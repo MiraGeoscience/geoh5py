@@ -24,7 +24,7 @@ from thriftpy2.rpc import make_server
 
 from app import CalculatorHandler
 
-def start():
+def main():
     handler = CalculatorHandler.CalculatorHandler()
 
     timeout_seconds = 5*60
@@ -36,4 +36,4 @@ def start():
     print('done.')
 
 if __name__ == '__main__':
-    start()
+    main()
