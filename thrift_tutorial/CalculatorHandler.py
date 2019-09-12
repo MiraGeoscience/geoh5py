@@ -68,7 +68,7 @@ class CalculatorHandler:
         return val
 
     def shift(self, coord_list, tx, ty, tz):
-        print('shift([],%d,%d,%d)' % (tx, ty, tz))
+        print('shift([...],%d,%d,%d)' % (tx, ty, tz))
         for coord in coord_list.coords:
             coord[0] += tx
             coord[1] += ty

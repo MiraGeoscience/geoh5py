@@ -20,7 +20,6 @@
 #
 
 import sys
-import glob
 sys.path.append('gen-py')
 
 from tutorial import Calculator

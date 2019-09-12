@@ -19,7 +19,6 @@
 # under the License.
 #
 
-import glob
 import sys
 sys.path.append('gen-py')
 
