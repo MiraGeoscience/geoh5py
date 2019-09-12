@@ -24,7 +24,7 @@ import glob
 sys.path.append('gen-py')
 
 from tutorial import Calculator
-from tutorial.ttypes import InvalidOperation, Operation, Work
+from tutorial.ttypes import InvalidOperation, Operation, Work, CoordList
 
 from thrift import Thrift
 from thrift.transport import TSocket
@@ -67,6 +67,13 @@ def main():
     except InvalidOperation as e:
         print('InvalidOperation: %r' % e)
 
+    coord_list = CoordList([[0,1,2],[10,11,12],[20,21,22],[30,31,32]])  
+    modified_coords = client.shift(coord_list, 100, 200, 300)
+    print('modified_coords:')
+    print(modified_coords.coords);    
+    print('original_coords:')
+    print(coord_list.coords);
+    
     work.op = Operation.SUBTRACT
     work.num1 = 15
     work.num2 = 10
