@@ -19,11 +19,12 @@
 # under the License.
 #
 
-import thriftpy2
-thrift_module = thriftpy2.load("tutorial.thrift", module_name="tutorial_thrift")
+from typing import TYPE_CHECKING
+from app import interfaces
 
-from tutorial_thrift import InvalidOperation, Operation
-SharedStruct = thrift_module.shared.SharedStruct
+if TYPE_CHECKING:
+    from app.interfaces.tutorial import InvalidOperation, Operation
+    from app.interfaces.shared import SharedStruct
 
 
 class CalculatorHandler:
@@ -40,26 +41,26 @@ class CalculatorHandler:
     def calculate(self, logid, work):
         print('calculate(%d, %r)' % (logid, work))
 
-        if work.op == Operation.ADD:
+        if work.op == interfaces.tutorial.Operation.ADD:
             val = work.num1 + work.num2
-        elif work.op == Operation.SUBTRACT:
+        elif work.op == interfaces.tutorial.Operation.SUBTRACT:
             val = work.num1 - work.num2
-        elif work.op == Operation.MULTIPLY:
+        elif work.op == interfaces.tutorial.Operation.MULTIPLY:
             val = work.num1 * work.num2
-        elif work.op == Operation.DIVIDE:
+        elif work.op == interfaces.tutorial.Operation.DIVIDE:
             if work.num2 == 0:
-                x = InvalidOperation()
+                x = interfaces.tutorial.InvalidOperation()
                 x.whatOp = work.op
                 x.why = 'Cannot divide by 0'
                 raise x
             val = work.num1 / work.num2
         else:
-            x = InvalidOperation()
+            x = interfaces.tutorial.InvalidOperation()
             x.whatOp = work.op
             x.why = 'Invalid operation'
             raise x
 
-        log = SharedStruct()
+        log = interfaces.shared.SharedStruct()
         log.key = logid
         log.value = '%d' % (val)
         self.log[logid] = log

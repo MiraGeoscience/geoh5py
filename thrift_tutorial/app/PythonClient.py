@@ -21,19 +21,14 @@
 
 import time
 
-import thriftpy2
-thrift_module = thriftpy2.load("tutorial.thrift", module_name="tutorial_thrift")
-
+from app import interfaces
 from thriftpy2.rpc import make_client
-
-from tutorial_thrift import Calculator, InvalidOperation, Operation, Work, CoordList
-
 
 def main():
 
     timeout_seconds = 5*60
     # TODO: get server address, port and timeout from environment variables
-    client = make_client(Calculator, 'localhost', 9090, timeout=1000*timeout_seconds)
+    client = make_client(interfaces.tutorial.Calculator, 'localhost', 9090, timeout=1000*timeout_seconds)
 
     client.ping()
     print('ping()')
@@ -41,9 +36,9 @@ def main():
     sum_ = client.add(1, 1)
     print('1+1=%d' % sum_)
 
-    work = Work()
+    work = interfaces.tutorial.Work()
 
-    work.op = Operation.DIVIDE
+    work.op = interfaces.tutorial.Operation.DIVIDE
     work.num1 = 1
     work.num2 = 0
 
@@ -51,7 +46,7 @@ def main():
         quotient = client.calculate(1, work)
         print('Whoa? You know how to divide by zero?')
         print('FYI the answer is %d' % quotient)
-    except InvalidOperation as e:
+    except interfaces.tutorial.InvalidOperation as e:
         print('InvalidOperation: %r' % e)
 
     test_size_factor = 3 * 10000
@@ -60,11 +55,11 @@ def main():
     # x 1e6 takes ~130 seconds
 
     base_coords = [[0,1,2],[10,11,12],[20,21,22],[30,31,32]]
-    coord_list = CoordList(base_coords * test_size_factor)
+    coord_list = interfaces.tutorial.CoordList(base_coords * test_size_factor)
     start = time.time()
     modified_coords = client.shift(coord_list, 100, 200, 300)
-    assert( len(modified_coords.coords) == len(base_coords) * test_size_factor)
     end = time.time()
+    assert( len(modified_coords.coords) == len(base_coords) * test_size_factor)
     print('time elapsed: %d' % (end - start))
     
     #print('modified_coords:')
@@ -72,7 +67,7 @@ def main():
     #print('original_coords:')
     #print(coord_list.coords);
     
-    work.op = Operation.SUBTRACT
+    work.op = interfaces.tutorial.Operation.SUBTRACT
     work.num1 = 15
     work.num2 = 10
 

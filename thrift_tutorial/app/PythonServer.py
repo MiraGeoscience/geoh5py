@@ -19,21 +19,17 @@
 # under the License.
 #
 
-import thriftpy2
-thrift_module = thriftpy2.load("tutorial.thrift", module_name="tutorial_thrift")
-
+from app import interfaces
 from thriftpy2.rpc import make_server
 
-import CalculatorHandler
-from tutorial_thrift import Calculator, InvalidOperation, Operation
-
+from app import CalculatorHandler
 
 def start():
     handler = CalculatorHandler.CalculatorHandler()
 
     timeout_seconds = 5*60
     # TODO: get server address, port and timeout from environment variables
-    server = make_server(Calculator, handler, 'localhost', 9090, client_timeout=1000*timeout_seconds)
+    server = make_server(interfaces.tutorial.Calculator, handler, 'localhost', 9090, client_timeout=1000*timeout_seconds)
 
     print('Starting the server...')
     server.serve()
