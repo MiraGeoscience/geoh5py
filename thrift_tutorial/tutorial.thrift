@@ -114,6 +114,10 @@ struct Work {
   4: optional string comment,
 }
 
+struct CoordList {
+  1: list<list<double>> coords,
+}
+
 /**
  * Structs can also be exceptions, if they are nasty.
  */
@@ -141,6 +145,11 @@ service Calculator extends shared.SharedService {
 
    i32 calculate(1:i32 logid, 2:Work w) throws (1:InvalidOperation ouch),
 
+   /**
+    * Experiment exchanging a multi-dimensional array
+    */
+   CoordList shift(1:CoordList coord_list, 2:double tx, 3:double ty, 4:double tz),
+   
    /**
     * This method has a oneway modifier. That means the client only makes
     * a request and does not listen for any response at all. Oneway methods

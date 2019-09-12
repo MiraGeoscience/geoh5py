@@ -53,6 +53,19 @@ class Iface(shared.SharedService.Iface):
         """
         pass
 
+    def shift(self, coord_list, tx, ty, tz):
+        """
+        Experiment exchanging a multi-dimensional array
+
+        Parameters:
+         - coord_list
+         - tx
+         - ty
+         - tz
+
+        """
+        pass
+
     def zip(self):
         """
         This method has a oneway modifier. That means the client only makes
@@ -173,6 +186,46 @@ class Client(shared.SharedService.Client, Iface):
             raise result.ouch
         raise TApplicationException(TApplicationException.MISSING_RESULT, "calculate failed: unknown result")
 
+    def shift(self, coord_list, tx, ty, tz):
+        """
+        Experiment exchanging a multi-dimensional array
+
+        Parameters:
+         - coord_list
+         - tx
+         - ty
+         - tz
+
+        """
+        self.send_shift(coord_list, tx, ty, tz)
+        return self.recv_shift()
+
+    def send_shift(self, coord_list, tx, ty, tz):
+        self._oprot.writeMessageBegin('shift', TMessageType.CALL, self._seqid)
+        args = shift_args()
+        args.coord_list = coord_list
+        args.tx = tx
+        args.ty = ty
+        args.tz = tz
+        args.write(self._oprot)
+        self._oprot.writeMessageEnd()
+        self._oprot.trans.flush()
+
+    def recv_shift(self):
+        iprot = self._iprot
+        (fname, mtype, rseqid) = iprot.readMessageBegin()
+        if mtype == TMessageType.EXCEPTION:
+            x = TApplicationException()
+            x.read(iprot)
+            iprot.readMessageEnd()
+            raise x
+        result = shift_result()
+        result.read(iprot)
+        iprot.readMessageEnd()
+        if result.success is not None:
+            return result.success
+        raise TApplicationException(TApplicationException.MISSING_RESULT, "shift failed: unknown result")
+
     def zip(self):
         """
         This method has a oneway modifier. That means the client only makes
@@ -196,6 +249,7 @@ class Processor(shared.SharedService.Processor, Iface, TProcessor):
         self._processMap["ping"] = Processor.process_ping
         self._processMap["add"] = Processor.process_add
         self._processMap["calculate"] = Processor.process_calculate
+        self._processMap["shift"] = Processor.process_shift
         self._processMap["zip"] = Processor.process_zip
 
     def process(self, iprot, oprot):
@@ -281,6 +335,29 @@ class Processor(shared.SharedService.Processor, Iface, TProcessor):
             msg_type = TMessageType.EXCEPTION
             result = TApplicationException(TApplicationException.INTERNAL_ERROR, 'Internal error')
         oprot.writeMessageBegin("calculate", msg_type, seqid)
+        result.write(oprot)
+        oprot.writeMessageEnd()
+        oprot.trans.flush()
+
+    def process_shift(self, seqid, iprot, oprot):
+        args = shift_args()
+        args.read(iprot)
+        iprot.readMessageEnd()
+        result = shift_result()
+        try:
+            result.success = self._handler.shift(args.coord_list, args.tx, args.ty, args.tz)
+            msg_type = TMessageType.REPLY
+        except TTransport.TTransportException:
+            raise
+        except TApplicationException as ex:
+            logging.exception('TApplication exception in handler')
+            msg_type = TMessageType.EXCEPTION
+            result = ex
+        except Exception:
+            logging.exception('Unexpected exception in handler')
+            msg_type = TMessageType.EXCEPTION
+            result = TApplicationException(TApplicationException.INTERNAL_ERROR, 'Internal error')
+        oprot.writeMessageBegin("shift", msg_type, seqid)
         result.write(oprot)
         oprot.writeMessageEnd()
         oprot.trans.flush()
@@ -666,6 +743,167 @@ all_structs.append(calculate_result)
 calculate_result.thrift_spec = (
     (0, TType.I32, 'success', None, None, ),  # 0
     (1, TType.STRUCT, 'ouch', [InvalidOperation, None], None, ),  # 1
+)
+
+
+class shift_args(object):
+    """
+    Attributes:
+     - coord_list
+     - tx
+     - ty
+     - tz
+
+    """
+
+
+    def __init__(self, coord_list=None, tx=None, ty=None, tz=None,):
+        self.coord_list = coord_list
+        self.tx = tx
+        self.ty = ty
+        self.tz = tz
+
+    def read(self, iprot):
+        if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
+            iprot._fast_decode(self, iprot, [self.__class__, self.thrift_spec])
+            return
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            if fid == 1:
+                if ftype == TType.STRUCT:
+                    self.coord_list = CoordList()
+                    self.coord_list.read(iprot)
+                else:
+                    iprot.skip(ftype)
+            elif fid == 2:
+                if ftype == TType.DOUBLE:
+                    self.tx = iprot.readDouble()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 3:
+                if ftype == TType.DOUBLE:
+                    self.ty = iprot.readDouble()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 4:
+                if ftype == TType.DOUBLE:
+                    self.tz = iprot.readDouble()
+                else:
+                    iprot.skip(ftype)
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        if oprot._fast_encode is not None and self.thrift_spec is not None:
+            oprot.trans.write(oprot._fast_encode(self, [self.__class__, self.thrift_spec]))
+            return
+        oprot.writeStructBegin('shift_args')
+        if self.coord_list is not None:
+            oprot.writeFieldBegin('coord_list', TType.STRUCT, 1)
+            self.coord_list.write(oprot)
+            oprot.writeFieldEnd()
+        if self.tx is not None:
+            oprot.writeFieldBegin('tx', TType.DOUBLE, 2)
+            oprot.writeDouble(self.tx)
+            oprot.writeFieldEnd()
+        if self.ty is not None:
+            oprot.writeFieldBegin('ty', TType.DOUBLE, 3)
+            oprot.writeDouble(self.ty)
+            oprot.writeFieldEnd()
+        if self.tz is not None:
+            oprot.writeFieldBegin('tz', TType.DOUBLE, 4)
+            oprot.writeDouble(self.tz)
+            oprot.writeFieldEnd()
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        return
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+             for key, value in self.__dict__.items()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
+all_structs.append(shift_args)
+shift_args.thrift_spec = (
+    None,  # 0
+    (1, TType.STRUCT, 'coord_list', [CoordList, None], None, ),  # 1
+    (2, TType.DOUBLE, 'tx', None, None, ),  # 2
+    (3, TType.DOUBLE, 'ty', None, None, ),  # 3
+    (4, TType.DOUBLE, 'tz', None, None, ),  # 4
+)
+
+
+class shift_result(object):
+    """
+    Attributes:
+     - success
+
+    """
+
+
+    def __init__(self, success=None,):
+        self.success = success
+
+    def read(self, iprot):
+        if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
+            iprot._fast_decode(self, iprot, [self.__class__, self.thrift_spec])
+            return
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            if fid == 0:
+                if ftype == TType.STRUCT:
+                    self.success = CoordList()
+                    self.success.read(iprot)
+                else:
+                    iprot.skip(ftype)
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        if oprot._fast_encode is not None and self.thrift_spec is not None:
+            oprot.trans.write(oprot._fast_encode(self, [self.__class__, self.thrift_spec]))
+            return
+        oprot.writeStructBegin('shift_result')
+        if self.success is not None:
+            oprot.writeFieldBegin('success', TType.STRUCT, 0)
+            self.success.write(oprot)
+            oprot.writeFieldEnd()
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        return
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+             for key, value in self.__dict__.items()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
+all_structs.append(shift_result)
+shift_result.thrift_spec = (
+    (0, TType.STRUCT, 'success', [CoordList, None], None, ),  # 0
 )
 
 
