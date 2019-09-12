@@ -19,12 +19,11 @@
 # under the License.
 #
 
-import sys
-sys.path.append('gen-py')
+import thriftpy2
+thrift_module = thriftpy2.load("tutorial.thrift", module_name="tutorial_thrift")
 
-from tutorial.ttypes import InvalidOperation, Operation
-
-from shared.ttypes import SharedStruct
+from tutorial_thrift import InvalidOperation, Operation
+SharedStruct = thrift_module.shared.SharedStruct
 
 
 class CalculatorHandler:

@@ -3,6 +3,8 @@
 import sys
 sys.path.append('gen-py')
 
+import time
+
 import CalculatorHandler
 from tutorial.ttypes import InvalidOperation, Operation, Work, CoordList
 
@@ -31,12 +33,17 @@ def main():
     except InvalidOperation as e:
         print('InvalidOperation: %r' % e)
 
-    coord_list = CoordList([[0,1,2],[10,11,12],[20,21,22],[30,31,32]])  
+    coord_list = CoordList([[0,1,2],[10,11,12],[20,21,22],[30,31,32]]*1000000)
+    start = time.time()
     modified_coords = client.shift(coord_list, 100, 200, 300)
-    print('modified_coords:')
-    print(modified_coords.coords);    
-    print('original_coords:')
-    print(coord_list.coords);
+    end = time.time()
+    print('time elapsed: %d' % (end - start))
+
+
+    #print('modified_coords:')
+    #print(modified_coords.coords);    
+    #print('original_coords:')
+    #print(coord_list.coords);
     
     work.op = Operation.SUBTRACT
     work.num1 = 15

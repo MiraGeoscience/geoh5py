@@ -19,35 +19,25 @@
 # under the License.
 #
 
-import sys
-sys.path.append('gen-py')
+import thriftpy2
+thrift_module = thriftpy2.load("tutorial.thrift", module_name="tutorial_thrift")
+
+from thriftpy2.rpc import make_server
 
 import CalculatorHandler
-from tutorial import Calculator
-from tutorial.ttypes import InvalidOperation, Operation
+from tutorial_thrift import Calculator, InvalidOperation, Operation
 
-from shared.ttypes import SharedStruct
 
-from thrift.transport import TSocket
-from thrift.transport import TTransport
-from thrift.protocol import TBinaryProtocol
-from thrift.server import TServer
-
-if __name__ == '__main__':
+def start():
     handler = CalculatorHandler.CalculatorHandler()
-    processor = Calculator.Processor(handler)
-    transport = TSocket.TServerSocket(host='127.0.0.1', port=9090)
-    tfactory = TTransport.TBufferedTransportFactory()
-    pfactory = TBinaryProtocol.TBinaryProtocolFactory()
 
-    server = TServer.TSimpleServer(processor, transport, tfactory, pfactory)
-
-    # You could do one of these for a multithreaded server
-    # server = TServer.TThreadedServer(
-    #     processor, transport, tfactory, pfactory)
-    # server = TServer.TThreadPoolServer(
-    #     processor, transport, tfactory, pfactory)
+    timeout_seconds = 5*60
+    # TODO: get server address, port and timeout from environment variables
+    server = make_server(Calculator, handler, 'localhost', 9090, client_timeout=1000*timeout_seconds)
 
     print('Starting the server...')
     server.serve()
     print('done.')
+
+if __name__ == '__main__':
+    start()
