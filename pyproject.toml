@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "GeoH5io"
+version = "0.1.0"
+description = "Read and write GeoH5 files from Python"
+authors = ["Mira Geoscience <support@mirageoscience.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+h5py = "^2.10"
+thriftpy2 = "^0.4.5"
+cython = {version = "^0.29.13", optional = true}
+[tool.poetry.dev-dependencies]
+pytest = "^3.0"
+thrift-pyi = "^0.1.0"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
