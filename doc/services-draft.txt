@@ -1,0 +1,134 @@
+// keep in mind: these services should also be implement by GA
+// so that a same geoh5 client can connect indifferently to a geoh5 server or to GA
+
+// Note: any modification should be flagged so that server know what needs to be to save
+// (thus, flag any new object as modified). Also update last modified date?
+
+// TODO: define a scenario for a demo, so that implementation is prioritized accordingly
+
+constant version : Version // does not have to match geoh5
+
+workspaceService.getServerVersion() = Version // so that client can compare its version with the one from server
+workspaceService.open(geoh5_path) => Workspace
+workspaceService.getContributors() => string[]
+workspaceService.getFileVersion() => VersionNumer
+workspaceService.getDistanceUnit() => DistanceUnit
+workspaceService.setPublic(Uuid[], bool)
+workspaceService.setVisible(Uuid[], bool)
+workspaceService.setAllowDelete(Uuid[], bool)
+workspaceService.setAllowRename(Uuid[], bool)
+workspaceService.saveAs(geoh5_path, contributors)
+workspaceService.exportObjects(Uuid[], geoh5_path, distance_unit, contributors)
+
+Entity {
+   uuid: Uuid
+   name: string
+   visible: bool
+   allowDelete: bool
+   allowRename: bool
+   isPublic: bool
+}
+
+Object {
+   super_: Entity
+   allowMove: bool
+   clippingIDs: Uuid[] // Do not expose in the API, until we can manipulate clipping planes
+   objectTypeID: Uuid
+   class: ObjectClass (enum value) // Unknown for custom types
+}
+
+objectService.getObjectType(ObjectClass) => ObjectType // TODO: should use constants instead?
+objectService.getAll() => Object[]
+objectService.getAllOfType(ObjectType_uuid) => Object[]
+objectService.findChildren(group_uuid, ObjectType_uuid) => Object[]
+objectService.findByName(string, ObjectType_uuid, group_uuid) => Object[] // group_uuid and ObjectType_uuid optional
+objectService.get(uuid) => Object
+objectService.narrowPoints(uuid) => Points
+objectService.narrowCurve(uuid) => Curve
+objectService.narrowSurface(uuid) => Surface
+objectService.narrowGrid2D(uuid) => Grid2D
+objectService.narrowDrillhole(uuid) => Drillhole
+objectService.narrowBlockModel(uuid) => BlockModel
+objectService.narrowOctree(uuid) => Octree
+objectService.narrowGeoImage(uuid) => GeoImage
+objectService.narrowLabel(uuid) => Label
+
+// when creating object, group is optional. Gets created under root group if group is not specified.
+objectService.createPoints(..., groupID: Uuid) => Points
+objectService.createCurve(..., groupID: Uuid) => Curve
+...
+objectService.createAnyObject(..., ObjectType_uuid, attributes: dict<string, string>, groupID: Uuid) => Object
+
+objectService.transform(rotation, translation) // TODO: define rotation and translation objects
+
+
+// also need CurveService, SurfaceService, ... ?
+// yes iff specific operations per class, other than create
+
+// TODO? allow creation of new ObjectTypes?
+
+Data {
+   super_: Entity
+   association: DataAssociation (enum value)
+   dataTypeID: Uuid
+}
+
+union DataValues {
+    // only one of them is set
+    int[]
+    float[]
+    uint[]
+    string[]
+    ??? // blob
+}
+
+dataService.getAll() => Data[]
+dataService.getAllOfType(dataType_uuid) => Data[]
+dataService.findChildren(object_uuid, dataType_uuid) => Data[] // dataType_uuid optional
+dataService.findByName(string, object_uuid, primitiveType) => Data[] // primitiveType optional
+dataService.get(uuid) => Data
+dataService.getValues(uuid) => DataValues
+dataService.create(objectUuid, association, dataTypeID, ...) => Data
+
+// alternatively
+// dataService.getIntegerValues(uuid) => int[]
+// dataService.getFloatValues(uuid) => float[]
+// dataService.getReferenceValues(uuid) => uint[]
+// dataService.getTextValues(uuid) => string[]
+// dataService.getFileNameValues(uuid) => string[]
+// dataService.getDateTimeValues(uuid) => string[]
+// dataService.getBlobValues(uuid) => ???
+
+DataType {
+   ... see UML ...
+   primitiveType: PrimitiveDataType (enum value)
+   units: DataUnit
+}
+
+dataService.getAllTypes(primitiveType) => DataType[] // primitiveType optional
+dataService.get(uuid) => DataType
+dataService.create(...) => DataType
+
+// TODO: how are managed data groups?
+
+Group {
+   super_: Entity
+   allowMove: bool
+   clippingIDs: Uuid[] // Do not expose in the API, until we can manipulate clipping planes
+   groupTypeID: Uuid
+   class: GroupClass (enum value) // Unknown for custom types
+}
+
+groupService.getGroupType(GroupClass) => GroupType // TODO: should use constants instead?
+groupService.getAll() => Group[]
+groupService.getAllOfType(groupType_uuid) => Group[]
+groupService.findChildren(group_uuid, groupType_uuid) => Group[] // groupType_uuid optional
+groupService.findByName(string, groupType_uuid, group_uuid) => Object[] // group_uuid and groupType_uuid optional
+groupService.get(uuid) => Group
+groupService.create(groupType: Uuid, ...) => Group
+// TODO? allow creation of new GroupTypes?
+
+
+// TODO: read/write and assign clipping planes?
+// TODO: manage viewports, and visibility per viewport
+
