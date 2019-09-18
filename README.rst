@@ -3,15 +3,18 @@
 
 GeoH5io
 =======
-API to read and write GeoH5 files from Python 3.
+API to read and write geoh5 files from Python 3.
 
-The API is described in terms data types and service interfaces in a `Thrift
-<https://thrift.apache.org/>`_ definition file.
-You are free to generate a client from this definition file in one of the many
+The API is described in terms data types and service interfaces in  `Thrift
+<https://thrift.apache.org/>`_ definition files.
+You are free to generate a client from these `definition files`_  in one of the many
 languages supported by Thrift. You can then use the client in your custom code
 to communicate with the GeoH5 server.
 
-For specifications of the GeoH5 file format, see :doc:`doc/GeoH5.textile`.
+See also the description of `the geoh5 file format`_.
+
+.. _the geoh5 file format: doc/GeoH5.textile
+.. _definition files: interfaces/
 
 
 .. highlight:: console
