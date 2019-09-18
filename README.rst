@@ -11,6 +11,9 @@ You are free to generate a client from this definition file in one of the many
 languages supported by Thrift. You can then use the client in your custom code
 to communicate with the GeoH5 server.
 
+For specifications of the GeoH5 file format, see :file:`doc/GeoH5.textile`.
+
+
 .. highlight:: console
 
 Setup for development
