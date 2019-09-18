@@ -15,7 +15,7 @@ class WorkspaceHandler:
 
     def open_geoh5(self, file_path: str) -> interfaces.workspace.Workspace:
         # TODO
-        pass
+        return interfaces.workspace.Workspace()
 
     def save(
         self, file_path: str, overwrite_file: bool

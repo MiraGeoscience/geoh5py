@@ -4,8 +4,11 @@ import os
 
 import toml
 
-from geoh5io import interfaces, workspace_handler
-from thriftpy2.rpc import make_server
+from geoh5io import interfaces, objects_handler, workspace_handler
+from thriftpy2.protocol import TBinaryProtocolFactory
+from thriftpy2.server import TThreadedServer
+from thriftpy2.thrift import TMultiplexedProcessor, TProcessor
+from thriftpy2.transport import TBufferedTransportFactory, TServerSocket
 
 
 def main():
@@ -19,18 +22,23 @@ def main():
     host = config.get("HOST", "localhost")
     timeout_seconds = config.get("TIMEOUT", 30)
 
-    handler = workspace_handler.WorkspaceHandler()
-
-    # TODO: get server address, port and timeout from environment variables
-    server = make_server(
-        interfaces.workspace.WorkspaceService,
-        handler,
-        host,
-        port,
-        client_timeout=1000 * timeout_seconds,
+    workspace_proc = TProcessor(
+        interfaces.workspace.WorkspaceService, workspace_handler.WorkspaceHandler()
+    )
+    objects_proc = TProcessor(
+        interfaces.objects.ObjectService, objects_handler.ObjectsHandler()
     )
 
-    # TODO: start a multiplex server for multiple services
+    mux_proc = TMultiplexedProcessor()
+    mux_proc.register_processor("workspace_thrift", workspace_proc)
+    mux_proc.register_processor("objects_thrift", objects_proc)
+
+    server = TThreadedServer(
+        mux_proc,
+        TServerSocket(host, port, client_timeout=1000 * timeout_seconds),
+        iprot_factory=TBinaryProtocolFactory(),
+        itrans_factory=TBufferedTransportFactory(),
+    )
 
     print(f"Starting server on {host}:{port}...")
     server.serve()

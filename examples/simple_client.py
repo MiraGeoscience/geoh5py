@@ -5,7 +5,22 @@ import os
 import toml
 
 from geoh5io import interfaces
-from thriftpy2.rpc import make_client
+from thriftpy2.protocol import (TBinaryProtocolFactory,
+                                TMultiplexedProtocolFactory)
+from thriftpy2.rpc import client_context
+
+
+# TODO: share this code between app and client demo
+def simple_demo(workspace_service, objects_service):
+    print("API version: " + workspace_service.get_api_version().value)
+
+    workspace_service.open_geoh5("test.geoh5")
+    all_objects = objects_service.get_all()
+    print(f"Found {len(all_objects)} in workspace.")
+
+    # TODO: some more interesting examples
+
+    workspace_service.close()
 
 
 def main():
@@ -19,22 +34,32 @@ def main():
     host = config.get("HOST", "localhost")
     timeout_seconds = config.get("TIMEOUT", 30)
 
-    client: interfaces.workspace.WorkspaceService = make_client(
+    print("My API version: " + interfaces.api.API_VERSION)
+
+    binary_factory = TBinaryProtocolFactory()
+    workspace_serv_factory = TMultiplexedProtocolFactory(
+        binary_factory, "workspace_thrift"
+    )
+    objects_serv_factory = TMultiplexedProtocolFactory(binary_factory, "objects_thrift")
+
+    print(f"Starting client on {host}:{port}...")
+    with client_context(
         interfaces.workspace.WorkspaceService,
         host,
         port,
-        timeout=1000 * timeout_seconds,
-    )
-
-    print(f"Starting client on {host}:{port}...")
-
-    print("My API version: " + interfaces.api.API_VERSION)
-    print("Server API version: " + client.get_api_version().value)
-
-    # TODO: some more interesting examples
-
-    client.close()
-    print("Done.")
+        connect_timeout=1000 * timeout_seconds,
+        socket_timeout=1000 * timeout_seconds,
+        proto_factory=workspace_serv_factory,
+    ) as workspace_service:
+        with client_context(
+            interfaces.objects.ObjectService,
+            host,
+            port,
+            connect_timeout=1000 * timeout_seconds,
+            socket_timeout=1000 * timeout_seconds,
+            proto_factory=objects_serv_factory,
+        ) as objects_service:
+            simple_demo(workspace_service, objects_service)
 
 
 if __name__ == "__main__":
