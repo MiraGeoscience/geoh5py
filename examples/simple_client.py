@@ -3,20 +3,25 @@
 import os
 
 import toml
+from thriftpy2.protocol import TBinaryProtocolFactory, TMultiplexedProtocolFactory
+from thriftpy2.rpc import client_context
 
 from geoh5io import interfaces
-from thriftpy2.protocol import (TBinaryProtocolFactory,
-                                TMultiplexedProtocolFactory)
-from thriftpy2.rpc import client_context
 
 
 # TODO: share this code between app and client demo
-def simple_demo(workspace_service, objects_service):
+def simple_demo(workspace_service, objects_service, groups_service, data_service):
     print("API version: " + workspace_service.get_api_version().value)
 
     workspace_service.open_geoh5("test.geoh5")
     all_objects = objects_service.get_all()
-    print(f"Found {len(all_objects)} in workspace.")
+    print(f"Found {len(all_objects)} Objects in workspace.")
+
+    all_groups = groups_service.get_all()
+    print(f"found {len(all_groups)} Groups in workspace.")
+
+    all_data = data_service.get_all()
+    print(f"found {len(all_data)} Data in workspace.")
 
     # TODO: some more interesting examples
 
@@ -41,6 +46,8 @@ def main():
         binary_factory, "workspace_thrift"
     )
     objects_serv_factory = TMultiplexedProtocolFactory(binary_factory, "objects_thrift")
+    groups_serv_factory = TMultiplexedProtocolFactory(binary_factory, "groups_thrift")
+    data_serv_factory = TMultiplexedProtocolFactory(binary_factory, "data_thrift")
 
     print(f"Starting client on {host}:{port}...")
     with client_context(
@@ -59,7 +66,25 @@ def main():
             socket_timeout=1000 * timeout_seconds,
             proto_factory=objects_serv_factory,
         ) as objects_service:
-            simple_demo(workspace_service, objects_service)
+            with client_context(
+                interfaces.groups.GroupService,
+                host,
+                port,
+                connect_timeout=1000 * timeout_seconds,
+                socket_timeout=1000 * timeout_seconds,
+                proto_factory=groups_serv_factory,
+            ) as groups_service:
+                with client_context(
+                    interfaces.data.DataService,
+                    host,
+                    port,
+                    connect_timeout=1000 * timeout_seconds,
+                    socket_timeout=1000 * timeout_seconds,
+                    proto_factory=data_serv_factory,
+                ) as data_service:
+                    simple_demo(
+                        workspace_service, objects_service, groups_service, data_service
+                    )
 
 
 if __name__ == "__main__":

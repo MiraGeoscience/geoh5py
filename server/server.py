@@ -3,12 +3,18 @@
 import os
 
 import toml
-
-from geoh5io import interfaces, objects_handler, workspace_handler
 from thriftpy2.protocol import TBinaryProtocolFactory
 from thriftpy2.server import TThreadedServer
 from thriftpy2.thrift import TMultiplexedProcessor, TProcessor
 from thriftpy2.transport import TBufferedTransportFactory, TServerSocket
+
+from geoh5io import (
+    data_handler,
+    groups_handler,
+    interfaces,
+    objects_handler,
+    workspace_handler,
+)
 
 
 def main():
@@ -28,10 +34,16 @@ def main():
     objects_proc = TProcessor(
         interfaces.objects.ObjectService, objects_handler.ObjectsHandler()
     )
+    groups_proc = TProcessor(
+        interfaces.objects.ObjectService, groups_handler.GroupsHandler()
+    )
+    data_proc = TProcessor(interfaces.objects.ObjectService, data_handler.DataHandler())
 
     mux_proc = TMultiplexedProcessor()
     mux_proc.register_processor("workspace_thrift", workspace_proc)
     mux_proc.register_processor("objects_thrift", objects_proc)
+    mux_proc.register_processor("groups_thrift", groups_proc)
+    mux_proc.register_processor("data_thrift", data_proc)
 
     server = TThreadedServer(
         mux_proc,
