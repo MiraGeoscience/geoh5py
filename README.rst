@@ -19,15 +19,18 @@ Setup for development
 start a virtual environment.
 
 To install poetry::
+
   curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
 
 Then, create and activate the virtual environment simply with::
+
   poetry shell
 
 Configure the pre-commit hooks
 ------------------------------
 To have the [pre-commit](https://pre-commit.com/) hooks installed and running, first make sure you have pip installed
 on your system. Then execute::
+
   pip install --user pre-commit
   pre-commit install
 
@@ -37,6 +40,7 @@ All the pre-commit checks run automatically for you, and reformat files when req
 Create the .pyi from thrift files
 ---------------------------------
 To regenerate the Python interface .pyi files from the thrift files, execute::
+
   thriftpyi interfaces --output geoh5io/interfaces
 
 On Windows, it most likely terminate with an exception running autoflake,
@@ -53,16 +57,20 @@ config-example.toml at the root of the project is provided as an example.
 
 To start the server
 ===================
-python server/Server.py
+To start the server, execute::
+
+  python server/Server.py
 
 To run the examples
 ====================
 Run the simple client
 ---------------------
 Once the server is started::
+
   python example/Client.py
 
 Run the stand-alone application
 -------------------------------
 Without any server running::
+
   python example/Client.py
