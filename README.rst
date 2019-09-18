@@ -24,6 +24,26 @@ To install poetry::
 Then, create and activate the virtual environment simply with::
   poetry shell
 
+Configure the pre-commit hooks
+------------------------------
+To have the [pre-commit](https://pre-commit.com/) hooks installed and running, first make sure you have pip installed
+on your system. Then execute::
+  pip install --user pre-commit
+  pre-commit install
+
+All the pre-commit checks run automatically for you, and reformat files when required. Enjoy...
+
+
+Create the .pyi from thrift files
+---------------------------------
+To regenerate the Python interface .pyi files from the thrift files, execute::
+  thriftpyi interfaces --output geoh5io/interfaces
+
+On Windows, it most likely terminate with an exception running autoflake,
+but files are created nonetheless.
+And file while be re-formatted by the pre-commit hook anyway.
+
+
 Configuration
 =============
 Both the server and the example client are reading the configuration from config.toml file
