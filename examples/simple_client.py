@@ -59,7 +59,7 @@ def main():
         proto_factory=workspace_serv_factory,
     ) as workspace_service:
         with client_context(
-            interfaces.objects.ObjectService,
+            interfaces.objects.ObjectsService,
             host,
             port,
             connect_timeout=1000 * timeout_seconds,
@@ -67,7 +67,7 @@ def main():
             proto_factory=objects_serv_factory,
         ) as objects_service:
             with client_context(
-                interfaces.groups.GroupService,
+                interfaces.groups.GroupsService,
                 host,
                 port,
                 connect_timeout=1000 * timeout_seconds,

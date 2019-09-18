@@ -37,7 +37,7 @@ exception InvalidGroupOperation {
     1: optional string message = "";
 }
 
-service GroupService extends shared.EntityService {
+service GroupsService extends shared.EntityService {
     /** Returns the root container of the current open Workspace. */
     Group get_root();
 

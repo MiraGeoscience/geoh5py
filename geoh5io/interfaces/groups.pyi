@@ -37,7 +37,7 @@ class GroupQuery:
 
 
 
-class GroupService:
+class GroupsService:
     def get_root(
         self,
     ) -> Group:

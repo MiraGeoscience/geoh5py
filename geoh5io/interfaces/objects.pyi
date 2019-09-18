@@ -85,7 +85,7 @@ class GeometryTransformation:
 
 
 
-class ObjectService:
+class ObjectsService:
     def get_type(
         self,
         object_class: int,

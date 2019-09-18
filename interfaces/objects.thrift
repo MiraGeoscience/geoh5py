@@ -99,7 +99,7 @@ exception InvalidObjectOperation {
 /**
  * Defines operations on Objects.
  */
-service ObjectService extends shared.EntityService {
+service ObjectsService extends shared.EntityService {
     /**
      * Returns the Uuid for the Object type that corresponds to the given ObjectClass.
      *

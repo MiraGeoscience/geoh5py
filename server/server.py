@@ -32,12 +32,12 @@ def main():
         interfaces.workspace.WorkspaceService, workspace_handler.WorkspaceHandler()
     )
     objects_proc = TProcessor(
-        interfaces.objects.ObjectService, objects_handler.ObjectsHandler()
+        interfaces.objects.ObjectsService, objects_handler.ObjectsHandler()
     )
     groups_proc = TProcessor(
-        interfaces.objects.ObjectService, groups_handler.GroupsHandler()
+        interfaces.groups.GroupsService, groups_handler.GroupsHandler()
     )
-    data_proc = TProcessor(interfaces.objects.ObjectService, data_handler.DataHandler())
+    data_proc = TProcessor(interfaces.data.DataService, data_handler.DataHandler())
 
     mux_proc = TMultiplexedProcessor()
     mux_proc.register_processor("workspace_thrift", workspace_proc)
