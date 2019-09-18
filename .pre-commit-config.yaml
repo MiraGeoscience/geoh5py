@@ -2,6 +2,13 @@
 default_language_version:
     python: python3
 repos:
+-   repo: https://github.com/pre-commit/mirrors-isort
+    rev: v4.3.21
+    hooks:
+    -   id: isort
+        additional_dependencies:
+        -   toml
+        exclude: "example/"
 -   repo: https://github.com/psf/black
     rev: stable
     hooks:
@@ -10,13 +17,6 @@ repos:
     rev: v1.2
     hooks:
     -   id: autoflake
--   repo: https://github.com/pre-commit/mirrors-isort
-    rev: v4.3.21
-    hooks:
-    -   id: isort
-        additional_dependencies:
-        -   toml
-        exclude: "example/"
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: 'V0.720'
     hooks:
