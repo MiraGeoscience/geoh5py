@@ -24,6 +24,13 @@ To install poetry::
 Then, create and activate the virtual environment simply with::
   poetry shell
 
+Configuration
+=============
+Both the server and the example client are reading the configuration from config.toml file
+in the current directory. If this file does not exists, defaults are applied.
+
+config-example.toml at the root of the project is provided as an example.
+
 To start the server
 ===================
 python server/Server.py
