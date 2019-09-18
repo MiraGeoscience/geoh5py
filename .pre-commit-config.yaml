@@ -11,30 +11,31 @@ repos:
     hooks:
     -   id: autoflake
 -   repo: https://github.com/pre-commit/mirrors-isort
-    rev: v4.3.15
+    rev: v4.3.21
     hooks:
     -   id: isort
         additional_dependencies:
         -   toml
         exclude: "example/"
--   repo: local
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'V0.720'
     hooks:
-      - id: pylint
-        name: pylint
-        entry: python -m pylint
-        language: system
-        types: [python]
-        exclude: "example/"
-      - id: mypy
-        name: mypy
-        entry: python -m mypy
-        args: ["--junit-xml", "test-reports/mypy-junit.xml"]
-        language: system
-        types: [python]
+    -   id: mypy
+-   repo: https://github.com/pre-commit/mirrors-pylint
+    rev: 'V2.3.1'
+    hooks:
+    -   id: pylint
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.1.0
+    rev: v2.3.0
     hooks:
     -   id: trailing-whitespace
-    -   id: check-yaml
+    -   id: check-toml
+    -   id: check-added-large-files
+    -   id: check-case-conflict
+    -   id: check-merge-conflict
     -   id: debug-statements
+    -   id: detect-private-key
+    -   id: end-of-file-fixer
+    -   id: mixed-line-ending
+    -   id: name-tests-test
     -   id: flake8
