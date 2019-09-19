@@ -63,6 +63,21 @@ On Windows, it most likely terminate with an exception running ``autoflake``,
 but files are created nonetheless.
 And file while be re-formatted by the pre-commit hook anyway.
 
+IDE
+---
+`PyCharm`_, by JetBrains, is a very good IDE for developing with Python.
+Some suggested PyCharm plugins for working in this project:
+
+- `Toml`_
+- `Thrift Support`_
+
+For Vim lovers, also check out `IdeaVim`_.
+
+.. _PyCharm: https://www.jetbrains.com/pycharm/
+
+.. _Toml: https://plugins.jetbrains.com/plugin/8195-toml/
+.. _Thrift Support: https://plugins.jetbrains.com/plugin/7331-thrift-support/
+.. _IdeaVim: https://plugins.jetbrains.com/plugin/164-ideavim/
 
 Configuration
 =============
