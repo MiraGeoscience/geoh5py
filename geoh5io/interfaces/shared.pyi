@@ -43,10 +43,6 @@ class DistanceUnit:
     unit: Optional[str] = ""
 
 @dataclass
-class DataUnit:
-    unit: Optional[str] = ""
-
-@dataclass
 class Coord3D:
     x: Optional[float] = 0.0
     y: Optional[float] = 0.0

@@ -32,11 +32,18 @@ struct Data {
    2: required DataAssociation association;
 }
 
+/**
+ * The unit for data values.
+ */
+struct DataUnit {
+    1: optional string unit = "";
+}
+
 struct DataType {
    1: required shared.Uuid uid;
    2: required string name;
    3: optional string description = "";
-   4: optional shared.DataUnit units,
+   4: optional DataUnit units,
    5: PrimitiveType primitive_type,
 }
 
@@ -74,7 +81,7 @@ struct DataQuery {
 struct DataTypeQuery {
    1: optional string name;
    2: optional PrimitiveType primitive_type;
-   3: optional shared.DataUnit units;
+   3: optional DataUnit units;
 }
 
 /**

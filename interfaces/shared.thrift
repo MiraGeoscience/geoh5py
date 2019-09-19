@@ -38,13 +38,6 @@ struct DistanceUnit {
     1: optional string unit = "";
 }
 
-/**
- * The unit for data values.
- */
-struct DataUnit {
-    1: optional string unit = "";
-}
-
 struct Coord3D {
     1: optional double x = 0.;
     2: optional double y = 0.;

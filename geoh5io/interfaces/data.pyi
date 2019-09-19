@@ -43,11 +43,15 @@ class Data:
     association: Optional[int] = None
 
 @dataclass
+class DataUnit:
+    unit: Optional[str] = ""
+
+@dataclass
 class DataType:
     uid: Optional[shared.Uuid] = None
     name: Optional[str] = None
     description: Optional[str] = ""
-    units: Optional[shared.DataUnit] = None
+    units: Optional[DataUnit] = None
     primitive_type: Optional[int] = None
 
 @dataclass
@@ -79,7 +83,7 @@ class DataQuery:
 class DataTypeQuery:
     name: Optional[str] = None
     primitive_type: Optional[int] = None
-    units: Optional[shared.DataUnit] = None
+    units: Optional[DataUnit] = None
 
 
 
