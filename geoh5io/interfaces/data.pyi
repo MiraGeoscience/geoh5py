@@ -18,7 +18,7 @@ class BadPrimitiveType(Exception):
 
 
 class DataAssociation(IntEnum):
-    UNKOWN = 0
+    UNKNOWN = 0
     OBJECT = 1
     CELL = 2
     FACE = 3

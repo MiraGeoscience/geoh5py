@@ -6,7 +6,7 @@ namespace * data
  * Describes how the Data is tied to its parent Entity: vertex, face, cell, or the object/group itself.
  */
 enum DataAssociation {
-   UNKOWN = 0,
+   UNKNOWN = 0,
    OBJECT,
    CELL,
    FACE,
