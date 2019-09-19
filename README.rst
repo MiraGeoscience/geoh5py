@@ -5,14 +5,14 @@ GeoH5io
 =======
 API to read and write geoh5 files from Python 3.
 
-The API is described in terms data types and service interfaces in  `Thrift
-<https://thrift.apache.org/>`_ definition files.
+The API is described in terms data types and service interfaces in  `Thrift`_ definition files.
 You are free to generate a client from these `definition files`_  in one of the many
 languages supported by Thrift. You can then use the client in your custom code
 to communicate with the GeoH5 server.
 
 See also the description of `the geoh5 file format`_.
 
+.. _Thrift: https://thrift.apache.org/
 .. _the geoh5 file format: doc/GeoH5.textile
 .. _definition files: interfaces/
 
@@ -21,7 +21,7 @@ See also the description of `the geoh5 file format`_.
 
 Setup for development
 =====================
-`Poetry <https://poetry.eustace.io/docs/>`_ makes it easy to install the dependencies and
+`Poetry`_ makes it easy to install the dependencies and
 start a virtual environment.
 
 To install poetry::
@@ -32,9 +32,11 @@ Then, create and activate the virtual environment simply with::
 
   poetry shell
 
+.. _Poetry: https://poetry.eustace.io/docs/
+
 Configure the pre-commit hooks
 ------------------------------
-To have the `pre-commit <https://pre-commit.com/>`_ hooks installed and running, first make sure you have pip installed
+To have the `pre-commit`_ hooks installed and running, first make sure you have pip installed
 on your system. Then execute::
 
   pip install --user pre-commit
@@ -42,6 +44,7 @@ on your system. Then execute::
 
 All the pre-commit checks run automatically for you, and reformat files when required. Enjoy...
 
+.. _pre-commit: https://pre-commit.com/
 
 Create the .pyi from thrift files
 ---------------------------------
