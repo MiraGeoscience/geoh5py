@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-
-from geoh5io import data_handler, groups_handler, objects_handler, workspace_handler
+from geoh5io import data_handler
+from geoh5io import groups_handler
+from geoh5io import objects_handler
+from geoh5io import workspace_handler
 
 
 # TODO: share this code between app and client demo

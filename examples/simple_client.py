@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-
 import os
 
 import toml
-from thriftpy2.protocol import TBinaryProtocolFactory, TMultiplexedProtocolFactory
+from thriftpy2.protocol import TBinaryProtocolFactory
+from thriftpy2.protocol import TMultiplexedProtocolFactory
 from thriftpy2.rpc import client_context
 
 from geoh5io import interfaces

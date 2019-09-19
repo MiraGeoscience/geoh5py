@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
-
 import os
 
 import toml
 from thriftpy2.protocol import TBinaryProtocolFactory
 from thriftpy2.server import TThreadedServer
-from thriftpy2.thrift import TMultiplexedProcessor, TProcessor
-from thriftpy2.transport import TBufferedTransportFactory, TServerSocket
+from thriftpy2.thrift import TMultiplexedProcessor
+from thriftpy2.thrift import TProcessor
+from thriftpy2.transport import TBufferedTransportFactory
+from thriftpy2.transport import TServerSocket
 
-from geoh5io import (
-    data_handler,
-    groups_handler,
-    interfaces,
-    objects_handler,
-    workspace_handler,
-)
+from geoh5io import data_handler
+from geoh5io import groups_handler
+from geoh5io import interfaces
+from geoh5io import objects_handler
+from geoh5io import workspace_handler
 
 
 def main():
