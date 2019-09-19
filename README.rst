@@ -13,22 +13,25 @@ to communicate with the GeoH5 server.
 See also the description of `the geoh5 file format`_.
 
 .. _Thrift: https://thrift.apache.org/
-.. _the geoh5 file format: doc/GeoH5.textile
+.. _the geoh5 file format: doc/source/GeoH5.textile
 .. _definition files: interfaces/
 
 
-.. highlight:: console
 
 Setup for development
 =====================
 `Poetry`_ makes it easy to install the dependencies and
 start a virtual environment.
 
-To install poetry::
+To install poetry:
+
+.. code-block:: bash
 
   curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
 
-Then, create and activate the virtual environment simply with::
+Then, create and activate the virtual environment simply with:
+
+.. code-block:: bash
 
   poetry shell
 
@@ -37,7 +40,9 @@ Then, create and activate the virtual environment simply with::
 Configure the pre-commit hooks
 ------------------------------
 To have the `pre-commit`_ hooks installed and running, first make sure you have pip installed
-on your system. Then execute::
+on your system. Then execute:
+
+.. code-block:: bash
 
   pip install --user pre-commit
   pre-commit install
@@ -48,7 +53,9 @@ All the pre-commit checks run automatically for you, and reformat files when req
 
 Create the .pyi from thrift files
 ---------------------------------
-To regenerate the Python interface .pyi files from the thrift files, execute::
+To regenerate the Python interface .pyi files from the thrift files, execute:
+
+.. code-block:: bash
 
   thriftpyi interfaces --output geoh5io/interfaces
 
@@ -66,7 +73,9 @@ config-example.toml at the root of the project is provided as an example.
 
 To start the server
 ===================
-To start the server, execute::
+To start the server, execute:
+
+.. code-block:: bash
 
   python server/Server.py
 
@@ -74,12 +83,16 @@ To run the examples
 ====================
 Run the simple client
 ---------------------
-Once the server is started::
+Once the server is started:
+
+.. code-block:: bash
 
   python example/Client.py
 
 Run the stand-alone application
 -------------------------------
-Without any server running::
+Without any server running:
+
+.. code-block:: bash
 
   python example/Client.py
