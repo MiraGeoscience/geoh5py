@@ -23,7 +23,7 @@ repos:
     hooks:
     -   id: autoflake
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'V0.720'
+    rev: v0.720
     hooks:
     -   id: mypy
 #-   repo: https://github.com/pre-commit/mirrors-pylint
@@ -44,3 +44,15 @@ repos:
     -   id: mixed-line-ending
     -   id: name-tests-test
     -   id: flake8
+-   repo: local
+    hooks:
+    -   id: rstcheck
+        name: rstcheck
+        entry: rstcheck
+        files: '.rst'
+        language: python
+        additional_dependencies: [rstcheck, sphinx]
+-   repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.4.1
+    hooks:
+    -   id: rst-backticks
