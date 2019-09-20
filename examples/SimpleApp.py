@@ -2,6 +2,7 @@
 
 import time
 
+import numpy
 from geoh5io import CalculatorHandler, interfaces
 
 
@@ -29,19 +30,40 @@ def main():
     except interfaces.tutorial.InvalidOperation as e:
         print("InvalidOperation: %r" % e)
 
-    test_size_factor = 3 * 10000
-    base_coords = [[0, 1, 2], [10, 11, 12], [20, 21, 22], [30, 31, 32]]
-    coord_list = interfaces.tutorial.CoordList(base_coords * test_size_factor)
-    start = time.time()
-    modified_coords = client.shift(coord_list, 100, 200, 300)
-    end = time.time()
-    assert len(modified_coords.coords) == len(base_coords) * test_size_factor
-    print("time elapsed: %d" % (end - start))
+    test_size_factor = 3 * int(1e4)
 
-    # print('modified_coords:')
-    # print(modified_coords.coords);
-    # print('original_coords:')
-    # print(coord_list.coords);
+    test_list2 = False
+    base_coords = [[0, 1, 2], [10, 11, 12], [20, 21, 22], [30, 31, 32]]
+    if not test_list2:
+        coord_list = interfaces.tutorial.CoordList(base_coords * test_size_factor)
+        start = time.time()
+        modified_coords = client.shift(coord_list, 100, 200, 300)
+        end = time.time()
+        assert len(modified_coords.coords) == len(base_coords) * test_size_factor
+        print("time elapsed: %d" % (end - start))
+
+        # print('modified_coords:')
+        # print(modified_coords.coords);
+        # print('original_coords:')
+        # print(coord_list.coords);
+
+    else:
+        coord_list2 = interfaces.tutorial.CoordList2()
+        coord_list2.x, coord_list2.y, coord_list2.z = numpy.transpose(
+            base_coords * test_size_factor
+        )
+        start = time.time()
+        modified_coords2 = client.shift2(coord_list2, 100, 200, 300)
+        end = time.time()
+        assert len(modified_coords2.x) == len(base_coords) * test_size_factor
+        assert len(modified_coords2.y) == len(base_coords) * test_size_factor
+        assert len(modified_coords2.z) == len(base_coords) * test_size_factor
+        print("time elapsed: %d" % (end - start))
+
+        # print('modified_coords:')
+        # print(modified_coords2)
+        # print('original_coords:')
+        # print(coord_list2)
 
     work.op = interfaces.tutorial.Operation.SUBTRACT
     work.num1 = 15

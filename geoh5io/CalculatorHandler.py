@@ -71,6 +71,14 @@ class CalculatorHandler:
             ]
         )
 
+    def shift2(self, coord_list, tx, ty, tz):
+        print("shift([...],%d,%d,%d)" % (tx, ty, tz))
+        coords = interfaces.tutorial.CoordList2()
+        coords.x = [coord + tx for coord in coord_list.x]
+        coords.y = [coord + ty for coord in coord_list.y]
+        coords.z = [coord + tz for coord in coord_list.z]
+        return coords
+
     def getStruct(self, key):
         print("getStruct(%d)" % (key))
         return self.log[key]

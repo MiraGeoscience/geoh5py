@@ -118,6 +118,12 @@ struct CoordList {
   1: list<list<double>> coords,
 }
 
+struct CoordList2 {
+  1: list<double> x,
+  2: list<double> y,
+  3: list<double> z,
+}
+
 /**
  * Structs can also be exceptions, if they are nasty.
  */
@@ -149,6 +155,7 @@ service Calculator extends shared.SharedService {
     * Experiment exchanging a multi-dimensional array
     */
    CoordList shift(1:CoordList coord_list, 2:double tx, 3:double ty, 4:double tz),
+   CoordList2 shift2(1:CoordList2 coord_list, 2:double tx, 3:double ty, 4:double tz),
 
    /**
     * This method has a oneway modifier. That means the client only makes

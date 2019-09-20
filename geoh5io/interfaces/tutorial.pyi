@@ -35,6 +35,12 @@ class Work:
 class CoordList:
     coords: Optional[List[List[float]]] = None
 
+@dataclass
+class CoordList2:
+    x: Optional[List[float]] = None
+    y: Optional[List[float]] = None
+    z: Optional[List[float]] = None
+
 
 
 
@@ -62,6 +68,14 @@ class Calculator:
         ty: float,
         tz: float,
     ) -> CoordList:
+        ...
+    def shift2(
+        self,
+        coord_list: CoordList2,
+        tx: float,
+        ty: float,
+        tz: float,
+    ) -> CoordList2:
         ...
     def zip(
         self,
