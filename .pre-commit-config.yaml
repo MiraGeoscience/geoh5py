@@ -28,8 +28,8 @@ repos:
     hooks:
     -   id: pylint
         name: pylint
-        entry: devtools/pylint
-        language: script
+        entry: poetry run pylint
+        language: system
         types: [python]
 #-   repo: https://github.com/pre-commit/mirrors-pylint
 #    rev: 'V2.3.1'
