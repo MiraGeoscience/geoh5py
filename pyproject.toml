@@ -10,6 +10,7 @@ h5py = "^2.10"
 thriftpy2 = "^0.4.5"
 cython = {version = "^0.29.13", optional = true}
 toml = "^0.10.0"
+pylint = "^2.3"
 [tool.poetry.dev-dependencies]
 pytest = "^3.0"
 thrift-pyi = "^0.1.0"
