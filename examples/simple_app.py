@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-from geoh5io import data_handler
-from geoh5io import groups_handler
-from geoh5io import objects_handler
-from geoh5io import workspace_handler
+from geoh5io.handlers import DataHandler
+from geoh5io.handlers import GroupsHandler
+from geoh5io.handlers import ObjectsHandler
+from geoh5io.handlers import WorkspaceHandler
 
 
 # TODO: share this code between app and client demo
@@ -26,10 +26,10 @@ def simple_demo(workspace_service, objects_service, groups_service, data_service
 
 def main():
 
-    workspace_service = workspace_handler.WorkspaceHandler()
-    objects_service = objects_handler.ObjectsHandler()
-    groups_service = groups_handler.GroupsHandler()
-    data_service = data_handler.DataHandler()
+    workspace_service = WorkspaceHandler()
+    objects_service = ObjectsHandler()
+    groups_service = GroupsHandler()
+    data_service = DataHandler()
     simple_demo(workspace_service, objects_service, groups_service, data_service)
 
 

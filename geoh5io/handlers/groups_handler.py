@@ -1,6 +1,6 @@
 from typing import List
 
-from . import interfaces
+from geoh5io import interfaces
 
 
 class GroupsHandler:

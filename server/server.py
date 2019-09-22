@@ -9,11 +9,11 @@ from thriftpy2.thrift import TProcessor
 from thriftpy2.transport import TBufferedTransportFactory
 from thriftpy2.transport import TServerSocket
 
-from geoh5io import data_handler
-from geoh5io import groups_handler
 from geoh5io import interfaces
-from geoh5io import objects_handler
-from geoh5io import workspace_handler
+from geoh5io.handlers import DataHandler
+from geoh5io.handlers import GroupsHandler
+from geoh5io.handlers import ObjectsHandler
+from geoh5io.handlers import WorkspaceHandler
 
 
 def main():
@@ -28,15 +28,11 @@ def main():
     timeout_seconds = config.get("TIMEOUT", 30)
 
     workspace_proc = TProcessor(
-        interfaces.workspace.WorkspaceService, workspace_handler.WorkspaceHandler()
+        interfaces.workspace.WorkspaceService, WorkspaceHandler()
     )
-    objects_proc = TProcessor(
-        interfaces.objects.ObjectsService, objects_handler.ObjectsHandler()
-    )
-    groups_proc = TProcessor(
-        interfaces.groups.GroupsService, groups_handler.GroupsHandler()
-    )
-    data_proc = TProcessor(interfaces.data.DataService, data_handler.DataHandler())
+    objects_proc = TProcessor(interfaces.objects.ObjectsService, ObjectsHandler())
+    groups_proc = TProcessor(interfaces.groups.GroupsService, GroupsHandler())
+    data_proc = TProcessor(interfaces.data.DataService, DataHandler())
 
     mux_proc = TMultiplexedProcessor()
     mux_proc.register_processor("workspace_thrift", workspace_proc)
