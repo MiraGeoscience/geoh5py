@@ -1,14 +1,35 @@
-#!/usr/bin/env python3
-from shared.Type import Type
+from __future__ import annotations
+
+import uuid
+from typing import Optional
+
+from geoh5io.impl.shared import Type
 
 
 class GroupType(Type):
-    """
-    UUID for Container type: {61FBB4E8-A480-11E3-8D5A-2776BDF4F982}
-    UUID for Drillhole group type: {825424FB-C2C6-4FEA-9F2B-6CD00023D393}
-    """
+    def __init__(self, uid, name=None, description=None, class_id: uuid.UUID = None):
+        super().__init__(uid, name, description)
 
-    def __init__(self):
-        self.classId = None
-        self.allowMoveContent = 1
-        self.allowDeleteContent = 1
+        self._class_id = class_id
+        self._allow_move_content = True
+        self._allow_delete_content = True
+
+    @property
+    def allow_move_content(self) -> bool:
+        return self._allow_move_content
+
+    @allow_move_content.setter
+    def allow_move_content(self, allow: bool):
+        self._allow_move_content = bool(allow)
+
+    @property
+    def allow_delete_content(self) -> bool:
+        return self._allow_delete_content
+
+    @allow_delete_content.setter
+    def allow_delete_content(self, allow: bool):
+        self._allow_delete_content = bool(allow)
+
+    @property
+    def class_id(self) -> Optional[uuid.UUID]:
+        return self._class_id

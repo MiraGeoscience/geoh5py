@@ -3,7 +3,7 @@
 
 class Entity:
     def __init__(self):
-        self.uuid = None
+        self.uid = None
         self.name = None
         self.visible = 1
         self.allowDelete = 1
