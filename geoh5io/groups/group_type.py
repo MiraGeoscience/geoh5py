@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-from geoh5io.impl.shared import Type
+from geoh5io.shared import Type
 
 
 class GroupType(Type):

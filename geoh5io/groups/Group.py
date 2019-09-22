@@ -2,7 +2,7 @@ import uuid
 from typing import List
 
 from . import GroupType
-from geoh5io.impl.shared import Entity
+from geoh5io.shared import Entity
 
 
 class Group(Entity):
