@@ -28,7 +28,7 @@ enum PrimitiveType {
  * Contains the base Entity attributes and more attributes specific to Data.
  */
 struct Data {
-   1: required shared.Entity base_;
+   1: required shared.Entity entity_;
    2: required DataAssociation association;
 }
 

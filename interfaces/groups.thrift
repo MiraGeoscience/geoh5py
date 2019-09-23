@@ -6,8 +6,8 @@ namespace * groups
  * Contains the base Entity attributes and more attributes specific to Group.
  */
 struct Group {
-   1: required shared.Entity base_;
-   2: optional bool allowMove = true;
+   1: required shared.Entity entity_;
+   2: optional bool allow_move = true;
    // geoh5 also has: list<shared.Uuid> clipping_uids; -- Do not expose in the API, until it allows for manipulation of clipping planes
 }
 

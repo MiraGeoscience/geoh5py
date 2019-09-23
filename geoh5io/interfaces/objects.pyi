@@ -31,7 +31,7 @@ class ObjectClass(IntEnum):
 
 @dataclass
 class Object:
-    base_: Optional[shared.Entity] = None
+    entity_: Optional[shared.Entity] = None
     allow_move: Optional[bool] = True
 
 @dataclass
@@ -73,7 +73,7 @@ class Label:
 @dataclass
 class ObjectQuery:
     name: Optional[str] = ""
-    type: Optional[shared.Uuid] = None
+    type_id: Optional[shared.Uuid] = None
     in_group: Optional[shared.Uuid] = None
     recursive: Optional[bool] = False
 
@@ -93,7 +93,7 @@ class ObjectsService:
         ...
     def get_class(
         self,
-        type: shared.Uuid,
+        type_id: shared.Uuid,
     ) -> int:
         ...
     def get_all(
@@ -122,54 +122,54 @@ class ObjectsService:
         uid: shared.Uuid,
     ) -> Object:
         ...
-    def narrowPoints(
+    def narrow_points(
         self,
         uid: shared.Uuid,
     ) -> Points:
         ...
-    def narrowCurve(
+    def narrow_curve(
         self,
         uid: shared.Uuid,
     ) -> Curve:
         ...
-    def narrowSurface(
+    def narrow_surface(
         self,
         uid: shared.Uuid,
     ) -> Surface:
         ...
-    def narrowGrid2D(
+    def narrow_grid2d(
         self,
         uid: shared.Uuid,
     ) -> Grid2D:
         ...
-    def narrowDrillhole(
+    def narrow_drillhole(
         self,
         uid: shared.Uuid,
     ) -> Drillhole:
         ...
-    def narrowBlockModel(
+    def narrow_blockmodel(
         self,
         uid: shared.Uuid,
     ) -> BlockModel:
         ...
-    def narrowOctree(
+    def narrow_octree(
         self,
         uid: shared.Uuid,
     ) -> Octree:
         ...
-    def narrowGeoImage(
+    def narrow_geoimage(
         self,
         uid: shared.Uuid,
     ) -> GeoImage:
         ...
-    def narrowLabel(
+    def narrow_label(
         self,
         uid: shared.Uuid,
     ) -> Label:
         ...
-    def createAnyObject(
+    def create_any_object(
         self,
-        type: shared.Uuid,
+        type_id: shared.Uuid,
         name: str,
         parent_group: shared.Uuid,
         attributes: Dict[str, str],

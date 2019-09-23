@@ -4,17 +4,20 @@ from typing import List
 from geoh5io import interfaces
 
 
+# pylint: disable=too-many-public-methods
 class ObjectsHandler:
     def get_type(self, object_class: int) -> interfaces.shared.Uuid:
         # TODO
         pass
 
-    def get_class(self, type: interfaces.shared.Uuid) -> int:
+    def get_class(self, type_id: interfaces.shared.Uuid) -> int:
         # TODO
         pass
 
-    def get_all(self,) -> List[interfaces.objects.Object]:
-        # TODO
+    @staticmethod
+    def get_all() -> List[interfaces.objects.Object]:
+        # TODO: get fromm workspace
+        # return geoh5io.workspace.Workspace.instance().all_objects()
         return []
 
     def find(
@@ -41,51 +44,51 @@ class ObjectsHandler:
         # TODO
         pass
 
-    def narrowPoints(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Points:
+    def narrow_points(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Points:
         # TODO
         pass
 
-    def narrowCurve(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Curve:
+    def narrow_curve(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Curve:
         # TODO
         pass
 
-    def narrowSurface(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Surface:
+    def narrow_surface(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Surface:
         # TODO
         pass
 
-    def narrowGrid2D(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Grid2D:
+    def narrow_grid2d(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Grid2D:
         # TODO
         pass
 
-    def narrowDrillhole(
+    def narrow_drillhole(
         self, uid: interfaces.shared.Uuid
     ) -> interfaces.objects.Drillhole:
         # TODO
         pass
 
-    def narrowBlockModel(
+    def narrow_blockmodel(
         self, uid: interfaces.shared.Uuid
     ) -> interfaces.objects.BlockModel:
         # TODO
         pass
 
-    def narrowOctree(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Octree:
+    def narrow_octree(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Octree:
         # TODO
         pass
 
-    def narrowGeoImage(
+    def narrow_geoimage(
         self, uid: interfaces.shared.Uuid
     ) -> interfaces.objects.GeoImage:
         # TODO
         pass
 
-    def narrowLabel(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Label:
+    def narrow_label(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Label:
         # TODO
         pass
 
-    def createAnyObject(
+    def create_any_object(
         self,
-        type: interfaces.shared.Uuid,
+        type_id: interfaces.shared.Uuid,
         name: str,
         parent_group: interfaces.shared.Uuid,
         attributes: Dict[str, str],

@@ -24,6 +24,8 @@ repos:
     rev: v0.720
     hooks:
     -   id: mypy
+        args: ["--ignore-missing-imports", "--scripts-are-modules", "--show-error-context",
+               "--show-column-numbers"]
 -   repo: local
     hooks:
     -   id: pylint

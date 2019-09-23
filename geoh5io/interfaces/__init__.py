@@ -4,14 +4,14 @@ from typing import Dict
 
 import thriftpy2
 
-_interfaces_path = Path("interfaces")
-_interfaces: Dict[str, ModuleType] = {}
+_INTERFACES_PATH = Path("interfaces")
+_INTERFACES: Dict[str, ModuleType] = {}
 
 
 def __getattr__(name):
     try:
-        return _interfaces[name]
+        return _INTERFACES[name]
     except KeyError:
-        interface = thriftpy2.load(str(_interfaces_path.joinpath(f"{name}.thrift")))
-        _interfaces[name] = interface
+        interface = thriftpy2.load(str(_INTERFACES_PATH.joinpath(f"{name}.thrift")))
+        _INTERFACES[name] = interface
         return interface

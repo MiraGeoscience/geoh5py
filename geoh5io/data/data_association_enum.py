@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
 from enum import IntEnum
 
 
-class DataAssociation(IntEnum):
+class DataAssociationEnum(IntEnum):
     UNKNOWN = 0
     OBJECT = 1
     CELL = 2

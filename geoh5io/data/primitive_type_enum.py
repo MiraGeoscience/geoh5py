@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
 from enum import IntEnum
 
 
-class PrimitiveDataType(IntEnum):
+class PrimitiveTypeEnum(IntEnum):
     UNKNOWN = 0
     INTEGER = 1
     FLOAT = 2

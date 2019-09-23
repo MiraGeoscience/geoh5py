@@ -39,7 +39,7 @@ class PrimitiveType(IntEnum):
 
 @dataclass
 class Data:
-    base_: Optional[shared.Entity] = None
+    entity_: Optional[shared.Entity] = None
     association: Optional[int] = None
 
 @dataclass

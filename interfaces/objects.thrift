@@ -6,7 +6,7 @@ namespace * objects
  * Contains the base Entity attributes and more attributes specific to Object.
  */
 struct Object {
-   1: required shared.Entity base_;
+   1: required shared.Entity entity_;
    2: optional bool allow_move = true;
    // geoh5 also has: list<shared.Uuid> clipping_uids; -- Do not expose in the API, until it allows for manipulation of clipping planes
 }
@@ -61,7 +61,7 @@ struct Label {
  */
 struct ObjectQuery {
    1: optional string name = "";
-   2: optional shared.Uuid type;
+   2: optional shared.Uuid type_id;
    3: optional shared.Uuid in_group;
    4: optional bool recursive = false;
 }
@@ -112,7 +112,7 @@ service ObjectsService extends shared.EntityService {
      *
      * May return ObjectClass.UNKNOWN if the given type does not correspond to any known type.
      */
-    ObjectClass get_class(1: required shared.Uuid type)
+    ObjectClass get_class(1: required shared.Uuid type_id)
         throws (1:shared.InvalidUid uuid_ex);
 
     list<Object> get_all();
@@ -134,39 +134,39 @@ service ObjectsService extends shared.EntityService {
     Object get(1: required shared.Uuid uid)
         throws (1:shared.InvalidUid uuid_ex, 2:shared.BadEntityType entity_type_ex);
 
-    Points narrowPoints(1: required shared.Uuid uid)
+    Points narrow_points(1: required shared.Uuid uid)
         throws (1:shared.InvalidUid uuid_ex, 2:shared.BadEntityType entity_type_ex);
 
-    Curve narrowCurve(1: required shared.Uuid uid)
+    Curve narrow_curve(1: required shared.Uuid uid)
         throws (1:shared.InvalidUid uuid_ex, 2:shared.BadEntityType entity_type_ex);
 
-    Surface narrowSurface(1: required shared.Uuid uid)
+    Surface narrow_surface(1: required shared.Uuid uid)
         throws (1:shared.InvalidUid uuid_ex, 2:shared.BadEntityType entity_type_ex);
 
-    Grid2D narrowGrid2D(1: required shared.Uuid uid)
+    Grid2D narrow_grid2d(1: required shared.Uuid uid)
         throws (1:shared.InvalidUid uuid_ex, 2:shared.BadEntityType entity_type_ex);
 
-    Drillhole narrowDrillhole(1: required shared.Uuid uid)
+    Drillhole narrow_drillhole(1: required shared.Uuid uid)
         throws (1:shared.InvalidUid uuid_ex, 2:shared.BadEntityType entity_type_ex);
 
-    BlockModel narrowBlockModel(1: required shared.Uuid uid)
+    BlockModel narrow_blockmodel(1: required shared.Uuid uid)
         throws (1:shared.InvalidUid uuid_ex, 2:shared.BadEntityType entity_type_ex);
 
-    Octree narrowOctree(1: required shared.Uuid uid)
+    Octree narrow_octree(1: required shared.Uuid uid)
         throws (1:shared.InvalidUid uuid_ex, 2:shared.BadEntityType entity_type_ex);
 
-    GeoImage narrowGeoImage(1: required shared.Uuid uid)
+    GeoImage narrow_geoimage(1: required shared.Uuid uid)
         throws (1:shared.InvalidUid uuid_ex, 2:shared.BadEntityType entity_type_ex);
 
-    Label narrowLabel(1: required shared.Uuid uid)
+    Label narrow_label(1: required shared.Uuid uid)
         throws (1:shared.InvalidUid uuid_ex, 2:shared.BadEntityType entity_type_ex);
 
     // Below, methods for creating new Objects.
     // When creating object, group is optional. The object gets created under the root container
     // if group is not specified.
 
-    Object createAnyObject(
-        1: required shared.Uuid type, 2: required string name,
+    Object create_any_object(
+        1: required shared.Uuid type_id, 2: required string name,
         3: optional shared.Uuid parent_group, 4: map<string, string> attributes
      ) throws (1:shared.BadEntityName name_ex, 2:shared.InvalidUid uuid_ex, 3:shared.BadEntityType entity_type_ex);
 

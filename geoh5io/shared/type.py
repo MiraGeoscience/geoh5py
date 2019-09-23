@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 import uuid
 from abc import ABC
 from abc import abstractmethod
 from typing import Optional
+from typing import Type
+
+from geoh5io.shared import Entity
 
 
-class Type(ABC):
+class EntityType(ABC):
     def __init__(self, uid: uuid.UUID, name: str = None, description: str = None):
         self._uid = uid
         self._name = name
@@ -24,10 +29,7 @@ class Type(ABC):
 
     @classmethod
     @abstractmethod
-    def create(cls):
-        """ Creates a new instance of a concrete Type.
-
-        Note: the abstract declaration also makes it possible to prevent instantiation of
-        intermediate partial Type classes.
+    def create(cls, entity_class: Type[Entity]) -> EntityType:
+        """ Creates a new instance of the proper type for the given entity type.
         """
         ...
