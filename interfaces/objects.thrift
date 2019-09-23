@@ -112,7 +112,7 @@ service ObjectsService extends shared.EntityService {
      *
      * May return ObjectClass.UNKNOWN if the given type does not correspond to any known type.
      */
-    ObjectClass get_class(1: required shared.Uuid type_id)
+    ObjectClass get_class(1: required shared.Uuid type_uid)
         throws (1:shared.InvalidUid uuid_ex);
 
     list<Object> get_all();

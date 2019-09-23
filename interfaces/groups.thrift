@@ -13,7 +13,7 @@ struct Group {
 
 struct GroupQuery {
    1: optional string name;
-   2: optional shared.Uuid type;
+   2: optional shared.Uuid type_uid;
    3: optional shared.Uuid in_group;
    4: optional bool recursive = false;
 }
@@ -53,7 +53,7 @@ service GroupsService extends shared.EntityService {
      *
      * May return GroupClass.UNKNOWN if the given type does not correspond to any known type.
      */
-    GroupClass get_class(1: required shared.Uuid type)
+    GroupClass get_class(1: required shared.Uuid type_uid)
         throws (1:shared.InvalidUid uuid_ex);
 
     list<Group> get_all();
@@ -73,7 +73,7 @@ service GroupsService extends shared.EntityService {
         throws (1:shared.InvalidUid uuid_ex, 2:shared.BadEntityType entity_type_ex, 3:InvalidGroupOperation op_ex);
 
     // type defaults to Uuid for GroupClass.CONTAINER if not specified
-    Group create(1: optional shared.Uuid type/*, TODO...*/)
+    Group create(1: optional shared.Uuid type_uid/*, TODO...*/)
         throws (1:shared.InvalidUid uuid_ex, 2:shared.BadEntityType entity_type_ex);
 
     // TODO: allow creation of new custom GroupTypes?

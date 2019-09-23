@@ -4,6 +4,7 @@ import uuid
 from typing import Type
 
 from geoh5io.objects import Object
+from geoh5io.shared import Entity
 from geoh5io.shared import EntityType
 
 
@@ -13,18 +14,8 @@ class ObjectType(EntityType):
         self._class_id = class_id
 
     @classmethod
-    def create(cls, entity_class: Type[Object]) -> ObjectType:
-        """ Creates a new instance of ObjectType with the class_id from the given Object
-        implementation class.
-
-        The class_id is also used as the UUID for the newly created ObjectType.
-        Thus, all created instances for the same Object class share the same UUID.
-        It is actually expected to have a single instance of ObjectType in the Workspace
-        for each concrete Object class.
-
-        :param entity_class: An Object implementation class.
-        :return: A new instance of ObjectType.
-        """
+    def _create(cls, entity_class: Type[Entity]) -> ObjectType:
+        """ See method ``create()`` """
         assert issubclass(entity_class, Object)
         class_id = entity_class.static_class_id()
         if class_id is None:
@@ -33,3 +24,18 @@ class ObjectType(EntityType):
             )
 
         return ObjectType(class_id, class_id)
+
+    @classmethod
+    def create(cls, object_class: Type[Object]) -> ObjectType:
+        """ Creates a new instance of ObjectType with the class_id from the given Object
+        implementation class.
+
+        The class_id is also used as the UUID for the newly created ObjectType.
+        Thus, all created instances for the same Object class share the same UUID.
+        It is actually expected to have a single instance of ObjectType in the Workspace
+        for each concrete Object class.
+
+        :param object_class: An Object implementation class.
+        :return: A new instance of ObjectType.
+        """
+        return cls._create(object_class)

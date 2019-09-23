@@ -5,6 +5,7 @@ from typing import Optional
 from typing import Type
 
 from geoh5io.groups import Group
+from geoh5io.shared import Entity
 from geoh5io.shared import EntityType
 
 
@@ -37,18 +38,8 @@ class GroupType(EntityType):
         return self._class_id
 
     @classmethod
-    def create(cls, entity_class: Type[Group]) -> GroupType:
-        """ Creates a new instance of GroupType with the class_id from the given Group
-        implementation class.
-
-        The class_id is also used as the UUID for the newly created GroupType.
-        Thus, all created instances for the same Group class share the same UUID.
-        It is actually expected to have a single instance of GroupType in the Workspace
-        for each concrete Group class.
-
-        :param entity_class: A Group implementation class.
-        :return: A new instance of GroupType.
-        """
+    def _create(cls, entity_class: Type[Entity]) -> GroupType:
+        """ See method ``create()`` """
         assert issubclass(entity_class, Group)
         class_id = entity_class.static_class_id()
         if class_id is None:
@@ -62,6 +53,21 @@ class GroupType(EntityType):
             entity_class.static_type_description(),
             class_id,
         )
+
+    @classmethod
+    def create(cls, group_class: Type[Group]) -> GroupType:
+        """ Creates a new instance of GroupType with the class_id from the given Group
+        implementation class.
+
+        The class_id is also used as the UUID for the newly created GroupType.
+        Thus, all created instances for the same Group class share the same UUID.
+        It is actually expected to have a single instance of GroupType in the Workspace
+        for each concrete Group class.
+
+        :param group_class: A Group implementation class.
+        :return: A new instance of GroupType.
+        """
+        return cls._create(group_class)
 
     @staticmethod
     def create_custom() -> GroupType:

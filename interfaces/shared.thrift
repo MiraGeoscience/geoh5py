@@ -49,7 +49,7 @@ struct Coord3D {
  */
 struct Entity {
    1: required Uuid uid;
-   2: required Uuid type;
+   2: required Uuid type_uid;
    3: required string name;
    4: optional bool visible = false;
    5: optional bool allow_delete = true;

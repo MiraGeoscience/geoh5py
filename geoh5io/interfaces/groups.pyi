@@ -30,7 +30,7 @@ class Group:
 @dataclass
 class GroupQuery:
     name: Optional[str] = None
-    type: Optional[shared.Uuid] = None
+    type_uid: Optional[shared.Uuid] = None
     in_group: Optional[shared.Uuid] = None
     recursive: Optional[bool] = False
 
@@ -49,7 +49,7 @@ class GroupsService:
         ...
     def get_class(
         self,
-        type: shared.Uuid,
+        type_uid: shared.Uuid,
     ) -> int:
         ...
     def get_all(
@@ -75,7 +75,7 @@ class GroupsService:
         ...
     def create(
         self,
-        type: shared.Uuid,
+        type_uid: shared.Uuid,
     ) -> Group:
         ...
     def set_public(

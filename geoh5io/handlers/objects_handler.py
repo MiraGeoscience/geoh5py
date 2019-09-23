@@ -10,13 +10,13 @@ class ObjectsHandler:
         # TODO
         pass
 
-    def get_class(self, type_id: interfaces.shared.Uuid) -> int:
+    def get_class(self, type_uid: interfaces.shared.Uuid) -> int:
         # TODO
         pass
 
     @staticmethod
     def get_all() -> List[interfaces.objects.Object]:
-        # TODO: get fromm workspace
+        # TODO: get from workspace
         # return geoh5io.workspace.Workspace.instance().all_objects()
         return []
 
@@ -88,7 +88,7 @@ class ObjectsHandler:
 
     def create_any_object(
         self,
-        type_id: interfaces.shared.Uuid,
+        type_uid: interfaces.shared.Uuid,
         name: str,
         parent_group: interfaces.shared.Uuid,
         attributes: Dict[str, str],

@@ -93,7 +93,7 @@ class ObjectsService:
         ...
     def get_class(
         self,
-        type_id: shared.Uuid,
+        type_uid: shared.Uuid,
     ) -> int:
         ...
     def get_all(

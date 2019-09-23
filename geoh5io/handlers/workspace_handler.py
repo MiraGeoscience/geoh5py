@@ -4,7 +4,8 @@ from geoh5io import interfaces
 
 
 class WorkspaceHandler:
-    def get_api_version(self) -> interfaces.shared.VersionString:
+    @staticmethod
+    def get_api_version() -> interfaces.shared.VersionString:
         version = interfaces.shared.VersionString()
         version.value = interfaces.api.API_VERSION
         return version
@@ -13,7 +14,9 @@ class WorkspaceHandler:
         # TODO
         pass
 
-    def open_geoh5(self, file_path: str) -> interfaces.workspace.Workspace:
+    # pylint: disable=unused-argument
+    @staticmethod
+    def open_geoh5(file_path: str) -> interfaces.workspace.Workspace:
         # TODO
         return interfaces.workspace.Workspace()
 

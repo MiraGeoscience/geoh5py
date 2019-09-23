@@ -29,7 +29,7 @@ class EntityType(ABC):
 
     @classmethod
     @abstractmethod
-    def create(cls, entity_class: Type[Entity]) -> EntityType:
+    def _create(cls, entity_class: Type[Entity]) -> EntityType:
         """ Creates a new instance of the proper type for the given entity type.
         """
         ...

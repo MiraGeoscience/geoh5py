@@ -12,12 +12,14 @@ class GroupsHandler:
         # TODO
         pass
 
-    def get_class(self, type: interfaces.shared.Uuid) -> int:
+    def get_class(self, type_uid: interfaces.shared.Uuid) -> int:
         # TODO
         pass
 
-    def get_all(self,) -> List[interfaces.groups.Group]:
-        # TODO
+    @staticmethod
+    def get_all() -> List[interfaces.groups.Group]:
+        # TODO: get from workspace
+        # return geoh5io.workspace.Workspace.instance().all_groups()
         return []
 
     def find(
@@ -38,7 +40,7 @@ class GroupsHandler:
         # TODO
         pass
 
-    def create(self, type: interfaces.shared.Uuid) -> interfaces.groups.Group:
+    def create(self, type_uid: interfaces.shared.Uuid) -> interfaces.groups.Group:
         # TODO
         pass
 

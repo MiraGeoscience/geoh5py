@@ -1,8 +1,23 @@
+import uuid
+
 from geoh5io.data import Data
+from geoh5io.data import DataAssociationEnum
+from geoh5io.data import DataType
 from geoh5io.data import PrimitiveTypeEnum
+from geoh5io.data import ReferenceValueMap
 
 
 class ReferencedData(Data):
+    def __init__(
+        self,
+        data_type: DataType,
+        association: DataAssociationEnum,
+        uid: uuid.UUID,
+        name: str,
+    ):
+        super().__init__(data_type, association, uid, name)
+        self._value_map = ReferenceValueMap()
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.REFERENCED

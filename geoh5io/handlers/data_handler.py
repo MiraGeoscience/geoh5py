@@ -4,8 +4,10 @@ from geoh5io import interfaces
 
 
 class DataHandler:
-    def get_all(self,) -> List[interfaces.data.Data]:
-        # TODO
+    @staticmethod
+    def get_all() -> List[interfaces.data.Data]:
+        # TODO: get from workspace
+        # return geoh5io.workspace.Workspace.instance().all_data()
         return []
 
     def find(self, query: interfaces.data.DataQuery) -> List[interfaces.data.Data]:

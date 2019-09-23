@@ -51,7 +51,7 @@ class Coord3D:
 @dataclass
 class Entity:
     uid: Optional[Uuid] = None
-    type: Optional[Uuid] = None
+    type_uid: Optional[Uuid] = None
     name: Optional[str] = None
     visible: Optional[bool] = False
     allow_delete: Optional[bool] = True
