@@ -12,10 +12,10 @@ class ReferencedData(Data):
         self,
         data_type: DataType,
         association: DataAssociationEnum,
-        uid: uuid.UUID,
         name: str,
+        uid: uuid.UUID = None,
     ):
-        super().__init__(data_type, association, uid, name)
+        super().__init__(data_type, association, name, uid)
         self._value_map = ReferenceValueMap()
 
     @classmethod

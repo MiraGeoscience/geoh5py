@@ -4,9 +4,6 @@ import uuid
 from abc import ABC
 from abc import abstractmethod
 from typing import Optional
-from typing import Type
-
-from geoh5io.shared import Entity
 
 
 class EntityType(ABC):
@@ -29,7 +26,10 @@ class EntityType(ABC):
 
     @classmethod
     @abstractmethod
-    def _create(cls, entity_class: Type[Entity]) -> EntityType:
-        """ Creates a new instance of the proper type for the given entity type.
+    def find(cls, type_uid: uuid.UUID) -> Optional[EntityType]:
+        """ Finds and returns the EntityType for the given UUID for a specific EntityType
+        implementation class.
+
+        Returns None if not found.
         """
         ...

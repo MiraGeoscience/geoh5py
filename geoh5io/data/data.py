@@ -12,10 +12,10 @@ class Data(Entity):
         self,
         data_type: DataType,
         association: DataAssociationEnum,
-        uid: uuid.UUID,
         name: str,
+        uid: uuid.UUID = None,
     ):
-        super().__init__(uid, name)
+        super().__init__(name, uid)
         self._association = association
         self._type = data_type
 

@@ -5,8 +5,8 @@ from geoh5io.shared import EntityType
 
 
 class Entity:
-    def __init__(self, uid: uuid.UUID, name: str):
-        self._uid = uid
+    def __init__(self, name: str, uid: uuid.UUID = None):
+        self._uid = uid if uid is not None else uuid.uuid4()
         self._name = self.fix_up_name(name)
         # TODO: properties and setters
         self._visible = 1

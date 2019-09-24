@@ -1,14 +1,16 @@
 import uuid
+from typing import List
 
 from geoh5io.objects import Object
+from geoh5io.shared import Coord3D
 
 
 class Points(Object):
     __class_id = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
 
-    def __init__(self):
-        super().__init__()
-        self._vertices = []
+    def __init__(self, name: str, uid: uuid.UUID = None):
+        super().__init__(name, uid)
+        self._vertices: List[Coord3D] = []
 
     @classmethod
     def static_class_id(cls) -> uuid.UUID:

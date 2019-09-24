@@ -7,8 +7,8 @@ from typing import Type
 from geoh5io.data import ColorMap
 from geoh5io.data import Data
 from geoh5io.data import PrimitiveTypeEnum
-from geoh5io.shared import Entity
 from geoh5io.shared import EntityType
+from geoh5io.workspace import Workspace
 
 
 class DataType(EntityType):
@@ -20,12 +20,8 @@ class DataType(EntityType):
         self._units = None
 
     @classmethod
-    def _create(cls, entity_class: Type[Entity]) -> DataType:
-        """ See method ``create()`` """
-        assert issubclass(entity_class, Data)
-        uid = uuid.uuid4()
-        primitive_type = entity_class.primitive_type()
-        return DataType(uid, primitive_type)
+    def find(cls, type_uid: uuid.UUID) -> Optional[DataType]:
+        return Workspace.active().find_data_type(type_uid)
 
     @classmethod
     def create(cls, data_class: Type[Data]) -> DataType:
@@ -35,4 +31,7 @@ class DataType(EntityType):
         :param data_class: A Data implementation class.
         :return: A new instance of DataType.
         """
-        return cls._create(data_class)
+        assert issubclass(data_class, Data)
+        uid = uuid.uuid4()
+        primitive_type = data_class.primitive_type()
+        return DataType(uid, primitive_type)

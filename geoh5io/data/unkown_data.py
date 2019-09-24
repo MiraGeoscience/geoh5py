@@ -14,7 +14,7 @@ class UnknownData(Data):
         uid: uuid.UUID,
         name: str,
     ):
-        super().__init__(data_type, association, uid, name)
+        super().__init__(data_type, association, name, uid)
         raise NotImplementedError("No implementation for UnknownData")
         # Possibly, provide an implementation to access generic data,
         # for which primitive type is provided by the H5 file.

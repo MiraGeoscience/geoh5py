@@ -5,8 +5,8 @@ from typing import Optional
 from typing import Type
 
 from geoh5io.groups import Group
-from geoh5io.shared import Entity
 from geoh5io.shared import EntityType
+from geoh5io.workspace import Workspace
 
 
 class GroupType(EntityType):
@@ -38,36 +38,38 @@ class GroupType(EntityType):
         return self._class_id
 
     @classmethod
-    def _create(cls, entity_class: Type[Entity]) -> GroupType:
-        """ See method ``create()`` """
-        assert issubclass(entity_class, Group)
-        class_id = entity_class.static_class_id()
-        if class_id is None:
-            raise RuntimeError(
-                f"Cannot create GroupType with null UUID from {entity_class.__name__}."
-            )
-
-        return GroupType(
-            class_id,
-            entity_class.static_type_name(),
-            entity_class.static_type_description(),
-            class_id,
-        )
+    def find(cls, type_uid: uuid.UUID) -> Optional[GroupType]:
+        return Workspace.active().find_group_type(type_uid)
 
     @classmethod
-    def create(cls, group_class: Type[Group]) -> GroupType:
-        """ Creates a new instance of GroupType with the class_id from the given Group
+    def find_or_create(cls, group_class: Type[Group]) -> GroupType:
+        """ Find or creates the GroupType with the class_id from the given Group
         implementation class.
 
         The class_id is also used as the UUID for the newly created GroupType.
-        Thus, all created instances for the same Group class share the same UUID.
-        It is actually expected to have a single instance of GroupType in the Workspace
+        It is expected to have a single instance of GroupType in the Workspace
         for each concrete Group class.
 
-        :param group_class: A Group implementation class.
+        :param group_class: An Group implementation class.
         :return: A new instance of GroupType.
         """
-        return cls._create(group_class)
+        assert issubclass(group_class, Group)
+        class_id = group_class.static_class_id()
+        if class_id is None:
+            raise RuntimeError(
+                f"Cannot create GroupType with null UUID from {group_class.__name__}."
+            )
+
+        group_type = cls.find(class_id)
+        if group_type is not None:
+            return group_type
+
+        return cls(
+            class_id,
+            group_class.static_type_name(),
+            group_class.static_type_description(),
+            class_id,
+        )
 
     @staticmethod
     def create_custom() -> GroupType:
