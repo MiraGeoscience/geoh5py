@@ -24,7 +24,7 @@ class GroupClass(IntEnum):
 
 @dataclass
 class Group:
-    entity_: Optional[shared.Entity] = None
+    entity_: shared.Entity
     allow_move: Optional[bool] = True
 
 @dataclass

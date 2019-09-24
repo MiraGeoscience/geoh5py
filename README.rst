@@ -57,7 +57,7 @@ To regenerate the Python interface .pyi files from the thrift files, execute:
 
 .. code-block:: bash
 
-  thriftpyi interfaces --output geoh5io/interfaces
+  thriftpyi interfaces --strict-optional --output geoh5io/interfaces
 
 On Windows, it most likely terminate with an exception running ``autoflake``,
 but files are created nonetheless.

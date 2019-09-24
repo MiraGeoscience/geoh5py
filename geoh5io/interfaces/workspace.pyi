@@ -52,7 +52,7 @@ class WorkspaceService:
         overwrite_file: bool,
     ) -> Workspace:
         ...
-    def save_copy(
+    def export_all(
         self,
         file_path: str,
         overwrite_file: bool,

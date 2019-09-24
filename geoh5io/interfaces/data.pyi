@@ -39,8 +39,8 @@ class PrimitiveType(IntEnum):
 
 @dataclass
 class Data:
-    entity_: Optional[shared.Entity] = None
-    association: Optional[int] = None
+    entity_: shared.Entity
+    association: int
 
 @dataclass
 class DataUnit:
@@ -48,8 +48,8 @@ class DataUnit:
 
 @dataclass
 class DataType:
-    uid: Optional[shared.Uuid] = None
-    name: Optional[str] = None
+    uid: shared.Uuid
+    name: str
     description: Optional[str] = ""
     units: Optional[DataUnit] = None
     primitive_type: Optional[int] = None
@@ -63,7 +63,7 @@ class DataSlab:
 
 @dataclass
 class ReferencedDataEntry:
-    key: Optional[int] = None
+    key: int
     value: Optional[str] = None
 
 @dataclass

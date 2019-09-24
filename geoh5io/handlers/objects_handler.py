@@ -131,3 +131,28 @@ class ObjectsHandler:
     def rename(self, entities: interfaces.shared.Uuid, new_name: str) -> None:
         # TODO
         pass
+
+    @staticmethod
+    def test_roundtrip(
+        coords: List[interfaces.shared.Coord3D]
+    ) -> List[interfaces.shared.Coord3D]:
+        print(f"test_roundtrip(len={len(coords)})")
+        return [
+            interfaces.shared.Coord3D(
+                coord.x + 100 if coord.x is not None else None,
+                coord.y + 200 if coord.y is not None else None,
+                coord.z + 300 if coord.z is not None else None,
+            )
+            for coord in coords
+        ]
+
+    @staticmethod
+    def test_roundtrip2(
+        coords: interfaces.objects.CoordList3
+    ) -> interfaces.objects.CoordList3:
+        print(f"test_roundtrip2(len={len(coords.x)})")
+        return interfaces.objects.CoordList3(
+            [x + 100 for x in coords.x],
+            [y + 200 for y in coords.y],
+            [z + 300 for z in coords.z],
+        )

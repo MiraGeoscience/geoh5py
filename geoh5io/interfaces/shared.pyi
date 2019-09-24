@@ -50,9 +50,9 @@ class Coord3D:
 
 @dataclass
 class Entity:
-    uid: Optional[Uuid] = None
-    type_uid: Optional[Uuid] = None
-    name: Optional[str] = None
+    uid: Uuid
+    type_uid: Uuid
+    name: str
     visible: Optional[bool] = False
     allow_delete: Optional[bool] = True
     allow_rename: Optional[bool] = True

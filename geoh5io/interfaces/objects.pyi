@@ -31,44 +31,44 @@ class ObjectClass(IntEnum):
 
 @dataclass
 class Object:
-    entity_: Optional[shared.Entity] = None
+    entity_: shared.Entity
     allow_move: Optional[bool] = True
 
 @dataclass
 class Points:
-    base_: Optional[Object] = None
+    base_: Object
 
 @dataclass
 class Curve:
-    base_: Optional[Object] = None
+    base_: Object
 
 @dataclass
 class Surface:
-    base_: Optional[Object] = None
+    base_: Object
 
 @dataclass
 class Grid2D:
-    base_: Optional[Object] = None
+    base_: Object
 
 @dataclass
 class Drillhole:
-    base_: Optional[Object] = None
+    base_: Object
 
 @dataclass
 class BlockModel:
-    base_: Optional[Object] = None
+    base_: Object
 
 @dataclass
 class Octree:
-    base_: Optional[Object] = None
+    base_: Object
 
 @dataclass
 class GeoImage:
-    base_: Optional[Object] = None
+    base_: Object
 
 @dataclass
 class Label:
-    base_: Optional[Object] = None
+    base_: Object
 
 @dataclass
 class ObjectQuery:
@@ -76,6 +76,12 @@ class ObjectQuery:
     type_id: Optional[shared.Uuid] = None
     in_group: Optional[shared.Uuid] = None
     recursive: Optional[bool] = False
+
+@dataclass
+class CoordList3:
+    x: List[float]
+    y: List[float]
+    z: List[float]
 
 @dataclass
 class GeometryTransformation:
@@ -180,6 +186,16 @@ class ObjectsService:
         objects: List[shared.Uuid],
         transformation: GeometryTransformation,
     ) -> None:
+        ...
+    def test_roundtrip(
+        self,
+        coords: List[shared.Coord3D],
+    ) -> List[shared.Coord3D]:
+        ...
+    def test_roundtrip2(
+        self,
+        coords: CoordList3,
+    ) -> CoordList3:
         ...
     def set_public(
         self,

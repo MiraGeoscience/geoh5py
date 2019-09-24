@@ -66,6 +66,12 @@ struct ObjectQuery {
    4: optional bool recursive = false;
 }
 
+struct CoordList3 {
+   1: required list<double> x;
+   2: required list<double> y;
+   3: required list<double> z;
+}
+
 /**
  * Describes the known type of Objects.
  *
@@ -177,6 +183,9 @@ service ObjectsService extends shared.EntityService {
 
     void transform(1: required list<shared.Uuid> objects, 2: required GeometryTransformation transformation)
         throws (1:shared.InvalidUid uuid_ex, 2:shared.BadEntityType entity_type_ex, 3:InvalidObjectOperation op_ex);
+
+    list<shared.Coord3D> test_roundtrip(1: list<shared.Coord3D> coords);
+    CoordList3 test_roundtrip2(1: CoordList3 coords);
 
     // TODO: get the object coordinates, cells, survey location, ...
 
