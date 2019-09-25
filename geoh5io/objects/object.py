@@ -3,7 +3,7 @@ from abc import abstractmethod
 from typing import List
 from typing import Optional
 
-from geoh5io.objects import ObjectType
+from .object_type import ObjectType
 from geoh5io.shared import Entity
 
 
@@ -23,7 +23,7 @@ class Object(Entity):
     def get_type(self) -> ObjectType:
         return self._type
 
-    @abstractmethod
     @classmethod
+    @abstractmethod
     def static_class_id(cls) -> Optional[uuid.UUID]:
         ...

@@ -1,6 +1,6 @@
 import uuid
 
-from geoh5io.objects import Object
+from .object import Object
 
 
 class Curve(Object):

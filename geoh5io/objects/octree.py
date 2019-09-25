@@ -1,10 +1,11 @@
 import uuid
 
-from geoh5io.objects import Object
+from .object import Object
 
 
 class Octree(Object):
-    __class_id = uuid.UUID("{???}")  # TODO: put thr right UUID
+    # TODO: put the right UUID
+    __class_id = uuid.UUID("{00000000-0000-0000-0000-000000000000}")
 
     @classmethod
     def static_class_id(cls) -> uuid.UUID:

@@ -1,7 +1,9 @@
 import uuid
 from abc import abstractmethod
+from typing import TYPE_CHECKING
 
-from geoh5io.shared import EntityType
+if TYPE_CHECKING:
+    from geoh5io import shared
 
 
 class Entity:
@@ -37,5 +39,5 @@ class Entity:
         return name
 
     @abstractmethod
-    def get_type(self) -> EntityType:
+    def get_type(self) -> "shared.EntityType":
         ...

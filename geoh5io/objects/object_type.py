@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import uuid
+from typing import cast
 from typing import Optional
 from typing import Type
+from typing import TYPE_CHECKING
 
-from geoh5io.objects import Object
+if TYPE_CHECKING:
+    from . import object
+
 from geoh5io.shared import EntityType
 from geoh5io.workspace import Workspace
 
@@ -16,10 +20,10 @@ class ObjectType(EntityType):
 
     @classmethod
     def find(cls, type_uid: uuid.UUID) -> Optional[ObjectType]:
-        return Workspace.active().find_object_type(type_uid)
+        return cast(ObjectType, Workspace.active().find_type(type_uid, cls))
 
     @classmethod
-    def find_or_create(cls, object_class: Type[Object]) -> ObjectType:
+    def find_or_create(cls, object_class: Type["object.Object"]) -> ObjectType:
         """ Find or creates the ObjectType with the class_id from the given Object
         implementation class.
 
@@ -30,7 +34,6 @@ class ObjectType(EntityType):
         :param object_class: An Object implementation class.
         :return: A new instance of ObjectType.
         """
-        assert issubclass(object_class, Object)
         class_id = object_class.static_class_id()
         if class_id is None:
             raise RuntimeError(

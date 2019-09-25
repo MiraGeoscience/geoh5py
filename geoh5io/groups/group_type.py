@@ -3,10 +3,13 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 from typing import Type
+from typing import TYPE_CHECKING
 
-from geoh5io.groups import Group
 from geoh5io.shared import EntityType
 from geoh5io.workspace import Workspace
+
+if TYPE_CHECKING:
+    from . import group
 
 
 class GroupType(EntityType):
@@ -39,10 +42,10 @@ class GroupType(EntityType):
 
     @classmethod
     def find(cls, type_uid: uuid.UUID) -> Optional[GroupType]:
-        return Workspace.active().find_group_type(type_uid)
+        return Workspace.active().find_type(type_uid, cls)
 
     @classmethod
-    def find_or_create(cls, group_class: Type[Group]) -> GroupType:
+    def find_or_create(cls, group_class: Type["group.Group"]) -> GroupType:
         """ Find or creates the GroupType with the class_id from the given Group
         implementation class.
 
@@ -53,7 +56,6 @@ class GroupType(EntityType):
         :param group_class: An Group implementation class.
         :return: A new instance of GroupType.
         """
-        assert issubclass(group_class, Group)
         class_id = group_class.static_class_id()
         if class_id is None:
             raise RuntimeError(

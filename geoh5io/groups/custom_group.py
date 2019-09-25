@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-from geoh5io.groups import Group
+from .group import Group
 
 
 class CustomGroup(Group):

@@ -3,10 +3,13 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 from typing import Type
+from typing import TYPE_CHECKING
 
-from geoh5io.data import ColorMap
-from geoh5io.data import Data
-from geoh5io.data import PrimitiveTypeEnum
+if TYPE_CHECKING:
+    from . import data
+
+from .color_map import ColorMap
+from .primitive_type_enum import PrimitiveTypeEnum
 from geoh5io.shared import EntityType
 from geoh5io.workspace import Workspace
 
@@ -19,19 +22,26 @@ class DataType(EntityType):
         self._color_map: Optional[ColorMap] = None
         self._units = None
 
-    @classmethod
-    def find(cls, type_uid: uuid.UUID) -> Optional[DataType]:
-        return Workspace.active().find_data_type(type_uid)
+    @property
+    def units(self) -> Optional[str]:
+        return self._units
+
+    @property
+    def primitive_type(self) -> PrimitiveTypeEnum:
+        return self._primitive_type
 
     @classmethod
-    def create(cls, data_class: Type[Data]) -> DataType:
+    def find(cls, type_uid: uuid.UUID) -> Optional[DataType]:
+        return Workspace.active().find_type(type_uid, cls)
+
+    @classmethod
+    def create(cls, data_class: Type["data.Data"]) -> DataType:
         """ Creates a new instance of GroupType with the primitive type from the given Data
         implementation class.
 
         :param data_class: A Data implementation class.
         :return: A new instance of DataType.
         """
-        assert issubclass(data_class, Data)
         uid = uuid.uuid4()
         primitive_type = data_class.primitive_type()
         return DataType(uid, primitive_type)

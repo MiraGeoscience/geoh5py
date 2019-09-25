@@ -1,9 +1,9 @@
 import uuid
 from abc import abstractmethod
 
-from geoh5io.data import DataAssociationEnum
-from geoh5io.data import DataType
-from geoh5io.data import PrimitiveTypeEnum
+from .data_association_enum import DataAssociationEnum
+from .data_type import DataType
+from .primitive_type_enum import PrimitiveTypeEnum
 from geoh5io.shared import Entity
 
 
@@ -26,7 +26,7 @@ class Data(Entity):
     def get_type(self) -> DataType:
         return self._type
 
-    @abstractmethod
     @classmethod
+    @abstractmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         ...

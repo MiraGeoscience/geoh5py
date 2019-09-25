@@ -1,7 +1,7 @@
 import uuid
 from typing import List
 
-from geoh5io.objects import Object
+from .object import Object
 from geoh5io.shared import Coord3D
 
 

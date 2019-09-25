@@ -1,10 +1,10 @@
 import uuid
 
-from geoh5io.data import Data
-from geoh5io.data import DataAssociationEnum
-from geoh5io.data import DataType
-from geoh5io.data import PrimitiveTypeEnum
-from geoh5io.data import ReferenceValueMap
+from .data import Data
+from .data_association_enum import DataAssociationEnum
+from .data_type import DataType
+from .primitive_type_enum import PrimitiveTypeEnum
+from .reference_value_map import ReferenceValueMap
 
 
 class ReferencedData(Data):
