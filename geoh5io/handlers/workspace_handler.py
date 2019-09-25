@@ -1,43 +1,48 @@
 from typing import List
 
 from geoh5io import interfaces
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from geoh5io.interfaces.workspace import Workspace as i_Workspace
+    from geoh5io.interfaces.shared import Uuid as i_Uuid
+    from geoh5io.interfaces.shared import VersionString as i_VersionString
 
 class WorkspaceHandler:
     @staticmethod
-    def get_api_version() -> interfaces.shared.VersionString:
+    def get_api_version() -> i_VersionString:
         version = interfaces.shared.VersionString()
         version.value = interfaces.api.API_VERSION
         return version
 
-    def create_geoh5(self, file_path: str) -> interfaces.workspace.Workspace:
+    def create_geoh5(self, file_path: str) -> i_Workspace:
         # TODO
         pass
 
     # pylint: disable=unused-argument
     @staticmethod
-    def open_geoh5(file_path: str) -> interfaces.workspace.Workspace:
+    def open_geoh5(file_path: str) -> i_Workspace:
         # TODO
         return interfaces.workspace.Workspace()
 
     def save(
         self, file_path: str, overwrite_file: bool
-    ) -> interfaces.workspace.Workspace:
+    ) -> i_Workspace:
         # TODO
         pass
 
     def save_copy(
         self, file_path: str, overwrite_file: bool
-    ) -> interfaces.workspace.Workspace:
+    ) -> i_Workspace:
         # TODO
         pass
 
     def export_objects(
         self,
-        objects_or_groups: List[interfaces.shared.Uuid],
+        objects_or_groups: List[i_Uuid],
         file_path: str,
         overwrite_file: bool,
-    ) -> interfaces.workspace.Workspace:
+    ) -> i_Workspace:
         # TODO
         pass
 

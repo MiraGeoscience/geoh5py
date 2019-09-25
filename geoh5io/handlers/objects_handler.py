@@ -1,132 +1,146 @@
-from typing import Dict, List
+from typing import Dict, List, TYPE_CHECKING
 
 from geoh5io import interfaces
 
+if TYPE_CHECKING:
+    from geoh5io.interfaces.objects import Object as i_Object
+    from geoh5io.interfaces.objects import ObjectQuery as i_ObjectQuery
+    from geoh5io.interfaces.objects import Points as i_Points
+    from geoh5io.interfaces.objects import Curve as i_Curve
+    from geoh5io.interfaces.objects import Surface as i_Surface
+    from geoh5io.interfaces.objects import Grid2D as i_Grid2D
+    from geoh5io.interfaces.objects import BlockModel as i_BlockModel
+    from geoh5io.interfaces.objects import Drillhole as i_Drillhole
+    from geoh5io.interfaces.objects import GeoImage as i_GeoImage
+    from geoh5io.interfaces.objects import Octree as i_Octree
+    from geoh5io.interfaces.objects import Label as i_Label
+    from geoh5io.interfaces.objects import GeometryTransformation as i_GeometryTransformation
+    from geoh5io.interfaces.shared import Uuid as i_Uuid
 
 # pylint: disable=too-many-public-methods
 class ObjectsHandler:
-    def get_type(self, object_class: int) -> interfaces.shared.Uuid:
+    def get_type(self, object_class: int) -> i_Uuid:
         # TODO
         pass
 
-    def get_class(self, type_uid: interfaces.shared.Uuid) -> int:
+    def get_class(self, type_uid: i_Uuid) -> int:
         # TODO
         pass
 
     @staticmethod
-    def get_all() -> List[interfaces.objects.Object]:
+    def get_all() -> List[i_Object]:
         # TODO: get from workspace
         # return geoh5io.workspace.Workspace.instance().all_objects()
         return []
 
     def find(
-        self, query: interfaces.objects.ObjectQuery
-    ) -> List[interfaces.objects.Object]:
+        self, query: i_ObjectQuery
+    ) -> List[i_Object]:
         # TODO
         pass
 
     def set_allow_move(
-        self, objects: List[interfaces.shared.Uuid], allow: bool
+        self, objects: List[i_Uuid], allow: bool
     ) -> None:
         # TODO
         pass
 
     def move_to_group(
         self,
-        objects: List[interfaces.shared.Uuid],
-        destination_group: interfaces.shared.Uuid,
+        objects: List[i_Uuid],
+        destination_group: i_Uuid,
     ) -> None:
         # TODO
         pass
 
-    def get(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Object:
+    def get(self, uid: i_Uuid) -> i_Object:
         # TODO
         pass
 
-    def narrow_points(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Points:
+    def narrow_points(self, uid: i_Uuid) -> i_Points:
         # TODO
         pass
 
-    def narrow_curve(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Curve:
+    def narrow_curve(self, uid: i_Uuid) -> i_Curve:
         # TODO
         pass
 
-    def narrow_surface(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Surface:
+    def narrow_surface(self, uid: i_Uuid) -> i_Surface:
         # TODO
         pass
 
-    def narrow_grid2d(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Grid2D:
+    def narrow_grid2d(self, uid: i_Uuid) -> i_Grid2D:
         # TODO
         pass
 
     def narrow_drillhole(
-        self, uid: interfaces.shared.Uuid
-    ) -> interfaces.objects.Drillhole:
+        self, uid: i_Uuid
+    ) -> i_Drillhole:
         # TODO
         pass
 
     def narrow_blockmodel(
-        self, uid: interfaces.shared.Uuid
-    ) -> interfaces.objects.BlockModel:
+        self, uid: i_Uuid
+    ) -> i_BlockModel:
         # TODO
         pass
 
-    def narrow_octree(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Octree:
+    def narrow_octree(self, uid: i_Uuid) -> i_Octree:
         # TODO
         pass
 
     def narrow_geoimage(
-        self, uid: interfaces.shared.Uuid
-    ) -> interfaces.objects.GeoImage:
+        self, uid: i_Uuid
+    ) -> i_GeoImage:
         # TODO
         pass
 
-    def narrow_label(self, uid: interfaces.shared.Uuid) -> interfaces.objects.Label:
+    def narrow_label(self, uid: i_Uuid) -> i_Label:
         # TODO
         pass
 
     def create_any_object(
         self,
-        type_uid: interfaces.shared.Uuid,
+        type_uid: i_Uuid,
         name: str,
-        parent_group: interfaces.shared.Uuid,
+        parent_group: i_Uuid,
         attributes: Dict[str, str],
-    ) -> interfaces.objects.Object:
+    ) -> i_Object:
         # TODO
         pass
 
     def transform(
         self,
-        objects: List[interfaces.shared.Uuid],
-        transformation: interfaces.objects.GeometryTransformation,
+        objects: List[i_Uuid],
+        transformation: i_GeometryTransformation,
     ) -> None:
         # TODO
         pass
 
     def set_public(
-        self, entities: List[interfaces.shared.Uuid], is_public: bool
+        self, entities: List[i_Uuid], is_public: bool
     ) -> None:
         # TODO
         pass
 
     def set_visible(
-        self, entities: List[interfaces.shared.Uuid], visible: bool
+        self, entities: List[i_Uuid], visible: bool
     ) -> None:
         # TODO
         pass
 
     def set_allow_delete(
-        self, entities: List[interfaces.shared.Uuid], allow: bool
+        self, entities: List[i_Uuid], allow: bool
     ) -> None:
         # TODO
         pass
 
     def set_allow_rename(
-        self, entities: List[interfaces.shared.Uuid], allow: bool
+        self, entities: List[i_Uuid], allow: bool
     ) -> None:
         # TODO
         pass
 
-    def rename(self, entities: interfaces.shared.Uuid, new_name: str) -> None:
+    def rename(self, entities: i_Uuid, new_name: str) -> None:
         # TODO
         pass

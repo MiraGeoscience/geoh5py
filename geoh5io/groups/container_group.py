@@ -3,7 +3,6 @@ from __future__ import annotations
 import uuid
 
 from .group import Group
-from .group_type import GroupType
 
 
 class ContainerGroup(Group):

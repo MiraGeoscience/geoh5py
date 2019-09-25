@@ -1,20 +1,19 @@
 import uuid
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from geoh5io import shared
 
 
-class Entity:
+class Entity(ABC):
     def __init__(self, name: str, uid: uuid.UUID = None):
         self._uid = uid if uid is not None else uuid.uuid4()
         self._name = self.fix_up_name(name)
-        # TODO: properties and setters
-        self._visible = 1
-        self._allow_delete = 1
-        self._allow_rename = 1
-        self._is_public = 1
+        self._visible = True
+        self._allow_delete = True
+        self._allow_rename = True
+        self._is_public = True
 
     @property
     def uid(self) -> uuid.UUID:
@@ -27,6 +26,22 @@ class Entity:
     @name.setter
     def name(self, new_name: str):
         self._name = self.fix_up_name(new_name)
+
+    @property
+    def visible(self) -> bool:
+        return self._visible
+
+    @property
+    def allow_delete(self) -> bool:
+        return self._allow_delete
+
+    @property
+    def allow_rename(self) -> bool:
+        return self._allow_rename
+
+    @property
+    def is_public(self) -> bool:
+        return self._is_public
 
     @classmethod
     def fix_up_name(cls, name: str) -> str:

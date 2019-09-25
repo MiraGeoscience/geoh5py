@@ -4,23 +4,24 @@ import uuid
 from typing import TYPE_CHECKING, Optional, Type, cast
 
 from geoh5io.shared import EntityType
-from geoh5io.workspace import Workspace
 
 if TYPE_CHECKING:
+    from geoh5io import workspace
     from . import object
 
 
 class ObjectType(EntityType):
-    def __init__(self, uid: uuid.UUID, class_id: uuid.UUID):
-        super().__init__(uid)
+    def __init__(self, workspace: 'workspace.Workspace', uid: uuid.UUID, class_id: uuid.UUID):
+        super().__init__(workspace, uid)
         self._class_id = class_id
 
     @classmethod
-    def find(cls, type_uid: uuid.UUID) -> Optional[ObjectType]:
-        return cast(ObjectType, Workspace.active().find_type(type_uid, cls))
+    def find(cls, workspace: 'workspace.Workspace', type_uid: uuid.UUID) -> Optional[ObjectType]:
+        return cast(ObjectType, workspace.find_type(type_uid, cls))
 
     @classmethod
-    def find_or_create(cls, object_class: Type["object.Object"]) -> ObjectType:
+    def find_or_create(cls, workspace: 'workspace.Workspace',
+                       object_class: Type["object.Object"])-> ObjectType:
         """ Find or creates the ObjectType with the class_id from the given Object
         implementation class.
 
@@ -37,18 +38,18 @@ class ObjectType(EntityType):
                 f"Cannot create GroupType with null UUID from {object_class.__name__}."
             )
 
-        object_type = cls.find(class_id)
+        object_type = cls.find(workspace, class_id)
         if object_type is not None:
             return object_type
 
-        return cls(class_id, class_id)
+        return cls(workspace, class_id, class_id)
 
     @staticmethod
-    def create_custom() -> ObjectType:
+    def create_custom(workspace: 'workspace.Workspace') -> ObjectType:
         """ Creates a new instance of ObjectType for an unlisted custom Object type with a
         new auto-generated UUID.
 
         The same UUID is used for class_id.
         """
         class_id = uuid.uuid4()
-        return ObjectType(class_id, class_id)
+        return ObjectType(workspace, class_id, class_id)

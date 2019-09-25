@@ -1,21 +1,22 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Optional, Type, cast
 
 from geoh5io.shared import EntityType
-from geoh5io.workspace import Workspace
 
 from .color_map import ColorMap
 from .primitive_type_enum import PrimitiveTypeEnum
 
 if TYPE_CHECKING:
+    from geoh5io import workspace
     from . import data
 
 
 class DataType(EntityType):
-    def __init__(self, uid: uuid.UUID, primitive_type: PrimitiveTypeEnum):
-        super().__init__(uid)
+    def __init__(self, workspace: 'workspace.Workspace', uid: uuid.UUID, primitive_type:
+    PrimitiveTypeEnum):
+        super().__init__(workspace, uid)
         self._primitive_type = primitive_type
         # TODO: define properties and setters
         self._color_map: Optional[ColorMap] = None
@@ -30,8 +31,8 @@ class DataType(EntityType):
         return self._primitive_type
 
     @classmethod
-    def find(cls, type_uid: uuid.UUID) -> Optional[DataType]:
-        return Workspace.active().find_type(type_uid, cls)
+    def find(cls, workspace: 'workspace.Workspace', type_uid: uuid.UUID) -> Optional[DataType]:
+        return cast(DataType, workspace.find_type(type_uid, cls))
 
     @classmethod
     def create(cls, data_class: Type["data.Data"]) -> DataType:

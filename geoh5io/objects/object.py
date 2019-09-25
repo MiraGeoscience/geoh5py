@@ -9,14 +9,12 @@ from .object_type import ObjectType
 
 class Object(Entity):
     def __init__(
-        self, name: str, uid: uuid.UUID = None, object_type: ObjectType = None
+        self, object_type: ObjectType, name: str, uid: uuid.UUID = None
     ):
+        assert object_type is not None
         super().__init__(name, uid)
-        self._type = (
-            object_type
-            if object_type is not None
-            else ObjectType.find_or_create(self.__class__)
-        )
+
+        self._type = object_type
         self._allow_move = 1
         self._clipping_ids: List[uuid.UUID] = []
 

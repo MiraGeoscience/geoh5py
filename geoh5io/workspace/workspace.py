@@ -6,28 +6,37 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Callable, Dict, Optional, Type, Union, cast
 
 from geoh5io.shared import EntityType
+from geoh5io.groups import GroupType, Group
 
 if TYPE_CHECKING:
-    from geoh5io.groups import group
     from geoh5io.objects import object
     from geoh5io.shared import type
 
 
 class Workspace:
-    _active_ref: Union[
-        weakref.ReferenceType, Callable[[], Optional[Workspace]]
-    ] = lambda: None
+    __root_type_uid = uuid.uuid4()  # TODO: what should this be?
 
-    def __init__(self):
+    _active_ref = lambda: None \
+        # type: Union[weakref.ReferenceType, Callable[[], Optional[Workspace]]]
+
+    def __init__(self, root: Group = None):
         self.version = None
         self._distance_unit = None
         self._contributors = []
-        self._groups: Dict[uuid.UUID, group.Group] = {}
+
+        # TODO: use weak ref dict
+        self._groups: Dict[uuid.UUID, Group] = {}
         self._objects: Dict[uuid.UUID, object.Object] = {}
         self._types: Dict[uuid.UUID, type.EntityType] = {}
 
-        # TODO: must always have a root group (cannot be None)
-        # self._root: group.Group
+        self._root: root
+        if self._root is None:
+            workspace_group_type = GroupType(self, self.__root_type_uid, "workspace")
+            self._root = Group(workspace_group_type, "workspace")
+
+    @property
+    def root(self) -> Group:
+        return self._root
 
     def activate(self):
         """ Makes this workspace the active one.
@@ -53,6 +62,11 @@ class Workspace:
         # so that type check does not complain of possible returned None
         return cast(Workspace, active_one)
 
+    def register_type(self, entity_type: EntityType):
+        # TODO: raise exception if it does already exists
+        self._types[entity_type.uid] = entity_type
+
+
     def find_type(
         self, type_uid: uuid.UUID, type_class: Type["type.EntityType"]
     ) -> Optional[EntityType]:
@@ -62,10 +76,15 @@ class Workspace:
 
         return None
 
+    def find_any_object(
+        self, object_uid: uuid.UUID
+    ) -> Optional['object.Object']:
+        return self._objects.get(object_uid, None)
+
 
 @contextmanager
 def active_workspace(workspace: Workspace):
-    previous_active_ref = Workspace._active_ref
+    previous_active_ref = Workspace._active_ref # pylint: disable=protected-access
     workspace.activate()
     yield workspace
 

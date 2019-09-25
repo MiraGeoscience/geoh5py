@@ -25,13 +25,13 @@ def test_group_instantiation():
 
 def test_data_instantiation():
     with active_workspace(Workspace()):
-        dt = DataType.create(ReferencedData)
-        assert dt.uid is not None
-        assert dt.name is None
-        assert dt.units is None
-        assert dt.primitive_type == PrimitiveTypeEnum.REFERENCED
+        data_type = DataType.create(ReferencedData)
+        assert data_type.uid is not None
+        assert data_type.name is None
+        assert data_type.units is None
+        assert data_type.primitive_type == PrimitiveTypeEnum.REFERENCED
 
-        data = ReferencedData(dt, DataAssociationEnum.VERTEX, "test")
+        data = ReferencedData(data_type, DataAssociationEnum.VERTEX, "test")
         assert data.primitive_type() == DataAssociationEnum.VERTEX
         assert data.uid is not None
         assert data.name == "test"

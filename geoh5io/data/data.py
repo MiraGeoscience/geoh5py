@@ -16,6 +16,7 @@ class Data(Entity):
         name: str,
         uid: uuid.UUID = None,
     ):
+        assert data_type is not None
         super().__init__(name, uid)
         self._association = association
         self._type = data_type
