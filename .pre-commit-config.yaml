@@ -10,11 +10,6 @@ repos:
     rev: v1.3
     hooks:
     -   id: autoflake
--   repo: https://github.com/asottile/reorder_python_imports
-    rev: v1.7.0
-    hooks:
-    -   id: reorder-python-imports
-        args: [--py37-plus]
 -   repo: https://github.com/asottile/pyupgrade
     rev: v1.23.0
     hooks:
