@@ -1,5 +1,4 @@
-from .data import Data
-from .data import PrimitiveTypeEnum
+from .data import Data, PrimitiveTypeEnum
 
 
 class FilenameData(Data):

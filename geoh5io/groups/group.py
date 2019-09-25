@@ -1,10 +1,10 @@
 import uuid
 from abc import abstractmethod
-from typing import List
-from typing import Optional
+from typing import List, Optional
+
+from geoh5io.shared import Entity
 
 from .group_type import GroupType
-from geoh5io.shared import Entity
 
 
 class Group(Entity):

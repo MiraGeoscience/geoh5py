@@ -1,7 +1,9 @@
-from geoh5io.data import DataAssociationEnum
-from geoh5io.data import DataType
-from geoh5io.data import PrimitiveTypeEnum
-from geoh5io.data import ReferencedData
+from geoh5io.data import (
+    DataAssociationEnum,
+    DataType,
+    PrimitiveTypeEnum,
+    ReferencedData,
+)
 from geoh5io.groups import ContainerGroup
 from geoh5io.objects import Points
 from geoh5io.workspace import Workspace

@@ -1,6 +1,5 @@
 from .blob_data import BlobData
-from .color_map import ColorMap
-from .color_map import RGBAColor
+from .color_map import ColorMap, RGBAColor
 from .data import Data
 from .data_association_enum import DataAssociationEnum
 from .data_type import DataType
@@ -10,8 +9,7 @@ from .filename_data import FilenameData
 from .float_data import FloatData
 from .integer_data import IntegerData
 from .primitive_type_enum import PrimitiveTypeEnum
-from .reference_value_map import ReferenceValue
-from .reference_value_map import ReferenceValueMap
+from .reference_value_map import ReferenceValue, ReferenceValueMap
 from .referenced_data import ReferencedData
 from .text_data import TextData
 from .unkown_data import UnknownData

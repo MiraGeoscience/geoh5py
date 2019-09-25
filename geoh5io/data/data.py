@@ -1,10 +1,11 @@
 import uuid
 from abc import abstractmethod
 
+from geoh5io.shared import Entity
+
 from .data_association_enum import DataAssociationEnum
 from .data_type import DataType
 from .primitive_type_enum import PrimitiveTypeEnum
-from geoh5io.shared import Entity
 
 
 class Data(Entity):

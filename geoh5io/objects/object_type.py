@@ -1,16 +1,13 @@
 from __future__ import annotations
 
 import uuid
-from typing import cast
-from typing import Optional
-from typing import Type
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from . import object
+from typing import TYPE_CHECKING, Optional, Type, cast
 
 from geoh5io.shared import EntityType
 from geoh5io.workspace import Workspace
+
+if TYPE_CHECKING:
+    from . import object
 
 
 class ObjectType(EntityType):

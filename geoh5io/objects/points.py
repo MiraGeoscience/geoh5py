@@ -1,8 +1,9 @@
 import uuid
 from typing import List
 
-from .object import Object
 from geoh5io.shared import Coord3D
+
+from .object import Object
 
 
 class Points(Object):

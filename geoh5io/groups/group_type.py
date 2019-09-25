@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Optional
-from typing import Type
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Type
 
 from geoh5io.shared import EntityType
 from geoh5io.workspace import Workspace

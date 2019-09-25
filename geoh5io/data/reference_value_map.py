@@ -1,5 +1,4 @@
-from typing import Dict
-from typing import Optional
+from typing import Dict, Optional
 
 
 class ReferenceValue:
