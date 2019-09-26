@@ -1,9 +1,9 @@
 import uuid
 
-from .object_base import Object, ObjectType
+from .object_base import ObjectBase, ObjectType
 
 
-class Octree(Object):
+class Octree(ObjectBase):
     # TODO: put the right UUID. Beware class_id differs from type uid (!!!)
     __type_uid = uuid.UUID("{10000000-0000-0000-0000-000000000000}")
     __class_id = uuid.UUID("{20000000-0000-0000-0000-000000000000}")

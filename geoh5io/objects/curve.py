@@ -1,9 +1,9 @@
 import uuid
 
-from .object_base import Object, ObjectType
+from .object_base import ObjectBase, ObjectType
 
 
-class Curve(Object):
+class Curve(ObjectBase):
     __type_uid = uuid.UUID("{6A057FDC-B355-11E3-95BE-FD84A7FFCB88}")
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):

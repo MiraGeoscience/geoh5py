@@ -1,9 +1,9 @@
 import uuid
 
-from .object_base import Object, ObjectType
+from .object_base import ObjectBase, ObjectType
 
 
-class Label(Object):
+class Label(ObjectBase):
     __type_uid = uuid.UUID("{E79F449D-74E3-4598-9C9C-351A28B8B69E}")
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):

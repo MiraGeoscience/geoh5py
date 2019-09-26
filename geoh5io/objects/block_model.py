@@ -2,10 +2,10 @@ import uuid
 
 from geoh5io.shared import Coord3D
 
-from .object_base import Object, ObjectType
+from .object_base import ObjectBase, ObjectType
 
 
-class BlockModel(Object):
+class BlockModel(ObjectBase):
     __type_uid = uuid.UUID("{B020A277-90E2-4CD7-84D6-612EE3F25051}")
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):

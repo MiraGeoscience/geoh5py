@@ -31,7 +31,7 @@ class ObjectType(EntityType):
 
     @classmethod
     def find_or_create(
-        cls, workspace: "workspace.Workspace", object_class: Type["object_base.Object"]
+        cls, workspace: "workspace.Workspace", object_class: Type["object_base.ObjectBase"]
     ) -> ObjectType:
         """ Find or creates the ObjectType with the class_id from the given Object
         implementation class.

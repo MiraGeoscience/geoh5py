@@ -1,9 +1,9 @@
 import uuid
 
-from .object_base import Object, ObjectType
+from .object_base import ObjectBase, ObjectType
 
 
-class Grid2D(Object):
+class Grid2D(ObjectBase):
     __type_uid = uuid.UUID("{48f5054a-1c5c-4ca4-9048-80f36dc60a06}")
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):

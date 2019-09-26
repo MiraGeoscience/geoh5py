@@ -28,7 +28,7 @@ class Workspace:
 
         # TODO: use weak ref dict
         self._groups: Dict[uuid.UUID, group.Group] = {}
-        self._objects: Dict[uuid.UUID, object_base.Object] = {}
+        self._objects: Dict[uuid.UUID, object_base.ObjectBase] = {}
         self._types: Dict[uuid.UUID, entity_type.EntityType] = {}
 
         self._root = root
@@ -76,7 +76,7 @@ class Workspace:
 
         return None
 
-    def find_any_object(self, object_uid: uuid.UUID) -> Optional["object_base.Object"]:
+    def find_any_object(self, object_uid: uuid.UUID) -> Optional["object_base.ObjectBase"]:
         return self._objects.get(object_uid, None)
 
 

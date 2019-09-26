@@ -1,9 +1,9 @@
 import uuid
 
-from .object_base import Object, ObjectType
+from .object_base import ObjectBase, ObjectType
 
 
-class Drillhole(Object):
+class Drillhole(ObjectBase):
     __type_uid = uuid.UUID("{7CAEBF0E-D16E-11E3-BC69-E4632694AA37}")
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):

@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from geoh5io import workspace
 
 
-class Object(Entity):
+class ObjectBase(Entity):
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         assert object_type is not None
         super().__init__(name, uid)

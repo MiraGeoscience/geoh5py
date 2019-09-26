@@ -1,9 +1,9 @@
 import uuid
 
-from .object_base import Object, ObjectType
+from .object_base import ObjectBase, ObjectType
 
 
-class GeoImage(Object):
+class GeoImage(ObjectBase):
     __type_uid = uuid.UUID("{77AC043C-FE8D-4D14-8167-75E300FB835A}")
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):

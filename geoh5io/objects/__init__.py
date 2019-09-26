@@ -5,7 +5,7 @@ from .drillhole import Drillhole
 from .geo_image import GeoImage
 from .grid2d import Grid2D
 from .label import Label
-from .object_base import Object
+from .object_base import ObjectBase
 from .object_type import ObjectType
 from .octree import Octree
 from .points import Points
@@ -20,7 +20,7 @@ __all__ = [
     GeoImage.__name__,
     Grid2D.__name__,
     Label.__name__,
-    Object.__name__,
+    ObjectBase.__name__,
     ObjectType.__name__,
     Octree.__name__,
     Points.__name__,

@@ -4,18 +4,18 @@ from typing import Type
 import pytest
 
 from geoh5io import objects
-from geoh5io.objects import Object, ObjectType
+from geoh5io.objects import ObjectBase, ObjectType
 from geoh5io.workspace import Workspace
 
 
 def all_object_types():
     for _, obj in inspect.getmembers(objects):
-        if inspect.isclass(obj) and issubclass(obj, Object) and obj is not Object:
+        if inspect.isclass(obj) and issubclass(obj, ObjectBase) and obj is not ObjectBase:
             yield obj
 
 
 @pytest.mark.parametrize("object_class", all_object_types())
-def test_object_instantiation(object_class: Type[Object]):
+def test_object_instantiation(object_class: Type[ObjectBase]):
     the_workspace = Workspace()
 
     object_type = object_class.find_or_create_type(the_workspace)

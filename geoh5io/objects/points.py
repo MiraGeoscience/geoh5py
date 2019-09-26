@@ -3,10 +3,10 @@ from typing import List
 
 from geoh5io.shared import Coord3D
 
-from .object_base import Object, ObjectType
+from .object_base import ObjectBase, ObjectType
 
 
-class Points(Object):
+class Points(ObjectBase):
     __type_uid = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
