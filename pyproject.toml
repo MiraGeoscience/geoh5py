@@ -7,20 +7,28 @@ authors = ["Mira Geoscience <support@mirageoscience.com>"]
 [tool.poetry.dependencies]
 python = "^3.7"
 h5py = "^2.10"
-thriftpy2 = "^0.4.5"
-cython = {version = "^0.29.13", optional = true}
 toml = "^0.10.0"
-pylint = "^2.3"
+thriftpy2 = "^0.4.6"
+cython = {version = "^0.29.13", optional = true}
+
 [tool.poetry.dev-dependencies]
+pylint = "^2.3"
 pytest = "^3.0"
 thrift-pyi = "^0.1.0"
 sphinx = "^2.2"
 
+[tool.poetry.extras]
+cython = ["cython"]
+
 [tool.isort]
-known_third_party = ["thriftpy2", "toml"]
-# settings of isort for compatibility with 'black' formatting
+# settings for compatibility between ``isort`` and ``black`` formatting
 multi_line_output = 3
 include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 88
+# auto-updated by seed-isort-config
+known_third_party = ["numpy", "pytest", "thriftpy2", "toml"]
 
 [tool.black]
 # defaults are just fine

@@ -1,19 +1,22 @@
 import uuid
 
-from geoh5io.objects import Object
+from geoh5io.shared import Coord3D
+
+from .object_base import ObjectBase, ObjectType
 
 
-class BlockModel(Object):
-    __class_id = uuid.UUID("{B020A277-90E2-4CD7-84D6-612EE3F25051}")
+class BlockModel(ObjectBase):
+    __TYPE_UID = uuid.UUID("{B020A277-90E2-4CD7-84D6-612EE3F25051}")
 
-    def __init__(self):
-        super().__init__()
-        self.origin = None
-        self.rotation = 0
-        self.u_cell_delimiters = []
-        self.v_cell_delimiters = []
-        self.z_cell_delimiters = []
+    def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
+        super().__init__(object_type, name, uid)
+        # TODO
+        self._origin = Coord3D()
+        self._rotation = 0
+        # self._u_cell_delimiters = []
+        # self._v_cell_delimiters = []
+        # self._z_cell_delimiters = []
 
     @classmethod
-    def static_class_id(cls) -> uuid.UUID:
-        return cls.__class_id
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID

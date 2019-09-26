@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-from geoh5io.groups import Group
+from .group import Group
 
 
 class CustomGroup(Group):
@@ -11,13 +11,13 @@ class CustomGroup(Group):
     """
 
     @classmethod
-    def static_class_id(cls) -> Optional[uuid.UUID]:
+    def default_type_uid(cls) -> uuid.UUID:
+        raise RuntimeError(f"No predefined static type UUID for {cls}.")
+
+    @classmethod
+    def default_type_name(cls) -> Optional[str]:
         return None
 
     @classmethod
-    def static_type_name(cls) -> Optional[str]:
-        return None
-
-    @classmethod
-    def static_type_description(cls) -> Optional[str]:
+    def default_type_description(cls) -> Optional[str]:
         return None

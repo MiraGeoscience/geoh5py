@@ -2,23 +2,18 @@ from __future__ import annotations
 
 import uuid
 
-from geoh5io.groups import Group
+from .group import Group
 
 
 class ContainerGroup(Group):
     """ The type for the basic Container group."""
 
-    __class_id = uuid.UUID("{61FBB4E8-A480-11E3-8D5A-2776BDF4F982}")
-    __type_name = "Container"
+    __TYPE_UID = uuid.UUID("{61FBB4E8-A480-11E3-8D5A-2776BDF4F982}")
 
     @classmethod
-    def static_class_id(cls) -> uuid.UUID:
-        return cls.__class_id
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID
 
     @classmethod
-    def static_type_name(cls) -> str:
-        return cls.__type_name
-
-    @classmethod
-    def static_type_description(cls) -> str:
-        return cls.static_type_name()
+    def default_type_name(cls) -> str:
+        return "Container"

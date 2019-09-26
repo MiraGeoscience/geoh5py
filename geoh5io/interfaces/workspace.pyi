@@ -52,15 +52,15 @@ class WorkspaceService:
         overwrite_file: bool,
     ) -> Workspace:
         ...
-    def save_copy(
+    def export_objects(
         self,
+        objects_or_groups: List[shared.Uuid],
         file_path: str,
         overwrite_file: bool,
     ) -> Workspace:
         ...
-    def export_objects(
+    def export_all(
         self,
-        objects_or_groups: List[shared.Uuid],
         file_path: str,
         overwrite_file: bool,
     ) -> Workspace:

@@ -4,16 +4,16 @@ import os
 import toml
 from thriftpy2.protocol import TBinaryProtocolFactory
 from thriftpy2.server import TThreadedServer
-from thriftpy2.thrift import TMultiplexedProcessor
-from thriftpy2.thrift import TProcessor
-from thriftpy2.transport import TBufferedTransportFactory
-from thriftpy2.transport import TServerSocket
+from thriftpy2.thrift import TMultiplexedProcessor, TProcessor
+from thriftpy2.transport import TBufferedTransportFactory, TServerSocket
 
 from geoh5io import interfaces
-from geoh5io.handlers import DataHandler
-from geoh5io.handlers import GroupsHandler
-from geoh5io.handlers import ObjectsHandler
-from geoh5io.handlers import WorkspaceHandler
+from geoh5io.handlers import (
+    DataHandler,
+    GroupsHandler,
+    ObjectsHandler,
+    WorkspaceHandler,
+)
 
 
 def main():

@@ -62,22 +62,10 @@ service WorkspaceService {
      * In case of success, the current workspace now refers to this new file location.
      * Closes the previously opened workspace file, if any.
      *
-     * If file_path is the same the current workspace file, and overwrite_file is true,
+     * If file_path is the same the current workspace file, and ``overwrite_file`` is true,
      * then the original file is updated.
      */
     Workspace save(1: required string file_path, 2: optional bool overwrite_file = false)
-        throws (1:FileIOException io_ex);
-
-    /**
-     * Saves the current workspace at the given file location on server.
-     *
-     * The current open workspace does not change and still refers to the initially
-     * opened geoh5 file, if any.
-     *
-     * Even it overwrite_file is true, it will refuse to overwrite the file of the
-     * current open workspace.
-     */
-    Workspace save_copy(1: required string file_path, 2: optional bool overwrite_file = false)
         throws (1:FileIOException io_ex);
 
     /**
@@ -86,13 +74,24 @@ service WorkspaceService {
      * The current open workspace does not change and still refers to the initially
      * opened geoh5 file, if any.
      *
-     * Even it overwrite_file is true, it will refuse to overwrite the file of the
+     * Even it ``overwrite_file`` is true, it will refuse to overwrite the file of the
      * current open workspace.
      */
     Workspace export_objects(
         1: required list<shared.Uuid> objects_or_groups, 2: required string file_path,
         3: optional bool overwrite_file = false
     ) throws (1:FileIOException io_ex, 2:shared.InvalidUid uuid_ex, 3:shared.BadEntityType entity_type_ex);
+
+    /**
+     * Same as ``export_objects()``, with all the objects of the workspace.
+     *
+     * Thus, opening an existing workspace file, and executing ``export_all()`` will result in a copy
+     * on disk of the opneed workspace.
+     */
+    Workspace export_all(1: required string file_path, 2: optional bool overwrite_file =
+    false)
+        throws (1:FileIOException io_ex);
+
 
     /**
      * Closes the current workspace and the associated geoh5 file if any.

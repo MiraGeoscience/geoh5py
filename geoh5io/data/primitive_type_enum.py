@@ -1,7 +1,7 @@
-from enum import IntEnum
+from enum import Enum
 
 
-class PrimitiveTypeEnum(IntEnum):
+class PrimitiveTypeEnum(Enum):
     UNKNOWN = 0
     INTEGER = 1
     FLOAT = 2

@@ -1,41 +1,69 @@
 from __future__ import annotations
 
 import uuid
-from typing import Type
+from typing import TYPE_CHECKING, Type
 
-from geoh5io.objects import Object
-from geoh5io.shared import Entity
 from geoh5io.shared import EntityType
+
+if TYPE_CHECKING:
+    from geoh5io import workspace
+    from . import object_base  # noqa: F401
 
 
 class ObjectType(EntityType):
-    def __init__(self, uid: uuid.UUID, class_id: uuid.UUID):
-        super().__init__(uid)
+    def __init__(
+        self,
+        workspace: "workspace.Workspace",
+        uid: uuid.UUID,
+        class_id: uuid.UUID = None,
+    ):
+        super().__init__(workspace, uid)
         self._class_id = class_id
 
-    @classmethod
-    def _create(cls, entity_class: Type[Entity]) -> ObjectType:
-        """ See method ``create()`` """
-        assert issubclass(entity_class, Object)
-        class_id = entity_class.static_class_id()
-        if class_id is None:
-            raise RuntimeError(
-                f"Cannot create GroupType with null UUID from {entity_class.__name__}."
-            )
+    @staticmethod
+    def _is_abstract() -> bool:
+        return False
 
-        return ObjectType(class_id, class_id)
+    @property
+    def class_id(self) -> uuid.UUID:
+        """ If class ID was not set, defaults to this type UUID."""
+        return self._class_id if self._class_id is not None else self.uid
 
     @classmethod
-    def create(cls, object_class: Type[Object]) -> ObjectType:
-        """ Creates a new instance of ObjectType with the class_id from the given Object
+    def find_or_create(
+        cls,
+        workspace: "workspace.Workspace",
+        object_class: Type["object_base.ObjectBase"],
+    ) -> ObjectType:
+        """ Find or creates the ObjectType with the class_id from the given Object
         implementation class.
 
         The class_id is also used as the UUID for the newly created ObjectType.
-        Thus, all created instances for the same Object class share the same UUID.
-        It is actually expected to have a single instance of ObjectType in the Workspace
+        It is expected to have a single instance of ObjectType in the Workspace
         for each concrete Object class.
 
         :param object_class: An Object implementation class.
         :return: A new instance of ObjectType.
         """
-        return cls._create(object_class)
+        type_uid = object_class.default_type_uid()
+        if type_uid is None:
+            raise RuntimeError(
+                f"Cannot create GroupType with null UUID from {object_class.__name__}."
+            )
+
+        object_type = cls.find(workspace, type_uid)
+        if object_type is not None:
+            return object_type
+
+        class_id = object_class.default_class_id()
+        return cls(workspace, type_uid, class_id)
+
+    @staticmethod
+    def create_custom(workspace: "workspace.Workspace") -> ObjectType:
+        """ Creates a new instance of ObjectType for an unlisted custom Object type with a
+        new auto-generated UUID.
+
+        The same UUID is used for class_id.
+        """
+        class_id = uuid.uuid4()
+        return ObjectType(workspace, class_id, class_id)

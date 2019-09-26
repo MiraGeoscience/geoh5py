@@ -1,19 +1,20 @@
 import uuid
 
-from geoh5io.objects import Object
+from .object_base import ObjectBase, ObjectType
 
 
-class Drillhole(Object):
-    __class_id = uuid.UUID("{7CAEBF0E-D16E-11E3-BC69-E4632694AA37}")
+class Drillhole(ObjectBase):
+    __TYPE_UID = uuid.UUID("{7CAEBF0E-D16E-11E3-BC69-E4632694AA37}")
 
-    def __init__(self):
-        super().__init__()
-        self.vertices = []
-        self.cells = []
-        self.collar = None
-        self.surveys = []
-        self.trace = []
+    def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
+        super().__init__(object_type, name, uid)
+        # TODO
+        # self._vertices = []
+        # self._cells = []
+        # self._collar = None
+        # self._surveys = []
+        # self._trace = []
 
     @classmethod
-    def static_class_id(cls) -> uuid.UUID:
-        return cls.__class_id
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID

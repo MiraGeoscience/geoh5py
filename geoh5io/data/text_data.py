@@ -1,5 +1,5 @@
-from geoh5io.data import Data
-from geoh5io.data import PrimitiveTypeEnum
+from .data import Data
+from .primitive_type_enum import PrimitiveTypeEnum
 
 
 class TextData(Data):

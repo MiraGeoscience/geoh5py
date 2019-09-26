@@ -1,16 +1,17 @@
 import uuid
 
-from geoh5io.objects import Object
+from .object_base import ObjectBase, ObjectType
 
 
-class Surface(Object):
-    __class_id = uuid.UUID("{F26FEBA3-ADED-494B-B9E9-B2BBCBE298E1}")
+class Surface(ObjectBase):
+    __TYPE_UID = uuid.UUID("{F26FEBA3-ADED-494B-B9E9-B2BBCBE298E1}")
 
-    def __init__(self):
-        super().__init__()
-        self.vertices = []
-        self.cells = []
+    def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
+        super().__init__(object_type, name, uid)
+        # TODO
+        # self._vertices = []
+        # self._cells = []
 
     @classmethod
-    def static_class_id(cls) -> uuid.UUID:
-        return cls.__class_id
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID

@@ -1,5 +1,4 @@
-from geoh5io.data import Data
-from geoh5io.data import PrimitiveTypeEnum
+from .data import Data, PrimitiveTypeEnum
 
 
 class DatetimeData(Data):
