@@ -9,7 +9,6 @@ from typing import (
     Callable,
     ClassVar,
     Dict,
-    List,
     Optional,
     Type,
     Union,
@@ -33,19 +32,20 @@ WeakRefDuckType = Union[weakref.ReferenceType, Callable[[], Optional["Workspace"
 
 @dataclass
 class WorkspaceAttributes:
-    version = None
+    contributors = None
     distance_unit = None
-    contributors: List
+    ga_version = None
+    version = None
 
 
 class Workspace:
 
     _active_ref: ClassVar[WeakRefDuckType] = type(None)
 
-    def __init__(self, root: RootGroup = None):
-        self._workspace_attributes = WorkspaceAttributes
+    def __init__(self, h5file: str = None, root: RootGroup = None):
+        self._workspace_attributes = None
         self._base = "GEOSCIENCE"
-        self._h5file = None
+        self._h5file = h5file
 
         # TODO: store values as weak references
         self._types: Dict[uuid.UUID, entity_type.EntityType] = {}
@@ -57,13 +57,17 @@ class Workspace:
 
     @property
     def version(self):
+        if getattr(self, "_workspace_attributes", None) is None:
+            self.get_workspace_attributes()
 
-        if getattr(self, "_project_attributes", None) is None:
-            self._workspace_attributes = H5Reader.get_project_attributes(
-                self._h5file, self._base
-            )
+        return self._workspace_attributes.version
 
-        return self._workspace_attributes["version"]
+    @property
+    def ga_version(self):
+        if getattr(self, "_workspace_attributes", None) is None:
+            self.get_workspace_attributes()
+
+        return self._workspace_attributes.ga_version
 
     @property
     def root(self) -> "group.Group":
@@ -137,14 +141,6 @@ class Workspace:
     def find_data(self, data_uid: uuid.UUID) -> Optional["data.Data"]:
         return self._data.get(data_uid, None)
 
-    # @property
-    # def project_attributes(self):
-    #
-    #     if getattr(self, "_project_attrs", None) is None:
-    #         self._version = H5Reader.get_project_attributes(self._h5file, self._base)
-    #
-    #     return self._project_attrs
-
     @property
     def h5file(self) -> str:
         assert self._h5file is not None, "The 'h5file' property name must be set"
@@ -153,6 +149,21 @@ class Workspace:
     @h5file.setter
     def h5file(self, h5file):
         self._h5file = h5file
+
+    def get_workspace_attributes(self):
+        """ Fetch the workspace attributes
+        """
+
+        if getattr(self, "_project_attributes", None) is None:
+
+            self._workspace_attributes = WorkspaceAttributes()
+
+            attributes = H5Reader.get_project_attributes(self.h5file, self._base)
+
+            for (attr, value) in zip(attributes.keys(), attributes.values()):
+                setattr(self._workspace_attributes, attr, value)
+
+        return self._workspace_attributes
 
 
 @contextmanager

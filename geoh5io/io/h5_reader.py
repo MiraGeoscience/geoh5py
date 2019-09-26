@@ -29,7 +29,10 @@ class H5Reader:
         project_attrs = {}
 
         for key in list(project[base].attrs.keys()):
-            project_attrs[key] = project[base].attrs[key]
+
+            attr = key.lower().replace(" ", "_")
+
+            project_attrs[attr] = project[base].attrs[key]
 
         project.close()
 
