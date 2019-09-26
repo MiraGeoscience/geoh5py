@@ -43,7 +43,8 @@ def test_group_instantiation(group_class: Type[Group]):
 
 
 def test_custom_group_instantiation():
-    assert CustomGroup.static_type_uid() is None
+    with pytest.raises(RuntimeError) as error:
+        assert CustomGroup.static_type_uid() is None
     assert CustomGroup.static_class_id() is None
 
     the_workspace = Workspace()
@@ -51,7 +52,9 @@ def test_custom_group_instantiation():
         # cannot get a pre-defined type for a CustomGroup
         CustomGroup.find_or_create_type(the_workspace)
 
-    group_type = GroupType.create_custom(the_workspace, "test custom", "test custom description")
+    group_type = GroupType.create_custom(
+        the_workspace, "test custom", "test custom description"
+    )
     assert group_type.name == "test custom"
     assert group_type.description == "test custom description"
 
