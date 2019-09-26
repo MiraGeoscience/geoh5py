@@ -29,9 +29,9 @@ class ObjectBase(Entity):
 
     @classmethod
     @abstractmethod
-    def static_type_uid(cls) -> uuid.UUID:
+    def default_type_uid(cls) -> uuid.UUID:
         ...
 
     @classmethod
-    def static_class_id(cls) -> Optional[uuid.UUID]:
+    def default_class_id(cls) -> Optional[uuid.UUID]:
         return None

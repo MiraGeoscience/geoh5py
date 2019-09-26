@@ -4,7 +4,7 @@ from .object_base import ObjectBase, ObjectType
 
 
 class Grid2D(ObjectBase):
-    __type_uid = uuid.UUID("{48f5054a-1c5c-4ca4-9048-80f36dc60a06}")
+    __TYPE_UID = uuid.UUID("{48f5054a-1c5c-4ca4-9048-80f36dc60a06}")
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)
@@ -18,5 +18,5 @@ class Grid2D(ObjectBase):
         self.is_vertical = 0
 
     @classmethod
-    def static_type_uid(cls) -> uuid.UUID:
-        return cls.__type_uid
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID

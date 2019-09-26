@@ -45,7 +45,7 @@ class ObjectType(EntityType):
         :param object_class: An Object implementation class.
         :return: A new instance of ObjectType.
         """
-        type_uid = object_class.static_type_uid()
+        type_uid = object_class.default_type_uid()
         if type_uid is None:
             raise RuntimeError(
                 f"Cannot create GroupType with null UUID from {object_class.__name__}."
@@ -55,7 +55,7 @@ class ObjectType(EntityType):
         if object_type is not None:
             return object_type
 
-        class_id = object_class.static_class_id()
+        class_id = object_class.default_class_id()
         return cls(workspace, type_uid, class_id)
 
     @staticmethod

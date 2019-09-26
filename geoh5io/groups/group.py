@@ -33,18 +33,18 @@ class Group(Entity):
 
     @classmethod
     @abstractmethod
-    def static_type_uid(cls) -> uuid.UUID:
+    def default_type_uid(cls) -> uuid.UUID:
         ...
 
     @classmethod
-    def static_class_id(cls) -> Optional[uuid.UUID]:
+    def default_class_id(cls) -> Optional[uuid.UUID]:
         return None
 
     @classmethod
     @abstractmethod
-    def static_type_name(cls) -> Optional[str]:
+    def default_type_name(cls) -> Optional[str]:
         ...
 
     @classmethod
-    def static_type_description(cls) -> Optional[str]:
-        return cls.static_type_name()
+    def default_type_description(cls) -> Optional[str]:
+        return cls.default_type_name()

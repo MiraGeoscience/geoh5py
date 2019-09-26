@@ -63,13 +63,13 @@ class GroupType(EntityType):
         :param group_class: An Group implementation class.
         :return: A new instance of GroupType.
         """
-        type_uid = group_class.static_type_uid()
+        type_uid = group_class.default_type_uid()
         if type_uid is None or type_uid.int == 0:
             raise RuntimeError(
                 f"Cannot create GroupType with null UUID from {group_class.__name__}."
             )
 
-        class_id = group_class.static_class_id()
+        class_id = group_class.default_class_id()
         # TODO: class_id might differ from type uuid
         group_type = cls.find(workspace, type_uid)
         if group_type is not None:
@@ -78,8 +78,8 @@ class GroupType(EntityType):
         return cls(
             workspace,
             type_uid,
-            group_class.static_type_name(),
-            group_class.static_type_description(),
+            group_class.default_type_name(),
+            group_class.default_type_description(),
             class_id,
         )
 

@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
     Callable,
+    ClassVar,
     Dict,
     Iterable,
     List,
@@ -28,9 +29,8 @@ WeakRefDuckType = Union[weakref.ReferenceType, Callable[[], Optional["Workspace"
 
 
 class Workspace:
-    __workspace_root_name = "Workspace"
 
-    _active_ref: WeakRefDuckType = type(None)
+    _active_ref: ClassVar[WeakRefDuckType] = type(None)
 
     def __init__(self, root: RootGroup = None):
         self.version = None

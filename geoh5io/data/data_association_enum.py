@@ -1,7 +1,7 @@
-from enum import IntEnum
+from enum import Enum
 
 
-class DataAssociationEnum(IntEnum):
+class DataAssociationEnum(Enum):
     UNKNOWN = 0
     OBJECT = 1
     CELL = 2

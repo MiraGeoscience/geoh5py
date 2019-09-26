@@ -25,11 +25,11 @@ def test_object_instantiation(object_class: Type[ObjectBase]):
     object_type = object_class.find_or_create_type(the_workspace)
     isinstance(object_type, ObjectType)
     assert object_type.workspace is the_workspace
-    assert object_type.uid == object_class.static_type_uid()
-    if object_class.static_class_id() is None:
+    assert object_type.uid == object_class.default_type_uid()
+    if object_class.default_class_id() is None:
         assert object_type.class_id == object_type.uid
     else:
-        assert object_type.class_id == object_class.static_class_id()
+        assert object_type.class_id == object_class.default_class_id()
 
     created_object = object_class(object_type, "test")
     assert created_object.uid is not None
