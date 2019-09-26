@@ -8,13 +8,14 @@ from typing import (
     Callable,
     ClassVar,
     Dict,
-    List,
     Optional,
     Type,
     Union,
     ValuesView,
     cast,
 )
+
+from geoh5io.io import H5Reader
 
 from .root_group import RootGroup
 
@@ -33,9 +34,14 @@ class Workspace:
     _active_ref: ClassVar[WeakRefDuckType] = type(None)
 
     def __init__(self, root: RootGroup = None):
-        self.version = None
-        self._distance_unit = None
-        self._contributors: List[str] = []
+        self._project_attributes: Dict = {
+            "version": None,
+            "distance_unit": None,
+            "contributors": [],
+        }
+        self._base = "GEOSCIENCE"
+        self._h5file = None
+        self._h5reader = H5Reader()
 
         # TODO: store values as weak references
         self._types: Dict[uuid.UUID, entity_type.EntityType] = {}
@@ -44,6 +50,22 @@ class Workspace:
         self._data: Dict[uuid.UUID, data.Data] = {}
 
         self._root = root if root is not None else RootGroup(self)
+
+    @property
+    def h5reader(self) -> H5Reader:
+
+        if getattr(self, "_h5reader", None) is None:
+            self._h5reader = H5Reader(h5file=self._h5file)
+
+        return self._h5reader
+
+    @property
+    def version(self):
+
+        if getattr(self, "_project_attributes", None) is None:
+            self._project_attributes = self._h5reader.get_project_attributes()
+
+        return self._project_attributes["version"]
 
     @property
     def root(self) -> "group.Group":
@@ -73,21 +95,22 @@ class Workspace:
         # so that type check does not complain of possible returned None
         return cast(Workspace, active_one)
 
-    def register_type(self, entity_type: "entity_type.EntityType"):
+    # pylint: disable=redefined-outer-name
+    def register_type(self, staged_type: "entity_type.EntityType"):
         # TODO: raise exception if it does already exists
-        self._types[entity_type.uid] = entity_type
+        self._types[staged_type.uid] = staged_type
 
-    def register_group(self, group: "group.Group"):
+    def register_group(self, staged_group: "group.Group"):
         # TODO: raise exception if it does already exists
-        self._groups[group.uid] = group
+        self._groups[staged_group.uid] = staged_group
 
-    def register_data(self, data: "data.Data"):
+    def register_data(self, staged_data: "data.Data"):
         # TODO: raise exception if it does already exists
-        self._data[data.uid] = data
+        self._data[staged_data.uid] = staged_data
 
-    def register_object(self, obj: "object_base.ObjectBase"):
+    def register_object(self, staged_object: "object_base.ObjectBase"):
         # TODO: raise exception if it does already exists
-        self._objects[obj.uid] = obj
+        self._objects[staged_object.uid] = staged_object
 
     def find_type(
         self, type_uid: uuid.UUID, type_class: Type["entity_type.EntityType"]
@@ -115,6 +138,23 @@ class Workspace:
 
     def find_data(self, data_uid: uuid.UUID) -> Optional["data.Data"]:
         return self._data.get(data_uid, None)
+
+    # @property
+    # def project_attributes(self):
+    #
+    #     if getattr(self, "_project_attrs", None) is None:
+    #         self._version = H5Reader.get_project_attributes(self._h5file, self._base)
+    #
+    #     return self._project_attrs
+
+    @property
+    def h5file(self) -> str:
+        assert self._h5file is not None, "The 'h5file' property name must be set"
+        return self._h5file
+
+    # @h5file.setter
+    # def h5file(self, h5file: str):
+    #     self._h5file = h5file
 
 
 @contextmanager
