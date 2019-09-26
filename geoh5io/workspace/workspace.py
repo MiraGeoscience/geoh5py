@@ -150,9 +150,9 @@ class Workspace:
         assert self._h5file is not None, "The 'h5file' property name must be set"
         return self._h5file
 
-    # @h5file.setter
-    # def h5file(self, h5file: Optional[str] = None):
-    #     self._h5file = h5file
+    @h5file.setter
+    def h5file(self, h5file):
+        self._h5file = h5file
 
 
 @contextmanager
