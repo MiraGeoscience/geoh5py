@@ -3,7 +3,7 @@ from .date_time import DateTime
 from .distance_unit import DistanceUnit
 from .entity import Entity
 from .file_name import FileName
-from .type import EntityType
+from .entity_type import EntityType
 from .version_number import VersionNumber
 from .version_string import VersionString
 from .vertex_index import VertexIndex

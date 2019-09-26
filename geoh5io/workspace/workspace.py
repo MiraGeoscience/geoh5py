@@ -9,7 +9,7 @@ from .root_group import RootGroup
 
 if TYPE_CHECKING:
     from geoh5io.objects import object
-    from geoh5io.shared import type as entity_type
+    from geoh5io.shared import entity_type
     from geoh5io.shared import group
 
 
