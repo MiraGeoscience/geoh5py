@@ -9,7 +9,7 @@ from geoh5io.workspace import Workspace
 
 
 def all_data_types():
-    for name, obj in inspect.getmembers(data):
+    for _, obj in inspect.getmembers(data):
         if inspect.isclass(obj) and issubclass(obj, Data) and obj is not Data:
             yield obj
 
