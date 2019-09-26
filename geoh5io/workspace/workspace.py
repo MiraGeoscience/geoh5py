@@ -8,11 +8,11 @@ from typing import (
     Callable,
     ClassVar,
     Dict,
-    Iterable,
     List,
     Optional,
     Type,
     Union,
+    ValuesView,
     cast,
 )
 
@@ -37,7 +37,7 @@ class Workspace:
         self._distance_unit = None
         self._contributors: List[str] = []
 
-        # TODO: use weak ref dict
+        # TODO: store values as weak references
         self._types: Dict[uuid.UUID, entity_type.EntityType] = {}
         self._groups: Dict[uuid.UUID, group.Group] = {}
         self._objects: Dict[uuid.UUID, object_base.ObjectBase] = {}
@@ -77,6 +77,18 @@ class Workspace:
         # TODO: raise exception if it does already exists
         self._types[entity_type.uid] = entity_type
 
+    def register_group(self, group: "group.Group"):
+        # TODO: raise exception if it does already exists
+        self._groups[group.uid] = group
+
+    def register_data(self, data: "data.Data"):
+        # TODO: raise exception if it does already exists
+        self._data[data.uid] = data
+
+    def register_object(self, obj: "object_base.ObjectBase"):
+        # TODO: raise exception if it does already exists
+        self._objects[obj.uid] = obj
+
     def find_type(
         self, type_uid: uuid.UUID, type_class: Type["entity_type.EntityType"]
     ) -> Optional["entity_type.EntityType"]:
@@ -86,19 +98,19 @@ class Workspace:
 
         return None
 
-    def all_groups(self) -> Iterable["group.Group"]:
+    def all_groups(self) -> ValuesView["group.Group"]:
         return self._groups.values()
 
     def find_group(self, group_uid: uuid.UUID) -> Optional["group.Group"]:
         return self._groups.get(group_uid, None)
 
-    def all_objects(self) -> Iterable["object_base.ObjectBase"]:
+    def all_objects(self) -> ValuesView["object_base.ObjectBase"]:
         return self._objects.values()
 
     def find_object(self, object_uid: uuid.UUID) -> Optional["object_base.ObjectBase"]:
         return self._objects.get(object_uid, None)
 
-    def all_data(self) -> Iterable["data.Data"]:
+    def all_data(self) -> ValuesView["data.Data"]:
         return self._data.values()
 
     def find_data(self, data_uid: uuid.UUID) -> Optional["data.Data"]:

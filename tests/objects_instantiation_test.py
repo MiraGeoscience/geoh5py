@@ -31,11 +31,18 @@ def test_object_instantiation(object_class: Type[ObjectBase]):
     else:
         assert object_type.class_id == object_class.default_class_id()
 
+    assert the_workspace.find_type(object_type.uid, ObjectType) is object_type
+
     created_object = object_class(object_type, "test")
     assert created_object.uid is not None
     assert created_object.uid.int != 0
     assert created_object.name == "test"
     assert created_object.entity_type is object_type
+
+    all_objects = the_workspace.all_objects()
+    assert len(all_objects) == 1
+    assert next(iter(all_objects)) is created_object
+    assert the_workspace.find_object(created_object.uid) is created_object
 
     # should find the type instead of re-creating one
     object_type2 = object_class.find_or_create_type(the_workspace)

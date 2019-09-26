@@ -61,12 +61,20 @@ def test_custom_group_instantiation():
     isinstance(group_type, GroupType)
     assert group_type.workspace is the_workspace
     assert group_type.class_id == group_type.uid
+    assert the_workspace.find_type(group_type.uid, GroupType) is group_type
 
     created_group = CustomGroup(group_type, "test custom group")
     assert created_group.uid is not None
     assert created_group.uid.int != 0
     assert created_group.name == "test custom group"
     assert created_group.entity_type is group_type
+
+    all_groups = the_workspace.all_groups()
+    assert len(all_groups) == 2
+    iter_all_groups = iter(all_groups)
+    assert next(iter_all_groups) in [created_group, the_workspace.root]
+    assert next(iter_all_groups) in [created_group, the_workspace.root]
+    assert the_workspace.find_group(created_group.uid) is created_group
 
     # should be able find the group type again
     assert group_type is GroupType.find(the_workspace, group_type.uid)

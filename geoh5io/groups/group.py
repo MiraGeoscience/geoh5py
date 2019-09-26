@@ -18,6 +18,7 @@ class Group(Entity):
         self._type = group_type
         self._allow_move = True
         self._clipping_ids: List[uuid.UUID] = []
+        group_type.workspace.register_group(self)
 
     @property
     def entity_type(self) -> GroupType:

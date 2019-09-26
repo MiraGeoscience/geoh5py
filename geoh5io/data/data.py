@@ -20,6 +20,7 @@ class Data(Entity):
         super().__init__(name, uid)
         self._association = association
         self._type = data_type
+        data_type.workspace.register_data(self)
 
     @property
     def association(self) -> DataAssociationEnum:
