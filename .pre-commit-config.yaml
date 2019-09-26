@@ -37,7 +37,7 @@ repos:
         entry: poetry run pylint
         language: system
         types: [python]
-        exclude: ^doc/
+        exclude: ^doc/|^geoh5io/handlers/
 -   repo: https://github.com/codespell-project/codespell
     rev: v1.16.0
     hooks:
