@@ -10,7 +10,7 @@ from .primitive_type_enum import PrimitiveTypeEnum
 
 if TYPE_CHECKING:
     from geoh5io import workspace
-    from . import data
+    from . import data  # noqa: F401
 
 
 class DataType(EntityType):

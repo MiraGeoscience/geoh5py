@@ -7,7 +7,7 @@ from geoh5io.shared import EntityType
 
 if TYPE_CHECKING:
     from geoh5io import workspace
-    from . import group
+    from . import group  # noqa: F401
 
 
 class GroupType(EntityType):

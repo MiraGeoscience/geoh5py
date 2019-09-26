@@ -7,7 +7,7 @@ from geoh5io.shared import EntityType
 
 if TYPE_CHECKING:
     from geoh5io import workspace
-    from . import object_base
+    from . import object_base  # noqa: F401
 
 
 class ObjectType(EntityType):

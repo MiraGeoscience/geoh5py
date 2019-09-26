@@ -115,4 +115,4 @@ def active_workspace(workspace: Workspace):
     # restore previous active workspace when leaving the context
     previous_active = previous_active_ref()
     if previous_active is not None:
-        previous_active.activate()
+        previous_active.activate()  # pylint: disable=no-member

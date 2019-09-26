@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-from .group import Group, GroupType
+from .group import Group
 
 
 class CustomGroup(Group):
