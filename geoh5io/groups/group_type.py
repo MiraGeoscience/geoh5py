@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Optional, Type, cast
+from typing import TYPE_CHECKING, Type
 
 from geoh5io.shared import EntityType
 
@@ -11,13 +11,22 @@ if TYPE_CHECKING:
 
 
 class GroupType(EntityType):
-
-    def __init__(self, workspace: 'workspace.Workspace', uid: uuid.UUID, name=None, description=None,
-                 class_id: uuid.UUID = None):
+    def __init__(
+        self,
+        workspace: "workspace.Workspace",
+        uid: uuid.UUID,
+        name=None,
+        description=None,
+        class_id: uuid.UUID = None,
+    ):
         super().__init__(workspace, uid, name, description)
         self._class_id = class_id
         self._allow_move_content = True
         self._allow_delete_content = True
+
+    @staticmethod
+    def _is_abstract() -> bool:
+        return False
 
     @property
     def allow_move_content(self) -> bool:
@@ -36,16 +45,14 @@ class GroupType(EntityType):
         self._allow_delete_content = bool(allow)
 
     @property
-    def class_id(self) -> Optional[uuid.UUID]:
-        return self._class_id
+    def class_id(self) -> uuid.UUID:
+        """ If class ID was not set, defaults to this type UUID."""
+        return self._class_id if self._class_id is not None else self.uid
 
     @classmethod
-    def find(cls, workspace: 'workspace.Workspace', type_uid: uuid.UUID) -> Optional[GroupType]:
-        return cast(GroupType, workspace.find_type(type_uid, cls))
-
-    @classmethod
-    def find_or_create(cls, workspace: 'workspace.Workspace', group_class: Type["group.Group"]) -> \
-            GroupType:
+    def find_or_create(
+        cls, workspace: "workspace.Workspace", group_class: Type["group.Group"]
+    ) -> GroupType:
         """ Find or creates the GroupType with the class_id from the given Group
         implementation class.
 
@@ -56,26 +63,30 @@ class GroupType(EntityType):
         :param group_class: An Group implementation class.
         :return: A new instance of GroupType.
         """
-        class_id = group_class.static_class_id()
-        if class_id is None:
+        type_uid = group_class.static_type_uid()
+        if type_uid is None or type_uid.int == 0:
             raise RuntimeError(
                 f"Cannot create GroupType with null UUID from {group_class.__name__}."
             )
 
-        group_type = cls.find(workspace, class_id)
+        class_id = group_class.static_class_id()
+        # TODO: class_id might differ from type uuid
+        group_type = cls.find(workspace, type_uid)
         if group_type is not None:
             return group_type
 
         return cls(
             workspace,
-            class_id,
+            type_uid,
             group_class.static_type_name(),
             group_class.static_type_description(),
             class_id,
         )
 
     @staticmethod
-    def create_custom(workspace: 'workspace.Workspace', name=None, description=None) -> GroupType:
+    def create_custom(
+        workspace: "workspace.Workspace", name=None, description=None
+    ) -> GroupType:
         """ Creates a new instance of GroupType for an unlisted custom Group type with a
         new auto-generated UUID.
 

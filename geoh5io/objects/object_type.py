@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Optional, Type, cast
+from typing import TYPE_CHECKING, Type
 
 from geoh5io.shared import EntityType
 
@@ -11,17 +11,28 @@ if TYPE_CHECKING:
 
 
 class ObjectType(EntityType):
-    def __init__(self, workspace: 'workspace.Workspace', uid: uuid.UUID, class_id: uuid.UUID):
+    def __init__(
+        self,
+        workspace: "workspace.Workspace",
+        uid: uuid.UUID,
+        class_id: uuid.UUID = None,
+    ):
         super().__init__(workspace, uid)
         self._class_id = class_id
 
-    @classmethod
-    def find(cls, workspace: 'workspace.Workspace', type_uid: uuid.UUID) -> Optional[ObjectType]:
-        return cast(ObjectType, workspace.find_type(type_uid, cls))
+    @staticmethod
+    def _is_abstract() -> bool:
+        return False
+
+    @property
+    def class_id(self) -> uuid.UUID:
+        """ If class ID was not set, defaults to this type UUID."""
+        return self._class_id if self._class_id is not None else self.uid
 
     @classmethod
-    def find_or_create(cls, workspace: 'workspace.Workspace',
-                       object_class: Type["object.Object"])-> ObjectType:
+    def find_or_create(
+        cls, workspace: "workspace.Workspace", object_class: Type["object.Object"]
+    ) -> ObjectType:
         """ Find or creates the ObjectType with the class_id from the given Object
         implementation class.
 
@@ -32,20 +43,21 @@ class ObjectType(EntityType):
         :param object_class: An Object implementation class.
         :return: A new instance of ObjectType.
         """
-        class_id = object_class.static_class_id()
-        if class_id is None:
+        type_uid = object_class.static_type_uid()
+        if type_uid is None:
             raise RuntimeError(
                 f"Cannot create GroupType with null UUID from {object_class.__name__}."
             )
 
-        object_type = cls.find(workspace, class_id)
+        object_type = cls.find(workspace, type_uid)
         if object_type is not None:
             return object_type
 
-        return cls(workspace, class_id, class_id)
+        class_id = object_class.static_class_id()
+        return cls(workspace, type_uid, class_id)
 
     @staticmethod
-    def create_custom(workspace: 'workspace.Workspace') -> ObjectType:
+    def create_custom(workspace: "workspace.Workspace") -> ObjectType:
         """ Creates a new instance of ObjectType for an unlisted custom Object type with a
         new auto-generated UUID.
 

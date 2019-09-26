@@ -25,7 +25,8 @@ class Data(Entity):
     def association(self) -> DataAssociationEnum:
         return self._association
 
-    def get_type(self) -> DataType:
+    @property
+    def entity_type(self) -> DataType:
         return self._type
 
     @classmethod

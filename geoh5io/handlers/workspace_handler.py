@@ -1,12 +1,12 @@
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from geoh5io import interfaces
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from geoh5io.interfaces.workspace import Workspace as i_Workspace
     from geoh5io.interfaces.shared import Uuid as i_Uuid
     from geoh5io.interfaces.shared import VersionString as i_VersionString
+
 
 class WorkspaceHandler:
     @staticmethod
@@ -25,23 +25,16 @@ class WorkspaceHandler:
         # TODO
         return interfaces.workspace.Workspace()
 
-    def save(
-        self, file_path: str, overwrite_file: bool
-    ) -> i_Workspace:
+    def save(self, file_path: str, overwrite_file: bool) -> i_Workspace:
         # TODO
         pass
 
-    def save_copy(
-        self, file_path: str, overwrite_file: bool
-    ) -> i_Workspace:
+    def save_copy(self, file_path: str, overwrite_file: bool) -> i_Workspace:
         # TODO
         pass
 
     def export_objects(
-        self,
-        objects_or_groups: List[i_Uuid],
-        file_path: str,
-        overwrite_file: bool,
+        self, objects_or_groups: List[i_Uuid], file_path: str, overwrite_file: bool
     ) -> i_Workspace:
         # TODO
         pass

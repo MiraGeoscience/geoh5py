@@ -1,16 +1,17 @@
 import uuid
 
-from .object import Object
+from .object import Object, ObjectType
 
 
 class Curve(Object):
-    __class_id = uuid.UUID("{6A057FDC-B355-11E3-95BE-FD84A7FFCB88}")
+    __type_uid = uuid.UUID("{6A057FDC-B355-11E3-95BE-FD84A7FFCB88}")
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
+        super().__init__(object_type, name, uid)
+        # TODO
         self.vertices = []
         self.cells = []
 
     @classmethod
-    def static_class_id(cls) -> uuid.UUID:
-        return cls.__class_id
+    def static_type_uid(cls) -> uuid.UUID:
+        return cls.__type_uid

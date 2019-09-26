@@ -1,7 +1,7 @@
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
-from geoh5io.workspace import Workspace
 from geoh5io import interfaces
+from geoh5io.workspace import Workspace
 
 if TYPE_CHECKING:
     from geoh5io.interfaces.data import Data as i_Data
@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from geoh5io.interfaces.data import ReferencedValues as i_ReferencedValues
     from geoh5io.interfaces.data import DataSlab as i_DataSlab
     from geoh5io.interfaces.shared import Uuid as i_Uuid
+
 
 class DataHandler:
     @staticmethod
@@ -28,21 +29,15 @@ class DataHandler:
         # TODO
         return interfaces.shared.Uuid()
 
-    def get_float_values(
-        self, data: i_Uuid, slab: i_DataSlab
-    ) -> List[float]:
+    def get_float_values(self, data: i_Uuid, slab: i_DataSlab) -> List[float]:
         # TODO
         pass
 
-    def get_integer_values(
-        self, data: i_Uuid, slab: i_DataSlab
-    ) -> List[int]:
+    def get_integer_values(self, data: i_Uuid, slab: i_DataSlab) -> List[int]:
         # TODO
         pass
 
-    def get_text_values(
-        self, data: i_Uuid, slab: i_DataSlab
-    ) -> List[str]:
+    def get_text_values(self, data: i_Uuid, slab: i_DataSlab) -> List[str]:
         # TODO
         pass
 
@@ -52,15 +47,11 @@ class DataHandler:
         # TODO
         pass
 
-    def get_datetime_values(
-        self, data: i_Uuid, slab: i_DataSlab
-    ) -> List[str]:
+    def get_datetime_values(self, data: i_Uuid, slab: i_DataSlab) -> List[str]:
         # TODO
         pass
 
-    def get_filename_values(
-        self, data: i_Uuid, slab: i_DataSlab
-    ) -> List[str]:
+    def get_filename_values(self, data: i_Uuid, slab: i_DataSlab) -> List[str]:
         # TODO
         pass
 
@@ -68,9 +59,7 @@ class DataHandler:
         # TODO
         pass
 
-    def get_blob_values(
-        self, data: i_Uuid, slab: i_DataSlab
-    ) -> List[int]:
+    def get_blob_values(self, data: i_Uuid, slab: i_DataSlab) -> List[int]:
         # TODO
         pass
 
@@ -82,9 +71,7 @@ class DataHandler:
         # TODO
         pass
 
-    def find_types(
-        self, query: i_DataTypeQuery
-    ) -> List[i_DataType]:
+    def find_types(self, query: i_DataTypeQuery) -> List[i_DataType]:
         # TODO
         pass
 
@@ -92,27 +79,19 @@ class DataHandler:
         # TODO
         pass
 
-    def set_public(
-        self, entities: List[i_Uuid], is_public: bool
-    ) -> None:
+    def set_public(self, entities: List[i_Uuid], is_public: bool) -> None:
         # TODO
         pass
 
-    def set_visible(
-        self, entities: List[i_Uuid], visible: bool
-    ) -> None:
+    def set_visible(self, entities: List[i_Uuid], visible: bool) -> None:
         # TODO
         pass
 
-    def set_allow_delete(
-        self, entities: List[i_Uuid], allow: bool
-    ) -> None:
+    def set_allow_delete(self, entities: List[i_Uuid], allow: bool) -> None:
         # TODO
         pass
 
-    def set_allow_rename(
-        self, entities: List[i_Uuid], allow: bool
-    ) -> None:
+    def set_allow_rename(self, entities: List[i_Uuid], allow: bool) -> None:
         # TODO
         pass
 

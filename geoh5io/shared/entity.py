@@ -8,7 +8,11 @@ if TYPE_CHECKING:
 
 class Entity(ABC):
     def __init__(self, name: str, uid: uuid.UUID = None):
-        self._uid = uid if uid is not None else uuid.uuid4()
+        if uid is not None:
+            assert uid.int != 0
+            self._uid = uid
+        else:
+            self._uid = uuid.uuid4()
         self._name = self.fix_up_name(name)
         self._visible = True
         self._allow_delete = True
@@ -53,6 +57,7 @@ class Entity(ABC):
         #  (possibly it has to be abstract with different implementations per Entity type)
         return name
 
+    @property
     @abstractmethod
-    def get_type(self) -> "shared.EntityType":
+    def entity_type(self) -> "shared.EntityType":
         ...

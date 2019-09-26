@@ -1,4 +1,4 @@
-from typing import Dict, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List
 
 from geoh5io import interfaces
 
@@ -14,7 +14,9 @@ if TYPE_CHECKING:
     from geoh5io.interfaces.objects import GeoImage as i_GeoImage
     from geoh5io.interfaces.objects import Octree as i_Octree
     from geoh5io.interfaces.objects import Label as i_Label
-    from geoh5io.interfaces.objects import GeometryTransformation as i_GeometryTransformation
+    from geoh5io.interfaces.objects import (
+        GeometryTransformation as i_GeometryTransformation,
+    )
     from geoh5io.interfaces.shared import Uuid as i_Uuid
 
 # pylint: disable=too-many-public-methods
@@ -33,23 +35,15 @@ class ObjectsHandler:
         # return geoh5io.workspace.Workspace.instance().all_objects()
         return []
 
-    def find(
-        self, query: i_ObjectQuery
-    ) -> List[i_Object]:
+    def find(self, query: i_ObjectQuery) -> List[i_Object]:
         # TODO
         pass
 
-    def set_allow_move(
-        self, objects: List[i_Uuid], allow: bool
-    ) -> None:
+    def set_allow_move(self, objects: List[i_Uuid], allow: bool) -> None:
         # TODO
         pass
 
-    def move_to_group(
-        self,
-        objects: List[i_Uuid],
-        destination_group: i_Uuid,
-    ) -> None:
+    def move_to_group(self, objects: List[i_Uuid], destination_group: i_Uuid) -> None:
         # TODO
         pass
 
@@ -73,15 +67,11 @@ class ObjectsHandler:
         # TODO
         pass
 
-    def narrow_drillhole(
-        self, uid: i_Uuid
-    ) -> i_Drillhole:
+    def narrow_drillhole(self, uid: i_Uuid) -> i_Drillhole:
         # TODO
         pass
 
-    def narrow_blockmodel(
-        self, uid: i_Uuid
-    ) -> i_BlockModel:
+    def narrow_blockmodel(self, uid: i_Uuid) -> i_BlockModel:
         # TODO
         pass
 
@@ -89,9 +79,7 @@ class ObjectsHandler:
         # TODO
         pass
 
-    def narrow_geoimage(
-        self, uid: i_Uuid
-    ) -> i_GeoImage:
+    def narrow_geoimage(self, uid: i_Uuid) -> i_GeoImage:
         # TODO
         pass
 
@@ -110,34 +98,24 @@ class ObjectsHandler:
         pass
 
     def transform(
-        self,
-        objects: List[i_Uuid],
-        transformation: i_GeometryTransformation,
+        self, objects: List[i_Uuid], transformation: i_GeometryTransformation
     ) -> None:
         # TODO
         pass
 
-    def set_public(
-        self, entities: List[i_Uuid], is_public: bool
-    ) -> None:
+    def set_public(self, entities: List[i_Uuid], is_public: bool) -> None:
         # TODO
         pass
 
-    def set_visible(
-        self, entities: List[i_Uuid], visible: bool
-    ) -> None:
+    def set_visible(self, entities: List[i_Uuid], visible: bool) -> None:
         # TODO
         pass
 
-    def set_allow_delete(
-        self, entities: List[i_Uuid], allow: bool
-    ) -> None:
+    def set_allow_delete(self, entities: List[i_Uuid], allow: bool) -> None:
         # TODO
         pass
 
-    def set_allow_rename(
-        self, entities: List[i_Uuid], allow: bool
-    ) -> None:
+    def set_allow_rename(self, entities: List[i_Uuid], allow: bool) -> None:
         # TODO
         pass
 

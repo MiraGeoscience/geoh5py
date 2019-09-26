@@ -1,34 +1,30 @@
-from typing import List
+from typing import TYPE_CHECKING, List
 
-from geoh5io.workspace import Workspace
 from geoh5io import interfaces
-
-from typing import TYPE_CHECKING
+from geoh5io.workspace import Workspace
 
 if TYPE_CHECKING:
     from geoh5io.interfaces.groups import Group as i_Group
     from geoh5io.interfaces.groups import GroupQuery as i_GroupQuery
     from geoh5io.interfaces.shared import Uuid as i_Uuid
 
+
 class GroupsHandler:
     @staticmethod
     def get_root() -> i_Group:
         root = Workspace.active().root
 
-        root_entity =  interfaces.shared.Entity(
-            uid = interfaces.shared.Uuid(str(root.uid)),
-            type_uid = root.get_type().name,
-            name = root.name,
-            visible = root.visible,
-            allow_delete = root.allow_delete,
-            allow_rename = root.allow_rename,
-            is_public = root.is_public
+        root_entity = interfaces.shared.Entity(
+            uid=interfaces.shared.Uuid(str(root.uid)),
+            type_uid=interfaces.shared.Uuid(str(root.entity_type.uid)),
+            name=root.name,
+            visible=root.visible,
+            allow_delete=root.allow_delete,
+            allow_rename=root.allow_rename,
+            is_public=root.is_public,
         )
 
-        return interfaces.groups.Group(
-            entity_ = root_entity,
-            allow_move = root.allow_move
-        )
+        return interfaces.groups.Group(entity_=root_entity, allow_move=root.allow_move)
 
     def get_type(self, group_class: int) -> i_Uuid:
         # TODO
@@ -44,9 +40,7 @@ class GroupsHandler:
         # return geoh5io.workspace.Workspace.instance().all_groups()
         return []
 
-    def find(
-        self, query: i_GroupQuery
-    ) -> List[i_Group]:
+    def find(self, query: i_GroupQuery) -> List[i_Group]:
         # TODO
         pass
 
@@ -54,11 +48,7 @@ class GroupsHandler:
         # TODO
         pass
 
-    def move_to_group(
-        self,
-        groups: List[i_Uuid],
-        destination_group: i_Uuid,
-    ) -> None:
+    def move_to_group(self, groups: List[i_Uuid], destination_group: i_Uuid) -> None:
         # TODO
         pass
 
@@ -66,27 +56,19 @@ class GroupsHandler:
         # TODO
         pass
 
-    def set_public(
-        self, entities: List[i_Uuid], is_public: bool
-    ) -> None:
+    def set_public(self, entities: List[i_Uuid], is_public: bool) -> None:
         # TODO
         pass
 
-    def set_visible(
-        self, entities: List[i_Uuid], visible: bool
-    ) -> None:
+    def set_visible(self, entities: List[i_Uuid], visible: bool) -> None:
         # TODO
         pass
 
-    def set_allow_delete(
-        self, entities: List[i_Uuid], allow: bool
-    ) -> None:
+    def set_allow_delete(self, entities: List[i_Uuid], allow: bool) -> None:
         # TODO
         pass
 
-    def set_allow_rename(
-        self, entities: List[i_Uuid], allow: bool
-    ) -> None:
+    def set_allow_rename(self, entities: List[i_Uuid], allow: bool) -> None:
         # TODO
         pass
 

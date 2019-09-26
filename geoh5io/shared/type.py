@@ -1,25 +1,42 @@
 from __future__ import annotations
 
-import weakref
 import uuid
+import weakref
 from abc import ABC, abstractmethod
-from typing import Optional
-from geoh5io import workspace
+from typing import TYPE_CHECKING, Optional, Type, TypeVar, cast
+
+if TYPE_CHECKING:
+    from geoh5io import workspace
+
+TEntityType = TypeVar("TEntityType", bound="EntityType")
 
 
 class EntityType(ABC):
-    def __init__(self, workspace: 'workspace.Workspace',
-                 uid: uuid.UUID, name: str = None, description: str = None):
+    def __init__(
+        self,
+        workspace: "workspace.Workspace",
+        uid: uuid.UUID,
+        name: str = None,
+        description: str = None,
+    ):
         assert workspace is not None
-        assert uid is not None and uid.int != 0
+        assert uid is not None
+        assert uid.int != 0
+
         self._workspace = weakref.ref(workspace)
         self._uid = uid
         self._name = name
         self._description = description
         workspace.register_type(self)
 
+    @staticmethod
+    @abstractmethod
+    def _is_abstract() -> bool:
+        """ Trick to prevent from instantiating abstract base class. """
+        return True
+
     @property
-    def workspace(self) -> 'workspace.Workspace':
+    def workspace(self) -> "workspace.Workspace":
         """ Return the workspace which owns this type. """
         workspace = self._workspace()
 
@@ -41,11 +58,12 @@ class EntityType(ABC):
         return self._description
 
     @classmethod
-    @abstractmethod
-    def find(cls, workspace: 'workspace.Workspace', type_uid: uuid.UUID) -> Optional[EntityType]:
+    def find(
+        cls: Type[TEntityType], workspace: "workspace.Workspace", type_uid: uuid.UUID
+    ) -> Optional[TEntityType]:
         """ Finds in the given Workspace the EntityType with the given UUID for
         this specific EntityType implementation class.
 
         Returns None if not found.
         """
-        ...
+        return cast(TEntityType, workspace.find_type(type_uid, cls))

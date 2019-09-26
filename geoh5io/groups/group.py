@@ -1,13 +1,13 @@
 import uuid
 from abc import abstractmethod
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 from geoh5io.shared import Entity
 
+from .group_type import GroupType
+
 if TYPE_CHECKING:
     from geoh5io import workspace
-
-from .group_type import GroupType
 
 
 class Group(Entity):
@@ -19,11 +19,12 @@ class Group(Entity):
         self._allow_move = True
         self._clipping_ids: List[uuid.UUID] = []
 
-    def get_type(self) -> GroupType:
+    @property
+    def entity_type(self) -> GroupType:
         return self._type
 
     @classmethod
-    def find_or_create_type(cls, workspace: 'workspace.Workspace') -> Optional[GroupType]:
+    def find_or_create_type(cls, workspace: "workspace.Workspace") -> GroupType:
         return GroupType.find_or_create(workspace, cls)
 
     @property
@@ -32,8 +33,12 @@ class Group(Entity):
 
     @classmethod
     @abstractmethod
-    def static_class_id(cls) -> Optional[uuid.UUID]:
+    def static_type_uid(cls) -> uuid.UUID:
         ...
+
+    @classmethod
+    def static_class_id(cls) -> Optional[uuid.UUID]:
+        return None
 
     @classmethod
     @abstractmethod
@@ -41,6 +46,5 @@ class Group(Entity):
         ...
 
     @classmethod
-    @abstractmethod
     def static_type_description(cls) -> Optional[str]:
-        ...
+        return cls.static_type_name()
