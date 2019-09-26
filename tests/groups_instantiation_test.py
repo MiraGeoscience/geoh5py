@@ -9,7 +9,7 @@ from geoh5io.workspace import Workspace
 
 
 def all_group_types():
-    for name, obj in inspect.getmembers(groups):
+    for _, obj in inspect.getmembers(groups):
         if (
             inspect.isclass(obj)
             and issubclass(obj, Group)
@@ -43,12 +43,12 @@ def test_group_instantiation(group_class: Type[Group]):
 
 
 def test_custom_group_instantiation():
-    with pytest.raises(RuntimeError) as error:
+    with pytest.raises(RuntimeError):
         assert CustomGroup.static_type_uid() is None
     assert CustomGroup.static_class_id() is None
 
     the_workspace = Workspace()
-    with pytest.raises(RuntimeError) as error:
+    with pytest.raises(RuntimeError):
         # cannot get a pre-defined type for a CustomGroup
         CustomGroup.find_or_create_type(the_workspace)
 

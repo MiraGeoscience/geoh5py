@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Optional, Type, TypeVar, cast
 
 if TYPE_CHECKING:
-    from geoh5io import workspace
+    from geoh5io import workspace as ws
 
 TEntityType = TypeVar("TEntityType", bound="EntityType")
 
@@ -14,7 +14,7 @@ TEntityType = TypeVar("TEntityType", bound="EntityType")
 class EntityType(ABC):
     def __init__(
         self,
-        workspace: "workspace.Workspace",
+        workspace: "ws.Workspace",
         uid: uuid.UUID,
         name: str = None,
         description: str = None,
@@ -36,7 +36,7 @@ class EntityType(ABC):
         return True
 
     @property
-    def workspace(self) -> "workspace.Workspace":
+    def workspace(self) -> "ws.Workspace":
         """ Return the workspace which owns this type. """
         workspace = self._workspace()
 
@@ -59,7 +59,7 @@ class EntityType(ABC):
 
     @classmethod
     def find(
-        cls: Type[TEntityType], workspace: "workspace.Workspace", type_uid: uuid.UUID
+        cls: Type[TEntityType], workspace: "ws.Workspace", type_uid: uuid.UUID
     ) -> Optional[TEntityType]:
         """ Finds in the given Workspace the EntityType with the given UUID for
         this specific EntityType implementation class.

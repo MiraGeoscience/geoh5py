@@ -1,3 +1,4 @@
+import uuid
 from typing import TYPE_CHECKING, List
 
 from geoh5io import interfaces
@@ -16,8 +17,8 @@ if TYPE_CHECKING:
 class DataHandler:
     @staticmethod
     def get_all() -> List[i_Data]:
-        # TODO: get from workspace
-        # return geoh5io.workspace.Workspace.instance().all_data()
+        Workspace.active().all_data()
+        # TODO
         return []
 
     def find(self, query: i_DataQuery) -> List[i_Data]:
@@ -25,9 +26,9 @@ class DataHandler:
         pass
 
     def get(self, uid: i_Uuid) -> i_Data:
-        Workspace.active().find_data()
+        Workspace.active().find_data(uuid.UUID(uid.id))
         # TODO
-        return interfaces.shared.Uuid()
+        return interfaces.data.Data()
 
     def get_float_values(self, data: i_Uuid, slab: i_DataSlab) -> List[float]:
         # TODO

@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from geoh5io.groups.group import Group
+from geoh5io.groups.group import Group, GroupType
 
 if TYPE_CHECKING:
     from geoh5io import workspace
@@ -16,8 +16,14 @@ class RootGroup(Group):
     __type_name = "NoType"
     __type_description = "<Unknown>"
 
-    def __init__(self, workspace: "workspace.Workspace", uid: uuid.UUID = None):
-        group_type = self.find_or_create_type(workspace)
+    def __init__(
+        self,
+        workspace: "workspace.Workspace",
+        group_type: GroupType = None,
+        uid: uuid.UUID = None,
+    ):
+        if group_type is None:
+            group_type = self.find_or_create_type(workspace)
         super().__init__(group_type, "Workspace", uid)
         self._allow_move = False
         self._allow_delete = False

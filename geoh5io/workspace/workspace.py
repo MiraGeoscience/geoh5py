@@ -3,14 +3,25 @@ from __future__ import annotations
 import uuid
 import weakref
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Callable, Dict, Optional, Type, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Type,
+    Union,
+    cast,
+)
 
 from .root_group import RootGroup
 
 if TYPE_CHECKING:
+    from geoh5io.groups import group
     from geoh5io.objects import object_base
+    from geoh5io.data import data
     from geoh5io.shared import entity_type
-    from geoh5io.shared import group
 
 
 WeakRefDuckType = Union[weakref.ReferenceType, Callable[[], Optional["Workspace"]]]
@@ -21,19 +32,18 @@ class Workspace:
 
     _active_ref: WeakRefDuckType = type(None)
 
-    def __init__(self, root: "group.Group" = None):
+    def __init__(self, root: RootGroup = None):
         self.version = None
         self._distance_unit = None
-        self._contributors = []
+        self._contributors: List[str] = []
 
         # TODO: use weak ref dict
+        self._types: Dict[uuid.UUID, entity_type.EntityType] = {}
         self._groups: Dict[uuid.UUID, group.Group] = {}
         self._objects: Dict[uuid.UUID, object_base.ObjectBase] = {}
-        self._types: Dict[uuid.UUID, entity_type.EntityType] = {}
+        self._data: Dict[uuid.UUID, data.Data] = {}
 
-        self._root = root
-        if self._root is None:
-            self._root = RootGroup(self)
+        self._root = root if root is not None else RootGroup(self)
 
     @property
     def root(self) -> "group.Group":
@@ -42,7 +52,7 @@ class Workspace:
     def activate(self):
         """ Makes this workspace the active one.
 
-            In case te workspace gets deleted, Workspace.active() safely returns None.
+            In case the workspace gets deleted, Workspace.active() safely returns None.
         """
         if Workspace._active_ref() is not self:
             Workspace._active_ref = weakref.ref(self)
@@ -76,8 +86,23 @@ class Workspace:
 
         return None
 
-    def find_any_object(self, object_uid: uuid.UUID) -> Optional["object_base.ObjectBase"]:
+    def all_groups(self) -> Iterable["group.Group"]:
+        return self._groups.values()
+
+    def find_group(self, group_uid: uuid.UUID) -> Optional["group.Group"]:
+        return self._groups.get(group_uid, None)
+
+    def all_objects(self) -> Iterable["object_base.ObjectBase"]:
+        return self._objects.values()
+
+    def find_object(self, object_uid: uuid.UUID) -> Optional["object_base.ObjectBase"]:
         return self._objects.get(object_uid, None)
+
+    def all_data(self) -> Iterable["data.Data"]:
+        return self._data.values()
+
+    def find_data(self, data_uid: uuid.UUID) -> Optional["data.Data"]:
+        return self._data.get(data_uid, None)
 
 
 @contextmanager

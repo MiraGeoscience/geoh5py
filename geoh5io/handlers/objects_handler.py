@@ -1,6 +1,8 @@
+import uuid
 from typing import TYPE_CHECKING, Dict, List
 
 from geoh5io import interfaces
+from geoh5io.workspace import Workspace
 
 if TYPE_CHECKING:
     from geoh5io.interfaces.objects import Object as i_Object
@@ -19,6 +21,7 @@ if TYPE_CHECKING:
     )
     from geoh5io.interfaces.shared import Uuid as i_Uuid
 
+
 # pylint: disable=too-many-public-methods
 class ObjectsHandler:
     def get_type(self, object_class: int) -> i_Uuid:
@@ -31,8 +34,8 @@ class ObjectsHandler:
 
     @staticmethod
     def get_all() -> List[i_Object]:
-        # TODO: get from workspace
-        # return geoh5io.workspace.Workspace.instance().all_objects()
+        Workspace.active().all_data()
+        # TODO
         return []
 
     def find(self, query: i_ObjectQuery) -> List[i_Object]:
@@ -48,8 +51,9 @@ class ObjectsHandler:
         pass
 
     def get(self, uid: i_Uuid) -> i_Object:
+        Workspace.active().find_object(uuid.UUID(uid.id))
         # TODO
-        pass
+        return interfaces.objects.Object()
 
     def narrow_points(self, uid: i_Uuid) -> i_Points:
         # TODO

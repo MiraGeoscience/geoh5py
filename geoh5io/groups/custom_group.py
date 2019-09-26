@@ -10,11 +10,8 @@ class CustomGroup(Group):
     """ A custom group, for an unlisted Group type.
     """
 
-    def __init__(self, group_type: GroupType, name: str, uid: uuid.UUID = None):
-        super().__init__(group_type, name, uid)
-
     @classmethod
-    def static_type_uid(cls) -> Optional[uuid.UUID]:
+    def static_type_uid(cls) -> uuid.UUID:
         raise RuntimeError(f"No predefined static type UUID for {cls}.")
 
     @classmethod

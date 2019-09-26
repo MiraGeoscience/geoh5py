@@ -24,9 +24,7 @@ class ObjectBase(Entity):
         return self._type
 
     @classmethod
-    def find_or_create_type(
-        cls, workspace: "workspace.Workspace"
-    ) -> ObjectType:
+    def find_or_create_type(cls, workspace: "workspace.Workspace") -> ObjectType:
         return ObjectType.find_or_create(workspace, cls)
 
     @classmethod

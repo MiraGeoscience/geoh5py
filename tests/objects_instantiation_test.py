@@ -10,7 +10,11 @@ from geoh5io.workspace import Workspace
 
 def all_object_types():
     for _, obj in inspect.getmembers(objects):
-        if inspect.isclass(obj) and issubclass(obj, ObjectBase) and obj is not ObjectBase:
+        if (
+            inspect.isclass(obj)
+            and issubclass(obj, ObjectBase)
+            and obj is not ObjectBase
+        ):
             yield obj
 
 

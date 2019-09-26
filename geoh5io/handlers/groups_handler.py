@@ -36,8 +36,8 @@ class GroupsHandler:
 
     @staticmethod
     def get_all() -> List[i_Group]:
-        # TODO: get from workspace
-        # return geoh5io.workspace.Workspace.instance().all_groups()
+        Workspace.active().all_groups()
+        # TODO
         return []
 
     def find(self, query: i_GroupQuery) -> List[i_Group]:

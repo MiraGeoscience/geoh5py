@@ -9,8 +9,8 @@ class Surface(ObjectBase):
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)
         # TODO
-        self.vertices = []
-        self.cells = []
+        # self._vertices = []
+        # self._cells = []
 
     @classmethod
     def static_type_uid(cls) -> uuid.UUID:

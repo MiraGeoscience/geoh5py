@@ -9,11 +9,11 @@ class Drillhole(ObjectBase):
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)
         # TODO
-        self.vertices = []
-        self.cells = []
-        self.collar = None
-        self.surveys = []
-        self.trace = []
+        # self._vertices = []
+        # self._cells = []
+        # self._collar = None
+        # self._surveys = []
+        # self._trace = []
 
     @classmethod
     def static_type_uid(cls) -> uuid.UUID:
