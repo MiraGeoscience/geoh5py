@@ -2,7 +2,7 @@ import uuid
 
 from geoh5io.shared import Coord3D
 
-from .object import Object, ObjectType
+from .object_base import Object, ObjectType
 
 
 class BlockModel(Object):

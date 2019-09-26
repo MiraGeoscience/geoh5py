@@ -7,7 +7,7 @@ from geoh5io.shared import EntityType
 
 if TYPE_CHECKING:
     from geoh5io import workspace
-    from . import object
+    from . import object_base
 
 
 class ObjectType(EntityType):
@@ -31,7 +31,7 @@ class ObjectType(EntityType):
 
     @classmethod
     def find_or_create(
-        cls, workspace: "workspace.Workspace", object_class: Type["object.Object"]
+        cls, workspace: "workspace.Workspace", object_class: Type["object_base.Object"]
     ) -> ObjectType:
         """ Find or creates the ObjectType with the class_id from the given Object
         implementation class.

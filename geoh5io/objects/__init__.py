@@ -5,7 +5,7 @@ from .drillhole import Drillhole
 from .geo_image import GeoImage
 from .grid2d import Grid2D
 from .label import Label
-from .object import Object
+from .object_base import Object
 from .object_type import ObjectType
 from .octree import Octree
 from .points import Points

@@ -1,6 +1,6 @@
 import uuid
 
-from .object import Object, ObjectType
+from .object_base import Object, ObjectType
 
 
 class Label(Object):

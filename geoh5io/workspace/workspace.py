@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Callable, Dict, Optional, Type, Union, cast
 from .root_group import RootGroup
 
 if TYPE_CHECKING:
-    from geoh5io.objects import object
+    from geoh5io.objects import object_base
     from geoh5io.shared import entity_type
     from geoh5io.shared import group
 
@@ -28,7 +28,7 @@ class Workspace:
 
         # TODO: use weak ref dict
         self._groups: Dict[uuid.UUID, group.Group] = {}
-        self._objects: Dict[uuid.UUID, object.Object] = {}
+        self._objects: Dict[uuid.UUID, object_base.Object] = {}
         self._types: Dict[uuid.UUID, entity_type.EntityType] = {}
 
         self._root = root
@@ -76,7 +76,7 @@ class Workspace:
 
         return None
 
-    def find_any_object(self, object_uid: uuid.UUID) -> Optional["object.Object"]:
+    def find_any_object(self, object_uid: uuid.UUID) -> Optional["object_base.Object"]:
         return self._objects.get(object_uid, None)
 
 
