@@ -22,27 +22,14 @@ class H5Reader:
         H5 file Reader
     """
 
-    def __init__(self, h5file=None):
+    @classmethod
+    def get_project_attributes(cls, h5file: str, base: str) -> dict:
 
-        self._h5file = h5file
-        self._base = "GEOSCIENCE"
-
-    @property
-    def h5file(self) -> str:
-        assert self._h5file is not None, "The 'h5file' property name must be set"
-        return self._h5file
-
-    @h5file.setter
-    def h5file(self, h5file: str):
-        self._h5file = h5file
-
-    def get_project_attributes(self) -> dict:
-
-        project = h5py.File(self._h5file, "r+")
+        project = h5py.File(h5file, "r+")
         project_attrs = {}
 
-        for key in list(project[self._base].attrs.keys()):
-            project_attrs[key] = project[self._base].attrs[key]
+        for key in list(project[base].attrs.keys()):
+            project_attrs[key] = project[base].attrs[key]
 
         project.close()
 

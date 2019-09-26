@@ -3,11 +3,13 @@ from __future__ import annotations
 import uuid
 import weakref
 from contextlib import contextmanager
+from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Callable,
     ClassVar,
     Dict,
+    List,
     Optional,
     Type,
     Union,
@@ -29,19 +31,21 @@ if TYPE_CHECKING:
 WeakRefDuckType = Union[weakref.ReferenceType, Callable[[], Optional["Workspace"]]]
 
 
+@dataclass
+class WorkspaceAttributes:
+    version = None
+    distance_unit = None
+    contributors: List
+
+
 class Workspace:
 
     _active_ref: ClassVar[WeakRefDuckType] = type(None)
 
     def __init__(self, root: RootGroup = None):
-        self._project_attributes: Dict = {
-            "version": None,
-            "distance_unit": None,
-            "contributors": [],
-        }
+        self._workspace_attributes = WorkspaceAttributes
         self._base = "GEOSCIENCE"
         self._h5file = None
-        self._h5reader = H5Reader()
 
         # TODO: store values as weak references
         self._types: Dict[uuid.UUID, entity_type.EntityType] = {}
@@ -52,20 +56,14 @@ class Workspace:
         self._root = root if root is not None else RootGroup(self)
 
     @property
-    def h5reader(self) -> H5Reader:
-
-        if getattr(self, "_h5reader", None) is None:
-            self._h5reader = H5Reader(h5file=self._h5file)
-
-        return self._h5reader
-
-    @property
     def version(self):
 
         if getattr(self, "_project_attributes", None) is None:
-            self._project_attributes = self._h5reader.get_project_attributes()
+            self._workspace_attributes = H5Reader.get_project_attributes(
+                self._h5file, self._base
+            )
 
-        return self._project_attributes["version"]
+        return self._workspace_attributes["version"]
 
     @property
     def root(self) -> "group.Group":
@@ -153,7 +151,7 @@ class Workspace:
         return self._h5file
 
     # @h5file.setter
-    # def h5file(self, h5file: str):
+    # def h5file(self, h5file: Optional[str] = None):
     #     self._h5file = h5file
 
 
