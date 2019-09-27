@@ -97,7 +97,6 @@ class Workspace:
         # so that type check does not complain of possible returned None
         return cast(Workspace, active_one)
 
-    # pylint: disable=redefined-outer-name
     def register_type(self, staged_type: "entity_type.EntityType"):
         # TODO: raise exception if it does already exists
         self._types[staged_type.uid] = staged_type
@@ -164,6 +163,17 @@ class Workspace:
                 setattr(self._workspace_attributes, attr, value)
 
         return self._workspace_attributes
+
+    def load_geoh5_workspace(self):
+        """ Load the groups, objects, data and types from H5file
+        """
+
+        tree = H5Reader.get_project_tree(self.h5file, self._base)
+        # if getattr(self, "_project_attributes", None) is None:
+        # for (attr, value) in zip(attributes.keys(), attributes.values()):
+        #     setattr(self._workspace_attributes, attr, value)
+
+        return tree
 
 
 @contextmanager
