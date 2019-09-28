@@ -5,6 +5,7 @@ import pytest
 
 from geoh5io import data
 from geoh5io.data import Data, DataAssociationEnum, DataType
+from geoh5io.objects import ObjectType
 from geoh5io.workspace import Workspace
 
 
@@ -26,6 +27,9 @@ def test_data_instantiation(data_class: Type[Data]):
     assert data_type.primitive_type == data_class.primitive_type()
 
     assert the_workspace.find_type(data_type.uid, DataType) is data_type
+
+    # searching for the wrong type
+    assert the_workspace.find_type(data_type.uid, ObjectType) is None
 
     created_data = data_class(data_type, DataAssociationEnum.VERTEX, "test")
     assert created_data.uid is not None

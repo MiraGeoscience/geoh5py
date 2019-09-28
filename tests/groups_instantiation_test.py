@@ -5,6 +5,7 @@ import pytest
 
 from geoh5io import groups
 from geoh5io.groups import CustomGroup, Group, GroupType
+from geoh5io.objects import ObjectType
 from geoh5io.workspace import Workspace
 
 
@@ -56,6 +57,9 @@ def test_custom_group_instantiation():
     isinstance(group_type, GroupType)
     assert group_type.workspace is the_workspace
     assert the_workspace.find_type(group_type.uid, GroupType) is group_type
+
+    # searching for the wrong type
+    assert the_workspace.find_type(group_type.uid, ObjectType) is None
 
     created_group = CustomGroup(group_type, "test custom group")
     assert created_group.uid is not None

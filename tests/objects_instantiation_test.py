@@ -4,6 +4,7 @@ from typing import Type
 import pytest
 
 from geoh5io import objects
+from geoh5io.groups import GroupType
 from geoh5io.objects import ObjectBase, ObjectType
 from geoh5io.workspace import Workspace
 
@@ -28,6 +29,9 @@ def test_object_instantiation(object_class: Type[ObjectBase]):
     assert object_type.uid == object_class.default_type_uid()
 
     assert the_workspace.find_type(object_type.uid, ObjectType) is object_type
+
+    # searching for the wrong type
+    assert the_workspace.find_type(object_type.uid, GroupType) is None
 
     created_object = object_class(object_type, "test")
     assert created_object.uid is not None
