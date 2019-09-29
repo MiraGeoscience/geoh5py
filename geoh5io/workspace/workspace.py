@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 import weakref
 from contextlib import contextmanager
-from typing import ClassVar, Dict, List, Optional, TYPE_CHECKING, Type, cast
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, cast
 
 from geoh5io.shared import weakref_utils
 
@@ -62,16 +62,16 @@ class Workspace:
         # so that type check does not complain of possible returned None
         return cast(Workspace, active_one)
 
-    def register_type(self, entity_type: "entity_type.EntityType"):
+    def _register_type(self, entity_type: "entity_type.EntityType"):
         weakref_utils.insert_once(self._types, entity_type.uid, entity_type)
 
-    def register_group(self, group: "group.Group"):
+    def _register_group(self, group: "group.Group"):
         weakref_utils.insert_once(self._groups, group.uid, group)
 
-    def register_data(self, data: "data.Data"):
+    def _register_data(self, data: "data.Data"):
         weakref_utils.insert_once(self._data, data.uid, data)
 
-    def register_object(self, obj: "object_base.ObjectBase"):
+    def _register_object(self, obj: "object_base.ObjectBase"):
         weakref_utils.insert_once(self._objects, obj.uid, obj)
 
     def find_type(

@@ -18,7 +18,7 @@ class ObjectBase(Entity):
         self._type = object_type
         self._allow_move = 1
         self._clipping_ids: List[uuid.UUID] = []
-        object_type.workspace.register_object(self)
+        object_type.workspace._register_object(self)
 
     @property
     def entity_type(self) -> ObjectType:
