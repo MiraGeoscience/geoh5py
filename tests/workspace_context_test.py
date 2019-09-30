@@ -3,7 +3,7 @@ import pytest
 from geoh5io.workspace import Workspace, active_workspace
 
 
-def test_worspace_context():
+def test_workspace_context():
     with active_workspace(Workspace()) as ws1:
         assert Workspace.active() == ws1
         with active_workspace(Workspace()) as ws2:

@@ -4,6 +4,7 @@ import uuid
 import weakref
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, cast
+from weakref import ReferenceType
 
 from geoh5io.shared import weakref_utils
 
@@ -18,19 +19,17 @@ if TYPE_CHECKING:
 
 class Workspace:
 
-    _active_ref: ClassVar[weakref.ReferenceType[Workspace]] = type(None)  # type: ignore
+    _active_ref: ClassVar[ReferenceType[Workspace]] = type(None)  # type: ignore
 
     def __init__(self, root: RootGroup = None):
         self.version = None
         self._distance_unit = None
         self._contributors: List[str] = []
 
-        self._types: Dict[uuid.UUID, weakref.ReferenceType[entity_type.EntityType]] = {}
-        self._groups: Dict[uuid.UUID, weakref.ReferenceType[group.Group]] = {}
-        self._objects: Dict[
-            uuid.UUID, weakref.ReferenceType[object_base.ObjectBase]
-        ] = {}
-        self._data: Dict[uuid.UUID, weakref.ReferenceType[data.Data]] = {}
+        self._types: Dict[uuid.UUID, ReferenceType[entity_type.EntityType]] = {}
+        self._groups: Dict[uuid.UUID, ReferenceType[group.Group]] = {}
+        self._objects: Dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
+        self._data: Dict[uuid.UUID, ReferenceType[data.Data]] = {}
 
         self._root = root if root is not None else RootGroup(self)
 
@@ -82,21 +81,21 @@ class Workspace:
 
     def all_groups(self) -> List["group.Group"]:
         weakref_utils.remove_none_referents(self._groups)
-        return [cast(group.Group, v()) for v in self._groups.values()]
+        return [cast("group.Group", v()) for v in self._groups.values()]
 
     def find_group(self, group_uid: uuid.UUID) -> Optional["group.Group"]:
         return weakref_utils.get_clean_ref(self._groups, group_uid)
 
     def all_objects(self) -> List["object_base.ObjectBase"]:
         weakref_utils.remove_none_referents(self._objects)
-        return [cast(object_base.ObjectBase, v()) for v in self._objects.values()]
+        return [cast("object_base.ObjectBase", v()) for v in self._objects.values()]
 
     def find_object(self, object_uid: uuid.UUID) -> Optional["object_base.ObjectBase"]:
         return weakref_utils.get_clean_ref(self._objects, object_uid)
 
     def all_data(self) -> List["data.Data"]:
         weakref_utils.remove_none_referents(self._data)
-        return [cast(data.Data, v()) for v in self._data.values()]
+        return [cast("data.Data", v()) for v in self._data.values()]
 
     def find_data(self, data_uid: uuid.UUID) -> Optional["data.Data"]:
         return weakref_utils.get_clean_ref(self._data, data_uid)

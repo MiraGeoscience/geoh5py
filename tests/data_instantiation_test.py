@@ -25,8 +25,8 @@ def test_data_instantiation(data_class: Type[Data]):
     assert data_type.name is None
     assert data_type.units is None
     assert data_type.primitive_type == data_class.primitive_type()
-
     assert the_workspace.find_type(data_type.uid, DataType) is data_type
+    assert DataType.find(the_workspace, data_type.uid) is data_type
 
     # searching for the wrong type
     assert the_workspace.find_type(data_type.uid, ObjectType) is None
@@ -37,7 +37,28 @@ def test_data_instantiation(data_class: Type[Data]):
     assert created_data.name == "test"
     assert created_data.association == DataAssociationEnum.VERTEX
 
-    all_data = the_workspace.all_data()
+    _can_find(the_workspace, created_data)
+
+    # now, make sure that unused data and types do not remain reference in the workspace
+    data_type_uid = data_type.uid
+    data_type = None  # type: ignore
+    # data_type is still referenced by created_data, so it should survive in the workspace
+    assert the_workspace.find_type(data_type_uid, DataType) is not None
+
+    created_data_uid = created_data.uid
+    created_data = None  # type: ignore
+    # no more reference on created_data, so it should be gone from the workspace
+    assert the_workspace.find_data(created_data_uid) is None
+
+    # no more reference on data_type, so it should be gone from the workspace
+    assert the_workspace.find_type(data_type_uid, DataType) is None
+
+
+def _can_find(workspace, created_data):
+    """ Make sure we can find the created data in the workspace.
+    """
+
+    all_data = workspace.all_data()
     assert len(all_data) == 1
     assert next(iter(all_data)) is created_data
-    assert the_workspace.find_data(created_data.uid) is created_data
+    assert workspace.find_data(created_data.uid) is created_data
