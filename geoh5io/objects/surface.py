@@ -1,5 +1,4 @@
 import uuid
-from typing import Optional
 
 from .object_base import ObjectBase, ObjectType
 
@@ -17,9 +16,4 @@ class Surface(ObjectBase):
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
-
-    @classmethod
-    def default_class_id(cls) -> Optional[uuid.UUID]:
-        # same as type UID
         return cls.__TYPE_UID

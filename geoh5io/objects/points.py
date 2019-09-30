@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Optional
+from typing import List
 
 from geoh5io.shared import Coord3D
 
@@ -16,9 +16,4 @@ class Points(ObjectBase):
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
-
-    @classmethod
-    def default_class_id(cls) -> Optional[uuid.UUID]:
-        # same as type UID
         return cls.__TYPE_UID

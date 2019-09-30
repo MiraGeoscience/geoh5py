@@ -39,15 +39,9 @@ class Group(Entity):
 
     @classmethod
     @abstractmethod
-    def default_class_id(cls) -> Optional[uuid.UUID]:
-        ...
-
-    @classmethod
-    @abstractmethod
     def default_type_name(cls) -> Optional[str]:
         ...
 
     @classmethod
     def default_type_description(cls) -> Optional[str]:
         return cls.default_type_name()
-

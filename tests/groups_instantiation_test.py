@@ -26,10 +26,7 @@ def test_group_instantiation(group_class: Type[Group]):
     isinstance(group_type, GroupType)
     assert group_type.workspace is the_workspace
     assert group_type.uid == group_class.default_type_uid()
-    if group_class.default_class_id() is None:
-        assert group_type.class_id == group_type.uid
-    else:
-        assert group_type.class_id == group_class.default_class_id()
+    assert group_type.class_id is None
 
     created_group = group_class(group_type, "test group")
     assert created_group.uid is not None
@@ -45,7 +42,6 @@ def test_group_instantiation(group_class: Type[Group]):
 def test_custom_group_instantiation():
     with pytest.raises(RuntimeError):
         assert CustomGroup.default_type_uid() is None
-    assert CustomGroup.default_class_id() is None
 
     the_workspace = Workspace()
     with pytest.raises(RuntimeError):
@@ -60,7 +56,7 @@ def test_custom_group_instantiation():
 
     isinstance(group_type, GroupType)
     assert group_type.workspace is the_workspace
-    assert group_type.class_id == group_type.uid
+    assert group_type.class_id is None
     assert the_workspace.find_type(group_type.uid, GroupType) is group_type
 
     created_group = CustomGroup(group_type, "test custom group")

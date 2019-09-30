@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from geoh5io.shared import EntityType
 
@@ -15,19 +15,19 @@ class ObjectType(EntityType):
         self,
         workspace: "workspace.Workspace",
         uid: uuid.UUID,
-        class_id: uuid.UUID = None,
+        legacy_class_id: uuid.UUID = None,
     ):
         super().__init__(workspace, uid)
-        self._class_id = class_id
+        self._class_id = legacy_class_id
 
     @staticmethod
     def _is_abstract() -> bool:
         return False
 
     @property
-    def class_id(self) -> uuid.UUID:
-        """ If class ID was not set, defaults to this type UUID."""
-        return self._class_id if self._class_id is not None else self.uid
+    def class_id(self) -> Optional[uuid.UUID]:
+        """ From legacy file format. Should not need this. """
+        return self._class_id
 
     @classmethod
     def find_or_create(
@@ -35,10 +35,9 @@ class ObjectType(EntityType):
         workspace: "workspace.Workspace",
         object_class: Type["object_base.ObjectBase"],
     ) -> ObjectType:
-        """ Find or creates the ObjectType with the class_id from the given Object
-        implementation class.
+        """ Find or creates the ObjectType with the pre-defined type UUID that matches the given
+        Object implementation class.
 
-        The class_id is also used as the UUID for the newly created ObjectType.
         It is expected to have a single instance of ObjectType in the Workspace
         for each concrete Object class.
 
@@ -55,15 +54,12 @@ class ObjectType(EntityType):
         if object_type is not None:
             return object_type
 
-        class_id = object_class.default_class_id()
-        return cls(workspace, type_uid, class_id)
+        return cls(workspace, type_uid)
 
     @staticmethod
     def create_custom(workspace: "workspace.Workspace") -> ObjectType:
         """ Creates a new instance of ObjectType for an unlisted custom Object type with a
         new auto-generated UUID.
-
-        The same UUID is used for class_id.
         """
-        class_id = uuid.uuid4()
-        return ObjectType(workspace, class_id, class_id)
+        type_uid = uuid.uuid4()
+        return ObjectType(workspace, type_uid)
