@@ -1,22 +1,21 @@
 import uuid
 from typing import Optional
 
-from .object_base import ObjectBase, ObjectType
+from .object_base import ObjectBase
+from .object_type import ObjectType
 
 
-class Label(ObjectBase):
+class NoTypeObject(ObjectBase):
+
     __TYPE_UID = uuid.UUID(
-        fields=(0xE79F449D, 0x74E3, 0x4598, 0x9C, 0x9C, 0x351A28B8B69E)
+        fields=(0x849D2F3E, 0xA46E, 0x11E3, 0xB4, 0x01, 0x2776BDF4F982)
     )
     __CLASS_UID = uuid.UUID(
-        fields=(0x3EAACBB6, 0xDE2E, 0x4216, 0x96, 0x39, 0x134D4D3F3CD4)
+        fields=(0xF060E15F, 0x7ACC, 0x408B, 0x8F, 0x23, 0xAFC893EE3B42)
     )
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)
-        # TODO
-        self.target_position = None
-        self.label_position = None
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

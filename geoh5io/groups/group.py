@@ -38,8 +38,9 @@ class Group(Entity):
         ...
 
     @classmethod
+    @abstractmethod
     def default_class_id(cls) -> Optional[uuid.UUID]:
-        return None
+        ...
 
     @classmethod
     @abstractmethod
@@ -49,3 +50,4 @@ class Group(Entity):
     @classmethod
     def default_type_description(cls) -> Optional[str]:
         return cls.default_type_name()
+

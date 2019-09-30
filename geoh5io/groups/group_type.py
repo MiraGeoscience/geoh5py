@@ -92,5 +92,5 @@ class GroupType(EntityType):
 
         The same UUID is used for class_id.
         """
-        class_id = uuid.uuid4()
-        return GroupType(workspace, class_id, name, description, class_id)
+        type_id = uuid.uuid4()
+        return GroupType(workspace, type_id, name, description, type_id)

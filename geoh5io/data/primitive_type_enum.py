@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class PrimitiveTypeEnum(Enum):
-    UNKNOWN = 0
+    INVALID = 0
     INTEGER = 1
     FLOAT = 2
     REFERENCED = 3

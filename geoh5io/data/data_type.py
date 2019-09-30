@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Optional, Type, cast
 
 from geoh5io.shared import EntityType
 
 from .color_map import ColorMap
+from .geometric_data_constants import GeometricDataConstants
 from .primitive_type_enum import PrimitiveTypeEnum
 
 if TYPE_CHECKING:
@@ -42,7 +43,7 @@ class DataType(EntityType):
     def create(
         cls, workspace: "workspace.Workspace", data_class: Type["data.Data"]
     ) -> DataType:
-        """ Creates a new instance of GroupType with the primitive type from the given Data
+        """ Creates a new instance of DataType with the primitive type from the given Data
         implementation class.
 
         :param data_class: A Data implementation class.

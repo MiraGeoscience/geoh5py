@@ -34,5 +34,6 @@ class ObjectBase(Entity):
         ...
 
     @classmethod
+    @abstractmethod
     def default_class_id(cls) -> Optional[uuid.UUID]:
-        return None
+        ...

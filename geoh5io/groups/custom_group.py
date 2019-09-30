@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import uuid
 from typing import Optional
 
@@ -13,6 +11,10 @@ class CustomGroup(Group):
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         raise RuntimeError(f"No predefined static type UUID for {cls}.")
+
+    @classmethod
+    def default_class_id(cls) -> Optional[uuid.UUID]:
+        return None
 
     @classmethod
     def default_type_name(cls) -> Optional[str]:
