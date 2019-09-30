@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Type
 
 from geoh5io.shared import EntityType
 
@@ -11,23 +11,12 @@ if TYPE_CHECKING:
 
 
 class ObjectType(EntityType):
-    def __init__(
-        self,
-        workspace: "workspace.Workspace",
-        uid: uuid.UUID,
-        legacy_class_id: uuid.UUID = None,
-    ):
+    def __init__(self, workspace: "workspace.Workspace", uid: uuid.UUID):
         super().__init__(workspace, uid)
-        self._class_id = legacy_class_id
 
     @staticmethod
     def _is_abstract() -> bool:
         return False
-
-    @property
-    def class_id(self) -> Optional[uuid.UUID]:
-        """ From legacy file format. Should not need this. """
-        return self._class_id
 
     @classmethod
     def find_or_create(

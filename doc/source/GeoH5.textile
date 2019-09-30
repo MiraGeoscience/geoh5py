@@ -141,20 +141,21 @@ Each type can be shared by any number of groups/objects/data sets.
 h6. Group type attributes
 
 * Name : (string)
+* ID : (string, UUID of this Group type, referring to the Group implementation)
 * Description : (string, optional)
-* Class ID : (UUID string referring to the group implementation, optional - defaults to container class UUID)
 * Allow move contents : (char, optional, 0(false) or 1(true), default 1)
 * Allow delete contents : (char, optional, 0(false) or 1(true), default 1)
 
 h6. Object type attributes
 
 * Name : (string)
+* ID : (string, UUID of this Object type, referring to the Object implementation)
 * Description : (string, optional)
-* Class ID : (UUID string referring to the object implementation)
 
 h6. Data type attributes
 
 * Name : (string)
+* ID : (string, UUID of this Data type)
 * Primitive type : (string) : describing the kind of data contained in the associated "Data" tables - "Integer", "Float", "Referenced", "Text", "Filename", "DateTime" or "Blob" (see "Data types" section)
 * Description : (string, optional)
 * Units : (string, optional)
