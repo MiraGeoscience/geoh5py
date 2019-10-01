@@ -1,6 +1,6 @@
 import uuid
 from abc import abstractmethod
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from geoh5io.shared import Entity
 
