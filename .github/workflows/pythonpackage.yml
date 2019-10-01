@@ -34,10 +34,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install pre-commit
     - name: Run pre-commit hooks on changes
-      if: github.event == 'pull_request'      
+      if: github.event_name == 'pull_request'      
       run: git diff-tree --no-commit-id --name-only -r $GITHUB_SHA | xargs pre-commit run --files
     - name: Run pre-commit hooks on all files
-      if: github.event == 'push'
+      if: github.event_name == 'push'
       run: pre-commit run --all-files
     - name: Test with pytest
       uses: abatilo/actions-poetry@master
