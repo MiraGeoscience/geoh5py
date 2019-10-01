@@ -4,7 +4,9 @@ from .object_base import ObjectBase, ObjectType
 
 
 class Surface(ObjectBase):
-    __TYPE_UID = uuid.UUID("{F26FEBA3-ADED-494B-B9E9-B2BBCBE298E1}")
+    __TYPE_UID = uuid.UUID(
+        fields=(0xF26FEBA3, 0xADED, 0x494B, 0xB9, 0xE9, 0xB2BBCBE298E1)
+    )
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)

@@ -4,7 +4,9 @@ from .object_base import ObjectBase, ObjectType
 
 
 class Grid2D(ObjectBase):
-    __TYPE_UID = uuid.UUID("{48f5054a-1c5c-4ca4-9048-80f36dc60a06}")
+    __TYPE_UID = uuid.UUID(
+        fields=(0x48F5054A, 0x1C5C, 0x4CA4, 0x90, 0x48, 0x80F36DC60A06)
+    )
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)

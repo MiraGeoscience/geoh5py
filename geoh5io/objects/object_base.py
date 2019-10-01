@@ -1,6 +1,6 @@
 import uuid
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, TYPE_CHECKING
 
 from geoh5io.shared import Entity
 
@@ -32,7 +32,3 @@ class ObjectBase(Entity):
     @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:
         ...
-
-    @classmethod
-    def default_class_id(cls) -> Optional[uuid.UUID]:
-        return None

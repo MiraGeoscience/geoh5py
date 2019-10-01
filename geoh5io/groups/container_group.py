@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import uuid
 
 from .group import Group
@@ -8,7 +6,9 @@ from .group import Group
 class ContainerGroup(Group):
     """ The type for the basic Container group."""
 
-    __TYPE_UID = uuid.UUID("{61FBB4E8-A480-11E3-8D5A-2776BDF4F982}")
+    __TYPE_UID = uuid.UUID(
+        fields=(0x61FBB4E8, 0xA480, 0x11E3, 0x8D, 0x5A, 0x2776BDF4F982)
+    )
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
