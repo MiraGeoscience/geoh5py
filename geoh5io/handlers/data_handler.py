@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 import uuid
 from typing import TYPE_CHECKING, List
 
