@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import uuid
 import weakref
 from contextlib import contextmanager
@@ -7,7 +8,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, cast
 from weakref import ReferenceType
 
+from geoh5io import objects
 from geoh5io.io import H5Reader
+from geoh5io.objects import ObjectBase
 from geoh5io.shared import weakref_utils
 
 from .root_group import RootGroup
@@ -60,9 +63,60 @@ class Workspace:
 
         return self._tree
 
-    # def show_object(self, name: str):
-    #
-    #     self.tree
+    @property
+    def list_objects(self):
+        """
+        :return: List of object names
+        """
+        return [elem["name"] for elem in list(self.tree["objects"].values())]
+
+    def get_object(self, name: str) -> List[Optional[ObjectBase]]:
+        """Retrieve an object from its name
+
+        :param name: List of object identifiers of type 'str' | 'uuid'
+        :return: object_base.ObjectBase
+        """
+
+        # Extract all objects uuid with matching name
+        object_uuids = [
+            key
+            for key in list(self.tree["objects"].keys())
+            if self.tree["objects"][key]["name"] == name
+        ]
+
+        object_list: List[Optional[ObjectBase]] = []
+        for uid in object_uuids:
+
+            # Check if an object already exists in the workspace
+            if self.find_object(uuid.UUID(uid)) is not None:
+                object_list += [self.find_object(uuid.UUID(uid))]
+                continue
+
+            # If not, check the type
+            obj_type = uuid.UUID(self.tree["objects"][uid]["type"])
+
+            created_object: Optional[ObjectBase] = None
+            for _, member in inspect.getmembers(objects):
+
+                if (
+                    inspect.isclass(member)
+                    and issubclass(member, ObjectBase)
+                    and member is not ObjectBase
+                    and member.default_type_uid() == obj_type
+                ):
+                    known_type = member.find_or_create_type(self)
+                    created_object = member(
+                        known_type, self.tree["objects"][uid]["name"], uuid.UUID(uid)
+                    )
+
+            # Object of unknown type
+            if created_object is None:
+                assert RuntimeError("Only objects of known type have been implemented")
+            #             unknown_type =
+
+            object_list += [created_object]
+
+        return object_list
 
     @property
     def root(self) -> "group.Group":
@@ -93,6 +147,7 @@ class Workspace:
         return cast(Workspace, active_one)
 
     def _register_type(self, entity_type: "entity_type.EntityType"):
+        # print(entity_type.uid, entity_type)
         weakref_utils.insert_once(self._types, entity_type.uid, entity_type)
 
     def _register_group(self, group: "group.Group"):
