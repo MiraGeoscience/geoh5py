@@ -10,15 +10,17 @@ h5py = "^2.10"
 toml = "^0.10.0"
 thriftpy2 = "^0.4.6"
 cython = {version = "^0.29.13", optional = true}
+sphinx = {version = "^2.2", optional = true}
 
 [tool.poetry.dev-dependencies]
 pylint = "^2.3"
 pytest = "^3.0"
 thrift-pyi = "^0.1.0"
-sphinx = "^2.2"
+pytest-cov = "^2.7.1"
 
 [tool.poetry.extras]
 cython = ["cython"]
+doc = ["sphinx"]
 
 [tool.isort]
 # settings for compatibility between ``isort`` and ``black`` formatting
