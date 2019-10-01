@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 from typing import TYPE_CHECKING, List
 
 from geoh5io import interfaces
