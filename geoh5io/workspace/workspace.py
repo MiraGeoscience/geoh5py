@@ -52,7 +52,7 @@ class Workspace:
         self._groups: Dict[uuid.UUID, group.Group] = {}
         self._objects: Dict[uuid.UUID, object_base.ObjectBase] = {}
         self._data: Dict[uuid.UUID, data.Data] = {}
-
+        self._tree: Dict = {}
         self._root = root if root is not None else RootGroup(self)
 
     @property
@@ -60,14 +60,21 @@ class Workspace:
         if getattr(self, "_workspace_attributes", None) is None:
             self.get_workspace_attributes()
 
-        return self._workspace_attributes.version
+        return (
+            self._workspace_attributes.version,
+            self._workspace_attributes.ga_version,
+        )
 
     @property
-    def ga_version(self):
-        if getattr(self, "_workspace_attributes", None) is None:
-            self.get_workspace_attributes()
+    def tree(self):
+        if not getattr(self, "_tree"):
+            self._tree = H5Reader.get_project_tree(self.h5file, self._base)
 
-        return self._workspace_attributes.ga_version
+        return self._tree
+
+    # def show_object(self, name: str):
+    #
+    #     self.tree
 
     @property
     def root(self) -> "group.Group":
