@@ -42,4 +42,6 @@ jobs:
     - name: Test with pytest
       uses: abatilo/actions-poetry@master
       with:
-        args: run python -m pytest --cov-report xml:codecov.xml --cov=typed_json_dataclass --cov-report=html --junit-xml=coverage.xml --cov-branch --cov-fail-under=100
+        args: >-
+          run python -m pytest --cov-report xml:codecov.xml --cov=geoh5io
+          --cov-report=html --junit-xml=coverage.xml --cov-branch --cov-fail-under=80
