@@ -1,18 +1,17 @@
 import uuid
 
-from .object_base import ObjectBase, ObjectType
+from .object_base import ObjectBase
+from .object_type import ObjectType
 
 
-class Label(ObjectBase):
+class NoTypeObject(ObjectBase):
+
     __TYPE_UID = uuid.UUID(
-        fields=(0xE79F449D, 0x74E3, 0x4598, 0x9C, 0x9C, 0x351A28B8B69E)
+        fields=(0x849D2F3E, 0xA46E, 0x11E3, 0xB4, 0x01, 0x2776BDF4F982)
     )
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)
-        # TODO
-        self.target_position = None
-        self.label_position = None
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

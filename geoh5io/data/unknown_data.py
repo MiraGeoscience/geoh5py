@@ -18,7 +18,7 @@ class UnknownData(Data):
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.UNKNOWN
+        return PrimitiveTypeEnum.INVALID
 
     # TODO: Provide a partial implementation to access generic data,
     # for which primitive type would be provided by the H5 file.

@@ -18,7 +18,7 @@ class Group(Entity):
         self._type = group_type
         self._allow_move = True
         self._clipping_ids: List[uuid.UUID] = []
-        group_type.workspace.register_group(self)
+        group_type.workspace._register_group(self)
 
     @property
     def entity_type(self) -> GroupType:
@@ -36,10 +36,6 @@ class Group(Entity):
     @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:
         ...
-
-    @classmethod
-    def default_class_id(cls) -> Optional[uuid.UUID]:
-        return None
 
     @classmethod
     @abstractmethod

@@ -27,7 +27,7 @@ class EntityType(ABC):
         self._uid = uid
         self._name = name
         self._description = description
-        workspace.register_type(self)
+        workspace._register_type(self)
 
     @staticmethod
     @abstractmethod

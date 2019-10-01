@@ -17,10 +17,8 @@ class GroupType(EntityType):
         uid: uuid.UUID,
         name=None,
         description=None,
-        class_id: uuid.UUID = None,
     ):
         super().__init__(workspace, uid, name, description)
-        self._class_id = class_id
         self._allow_move_content = True
         self._allow_delete_content = True
 
@@ -44,19 +42,13 @@ class GroupType(EntityType):
     def allow_delete_content(self, allow: bool):
         self._allow_delete_content = bool(allow)
 
-    @property
-    def class_id(self) -> uuid.UUID:
-        """ If class ID was not set, defaults to this type UUID."""
-        return self._class_id if self._class_id is not None else self.uid
-
     @classmethod
     def find_or_create(
         cls, workspace: "workspace.Workspace", group_class: Type["group.Group"]
     ) -> GroupType:
-        """ Find or creates the GroupType with the class_id from the given Group
-        implementation class.
+        """ Find or creates the GroupType with the pre-defined type UUID that matches the given
+        Group implementation class.
 
-        The class_id is also used as the UUID for the newly created GroupType.
         It is expected to have a single instance of GroupType in the Workspace
         for each concrete Group class.
 
@@ -69,8 +61,6 @@ class GroupType(EntityType):
                 f"Cannot create GroupType with null UUID from {group_class.__name__}."
             )
 
-        class_id = group_class.default_class_id()
-        # TODO: class_id might differ from type uuid
         group_type = cls.find(workspace, type_uid)
         if group_type is not None:
             return group_type
@@ -80,7 +70,6 @@ class GroupType(EntityType):
             type_uid,
             group_class.default_type_name(),
             group_class.default_type_description(),
-            class_id,
         )
 
     @staticmethod
@@ -89,8 +78,6 @@ class GroupType(EntityType):
     ) -> GroupType:
         """ Creates a new instance of GroupType for an unlisted custom Group type with a
         new auto-generated UUID.
-
-        The same UUID is used for class_id.
         """
-        class_id = uuid.uuid4()
-        return GroupType(workspace, class_id, name, description, class_id)
+        type_id = uuid.uuid4()
+        return GroupType(workspace, type_id, name, description)

@@ -2,11 +2,13 @@ from enum import Enum
 
 
 class PrimitiveTypeEnum(Enum):
-    UNKNOWN = 0
+    INVALID = 0
     INTEGER = 1
     FLOAT = 2
-    REFERENCED = 3
-    TEXT = 4
+    TEXT = 3
+    REFERENCED = 4
     FILENAME = 5
-    DATETIME = 6
-    BLOB = 7
+    BLOB = 6
+    VECTOR = 7
+    DATETIME = 8
+    GEOMETRIC = 9

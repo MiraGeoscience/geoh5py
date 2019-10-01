@@ -17,10 +17,11 @@ class Data(Entity):
         uid: uuid.UUID = None,
     ):
         assert data_type is not None
+        assert data_type.primitive_type == self.primitive_type()
         super().__init__(name, uid)
         self._association = association
         self._type = data_type
-        data_type.workspace.register_data(self)
+        data_type.workspace._register_data(self)
 
     @property
     def association(self) -> DataAssociationEnum:

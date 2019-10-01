@@ -4,19 +4,11 @@ import uuid
 import weakref
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import (
-    TYPE_CHECKING,
-    Callable,
-    ClassVar,
-    Dict,
-    Optional,
-    Type,
-    Union,
-    ValuesView,
-    cast,
-)
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, cast
+from weakref import ReferenceType
 
 from geoh5io.io import H5Reader
+from geoh5io.shared import weakref_utils
 
 from .root_group import RootGroup
 
@@ -25,9 +17,6 @@ if TYPE_CHECKING:
     from geoh5io.objects import object_base
     from geoh5io.data import data
     from geoh5io.shared import entity_type
-
-
-WeakRefDuckType = Union[weakref.ReferenceType, Callable[[], Optional["Workspace"]]]
 
 
 @dataclass
@@ -40,19 +29,18 @@ class WorkspaceAttributes:
 
 class Workspace:
 
-    _active_ref: ClassVar[WeakRefDuckType] = type(None)
+    _active_ref: ClassVar[ReferenceType[Workspace]] = type(None)  # type: ignore
 
     def __init__(self, h5file: str = None, root: RootGroup = None):
         self._workspace_attributes = None
         self._base = "GEOSCIENCE"
         self._h5file = h5file
-
-        # TODO: store values as weak references
-        self._types: Dict[uuid.UUID, entity_type.EntityType] = {}
-        self._groups: Dict[uuid.UUID, group.Group] = {}
-        self._objects: Dict[uuid.UUID, object_base.ObjectBase] = {}
-        self._data: Dict[uuid.UUID, data.Data] = {}
         self._tree: Dict = {}
+        self._types: Dict[uuid.UUID, ReferenceType[entity_type.EntityType]] = {}
+        self._groups: Dict[uuid.UUID, ReferenceType[group.Group]] = {}
+        self._objects: Dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
+        self._data: Dict[uuid.UUID, ReferenceType[data.Data]] = {}
+
         self._root = root if root is not None else RootGroup(self)
 
     @property
@@ -104,48 +92,44 @@ class Workspace:
         # so that type check does not complain of possible returned None
         return cast(Workspace, active_one)
 
-    def register_type(self, staged_type: "entity_type.EntityType"):
-        # TODO: raise exception if it does already exists
-        self._types[staged_type.uid] = staged_type
+    def _register_type(self, entity_type: "entity_type.EntityType"):
+        weakref_utils.insert_once(self._types, entity_type.uid, entity_type)
 
-    def register_group(self, staged_group: "group.Group"):
-        # TODO: raise exception if it does already exists
-        self._groups[staged_group.uid] = staged_group
+    def _register_group(self, group: "group.Group"):
+        weakref_utils.insert_once(self._groups, group.uid, group)
 
-    def register_data(self, staged_data: "data.Data"):
-        # TODO: raise exception if it does already exists
-        self._data[staged_data.uid] = staged_data
+    def _register_data(self, data: "data.Data"):
+        weakref_utils.insert_once(self._data, data.uid, data)
 
-    def register_object(self, staged_object: "object_base.ObjectBase"):
-        # TODO: raise exception if it does already exists
-        self._objects[staged_object.uid] = staged_object
+    def _register_object(self, obj: "object_base.ObjectBase"):
+        weakref_utils.insert_once(self._objects, obj.uid, obj)
 
     def find_type(
         self, type_uid: uuid.UUID, type_class: Type["entity_type.EntityType"]
     ) -> Optional["entity_type.EntityType"]:
-        found_type = self._types.get(type_uid, None)
-        if found_type is not None and isinstance(found_type, type_class):
-            return found_type
+        found_type = weakref_utils.get_clean_ref(self._types, type_uid)
+        return found_type if isinstance(found_type, type_class) else None
 
-        return None
-
-    def all_groups(self) -> ValuesView["group.Group"]:
-        return self._groups.values()
+    def all_groups(self) -> List["group.Group"]:
+        weakref_utils.remove_none_referents(self._groups)
+        return [cast("group.Group", v()) for v in self._groups.values()]
 
     def find_group(self, group_uid: uuid.UUID) -> Optional["group.Group"]:
-        return self._groups.get(group_uid, None)
+        return weakref_utils.get_clean_ref(self._groups, group_uid)
 
-    def all_objects(self) -> ValuesView["object_base.ObjectBase"]:
-        return self._objects.values()
+    def all_objects(self) -> List["object_base.ObjectBase"]:
+        weakref_utils.remove_none_referents(self._objects)
+        return [cast("object_base.ObjectBase", v()) for v in self._objects.values()]
 
     def find_object(self, object_uid: uuid.UUID) -> Optional["object_base.ObjectBase"]:
-        return self._objects.get(object_uid, None)
+        return weakref_utils.get_clean_ref(self._objects, object_uid)
 
-    def all_data(self) -> ValuesView["data.Data"]:
-        return self._data.values()
+    def all_data(self) -> List["data.Data"]:
+        weakref_utils.remove_none_referents(self._data)
+        return [cast("data.Data", v()) for v in self._data.values()]
 
     def find_data(self, data_uid: uuid.UUID) -> Optional["data.Data"]:
-        return self._data.get(data_uid, None)
+        return weakref_utils.get_clean_ref(self._data, data_uid)
 
     @property
     def h5file(self) -> str:

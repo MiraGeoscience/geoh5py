@@ -4,7 +4,9 @@ from .object_base import ObjectBase, ObjectType
 
 
 class Curve(ObjectBase):
-    __TYPE_UID = uuid.UUID("{6A057FDC-B355-11E3-95BE-FD84A7FFCB88}")
+    __TYPE_UID = uuid.UUID(
+        fields=(0x6A057FDC, 0xB355, 0x11E3, 0x95, 0xBE, 0xFD84A7FFCB88)
+    )
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)

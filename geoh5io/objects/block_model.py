@@ -6,7 +6,9 @@ from .object_base import ObjectBase, ObjectType
 
 
 class BlockModel(ObjectBase):
-    __TYPE_UID = uuid.UUID("{B020A277-90E2-4CD7-84D6-612EE3F25051}")
+    __TYPE_UID = uuid.UUID(
+        fields=(0xB020A277, 0x90E2, 0x4CD7, 0x84, 0xD6, 0x612EE3F25051)
+    )
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)
