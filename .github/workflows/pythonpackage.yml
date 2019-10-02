@@ -42,7 +42,15 @@ jobs:
       uses: abatilo/actions-poetry@master
       with:
         args: install
-    - name: Run pylint
+    - name: Run pylint on modified files
+      if: github.event_name == 'pull_request'
+      uses: abatilo/actions-poetry@master
+      with:
+        args: >-
+          run python -m pylint -j0
+          $(git diff --name-only ${{github.ref}}...${{github.sha}} | grep -E '^geoh5io/.*\.py$')
+    - name: Run pylint on all files
+      if: github.event_name == 'push'
       uses: abatilo/actions-poetry@master
       with:
         args: run python -m pylint -j0 geoh5io
