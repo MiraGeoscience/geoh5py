@@ -49,7 +49,7 @@ jobs:
       with:
         args: >-
           run python -m pylint -j0
-          $(git diff --name-only refs/remotes/origin/development... | grep -E '^geoh5io/.*\.py$')
+          $(git diff --name-only refs/remotes/origin/development... | grep -E '^geoh5io/.*\.py$' || echo 'geoh5io/__init__.py')
     - name: Run pylint on all files
       if: github.event_name == 'push'
       uses: abatilo/actions-poetry@master
