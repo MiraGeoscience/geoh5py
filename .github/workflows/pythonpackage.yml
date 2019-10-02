@@ -62,3 +62,9 @@ jobs:
         args: >-
           run python -m pytest --cov-report xml:codecov.xml --cov=geoh5io
           --cov-report=html --junit-xml=coverage.xml --cov-branch --cov-fail-under=80
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1.0.2
+      with:
+        token: ${{secrets.CODECOV_UPLOAD_TOKEN}}
+        file: ./codecov.xml
+        flags: pytest
