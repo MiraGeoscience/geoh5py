@@ -69,10 +69,8 @@ jobs:
       uses: abatilo/actions-poetry@master
       with:
         args: >-
-          run python -m pytest --cov-report xml:codecov.xml --cov=geoh5io
-          --cov-report=html --junit-xml=coverage.xml --cov-branch --cov-fail-under=80
+          run python -m pytest --cov-report=xml --cov=geoh5io --cov-branch --cov-fail-under=80
     - name: Upload coverage to Codecov
-      if: github.event_name == 'push'
+      if: success()
       run: >-
-        curl -s https://codecov.io/bash |
-        bash -s -- -t ${{secrets.CODECOV_UPLOAD_TOKEN}} -f ./codecov.xml -F pytest
+        bash <(curl -s https://codecov.io/bash) -t ${{secrets.CODECOV_UPLOAD_TOKEN}} -n GitHub
