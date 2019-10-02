@@ -8,6 +8,13 @@ on:
   pull_request:
     branches:
     - development
+    paths:
+      - '**/*.py'
+      - '*.toml'
+      - '.*'
+      - '*rc'
+      - 'peotry.lock'
+      - '.flake8'
 
 jobs:
   pre-commit:
