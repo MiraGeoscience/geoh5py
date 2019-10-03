@@ -8,6 +8,7 @@ on:
   pull_request:
     branches:
     - development
+    - master
 
 jobs:
   pre-commit:
@@ -15,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python version
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
@@ -28,7 +29,7 @@ jobs:
     - name: Run pre-commit hooks on modified files
       if: github.event_name == 'pull_request'
       run: >-
-        git diff --name-only refs/remotes/origin/development... |
+        git diff --name-only refs/remotes/origin/${{github.base_ref}}... |
         xargs pre-commit run --config .pre-commit-ci-config.yaml --files
     - name: Run pre-commit hooks on all files
       if: github.event_name == 'push'
@@ -39,37 +40,44 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: Install
-      uses: abatilo/actions-poetry@master
+    - name: Set up Python version
+      uses: actions/setup-python@v1
       with:
-        args: install
+        python-version: 3.7
+    - name: Environment
+      run: echo ::add-path::$HOME/.poetry/bin
+    - name: Install
+      run: |
+        curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+        poetry install
     - name: Run pylint on modified files
       if: github.event_name == 'pull_request'
-      uses: abatilo/actions-poetry@master
-      with:
-        args: >-
-          run python -m pylint -j0
-          $(git diff --name-only refs/remotes/origin/development... | grep -E '^geoh5io/.*\.py$' || echo 'geoh5io/__init__.py')
+      run: >-
+        poetry run pylint -j0 $(
+        git diff --name-only refs/remotes/origin/${{github.base_ref}}... | grep -E '^geoh5io/.*\.py$'
+        || echo 'geoh5io/__init__.py'
+        )
     - name: Run pylint on all files
       if: github.event_name == 'push'
-      uses: abatilo/actions-poetry@master
-      with:
-        args: run python -m pylint -j0 geoh5io
+      run: poetry run pylint -j0 geoh5io
 
   pytest:
     name: pytest
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+    - name: Set up Python version
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Environment
+      run: echo ::add-path::$HOME/.poetry/bin
     - name: Install
-      uses: abatilo/actions-poetry@master
-      with:
-        args: install
+      run: |
+        curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+        poetry install
     - name: Run pytest
-      uses: abatilo/actions-poetry@master
-      with:
-        args: >-
-          run python -m pytest --cov-report=xml --cov=geoh5io --cov-branch --cov-fail-under=80
+      run: poetry run pytest --cov-report=xml --cov=geoh5io --cov-branch --cov-fail-under=80
     - name: Upload coverage to Codecov
       if: success()
       run: >-
