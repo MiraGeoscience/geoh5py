@@ -40,21 +40,19 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Install
-      uses: abatilo/actions-poetry@master
-      with:
-        args: install
+      run: |
+        curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+        poetry install
     - name: Run pylint on modified files
       if: github.event_name == 'pull_request'
-      uses: abatilo/actions-poetry@master
-      with:
-        args: >-
-          run python -m pylint -j0
-          $(git diff --name-only refs/remotes/origin/development... | grep -E '^geoh5io/.*\.py$' || echo 'geoh5io/__init__.py')
+      run: >-
+        poetry run pylint -j0 $(
+        git diff --name-only refs/remotes/origin/development... | grep -E '^geoh5io/.*\.py$'
+        || echo 'geoh5io/__init__.py'
+        )
     - name: Run pylint on all files
       if: github.event_name == 'push'
-      uses: abatilo/actions-poetry@master
-      with:
-        args: run python -m pylint -j0 geoh5io
+      run: poetry run pylint -j0 geoh5io
 
   pytest:
     name: pytest
@@ -62,14 +60,11 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Install
-      uses: abatilo/actions-poetry@master
-      with:
-        args: install
+      run: |
+        curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+        poetry install
     - name: Run pytest
-      uses: abatilo/actions-poetry@master
-      with:
-        args: >-
-          run python -m pytest --cov-report=xml --cov=geoh5io --cov-branch --cov-fail-under=80
+      run: poetry run pytest --cov-report=xml --cov=geoh5io --cov-branch --cov-fail-under=80
     - name: Upload coverage to Codecov
       if: success()
       run: >-
