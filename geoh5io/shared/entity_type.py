@@ -67,23 +67,3 @@ class EntityType(ABC):
         Returns None if not found.
         """
         return cast(TEntityType, workspace.find_type(type_uid, cls))
-
-    @classmethod
-    def known_types(cls):
-        """
-        Get dictionary of known entity types with class
-
-        :return: dict
-        """
-        return {
-            "{dd99b610-be92-48c0-873c-5b5946ea2840}": "Unknown type",
-            "{61fbb4e8-a480-11e3-8d5a-2776bdf4f982}": "Container",
-            "{825424fb-c2c6-4fea-9f2b-6cd00023d393}": "DrillHole container",
-            "{202c5db1-a56d-4004-9cad-baafd8899406}": "Points",
-            "{6a057fdc-b355-11e3-95be-fd84a7ffcb88}": "Curve",
-            "{f26feba3-aded-494b-b9e9-b2bbcbe298e1}": "Surface",
-            "{b020a277-90e2-4cd7-84d6-612ee3f25051}": "3D mesh (block model)",
-            "{7caebf0e-d16e-11e3-bc69-e4632694aa37}": "Drillhole",
-            "{77ac043c-fe8d-4d14-8167-75e300fb835a}": "GeoImage",
-            "{e79f449d-74e3-4598-9c9c-351a28b8b69e}": "Label",
-        }
