@@ -8,46 +8,18 @@ on:
   pull_request:
     branches:
     - development
-env:
-  python_version: 3.7
+    - master
 
 jobs:
-  one:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-      - name: Dump job context
-        env:
-          JOB_CONTEXT: ${{ toJson(job) }}
-        run: echo "$JOB_CONTEXT"
-      - name: Dump steps context
-        env:
-          STEPS_CONTEXT: ${{ toJson(steps) }}
-        run: echo "$STEPS_CONTEXT"
-      - name: Dump runner context
-        env:
-          RUNNER_CONTEXT: ${{ toJson(runner) }}
-        run: echo "$RUNNER_CONTEXT"
-      - name: Dump strategy context
-        env:
-          STRATEGY_CONTEXT: ${{ toJson(strategy) }}
-        run: echo "$STRATEGY_CONTEXT"
-      - name: Dump matrix context
-        env:
-          MATRIX_CONTEXT: ${{ toJson(matrix) }}
-        run: echo "$MATRIX_CONTEXT"
   pre-commit:
     name: pre-commit
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: Set up Python $python_version
+    - name: Set up Python version
       uses: actions/setup-python@v1
       with:
-        python-version: $python_version
+        python-version: 3.7
     - name: Install pre-commit
       run: |
         python -m pip install --upgrade pip
@@ -57,7 +29,7 @@ jobs:
     - name: Run pre-commit hooks on modified files
       if: github.event_name == 'pull_request'
       run: >-
-        git diff --name-only refs/remotes/origin/development... |
+        git diff --name-only refs/remotes/origin/${{github.base_ref}}... |
         xargs pre-commit run --config .pre-commit-ci-config.yaml --files
     - name: Run pre-commit hooks on all files
       if: github.event_name == 'push'
@@ -68,10 +40,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: Set up Python $python_version
+    - name: Set up Python version
       uses: actions/setup-python@v1
       with:
-        python-version: $python_version
+        python-version: 3.7
     - name: Environment
       run: echo ::add-path::$HOME/.poetry/bin
     - name: Install
@@ -82,7 +54,7 @@ jobs:
       if: github.event_name == 'pull_request'
       run: >-
         poetry run pylint -j0 $(
-        git diff --name-only refs/remotes/origin/development... | grep -E '^geoh5io/.*\.py$'
+        git diff --name-only refs/remotes/origin/${{github.base_ref}}... | grep -E '^geoh5io/.*\.py$'
         || echo 'geoh5io/__init__.py'
         )
     - name: Run pylint on all files
