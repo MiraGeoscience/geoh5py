@@ -30,14 +30,6 @@ repos:
     -   id: mypy
         args: ["--ignore-missing-imports", "--scripts-are-modules", "--show-error-context",
                "--show-column-numbers"]
--   repo: local
-    hooks:
-    -   id: pylint
-        name: pylint
-        entry: poetry run pylint
-        language: system
-        types: [python]
-        exclude: ^doc/
 -   repo: https://github.com/codespell-project/codespell
     rev: v1.16.0
     hooks:
