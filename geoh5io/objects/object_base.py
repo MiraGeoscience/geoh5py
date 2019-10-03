@@ -18,7 +18,32 @@ class ObjectBase(Entity):
         self._type = object_type
         self._allow_move = 1
         self._clipping_ids: List[uuid.UUID] = []
+        self._parent = None
         object_type.workspace._register_object(self)
+
+    # @property
+    # def parent(self):
+    #     """
+    #     The parent of an object in the workspace
+    #     :return: Entity: Parent entity
+    #     """
+    #     if getattr(self, "_parent", None) is None:
+    #
+    #         self._parent = self.get_parent()
+    #
+    #     return self._parent
+    #
+    # def get_parent(self):
+    #     """
+    #     Function to fetch the parent of an object from the workspace tree
+    #     :return: Entity: Parent entity of object
+    #     """
+    #     for item in self._type.workspace.tree['objects'].items():
+    #         if uuid.UUID(item[0]) == self.uid:
+    #
+    #             parent = item[1]['parent']
+    #
+    #     return parent
 
     @property
     def entity_type(self) -> ObjectType:
