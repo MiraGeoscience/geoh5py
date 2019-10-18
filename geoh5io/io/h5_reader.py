@@ -35,7 +35,7 @@ class H5Reader:
         x = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["x"]
         y = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["y"]
         z = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["z"]
-        vertices = Coord3D((x, y, z))
+        vertices = Coord3D(np.c_[x, y, z])
 
         project.close()
 

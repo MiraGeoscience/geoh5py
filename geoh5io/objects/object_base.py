@@ -1,6 +1,6 @@
 import uuid
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 from geoh5io.shared import Entity
 
@@ -46,13 +46,13 @@ class ObjectBase(Entity):
         """
         :return: List of names of data
         """
-        return self.entity_type.workspace.get_children_list(self.uid)
+        return self.entity_type.workspace.get_children_list(self.uid, "data")
 
-    def get_data(self, name: str):
+    def get_data(self, name: str) -> Optional[Entity]:
         """
         :return: List of names of data
         """
-        return self.entity_type.workspace.get_children(self.uid, name)
+        return self.entity_type.workspace.get_children(self.uid, name)[0]
 
     @property
     def entity_type(self) -> ObjectType:

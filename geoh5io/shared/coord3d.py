@@ -17,5 +17,9 @@ class Coord3D:
     def z(self) -> float:
         return self._xyz[:, 2]
 
+    @property
+    def locations(self) -> np.array:
+        return self._xyz
+
     def __getitem__(self, item) -> float:
         return self._xyz[item, :]
