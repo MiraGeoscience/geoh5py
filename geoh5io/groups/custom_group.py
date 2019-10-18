@@ -1,3 +1,4 @@
+import uuid
 from typing import Optional
 
 from .group import Group
@@ -8,7 +9,7 @@ class CustomGroup(Group):
     """
 
     @classmethod
-    def default_type_uid(cls):
+    def default_type_uid(cls) -> Optional[uuid.UUID]:
         # raise RuntimeError(f"No predefined static type UUID for {cls}.")
         return None
 

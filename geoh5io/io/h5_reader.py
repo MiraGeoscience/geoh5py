@@ -1,7 +1,10 @@
 import uuid
+from typing import Optional
 
 import h5py
 import numpy as np
+
+from geoh5io.shared import Coord3D
 
 
 class H5Reader:
@@ -26,80 +29,79 @@ class H5Reader:
         return project_attrs
 
     @classmethod
+    def get_vertices(cls, h5file: Optional[str], base: str, uid: uuid.UUID) -> Coord3D:
+        project = h5py.File(h5file, "r+")
+
+        x = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["x"]
+        y = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["y"]
+        z = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["z"]
+        vertices = Coord3D((x, y, z))
+
+        project.close()
+
+        return vertices
+
+    @classmethod
+    def get_value(
+        cls, h5file: Optional[str], base: str, uid: uuid.UUID
+    ) -> Optional[float]:
+        project = h5py.File(h5file, "r+")
+
+        data = np.r_[project[base]["Data"]["{" + str(uid) + "}"]["Data"]]
+
+        project.close()
+
+        return data
+
+    @classmethod
     def get_project_tree(cls, h5file: str, base: str) -> dict:
 
         project = h5py.File(h5file, "r+")
 
-        tree: dict = {
-            "data": {},
-            "object": {},
-            "group": {},
-            "types": {"data": {}, "group": {}, "object": {}},
-        }
+        tree: dict = {}
 
-        data_types = project[base]["Types"]["Data types"]
-        for uid in data_types:
-            tree["types"]["data"][uid] = data_types[uid].attrs["Name"]
+        # Load all entity types
+        entity_type_classes = ["Data types", "Group types", "Object types"]
+        for entity_type_class in entity_type_classes:
+            for str_uid, entity_type in project[base]["Types"][
+                entity_type_class
+            ].items():
+                uid = uuid.UUID(str_uid)
+                tree[uid] = {}
+                tree[uid]["entity_type"] = entity_type_class.replace(" ", "_").lower()[
+                    :-1
+                ]
+                for key, value in entity_type.attrs.items():
+                    tree[uid][key.replace(" ", "_").lower()] = value
 
-        group_types = project[base]["Types"]["Group types"]
-        for uid in group_types:
-            tree["types"]["group"][uid] = group_types[uid].attrs["Name"]
+        # Load all entities with relationships
+        entity_classes = ["Data", "Objects", "Groups"]
+        for entity_class in entity_classes:
 
-        object_types = project[base]["Types"]["Object types"]
-        for uid in object_types:
-            tree["types"]["object"][uid] = object_types[uid].attrs["Name"]
+            for str_uid, entity in project[base][entity_class].items():
+                uid = uuid.UUID(str_uid)
+                tree[uid] = {}
+                tree[uid]["entity_type"] = entity_class.replace("s", "").lower()
+                for key, value in entity.attrs.items():
+                    tree[uid][key.replace(" ", "_").lower()] = value
 
-        data = project[base]["Data"]
-        for uid in data:
-            tree["data"][uid] = {}
-            tree["data"][uid]["name"] = data[uid].attrs["Name"]
-            tree["data"][uid]["type"] = data[uid]["Type"].attrs["ID"]
-            tree["data"][uid]["parent"] = []
-            tree["data"][uid]["children"] = []
+                tree[uid]["type"] = uuid.UUID(entity["Type"].attrs["ID"])
+                tree[uid]["parent"] = []
+                tree[uid]["children"] = []
 
-        objects = project[base]["Objects"]
-        for uid in objects:
-            tree["object"][uid] = {}
-            tree["object"][uid]["name"] = objects[uid].attrs["Name"]
-            tree["object"][uid]["type"] = objects[uid]["Type"].attrs["ID"]
-            tree["object"][uid]["parent"] = []
-            children = list(objects[uid]["Data"].keys())
+                if entity_class in ["Groups", "Objects"]:
 
-            # Assign as parent to data
-            for child in children:
-                tree["data"][objects[uid]["Data"][child].attrs["ID"]]["parent"] = uid
+                    # Assign as parent to data and data children
+                    for key, value in entity["Data"].items():
+                        tree[uuid.UUID(value.attrs["ID"])]["parent"] = uid
+                        tree[uid]["children"] += [uuid.UUID(key)]
 
-            tree["object"][uid]["children"] = children
+                if entity_class == "Groups":
 
-        groups = project[base]["Groups"]
-        for uid in groups:
-            tree["group"][uid] = {}
-            tree["group"][uid]["name"] = groups[uid].attrs["Name"]
-            tree["group"][uid]["type"] = groups[uid]["Type"].attrs["ID"]
-            tree["group"][uid]["parent"] = []
-            tree["group"][uid]["children"] = []
-
-            # Assign as parent to data
-            for child in groups[uid]["Data"]:
-                tree["data"][groups[uid]["Data"][child].attrs["ID"]]["parent"] = uid
-
-            children = list(groups[uid]["Data"].keys())
-
-            # Assign as parent to objects
-            for child in groups[uid]["Objects"]:
-                tree["object"][groups[uid]["Objects"][child].attrs["ID"]][
-                    "parent"
-                ] = uid
-
-            children += list(groups[uid]["Objects"].keys())
-
-            # Check for parent group to groups
-            for child in groups[uid]["Groups"]:
-                tree["group"][groups[uid]["Groups"][child].attrs["ID"]]["parent"] = uid
-
-            children += list(groups[uid]["Groups"].keys())
-
-            tree["group"][uid]["children"] = children
+                    # Assign as parent to data and data children
+                    for key, value in entity["Objects"].items():
+                        tree[uuid.UUID(value.attrs["ID"])]["parent"] = uid
+                        tree[uid]["children"] += [uuid.UUID(key)]
 
         project.close()
 

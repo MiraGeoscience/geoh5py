@@ -1,5 +1,4 @@
 import uuid
-from typing import List
 
 from geoh5io.shared import Coord3D
 
@@ -11,9 +10,20 @@ class Points(ObjectBase):
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)
-        # TODO
-        self._vertices: List[Coord3D] = []
+
+        self._vertices: Coord3D = Coord3D()
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
+
+    @property
+    def vertices(self) -> Coord3D:
+        """
+
+        :return:
+        """
+        if getattr(self, "_vertices", None) is None:
+            self._vertices = self.entity_type.workspace.get_vertices(self.uid)
+
+        return self._vertices

@@ -48,6 +48,6 @@ def insert_once(some_dict: Dict[K, ReferenceType], key: K, value):
     """
     existing_ref = some_dict.get(key, None)
     if existing_ref is not None and existing_ref() is not None:
-        return  # raise RuntimeError(f"Key '{key}' already used.")
+        raise RuntimeError(f"Key '{key}' already used.")
 
     some_dict[key] = weakref.ref(value)

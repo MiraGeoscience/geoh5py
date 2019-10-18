@@ -34,7 +34,7 @@ class Group(Entity):
 
     @classmethod
     @abstractmethod
-    def default_type_uid(cls) -> uuid.UUID:
+    def default_type_uid(cls) -> Optional[uuid.UUID]:
         ...
 
     @classmethod

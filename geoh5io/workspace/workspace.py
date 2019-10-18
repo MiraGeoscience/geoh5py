@@ -13,7 +13,7 @@ from geoh5io.data import Data
 from geoh5io.groups import Group
 from geoh5io.io import H5Reader
 from geoh5io.objects import ObjectBase
-from geoh5io.shared import weakref_utils
+from geoh5io.shared import Coord3D, weakref_utils
 from geoh5io.shared.entity import Entity
 
 from .root_group import RootGroup
@@ -66,25 +66,37 @@ class Workspace:
         return self._tree
 
     @property
-    def get_groups_list(self):
+    def list_groups(self):
         """
         :return: List of names of groups
         """
-        return [value["name"] for value in self.tree["group"].values()]
+        return [
+            value["name"]
+            for value in self.tree.values()
+            if value["entity_type"] == "group"
+        ]
 
     @property
-    def get_objects_list(self):
+    def list_objects(self):
         """
         :return: List of names of objects
         """
-        return [value["name"] for value in self.tree["object"].values()]
+        return [
+            value["name"]
+            for value in self.tree.values()
+            if value["entity_type"] == "object"
+        ]
 
     @property
-    def get_data_list(self):
+    def list_data(self):
         """
         :return: List of names of data
         """
-        return [value["name"] for value in self.tree["data"].values()]
+        return [
+            value["name"]
+            for value in self.tree.values()
+            if value["entity_type"] == "data"
+        ]
 
     # @property
     # def get_group_types_list(self):
@@ -107,47 +119,45 @@ class Workspace:
     #     """
     #     return [value for value in self.tree["types"]["data"].values()]
 
-    def get_entity(self, name: str, entity_type: str) -> List[Optional[Entity]]:
+    def get_entity(self, name: str) -> List[Optional[Entity]]:
         """Retrieve an entity from its name
 
         :param name: List of object identifiers of type 'str' | 'uuid'
         :return: object_base.ObjectBase
         """
 
-        assert entity_type in [
-            "group",
-            "object",
-            "data",
-        ], "'entity_type' must be on of %s" % ["group", "object", "data"]
-
         base_classes = {"group": Group, "object": ObjectBase, "data": Data}
 
-        entity_class = base_classes[entity_type]
+        if isinstance(name, uuid.UUID):
+            list_entity_uid = [name]
 
-        # Extract all objects uuid with matching name
-        entity_uids = [
-            key
-            for key in self.tree[entity_type]
-            if self.tree[entity_type][key]["name"] == name
-        ]
+        else:  # Extract all objects uuid with matching name
+            list_entity_uid = [
+                key
+                for key in self.tree
+                if (self.tree[key]["name"] == name)
+                and ("type" not in self.tree[key]["entity_type"])
+            ]
 
         entity_list: List[Optional[Entity]] = []
-        for uid in entity_uids:
+        for uid in list_entity_uid:
+            entity_type = self.tree[uid]["entity_type"]
 
             # Check if an object already exists in the workspace
+            print(entity_type, name)
             finder = getattr(self, f"find_{entity_type}")
-            if finder(uuid.UUID(uid)) is not None:
-                entity_list += [finder(uuid.UUID(uid))]
+            if finder(uid) is not None:
+                print("Found")
+                entity_list += [finder(uid)]
                 continue
 
-            # If not, check the type
-            entity_type_uid = uuid.UUID(self.tree[entity_type][uid]["type"])
-
             created_object = self.create_entity(
-                entity_class,
-                entity_type_uid,
-                self.tree[entity_type][uid]["name"],
-                uuid.UUID(uid),
+                base_classes[entity_type],
+                self.tree[uid]["type"],
+                self.tree[uid]["name"],
+                uid,
+                attributes=self.tree[uid],
+                type_attributes=self.tree[self.tree[uid]["type"]],
             )
 
             # Object of unknown type
@@ -160,58 +170,141 @@ class Workspace:
         return entity_list
 
     def create_entity(
-        self, entity_class, entity_type_uid: uuid.UUID, name: str, uid: uuid.UUID
+        self,
+        entity_class,
+        entity_type_uid: uuid.UUID,
+        name: str,
+        uid: uuid.UUID,
+        attributes=None,
+        type_attributes=None,
     ) -> Optional[Entity]:
 
         created_entity: Optional[Entity] = None
 
-        for _, member in (
-            inspect.getmembers(groups)
-            + inspect.getmembers(objects)
-            + inspect.getmembers(data)
-        ):
+        if entity_class is not Data:
+            for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
 
-            if (
-                inspect.isclass(member)
-                and issubclass(member, entity_class)
-                and member is not entity_class
-                and member.default_type_uid() == entity_type_uid
-            ):
-                known_type = member.find_or_create_type(self)
-                created_entity = member(known_type, name, uid)
+                if (
+                    inspect.isclass(member)
+                    and issubclass(member, entity_class)
+                    and member is not entity_class
+                    and hasattr(member, "default_type_uid")
+                    and member.default_type_uid() is not None
+                    and member.default_type_uid() == entity_type_uid
+                ):
 
-        # Special case for CustomGroup without uuid
-        if (created_entity is None) and entity_class == Group:
-            custom = groups.custom_group.CustomGroup
-            unknown_type = custom.find_or_create_type(self)
-            created_entity = custom(unknown_type, name, uid)
+                    known_type = member.find_or_create_type(self)
+                    created_entity = member(known_type, name, uid)
+
+            # Special case for CustomGroup without uuid
+            if (created_entity is None) and entity_class == Group:
+                custom = groups.custom_group.CustomGroup
+                unknown_type = custom.find_or_create_type(self)
+                created_entity = custom(unknown_type, name, uid)
+
+        else:
+
+            data_type = data.data_type.DataType(
+                self,
+                entity_type_uid,
+                getattr(
+                    data.primitive_type_enum.PrimitiveTypeEnum,
+                    type_attributes["primitive_type"].upper(),
+                ),
+            )
+
+            for _, member in inspect.getmembers(data):
+
+                if (
+                    inspect.isclass(member)
+                    and issubclass(member, entity_class)
+                    and member is not entity_class
+                    and hasattr(member, "primitive_type")
+                    and inspect.ismethod(member.primitive_type)
+                    and data_type.primitive_type is member.primitive_type()
+                ):
+
+                    created_entity = member(
+                        data_type,
+                        getattr(
+                            data.data_association_enum.DataAssociationEnum,
+                            attributes["association"].upper(),
+                        ),
+                        name,
+                        uid,
+                    )
 
         return created_entity
 
-    def get_data(self, name: str) -> List[Optional[Entity]]:
-        """Retrieve a group from its name
-
-        :param name: List of group identifiers of type 'str' | 'uuid'
-        :return: groups.Group
-        """
-        return self.get_entity(name, "data")
-
-    def get_object(self, name: str) -> List[Optional[Entity]]:
-        """Retrieve a group from its name
-
-        :param name: List of group identifiers of type 'str' | 'uuid'
-        :return: groups.Group
-        """
-        return self.get_entity(name, "object")
-
-    def get_group(self, name: str) -> List[Optional[Entity]]:
-        """Retrieve a group from its name
-
-        :param name: List of group identifiers of type 'str' | 'uuid'
-        :return: groups.Group
+    def get_children_list(self, uid: uuid.UUID, children_type: str):
         """
 
-        return self.get_entity(name, "group")
+        :param uid: UUID of object
+        :param children_type:
+        :return:
+        """
+
+        name_list: List[str] = []
+
+        for key in self.tree[uid]["children"]:
+
+            if self.tree[key]["entity_type"] == children_type:
+                name_list += [self.tree[key]["name"]]
+
+        return name_list
+
+    def get_children(self, uid: uuid.UUID, name: str) -> List[Optional[Entity]]:
+        """
+        Return a data object
+
+        :param: uid: UUID of object
+        :param name: Name of children
+        :return: List[entity]: A list of registered objects
+        """
+
+        if isinstance(name, uuid.UUID):
+            return self.get_entity(name)
+
+        for key in self.tree[uid]["children"]:
+
+            if self.tree[key]["name"] == name:
+
+                return self.get_entity(key)
+
+        return []
+
+    def get_parent(self, uid: uuid.UUID) -> List[Optional[Entity]]:
+        """
+        Return the parent object
+
+        :param: uid: UUID of object
+        :return: entity: The registered parent entity
+        """
+
+        if self.tree[uid]["parent"]:
+            return self.get_entity(self.tree[uid]["parent"])
+
+        return []
+
+    def get_data_value(self, uid: uuid.UUID) -> Optional[float]:
+        """
+        Get the data values from the source h5 file
+
+        :param uid: UUID of target data object
+        :return: value: Data value
+        """
+
+        return H5Reader.get_value(self._h5file, self._base, uid)
+
+    def get_vertices(self, uid: uuid.UUID) -> Coord3D:
+        """
+        Get the vertices of an object from the source h5 file
+
+        :param uid: UUID of target entity
+        :return: value: Data value
+        """
+
+        return H5Reader.get_vertices(self._h5file, self._base, uid)
 
     @property
     def root(self) -> "group.Group":
@@ -242,7 +335,6 @@ class Workspace:
         return cast(Workspace, active_one)
 
     def _register_type(self, entity_type: "entity_type.EntityType"):
-        # print(entity_type.uid, entity_type)
         weakref_utils.insert_once(self._types, entity_type.uid, entity_type)
 
     def _register_group(self, group: "group.Group"):
