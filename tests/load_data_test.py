@@ -1,10 +1,10 @@
+import numpy as np
+
 from geoh5io.workspace import Workspace
 
 
 def test_load_data():
-    workspace = Workspace(
-        r"C:\Users\DominiqueFournier\Dropbox\Projects\Mira\GeoIO\"TKC.geoh5"
-    )
+    workspace = Workspace(r".\assets\pointObject.geoh5")
 
     names = workspace.list_objects
 
@@ -14,4 +14,4 @@ def test_load_data():
 
     data = obj.get_data(children[0])
 
-    print(data)
+    assert isinstance(data.values, np.ndarray), "Imported data should be a numpy array"

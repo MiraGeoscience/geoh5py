@@ -103,6 +103,11 @@ class H5Reader:
                         tree[uuid.UUID(value.attrs["ID"])]["parent"] = uid
                         tree[uid]["children"] += [uuid.UUID(key)]
 
+                    # Assign as parent to data and data children
+                    for key, value in entity["Groups"].items():
+                        tree[uuid.UUID(value.attrs["ID"])]["parent"] = uid
+                        tree[uid]["children"] += [uuid.UUID(key)]
+
         project.close()
 
         return tree
