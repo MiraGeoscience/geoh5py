@@ -26,10 +26,10 @@ if TYPE_CHECKING:
 
 @dataclass
 class WorkspaceAttributes:
-    contributors = None
-    distance_unit = None
-    ga_version = None
-    version = None
+    contributors = "UserName"
+    distance_unit = "meter"
+    ga_version = "1"
+    version = 1
 
 
 class Workspace:
@@ -47,6 +47,14 @@ class Workspace:
         self._data: Dict[uuid.UUID, ReferenceType[data.Data]] = {}
 
         self._root = root if root is not None else RootGroup(self)
+
+    @property
+    def base_name(self):
+        """
+
+        :return: str: Name of the project ['GEOSCIENCE']
+        """
+        return self._base
 
     @property
     def version(self):
@@ -384,7 +392,7 @@ class Workspace:
         """ Fetch the workspace attributes
         """
 
-        if getattr(self, "_project_attributes", None) is None:
+        if getattr(self, "_workspace_attributes", None) is None:
 
             self._workspace_attributes = WorkspaceAttributes()
 
