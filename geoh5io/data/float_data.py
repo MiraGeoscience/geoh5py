@@ -9,3 +9,11 @@ class FloatData(Data):
     # TODO: implement specialization to access values.
     # Stored as a 1D array of 32-bit float type.
     # No data value: 1.175494351e-38 (FLT_MIN, considering use of NaN)
+
+    @property
+    def values(self):
+
+        if getattr(self, "_values", None) is None:
+            self._values = self.entity_type.workspace.get_data_value(self.uid)
+
+        return self._values

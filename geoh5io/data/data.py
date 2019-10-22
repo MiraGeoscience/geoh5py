@@ -21,6 +21,7 @@ class Data(Entity):
         super().__init__(name, uid)
         self._association = association
         self._type = data_type
+        self._values = None
         data_type.workspace._register_data(self)
 
     @property

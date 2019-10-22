@@ -28,8 +28,3 @@ class Points(ObjectBase):
             self._vertices = self.entity_type.workspace.get_vertices(self.uid)
 
         return self._vertices
-
-    @property
-    def locations(self):
-
-        return self.vertices.locations

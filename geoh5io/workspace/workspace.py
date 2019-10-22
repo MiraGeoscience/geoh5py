@@ -144,10 +144,8 @@ class Workspace:
             entity_type = self.tree[uid]["entity_type"]
 
             # Check if an object already exists in the workspace
-            print(entity_type, name)
             finder = getattr(self, f"find_{entity_type}")
             if finder(uid) is not None:
-                print("Found")
                 entity_list += [finder(uid)]
                 continue
 
