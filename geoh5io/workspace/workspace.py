@@ -10,7 +10,7 @@ from weakref import ReferenceType
 
 from geoh5io import data, groups, objects
 from geoh5io.data import Data
-from geoh5io.groups import Group
+from geoh5io.groups import CustomGroup, Group, NoTypeGroup
 from geoh5io.io import H5Reader
 from geoh5io.objects import ObjectBase
 from geoh5io.shared import Coord3D, weakref_utils
@@ -70,6 +70,20 @@ class Workspace:
     def tree(self):
         if not getattr(self, "_tree"):
             self._tree = H5Reader.get_project_tree(self.h5file, self._base)
+
+            # Find the workspace object
+            for key, value in self._tree.items():
+                if "parent" in value.keys() and not value["parent"]:
+                    uid = key
+
+            self.create_entity(
+                Group,
+                NoTypeGroup.default_type_uid(),
+                "Workspace",
+                uid,
+                attributes=self.tree[uid],
+                type_attributes=self.tree[self.tree[uid]["type"]],
+            )
 
         return self._tree
 
@@ -195,7 +209,7 @@ class Workspace:
                     and issubclass(member, entity_class)
                     and member is not entity_class
                     and hasattr(member, "default_type_uid")
-                    and member.default_type_uid() is not None
+                    and not member == CustomGroup
                     and member.default_type_uid() == entity_type_uid
                 ):
 
