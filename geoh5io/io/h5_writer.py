@@ -5,6 +5,9 @@ import numpy as np
 
 
 class H5Writer:
+
+    str_type = h5py.special_dtype(vlen=str)
+
     @staticmethod
     def bool_value(value: bool) -> np.uint8:
         return np.uint8(1 if value else 0)
@@ -14,16 +17,30 @@ class H5Writer:
         return f"{{{value}}}"
 
     @classmethod
-    def create_project(cls, file: str, workspace):
-        str_type = h5py.special_dtype(vlen=str)
+    def create_geoh5(cls, file: str, close_file=True):
+
         h5file = h5py.File(file, "w")
+
+        if close_file:
+            h5file.close()
+            return None
+        return h5file
+
+    @classmethod
+    def add_workspace(cls, file: str, workspace, close_file=True):
+
+        # Check if file reference to an opened hdf5
+        if not isinstance(file, h5py.File):
+            h5file = h5py.File(file, "r+")
+        else:
+            h5file = file
 
         attr = workspace.get_workspace_attributes().__dict__
         project = h5file.create_group(workspace.base_name)
-        project.attrs.create("Distance unit", attr["distance_unit"], dtype=str_type)
+        project.attrs.create("Distance unit", attr["distance_unit"], dtype=cls.str_type)
         project.attrs.create("Version", attr["version"])
-        project.attrs.create("Contributors", attr["contributors"], dtype=str_type)
-        project.attrs.create("GA Version", attr["ga_version"], dtype=str_type)
+        project.attrs.create("Contributors", attr["contributors"], dtype=cls.str_type)
+        project.attrs.create("GA Version", attr["ga_version"], dtype=cls.str_type)
 
         # Create base entity structure for geoh5
         project.create_group("Data")
@@ -34,11 +51,14 @@ class H5Writer:
         types.create_group("Group types")
         types.create_group("Object types")
 
-        h5file.close()
+        if close_file:
+            h5file.close()
+            return None
+        return project
 
     @classmethod
-    def add_type(cls, file: str, tree: dict, uid: uuid.UUID):
-        str_type = h5py.special_dtype(vlen=str)
+    def add_type(cls, file: str, tree: dict, uid: uuid.UUID, close_file=True):
+
         # Check if file reference to an opened hdf5
         if not isinstance(file, h5py.File):
             h5file = h5py.File(file, "r+")
@@ -58,17 +78,16 @@ class H5Writer:
             else:
                 entry_key = key.capitalize()
 
-            new_type.attrs.create(entry_key, value, dtype=str_type)
+            new_type.attrs.create(entry_key, value, dtype=cls.str_type)
 
-        if not isinstance(file, h5py.File):
+        if close_file:
             h5file.close()
             return None
-
         return new_type
 
     @classmethod
-    def add_entity(cls, file: str, tree: dict, uid: uuid.UUID):
-        str_type = h5py.special_dtype(vlen=str)
+    def add_entity(cls, file: str, tree: dict, uid: uuid.UUID, close_file=True):
+        cls.str_type = h5py.special_dtype(vlen=str)
         # Check if file reference to an opened hdf5
         if not isinstance(file, h5py.File):
             h5file = h5py.File(file, "r+")
@@ -92,15 +111,15 @@ class H5Writer:
             else:
                 entry_key = key.capitalize()
 
-            new_entity.attrs.create(entry_key, value, dtype=str_type)
+            new_entity.attrs.create(entry_key, value, dtype=cls.str_type)
 
-        new_type = H5Writer.add_type(h5file, tree, tree[uid]["type"])
+        # Add the type and return a pointer
+        new_type = H5Writer.add_type(h5file, tree, tree[uid]["type"], close_file=False)
 
         new_entity["Type"] = new_type
 
         # Check if file reference to an opened hdf5
-        if not isinstance(file, h5py.File):
+        if close_file:
             h5file.close()
             return None
-
         return new_entity
