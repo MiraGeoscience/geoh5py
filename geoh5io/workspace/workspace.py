@@ -141,7 +141,7 @@ class Workspace:
     #     """
     #     return [value for value in self.tree["types"]["data"].values()]
 
-    def get_entity(self, name: str) -> List[Optional[Entity]]:
+    def get_entity(self, name: str) -> List[Entity]:
         """Retrieve an entity from its name
 
         :param name: List of object identifiers of type 'str' | 'uuid'
@@ -161,7 +161,7 @@ class Workspace:
                 and ("type" not in self.tree[key]["entity_type"])
             ]
 
-        entity_list: List[Optional[Entity]] = []
+        entity_list: List[Entity] = []
         for uid in list_entity_uid:
             entity_type = self.tree[uid]["entity_type"]
 
@@ -197,7 +197,7 @@ class Workspace:
         uid: uuid.UUID,
         attributes=None,
         type_attributes=None,
-    ) -> Optional[Entity]:
+    ):
 
         created_entity: Optional[Entity] = None
 
@@ -273,7 +273,7 @@ class Workspace:
 
         return name_list
 
-    def get_children(self, uid: uuid.UUID, name: str) -> List[Optional[Entity]]:
+    def get_children(self, uid: uuid.UUID, name: str) -> List[Entity]:
         """
         Return a data object
 
@@ -293,7 +293,7 @@ class Workspace:
 
         return []
 
-    def get_parent(self, uid: uuid.UUID) -> List[Optional[Entity]]:
+    def get_parent(self, uid: uuid.UUID) -> List[Entity]:
         """
         Return the parent object
 
