@@ -4,7 +4,6 @@ import h5py
 import numpy as np
 
 from geoh5io.shared import Entity, EntityType
-from geoh5io.workspace import Workspace
 
 
 class H5Writer:
@@ -75,11 +74,14 @@ class H5Writer:
             if key == "entity_type":
                 continue
             if key == "id":
-                entry_key = key.upper()
+                entry_key = key.replace("_", " ").upper()
             else:
-                entry_key = key.capitalize()
+                entry_key = key.replace("_", " ").capitalize()
 
-            new_type.attrs.create(entry_key, value, dtype=cls.str_type)
+            if isinstance(value, str):
+                new_type.attrs.create(entry_key, value, dtype=cls.str_type)
+            else:
+                new_type.attrs.create(entry_key, value, dtype=type(value))
 
         if close_file:
             h5file.close()
@@ -87,7 +89,7 @@ class H5Writer:
         return new_type
 
     @classmethod
-    def finalize(cls, file: str, workspace: Workspace, close_file=True):
+    def finalize(cls, file: str, workspace, close_file=True):
         """
 
         :param file:
@@ -107,7 +109,33 @@ class H5Writer:
             h5file.close()
 
     @classmethod
-    def add_entity(cls, file: str, entity: Entity, values=None, close_file=True):
+    def add_vertices(cls, file: str, entity, close_file=True):
+        if not isinstance(file, h5py.File):
+            h5file = h5py.File(file, "r+")
+        else:
+            h5file = file
+
+        if hasattr(entity, "vertices") and entity.vertices:
+            xyz = entity.vertices.locations
+            entity_handle = H5Writer.add_entity(h5file, entity, close_file=False)
+
+            # Adding vertices
+            loc_type = np.dtype(
+                [("x", np.float64), ("y", np.float64), ("z", np.float64)]
+            )
+
+            vertices = entity_handle.create_dataset(
+                "Vertices", (xyz.shape[0],), dtype=loc_type
+            )
+            vertices["x"] = xyz[:, 0]
+            vertices["y"] = xyz[:, 1]
+            vertices["z"] = xyz[:, 2]
+
+        if close_file:
+            h5file.close()
+
+    @classmethod
+    def add_entity(cls, file: str, entity, values=None, close_file=True):
         """
 
         :param file:
@@ -141,34 +169,48 @@ class H5Writer:
                 return None
             return h5file[base][entity_type][cls.uuid_value(uid)]
 
-        new_entity = h5file[base][entity_type].create_group(cls.uuid_value(uid))
+        entity_handle = h5file[base][entity_type].create_group(cls.uuid_value(uid))
+
+        if entity_type == "Groups":
+            entity_handle.create_group("Data")
+            entity_handle.create_group("Groups")
+            entity_handle.create_group("Objects")
+        elif entity_type == "Objects":
+            entity_handle.create_group("Data")
 
         for key, value in tree[uid].items():
             if key in ["type", "entity_type", "parent", "children"]:
                 continue
             if key == "id":
-                entry_key = key.upper()
+                entry_key = key.replace("_", " ").upper()
             else:
-                entry_key = key.capitalize()
+                entry_key = key.replace("_", " ").capitalize()
 
             if isinstance(value, str):
-                new_entity.attrs.create(entry_key, value, dtype=cls.str_type)
+                entity_handle.attrs.create(entry_key, value, dtype=cls.str_type)
             else:
-                new_entity.attrs.create(entry_key, value, dtype="int8")
+                entity_handle.attrs.create(entry_key, value, dtype="int8")
 
         # Add the type and return a pointer
         new_type = H5Writer.add_type(h5file, entity.entity_type, close_file=False)
 
-        new_entity["Type"] = new_type
+        entity_handle["Type"] = new_type
 
-        if values is not None:
-            new_entity["Data"] = values
+        if hasattr(entity, "values"):
+            if values is not None:
+                entity_handle["Data"] = values
+
+            if entity.values is not None:
+                entity_handle["Data"] = entity.values
+
+        if hasattr(entity, "vertices") and entity.vertices:
+            H5Writer.add_vertices(h5file, entity, close_file=False)
 
         # Check if file reference to an opened hdf5
         if close_file:
             h5file.close()
 
-        return new_entity
+        return entity_handle
 
     @classmethod
     def add_to_parent(

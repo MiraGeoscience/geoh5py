@@ -120,27 +120,6 @@ class Workspace:
             if value["entity_type"] == "data"
         ]
 
-    # @property
-    # def get_group_types_list(self):
-    #     """
-    #     :return: List of names of group types
-    #     """
-    #     return [value for value in self.tree["types"]["group"].values()]
-    #
-    # @property
-    # def get_object_types_list(self):
-    #     """
-    #     :return: List of names of object types
-    #     """
-    #     return [value for value in self.tree["types"]["object"].values()]
-    #
-    # @property
-    # def get_data_types_list(self):
-    #     """
-    #     :return: List of names of data types
-    #     """
-    #     return [value for value in self.tree["types"]["data"].values()]
-
     def get_entity(self, name: str) -> List[Entity]:
         """Retrieve an entity from its name
 
