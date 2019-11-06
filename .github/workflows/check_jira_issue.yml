@@ -23,5 +23,6 @@ jobs:
           ${{ github.event.pull_request.body }}"
         }
         EOF
-        curl -sSL --data-binary @data.json --request POST --url ${{ github.event.pull_request.url }} \
+        cat data.json
+        curl -sSL --data @data.json --request POST --url ${{ github.event.pull_request.url }} \
         --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' --header 'content-type: application/json'
