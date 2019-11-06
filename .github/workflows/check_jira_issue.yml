@@ -14,9 +14,10 @@ jobs:
       run: echo ${{ github.event.pull_request.title }} | grep '^\s*\[\?GEOIO-[0-9]\+\b'
     - name: Add JIRA link
       run: >-
+        echo '{"body": "'$(echo "${{ github.event.pull_request.title }}" | sed -e 's/^\s*\[\?\(GEOIO-[0-9]\+\b\).*/\1/')' > data.json &&
+        echo '${{ github.event.pull_request.body }}"}' >> data.json &&
+        cat data.json &&
         curl --url ${{ github.event.pull_request.url }}
         --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}'
         --header 'content-type: application/json'
-        --data '{"body": "'$(
-          echo "${{ github.event.pull_request.title }}" | sed -e "s/^\s*\[\?\(GEOIO-[0-9]\+\b\).*/\1/"
-          )'\n${{ github.event.pull_request.body }}"}'
+        --data @-
