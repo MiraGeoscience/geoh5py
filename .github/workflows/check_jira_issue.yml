@@ -23,7 +23,7 @@ jobs:
         --request POST --url ${{ github.event.pull_request.url }} \
         --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' --header 'content-type: application/json' \
         --data $'{"body": "[$JIRA_NUMBER](https://bugs.miragesoscience.com/browse/$JIRA_NUMBER)\n\
-        $(jq --raw-output .pull_request.body "$GITHUB_EVENT_PATH" | sed 's/$/\\n/')"}
+        $(jq --raw-output .pull_request.body "$GITHUB_EVENT_PATH" | sed 's/$/\\n/')"}'
         EOF
         echo '----'
         cat update_body.sh
