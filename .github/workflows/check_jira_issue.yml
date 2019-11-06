@@ -19,4 +19,4 @@ jobs:
         --url ${{ github.event.pull_request.url }}
         --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}'
         --header 'content-type: application/json'
-        --data '{\"body\": \"[$JIRA_NUMBER](https://bugs.miragesoscience.com/browse/$JIRA_NUMBER)\n${{ github.event.pull_request.body }}\"}"
+        --data "{\"body\": \"[$JIRA_NUMBER](https://bugs.miragesoscience.com/browse/$JIRA_NUMBER)\n${{ github.event.pull_request.body }}\"}"
