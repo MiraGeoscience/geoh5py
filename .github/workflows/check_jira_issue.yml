@@ -19,9 +19,9 @@ jobs:
       run: |        
         cat <<EOF > data.json
         {
-          "body": "[$JIRA_NUMBER](https://bugs.miragesoscience.com/browse/$JIRA_NUMBER)\n
+          "body": "[$JIRA_NUMBER](https://bugs.miragesoscience.com/browse/$JIRA_NUMBER)\r\n
         EOF
-        jq --raw-output .pull_request.body "$GITHUB_EVENT_PATH" | sed 's/$/\\n/' >> data.json
+        jq --raw-output .pull_request.body "$GITHUB_EVENT_PATH" | sed 's/$/\\r\\n/' >> data.json
         echo '"}' >> data.json
         echo '----'
         cat data.json
