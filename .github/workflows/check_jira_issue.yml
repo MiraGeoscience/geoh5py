@@ -19,8 +19,8 @@ jobs:
       run: |
         cat <<EOF > data.json
         {
-          "body": "[$JIRA_NUMBER](https://bugs.miragesoscience.com/browse/$JIRA_NUMBER)
-          ${{ github.event.pull_request.body }}"
+          "body": "[$JIRA_NUMBER](https://bugs.miragesoscience.com/browse/$JIRA_NUMBER)\n
+          $(jq --raw-output .pull_request.body "$GITHUB_EVENT_PATH")"
         }
         EOF
         echo '----'
