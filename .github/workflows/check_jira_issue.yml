@@ -17,6 +17,7 @@ jobs:
     - name: Add JIRA link
       if: (!startsWith(github.event.pull_request.body, format('[{0}]', env.JIRA_NUMBER)))
       run: >-
+        echo ${{ env.JIRA_NUMBER }} &&
         echo '{"body": "['$JIRA_NUMBER'](https://bugs.miragesoscience.com/browse/'$JIRA_NUMBER')\n${{ github.event.pull_request.body }}"}' > data.json &&
         curl -sSL
         --data @data.json
