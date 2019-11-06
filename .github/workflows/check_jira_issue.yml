@@ -2,7 +2,7 @@ name: JIRA issue reference
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, edited]
+    types: [opened, synchronize, reopened, edited,]
 
 jobs:
   jira-number:
@@ -13,10 +13,10 @@ jobs:
     - name: Validate title
       run: echo ${{ github.event.pull_request.title }} | grep '^\s*\[\?GEOIO-[0-9]\+\b'
     - name: Add JIRA link
-      run: |
-        env JIRA_NUMBER=$(echo ${{ github.event.pull_request.title }} | sed -e 's/^\s*\[\?\(GEOIO-[0-9]\+\b\).*/\1/')
+      run: >-
+        JIRA_NUMBER=$(echo ${{ github.event.pull_request.title }} | sed -e 's/^\s*\[\?\(GEOIO-[0-9]\+\b\).*/\1/')
         curl --request POST
-        --url https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.url }}
+        --url ${{ github.event.pull_request.url }}
         --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}'
         --header 'content-type: application/json'
         --data '{\"body\": \"[$JIRA_NUMBER](https://bugs.miragesoscience.com/browse/$JIRA_NUMBER)\n${{ github.event.pull_request.body }}\"}"
