@@ -28,5 +28,5 @@ jobs:
         echo '----'
         jq --raw-output . "$GITHUB_EVENT_PATH"
         echo '----'
-        curl -sSL --data @data.json --request POST --url ${{ github.event.pull_request.url }} \
+        curl -sSL --data $"$(cat data.json)" --request POST --url ${{ github.event.pull_request.url }} \
         --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' --header 'content-type: application/json'
