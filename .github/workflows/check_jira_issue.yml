@@ -11,12 +11,15 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Validate title
-      run: echo ${{ github.event.pull_request.title }} | grep '^\s*\[\?GEOIO-[0-9]\+\b'
-    - name: Add JIRA link
       run: >-
-        JIRA_NUMBER=$(echo ${{ github.event.pull_request.title }} | sed -e 's/^\s*\[\?\(GEOIO-[0-9]\+\b\).*/\1/') &&
+        echo ${{ github.event.pull_request.title }} | grep '^\s*\[\?GEOIO-[0-9]\+\b' &&
+        echo "::set-env JIRA_NUMBER=$(echo ${{ github.event.pull_request.title }} | sed -e 's/^\s*\[\?\(GEOIO-[0-9]\+\b\).*/\1/')"
+    - name: Add JIRA link
+      if: (!startsWith(github.event.pull_request.body, format('[{0}]', env.JIRA_NUMBER)))
+      run: >-
         echo '{"body": "['$JIRA_NUMBER'](https://bugs.miragesoscience.com/browse/'$JIRA_NUMBER')\n${{ github.event.pull_request.body }}"}' > data.json &&
-        curl --data @data.json
+        curl -sSL
+        --data @data.json
         --request POST
         --url ${{ github.event.pull_request.url }}
         --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}'
