@@ -16,13 +16,13 @@ jobs:
         echo "::set-env name=JIRA_NUMBER::$(echo ${{ github.event.pull_request.title }} | sed -e 's/^\s*\[\?\(GEOIO-[0-9]\+\b\).*/\1/')"
     - name: Add JIRA link
       if: (!startsWith(github.event.pull_request.body, format('[{0}]', env.JIRA_NUMBER)))
-      run: |
+      run: |        
         cat <<EOF > data.json
         {
           "body": "[$JIRA_NUMBER](https://bugs.miragesoscience.com/browse/$JIRA_NUMBER)\n
-          $(jq --raw-output .pull_request.body "$GITHUB_EVENT_PATH")"
-        }
         EOF
+        jq --raw-output .pull_request.body "$GITHUB_EVENT_PATH" >> data.json
+        echo '"}' >> data.json
         echo '----'
         cat data.json
         echo '----'
