@@ -15,9 +15,7 @@ jobs:
     - name: Add JIRA link
       run: >-
         JIRA_NUMBER=$(echo ${{ github.event.pull_request.title }} | sed -e 's/^\s*\[\?\(GEOIO-[0-9]\+\b\).*/\1/') &&
-        echo '{"body": "['$JIRA_NUMBER'](https://bugs.miragesoscience.com/browse/'$JIRA_NUMBER')' > data.json &&
-        echo '${{ github.event.pull_request.body }}"}' >> data.json &&
-        cat data.json &&
+        echo '{"body": "['$JIRA_NUMBER'](https://bugs.miragesoscience.com/browse/'$JIRA_NUMBER')\n${{ github.event.pull_request.body }}"}' > data.json &&
         curl --data @data.json
         --request POST
         --url ${{ github.event.pull_request.url }}
