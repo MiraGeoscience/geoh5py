@@ -53,9 +53,17 @@ class EntityType(ABC):
     def name(self) -> Optional[str]:
         return self._name
 
+    @name.setter
+    def name(self, name: str):
+        self._name = name
+
     @property
     def description(self) -> Optional[str]:
         return self._description
+
+    @description.setter
+    def description(self, description: str):
+        self._description = description
 
     @classmethod
     def find(

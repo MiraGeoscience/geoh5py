@@ -3,6 +3,7 @@ import uuid
 import h5py
 import numpy as np
 
+from geoh5io.groups import Group, NoTypeGroup
 from geoh5io.shared import Entity, EntityType
 
 
@@ -19,15 +20,21 @@ class H5Writer:
         return f"{{{value}}}"
 
     @classmethod
-    def create_geoh5(cls, file: str, workspace, close_file=True):
+    def create_geoh5(cls, workspace, file: str = None, close_file: bool = True):
 
-        # Check if file reference to an opened hdf5
+        attr = workspace.get_workspace_attributes()
+
+        # Take default name
+        if file is None:
+            file = workspace.h5file
+
+        # Returns default error if already exists
         h5file = h5py.File(file, "w")
 
-        attr = workspace.get_workspace_attributes().__dict__
+        # Write the workspace group
         project = h5file.create_group(workspace.base_name)
         project.attrs.create("Distance unit", attr["distance_unit"], dtype=cls.str_type)
-        project.attrs.create("Version", attr["version"])
+        project.attrs.create("Version", attr["version"], dtype=type(attr["version"]))
         project.attrs.create("Contributors", attr["contributors"], dtype=cls.str_type)
         project.attrs.create("GA Version", attr["ga_version"], dtype=cls.str_type)
 
@@ -40,9 +47,20 @@ class H5Writer:
         types.create_group("Group types")
         types.create_group("Object types")
 
-        workspace_handle = H5Writer.add_entity(
-            file, workspace.get_entity("Workspace")[0], close_file=False
-        )
+        # Check if the Workspace already has a tree
+        if workspace.tree:
+            workspace_entity = workspace.get_entity("Workspace")[0]
+
+            assert workspace_entity is not None, "The tree has no 'Workspace' group."
+
+        else:
+            workspace_entity = workspace.create_entity(
+                Group, NoTypeGroup.default_type_uid(), "Workspace", uuid.uuid4()
+            )
+
+            workspace.add_to_tree(workspace_entity)
+
+        workspace_handle = H5Writer.add_entity(file, workspace_entity, close_file=False)
 
         project["Root"] = workspace_handle
 
@@ -71,8 +89,9 @@ class H5Writer:
         )
 
         for key, value in tree[uid].items():
-            if key == "entity_type":
+            if (key == "entity_type") or ("allow" in key):
                 continue
+
             if key == "id":
                 entry_key = key.replace("_", " ").upper()
             else:
@@ -81,6 +100,7 @@ class H5Writer:
             if isinstance(value, str):
                 new_type.attrs.create(entry_key, value, dtype=cls.str_type)
             else:
+
                 new_type.attrs.create(entry_key, value, dtype=type(value))
 
         if close_file:
@@ -89,7 +109,7 @@ class H5Writer:
         return new_type
 
     @classmethod
-    def finalize(cls, file: str, workspace, close_file=True):
+    def finalize(cls, workspace, file: str = None, close_file=True):
         """
 
         :param file:
@@ -97,10 +117,15 @@ class H5Writer:
         :param close_file: Bool to close h5 file after write
         :return:
         """
-        if not isinstance(file, h5py.File):
-            h5file = h5py.File(file, "r+")
+
+        if file is None:
+            h5file = h5py.File(workspace.h5file, "r+")
+
         else:
-            h5file = file
+            if not isinstance(file, h5py.File):
+                h5file = h5py.File(file, "r+")
+            else:
+                h5file = file
 
         workspace_group: Entity = workspace.get_entity("Workspace")[0]
         H5Writer.add_entity(h5file, workspace_group, close_file=False)
@@ -179,17 +204,25 @@ class H5Writer:
             entity_handle.create_group("Data")
 
         for key, value in tree[uid].items():
-            if key in ["type", "entity_type", "parent", "children"]:
+            if key in [
+                "type",
+                "entity_type",
+                "parent",
+                "children",
+                "vertices",
+                "visible",
+            ]:
                 continue
             if key == "id":
                 entry_key = key.replace("_", " ").upper()
             else:
                 entry_key = key.replace("_", " ").capitalize()
 
-            if isinstance(value, str):
-                entity_handle.attrs.create(entry_key, value, dtype=cls.str_type)
-            else:
+            if isinstance(value, int):
                 entity_handle.attrs.create(entry_key, value, dtype="int8")
+
+            else:
+                entity_handle.attrs.create(entry_key, value, dtype=cls.str_type)
 
         # Add the type and return a pointer
         new_type = H5Writer.add_type(h5file, entity.entity_type, close_file=False)
@@ -218,15 +251,18 @@ class H5Writer:
     ):
         cls.str_type = h5py.special_dtype(vlen=str)
 
+        workspace = child.entity_type.workspace
+        tree = workspace.tree
+        uid = child.uid
+
+        if not tree[uid]["parent"]:
+            return
+
         # Check if file reference to an opened hdf5
         if not isinstance(file, h5py.File):
             h5file = h5py.File(file, "r+")
         else:
             h5file = file
-
-        workspace = child.entity_type.workspace
-        tree = workspace.tree
-        uid = child.uid
 
         # Get the h5 handle
         child_handle = H5Writer.add_entity(h5file, child, close_file=False)
@@ -253,14 +289,18 @@ class H5Writer:
             h5file.close()
 
     @classmethod
-    def save_entity(cls, file: str, entity: Entity, close_file=True):
+    def save_entity(cls, entity: Entity, file: str = None, close_file=True):
         cls.str_type = h5py.special_dtype(vlen=str)
 
-        # Check if file reference to an opened hdf5
-        if not isinstance(file, h5py.File):
-            h5file = h5py.File(file, "r+")
+        if file is not None:
+            # Check if file reference to an opened hdf5
+            if not isinstance(file, h5py.File):
+                h5file = h5py.File(file, "r+")
+            else:
+                h5file = file
+
         else:
-            h5file = file
+            h5file = h5py.File(entity.entity_type.workspace.h5file, "r+")
 
         workspace = entity.entity_type.workspace
         tree = workspace.tree

@@ -17,7 +17,7 @@ class Entity(ABC):
         self._visible = True
         self._allow_delete = True
         self._allow_rename = True
-        self._is_public = True
+        self._public = True
 
     @property
     def uid(self) -> uuid.UUID:
@@ -45,7 +45,7 @@ class Entity(ABC):
 
     @property
     def is_public(self) -> bool:
-        return self._is_public
+        return self._public
 
     @classmethod
     def fix_up_name(cls, name: str) -> str:
@@ -61,3 +61,36 @@ class Entity(ABC):
     @abstractmethod
     def entity_type(self) -> "shared.EntityType":
         ...
+
+    def set_parent(self, parent):
+        """
+        The parent of an object in the workspace
+        :return: Entity: Parent entity
+        """
+
+        if isinstance(parent, uuid.UUID):
+            uid = parent
+        else:
+            if isinstance(parent, Entity):
+                uid = parent.uid
+            else:
+                uid = self.entity_type.workspace.get_entity("Workspace")[0].uid
+
+        self.entity_type.workspace.tree[self.uid]["parent"] = uid
+
+        # Add as children of parent
+        if self.uid not in self.entity_type.workspace.tree[uid]["children"]:
+            self.entity_type.workspace.tree[uid]["children"] += [self.uid]
+
+    def get_parent(self):
+        """
+        Function to fetch the parent of an object from the workspace tree
+        :return: Entity: Parent entity of object
+        """
+
+        workspace = self.entity_type.workspace
+        return workspace.get_entity(workspace.tree[self.uid]["parent"])[0]
+
+    def save_to_h5(self, close_file: bool = True):
+
+        self.entity_type.workspace.save_entity(self, close_file=close_file)

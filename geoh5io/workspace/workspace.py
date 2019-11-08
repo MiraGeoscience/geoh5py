@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import os
 import uuid
 import weakref
 from contextlib import contextmanager
@@ -8,10 +9,12 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, cast
 from weakref import ReferenceType
 
+import numpy as np
+
 from geoh5io import data, groups, objects
 from geoh5io.data import Data
-from geoh5io.groups import CustomGroup, Group, NoTypeGroup
-from geoh5io.io import H5Reader
+from geoh5io.groups import CustomGroup, Group
+from geoh5io.io import H5Reader, H5Writer
 from geoh5io.objects import ObjectBase
 from geoh5io.shared import Coord3D, weakref_utils
 from geoh5io.shared.entity import Entity
@@ -26,17 +29,18 @@ if TYPE_CHECKING:
 
 @dataclass
 class WorkspaceAttributes:
-    contributors = "UserName"
+    contributors = np.asarray(["UserName"], dtype="object")
     distance_unit = "meter"
     ga_version = "1"
-    version = 1
+    version = 1.0
+    name = "Workspace"
 
 
 class Workspace:
 
     _active_ref: ClassVar[ReferenceType[Workspace]] = type(None)  # type: ignore
 
-    def __init__(self, h5file: str = None, root: RootGroup = None):
+    def __init__(self, h5file: str = "GAProject.geoh5", root: RootGroup = None):
         self._workspace_attributes = None
         self._base = "GEOSCIENCE"
         self._h5file = h5file
@@ -47,6 +51,10 @@ class Workspace:
         self._data: Dict[uuid.UUID, ReferenceType[data.Data]] = {}
 
         self._root = root if root is not None else RootGroup(self)
+
+        # Check if the geoh5 exists, if not create it
+        if not os.path.exists(self._h5file):
+            H5Writer.create_geoh5(self)
 
     @property
     def base_name(self):
@@ -62,28 +70,14 @@ class Workspace:
             self.get_workspace_attributes()
 
         return (
-            self._workspace_attributes.version,
-            self._workspace_attributes.ga_version,
+            self._workspace_attributes["version"],
+            self._workspace_attributes["ga_version"],
         )
 
     @property
     def tree(self):
         if not getattr(self, "_tree"):
             self._tree = H5Reader.get_project_tree(self.h5file, self._base)
-
-            # Find the workspace object
-            for key, value in self._tree.items():
-                if "parent" in value.keys() and not value["parent"]:
-                    uid = key
-
-            self.create_entity(
-                Group,
-                NoTypeGroup.default_type_uid(),
-                "Workspace",
-                uid,
-                attributes=self.tree[uid],
-                type_attributes=self.tree[self.tree[uid]["type"]],
-            )
 
         return self._tree
 
@@ -120,6 +114,56 @@ class Workspace:
             if value["entity_type"] == "data"
         ]
 
+    def add_to_tree(
+        self,
+        entity: Entity,
+        attributes: Optional[dict] = None,
+        parent: Optional[list] = None,
+        children: Optional[list] = None,
+    ):
+
+        uid = entity.uid
+
+        self.tree[uid] = {}
+
+        if isinstance(entity, Group):
+            entity_type = "group"
+        elif isinstance(entity, Data):
+            entity_type = "data"
+        else:
+            entity_type = "object"
+
+        self.tree[uid]["entity_type"] = entity_type
+
+        if attributes is not None:
+            for key, value in attributes.items():
+                self.tree[uid][key.replace(" ", "_").lower()] = value
+        else:
+
+            for key, attr in entity.__dict__.items():
+                if "workspace" in key:
+                    continue
+                if "uid" in key:
+                    self.tree[uid]["id"] = H5Writer.uuid_value(attr)
+                else:
+                    self.tree[uid][key.replace("_", " ").strip()] = attr
+
+        self.tree[uid]["type"] = entity.entity_type.uid
+        self.tree[uid]["parent"] = parent
+        self.tree[uid]["children"] = children
+
+        # Add type to tree
+        self.tree[entity.entity_type.uid] = {}
+        self.tree[entity.entity_type.uid]["entity_type"] = entity_type + "_type"
+
+        for key, attr in entity.entity_type.__dict__.items():
+            if "workspace" in key:
+                continue
+            if "uid" in key:
+                self.tree[entity.entity_type.uid]["id"] = H5Writer.uuid_value(attr)
+            else:
+                self.tree[entity.entity_type.uid][key.replace("_", " ").strip()] = attr
+
     def get_entity(self, name: str) -> List[Entity]:
         """Retrieve an entity from its name
 
@@ -136,8 +180,8 @@ class Workspace:
             list_entity_uid = [
                 key
                 for key in self.tree
-                if (self.tree[key]["name"] == name)
-                and ("type" not in self.tree[key]["entity_type"])
+                if ("type" not in self.tree[key]["entity_type"])
+                and (self.tree[key]["name"] == name)
             ]
 
         entity_list: List[Entity] = []
@@ -387,25 +431,34 @@ class Workspace:
 
         if getattr(self, "_workspace_attributes", None) is None:
 
-            self._workspace_attributes = WorkspaceAttributes()
+            self._workspace_attributes = {}
 
-            attributes = H5Reader.get_project_attributes(self.h5file, self._base)
+            for attr in dir(WorkspaceAttributes()):
 
-            for (attr, value) in zip(attributes.keys(), attributes.values()):
-                setattr(self._workspace_attributes, attr, value)
+                if "__" not in attr:
+                    self._workspace_attributes[attr] = getattr(
+                        WorkspaceAttributes(), attr
+                    )
 
         return self._workspace_attributes
 
     def load_geoh5_workspace(self):
-        """ Load the groups, objects, data and types from H5file
+        """
+            Load the groups, objects, data and types from H5file
         """
 
         tree = H5Reader.get_project_tree(self.h5file, self._base)
-        # if getattr(self, "_project_attributes", None) is None:
-        # for (attr, value) in zip(attributes.keys(), attributes.values()):
-        #     setattr(self._workspace_attributes, attr, value)
 
         return tree
+
+    @staticmethod
+    def save_entity(entity: Entity, close_file: bool = True):
+
+        H5Writer.save_entity(entity, close_file=close_file)
+
+    def finalize(self):
+
+        H5Writer.finalize(self)
 
 
 @contextmanager

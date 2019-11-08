@@ -1,7 +1,8 @@
 import uuid
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
+from geoh5io.io import H5Writer
 from geoh5io.shared import Entity
 
 from .object_type import ObjectType
@@ -17,29 +18,9 @@ class ObjectBase(Entity):
 
         self._type = object_type
         self._allow_move = 1
-        self._clipping_ids: List[uuid.UUID] = []
-        self._parent = None
+        # self._clipping_ids: List[uuid.UUID] = []
+        # self._parent = None
         object_type.workspace._register_object(self)
-
-    @property
-    def parent(self):
-        """
-        The parent of an object in the workspace
-        :return: Entity: Parent entity
-        """
-        if getattr(self, "_parent", None) is None:
-
-            self._parent = self.get_parent()
-
-        return self._parent
-
-    def get_parent(self):
-        """
-        Function to fetch the parent of an object from the workspace tree
-        :return: Entity: Parent entity of object
-        """
-
-        return self.entity_type.workspace.get_parent(self.uid)[0]
 
     @property
     def get_data_list(self):
@@ -66,3 +47,7 @@ class ObjectBase(Entity):
     @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:
         ...
+
+    def save_to_h5(self, close_file: bool = True):
+
+        H5Writer.save_entity(self, close_file=close_file)

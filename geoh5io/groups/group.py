@@ -1,6 +1,6 @@
 import uuid
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from geoh5io.shared import Entity
 
@@ -17,7 +17,7 @@ class Group(Entity):
 
         self._type = group_type
         self._allow_move = True
-        self._clipping_ids: List[uuid.UUID] = []
+        # self._clipping_ids: List[uuid.UUID] = []
         group_type.workspace._register_group(self)
 
     @property
