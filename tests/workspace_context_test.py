@@ -11,4 +11,4 @@ def test_workspace_context():
         assert Workspace.active() == ws1
     with pytest.raises(RuntimeError) as error:
         Workspace.active()
-    assert "no active workspace" in str(error).lower()
+    assert "no active workspace" in str(error.value).lower()

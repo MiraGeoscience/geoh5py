@@ -310,12 +310,13 @@ class H5Writer:
         new_entity = H5Writer.add_entity(h5file, entity, close_file=False)
 
         # Write children entities and add to current parent
-        for child in tree[uid]["children"]:
-            child_entity = workspace.get_entity(child)[0]
-            H5Writer.add_entity(h5file, child_entity, close_file=False)
-            H5Writer.add_to_parent(
-                h5file, child_entity, close_file=False, recursively=False
-            )
+        if tree[uid]["children"]:
+            for child in tree[uid]["children"]:
+                child_entity = workspace.get_entity(child)[0]
+                H5Writer.add_entity(h5file, child_entity, close_file=False)
+                H5Writer.add_to_parent(
+                    h5file, child_entity, close_file=False, recursively=False
+                )
 
         H5Writer.add_to_parent(h5file, entity, close_file=False, recursively=True)
 

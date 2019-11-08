@@ -40,10 +40,9 @@ class Workspace:
 
     _active_ref: ClassVar[ReferenceType[Workspace]] = type(None)  # type: ignore
 
-    def __init__(self, h5file: str = "GAProject.geoh5", root: RootGroup = None):
+    def __init__(self, h5file: Optional[str] = None, root: RootGroup = None):
         self._workspace_attributes = None
         self._base = "GEOSCIENCE"
-        self._h5file = h5file
         self._tree: Dict = {}
         self._types: Dict[uuid.UUID, ReferenceType[entity_type.EntityType]] = {}
         self._groups: Dict[uuid.UUID, ReferenceType[group.Group]] = {}
@@ -52,9 +51,7 @@ class Workspace:
 
         self._root = root if root is not None else RootGroup(self)
 
-        # Check if the geoh5 exists, if not create it
-        if not os.path.exists(self._h5file):
-            H5Writer.create_geoh5(self)
+        self.h5file = h5file
 
     @property
     def base_name(self):
@@ -149,8 +146,16 @@ class Workspace:
                     self.tree[uid][key.replace("_", " ").strip()] = attr
 
         self.tree[uid]["type"] = entity.entity_type.uid
-        self.tree[uid]["parent"] = parent
-        self.tree[uid]["children"] = children
+
+        if parent is None:
+            self.tree[uid]["parent"] = []
+        else:
+            self.tree[uid]["parent"] = parent
+
+        if children is None:
+            self.tree[uid]["children"] = []
+        else:
+            self.tree[uid]["children"] = children
 
         # Add type to tree
         self.tree[entity.entity_type.uid] = {}
@@ -417,13 +422,19 @@ class Workspace:
         return weakref_utils.get_clean_ref(self._data, data_uid)
 
     @property
-    def h5file(self) -> str:
+    def h5file(self) -> Optional[str]:
         assert self._h5file is not None, "The 'h5file' property name must be set"
         return self._h5file
 
     @h5file.setter
-    def h5file(self, h5file):
-        self._h5file = h5file
+    def h5file(self, h5file: Optional[str]):
+
+        if h5file is not None:
+            self._h5file = h5file
+
+            # Check if the geoh5 exists, if not create it
+            if not os.path.exists(self._h5file):
+                H5Writer.create_geoh5(self)
 
     def get_workspace_attributes(self):
         """ Fetch the workspace attributes
