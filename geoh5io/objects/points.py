@@ -4,6 +4,7 @@ from typing import Optional
 import numpy as np
 
 from geoh5io import workspace
+from geoh5io.data import Data
 from geoh5io.shared import Coord3D
 
 from .object_base import ObjectBase, ObjectType
@@ -73,7 +74,24 @@ class Points(ObjectBase):
 
         if data is not None:
             for key, value in data.items():
-                print(key, value)
+
+                if isinstance(value, np.ndarray):
+
+                    float_data = object_type.workspace.create_entity(
+                        Data,
+                        uuid.uuid4(),
+                        key,
+                        uuid.uuid4(),
+                        attributes={"association": "VERTEX"},
+                        type_attributes={"primitive_type": "FLOAT"},
+                    )
+
+                    float_data.values = value
+
+                    # Add the new object and type to tree
+                    object_type.workspace.add_to_tree(float_data)
+
+                    float_data.set_parent(point_object)
 
         return point_object
 

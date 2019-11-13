@@ -138,12 +138,19 @@ class Workspace:
         else:
 
             for key, attr in entity.__dict__.items():
-                if "workspace" in key:
+                if ("workspace" in key) or ("value" in key):
                     continue
                 if "uid" in key:
                     self.tree[uid]["id"] = H5Writer.uuid_value(attr)
                 else:
-                    self.tree[uid][key.replace("_", " ").strip()] = attr
+                    if ("association" in key) and isinstance(
+                        attr, data.DataAssociationEnum
+                    ):
+                        attr = attr.name.lower().capitalize()
+
+                    self.tree[uid][
+                        key.replace("_", " ").strip().replace(" ", "_")
+                    ] = attr
 
         self.tree[uid]["type"] = entity.entity_type.uid
 
@@ -157,6 +164,9 @@ class Workspace:
         else:
             self.tree[uid]["children"] = children
 
+        # Store a pointer to the object in memory
+        self.tree[uid]["object"] = entity
+
         # Add type to tree
         self.tree[entity.entity_type.uid] = {}
         self.tree[entity.entity_type.uid]["entity_type"] = entity_type + "_type"
@@ -166,8 +176,16 @@ class Workspace:
                 continue
             if "uid" in key:
                 self.tree[entity.entity_type.uid]["id"] = H5Writer.uuid_value(attr)
+
             else:
-                self.tree[entity.entity_type.uid][key.replace("_", " ").strip()] = attr
+                if ("primitive_type" in key) and isinstance(
+                    attr, data.PrimitiveTypeEnum
+                ):
+                    attr = attr.name.lower().capitalize()
+
+                self.tree[entity.entity_type.uid][
+                    key.replace("_", " ").strip().replace(" ", "_")
+                ] = attr
 
     def get_entity(self, name: str) -> List[Entity]:
         """Retrieve an entity from its name
@@ -260,6 +278,7 @@ class Workspace:
                     type_attributes["primitive_type"].upper(),
                 ),
             )
+            data_type.name = name
 
             for _, member in inspect.getmembers(data):
 

@@ -100,8 +100,8 @@ class H5Writer:
             if isinstance(value, str):
                 new_type.attrs.create(entry_key, value, dtype=cls.str_type)
             else:
-
-                new_type.attrs.create(entry_key, value, dtype=type(value))
+                if value is not None:
+                    new_type.attrs.create(entry_key, value, dtype=type(value))
 
         if close_file:
             h5file.close()
@@ -155,6 +155,21 @@ class H5Writer:
             vertices["x"] = xyz[:, 0]
             vertices["y"] = xyz[:, 1]
             vertices["z"] = xyz[:, 2]
+
+        if close_file:
+            h5file.close()
+
+    @classmethod
+    def add_data_values(cls, file: str, entity, values=None, close_file=True):
+        if not isinstance(file, h5py.File):
+            h5file = h5py.File(file, "r+")
+        else:
+            h5file = file
+
+        entity_handle = H5Writer.add_entity(h5file, entity, close_file=False)
+
+        # Adding an array of values
+        entity_handle.create_dataset("Data", data=values)
 
         if close_file:
             h5file.close()
@@ -231,10 +246,14 @@ class H5Writer:
 
         if hasattr(entity, "values"):
             if values is not None:
-                entity_handle["Data"] = values
+                H5Writer.add_data_values(
+                    h5file, entity, values=values, close_file=False
+                )
 
             if entity.values is not None:
-                entity_handle["Data"] = entity.values
+                H5Writer.add_data_values(
+                    h5file, entity, values=entity.values, close_file=False
+                )
 
         if hasattr(entity, "vertices") and entity.vertices:
             H5Writer.add_vertices(h5file, entity, close_file=False)
