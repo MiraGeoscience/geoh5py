@@ -25,13 +25,26 @@ class Points(ObjectBase):
     @property
     def vertices(self) -> Optional[Coord3D]:
         """
+        @propertt
+        vertices(xyz)
 
-        :return:
+        Function to return the object vertices coordinates.
+
+        Returns
+        -------
+        vertices: geoh5io.Coord3D
+            Coord3D object holding the vertices coordinates
         """
         if getattr(self, "_vertices", None) is None:
             self._vertices = self.entity_type.workspace.fetch_vertices(self.uid)
 
         return self._vertices
+
+    @vertices.setter
+    def vertices(self, xyz):
+        """Set vertices"""
+
+        self._vertices = Coord3D(xyz)
 
     @classmethod
     def create(
@@ -64,13 +77,13 @@ class Points(ObjectBase):
             assert (
                 locations.shape[1] == 3
             ), "Locations should be an an array of shape N x 3"
-            point_object.set_vertices(locations)
+            point_object.vertices = locations
 
         elif isinstance(locations, list):
             assert (
                 len(locations) == 3
             ), "List of coordinates [x, y, z] must be of length 3"
-            point_object.set_vertices(np.c_[locations])
+            point_object.vertices = np.c_[locations]
 
         if data is not None:
             for key, value in data.items():
@@ -94,18 +107,6 @@ class Points(ObjectBase):
                     float_data.set_parent(point_object)
 
         return point_object
-
-    def set_vertices(self, xyz):
-        """
-        set_vertices(xyz)
-
-        Function to assign coordinate locations to a point object.
-
-        :param xyz: numpy.ndarray of node locations [nDx3] (x,y,z)
-
-        """
-
-        self._vertices = Coord3D(xyz)
 
     @property
     def locations(self):
