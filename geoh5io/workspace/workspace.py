@@ -61,7 +61,6 @@ class Workspace:
 
         Returns
         -------
-
         name: str
             Name of the project ['GEOSCIENCE']
         """
@@ -75,7 +74,6 @@ class Workspace:
 
         Returns
         -------
-
         version: List(float)
             (Version, Geoscience Analyst version)
         """
@@ -95,7 +93,6 @@ class Workspace:
 
         Returns
         -------
-
         tree: dict
             Dictionary of entities and entity_types contained in the project.
             Used for light reference to attributes, parent and children.
@@ -121,7 +118,6 @@ class Workspace:
 
         Returns
         -------
-
         groups: List[str]
             Names of all groups registered in the tree
         """
@@ -139,7 +135,6 @@ class Workspace:
 
         Returns
         -------
-
         objects: List[str]
             Names of all objects registered in the tree
         """
@@ -157,7 +152,6 @@ class Workspace:
 
         Returns
         -------
-
         data: List[str]
             Names of all data registered in the tree
         """
@@ -175,7 +169,6 @@ class Workspace:
 
         Returns
         -------
-
         root: geoh5io.Group
             Group entity corresponding to the root (Workspace)
         """
@@ -190,7 +183,6 @@ class Workspace:
 
         Returns
         -------
-
         h5file: str
             File name with path to the target geoh5 database
         """
@@ -225,7 +217,6 @@ class Workspace:
 
         Parameters
         ----------
-
         entity: geoh5io.Entity
             Entity to be written to the project geoh5 file
         close_file: bool optional
@@ -489,7 +480,6 @@ class Workspace:
 
         Parameters
         ----------
-
         uid: uuid.UUID
             Unique identifier of parent entity
         children_type: str
@@ -518,7 +508,6 @@ class Workspace:
 
         Parameters
         ----------
-
         parent_uuid: UUID
             The unique identifier of the parent entity
         child_name: str
@@ -526,7 +515,6 @@ class Workspace:
 
         Returns
         -------
-
         entity_list List[Entity]:
             A list of registered entities
         """

@@ -25,13 +25,31 @@ class ObjectBase(Entity):
     @property
     def get_data_list(self):
         """
-        :return: List of names of data
+        @property
+        get_data_list
+
+        Returns
+        -------
+        names: list[str]
+            List of names of data associated with the object
+
         """
         return self.entity_type.workspace.get_names_of_type(self.uid, "data")
 
     def get_data(self, name: str) -> Optional[Entity]:
         """
-        :return: List of names of data
+        @property
+        get_data
+
+        Parameters
+        ----------
+        name: str
+            Name of the target child data
+
+        Returns
+        -------
+        data: geoh5io.Data
+            Returns a registered Data
         """
         return self.entity_type.workspace.get_child(self.uid, name)[0]
 
