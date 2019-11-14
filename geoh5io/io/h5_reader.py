@@ -14,7 +14,25 @@ class H5Reader:
 
     @classmethod
     def get_project_attributes(cls, h5file: str, base: str) -> dict:
+        """
+        get_project_attributes(h5file, base)
 
+        Get the project attributes
+
+        Parameters
+        ----------
+        h5file: str
+            Name of the project h5file
+
+        base: str
+            Name of the base project group ['GEOSCIENCE']
+
+        Returns
+        -------
+
+        attributes: dict
+            Dictionary of attributes
+        """
         project = h5py.File(h5file, "r+")
         project_attrs = {}
 
@@ -32,6 +50,27 @@ class H5Reader:
     def fetch_vertices(
         cls, h5file: Optional[str], base: str, uid: uuid.UUID
     ) -> Coord3D:
+        """
+        fetch_vertices(h5file, base, uid)
+
+        Get the vertices of an object
+
+        Parameters
+        ----------
+        h5file: str
+            Name of the project h5file
+
+        base: str
+            Name of the base project group ['GEOSCIENCE']
+
+        uid: uuid.UUID
+            Unique identifier of the target object
+
+        Returns
+        -------
+        vertices: geoh5io.Coord3D
+            Coordinate object with vertex locations
+        """
         project = h5py.File(h5file, "r+")
 
         x = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["x"]
@@ -47,17 +86,65 @@ class H5Reader:
     def fetch_values(
         cls, h5file: Optional[str], base: str, uid: uuid.UUID
     ) -> Optional[float]:
+        """
+        fetch_values(h5file, base, uid)
+
+        Get the values of an entity
+
+        Parameters
+        ----------
+        h5file: str
+            Name of the project h5file
+
+        base: str
+            Name of the base project group ['GEOSCIENCE']
+
+        uid: uuid.UUID
+            Unique identifier of the target entity
+
+        Returns
+        -------
+        values: numpy.array
+            Array of values
+        """
+
         project = h5py.File(h5file, "r+")
 
-        data = np.r_[project[base]["Data"]["{" + str(uid) + "}"]["Data"]]
+        values = np.r_[project[base]["Data"]["{" + str(uid) + "}"]["Data"]]
 
         project.close()
 
-        return data
+        return values
 
     @classmethod
     def get_project_tree(cls, h5file: str, base: str) -> dict:
+        """
+        get_project_tree(h5file, base)
 
+        Get the values of an entity
+
+        Parameters
+        ----------
+        h5file: str
+            Name of the project h5file
+
+        base: str
+            Name of the base project group ['GEOSCIENCE']
+
+        Returns
+        -------
+        tree: dict
+            Dictionary of group, objects, data and types found in the geoh5 file.
+            Used for light reference to attributes, parent and children.
+            {uuid:
+                {'name': value},
+                {'attr1': value},
+                ...
+                {'parent': uuid},
+                {'children': [uuid1, uuid2,....],
+             ...
+             }
+        """
         project = h5py.File(h5file, "r+")
 
         tree: dict = {}
