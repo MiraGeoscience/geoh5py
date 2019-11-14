@@ -27,7 +27,7 @@ class ObjectBase(Entity):
         """
         :return: List of names of data
         """
-        return self.entity_type.workspace.get_children_list(self.uid, "data")
+        return self.entity_type.workspace.get_names_of_type(self.uid, "data")
 
     def get_data(self, name: str) -> Optional[Entity]:
         """

@@ -56,6 +56,7 @@ class Workspace:
     @property
     def base_name(self):
         """
+        @property
         base_name
 
         Returns
@@ -247,7 +248,7 @@ class Workspace:
         """
         add_to_tree(entity)
 
-        Add entity and attribute to tree for future reference
+        Add entity and attribute to tree for fast reference and write to geoh5
 
         Parameters
         ----------
@@ -338,7 +339,7 @@ class Workspace:
         Parameters
         ----------
         name: str | uuid.UUID
-            Object identifier
+            Object identifier, either name or uuid
 
         Returns
         -------
@@ -480,12 +481,24 @@ class Workspace:
 
         return created_entity
 
-    def get_children_list(self, uid: uuid.UUID, children_type: str):
+    def get_names_of_type(self, uid: uuid.UUID, children_type: str):
         """
+        get_names_of_type(uid, children_type)
 
-        :param uid: UUID of object
-        :param children_type:
-        :return:
+        Get all children's name of a certain type
+
+        Parameters
+        ----------
+
+        uid: uuid.UUID
+            Unique identifier of parent entity
+        children_type: str
+            Specify the type of children requested: "object", "group", "data"
+
+        Returns
+        -------
+        children: list
+            List of names of given type
         """
 
         name_list: List[str] = []
@@ -531,10 +544,19 @@ class Workspace:
 
     def get_parent(self, uid: uuid.UUID) -> List[Entity]:
         """
-        Return the parent object
+        get_parent(uid)
 
-        :param: uid: UUID of object
-        :return: entity: The registered parent entity
+        Get the parent unique identifier of a given entity uuid
+
+        Parameters
+        ----------
+        uid: uuid.UUID
+            Unique identifier of child
+
+        Returns
+        -------
+        parent: geoh5io.Entity
+            The registered parent entity
         """
 
         if self.tree[uid]["parent"]:
@@ -544,10 +566,19 @@ class Workspace:
 
     def fetch_values(self, uid: uuid.UUID) -> Optional[float]:
         """
-        Get the data values from the source h5 file
+        fetch_values(uid)
 
-        :param uid: UUID of target data object
-        :return: value: Data value
+        Fetch the data values from the source h5 file
+
+        Parameters
+        ----------
+        uid: uuid.UUID
+            Unique identifier of target data object
+
+        Returns
+        -------
+        value: numpy.array
+            Array of values
         """
 
         return H5Reader.fetch_values(self._h5file, self._base, uid)
@@ -556,8 +587,15 @@ class Workspace:
         """
         Get the vertices of an object from the source h5 file
 
-        :param uid: UUID of target entity
-        :return: value: Data value
+        Parameters
+        ----------
+        uid: uuid.UUID
+            Unique identifier of target entity
+
+        Returns
+        -------
+        coordinates: Coord3D
+            Coordinate entity with locations
         """
 
         return H5Reader.fetch_vertices(self._h5file, self._base, uid)
@@ -631,15 +669,6 @@ class Workspace:
                     )
 
         return self._workspace_attributes
-
-    def load_geoh5_workspace(self):
-        """
-            Load the groups, objects, data and types from H5file
-        """
-
-        tree = H5Reader.get_project_tree(self.h5file, self._base)
-
-        return tree
 
 
 @contextmanager
