@@ -25,7 +25,7 @@ class Points(ObjectBase):
     @property
     def vertices(self) -> Optional[Coord3D]:
         """
-        @propertt
+        @property
         vertices(xyz)
 
         Function to return the object vertices coordinates.
@@ -35,6 +35,7 @@ class Points(ObjectBase):
         vertices: geoh5io.Coord3D
             Coord3D object holding the vertices coordinates
         """
+
         if getattr(self, "_vertices", None) is None:
             self._vertices = self.entity_type.workspace.fetch_vertices(self.uid)
 
@@ -42,7 +43,21 @@ class Points(ObjectBase):
 
     @vertices.setter
     def vertices(self, xyz):
-        """Set vertices"""
+        """
+        @property.setter
+
+        vertices(xyz)
+
+        Parameters
+        ----------
+        xyz: numpy.array
+            Coordinate xyz locations [n x 3]
+
+        Returns
+        -------
+        vertices: geoh5io.Coord3D
+            Coord3D object holding the vertices coordinates
+        """
 
         self._vertices = Coord3D(xyz)
 
@@ -56,6 +71,41 @@ class Points(ObjectBase):
         parent=None,
         data: Optional[dict] = None,
     ):
+        """
+        create(
+            locations, workspace=None, name="NewPoints",
+            uid=uuid.uuid4(), parent=None, data=None
+        )
+
+        Function to create a point object from xyz locations and data
+
+        Parameters
+        ----------
+        locations: numpy.array()
+            Coordinate xyz locations [n x 3]
+
+        work_space: geoh5io.Workspace
+            Workspace or active worskapce if [None]
+
+        name: str optional
+            Name of the point object [NewPoints]
+
+        uid: uuid.UUID optional
+            Unique identifier, or randomly generated using uuid.uuid4 if None
+
+        parent: uuid.UUID | Entity | None optional
+            Parental Entity or reference uuid to be linked to.
+            If None, the object is added to the base Workspace.
+
+        data: Dict{'name': values} optional
+            Dictionary of data values to be added to the point object
+
+        Returns
+        -------
+        entity: geoh5io.Points
+            Point object registered to the workspace.
+        """
+
         object_type = cls.find_or_create_type(
             workspace.Workspace.active() if work_space is None else work_space
         )
@@ -111,7 +161,12 @@ class Points(ObjectBase):
     @property
     def locations(self):
         """
-        Property locations
-        :return: Coordinates (x, y, z) from the shared.Coord3D class
+        @property
+        location
+
+        Returns
+        -------
+        locations: numpy.array
+            Rapid access to the (x, y, z) coordinates from the Coord3D
         """
         return self._vertices.locations
