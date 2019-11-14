@@ -12,6 +12,8 @@ class FloatData(Data):
 
     @property
     def values(self):
+        if getattr(self, "_values", None) is None:
+            self._values = self.entity_type.workspace.get_data_value(self.uid)
 
         return self._values
 
