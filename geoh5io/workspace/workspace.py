@@ -188,10 +188,20 @@ class Workspace:
                 ] = attr
 
     def get_entity(self, name: str) -> List[Entity]:
-        """Retrieve an entity from its name
+        """
+        get_entity(name)
 
-        :param name: List of object identifiers of type 'str' | 'uuid'
-        :return: object_base.ObjectBase
+        Retrieve an entity from one of its identifier, either by name or uuid
+
+        Parameters
+        ----------
+        name: str | uuid.UUID
+            Object identifier
+
+        Returns
+        -------
+        object_list: List[Entity]
+            List of entities with the same given name
         """
 
         base_classes = {"group": Group, "object": ObjectBase, "data": Data}
@@ -219,9 +229,9 @@ class Workspace:
 
             created_object = self.create_entity(
                 base_classes[entity_type],
-                self.tree[uid]["type"],
                 self.tree[uid]["name"],
                 uid,
+                self.tree[uid]["type"],
                 attributes=self.tree[uid],
                 type_attributes=self.tree[self.tree[uid]["type"]],
             )
@@ -238,12 +248,37 @@ class Workspace:
     def create_entity(
         self,
         entity_class,
-        entity_type_uid: uuid.UUID,
         name: str,
         uid: uuid.UUID,
+        entity_type_uid: uuid.UUID,
         attributes=None,
         type_attributes=None,
     ):
+        """
+        create_entity(entity_class, name, uuid, type_uuid)
+
+        Function to create and register a new entity and its entity_type.
+
+        Parameters
+        ----------
+        entity_class: Entity
+            Type of entity to be created
+        name: str
+            Name of the entity displayed in the project tree
+        uid: uuid.UUID
+            Unique identifier of the entity
+        entity_type_uid: uuid.UUID
+            Unique identifier of the entity type
+        attributes: dict, optional
+            Dictionary of attributes to be added to the object
+        type_attributes: dict, optional
+            Dictionary of attributes to be added to the object type
+
+        Returns
+        -------
+        entity: Entity
+            New entity created
+        """
 
         created_entity: Optional[Entity] = None
 

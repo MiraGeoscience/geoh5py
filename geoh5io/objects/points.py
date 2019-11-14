@@ -79,8 +79,8 @@ class Points(ObjectBase):
 
                     float_data = object_type.workspace.create_entity(
                         Data,
-                        uuid.uuid4(),
                         key,
+                        uuid.uuid4(),
                         uuid.uuid4(),
                         attributes={"association": "VERTEX"},
                         type_attributes={"primitive_type": "FLOAT"},
