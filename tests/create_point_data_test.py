@@ -6,7 +6,7 @@ from geoh5io.objects import Points
 from geoh5io.workspace import Workspace, active_workspace
 
 
-def test_create_group():
+def test_create_point_data():
 
     h5file = "testProject.geoh5"
 
@@ -32,5 +32,5 @@ def test_create_group():
     data = workspace.get_entity(obj.get_data_list[0])[0]
 
     assert all(data.values == values), "Data values differ from input"
-
+    assert all((obj.locations == xyz).flatten()), "Data locations differ from input"
     os.remove(r".\assets" + os.sep + h5file)

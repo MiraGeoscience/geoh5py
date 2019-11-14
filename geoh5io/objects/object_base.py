@@ -33,7 +33,7 @@ class ObjectBase(Entity):
         """
         :return: List of names of data
         """
-        return self.entity_type.workspace.get_children(self.uid, name)[0]
+        return self.entity_type.workspace.get_child(self.uid, name)[0]
 
     @property
     def entity_type(self) -> ObjectType:

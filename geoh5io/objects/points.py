@@ -29,7 +29,7 @@ class Points(ObjectBase):
         :return:
         """
         if getattr(self, "_vertices", None) is None:
-            self._vertices = self.entity_type.workspace.get_vertices(self.uid)
+            self._vertices = self.entity_type.workspace.fetch_vertices(self.uid)
 
         return self._vertices
 

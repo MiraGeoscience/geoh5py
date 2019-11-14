@@ -29,7 +29,9 @@ class H5Reader:
         return project_attrs
 
     @classmethod
-    def get_vertices(cls, h5file: Optional[str], base: str, uid: uuid.UUID) -> Coord3D:
+    def fetch_vertices(
+        cls, h5file: Optional[str], base: str, uid: uuid.UUID
+    ) -> Coord3D:
         project = h5py.File(h5file, "r+")
 
         x = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["x"]
@@ -42,7 +44,7 @@ class H5Reader:
         return vertices
 
     @classmethod
-    def get_value(
+    def fetch_values(
         cls, h5file: Optional[str], base: str, uid: uuid.UUID
     ) -> Optional[float]:
         project = h5py.File(h5file, "r+")

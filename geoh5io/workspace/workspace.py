@@ -56,13 +56,28 @@ class Workspace:
     @property
     def base_name(self):
         """
+        base_name
 
-        :return: str: Name of the project ['GEOSCIENCE']
+        Returns
+        -------
+
+        name: str
+            Name of the project ['GEOSCIENCE']
         """
         return self._base
 
     @property
     def version(self):
+        """
+        @property
+        version
+
+        Returns
+        -------
+
+        version: List(float)
+            (Version, Geoscience Analyst version)
+        """
         if getattr(self, "_workspace_attributes", None) is None:
             self.get_workspace_attributes()
 
@@ -73,6 +88,25 @@ class Workspace:
 
     @property
     def tree(self):
+        """
+        @property
+        tree
+
+        Returns
+        -------
+
+        tree: dict
+            Dictionary of entities and entity_types contained in the project.
+            Used for light reference to attributes, parent and children.
+            {uuid:
+                {'name': value},
+                {'attr1': value},
+                ...
+                {'parent': uuid},
+                {'children': [uuid1, uuid2,....],
+             ...
+             }
+        """
         if not getattr(self, "_tree"):
             self._tree = H5Reader.get_project_tree(self.h5file, self._base)
 
@@ -81,7 +115,14 @@ class Workspace:
     @property
     def list_groups(self):
         """
-        :return: List of names of groups
+        @property
+        list_groups
+
+        Returns
+        -------
+
+        groups: List[str]
+            Names of all groups registered in the tree
         """
         return [
             value["name"]
@@ -92,7 +133,14 @@ class Workspace:
     @property
     def list_objects(self):
         """
-        :return: List of names of objects
+        @property
+        list_objects
+
+        Returns
+        -------
+
+        objects: List[str]
+            Names of all objects registered in the tree
         """
         return [
             value["name"]
@@ -103,7 +151,14 @@ class Workspace:
     @property
     def list_data(self):
         """
-        :return: List of names of data
+        @property
+        list_data
+
+        Returns
+        -------
+
+        data: List[str]
+            Names of all data registered in the tree
         """
         return [
             value["name"]
@@ -111,13 +166,100 @@ class Workspace:
             if value["entity_type"] == "data"
         ]
 
+    @property
+    def root(self) -> "group.Group":
+        """
+        @property
+        root
+
+        Returns
+        -------
+
+        root: geoh5io.Group
+            Group entity corresponding to the root (Workspace)
+        """
+
+        return self._root
+
+    @property
+    def h5file(self) -> Optional[str]:
+        """
+        @property
+        h5file
+
+        Returns
+        -------
+
+        h5file: str
+            File name with path to the target geoh5 database
+        """
+
+        assert self._h5file is not None, "The 'h5file' property name must be set"
+        return self._h5file
+
+    @h5file.setter
+    def h5file(self, h5file: Optional[str]):
+
+        if h5file is not None:
+            self._h5file = h5file
+
+            # Check if the geoh5 exists, if not create it
+            if not os.path.exists(self._h5file):
+                H5Writer.create_geoh5(self)
+
+    @staticmethod
+    def active() -> Workspace:
+        """ Get the active workspace. """
+        active_one = Workspace._active_ref()
+        if active_one is None:
+            raise RuntimeError("No active workspace.")
+
+        # so that type check does not complain of possible returned None
+        return cast(Workspace, active_one)
+
+    @staticmethod
+    def save_entity(entity: Entity, close_file: bool = True):
+        """
+        save_entity(entity)
+
+        Parameters
+        ----------
+
+        entity: geoh5io.Entity
+            Entity to be written to the project geoh5 file
+        close_file: bool optional
+            Close the geoh5 database after writing is completed [True] or False
+
+        """
+        H5Writer.save_entity(entity, close_file=close_file)
+
+    def finalize(self):
+        """ Finalize the geoh5 file by re-building the Root"""
+        H5Writer.finalize(self)
+
     def add_to_tree(
         self,
         entity: Entity,
         attributes: Optional[dict] = None,
-        parent: Optional[list] = None,
+        parent: Optional[uuid.UUID] = None,
         children: Optional[list] = None,
     ):
+        """
+        add_to_tree(entity)
+
+        Add entity and attribute to tree for future reference
+
+        Parameters
+        ----------
+        entity: geoh5io.Entity
+            Entity to be added
+        attributes: dict optional
+            Dictionary of attributes to be written with the object
+        parent: uuid.UUID optional
+            Unique identifier of the parent Entity
+        children: List[uuid] optional
+            List of unique identifier of children entities
+        """
 
         uid = entity.uid
 
@@ -355,21 +497,33 @@ class Workspace:
 
         return name_list
 
-    def get_children(self, uid: uuid.UUID, name: str) -> List[Entity]:
+    def get_child(self, parent_uuid: uuid.UUID, child_name: str) -> List[Entity]:
         """
-        Return a data object
+        get_child(parent_uuid, child_name)
 
-        :param: uid: UUID of object
-        :param name: Name of children
-        :return: List[entity]: A list of registered objects
+        Return a list of children entities with given name
+
+        Parameters
+        ----------
+
+        parent_uuid: UUID
+            The unique identifier of the parent entity
+        child_name: str
+            Name of entity(ies)
+
+        Returns
+        -------
+
+        entity_list List[Entity]:
+            A list of registered entities
         """
 
-        if isinstance(name, uuid.UUID):
-            return self.get_entity(name)
+        if isinstance(child_name, uuid.UUID):
+            return self.get_entity(child_name)
 
-        for key in self.tree[uid]["children"]:
+        for key in self.tree[parent_uuid]["children"]:
 
-            if self.tree[key]["name"] == name:
+            if self.tree[key]["name"] == child_name:
 
                 return self.get_entity(key)
 
@@ -388,7 +542,7 @@ class Workspace:
 
         return []
 
-    def get_data_value(self, uid: uuid.UUID) -> Optional[float]:
+    def fetch_values(self, uid: uuid.UUID) -> Optional[float]:
         """
         Get the data values from the source h5 file
 
@@ -396,9 +550,9 @@ class Workspace:
         :return: value: Data value
         """
 
-        return H5Reader.get_value(self._h5file, self._base, uid)
+        return H5Reader.fetch_values(self._h5file, self._base, uid)
 
-    def get_vertices(self, uid: uuid.UUID) -> Coord3D:
+    def fetch_vertices(self, uid: uuid.UUID) -> Coord3D:
         """
         Get the vertices of an object from the source h5 file
 
@@ -406,11 +560,7 @@ class Workspace:
         :return: value: Data value
         """
 
-        return H5Reader.get_vertices(self._h5file, self._base, uid)
-
-    @property
-    def root(self) -> "group.Group":
-        return self._root
+        return H5Reader.fetch_vertices(self._h5file, self._base, uid)
 
     def activate(self):
         """ Makes this workspace the active one.
@@ -425,16 +575,6 @@ class Workspace:
         """
         if Workspace._active_ref() is self:
             Workspace._active_ref = type(None)
-
-    @staticmethod
-    def active() -> Workspace:
-        """ Get the active workspace. """
-        active_one = Workspace._active_ref()
-        if active_one is None:
-            raise RuntimeError("No active workspace.")
-
-        # so that type check does not complain of possible returned None
-        return cast(Workspace, active_one)
 
     def _register_type(self, entity_type: "entity_type.EntityType"):
         weakref_utils.insert_once(self._types, entity_type.uid, entity_type)
@@ -475,21 +615,6 @@ class Workspace:
     def find_data(self, data_uid: uuid.UUID) -> Optional["data.Data"]:
         return weakref_utils.get_clean_ref(self._data, data_uid)
 
-    @property
-    def h5file(self) -> Optional[str]:
-        assert self._h5file is not None, "The 'h5file' property name must be set"
-        return self._h5file
-
-    @h5file.setter
-    def h5file(self, h5file: Optional[str]):
-
-        if h5file is not None:
-            self._h5file = h5file
-
-            # Check if the geoh5 exists, if not create it
-            if not os.path.exists(self._h5file):
-                H5Writer.create_geoh5(self)
-
     def get_workspace_attributes(self):
         """ Fetch the workspace attributes
         """
@@ -515,15 +640,6 @@ class Workspace:
         tree = H5Reader.get_project_tree(self.h5file, self._base)
 
         return tree
-
-    @staticmethod
-    def save_entity(entity: Entity, close_file: bool = True):
-
-        H5Writer.save_entity(entity, close_file=close_file)
-
-    def finalize(self):
-
-        H5Writer.finalize(self)
 
 
 @contextmanager
