@@ -4,6 +4,7 @@ from typing import Optional
 import h5py
 import numpy as np
 
+from geoh5io.objects import Cell
 from geoh5io.shared import Coord3D
 
 
@@ -81,6 +82,38 @@ class H5Reader:
         project.close()
 
         return vertices
+
+    @classmethod
+    def fetch_cells(cls, h5file: Optional[str], base: str, uid: uuid.UUID) -> Cell:
+        """
+        fetch_cells(h5file, base, uid)
+
+        Get the cells of an object
+
+        Parameters
+        ----------
+        h5file: str
+            Name of the project h5file
+
+        base: str
+            Name of the base project group ['GEOSCIENCE']
+
+        uid: uuid.UUID
+            Unique identifier of the target object
+
+        Returns
+        -------
+        cells: geoh5io.Cell
+            Cell object with vertex indices defining the cell
+        """
+        project = h5py.File(h5file, "r+")
+
+        indices = project[base]["Objects"]["{" + str(uid) + "}"]["Cells"][:]
+        cells = Cell(indices)
+
+        project.close()
+
+        return cells
 
     @classmethod
     def fetch_values(
