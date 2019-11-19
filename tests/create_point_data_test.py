@@ -21,7 +21,7 @@ def test_create_point_data():
     with active_workspace(workspace):
 
         points = Points.create(locations=xyz, data={"DataValues": values})
-        points.save_to_h5()
+        workspace.save_entity(points)
         workspace.finalize()
 
     # Read the data back in

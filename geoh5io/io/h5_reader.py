@@ -2,9 +2,8 @@ import uuid
 from typing import Optional
 
 import h5py
-import numpy as np
+from numpy import c_, ndarray, r_, uint8
 
-from geoh5io.objects import Cell
 from geoh5io.shared import Coord3D
 
 
@@ -77,14 +76,14 @@ class H5Reader:
         x = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["x"]
         y = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["y"]
         z = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["z"]
-        vertices = Coord3D(np.c_[x, y, z])
+        vertices = Coord3D(c_[x, y, z])
 
         project.close()
 
         return vertices
 
     @classmethod
-    def fetch_cells(cls, h5file: Optional[str], base: str, uid: uuid.UUID) -> Cell:
+    def fetch_cells(cls, h5file: Optional[str], base: str, uid: uuid.UUID) -> ndarray:
         """
         fetch_cells(h5file, base, uid)
 
@@ -109,11 +108,10 @@ class H5Reader:
         project = h5py.File(h5file, "r+")
 
         indices = project[base]["Objects"]["{" + str(uid) + "}"]["Cells"][:]
-        cells = Cell(indices)
 
         project.close()
 
-        return cells
+        return indices
 
     @classmethod
     def fetch_values(
@@ -143,7 +141,7 @@ class H5Reader:
 
         project = h5py.File(h5file, "r+")
 
-        values = np.r_[project[base]["Data"]["{" + str(uid) + "}"]["Data"]]
+        values = r_[project[base]["Data"]["{" + str(uid) + "}"]["Data"]]
 
         project.close()
 
@@ -235,7 +233,7 @@ class H5Reader:
         return tree
 
     @staticmethod
-    def bool_value(value: np.uint8) -> bool:
+    def bool_value(value: uint8) -> bool:
         return bool(value)
 
     @staticmethod

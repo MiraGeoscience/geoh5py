@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 
-from numpy import c_, ndarray
+from numpy import arange, c_, ndarray
 
 from geoh5io import workspace
 from geoh5io.data import Data
@@ -23,7 +23,7 @@ class Curve(ObjectBase):
         self._cells: Optional[Cell] = None
 
     @property
-    def cells(self) -> Optional[Cell]:
+    def cells(self) -> Optional[ndarray]:
         """
         @property
         cells(xyz)
@@ -59,10 +59,9 @@ class Curve(ObjectBase):
             Cell object holding vertices index
         """
 
-        if isinstance(indices, Cell):
-            self._cells = indices
-        else:
-            self._cells = Cell(indices)
+        assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
+
+        self._cells = indices
 
     @property
     def vertices(self) -> ndarray:
@@ -110,7 +109,7 @@ class Curve(ObjectBase):
     @classmethod
     def create(
         cls,
-        locations=None,
+        locations: ndarray,
         cells=None,
         work_space=None,
         name: str = "NewPoints",
@@ -131,7 +130,7 @@ class Curve(ObjectBase):
         locations: numpy.ndarray("float64")
             Coordinate xyz locations [n x 3]
 
-        cells: numpy.ndarray("int32")
+        cells: numpy.ndarray("uint32")
             Array on integers defining the connection between vertices
 
         work_space: geoh5io.Workspace
@@ -185,8 +184,15 @@ class Curve(ObjectBase):
             ), "List of coordinates [x, y, z] must be of length 3"
             curve_object.vertices = c_[locations]
 
-        if cells:
-            curve_object.cells = Cell(cells)
+        # If segments are not provided, connect sequentially
+        if cells is None:
+            vertices = curve_object.vertices
+            n_segments = vertices().shape[0]
+            cells = c_[arange(0, n_segments - 1), arange(1, n_segments)].astype(
+                "uint32"
+            )
+
+        curve_object.cells = cells
 
         if data is not None:
             for key, value in data.items():

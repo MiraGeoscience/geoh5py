@@ -227,6 +227,42 @@ class H5Writer:
             h5file.close()
 
     @classmethod
+    def add_cells(cls, file: str, entity, close_file=True):
+        """
+        add_cells(file, entity, close_file=True)
+
+        Add a type to the geoh5 project.
+
+        Parameters
+        ----------
+        file: str | h5py.File
+            Name or handle to a geoh5 file
+
+        entity: geoh5io.Entity
+            Target entity to which cells are being written
+
+        close_file: bool optional
+           Close h5 file after write [True] | False
+        """
+
+        if not isinstance(file, h5py.File):
+            h5file = h5py.File(file, "r+")
+        else:
+            h5file = file
+
+        if hasattr(entity, "cells") and (entity.cells is not None):
+            indices = entity.cells
+            entity_handle = H5Writer.add_entity(h5file, entity, close_file=False)
+
+            # Adding cells
+            entity_handle.create_dataset(
+                "Cells", indices.shape, data=indices, dtype=indices.dtype
+            )
+
+        if close_file:
+            h5file.close()
+
+    @classmethod
     def add_data_values(cls, file: str, entity, values, close_file=True):
         """
         add_data_values(file, entity, values=None, close_file=True)
@@ -363,6 +399,9 @@ class H5Writer:
 
         if hasattr(entity, "vertices") and entity.vertices:
             H5Writer.add_vertices(h5file, entity, close_file=False)
+
+        if hasattr(entity, "cells") and entity.vertices:
+            H5Writer.add_cells(h5file, entity, close_file=False)
 
         # Check if file reference to a hdf5
         if close_file:
