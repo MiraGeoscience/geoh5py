@@ -15,7 +15,7 @@ from geoh5io import data, groups, objects
 from geoh5io.data import Data
 from geoh5io.groups import CustomGroup, Group
 from geoh5io.io import H5Reader, H5Writer
-from geoh5io.objects import ObjectBase
+from geoh5io.objects import Cell, ObjectBase
 from geoh5io.shared import Coord3D, weakref_utils
 from geoh5io.shared.entity import Entity
 
@@ -587,6 +587,23 @@ class Workspace:
         """
 
         return H5Reader.fetch_vertices(self._h5file, self._base, uid)
+
+    def fetch_cells(self, uid: uuid.UUID) -> Cell:
+        """
+        Get the cells of an object from the source h5 file
+
+        Parameters
+        ----------
+        uid: uuid.UUID
+            Unique identifier of target entity
+
+        Returns
+        -------
+        cells: geoh5io.Cell
+            Cell object with vertices index
+        """
+
+        return H5Reader.fetch_cells(self._h5file, self._base, uid)
 
     def activate(self):
         """ Makes this workspace the active one.
