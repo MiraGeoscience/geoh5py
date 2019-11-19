@@ -6,10 +6,6 @@ class FloatData(Data):
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.FLOAT
 
-    # TODO: implement specialization to access values.
-    # Stored as a 1D array of 32-bit float type.
-    # No data value: 1.175494351e-38 (FLT_MIN, considering use of NaN)
-
     @property
     def values(self):
         if getattr(self, "_values", None) is None:
@@ -21,3 +17,6 @@ class FloatData(Data):
     def values(self, values):
 
         self._values = values
+
+    def __call__(self):
+        return self.values
