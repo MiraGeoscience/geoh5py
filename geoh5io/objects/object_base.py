@@ -2,7 +2,6 @@ import uuid
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Optional
 
-from geoh5io.io import H5Writer
 from geoh5io.shared import Entity
 
 from .object_type import ObjectType
@@ -65,7 +64,3 @@ class ObjectBase(Entity):
     @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:
         ...
-
-    def save_to_h5(self, close_file: bool = True):
-
-        H5Writer.save_entity(self, close_file=close_file)
