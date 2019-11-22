@@ -15,15 +15,10 @@ if TYPE_CHECKING:
 class Points(ObjectBase):
     __TYPE_UID = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
 
-    def __init__(
-        self,
-        object_type: ObjectType,
-        name: str,
-        uid: uuid.UUID = None,
-        locations: ndarray = None,
-    ):
+    def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
 
         super().__init__(object_type, name, uid)
+        self._vertices: Optional[Coord3D] = None
 
         if object_type.name is None:
             self.entity_type.name = "Points"
@@ -34,15 +29,6 @@ class Points(ObjectBase):
             self.entity_type.description = "Points"
         else:
             self.entity_type.description = object_type.description
-
-        if locations is not None:
-            assert (
-                locations.shape[1] == 3
-            ), "Locations should be an an array of shape N x 3"
-            self.vertices = locations
-
-        else:
-            self._vertices: Optional[Coord3D] = None
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
