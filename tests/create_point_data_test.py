@@ -3,12 +3,13 @@ import os
 import numpy.random as random
 
 from geoh5io.objects import Points
-from geoh5io.workspace import Workspace, active_workspace
+from geoh5io.workspace import Workspace
 
 
 def test_create_point_data():
 
     h5file = "testProject.geoh5"
+    name = "MyTestPointset"
 
     # Generate a random cloud of points
     n_data = 12
@@ -18,13 +19,14 @@ def test_create_point_data():
     # Create a workspace
     workspace = Workspace(r".\assets" + os.sep + h5file)
 
-    with active_workspace(workspace):
+    points, data = workspace.create_entity(
+        Points, name, vertices=xyz, data={"DataValues": values}
+    )
+    points.save_to_h5()
+    workspace.finalize()
 
-        points = Points.create(locations=xyz, data={"DataValues": values})
-        points.save_to_h5()
-        workspace.finalize()
-
-    # Read the data back in
+    # Read the data back in from a fresh workspace
+    workspace = Workspace(r".\assets" + os.sep + h5file)
     obj_list = workspace.list_objects
 
     obj = workspace.get_entity(obj_list[0])[0]
@@ -33,4 +35,5 @@ def test_create_point_data():
 
     assert all(data.values == values), "Data values differ from input"
     assert all((obj.locations == xyz).flatten()), "Data locations differ from input"
+
     os.remove(r".\assets" + os.sep + h5file)

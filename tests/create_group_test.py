@@ -1,23 +1,21 @@
 import os
 
 from geoh5io.groups import ContainerGroup
-from geoh5io.workspace import Workspace, active_workspace
+from geoh5io.workspace import Workspace
 
 
 def test_create_group():
 
     h5file = "testProject.geoh5"
 
-    group_name = "MyContainer"
+    group_name = "MyTestContainer"
 
     # Create a workspace
     workspace = Workspace(r".\assets" + os.sep + h5file)
 
-    with active_workspace(workspace):
-
-        group = ContainerGroup.create(name=group_name)
-        group.save_to_h5()
-        workspace.finalize()
+    group = workspace.create_entity(ContainerGroup, group_name)
+    group.save_to_h5()
+    workspace.finalize()
 
     # Read the group back in
     group_object = workspace.get_entity(group_name)
