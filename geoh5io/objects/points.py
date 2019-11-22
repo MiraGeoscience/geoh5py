@@ -112,9 +112,6 @@ class Points(ObjectBase):
         vertices: numpy.ndarray("float64")
             Coordinate xyz vertices [n x 3]
 
-        cells: numpy.ndarray("uint32")
-            Array on integers defining the connection between vertices
-
         name: str optional
             Name of the point object [NewPoints]
 
@@ -154,22 +151,6 @@ class Points(ObjectBase):
                 vertices.shape[1] == 3
             ), "Locations should be an an array of shape N x 3"
             point_object.vertices = vertices
-
-        # elif isinstance(vertices, list):
-        #     assert (
-        #             len(vertices) == 3
-        #     ), "List of coordinates [x, y, z] must be of length 3"
-        #     point_object.vertices = c_[vertices]
-        #
-        # # If segments are not provided, connect sequentially
-        # if cells is None:
-        #     vertices = point_object.vertices
-        #     n_segments = vertices().shape[0]
-        #     cells = c_[arange(0, n_segments - 1), arange(1, n_segments)].astype(
-        #         "uint32"
-        #     )
-        #
-        # point_object.cells = cells
 
         if data is not None:
             data_objects = []
