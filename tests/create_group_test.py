@@ -13,7 +13,7 @@ def test_create_group():
     # Create a workspace
     workspace = Workspace(r".\assets" + os.sep + h5file)
 
-    group = workspace.create_entity(ContainerGroup, group_name)
+    group = ContainerGroup.create(workspace, group_name)
     group.save_to_h5()
     workspace.finalize()
 

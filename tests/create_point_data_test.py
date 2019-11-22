@@ -19,9 +19,7 @@ def test_create_point_data():
     # Create a workspace
     workspace = Workspace(r".\assets" + os.sep + h5file)
 
-    points, data = workspace.create_entity(
-        Points, name, vertices=xyz, data={"DataValues": values}
-    )
+    points, data = Points.create(workspace, xyz, name=name, data={"DataValues": values})
     points.save_to_h5()
     workspace.finalize()
 

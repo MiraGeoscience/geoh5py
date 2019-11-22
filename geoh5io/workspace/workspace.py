@@ -15,7 +15,7 @@ from geoh5io import data, groups, objects
 from geoh5io.data import Data
 from geoh5io.groups import CustomGroup, Group
 from geoh5io.io import H5Reader, H5Writer
-from geoh5io.objects import Cell, ObjectBase, Points
+from geoh5io.objects import Cell, ObjectBase
 from geoh5io.shared import Coord3D, weakref_utils
 from geoh5io.shared.entity import Entity
 
@@ -473,26 +473,6 @@ class Workspace:
                         name,
                         uid,
                     )
-
-        if isinstance(created_entity, Entity):
-            # Add the new entity and type to tree
-            if created_entity.uid not in self.tree.keys():
-                self.add_to_tree(created_entity)
-
-            if "parent" in kwargs:
-                created_entity.parent = kwargs["parent"]
-                # self.set_parent(kwargs['parent'])
-            elif name != "Workspace":
-                created_entity.parent = self.get_entity("Workspace")
-
-            if isinstance(created_entity, Points):
-                if "vertices" in kwargs:
-                    created_entity.vertices = kwargs["vertices"]
-
-                if "data" in kwargs:
-                    data_objects = created_entity.add_data(kwargs["data"])
-
-                    return tuple([created_entity] + data_objects)
 
         return created_entity
 

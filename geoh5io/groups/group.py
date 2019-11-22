@@ -23,11 +23,6 @@ class Group(Entity):
         # self._clipping_ids: List[uuid.UUID] = []
         group_type.workspace._register_group(self)
 
-        # # Add the new group and type to tree
-        # group_type.workspace.add_to_tree(self)
-        #
-        # self.set_parent(parent)
-
     @property
     def entity_type(self) -> GroupType:
         return self._type
@@ -53,3 +48,51 @@ class Group(Entity):
     @classmethod
     def default_type_description(cls) -> Optional[str]:
         return cls.default_type_name()
+
+    @classmethod
+    def create(
+        cls,
+        workspace: "workspace.Workspace",
+        name: str = "NewGroup",
+        uid: uuid.UUID = uuid.uuid4(),
+        parent=None,
+    ):
+        """
+        create(
+            workspace, name=["NewGroup"],
+            uid=[uuid.uuid4()], parent=[None]
+        )
+
+        Function to create a group object
+
+        Parameters
+        ----------
+        workspace: geoh5io.Workspace
+            Workspace to be added to
+
+        name: str optional
+            Name of the Group object ["NewGroup"]
+
+        uid: uuid.UUID optional
+            Unique identifier, or randomly generated using uuid.uuid4 if None
+
+        parent: uuid.UUID | Entity | None optional
+            Parental Entity or reference uuid to be linked to.
+            If None, the object is added to the base Workspace.
+
+        Returns
+        -------
+        entity: geoh5io.Group
+            Group object registered to the workspace.
+        """
+
+        new_group_type = cls.find_or_create_type(workspace)
+
+        new_group = cls(new_group_type, name, uid)
+
+        # Add the new new_group and type to tree
+        new_group_type.workspace.add_to_tree(new_group)
+
+        new_group.parent = parent
+
+        return new_group
