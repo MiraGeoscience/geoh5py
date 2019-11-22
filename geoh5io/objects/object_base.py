@@ -11,15 +11,22 @@ if TYPE_CHECKING:
 
 
 class ObjectBase(Entity):
-    def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
+    def __init__(
+        self, object_type: ObjectType, name: str, uid: uuid.UUID = None, parent=None
+    ):
         assert object_type is not None
         super().__init__(name, uid)
 
         self._type = object_type
         self._allow_move = 1
         # self._clipping_ids: List[uuid.UUID] = []
-        # self._parent = None
+        self._parent = parent
         object_type.workspace._register_object(self)
+
+        # # Add the new group and type to tree
+        # object_type.workspace.add_to_tree(self)
+        #
+        # self.set_parent(parent)
 
     @property
     def get_data_list(self):

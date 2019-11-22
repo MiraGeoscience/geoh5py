@@ -11,14 +11,22 @@ if TYPE_CHECKING:
 
 
 class Group(Entity):
-    def __init__(self, group_type: GroupType, name: str, uid: uuid.UUID = None):
+    def __init__(
+        self, group_type: GroupType, name: str, uid: uuid.UUID = None, parent=None
+    ):
         assert group_type is not None
         super().__init__(name, uid)
 
         self._type = group_type
         self._allow_move = True
+        self._parent = parent
         # self._clipping_ids: List[uuid.UUID] = []
         group_type.workspace._register_group(self)
+
+        # # Add the new group and type to tree
+        # group_type.workspace.add_to_tree(self)
+        #
+        # self.set_parent(parent)
 
     @property
     def entity_type(self) -> GroupType:

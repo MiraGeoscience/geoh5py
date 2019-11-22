@@ -15,7 +15,7 @@ from geoh5io import data, groups, objects
 from geoh5io.data import Data
 from geoh5io.groups import CustomGroup, Group
 from geoh5io.io import H5Reader, H5Writer
-from geoh5io.objects import Cell, ObjectBase
+from geoh5io.objects import Cell, ObjectBase, Points
 from geoh5io.shared import Coord3D, weakref_utils
 from geoh5io.shared.entity import Entity
 
@@ -49,9 +49,9 @@ class Workspace:
         self._objects: Dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
         self._data: Dict[uuid.UUID, ReferenceType[data.Data]] = {}
 
-        self._root = root if root is not None else RootGroup(self)
-
         self.h5file = h5file
+
+        self._root = root if root is not None else RootGroup(self)
 
     @property
     def base_name(self):
@@ -106,7 +106,10 @@ class Workspace:
              }
         """
         if not getattr(self, "_tree"):
-            self._tree = H5Reader.get_project_tree(self.h5file, self._base)
+            if self.h5file is not None:
+                self._tree = H5Reader.get_project_tree(self.h5file, self._base)
+            else:
+                self._tree = {}
 
         return self._tree
 
@@ -187,14 +190,14 @@ class Workspace:
             File name with path to the target geoh5 database
         """
 
-        assert self._h5file is not None, "The 'h5file' property name must be set"
         return self._h5file
 
     @h5file.setter
-    def h5file(self, h5file: Optional[str]):
+    def h5file(self, h5file):
+
+        self._h5file = h5file
 
         if h5file is not None:
-            self._h5file = h5file
 
             # Check if the geoh5 exists, if not create it
             if not os.path.exists(self._h5file):
@@ -272,7 +275,7 @@ class Workspace:
         else:
 
             for key, attr in entity.__dict__.items():
-                if ("workspace" in key) or ("value" in key):
+                if key.replace("_", "") in ["workspace", "values"]:
                     continue
                 if "uid" in key:
                     self.tree[uid]["id"] = H5Writer.uuid_value(attr)
@@ -299,14 +302,14 @@ class Workspace:
             self.tree[uid]["children"] = children
 
         # Store a pointer to the object in memory
-        self.tree[uid]["object"] = entity
+        # self.tree[uid]["object"] = entity
 
         # Add type to tree
         self.tree[entity.entity_type.uid] = {}
         self.tree[entity.entity_type.uid]["entity_type"] = entity_type + "_type"
 
         for key, attr in entity.entity_type.__dict__.items():
-            if "workspace" in key:
+            if key.replace("_", "") in ["workspace", "values"]:
                 continue
             if "uid" in key:
                 self.tree[entity.entity_type.uid]["id"] = H5Writer.uuid_value(attr)
@@ -364,8 +367,8 @@ class Workspace:
             created_object = self.create_entity(
                 base_classes[entity_type],
                 self.tree[uid]["name"],
-                uid,
-                self.tree[uid]["type"],
+                uid=uid,
+                entity_type_uid=self.tree[uid]["type"],
                 attributes=self.tree[uid],
                 type_attributes=self.tree[self.tree[uid]["type"]],
             )
@@ -380,13 +383,7 @@ class Workspace:
         return entity_list
 
     def create_entity(
-        self,
-        entity_class,
-        name: str,
-        uid: uuid.UUID,
-        entity_type_uid: uuid.UUID,
-        attributes=None,
-        type_attributes=None,
+        self, entity_class, name: str, uid: Optional[uuid.UUID] = uuid.uuid4(), **kwargs
     ):
         """
         create_entity(entity_class, name, uuid, type_uuid)
@@ -401,12 +398,6 @@ class Workspace:
             Name of the entity displayed in the project tree
         uid: uuid.UUID
             Unique identifier of the entity
-        entity_type_uid: uuid.UUID
-            Unique identifier of the entity type
-        attributes: dict, optional
-            Dictionary of attributes to be added to the object
-        type_attributes: dict, optional
-            Dictionary of attributes to be added to the object type
 
         Returns
         -------
@@ -415,6 +406,17 @@ class Workspace:
         """
 
         created_entity: Optional[Entity] = None
+
+        if "entity_type_uid" in kwargs:
+            entity_type_uid = kwargs["entity_type_uid"]
+        # Assume that entity is being created from its class
+        elif hasattr(entity_class, "default_type_uid"):
+            entity_type_uid = entity_class.default_type_uid()
+            entity_class = entity_class.__bases__
+        else:
+            raise RuntimeError(
+                f"An entity_type_uid must be provided for {entity_class}."
+            )
 
         if entity_class is not Data:
             for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
@@ -438,6 +440,8 @@ class Workspace:
                 created_entity = custom(unknown_type, name, uid)
 
         else:
+            attributes = kwargs["attributes"]
+            type_attributes = kwargs["type_attributes"]
 
             data_type = data.data_type.DataType(
                 self,
@@ -469,6 +473,26 @@ class Workspace:
                         name,
                         uid,
                     )
+
+        if isinstance(created_entity, Entity):
+            # Add the new entity and type to tree
+            if created_entity.uid not in self.tree.keys():
+                self.add_to_tree(created_entity)
+
+            if "parent" in kwargs:
+                created_entity.parent = kwargs["parent"]
+                # self.set_parent(kwargs['parent'])
+            elif name != "Workspace":
+                created_entity.parent = self.get_entity("Workspace")
+
+            if isinstance(created_entity, Points):
+                if "vertices" in kwargs:
+                    created_entity.vertices = kwargs["vertices"]
+
+                if "data" in kwargs:
+                    data_objects = created_entity.add_data(kwargs["data"])
+
+                    return tuple([created_entity] + data_objects)
 
         return created_entity
 

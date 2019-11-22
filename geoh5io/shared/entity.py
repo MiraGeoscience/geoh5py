@@ -14,6 +14,7 @@ class Entity(ABC):
         else:
             self._uid = uuid.uuid4()
         self._name = self.fix_up_name(name)
+        self._parent = None
         self._visible = True
         self._allow_delete = True
         self._allow_rename = True
@@ -62,25 +63,36 @@ class Entity(ABC):
     def entity_type(self) -> "shared.EntityType":
         ...
 
-    def set_parent(self, parent):
+    @property
+    def parent(self):
+        return self._parent
+
+    @parent.setter
+    def parent(self, parent):
         """
         The parent of an object in the workspace
         :return: Entity: Parent entity
         """
 
-        if isinstance(parent, uuid.UUID):
-            uid = parent
-        else:
-            if isinstance(parent, Entity):
-                uid = parent.uid
+        if parent is not None:
+            if isinstance(parent, uuid.UUID):
+                uid = parent
             else:
-                uid = self.entity_type.workspace.get_entity("Workspace")[0].uid
+                if isinstance(parent, Entity):
+                    uid = parent.uid
+                else:
+                    uid = self.entity_type.workspace.get_entity("Workspace")[0].uid
 
-        self.entity_type.workspace.tree[self.uid]["parent"] = uid
+            self.entity_type.workspace.tree[self.uid]["parent"] = uid
 
-        # Add as children of parent
-        if self.uid not in self.entity_type.workspace.tree[uid]["children"]:
-            self.entity_type.workspace.tree[uid]["children"] += [self.uid]
+            # Add as children of parent in tree
+            if self.uid not in self.entity_type.workspace.tree[uid]["children"]:
+                self.entity_type.workspace.tree[uid]["children"] += [self.uid]
+
+            self._parent = self.entity_type.workspace.get_entity(uid)
+
+        else:
+            self._parent = None
 
     def get_parent(self):
         """

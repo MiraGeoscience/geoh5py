@@ -76,7 +76,10 @@ class H5Writer:
 
         else:
             workspace_entity = workspace.create_entity(
-                Group, "Workspace", uuid.uuid4(), NoTypeGroup.default_type_uid()
+                Group,
+                "Workspace",
+                uuid.uuid4(),
+                entity_type_uid=NoTypeGroup.default_type_uid(),
             )
 
             workspace.add_to_tree(workspace_entity)
