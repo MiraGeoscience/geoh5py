@@ -6,9 +6,10 @@ from geoh5io.objects import Curve
 from geoh5io.workspace import Workspace
 
 
-def test_create_point_data():
+def test_create_curve_data():
 
     h5file = "testCurve.geoh5"
+    curve_name = "TestCurve"
 
     # Generate a random cloud of points
     n_data = 12
@@ -19,11 +20,20 @@ def test_create_point_data():
     # Create a workspace
     workspace = Workspace(r".\assets" + os.sep + h5file)
 
-    curve, _, _ = Curve.create(
+    curve, vertex_data, cell_data = Curve.create(
         workspace,
-        xyz,
+        vertices=xyz,
+        name=curve_name,
         data={"vertexValues": ["VERTEX", values], "cellValues": ["CELL", cell_values]},
     )
+
+    assert all(
+        vertex_data.values == values
+    ), "Created VERTEX data values differ from input"
+    assert all(
+        cell_data.values == cell_values
+    ), "Created CELL data values differ from input"
+
     curve.save_to_h5()
     workspace.finalize()
 
@@ -31,11 +41,39 @@ def test_create_point_data():
     obj_list = workspace.list_objects
 
     obj = workspace.get_entity(obj_list[0])[0]
+    assert all((obj.vertices() == xyz).flatten()), "Data locations differ from input"
+
     data_vertex = workspace.get_entity(obj.get_data_list[0])[0]
     data_cell = workspace.get_entity(obj.get_data_list[1])[0]
 
-    assert all(data_vertex.values == values), "VERTEX data values differ from input"
-    assert all(data_cell.values == cell_values), "VERTEX data values differ from input"
-    assert all((obj.vertices() == xyz).flatten()), "Data locations differ from input"
+    assert all(
+        data_vertex.values == values
+    ), "Loaded VERTEX data values differ from input"
+    assert all(
+        data_cell.values == cell_values
+    ), "Loaded CELL data values differ from input"
+
+    #################### Modify the vertices and data #########################
+    # Change the vertices of the curve
+    new_locs = random.randn(n_data, 3)
+    curve.vertices = new_locs
+
+    # Change the vertex values
+    new_vals = random.randn(n_data)
+    vertex_data.values = new_vals
+    curve.save_to_h5()
+
+    # Read the data back in
+    obj = workspace.get_entity(curve_name)[0]
+    assert all(
+        (obj.vertices() == new_locs).flatten()
+    ), "Modified data locations differ from input"
+
+    data_vertex = workspace.get_entity(obj.get_data_list[0])[0]
+    data_cell = workspace.get_entity(obj.get_data_list[1])[0]
+
+    assert all(
+        data_vertex.values == new_vals
+    ), "Modified VERTEX data values differ from input"
 
     os.remove(r".\assets" + os.sep + h5file)

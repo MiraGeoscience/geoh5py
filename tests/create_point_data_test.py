@@ -19,8 +19,18 @@ def test_create_point_data():
     # Create a workspace
     workspace = Workspace(r".\assets" + os.sep + h5file)
 
-    points, data = Points.create(workspace, xyz, name=name, data={"DataValues": values})
+    points, data = Points.create(
+        workspace,
+        vertices=xyz,
+        name=name,
+        data={"DataValues": ["VERTEX", values]},
+        allow_move=False,
+    )
+
+    assert not points.allow_move, "Attribute of point did not properly set on creation"
+
     points.save_to_h5()
+
     workspace.finalize()
 
     # Read the data back in from a fresh workspace
