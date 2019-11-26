@@ -41,23 +41,6 @@ class ObjectBase(Entity):
         """
         return self.entity_type.workspace.get_names_of_type(self.uid, "data")
 
-    def get_data(self, name: str) -> Optional[Entity]:
-        """
-        @property
-        get_data
-
-        Parameters
-        ----------
-        name: str
-            Name of the target child data
-
-        Returns
-        -------
-        data: geoh5io.Data
-            Returns a registered Data
-        """
-        return self.entity_type.workspace.get_child(self.uid, name)[0]
-
     @property
     def entity_type(self) -> ObjectType:
         return self._type
@@ -137,25 +120,10 @@ class ObjectBase(Entity):
         # Add the new object and type to tree
         object_type.workspace.add_to_tree(new_object)
 
-        if "parent" in kwargs.keys():
-            new_object.parent = kwargs["parent"]
-
-        for attr in new_object.__dict__:
-
-            if attr[1:] in kwargs.keys():
-                setattr(new_object, attr[1:], kwargs[attr[1:]])
-
-        # if hasattr(cls, "_vertices") and "vertices" in kwargs.keys():
-        #     assert (
-        #         kwargs["vertices"].shape[1] == 3
-        #     ), "'vertices' should be an an array of shape N x 3"
-        #     new_object.vertices = kwargs["vertices"]
-        #
-        # if hasattr(cls, "_cells") and "cells" in kwargs.keys():
-        #     assert (
-        #         kwargs["cells"].shape[1] == 2
-        #     ), "'cells' should be an an array of shape N x 2"
-        #     new_object.cells = kwargs["cells"]
+        # Replace all attributes given as kwargs
+        for attr, item in kwargs.items():
+            if "_" + attr in new_object.__dict__:
+                setattr(new_object, attr, item)
 
         if "data" in kwargs.keys():
             data_objects = []
@@ -183,3 +151,20 @@ class ObjectBase(Entity):
             return tuple([new_object] + data_objects)
 
         return new_object
+
+    def get_data(self, name: str) -> Optional[Entity]:
+        """
+        @property
+        get_data
+
+        Parameters
+        ----------
+        name: str
+            Name of the target child data
+
+        Returns
+        -------
+        data: geoh5io.Data
+            Returns a registered Data
+        """
+        return self.entity_type.workspace.get_child(self.uid, name)[0]
