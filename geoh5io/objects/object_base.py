@@ -14,18 +14,23 @@ if TYPE_CHECKING:
 
 
 class ObjectBase(Entity):
-    def __init__(
-        self, object_type: ObjectType, name: str, uid: uuid.UUID = None, parent=None
-    ):
+    def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         assert object_type is not None
         super().__init__(name, uid)
 
         self._type = object_type
-        self._allow_move = 1
+        self._allow_move = True
         # self._clipping_ids: List[uuid.UUID] = []
-        self._parent = parent
 
         object_type.workspace._register_object(self)
+
+    @property
+    def allow_move(self) -> bool:
+        return self._allow_move
+
+    @allow_move.setter
+    def allow_move(self, value: bool):
+        self._allow_move = value
 
     @property
     def get_data_list(self):

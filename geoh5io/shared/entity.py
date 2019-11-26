@@ -54,17 +54,33 @@ class Entity(ABC):
     def visible(self) -> bool:
         return self._visible
 
+    @visible.setter
+    def visible(self, value: bool):
+        self._visible = value
+
     @property
     def allow_delete(self) -> bool:
         return self._allow_delete
+
+    @allow_delete.setter
+    def allow_delete(self, value: bool):
+        self._allow_delete = value
 
     @property
     def allow_rename(self) -> bool:
         return self._allow_rename
 
+    @allow_rename.setter
+    def allow_rename(self, value: bool):
+        self._allow_rename = value
+
     @property
     def is_public(self) -> bool:
         return self._public
+
+    @is_public.setter
+    def is_public(self, value: bool):
+        self._public = value
 
     @classmethod
     def fix_up_name(cls, name: str) -> str:
