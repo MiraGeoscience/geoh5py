@@ -19,6 +19,8 @@ class Entity(ABC):
         self._allow_delete = True
         self._allow_rename = True
         self._public = True
+        self._existing_h5_entity = False
+        self._update_h5 = False
 
     @property
     def uid(self) -> uuid.UUID:

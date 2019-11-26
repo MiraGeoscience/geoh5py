@@ -27,6 +27,9 @@ class EntityType(ABC):
         self._uid = uid
         self._name = name
         self._description = description
+        self._saved_h5_type = False
+        self._update_h5 = False
+
         workspace._register_type(self)
 
     @staticmethod

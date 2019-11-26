@@ -1,15 +1,9 @@
 import uuid
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
-from numpy import ndarray
-
-from geoh5io.data import Data
 from geoh5io.shared import Coord3D
 
 from .object_base import ObjectBase, ObjectType
-
-if TYPE_CHECKING:
-    from geoh5io import workspace
 
 
 class Points(ObjectBase):
@@ -48,7 +42,7 @@ class Points(ObjectBase):
             Coord3D object holding the vertices coordinates
         """
 
-        if getattr(self, "_vertices", None) is None:
+        if (getattr(self, "_vertices", None) is None) and self._existing_h5_entity:
             self._vertices = self.entity_type.workspace.fetch_vertices(self.uid)
 
         return self._vertices
@@ -70,7 +64,8 @@ class Points(ObjectBase):
         vertices: geoh5io.Coord3D
             Coord3D object holding the vertices coordinates
         """
-
+        if self._existing_h5_entity:
+            self._update_h5 = True
         self._vertices = Coord3D(xyz)
 
     @property
@@ -86,95 +81,96 @@ class Points(ObjectBase):
         """
         return self.vertices.locations
 
-    @classmethod
-    def create(
-        cls,
-        workspace: "workspace.Workspace",
-        vertices: ndarray,
-        name: str = "NewPoints",
-        uid: uuid.UUID = uuid.uuid4(),
-        parent=None,
-        data: Optional[dict] = None,
-    ):
-        """
-        create(
-            locations, workspace=None, name="NewPoints",
-            uid=uuid.uuid4(), parent=None, data=None
-        )
-
-        Function to create a point object from xyz locations and data
-
-        Parameters
-        ----------
-        workspace: geoh5io.Workspace
-            Workspace to be added to
-
-        vertices: numpy.ndarray("float64")
-            Coordinate xyz vertices [n x 3]
-
-        name: str optional
-            Name of the point object [NewPoints]
-
-        uid: uuid.UUID optional
-            Unique identifier, or randomly generated using uuid.uuid4 if None
-
-        parent: uuid.UUID | Entity | None optional
-            Parental Entity or reference uuid to be linked to.
-            If None, the object is added to the base Workspace.
-
-        data: Dict{'name': ['association', values]} optional
-            Dictionary of data values associated to "CELL" or "VERTEX" values
-
-        Returns
-        -------
-        entity: geoh5io.Points
-            Point object registered to the workspace.
-        """
-
-        object_type = cls.find_or_create_type(workspace)
-
-        if object_type.name is None:
-            object_type.name = "Points"
-
-        if object_type.description is None:
-            object_type.description = "Points"
-
-        point_object = Points(object_type, name, uid)
-
-        # Add the new object and type to tree
-        object_type.workspace.add_to_tree(point_object)
-
-        point_object.parent = parent
-
-        if isinstance(vertices, ndarray):
-            assert (
-                vertices.shape[1] == 3
-            ), "Locations should be an an array of shape N x 3"
-            point_object.vertices = vertices
-
-        if data is not None:
-            data_objects = []
-            for key, value in data.items():
-
-                if isinstance(value, ndarray):
-                    data_object = object_type.workspace.create_entity(
-                        Data,
-                        key,
-                        uuid.uuid4(),
-                        entity_type_uid=uuid.uuid4(),
-                        attributes={"association": "VERTEX"},
-                        type_attributes={"primitive_type": "FLOAT"},
-                    )
-
-                    data_object.values = value
-
-                    # Add the new object and type to tree
-                    object_type.workspace.add_to_tree(data_object)
-
-                    data_object.parent = point_object
-
-                data_objects.append(data_object)
-
-            return tuple([point_object] + data_objects)
-
-        return point_object
+    # @classmethod
+    # def create(
+    #     cls,
+    #     workspace: "workspace.Workspace",
+    #     vertices: ndarray,
+    #     name: str = "NewPoints",
+    #     uid: uuid.UUID = uuid.uuid4(),
+    #     parent=None,
+    #     data: Optional[dict] = None,
+    #     *args
+    # ):
+    #     """
+    #     create(
+    #         locations, workspace=None, name="NewPoints",
+    #         uid=uuid.uuid4(), parent=None, data=None
+    #     )
+    #
+    #     Function to create a point object from xyz locations and data
+    #
+    #     Parameters
+    #     ----------
+    #     workspace: geoh5io.Workspace
+    #         Workspace to be added to
+    #
+    #     vertices: numpy.ndarray("float64")
+    #         Coordinate xyz vertices [n x 3]
+    #
+    #     name: str optional
+    #         Name of the point object [NewPoints]
+    #
+    #     uid: uuid.UUID optional
+    #         Unique identifier, or randomly generated using uuid.uuid4 if None
+    #
+    #     parent: uuid.UUID | Entity | None optional
+    #         Parental Entity or reference uuid to be linked to.
+    #         If None, the object is added to the base Workspace.
+    #
+    #     data: Dict{'name': ['association', values]} optional
+    #         Dictionary of data values associated to "CELL" or "VERTEX" values
+    #
+    #     Returns
+    #     -------
+    #     entity: geoh5io.Points
+    #         Point object registered to the workspace.
+    #     """
+    #
+    #     object_type = cls.find_or_create_type(workspace)
+    #
+    #     if object_type.name is None:
+    #         object_type.name = "Points"
+    #
+    #     if object_type.description is None:
+    #         object_type.description = "Points"
+    #
+    #     point_object = Points(object_type, name, uid)
+    #
+    #     # Add the new object and type to tree
+    #     object_type.workspace.add_to_tree(point_object)
+    #
+    #     point_object.parent = parent
+    #
+    #     if isinstance(vertices, ndarray):
+    #         assert (
+    #             vertices.shape[1] == 3
+    #         ), "Locations should be an an array of shape N x 3"
+    #         point_object.vertices = vertices
+    #
+    #     if data is not None:
+    #         data_objects = []
+    #         for key, value in data.items():
+    #
+    #             if isinstance(value, ndarray):
+    #                 data_object = object_type.workspace.create_entity(
+    #                     Data,
+    #                     key,
+    #                     uuid.uuid4(),
+    #                     entity_type_uid=uuid.uuid4(),
+    #                     attributes={"association": "VERTEX"},
+    #                     type_attributes={"primitive_type": "FLOAT"},
+    #                 )
+    #
+    #                 data_object.values = value
+    #
+    #                 # Add the new object and type to tree
+    #                 object_type.workspace.add_to_tree(data_object)
+    #
+    #                 data_object.parent = point_object
+    #
+    #             data_objects.append(data_object)
+    #
+    #         return tuple([point_object] + data_objects)
+    #
+    #     return point_object
