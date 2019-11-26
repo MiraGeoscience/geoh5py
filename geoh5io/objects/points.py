@@ -42,7 +42,7 @@ class Points(ObjectBase):
             Coord3D object holding the vertices coordinates
         """
 
-        if (getattr(self, "_vertices", None) is None) and self._existing_h5_entity:
+        if (getattr(self, "_vertices", None) is None) and self.existing_h5_entity:
             self._vertices = self.entity_type.workspace.fetch_vertices(self.uid)
 
         return self._vertices
@@ -64,7 +64,7 @@ class Points(ObjectBase):
         vertices: geoh5io.Coord3D
             Coord3D object holding the vertices coordinates
         """
-        if self._existing_h5_entity:
+        if self.existing_h5_entity:
             self._update_h5 = True
         self._vertices = Coord3D(xyz)
 

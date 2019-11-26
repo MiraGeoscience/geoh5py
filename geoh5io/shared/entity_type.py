@@ -27,10 +27,26 @@ class EntityType(ABC):
         self._uid = uid
         self._name = name
         self._description = description
-        self._saved_h5_type = False
+        self._existing_h5_entity = False
         self._update_h5 = False
 
         workspace._register_type(self)
+
+    @property
+    def existing_h5_entity(self) -> bool:
+        return self._existing_h5_entity
+
+    @existing_h5_entity.setter
+    def existing_h5_entity(self, value: bool):
+        self._existing_h5_entity = value
+
+    @property
+    def update_h5(self) -> bool:
+        return self._update_h5
+
+    @update_h5.setter
+    def update_h5(self, value: bool):
+        self._update_h5 = value
 
     @staticmethod
     @abstractmethod

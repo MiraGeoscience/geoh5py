@@ -128,12 +128,25 @@ class H5Writer:
         uid = entity_type.uid
 
         entity_type_str = tree[uid]["entity_type"].replace("_", " ").capitalize() + "s"
+
+        # Check if already in the project
+        if cls.uuid_value(uid) in list(h5file[base]["Types"][entity_type_str].keys()):
+
+            if entity_type.update_h5:
+                # Remove the entity type for re-write
+                del h5file[base][entity_type][cls.uuid_value(uid)]
+                entity_type.update_h5 = False
+                entity_type.existing_h5_entity = False
+
+            else:
+                return h5file[base]["Types"][entity_type_str][cls.uuid_value(uid)]
+
         new_type = h5file[base]["Types"][entity_type_str].create_group(
             cls.uuid_value(uid)
         )
 
         for key, value in tree[uid].items():
-            if (key == "entity_type") or ("allow" in key):
+            if (key == "entity_type") or ("allow" in key) or ("h5" in key):
                 continue
 
             if key == "id":
@@ -149,6 +162,9 @@ class H5Writer:
 
         if close_file:
             h5file.close()
+
+        entity_type.update_h5 = False
+        entity_type.existing_h5_entity = True
 
         return new_type
 
@@ -330,6 +346,7 @@ class H5Writer:
         """
 
         cls.str_type = h5py.special_dtype(vlen=str)
+
         # Check if file reference to a hdf5
         if not isinstance(file, h5py.File):
             h5file = h5py.File(file, "r+")
@@ -348,11 +365,19 @@ class H5Writer:
 
         # Check if already in the project
         if cls.uuid_value(uid) in list(h5file[base][entity_type].keys()):
-            # Check if file reference to a hdf5
-            if close_file:
-                h5file.close()
-                return None
-            return h5file[base][entity_type][cls.uuid_value(uid)]
+
+            if entity.update_h5:
+                # Remove the entity for re-write
+                del h5file[base][entity_type][cls.uuid_value(uid)]
+                entity.update_h5 = False
+                entity.existing_h5_entity = False
+
+            else:
+                # Check if file reference to a hdf5
+                if close_file:
+                    h5file.close()
+                    return None
+                return h5file[base][entity_type][cls.uuid_value(uid)]
 
         entity_handle = h5file[base][entity_type].create_group(cls.uuid_value(uid))
 
@@ -371,8 +396,10 @@ class H5Writer:
                 "children",
                 "vertices",
                 "visible",
-            ]:
+                "cells",
+            ] or ("h5" in key):
                 continue
+
             if key == "id":
                 entry_key = key.replace("_", " ").upper()
             else:
@@ -409,6 +436,9 @@ class H5Writer:
         # Check if file reference to a hdf5
         if close_file:
             h5file.close()
+
+        entity.update_h5 = False
+        entity.existing_h5_entity = True
 
         return entity_handle
 

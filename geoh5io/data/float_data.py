@@ -8,13 +8,16 @@ class FloatData(Data):
 
     @property
     def values(self):
-        if getattr(self, "_values", None) is None:
+        if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
             self._values = self.entity_type.workspace.fetch_values(self.uid)
 
         return self._values
 
     @values.setter
     def values(self, values):
+
+        if self.existing_h5_entity:
+            self._update_h5 = True
 
         self._values = values
 

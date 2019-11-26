@@ -23,6 +23,22 @@ class Entity(ABC):
         self._update_h5 = False
 
     @property
+    def existing_h5_entity(self) -> bool:
+        return self._existing_h5_entity
+
+    @existing_h5_entity.setter
+    def existing_h5_entity(self, value: bool):
+        self._existing_h5_entity = value
+
+    @property
+    def update_h5(self) -> bool:
+        return self._update_h5
+
+    @update_h5.setter
+    def update_h5(self, value: bool):
+        self._update_h5 = value
+
+    @property
     def uid(self) -> uuid.UUID:
         return self._uid
 

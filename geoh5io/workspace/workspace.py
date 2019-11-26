@@ -364,7 +364,7 @@ class Workspace:
                 entity_list += [finder(uid)]
                 continue
 
-            created_object = self.create_entity(
+            recovered_object = self.create_entity(
                 base_classes[entity_type],
                 self.tree[uid]["name"],
                 uid=uid,
@@ -373,12 +373,15 @@ class Workspace:
                 type_attributes=self.tree[self.tree[uid]["type"]],
             )
 
+            # Assumes the object was pulled from h5
+            recovered_object.existing_h5_entity = True
+
             # Object of unknown type
-            if created_object is None:
+            if recovered_object is None:
                 assert RuntimeError("Only objects of known type have been implemented")
             #             unknown_type =
 
-            entity_list += [created_object]
+            entity_list += [recovered_object]
 
         return entity_list
 

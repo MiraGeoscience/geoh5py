@@ -43,7 +43,7 @@ class Curve(Points):
         """
 
         if getattr(self, "_cells", None) is None:
-            if self._existing_h5_entity:
+            if self.existing_h5_entity:
                 self._cells = self.entity_type.workspace.fetch_cells(self.uid)
             else:
                 if self.vertices is not None:
