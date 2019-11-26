@@ -11,15 +11,13 @@ if TYPE_CHECKING:
 
 
 class Group(Entity):
-    def __init__(
-        self, group_type: GroupType, name: str, uid: uuid.UUID = None, parent=None
-    ):
+    def __init__(self, group_type: GroupType, name: str, uid: uuid.UUID = None):
         assert group_type is not None
         super().__init__(name, uid)
 
         self._type = group_type
         self._allow_move = True
-        self._parent = parent
+
         # self._clipping_ids: List[uuid.UUID] = []
         group_type.workspace._register_group(self)
 
@@ -34,6 +32,10 @@ class Group(Entity):
     @property
     def allow_move(self) -> bool:
         return self._allow_move
+
+    @allow_move.setter
+    def allow_move(self, value: bool):
+        self._allow_move = value
 
     @classmethod
     @abstractmethod
@@ -50,13 +52,7 @@ class Group(Entity):
         return cls.default_type_name()
 
     @classmethod
-    def create(
-        cls,
-        workspace: "workspace.Workspace",
-        name: str = "NewGroup",
-        uid: uuid.UUID = uuid.uuid4(),
-        parent=None,
-    ):
+    def create(cls, workspace: "workspace.Workspace", **kwargs):
         """
         create(
             workspace, name=["NewGroup"],
@@ -70,15 +66,16 @@ class Group(Entity):
         workspace: geoh5io.Workspace
             Workspace to be added to
 
-        name: str optional
-            Name of the Group object ["NewGroup"]
+        **kwargs
+            name: str optional
+                Name of the Group object ["NewGroup"]
 
-        uid: uuid.UUID optional
-            Unique identifier, or randomly generated using uuid.uuid4 if None
+            uid: uuid.UUID optional
+                Unique identifier, or randomly generated using uuid.uuid4 if None
 
-        parent: uuid.UUID | Entity | None optional
-            Parental Entity or reference uuid to be linked to.
-            If None, the object is added to the base Workspace.
+            parent: uuid.UUID | Entity | None optional
+                Parental Entity or reference uuid to be linked to.
+                If None, the object is added to the base Workspace.
 
         Returns
         -------
@@ -88,11 +85,27 @@ class Group(Entity):
 
         new_group_type = cls.find_or_create_type(workspace)
 
+        if "name" in kwargs.keys():
+            name = kwargs["name"]
+        else:
+            name = "NewGroup"
+
+        if "uid" in kwargs.keys():
+            assert isinstance(
+                kwargs["uid"], uuid.UUID
+            ), "Input uid must be of type uuid.UUID"
+            uid = kwargs["uid"]
+        else:
+            uid = uuid.uuid4()
+
         new_group = cls(new_group_type, name, uid)
+
+        # Replace all attributes given as kwargs
+        for attr, item in kwargs.items():
+            if "_" + attr in new_group.__dict__:
+                setattr(new_group, attr, item)
 
         # Add the new new_group and type to tree
         new_group_type.workspace.add_to_tree(new_group)
-
-        new_group.parent = parent
 
         return new_group
