@@ -2,7 +2,7 @@ import uuid
 from typing import Optional
 
 import h5py
-from numpy import c_, ndarray, r_, uint8
+from numpy import c_, int8, ndarray, r_
 
 from geoh5io.shared import Coord3D
 
@@ -233,7 +233,7 @@ class H5Reader:
         return tree
 
     @staticmethod
-    def bool_value(value: uint8) -> bool:
+    def bool_value(value: int8) -> bool:
         return bool(value)
 
     @staticmethod

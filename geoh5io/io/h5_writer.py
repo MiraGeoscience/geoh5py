@@ -1,7 +1,7 @@
 import uuid
 
 import h5py
-import numpy as np
+from numpy import dtype, float64, int8
 
 from geoh5io.groups import Group, NoTypeGroup
 from geoh5io.shared import Entity, EntityType
@@ -12,8 +12,8 @@ class H5Writer:
     str_type = h5py.special_dtype(vlen=str)
 
     @staticmethod
-    def bool_value(value: bool) -> np.uint8:
-        return np.uint8(1 if value else 0)
+    def bool_value(value: bool) -> int8:
+        return int8(1 if value else 0)
 
     @staticmethod
     def uuid_value(value: uuid.UUID) -> str:
@@ -139,6 +139,8 @@ class H5Writer:
                 entity_type.existing_h5_entity = False
 
             else:
+
+                entity_type.existing_h5_entity = True
                 return h5file[base]["Types"][entity_type_str][cls.uuid_value(uid)]
 
         new_type = h5file[base]["Types"][entity_type_str].create_group(
@@ -228,12 +230,10 @@ class H5Writer:
 
         if hasattr(entity, "vertices") and entity.vertices:
             xyz = entity.vertices.locations
-            entity_handle = H5Writer.add_entity(h5file, entity, close_file=False)
+            entity_handle = H5Writer.fetch_handle(h5file, entity)
 
             # Adding vertices
-            loc_type = np.dtype(
-                [("x", np.float64), ("y", np.float64), ("z", np.float64)]
-            )
+            loc_type = dtype([("x", float64), ("y", float64), ("z", float64)])
 
             vertices = entity_handle.create_dataset(
                 "Vertices", (xyz.shape[0],), dtype=loc_type
@@ -271,7 +271,7 @@ class H5Writer:
 
         if hasattr(entity, "cells") and (entity.cells is not None):
             indices = entity.cells
-            entity_handle = H5Writer.add_entity(h5file, entity, close_file=False)
+            entity_handle = H5Writer.fetch_handle(h5file, entity)
 
             # Adding cells
             entity_handle.create_dataset(
@@ -308,13 +308,41 @@ class H5Writer:
         else:
             h5file = file
 
-        entity_handle = H5Writer.add_entity(h5file, entity, close_file=False)
+        entity_handle = H5Writer.fetch_handle(h5file, entity)
 
         # Adding an array of values
         entity_handle.create_dataset("Data", data=values)
 
         if close_file:
             h5file.close()
+
+    @classmethod
+    def fetch_handle(cls, file: str, entity):
+
+        cls.str_type = h5py.special_dtype(vlen=str)
+
+        # Check if file reference to a hdf5
+        if not isinstance(file, h5py.File):
+            h5file = h5py.File(file, "r+")
+        else:
+            h5file = file
+
+        base = list(h5file.keys())[0]
+
+        tree = entity.entity_type.workspace.tree
+        uid = entity.uid
+
+        entity_type = tree[uid]["entity_type"].capitalize()
+
+        if entity_type != "Data":
+            entity_type += "s"
+
+        # Check if already in the project
+        if cls.uuid_value(uid) in list(h5file[base][entity_type].keys()):
+
+            return h5file[base][entity_type][cls.uuid_value(uid)]
+
+        return None
 
     @classmethod
     def add_entity(cls, file: str, entity, values=None, close_file=True):
@@ -377,6 +405,7 @@ class H5Writer:
                 if close_file:
                     h5file.close()
                     return None
+                entity.existing_h5_entity = True
                 return h5file[base][entity_type][cls.uuid_value(uid)]
 
         entity_handle = h5file[base][entity_type].create_group(cls.uuid_value(uid))
@@ -405,8 +434,8 @@ class H5Writer:
             else:
                 entry_key = key.replace("_", " ").capitalize()
 
-            if isinstance(value, int):
-                entity_handle.attrs.create(entry_key, value, dtype="int8")
+            if isinstance(value, (int8, bool)):
+                entity_handle.attrs.create(entry_key, int(value), dtype="int8")
 
             else:
                 entity_handle.attrs.create(entry_key, value, dtype=cls.str_type)

@@ -213,8 +213,7 @@ class Workspace:
         # so that type check does not complain of possible returned None
         return cast(Workspace, active_one)
 
-    @staticmethod
-    def save_entity(entity: Entity, close_file: bool = True):
+    def save_entity(self, entity: Entity, close_file: bool = True):
         """
         save_entity(entity)
 
@@ -226,7 +225,7 @@ class Workspace:
             Close the geoh5 database after writing is completed [True] or False
 
         """
-        H5Writer.save_entity(entity, close_file=close_file)
+        H5Writer.save_entity(entity, file=self.h5file, close_file=close_file)
 
     def finalize(self):
         """ Finalize the geoh5 file by re-building the Root"""

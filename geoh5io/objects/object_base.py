@@ -18,7 +18,7 @@ class ObjectBase(Entity):
         assert object_type is not None
         super().__init__(name, uid)
 
-        self._type = object_type
+        self.__type = object_type
         self._allow_move = True
         # self._clipping_ids: List[uuid.UUID] = []
 
@@ -48,7 +48,7 @@ class ObjectBase(Entity):
 
     @property
     def entity_type(self) -> ObjectType:
-        return self._type
+        return self.__type
 
     @classmethod
     def find_or_create_type(cls, workspace: "workspace.Workspace") -> ObjectType:
@@ -76,6 +76,8 @@ class ObjectBase(Entity):
 
         **kwargs
 
+            Object properties
+
             vertices: numpy.ndarray("float64")
                 Coordinate xyz vertices [n x 3]
 
@@ -92,7 +94,11 @@ class ObjectBase(Entity):
             data: Dict{'name': ['association', values]} optional
                 Dictionary of data values associated to "CELL" or "VERTEX" values
 
+        Surface and curves
+
             cell:
+
+
         Returns
         -------
         entity: geoh5io.Points
@@ -131,31 +137,43 @@ class ObjectBase(Entity):
                 setattr(new_object, attr, item)
 
         if "data" in kwargs.keys():
-            data_objects = []
-            for key, value in kwargs["data"].items():
-
-                if isinstance(value[1], ndarray):
-                    data_object = object_type.workspace.create_entity(
-                        Data,
-                        key,
-                        uuid.uuid4(),
-                        entity_type_uid=uuid.uuid4(),
-                        attributes={"association": value[0].upper()},
-                        type_attributes={"primitive_type": "FLOAT"},
-                    )
-
-                    data_object.values = value[1]
-
-                    # Add the new object and type to tree
-                    object_type.workspace.add_to_tree(data_object)
-
-                    data_object.parent = new_object
-
-                    data_objects.append(data_object)
+            data_objects = new_object.add_data(kwargs["data"])
 
             return tuple([new_object] + data_objects)
 
         return new_object
+
+    def add_data(self, data: dict):
+        """
+        add_data(data)
+
+        Create data with association
+
+
+        :return:
+        """
+
+        data_objects = []
+        for key, value in data.items():
+
+            if isinstance(value[1], ndarray):
+                data_object = self.entity_type.workspace.create_entity(
+                    Data,
+                    key,
+                    uuid.uuid4(),
+                    entity_type_uid=uuid.uuid4(),
+                    attributes={"association": value[0].upper()},
+                    type_attributes={"primitive_type": "FLOAT"},
+                )
+
+                data_object.values = value[1]
+
+                # Add the new object and type to tree
+                self.entity_type.workspace.add_to_tree(data_object)
+                data_object.parent = self
+                data_objects.append(data_object)
+
+        return data_objects
 
     def get_data(self, name: str) -> Optional[Entity]:
         """
