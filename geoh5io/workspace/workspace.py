@@ -6,7 +6,7 @@ import uuid
 import weakref
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, Union, cast
 from weakref import ReferenceType
 
 import numpy as np
@@ -40,7 +40,13 @@ class Workspace:
 
     _active_ref: ClassVar[ReferenceType[Workspace]] = type(None)  # type: ignore
 
-    def __init__(self, h5file: Optional[str] = None, root: RootGroup = None):
+    def __init__(
+        self,
+        h5file: Optional[str] = None,
+        root: RootGroup = None,
+        uid: uuid.UUID = uuid.uuid4(),
+    ):
+        self._uid = uid
         self._workspace_attributes = None
         self._base = "GEOSCIENCE"
         self._tree: Dict = {}
@@ -48,10 +54,14 @@ class Workspace:
         self._groups: Dict[uuid.UUID, ReferenceType[group.Group]] = {}
         self._objects: Dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
         self._data: Dict[uuid.UUID, ReferenceType[data.Data]] = {}
-
+        self._update_h5 = False
         self.h5file = h5file
 
         self._root = root if root is not None else RootGroup(self)
+
+    @property
+    def uid(self) -> uuid.UUID:
+        return self._uid
 
     @property
     def base_name(self):
@@ -203,6 +213,14 @@ class Workspace:
             if not os.path.exists(self._h5file):
                 H5Writer.create_geoh5(self)
 
+    @property
+    def update_h5(self) -> bool:
+        return self._update_h5
+
+    @update_h5.setter
+    def update_h5(self, value: bool):
+        self._update_h5 = value
+
     @staticmethod
     def active() -> Workspace:
         """ Get the active workspace. """
@@ -213,7 +231,7 @@ class Workspace:
         # so that type check does not complain of possible returned None
         return cast(Workspace, active_one)
 
-    def save_entity(self, entity: Entity, close_file: bool = True):
+    def save_entity(self, entity: Entity, parent=None, close_file: bool = True):
         """
         save_entity(entity)
 
@@ -221,11 +239,27 @@ class Workspace:
         ----------
         entity: geoh5io.Entity
             Entity to be written to the project geoh5 file
+
+        parent: geoh5io.Entity
+            Parent Entity or [None] to be added under in the workspace
+
         close_file: bool optional
             Close the geoh5 database after writing is completed [True] or False
 
         """
-        H5Writer.save_entity(entity, file=self.h5file, close_file=close_file)
+
+        # Check if entity if in current workspace
+        if not self.get_entity(entity.uid):
+
+            if parent is None:
+                parent = self
+
+            self.add_to_tree(entity, parent=parent.uid)
+            self.tree[parent.uid]["children"] += [entity.uid]
+
+        H5Writer.save_entity(
+            entity, parent=parent, file=self.h5file, close_file=close_file
+        )
 
     def finalize(self):
         """ Finalize the geoh5 file by re-building the Root"""
@@ -323,7 +357,7 @@ class Workspace:
                     key.replace("_", " ").strip().replace(" ", "_")
                 ] = attr
 
-    def get_entity(self, name: str) -> List[Entity]:
+    def get_entity(self, name: Union[str, uuid.UUID]) -> List[Entity]:
         """
         get_entity(name)
 
@@ -342,7 +376,7 @@ class Workspace:
 
         base_classes = {"group": Group, "object": ObjectBase, "data": Data}
 
-        if isinstance(name, uuid.UUID):
+        if isinstance(name, uuid.UUID) and (name in self.tree.keys()):
             list_entity_uid = [name]
 
         else:  # Extract all objects uuid with matching name

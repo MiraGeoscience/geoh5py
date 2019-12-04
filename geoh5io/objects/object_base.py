@@ -75,34 +75,12 @@ class ObjectBase(Entity):
             Workspace to be added to
 
         **kwargs
-
-            Object properties
-
-            vertices: numpy.ndarray("float64")
-                Coordinate xyz vertices [n x 3]
-
-            name: str optional
-                Name of the point object [NewPoints]
-
-            uid: uuid.UUID optional
-                Unique identifier, or randomly generated using uuid.uuid4 if None
-
-            parent: uuid.UUID | Entity | None optional
-                Parental Entity or reference uuid to be linked to.
-                If None, the object is added to the base Workspace.
-
-            data: Dict{'name': ['association', values]} optional
-                Dictionary of data values associated to "CELL" or "VERTEX" values
-
-        Surface and curves
-
-            cell:
-
+            List of keyword arguments
 
         Returns
         -------
-        entity: geoh5io.Points
-            Point object registered to the workspace.
+        entity: geoh5io.Entity
+            Entity registered to the workspace.
         """
 
         object_type = cls.find_or_create_type(workspace)
@@ -128,13 +106,18 @@ class ObjectBase(Entity):
 
         new_object = cls(object_type, name, uid)
 
-        # Add the new object and type to tree
-        object_type.workspace.add_to_tree(new_object)
-
         # Replace all attributes given as kwargs
         for attr, item in kwargs.items():
             if "_" + attr in new_object.__dict__:
                 setattr(new_object, attr, item)
+
+        if new_object.parent is not None:
+            parent_uid = new_object.parent.uid
+        else:
+            parent_uid = object_type.workspace.uid
+
+        # Add the new object and type to tree
+        object_type.workspace.add_to_tree(new_object, parent=parent_uid)
 
         if "data" in kwargs.keys():
             data_objects = new_object.add_data(kwargs["data"])
