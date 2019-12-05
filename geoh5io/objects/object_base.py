@@ -40,7 +40,7 @@ class ObjectBase(Entity):
             List of names of data associated with the object
 
         """
-        return self.entity_type.workspace.get_names_of_type(self.uid, "data")
+        return self.workspace.get_names_of_type(self.uid, "data")
 
     def get_data(self, name: str) -> Optional[Entity]:
         """
@@ -57,7 +57,7 @@ class ObjectBase(Entity):
         data: geoh5io.Data
             Returns a registered Data
         """
-        return self.entity_type.workspace.get_child(self.uid, name)[0]
+        return self.workspace.get_child(self.uid, name)[0]
 
     @property
     def entity_type(self) -> ObjectType:
