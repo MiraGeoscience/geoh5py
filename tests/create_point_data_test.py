@@ -20,7 +20,7 @@ def test_create_point_data():
     workspace = Workspace(r".\assets" + os.sep + h5file)
 
     points, data = Points.create(workspace, xyz, name=name, data={"DataValues": values})
-    points.save_to_h5()
+    workspace.save_entity(points)
     workspace.finalize()
 
     # Read the data back in from a fresh workspace

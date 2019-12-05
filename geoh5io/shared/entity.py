@@ -116,7 +116,3 @@ class Entity(ABC):
 
         workspace = self.workspace
         return workspace.get_entity(workspace.tree[self.uid]["parent"])[0]
-
-    def save_to_h5(self, close_file: bool = True):
-
-        self.entity_type.workspace.save_entity(self, close_file=close_file)

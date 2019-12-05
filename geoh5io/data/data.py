@@ -20,7 +20,7 @@ class Data(Entity):
         assert data_type.primitive_type == self.primitive_type()
         super().__init__(name, uid)
         self._association = association
-        self._allow_move = 0
+        self._allow_move = False
         self._type = data_type
         self._values = None
         data_type.workspace._register_data(self)
