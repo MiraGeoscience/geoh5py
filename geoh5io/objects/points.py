@@ -54,7 +54,7 @@ class Points(ObjectBase):
         return self._vertices
 
     @vertices.setter
-    def vertices(self, xyz):
+    def vertices(self, xyz: ndarray):
         """
         @property.setter
 
