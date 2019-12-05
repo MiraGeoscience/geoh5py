@@ -14,7 +14,7 @@ def test_create_group():
     workspace = Workspace(r".\assets" + os.sep + h5file)
 
     group = ContainerGroup.create(workspace, name=group_name)
-    group.save_to_h5()
+    workspace.save_entity(group)
     workspace.finalize()
 
     # Read the group back in

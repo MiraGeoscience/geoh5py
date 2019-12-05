@@ -34,7 +34,7 @@ def test_create_curve_data():
         cell_data.values == cell_values
     ), "Created CELL data values differ from input"
 
-    curve.save_to_h5()
+    workspace.save_entity(curve)
     workspace.finalize()
 
     # Read the data back in
@@ -61,7 +61,7 @@ def test_create_curve_data():
     # Change the vertex values
     new_vals = random.randn(n_data)
     vertex_data.values = new_vals
-    curve.save_to_h5()
+    workspace.save_entity(curve)
 
     # Read the data back in
     obj = workspace.get_entity(curve_name)[0]

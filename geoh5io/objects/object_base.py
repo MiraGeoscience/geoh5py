@@ -44,7 +44,7 @@ class ObjectBase(Entity):
             List of names of data associated with the object
 
         """
-        return self.entity_type.workspace.get_names_of_type(self.uid, "data")
+        return self.workspace.get_names_of_type(self.uid, "data")
 
     @property
     def entity_type(self) -> ObjectType:
@@ -140,7 +140,7 @@ class ObjectBase(Entity):
         for key, value in data.items():
 
             if isinstance(value[1], ndarray):
-                data_object = self.entity_type.workspace.create_entity(
+                data_object = self.workspace.create_entity(
                     Data,
                     key,
                     uuid.uuid4(),
@@ -152,7 +152,7 @@ class ObjectBase(Entity):
                 data_object.values = value[1]
 
                 # Add the new object and type to tree
-                self.entity_type.workspace.add_to_tree(data_object)
+                self.workspace.add_to_tree(data_object)
                 data_object.parent = self
                 data_objects.append(data_object)
 
@@ -173,4 +173,4 @@ class ObjectBase(Entity):
         data: geoh5io.Data
             Returns a registered Data
         """
-        return self.entity_type.workspace.get_child(self.uid, name)[0]
+        return self.workspace.get_child(self.uid, name)[0]

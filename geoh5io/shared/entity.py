@@ -82,6 +82,10 @@ class Entity(ABC):
     def is_public(self, value: bool):
         self._public = value
 
+    @property
+    def workspace(self):
+        return self.entity_type.workspace
+
     @classmethod
     def fix_up_name(cls, name: str) -> str:
         """ If the given  name is not a valid one, transforms it to make it valid
@@ -115,15 +119,15 @@ class Entity(ABC):
                 if isinstance(parent, Entity):
                     uid = parent.uid
                 else:
-                    uid = self.entity_type.workspace.get_entity("Workspace")[0].uid
+                    uid = self.workspace.get_entity("Workspace")[0].uid
 
-            self.entity_type.workspace.tree[self.uid]["parent"] = uid
+            self.workspace.tree[self.uid]["parent"] = uid
 
             # Add as children of parent in tree
-            if self.uid not in self.entity_type.workspace.tree[uid]["children"]:
-                self.entity_type.workspace.tree[uid]["children"] += [self.uid]
+            if self.uid not in self.workspace.tree[uid]["children"]:
+                self.workspace.tree[uid]["children"] += [self.uid]
 
-            self._parent = self.entity_type.workspace.get_entity(uid)
+            self._parent = self.workspace.get_entity(uid)
 
         else:
             self._parent = None
@@ -134,9 +138,5 @@ class Entity(ABC):
         :return: Entity: Parent entity of object
         """
 
-        workspace = self.entity_type.workspace
+        workspace = self.workspace
         return workspace.get_entity(workspace.tree[self.uid]["parent"])[0]
-
-    def save_to_h5(self, close_file: bool = True):
-
-        self.entity_type.workspace.save_entity(self, close_file=close_file)

@@ -325,7 +325,7 @@ class H5Writer:
 
         base = list(h5file.keys())[0]
 
-        tree = entity.entity_type.workspace.tree
+        tree = entity.workspace.tree
         uid = entity.uid
 
         entity_type = tree[uid]["entity_type"].capitalize()
@@ -378,7 +378,7 @@ class H5Writer:
         if getattr(entity, "tree", None) is not None:
             tree = entity.tree
         else:
-            tree = entity.entity_type.workspace.tree
+            tree = entity.workspace.tree
 
         uid = entity.uid
 
@@ -510,12 +510,12 @@ class H5Writer:
         cls.str_type = h5py.special_dtype(vlen=str)
 
         if parent is None:
-            workspace = child_entity.entity_type.workspace
+            workspace = child_entity.workspace
         else:
             if getattr(parent, "tree", None) is not None:
                 workspace = parent
             else:
-                workspace = parent.entity_type.workspace
+                workspace = parent.workspace
 
         tree = workspace.tree
         uid = child_entity.uid
@@ -595,9 +595,9 @@ class H5Writer:
             else:
                 h5file = file
         else:
-            h5file = h5py.File(entity.entity_type.workspace.h5file, "r+")
+            h5file = h5py.File(entity.workspace.h5file, "r+")
 
-        workspace = entity.entity_type.workspace
+        workspace = entity.workspace
         tree = workspace.tree
         uid = entity.uid
 

@@ -9,7 +9,7 @@ class FloatData(Data):
     @property
     def values(self):
         if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
-            self._values = self.entity_type.workspace.fetch_values(self.uid)
+            self._values = self.workspace.fetch_values(self.uid)
 
         return self._values
 

@@ -43,7 +43,7 @@ class Points(ObjectBase):
         """
 
         if (getattr(self, "_vertices", None) is None) and self.existing_h5_entity:
-            self._vertices = self.entity_type.workspace.fetch_vertices(self.uid)
+            self._vertices = self.workspace.fetch_vertices(self.uid)
 
         return self._vertices
 

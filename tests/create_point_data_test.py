@@ -29,8 +29,7 @@ def test_create_point_data():
 
     assert not points.allow_move, "Attribute of point did not properly set on creation"
 
-    points.save_to_h5()
-
+    workspace.save_entity(points)
     workspace.finalize()
 
     # Read the data back in from a fresh workspace
