@@ -11,7 +11,7 @@ def test_create_group():
     group_name = "MyTestContainer"
 
     # Create a workspace
-    workspace = Workspace(r".\assets" + os.sep + h5file)
+    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
 
     group = ContainerGroup.create(workspace, group_name)
     workspace.save_entity(group)
@@ -22,4 +22,4 @@ def test_create_group():
 
     assert group_object, "Could not read the group object %s" % group_name
 
-    os.remove(r".\assets" + os.sep + h5file)
+    os.remove(os.getcwd() + os.sep + "assets" + os.sep + h5file)
