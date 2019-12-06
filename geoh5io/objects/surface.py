@@ -17,7 +17,6 @@ class Surface(Points):
         super().__init__(object_type, name, uid)
 
         self._cells: Optional[Cell] = None
-        self._n_cells: Optional[int] = None
 
         if object_type.name is None:
             self.entity_type.name = "Surface"
@@ -56,11 +55,11 @@ class Surface(Points):
         return self._cells
 
     @cells.setter
-    def cells(self, indices):
+    def cells(self, indices: ndarray):
         """
         @property.setter
 
-        cells(id1, id2)
+        cells(id1, id2, id3)
 
         Parameters
         ----------
@@ -73,7 +72,14 @@ class Surface(Points):
             Cell object holding vertices index
         """
 
-        assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
+        assert indices.dtype in [
+            "int32",
+            "uint32",
+        ], "Indices array must be of type 'uint32'"
+
+        if indices.dtype == "int32":
+            indices.astype("uint32")
+
         self._n_cells = None  # Reset the n_cells if not None
         self._cells = indices
 
