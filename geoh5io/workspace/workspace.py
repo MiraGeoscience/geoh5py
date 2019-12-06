@@ -123,6 +123,16 @@ class Workspace:
 
         return self._tree
 
+    @tree.setter
+    def tree(self, tree: dict):
+        """
+
+        :param tree: dict
+            Tree dictionary for the workspace
+        :return:
+        """
+        self._tree = tree
+
     @property
     def list_groups(self):
         """
@@ -247,14 +257,18 @@ class Workspace:
             Close the geoh5 database after writing is completed [True] or False
 
         """
-
         # Check if entity if in current workspace
         if not self.get_entity(entity.uid):
 
             if parent is None:
                 parent = self
 
-            self.add_to_tree(entity, parent=parent.uid)
+            self.add_to_tree(
+                entity,
+                parent=parent.uid,
+                children=entity.workspace.tree[entity.uid]["children"],
+            )
+
             self.tree[parent.uid]["children"] += [entity.uid]
 
         H5Writer.save_entity(

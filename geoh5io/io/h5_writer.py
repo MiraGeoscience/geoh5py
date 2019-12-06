@@ -7,6 +7,8 @@ from numpy import dtype, float64, int8
 from geoh5io.groups import Group, NoTypeGroup
 from geoh5io.shared import Entity, EntityType
 
+from . import H5Reader
+
 
 class H5Writer:
 
@@ -201,6 +203,10 @@ class H5Writer:
         del h5file[workspace.base_name]["Root"]
         h5file[workspace.base_name]["Root"] = root_handle
 
+        # Refresh the project tree
+        workspace.tree = H5Reader.get_project_tree(
+            workspace.h5file, workspace.base_name
+        )
         if close_file:
             h5file.close()
 

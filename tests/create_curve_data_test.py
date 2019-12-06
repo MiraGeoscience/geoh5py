@@ -18,7 +18,7 @@ def test_create_curve_data():
     cell_values = random.randn(n_data - 1)
 
     # Create a workspace
-    workspace = Workspace(r".\assets" + os.sep + h5file)
+    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
 
     curve, vertex_data, cell_data = Curve.create(
         workspace,
@@ -76,4 +76,4 @@ def test_create_curve_data():
         data_vertex.values == new_vals
     ), "Modified VERTEX data values differ from input"
 
-    os.remove(r".\assets" + os.sep + h5file)
+    os.remove(os.getcwd() + os.sep + "assets" + os.sep + h5file)

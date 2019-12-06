@@ -1,6 +1,8 @@
 import uuid
 from typing import Optional
 
+from numpy import ndarray
+
 from geoh5io.shared import Coord3D
 
 from .object_base import ObjectBase, ObjectType
@@ -48,7 +50,7 @@ class Points(ObjectBase):
         return self._vertices
 
     @vertices.setter
-    def vertices(self, xyz):
+    def vertices(self, xyz: ndarray):
         """
         @property.setter
 
