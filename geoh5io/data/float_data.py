@@ -15,7 +15,17 @@ class FloatData(Data):
 
     @values.setter
     def values(self, values):
+        """
+        values(values)
 
+        Assign array of float as values
+
+        Parameter
+        ---------
+        values: numpy.ndarray
+            Array of floats
+
+        """
         if self.existing_h5_entity:
             self._update_h5 = True
 

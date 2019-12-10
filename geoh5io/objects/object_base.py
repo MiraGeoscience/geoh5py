@@ -82,7 +82,6 @@ class ObjectBase(Entity):
         entity: geoh5io.Entity
             Entity registered to the workspace.
         """
-
         object_type = cls.find_or_create_type(workspace)
 
         if object_type.name is None:
@@ -135,7 +134,6 @@ class ObjectBase(Entity):
 
         :return:
         """
-
         data_objects = []
         for key, value in data.items():
 

@@ -138,7 +138,6 @@ class H5Reader:
         values: numpy.array
             Array of values
         """
-
         project = h5py.File(h5file, "r+")
 
         values = r_[project[base]["Data"]["{" + str(uid) + "}"]["Data"]]

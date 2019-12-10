@@ -187,7 +187,6 @@ class H5Writer:
         close_file: bool optional
            Close h5 file after write [True] or False
         """
-
         if file is None:
             h5file = h5py.File(workspace.h5file, "r+")
 
@@ -228,7 +227,6 @@ class H5Writer:
         close_file: bool optional
            Close h5 file after write [True] or False
         """
-
         if not isinstance(file, h5py.File):
             h5file = h5py.File(file, "r+")
         else:
@@ -269,7 +267,6 @@ class H5Writer:
         close_file: bool optional
            Close h5 file after write [True] or False
         """
-
         if not isinstance(file, h5py.File):
             h5file = h5py.File(file, "r+")
         else:
@@ -308,7 +305,6 @@ class H5Writer:
         close_file: bool optional
            Close h5 file after write [True] or False
         """
-
         if not isinstance(file, h5py.File):
             h5file = h5py.File(file, "r+")
         else:
@@ -324,7 +320,22 @@ class H5Writer:
 
     @classmethod
     def fetch_handle(cls, file: str, entity):
+        """
+        fetch_handle(file, entity)
 
+        Parameters
+        ----------
+        file: str
+            Target geoh5 file
+
+        entity: Entity
+            Entity to be retrieved from the geoh5 file
+
+        Returns
+        -------
+        entity_handle: h5py.File
+            Pointer to an existing entity or None if not found
+        """
         cls.str_type = h5py.special_dtype(vlen=str)
 
         h5file = get_h5_handle(file)
@@ -374,7 +385,6 @@ class H5Writer:
         type: h5py.File
             Pointer to written entity. Active link if "close_file" is False
         """
-
         cls.str_type = h5py.special_dtype(vlen=str)
 
         h5file = get_h5_handle(file)

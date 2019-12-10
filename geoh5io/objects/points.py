@@ -12,7 +12,6 @@ class Points(ObjectBase):
     __TYPE_UID = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
-
         super().__init__(object_type, name, uid)
         self._vertices: Optional[Coord3D] = None
 
@@ -43,7 +42,6 @@ class Points(ObjectBase):
         vertices: geoh5io.Coord3D
             Coord3D object holding the vertices coordinates
         """
-
         if (getattr(self, "_vertices", None) is None) and self.existing_h5_entity:
             self._vertices = self.workspace.fetch_vertices(self.uid)
 

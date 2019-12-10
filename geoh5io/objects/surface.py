@@ -41,7 +41,6 @@ class Surface(Points):
         cells: geoh5io.objects.Cell
             Cell object holding vertices index
         """
-
         if getattr(self, "_cells", None) is None:
             if self.existing_h5_entity:
                 self._cells = self.workspace.fetch_cells(self.uid)
@@ -71,7 +70,6 @@ class Surface(Points):
         cells: geoh5io.objects.Cell
             Cell object holding vertices index
         """
-
         assert indices.dtype in [
             "int32",
             "uint32",
@@ -97,7 +95,6 @@ class Surface(Points):
         n_cells: int
             Number of cells
         """
-
         if (self._n_cells is None) and (self.cells is not None):
             self._n_cells = self._cells.shape[0]
 

@@ -41,7 +41,6 @@ class Curve(Points):
         cells: geoh5io.objects.Cell
             Cell object holding vertices index
         """
-
         if getattr(self, "_cells", None) is None:
             if self.existing_h5_entity:
                 self._cells = self.workspace.fetch_cells(self.uid)
@@ -71,7 +70,6 @@ class Curve(Points):
         cells: geoh5io.objects.Cell
             Cell object holding vertices index
         """
-
         assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
 
         self._cells = indices

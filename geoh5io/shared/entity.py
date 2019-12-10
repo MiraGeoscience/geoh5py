@@ -111,7 +111,6 @@ class Entity(ABC):
         The parent of an object in the workspace
         :return: Entity: Parent entity
         """
-
         if parent is not None:
             if isinstance(parent, uuid.UUID):
                 uid = parent
@@ -137,6 +136,5 @@ class Entity(ABC):
         Function to fetch the parent of an object from the workspace tree
         :return: Entity: Parent entity of object
         """
-
         workspace = self.workspace
         return workspace.get_entity(workspace.tree[self.uid]["parent"])[0]

@@ -302,7 +302,6 @@ class Workspace:
         children: List[uuid] optional
             List of unique identifier of children entities
         """
-
         uid = entity.uid
 
         self.tree[uid] = {}
@@ -387,7 +386,6 @@ class Workspace:
         object_list: List[Entity]
             List of entities with the same given name
         """
-
         base_classes = {"group": Group, "object": ObjectBase, "data": Data}
 
         if isinstance(name, uuid.UUID) and (name in self.tree.keys()):
@@ -454,7 +452,6 @@ class Workspace:
         entity: Entity
             New entity created
         """
-
         created_entity: Optional[Entity] = None
 
         if "entity_type_uid" in kwargs:
@@ -544,7 +541,6 @@ class Workspace:
         children: list
             List of names of given type
         """
-
         name_list: List[str] = []
 
         for key in self.tree[uid]["children"]:
@@ -572,7 +568,6 @@ class Workspace:
         entity_list List[Entity]:
             A list of registered entities
         """
-
         if isinstance(child_name, uuid.UUID):
             return self.get_entity(child_name)
 
@@ -600,7 +595,6 @@ class Workspace:
         parent: geoh5io.Entity
             The registered parent entity
         """
-
         if self.tree[uid]["parent"]:
             return self.get_entity(self.tree[uid]["parent"])
 
@@ -622,7 +616,6 @@ class Workspace:
         value: numpy.array
             Array of values
         """
-
         return H5Reader.fetch_values(self._h5file, self._base, uid)
 
     def fetch_vertices(self, uid: uuid.UUID) -> Coord3D:
@@ -639,7 +632,6 @@ class Workspace:
         coordinates: Coord3D
             Coordinate entity with locations
         """
-
         return H5Reader.fetch_vertices(self._h5file, self._base, uid)
 
     def fetch_cells(self, uid: uuid.UUID) -> Cell:
@@ -656,7 +648,6 @@ class Workspace:
         cells: geoh5io.Cell
             Cell object with vertices index
         """
-
         return H5Reader.fetch_cells(self._h5file, self._base, uid)
 
     def activate(self):
@@ -715,7 +706,6 @@ class Workspace:
     def get_workspace_attributes(self):
         """ Fetch the workspace attributes
         """
-
         if getattr(self, "_workspace_attributes", None) is None:
 
             self._workspace_attributes = {}

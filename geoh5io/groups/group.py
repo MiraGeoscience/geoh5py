@@ -82,7 +82,6 @@ class Group(Entity):
         entity: geoh5io.Group
             Group object registered to the workspace.
         """
-
         new_group_type = cls.find_or_create_type(workspace)
 
         if "name" in kwargs.keys():
