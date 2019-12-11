@@ -199,19 +199,25 @@ class H5Reader:
 
             for str_uid, entity in project[base][entity_class].items():
                 uid = uuid.UUID(str_uid)
-                tree[uid] = {}
+
+                if uid not in tree.keys():
+                    tree[uid] = {}
+                    tree[uid]["parent"] = []
+
                 tree[uid]["entity_type"] = entity_class.replace("s", "").lower()
                 for key, value in entity.attrs.items():
                     tree[uid][key.replace(" ", "_").lower()] = value
 
                 tree[uid]["type"] = uuid.UUID(entity["Type"].attrs["ID"])
-                tree[uid]["parent"] = []
                 tree[uid]["children"] = []
 
                 if entity_class in ["Groups", "Objects"]:
 
                     # Assign as parent to data and data children
                     for key, value in entity["Data"].items():
+                        if uuid.UUID(value.attrs["ID"]) not in tree.keys():
+                            tree[uuid.UUID(value.attrs["ID"])] = {}
+
                         tree[uuid.UUID(value.attrs["ID"])]["parent"] = uid
                         tree[uid]["children"] += [uuid.UUID(key)]
 
@@ -219,11 +225,17 @@ class H5Reader:
 
                     # Assign as parent to data and data children
                     for key, value in entity["Objects"].items():
+                        if uuid.UUID(value.attrs["ID"]) not in tree.keys():
+                            tree[uuid.UUID(value.attrs["ID"])] = {}
+
                         tree[uuid.UUID(value.attrs["ID"])]["parent"] = uid
                         tree[uid]["children"] += [uuid.UUID(key)]
 
                     # Assign as parent to data and data children
                     for key, value in entity["Groups"].items():
+                        if uuid.UUID(value.attrs["ID"]) not in tree.keys():
+                            tree[uuid.UUID(value.attrs["ID"])] = {}
+
                         tree[uuid.UUID(value.attrs["ID"])]["parent"] = uid
                         tree[uid]["children"] += [uuid.UUID(key)]
 
