@@ -580,6 +580,7 @@ class H5Writer:
         parent: Optional[Entity] = None,
         file: str = None,
         close_file=True,
+        add_children=True,
     ):
         """
         save_entity(entity, file, close_file=True)
@@ -620,14 +621,15 @@ class H5Writer:
         # Add itself to the project
         new_entity = H5Writer.add_entity(h5file, entity, close_file=False)
 
-        # Write children entities and add to current parent
-        if tree[uid]["children"]:
-            for child in tree[uid]["children"]:
-                child_entity = workspace.get_entity(child)[0]
-                H5Writer.add_entity(h5file, child_entity, close_file=False)
-                H5Writer.add_to_parent(
-                    h5file, child_entity, close_file=False, recursively=False
-                )
+        if add_children:
+            # Write children entities and add to current parent
+            if tree[uid]["children"]:
+                for child in tree[uid]["children"]:
+                    child_entity = workspace.get_entity(child)[0]
+                    H5Writer.add_entity(h5file, child_entity, close_file=False)
+                    H5Writer.add_to_parent(
+                        h5file, child_entity, close_file=False, recursively=False
+                    )
 
         H5Writer.add_to_parent(
             h5file, entity, parent=parent, close_file=False, recursively=True

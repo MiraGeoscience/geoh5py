@@ -231,6 +231,10 @@ class Workspace:
     def update_h5(self, value: bool):
         self._update_h5 = value
 
+    @property
+    def workspace(self):
+        return self
+
     @staticmethod
     def active() -> Workspace:
         """ Get the active workspace. """
@@ -241,7 +245,13 @@ class Workspace:
         # so that type check does not complain of possible returned None
         return cast(Workspace, active_one)
 
-    def save_entity(self, entity: Entity, parent=None, close_file: bool = True):
+    def save_entity(
+        self,
+        entity: Entity,
+        parent=None,
+        close_file: bool = True,
+        add_children: bool = True,
+    ):
         """
         save_entity(entity)
 
@@ -261,18 +271,30 @@ class Workspace:
         if not self.get_entity(entity.uid):
 
             if parent is None:
-                parent = self
+                # If a data entity, then add parent object without data
+                if isinstance(entity, Data):
+                    parent = entity.get_parent()
+                    if not self.get_entity(parent.uid):
+                        self.save_entity(parent, add_children=False)
+                        parent = self.get_entity(parent.uid)[0]
+                else:
+                    parent = self
 
-            self.add_to_tree(
-                entity,
-                parent=parent.uid,
-                children=entity.workspace.tree[entity.uid]["children"],
-            )
+            if add_children:
+                children = entity.workspace.tree[entity.uid]["children"]
+            else:
+                children = []
+
+            self.add_to_tree(entity, parent=parent.uid, children=children)
 
             self.tree[parent.uid]["children"] += [entity.uid]
 
         H5Writer.save_entity(
-            entity, parent=parent, file=self.h5file, close_file=close_file
+            entity,
+            parent=parent,
+            file=self.h5file,
+            close_file=close_file,
+            add_children=add_children,
         )
 
     def finalize(self):
