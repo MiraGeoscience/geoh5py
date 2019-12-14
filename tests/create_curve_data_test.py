@@ -8,7 +8,7 @@ from geoh5io.workspace import Workspace
 
 def test_create_curve_data():
 
-    h5file = "testCurve.geoh5"
+    h5file = r"temp\testCurve.geoh5"
     curve_name = "TestCurve"
 
     # Generate a random cloud of points
@@ -43,8 +43,8 @@ def test_create_curve_data():
     obj = workspace.get_entity(obj_list[0])[0]
     assert all((obj.vertices() == xyz).flatten()), "Data locations differ from input"
 
-    data_vertex = workspace.get_entity(obj.get_data_list[0])[0]
-    data_cell = workspace.get_entity(obj.get_data_list[1])[0]
+    data_vertex = workspace.get_entity("vertexValues")[0]
+    data_cell = workspace.get_entity("cellValues")[0]
 
     assert all(
         data_vertex.values == values
@@ -69,8 +69,8 @@ def test_create_curve_data():
         (obj.vertices() == new_locs).flatten()
     ), "Modified data locations differ from input"
 
-    data_vertex = workspace.get_entity(obj.get_data_list[0])[0]
-    data_cell = workspace.get_entity(obj.get_data_list[1])[0]
+    data_vertex = workspace.get_entity("vertexValues")[0]
+    data_cell = workspace.get_entity("cellValues")[0]
 
     assert all(
         data_vertex.values == new_vals

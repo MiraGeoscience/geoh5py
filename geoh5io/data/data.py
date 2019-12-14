@@ -21,7 +21,7 @@ class Data(Entity):
         super().__init__(name, uid)
         self._association = association
         self._allow_move = False
-        self._type = data_type
+        self.__type = data_type
         self._values = None
         data_type.workspace._register_data(self)
 
@@ -29,9 +29,18 @@ class Data(Entity):
     def association(self) -> DataAssociationEnum:
         return self._association
 
+    @association.setter
+    def association(self, value):
+        if self._association is None:
+
+            assert isinstance(
+                value, DataAssociationEnum
+            ), f"Association must be of type {DataAssociationEnum}"
+            self._association = value
+
     @property
     def entity_type(self) -> DataType:
-        return self._type
+        return self.__type
 
     @classmethod
     @abstractmethod

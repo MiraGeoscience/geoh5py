@@ -83,6 +83,14 @@ class Entity(ABC):
         self._public = value
 
     @property
+    def public(self) -> bool:
+        return self._public
+
+    @public.setter
+    def public(self, value: bool):
+        self._public = value
+
+    @property
     def workspace(self):
         return self.entity_type.workspace
 
@@ -111,7 +119,7 @@ class Entity(ABC):
         The parent of an object in the workspace
         :return: Entity: Parent entity
         """
-        if parent is not None:
+        if parent:
             if isinstance(parent, uuid.UUID):
                 uid = parent
             else:

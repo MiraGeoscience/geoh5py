@@ -8,7 +8,7 @@ from geoh5io.workspace import Workspace
 
 def test_create_point_data():
 
-    h5file = "testProject.geoh5"
+    h5file = r"temp\testPoints.geoh5"
     name = "MyTestPointset"
 
     # Generate a random cloud of points
@@ -34,11 +34,10 @@ def test_create_point_data():
 
     # Read the data back in from a fresh workspace
     workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
-    obj_list = workspace.list_objects
 
-    obj = workspace.get_entity(obj_list[0])[0]
+    obj = workspace.get_entity(name)[0]
 
-    data = workspace.get_entity(obj.get_data_list[0])[0]
+    data = workspace.get_entity("DataValues")[0]
 
     assert all(data.values == values), "Data values differ from input"
     assert all((obj.locations == xyz).flatten()), "Data locations differ from input"

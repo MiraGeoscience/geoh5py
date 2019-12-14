@@ -383,14 +383,15 @@ class Workspace:
                 self.tree[entity.entity_type.uid]["id"] = H5Writer.uuid_value(attr)
 
             else:
+                key_ind = key.replace("_", " ").strip().replace(" ", "_")
+
                 if ("primitive_type" in key) and isinstance(
                     attr, data.PrimitiveTypeEnum
                 ):
                     attr = attr.name.lower().capitalize()
+                    key_ind = "primitive_type"
 
-                self.tree[entity.entity_type.uid][
-                    key.replace("_", " ").strip().replace(" ", "_")
-                ] = attr
+                self.tree[entity.entity_type.uid][key_ind] = attr
 
     def get_entity(self, name: Union[str, uuid.UUID]) -> List[Entity]:
         """
@@ -501,6 +502,7 @@ class Workspace:
 
                     known_type = member.find_or_create_type(self)
                     created_entity = member(known_type, name, uid)
+                    break
 
             # Special case for CustomGroup without uuid
             if (created_entity is None) and entity_class == Group:
@@ -542,6 +544,19 @@ class Workspace:
                         name,
                         uid,
                     )
+                    break
+
+        if created_entity is not None:
+
+            if "attributes" in kwargs.keys():
+                for attr, item in kwargs["attributes"].items():
+                    if "_" + attr in created_entity.__dict__:
+                        setattr(created_entity, attr, item)
+
+            if "type_attributes" in kwargs.keys():
+                for attr, item in kwargs["type_attributes"].items():
+                    if "_" + attr in created_entity.entity_type.__dict__:
+                        setattr(created_entity.entity_type, attr, item)
 
         return created_entity
 

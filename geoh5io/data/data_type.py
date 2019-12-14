@@ -22,7 +22,7 @@ class DataType(EntityType):
         primitive_type: PrimitiveTypeEnum,
     ):
         super().__init__(workspace, uid)
-        self._primitive_type = primitive_type
+        self.__primitive_type = primitive_type
         # TODO: define properties and setters
         self._color_map: Optional[ColorMap] = None
         self._units = None
@@ -37,7 +37,7 @@ class DataType(EntityType):
 
     @property
     def primitive_type(self) -> PrimitiveTypeEnum:
-        return self._primitive_type
+        return self.__primitive_type
 
     @classmethod
     def create(

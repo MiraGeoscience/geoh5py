@@ -9,7 +9,7 @@ from geoh5io.workspace import Workspace
 
 def test_create_surface_data():
 
-    h5file = "testSurface_orig.geoh5"
+    h5file = r"temp\testSurface_orig.geoh5"
 
     workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
 
@@ -41,7 +41,7 @@ def test_create_surface_data():
 
     # Write the object to a different workspace
     new_workspace = Workspace(
-        os.getcwd() + os.sep + "assets" + os.sep + "testSurface.geoh5"
+        os.getcwd() + os.sep + "assets" + os.sep + r"temp\testSurface.geoh5"
     )
 
     new_workspace.save_entity(surface)
@@ -54,5 +54,5 @@ def test_create_surface_data():
         prop in obj_copy.get_data_list for prop in surface.get_data_list
     ], "The surface object did not copy"
     assert np.all(data_copy.values == data_object.values), "Data values were not copied"
-    os.remove(os.getcwd() + os.sep + "assets" + os.sep + "testSurface.geoh5")
-    os.remove(os.getcwd() + os.sep + "assets" + os.sep + "testSurface_orig.geoh5")
+    os.remove(os.getcwd() + os.sep + "assets" + os.sep + r"temp\testSurface.geoh5")
+    os.remove(os.getcwd() + os.sep + "assets" + os.sep + r"temp\testSurface_orig.geoh5")

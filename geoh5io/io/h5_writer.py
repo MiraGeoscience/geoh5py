@@ -299,7 +299,7 @@ class H5Writer:
         entity: geoh5io.Entity
             Target entity to which vertices are being written
 
-        values: numpy.array
+        values: numpy.array or str
             Array of values to be added to the geoh5 file
 
         close_file: bool optional
@@ -430,27 +430,43 @@ class H5Writer:
             entity_handle.create_group("Data")
 
         for key, value in tree[uid].items():
-            if key in [
-                "type",
-                "entity_type",
-                "parent",
-                "children",
-                "vertices",
-                "visible",
-                "cells",
-            ] or ("h5" in key):
-                continue
+            if key.lower() in [
+                "allow_delete",
+                "allow_move",
+                "allow_rename",
+                "dip",
+                "id",
+                "last_focus",
+                "name",
+                "origin",
+                "public",
+                "rotation",
+                "u_count",
+                "u_size",
+                "v_count",
+                "v_size",
+                "vertical",
+                "association",
+            ]:
 
-            if key == "id":
-                entry_key = key.replace("_", " ").upper()
-            else:
-                entry_key = key.replace("_", " ").capitalize()
+                if key == "id":
+                    entry_key = key.replace("_", " ").upper()
+                else:
+                    entry_key = key.replace("_", " ").capitalize()
 
-            if isinstance(value, (int8, bool)):
-                entity_handle.attrs.create(entry_key, int(value), dtype="int8")
+                # More custom upper/lower
+                entry_key = entry_key.replace(" size", " Size")
+                entry_key = entry_key.replace(" count", " Count")
 
-            else:
-                entity_handle.attrs.create(entry_key, value, dtype=cls.str_type)
+                if isinstance(value, (int8, bool)):
+                    entity_handle.attrs.create(entry_key, int(value), dtype="int8")
+
+                elif isinstance(value, str):
+                    entity_handle.attrs.create(entry_key, value, dtype=cls.str_type)
+
+                else:
+                    print(entity, entry_key, value)
+                    entity_handle.attrs.create(entry_key, value, dtype=value.dtype)
 
         # Add the type and return a pointer
         new_type = H5Writer.add_type(h5file, entity.entity_type, close_file=False)
