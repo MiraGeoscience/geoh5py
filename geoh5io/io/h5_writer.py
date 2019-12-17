@@ -2,7 +2,7 @@ import uuid
 from typing import Optional
 
 import h5py
-from numpy import dtype, float64, int8
+from numpy import asarray, dtype, float64, int8
 
 from geoh5io.groups import Group, NoTypeGroup
 from geoh5io.shared import Entity, EntityType
@@ -466,7 +466,9 @@ class H5Writer:
 
                 else:
                     print(entity, entry_key, value)
-                    entity_handle.attrs.create(entry_key, value, dtype=value.dtype)
+                    entity_handle.attrs.create(
+                        entry_key, value, dtype=asarray(value).dtype
+                    )
 
         # Add the type and return a pointer
         new_type = H5Writer.add_type(h5file, entity.entity_type, close_file=False)

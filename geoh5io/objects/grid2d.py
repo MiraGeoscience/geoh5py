@@ -1,5 +1,7 @@
 import uuid
 
+from numpy import r_
+
 from .object_base import ObjectBase, ObjectType
 
 
@@ -16,7 +18,7 @@ class Grid2D(ObjectBase):
         self._v_size = None
         self._u_count = None
         self._v_count = None
-        self._rotation = 0
+        self._rotation = 0.0
         self._is_vertical = False
 
     @classmethod
@@ -36,9 +38,10 @@ class Grid2D(ObjectBase):
         return self._origin
 
     @origin.setter
-    def origin(self, xyz):
-        assert len(xyz) == 3, "Origin must be a list"
-        self._origin = xyz
+    def origin(self, value):
+        value = r_[value]
+        assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
+        self._origin = value.astype(float)
 
     @property
     def u_size(self):
@@ -54,8 +57,9 @@ class Grid2D(ObjectBase):
 
     @u_size.setter
     def u_size(self, value):
-        assert value.dtype == "float", "u_size must be a float"
-        self._u_size = value
+        value = r_[value]
+        assert len(value) == 1, "u_size must be a float of shape (1,)"
+        self._u_size = value.astype(float)
 
     @property
     def v_size(self):
@@ -71,8 +75,9 @@ class Grid2D(ObjectBase):
 
     @v_size.setter
     def v_size(self, value):
-        assert value.dtype == "float", "v_size must be a float"
-        self._v_size = value
+        value = r_[value]
+        assert len(value) == 1, "v_size must be a float of shape (1,)"
+        self._v_size = value.astype(float)
 
     @property
     def u_count(self):
@@ -88,9 +93,9 @@ class Grid2D(ObjectBase):
 
     @u_count.setter
     def u_count(self, value):
-
-        assert value.dtype in ["int32", "uint32"], "u_count must be an integer"
-        self._u_count = value
+        value = r_[value]
+        assert len(value) == 1, "u_count must be an integer of shape (1,)"
+        self._u_count = value.astype(int)
 
     @property
     def v_count(self):
@@ -106,8 +111,9 @@ class Grid2D(ObjectBase):
 
     @v_count.setter
     def v_count(self, value):
-        assert value.dtype in ["int32", "uint32"], "v_count must be an integer"
-        self._v_count = value
+        value = r_[value]
+        assert len(value) == 1, "v_count must be an integer of shape (1,)"
+        self._v_count = value.astype(int)
 
     @property
     def rotation(self):
@@ -123,8 +129,9 @@ class Grid2D(ObjectBase):
 
     @rotation.setter
     def rotation(self, value):
-        assert value.dtype == "float", "Rotation angle must be a float"
-        self._rotation = value
+        value = r_[value]
+        assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
+        self._rotation = value.astype(float)
 
     @property
     def is_vertical(self) -> bool:
