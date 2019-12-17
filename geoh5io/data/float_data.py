@@ -1,3 +1,5 @@
+from numpy import ravel
+
 from .data import Data, PrimitiveTypeEnum
 
 
@@ -29,7 +31,7 @@ class FloatData(Data):
         if self.existing_h5_entity:
             self._update_h5 = True
 
-        self._values = values
+        self._values = ravel(values)
 
     def __call__(self):
         return self.values
