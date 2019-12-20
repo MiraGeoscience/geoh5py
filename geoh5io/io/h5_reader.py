@@ -36,7 +36,7 @@ class H5Reader:
         project = h5py.File(h5file, "r")
         project_attrs = {}
 
-        for key in list(project[base].attrs.keys()):
+        for key in project[base].attrs.keys():
 
             attr = key.lower().replace(" ", "_")
 
@@ -215,9 +215,8 @@ class H5Reader:
             Dictionary of group, objects, data and types found in the geoh5 file.
             Used for light reference to attributes, parent and children.
             {uuid:
-                {'name': value},
-                {'attr1': value},
-                ...
+                {'name': str},
+                {'entity_type': str},
                 {'parent': uuid},
                 {'children': [uuid1, uuid2,....],
              ...
