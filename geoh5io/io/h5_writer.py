@@ -429,30 +429,34 @@ class H5Writer:
         elif entity_type == "Objects":
             entity_handle.create_group("Data")
 
-        for key, value in tree[uid].items():
-            if key.lower() in [
-                "allow_delete",
-                "allow_move",
-                "allow_rename",
+        for key, value in entity.__dict__.items():
+            if key.replace("_", " ").strip().lower() in [
+                "allow delete",
+                "allow move",
+                "allow rename",
                 "dip",
-                "id",
-                "last_focus",
+                "uid",
+                "last focus",
                 "name",
                 "origin",
                 "public",
                 "rotation",
-                "u_count",
-                "u_size",
-                "v_count",
-                "v_size",
+                "u count",
+                "u size",
+                "v count",
+                "v size",
                 "vertical",
                 "association",
             ]:
 
-                if key == "id":
-                    entry_key = key.replace("_", " ").upper()
+                if "uid" in key:
+                    entry_key = "ID"
+                    value = "{" + str(value) + "}"
                 else:
-                    entry_key = key.replace("_", " ").capitalize()
+                    entry_key = key.replace("_", " ").strip().capitalize()
+
+                    if entry_key == "Association":
+                        value = value.name
 
                 # More custom upper/lower
                 entry_key = entry_key.replace(" size", " Size")
@@ -465,7 +469,6 @@ class H5Writer:
                     entity_handle.attrs.create(entry_key, value, dtype=cls.str_type)
 
                 else:
-                    print(entity, entry_key, value)
                     entity_handle.attrs.create(
                         entry_key, value, dtype=asarray(value).dtype
                     )
