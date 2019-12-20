@@ -33,7 +33,7 @@ class H5Reader:
         attributes: dict
             Dictionary of attributes
         """
-        project = h5py.File(h5file, "r+")
+        project = h5py.File(h5file, "r")
         project_attrs = {}
 
         for key in list(project[base].attrs.keys()):
@@ -45,6 +45,54 @@ class H5Reader:
         project.close()
 
         return project_attrs
+
+    @classmethod
+    def fetch_attributes(
+        cls, h5file: str, base: str, uid: uuid.UUID, entity_type: str
+    ) -> dict:
+        """
+        fetch_attributes(h5file, base, uid, entity_type)
+
+        Get attributes og object from geoh5
+
+        Parameters
+        ----------
+        h5file: str
+            Name of the project h5file
+
+        base: str
+            Name of the base project group ['GEOSCIENCE']
+
+        uid: uuid.UUID
+            Unique identifier
+
+        entity_type: str
+            Type of entity from "group", "data", "object", "group_type", "data_type", "object_type"
+
+        Returns
+        -------
+        attributes: dict
+            Dictionary of attributes from geoh5
+        """
+        project = h5py.File(h5file, "r")
+        attributes = {}
+
+        if "type" in entity_type:
+            entity_type = entity_type.replace("_", " ").capitalize() + "s"
+            entity = project[base]["Types"][entity_type][cls.uuid_str(uid)]
+        else:
+            entity_type = entity_type.capitalize()
+            if entity_type != "Data":
+                entity_type += "s"
+
+            entity = project[base][entity_type][cls.uuid_str(uid)]
+
+        for key, value in entity.attrs.items():
+            attributes[key.replace(" ", "_").lower()] = value
+
+        project.close()
+
+        return attributes
 
     @classmethod
     def fetch_vertices(
@@ -71,11 +119,11 @@ class H5Reader:
         vertices: geoh5io.Coord3D
             Coordinate object with vertex locations
         """
-        project = h5py.File(h5file, "r+")
+        project = h5py.File(h5file, "r")
 
-        x = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["x"]
-        y = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["y"]
-        z = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["z"]
+        x = project[base]["Objects"][cls.uuid_str(uid)]["Vertices"]["x"]
+        y = project[base]["Objects"][cls.uuid_str(uid)]["Vertices"]["y"]
+        z = project[base]["Objects"][cls.uuid_str(uid)]["Vertices"]["z"]
         vertices = Coord3D(c_[x, y, z])
 
         project.close()
@@ -105,9 +153,9 @@ class H5Reader:
         cells: geoh5io.Cell
             Cell object with vertex indices defining the cell
         """
-        project = h5py.File(h5file, "r+")
+        project = h5py.File(h5file, "r")
 
-        indices = project[base]["Objects"]["{" + str(uid) + "}"]["Cells"][:]
+        indices = project[base]["Objects"][cls.uuid_str(uid)]["Cells"][:]
 
         project.close()
 
@@ -138,9 +186,9 @@ class H5Reader:
         values: numpy.array
             Array of values
         """
-        project = h5py.File(h5file, "r+")
+        project = h5py.File(h5file, "r")
 
-        values = r_[project[base]["Data"]["{" + str(uid) + "}"]["Data"]]
+        values = r_[project[base]["Data"][cls.uuid_str(uid)]["Data"]]
 
         project.close()
 
@@ -175,7 +223,7 @@ class H5Reader:
              ...
              }
         """
-        project = h5py.File(h5file, "r+")
+        project = h5py.File(h5file, "r")
 
         tree: dict = {}
 
@@ -190,8 +238,8 @@ class H5Reader:
                 tree[uid]["entity_type"] = entity_type_class.replace(" ", "_").lower()[
                     :-1
                 ]
-                for key, value in entity_type.attrs.items():
-                    tree[uid][key.replace(" ", "_").lower()] = value
+                # for key, value in entity_type.attrs.items():
+                tree[uid]["name"] = entity_type.attrs["Name"]
 
         # Load all entities with relationships
         entity_classes = ["Data", "Objects", "Groups"]
@@ -205,8 +253,8 @@ class H5Reader:
                     tree[uid]["parent"] = []
 
                 tree[uid]["entity_type"] = entity_class.replace("s", "").lower()
-                for key, value in entity.attrs.items():
-                    tree[uid][key.replace(" ", "_").lower()] = value
+                # for key, value in entity.attrs.items():
+                tree[uid]["name"] = entity.attrs["Name"]
 
                 tree[uid]["type"] = uuid.UUID(entity["Type"].attrs["ID"])
                 tree[uid]["children"] = []
@@ -250,3 +298,7 @@ class H5Reader:
     @staticmethod
     def uuid_value(value: str) -> uuid.UUID:
         return uuid.UUID(value)
+
+    @staticmethod
+    def uuid_str(value: uuid.UUID) -> str:
+        return "{" + str(value) + "}"

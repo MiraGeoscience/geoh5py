@@ -150,7 +150,7 @@ class ObjectBase(Entity):
                 data_object.values = value[1]
 
                 # Add the new object and type to tree
-                self.workspace.add_to_tree(data_object)
+                self.workspace.add_to_tree(data_object, parent=self)
                 data_object.parent = self
                 data_objects.append(data_object)
 

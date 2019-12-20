@@ -26,6 +26,10 @@ class DataType(EntityType):
         # TODO: define properties and setters
         self._color_map: Optional[ColorMap] = None
         self._units = None
+        self._number_of_bins = 50
+        self._transparent_no_data = True
+        self._mapping = "equal_area"
+        self._hidden = False
 
     @staticmethod
     def _is_abstract() -> bool:

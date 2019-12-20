@@ -146,20 +146,40 @@ class H5Writer:
             cls.uuid_value(uid)
         )
 
-        for key, value in tree[uid].items():
-            if (key == "entity_type") or ("allow" in key) or ("h5" in key):
-                continue
+        for key, value in entity_type.__dict__.items():
+            if (
+                key.replace("_", " ").strip().lower()
+                in [
+                    "uid",
+                    "name",
+                    "units",
+                    "description",
+                    "hidden",
+                    "mapping",
+                    "number of bins",
+                    "transparent no data",
+                    "datatype  primitive type",
+                ]
+                and value is not None
+            ):
 
-            if key == "id":
-                entry_key = key.replace("_", " ").upper()
-            else:
-                entry_key = key.replace("_", " ").capitalize()
+                if "uid" in key:
+                    entry_key = "ID"
+                    value = "{" + str(value) + "}"
+                elif "primitive" in key:
+                    entry_key = "Primitive type"
+                    value = getattr(entity_type, key).name.lower().capitalize()
+                else:
+                    entry_key = key.replace("_", " ").strip().capitalize()
 
-            if isinstance(value, str):
-                new_type.attrs.create(entry_key, value, dtype=cls.str_type)
-            else:
-                if value is not None:
-                    new_type.attrs.create(entry_key, value, dtype=type(value))
+                if isinstance(value, (int8, bool)):
+                    new_type.attrs.create(entry_key, int(value), dtype="int8")
+
+                elif isinstance(value, str):
+                    new_type.attrs.create(entry_key, value, dtype=cls.str_type)
+
+                else:
+                    new_type.attrs.create(entry_key, value, dtype=asarray(value).dtype)
 
         if close_file:
             h5file.close()

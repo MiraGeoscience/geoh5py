@@ -104,7 +104,19 @@ class Group(Entity):
             if "_" + attr in new_group.__dict__:
                 setattr(new_group, attr, item)
 
+        if "parent" in kwargs.keys():
+            if isinstance(kwargs["parent"], uuid.UUID):
+                parent = kwargs["parent"]
+            else:
+                assert isinstance(
+                    kwargs["parent"], Entity
+                ), "Given 'parent' argument must be of type uuid.UUID or 'Entity'"
+
+                parent = kwargs["parent"].uid
+        else:
+            parent = workspace.uid
+
         # Add the new new_group and type to tree
-        new_group_type.workspace.add_to_tree(new_group)
+        new_group_type.workspace.add_to_tree(new_group, parent=parent)
 
         return new_group

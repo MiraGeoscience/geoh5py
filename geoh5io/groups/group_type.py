@@ -15,8 +15,8 @@ class GroupType(EntityType):
         self,
         workspace: "workspace.Workspace",
         uid: uuid.UUID,
-        name=None,
-        description=None,
+        name="Container",
+        description="Container",
     ):
         super().__init__(workspace, uid, name, description)
         self._allow_move_content = True

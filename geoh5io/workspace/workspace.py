@@ -340,22 +340,24 @@ class Workspace:
         if attributes is not None:
             for key, value in attributes.items():
                 self.tree[uid][key.replace(" ", "_").lower()] = value
-        else:
 
-            for key, attr in entity.__dict__.items():
-                if key.replace("_", "") in ["workspace", "values"]:
-                    continue
-                if "uid" in key:
-                    self.tree[uid]["id"] = H5Writer.uuid_value(attr)
-                else:
-                    if ("association" in key) and isinstance(
-                        attr, data.DataAssociationEnum
-                    ):
-                        attr = attr.name.lower().capitalize()
-
-                    self.tree[uid][
-                        key.replace("_", " ").strip().replace(" ", "_")
-                    ] = attr
+        self.tree[uid]["name"] = entity.name
+        # else:
+        #
+        #     for key, attr in entity.__dict__.items():
+        #         if key.replace("_", "") in ["workspace", "values"]:
+        #             continue
+        #         if "uid" in key:
+        #             self.tree[uid]["id"] = H5Writer.uuid_value(attr)
+        #         else:
+        #             if ("association" in key) and isinstance(
+        #                 attr, data.DataAssociationEnum
+        #             ):
+        #                 attr = attr.name.lower().capitalize()
+        #
+        #             self.tree[uid][
+        #                 key.replace("_", " ").strip().replace(" ", "_")
+        #             ] = attr
 
         self.tree[uid]["type"] = entity.entity_type.uid
 
@@ -369,29 +371,26 @@ class Workspace:
         else:
             self.tree[uid]["children"] = children
 
-        # Store a pointer to the object in memory
-        # self.tree[uid]["object"] = entity
-
         # Add type to tree
         self.tree[entity.entity_type.uid] = {}
         self.tree[entity.entity_type.uid]["entity_type"] = entity_type + "_type"
 
-        for key, attr in entity.entity_type.__dict__.items():
-            if key.replace("_", "") in ["workspace", "values"]:
-                continue
-            if "uid" in key:
-                self.tree[entity.entity_type.uid]["id"] = H5Writer.uuid_value(attr)
-
-            else:
-                key_ind = key.replace("_", " ").strip().replace(" ", "_")
-
-                if ("primitive_type" in key) and isinstance(
-                    attr, data.PrimitiveTypeEnum
-                ):
-                    attr = attr.name.lower().capitalize()
-                    key_ind = "primitive_type"
-
-                self.tree[entity.entity_type.uid][key_ind] = attr
+        # for key, attr in entity.entity_type.__dict__.items():
+        #     if key.replace("_", "") in ["workspace", "values"]:
+        #         continue
+        #     if "uid" in key:
+        #         self.tree[entity.entity_type.uid]["id"] = H5Writer.uuid_value(attr)
+        #
+        #     else:
+        #         key_ind = key.replace("_", " ").strip().replace(" ", "_")
+        #
+        #         if ("primitive_type" in key) and isinstance(
+        #             attr, data.PrimitiveTypeEnum
+        #         ):
+        #             attr = attr.name.lower().capitalize()
+        #             key_ind = "primitive_type"
+        #
+        #         self.tree[entity.entity_type.uid][key_ind] = attr
 
     def get_entity(self, name: Union[str, uuid.UUID]) -> List[Entity]:
         """
@@ -432,13 +431,21 @@ class Workspace:
                 entity_list += [finder(uid)]
                 continue
 
+            type_uid = self.tree[uid]["type"]
+            attributes = H5Reader.fetch_attributes(
+                self._h5file, self._base, uid, entity_type
+            )
+            type_attributes = H5Reader.fetch_attributes(
+                self._h5file, self._base, type_uid, self.tree[type_uid]["entity_type"]
+            )
+
             recovered_object = self.create_entity(
                 base_classes[entity_type],
                 self.tree[uid]["name"],
                 uid=uid,
-                entity_type_uid=self.tree[uid]["type"],
-                attributes=self.tree[uid],
-                type_attributes=self.tree[self.tree[uid]["type"]],
+                entity_type_uid=type_uid,
+                attributes=attributes,
+                type_attributes=type_attributes,
             )
 
             # Assumes the object was pulled from h5
