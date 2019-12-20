@@ -1,6 +1,7 @@
 import uuid
+from typing import Optional
 
-from numpy import r_
+import numpy as np
 
 from .object_base import ObjectBase, ObjectType
 
@@ -19,7 +20,8 @@ class Grid2D(ObjectBase):
         self._u_count = None
         self._v_count = None
         self._rotation = 0.0
-        self._is_vertical = False
+        self._vertical = False
+        self._centroids = None
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -39,12 +41,21 @@ class Grid2D(ObjectBase):
 
     @origin.setter
     def origin(self, value):
-        value = r_[value]
-        assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
-        self._origin = value.astype(float)
+        if value is not None:
+            assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
+
+            if self.existing_h5_entity:
+                self.update_h5 = True
+            self._centroids = None
+
+            if isinstance(value, list):
+                value = np.asarray(
+                    tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
+                )
+            self._origin = value
 
     @property
-    def u_size(self):
+    def u_size(self) -> Optional[float]:
         """
         u_size
 
@@ -57,12 +68,18 @@ class Grid2D(ObjectBase):
 
     @u_size.setter
     def u_size(self, value):
-        value = r_[value]
-        assert len(value) == 1, "u_size must be a float of shape (1,)"
-        self._u_size = value.astype(float)
+        if value is not None:
+            value = np.r_[value]
+            assert len(value) == 1, "u_size must be a float of shape (1,)"
+
+            if self.existing_h5_entity:
+                self.update_h5 = True
+            self._centroids = None
+
+            self._u_size = value.astype(float)
 
     @property
-    def v_size(self):
+    def v_size(self) -> Optional[float]:
         """
         v_size
 
@@ -75,12 +92,18 @@ class Grid2D(ObjectBase):
 
     @v_size.setter
     def v_size(self, value):
-        value = r_[value]
-        assert len(value) == 1, "v_size must be a float of shape (1,)"
-        self._v_size = value.astype(float)
+        if value is not None:
+            value = np.r_[value]
+            assert len(value) == 1, "v_size must be a float of shape (1,)"
+
+            if self.existing_h5_entity:
+                self.update_h5 = True
+            self._centroids = None
+
+            self._v_size = value.astype(float)
 
     @property
-    def u_count(self):
+    def u_count(self) -> Optional[int]:
         """
         u_count
 
@@ -93,12 +116,18 @@ class Grid2D(ObjectBase):
 
     @u_count.setter
     def u_count(self, value):
-        value = r_[value]
-        assert len(value) == 1, "u_count must be an integer of shape (1,)"
-        self._u_count = value.astype(int)
+        if value is not None:
+            value = np.r_[value]
+            assert len(value) == 1, "u_count must be an integer of shape (1,)"
+
+            if self.existing_h5_entity:
+                self.update_h5 = True
+            self._centroids = None
+
+            self._u_count = value.astype(int)
 
     @property
-    def v_count(self):
+    def v_count(self) -> Optional[int]:
         """
         v_count
 
@@ -111,33 +140,132 @@ class Grid2D(ObjectBase):
 
     @v_count.setter
     def v_count(self, value):
-        value = r_[value]
-        assert len(value) == 1, "v_count must be an integer of shape (1,)"
-        self._v_count = value.astype(int)
+        if value is not None:
+            value = np.r_[value]
+            assert len(value) == 1, "v_count must be an integer of shape (1,)"
+
+            if self.existing_h5_entity:
+                self.update_h5 = True
+            self._centroids = None
+
+            self._v_count = value.astype(int)
 
     @property
-    def rotation(self):
+    def rotation(self) -> Optional[float]:
         """
         rotation
 
         Returns
         -------
-        rotation: ndarray of floats, shape (3,)
-            Rotation angle about the vertical axis
+        rotation: array of floats, shape (3,)
+            Clockwise rotation angle about the vertical axis
         """
         return self._rotation
 
     @rotation.setter
     def rotation(self, value):
-        value = r_[value]
-        assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
-        self._rotation = value.astype(float)
+        if value is not None:
+            value = np.r_[value]
+            assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
+
+            if self.existing_h5_entity:
+                self.update_h5 = True
+            self._centroids = None
+
+            self._rotation = value.astype(float)
 
     @property
-    def is_vertical(self) -> bool:
-        return self._is_vertical
+    def vertical(self) -> Optional[bool]:
+        return self._vertical
 
-    @is_vertical.setter
-    def is_vertical(self, value: bool):
-        assert isinstance(value, bool), "is_vertical must be of type 'bool'"
-        self._is_vertical = value
+    @vertical.setter
+    def vertical(self, value: bool):
+        if value is not None:
+            assert isinstance(value, bool) or value in [
+                0,
+                1,
+            ], "vertical must be of type 'bool'"
+
+            if self.existing_h5_entity:
+                self.update_h5 = True
+            self._centroids = None
+
+            self._vertical = value
+
+    @property
+    def n_cells(self) -> Optional[int]:
+        """
+        n_cells
+
+        Returns
+        -------
+            n_cells: int
+                Number of cells
+        """
+
+        assert (self.u_count is not None) and (
+            self.v_count is not None
+        ), "'u_count' and 'v_count' must be set"
+
+        return int(self.u_count * self.v_count)
+
+    @property
+    def cell_center_u(self):
+        """
+        cell_center_u
+
+        Returns
+        -------
+        cell_center_u: array of floats, shape(u_count,)
+            The cell center location along u in world coordinates
+
+        """
+        return np.cumsum(np.ones(self.u_count) * self.u_size) - self.u_size / 2.0
+
+    @property
+    def cell_center_v(self):
+        """
+        cell_center_v
+
+        Returns
+        -------
+        cell_center_v: array of floats, shape(v_count,)
+            The cell center location along v
+
+        """
+        return np.cumsum(np.ones(self.v_count) * self.v_size) - self.v_size / 2.0
+
+    @property
+    def centroids(self):
+        """
+        cell_centers
+
+        Returns
+        -------
+        cell_centers: array of floats, shape(nC, 3)
+            The cell center locations [x_i, y_i, z_i]
+
+        """
+
+        if getattr(self, "_centroids", None) is None:
+
+            angle = np.deg2rad(self.rotation)
+            rot = np.r_[
+                np.c_[np.cos(angle), -np.sin(angle), 0],
+                np.c_[np.sin(angle), np.cos(angle), 0],
+                np.c_[0, 0, 1],
+            ]
+
+            u_grid, v_grid = np.meshgrid(self.cell_center_u, self.cell_center_v)
+            if self.vertical:
+                xyz = np.c_[np.ravel(u_grid), np.zeros(self.n_cells), np.ravel(v_grid)]
+
+            else:
+                xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.zeros(self.n_cells)]
+
+            self._centroids = np.dot(rot, xyz.T).T
+
+            for ind, axis in enumerate(["x", "y", "z"]):
+                self._centroids[:, ind] += self.origin[axis]
+
+        return self._centroids
