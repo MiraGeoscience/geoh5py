@@ -171,6 +171,48 @@ class BlockModel(ObjectBase):
             self._rotation = value.astype(float)
 
     @property
+    def u_cells(self) -> Optional[np.ndarray]:
+        """
+        u_cells size
+
+        Returns
+        -------
+        u_cells: numpy.ndarray
+            Cell size along the u-coordinate
+        """
+        if self.u_cell_delimiters is not None:
+            return self.u_cell_delimiters[1:] - self.u_cell_delimiters[:-1]
+        return None
+
+    @property
+    def v_cells(self) -> Optional[np.ndarray]:
+        """
+        v_cells size
+
+        Returns
+        -------
+        v_cells: numpy.ndarray
+            Cell size along the v-coordinate
+        """
+        if self.v_cell_delimiters is not None:
+            return self.v_cell_delimiters[1:] - self.v_cell_delimiters[:-1]
+        return None
+
+    @property
+    def z_cells(self) -> Optional[np.ndarray]:
+        """
+        z_cells size
+
+        Returns
+        -------
+        z_cells: numpy.ndarray
+            Cell size along the z-coordinate
+        """
+        if self.z_cell_delimiters is not None:
+            return self.z_cell_delimiters[1:] - self.z_cell_delimiters[:-1]
+        return None
+
+    @property
     def dimensions(self) -> Optional[list]:
         """
         dimension
@@ -187,9 +229,9 @@ class BlockModel(ObjectBase):
             and self.z_cell_delimiters is not None
         ):
             return [
-                self.u_cell_delimiters.shape[0],
-                self.v_cell_delimiters.shape[0],
-                self.z_cell_delimiters.shape[0],
+                self.u_cell_delimiters.shape[0] - 1,
+                self.v_cell_delimiters.shape[0] - 1,
+                self.z_cell_delimiters.shape[0] - 1,
             ]
         return None
 
@@ -219,7 +261,7 @@ class BlockModel(ObjectBase):
             The cell center location along u
 
         """
-        return np.cumsum(self.u_cell_delimiters) - self.u_cell_delimiters / 2.0
+        return np.cumsum(self.u_cells) - self.u_cells / 2.0
 
     @property
     def cell_center_v(self):
@@ -232,7 +274,7 @@ class BlockModel(ObjectBase):
             The cell center location along v
 
         """
-        return np.cumsum(self.v_cell_delimiters) - self.v_cell_delimiters / 2.0
+        return np.cumsum(self.v_cells) - self.v_cells / 2.0
 
     @property
     def cell_center_z(self):
@@ -245,7 +287,7 @@ class BlockModel(ObjectBase):
             The cell center location along z
 
         """
-        return np.cumsum(self.z_cell_delimiters) - self.z_cell_delimiters / 2.0
+        return np.cumsum(self.z_cells) - self.z_cells / 2.0
 
     @property
     def centroids(self):

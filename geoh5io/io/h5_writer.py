@@ -81,7 +81,7 @@ class H5Writer:
             workspace_entity = workspace.create_entity(
                 Group,
                 "Workspace",
-                workspace.uid,
+                uuid.uuid4(),
                 entity_type_uid=NoTypeGroup.default_type_uid(),
             )
 
@@ -234,7 +234,7 @@ class H5Writer:
         """
         add_vertices(file, entity, close_file=True)
 
-        Add a type to the geoh5 project.
+        Add vertices to a points object.
 
         Parameters
         ----------
@@ -270,11 +270,76 @@ class H5Writer:
             h5file.close()
 
     @classmethod
+    def add_cell_delimiters(cls, file: str, entity, close_file=True):
+        """
+        add_cell_delimiters(file, entity, close_file=True)
+
+        Add (u, v, z) cell delimiters to a block_model object.
+
+        Parameters
+        ----------
+        file: str or h5py.File
+            Name or handle to a *.geoh5 file
+
+        entity: geoh5io.Entity
+            Target entity to which cells are being written
+
+        close_file: bool optional
+           Close h5 file after write [True] or False
+        """
+        if not isinstance(file, h5py.File):
+            h5file = h5py.File(file, "r+")
+        else:
+            h5file = file
+
+        if hasattr(entity, "u_cell_delimiters") and (
+            entity.u_cell_delimiters is not None
+        ):
+            u_cell_delimiters = entity.u_cell_delimiters
+            entity_handle = H5Writer.fetch_handle(h5file, entity)
+
+            # Adding cells
+            entity_handle.create_dataset(
+                "U cell delimiters",
+                data=u_cell_delimiters,
+                dtype=u_cell_delimiters.dtype,
+            )
+
+        if hasattr(entity, "v_cell_delimiters") and (
+            entity.v_cell_delimiters is not None
+        ):
+            v_cell_delimiters = entity.v_cell_delimiters
+            entity_handle = H5Writer.fetch_handle(h5file, entity)
+
+            # Adding cells
+            entity_handle.create_dataset(
+                "V cell delimiters",
+                data=v_cell_delimiters,
+                dtype=v_cell_delimiters.dtype,
+            )
+
+        if hasattr(entity, "z_cell_delimiters") and (
+            entity.z_cell_delimiters is not None
+        ):
+            z_cell_delimiters = entity.z_cell_delimiters
+            entity_handle = H5Writer.fetch_handle(h5file, entity)
+
+            # Adding cells
+            entity_handle.create_dataset(
+                "Z cell delimiters",
+                data=z_cell_delimiters,
+                dtype=z_cell_delimiters.dtype,
+            )
+
+        if close_file:
+            h5file.close()
+
+    @classmethod
     def add_cells(cls, file: str, entity, close_file=True):
         """
         add_cells(file, entity, close_file=True)
 
-        Add a type to the geoh5 project.
+        Add cells to an object.
 
         Parameters
         ----------
@@ -397,8 +462,8 @@ class H5Writer:
         values: numpy.array optional
             Array of values to be added to Data entity
 
-        close_file: bool optional
-           Close h5 file after write [True] or False
+        close_file: bool optional = True
+           Close h5 file after write
 
         Returns
         -------
@@ -476,7 +541,7 @@ class H5Writer:
                     entry_key = key.replace("_", " ").strip().capitalize()
 
                     if entry_key == "Association":
-                        value = value.name
+                        value = value.name.capitalize()
 
                 # More custom upper/lower
                 entry_key = entry_key.replace(" size", " Size")
@@ -498,22 +563,7 @@ class H5Writer:
 
         entity_handle["Type"] = new_type
 
-        if hasattr(entity, "values"):
-            if values is not None:
-                H5Writer.add_data_values(
-                    h5file, entity, values=values, close_file=False
-                )
-
-            if entity.values is not None:
-                H5Writer.add_data_values(
-                    h5file, entity, values=entity.values, close_file=False
-                )
-
-        if hasattr(entity, "vertices") and entity.vertices:
-            H5Writer.add_vertices(h5file, entity, close_file=False)
-
-        if hasattr(entity, "cells") and entity.vertices:
-            H5Writer.add_cells(h5file, entity, close_file=False)
+        cls.add_attributes(h5file, entity, values=values)
 
         # Check if file reference to a hdf5
         if close_file:
@@ -639,8 +689,11 @@ class H5Writer:
         file: str or h5py.File
             Name or handle to a geoh5 file
 
-        close_file: bool optional
-           Close h5 file after write: [True] or False
+        close_file: bool optional = True
+           Close h5 file after write
+
+        add_children: bool optional = True
+            Add children associated with entity
 
         """
 
@@ -681,6 +734,45 @@ class H5Writer:
             h5file.close()
 
         return new_entity
+
+    @staticmethod
+    def add_attributes(h5file, entity, values=None):
+        """
+
+        Parameters
+        ----------
+        h5file: str or h5py.File
+            Name or handle to a geoh5 file
+
+        entity: geoh5io.Entity
+            Entity to be added to the geoh5 file
+
+        values: numpy.array optional
+            Array of values to be added to Data entity
+
+        """
+        if hasattr(entity, "values"):
+            if values is not None:
+                H5Writer.add_data_values(
+                    h5file, entity, values=values, close_file=False
+                )
+
+            if entity.values is not None:
+                H5Writer.add_data_values(
+                    h5file, entity, values=entity.values, close_file=False
+                )
+
+        if hasattr(entity, "vertices") and entity.vertices:
+            H5Writer.add_vertices(h5file, entity, close_file=False)
+
+        if (
+            hasattr(entity, "u_cell_delimiters")
+            and entity.u_cell_delimiters is not None
+        ):
+            H5Writer.add_cell_delimiters(h5file, entity, close_file=False)
+
+        if hasattr(entity, "cells") and entity.vertices:
+            H5Writer.add_cells(h5file, entity, close_file=False)
 
 
 def get_h5_handle(file):

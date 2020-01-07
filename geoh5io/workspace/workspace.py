@@ -50,13 +50,8 @@ class Workspace:
 
     _active_ref: ClassVar[ReferenceType[Workspace]] = type(None)  # type: ignore
 
-    def __init__(
-        self,
-        h5file: Optional[str] = None,
-        root: RootGroup = None,
-        uid: uuid.UUID = uuid.uuid4(),
-    ):
-        self._uid = uid
+    def __init__(self, h5file: Optional[str] = None, root: RootGroup = None):
+        self._uid = None
         self._workspace_attributes = None
         self._base = "GEOSCIENCE"
         self._tree: Dict = {}
@@ -71,6 +66,9 @@ class Workspace:
 
     @property
     def uid(self) -> uuid.UUID:
+
+        if self._uid is None:
+            self._uid = self.get_entity("Workspace")[0].uid
         return self._uid
 
     @property

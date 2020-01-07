@@ -20,8 +20,6 @@ def test_create_grid_2d_data():
     # # Create a workspace
     workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
 
-    # ws = Workspace(r'assets\grid2DOutput.geoh5')
-    # ws.save_entity(grid)
     grid, data = Grid2D.create(
         workspace,
         origin=origin,
@@ -34,13 +32,11 @@ def test_create_grid_2d_data():
         allow_move=False,
     )
 
-    #
-    # assert not grid.allow_move, "Attribute of point did not properly set on creation"
     grid.rotation = 45.0
     workspace.save_entity(grid)
     workspace.finalize()
-    #
-    # # Read the data back in from a fresh workspace
+
+    # Read the data back in from a fresh workspace
     workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
 
     # obj = workspace.get_entity(name)[0]
