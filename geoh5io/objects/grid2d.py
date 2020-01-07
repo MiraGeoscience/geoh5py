@@ -217,7 +217,7 @@ class Grid2D(ObjectBase):
         Returns
         -------
         cell_center_u: array of floats, shape(u_count,)
-            The cell center location along u in world coordinates
+            The cell center location along u
 
         """
         return np.cumsum(np.ones(self.u_count) * self.u_size) - self.u_size / 2.0

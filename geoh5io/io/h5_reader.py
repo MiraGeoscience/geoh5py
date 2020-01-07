@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from typing import Optional, Tuple
 
 import h5py
 from numpy import c_, int8, ndarray, r_
@@ -193,6 +193,53 @@ class H5Reader:
         project.close()
 
         return values
+
+    @classmethod
+    def fetch_delimiters(
+        cls, h5file: Optional[str], base: str, uid: uuid.UUID
+    ) -> Tuple[ndarray, ndarray, ndarray]:
+        """
+        fetch_delimiters(h5file, base, uid)
+
+        Get the delimiters of an entity
+
+        Parameters
+        ----------
+        h5file: str
+            Name of the project h5file
+
+        base: str
+            Name of the base project group ['GEOSCIENCE']
+
+        uid: uuid.UUID
+            Unique identifier of the target entity
+
+        Returns
+        -------
+        u_delimiters: numpy.array
+            Array of u_delimiters
+
+        v_delimiters: numpy.array
+            Array of v_delimiters
+
+        z_delimiters: numpy.array
+            Array of z_delimiters
+        """
+        project = h5py.File(h5file, "r")
+
+        u_delimiters = r_[
+            project[base]["Objects"][cls.uuid_str(uid)]["U cell delimiters"]
+        ]
+        v_delimiters = r_[
+            project[base]["Objects"][cls.uuid_str(uid)]["V cell delimiters"]
+        ]
+        z_delimiters = r_[
+            project[base]["Objects"][cls.uuid_str(uid)]["Z cell delimiters"]
+        ]
+
+        project.close()
+
+        return u_delimiters, v_delimiters, z_delimiters
 
     @classmethod
     def get_project_tree(cls, h5file: str, base: str) -> dict:

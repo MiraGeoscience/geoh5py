@@ -6,7 +6,17 @@ import uuid
 import weakref
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 from weakref import ReferenceType
 
 import numpy as np
@@ -693,6 +703,32 @@ class Workspace:
             Cell object with vertices index
         """
         return H5Reader.fetch_cells(self._h5file, self._base, uid)
+
+    def fetch_delimiters(
+        self, uid: uuid.UUID
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        fetch_delimiters(uid)
+
+        Fetch the delimiter attributes from the source h5 file
+
+        Parameters
+        ----------
+        uid: uuid.UUID
+            Unique identifier of target data object
+
+        Returns
+        -------
+        u_delimiters: numpy.array
+            Array of u_delimiters
+
+        v_delimiters: numpy.array
+            Array of v_delimiters
+
+        z_delimiters: numpy.array
+            Array of z_delimiters
+        """
+        return H5Reader.fetch_delimiters(self._h5file, self._base, uid)
 
     def activate(self):
         """ Makes this workspace the active one.
