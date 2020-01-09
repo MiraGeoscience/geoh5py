@@ -5,6 +5,7 @@ import h5py
 from numpy import asarray, dtype, float64, int8
 
 from geoh5io.groups import Group, NoTypeGroup
+from geoh5io.objects import Octree
 from geoh5io.shared import Entity, EntityType
 
 from . import H5Reader
@@ -370,6 +371,44 @@ class H5Writer:
             h5file.close()
 
     @classmethod
+    def add_octree_cells(cls, file: str, entity, close_file=True):
+        """
+        add_octree_cells(file, entity, close_file=True)
+
+        Add octree cells to an object.
+
+        Parameters
+        ----------
+        file: str or h5py.File
+            Name or handle to a *.geoh5 file
+
+        entity: geoh5io.Entity
+            Target entity to which cells are being written
+
+        close_file: bool optional
+           Close h5 file after write [True] or False
+        """
+        if not isinstance(file, h5py.File):
+            h5file = h5py.File(file, "r+")
+        else:
+            h5file = file
+
+        if hasattr(entity, "octree_cells") and (entity.octree_cells is not None):
+            octree_cells = entity.octree_cells
+            entity_handle = H5Writer.fetch_handle(h5file, entity)
+
+            # Adding cells
+            entity_handle.create_dataset(
+                "Octree Cells",
+                octree_cells.shape,
+                data=octree_cells,
+                dtype=octree_cells.dtype,
+            )
+
+        if close_file:
+            h5file.close()
+
+    @classmethod
     def add_data_values(cls, file: str, entity, values, close_file=True):
         """
         add_data_values(file, entity, values=None, close_file=True)
@@ -528,8 +567,12 @@ class H5Writer:
                 "rotation",
                 "u count",
                 "u size",
+                "u cell size",
                 "v count",
                 "v size",
+                "v cell size",
+                "w count",
+                "w cell size",
                 "vertical",
                 "association",
             ]:
@@ -540,12 +583,16 @@ class H5Writer:
                 else:
                     entry_key = key.replace("_", " ").strip().capitalize()
 
+                    if ("count" in key) and isinstance(entity, Octree):
+                        entry_key = "N" + entry_key.replace(" count", "")
+
                     if entry_key == "Association":
                         value = value.name.capitalize()
 
                 # More custom upper/lower
                 entry_key = entry_key.replace(" size", " Size")
                 entry_key = entry_key.replace(" count", " Count")
+                entry_key = entry_key.replace(" cell", " Cell")
 
                 if isinstance(value, (int8, bool)):
                     entity_handle.attrs.create(entry_key, int(value), dtype="int8")
@@ -771,8 +818,11 @@ class H5Writer:
         ):
             H5Writer.add_cell_delimiters(h5file, entity, close_file=False)
 
-        if hasattr(entity, "cells") and entity.vertices:
+        if hasattr(entity, "cells") and entity.cells is not None:
             H5Writer.add_cells(h5file, entity, close_file=False)
+
+        if hasattr(entity, "octree_cells") and entity.octree_cells is not None:
+            H5Writer.add_octree_cells(h5file, entity, close_file=False)
 
 
 def get_h5_handle(file):

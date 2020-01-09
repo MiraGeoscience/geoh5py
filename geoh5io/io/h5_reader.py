@@ -88,7 +88,13 @@ class H5Reader:
             entity = project[base][entity_type][cls.uuid_str(uid)]
 
         for key, value in entity.attrs.items():
-            attributes[key.replace(" ", "_").lower()] = value
+            attr = key.replace(" ", "_").lower()
+
+            # Special case for octree
+            if attr in ["nu", "nv", "nw"]:
+                attr = attr.replace("n", "") + "_count"
+
+            attributes[attr] = value
 
         project.close()
 
@@ -240,6 +246,40 @@ class H5Reader:
         project.close()
 
         return u_delimiters, v_delimiters, z_delimiters
+
+    @classmethod
+    def fetch_octree_cells(
+        cls, h5file: Optional[str], base: str, uid: uuid.UUID
+    ) -> ndarray:
+        """
+        fetch_octree_cells(h5file, base, uid)
+
+        Get the octree_cells of an octree mesh
+
+        Parameters
+        ----------
+        h5file: str
+            Name of the project h5file
+
+        base: str
+            Name of the base project group ['GEOSCIENCE']
+
+        uid: uuid.UUID
+            Unique identifier of the target entity
+
+        Returns
+        -------
+        octree_cells: numpy.ndarray(int)
+            Array of octree_cells
+
+        """
+        project = h5py.File(h5file, "r")
+
+        octree_cells = r_[project[base]["Objects"][cls.uuid_str(uid)]["Octree Cells"]]
+
+        project.close()
+
+        return octree_cells
 
     @classmethod
     def get_project_tree(cls, h5file: str, base: str) -> dict:

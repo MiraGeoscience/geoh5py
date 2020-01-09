@@ -702,6 +702,22 @@ class Workspace:
         """
         return H5Reader.fetch_cells(self._h5file, self._base, uid)
 
+    def fetch_octree_cells(self, uid: uuid.UUID) -> np.ndarray:
+        """
+        Get the octree cells ordering from the source h5 file
+
+        Parameters
+        ----------
+        uid: uuid.UUID
+            Unique identifier of target entity
+
+        Returns
+        -------
+        value: numpy.ndarray(int)
+            Array of [i, j, k, dimension] defining the octree mesh
+        """
+        return H5Reader.fetch_octree_cells(self._h5file, self._base, uid)
+
     def fetch_delimiters(
         self, uid: uuid.UUID
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
