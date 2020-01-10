@@ -73,7 +73,7 @@ class H5Reader:
         """
         project = h5py.File(h5file, "r+")
 
-        x = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["x"]
+        x = project[base]["Objects"][f"{{{uid}}}"]["Vertices"]["x"]
         y = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["y"]
         z = project[base]["Objects"]["{" + str(uid) + "}"]["Vertices"]["z"]
         vertices = Coord3D(c_[x, y, z])
