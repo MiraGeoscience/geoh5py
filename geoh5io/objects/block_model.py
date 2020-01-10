@@ -224,15 +224,11 @@ class BlockModel(ObjectBase):
         """
 
         if (
-            self.u_cell_delimiters is not None
-            and self.v_cell_delimiters is not None
-            and self.z_cell_delimiters is not None
+            self.u_count is not None
+            and self.v_count is not None
+            and self.z_count is not None
         ):
-            return [
-                self.u_cell_delimiters.shape[0] - 1,
-                self.v_cell_delimiters.shape[0] - 1,
-                self.z_cell_delimiters.shape[0] - 1,
-            ]
+            return [self.u_count, self.v_count, self.z_count]
         return None
 
     @property
@@ -322,3 +318,45 @@ class BlockModel(ObjectBase):
                 self._centroids[:, ind] += self.origin[axis]
 
         return self._centroids
+
+    @property
+    def u_count(self) -> Optional[int]:
+        """
+        u_count
+
+        Returns
+        -------
+        u_count: int
+            Number of cells along u-axis
+        """
+        if self.u_cell_delimiters is not None:
+            return int(self.u_cell_delimiters.shape[0] - 1)
+        return None
+
+    @property
+    def v_count(self) -> Optional[int]:
+        """
+        v_count
+
+        Returns
+        -------
+        v_count: int
+            Number of cells along v-axis
+        """
+        if self.v_cell_delimiters is not None:
+            return int(self.v_cell_delimiters.shape[0] - 1)
+        return None
+
+    @property
+    def z_count(self) -> Optional[int]:
+        """
+        z_count
+
+        Returns
+        -------
+        z_count: int
+            Number of cells along z-axis
+        """
+        if self.z_cell_delimiters is not None:
+            return int(self.z_cell_delimiters.shape[0] - 1)
+        return None
