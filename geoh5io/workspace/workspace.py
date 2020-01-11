@@ -22,7 +22,7 @@ from weakref import ReferenceType
 import numpy as np
 
 from geoh5io import data, groups, objects
-from geoh5io.data import Data
+from geoh5io.data import Data, FloatData
 from geoh5io.groups import CustomGroup, Group
 from geoh5io.io import H5Reader, H5Writer
 from geoh5io.objects import Cell, ObjectBase
@@ -350,22 +350,6 @@ class Workspace:
                 self.tree[uid][key.replace(" ", "_").lower()] = value
 
         self.tree[uid]["name"] = entity.name
-        # else:
-        #
-        #     for key, attr in entity.__dict__.items():
-        #         if key.replace("_", "") in ["workspace", "values"]:
-        #             continue
-        #         if "uid" in key:
-        #             self.tree[uid]["id"] = H5Writer.uuid_value(attr)
-        #         else:
-        #             if ("association" in key) and isinstance(
-        #                 attr, data.DataAssociationEnum
-        #             ):
-        #                 attr = attr.name.lower().capitalize()
-        #
-        #             self.tree[uid][
-        #                 key.replace("_", " ").strip().replace(" ", "_")
-        #             ] = attr
 
         self.tree[uid]["type"] = entity.entity_type.uid
 
@@ -382,23 +366,6 @@ class Workspace:
         # Add type to tree
         self.tree[entity.entity_type.uid] = {}
         self.tree[entity.entity_type.uid]["entity_type"] = entity_type + "_type"
-
-        # for key, attr in entity.entity_type.__dict__.items():
-        #     if key.replace("_", "") in ["workspace", "values"]:
-        #         continue
-        #     if "uid" in key:
-        #         self.tree[entity.entity_type.uid]["id"] = H5Writer.uuid_value(attr)
-        #
-        #     else:
-        #         key_ind = key.replace("_", " ").strip().replace(" ", "_")
-        #
-        #         if ("primitive_type" in key) and isinstance(
-        #             attr, data.PrimitiveTypeEnum
-        #         ):
-        #             attr = attr.name.lower().capitalize()
-        #             key_ind = "primitive_type"
-        #
-        #         self.tree[entity.entity_type.uid][key_ind] = attr
 
     def get_entity(self, name: Union[str, uuid.UUID]) -> List[Entity]:
         """
@@ -743,6 +710,30 @@ class Workspace:
             Array of z_delimiters
         """
         return H5Reader.fetch_delimiters(self._h5file, self._base, uid)
+
+    def sort_children_data(self, entity: Entity, indices):
+        """
+        sort_valued_children(entity)
+
+        Change the order of values of children of an entity
+
+        Parameters
+        ----------
+        entity: Entity
+            The parent entity
+        indices: numpy.ndarray(int)
+            Array of indices used to sort the data
+
+        """
+
+        for child in self.tree[entity.uid]["children"]:
+            child_entity = self.get_entity(child)[0]
+
+            if isinstance(child_entity, FloatData):
+                if (child_entity.values is not None) and (
+                    child_entity.association.name in ["CELL"]
+                ):
+                    child_entity.values = child_entity.values[indices]
 
     def activate(self):
         """ Makes this workspace the active one.

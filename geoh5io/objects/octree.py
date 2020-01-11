@@ -251,7 +251,9 @@ class Octree(ObjectBase):
                 self.update_h5 = True
             self._centroids = None
 
-            self._octree_cells = value.astype(int)
+            self._octree_cells = value.astype(
+                [("I", "<i4"), ("J", "<i4"), ("K", "<i4"), ("NCells", "<i4")]
+            )
 
     @property
     def dimensions(self) -> Optional[list]:
@@ -329,6 +331,47 @@ class Octree(ObjectBase):
                 Number of cells
         """
 
-        if self.octree_cells:
+        if self.octree_cells is not None:
             return self.octree_cells.shape[0]
         return None
+
+    def refine_cells(self, indices):
+
+        octree_cells = self.octree_cells.copy()
+
+        mask = np.ones(self.n_cells, dtype=bool)
+        mask[indices] = 0
+
+        new_cells = np.array([], dtype=self.octree_cells.dtype)
+
+        copy_val = []
+        for ind in indices:
+
+            level = int(octree_cells[ind][3] / 2)
+
+            if level < 1:
+                continue
+
+            # Brake into 8 cells
+            for k in range(2):
+                for j in range(2):
+                    for i in range(2):
+
+                        new_cell = np.array(
+                            (
+                                octree_cells[ind][0] + i * level,
+                                octree_cells[ind][1] + j * level,
+                                octree_cells[ind][2] + k * level,
+                                level,
+                            ),
+                            dtype=octree_cells.dtype,
+                        )
+                        new_cells = np.hstack([new_cells, new_cell])
+
+            copy_val.append(np.ones(8) * ind)
+
+        ind_data = np.hstack(
+            [np.arange(self.n_cells)[mask], np.hstack(copy_val)]
+        ).astype(int)
+        self._octree_cells = np.hstack([octree_cells[mask], new_cells])
+        self.entity_type.workspace.sort_children_data(self, ind_data)
