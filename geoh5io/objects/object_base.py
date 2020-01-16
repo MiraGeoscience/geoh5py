@@ -107,8 +107,10 @@ class ObjectBase(Entity):
 
         # Replace all attributes given as kwargs
         for attr, item in kwargs.items():
-            if "_" + attr in new_object.__dict__:
+            try:
                 setattr(new_object, attr, item)
+            except AttributeError:
+                print(f"Could not set attribute {attr}")
 
         if new_object.parent is not None:
             parent_uid = new_object.parent.uid
@@ -171,4 +173,9 @@ class ObjectBase(Entity):
         data: geoh5io.Data
             Returns a registered Data
         """
-        return self.workspace.get_child(self.uid, name)[0]
+
+        entity_list = self.workspace.get_child(self.uid, name)
+        if entity_list:
+            return entity_list[0]
+
+        return None

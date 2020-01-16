@@ -101,8 +101,10 @@ class Group(Entity):
 
         # Replace all attributes given as kwargs
         for attr, item in kwargs.items():
-            if "_" + attr in new_group.__dict__:
+            try:
                 setattr(new_group, attr, item)
+            except AttributeError:
+                print(f"Could not set attribute {attr}")
 
         if "parent" in kwargs.keys():
             if isinstance(kwargs["parent"], uuid.UUID):

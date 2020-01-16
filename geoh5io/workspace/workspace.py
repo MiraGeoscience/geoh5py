@@ -532,13 +532,17 @@ class Workspace:
 
             if "attributes" in kwargs.keys():
                 for attr, item in kwargs["attributes"].items():
-                    if "_" + attr in created_entity.__dict__:
+                    try:
                         setattr(created_entity, attr, item)
+                    except AttributeError:
+                        print(f"Could not set attribute {attr}")
 
             if "type_attributes" in kwargs.keys():
                 for attr, item in kwargs["type_attributes"].items():
-                    if "_" + attr in created_entity.entity_type.__dict__:
+                    try:
                         setattr(created_entity.entity_type, attr, item)
+                    except AttributeError:
+                        print(f"Could not set attribute {attr}")
 
         return created_entity
 
