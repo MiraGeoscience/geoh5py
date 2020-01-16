@@ -236,16 +236,20 @@ class Octree(ObjectBase):
             Array defining the i,j,k ordering and cell dimensions
             [i, j, k, n_cells]
         """
-        if (getattr(self, "_octree_cells", None) is None) and self.existing_h5_entity:
-            octree_cells = self.workspace.fetch_octree_cells(self.uid)
-            self._octree_cells = octree_cells
+        if getattr(self, "_octree_cells", None) is None:
+            if self.existing_h5_entity:
+                octree_cells = self.workspace.fetch_octree_cells(self.uid)
+                self._octree_cells = octree_cells
+
+            else:
+                self.refine(0)
 
         return self._octree_cells
 
     @octree_cells.setter
     def octree_cells(self, value):
         if value is not None:
-            value = np.r_[value]
+            value = np.vstack(value)
 
             if self.existing_h5_entity:
                 self.update_h5 = True
@@ -335,8 +339,66 @@ class Octree(ObjectBase):
             return self.octree_cells.shape[0]
         return None
 
-    def refine_cells(self, indices):
+    def refine(self, level: int):
+        """
+        refine(levels)
 
+        Function to refine all cells to a given octree level:
+        level=0 refers to a single cell along the shortest dimension.
+
+        Parameter
+        ---------
+        level: int
+            Level of global octree refinement
+        """
+
+        assert (
+            self._octree_cells is None
+        ), "'refine' function only implemented if 'octree_cells' is None "
+
+        # Number of octree levels allowed on each dimension
+        level_u = np.log2(self.u_count)
+        level_v = np.log2(self.v_count)
+        level_w = np.log2(self.w_count)
+
+        min_level = np.min([level_u, level_v, level_w])
+
+        # Check that the refine level doesn't exceed the shortest dimension
+        level = np.min([level, min_level])
+
+        # Number of additional break to account for variable dimensions
+        add_u = int(level_u - min_level)
+        add_v = int(level_v - min_level)
+        add_w = int(level_w - min_level)
+
+        j, k, i = np.meshgrid(
+            np.arange(0, self.v_count, 2 ** (level_v - add_v - level)),
+            np.arange(0, self.w_count, 2 ** (level_w - add_w - level)),
+            np.arange(0, self.u_count, 2 ** (level_u - add_u - level)),
+        )
+
+        octree_cells = np.c_[
+            i.flatten(),
+            j.flatten(),
+            k.flatten(),
+            np.ones_like(i.flatten()) * 2 ** (min_level - level),
+        ]
+
+        self._octree_cells = np.rec.fromarrays(
+            octree_cells.T,
+            names=["I", "J", "K", "NCells"],
+            formats=["<i4", "<i4", "<i4", "<i4"],
+        )
+
+    def refine_cells(self, indices):
+        """
+
+        Parameter
+        ---------
+        indices: int
+            Index of cell to be divided in octree
+
+        """
         octree_cells = self.octree_cells.copy()
 
         mask = np.ones(self.n_cells, dtype=bool)
@@ -375,3 +437,22 @@ class Octree(ObjectBase):
         ).astype(int)
         self._octree_cells = np.hstack([octree_cells[mask], new_cells])
         self.entity_type.workspace.sort_children_data(self, ind_data)
+
+    # def refine_xyz(self, locations, levels):
+    #     """
+    #     Parameters
+    #     ----------
+    #     locations: np.ndarray or list of floats
+    #         List of locations (x, y, z) to refine the octree
+    #     levels: array or list of int
+    #         List of octree level for each location
+    #     """
+    #
+    #     if isinstance(locations, np.ndarray):
+    #         locations = locations.tolist()
+    #     if isinstance(levels, np.ndarray):
+    #         levels = levels.tolist()
+    #
+    #     tree = np.spatial.cKDTree(self.centroids)
+    #     indices = tree.query()
+    #
