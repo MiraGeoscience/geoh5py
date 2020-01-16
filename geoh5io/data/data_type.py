@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Optional, Type, cast
 from geoh5io.shared import EntityType
 
 from .color_map import ColorMap
+from .data_unit import DataUnit
 from .geometric_data_constants import GeometricDataConstants
 from .primitive_type_enum import PrimitiveTypeEnum
 
@@ -36,8 +37,17 @@ class DataType(EntityType):
         return False
 
     @property
-    def units(self) -> Optional[str]:
+    def units(self) -> Optional[DataUnit]:
         return self._units
+
+    # @units.setter
+    # def units(self, unit_name):
+    #     if self._units is None:
+    #
+    #         assert isinstance(
+    #             unit_name, str
+    #         ), f"Units must be of type {str}"
+    #         self._units = DataUnit(unit_name)
 
     @property
     def primitive_type(self) -> PrimitiveTypeEnum:
