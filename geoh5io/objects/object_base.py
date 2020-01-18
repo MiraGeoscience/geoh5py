@@ -44,7 +44,11 @@ class ObjectBase(Entity):
             List of names of data associated with the object
 
         """
-        return self.workspace.get_names_of_type(self.uid, "data")
+        name_list = []
+        for child in self.children:
+            if isinstance(child, Data):
+                name_list.append(child.name)
+        return name_list
 
     @property
     def entity_type(self) -> ObjectType:
@@ -112,13 +116,20 @@ class ObjectBase(Entity):
             except AttributeError:
                 print(f"Could not set attribute {attr}")
 
-        if new_object.parent is not None:
-            parent_uid = new_object.parent.uid
-        else:
-            parent_uid = object_type.workspace.uid
+        # Add parent-child relationship
+        if "parent" in kwargs.keys():
+            if isinstance(kwargs["parent"], uuid.UUID):
+                parent = workspace.get_entity(kwargs["parent"])[0]
+            else:
+                assert isinstance(
+                    kwargs["parent"], Entity
+                ), "Given 'parent' argument must be of type uuid.UUID or 'Entity'"
 
-        # Add the new object and type to tree
-        object_type.workspace.add_to_tree(new_object, parent=parent_uid)
+                parent = kwargs["parent"]
+        else:
+            parent = workspace.root
+
+        new_object.parent = parent
 
         if "data" in kwargs.keys():
             data_objects = new_object.add_data(kwargs["data"])
@@ -151,9 +162,9 @@ class ObjectBase(Entity):
 
                 data_object.values = value[1]
 
-                # Add the new object and type to tree
-                self.workspace.add_to_tree(data_object, parent=self)
+                # Add parent-child relationship
                 data_object.parent = self
+
                 data_objects.append(data_object)
 
         return data_objects

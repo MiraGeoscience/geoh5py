@@ -4,11 +4,11 @@ from typing import Optional
 import h5py
 from numpy import asarray, dtype, float64, int8
 
-from geoh5io.groups import Group, NoTypeGroup
-from geoh5io.objects import Octree
+from geoh5io.data import Data, DataType
+from geoh5io.groups import Group, GroupType
+from geoh5io.objects import ObjectBase, ObjectType, Octree
 from geoh5io.shared import Entity, EntityType
-
-from . import H5Reader
+from geoh5io.workspace import RootGroup
 
 
 class H5Writer:
@@ -72,21 +72,22 @@ class H5Writer:
         types.create_group("Group types")
         types.create_group("Object types")
 
+        workspace_entity = workspace.get_entity("Workspace")[0]
         # Check if the Workspace already has a tree
-        if workspace.tree:
-            workspace_entity = workspace.get_entity("Workspace")[0]
+        # if workspace.tree:
+        #     workspace_entity = workspace.get_entity("Workspace")[0]
+        #
+        #     assert workspace_entity is not None, "The tree has no 'Workspace' group."
+        #
+        # else:
+        #     workspace_entity = workspace.create_entity(
+        #         Group,
+        #         "Workspace",
+        #         uuid.uuid4(),
+        #         entity_type_uid=NoTypeGroup.default_type_uid(),
+        #     )
 
-            assert workspace_entity is not None, "The tree has no 'Workspace' group."
-
-        else:
-            workspace_entity = workspace.create_entity(
-                Group,
-                "Workspace",
-                uuid.uuid4(),
-                entity_type_uid=NoTypeGroup.default_type_uid(),
-            )
-
-            workspace.add_to_tree(workspace_entity)
+        # workspace.add_to_tree(workspace_entity)
 
         workspace_handle = H5Writer.add_entity(file, workspace_entity, close_file=False)
 
@@ -124,10 +125,18 @@ class H5Writer:
 
         base = list(h5file.keys())[0]
 
-        tree = entity_type.workspace.tree
+        # tree = entity_type.workspace.tree
         uid = entity_type.uid
 
-        entity_type_str = tree[uid]["entity_type"].replace("_", " ").capitalize() + "s"
+        # entity_type_str = tree[uid]["entity_type"].replace("_", " ").capitalize() + "s"
+        if isinstance(entity_type, DataType):
+            entity_type_str = "Data types"
+        elif isinstance(entity_type, ObjectType):
+            entity_type_str = "Object types"
+        elif isinstance(entity_type, GroupType):
+            entity_type_str = "Group types"
+        else:
+            return None
 
         # Check if already in the project
         if cls.uuid_value(uid) in list(h5file[base]["Types"][entity_type_str].keys()):
@@ -223,10 +232,10 @@ class H5Writer:
         del h5file[workspace.base_name]["Root"]
         h5file[workspace.base_name]["Root"] = root_handle
 
-        # Refresh the project tree
-        workspace.tree = H5Reader.get_project_tree(
-            workspace.h5file, workspace.base_name
-        )
+        # # Refresh the project tree
+        # workspace.tree = H5Reader.get_project_tree(
+        #     workspace.h5file, workspace.base_name
+        # )
         if close_file:
             h5file.close()
 
@@ -466,13 +475,22 @@ class H5Writer:
 
         base = list(h5file.keys())[0]
 
-        tree = entity.workspace.tree
+        # tree = entity.workspace.tree
         uid = entity.uid
 
-        entity_type = tree[uid]["entity_type"].capitalize()
+        # entity_type = tree[uid]["entity_type"].capitalize()
 
-        if entity_type != "Data":
-            entity_type += "s"
+        if isinstance(entity, Data):
+            entity_type = "Data"
+        elif isinstance(entity, ObjectBase):
+            entity_type = "Objects"
+        elif isinstance(entity, Group):
+            entity_type = "Groups"
+        else:
+            return None
+
+        # if entity_type != "Data":
+        #     entity_type += "s"
 
         # Check if already in the project
         if cls.uuid_value(uid) in list(h5file[base][entity_type].keys()):
@@ -515,17 +533,21 @@ class H5Writer:
 
         base = list(h5file.keys())[0]
 
-        if getattr(entity, "tree", None) is not None:
-            tree = entity.tree
+        if isinstance(entity, Data):
+            entity_type = "Data"
+        elif isinstance(entity, ObjectBase):
+            entity_type = "Objects"
+        elif isinstance(entity, Group):
+            entity_type = "Groups"
         else:
-            tree = entity.workspace.tree
+            return None
 
         uid = entity.uid
 
-        entity_type = tree[uid]["entity_type"].capitalize()
-
-        if entity_type != "Data":
-            entity_type += "s"
+        # # entity_type = tree[uid]["entity_type"].capitalize()
+        #
+        # if entity_type != "Data":
+        #     entity_type += "s"
 
         # Check if already in the project
         if cls.uuid_value(uid) in list(h5file[base][entity_type].keys()):
@@ -657,21 +679,16 @@ class H5Writer:
 
         h5file = get_h5_handle(file)
 
-        # If child has a 'tree' than it's the workspace
-        if getattr(child_entity, "tree", None) is not None:
+        # If RootGroup than no parent to be added
+        if isinstance(child_entity, RootGroup):
             return
 
         cls.str_type = h5py.special_dtype(vlen=str)
 
+        # Check if changing workspace
         if parent is None:
-            workspace = child_entity.workspace
-        else:
-            if getattr(parent, "tree", None) is not None:
-                workspace = parent
-            else:
-                workspace = parent.workspace
+            parent = child_entity.parent
 
-        tree = workspace.tree
         uid = child_entity.uid
 
         # Get the h5 handle
@@ -679,20 +696,18 @@ class H5Writer:
             h5file, child_entity, close_file=False
         )
 
-        # Check if moving up the tree or go up the given parent
-        if parent is None:
-            if tree[uid]["parent"]:
-                parent = workspace.get_entity(tree[uid]["parent"])[0]
-            else:
-                return
-
         parent_handle = H5Writer.add_entity(h5file, parent, close_file=False)
 
-        # Add the type
-        entity_type = tree[uid]["entity_type"].capitalize()
-        # All trailing with s, except Data
-        if entity_type != "Data":
-            entity_type += "s"
+        if isinstance(child_entity, Data):
+            entity_type = "Data"
+        elif isinstance(child_entity, ObjectBase):
+            entity_type = "Objects"
+        elif isinstance(child_entity, Group):
+            entity_type = "Groups"
+        else:
+            if close_file:
+                h5file.close()
+            return
 
         # Check if child group not already in h5
         if entity_type not in parent_handle.keys():
@@ -755,22 +770,16 @@ class H5Writer:
         else:
             h5file = h5py.File(entity.workspace.h5file, "r+")
 
-        workspace = entity.workspace
-        tree = workspace.tree
-        uid = entity.uid
-
         # Add itself to the project
         new_entity = H5Writer.add_entity(h5file, entity, close_file=False)
 
         if add_children:
             # Write children entities and add to current parent
-            if tree[uid]["children"]:
-                for child in tree[uid]["children"]:
-                    child_entity = workspace.get_entity(child)[0]
-                    H5Writer.add_entity(h5file, child_entity, close_file=False)
-                    H5Writer.add_to_parent(
-                        h5file, child_entity, close_file=False, recursively=False
-                    )
+            for child in entity.children:
+                H5Writer.add_entity(h5file, child, close_file=False)
+                H5Writer.add_to_parent(
+                    h5file, child, close_file=False, recursively=False
+                )
 
         H5Writer.add_to_parent(
             h5file, entity, parent=parent, close_file=False, recursively=True

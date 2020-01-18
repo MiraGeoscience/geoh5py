@@ -1,6 +1,6 @@
 import uuid
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from geoh5io import shared
@@ -15,6 +15,7 @@ class Entity(ABC):
             self._uid = uuid.uuid4()
         self._name = self.fix_up_name(name)
         self._parent = None
+        self._children: List[Entity] = []
         self._visible = True
         self._allow_delete = True
         self._allow_rename = True
@@ -128,21 +129,31 @@ class Entity(ABC):
                 else:
                     uid = self.workspace.get_entity("Workspace")[0].uid
 
-            self.workspace.tree[self.uid]["parent"] = uid
+            # self.workspace.tree[self.uid]["parent"] = uid
+            #
+            # # Add as children of parent in tree
+            # if self.uid not in self.workspace.tree[uid]["children"]:
+            #     self.workspace.tree[uid]["children"] += [self.uid]
 
-            # Add as children of parent in tree
-            if self.uid not in self.workspace.tree[uid]["children"]:
-                self.workspace.tree[uid]["children"] += [self.uid]
-
-            self._parent = self.workspace.get_entity(uid)
+            self._parent = self.workspace.get_entity(uid)[0]
+            self._parent.add_child(self)
 
         else:
             self._parent = None
 
-    def get_parent(self):
-        """
-        Function to fetch the parent of an object from the workspace tree
-        :return: Entity: Parent entity of object
-        """
-        workspace = self.workspace
-        return workspace.get_entity(workspace.tree[self.uid]["parent"])[0]
+    # def get_parent(self):
+    #     """
+    #     Function to fetch the parent of an object from the workspace tree
+    #     :return: Entity: Parent entity of object
+    #     """
+    #     workspace = self.workspace
+    #     return workspace.get_entity(workspace.tree[self.uid]["parent"])[0]
+
+    @property
+    def children(self):
+
+        return self._children
+
+    def add_child(self, entity):
+
+        self._children.append(entity)

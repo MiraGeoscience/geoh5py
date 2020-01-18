@@ -106,19 +106,19 @@ class Group(Entity):
             except AttributeError:
                 print(f"Could not set attribute {attr}")
 
+        # Add parent-child relationship
         if "parent" in kwargs.keys():
             if isinstance(kwargs["parent"], uuid.UUID):
-                parent = kwargs["parent"]
+                parent = workspace.get_entity(kwargs["parent"])[0]
             else:
                 assert isinstance(
                     kwargs["parent"], Entity
                 ), "Given 'parent' argument must be of type uuid.UUID or 'Entity'"
 
-                parent = kwargs["parent"].uid
+                parent = kwargs["parent"]
         else:
-            parent = workspace.uid
+            parent = workspace.root
 
-        # Add the new new_group and type to tree
-        new_group_type.workspace.add_to_tree(new_group, parent=parent)
+        new_group.parent = parent
 
         return new_group

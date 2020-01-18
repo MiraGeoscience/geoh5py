@@ -3,6 +3,7 @@ from typing import Optional
 
 import numpy as np
 
+from geoh5io.data import FloatData
 from geoh5io.shared import Coord3D
 
 from .object_base import ObjectBase, ObjectType
@@ -338,6 +339,26 @@ class Octree(ObjectBase):
         if self.octree_cells is not None:
             return self.octree_cells.shape[0]
         return None
+
+    def sort_children_data(self, indices):
+        """
+        sort_valued_children(entity)
+
+        Change the order of values of children of an entity
+
+        Parameters
+        ----------
+        entity: Entity
+            The parent entity
+        indices: numpy.ndarray(int)
+            Array of indices used to sort the data
+
+        """
+
+        for child in self.children:
+            if isinstance(child, FloatData):
+                if (child.values is not None) and (child.association.name in ["CELL"]):
+                    child.values = child.values[indices]
 
     def refine(self, level: int):
         """

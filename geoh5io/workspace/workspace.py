@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import inspect
-import os
 import uuid
 import weakref
 from contextlib import contextmanager
@@ -22,7 +21,7 @@ from weakref import ReferenceType
 import numpy as np
 
 from geoh5io import data, groups, objects
-from geoh5io.data import Data, FloatData
+from geoh5io.data import Data
 from geoh5io.groups import CustomGroup, Group
 from geoh5io.io import H5Reader, H5Writer
 from geoh5io.objects import Cell, ObjectBase
@@ -50,8 +49,8 @@ class Workspace:
 
     _active_ref: ClassVar[ReferenceType[Workspace]] = type(None)  # type: ignore
 
-    def __init__(self, h5file: Optional[str] = None, root: RootGroup = None):
-        self._uid = None
+    def __init__(self, h5file: str = "Analyst.geoh5", root: RootGroup = None):
+        # self._uid = None
         self._workspace_attributes = None
         self._base = "GEOSCIENCE"
         self._tree: Dict = {}
@@ -62,14 +61,25 @@ class Workspace:
         self._update_h5 = False
         self.h5file = h5file
 
-        self._root = root if root is not None else RootGroup(self)
+        # Create a root, either from file or from scratch
+        try:
+            attributes, type_attributes = H5Reader.fetch_attributes(
+                self.h5file, self._base, uuid.uuid4(), "Root"
+            )
+            self._root = self.create_entity(
+                RootGroup,
+                "Workspace",
+                uuid.UUID(attributes["id"]),
+                attributes=attributes,
+                type_attributes=type_attributes,
+            )
 
-    @property
-    def uid(self) -> uuid.UUID:
-
-        if self._uid is None:
-            self._uid = self.get_entity("Workspace")[0].uid
-        return self._uid
+            # Get all objects in the file
+            self.fetch_children(self._root, recursively=True)
+        #
+        except FileNotFoundError:
+            self._root = root if root is not None else RootGroup(self)
+            H5Writer.create_geoh5(self)
 
     @property
     def base_name(self):
@@ -103,46 +113,46 @@ class Workspace:
             self._workspace_attributes["ga_version"],
         )
 
+    # @property
+    # def tree(self):
+    #     """
+    #     @property
+    #     tree
+    #
+    #     Returns
+    #     -------
+    #     tree: dict
+    #         Dictionary of entities and entity_types contained in the project.
+    #         Used for light reference to attributes, parent and children.
+    #         {uuid:
+    #             {'name': value},
+    #             {'attr1': value},
+    #             ...
+    #             {'parent': uuid},
+    #             {'children': [uuid1, uuid2,....],
+    #          ...
+    #          }
+    #     """
+    #     if not getattr(self, "_tree"):
+    #         if self.h5file is not None:
+    #             self._tree = H5Reader.get_project_tree(self.h5file, self._base)
+    #         else:
+    #             self._tree = {}
+    #
+    #     return self._tree
+    #
+    # @tree.setter
+    # def tree(self, tree: dict):
+    #     """
+    #
+    #     :param tree: dict
+    #         Tree dictionary for the workspace
+    #     :return:
+    #     """
+    #     self._tree = tree
+
     @property
-    def tree(self):
-        """
-        @property
-        tree
-
-        Returns
-        -------
-        tree: dict
-            Dictionary of entities and entity_types contained in the project.
-            Used for light reference to attributes, parent and children.
-            {uuid:
-                {'name': value},
-                {'attr1': value},
-                ...
-                {'parent': uuid},
-                {'children': [uuid1, uuid2,....],
-             ...
-             }
-        """
-        if not getattr(self, "_tree"):
-            if self.h5file is not None:
-                self._tree = H5Reader.get_project_tree(self.h5file, self._base)
-            else:
-                self._tree = {}
-
-        return self._tree
-
-    @tree.setter
-    def tree(self, tree: dict):
-        """
-
-        :param tree: dict
-            Tree dictionary for the workspace
-        :return:
-        """
-        self._tree = tree
-
-    @property
-    def list_groups(self):
+    def list_groups_name(self):
         """
         @property
         list_groups
@@ -150,16 +160,15 @@ class Workspace:
         Returns
         -------
         groups: List[str]
-            Names of all groups registered in the tree
+            Names of all groups registered in the workspace
         """
-        return [
-            value["name"]
-            for value in self.tree.values()
-            if value["entity_type"] == "group"
-        ]
+        groups_name = {}
+        for key, val in self._groups.items():
+            groups_name[key] = val.__call__().name
+        return groups_name
 
     @property
-    def list_objects(self):
+    def list_objects_name(self):
         """
         @property
         list_objects
@@ -167,16 +176,15 @@ class Workspace:
         Returns
         -------
         objects: List[str]
-            Names of all objects registered in the tree
+            Names of all objects registered in the workspace
         """
-        return [
-            value["name"]
-            for value in self.tree.values()
-            if value["entity_type"] == "object"
-        ]
+        objects_name = {}
+        for key, val in self._objects.items():
+            objects_name[key] = val.__call__().name
+        return objects_name
 
     @property
-    def list_data(self):
+    def list_data_name(self):
         """
         @property
         list_data
@@ -184,13 +192,28 @@ class Workspace:
         Returns
         -------
         data: List[str]
-            Names of all data registered in the tree
+            Names of all data registered in the workspace
         """
-        return [
-            value["name"]
-            for value in self.tree.values()
-            if value["entity_type"] == "data"
-        ]
+        data_name = {}
+        for key, val in self._data.items():
+            data_name[key] = val.__call__().name
+        return data_name
+
+    @property
+    def list_entities_name(self):
+        """
+        @property
+        list_data
+
+        Returns
+        -------
+        data: List[str]
+            Names of all entities registered in the workspace
+        """
+        entities_name = self.list_groups_name
+        entities_name.update(self.list_objects_name)
+        entities_name.update(self.list_data_name)
+        return entities_name
 
     @property
     def root(self) -> "group.Group":
@@ -225,11 +248,11 @@ class Workspace:
 
         self._h5file = h5file
 
-        if h5file is not None:
-
-            # Check if the geoh5 exists, if not create it
-            if not os.path.exists(self._h5file):
-                H5Writer.create_geoh5(self)
+        # if h5file is not None:
+        #
+        #     # Check if the geoh5 exists, if not create it
+        #     if not os.path.exists(self._h5file):
+        #         H5Writer.create_geoh5(self)
 
     @property
     def update_h5(self) -> bool:
@@ -276,26 +299,26 @@ class Workspace:
 
         """
         # Check if entity if in current workspace
-        if not self.get_entity(entity.uid):
+        if self.get_entity(entity.uid)[0] is None:
 
             if parent is None:
                 # If a data entity, then add parent object without data
                 if isinstance(entity, Data):
-                    parent = entity.get_parent()
-                    if not self.get_entity(parent.uid):
-                        self.save_entity(parent, add_children=False)
+                    parent = entity.parent
+                    if self.get_entity(parent.uid)[0] is None:
+                        self.save_entity(entity.parent, add_children=False)
                         parent = self.get_entity(parent.uid)[0]
                 else:
-                    parent = self
+                    parent = self.root
 
-            if add_children:
-                children = entity.workspace.tree[entity.uid]["children"]
-            else:
-                children = []
+            # if add_children:
+            #     children = entity.workspace.tree[entity.uid]["children"]
+            # else:
+            #     children = []
 
-            self.add_to_tree(entity, parent=parent.uid, children=children)
+            # self.add_to_tree(entity, parent=parent.uid, children=children)
 
-            self.tree[parent.uid]["children"] += [entity.uid]
+            # self.tree[parent.uid]["children"] += [entity.uid]
 
         H5Writer.save_entity(
             entity,
@@ -309,65 +332,65 @@ class Workspace:
         """ Finalize the geoh5 file by re-building the Root"""
         H5Writer.finalize(self)
 
-    def add_to_tree(
-        self,
-        entity: Entity,
-        attributes: Optional[dict] = None,
-        parent: Optional[uuid.UUID] = None,
-        children: Optional[list] = None,
-    ):
-        """
-        add_to_tree(entity)
+    # def add_to_tree(
+    #     self,
+    #     entity: Entity,
+    #     attributes: Optional[dict] = None,
+    #     parent: Optional[uuid.UUID] = None,
+    #     children: Optional[list] = None,
+    # ):
+    #     """
+    #     add_to_tree(entity)
+    #
+    #     Add entity and attribute to tree for fast reference and write to geoh5
+    #
+    #     Parameters
+    #     ----------
+    #     entity: geoh5io.Entity
+    #         Entity to be added
+    #     attributes: dict optional
+    #         Dictionary of attributes to be written with the object
+    #     parent: uuid.UUID optional
+    #         Unique identifier of the parent Entity
+    #     children: List[uuid] optional
+    #         List of unique identifier of children entities
+    #     """
+    #     uid = entity.uid
+    #
+    #     self.tree[uid] = {}
+    #
+    #     if isinstance(entity, Group):
+    #         entity_type = "group"
+    #     elif isinstance(entity, Data):
+    #         entity_type = "data"
+    #     else:
+    #         entity_type = "object"
+    #
+    #     self.tree[uid]["entity_type"] = entity_type
+    #
+    #     if attributes is not None:
+    #         for key, value in attributes.items():
+    #             self.tree[uid][key.replace(" ", "_").lower()] = value
+    #
+    #     self.tree[uid]["name"] = entity.name
+    #
+    #     self.tree[uid]["type"] = entity.entity_type.uid
+    #
+    #     if parent is None:
+    #         self.tree[uid]["parent"] = []
+    #     else:
+    #         self.tree[uid]["parent"] = parent
+    #
+    #     if children is None:
+    #         self.tree[uid]["children"] = []
+    #     else:
+    #         self.tree[uid]["children"] = children
+    #
+    #     # Add type to tree
+    #     self.tree[entity.entity_type.uid] = {}
+    #     self.tree[entity.entity_type.uid]["entity_type"] = entity_type + "_type"
 
-        Add entity and attribute to tree for fast reference and write to geoh5
-
-        Parameters
-        ----------
-        entity: geoh5io.Entity
-            Entity to be added
-        attributes: dict optional
-            Dictionary of attributes to be written with the object
-        parent: uuid.UUID optional
-            Unique identifier of the parent Entity
-        children: List[uuid] optional
-            List of unique identifier of children entities
-        """
-        uid = entity.uid
-
-        self.tree[uid] = {}
-
-        if isinstance(entity, Group):
-            entity_type = "group"
-        elif isinstance(entity, Data):
-            entity_type = "data"
-        else:
-            entity_type = "object"
-
-        self.tree[uid]["entity_type"] = entity_type
-
-        if attributes is not None:
-            for key, value in attributes.items():
-                self.tree[uid][key.replace(" ", "_").lower()] = value
-
-        self.tree[uid]["name"] = entity.name
-
-        self.tree[uid]["type"] = entity.entity_type.uid
-
-        if parent is None:
-            self.tree[uid]["parent"] = []
-        else:
-            self.tree[uid]["parent"] = parent
-
-        if children is None:
-            self.tree[uid]["children"] = []
-        else:
-            self.tree[uid]["children"] = children
-
-        # Add type to tree
-        self.tree[entity.entity_type.uid] = {}
-        self.tree[entity.entity_type.uid]["entity_type"] = entity_type + "_type"
-
-    def get_entity(self, name: Union[str, uuid.UUID]) -> List[Entity]:
+    def get_entity(self, name: Union[str, uuid.UUID]) -> List[Optional[Entity]]:
         """
         get_entity(name)
 
@@ -383,55 +406,18 @@ class Workspace:
         object_list: List[Entity]
             List of entities with the same given name
         """
-        base_classes = {"group": Group, "object": ObjectBase, "data": Data}
 
-        if isinstance(name, uuid.UUID) and (name in self.tree.keys()):
+        if isinstance(name, uuid.UUID):
             list_entity_uid = [name]
 
         else:  # Extract all objects uuid with matching name
             list_entity_uid = [
-                key
-                for key in self.tree
-                if ("type" not in self.tree[key]["entity_type"])
-                and (self.tree[key]["name"] == name)
+                key for key, val in self.list_entities_name.items() if val == name
             ]
 
-        entity_list: List[Entity] = []
+        entity_list: List[Optional[Entity]] = []
         for uid in list_entity_uid:
-            entity_type = self.tree[uid]["entity_type"]
-
-            # Check if an object already exists in the workspace
-            finder = getattr(self, f"find_{entity_type}")
-            if finder(uid) is not None:
-                entity_list += [finder(uid)]
-                continue
-
-            type_uid = self.tree[uid]["type"]
-            attributes = H5Reader.fetch_attributes(
-                self._h5file, self._base, uid, entity_type
-            )
-            type_attributes = H5Reader.fetch_attributes(
-                self._h5file, self._base, type_uid, self.tree[type_uid]["entity_type"]
-            )
-
-            recovered_object = self.create_entity(
-                base_classes[entity_type],
-                self.tree[uid]["name"],
-                uid=uid,
-                entity_type_uid=type_uid,
-                attributes=attributes,
-                type_attributes=type_attributes,
-            )
-
-            # Assumes the object was pulled from h5
-            recovered_object.existing_h5_entity = True
-
-            # Object of unknown type
-            if recovered_object is None:
-                assert RuntimeError("Only objects of known type have been implemented")
-            #             unknown_type =
-
-            entity_list += [recovered_object]
+            entity_list.append(self.find_entity(uid))
 
         return entity_list
 
@@ -496,7 +482,7 @@ class Workspace:
             attributes = kwargs["attributes"]
             type_attributes = kwargs["type_attributes"]
 
-            data_type = data.data_type.DataType(
+            data_type = data.data_type.DataType.find_or_create(
                 self,
                 entity_type_uid,
                 getattr(
@@ -546,82 +532,133 @@ class Workspace:
 
         return created_entity
 
-    def get_names_of_type(self, uid: uuid.UUID, children_type: str):
+    # def get_names_of_type(self, uid: uuid.UUID, children_type: str):
+    #     """
+    #     get_names_of_type(uid, children_type)
+    #
+    #     Get all children's name of a certain type
+    #
+    #     Parameters
+    #     ----------
+    #     uid: uuid.UUID
+    #         Unique identifier of parent entity
+    #     children_type: str
+    #         Specify the type of children requested: "object", "group", "data"
+    #
+    #     Returns
+    #     -------
+    #     children: list
+    #         List of names of given type
+    #     """
+    #     name_list: List[str] = []
+    #
+    #     entity = self.get_entity(uid)[0]
+    #     for key in self.tree[uid]["children"]:
+    #
+    #         if self.tree[key]["entity_type"] == children_type:
+    #             name_list += [self.tree[key]["name"]]
+    #
+    #     return name_list
+
+    # def get_child(self, parent_uuid: uuid.UUID, child_name: str) -> List[Entity]:
+    #     """
+    #     get_child(parent_uuid, child_name)
+    #
+    #     Return a list of children entities with given name
+    #
+    #     Parameters
+    #     ----------
+    #     parent_uuid: UUID
+    #         The unique identifier of the parent entity
+    #     child_name: str
+    #         Name of entity(ies)
+    #
+    #     Returns
+    #     -------
+    #     entity_list List[Entity]:
+    #         A list of registered entities
+    #     """
+    #     if isinstance(child_name, uuid.UUID):
+    #         return self.get_entity(child_name)
+    #
+    #     for key in self.tree[parent_uuid]["children"]:
+    #
+    #         if self.tree[key]["name"] == child_name:
+    #
+    #             return self.get_entity(key)
+    #
+    #     return []
+    #
+    # def get_parent(self, uid: uuid.UUID) -> List[Entity]:
+    #     """
+    #     get_parent(uid)
+    #
+    #     Get the parent unique identifier of a given entity uuid
+    #
+    #     Parameters
+    #     ----------
+    #     uid: uuid.UUID
+    #         Unique identifier of child
+    #
+    #     Returns
+    #     -------
+    #     parent: geoh5io.Entity
+    #         The registered parent entity
+    #     """
+    #     if self.tree[uid]["parent"]:
+    #         return self.get_entity(self.tree[uid]["parent"])
+    #
+    #     return []
+
+    def fetch_children(self, entity: Entity, recursively=False):
         """
-        get_names_of_type(uid, children_type)
 
-        Get all children's name of a certain type
-
-        Parameters
-        ----------
-        uid: uuid.UUID
-            Unique identifier of parent entity
-        children_type: str
-            Specify the type of children requested: "object", "group", "data"
-
-        Returns
-        -------
-        children: list
-            List of names of given type
+        :param entity:
+        :param recursively:
+        :return:
         """
-        name_list: List[str] = []
 
-        for key in self.tree[uid]["children"]:
+        base_classes = {"group": Group, "object": ObjectBase, "data": Data}
 
-            if self.tree[key]["entity_type"] == children_type:
-                name_list += [self.tree[key]["name"]]
+        if isinstance(entity, Group):
+            entity_type = "group"
+        elif isinstance(entity, ObjectBase):
+            entity_type = "object"
+        else:
+            entity_type = "data"
 
-        return name_list
+        children_list = H5Reader.fetch_children(
+            self._h5file, self._base, entity.uid, entity_type
+        )
 
-    def get_child(self, parent_uuid: uuid.UUID, child_name: str) -> List[Entity]:
-        """
-        get_child(parent_uuid, child_name)
+        for uid, child_type in children_list.items():
+            attributes, type_attributes = H5Reader.fetch_attributes(
+                self._h5file, self._base, uid, child_type
+            )
 
-        Return a list of children entities with given name
+            recovered_object = self.create_entity(
+                base_classes[child_type],
+                attributes["name"],
+                uid=uid,
+                entity_type_uid=uuid.UUID(type_attributes["id"]),
+                attributes=attributes,
+                type_attributes=type_attributes,
+            )
 
-        Parameters
-        ----------
-        parent_uuid: UUID
-            The unique identifier of the parent entity
-        child_name: str
-            Name of entity(ies)
+            # Assumes the object was pulled from h5
+            recovered_object.existing_h5_entity = True
 
-        Returns
-        -------
-        entity_list List[Entity]:
-            A list of registered entities
-        """
-        if isinstance(child_name, uuid.UUID):
-            return self.get_entity(child_name)
+            # Add parent-child relationship
+            recovered_object.parent = entity
 
-        for key in self.tree[parent_uuid]["children"]:
+            if recursively:
+                self.fetch_children(recovered_object, recursively=True)
 
-            if self.tree[key]["name"] == child_name:
-
-                return self.get_entity(key)
-
-        return []
-
-    def get_parent(self, uid: uuid.UUID) -> List[Entity]:
-        """
-        get_parent(uid)
-
-        Get the parent unique identifier of a given entity uuid
-
-        Parameters
-        ----------
-        uid: uuid.UUID
-            Unique identifier of child
-
-        Returns
-        -------
-        parent: geoh5io.Entity
-            The registered parent entity
-        """
-        if self.tree[uid]["parent"]:
-            return self.get_entity(self.tree[uid]["parent"])
-
-        return []
+        #     # Object of unknown type
+        #     if recovered_object is None:
+        #         assert RuntimeError("Only objects of known type have been implemented")
+        #
+        # #             unknown_type =
 
     def fetch_values(self, uid: uuid.UUID) -> Optional[float]:
         """
@@ -715,30 +752,6 @@ class Workspace:
         """
         return H5Reader.fetch_delimiters(self._h5file, self._base, uid)
 
-    def sort_children_data(self, entity: Entity, indices):
-        """
-        sort_valued_children(entity)
-
-        Change the order of values of children of an entity
-
-        Parameters
-        ----------
-        entity: Entity
-            The parent entity
-        indices: numpy.ndarray(int)
-            Array of indices used to sort the data
-
-        """
-
-        for child in self.tree[entity.uid]["children"]:
-            child_entity = self.get_entity(child)[0]
-
-            if isinstance(child_entity, FloatData):
-                if (child_entity.values is not None) and (
-                    child_entity.association.name in ["CELL"]
-                ):
-                    child_entity.values = child_entity.values[indices]
-
     def activate(self):
         """ Makes this workspace the active one.
 
@@ -791,6 +804,13 @@ class Workspace:
 
     def find_data(self, data_uid: uuid.UUID) -> Optional["data.Data"]:
         return weakref_utils.get_clean_ref(self._data, data_uid)
+
+    def find_entity(self, entity_uid: uuid.UUID) -> Optional["Entity"]:
+        return (
+            self.find_group(entity_uid)
+            or self.find_data(entity_uid)
+            or self.find_object(entity_uid)
+        )
 
     def get_workspace_attributes(self):
         """ Fetch the workspace attributes

@@ -49,7 +49,7 @@ class H5Reader:
     @classmethod
     def fetch_attributes(
         cls, h5file: str, base: str, uid: uuid.UUID, entity_type: str
-    ) -> dict:
+    ) -> Tuple[dict, dict]:
         """
         fetch_attributes(h5file, base, uid, entity_type)
 
@@ -76,15 +76,16 @@ class H5Reader:
         """
         project = h5py.File(h5file, "r")
         attributes = {}
-
+        type_attributes = {}
         if "type" in entity_type:
             entity_type = entity_type.replace("_", " ").capitalize() + "s"
             entity = project[base]["Types"][entity_type][cls.uuid_str(uid)]
+        elif entity_type == "Root":
+            entity = project[base][entity_type]
         else:
             entity_type = entity_type.capitalize()
-            if entity_type != "Data":
+            if entity_type in ["Group", "Object"]:
                 entity_type += "s"
-
             entity = project[base][entity_type][cls.uuid_str(uid)]
 
         for key, value in entity.attrs.items():
@@ -96,9 +97,68 @@ class H5Reader:
 
             attributes[attr] = value
 
+        for key, value in entity["Type"].attrs.items():
+            attr = key.replace(" ", "_").lower()
+
+            # Special case for octree
+            if attr in ["nu", "nv", "nw"]:
+                attr = attr.replace("n", "") + "_count"
+
+            type_attributes[attr] = value
+
         project.close()
 
-        return attributes
+        return attributes, type_attributes
+
+    @classmethod
+    def fetch_children(
+        cls, h5file: str, base: str, uid: uuid.UUID, entity_type: str
+    ) -> dict:
+        """
+        fetch_children(h5file, base, uid, entity_type)
+
+        Get children of object from geoh5
+
+        Parameters
+        ----------
+        h5file: str
+            Name of the project h5file
+
+        base: str
+            Name of the base project group ['GEOSCIENCE']
+
+        uid: uuid.UUID
+            Unique identifier
+
+        entity_type: str
+            Type of entity from "group", "data", "object", "group_type", "data_type", "object_type"
+
+        Returns
+        -------
+        children: list of dict
+            List of dictionaries for the children uid and type
+        """
+        project = h5py.File(h5file, "r")
+
+        children = {}
+        entity_type = entity_type.capitalize()
+        if entity_type in ["Group", "Object"]:
+            entity_type += "s"
+        entity = project[base][entity_type][cls.uuid_str(uid)]
+
+        for child_type, child_list in entity.items():
+            if child_type in ["Type", "PropertyGroups"]:
+                continue
+
+            if isinstance(child_list, h5py.Group):
+                for uid_str in child_list.keys():
+                    children[cls.uuid_value(uid_str)] = child_type.replace(
+                        "s", ""
+                    ).lower()
+
+        project.close()
+
+        return children
 
     @classmethod
     def fetch_vertices(
