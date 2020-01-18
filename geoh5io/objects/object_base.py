@@ -1,6 +1,6 @@
 import uuid
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List
 
 from numpy import ndarray
 
@@ -149,7 +149,6 @@ class ObjectBase(Entity):
         """
         data_objects = []
         for key, value in data.items():
-
             if isinstance(value[1], ndarray):
                 data_object = self.workspace.create_entity(
                     Data,
@@ -169,7 +168,7 @@ class ObjectBase(Entity):
 
         return data_objects
 
-    def get_data(self, name: str) -> Optional[Entity]:
+    def get_data(self, name: str) -> List[Data]:
         """
         @property
         get_data
@@ -184,9 +183,10 @@ class ObjectBase(Entity):
         data: geoh5io.Data
             Returns a registered Data
         """
+        entity_list = []
 
-        entity_list = self.workspace.get_child(self.uid, name)
-        if entity_list:
-            return entity_list[0]
+        for child in self.children:
+            if isinstance(child, Data) and child.name == name:
+                entity_list.append(child)
 
-        return None
+        return entity_list

@@ -63,6 +63,7 @@ class Workspace:
 
         # Create a root, either from file or from scratch
         try:
+            open(self.h5file)
             attributes, type_attributes = H5Reader.fetch_attributes(
                 self.h5file, self._base, uuid.uuid4(), "Root"
             )
@@ -443,76 +444,79 @@ class Workspace:
         entity: Entity
             New entity created
         """
+
         created_entity: Optional[Entity] = None
 
-        if "entity_type_uid" in kwargs:
-            entity_type_uid = kwargs["entity_type_uid"]
-        # Assume that entity is being created from its class
-        elif hasattr(entity_class, "default_type_uid"):
-            entity_type_uid = entity_class.default_type_uid()
-            entity_class = entity_class.__bases__
-        else:
-            raise RuntimeError(
-                f"An entity_type_uid must be provided for {entity_class}."
-            )
-
-        if entity_class is not Data:
-            for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
-
-                if (
-                    inspect.isclass(member)
-                    and issubclass(member, entity_class)
-                    and member is not entity_class
-                    and hasattr(member, "default_type_uid")
-                    and not member == CustomGroup
-                    and member.default_type_uid() == entity_type_uid
-                ):
-
-                    known_type = member.find_or_create_type(self)
-                    created_entity = member(known_type, name, uid)
-                    break
-
-            # Special case for CustomGroup without uuid
-            if (created_entity is None) and entity_class == Group:
-                custom = groups.custom_group.CustomGroup
-                unknown_type = custom.find_or_create_type(self)
-                created_entity = custom(unknown_type, name, uid)
+        if entity_class is RootGroup:
+            created_entity = RootGroup(self, uid=uid)
 
         else:
-            attributes = kwargs["attributes"]
-            type_attributes = kwargs["type_attributes"]
+            if "entity_type_uid" in kwargs:
+                entity_type_uid = kwargs["entity_type_uid"]
+            # Assume that entity is being created from its class
+            elif hasattr(entity_class, "default_type_uid"):
+                entity_type_uid = entity_class.default_type_uid()
+                entity_class = entity_class.__bases__
+            else:
+                raise RuntimeError(
+                    f"An entity_type_uid must be provided for {entity_class}."
+                )
 
-            data_type = data.data_type.DataType.find_or_create(
-                self,
-                entity_type_uid,
-                getattr(
-                    data.primitive_type_enum.PrimitiveTypeEnum,
-                    type_attributes["primitive_type"].upper(),
-                ),
-            )
-            data_type.name = name
-
-            for _, member in inspect.getmembers(data):
-
-                if (
-                    inspect.isclass(member)
-                    and issubclass(member, entity_class)
-                    and member is not entity_class
-                    and hasattr(member, "primitive_type")
-                    and inspect.ismethod(member.primitive_type)
-                    and data_type.primitive_type is member.primitive_type()
+            if entity_class is not Data:
+                for _, member in inspect.getmembers(groups) + inspect.getmembers(
+                    objects
                 ):
+                    if (
+                        inspect.isclass(member)
+                        and issubclass(member, entity_class)
+                        and member is not entity_class
+                        and hasattr(member, "default_type_uid")
+                        and not member == CustomGroup
+                        and member.default_type_uid() == entity_type_uid
+                    ):
+                        known_type = member.find_or_create_type(self)
+                        created_entity = member(known_type, name, uid)
+                        break
 
-                    created_entity = member(
-                        data_type,
-                        getattr(
-                            data.data_association_enum.DataAssociationEnum,
-                            attributes["association"].upper(),
-                        ),
-                        name,
-                        uid,
-                    )
-                    break
+                # Special case for CustomGroup without uuid
+                if (created_entity is None) and entity_class == Group:
+                    custom = groups.custom_group.CustomGroup
+                    unknown_type = custom.find_or_create_type(self)
+                    created_entity = custom(unknown_type, name, uid)
+
+            else:
+                attributes = kwargs["attributes"]
+                type_attributes = kwargs["type_attributes"]
+                data_type = data.data_type.DataType.find_or_create(
+                    self,
+                    entity_type_uid,
+                    getattr(
+                        data.primitive_type_enum.PrimitiveTypeEnum,
+                        type_attributes["primitive_type"].upper(),
+                    ),
+                )
+                data_type.name = name
+
+                for _, member in inspect.getmembers(data):
+
+                    if (
+                        inspect.isclass(member)
+                        and issubclass(member, entity_class)
+                        and member is not entity_class
+                        and hasattr(member, "primitive_type")
+                        and inspect.ismethod(member.primitive_type)
+                        and data_type.primitive_type is member.primitive_type()
+                    ):
+                        created_entity = member(
+                            data_type,
+                            getattr(
+                                data.data_association_enum.DataAssociationEnum,
+                                attributes["association"].upper(),
+                            ),
+                            name,
+                            uid,
+                        )
+                        break
 
         if created_entity is not None:
 

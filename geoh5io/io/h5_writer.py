@@ -709,7 +709,7 @@ class H5Writer:
                 h5file.close()
             return
 
-        # Check if child group not already in h5
+        # Check if child h5py.Group already exists
         if entity_type not in parent_handle.keys():
             parent_handle.create_group(entity_type)
 
