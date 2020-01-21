@@ -25,27 +25,32 @@ def test_octree():
         u_cell_size=1.0,
         v_cell_size=1.0,
         w_cell_size=2.0,
+        rotation=45,
     )
 
     # Refine globally to first octree
-    mesh.refine(1)
+    # mesh.refine(1)
 
-    assert mesh.n_cells == 64, "Number of octree cells after refine is wrong"
+    assert mesh.n_cells == 8, "Number of octree cells after refine is wrong"
 
     # Refine
     workspace.save_entity(mesh)
     workspace.finalize()
 
     # Read the mesh back in
-    workspace2 = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
 
-    mesh2 = workspace2.get_entity(name)[0]
+    mesh2 = workspace.get_entity(name)[0]
 
     assert all(
         mesh2.octree_cells == mesh.octree_cells
     ), "Mesh output differs from mesh input"
     assert all(
         np.r_[mesh2.origin] == np.r_[mesh.origin]
+    ), "Mesh output differs from mesh input"
+
+    assert all(
+        np.r_[mesh2.rotation] == np.r_[mesh.rotation]
     ), "Mesh output differs from mesh input"
 
     os.remove(os.getcwd() + os.sep + "assets" + os.sep + h5file)

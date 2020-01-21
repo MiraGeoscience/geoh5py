@@ -52,7 +52,7 @@ class Group(Entity):
         return cls.default_type_name()
 
     @classmethod
-    def create(cls, workspace: "workspace.Workspace", **kwargs):
+    def create(cls, workspace: "workspace.Workspace", save_on_creation=True, **kwargs):
         """
         create(
             workspace, name=["NewGroup"],
@@ -104,7 +104,7 @@ class Group(Entity):
             try:
                 setattr(new_group, attr, item)
             except AttributeError:
-                print(f"Could not set attribute {attr}")
+                pass  # print(f"Could not set attribute {attr}")
 
         # Add parent-child relationship
         if "parent" in kwargs.keys():
@@ -120,5 +120,8 @@ class Group(Entity):
             parent = workspace.root
 
         new_group.parent = parent
+
+        if save_on_creation:
+            workspace.save_entity(new_group)
 
         return new_group

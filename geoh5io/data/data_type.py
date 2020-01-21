@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, Optional, Type, cast
 
 from geoh5io.shared import EntityType
 
@@ -53,19 +53,19 @@ class DataType(EntityType):
     def primitive_type(self) -> PrimitiveTypeEnum:
         return self.__primitive_type
 
-    # @classmethod
-    # def create(
-    #     cls, workspace: "workspace.Workspace", data_class: Type["data.Data"]
-    # ) -> DataType:
-    #     """ Creates a new instance of DataType with the primitive type from the given Data
-    #     implementation class.
-    #
-    #     :param data_class: A Data implementation class.
-    #     :return: A new instance of DataType.
-    #     """
-    #     uid = uuid.uuid4()
-    #     primitive_type = data_class.primitive_type()
-    #     return cls(workspace, uid, primitive_type)
+    @classmethod
+    def create(
+        cls, workspace: "workspace.Workspace", data_class: Type["data.Data"]
+    ) -> DataType:
+        """ Creates a new instance of DataType with the primitive type from the given Data
+        implementation class.
+
+        :param data_class: A Data implementation class.
+        :return: A new instance of DataType.
+        """
+        uid = uuid.uuid4()
+        primitive_type = data_class.primitive_type()
+        return cls(workspace, uid, primitive_type)
 
     @classmethod
     def find_or_create(

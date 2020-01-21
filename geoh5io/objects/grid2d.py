@@ -45,7 +45,7 @@ class Grid2D(ObjectBase):
             assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["origin"]
             self._centroids = None
 
             if isinstance(value, list):
@@ -73,7 +73,7 @@ class Grid2D(ObjectBase):
             assert len(value) == 1, "u_size must be a float of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["u_size"]
             self._centroids = None
 
             self._u_size = value.astype(float)
@@ -97,7 +97,7 @@ class Grid2D(ObjectBase):
             assert len(value) == 1, "v_size must be a float of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["v_size"]
             self._centroids = None
 
             self._v_size = value.astype(float)
@@ -121,7 +121,7 @@ class Grid2D(ObjectBase):
             assert len(value) == 1, "u_count must be an integer of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["u_count"]
             self._centroids = None
 
             self._u_count = value.astype(int)
@@ -145,7 +145,7 @@ class Grid2D(ObjectBase):
             assert len(value) == 1, "v_count must be an integer of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["v_count"]
             self._centroids = None
 
             self._v_count = value.astype(int)
@@ -169,7 +169,7 @@ class Grid2D(ObjectBase):
             assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["rotation"]
             self._centroids = None
 
             self._rotation = value.astype(float)
@@ -187,7 +187,7 @@ class Grid2D(ObjectBase):
             ], "vertical must be of type 'bool'"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["vertical"]
             self._centroids = None
 
             self._vertical = value

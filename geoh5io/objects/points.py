@@ -65,7 +65,7 @@ class Points(ObjectBase):
             Coord3D object holding the vertices coordinates
         """
         if self.existing_h5_entity:
-            self._update_h5 = True
+            self.update_h5 = ["vertices"]
         self._vertices = Coord3D(xyz)
 
     @property
@@ -80,3 +80,19 @@ class Points(ObjectBase):
             Rapid access to the (x, y, z) coordinates from the Coord3D
         """
         return self.vertices.locations
+
+    @property
+    def size(self):
+        """
+        @property
+        size
+
+        Returns
+        -------
+        size: int
+            Number of vertices
+        """
+        if self._vertices is not None:
+            return self.locations.shape[0]
+
+        return None

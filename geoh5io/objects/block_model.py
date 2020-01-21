@@ -44,7 +44,7 @@ class BlockModel(ObjectBase):
             assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["origin"]
             self._centroids = None
 
             if isinstance(value, list):
@@ -79,7 +79,7 @@ class BlockModel(ObjectBase):
             value = np.r_[value]
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["u_cell_delimiters"]
             self._centroids = None
 
             self._u_cell_delimiters = value.astype(float)
@@ -110,7 +110,7 @@ class BlockModel(ObjectBase):
             value = np.r_[value]
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["v_cell_delimiters"]
             self._centroids = None
 
             self._v_cell_delimiters = value.astype(float)
@@ -141,7 +141,7 @@ class BlockModel(ObjectBase):
             value = np.r_[value]
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["z_cell_delimiters"]
             self._centroids = None
 
             self._z_cell_delimiters = value.astype(float)
@@ -165,7 +165,7 @@ class BlockModel(ObjectBase):
             assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["rotation"]
             self._centroids = None
 
             self._rotation = value.astype(float)

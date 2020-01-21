@@ -21,7 +21,7 @@ class Entity(ABC):
         self._allow_rename = True
         self._public = True
         self._existing_h5_entity = False
-        self._update_h5 = False
+        self._update_h5: List[str] = []
 
     @property
     def existing_h5_entity(self) -> bool:
@@ -32,12 +32,16 @@ class Entity(ABC):
         self._existing_h5_entity = value
 
     @property
-    def update_h5(self) -> bool:
+    def update_h5(self) -> List[str]:
         return self._update_h5
 
     @update_h5.setter
-    def update_h5(self, value: bool):
-        self._update_h5 = value
+    def update_h5(self, value: List):
+        # Check if re-setting the list or appending
+        if len(value) == 0:
+            self._update_h5 = []
+        else:
+            self._update_h5 = self.update_h5 + value
 
     @property
     def uid(self) -> uuid.UUID:
@@ -50,6 +54,10 @@ class Entity(ABC):
     @name.setter
     def name(self, new_name: str):
         self._name = self.fix_up_name(new_name)
+
+    @name.getter
+    def name(self):
+        return self._name
 
     @property
     def visible(self) -> bool:
@@ -129,25 +137,11 @@ class Entity(ABC):
                 else:
                     uid = self.workspace.get_entity("Workspace")[0].uid
 
-            # self.workspace.tree[self.uid]["parent"] = uid
-            #
-            # # Add as children of parent in tree
-            # if self.uid not in self.workspace.tree[uid]["children"]:
-            #     self.workspace.tree[uid]["children"] += [self.uid]
-
             self._parent = self.workspace.get_entity(uid)[0]
             self._parent.add_child(self)
 
         else:
             self._parent = None
-
-    # def get_parent(self):
-    #     """
-    #     Function to fetch the parent of an object from the workspace tree
-    #     :return: Entity: Parent entity of object
-    #     """
-    #     workspace = self.workspace
-    #     return workspace.get_entity(workspace.tree[self.uid]["parent"])[0]
 
     @property
     def children(self):

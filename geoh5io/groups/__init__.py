@@ -7,3 +7,4 @@ from .drillhole_group import DrillholeGroup
 from .group import Group
 from .group_type import GroupType
 from .notype_group import NoTypeGroup
+from .property_group import PropertyGroup

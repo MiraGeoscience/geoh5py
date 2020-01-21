@@ -17,7 +17,7 @@ class Octree(ObjectBase):
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)
         self._origin = Coord3D()
-        self._rotation = 0
+        self._rotation = 0.0
         self._u_count = None
         self._v_count = None
         self._w_count = None
@@ -49,13 +49,15 @@ class Octree(ObjectBase):
             assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["origin"]
             self._centroids = None
 
-            if isinstance(value, list):
-                value = np.asarray(
-                    tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
-                )
+            if not isinstance(value, list):
+                value.tolist()
+
+            value = np.asarray(
+                tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
+            )
             self._origin = value
 
     @property
@@ -77,7 +79,7 @@ class Octree(ObjectBase):
             assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["rotation"]
             self._centroids = None
 
             self._rotation = value.astype(float)
@@ -101,7 +103,7 @@ class Octree(ObjectBase):
             assert len(value) == 1, "u_count must be type(int) of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["u_count"]
             self._centroids = None
 
             self._u_count = int(value)
@@ -125,7 +127,7 @@ class Octree(ObjectBase):
             assert len(value) == 1, "v_count must be type(int) of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["v_count"]
             self._centroids = None
 
             self._v_count = int(value)
@@ -149,7 +151,7 @@ class Octree(ObjectBase):
             assert len(value) == 1, "w_count must be type(int) of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["w_count"]
             self._centroids = None
 
             self._w_count = int(value)
@@ -173,7 +175,7 @@ class Octree(ObjectBase):
             assert len(value) == 1, "u_cell_size must be type(float) of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["u_cell_size"]
             self._centroids = None
 
             self._u_cell_size = value.astype(float)
@@ -197,7 +199,7 @@ class Octree(ObjectBase):
             assert len(value) == 1, "v_cell_size must be type(float) of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["v_cell_size"]
             self._centroids = None
 
             self._v_cell_size = value.astype(float)
@@ -221,7 +223,7 @@ class Octree(ObjectBase):
             assert len(value) == 1, "w_cell_size must be type(float) of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["w_cell_size"]
             self._centroids = None
 
             self._w_cell_size = value.astype(float)
@@ -252,12 +254,16 @@ class Octree(ObjectBase):
         if value is not None:
             value = np.vstack(value)
 
+            assert (
+                value.shape[1] == 4
+            ), "'octree_cells' requires an ndarray of shape (*, 4)"
+
             if self.existing_h5_entity:
-                self.update_h5 = True
+                self.update_h5 = ["octree_cells"]
             self._centroids = None
 
-            self._octree_cells = value.astype(
-                [("I", "<i4"), ("J", "<i4"), ("K", "<i4"), ("NCells", "<i4")]
+            self._octree_cells = np.core.records.fromarrays(
+                value.T, names="I, J, K, NCells", formats="<i4, <i4, <i4, <i4"
             )
 
     @property

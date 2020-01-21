@@ -22,7 +22,7 @@ import numpy as np
 
 from geoh5io import data, groups, objects
 from geoh5io.data import Data
-from geoh5io.groups import CustomGroup, Group
+from geoh5io.groups import CustomGroup, Group, PropertyGroup
 from geoh5io.io import H5Reader, H5Writer
 from geoh5io.objects import Cell, ObjectBase
 from geoh5io.shared import Coord3D, weakref_utils
@@ -329,6 +329,8 @@ class Workspace:
             add_children=add_children,
         )
 
+        self.finalize()
+
     def finalize(self):
         """ Finalize the geoh5 file by re-building the Root"""
         H5Writer.finalize(self)
@@ -423,7 +425,7 @@ class Workspace:
         return entity_list
 
     def create_entity(
-        self, entity_class, name: str, uid: Optional[uuid.UUID] = uuid.uuid4(), **kwargs
+        self, entity_class, name: str, uid: uuid.UUID = uuid.uuid4(), **kwargs
     ):
         """
         create_entity(entity_class, name, uuid, type_uuid)
@@ -523,16 +525,19 @@ class Workspace:
             if "attributes" in kwargs.keys():
                 for attr, item in kwargs["attributes"].items():
                     try:
+                        if attr == "property_groups":
+                            item = self.fetch_property_groups(uid)
+
                         setattr(created_entity, attr, item)
                     except AttributeError:
-                        print(f"Could not set attribute {attr}")
+                        pass  # print(f"Could not set attribute {attr}")
 
             if "type_attributes" in kwargs.keys():
                 for attr, item in kwargs["type_attributes"].items():
                     try:
                         setattr(created_entity.entity_type, attr, item)
                     except AttributeError:
-                        print(f"Could not set attribute {attr}")
+                        pass
 
         return created_entity
 
@@ -755,6 +760,43 @@ class Workspace:
             Array of z_delimiters
         """
         return H5Reader.fetch_delimiters(self._h5file, self._base, uid)
+
+    def fetch_property_groups(self, uid: uuid.UUID) -> List[PropertyGroup]:
+        """
+        Get the octree cells ordering from the source h5 file
+
+        Parameters
+        ----------
+        uid: uuid.UUID
+            Unique identifier of target entity
+
+        Returns
+        -------
+        value: numpy.ndarray(int)
+            Array of [i, j, k, dimension] defining the octree mesh
+        """
+
+        group_dict = H5Reader.fetch_property_groups(self._h5file, self._base, uid)
+
+        property_groups = []
+        for pg_id, attrs in group_dict.items():
+
+            group = PropertyGroup(uid=uuid.UUID(pg_id))
+            for attr, val in attrs.items():
+
+                if attr == "association":
+                    val = getattr(
+                        data.data_association_enum.DataAssociationEnum, val.upper()
+                    )
+
+                try:
+                    setattr(group, attr, val)
+                except AttributeError:
+                    pass
+
+            property_groups.append(group)
+
+        return property_groups
 
     def activate(self):
         """ Makes this workspace the active one.

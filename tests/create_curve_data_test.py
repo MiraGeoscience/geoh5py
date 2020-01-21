@@ -37,10 +37,10 @@ def test_create_curve_data():
     workspace.save_entity(curve)
     workspace.finalize()
 
-    # Read the data back in
-    obj_list = workspace.list_objects
+    # Re-open the workspace and read data back in
+    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
 
-    obj = workspace.get_entity(obj_list[0])[0]
+    obj = workspace.get_entity(curve_name)[0]
     assert all((obj.vertices() == xyz).flatten()), "Data locations differ from input"
 
     data_vertex = workspace.get_entity("vertexValues")[0]
@@ -63,7 +63,9 @@ def test_create_curve_data():
     vertex_data.values = new_vals
     workspace.save_entity(curve)
 
-    # Read the data back in
+    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+
+    # Read the data back in again
     obj = workspace.get_entity(curve_name)[0]
     assert all(
         (obj.vertices() == new_locs).flatten()

@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import h5py
 from numpy import c_, int8, ndarray, r_
@@ -94,17 +94,15 @@ class H5Reader:
             # Special case for octree
             if attr in ["nu", "nv", "nw"]:
                 attr = attr.replace("n", "") + "_count"
-
             attributes[attr] = value
 
         for key, value in entity["Type"].attrs.items():
             attr = key.replace(" ", "_").lower()
-
-            # Special case for octree
-            if attr in ["nu", "nv", "nw"]:
-                attr = attr.replace("n", "") + "_count"
-
             type_attributes[attr] = value
+
+        # Check if the entity has property_group
+        if "PropertyGroups" in entity.keys():
+            attributes["property_groups"] = []
 
         project.close()
 
@@ -342,11 +340,11 @@ class H5Reader:
         return octree_cells
 
     @classmethod
-    def get_project_tree(cls, h5file: str, base: str) -> dict:
+    def fetch_property_groups(
+        cls, h5file: Optional[str], base: str, uid: uuid.UUID
+    ) -> Dict[str, Dict[str, str]]:
         """
-        get_project_tree(h5file, base)
-
-        Get the values of an entity
+        fetch_property_groups(h5file, base, uid)
 
         Parameters
         ----------
@@ -356,86 +354,127 @@ class H5Reader:
         base: str
             Name of the base project group ['GEOSCIENCE']
 
+        uid: uuid.UUID
+            Unique identifier of the target entity
+
         Returns
         -------
-        tree: dict
-            Dictionary of group, objects, data and types found in the geoh5 file.
-            Used for light reference to attributes, parent and children.
-            {uuid:
-                {'name': str},
-                {'entity_type': str},
-                {'parent': uuid},
-                {'children': [uuid1, uuid2,....],
-             ...
-             }
+        property_group_attributes: dict
+            Dictionary of property_groups attributes
+
         """
         project = h5py.File(h5file, "r")
 
-        tree: dict = {}
+        pg_handle = project[base]["Objects"][cls.uuid_str(uid)]["PropertyGroups"]
 
-        # Load all entity types
-        entity_type_classes = ["Data types", "Group types", "Object types"]
-        for entity_type_class in entity_type_classes:
-            for str_uid, entity_type in project[base]["Types"][
-                entity_type_class
-            ].items():
-                uid = uuid.UUID(str_uid)
-                tree[uid] = {}
-                tree[uid]["entity_type"] = entity_type_class.replace(" ", "_").lower()[
-                    :-1
-                ]
-                # for key, value in entity_type.attrs.items():
-                tree[uid]["name"] = entity_type.attrs["Name"]
+        property_groups: Dict[str, Dict[str, str]] = {}
+        for pg_uid in pg_handle.keys():
 
-        # Load all entities with relationships
-        entity_classes = ["Data", "Objects", "Groups"]
-        for entity_class in entity_classes:
+            property_groups[pg_uid] = {}
+            for attr, value in pg_handle[pg_uid].attrs.items():
+                attr = attr.replace(" ", "_").lower()
 
-            for str_uid, entity in project[base][entity_class].items():
-                uid = uuid.UUID(str_uid)
+                if attr == "properties":
+                    value = value.tolist()
+                property_groups[pg_uid][attr] = value
 
-                if uid not in tree.keys():
-                    tree[uid] = {}
-                    tree[uid]["parent"] = []
+        return property_groups
 
-                tree[uid]["entity_type"] = entity_class.replace("s", "").lower()
-                # for key, value in entity.attrs.items():
-                tree[uid]["name"] = entity.attrs["Name"]
-
-                tree[uid]["type"] = uuid.UUID(entity["Type"].attrs["ID"])
-                tree[uid]["children"] = []
-
-                if entity_class in ["Groups", "Objects"]:
-
-                    # Assign as parent to data and data children
-                    for key, value in entity["Data"].items():
-                        if uuid.UUID(value.attrs["ID"]) not in tree.keys():
-                            tree[uuid.UUID(value.attrs["ID"])] = {}
-
-                        tree[uuid.UUID(value.attrs["ID"])]["parent"] = uid
-                        tree[uid]["children"] += [uuid.UUID(key)]
-
-                if entity_class == "Groups":
-
-                    # Assign as parent to data and data children
-                    for key, value in entity["Objects"].items():
-                        if uuid.UUID(value.attrs["ID"]) not in tree.keys():
-                            tree[uuid.UUID(value.attrs["ID"])] = {}
-
-                        tree[uuid.UUID(value.attrs["ID"])]["parent"] = uid
-                        tree[uid]["children"] += [uuid.UUID(key)]
-
-                    # Assign as parent to data and data children
-                    for key, value in entity["Groups"].items():
-                        if uuid.UUID(value.attrs["ID"]) not in tree.keys():
-                            tree[uuid.UUID(value.attrs["ID"])] = {}
-
-                        tree[uuid.UUID(value.attrs["ID"])]["parent"] = uid
-                        tree[uid]["children"] += [uuid.UUID(key)]
-
-        project.close()
-
-        return tree
+    # @classmethod
+    # def get_project_tree(cls, h5file: str, base: str) -> dict:
+    #     """
+    #     get_project_tree(h5file, base)
+    #
+    #     Get the values of an entity
+    #
+    #     Parameters
+    #     ----------
+    #     h5file: str
+    #         Name of the project h5file
+    #
+    #     base: str
+    #         Name of the base project group ['GEOSCIENCE']
+    #
+    #     Returns
+    #     -------
+    #     tree: dict
+    #         Dictionary of group, objects, data and types found in the geoh5 file.
+    #         Used for light reference to attributes, parent and children.
+    #         {uuid:
+    #             {'name': str},
+    #             {'entity_type': str},
+    #             {'parent': uuid},
+    #             {'children': [uuid1, uuid2,....],
+    #          ...
+    #          }
+    #     """
+    #     project = h5py.File(h5file, "r")
+    #
+    #     tree: dict = {}
+    #
+    #     # Load all entity types
+    #     entity_type_classes = ["Data types", "Group types", "Object types"]
+    #     for entity_type_class in entity_type_classes:
+    #         for str_uid, entity_type in project[base]["Types"][
+    #             entity_type_class
+    #         ].items():
+    #             uid = uuid.UUID(str_uid)
+    #             tree[uid] = {}
+    #             tree[uid]["entity_type"] = entity_type_class.replace(" ", "_").lower()[
+    #                 :-1
+    #             ]
+    #             # for key, value in entity_type.attrs.items():
+    #             tree[uid]["name"] = entity_type.attrs["Name"]
+    #
+    #     # Load all entities with relationships
+    #     entity_classes = ["Data", "Objects", "Groups"]
+    #     for entity_class in entity_classes:
+    #
+    #         for str_uid, entity in project[base][entity_class].items():
+    #             uid = uuid.UUID(str_uid)
+    #
+    #             if uid not in tree.keys():
+    #                 tree[uid] = {}
+    #                 tree[uid]["parent"] = []
+    #
+    #             tree[uid]["entity_type"] = entity_class.replace("s", "").lower()
+    #             # for key, value in entity.attrs.items():
+    #             tree[uid]["name"] = entity.attrs["Name"]
+    #
+    #             tree[uid]["type"] = uuid.UUID(entity["Type"].attrs["ID"])
+    #             tree[uid]["children"] = []
+    #
+    #             if entity_class in ["Groups", "Objects"]:
+    #
+    #                 # Assign as parent to data and data children
+    #                 for key, value in entity["Data"].items():
+    #                     if uuid.UUID(value.attrs["ID"]) not in tree.keys():
+    #                         tree[uuid.UUID(value.attrs["ID"])] = {}
+    #
+    #                     tree[uuid.UUID(value.attrs["ID"])]["parent"] = uid
+    #                     tree[uid]["children"] += [uuid.UUID(key)]
+    #
+    #             if entity_class == "Groups":
+    #
+    #                 # Assign as parent to data and data children
+    #                 for key, value in entity["Objects"].items():
+    #                     if uuid.UUID(value.attrs["ID"]) not in tree.keys():
+    #                         tree[uuid.UUID(value.attrs["ID"])] = {}
+    #
+    #                     tree[uuid.UUID(value.attrs["ID"])]["parent"] = uid
+    #                     tree[uid]["children"] += [uuid.UUID(key)]
+    #
+    #                 # Assign as parent to data and data children
+    #                 for key, value in entity["Groups"].items():
+    #                     if uuid.UUID(value.attrs["ID"]) not in tree.keys():
+    #                         tree[uuid.UUID(value.attrs["ID"])] = {}
+    #
+    #                     tree[uuid.UUID(value.attrs["ID"])]["parent"] = uid
+    #                     tree[uid]["children"] += [uuid.UUID(key)]
+    #
+    #     project.close()
+    #
+    #     return tree
 
     @staticmethod
     def bool_value(value: int8) -> bool:

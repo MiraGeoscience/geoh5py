@@ -29,7 +29,7 @@ class FloatData(Data):
 
         """
         if self.existing_h5_entity:
-            self._update_h5 = True
+            self.update_h5 = ["values"]
 
         self._values = ravel(values)
 

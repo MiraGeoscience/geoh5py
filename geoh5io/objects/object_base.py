@@ -1,10 +1,11 @@
 import uuid
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Union
 
 from numpy import ndarray
 
 from geoh5io.data import Data
+from geoh5io.groups import PropertyGroup
 from geoh5io.shared import Entity
 
 from .object_type import ObjectType
@@ -21,6 +22,9 @@ class ObjectBase(Entity):
         self.__type = object_type
         self._allow_move = True
         # self._clipping_ids: List[uuid.UUID] = []
+
+        # self.has_property_groups = False
+        self._property_groups: List[PropertyGroup] = []
 
         object_type.workspace._register_object(self)
 
@@ -54,6 +58,19 @@ class ObjectBase(Entity):
     def entity_type(self) -> ObjectType:
         return self.__type
 
+    @property
+    def property_groups(self) -> List[PropertyGroup]:
+
+        return self._property_groups
+
+    @property_groups.setter
+    def property_groups(self, prop_groups: List[PropertyGroup]):
+
+        # First time start with an empty list
+        if self.existing_h5_entity:
+            self.update_h5 = ["property_groups"]
+        self._property_groups = self.property_groups + prop_groups
+
     @classmethod
     def find_or_create_type(cls, workspace: "workspace.Workspace") -> ObjectType:
         return ObjectType.find_or_create(workspace, cls)
@@ -64,7 +81,7 @@ class ObjectBase(Entity):
         ...
 
     @classmethod
-    def create(cls, workspace: "workspace.Workspace", **kwargs):
+    def create(cls, workspace: "workspace.Workspace", save_on_creation=True, **kwargs):
         """
         create(
             locations, workspace=None, name="NewPoints",
@@ -114,7 +131,7 @@ class ObjectBase(Entity):
             try:
                 setattr(new_object, attr, item)
             except AttributeError:
-                print(f"Could not set attribute {attr}")
+                pass
 
         # Add parent-child relationship
         if "parent" in kwargs.keys():
@@ -136,16 +153,96 @@ class ObjectBase(Entity):
 
             return tuple([new_object] + data_objects)
 
+        if save_on_creation:
+            workspace.save_entity(new_object)
+
         return new_object
 
-    def add_data(self, data: dict):
+    def add_property_group(self, groups: dict):
+        """
+        add_property_group(groups)
+
+        Create property groups from given group names and properties.
+        e.g.:
+            groups = {
+                "MyGroupName1": {"properties":[data1.uid, data2.uid,...],
+                "MyGroupName2": {"properties":[data3.uid, data4.uid,...}
+            }
+        All given data.uid must be children of the object.
+
+        Parameter
+        ---------
+        groups: dict
+            Dictionary of arguments supported by the geoh5io.PropertyGroup object.
+
+        """
+
+        pg_list = []
+        for name, attrs in groups.items():
+
+            assert (
+                "properties" in attrs.keys()
+            ), "Each group must at least have 'properties' assigned"
+            children_uid = [child.uid for child in self.children]
+
+            new_pg = PropertyGroup()
+            new_pg.group_name = name
+            for uid in attrs["properties"]:
+                assert isinstance(uid, uuid.UUID), "Given uid must be of type uuid.UUID"
+                assert (
+                    uid in children_uid
+                ), f"Given uid {uid} in group {name} does not match any known children"
+
+            for attr, val in attrs.items():
+                try:
+                    setattr(new_pg, attr, val)
+                except AttributeError:
+                    pass
+
+            pg_list.append(new_pg)
+
+        self.property_groups = pg_list
+
+    def get_property_group(
+        self, group_id: Union[str, uuid.UUID]
+    ) -> List[PropertyGroup]:
+        """
+        get_property_group(group_name)
+
+        Retrieve a property_group from one of its identifier, either by group_name or uuid
+
+        Parameters
+        ----------
+        group_id: str | uuid.UUID
+            PropertyGroup identifier, either group_name or uuid
+
+        Returns
+        -------
+        object_list: List[PropertyGroup]
+            List of PropertyGroup with the same given group_name
+        """
+
+        if isinstance(group_id, uuid.UUID):
+            groups_list = [pg for pg in self.property_groups if pg.uid == group_id]
+
+        else:  # Extract all groups uuid with matching group_id
+            groups_list = [
+                pg for pg in self.property_groups if pg.group_name == group_id
+            ]
+
+        return groups_list
+
+    def add_data(self, data: dict, save_on_creation=True):
         """
         add_data(data)
 
         Create data with association
 
 
-        :return:
+        Returns
+        -------
+        data: list[Data]
+            List of created Data objects
         """
         data_objects = []
         for key, value in data.items():
@@ -163,6 +260,9 @@ class ObjectBase(Entity):
 
                 # Add parent-child relationship
                 data_object.parent = self
+
+                if save_on_creation:
+                    self.workspace.save_entity(data_object)
 
                 data_objects.append(data_object)
 
