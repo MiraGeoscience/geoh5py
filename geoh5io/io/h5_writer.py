@@ -38,7 +38,7 @@ class H5Writer:
         h5file: h5py.File
             Pointer to a geoh5 file. Active link if "close_file" is False)
         """
-        attr = workspace.get_workspace_attributes()
+        # attr = workspace.get_workspace_attributes()
 
         # Take default name
         if file is None:
@@ -48,11 +48,9 @@ class H5Writer:
         h5file = h5py.File(file, "w")
 
         # Write the workspace group
-        project = h5file.create_group(workspace.base_name)
-        project.attrs.create("Distance unit", attr["distance_unit"], dtype=cls.str_type)
-        project.attrs.create("Version", attr["version"], dtype=type(attr["version"]))
-        project.attrs.create("Contributors", attr["contributors"], dtype=cls.str_type)
-        project.attrs.create("GA Version", attr["ga_version"], dtype=cls.str_type)
+        project = h5file.create_group(workspace.name)
+
+        cls.add_attributes(file, workspace, close_file=False)
 
         # Create base entity structure for geoh5
         project.create_group("Data")
@@ -63,11 +61,9 @@ class H5Writer:
         types.create_group("Group types")
         types.create_group("Object types")
 
-        workspace_entity = workspace.get_entity("Workspace")[0]
-
-        workspace_handle = H5Writer.add_entity(file, workspace_entity, close_file=False)
-
-        project["Root"] = workspace_handle
+        root_entity = workspace.get_entity("Workspace")[0]
+        root_handle = H5Writer.add_entity(file, root_entity, close_file=False)
+        project["Root"] = root_handle
 
         if close_file:
             h5file.close()
@@ -184,8 +180,8 @@ class H5Writer:
         workspace_group: Entity = workspace.get_entity("Workspace")[0]
         root_handle = H5Writer.fetch_handle(h5file, workspace_group)
 
-        del h5file[workspace.base_name]["Root"]
-        h5file[workspace.base_name]["Root"] = root_handle
+        del h5file[workspace.name]["Root"]
+        h5file[workspace.name]["Root"] = root_handle
 
         # # Refresh the project tree
         # workspace.tree = H5Reader.get_project_tree(
@@ -415,10 +411,10 @@ class H5Writer:
 
         base = list(h5file.keys())[0]
 
-        # tree = entity.workspace.tree
-        uid = entity.uid
+        if entity.name == base:
+            return h5file[base]
 
-        # entity_type = tree[uid]["entity_type"].capitalize()
+        uid = entity.uid
 
         if isinstance(entity, Data):
             entity_type = "Data"
@@ -428,9 +424,6 @@ class H5Writer:
             entity_type = "Groups"
         else:
             return None
-
-        # if entity_type != "Data":
-        #     entity_type += "s"
 
         # Check if already in the project
         if cls.uuid_str(uid) in list(h5file[base][entity_type].keys()):

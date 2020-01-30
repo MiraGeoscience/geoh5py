@@ -1,5 +1,5 @@
 import uuid
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import h5py
 from numpy import c_, int8, ndarray, r_
@@ -47,11 +47,9 @@ class H5Reader:
         return project_attrs
 
     @classmethod
-    def fetch_attributes(
-        cls, h5file: str, base: str, uid: uuid.UUID, entity_type: str
-    ) -> Tuple[dict, dict]:
+    def fetch_project_attributes(cls, h5file: str) -> Dict[Any, Any]:
         """
-        fetch_attributes(h5file, base, uid, entity_type)
+        fetch_project_attributes(h5file)
 
         Get attributes og object from geoh5
 
@@ -60,8 +58,38 @@ class H5Reader:
         h5file: str
             Name of the project h5file
 
-        base: str
-            Name of the base project group ['GEOSCIENCE']
+        Returns
+        -------
+        attributes: dict
+            Dictionary of attributes from geoh5
+        """
+        project = h5py.File(h5file, "r")
+        name = list(project.keys())[0]
+        attributes = {}
+
+        for key, value in project[name].attrs.items():
+            attributes[key] = value
+
+        project.close()
+
+        return attributes
+
+    @classmethod
+    def fetch_attributes(
+        cls, h5file: str, name: str, uid: uuid.UUID, entity_type: str
+    ) -> Tuple[dict, dict]:
+        """
+        fetch_attributes(h5file, name, uid, entity_type)
+
+        Get attributes og object from geoh5
+
+        Parameters
+        ----------
+        h5file: str
+            Name of the project h5file
+
+        name: str
+            Name of the project group ['GEOSCIENCE']
 
         uid: uuid.UUID
             Unique identifier
@@ -79,14 +107,14 @@ class H5Reader:
         type_attributes = {}
         if "type" in entity_type:
             entity_type = entity_type.replace("_", " ").capitalize() + "s"
-            entity = project[base]["Types"][entity_type][cls.uuid_str(uid)]
+            entity = project[name]["Types"][entity_type][cls.uuid_str(uid)]
         elif entity_type == "Root":
-            entity = project[base][entity_type]
+            entity = project[name][entity_type]
         else:
             entity_type = entity_type.capitalize()
             if entity_type in ["Group", "Object"]:
                 entity_type += "s"
-            entity = project[base][entity_type][cls.uuid_str(uid)]
+            entity = project[name][entity_type][cls.uuid_str(uid)]
 
         for key, value in entity.attrs.items():
             attributes[key] = value

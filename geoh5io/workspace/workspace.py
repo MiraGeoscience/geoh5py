@@ -4,7 +4,6 @@ import inspect
 import uuid
 import weakref
 from contextlib import contextmanager
-from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     ClassVar,
@@ -18,6 +17,7 @@ from typing import (
 )
 from weakref import ReferenceType
 
+import h5py
 import numpy as np
 
 from geoh5io import data, groups, objects
@@ -36,36 +36,56 @@ if TYPE_CHECKING:
     from geoh5io.shared import entity_type
 
 
-@dataclass
-class WorkspaceAttributes:
-    contributors = np.asarray(["UserName"], dtype="object")
-    distance_unit = "meter"
-    ga_version = "1"
-    version = 1.0
-    name = "Workspace"
+# @dataclass
+# class WorkspaceAttributes:
+#     contributors = np.asarray(["UserName"], dtype="object")
+#     distance_unit = "meter"
+#     ga_version = "1"
+#     version = 1.0
+#     name = "Workspace"
 
 
 class Workspace:
 
     _active_ref: ClassVar[ReferenceType[Workspace]] = type(None)  # type: ignore
 
+    attribute_map = {
+        "Contributors": "contributors",
+        "Distance unit": "distance_unit",
+        "GA Version": "ga_version",
+        "Version": "version",
+    }
+
     def __init__(self, h5file: str = "Analyst.geoh5", root: RootGroup = None):
-        # self._uid = None
-        self._workspace_attributes = None
-        self._base = "GEOSCIENCE"
-        self._tree: Dict = {}
+
+        self._contributors = np.asarray(
+            ["UserName"], dtype=h5py.special_dtype(vlen=str)
+        )
+        self._distance_unit = "meter"
+        self._ga_version = "1"
+        self._version = 1.0
+
+        self._name = "GEOSCIENCE"
+
         self._types: Dict[uuid.UUID, ReferenceType[entity_type.EntityType]] = {}
         self._groups: Dict[uuid.UUID, ReferenceType[group.Group]] = {}
         self._objects: Dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
         self._data: Dict[uuid.UUID, ReferenceType[data.Data]] = {}
         self._update_h5 = False
-        self.h5file = h5file
+        self._h5file = h5file
 
         # Create a root, either from file or from scratch
         try:
             open(self.h5file)
+
+            proj_attributes = H5Reader.fetch_project_attributes(self.h5file)
+
+            for key, attr in proj_attributes.items():
+                setattr(self, self.attribute_map[key], attr)
+
+            # Get the Root attributes
             attributes, type_attributes = H5Reader.fetch_attributes(
-                self.h5file, self._base, uuid.uuid4(), "Root"
+                self.h5file, self.name, uuid.uuid4(), "Root"
             )
             self._root = self.create_entity(
                 RootGroup,
@@ -83,17 +103,21 @@ class Workspace:
             H5Writer.create_geoh5(self)
 
     @property
-    def base_name(self):
+    def ga_version(self):
         """
         @property
-        base_name
+        ga_version
 
         Returns
         -------
-        name: str
-            Name of the project ['GEOSCIENCE']
+        ga_version: str="Unknown"
+            Geoscience Analyst version
         """
-        return self._base
+        return self._ga_version
+
+    @ga_version.setter
+    def ga_version(self, value: str):
+        self._ga_version = value
 
     @property
     def version(self):
@@ -103,16 +127,61 @@ class Workspace:
 
         Returns
         -------
-        version: List(float)
-            (Version, Geoscience Analyst version)
+        version: float=1.0
+            Project version
         """
-        if getattr(self, "_workspace_attributes", None) is None:
-            self.get_workspace_attributes()
+        return self._version
 
-        return (
-            self._workspace_attributes["version"],
-            self._workspace_attributes["ga_version"],
-        )
+    @version.setter
+    def version(self, value: float):
+        self._version = value
+
+    @property
+    def distance_unit(self):
+        """
+        @property
+        distance_unit
+
+        Returns
+        -------
+        distance_unit: str="meter"
+            Distance unit used by the project
+        """
+        return self._distance_unit
+
+    @distance_unit.setter
+    def distance_unit(self, value: str):
+        self._distance_unit = value
+
+    @property
+    def contributors(self):
+        """
+        @property
+        contributors
+
+        Returns
+        -------
+        contributors: List[str]
+            List of project contributors name
+        """
+        return self._contributors
+
+    @contributors.setter
+    def contributors(self, value: List[str]):
+        self._contributors = np.asarray(value, dtype="object")
+
+    @property
+    def name(self):
+        """
+        @property
+        base_name
+
+        Returns
+        -------
+        name: str
+            Name of the project ['GEOSCIENCE']
+        """
+        return self._name
 
     @property
     def list_groups_name(self):
@@ -193,7 +262,7 @@ class Workspace:
         return self._root
 
     @property
-    def h5file(self) -> Optional[str]:
+    def h5file(self) -> str:
         """
         @property
         h5file
@@ -205,11 +274,6 @@ class Workspace:
         """
 
         return self._h5file
-
-    @h5file.setter
-    def h5file(self, h5file):
-
-        self._h5file = h5file
 
     @property
     def update_h5(self) -> bool:
@@ -462,12 +526,12 @@ class Workspace:
             entity_type = "data"
 
         children_list = H5Reader.fetch_children(
-            self._h5file, self._base, entity.uid, entity_type
+            self.h5file, self.name, entity.uid, entity_type
         )
 
         for uid, child_type in children_list.items():
             attributes, type_attributes = H5Reader.fetch_attributes(
-                self._h5file, self._base, uid, child_type
+                self.h5file, self.name, uid, child_type
             )
 
             recovered_object = self.create_entity(
@@ -505,7 +569,7 @@ class Workspace:
         value: numpy.array
             Array of values
         """
-        return H5Reader.fetch_values(self._h5file, self._base, uid)
+        return H5Reader.fetch_values(self.h5file, self.name, uid)
 
     def fetch_vertices(self, uid: uuid.UUID) -> Coord3D:
         """
@@ -521,7 +585,7 @@ class Workspace:
         coordinates: Coord3D
             Coordinate entity with locations
         """
-        return H5Reader.fetch_vertices(self._h5file, self._base, uid)
+        return H5Reader.fetch_vertices(self.h5file, self.name, uid)
 
     def fetch_cells(self, uid: uuid.UUID) -> Cell:
         """
@@ -537,7 +601,7 @@ class Workspace:
         cells: geoh5io.Cell
             Cell object with vertices index
         """
-        return H5Reader.fetch_cells(self._h5file, self._base, uid)
+        return H5Reader.fetch_cells(self.h5file, self.name, uid)
 
     def fetch_octree_cells(self, uid: uuid.UUID) -> np.ndarray:
         """
@@ -553,7 +617,7 @@ class Workspace:
         value: numpy.ndarray(int)
             Array of [i, j, k, dimension] defining the octree mesh
         """
-        return H5Reader.fetch_octree_cells(self._h5file, self._base, uid)
+        return H5Reader.fetch_octree_cells(self.h5file, self.name, uid)
 
     def fetch_delimiters(
         self, uid: uuid.UUID
@@ -579,7 +643,7 @@ class Workspace:
         z_delimiters: numpy.array
             Array of z_delimiters
         """
-        return H5Reader.fetch_delimiters(self._h5file, self._base, uid)
+        return H5Reader.fetch_delimiters(self.h5file, self.name, uid)
 
     def fetch_property_groups(self, uid: uuid.UUID) -> List[PropertyGroup]:
         """
@@ -596,7 +660,7 @@ class Workspace:
             Array of [i, j, k, dimension] defining the octree mesh
         """
 
-        group_dict = H5Reader.fetch_property_groups(self._h5file, self._base, uid)
+        group_dict = H5Reader.fetch_property_groups(self.h5file, self.name, uid)
 
         property_groups = []
         for pg_id, attrs in group_dict.items():
@@ -674,21 +738,21 @@ class Workspace:
             or self.find_object(entity_uid)
         )
 
-    def get_workspace_attributes(self):
-        """ Fetch the workspace attributes
-        """
-        if getattr(self, "_workspace_attributes", None) is None:
-
-            self._workspace_attributes = {}
-
-            for attr in dir(WorkspaceAttributes()):
-
-                if "__" not in attr:
-                    self._workspace_attributes[attr] = getattr(
-                        WorkspaceAttributes(), attr
-                    )
-
-        return self._workspace_attributes
+    # def get_workspace_attributes(self):
+    #     """ Fetch the workspace attributes
+    #     """
+    #     if getattr(self, "_workspace_attributes", None) is None:
+    #
+    #         self._workspace_attributes = {}
+    #
+    #         for attr in dir(WorkspaceAttributes()):
+    #
+    #             if "__" not in attr:
+    #                 self._workspace_attributes[attr] = getattr(
+    #                     WorkspaceAttributes(), attr
+    #                 )
+    #
+    #     return self._workspace_attributes
 
 
 @contextmanager
