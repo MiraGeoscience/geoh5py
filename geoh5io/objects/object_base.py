@@ -15,6 +15,12 @@ if TYPE_CHECKING:
 
 
 class ObjectBase(Entity):
+
+    attribute_map = Entity.attribute_map.copy()
+    attribute_map.update(
+        {"Last focus": "last_focus", "PropertyGroups": "property_groups"}
+    )
+
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         assert object_type is not None
         super().__init__(name, uid)

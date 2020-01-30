@@ -14,23 +14,19 @@ class Octree(ObjectBase):
         fields=(0x4EA87376, 0x3ECE, 0x438B, 0xBF, 0x12, 0x3479733DED46)
     )
 
-    attribute_map = {
-        "Allow delete": "allow_delete",
-        "Allow move": "allow_rename",
-        "Allow rename": "allow_rename",
-        "ID": "uid",
-        "Name": "name",
-        "Last focus": "last_focus",
-        "NU": "u_count",
-        "NV": "v_count",
-        "NW": "w_count",
-        "Origin": "origin",
-        "Public": "public",
-        "Rotation": "rotation",
-        "U Cell Size": "u_cell_size",
-        "V Cell Size": "v_cell_size",
-        "W Cell Size": "w_cell_size",
-    }
+    attribute_map = ObjectBase.attribute_map.copy()
+    attribute_map.update(
+        {
+            "NU": "u_count",
+            "NV": "v_count",
+            "NW": "w_count",
+            "Origin": "origin",
+            "Rotation": "rotation",
+            "U Cell Size": "u_cell_size",
+            "V Cell Size": "v_cell_size",
+            "W Cell Size": "w_cell_size",
+        }
+    )
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)

@@ -178,8 +178,8 @@ class Workspace:
 
         Returns
         -------
-        name: str
-            Name of the project ['GEOSCIENCE']
+        name: str='GEOSCIENCE'
+            Name of the project
         """
         return self._name
 

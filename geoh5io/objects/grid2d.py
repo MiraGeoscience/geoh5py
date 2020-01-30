@@ -11,23 +11,19 @@ class Grid2D(ObjectBase):
         fields=(0x48F5054A, 0x1C5C, 0x4CA4, 0x90, 0x48, 0x80F36DC60A06)
     )
 
-    attribute_map = {
-        "Allow delete": "allow_delete",
-        "Allow move": "allow_rename",
-        "Allow rename": "allow_rename",
-        "ID": "uid",
-        "Dip": "dip",
-        "Last focus": "last_focus",
-        "Name": "name",
-        "U Count": "u_count",
-        "V Count": "v_count",
-        "Origin": "origin",
-        "Public": "public",
-        "Rotation": "rotation",
-        "U Size": "u_cell_size",
-        "V Size": "v_cell_size",
-        "Vertical": "vertical",
-    }
+    attribute_map = ObjectBase.attribute_map.copy()
+    attribute_map.update(
+        {
+            "Dip": "dip",
+            "U Count": "u_count",
+            "V Count": "v_count",
+            "Origin": "origin",
+            "Rotation": "rotation",
+            "U Size": "u_cell_size",
+            "V Size": "v_cell_size",
+            "Vertical": "vertical",
+        }
+    )
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)

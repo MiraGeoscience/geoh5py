@@ -13,17 +13,6 @@ class Curve(Points):
         fields=(0x6A057FDC, 0xB355, 0x11E3, 0x95, 0xBE, 0xFD84A7FFCB88)
     )
 
-    attribute_map = {
-        "Allow delete": "allow_delete",
-        "Allow move": "allow_rename",
-        "Allow rename": "allow_rename",
-        "ID": "uid",
-        "Last focus": "last_focus",
-        "Name": "name",
-        "Public": "public",
-        "PropertyGroups": "property_groups",
-    }
-
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)
 
