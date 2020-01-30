@@ -1,6 +1,6 @@
 import uuid
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
 from numpy import ndarray
 
@@ -22,8 +22,6 @@ class ObjectBase(Entity):
         self.__type = object_type
         self._allow_move = True
         # self._clipping_ids: List[uuid.UUID] = []
-
-        # self.has_property_groups = False
         self._property_groups: List[PropertyGroup] = []
 
         object_type.workspace._register_object(self)
@@ -66,9 +64,12 @@ class ObjectBase(Entity):
     @property_groups.setter
     def property_groups(self, prop_groups: List[PropertyGroup]):
 
+        for prop_group in prop_groups:
+            prop_group.parent = self
+
         # First time start with an empty list
         if self.existing_h5_entity:
-            self.update_h5 = ["property_groups"]
+            self.update_h5 = "property_groups"
         self._property_groups = self.property_groups + prop_groups
 
     @classmethod
@@ -158,54 +159,80 @@ class ObjectBase(Entity):
 
         return new_object
 
-    def add_property_group(self, groups: dict):
+    def add_data_to_group(
+        self, data: Union[Data, uuid.UUID, str], group_id: Union[str, uuid.UUID]
+    ):
         """
-        add_property_group(groups)
+        add_data_to_group(data, group_id)
 
-        Create property groups from given group names and properties.
+        Append data to a property group where the data can be a Data object or a uuid
         e.g.:
-            groups = {
-                "MyGroupName1": {"properties":[data1.uid, data2.uid,...],
-                "MyGroupName2": {"properties":[data3.uid, data4.uid,...}
-            }
-        All given data.uid must be children of the object.
+            data = [FloatData, data.uid]
+
+        All given data must be children of the object.
+        The given group_id name is created if it does not exist already.
 
         Parameter
         ---------
-        groups: dict
-            Dictionary of arguments supported by the geoh5io.PropertyGroup object.
-
+        data: Data or uuid.UUID
+            Data object or uuid
+        group: str or PropertyGroup
+            PropertyGroup or name of a group to be used
         """
 
-        pg_list = []
-        for name, attrs in groups.items():
+        children_uid = [child.uid for child in self.children]
 
-            assert (
-                "properties" in attrs.keys()
-            ), "Each group must at least have 'properties' assigned"
-            children_uid = [child.uid for child in self.children]
+        # Create or retrieve a property_group from the object
+        prop_group = self.create_property_group(group_id)
 
-            new_pg = PropertyGroup()
-            new_pg.group_name = name
-            for uid in attrs["properties"]:
-                assert isinstance(uid, uuid.UUID), "Given uid must be of type uuid.UUID"
-                assert (
-                    uid in children_uid
-                ), f"Given uid {uid} in group {name} does not match any known children"
+        if isinstance(data, Data):
+            uid = data.uid
 
-            for attr, val in attrs.items():
+        assert (
+            uid in children_uid
+        ), f"Given data with uuid {uid} does not match any known children"
+
+        prop_group.properties = [uid]
+        self.update_h5 = "property_groups"
+
+    def create_property_group(self, group_name, **kwargs):
+        """
+        create_property_group(name, **kwargs)
+
+        Create property groups from given group names and properties.
+        An existing property_group is returned if one exists with the same name.
+
+        Parameter
+        ---------
+        group_name: str
+            Name given to the geoh5io.PropertyGroup object.
+
+        Returns
+        -------
+        group: PropertyGroup
+            A new or existing property_group object
+        """
+        # Check if the object has it
+        prop_group = self.get_property_group(group_name)
+
+        if prop_group is None:
+            prop_group = PropertyGroup(group_name=group_name)
+            self.property_groups = [prop_group]
+
+            for attr, val in kwargs.items():
                 try:
-                    setattr(new_pg, attr, val)
+                    setattr(prop_group, attr, val)
                 except AttributeError:
                     pass
 
-            pg_list.append(new_pg)
+            prop_group.parent = self
+            self.update_h5 = "property_groups"
 
-        self.property_groups = pg_list
+        return prop_group
 
     def get_property_group(
         self, group_id: Union[str, uuid.UUID]
-    ) -> List[PropertyGroup]:
+    ) -> Optional[PropertyGroup]:
         """
         get_property_group(group_name)
 
@@ -230,9 +257,14 @@ class ObjectBase(Entity):
                 pg for pg in self.property_groups if pg.group_name == group_id
             ]
 
-        return groups_list
+        if len(groups_list) < 1:
+            return None
 
-    def add_data(self, data: dict, save_on_creation=True):
+        return groups_list[0]
+
+    def add_data(
+        self, data: dict, property_group: str = None, save_on_creation: bool = True
+    ):
         """
         add_data(data)
 
@@ -244,6 +276,7 @@ class ObjectBase(Entity):
         data: list[Data]
             List of created Data objects
         """
+
         data_objects = []
         for key, value in data.items():
             if isinstance(value[1], ndarray):
@@ -263,6 +296,9 @@ class ObjectBase(Entity):
 
                 if save_on_creation:
                     self.workspace.save_entity(data_object)
+
+                if property_group is not None:
+                    self.add_data_to_group(data_object, property_group)
 
                 data_objects.append(data_object)
 

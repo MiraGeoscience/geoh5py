@@ -1,6 +1,6 @@
 import uuid
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Union
 
 if TYPE_CHECKING:
     from geoh5io import shared
@@ -32,16 +32,22 @@ class Entity(ABC):
         self._existing_h5_entity = value
 
     @property
-    def update_h5(self) -> List[str]:
+    def update_h5(self):
         return self._update_h5
 
     @update_h5.setter
-    def update_h5(self, value: List):
+    def update_h5(self, values: Union[List, str]):
+
+        if not isinstance(values, list):
+            values = [values]
+
         # Check if re-setting the list or appending
-        if len(value) == 0:
+        if len(values) == 0:
             self._update_h5 = []
         else:
-            self._update_h5 = self.update_h5 + value
+            for value in values:
+                if value not in self._update_h5:
+                    self._update_h5.append(value)
 
     @property
     def uid(self) -> uuid.UUID:

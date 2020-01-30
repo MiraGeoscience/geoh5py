@@ -2,18 +2,42 @@ import uuid
 from typing import List, Union
 
 from geoh5io.data import DataAssociationEnum
+from geoh5io.shared import Entity
 
 
 class PropertyGroup:
     """ Group for properties"""
 
-    def __init__(self, uid: uuid.UUID = uuid.uuid4()):
+    property_map = {
+        "Association": "association",
+        "Group Name": "group_name",
+        "ID": "uid",
+        "Properties": "properties",
+        "Property Group Type": "property_group_type",
+    }
 
-        self._group_name = "prop_group"
+    def __init__(self, uid: uuid.UUID = uuid.uuid4(), group_name: str = "prop_group"):
+        self._group_name = group_name
         self._uid = uid
         self._association: DataAssociationEnum = DataAssociationEnum.VERTEX
         self._properties: List[uuid.UUID] = []
         self._property_group_type = "multi-element"
+        self._parent = None
+
+    @property
+    def parent(self):
+        return self._parent
+
+    @parent.setter
+    def parent(self, parent):
+        """
+        The parent of an object in the workspace
+        :return: Entity: Parent entity
+        """
+        if isinstance(parent, Entity):
+            parent = parent.uid
+
+        self._parent = parent
 
     @property
     def uid(self) -> uuid.UUID:
@@ -55,7 +79,7 @@ class PropertyGroup:
             if isinstance(uid, str):
                 uid = uuid.UUID(uid)
             properties.append(uid)
-        self._properties = properties
+        self._properties += properties
 
     @property
     def property_group_type(self) -> str:
@@ -63,4 +87,4 @@ class PropertyGroup:
 
     @property_group_type.setter
     def property_group_type(self, group_type: str):
-        self._group_type = group_type
+        self._property_group_type = group_type

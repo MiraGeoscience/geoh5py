@@ -372,10 +372,10 @@ class H5Reader:
 
             property_groups[pg_uid] = {}
             for attr, value in pg_handle[pg_uid].attrs.items():
-                attr = attr.replace(" ", "_").lower()
+                # attr = attr.replace(" ", "_").lower()
 
-                if attr == "properties":
-                    value = value.tolist()
+                # if attr == "properties":
+                #     value = value.tolist()
                 property_groups[pg_uid][attr] = value
 
         return property_groups

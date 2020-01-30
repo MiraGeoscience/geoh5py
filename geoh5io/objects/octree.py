@@ -49,7 +49,7 @@ class Octree(ObjectBase):
             assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = ["origin"]
+                self.update_h5 = "origin"
             self._centroids = None
 
             if not isinstance(value, list):
@@ -79,7 +79,7 @@ class Octree(ObjectBase):
             assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = ["rotation"]
+                self.update_h5 = "rotation"
             self._centroids = None
 
             self._rotation = value.astype(float)
@@ -103,7 +103,7 @@ class Octree(ObjectBase):
             assert len(value) == 1, "u_count must be type(int) of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = ["u_count"]
+                self.update_h5 = "u_count"
             self._centroids = None
 
             self._u_count = int(value)
@@ -127,7 +127,7 @@ class Octree(ObjectBase):
             assert len(value) == 1, "v_count must be type(int) of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = ["v_count"]
+                self.update_h5 = "v_count"
             self._centroids = None
 
             self._v_count = int(value)
@@ -151,7 +151,7 @@ class Octree(ObjectBase):
             assert len(value) == 1, "w_count must be type(int) of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = ["w_count"]
+                self.update_h5 = "w_count"
             self._centroids = None
 
             self._w_count = int(value)
@@ -175,7 +175,7 @@ class Octree(ObjectBase):
             assert len(value) == 1, "u_cell_size must be type(float) of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = ["u_cell_size"]
+                self.update_h5 = "u_cell_size"
             self._centroids = None
 
             self._u_cell_size = value.astype(float)
@@ -199,7 +199,7 @@ class Octree(ObjectBase):
             assert len(value) == 1, "v_cell_size must be type(float) of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = ["v_cell_size"]
+                self.update_h5 = "v_cell_size"
             self._centroids = None
 
             self._v_cell_size = value.astype(float)
@@ -223,7 +223,7 @@ class Octree(ObjectBase):
             assert len(value) == 1, "w_cell_size must be type(float) of shape (1,)"
 
             if self.existing_h5_entity:
-                self.update_h5 = ["w_cell_size"]
+                self.update_h5 = "w_cell_size"
             self._centroids = None
 
             self._w_cell_size = value.astype(float)
@@ -259,7 +259,7 @@ class Octree(ObjectBase):
             ), "'octree_cells' requires an ndarray of shape (*, 4)"
 
             if self.existing_h5_entity:
-                self.update_h5 = ["octree_cells"]
+                self.update_h5 = "octree_cells"
             self._centroids = None
 
             self._octree_cells = np.core.records.fromarrays(

@@ -176,7 +176,7 @@ class H5Writer:
         return new_type
 
     @classmethod
-    def finalize(cls, workspace, file: str = None, close_file=False):
+    def finalize(cls, workspace, close_file=False):
         """
         finalize(workspace, file=None, close_file=True)
 
@@ -193,7 +193,7 @@ class H5Writer:
         close_file: bool optional
            Close h5 file after write [True] or False
         """
-        h5file = fetch_h5_handle(file)
+        h5file = fetch_h5_handle(workspace.h5file)
         workspace_group: Entity = workspace.get_entity("Workspace")[0]
         root_handle = H5Writer.fetch_handle(h5file, workspace_group)
 

@@ -26,8 +26,10 @@ class Group(Entity):
         return self._type
 
     @classmethod
-    def find_or_create_type(cls, workspace: "workspace.Workspace") -> GroupType:
-        return GroupType.find_or_create(workspace, cls)
+    def find_or_create_type(
+        cls, workspace: "workspace.Workspace", type_uid=None
+    ) -> GroupType:
+        return GroupType.find_or_create(workspace, cls, type_uid=type_uid)
 
     @property
     def allow_move(self) -> bool:

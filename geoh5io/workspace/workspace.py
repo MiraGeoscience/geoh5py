@@ -483,7 +483,9 @@ class Workspace:
                 # Special case for CustomGroup without uuid
                 if (created_entity is None) and entity_class == Group:
                     custom = groups.custom_group.CustomGroup
-                    unknown_type = custom.find_or_create_type(self)
+                    unknown_type = custom.find_or_create_type(
+                        self, type_uid=entity_type_uid
+                    )
                     created_entity = custom(unknown_type, name, uid)
 
             else:
@@ -654,20 +656,15 @@ class Workspace:
                 type_attributes=type_attributes,
             )
 
-            # Assumes the object was pulled from h5
-            recovered_object.existing_h5_entity = True
+            if recovered_object is not None:
+                # Assumes the object was pulled from h5
+                recovered_object.existing_h5_entity = True
 
-            # Add parent-child relationship
-            recovered_object.parent = entity
+                # Add parent-child relationship
+                recovered_object.parent = entity
 
-            if recursively:
-                self.fetch_children(recovered_object, recursively=True)
-
-        #     # Object of unknown type
-        #     if recovered_object is None:
-        #         assert RuntimeError("Only objects of known type have been implemented")
-        #
-        # #             unknown_type =
+                if recursively:
+                    self.fetch_children(recovered_object, recursively=True)
 
     def fetch_values(self, uid: uuid.UUID) -> Optional[float]:
         """
@@ -782,17 +779,26 @@ class Workspace:
         for pg_id, attrs in group_dict.items():
 
             group = PropertyGroup(uid=uuid.UUID(pg_id))
+
             for attr, val in attrs.items():
 
-                if attr == "association":
-                    val = getattr(
-                        data.data_association_enum.DataAssociationEnum, val.upper()
-                    )
-
                 try:
-                    setattr(group, attr, val)
+                    setattr(group, group.property_map[attr], val)
                 except AttributeError:
                     pass
+
+            # group
+            # for attr, val in attrs.items():
+            #
+            #     if attr == "association":
+            #         val = getattr(
+            #             data.data_association_enum.DataAssociationEnum, val.upper()
+            #         )
+            #
+            #     try:
+            #         setattr(group, attr, val)
+            #     except AttributeError:
+            #         pass
 
             property_groups.append(group)
 

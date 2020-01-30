@@ -65,7 +65,7 @@ class Points(ObjectBase):
             Coord3D object holding the vertices coordinates
         """
         if self.existing_h5_entity:
-            self.update_h5 = ["vertices"]
+            self.update_h5 = "vertices"
         self._vertices = Coord3D(xyz)
 
     @property
