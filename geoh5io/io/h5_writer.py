@@ -6,7 +6,7 @@ from numpy import asarray, dtype, float64, int8
 
 from geoh5io.data import Data, DataType
 from geoh5io.groups import Group, GroupType
-from geoh5io.objects import ObjectBase, ObjectType, Octree
+from geoh5io.objects import ObjectBase, ObjectType
 from geoh5io.shared import Entity, EntityType
 from geoh5io.workspace import RootGroup
 
@@ -132,40 +132,27 @@ class H5Writer:
             cls.uuid_str(uid)
         )
 
-        for key, value in entity_type.__dict__.items():
-            if (
-                key.replace("_", " ").strip().lower()
-                in [
-                    "uid",
-                    "name",
-                    "units",
-                    "description",
-                    "hidden",
-                    "mapping",
-                    "number of bins",
-                    "transparent no data",
-                    "datatype  primitive type",
-                ]
-                and value is not None
-            ):
+        for key, attr in entity_type.attribute_map.items():
 
-                if "uid" in key:
-                    entry_key = "ID"
-                    value = "{" + str(value) + "}"
-                elif "primitive" in key:
-                    entry_key = "Primitive type"
-                    value = getattr(entity_type, key).name.lower().capitalize()
-                else:
-                    entry_key = key.replace("_", " ").strip().capitalize()
+            try:
+                value = getattr(entity_type, attr)
+            except AttributeError:
+                continue
 
-                if isinstance(value, (int8, bool)):
-                    new_type.attrs.create(entry_key, int(value), dtype="int8")
+            if key == "ID":
+                value = "{" + str(value) + "}"
 
-                elif isinstance(value, str):
-                    new_type.attrs.create(entry_key, value, dtype=cls.str_type)
+            elif key == "Primitive type":
+                value = value.name.lower().capitalize()
 
-                else:
-                    new_type.attrs.create(entry_key, value, dtype=asarray(value).dtype)
+            if isinstance(value, (int8, bool)):
+                new_type.attrs.create(key, int(value), dtype="int8")
+
+            elif isinstance(value, str):
+                new_type.attrs.create(key, value, dtype=cls.str_type)
+
+            else:
+                new_type.attrs.create(key, value, dtype=asarray(value).dtype)
 
         if close_file:
             h5file.close()
@@ -756,57 +743,30 @@ class H5Writer:
         entity_handle = H5Writer.fetch_handle(file, entity)
         str_type = h5py.special_dtype(vlen=str)
 
-        for key, value in entity.__dict__.items():
-            if key.replace("_", " ").strip().lower() in [
-                "allow delete",
-                "allow move",
-                "allow rename",
-                "dip",
-                "uid",
-                "last focus",
-                "name",
-                "origin",
-                "public",
-                "rotation",
-                "u count",
-                "u size",
-                "u cell size",
-                "v count",
-                "v size",
-                "v cell size",
-                "w count",
-                "w cell size",
-                "vertical",
-                "association",
-            ]:
+        for key, attr in entity.attribute_map.items():
 
-                if "uid" in key:
-                    entry_key = "ID"
-                    value = "{" + str(value) + "}"
-                else:
-                    entry_key = key.replace("_", " ").strip().capitalize()
+            try:
+                value = getattr(entity, attr)
+            except AttributeError:
+                continue
 
-                    if ("count" in key) and isinstance(entity, Octree):
-                        entry_key = "N" + entry_key.replace(" count", "")
+            if key == "ID":
+                value = "{" + str(value) + "}"
 
-                    if entry_key == "Association":
-                        value = value.name.capitalize()
+            if key == "PropertyGroups":
+                continue
 
-                # More custom upper/lower
-                entry_key = entry_key.replace(" size", " Size")
-                entry_key = entry_key.replace(" count", " Count")
-                entry_key = entry_key.replace(" cell", " Cell")
+            if key == "Association":
+                value = value.name.capitalize()
 
-                if isinstance(value, (int8, bool)):
-                    entity_handle.attrs.create(entry_key, int(value), dtype="int8")
+            if isinstance(value, (int8, bool)):
+                entity_handle.attrs.create(key, int(value), dtype="int8")
 
-                elif isinstance(value, str):
-                    entity_handle.attrs.create(entry_key, value, dtype=str_type)
+            elif isinstance(value, str):
+                entity_handle.attrs.create(key, value, dtype=str_type)
 
-                else:
-                    entity_handle.attrs.create(
-                        entry_key, value, dtype=asarray(value).dtype
-                    )
+            else:
+                entity_handle.attrs.create(key, value, dtype=asarray(value).dtype)
         if close_file:
             h5file.close()
 
@@ -846,31 +806,40 @@ class H5Writer:
                 entity_handle["PropertyGroups"].create_group(uid)
 
                 group_handle = entity_handle["PropertyGroups"][uid]
-                for key, value in p_g.__dict__.items():
+                # for key, value in p_g.__dict__.items():
+                #
+                #     if key.replace("_", " ").strip().lower() in [
+                #         "uid",
+                #         "group name",
+                #         "association",
+                #         "properties",
+                #         "property group type",
+                #     ]:
+                #
+                #         if "uid" in key:
+                #             entry_key = "ID"
+                #             value = "{" + str(value) + "}"
+                #         else:
+                #             entry_key = key.replace("_", " ").strip().title()
+                for key, attr in p_g.attribute_map.items():
 
-                    if key.replace("_", " ").strip().lower() in [
-                        "uid",
-                        "group name",
-                        "association",
-                        "properties",
-                        "property group type",
-                    ]:
+                    try:
+                        value = getattr(p_g, attr)
+                    except AttributeError:
+                        continue
 
-                        if "uid" in key:
-                            entry_key = "ID"
-                            value = "{" + str(value) + "}"
-                        else:
-                            entry_key = key.replace("_", " ").strip().title()
+                    if key == "Association":
+                        value = value.name.capitalize()
 
-                        if entry_key == "Association":
-                            value = value.name.capitalize()
+                    elif key == "Properties":
+                        value = asarray([cls.uuid_str(val) for val in value])
 
-                        elif entry_key == "Properties":
-                            value = asarray([cls.uuid_str(val) for val in value])
+                    elif key == "ID":
+                        value = cls.uuid_str(value)
 
-                        group_handle.attrs.create(
-                            entry_key, value, dtype=h5py.special_dtype(vlen=str)
-                        )
+                    group_handle.attrs.create(
+                        key, value, dtype=h5py.special_dtype(vlen=str)
+                    )
         if close_file:
             h5file.close()
 

@@ -12,12 +12,15 @@ TEntityType = TypeVar("TEntityType", bound="EntityType")
 
 
 class EntityType(ABC):
+
+    attribute_map = {"Description": "description", "ID": "uid", "Name": "name"}
+
     def __init__(
         self,
         workspace: "ws.Workspace",
         uid: uuid.UUID,
-        name: str = None,
-        description: str = None,
+        name: str = "None",
+        description: str = "None",
     ):
         assert workspace is not None
         assert uid is not None

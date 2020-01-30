@@ -7,6 +7,16 @@ if TYPE_CHECKING:
 
 
 class Entity(ABC):
+
+    attribute_map = {
+        "Allow delete": "allow_delete",
+        "Allow move": "allow_rename",
+        "Allow rename": "allow_rename",
+        "ID": "uid",
+        "Name": "name",
+        "Public": "public",
+    }
+
     def __init__(self, name: str, uid: uuid.UUID = None):
         if uid is not None:
             assert uid.int != 0
@@ -18,6 +28,7 @@ class Entity(ABC):
         self._children: List[Entity] = []
         self._visible = True
         self._allow_delete = True
+        self._allow_move = False
         self._allow_rename = True
         self._public = True
         self._existing_h5_entity = False
@@ -80,6 +91,14 @@ class Entity(ABC):
     @allow_delete.setter
     def allow_delete(self, value: bool):
         self._allow_delete = value
+
+    @property
+    def allow_move(self) -> bool:
+        return self._allow_move
+
+    @allow_move.setter
+    def allow_move(self, value: bool):
+        self._allow_move = value
 
     @property
     def allow_rename(self) -> bool:

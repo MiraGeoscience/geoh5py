@@ -11,6 +11,16 @@ from .object_base import ObjectBase, ObjectType
 class Points(ObjectBase):
     __TYPE_UID = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
 
+    attribute_map = {
+        "Allow delete": "allow_delete",
+        "Allow move": "allow_rename",
+        "Allow rename": "allow_rename",
+        "ID": "uid",
+        "Last focus": "last_focus",
+        "Name": "name",
+        "Public": "public",
+    }
+
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)
         self._vertices: Optional[Coord3D] = None

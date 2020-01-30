@@ -8,7 +8,7 @@ from geoh5io.shared import Entity
 class PropertyGroup:
     """ Group for properties"""
 
-    property_map = {
+    attribute_map = {
         "Association": "association",
         "Group Name": "group_name",
         "ID": "uid",

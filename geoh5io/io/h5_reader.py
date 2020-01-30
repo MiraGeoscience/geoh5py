@@ -89,20 +89,14 @@ class H5Reader:
             entity = project[base][entity_type][cls.uuid_str(uid)]
 
         for key, value in entity.attrs.items():
-            attr = key.replace(" ", "_").lower()
-
-            # Special case for octree
-            if attr in ["nu", "nv", "nw"]:
-                attr = attr.replace("n", "") + "_count"
-            attributes[attr] = value
+            attributes[key] = value
 
         for key, value in entity["Type"].attrs.items():
-            attr = key.replace(" ", "_").lower()
-            type_attributes[attr] = value
+            type_attributes[key] = value
 
         # Check if the entity has property_group
         if "PropertyGroups" in entity.keys():
-            attributes["property_groups"] = []
+            attributes["PropertyGroups"] = []
 
         project.close()
 
@@ -372,10 +366,6 @@ class H5Reader:
 
             property_groups[pg_uid] = {}
             for attr, value in pg_handle[pg_uid].attrs.items():
-                # attr = attr.replace(" ", "_").lower()
-
-                # if attr == "properties":
-                #     value = value.tolist()
                 property_groups[pg_uid][attr] = value
 
         return property_groups

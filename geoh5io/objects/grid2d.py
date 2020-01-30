@@ -11,6 +11,24 @@ class Grid2D(ObjectBase):
         fields=(0x48F5054A, 0x1C5C, 0x4CA4, 0x90, 0x48, 0x80F36DC60A06)
     )
 
+    attribute_map = {
+        "Allow delete": "allow_delete",
+        "Allow move": "allow_rename",
+        "Allow rename": "allow_rename",
+        "ID": "uid",
+        "Dip": "dip",
+        "Last focus": "last_focus",
+        "Name": "name",
+        "U Count": "u_count",
+        "V Count": "v_count",
+        "Origin": "origin",
+        "Public": "public",
+        "Rotation": "rotation",
+        "U Size": "u_cell_size",
+        "V Size": "v_cell_size",
+        "Vertical": "vertical",
+    }
+
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)
 
@@ -21,6 +39,7 @@ class Grid2D(ObjectBase):
         self._v_count = None
         self._rotation = 0.0
         self._vertical = False
+        self._dip = 0.0
         self._centroids = None
 
     @classmethod
@@ -53,6 +72,28 @@ class Grid2D(ObjectBase):
                     tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
                 )
             self._origin = value
+
+    @property
+    def dip(self):
+        """
+        dip
+
+        Returns
+        -------
+        dip: float
+            Dip angle
+        """
+        return self._dip
+
+    @dip.setter
+    def dip(self, value):
+        if value is not None:
+            assert isinstance(value, float), "Dip angle must be a float"
+
+            if self.existing_h5_entity:
+                self.update_h5 = "dip"
+            self._centroids = None
+            self._dip = value
 
     @property
     def u_size(self) -> Optional[float]:

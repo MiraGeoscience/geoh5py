@@ -9,6 +9,10 @@ from .primitive_type_enum import PrimitiveTypeEnum
 
 
 class Data(Entity):
+
+    attribute_map = Entity.attribute_map.copy()
+    attribute_map.update({"Association": "association"})
+
     def __init__(
         self,
         data_type: DataType,
@@ -20,8 +24,7 @@ class Data(Entity):
         assert data_type.primitive_type == self.primitive_type()
         super().__init__(name, uid)
         self._association = association
-        self._allow_move = False
-        self.__type = data_type
+        self._type = data_type
         self._values = None
         data_type.workspace._register_data(self)
 
@@ -40,7 +43,7 @@ class Data(Entity):
 
     @property
     def entity_type(self) -> DataType:
-        return self.__type
+        return self._type
 
     @classmethod
     @abstractmethod

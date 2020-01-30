@@ -13,6 +13,16 @@ class Surface(Points):
         fields=(0xF26FEBA3, 0xADED, 0x494B, 0xB9, 0xE9, 0xB2BBCBE298E1)
     )
 
+    attribute_map = {
+        "Allow delete": "allow_delete",
+        "Allow move": "allow_rename",
+        "Allow rename": "allow_rename",
+        "ID": "uid",
+        "Last focus": "last_focus",
+        "Name": "name",
+        "Public": "public",
+    }
+
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)
 

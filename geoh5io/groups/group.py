@@ -16,7 +16,6 @@ class Group(Entity):
         super().__init__(name, uid)
 
         self._type = group_type
-        self._allow_move = True
 
         # self._clipping_ids: List[uuid.UUID] = []
         group_type.workspace._register_group(self)
@@ -30,14 +29,6 @@ class Group(Entity):
         cls, workspace: "workspace.Workspace", type_uid=None
     ) -> GroupType:
         return GroupType.find_or_create(workspace, cls, type_uid=type_uid)
-
-    @property
-    def allow_move(self) -> bool:
-        return self._allow_move
-
-    @allow_move.setter
-    def allow_move(self, value: bool):
-        self._allow_move = value
 
     @classmethod
     @abstractmethod
@@ -106,7 +97,7 @@ class Group(Entity):
             try:
                 setattr(new_group, attr, item)
             except AttributeError:
-                pass  # print(f"Could not set attribute {attr}")
+                continue  # print(f"Could not set attribute {attr}")
 
         # Add parent-child relationship
         if "parent" in kwargs.keys():

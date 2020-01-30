@@ -20,19 +20,19 @@ class ObjectBase(Entity):
         super().__init__(name, uid)
 
         self.__type = object_type
-        self._allow_move = True
         # self._clipping_ids: List[uuid.UUID] = []
         self._property_groups: List[PropertyGroup] = []
+        self._last_focus = "None"
 
         object_type.workspace._register_object(self)
 
     @property
-    def allow_move(self) -> bool:
-        return self._allow_move
+    def last_focus(self) -> str:
+        return self._last_focus
 
-    @allow_move.setter
-    def allow_move(self, value: bool):
-        self._allow_move = value
+    @last_focus.setter
+    def last_focus(self, value: str):
+        self._last_focus = value
 
     @property
     def get_data_list(self):

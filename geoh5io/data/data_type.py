@@ -16,6 +16,18 @@ if TYPE_CHECKING:
 
 
 class DataType(EntityType):
+
+    attribute_map = {
+        "Description": "description",
+        "Hidden": "hidden",
+        "ID": "uid",
+        "Mapping": "mapping",
+        "Name": "name",
+        "Number of bins": "number_of_bins",
+        "Primitive type": "primitive_type",
+        "Transparent no data": "transparent_no_data",
+    }
+
     def __init__(
         self,
         workspace: "workspace.Workspace",
@@ -23,7 +35,7 @@ class DataType(EntityType):
         primitive_type: PrimitiveTypeEnum,
     ):
         super().__init__(workspace, uid)
-        self.__primitive_type = primitive_type
+        self._primitive_type = primitive_type
         # TODO: define properties and setters
         self._color_map: Optional[ColorMap] = None
         self._units = None
@@ -51,7 +63,7 @@ class DataType(EntityType):
 
     @property
     def primitive_type(self) -> PrimitiveTypeEnum:
-        return self.__primitive_type
+        return self._primitive_type
 
     @classmethod
     def create(
