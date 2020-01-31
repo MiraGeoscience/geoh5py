@@ -1,6 +1,8 @@
 
 default_language_version:
     python: python3
+exclude: 'doc'
+fail_fast: false
 repos:
 -   repo: https://github.com/psf/black
     rev: stable
@@ -62,3 +64,5 @@ repos:
     rev: v1.4.1
     hooks:
     -   id: rst-backticks
+
+exclude: 'conf.py'

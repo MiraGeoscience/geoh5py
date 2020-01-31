@@ -1,0 +1,2 @@
+- Dom Fournier, (`@domfournier <https://github.com/domfournier/>`_)
+- Sebastien Hensgen, (`@sebhmg <https://github.com/sebhmg/>`_)
