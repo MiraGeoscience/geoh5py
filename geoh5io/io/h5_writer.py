@@ -170,9 +170,6 @@ class H5Writer:
         workspace: geoh5io.Workspace
             Workspace object defining the project structure
 
-        file: str optional
-            File name for the geoh5. Takes the default Workspace.h5file name if omitted
-
         close_file: bool optional
            Close h5 file after write [True] or False
         """
@@ -183,10 +180,6 @@ class H5Writer:
         del h5file[workspace.name]["Root"]
         h5file[workspace.name]["Root"] = root_handle
 
-        # # Refresh the project tree
-        # workspace.tree = H5Reader.get_project_tree(
-        #     workspace.h5file, workspace.base_name
-        # )
         if close_file:
             h5file.close()
 
@@ -517,6 +510,7 @@ class H5Writer:
         if close_file:
             h5file.close()
 
+        entity.update_h5 = []
         entity.existing_h5_entity = True
 
         return entity_handle
@@ -799,21 +793,7 @@ class H5Writer:
                 entity_handle["PropertyGroups"].create_group(uid)
 
                 group_handle = entity_handle["PropertyGroups"][uid]
-                # for key, value in p_g.__dict__.items():
-                #
-                #     if key.replace("_", " ").strip().lower() in [
-                #         "uid",
-                #         "group name",
-                #         "association",
-                #         "properties",
-                #         "property group type",
-                #     ]:
-                #
-                #         if "uid" in key:
-                #             entry_key = "ID"
-                #             value = "{" + str(value) + "}"
-                #         else:
-                #             entry_key = key.replace("_", " ").strip().title()
+
                 for key, attr in p_g.attribute_map.items():
 
                     try:
@@ -861,7 +841,7 @@ class H5Writer:
                 del entity_handle["Data"]
                 cls.add_data_values(file, entity, entity.values, close_file=close_file)
 
-            if attr == "cells":
+            elif attr == "cells":
                 del entity_handle["Cells"]
                 cls.add_cells(file, entity, close_file=close_file)
 
@@ -869,9 +849,19 @@ class H5Writer:
                 del entity_handle["Vertices"]
                 cls.add_vertices(file, entity, close_file=close_file)
 
+            elif attr == "octree_cells":
+                del entity_handle["Octree Cells"]
+                cls.add_octree_cells(file, entity, close_file=close_file)
+
             elif attr == "property_groups":
                 del entity_handle["PropertyGroups"]
                 cls.add_property_groups(file, entity, close_file=close_file)
+
+            elif attr == "cell_delimiters":
+                cls.add_cell_delimiters(file, entity, close_file=close_file)
+
+            else:
+                cls.add_attributes(file, entity, close_file=close_file)
 
     @staticmethod
     def uuid_value(value: str) -> uuid.UUID:

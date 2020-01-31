@@ -343,7 +343,12 @@ class Workspace:
         self.finalize()
 
     def finalize(self):
-        """ Finalize the geoh5 file by re-building the Root"""
+        """ Finalize the geoh5 file by checking for updated entities and re-building the Root"""
+
+        for entity in self.all_objects() + self.all_groups() + self.all_data():
+            if len(entity.update_h5) > 0:
+                self.save_entity(entity)
+
         H5Writer.finalize(self)
 
     def get_entity(self, name: Union[str, uuid.UUID]) -> List[Optional[Entity]]:

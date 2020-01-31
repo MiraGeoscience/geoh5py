@@ -77,7 +77,7 @@ class Surface(Points):
 
         if indices.dtype == "int32":
             indices.astype("uint32")
-
+        self.update_h5 = "cells"
         self._n_cells = None  # Reset the n_cells if not None
         self._cells = indices
 

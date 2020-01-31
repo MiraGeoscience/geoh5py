@@ -17,16 +17,16 @@ if TYPE_CHECKING:
 
 class DataType(EntityType):
 
-    attribute_map = {
-        "Description": "description",
-        "Hidden": "hidden",
-        "ID": "uid",
-        "Mapping": "mapping",
-        "Name": "name",
-        "Number of bins": "number_of_bins",
-        "Primitive type": "primitive_type",
-        "Transparent no data": "transparent_no_data",
-    }
+    attribute_map = EntityType.attribute_map.copy()
+    attribute_map.update(
+        {
+            "Hidden": "hidden",
+            "Mapping": "mapping",
+            "Number of bins": "number_of_bins",
+            "Primitive type": "primitive_type",
+            "Transparent no data": "transparent_no_data",
+        }
+    )
 
     def __init__(
         self,

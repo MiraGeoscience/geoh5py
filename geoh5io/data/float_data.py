@@ -28,9 +28,7 @@ class FloatData(Data):
             Array of floats
 
         """
-        if self.existing_h5_entity:
-            self.update_h5 = "values"
-
+        self.update_h5 = "values"
         self._values = ravel(values)
 
     def __call__(self):

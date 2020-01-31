@@ -74,8 +74,7 @@ class ObjectBase(Entity):
             prop_group.parent = self
 
         # First time start with an empty list
-        if self.existing_h5_entity:
-            self.update_h5 = "property_groups"
+        self.update_h5 = "property_groups"
         self._property_groups = self.property_groups + prop_groups
 
     @classmethod

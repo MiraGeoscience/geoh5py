@@ -10,7 +10,7 @@ class Entity(ABC):
 
     attribute_map = {
         "Allow delete": "allow_delete",
-        "Allow move": "allow_rename",
+        "Allow move": "allow_move",
         "Allow rename": "allow_rename",
         "ID": "uid",
         "Name": "name",
@@ -71,10 +71,7 @@ class Entity(ABC):
     @name.setter
     def name(self, new_name: str):
         self._name = self.fix_up_name(new_name)
-
-    @name.getter
-    def name(self):
-        return self._name
+        self.update_h5 = "attributes"
 
     @property
     def visible(self) -> bool:
@@ -83,6 +80,7 @@ class Entity(ABC):
     @visible.setter
     def visible(self, value: bool):
         self._visible = value
+        self.update_h5 = "attributes"
 
     @property
     def allow_delete(self) -> bool:
@@ -91,6 +89,7 @@ class Entity(ABC):
     @allow_delete.setter
     def allow_delete(self, value: bool):
         self._allow_delete = value
+        self.update_h5 = "attributes"
 
     @property
     def allow_move(self) -> bool:
@@ -99,6 +98,7 @@ class Entity(ABC):
     @allow_move.setter
     def allow_move(self, value: bool):
         self._allow_move = value
+        self.update_h5 = "attributes"
 
     @property
     def allow_rename(self) -> bool:
@@ -107,14 +107,7 @@ class Entity(ABC):
     @allow_rename.setter
     def allow_rename(self, value: bool):
         self._allow_rename = value
-
-    @property
-    def is_public(self) -> bool:
-        return self._public
-
-    @is_public.setter
-    def is_public(self, value: bool):
-        self._public = value
+        self.update_h5 = "attributes"
 
     @property
     def public(self) -> bool:
@@ -123,6 +116,7 @@ class Entity(ABC):
     @public.setter
     def public(self, value: bool):
         self._public = value
+        self.update_h5 = "attributes"
 
     @property
     def workspace(self):

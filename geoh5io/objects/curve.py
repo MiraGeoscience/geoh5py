@@ -71,7 +71,7 @@ class Curve(Points):
             Cell object holding vertices index
         """
         assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
-
+        self.update_h5 = "cells"
         self._cells = indices
 
     @classmethod
