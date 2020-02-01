@@ -34,9 +34,7 @@ class BlockModel(ObjectBase):
         """
         origin
 
-        Returns
-        -------
-        origin: ndarray of floats, shape (3,)
+        numpy.array of floats, shape (3,)
             Coordinates of the origin
         """
         return self._origin
@@ -57,11 +55,7 @@ class BlockModel(ObjectBase):
     @property
     def u_cell_delimiters(self) -> Optional[np.ndarray]:
         """
-        u_cell_delimiters
-
-        Returns
-        -------
-        u_cell_delimiters: float
+        numpy.array of floats, shape (u_count,)
             Nodal offset along the u-coordinate
         """
         if (
@@ -88,9 +82,7 @@ class BlockModel(ObjectBase):
         """
         v_cell_delimiters
 
-        Returns
-        -------
-        v_cell_delimiters: float
+        numpy.array of floats, shape (v_count,)
             Nodal offset along the v-coordinate
         """
         if (
@@ -117,9 +109,7 @@ class BlockModel(ObjectBase):
         """
         z_cell_delimiters
 
-        Returns
-        -------
-        z_cell_delimiters: float
+        numpy.array of floats, shape (z_count,)
             Nodal offset along the z-coordinate
         """
         if (

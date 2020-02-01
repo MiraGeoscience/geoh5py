@@ -84,6 +84,9 @@ class Entity(ABC):
 
     @property
     def allow_delete(self) -> bool:
+        """
+        bool: if True the Entity can be deleted from the geoh5
+        """
         return self._allow_delete
 
     @allow_delete.setter
@@ -93,6 +96,9 @@ class Entity(ABC):
 
     @property
     def allow_move(self) -> bool:
+        """
+        bool: if True the Entity can change parent
+        """
         return self._allow_move
 
     @allow_move.setter
@@ -102,6 +108,9 @@ class Entity(ABC):
 
     @property
     def allow_rename(self) -> bool:
+        """
+        bool: if True the Entity can change name
+        """
         return self._allow_rename
 
     @allow_rename.setter
@@ -111,6 +120,11 @@ class Entity(ABC):
 
     @property
     def public(self) -> bool:
+        """
+        public
+
+        bool: if True the Entity is visible in camera
+        """
         return self._public
 
     @public.setter
@@ -120,6 +134,9 @@ class Entity(ABC):
 
     @property
     def workspace(self):
+        """
+        Workspace to which the Entity belongs
+        """
         return self.entity_type.workspace
 
     @classmethod
@@ -139,14 +156,13 @@ class Entity(ABC):
 
     @property
     def parent(self):
+        """
+        Parental entity in the workspace tree
+        """
         return self._parent
 
     @parent.setter
     def parent(self, parent):
-        """
-        The parent of an object in the workspace
-        :return: Entity: Parent entity
-        """
         if parent:
             if isinstance(parent, uuid.UUID):
                 uid = parent
@@ -164,9 +180,18 @@ class Entity(ABC):
 
     @property
     def children(self):
-
+        """
+        List of children entities in the workspace tree
+        """
         return self._children
 
     def add_child(self, entity):
+        """
+        add_child
 
+        Parameters
+        ----------
+        entity: Entity
+            Add a child entity to the list of children
+        """
         self._children.append(entity)

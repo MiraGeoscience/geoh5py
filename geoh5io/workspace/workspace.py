@@ -694,6 +694,20 @@ class Workspace:
     def find_type(
         self, type_uid: uuid.UUID, type_class: Type["entity_type.EntityType"]
     ) -> Optional["entity_type.EntityType"]:
+        """
+        find_type
+
+        Find an existing and active EntityType
+
+        Parameters
+        ----------
+        type_uid: uuid.UUID
+            Unique identifier of target type
+
+        Returns
+        -------
+        entity_type: EntityType or None
+        """
         found_type = weakref_utils.get_clean_ref(self._types, type_uid)
         return found_type if isinstance(found_type, type_class) else None
 
@@ -702,6 +716,20 @@ class Workspace:
         return [cast("group.Group", v()) for v in self._groups.values()]
 
     def find_group(self, group_uid: uuid.UUID) -> Optional["group.Group"]:
+        """
+        find_group
+
+        Find an existing and active Group object
+
+        Parameters
+        ----------
+        group_uid: uuid.UUID
+            Unique identifier of target Group
+
+        Returns
+        -------
+        group: Group or None
+        """
         return weakref_utils.get_clean_ref(self._groups, group_uid)
 
     def all_objects(self) -> List["object_base.ObjectBase"]:
@@ -709,6 +737,20 @@ class Workspace:
         return [cast("object_base.ObjectBase", v()) for v in self._objects.values()]
 
     def find_object(self, object_uid: uuid.UUID) -> Optional["object_base.ObjectBase"]:
+        """
+        find_object
+
+        Find an existing and active Object
+
+        Parameters
+        ----------
+        object_uid: uuid.UUID
+            Unique identifier of target Object
+
+        Returns
+        -------
+        object: Object or None
+        """
         return weakref_utils.get_clean_ref(self._objects, object_uid)
 
     def all_data(self) -> List["data.Data"]:
@@ -716,6 +758,20 @@ class Workspace:
         return [cast("data.Data", v()) for v in self._data.values()]
 
     def find_data(self, data_uid: uuid.UUID) -> Optional["data.Data"]:
+        """
+        find_data
+
+        Find an existing and active Data
+
+        Parameters
+        ----------
+        data_uid: uuid.UUID
+            Unique identifier of target Data
+
+        Returns
+        -------
+        data: Object or None
+        """
         return weakref_utils.get_clean_ref(self._data, data_uid)
 
     def find_entity(self, entity_uid: uuid.UUID) -> Optional["Entity"]:
