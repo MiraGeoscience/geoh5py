@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 class Entity(ABC):
 
-    attribute_map = {
+    _attribute_map = {
         "Allow delete": "allow_delete",
         "Allow move": "allow_move",
         "Allow rename": "allow_rename",
@@ -33,6 +33,10 @@ class Entity(ABC):
         self._public = True
         self._existing_h5_entity = False
         self._update_h5: List[str] = []
+
+    @property
+    def attribute_map(self):
+        return self._attribute_map
 
     @property
     def existing_h5_entity(self) -> bool:

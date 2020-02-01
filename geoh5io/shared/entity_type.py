@@ -13,7 +13,7 @@ TEntityType = TypeVar("TEntityType", bound="EntityType")
 
 class EntityType(ABC):
 
-    attribute_map = {"Description": "description", "ID": "uid", "Name": "name"}
+    _attribute_map = {"Description": "description", "ID": "uid", "Name": "name"}
 
     def __init__(
         self,
@@ -34,6 +34,10 @@ class EntityType(ABC):
         self._update_h5 = False
 
         workspace._register_type(self)
+
+    @property
+    def attribute_map(self):
+        return self._attribute_map
 
     @property
     def existing_h5_entity(self) -> bool:

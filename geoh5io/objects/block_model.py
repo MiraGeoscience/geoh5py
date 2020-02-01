@@ -13,8 +13,8 @@ class BlockModel(ObjectBase):
         fields=(0xB020A277, 0x90E2, 0x4CD7, 0x84, 0xD6, 0x612EE3F25051)
     )
 
-    attribute_map = ObjectBase.attribute_map.copy()
-    attribute_map.update({"Origin": "origin", "Rotation": "rotation"})
+    _attribute_map = ObjectBase._attribute_map.copy()
+    _attribute_map.update({"Origin": "origin", "Rotation": "rotation"})
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)

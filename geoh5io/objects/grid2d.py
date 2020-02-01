@@ -11,8 +11,8 @@ class Grid2D(ObjectBase):
         fields=(0x48F5054A, 0x1C5C, 0x4CA4, 0x90, 0x48, 0x80F36DC60A06)
     )
 
-    attribute_map = ObjectBase.attribute_map.copy()
-    attribute_map.update(
+    _attribute_map = ObjectBase._attribute_map.copy()
+    _attribute_map.update(
         {
             "Dip": "dip",
             "U Count": "u_count",

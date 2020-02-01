@@ -16,8 +16,8 @@ if TYPE_CHECKING:
 
 class ObjectBase(Entity):
 
-    attribute_map = Entity.attribute_map.copy()
-    attribute_map.update(
+    _attribute_map = Entity._attribute_map.copy()
+    _attribute_map.update(
         {"Last focus": "last_focus", "PropertyGroups": "property_groups"}
     )
 

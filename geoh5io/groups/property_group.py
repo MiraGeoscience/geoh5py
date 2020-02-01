@@ -8,7 +8,7 @@ from geoh5io.shared import Entity
 class PropertyGroup:
     """ Group for properties"""
 
-    attribute_map = {
+    _attribute_map = {
         "Association": "association",
         "Group Name": "group_name",
         "ID": "uid",
@@ -38,6 +38,10 @@ class PropertyGroup:
             parent = parent.uid
 
         self._parent = parent
+
+    @property
+    def attribute_map(self):
+        return self._attribute_map
 
     @property
     def uid(self) -> uuid.UUID:

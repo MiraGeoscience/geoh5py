@@ -59,6 +59,8 @@ napoleon_use_param = False
 napoleon_use_rtype = True
 napoleon_use_keyword = True
 napoleon_custom_sections = None
+numpydoc_show_class_members = False
+numpydoc_class_members_toctree = False
 
 
 # Add any paths that contain templates here, relative to this directory.

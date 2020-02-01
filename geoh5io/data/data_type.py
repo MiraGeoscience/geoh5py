@@ -17,8 +17,8 @@ if TYPE_CHECKING:
 
 class DataType(EntityType):
 
-    attribute_map = EntityType.attribute_map.copy()
-    attribute_map.update(
+    _attribute_map = EntityType._attribute_map.copy()
+    _attribute_map.update(
         {
             "Hidden": "hidden",
             "Mapping": "mapping",

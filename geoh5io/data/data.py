@@ -10,8 +10,8 @@ from .primitive_type_enum import PrimitiveTypeEnum
 
 class Data(Entity):
 
-    attribute_map = Entity.attribute_map.copy()
-    attribute_map.update({"Association": "association"})
+    _attribute_map = Entity._attribute_map.copy()
+    _attribute_map.update({"Association": "association"})
 
     def __init__(
         self,

@@ -40,7 +40,7 @@ class Workspace:
 
     _active_ref: ClassVar[ReferenceType[Workspace]] = type(None)  # type: ignore
 
-    attribute_map = {
+    _attribute_map = {
         "Contributors": "contributors",
         "Distance unit": "distance_unit",
         "GA Version": "ga_version",
@@ -72,7 +72,7 @@ class Workspace:
             proj_attributes = H5Reader.fetch_project_attributes(self.h5file)
 
             for key, attr in proj_attributes.items():
-                setattr(self, self.attribute_map[key], attr)
+                setattr(self, self._attribute_map[key], attr)
 
             # Get the Root attributes
             attributes, type_attributes = H5Reader.fetch_attributes(
@@ -92,6 +92,10 @@ class Workspace:
         except FileNotFoundError:
             self._root = root if root is not None else RootGroup(self)
             H5Writer.create_geoh5(self)
+
+    @property
+    def attribute_map(self):
+        return self._attribute_map
 
     @property
     def ga_version(self):
