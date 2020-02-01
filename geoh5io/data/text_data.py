@@ -21,8 +21,8 @@ class TextData(Data):
 
         Assign string value
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         values: str
             Text in string format
 

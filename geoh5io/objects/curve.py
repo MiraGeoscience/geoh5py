@@ -31,10 +31,7 @@ class Curve(Points):
     @property
     def cells(self) -> Optional[ndarray]:
         """
-        @property
-        cells(xyz)
-
-        Function to return the object cells coordinates.
+        cells
 
         Returns
         -------
@@ -56,7 +53,7 @@ class Curve(Points):
     @cells.setter
     def cells(self, indices):
         """
-        @property.setter
+        cells
 
         cells(id1, id2)
 

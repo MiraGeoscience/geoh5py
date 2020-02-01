@@ -22,8 +22,8 @@ class FloatData(Data):
 
         Assign array of float as values
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         values: numpy.ndarray
             Array of floats
 

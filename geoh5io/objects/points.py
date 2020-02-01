@@ -9,6 +9,14 @@ from .object_base import ObjectBase, ObjectType
 
 
 class Points(ObjectBase):
+    """
+    Points object.
+
+    Functions
+    ---------
+
+    """
+
     __TYPE_UID = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
@@ -32,10 +40,7 @@ class Points(ObjectBase):
     @property
     def vertices(self) -> Optional[Coord3D]:
         """
-        @property
-        vertices(xyz)
-
-        Function to return the object vertices coordinates.
+        vertices
 
         Returns
         -------
@@ -49,41 +54,24 @@ class Points(ObjectBase):
 
     @vertices.setter
     def vertices(self, xyz: ndarray):
-        """
-        @property.setter
-
-        vertices(xyz)
-
-        Parameters
-        ----------
-        xyz: numpy.array
-            Coordinate xyz locations [n x 3]
-
-        Returns
-        -------
-        vertices: geoh5io.Coord3D
-            Coord3D object holding the vertices coordinates
-        """
         self.update_h5 = "vertices"
         self._vertices = Coord3D(xyz)
 
     @property
     def locations(self):
         """
-        @property
-        location
+        locations
 
         Returns
         -------
         locations: numpy.array
-            Rapid access to the (x, y, z) coordinates from the Coord3D
+            [x, y, z] array of coordinates from the Coord3D
         """
         return self.vertices.locations
 
     @property
     def size(self):
         """
-        @property
         size
 
         Returns

@@ -41,24 +41,6 @@ class ObjectBase(Entity):
         self._last_focus = value
 
     @property
-    def get_data_list(self):
-        """
-        @property
-        get_data_list
-
-        Returns
-        -------
-        names: list[str]
-            List of names of data associated with the object
-
-        """
-        name_list = []
-        for child in self.children:
-            if isinstance(child, Data):
-                name_list.append(child.name)
-        return name_list
-
-    @property
     def entity_type(self) -> ObjectType:
         return self.__type
 
@@ -177,11 +159,12 @@ class ObjectBase(Entity):
         All given data must be children of the object.
         The given group_id name is created if it does not exist already.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         data: Data or uuid.UUID
             Data object or uuid
-        group: str or PropertyGroup
+
+        group_id: str or PropertyGroup
             PropertyGroup or name of a group to be used
         """
 
@@ -207,8 +190,8 @@ class ObjectBase(Entity):
         Create property groups from given group names and properties.
         An existing property_group is returned if one exists with the same name.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         group_name: str
             Name given to the geoh5io.PropertyGroup object.
 
@@ -331,3 +314,19 @@ class ObjectBase(Entity):
                 entity_list.append(child)
 
         return entity_list
+
+    def get_data_list(self):
+        """
+        get_data_list
+
+        Returns
+        -------
+        names: list[str]
+            List of names of data associated with the object
+
+        """
+        name_list = []
+        for child in self.children:
+            if isinstance(child, Data):
+                name_list.append(child.name)
+        return name_list

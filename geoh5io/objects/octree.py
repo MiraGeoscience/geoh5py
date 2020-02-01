@@ -369,8 +369,8 @@ class Octree(ObjectBase):
         Function to refine all cells to a given octree level:
         level=0 refers to a single cell along the shortest dimension.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         level: int
             Level of global octree refinement
         """
@@ -416,8 +416,8 @@ class Octree(ObjectBase):
     def refine_cells(self, indices):
         """
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         indices: int
             Index of cell to be divided in octree
 

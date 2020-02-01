@@ -36,15 +36,6 @@ if TYPE_CHECKING:
     from geoh5io.shared import entity_type
 
 
-# @dataclass
-# class WorkspaceAttributes:
-#     contributors = np.asarray(["UserName"], dtype="object")
-#     distance_unit = "meter"
-#     ga_version = "1"
-#     version = 1.0
-#     name = "Workspace"
-
-
 class Workspace:
 
     _active_ref: ClassVar[ReferenceType[Workspace]] = type(None)  # type: ignore
@@ -105,7 +96,6 @@ class Workspace:
     @property
     def ga_version(self):
         """
-        @property
         ga_version
 
         Returns
@@ -122,7 +112,6 @@ class Workspace:
     @property
     def version(self):
         """
-        @property
         version
 
         Returns
@@ -139,7 +128,6 @@ class Workspace:
     @property
     def distance_unit(self):
         """
-        @property
         distance_unit
 
         Returns
@@ -156,7 +144,6 @@ class Workspace:
     @property
     def contributors(self):
         """
-        @property
         contributors
 
         Returns
@@ -173,8 +160,7 @@ class Workspace:
     @property
     def name(self):
         """
-        @property
-        base_name
+        name
 
         Returns
         -------
@@ -186,8 +172,7 @@ class Workspace:
     @property
     def list_groups_name(self):
         """
-        @property
-        list_groups
+        list_groups_name
 
         Returns
         -------
@@ -202,8 +187,7 @@ class Workspace:
     @property
     def list_objects_name(self):
         """
-        @property
-        list_objects
+        list_objects_name
 
         Returns
         -------
@@ -218,8 +202,7 @@ class Workspace:
     @property
     def list_data_name(self):
         """
-        @property
-        list_data
+        list_data_name
 
         Returns
         -------
@@ -234,8 +217,7 @@ class Workspace:
     @property
     def list_entities_name(self):
         """
-        @property
-        list_data
+        list_entities_name
 
         Returns
         -------
@@ -250,7 +232,6 @@ class Workspace:
     @property
     def root(self) -> "group.Group":
         """
-        @property
         root
 
         Returns
@@ -264,7 +245,6 @@ class Workspace:
     @property
     def h5file(self) -> str:
         """
-        @property
         h5file
 
         Returns
@@ -305,7 +285,7 @@ class Workspace:
         add_children: bool = True,
     ):
         """
-        save_entity(entity)
+        save_entity
 
         Parameters
         ----------
@@ -315,9 +295,11 @@ class Workspace:
         parent: geoh5io.Entity
             Parent Entity or [None] to be added under in the workspace
 
-        close_file: bool optional
-            Close the geoh5 database after writing is completed [True] or False
+        close_file: bool=True
+            Close the geoh5 database after writing is completed
 
+        add_children: bool=True
+            Add children objects to the geoh5
         """
         # Check if entity if in current workspace
         if self.get_entity(entity.uid)[0] is None:
@@ -742,22 +724,6 @@ class Workspace:
             or self.find_data(entity_uid)
             or self.find_object(entity_uid)
         )
-
-    # def get_workspace_attributes(self):
-    #     """ Fetch the workspace attributes
-    #     """
-    #     if getattr(self, "_workspace_attributes", None) is None:
-    #
-    #         self._workspace_attributes = {}
-    #
-    #         for attr in dir(WorkspaceAttributes()):
-    #
-    #             if "__" not in attr:
-    #                 self._workspace_attributes[attr] = getattr(
-    #                     WorkspaceAttributes(), attr
-    #                 )
-    #
-    #     return self._workspace_attributes
 
 
 @contextmanager

@@ -48,7 +48,7 @@ def test_create_surface_data():
     data_copy = obj_copy.get_data("TMI")[0]
 
     assert [
-        prop in obj_copy.get_data_list for prop in surface.get_data_list
+        prop in obj_copy.get_data_list() for prop in surface.get_data_list()
     ], "The surface object did not copy"
     assert np.all(data_copy.values == data_object.values), "Data values were not copied"
 

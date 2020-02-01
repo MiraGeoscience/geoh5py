@@ -11,7 +11,7 @@ Contents:
    :maxdepth: 1
 
    content/installation
-   content/api/index
+   source/modules.rst
 
 
 Feedback:
