@@ -7,50 +7,60 @@ Welcome to the documentation page for **gh5py**!
 In short
 ^^^^^^^^
 
-This library has been created for the manipulation a wide range of
-geoscientific data (points, curve, surface, 2D and 3D grids) stored in the
-geoh5 file format. Users will be able to leverage the powerful visualization
-capabilities of :ref:`Geoscience Analyst <https://mirageoscience.com/mining-industry-software/geoscience-analyst/>`_.
+The **gh5py** library is an extension of the `h5py <https://www.h5py.org/>`_ package.
+It has been created for the manipulation and storage of a wide range of
+geoscientific data (points, curve, surface, 2D and 3D grids) in
+``*.geoh5`` file format. Users will be able to directly leverage the powerful visualization
+capabilities of `Geoscience Analyst <https://mirageoscience.com/mining-industry-software/geoscience-analyst/>`_.
 
-Lastest
+.. figure:: ./images/GA_demo.png
+	    :align: center
+	    :width: 400
+
 
 Installation
 ^^^^^^^^^^^^
 
-gh5py is currently writen for Python 3.6 or higher, and depends on `numpy` and
-`h5py`. Since users will likely want to leverage advanced processing
-techniques available in the python eco-system, we recommend installing
+**gh5py** is currently written for Python 3.6 or higher, and depends on `NumPy <https://numpy.org/>`_ and
+`h5py <https://www.h5py.org/>`_. Users will likely want to also make use of advanced processing
+techniques made available under the python ecosystem. We therefore recommend installing
 Anaconda to handle the various packages.
 
 
-Step 1- Anaconda
-^^^^^^^^^^^^^^^^
+Step 1- Setup Anaconda
+^^^^^^^^^^^^^^^^^^^^^^
 `Download Anaconda <https://www.anaconda.com/download/>`_
 
 - Launch the installation
 
-	.. figure:: ../images/installation/MinicondaInstaller.png
+	.. figure:: ./images/installation/MinicondaInstaller.png
 	    :align: center
 	    :width: 400
 
 - We recommended letting Anaconda set the Environment Path:
 
-	.. figure:: ../images/installation/AnacondaPath.png
+	.. figure:: ./images/installation/AnacondaPath.png
 	    :align: center
 	    :width: 400
 
 
-Step 2: Install gh5py
-^^^^^^^^^^^^^^^^^^^^^
+Step 2: Install **gh5py**
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Soon available on pypi:
+Install **gh5py** from PyPI::
 
-`pip install gh5py`
+    $ pip install gh5py
 
+To install the latest development version of **gh5py**, you can use pip with the
+latest GitHub master::
 
-Or from source
+    $ pip install git+https://github.com/domfournier/GeoH5io.git
 
-`On GIT <https://github.com/domfournier/GeoH5io/archive/Docs.zip/>`_
+To work with **gh5py** source code in development, install from GitHub::
+
+    $ git clone --recursive https://github.com/domfournier/GeoH5io.git
+    $ cd gh5py
+    $ python setup.py install
 
 
 Contents:
@@ -59,7 +69,7 @@ Contents:
 .. toctree::
    :maxdepth: 1
 
-   content/Tutorial
+   content/Tutorial_Basics.ipynb
    source/modules.rst
 
 
