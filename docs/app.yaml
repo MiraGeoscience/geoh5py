@@ -1,4 +1,4 @@
-# application: geoh5py
+# application: gh5py
 # version: 001
 runtime: python37
 api_version: 0.1
@@ -56,7 +56,7 @@ handlers:
 
 # redirect en/latest traffic
 - url: /en/latest/(.*\.html)
-  script: geoh5py.app
+  script: gh5py.app
 
 # raw html
 - url: /(.*\.html)
@@ -78,7 +78,7 @@ handlers:
   upload: _build/html/index.html
 
 - url: .*
-  script: geoh5py.app
+  script: gh5py.app
 
 # Recommended file skipping declaration from the GAE tutorials
 skip_files:
