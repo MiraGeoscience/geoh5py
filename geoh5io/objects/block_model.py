@@ -9,10 +9,16 @@ from .object_base import ObjectBase, ObjectType
 
 
 class BlockModel(ObjectBase):
+    """
+    Rectilinear (Tensor) 3D mesh
+
+    The BlockModel is a container for models defined by three perpendicular
+    axes, each divided into discrete intervals that define the cell dimensions.
+    """
+
     __TYPE_UID = uuid.UUID(
         fields=(0xB020A277, 0x90E2, 0x4CD7, 0x84, 0xD6, 0x612EE3F25051)
     )
-
     _attribute_map = ObjectBase._attribute_map.copy()
     _attribute_map.update({"Origin": "origin", "Rotation": "rotation"})
 
