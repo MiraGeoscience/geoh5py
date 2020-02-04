@@ -10,10 +10,9 @@ from .object_base import ObjectBase, ObjectType
 
 class BlockModel(ObjectBase):
     """
-    Rectilinear (Tensor) 3D mesh
-
-    The BlockModel is a container for models defined by three perpendicular
-    axes, each divided into discrete intervals that define the cell dimensions.
+    Rectilinear ``BlockModel``, or 3D tensor mesh, is a container for models defined
+    by three perpendicular axes. Each axis is divided into discrete
+    intervals that define the cell dimensions.
     """
 
     __TYPE_UID = uuid.UUID(
