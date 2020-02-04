@@ -69,7 +69,7 @@ Contents:
 .. toctree::
    :maxdepth: 1
 
-   content/Tutorial_Basics.ipynb
+   content/tutorials/Tutorial_Basics.ipynb
    source/modules.rst
 
 
