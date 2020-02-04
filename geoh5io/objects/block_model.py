@@ -27,15 +27,15 @@ class BlockModel(ObjectBase):
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
+        """
+        :return: Default unique identifier
+        """
         return cls.__TYPE_UID
 
     @property
-    def origin(self):
+    def origin(self) -> np.array:
         """
-        origin
-
-        numpy.array of floats, shape (3,)
-            Coordinates of the origin
+        Coordinates of the origin: array of floats, shape (3,)
         """
         return self._origin
 
@@ -55,8 +55,7 @@ class BlockModel(ObjectBase):
     @property
     def u_cell_delimiters(self) -> Optional[np.ndarray]:
         """
-        numpy.array of floats, shape (u_count,)
-            Nodal offset along the u-coordinate
+        Nodal offset along the u-axis: array of floats, shape (u_count,)
         """
         if (
             getattr(self, "_u_cell_delimiters", None) is None
@@ -80,10 +79,7 @@ class BlockModel(ObjectBase):
     @property
     def v_cell_delimiters(self) -> Optional[np.ndarray]:
         """
-        v_cell_delimiters
-
-        numpy.array of floats, shape (v_count,)
-            Nodal offset along the v-coordinate
+        Nodal offset along the v-axis: array of floats, shape (u_count,)
         """
         if (
             getattr(self, "_v_cell_delimiters", None) is None
@@ -107,10 +103,7 @@ class BlockModel(ObjectBase):
     @property
     def z_cell_delimiters(self) -> Optional[np.ndarray]:
         """
-        z_cell_delimiters
-
-        numpy.array of floats, shape (z_count,)
-            Nodal offset along the z-coordinate
+        Nodal offset along the z-axis: array of floats, shape (u_count,)
         """
         if (
             getattr(self, "_z_cell_delimiters", None) is None
@@ -134,12 +127,7 @@ class BlockModel(ObjectBase):
     @property
     def rotation(self) -> Optional[float]:
         """
-        rotation
-
-        Returns
-        -------
-        rotation: array of floats, shape (3,)
-            Clockwise rotation angle about the vertical axis
+        Clockwise rotation angle about the vertical axis: float
         """
         return self._rotation
 
@@ -156,12 +144,7 @@ class BlockModel(ObjectBase):
     @property
     def u_cells(self) -> Optional[np.ndarray]:
         """
-        u_cells size
-
-        Returns
-        -------
-        u_cells: numpy.ndarray
-            Cell size along the u-coordinate
+        Cell size along the u-axis: array, shape (u_count,)
         """
         if self.u_cell_delimiters is not None:
             return self.u_cell_delimiters[1:] - self.u_cell_delimiters[:-1]
@@ -170,12 +153,7 @@ class BlockModel(ObjectBase):
     @property
     def v_cells(self) -> Optional[np.ndarray]:
         """
-        v_cells size
-
-        Returns
-        -------
-        v_cells: numpy.ndarray
-            Cell size along the v-coordinate
+        Cell size along the v-axis: array, shape (v_count,)
         """
         if self.v_cell_delimiters is not None:
             return self.v_cell_delimiters[1:] - self.v_cell_delimiters[:-1]
@@ -184,12 +162,7 @@ class BlockModel(ObjectBase):
     @property
     def z_cells(self) -> Optional[np.ndarray]:
         """
-        z_cells size
-
-        Returns
-        -------
-        z_cells: numpy.ndarray
-            Cell size along the z-coordinate
+        Cell size along the z-axis: array, shape (z_count,)
         """
         if self.z_cell_delimiters is not None:
             return self.z_cell_delimiters[1:] - self.z_cell_delimiters[:-1]
@@ -198,12 +171,7 @@ class BlockModel(ObjectBase):
     @property
     def dimensions(self) -> Optional[list]:
         """
-        dimension
-
-        Returns
-        -------
-        dimension: int
-            Number of cells along the u, v and z-coordinate
+        Number of cells along the u, v and z-axis: list[int], length (3,)
         """
 
         if (
@@ -217,12 +185,7 @@ class BlockModel(ObjectBase):
     @property
     def n_cells(self) -> Optional[int]:
         """
-        n_cells
-
-        Returns
-        -------
-            n_cells: int
-                Number of cells
+        Total number of cells in the model, int
         """
 
         if self.dimensions:
@@ -232,52 +195,29 @@ class BlockModel(ObjectBase):
     @property
     def cell_center_u(self):
         """
-        cell_center_u
-
-        Returns
-        -------
-        cell_center_u: array of floats, shape(n_cells[0],)
-            The cell center location along u
-
+        Cell center locations along u-axis: array of floats, shape(u_count,)
         """
         return np.cumsum(self.u_cells) - self.u_cells / 2.0
 
     @property
     def cell_center_v(self):
         """
-        cell_center_v
-
-        Returns
-        -------
-        cell_center_v: array of floats, shape(n_cells[1],)
-            The cell center location along v
-
+        Cell center locations along v-axis: array of floats, shape(v_count,)
         """
         return np.cumsum(self.v_cells) - self.v_cells / 2.0
 
     @property
     def cell_center_z(self):
         """
-        cell_center_z
-
-        Returns
-        -------
-        cell_center_z: array of floats, shape(n_cells[2],)
-            The cell center location along z
-
+        Cell center locations along z-axis: array of floats, shape(z_count,)
         """
         return np.cumsum(self.z_cells) - self.z_cells / 2.0
 
     @property
     def centroids(self):
         """
-        cell_centers
-
-        Returns
-        -------
-        cell_centers: array of floats, shape(nC, 3)
-            The cell center locations [x_i, y_i, z_i]
-
+        The cell center locations in world coordinates [x_i, y_i, z_i].
+        array of floats, shape(n_cells, 3)
         """
 
         if getattr(self, "_centroids", None) is None:
@@ -305,12 +245,7 @@ class BlockModel(ObjectBase):
     @property
     def u_count(self) -> Optional[int]:
         """
-        u_count
-
-        Returns
-        -------
-        u_count: int
-            Number of cells along u-axis
+        Number of cells along u-axis: int
         """
         if self.u_cell_delimiters is not None:
             return int(self.u_cell_delimiters.shape[0] - 1)
@@ -319,12 +254,7 @@ class BlockModel(ObjectBase):
     @property
     def v_count(self) -> Optional[int]:
         """
-        v_count
-
-        Returns
-        -------
-        v_count: int
-            Number of cells along v-axis
+        Number of cells along v-axis: int
         """
         if self.v_cell_delimiters is not None:
             return int(self.v_cell_delimiters.shape[0] - 1)
@@ -333,12 +263,7 @@ class BlockModel(ObjectBase):
     @property
     def z_count(self) -> Optional[int]:
         """
-        z_count
-
-        Returns
-        -------
-        z_count: int
-            Number of cells along z-axis
+        Number of cells along z-axis: int
         """
         if self.z_cell_delimiters is not None:
             return int(self.z_cell_delimiters.shape[0] - 1)
