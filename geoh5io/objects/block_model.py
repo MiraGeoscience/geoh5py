@@ -3,8 +3,6 @@ from typing import Optional
 
 import numpy as np
 
-from geoh5io.shared import Coord3D
-
 from .object_base import ObjectBase, ObjectType
 
 
@@ -23,7 +21,7 @@ class BlockModel(ObjectBase):
 
     def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
         super().__init__(object_type, name, uid)
-        self._origin = Coord3D()
+        self._origin = [0, 0, 0]
         self._rotation = 0
         self._u_cell_delimiters = None
         self._v_cell_delimiters = None
@@ -47,14 +45,17 @@ class BlockModel(ObjectBase):
     @origin.setter
     def origin(self, value):
         if value is not None:
+            if isinstance(value, np.ndarray):
+                value = value.tolist()
+
             assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
+
             self.update_h5 = "attributes"
             self._centroids = None
 
-            if isinstance(value, list):
-                value = np.asarray(
-                    tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
-                )
+            value = np.asarray(
+                tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
+            )
             self._origin = value
 
     @property
