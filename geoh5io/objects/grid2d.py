@@ -7,6 +7,11 @@ from .object_base import ObjectBase, ObjectType
 
 
 class Grid2D(ObjectBase):
+    """
+    The ``Grid2D`` is a rectilinear array uniform cell size. The grid can
+    be oriented in 3D space through ``rotation`` and ``dip`` parameters.
+    """
+
     __TYPE_UID = uuid.UUID(
         fields=(0x48F5054A, 0x1C5C, 0x4CA4, 0x90, 0x48, 0x80F36DC60A06)
     )
@@ -40,17 +45,15 @@ class Grid2D(ObjectBase):
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
+        """
+        :return: Default unique identifier
+        """
         return cls.__TYPE_UID
 
     @property
     def origin(self):
         """
-        origin
-
-        Returns
-        -------
-        origin: ndarray of floats, shape (3,)
-            Coordinates of the origin
+        Coordinates of the origin: array of floats, shape (3,)
         """
         return self._origin
 
@@ -70,13 +73,8 @@ class Grid2D(ObjectBase):
 
     @property
     def dip(self):
-        """
-        dip
-
-        Returns
-        -------
-        dip: float
-            Dip angle
+        """"
+        Dip angle (positive down) in degree: float
         """
         return self._dip
 
@@ -92,12 +90,7 @@ class Grid2D(ObjectBase):
     @property
     def u_size(self) -> Optional[float]:
         """
-        u_size
-
-        Returns
-        -------
-        u_size: float
-            Cell size along the u-coordinate
+        Cell size along the u-axis: float
         """
         return self._u_size
 
@@ -114,12 +107,7 @@ class Grid2D(ObjectBase):
     @property
     def v_size(self) -> Optional[float]:
         """
-        v_size
-
-        Returns
-        -------
-        v_size: float
-            Cell size along the v-coordinate
+        Cell size along the v-axis: float
         """
         return self._v_size
 
@@ -136,12 +124,7 @@ class Grid2D(ObjectBase):
     @property
     def u_count(self) -> Optional[int]:
         """
-        u_count
-
-        Returns
-        -------
-        u_count: int
-            Number of cells along the u-coordinate
+        Number of cells along u-axis: int
         """
         return self._u_count
 
@@ -158,12 +141,7 @@ class Grid2D(ObjectBase):
     @property
     def v_count(self) -> Optional[int]:
         """
-        v_count
-
-        Returns
-        -------
-        v_count: int
-            Number of cells along the v-coordinate
+        Number of cells along v-axis: int
         """
         return self._v_count
 
@@ -180,12 +158,7 @@ class Grid2D(ObjectBase):
     @property
     def rotation(self) -> Optional[float]:
         """
-        rotation
-
-        Returns
-        -------
-        rotation: array of floats, shape (3,)
-            Clockwise rotation angle about the vertical axis
+        Clockwise rotation angle about the vertical axis in degree: float
         """
         return self._rotation
 
@@ -201,6 +174,9 @@ class Grid2D(ObjectBase):
 
     @property
     def vertical(self) -> Optional[bool]:
+        """
+        Set the grid to be vertical: bool
+        """
         return self._vertical
 
     @vertical.setter
@@ -218,12 +194,7 @@ class Grid2D(ObjectBase):
     @property
     def n_cells(self) -> Optional[int]:
         """
-        n_cells
-
-        Returns
-        -------
-            n_cells: int
-                Number of cells
+        Total number of cells in the grid: int
         """
 
         assert (self.u_count is not None) and (
@@ -235,39 +206,22 @@ class Grid2D(ObjectBase):
     @property
     def cell_center_u(self):
         """
-        cell_center_u
-
-        Returns
-        -------
-        cell_center_u: array of floats, shape(u_count,)
-            The cell center location along u
-
+        The cell center location along u-axis: array of floats, shape(u_count,)
         """
         return np.cumsum(np.ones(self.u_count) * self.u_size) - self.u_size / 2.0
 
     @property
     def cell_center_v(self):
         """
-        cell_center_v
-
-        Returns
-        -------
-        cell_center_v: array of floats, shape(v_count,)
-            The cell center location along v
-
+        The cell center location along v-axis: array of floats, shape(u_count,)
         """
         return np.cumsum(np.ones(self.v_count) * self.v_size) - self.v_size / 2.0
 
     @property
     def centroids(self):
         """
-        cell_centers
-
-        Returns
-        -------
-        cell_centers: array of floats, shape(nC, 3)
-            The cell center locations [x_i, y_i, z_i]
-
+        Cell center locations in world coordinates [x_i, y_i, z_i]:
+        array of floats, shape(n_cells, 3)
         """
 
         if getattr(self, "_centroids", None) is None:

@@ -221,7 +221,7 @@ class BlockModel(ObjectBase):
     @property
     def centroids(self):
         """
-        The cell center locations in world coordinates [x_i, y_i, z_i].
+        Cell center locations in world coordinates [x_i, y_i, z_i]:
         array of floats, shape(n_cells, 3)
         """
 

@@ -11,7 +11,7 @@ from .points import Points
 class Curve(Points):
     """
     A ``Curve`` object is defined by a series of cells (segments)
-    connecting a set of vertices (points). Data can be associated on both the
+    connecting a set of vertices (points). Data can be associated to both the
     cells and vertices.
     """
 
