@@ -1,6 +1,6 @@
 import uuid
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
 
 from numpy import ndarray
 
@@ -15,6 +15,9 @@ if TYPE_CHECKING:
 
 
 class ObjectBase(Entity):
+    """
+    Base class for objects.
+    """
 
     _attribute_map = Entity._attribute_map.copy()
     _attribute_map.update(
@@ -25,7 +28,7 @@ class ObjectBase(Entity):
         assert object_type is not None
         super().__init__(name, uid)
 
-        self.__type = object_type
+        self._type = object_type
         # self._clipping_ids: List[uuid.UUID] = []
         self._property_groups: List[PropertyGroup] = []
         self._last_focus = "None"
@@ -34,6 +37,9 @@ class ObjectBase(Entity):
 
     @property
     def last_focus(self) -> str:
+        """
+        Object visible in camera on start: bool
+        """
         return self._last_focus
 
     @last_focus.setter
@@ -42,11 +48,16 @@ class ObjectBase(Entity):
 
     @property
     def entity_type(self) -> ObjectType:
-        return self.__type
+        """
+        Object type: EntityType
+        """
+        return self._type
 
     @property
     def property_groups(self) -> List[PropertyGroup]:
-
+        """
+        List of property (data) groups: List[PropertyGroup]
+        """
         return self._property_groups
 
     @property_groups.setter
@@ -61,6 +72,13 @@ class ObjectBase(Entity):
 
     @classmethod
     def find_or_create_type(cls, workspace: "workspace.Workspace") -> ObjectType:
+        """
+        Find or create a type for a given object class
+
+        :param Current workspace: Workspace
+
+        :return: A new or existing object type
+        """
         return ObjectType.find_or_create(workspace, cls)
 
     @classmethod
@@ -69,27 +87,16 @@ class ObjectBase(Entity):
         ...
 
     @classmethod
-    def create(cls, workspace: "workspace.Workspace", save_on_creation=True, **kwargs):
+    def create(
+        cls, workspace: "workspace.Workspace", **kwargs
+    ) -> Union[Entity, Tuple[Any, ...]]:
         """
-        create(
-            locations, workspace=None, name="NewPoints",
-            uid=uuid.uuid4(), parent=None, data=None
-        )
-
         Function to create an object with data
 
-        Parameters
-        ----------
-        workspace: geoh5io.Workspace
-            Workspace to be added to
+        :param workspace: Workspace to be added to
+        :param kwargs: List of keyword arguments
 
-        **kwargs
-            List of keyword arguments
-
-        Returns
-        -------
-        entity: geoh5io.Entity
-            Entity registered to the workspace.
+        :return: Entity registered to the workspace.
         """
         object_type = cls.find_or_create_type(workspace)
 
@@ -139,10 +146,7 @@ class ObjectBase(Entity):
         if "data" in kwargs.keys():
             data_objects = new_object.add_data(kwargs["data"])
 
-            return tuple([new_object] + data_objects)
-
-        if save_on_creation:
-            workspace.save_entity(new_object)
+            return tuple([new_object, data_objects])
 
         return new_object
 
@@ -150,8 +154,6 @@ class ObjectBase(Entity):
         self, data: Union[Data, uuid.UUID, str], group_id: Union[str, uuid.UUID]
     ):
         """
-        add_data_to_group(data, group_id)
-
         Append data to a property group where the data can be a Data object or a uuid
         e.g.:
             data = [FloatData, data.uid]
@@ -159,13 +161,9 @@ class ObjectBase(Entity):
         All given data must be children of the object.
         The given group_id name is created if it does not exist already.
 
-        Parameters
-        ----------
-        data: Data or uuid.UUID
-            Data object or uuid
-
-        group_id: str or PropertyGroup
-            PropertyGroup or name of a group to be used
+        :param data: Data object or uuid of data
+        :param group_id: PropertyGroup or name of a group. A new group is created
+        if none exist with the given name.
         """
 
         children_uid = [child.uid for child in self.children]
@@ -183,28 +181,27 @@ class ObjectBase(Entity):
         prop_group.properties = [uid]
         self.update_h5 = "property_groups"
 
-    def create_property_group(self, group_name, **kwargs):
+    def create_property_group(
+        self, group_name: Union[str, uuid.UUID], **kwargs
+    ) -> PropertyGroup:
         """
-        create_property_group(name, **kwargs)
-
         Create property groups from given group names and properties.
         An existing property_group is returned if one exists with the same name.
 
-        Parameters
-        ----------
-        group_name: str
-            Name given to the geoh5io.PropertyGroup object.
+        :param group_name: Name given to the new PropertyGroup object.
 
-        Returns
-        -------
-        group: PropertyGroup
-            A new or existing property_group object
+        :return: A new or existing property_group object
         """
         # Check if the object has it
         prop_group = self.get_property_group(group_name)
 
         if prop_group is None:
-            prop_group = PropertyGroup(group_name=group_name)
+
+            if isinstance(group_name, uuid.UUID):
+                prop_group = PropertyGroup(uid=group_name)
+            else:
+                prop_group = PropertyGroup(group_name=group_name)
+
             self.property_groups = [prop_group]
 
             for attr, val in kwargs.items():
@@ -222,19 +219,11 @@ class ObjectBase(Entity):
         self, group_id: Union[str, uuid.UUID]
     ) -> Optional[PropertyGroup]:
         """
-        get_property_group(group_name)
-
         Retrieve a property_group from one of its identifier, either by group_name or uuid
 
-        Parameters
-        ----------
-        group_id: str | uuid.UUID
-            PropertyGroup identifier, either group_name or uuid
+        :param group_id: PropertyGroup identifier, either group_name or uuid
 
-        Returns
-        -------
-        object_list: List[PropertyGroup]
-            List of PropertyGroup with the same given group_name
+        :return: PropertyGroup with the given group_name
         """
 
         if isinstance(group_id, uuid.UUID):
@@ -252,17 +241,18 @@ class ObjectBase(Entity):
 
     def add_data(
         self, data: dict, property_group: str = None, save_on_creation: bool = True
-    ):
+    ) -> List[Data]:
         """
-        add_data(data)
-
         Create data with association
 
+        :param data: Dictionary of data to be added to the object, such as
+            data = {
+            "data_name1": ["CELL", values1],
+            "data_name2": ["VERTEX", values2],
+            ...
+            }
 
-        Returns
-        -------
-        data: list[Data]
-            List of created Data objects
+        :return: List of created Data objects data:
         """
 
         data_objects = []
@@ -294,18 +284,11 @@ class ObjectBase(Entity):
 
     def get_data(self, name: str) -> List[Data]:
         """
-        @property
-        get_data
+        Get data objects by name
 
-        Parameters
-        ----------
-        name: str
-            Name of the target child data
+        :param name: Name of the target child data
 
-        Returns
-        -------
-        data: geoh5io.Data
-            Returns a registered Data
+        :return: A list of children Data objects
         """
         entity_list = []
 
@@ -315,14 +298,9 @@ class ObjectBase(Entity):
 
         return entity_list
 
-    def get_data_list(self):
+    def get_data_list(self) -> List[str]:
         """
-        get_data_list
-
-        Returns
-        -------
-        names: list[str]
-            List of names of data associated with the object
+        :return: List of names of data associated with the object
 
         """
         name_list = []
