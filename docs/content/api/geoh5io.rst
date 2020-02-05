@@ -1,10 +1,9 @@
-geoh5io package
-===============
+API: geoh5io
+============
 
-Subpackages
------------
 
 .. toctree::
+   :maxdepth: 2
 
    geoh5io.data
    geoh5io.groups
@@ -16,8 +15,6 @@ Subpackages
    geoh5io.workspace
 
 
-Module contents
----------------
 
 .. automodule:: geoh5io
    :members:

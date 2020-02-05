@@ -1,35 +1,34 @@
-geoh5io.handlers package
-========================
+geoh5io.handlers
+================
 
-Submodules
-----------
 
-geoh5io.handlers.data\_handler module
--------------------------------------
+
+geoh5io.handlers.data\_handler
+------------------------------
 
 .. automodule:: geoh5io.handlers.data_handler
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5io.handlers.groups\_handler module
----------------------------------------
+geoh5io.handlers.groups\_handler
+--------------------------------
 
 .. automodule:: geoh5io.handlers.groups_handler
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5io.handlers.objects\_handler module
-----------------------------------------
+geoh5io.handlers.objects\_handler
+---------------------------------
 
 .. automodule:: geoh5io.handlers.objects_handler
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5io.handlers.workspace\_handler module
-------------------------------------------
+geoh5io.handlers.workspace\_handler
+-----------------------------------
 
 .. automodule:: geoh5io.handlers.workspace_handler
    :members:
@@ -37,8 +36,7 @@ geoh5io.handlers.workspace\_handler module
    :show-inheritance:
 
 
-Module contents
----------------
+
 
 .. automodule:: geoh5io.handlers
    :members:

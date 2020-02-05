@@ -1,19 +1,18 @@
-geoh5io.workspace package
-=========================
+geoh5io.workspace
+=================
 
-Submodules
-----------
 
-geoh5io.workspace.root\_group module
-------------------------------------
+
+geoh5io.workspace.root\_group
+-----------------------------
 
 .. automodule:: geoh5io.workspace.root_group
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5io.workspace.workspace module
-----------------------------------
+geoh5io.workspace.workspace
+---------------------------
 
 .. automodule:: geoh5io.workspace.workspace
    :members:
@@ -21,8 +20,7 @@ geoh5io.workspace.workspace module
    :show-inheritance:
 
 
-Module contents
----------------
+
 
 .. automodule:: geoh5io.workspace
    :members:

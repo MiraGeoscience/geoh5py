@@ -372,3 +372,6 @@ nbstripout()
 #         os.path.sep.join([dirname, "content/api/index.rst"]),
 #     ]
 # )
+
+# TODO: build the source
+# sphinx-apidoc --templatedir templates/ -o content/api/ ../geoh5io

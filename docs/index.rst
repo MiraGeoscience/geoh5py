@@ -70,7 +70,7 @@ Contents:
    :maxdepth: 1
 
    content/tutorials/Tutorial_Basics.ipynb
-   source/modules.rst
+   content/api/geoh5io.rst
 
 
 Feedback:

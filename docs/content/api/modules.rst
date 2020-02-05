@@ -1,4 +1,4 @@
-geoh5io
+The API
 =======
 
 .. toctree::

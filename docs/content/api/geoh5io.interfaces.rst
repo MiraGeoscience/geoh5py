@@ -1,8 +1,7 @@
-geoh5io.interfaces package
-==========================
+geoh5io.interfaces
+==================
 
-Module contents
----------------
+
 
 .. automodule:: geoh5io.interfaces
    :members:
