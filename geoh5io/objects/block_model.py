@@ -11,6 +11,16 @@ class BlockModel(ObjectBase):
     Rectilinear ``BlockModel``, or 3D tensor mesh, is a container for models defined
     by three perpendicular axes. Each axis is divided into discrete
     intervals that define the cell dimensions.
+
+    The basic requirements needed to create a BlockModel mesh are:
+        u, v, and z_cell_delimiters = Vectors defining the nodal position along
+         each axis relative to the origin.
+
+            origin
+               V
+     .____.____.____.____.
+    -2.  -1.   O    1.   2.
+
     """
 
     __TYPE_UID = uuid.UUID(

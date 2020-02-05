@@ -9,6 +9,16 @@ from .object_base import ObjectBase, ObjectType
 
 
 class Octree(ObjectBase):
+    """
+    Octree mesh class that uses a tree structure where cells
+    can be subdivided it into eight octants.
+
+    The basic requirements needed to create an Octree mesh are:
+        u, v, and w_count = Number of cells (power of 2) along each axis
+        u, v, and w_cell_size = Cell size along each axis
+
+    """
+
     __TYPE_UID = uuid.UUID(
         fields=(0x4EA87376, 0x3ECE, 0x438B, 0xBF, 0x12, 0x3479733DED46)
     )

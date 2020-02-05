@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 class ObjectBase(Entity):
     """
-    Base class for objects.
+    Base class object.
     """
 
     _attribute_map = Entity._attribute_map.copy()
@@ -154,12 +154,9 @@ class ObjectBase(Entity):
         self, data: Union[Data, uuid.UUID, str], group_id: Union[str, uuid.UUID]
     ):
         """
-        Append data to a property group where the data can be a Data object or a uuid
-        e.g.:
-            data = [FloatData, data.uid]
-
+        Append data to a property group where the data can be a Data object, its name
+        or uid. The given group identifier (name or uid) is created if it does not exist already.
         All given data must be children of the object.
-        The given group_id name is created if it does not exist already.
 
         :param data: Data object or uuid of data
         :param group_id: PropertyGroup or name of a group. A new group is created

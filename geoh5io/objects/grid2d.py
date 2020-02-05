@@ -10,6 +10,17 @@ class Grid2D(ObjectBase):
     """
     The ``Grid2D`` is a rectilinear array uniform cell size. The grid can
     be oriented in 3D space through ``rotation`` and ``dip`` parameters.
+
+    The basic requirements needed to create an Octree mesh are:
+        u, v_count = Number of cells along each axis
+        u, v_cell_size = Cell size along each axis
+
+                origin      origin
+               V            V
+     .____.____.            .____.____.
+    -2.  -1.   O            O    1.   2.
+    (-) cell_size         (+) cell_size
+
     """
 
     __TYPE_UID = uuid.UUID(
