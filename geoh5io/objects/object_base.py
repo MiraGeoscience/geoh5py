@@ -1,6 +1,6 @@
 import uuid
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
 from numpy import ndarray
 
@@ -24,9 +24,11 @@ class ObjectBase(Entity):
         {"Last focus": "last_focus", "PropertyGroups": "property_groups"}
     )
 
-    def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
+    def __init__(
+        self, object_type: ObjectType, name: str = "Object", uid: uuid.UUID = None
+    ):
         assert object_type is not None
-        super().__init__(name, uid)
+        super().__init__(name=name, uid=uid)
 
         self._type = object_type
         # self._clipping_ids: List[uuid.UUID] = []
@@ -71,7 +73,9 @@ class ObjectBase(Entity):
         self._property_groups = self.property_groups + prop_groups
 
     @classmethod
-    def find_or_create_type(cls, workspace: "workspace.Workspace") -> ObjectType:
+    def find_or_create_type(
+        cls, workspace: "workspace.Workspace", uid: Optional[uuid.UUID] = None
+    ) -> ObjectType:
         """
         Find or create a type for a given object class
 
@@ -85,70 +89,6 @@ class ObjectBase(Entity):
     @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:
         ...
-
-    @classmethod
-    def create(
-        cls, workspace: "workspace.Workspace", **kwargs
-    ) -> Union[Entity, Tuple[Any, ...]]:
-        """
-        Function to create an object with data
-
-        :param workspace: Workspace to be added to
-        :param kwargs: List of keyword arguments
-
-        :return: Entity registered to the workspace.
-        """
-        object_type = cls.find_or_create_type(workspace)
-
-        if object_type.name is None:
-            object_type.name = cls.__name__
-
-        if object_type.description is None:
-            object_type.description = cls.__name__
-
-        if "name" in kwargs.keys():
-            name = kwargs["name"]
-        else:
-            name = "NewObject"
-
-        if "uid" in kwargs.keys():
-            assert isinstance(
-                kwargs["uid"], uuid.UUID
-            ), "Input uid must be of type uuid.UUID"
-            uid = kwargs["uid"]
-        else:
-            uid = uuid.uuid4()
-
-        new_object = cls(object_type, name, uid)
-
-        # Replace all attributes given as kwargs
-        for attr, item in kwargs.items():
-            try:
-                setattr(new_object, attr, item)
-            except AttributeError:
-                pass
-
-        # Add parent-child relationship
-        if "parent" in kwargs.keys():
-            if isinstance(kwargs["parent"], uuid.UUID):
-                parent = workspace.get_entity(kwargs["parent"])[0]
-            else:
-                assert isinstance(
-                    kwargs["parent"], Entity
-                ), "Given 'parent' argument must be of type uuid.UUID or 'Entity'"
-
-                parent = kwargs["parent"]
-        else:
-            parent = workspace.root
-
-        new_object.parent = parent
-
-        if "data" in kwargs.keys():
-            data_objects = new_object.add_data(kwargs["data"])
-
-            return tuple([new_object, data_objects])
-
-        return new_object
 
     def add_data_to_group(
         self, data: Union[Data, uuid.UUID, str], group_id: Union[str, uuid.UUID]
@@ -237,8 +177,8 @@ class ObjectBase(Entity):
         return groups_list[0]
 
     def add_data(
-        self, data: dict, property_group: str = None, save_on_creation: bool = True
-    ) -> List[Data]:
+        self, data: dict, property_group: str = None
+    ) -> Union[Data, List[Data]]:
         """
         Create data with association
 
@@ -269,13 +209,15 @@ class ObjectBase(Entity):
                 # Add parent-child relationship
                 data_object.parent = self
 
-                if save_on_creation:
-                    self.workspace.save_entity(data_object)
+                self.workspace.save_entity(data_object)
 
                 if property_group is not None:
                     self.add_data_to_group(data_object, property_group)
 
                 data_objects.append(data_object)
+
+        if len(data_objects) == 1:
+            return data_object
 
         return data_objects
 

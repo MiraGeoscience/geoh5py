@@ -20,18 +20,17 @@ def test_create_curve_data():
     # Create a workspace
     workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
 
-    curve, vertex_data, cell_data = Curve.create(
-        workspace,
-        vertices=xyz,
-        name=curve_name,
-        data={"vertexValues": ["VERTEX", values], "cellValues": ["CELL", cell_values]},
+    curve = Curve.create(workspace, vertices=xyz, name=curve_name)
+
+    data_objects = curve.add_data(
+        {"vertexValues": ["VERTEX", values], "cellValues": ["CELL", cell_values]}
     )
 
     assert all(
-        vertex_data.values == values
+        data_objects[0].values == values
     ), "Created VERTEX data values differ from input"
     assert all(
-        cell_data.values == cell_values
+        data_objects[1].values == cell_values
     ), "Created CELL data values differ from input"
 
     workspace.save_entity(curve)
@@ -60,7 +59,7 @@ def test_create_curve_data():
 
     # Change the vertex values
     new_vals = random.randn(n_data)
-    vertex_data.values = new_vals
+    data_objects[0].values = new_vals
     workspace.save_entity(curve)
 
     workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)

@@ -20,21 +20,19 @@ def test_create_grid_2d_data():
     # # Create a workspace
     workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
 
-    grid, data = Grid2D.create(
+    grid = Grid2D.create(
         workspace,
         origin=origin,
-        u_size=d_x,
-        v_size=d_y,
+        u_cell_size=d_x,
+        v_cell_size=d_y,
         u_count=n_x,
         v_count=n_y,
         name=name,
-        data={"DataValues": ["CELL", values]},
         allow_move=False,
     )
 
+    grid.add_data({"DataValues": ["CELL", values]})
     grid.rotation = 45.0
-    workspace.save_entity(grid)
-    workspace.finalize()
 
     # Read the data back in from a fresh workspace
     workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)

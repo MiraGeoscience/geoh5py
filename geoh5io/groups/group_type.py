@@ -47,7 +47,7 @@ class GroupType(EntityType):
         cls,
         workspace: "workspace.Workspace",
         group_class: Type["group.Group"],
-        type_uid=None,
+        uid=None,
     ) -> GroupType:
         """ Find or creates the GroupType with the pre-defined type UUID that matches the given
         Group implementation class.
@@ -59,21 +59,21 @@ class GroupType(EntityType):
         :return: A new instance of GroupType.
         """
 
-        if type_uid is None:
-            type_uid = group_class.default_type_uid()
+        if uid is None:
+            uid = group_class.default_type_uid()
 
-        if type_uid is None or type_uid.int == 0:
+        if uid is None or uid.int == 0:
             raise RuntimeError(
                 f"Cannot create GroupType with null UUID from {group_class.__name__}."
             )
 
-        group_type = cls.find(workspace, type_uid)
+        group_type = cls.find(workspace, uid)
         if group_type is not None:
             return group_type
 
         return cls(
             workspace,
-            type_uid,
+            uid,
             group_class.default_type_name(),
             group_class.default_type_description(),
         )

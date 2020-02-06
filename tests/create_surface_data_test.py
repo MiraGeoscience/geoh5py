@@ -28,16 +28,11 @@ def test_create_surface_data():
     )
 
     # Create a geoh5 surface
-    surface, data_object = Surface.create(
-        workspace,
-        name="mySurf",
-        vertices=np.c_[x, y, z],
-        cells=simplices,
-        data={"TMI": ["CELL", values]},
+    surface = Surface.create(
+        workspace, name="mySurf", vertices=np.c_[x, y, z], cells=simplices
     )
 
-    workspace.save_entity(surface)
-    workspace.finalize()
+    data = surface.add_data({"TMI": ["CELL", values]})
 
     # Read the object from a different workspace
     new_workspace = Workspace(
@@ -50,6 +45,6 @@ def test_create_surface_data():
     assert [
         prop in obj_copy.get_data_list() for prop in surface.get_data_list()
     ], "The surface object did not copy"
-    assert np.all(data_copy.values == data_object.values), "Data values were not copied"
+    assert np.all(data_copy.values == data.values), "Data values were not copied"
 
     os.remove(os.getcwd() + os.sep + "assets" + os.sep + r"temp\testSurface.geoh5")

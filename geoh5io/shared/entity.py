@@ -1,6 +1,6 @@
 import uuid
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
 if TYPE_CHECKING:
     from geoh5io import shared
@@ -17,7 +17,7 @@ class Entity(ABC):
         "Public": "public",
     }
 
-    def __init__(self, name: str, uid: uuid.UUID = None):
+    def __init__(self, name: str = "Entity", uid: uuid.UUID = None):
         if uid is not None:
             assert uid.int != 0
             self._uid = uid
@@ -199,3 +199,52 @@ class Entity(ABC):
             Add a child entity to the list of children
         """
         self._children.append(entity)
+
+    @classmethod
+    def create(cls, workspace, **kwargs):
+        """
+        Function to create an object with data
+
+        :param workspace: Workspace to be added to
+        :param kwargs: List of keyword arguments
+
+        :return: Entity: Registered to the workspace.
+        """
+        object_type = cls.find_or_create_type(workspace)
+
+        if object_type.name is None:
+            object_type.name = cls.__name__
+
+        if object_type.description is None:
+            object_type.description = cls.__name__
+
+        new_object = cls(object_type)
+
+        # Replace all attributes given as kwargs
+        for attr, item in kwargs.items():
+            try:
+                setattr(new_object, attr, item)
+            except AttributeError:
+                pass
+
+        # Add parent-child relationship
+        if "parent" in kwargs.keys():
+            if isinstance(kwargs["parent"], uuid.UUID):
+                parent = workspace.get_entity(kwargs["parent"])[0]
+            else:
+                assert isinstance(
+                    kwargs["parent"], Entity
+                ), "Given 'parent' argument must be of type uuid.UUID or 'Entity'"
+
+                parent = kwargs["parent"]
+        else:
+            parent = workspace.root
+
+        new_object.parent = parent
+
+        return new_object
+
+    @classmethod
+    @abstractmethod
+    def find_or_create_type(cls, workspace, uid: Optional[uuid.UUID] = None):
+        ...

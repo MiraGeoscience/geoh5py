@@ -11,9 +11,11 @@ if TYPE_CHECKING:
 
 
 class Group(Entity):
-    def __init__(self, group_type: GroupType, name: str, uid: uuid.UUID = None):
+    def __init__(
+        self, group_type: GroupType, name: str = "Group", uid: uuid.UUID = None
+    ):
         assert group_type is not None
-        super().__init__(name, uid)
+        super().__init__(name=name, uid=uid)
 
         self._type = group_type
 
@@ -26,9 +28,10 @@ class Group(Entity):
 
     @classmethod
     def find_or_create_type(
-        cls, workspace: "workspace.Workspace", type_uid=None
+        cls, workspace: "workspace.Workspace", uid: Optional[uuid.UUID] = None
     ) -> GroupType:
-        return GroupType.find_or_create(workspace, cls, type_uid=type_uid)
+
+        return GroupType.find_or_create(workspace, cls, uid=uid)
 
     @classmethod
     @abstractmethod
@@ -43,78 +46,3 @@ class Group(Entity):
     @classmethod
     def default_type_description(cls) -> Optional[str]:
         return cls.default_type_name()
-
-    @classmethod
-    def create(cls, workspace: "workspace.Workspace", save_on_creation=True, **kwargs):
-        """
-        create(
-            workspace, name=["NewGroup"],
-            uid=[uuid.uuid4()], parent=[None]
-        )
-
-        Function to create a group object
-
-        Parameters
-        ----------
-        workspace: geoh5io.Workspace
-            Workspace to be added to
-
-        **kwargs
-            name: str optional
-                Name of the Group object ["NewGroup"]
-
-            uid: uuid.UUID optional
-                Unique identifier, or randomly generated using uuid.uuid4 if None
-
-            parent: uuid.UUID | Entity | None optional
-                Parental Entity or reference uuid to be linked to.
-                If None, the object is added to the base Workspace.
-
-        Returns
-        -------
-        entity: geoh5io.Group
-            Group object registered to the workspace.
-        """
-        new_group_type = cls.find_or_create_type(workspace)
-
-        if "name" in kwargs.keys():
-            name = kwargs["name"]
-        else:
-            name = "NewGroup"
-
-        if "uid" in kwargs.keys():
-            assert isinstance(
-                kwargs["uid"], uuid.UUID
-            ), "Input uid must be of type uuid.UUID"
-            uid = kwargs["uid"]
-        else:
-            uid = uuid.uuid4()
-
-        new_group = cls(new_group_type, name, uid)
-
-        # Replace all attributes given as kwargs
-        for attr, item in kwargs.items():
-            try:
-                setattr(new_group, attr, item)
-            except AttributeError:
-                continue  # print(f"Could not set attribute {attr}")
-
-        # Add parent-child relationship
-        if "parent" in kwargs.keys():
-            if isinstance(kwargs["parent"], uuid.UUID):
-                parent = workspace.get_entity(kwargs["parent"])[0]
-            else:
-                assert isinstance(
-                    kwargs["parent"], Entity
-                ), "Given 'parent' argument must be of type uuid.UUID or 'Entity'"
-
-                parent = kwargs["parent"]
-        else:
-            parent = workspace.root
-
-        new_group.parent = parent
-
-        if save_on_creation:
-            workspace.save_entity(new_group)
-
-        return new_group

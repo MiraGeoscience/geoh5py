@@ -20,15 +20,10 @@ def test_create_point_data():
     # Create a workspace
     workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
 
-    _, data = Points.create(
-        workspace,
-        vertices=xyz,
-        name=name,
-        data={"DataValues": ["VERTEX", values]},
-        allow_move=False,
-    )
+    points = Points.create(workspace, vertices=xyz, name=name, allow_move=False)
 
-    # Change some attributes for testing
+    data = points.add_data({"DataValues": ["VERTEX", values]})
+    # Change some data attributes for testing
     data.allow_delete = False
     data.allow_move = True
     data.allow_rename = False

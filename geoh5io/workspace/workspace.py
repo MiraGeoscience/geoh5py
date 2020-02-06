@@ -427,9 +427,7 @@ class Workspace:
                 # Special case for CustomGroup without uuid
                 if (created_entity is None) and entity_class == Group:
                     custom = groups.custom_group.CustomGroup
-                    unknown_type = custom.find_or_create_type(
-                        self, type_uid=entity_type_uid
-                    )
+                    unknown_type = custom.find_or_create_type(self, uid=entity_type_uid)
                     created_entity = custom(unknown_type, name, uid)
 
             else:
