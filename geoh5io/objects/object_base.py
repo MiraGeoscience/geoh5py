@@ -140,7 +140,6 @@ class ObjectBase(Entity):
 
         :return: PropertyGroup with the given group_name
         """
-
         if isinstance(group_id, uuid.UUID):
             groups_list = [pg for pg in self.property_groups if pg.uid == group_id]
 
@@ -169,7 +168,6 @@ class ObjectBase(Entity):
 
         :return: List of created Data objects data:
         """
-
         data_objects = []
         for key, value in data.items():
             if isinstance(value[1], ndarray):

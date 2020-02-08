@@ -192,7 +192,6 @@ class BlockModel(ObjectBase):
         """
         Number of cells along the u, v and z-axis: list[int], length (3,)
         """
-
         if (
             self.u_count is not None
             and self.v_count is not None
@@ -206,7 +205,6 @@ class BlockModel(ObjectBase):
         """
         Total number of cells in the model, int
         """
-
         if self.dimensions:
             return int(np.prod(self.dimensions))
         return None
@@ -238,7 +236,6 @@ class BlockModel(ObjectBase):
         Cell center locations in world coordinates [x_i, y_i, z_i]:
         array of floats, shape(n_cells, 3)
         """
-
         if getattr(self, "_centroids", None) is None:
 
             angle = np.deg2rad(self.rotation)

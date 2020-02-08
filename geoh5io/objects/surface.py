@@ -22,9 +22,6 @@ class Surface(Points):
         if object_type.name == "None":
             self.entity_type.name = "Surface"
 
-        # if object_type.description is None:
-        #     self.entity_type.description = "Surface"
-
     @property
     def cells(self) -> Optional[ndarray]:
         """
@@ -75,7 +72,6 @@ class Surface(Points):
         if indices.dtype == "int32":
             indices.astype("uint32")
         self.update_h5 = "cells"
-        self._n_cells = None  # Reset the n_cells if not None
         self._cells = indices
 
     @classmethod
@@ -92,7 +88,6 @@ class Surface(Points):
         n_cells: int
             Number of cells
         """
-        if (self._n_cells is None) and (self.cells is not None):
-            self._n_cells = self._cells.shape[0]
-
-        return self._n_cells
+        if self.cells is not None:
+            return self._cells.shape[0]
+        return None

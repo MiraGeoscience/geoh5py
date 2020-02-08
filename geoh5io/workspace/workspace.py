@@ -240,7 +240,6 @@ class Workspace:
         root: geoh5io.Group
             Group entity corresponding to the root (Workspace)
         """
-
         return self._root
 
     @property
@@ -253,7 +252,6 @@ class Workspace:
         h5file: str
             File name with path to the target geoh5 database
         """
-
         return self._h5file
 
     @property
@@ -306,12 +304,10 @@ class Workspace:
         add_children: bool=True
             Add children objects to the geoh5
         """
-
         H5Writer.save_entity(entity, close_file=close_file, add_children=add_children)
 
     def finalize(self):
         """ Finalize the geoh5 file by checking for updated entities and re-building the Root"""
-
         for entity in self.all_objects() + self.all_groups() + self.all_data():
             if len(entity.update_h5) > 0:
                 self.save_entity(entity)
@@ -334,7 +330,6 @@ class Workspace:
         object_list: List[Entity]
             List of entities with the same given name
         """
-
         if isinstance(name, uuid.UUID):
             list_entity_uid = [name]
 
@@ -359,7 +354,6 @@ class Workspace:
 
         :return: entity: Newly created entity registered to the workspace
         """
-
         created_entity: Optional[Entity] = None
 
         # Assume that entity is being created from its class
@@ -447,7 +441,6 @@ class Workspace:
         recursively: bool=False
             Recover all children down the project tree
         """
-
         base_classes = {"group": Group, "object": ObjectBase, "data": Data}
 
         if isinstance(entity, Group):
@@ -593,7 +586,6 @@ class Workspace:
         value: numpy.ndarray(int)
             Array of [i, j, k, dimension] defining the octree mesh
         """
-
         group_dict = H5Reader.fetch_property_groups(self.h5file, self.name, uid)
 
         property_groups = []

@@ -27,9 +27,6 @@ class Curve(Points):
         if object_type.name == "None":
             self.entity_type.name = "Curve"
 
-        # if object_type.description is None:
-        #     self.entity_type.description = "Curve"
-
     @property
     def cells(self) -> Optional[ndarray]:
         """

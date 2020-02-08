@@ -219,7 +219,6 @@ class Grid2D(ObjectBase):
         """
         Total number of cells in the grid: int
         """
-
         assert (self.u_count is not None) and (
             self.v_count is not None
         ), "'u_count' and 'v_count' must be set"
@@ -250,7 +249,6 @@ class Grid2D(ObjectBase):
         Cell center locations in world coordinates [x_i, y_i, z_i]:
         array of floats, shape(n_cells, 3)
         """
-
         if getattr(self, "_centroids", None) is None:
 
             angle = np.deg2rad(self.rotation)

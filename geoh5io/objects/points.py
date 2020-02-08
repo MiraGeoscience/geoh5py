@@ -27,10 +27,6 @@ class Points(ObjectBase):
         if object_type.name == "None":
             self.entity_type.name = "Points"
 
-        # if object_type.description is None:
-        #     self.entity_type.description = "Points"
-        #
-
         object_type.workspace._register_object(self)
 
     @classmethod
@@ -81,5 +77,4 @@ class Points(ObjectBase):
         """
         if self._vertices is not None:
             return self.locations.shape[0]
-
         return None

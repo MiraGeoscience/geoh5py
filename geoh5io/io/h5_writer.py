@@ -87,7 +87,6 @@ class H5Writer:
         type: h5py.File
             Pointer to type in a geoh5 file. Active link if "close_file" is False
         """
-
         entity_type = entity.entity_type
 
         h5file = fetch_h5_handle(file, entity_type)

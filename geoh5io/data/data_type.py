@@ -96,7 +96,6 @@ class DataType(EntityType):
 
         :return: A new instance of DataType.
         """
-
         uid = uuid.uuid4()
 
         for key, val in kwargs.items():

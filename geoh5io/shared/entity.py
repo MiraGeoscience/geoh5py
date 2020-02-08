@@ -233,7 +233,6 @@ class Entity(ABC):
 
         :return: Entity: Registered to the workspace.
         """
-
         if "entity_type_uid" in kwargs.keys():
             entity_type_kwargs = {"entity_type": {"uid": kwargs["entity_type_uid"]}}
         else:

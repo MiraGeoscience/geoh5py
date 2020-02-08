@@ -265,7 +265,6 @@ class Octree(ObjectBase):
         dimension: int
             Number of cells along the u, v and w-axis
         """
-
         if (
             self.u_count is not None
             and self.v_count is not None
@@ -286,9 +285,7 @@ class Octree(ObjectBase):
             The cell center locations [x_i, y_i, z_i]
 
         """
-
         if getattr(self, "_centroids", None) is None:
-
             assert self.octree_cells is not None, "octree_cells must be set"
             assert self.u_cell_size is not None, "u_cell_size must be set"
             assert self.v_cell_size is not None, "v_cell_size must be set"
@@ -330,7 +327,6 @@ class Octree(ObjectBase):
             n_cells: int
                 Number of cells
         """
-
         if self.octree_cells is not None:
             return self.octree_cells.shape[0]
         return None
@@ -349,7 +345,6 @@ class Octree(ObjectBase):
             Array of indices used to sort the data
 
         """
-
         for child in self.children:
             if isinstance(child, FloatData):
                 if (child.values is not None) and (child.association.name in ["CELL"]):
@@ -367,7 +362,6 @@ class Octree(ObjectBase):
         level: int
             Level of global octree refinement
         """
-
         assert (
             self._octree_cells is None
         ), "'refine' function only implemented if 'octree_cells' is None "
