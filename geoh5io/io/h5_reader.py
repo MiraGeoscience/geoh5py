@@ -77,7 +77,7 @@ class H5Reader:
     @classmethod
     def fetch_attributes(
         cls, h5file: str, name: str, uid: uuid.UUID, entity_type: str
-    ) -> Tuple[dict, dict]:
+    ) -> Tuple[dict, dict, dict]:
         """
         fetch_attributes(h5file, name, uid, entity_type)
 
@@ -103,8 +103,9 @@ class H5Reader:
             Dictionary of attributes from geoh5
         """
         project = h5py.File(h5file, "r")
-        attributes = {}
-        type_attributes = {}
+        attributes: Dict = {"entity": {}}
+        type_attributes: Dict = {"entity_type": {}}
+        property_groups: Dict = {}
         if "type" in entity_type:
             entity_type = entity_type.replace("_", " ").capitalize() + "s"
             entity = project[name]["Types"][entity_type][cls.uuid_str(uid)]
@@ -117,18 +118,22 @@ class H5Reader:
             entity = project[name][entity_type][cls.uuid_str(uid)]
 
         for key, value in entity.attrs.items():
-            attributes[key] = value
+            attributes["entity"][key] = value
 
         for key, value in entity["Type"].attrs.items():
-            type_attributes[key] = value
+            type_attributes["entity_type"][key] = value
 
         # Check if the entity has property_group
         if "PropertyGroups" in entity.keys():
-            attributes["PropertyGroups"] = []
+            for pg_id in entity["PropertyGroups"].keys():
+                property_groups[pg_id] = {"uid": pg_id}
+                for key, value in entity["PropertyGroups"][pg_id].attrs.items():
+                    property_groups[pg_id][key] = value
 
         project.close()
 
-        return attributes, type_attributes
+        attributes["entity"]["existing_h5_entity"] = True
+        return attributes, type_attributes, property_groups
 
     @classmethod
     def fetch_children(

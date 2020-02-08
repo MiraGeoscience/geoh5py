@@ -36,6 +36,7 @@ def test_create_curve_data():
     workspace.save_entity(curve)
     workspace.finalize()
 
+    #################### Modify the vertices and data #########################
     # Re-open the workspace and read data back in
     workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
 
@@ -52,16 +53,17 @@ def test_create_curve_data():
         data_cell.values == cell_values
     ), "Loaded CELL data values differ from input"
 
-    #################### Modify the vertices and data #########################
     # Change the vertices of the curve
     new_locs = random.randn(n_data, 3)
-    curve.vertices = new_locs
+    obj.vertices = new_locs
 
     # Change the vertex values
     new_vals = random.randn(n_data)
-    data_objects[0].values = new_vals
-    workspace.save_entity(curve)
+    data_vertex.values = new_vals
 
+    workspace.finalize()
+
+    ##################### READ BACK AND COMPARE ############################
     workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
 
     # Read the data back in again

@@ -34,7 +34,7 @@ def test_group_instantiation(group_class: Type[Group]):
     assert the_workspace.find_type(group_type.uid, ObjectType) is None
 
     type_used_by_root = the_workspace.root.entity_type is group_type
-    created_group = group_class(group_type, "test group")
+    created_group = group_class(group_type, name="test group")
     assert created_group.uid is not None
     assert created_group.uid.int != 0
     assert created_group.name == "test group"
@@ -74,7 +74,7 @@ def test_custom_group_instantiation():
         CustomGroup.find_or_create_type(the_workspace)
 
     group_type = GroupType.create_custom(
-        the_workspace, "test custom", "test custom description"
+        the_workspace, name="test custom", description="test custom description"
     )
     assert group_type.name == "test custom"
     assert group_type.description == "test custom description"
@@ -85,7 +85,7 @@ def test_custom_group_instantiation():
     assert the_workspace.find_type(group_type.uid, GroupType) is group_type
     assert GroupType.find(the_workspace, group_type.uid) is group_type
 
-    created_group = CustomGroup(group_type, "test custom group")
+    created_group = CustomGroup(group_type, name="test custom group")
     assert created_group.uid is not None
     assert created_group.uid.int != 0
     assert created_group.name == "test custom group"

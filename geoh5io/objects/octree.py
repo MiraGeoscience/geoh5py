@@ -16,7 +16,6 @@ class Octree(ObjectBase):
     The basic requirements needed to create an Octree mesh are:
         u, v, and w_count = Number of cells (power of 2) along each axis
         u, v, and w_cell_size = Cell size along each axis
-
     """
 
     __TYPE_UID = uuid.UUID(
@@ -37,8 +36,8 @@ class Octree(ObjectBase):
         }
     )
 
-    def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
-        super().__init__(object_type, name, uid)
+    def __init__(self, object_type: ObjectType, **kwargs):
+
         self._origin = [0, 0, 0]
         self._rotation = 0.0
         self._u_count = None
@@ -49,6 +48,15 @@ class Octree(ObjectBase):
         self._w_cell_size = None
         self._octree_cells = None
         self._centroids = None
+        super().__init__(object_type, **kwargs)
+
+        if object_type.name == "None":
+            self.entity_type.name = "Octree"
+
+        # if object_type.description is None:
+        #     self.entity_type.description = "Octree"
+
+        object_type.workspace._register_object(self)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -57,12 +65,7 @@ class Octree(ObjectBase):
     @property
     def origin(self):
         """
-        origin
-
-        Returns
-        -------
-        origin: ndarray of floats, shape (3,)
-            Coordinates of the origin
+        Coordinates of the origin: array of floats, shape (3,)
         """
         return self._origin
 
@@ -85,12 +88,7 @@ class Octree(ObjectBase):
     @property
     def rotation(self) -> Optional[float]:
         """
-        rotation
-
-        Returns
-        -------
-        rotation: array of floats, shape (3,)
-            Clockwise rotation angle about the vertical axis
+        Clockwise rotation angle (degree) about the vertical axis: float
         """
         return self._rotation
 
@@ -107,12 +105,7 @@ class Octree(ObjectBase):
     @property
     def u_count(self) -> Optional[int]:
         """
-        u_count
-
-        Returns
-        -------
-        u_count: int
-            Number of base cells along u-axis
+        Number of base cells along u-axis: int
         """
         return self._u_count
 
@@ -129,12 +122,7 @@ class Octree(ObjectBase):
     @property
     def v_count(self) -> Optional[int]:
         """
-        v_count
-
-        Returns
-        -------
-        v_count: int
-            Number of base cells along v-axis
+        Number of base cells along v-axis: int
         """
         return self._v_count
 
@@ -151,12 +139,7 @@ class Octree(ObjectBase):
     @property
     def w_count(self) -> Optional[int]:
         """
-        w_count
-
-        Returns
-        -------
-        w_count: int
-            Number of base cells along w-axis
+        Number of base cells along w-axis: int
         """
         return self._w_count
 

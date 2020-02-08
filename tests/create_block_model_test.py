@@ -69,8 +69,6 @@ def test_create_block_model_data():
         * np.cos(grid.centroids[:, 2])
     )
     data = grid.add_data({"DataValues": ["CELL", values]})
-    workspace.save_entity(grid)
-    workspace.finalize()
 
     # Read the data back in from a fresh workspace
     workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)

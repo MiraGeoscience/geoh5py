@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING
 
 from geoh5io.shared import EntityType
 
@@ -11,16 +11,22 @@ if TYPE_CHECKING:
 
 
 class GroupType(EntityType):
-    def __init__(
-        self,
-        workspace: "workspace.Workspace",
-        uid: uuid.UUID,
-        name="Container",
-        description="Container",
-    ):
-        super().__init__(workspace, uid, name, description)
-        self._allow_move_content = True
-        self._allow_delete_content = True
+    _attribute_map = EntityType._attribute_map.copy()
+    _attribute_map.update(
+        {
+            "Allow move contents": "allow_move_content",
+            "Allow delete contents": "allow_delete_content",
+        }
+    )
+
+    _allow_move_content = True
+    _allow_delete_content = True
+
+    def __init__(self, workspace: "workspace.Workspace", **kwargs):
+        assert workspace is not None
+        super().__init__(workspace, **kwargs)
+
+        workspace._register_type(self)
 
     @staticmethod
     def _is_abstract() -> bool:
@@ -44,46 +50,38 @@ class GroupType(EntityType):
 
     @classmethod
     def find_or_create(
-        cls,
-        workspace: "workspace.Workspace",
-        group_class: Type["group.Group"],
-        uid=None,
+        cls, workspace: "workspace.Workspace", entity_class, **kwargs
     ) -> GroupType:
-        """ Find or creates the GroupType with the pre-defined type UUID that matches the given
+        """ Find or creates an EntityType with given UUID that matches the given
         Group implementation class.
 
-        It is expected to have a single instance of GroupType in the Workspace
-        for each concrete Group class.
+        It is expected to have a single instance of EntityType in the Workspace
+        for each concrete Entity class.
 
-        :param group_class: An Group implementation class.
+        :param workspace: An active Workspace class
+        :param entity_class: An Group implementation class.
+
         :return: A new instance of GroupType.
         """
 
-        if uid is None:
-            uid = group_class.default_type_uid()
+        uid = uuid.uuid4()
+        if getattr(entity_class, "default_type_uid", None) is not None:
+            uid = entity_class.default_type_uid()
 
-        if uid is None or uid.int == 0:
-            raise RuntimeError(
-                f"Cannot create GroupType with null UUID from {group_class.__name__}."
-            )
+            if "ID" in list(kwargs.keys()):
+                kwargs["ID"] = uid
+            else:
+                kwargs["uid"] = uid
 
-        group_type = cls.find(workspace, uid)
-        if group_type is not None:
-            return group_type
+        entity_type = cls.find(workspace, uid)
+        if entity_type is not None:
+            return entity_type
 
-        return cls(
-            workspace,
-            uid,
-            group_class.default_type_name(),
-            group_class.default_type_description(),
-        )
+        return cls(workspace, **kwargs)
 
     @staticmethod
-    def create_custom(
-        workspace: "workspace.Workspace", name=None, description=None
-    ) -> GroupType:
+    def create_custom(workspace: "workspace.Workspace", **kwargs) -> GroupType:
         """ Creates a new instance of GroupType for an unlisted custom Group type with a
         new auto-generated UUID.
         """
-        type_id = uuid.uuid4()
-        return GroupType(workspace, type_id, name, description)
+        return GroupType(workspace, **kwargs)

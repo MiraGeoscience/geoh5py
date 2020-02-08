@@ -1,6 +1,6 @@
 import uuid
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, List, Union
 
 if TYPE_CHECKING:
     from geoh5io import shared
@@ -17,15 +17,12 @@ class Entity(ABC):
         "Public": "public",
     }
 
-    def __init__(self, name: str = "Entity", uid: uuid.UUID = None):
-        if uid is not None:
-            assert uid.int != 0
-            self._uid = uid
-        else:
-            self._uid = uuid.uuid4()
-        self._name = self.fix_up_name(name)
+    def __init__(self, **kwargs):
+
+        self._uid: uuid.UUID = uuid.uuid4()
+        self._name = "Entity"
         self._parent = None
-        self._children: List[Entity] = []
+        self._children: List = []
         self._visible = True
         self._allow_delete = True
         self._allow_move = False
@@ -33,6 +30,14 @@ class Entity(ABC):
         self._public = True
         self._existing_h5_entity = False
         self._update_h5: List[str] = []
+
+        for attr, item in kwargs.items():
+            try:
+                if attr in self._attribute_map.keys():
+                    attr = self._attribute_map[attr]
+                setattr(self, attr, item)
+            except AttributeError:
+                continue
 
     @property
     def attribute_map(self):
@@ -66,6 +71,22 @@ class Entity(ABC):
 
     @property
     def uid(self) -> uuid.UUID:
+        return self._uid
+
+    @uid.setter
+    def uid(self, uid: Union[str, uuid.UUID]):
+
+        if isinstance(uid, str):
+            uid = uuid.UUID(uid)
+
+        self._uid = uid
+
+    @uid.getter
+    def uid(self):
+
+        if self._uid is None:
+            self._uid = uuid.uuid4()
+
         return self._uid
 
     @property
@@ -166,21 +187,23 @@ class Entity(ABC):
         return self._parent
 
     @parent.setter
-    def parent(self, parent):
-        if parent:
-            if isinstance(parent, uuid.UUID):
-                uid = parent
-            else:
-                if isinstance(parent, Entity):
-                    uid = parent.uid
-                else:
-                    uid = self.workspace.get_entity("Workspace")[0].uid
+    def parent(self, parent: Union["shared.Entity", uuid.UUID]):
 
-            self._parent = self.workspace.get_entity(uid)[0]
+        if isinstance(parent, uuid.UUID):
+            uid = parent
+        else:
+            uid = parent.uid
+
+        self._parent = self.workspace.get_entity(uid)[0]
+        self._parent.add_child(self)
+
+    @parent.getter
+    def parent(self):
+        if (self._parent is None) and (self.name != "Workspace"):
+            self._parent = self.workspace.get_entity("Workspace")[0]
             self._parent.add_child(self)
 
-        else:
-            self._parent = None
+        return self._parent
 
     @property
     def children(self):
@@ -210,41 +233,21 @@ class Entity(ABC):
 
         :return: Entity: Registered to the workspace.
         """
-        object_type = cls.find_or_create_type(workspace)
 
-        if object_type.name is None:
-            object_type.name = cls.__name__
-
-        if object_type.description is None:
-            object_type.description = cls.__name__
-
-        new_object = cls(object_type)
-
-        # Replace all attributes given as kwargs
-        for attr, item in kwargs.items():
-            try:
-                setattr(new_object, attr, item)
-            except AttributeError:
-                pass
-
-        # Add parent-child relationship
-        if "parent" in kwargs.keys():
-            if isinstance(kwargs["parent"], uuid.UUID):
-                parent = workspace.get_entity(kwargs["parent"])[0]
-            else:
-                assert isinstance(
-                    kwargs["parent"], Entity
-                ), "Given 'parent' argument must be of type uuid.UUID or 'Entity'"
-
-                parent = kwargs["parent"]
+        if "entity_type_uid" in kwargs.keys():
+            entity_type_kwargs = {"entity_type": {"uid": kwargs["entity_type_uid"]}}
         else:
-            parent = workspace.root
+            entity_type_kwargs = {}
 
-        new_object.parent = parent
+        entity_kwargs = {"entity": kwargs}
+        new_object = workspace.create_entity(
+            cls, **{**entity_kwargs, **entity_type_kwargs}
+        )
+
+        # Add to root if parent is not set
+        if new_object.parent is None:
+            new_object.parent = workspace.root
+
+        workspace.finalize()
 
         return new_object
-
-    @classmethod
-    @abstractmethod
-    def find_or_create_type(cls, workspace, uid: Optional[uuid.UUID] = None):
-        ...

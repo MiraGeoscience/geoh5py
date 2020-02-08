@@ -27,8 +27,6 @@ def test_create_property_group():
 
     # Property group object should have been created
     prop_group = curve.get_property_group("myGroup")
-
-    workspace.save_entity(curve)
     workspace.finalize()
 
     # Re-open the workspace

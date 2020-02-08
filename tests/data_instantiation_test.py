@@ -31,7 +31,9 @@ def test_data_instantiation(data_class: Type[Data]):
     # searching for the wrong type
     assert the_workspace.find_type(data_type.uid, ObjectType) is None
 
-    created_data = data_class(data_type, DataAssociationEnum.VERTEX, "test")
+    created_data = data_class(
+        data_type, association=DataAssociationEnum.VERTEX, name="test"
+    )
     assert created_data.uid is not None
     assert created_data.uid.int != 0
     assert created_data.name == "test"

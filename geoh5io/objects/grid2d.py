@@ -41,10 +41,9 @@ class Grid2D(ObjectBase):
         }
     )
 
-    def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
-        super().__init__(object_type, name, uid)
+    def __init__(self, object_type: ObjectType, **kwargs):
 
-        self.origin = [0, 0, 0]
+        self._origin = [0, 0, 0]
         self._u_size = None
         self._v_size = None
         self._u_count = None
@@ -53,6 +52,16 @@ class Grid2D(ObjectBase):
         self._vertical = False
         self._dip = 0.0
         self._centroids = None
+
+        super().__init__(object_type, **kwargs)
+
+        if object_type.name == "None":
+            self.entity_type.name = "Grid"
+        #
+        # if object_type.description is None:
+        #     self.entity_type.description = "Grid"
+
+        object_type.workspace._register_object(self)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -102,38 +111,38 @@ class Grid2D(ObjectBase):
             self._dip = value
 
     @property
-    def u_size(self) -> Optional[float]:
+    def u_cell_size(self) -> Optional[float]:
         """
         Cell size along the u-axis: float
         """
-        return self._u_size
+        return self._u_cell_size
 
-    @u_size.setter
-    def u_size(self, value):
+    @u_cell_size.setter
+    def u_cell_size(self, value):
         if value is not None:
             value = np.r_[value]
-            assert len(value) == 1, "u_size must be a float of shape (1,)"
+            assert len(value) == 1, "u_cell_size must be a float of shape (1,)"
             self.update_h5 = "attributes"
             self._centroids = None
 
-            self._u_size = value.astype(float)
+            self._u_cell_size = value.astype(float)
 
     @property
-    def v_size(self) -> Optional[float]:
+    def v_cell_size(self) -> Optional[float]:
         """
         Cell size along the v-axis: float
         """
-        return self._v_size
+        return self._v_cell_size
 
-    @v_size.setter
-    def v_size(self, value):
+    @v_cell_size.setter
+    def v_cell_size(self, value):
         if value is not None:
             value = np.r_[value]
-            assert len(value) == 1, "v_size must be a float of shape (1,)"
+            assert len(value) == 1, "v_cell_size must be a float of shape (1,)"
             self.update_h5 = "attributes"
             self._centroids = None
 
-            self._v_size = value.astype(float)
+            self._v_cell_size = value.astype(float)
 
     @property
     def u_count(self) -> Optional[int]:
@@ -222,14 +231,18 @@ class Grid2D(ObjectBase):
         """
         The cell center location along u-axis: array of floats, shape(u_count,)
         """
-        return np.cumsum(np.ones(self.u_count) * self.u_size) - self.u_size / 2.0
+        return (
+            np.cumsum(np.ones(self.u_count) * self.u_cell_size) - self.u_cell_size / 2.0
+        )
 
     @property
     def cell_center_v(self):
         """
         The cell center location along v-axis: array of floats, shape(u_count,)
         """
-        return np.cumsum(np.ones(self.v_count) * self.v_size) - self.v_size / 2.0
+        return (
+            np.cumsum(np.ones(self.v_count) * self.v_cell_size) - self.v_cell_size / 2.0
+        )
 
     @property
     def centroids(self):

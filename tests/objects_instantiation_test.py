@@ -33,7 +33,7 @@ def test_object_instantiation(object_class: Type[ObjectBase]):
     # searching for the wrong type
     assert the_workspace.find_type(object_type.uid, GroupType) is None
 
-    created_object = object_class(object_type, "test")
+    created_object = object_class(object_type, name="test")
     assert created_object.uid is not None
     assert created_object.uid.int != 0
     assert created_object.name == "test"

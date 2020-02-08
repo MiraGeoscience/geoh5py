@@ -11,16 +11,11 @@ if TYPE_CHECKING:
 
 
 class Group(Entity):
-    def __init__(
-        self, group_type: GroupType, name: str = "Group", uid: uuid.UUID = None
-    ):
+    def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
-        super().__init__(name=name, uid=uid)
+        super().__init__(**kwargs)
 
         self._type = group_type
-
-        # self._clipping_ids: List[uuid.UUID] = []
-        group_type.workspace._register_group(self)
 
     @property
     def entity_type(self) -> GroupType:
@@ -28,21 +23,12 @@ class Group(Entity):
 
     @classmethod
     def find_or_create_type(
-        cls, workspace: "workspace.Workspace", uid: Optional[uuid.UUID] = None
+        cls, workspace: "workspace.Workspace", **kwargs
     ) -> GroupType:
 
-        return GroupType.find_or_create(workspace, cls, uid=uid)
+        return GroupType.find_or_create(workspace, cls, **kwargs)
 
     @classmethod
     @abstractmethod
     def default_type_uid(cls) -> Optional[uuid.UUID]:
         ...
-
-    @classmethod
-    @abstractmethod
-    def default_type_name(cls) -> Optional[str]:
-        ...
-
-    @classmethod
-    def default_type_description(cls) -> Optional[str]:
-        return cls.default_type_name()

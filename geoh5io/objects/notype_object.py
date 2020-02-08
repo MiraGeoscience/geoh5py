@@ -10,8 +10,16 @@ class NoTypeObject(ObjectBase):
         fields=(0x849D2F3E, 0xA46E, 0x11E3, 0xB4, 0x01, 0x2776BDF4F982)
     )
 
-    def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
-        super().__init__(object_type, name, uid)
+    def __init__(self, object_type: ObjectType, **kwargs):
+        super().__init__(object_type, **kwargs)
+
+        if object_type.name == "None":
+            self.entity_type.name = "Unknown"
+
+        # if object_type.description is None:
+        #     self.entity_type.description = "Unknown"
+
+        object_type.workspace._register_object(self)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

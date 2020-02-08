@@ -19,19 +19,19 @@ class Points(ObjectBase):
 
     __TYPE_UID = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
 
-    def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
-        super().__init__(object_type, name, uid)
+    def __init__(self, object_type: ObjectType, **kwargs):
         self._vertices: Optional[Coord3D] = None
 
-        if object_type.name is None:
-            self.entity_type.name = "Points"
-        else:
-            self.entity_type.name = object_type.name
+        super().__init__(object_type, **kwargs)
 
-        if object_type.description is None:
-            self.entity_type.description = "Points"
-        else:
-            self.entity_type.description = object_type.description
+        if object_type.name == "None":
+            self.entity_type.name = "Points"
+
+        # if object_type.description is None:
+        #     self.entity_type.description = "Points"
+        #
+
+        object_type.workspace._register_object(self)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

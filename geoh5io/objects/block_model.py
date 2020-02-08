@@ -29,14 +29,17 @@ class BlockModel(ObjectBase):
     _attribute_map = ObjectBase._attribute_map.copy()
     _attribute_map.update({"Origin": "origin", "Rotation": "rotation"})
 
-    def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
-        super().__init__(object_type, name, uid)
+    def __init__(self, object_type: ObjectType, **kwargs):
         self._origin = [0, 0, 0]
         self._rotation = 0
         self._u_cell_delimiters = None
         self._v_cell_delimiters = None
         self._z_cell_delimiters = None
         self._centroids = None
+
+        super().__init__(object_type, **kwargs)
+
+        object_type.workspace._register_object(self)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -143,7 +146,7 @@ class BlockModel(ObjectBase):
     @property
     def rotation(self) -> Optional[float]:
         """
-        Clockwise rotation angle about the vertical axis: float
+        Clockwise rotation angle (degree) about the vertical axis: float
         """
         return self._rotation
 

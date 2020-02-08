@@ -15,7 +15,7 @@ class ReferencedData(Data):
         name: str,
         uid: uuid.UUID = None,
     ):
-        super().__init__(data_type, association, name, uid)
+        super().__init__(data_type, association=association, name=name, uid=uid)
         self._value_map = ReferenceValueMap()
 
     @classmethod

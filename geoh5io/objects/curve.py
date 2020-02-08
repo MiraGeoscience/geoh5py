@@ -19,20 +19,16 @@ class Curve(Points):
         fields=(0x6A057FDC, 0xB355, 0x11E3, 0x95, 0xBE, 0xFD84A7FFCB88)
     )
 
-    def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
-        super().__init__(object_type, name, uid)
+    def __init__(self, object_type: ObjectType, **kwargs):
 
         self._cells: Optional[Cell] = None
+        super().__init__(object_type, **kwargs)
 
-        if object_type.name is None:
+        if object_type.name == "None":
             self.entity_type.name = "Curve"
-        else:
-            self.entity_type.name = object_type.name
 
-        if object_type.description is None:
-            self.entity_type.description = "Curve"
-        else:
-            self.entity_type.description = object_type.description
+        # if object_type.description is None:
+        #     self.entity_type.description = "Curve"
 
     @property
     def cells(self) -> Optional[ndarray]:

@@ -28,21 +28,20 @@ class DataType(EntityType):
         }
     )
 
-    def __init__(
-        self,
-        workspace: "workspace.Workspace",
-        uid: uuid.UUID,
-        primitive_type: PrimitiveTypeEnum,
-    ):
-        super().__init__(workspace, uid)
-        self._primitive_type = primitive_type
-        # TODO: define properties and setters
-        self._color_map: Optional[ColorMap] = None
-        self._units = None
-        self._number_of_bins = 50
-        self._transparent_no_data = True
-        self._mapping = "equal_area"
-        self._hidden = False
+    _primitive_type: Optional[PrimitiveTypeEnum] = None
+    # TODO : add Property and Setters
+    _color_map: Optional[ColorMap] = None
+    _units = None
+    _number_of_bins = 50
+    _transparent_no_data = True
+    _mapping = "equal_area"
+    _hidden = False
+
+    def __init__(self, workspace: "workspace.Workspace", **kwargs):
+        assert workspace is not None
+        super().__init__(workspace, **kwargs)
+
+        workspace._register_type(self)
 
     @staticmethod
     def _is_abstract() -> bool:
@@ -52,18 +51,24 @@ class DataType(EntityType):
     def units(self) -> Optional[DataUnit]:
         return self._units
 
-    # @units.setter
-    # def units(self, unit_name):
-    #     if self._units is None:
-    #
-    #         assert isinstance(
-    #             unit_name, str
-    #         ), f"Units must be of type {str}"
-    #         self._units = DataUnit(unit_name)
+    @units.setter
+    def units(self, unit_name):
+        assert isinstance(unit_name, str), f"Units must be of type {str}"
+        self._units = DataUnit(unit_name)
 
     @property
-    def primitive_type(self) -> PrimitiveTypeEnum:
+    def primitive_type(self) -> Optional[PrimitiveTypeEnum]:
         return self._primitive_type
+
+    @primitive_type.setter
+    def primitive_type(self, value):
+        if isinstance(value, str):
+            self._primitive_type = getattr(PrimitiveTypeEnum, value.upper())
+        else:
+            assert isinstance(
+                value, PrimitiveTypeEnum
+            ), f"Primitive type value must be of type {PrimitiveTypeEnum}"
+            self._primitive_type = value
 
     @classmethod
     def create(
@@ -77,26 +82,32 @@ class DataType(EntityType):
         """
         uid = uuid.uuid4()
         primitive_type = data_class.primitive_type()
-        return cls(workspace, uid, primitive_type)
+        return cls(workspace, uid=uid, primitive_type=primitive_type)
 
     @classmethod
-    def find_or_create(
-        cls, workspace: "workspace.Workspace", type_uid: uuid.UUID, primitive_type
-    ) -> DataType:
-        """ Find or creates the DataType with the pre-defined type UUID that matches the given
-        Data implementation class.
+    def find_or_create(cls, workspace: "workspace.Workspace", **kwargs) -> DataType:
+        """ Find or creates an EntityType with given UUID that matches the given
+        Group implementation class.
 
+        It is expected to have a single instance of EntityType in the Workspace
+        for each concrete Entity class.
 
-        :param data_class: An Data implementation class.
+        :param workspace: An active Workspace class
+
         :return: A new instance of DataType.
         """
-        object_type = cls.find(workspace, type_uid)
-        if object_type is not None:
-            return object_type
 
         uid = uuid.uuid4()
-        # primitive_type = data_class.primitive_type()
-        return cls(workspace, uid, primitive_type)
+
+        for key, val in kwargs.items():
+            if key.lower() in ["id", "uid"]:
+                uid = val
+
+        entity_type = cls.find(workspace, uid)
+        if entity_type is not None:
+            return entity_type
+
+        return cls(workspace, **kwargs)
 
     @classmethod
     def _for_geometric_data(
@@ -107,7 +118,7 @@ class DataType(EntityType):
         if data_type is not None:
             assert data_type.primitive_type == geom_primitive_type
             return data_type
-        return cls(workspace, uid, geom_primitive_type)
+        return cls(workspace, uid=uid, primitive_type=geom_primitive_type)
 
     @classmethod
     def for_x_data(cls, workspace: "workspace.Workspace") -> DataType:

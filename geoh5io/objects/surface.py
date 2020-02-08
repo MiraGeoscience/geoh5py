@@ -13,20 +13,17 @@ class Surface(Points):
         fields=(0xF26FEBA3, 0xADED, 0x494B, 0xB9, 0xE9, 0xB2BBCBE298E1)
     )
 
-    def __init__(self, object_type: ObjectType, name: str, uid: uuid.UUID = None):
-        super().__init__(object_type, name, uid)
+    def __init__(self, object_type: ObjectType, **kwargs):
 
         self._cells: Optional[Cell] = None
 
-        if object_type.name is None:
-            self.entity_type.name = "Surface"
-        else:
-            self.entity_type.name = object_type.name
+        super().__init__(object_type, **kwargs)
 
-        if object_type.description is None:
-            self.entity_type.description = "Surface"
-        else:
-            self.entity_type.description = object_type.description
+        if object_type.name == "None":
+            self.entity_type.name = "Surface"
+
+        # if object_type.description is None:
+        #     self.entity_type.description = "Surface"
 
     @property
     def cells(self) -> Optional[ndarray]:

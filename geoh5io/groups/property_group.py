@@ -16,13 +16,22 @@ class PropertyGroup:
         "Property Group Type": "property_group_type",
     }
 
-    def __init__(self, uid: uuid.UUID = uuid.uuid4(), group_name: str = "prop_group"):
-        self._group_name = group_name
-        self._uid = uid
+    def __init__(self, **kwargs):
+
+        self._group_name = "prop_group"
+        self._uid = uuid.uuid4()
         self._association: DataAssociationEnum = DataAssociationEnum.VERTEX
         self._properties: List[uuid.UUID] = []
         self._property_group_type = "multi-element"
         self._parent = None
+
+        for attr, item in kwargs.items():
+            try:
+                if attr in self._attribute_map.keys():
+                    attr = self._attribute_map[attr]
+                setattr(self, attr, item)
+            except AttributeError:
+                continue
 
     @property
     def parent(self):
@@ -46,6 +55,12 @@ class PropertyGroup:
     @property
     def uid(self) -> uuid.UUID:
         return self._uid
+
+    @uid.setter
+    def uid(self, uid: Union[str, uuid.UUID]):
+        if isinstance(uid, str):
+            uid = uuid.UUID(uid)
+        self._uid = uid
 
     @property
     def group_name(self) -> str:
