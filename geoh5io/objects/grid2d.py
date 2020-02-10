@@ -86,7 +86,7 @@ class Grid2D(ObjectBase):
 
             assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
 
-            self.update_h5 = "attributes"
+            self.modified_entity = "attributes"
             self._centroids = None
 
             value = np.asarray(
@@ -106,7 +106,7 @@ class Grid2D(ObjectBase):
         if value is not None:
             assert isinstance(value, float), "Dip angle must be a float"
 
-            self.update_h5 = "attributes"
+            self.modified_entity = "attributes"
             self._centroids = None
             self._dip = value
 
@@ -122,7 +122,7 @@ class Grid2D(ObjectBase):
         if value is not None:
             value = np.r_[value]
             assert len(value) == 1, "u_cell_size must be a float of shape (1,)"
-            self.update_h5 = "attributes"
+            self.modified_entity = "attributes"
             self._centroids = None
 
             self._u_cell_size = value.astype(float)
@@ -139,7 +139,7 @@ class Grid2D(ObjectBase):
         if value is not None:
             value = np.r_[value]
             assert len(value) == 1, "v_cell_size must be a float of shape (1,)"
-            self.update_h5 = "attributes"
+            self.modified_entity = "attributes"
             self._centroids = None
 
             self._v_cell_size = value.astype(float)
@@ -156,7 +156,7 @@ class Grid2D(ObjectBase):
         if value is not None:
             value = np.r_[value]
             assert len(value) == 1, "u_count must be an integer of shape (1,)"
-            self.update_h5 = "attributes"
+            self.modified_entity = "attributes"
             self._centroids = None
 
             self._u_count = value.astype(int)
@@ -173,7 +173,7 @@ class Grid2D(ObjectBase):
         if value is not None:
             value = np.r_[value]
             assert len(value) == 1, "v_count must be an integer of shape (1,)"
-            self.update_h5 = "attributes"
+            self.modified_entity = "attributes"
             self._centroids = None
 
             self._v_count = value.astype(int)
@@ -190,7 +190,7 @@ class Grid2D(ObjectBase):
         if value is not None:
             value = np.r_[value]
             assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
-            self.update_h5 = "attributes"
+            self.modified_entity = "attributes"
             self._centroids = None
 
             self._rotation = value.astype(float)
@@ -209,7 +209,7 @@ class Grid2D(ObjectBase):
                 0,
                 1,
             ], "vertical must be of type 'bool'"
-            self.update_h5 = "attributes"
+            self.modified_entity = "attributes"
             self._centroids = None
 
             self._vertical = value

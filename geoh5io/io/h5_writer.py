@@ -109,10 +109,10 @@ class H5Writer:
         # Check if already in the project
         if cls.uuid_str(uid) in list(h5file[base]["Types"][entity_type_str].keys()):
 
-            if entity_type.update_h5:
+            if entity_type.modified_entity:
                 # Remove the entity type for re-write
                 del h5file[base]["Types"][entity_type_str][cls.uuid_str(uid)]
-                entity_type.update_h5 = False
+                entity_type.modified_entity = False
                 entity_type.existing_h5_entity = False
 
             else:
@@ -151,7 +151,7 @@ class H5Writer:
         if close_file:
             h5file.close()
 
-        entity_type.update_h5 = False
+        entity_type.modified_entity = False
         entity_type.existing_h5_entity = True
 
         return new_type
@@ -473,11 +473,11 @@ class H5Writer:
         # Check if already in the project
         if cls.uuid_str(uid) in list(h5file[base][entity_type].keys()):
 
-            if any([entity.update_h5]):
+            if any([entity.modified_entity]):
                 # Remove the entity for re-write
                 # del h5file[base][entity_type][cls.uuid_str(uid)]
                 cls.update_attributes(file, entity, close_file=False)
-                entity.update_h5 = []
+                entity.modified_entity = []
                 entity.existing_h5_entity = True
 
             else:
@@ -510,7 +510,7 @@ class H5Writer:
         if close_file:
             h5file.close()
 
-        entity.update_h5 = []
+        entity.modified_entity = []
         entity.existing_h5_entity = True
 
         return entity_handle
@@ -820,7 +820,7 @@ class H5Writer:
         """
         entity_handle = H5Writer.fetch_handle(file, entity)
 
-        for attr in entity.update_h5:
+        for attr in entity.modified_entity:
             if attr == "values":
                 del entity_handle["Data"]
                 cls.add_data_values(file, entity, entity.values, close_file=close_file)

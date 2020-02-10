@@ -66,7 +66,7 @@ class ObjectBase(Entity):
             prop_group.parent = self
 
         # First time start with an empty list
-        self.update_h5 = "property_groups"
+        self.modified_entity = "property_groups"
         self._property_groups = self.property_groups + prop_groups
 
     @classmethod
@@ -119,7 +119,7 @@ class ObjectBase(Entity):
             ], f"Given data with uuid {i} does not match any known children"
 
         prop_group.properties = uid
-        self.update_h5 = "property_groups"
+        self.modified_entity = "property_groups"
 
         return prop_group
 
@@ -128,7 +128,7 @@ class ObjectBase(Entity):
         Create property groups from given group names and properties.
         An existing property_group is returned if one exists with the same name.
 
-        :param group_name: Name given to the new PropertyGroup object.
+        :param kwargs: Any arguments taken by the PropertyGroup class
 
         :return: A new or existing property_group object
         """
@@ -137,7 +137,7 @@ class ObjectBase(Entity):
         self.property_groups = [prop_group]
 
         prop_group.parent = self
-        self.update_h5 = "property_groups"
+        self.modified_entity = "property_groups"
 
         return prop_group
 
@@ -162,6 +162,9 @@ class ObjectBase(Entity):
         if len(groups_list) < 1:
             return None
 
+        assert (
+            len(groups_list) == 1
+        ), "Multiple property groups with the same name have been found. Only keep one"
         return groups_list[0]
 
     def add_data(

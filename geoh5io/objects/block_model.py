@@ -63,7 +63,7 @@ class BlockModel(ObjectBase):
 
             assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
 
-            self.update_h5 = "attributes"
+            self.modified_entity = "attributes"
             self._centroids = None
 
             value = np.asarray(
@@ -90,7 +90,7 @@ class BlockModel(ObjectBase):
     def u_cell_delimiters(self, value):
         if value is not None:
             value = np.r_[value]
-            self.update_h5 = "cell_delimiters"
+            self.modified_entity = "cell_delimiters"
             self._centroids = None
 
             self._u_cell_delimiters = value.astype(float)
@@ -114,7 +114,7 @@ class BlockModel(ObjectBase):
     def v_cell_delimiters(self, value):
         if value is not None:
             value = np.r_[value]
-            self.update_h5 = "cell_delimiters"
+            self.modified_entity = "cell_delimiters"
             self._centroids = None
 
             self._v_cell_delimiters = value.astype(float)
@@ -138,7 +138,7 @@ class BlockModel(ObjectBase):
     def z_cell_delimiters(self, value):
         if value is not None:
             value = np.r_[value]
-            self.update_h5 = "cell_delimiters"
+            self.modified_entity = "cell_delimiters"
             self._centroids = None
 
             self._z_cell_delimiters = value.astype(float)
@@ -155,7 +155,7 @@ class BlockModel(ObjectBase):
         if value is not None:
             value = np.r_[value]
             assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
-            self.update_h5 = "attributes"
+            self.modified_entity = "attributes"
             self._centroids = None
 
             self._rotation = value.astype(float)

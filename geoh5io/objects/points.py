@@ -50,7 +50,7 @@ class Points(ObjectBase):
 
     @vertices.setter
     def vertices(self, xyz: ndarray):
-        self.update_h5 = "vertices"
+        self.modified_entity = "vertices"
         self._vertices = Coord3D(xyz)
 
     @property

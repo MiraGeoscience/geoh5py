@@ -27,7 +27,7 @@ class TextData(Data):
             Text in string format
 
         """
-        self.update_h5 = "values"
+        self.modified_entity = "values"
         self._values = values
 
     def __call__(self):

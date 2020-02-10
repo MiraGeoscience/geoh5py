@@ -24,7 +24,7 @@ class EntityType(ABC):
         self._name = "None"
         self._description: Optional[str] = None
         self._existing_h5_entity = False
-        self._update_h5 = False
+        self._modified_entity = False
 
         for attr, item in kwargs.items():
             try:
@@ -47,12 +47,12 @@ class EntityType(ABC):
         self._existing_h5_entity = value
 
     @property
-    def update_h5(self) -> bool:
-        return self._update_h5
+    def modified_entity(self) -> bool:
+        return self._modified_entity
 
-    @update_h5.setter
-    def update_h5(self, value: bool):
-        self._update_h5 = value
+    @modified_entity.setter
+    def modified_entity(self, value: bool):
+        self._modified_entity = value
 
     @staticmethod
     @abstractmethod

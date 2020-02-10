@@ -71,7 +71,7 @@ class Surface(Points):
 
         if indices.dtype == "int32":
             indices.astype("uint32")
-        self.update_h5 = "cells"
+        self.modified_entity = "cells"
         self._cells = indices
 
     @classmethod

@@ -48,7 +48,7 @@ class Curve(Points):
     @cells.setter
     def cells(self, indices):
         assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
-        self.update_h5 = "cells"
+        self.modified_entity = "cells"
         self._cells = indices
 
     @classmethod

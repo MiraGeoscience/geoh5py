@@ -62,7 +62,7 @@ class Workspace:
         self._groups: Dict[uuid.UUID, ReferenceType[group.Group]] = {}
         self._objects: Dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
         self._data: Dict[uuid.UUID, ReferenceType[data.Data]] = {}
-        self._update_h5 = False
+        self._modified_entity = False
         self._h5file = h5file
 
         # Create a root, either from file or from scratch
@@ -255,12 +255,12 @@ class Workspace:
         return self._h5file
 
     @property
-    def update_h5(self) -> bool:
-        return self._update_h5
+    def modified_entity(self) -> bool:
+        return self._modified_entity
 
-    @update_h5.setter
-    def update_h5(self, value: bool):
-        self._update_h5 = value
+    @modified_entity.setter
+    def modified_entity(self, value: bool):
+        self._modified_entity = value
 
     @property
     def workspace(self):
@@ -309,7 +309,7 @@ class Workspace:
     def finalize(self):
         """ Finalize the geoh5 file by checking for updated entities and re-building the Root"""
         for entity in self.all_objects() + self.all_groups() + self.all_data():
-            if len(entity.update_h5) > 0:
+            if len(entity.modified_entity) > 0:
                 self.save_entity(entity)
 
         H5Writer.finalize(self)
