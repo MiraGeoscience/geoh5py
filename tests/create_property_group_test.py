@@ -35,10 +35,10 @@ def test_create_property_group():
     # Read the property_group back in
     rec_prop_group = workspace.get_entity(obj_name)[0].property_groups[0]
 
-    attrs = rec_prop_group.__dict__
+    attrs = rec_prop_group.attribute_map
     check_list = [
         attr
-        for attr in attrs.keys()
+        for attr in attrs.values()
         if getattr(rec_prop_group, attr) != getattr(prop_group, attr)
     ]
     assert (

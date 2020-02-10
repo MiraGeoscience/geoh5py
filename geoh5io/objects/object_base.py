@@ -103,13 +103,18 @@ class ObjectBase(Entity):
             prop_group = self.create_property_group(group_name=group_name)
 
         if isinstance(data, Data):
-            uid = data.uid
+            uid = [data.uid]
+        elif isinstance(data, str):
+            uid = [obj.uid for obj in self.workspace.get_entity(data)]
+        else:
+            uid = [data]
 
-        assert uid in [
-            child.uid for child in self.children
-        ], f"Given data with uuid {uid} does not match any known children"
+        for i in uid:
+            assert i in [
+                child.uid for child in self.children
+            ], f"Given data with uuid {i} does not match any known children"
 
-        prop_group.properties = [uid]
+        prop_group.properties = uid
         self.update_h5 = "property_groups"
 
     def create_property_group(self, **kwargs) -> PropertyGroup:
