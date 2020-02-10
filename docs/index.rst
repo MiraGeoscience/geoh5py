@@ -7,8 +7,7 @@ Welcome to the documentation page for **gh5py**!
 In short
 ^^^^^^^^
 
-The **gh5py** library is an extension of the `h5py <https://www.h5py.org/>`_ package.
-It has been created for the manipulation and storage of a wide range of
+The **gh5py** library has been created for the manipulation and storage of a wide range of
 geoscientific data (points, curve, surface, 2D and 3D grids) in
 ``*.geoh5`` file format. Users will be able to directly leverage the powerful visualization
 capabilities of `Geoscience Analyst <https://mirageoscience.com/mining-industry-software/geoscience-analyst/>`_.
