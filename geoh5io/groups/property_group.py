@@ -35,17 +35,14 @@ class PropertyGroup:
 
     @property
     def parent(self) -> Entity:
+        """
+        The parent of an object in the workspace
+        :return: The parent entity
+        """
         return self._parent
 
     @parent.setter
-    def parent(self, parent):
-        """
-        The parent of an object in the workspace
-        :return: Entity: Parent entity
-        """
-        if isinstance(parent, Entity):
-            parent = parent.uid
-
+    def parent(self, parent: Entity):
         self._parent = parent
 
     @property
