@@ -91,6 +91,9 @@ class Entity(ABC):
 
     @property
     def name(self) -> str:
+        """
+        Name of the entity
+        """
         return self._name
 
     @name.setter
