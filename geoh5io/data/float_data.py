@@ -1,4 +1,4 @@
-from numpy import ravel
+from numpy import ndarray, ravel
 
 from .data import Data, PrimitiveTypeEnum
 
@@ -9,7 +9,7 @@ class FloatData(Data):
         return PrimitiveTypeEnum.FLOAT
 
     @property
-    def values(self):
+    def values(self) -> ndarray[float]:
         if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
             self._values = self.workspace.fetch_values(self.uid)
 
