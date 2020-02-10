@@ -13,9 +13,9 @@ class FloatData(Data):
         return PrimitiveTypeEnum.FLOAT
 
     @property
-    def values(self) -> ndarray[float]:
+    def values(self) -> ndarray:
         """
-        :return: values: An array of values
+        :return: values: An array of float values
         """
         if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
             self._values = self.workspace.fetch_values(self.uid)
