@@ -46,7 +46,10 @@ class PropertyGroup:
         self._parent = parent
 
     @property
-    def attribute_map(self):
+    def attribute_map(self) -> dict:
+        """
+        :return: Mapping between attribute names used in database and geoh5py
+        """
         return self._attribute_map
 
     @property
