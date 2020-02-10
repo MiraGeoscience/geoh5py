@@ -34,7 +34,7 @@ class PropertyGroup:
                 continue
 
     @property
-    def parent(self):
+    def parent(self) -> Entity:
         return self._parent
 
     @parent.setter
