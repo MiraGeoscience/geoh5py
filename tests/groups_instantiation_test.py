@@ -110,7 +110,6 @@ def test_custom_group_instantiation():
 def _can_find(workspace, created_group):
     """ Make sure we can find the created group in the workspace.
     """
-
     all_groups = workspace.all_groups()
     assert len(all_groups) == 2
     iter_all_groups = iter(all_groups)

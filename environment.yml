@@ -1,0 +1,20 @@
+name: geoh5io
+
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.6
+  - git
+  - pip
+  - pip:
+    - git+https://github.com/MiraGeoscience/GeoH5io.git
+    - sphinx
+    - sphinx_rtd_theme
+    - sphinxcontrib-bibtex
+    - nbsphinx
+    - nbstripout
+    - numpydoc
+    - download
+    - tqdm
+  - matplotlib

@@ -30,7 +30,7 @@ force_grid_wrap = 0
 use_parentheses = true
 line_length = 88
 # auto-updated by seed-isort-config
-known_third_party = ["Add2Build", "StringIO", "autodoc", "edit_on_github", "environmentSetup", "h5py", "numpy", "pytest", "scipy", "thriftpy2", "toml", "urllib2"]
+known_third_party = ["Add2Build", "StringIO", "autodoc", "edit_on_github", "environmentSetup", "h5py", "numpy", "pytest", "scipy", "setuptools", "thriftpy2", "toml", "urllib2"]
 
 [tool.black]
 # defaults are just fine
