@@ -87,7 +87,9 @@ class ObjectBase(Entity):
     def default_type_uid(cls) -> uuid.UUID:
         ...
 
-    def add_data_to_group(self, data: Union[Data, uuid.UUID, str], group_name: str):
+    def add_data_to_group(
+        self, data: Union[Data, uuid.UUID, str], group_name: str
+    ) -> PropertyGroup:
         """
         Append data to a property group where the data can be a Data object, its name
         or uid. The given group identifier (name or uid) is created if it does not exist already.
@@ -96,6 +98,8 @@ class ObjectBase(Entity):
         :param data: Data object or uuid of data
         :param group_name: Name of a property group. A new group is created
         if none exist with the given name.
+
+        :return: property_group: The target property_group
         """
         prop_group = self.get_property_group(group_name)
 
@@ -116,6 +120,8 @@ class ObjectBase(Entity):
 
         prop_group.properties = uid
         self.update_h5 = "property_groups"
+
+        return prop_group
 
     def create_property_group(self, **kwargs) -> PropertyGroup:
         """

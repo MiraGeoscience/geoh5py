@@ -27,13 +27,20 @@ def test_create_property_group():
 
     # Property group object should have been created
     prop_group = curve.get_property_group("myGroup")
+
+    # Create a new group by data name
+    single_data_group = curve.add_data_to_group(f"Period{1}", "Singleton")
+
+    assert (
+        workspace.find_data(single_data_group.properties[0]).name == f"Period{1}"
+    ), "Failed at creating a property group by data name"
     workspace.finalize()
 
     # Re-open the workspace
     workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
 
     # Read the property_group back in
-    rec_prop_group = workspace.get_entity(obj_name)[0].property_groups[0]
+    rec_prop_group = workspace.get_entity(obj_name)[0].get_property_group("myGroup")
 
     attrs = rec_prop_group.attribute_map
     check_list = [
