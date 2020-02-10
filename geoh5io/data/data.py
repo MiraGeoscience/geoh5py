@@ -34,6 +34,11 @@ class Data(Entity):
     @association.setter
     def association(self, value):
         if isinstance(value, str):
+
+            assert value.upper() in list(
+                DataAssociationEnum.__members__.keys()
+            ), f"Association flag should be one of {list(DataAssociationEnum.__members__.keys())}"
+
             self._association = getattr(DataAssociationEnum, value.upper())
         else:
             assert isinstance(
