@@ -64,17 +64,3 @@ class Points(ObjectBase):
             [x, y, z] array of coordinates from the Coord3D
         """
         return self.vertices.locations
-
-    @property
-    def size(self):
-        """
-        size
-
-        Returns
-        -------
-        size: int
-            Number of vertices
-        """
-        if self._vertices is not None:
-            return self.locations.shape[0]
-        return None

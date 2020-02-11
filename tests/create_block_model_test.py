@@ -11,18 +11,16 @@ def test_create_block_model_data():
     h5file = r"temp\block_model.geoh5"
     name = "MyTestBlockModel"
 
-    # Generate a 2D array
+    # Generate a 3D array
     n_x, n_y, n_z = 8, 9, 10
-    pad_x, pad_y, pad_z = [3, 4], [3, 5], [0, 6]
-    d_x, d_y, d_z = np.pi / n_x, np.pi / n_y, np.pi / n_z
 
     nodal_x = np.r_[
         0,
         np.cumsum(
             np.r_[
-                d_x * 1.5 ** np.arange(pad_x[0])[::-1],
-                np.ones(n_x) * d_x,
-                d_x * 1.5 ** np.arange(pad_x[1]),
+                np.pi / n_x * 1.5 ** np.arange(3)[::-1],
+                np.ones(n_x) * np.pi / n_x,
+                np.pi / n_x * 1.5 ** np.arange(4),
             ]
         ),
     ]
@@ -30,9 +28,9 @@ def test_create_block_model_data():
         0,
         np.cumsum(
             np.r_[
-                d_y * 1.5 ** np.arange(pad_y[0])[::-1],
-                np.ones(n_y) * d_y,
-                d_y * 1.5 ** np.arange(pad_y[1]),
+                np.pi / n_y * 1.5 ** np.arange(5)[::-1],
+                np.ones(n_y) * np.pi / n_y,
+                np.pi / n_y * 1.5 ** np.arange(6),
             ]
         ),
     ]
@@ -40,9 +38,9 @@ def test_create_block_model_data():
         0,
         np.cumsum(
             np.r_[
-                d_z * 1.5 ** np.arange(pad_z[0])[::-1],
-                np.ones(n_z) * d_z,
-                d_z * 1.5 ** np.arange(pad_z[1]),
+                np.pi / n_z * 1.5 ** np.arange(7)[::-1],
+                np.ones(n_z) * np.pi / n_z,
+                np.pi / n_z * 1.5 ** np.arange(8),
             ]
         ),
     ]
@@ -68,7 +66,7 @@ def test_create_block_model_data():
         * np.cos(grid.centroids[:, 1])
         * np.cos(grid.centroids[:, 2])
     )
-    data = grid.add_data({"DataValues": ["CELL", values]})
+    grid.add_data({"DataValues": {"association": "CELL", "values": values}})
 
     # Read the data back in from a fresh workspace
     workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)

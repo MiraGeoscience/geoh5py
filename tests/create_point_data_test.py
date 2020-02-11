@@ -22,7 +22,8 @@ def test_create_point_data():
 
     points = Points.create(workspace, vertices=xyz, name=name, allow_move=False)
 
-    data = points.add_data({"DataValues": ["VERTEX", values]})
+    data = points.add_data({"DataValues": {"association": "VERTEX", "values": values}})
+
     # Change some data attributes for testing
     data.allow_delete = False
     data.allow_move = True

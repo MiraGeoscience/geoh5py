@@ -23,7 +23,7 @@ def test_create_property_group():
     # Add data
     for i in range(4):
         values = cos(xyz[:, 0] / (i + 1))
-        curve.add_data({f"Period{i+1}": ["VERTEX", values]}, property_group="myGroup")
+        curve.add_data({f"Period{i+1}": values}, property_group="myGroup")
 
     # Property group object should have been created
     prop_group = curve.get_property_group("myGroup")

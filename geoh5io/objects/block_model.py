@@ -13,8 +13,12 @@ class BlockModel(ObjectBase):
     intervals that define the cell dimensions.
 
     The basic requirements needed to create a BlockModel mesh are:
-        u, v, and z_cell_delimiters = Vectors defining the nodal position along
-         each axis relative to the origin.
+
+    :param u_cell_delimiters: ndarray of floats
+    :param v_cell_delimiters: ndarray of floats
+    :param z_cell_delimiters: ndarray of floats
+
+    Vectors defining the nodal position along each axis relative to the origin.
 
             origin
                V
@@ -163,7 +167,7 @@ class BlockModel(ObjectBase):
     @property
     def u_cells(self) -> Optional[np.ndarray]:
         """
-        Cell size along the u-axis: array, shape (u_count,)
+        Cell size along the u-axis: array, shape (BlockModel.shape[0],)
         """
         if self.u_cell_delimiters is not None:
             return self.u_cell_delimiters[1:] - self.u_cell_delimiters[:-1]
@@ -172,7 +176,7 @@ class BlockModel(ObjectBase):
     @property
     def v_cells(self) -> Optional[np.ndarray]:
         """
-        Cell size along the v-axis: array, shape (v_count,)
+        Cell size along the v-axis: array, shape (BlockModel.shape[1],)
         """
         if self.v_cell_delimiters is not None:
             return self.v_cell_delimiters[1:] - self.v_cell_delimiters[:-1]
@@ -181,7 +185,7 @@ class BlockModel(ObjectBase):
     @property
     def z_cells(self) -> Optional[np.ndarray]:
         """
-        Cell size along the z-axis: array, shape (z_count,)
+        Cell size along the z-axis: array, shape (BlockModel.shape[2],)
         """
         if self.z_cell_delimiters is not None:
             return self.z_cell_delimiters[1:] - self.z_cell_delimiters[:-1]
@@ -193,42 +197,14 @@ class BlockModel(ObjectBase):
         Number of cells along the u, v and z-axis: list[int], length (3,)
         """
         if (
-            self.u_count is not None
-            and self.v_count is not None
-            and self.z_count is not None
+            self.u_cells is not None
+            and self.v_cells is not None
+            and self.z_cells is not None
         ):
-            return self.u_count, self.v_count, self.z_count
+            return tuple(
+                [self.u_cells.shape[0], self.v_cells.shape[0], self.z_cells.shape[0]]
+            )
         return None
-
-    @property
-    def n_cells(self) -> Optional[int]:
-        """
-        Total number of cells in the model, int
-        """
-        if self.shape is not None:
-            return int(np.prod(self.shape))
-        return None
-
-    @property
-    def cell_center_u(self):
-        """
-        Cell center locations along u-axis: array of floats, shape(u_count,)
-        """
-        return np.cumsum(self.u_cells) - self.u_cells / 2.0
-
-    @property
-    def cell_center_v(self):
-        """
-        Cell center locations along v-axis: array of floats, shape(v_count,)
-        """
-        return np.cumsum(self.v_cells) - self.v_cells / 2.0
-
-    @property
-    def cell_center_z(self):
-        """
-        Cell center locations along z-axis: array of floats, shape(z_count,)
-        """
-        return np.cumsum(self.z_cells) - self.z_cells / 2.0
 
     @property
     def centroids(self):
@@ -238,6 +214,10 @@ class BlockModel(ObjectBase):
         """
         if getattr(self, "_centroids", None) is None:
 
+            cell_center_u = np.cumsum(self.u_cells) - self.u_cells / 2.0
+            cell_center_v = np.cumsum(self.v_cells) - self.v_cells / 2.0
+            cell_center_z = np.cumsum(self.z_cells) - self.z_cells / 2.0
+
             angle = np.deg2rad(self.rotation)
             rot = np.r_[
                 np.c_[np.cos(angle), -np.sin(angle), 0],
@@ -246,7 +226,7 @@ class BlockModel(ObjectBase):
             ]
 
             u_grid, v_grid, z_grid = np.meshgrid(
-                self.cell_center_u, self.cell_center_v, self.cell_center_z
+                cell_center_u, cell_center_v, cell_center_z
             )
 
             xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.ravel(z_grid)]
@@ -257,30 +237,3 @@ class BlockModel(ObjectBase):
                 self._centroids[:, ind] += self.origin[axis]
 
         return self._centroids
-
-    @property
-    def u_count(self) -> Optional[int]:
-        """
-        Number of cells along u-axis: int
-        """
-        if self.u_cell_delimiters is not None:
-            return int(self.u_cell_delimiters.shape[0] - 1)
-        return None
-
-    @property
-    def v_count(self) -> Optional[int]:
-        """
-        Number of cells along v-axis: int
-        """
-        if self.v_cell_delimiters is not None:
-            return int(self.v_cell_delimiters.shape[0] - 1)
-        return None
-
-    @property
-    def z_count(self) -> Optional[int]:
-        """
-        Number of cells along z-axis: int
-        """
-        if self.z_cell_delimiters is not None:
-            return int(self.z_cell_delimiters.shape[0] - 1)
-        return None

@@ -11,7 +11,7 @@ class GeoImage(ObjectBase):
     def __init__(self, object_type: ObjectType, **kwargs):
 
         # TODO
-        self.vertices = None
+        self._vertices = None
         super().__init__(object_type, **kwargs)
 
         object_type.workspace._register_object(self)

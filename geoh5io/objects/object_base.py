@@ -1,6 +1,6 @@
 import uuid
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 from numpy import ndarray
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 class ObjectBase(Entity):
     """
-    Base class object.
+    Objects base class.
     """
 
     _attribute_map = Entity._attribute_map.copy()
@@ -53,6 +53,52 @@ class ObjectBase(Entity):
         return self._type
 
     @property
+    def vertices(self):
+        """
+        Vertices
+        """
+        return None
+
+    @property
+    def cells(self):
+        """
+        Cells
+        """
+        return None
+
+    @property
+    def faces(self):
+        """
+        Faces
+        """
+        return None
+
+    @property
+    def n_vertices(self) -> Optional[Tuple]:
+        """
+        Number of vertices
+
+        :return: Number of vertices
+        """
+        if self.vertices is not None:
+            return tuple([self.vertices.locations.shape[0]])
+        return None
+
+    @property
+    def n_cells(self) -> Optional[Tuple]:
+        """
+        n_cells
+
+        Returns
+        -------
+        n_cells: int
+            Number of cells
+        """
+        if self.cells is not None:
+            return tuple([self.cells.shape[0]])
+        return None
+
+    @property
     def property_groups(self) -> List[PropertyGroup]:
         """
         List of property (data) groups: List[PropertyGroup]
@@ -61,7 +107,6 @@ class ObjectBase(Entity):
 
     @property_groups.setter
     def property_groups(self, prop_groups: List[PropertyGroup]):
-
         for prop_group in prop_groups:
             prop_group.parent = self
 
@@ -171,12 +216,17 @@ class ObjectBase(Entity):
         self, data: dict, property_group: str = None
     ) -> Union[Data, List[Data]]:
         """
-        Create data with association
+        Create data with association from dictionary of data objects name and values.
+        The provided values can either be a dictionary of kwargs accepted by the target
+        Data object class or an array of values.
+        If not provided as argument, a data association type is assigned based on
+        the length of the given values.
 
         :param data: Dictionary of data to be added to the object, such as
             data = {
-            "data_name1": ["CELL", values1],
-            "data_name2": ["VERTEX", values2],
+            "data_name1": {'values', values1, 'association': 'VERTEX', ...},
+                and/or
+            "data_name2": values2,
             ...
             }
 
@@ -184,23 +234,43 @@ class ObjectBase(Entity):
         """
         data_objects = []
         for key, value in data.items():
-            if isinstance(value[1], ndarray):
-                data_object = self.workspace.create_entity(
-                    Data,
-                    entity={
-                        "name": key,
-                        "uid": uuid.uuid4(),
-                        "parent": self,
-                        "association": value[0].upper(),
-                        "values": value[1],
-                    },
-                    entity_type={"primitive_type": "FLOAT"},
+            if isinstance(value, ndarray):
+                kwargs = {"values": value}
+            elif isinstance(value, dict):
+                kwargs = value
+                assert "values" in list(
+                    kwargs.keys()
+                ), f"Given kwargs for data {key} should include 'values'"
+            else:
+                raise RuntimeError(
+                    f"Given value to data {key} should of type {dict} or {ndarray}"
                 )
 
-                if property_group is not None:
-                    self.add_data_to_group(data_object, property_group)
+            kwargs["parent"] = self
+            kwargs["name"] = key
 
-                data_objects.append(data_object)
+            if "association" not in list(kwargs.keys()):
+                if (
+                    getattr(self, "n_cells", None) is not None
+                    and kwargs["values"].shape[0] == self.n_cells
+                ):
+                    kwargs["association"] = "CELL"
+                elif (
+                    getattr(self, "n_vertices", None) is not None
+                    and kwargs["values"].shape[0] == self.n_vertices
+                ):
+                    kwargs["association"] = "VERTEX"
+                else:
+                    kwargs["association"] = "OBJECT"
+
+            data_object = self.workspace.create_entity(
+                Data, entity=kwargs, entity_type={"primitive_type": "FLOAT"}
+            )
+
+            if property_group is not None:
+                self.add_data_to_group(data_object, property_group)
+
+            data_objects.append(data_object)
 
         if len(data_objects) == 1:
             return data_object

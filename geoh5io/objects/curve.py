@@ -3,7 +3,6 @@ from typing import Optional
 
 from numpy import arange, c_, ndarray
 
-from .cell import Cell
 from .object_base import ObjectType
 from .points import Points
 
@@ -21,7 +20,7 @@ class Curve(Points):
 
     def __init__(self, object_type: ObjectType, **kwargs):
 
-        self._cells: Optional[Cell] = None
+        self._cells: Optional[ndarray] = None
         super().__init__(object_type, **kwargs)
 
         if object_type.name == "None":

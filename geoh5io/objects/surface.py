@@ -3,7 +3,6 @@ from typing import Optional
 
 from numpy import arange, c_, ndarray
 
-from .cell import Cell
 from .object_base import ObjectType
 from .points import Points
 
@@ -15,7 +14,7 @@ class Surface(Points):
 
     def __init__(self, object_type: ObjectType, **kwargs):
 
-        self._cells: Optional[Cell] = None
+        self._cells: Optional[ndarray] = None
 
         super().__init__(object_type, **kwargs)
 
@@ -77,17 +76,3 @@ class Surface(Points):
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
-
-    @property
-    def n_cells(self):
-        """
-        n_cells
-
-        Returns
-        -------
-        n_cells: int
-            Number of cells
-        """
-        if self.cells is not None:
-            return self._cells.shape[0]
-        return None

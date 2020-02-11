@@ -215,17 +215,6 @@ class Grid2D(ObjectBase):
             self._vertical = value
 
     @property
-    def n_cells(self) -> Optional[int]:
-        """
-        Total number of cells in the grid: int
-        """
-        assert (self.u_count is not None) and (
-            self.v_count is not None
-        ), "'u_count' and 'v_count' must be set"
-
-        return int(self.u_count * self.v_count)
-
-    @property
     def cell_center_u(self):
         """
         The cell center location along u-axis: array of floats, shape(u_count,)

@@ -22,9 +22,7 @@ def test_create_curve_data():
 
     curve = Curve.create(workspace, vertices=xyz, name=curve_name)
 
-    data_objects = curve.add_data(
-        {"vertexValues": ["VERTEX", values], "cellValues": ["CELL", cell_values]}
-    )
+    data_objects = curve.add_data({"vertexValues": values, "cellValues": cell_values})
 
     assert all(
         data_objects[0].values == values

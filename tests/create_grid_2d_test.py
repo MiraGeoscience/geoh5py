@@ -31,7 +31,7 @@ def test_create_grid_2d_data():
         allow_move=False,
     )
 
-    grid.add_data({"DataValues": ["CELL", values]})
+    grid.add_data({"DataValues": values})
     grid.rotation = 45.0
 
     # Read the data back in from a fresh workspace

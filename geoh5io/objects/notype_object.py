@@ -5,6 +5,9 @@ from .object_type import ObjectType
 
 
 class NoTypeObject(ObjectBase):
+    """
+    Generic Data object without a registered type
+    """
 
     __TYPE_UID = uuid.UUID(
         fields=(0x849D2F3E, 0xA46E, 0x11E3, 0xB4, 0x01, 0x2776BDF4F982)
@@ -15,9 +18,6 @@ class NoTypeObject(ObjectBase):
 
         if object_type.name == "None":
             self.entity_type.name = "Unknown"
-
-        # if object_type.description is None:
-        #     self.entity_type.description = "Unknown"
 
         object_type.workspace._register_object(self)
 

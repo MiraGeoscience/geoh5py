@@ -32,7 +32,7 @@ def test_create_surface_data():
         workspace, name="mySurf", vertices=np.c_[x, y, z], cells=simplices
     )
 
-    data = surface.add_data({"TMI": ["CELL", values]})
+    data = surface.add_data({"TMI": values})
 
     # Read the object from a different workspace
     new_workspace = Workspace(
