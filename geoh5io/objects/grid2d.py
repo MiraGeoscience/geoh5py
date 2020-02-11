@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -159,7 +159,7 @@ class Grid2D(ObjectBase):
             self.modified_entity = "attributes"
             self._centroids = None
 
-            self._u_count = value.astype(int)
+            self._u_count = int(value)
 
     @property
     def v_count(self) -> Optional[int]:
@@ -176,7 +176,7 @@ class Grid2D(ObjectBase):
             self.modified_entity = "attributes"
             self._centroids = None
 
-            self._v_count = value.astype(int)
+            self._v_count = int(value)
 
     @property
     def rotation(self) -> Optional[float]:
@@ -271,3 +271,12 @@ class Grid2D(ObjectBase):
                 self._centroids[:, ind] += self.origin[axis]
 
         return self._centroids
+
+    @property
+    def shape(self) -> Optional[Tuple]:
+        """
+        Number of cells along the u, v and z-axis: list[int], length (3,)
+        """
+        if self.u_count is not None and self.v_count is not None:
+            return self.u_count, self.v_count
+        return None

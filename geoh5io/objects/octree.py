@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -256,21 +256,16 @@ class Octree(ObjectBase):
             )
 
     @property
-    def dimensions(self) -> Optional[list]:
+    def shape(self) -> Optional[Tuple]:
         """
-        dimension
-
-        Returns
-        -------
-        dimension: int
-            Number of cells along the u, v and w-axis
+        Number of base cells along the u, v and w-axis
         """
         if (
             self.u_count is not None
             and self.v_count is not None
             and self.w_count is not None
         ):
-            return [self.u_count, self.v_count, self.w_count]
+            return self.u_count, self.v_count, self.w_count
         return None
 
     @property

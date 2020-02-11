@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -188,7 +188,7 @@ class BlockModel(ObjectBase):
         return None
 
     @property
-    def dimensions(self) -> Optional[list]:
+    def shape(self) -> Optional[Tuple]:
         """
         Number of cells along the u, v and z-axis: list[int], length (3,)
         """
@@ -197,7 +197,7 @@ class BlockModel(ObjectBase):
             and self.v_count is not None
             and self.z_count is not None
         ):
-            return [self.u_count, self.v_count, self.z_count]
+            return self.u_count, self.v_count, self.z_count
         return None
 
     @property
@@ -205,8 +205,8 @@ class BlockModel(ObjectBase):
         """
         Total number of cells in the model, int
         """
-        if self.dimensions:
-            return int(np.prod(self.dimensions))
+        if self.shape is not None:
+            return int(np.prod(self.shape))
         return None
 
     @property
