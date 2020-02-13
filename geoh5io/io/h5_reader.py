@@ -279,7 +279,10 @@ class H5Reader:
         """
         project = h5py.File(h5file, "r")
 
-        values = r_[project[base]["Data"][cls.uuid_str(uid)]["Data"]]
+        if "Data" in list(project[base]["Data"][cls.uuid_str(uid)].keys()):
+            values = r_[project[base]["Data"][cls.uuid_str(uid)]["Data"]]
+        else:
+            values = None
 
         project.close()
 
