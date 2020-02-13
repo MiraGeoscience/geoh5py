@@ -34,14 +34,9 @@ class Points(ObjectBase):
         return cls.__TYPE_UID
 
     @property
-    def vertices(self) -> Optional[Coord3D]:
+    def vertices(self) -> Optional[ndarray]:
         """
-        vertices
-
-        Returns
-        -------
-        vertices: geoh5io.Coord3D
-            Coord3D object holding the vertices coordinates
+        Array of vertices coordinates, shape (*, 3)
         """
         if (getattr(self, "_vertices", None) is None) and self.existing_h5_entity:
             self._vertices = self.workspace.fetch_vertices(self.uid)
@@ -50,17 +45,5 @@ class Points(ObjectBase):
 
     @vertices.setter
     def vertices(self, xyz: ndarray):
-        self.modified_entity = "vertices"
-        self._vertices = Coord3D(xyz)
-
-    @property
-    def locations(self):
-        """
-        locations
-
-        Returns
-        -------
-        locations: numpy.array
-            [x, y, z] array of coordinates from the Coord3D
-        """
-        return self.vertices.locations
+        self.modified_attributes = "vertices"
+        self._vertices = xyz
