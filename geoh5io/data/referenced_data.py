@@ -1,21 +1,13 @@
-import uuid
-
 from .data import Data
-from .data_association_enum import DataAssociationEnum
 from .data_type import DataType
 from .primitive_type_enum import PrimitiveTypeEnum
 from .reference_value_map import ReferenceValueMap
 
 
 class ReferencedData(Data):
-    def __init__(
-        self,
-        data_type: DataType,
-        association: DataAssociationEnum,
-        name: str,
-        uid: uuid.UUID = None,
-    ):
-        super().__init__(data_type, association=association, name=name, uid=uid)
+    def __init__(self, data_type: DataType, **kwargs):
+        super().__init__(data_type, **kwargs)
+
         self._value_map = ReferenceValueMap()
 
     @classmethod
