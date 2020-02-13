@@ -313,7 +313,7 @@ class Octree(ObjectBase):
         return self._centroids
 
     @property
-    def n_cells(self) -> Optional[Tuple]:
+    def n_cells(self) -> Optional[int]:
         """
         n_cells
 
@@ -323,7 +323,7 @@ class Octree(ObjectBase):
                 Number of cells
         """
         if self.octree_cells is not None:
-            return tuple([self.octree_cells.shape[0]])
+            return self.octree_cells.shape[0]
         return None
 
     def sort_children_data(self, indices):

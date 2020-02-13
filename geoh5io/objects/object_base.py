@@ -1,6 +1,6 @@
 import uuid
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
 from numpy import ndarray
 
@@ -74,18 +74,18 @@ class ObjectBase(Entity):
         return None
 
     @property
-    def n_vertices(self) -> Optional[Tuple]:
+    def n_vertices(self) -> Optional[int]:
         """
         Number of vertices
 
         :return: Number of vertices
         """
         if self.vertices is not None:
-            return tuple([self.vertices.locations.shape[0]])
+            return self.vertices.locations.shape[0]
         return None
 
     @property
-    def n_cells(self) -> Optional[Tuple]:
+    def n_cells(self) -> Optional[int]:
         """
         n_cells
 
@@ -95,7 +95,7 @@ class ObjectBase(Entity):
             Number of cells
         """
         if self.cells is not None:
-            return tuple([self.cells.shape[0]])
+            return self.cells.shape[0]
         return None
 
     @property
