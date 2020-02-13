@@ -66,124 +66,6 @@ class H5Writer:
         return h5file
 
     @classmethod
-    def add_type(cls, file: str, entity: Entity, close_file=True):
-        """
-        add_type(file, entity_type, close_file=True)
-
-        Add a type to the geoh5 project.
-
-        Parameters
-        ----------
-        file: str or h5py.File
-            Name or handle to a geoh5 file
-
-        entity: Entity with type to be added to the geoh5 file
-
-        close_file: bool optional
-           Close h5 file after write [True] or False
-
-        Returns
-        -------
-        type: h5py.File
-            Pointer to type in a geoh5 file. Active link if "close_file" is False
-        """
-        entity_type = entity.entity_type
-
-        h5file = fetch_h5_handle(file, entity_type)
-
-        base = list(h5file.keys())[0]
-
-        # tree = entity_type.workspace.tree
-        uid = entity_type.uid
-
-        # entity_type_str = tree[uid]["entity_type"].replace("_", " ").capitalize() + "s"
-        if isinstance(entity_type, DataType):
-            entity_type_str = "Data types"
-        elif isinstance(entity_type, ObjectType):
-            entity_type_str = "Object types"
-        elif isinstance(entity_type, GroupType):
-            entity_type_str = "Group types"
-        else:
-            return None
-
-        # Check if already in the project
-        if cls.uuid_str(uid) in list(h5file[base]["Types"][entity_type_str].keys()):
-
-            if entity_type.modified_entity:
-                # Remove the entity type for re-write
-                del h5file[base]["Types"][entity_type_str][cls.uuid_str(uid)]
-                entity_type.modified_entity = False
-                entity_type.existing_h5_entity = False
-
-            else:
-
-                entity_type.existing_h5_entity = True
-                return h5file[base]["Types"][entity_type_str][cls.uuid_str(uid)]
-
-        new_type = h5file[base]["Types"][entity_type_str].create_group(
-            cls.uuid_str(uid)
-        )
-
-        for key, attr in entity_type.attribute_map.items():
-
-            try:
-                value = getattr(entity_type, attr)
-            except AttributeError:
-                continue
-
-            if key == "ID":
-                value = "{" + str(value) + "}"
-
-            elif key == "Primitive type":
-                value = value.name.lower().capitalize()
-
-            if isinstance(value, (int8, bool)):
-                new_type.attrs.create(key, int(value), dtype="int8")
-
-            elif isinstance(value, str):
-                new_type.attrs.create(key, value, dtype=cls.str_type)
-
-            elif value is None:
-                new_type.attrs.create(key, "None", dtype=cls.str_type)
-            else:
-                new_type.attrs.create(key, value, dtype=asarray(value).dtype)
-
-        if close_file:
-            h5file.close()
-
-        entity_type.modified_entity = False
-        entity_type.existing_h5_entity = True
-
-        return new_type
-
-    @classmethod
-    def finalize(cls, workspace, close_file=False):
-        """
-        finalize(workspace, file=None, close_file=True)
-
-        Build the Root of a project
-
-        Parameters
-        ----------
-        workspace: geoh5io.Workspace
-            Workspace object defining the project structure
-
-        close_file: bool optional
-           Close h5 file after write [True] or False
-        """
-        h5file = fetch_h5_handle(workspace.h5file, workspace)
-        workspace_group: Entity = workspace.get_entity("Workspace")[0]
-        root_handle = H5Writer.fetch_handle(h5file, workspace_group)
-
-        if "Root" in h5file[workspace.name].keys():
-            del h5file[workspace.name]["Root"]
-
-        h5file[workspace.name]["Root"] = root_handle
-
-        if close_file:
-            h5file.close()
-
-    @classmethod
     def add_vertices(cls, file: str, entity, close_file=True):
         """
         add_vertices(file, entity, close_file=True)
@@ -201,10 +83,10 @@ class H5Writer:
         close_file: bool optional
            Close h5 file after write [True] or False
         """
-        h5file = fetch_h5_handle(file, entity)
+        h5file = cls.fetch_h5_handle(file, entity)
 
-        if hasattr(entity, "vertices") and entity.vertices:
-            xyz = entity.vertices.locations
+        if getattr(entity, "vertices", None) is not None:
+            xyz = entity.vertices
             entity_handle = H5Writer.fetch_handle(h5file, entity)
 
             # Adding vertices
@@ -238,7 +120,7 @@ class H5Writer:
         close_file: bool optional
            Close h5 file after write [True] or False
         """
-        h5file = fetch_h5_handle(file, entity)
+        h5file = cls.fetch_h5_handle(file, entity)
 
         if hasattr(entity, "u_cell_delimiters") and (
             entity.u_cell_delimiters is not None
@@ -300,7 +182,7 @@ class H5Writer:
         close_file: bool optional
            Close h5 file after write [True] or False
         """
-        h5file = fetch_h5_handle(file, entity)
+        h5file = cls.fetch_h5_handle(file, entity)
 
         if hasattr(entity, "cells") and (entity.cells is not None):
             indices = entity.cells
@@ -332,7 +214,7 @@ class H5Writer:
         close_file: bool optional
            Close h5 file after write [True] or False
         """
-        h5file = fetch_h5_handle(file, entity)
+        h5file = cls.fetch_h5_handle(file, entity)
 
         if hasattr(entity, "octree_cells") and (entity.octree_cells is not None):
             octree_cells = entity.octree_cells
@@ -370,7 +252,7 @@ class H5Writer:
         close_file: bool optional
            Close h5 file after write [True] or False
         """
-        h5file = fetch_h5_handle(file, entity)
+        h5file = cls.fetch_h5_handle(file, entity)
 
         entity_handle = H5Writer.fetch_handle(h5file, entity)
 
@@ -400,7 +282,7 @@ class H5Writer:
         """
         cls.str_type = h5py.special_dtype(vlen=str)
 
-        h5file = fetch_h5_handle(file, entity)
+        h5file = cls.fetch_h5_handle(file, entity)
 
         base = list(h5file.keys())[0]
 
@@ -410,20 +292,52 @@ class H5Writer:
         uid = entity.uid
 
         if isinstance(entity, Data):
-            entity_type = "Data"
+            base_handle = h5file[base]["Data"]
         elif isinstance(entity, ObjectBase):
-            entity_type = "Objects"
+            base_handle = h5file[base]["Objects"]
         elif isinstance(entity, Group):
-            entity_type = "Groups"
+            base_handle = h5file[base]["Groups"]
+        elif isinstance(entity, DataType):
+            base_handle = h5file[base]["Types"]["Data types"]
+        elif isinstance(entity, ObjectType):
+            base_handle = h5file[base]["Types"]["Object types"]
+        elif isinstance(entity, GroupType):
+            base_handle = h5file[base]["Types"]["Group types"]
         else:
-            return None
+            raise RuntimeError(f"Cannot add object '{entity}' to geoh5.")
 
         # Check if already in the project
-        if cls.uuid_str(uid) in list(h5file[base][entity_type].keys()):
-
-            return h5file[base][entity_type][cls.uuid_str(uid)]
+        if cls.uuid_str(uid) in list(base_handle.keys()):
+            return base_handle[cls.uuid_str(uid)]
 
         return None
+
+    @classmethod
+    def finalize(cls, workspace, close_file=False):
+        """
+        finalize(workspace, file=None, close_file=True)
+
+        Build the Root of a project
+
+        Parameters
+        ----------
+        workspace: geoh5io.Workspace
+            Workspace object defining the project structure
+
+        close_file: bool optional
+           Close h5 file after write [True] or False
+        """
+        h5file = cls.fetch_h5_handle(workspace.h5file, workspace)
+        workspace_group: Entity = workspace.get_entity("Workspace")[0]
+        root_handle = H5Writer.fetch_handle(h5file, workspace_group)
+
+        if "Root" in h5file[workspace.name].keys():
+            del h5file[workspace.name]["Root"]
+
+        h5file[workspace.name]["Root"] = root_handle
+
+        if close_file:
+            h5file.close()
 
     @classmethod
     def add_entity(cls, entity, file=None, values=None, close_file=True):
@@ -455,7 +369,7 @@ class H5Writer:
         """
         cls.str_type = h5py.special_dtype(vlen=str)
 
-        h5file = fetch_h5_handle(file, entity)
+        h5file = cls.fetch_h5_handle(file, entity)
 
         base = list(h5file.keys())[0]
 
@@ -474,8 +388,6 @@ class H5Writer:
         if cls.uuid_str(uid) in list(h5file[base][entity_type].keys()):
 
             if any([entity.modified_entity]):
-                # Remove the entity for re-write
-                # del h5file[base][entity_type][cls.uuid_str(uid)]
                 cls.update_attributes(file, entity, close_file=False)
                 entity.modified_entity = []
                 entity.existing_h5_entity = True
@@ -501,10 +413,12 @@ class H5Writer:
 
         # Add the type and return a pointer
         new_type = H5Writer.add_type(h5file, entity, close_file=False)
-
         entity_handle["Type"] = new_type
 
-        cls.add_datasets(h5file, entity, values=values, close_file=False)
+        entity.entity_type.modified_entity = []
+        entity.entity_type.existing_h5_entity = True
+
+        cls.add_datasets(entity, file=h5file, values=values, close_file=False)
 
         # Check if file reference to a hdf5
         if close_file:
@@ -514,6 +428,72 @@ class H5Writer:
         entity.existing_h5_entity = True
 
         return entity_handle
+
+    @classmethod
+    def add_type(cls, file: str, entity: Entity, close_file=True):
+        """
+        add_type(file, entity_type, close_file=True)
+
+        Add a type to the geoh5 project.
+
+        Parameters
+        ----------
+        file: str or h5py.File
+            Name or handle to a geoh5 file
+
+        entity: Entity with type to be added to the geoh5 file
+
+        close_file: bool optional
+           Close h5 file after write [True] or False
+
+        Returns
+        -------
+        type: h5py.File
+            Pointer to type in a geoh5 file. Active link if "close_file" is False
+        """
+        entity_type = entity.entity_type
+
+        h5file = cls.fetch_h5_handle(file, entity_type)
+
+        base = list(h5file.keys())[0]
+
+        # tree = entity_type.workspace.tree
+        uid = entity_type.uid
+
+        # entity_type_str = tree[uid]["entity_type"].replace("_", " ").capitalize() + "s"
+        if isinstance(entity_type, DataType):
+            entity_type_str = "Data types"
+        elif isinstance(entity_type, ObjectType):
+            entity_type_str = "Object types"
+        elif isinstance(entity_type, GroupType):
+            entity_type_str = "Group types"
+        else:
+            return None
+
+        # Check if already in the project
+        if cls.uuid_str(uid) in list(h5file[base]["Types"][entity_type_str].keys()):
+
+            if any([entity_type.modified_entity]):
+                cls.update_attributes(file, entity_type, close_file=False)
+                entity.modified_entity = []
+                entity_type.existing_h5_entity = False
+
+            else:
+                entity_type.existing_h5_entity = True
+                return h5file[base]["Types"][entity_type_str][cls.uuid_str(uid)]
+
+        new_type = h5file[base]["Types"][entity_type_str].create_group(
+            cls.uuid_str(uid)
+        )
+        H5Writer.add_attributes(file, entity_type, close_file=False)
+
+        if close_file:
+            h5file.close()
+
+        entity_type.modified_entity = False
+        entity_type.existing_h5_entity = True
+
+        return new_type
 
     @classmethod
     def add_to_parent(
@@ -544,7 +524,7 @@ class H5Writer:
             Add parents recursively until reaching the top Workspace group: True or [False]
         """
 
-        h5file = fetch_h5_handle(file, entity)
+        h5file = cls.fetch_h5_handle(file, entity)
 
         # If RootGroup than no parent to be added
         if isinstance(entity, RootGroup):
@@ -616,7 +596,7 @@ class H5Writer:
             Add children associated with entity
 
         """
-        h5file = fetch_h5_handle(file, entity)
+        h5file = cls.fetch_h5_handle(file, entity)
 
         # Add itself to the project
         new_entity = H5Writer.add_entity(entity, file=h5file, close_file=False)
@@ -637,17 +617,19 @@ class H5Writer:
 
         return new_entity
 
-    @staticmethod
-    def add_datasets(h5file, entity, values=None, close_file=True):
+    @classmethod
+    def add_datasets(
+        cls, entity: Entity, file: str = None, values=None, close_file=True
+    ):
         """
 
         Parameters
         ----------
-        h5file: str or h5py.File
-            Name or handle to a geoh5 file
-
         entity: geoh5io.Entity
             Entity to be added to the geoh5 file
+
+        file: str or h5py.File
+            Name or handle to a geoh5 file
 
         values: numpy.array optional
             Array of values to be added to Data entity
@@ -656,40 +638,37 @@ class H5Writer:
            Close h5 file after write
 
         """
+        h5file = cls.fetch_h5_handle(file, entity)
+
         if hasattr(entity, "values"):
             if values is not None:
                 H5Writer.add_data_values(h5file, entity, values, close_file=False)
 
-            if entity.values is not None:
+            if isinstance(entity, Data):
                 H5Writer.add_data_values(
                     h5file, entity, entity.values, close_file=False
                 )
 
-        if hasattr(entity, "property_groups") and isinstance(
-            entity.property_groups, list
-        ):
+        if isinstance(entity, ObjectBase) and isinstance(entity.property_groups, list):
             H5Writer.add_property_groups(h5file, entity, close_file=False)
 
-        if hasattr(entity, "vertices") and entity.vertices:
+        if getattr(entity, "vertices", None) is not None:
             H5Writer.add_vertices(h5file, entity, close_file=False)
 
-        if (
-            hasattr(entity, "u_cell_delimiters")
-            and entity.u_cell_delimiters is not None
-        ):
+        if getattr(entity, "u_cell_delimiters", None) is not None:
             H5Writer.add_cell_delimiters(h5file, entity, close_file=False)
 
-        if hasattr(entity, "cells") and entity.cells is not None:
+        if getattr(entity, "cells", None) is not None:
             H5Writer.add_cells(h5file, entity, close_file=False)
 
-        if hasattr(entity, "octree_cells") and entity.octree_cells is not None:
+        if getattr(entity, "octree_cells", None) is not None:
             H5Writer.add_octree_cells(h5file, entity, close_file=False)
 
         if close_file:
             h5file.close()
 
-    @staticmethod
-    def add_attributes(file: str, entity, close_file=True):
+    @classmethod
+    def add_attributes(cls, file: str, entity, close_file=True):
         """
 
         Parameters
@@ -707,7 +686,7 @@ class H5Writer:
            Close h5 file after write
 
         """
-        h5file = fetch_h5_handle(file, entity)
+        h5file = cls.fetch_h5_handle(file, entity)
         entity_handle = H5Writer.fetch_handle(file, entity)
         str_type = h5py.special_dtype(vlen=str)
 
@@ -724,8 +703,8 @@ class H5Writer:
             if key == "PropertyGroups":
                 continue
 
-            if key == "Association":
-                value = value.name.capitalize()
+            if key in ["Association", "Primitive type"]:
+                value = value.name.lower().capitalize()
 
             if isinstance(value, (int8, bool)):
                 entity_handle.attrs.create(key, int(value), dtype="int8")
@@ -859,26 +838,26 @@ class H5Writer:
     def bool_value(value: int8) -> bool:
         return bool(value)
 
+    @staticmethod
+    def fetch_h5_handle(file, entity) -> h5py.File:
+        """
+        fetch_h5_handle(file)
 
-def fetch_h5_handle(file, entity) -> h5py.File:
-    """
-    fetch_h5_handle(file)
+        Check if file reference to an existing hdf5
 
-    Check if file reference to an existing hdf5
+        Returns
+        -------
+        h5py: h5py.File
+            Handle to an opened h5py file
 
-    Returns
-    -------
-    h5py: h5py.File
-        Handle to an opened h5py file
+        """
+        if file is None:
+            h5file = h5py.File(entity.workspace.h5file, "r+")
 
-    """
-    if file is None:
-        h5file = h5py.File(entity.workspace.h5file, "r+")
-
-    else:
-        if not isinstance(file, h5py.File):
-            h5file = h5py.File(file, "r+")
         else:
-            h5file = file
+            if not isinstance(file, h5py.File):
+                h5file = h5py.File(file, "r+")
+            else:
+                h5file = file
 
-    return h5file
+        return h5file

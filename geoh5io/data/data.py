@@ -20,12 +20,16 @@ class Data(Entity):
         assert data_type is not None
         assert data_type.primitive_type == self.primitive_type()
 
-        self._type = data_type
+        self._entity_type = data_type
         self._association: Optional[DataAssociationEnum] = None
         self._values = None
         super().__init__(**kwargs)
 
         data_type.workspace._register_data(self)
+
+    @property
+    def values(self):
+        return self._values
 
     @property
     def association(self) -> Optional[DataAssociationEnum]:
@@ -48,7 +52,7 @@ class Data(Entity):
 
     @property
     def entity_type(self) -> DataType:
-        return self._type
+        return self._entity_type
 
     @classmethod
     @abstractmethod

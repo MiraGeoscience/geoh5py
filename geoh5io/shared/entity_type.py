@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 import weakref
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Optional, Type, TypeVar, Union, cast
+from typing import TYPE_CHECKING, List, Optional, Type, TypeVar, Union, cast
 
 if TYPE_CHECKING:
     from geoh5io import workspace as ws
@@ -24,7 +24,7 @@ class EntityType(ABC):
         self._name = "None"
         self._description: Optional[str] = None
         self._existing_h5_entity = False
-        self._modified_entity = False
+        self._modified_entity: List[str] = []
 
         for attr, item in kwargs.items():
             try:
@@ -47,12 +47,22 @@ class EntityType(ABC):
         self._existing_h5_entity = value
 
     @property
-    def modified_entity(self) -> bool:
+    def modified_entity(self):
         return self._modified_entity
 
     @modified_entity.setter
-    def modified_entity(self, value: bool):
-        self._modified_entity = value
+    def modified_entity(self, values: Union[List, str]):
+        if self.existing_h5_entity:
+            if not isinstance(values, list):
+                values = [values]
+
+            # Check if re-setting the list or appending
+            if len(values) == 0:
+                self._modified_entity = []
+            else:
+                for value in values:
+                    if value not in self._modified_entity:
+                        self._modified_entity.append(value)
 
     @staticmethod
     @abstractmethod
