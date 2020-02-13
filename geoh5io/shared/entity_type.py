@@ -24,7 +24,7 @@ class EntityType(ABC):
         self._name = "None"
         self._description: Optional[str] = None
         self._existing_h5_entity = False
-        self._modified_entity: List[str] = []
+        self._modified_attributes: List[str] = []
 
         for attr, item in kwargs.items():
             try:
@@ -47,22 +47,22 @@ class EntityType(ABC):
         self._existing_h5_entity = value
 
     @property
-    def modified_entity(self):
-        return self._modified_entity
+    def modified_attributes(self):
+        return self._modified_attributes
 
-    @modified_entity.setter
-    def modified_entity(self, values: Union[List, str]):
+    @modified_attributes.setter
+    def modified_attributes(self, values: Union[List, str]):
         if self.existing_h5_entity:
             if not isinstance(values, list):
                 values = [values]
 
             # Check if re-setting the list or appending
             if len(values) == 0:
-                self._modified_entity = []
+                self._modified_attributes = []
             else:
                 for value in values:
-                    if value not in self._modified_entity:
-                        self._modified_entity.append(value)
+                    if value not in self._modified_attributes:
+                        self._modified_attributes.append(value)
 
     @staticmethod
     @abstractmethod

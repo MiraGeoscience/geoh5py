@@ -39,7 +39,7 @@ class Surface(Points):
                 self._cells = self.workspace.fetch_cells(self.uid)
             else:
                 if self.vertices is not None:
-                    n_segments = self.vertices.locations.shape[0]
+                    n_segments = self.vertices.shape[0]
                     self._cells = c_[
                         arange(0, n_segments - 1), arange(1, n_segments)
                     ].astype("uint32")
@@ -70,7 +70,7 @@ class Surface(Points):
 
         if indices.dtype == "int32":
             indices.astype("uint32")
-        self.modified_entity = "cells"
+        self.modified_attributes = "cells"
         self._cells = indices
 
     @classmethod

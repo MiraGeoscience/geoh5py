@@ -1,3 +1,6 @@
+# pylint: disable=R0904
+# pylint: disable=R0912
+
 from __future__ import annotations
 
 import inspect
@@ -25,7 +28,7 @@ from geoh5io.data import Data
 from geoh5io.groups import CustomGroup, Group, PropertyGroup
 from geoh5io.io import H5Reader, H5Writer
 from geoh5io.objects import Cell, ObjectBase
-from geoh5io.shared import Coord3D, weakref_utils
+from geoh5io.shared import weakref_utils
 from geoh5io.shared.entity import Entity
 
 from .root_group import RootGroup
@@ -62,7 +65,7 @@ class Workspace:
         self._groups: Dict[uuid.UUID, ReferenceType[group.Group]] = {}
         self._objects: Dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
         self._data: Dict[uuid.UUID, ReferenceType[data.Data]] = {}
-        self._modified_entity = False
+        self._modified_attributes = False
         self._h5file = h5file
 
         # Create a root, either from file or from scratch
@@ -81,6 +84,8 @@ class Workspace:
             self._root = self.create_entity(
                 RootGroup, save_on_creation=False, **{**attributes, **type_attributes}
             )
+            self._root.existing_h5_entity = True
+            self._root.entity_type.existing_h5_entity = True
 
             # Get all objects in the file
             self.fetch_children(self._root, recursively=True)
@@ -255,12 +260,12 @@ class Workspace:
         return self._h5file
 
     @property
-    def modified_entity(self) -> bool:
-        return self._modified_entity
+    def modified_attributes(self) -> bool:
+        return self._modified_attributes
 
-    @modified_entity.setter
-    def modified_entity(self, value: bool):
-        self._modified_entity = value
+    @modified_attributes.setter
+    def modified_attributes(self, value: bool):
+        self._modified_attributes = value
 
     @property
     def workspace(self):
@@ -309,7 +314,7 @@ class Workspace:
     def finalize(self):
         """ Finalize the geoh5 file by checking for updated entities and re-building the Root"""
         for entity in self.all_objects() + self.all_groups() + self.all_data():
-            if len(entity.modified_entity) > 0:
+            if len(entity.modified_attributes) > 0:
                 self.save_entity(entity)
 
         H5Writer.finalize(self)
@@ -379,8 +384,10 @@ class Workspace:
                 entity_type_uid = uuid.uuid4()
 
         if entity_class is RootGroup:
-            group_type = RootGroup.find_or_create_type(self, **entity_type_kwargs)
-            created_entity = RootGroup(group_type, **entity_kwargs)
+            created_entity = RootGroup(
+                RootGroup.find_or_create_type(self, **entity_type_kwargs),
+                **entity_kwargs,
+            )
 
         elif entity_class is Data:
             data_type = data.data_type.DataType.find_or_create(
@@ -411,15 +418,18 @@ class Workspace:
                     and not member == CustomGroup
                     and member.default_type_uid() == entity_type_uid
                 ):
-                    known_type = member.find_or_create_type(self, **entity_type_kwargs)
-                    created_entity = member(known_type, **entity_kwargs)
+                    entity_type = member.find_or_create_type(self, **entity_type_kwargs)
+                    created_entity = member(entity_type, **entity_kwargs)
                     break
 
             # Special case for CustomGroup without uuid
             if (created_entity is None) and entity_class == Group:
-                custom = groups.custom_group.CustomGroup
-                unknown_type = custom.find_or_create_type(self, **entity_type_kwargs)
-                created_entity = custom(unknown_type, **entity_kwargs)
+                entity_type = groups.custom_group.CustomGroup.find_or_create_type(
+                    self, **entity_type_kwargs
+                )
+                created_entity = groups.custom_group.CustomGroup(
+                    entity_type, **entity_kwargs
+                )
 
         if created_entity is not None:
             if save_on_creation:
@@ -469,6 +479,7 @@ class Workspace:
 
                 # Assumes the object was pulled from h5
                 recovered_object.existing_h5_entity = True
+                recovered_object.entity_type.existing_h5_entity = True
 
                 # Add parent-child relationship
                 recovered_object.parent = entity
@@ -498,7 +509,7 @@ class Workspace:
         """
         return H5Reader.fetch_values(self.h5file, self.name, uid)
 
-    def fetch_vertices(self, uid: uuid.UUID) -> Coord3D:
+    def fetch_vertices(self, uid: uuid.UUID) -> np.ndarray:
         """
         Get the vertices of an object from the source h5 file
 

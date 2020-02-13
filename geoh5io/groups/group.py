@@ -15,11 +15,11 @@ class Group(Entity):
         assert group_type is not None
         super().__init__(**kwargs)
 
-        self._type = group_type
+        self._entity_type = group_type
 
     @property
     def entity_type(self) -> GroupType:
-        return self._type
+        return self._entity_type
 
     @classmethod
     def find_or_create_type(

@@ -387,9 +387,9 @@ class H5Writer:
         # Check if already in the project
         if cls.uuid_str(uid) in list(h5file[base][entity_type].keys()):
 
-            if any([entity.modified_entity]):
+            if any([entity.modified_attributes]):
                 cls.update_attributes(file, entity, close_file=False)
-                entity.modified_entity = []
+                entity.modified_attributes = []
                 entity.existing_h5_entity = True
 
             else:
@@ -415,7 +415,7 @@ class H5Writer:
         new_type = H5Writer.add_type(h5file, entity, close_file=False)
         entity_handle["Type"] = new_type
 
-        entity.entity_type.modified_entity = []
+        entity.entity_type.modified_attributes = []
         entity.entity_type.existing_h5_entity = True
 
         cls.add_datasets(entity, file=h5file, values=values, close_file=False)
@@ -424,7 +424,7 @@ class H5Writer:
         if close_file:
             h5file.close()
 
-        entity.modified_entity = []
+        entity.modified_attributes = []
         entity.existing_h5_entity = True
 
         return entity_handle
@@ -473,9 +473,9 @@ class H5Writer:
         # Check if already in the project
         if cls.uuid_str(uid) in list(h5file[base]["Types"][entity_type_str].keys()):
 
-            if any([entity_type.modified_entity]):
+            if any([entity_type.modified_attributes]):
                 cls.update_attributes(file, entity_type, close_file=False)
-                entity.modified_entity = []
+                entity.modified_attributes = []
                 entity_type.existing_h5_entity = False
 
             else:
@@ -490,7 +490,7 @@ class H5Writer:
         if close_file:
             h5file.close()
 
-        entity_type.modified_entity = False
+        entity_type.modified_attributes = False
         entity_type.existing_h5_entity = True
 
         return new_type
@@ -799,7 +799,7 @@ class H5Writer:
         """
         entity_handle = H5Writer.fetch_handle(file, entity)
 
-        for attr in entity.modified_entity:
+        for attr in entity.modified_attributes:
             if attr == "values":
                 del entity_handle["Data"]
                 cls.add_data_values(file, entity, entity.values, close_file=close_file)

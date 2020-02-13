@@ -1,9 +1,8 @@
 import uuid
 from typing import List, Optional
 
-from geoh5io.shared import Coord3D
+from numpy import ndarray
 
-from .cell import Cell
 from .object_base import ObjectBase, ObjectType
 
 
@@ -15,10 +14,10 @@ class Drillhole(ObjectBase):
     def __init__(self, object_type: ObjectType, **kwargs):
 
         # TODO
-        self._vertices: Optional[Coord3D] = None
-        self._cells: Optional[Cell] = None
-        self._collar: Optional[Coord3D] = None
-        self._surveys: Optional[Coord3D] = None
+        self._vertices: Optional[ndarray] = None
+        self._cells: Optional[ndarray] = None
+        self._collar: Optional[ndarray] = None
+        self._surveys: Optional[ndarray] = None
         self._trace: List = []
 
         super().__init__(object_type, **kwargs)

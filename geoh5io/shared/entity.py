@@ -29,7 +29,7 @@ class Entity(ABC):
         self._allow_rename = True
         self._public = True
         self._existing_h5_entity = False
-        self._modified_entity: List[str] = []
+        self._modified_attributes: List[str] = []
 
         for attr, item in kwargs.items():
             try:
@@ -52,22 +52,22 @@ class Entity(ABC):
         self._existing_h5_entity = value
 
     @property
-    def modified_entity(self):
-        return self._modified_entity
+    def modified_attributes(self):
+        return self._modified_attributes
 
-    @modified_entity.setter
-    def modified_entity(self, values: Union[List, str]):
+    @modified_attributes.setter
+    def modified_attributes(self, values: Union[List, str]):
+        if self.existing_h5_entity:
+            if not isinstance(values, list):
+                values = [values]
 
-        if not isinstance(values, list):
-            values = [values]
-
-        # Check if re-setting the list or appending
-        if len(values) == 0:
-            self._modified_entity = []
-        else:
-            for value in values:
-                if value not in self._modified_entity:
-                    self._modified_entity.append(value)
+            # Check if re-setting the list or appending
+            if len(values) == 0:
+                self._modified_attributes = []
+            else:
+                for value in values:
+                    if value not in self._modified_attributes:
+                        self._modified_attributes.append(value)
 
     @property
     def uid(self) -> uuid.UUID:
@@ -99,7 +99,7 @@ class Entity(ABC):
     @name.setter
     def name(self, new_name: str):
         self._name = self.fix_up_name(new_name)
-        self.modified_entity = "attributes"
+        self.modified_attributes = "attributes"
 
     @property
     def visible(self) -> bool:
@@ -108,7 +108,7 @@ class Entity(ABC):
     @visible.setter
     def visible(self, value: bool):
         self._visible = value
-        self.modified_entity = "attributes"
+        self.modified_attributes = "attributes"
 
     @property
     def allow_delete(self) -> bool:
@@ -120,7 +120,7 @@ class Entity(ABC):
     @allow_delete.setter
     def allow_delete(self, value: bool):
         self._allow_delete = value
-        self.modified_entity = "attributes"
+        self.modified_attributes = "attributes"
 
     @property
     def allow_move(self) -> bool:
@@ -132,7 +132,7 @@ class Entity(ABC):
     @allow_move.setter
     def allow_move(self, value: bool):
         self._allow_move = value
-        self.modified_entity = "attributes"
+        self.modified_attributes = "attributes"
 
     @property
     def allow_rename(self) -> bool:
@@ -144,7 +144,7 @@ class Entity(ABC):
     @allow_rename.setter
     def allow_rename(self, value: bool):
         self._allow_rename = value
-        self.modified_entity = "attributes"
+        self.modified_attributes = "attributes"
 
     @property
     def public(self) -> bool:
@@ -158,7 +158,7 @@ class Entity(ABC):
     @public.setter
     def public(self, value: bool):
         self._public = value
-        self.modified_entity = "attributes"
+        self.modified_attributes = "attributes"
 
     @property
     def workspace(self):

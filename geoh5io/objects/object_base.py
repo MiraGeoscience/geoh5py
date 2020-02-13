@@ -26,7 +26,7 @@ class ObjectBase(Entity):
 
     def __init__(self, object_type: ObjectType, **kwargs):
         assert object_type is not None
-        self._type = object_type
+        self._entity_type = object_type
         self._property_groups: List[PropertyGroup] = []
         self._last_focus = "None"
 
@@ -50,7 +50,7 @@ class ObjectBase(Entity):
         """
         Object type: EntityType
         """
-        return self._type
+        return self._entity_type
 
     @property
     def vertices(self):
@@ -81,7 +81,7 @@ class ObjectBase(Entity):
         :return: Number of vertices
         """
         if self.vertices is not None:
-            return self.vertices.locations.shape[0]
+            return self.vertices.shape[0]
         return None
 
     @property
@@ -111,7 +111,7 @@ class ObjectBase(Entity):
             prop_group.parent = self
 
         # First time start with an empty list
-        self.modified_entity = "property_groups"
+        self.modified_attributes = "property_groups"
         self._property_groups = self.property_groups + prop_groups
 
     @classmethod
@@ -164,7 +164,7 @@ class ObjectBase(Entity):
             ], f"Given data with uuid {i} does not match any known children"
 
         prop_group.properties = uid
-        self.modified_entity = "property_groups"
+        self.modified_attributes = "property_groups"
 
         return prop_group
 
@@ -182,7 +182,7 @@ class ObjectBase(Entity):
         self.property_groups = [prop_group]
 
         prop_group.parent = self
-        self.modified_entity = "property_groups"
+        self.modified_attributes = "property_groups"
 
         return prop_group
 

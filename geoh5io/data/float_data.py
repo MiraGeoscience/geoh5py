@@ -24,7 +24,7 @@ class FloatData(Data):
 
     @values.setter
     def values(self, values):
-        self.modified_entity = "values"
+        self.modified_attributes = "values"
         self._values = ravel(values)
 
     def __call__(self):
