@@ -40,6 +40,16 @@ if TYPE_CHECKING:
 
 
 class Workspace:
+    """
+    The Workspace class is the core object that manages all Entities
+    handled by geoh5io.
+
+    The basic requirements needed to create a Workspace is:
+
+    :param h5file: str
+        File name of the target *.geoh5 file. A new project is created if
+        the target file cannot by found on disk.
+    """
 
     _active_ref: ClassVar[ReferenceType[Workspace]] = type(None)  # type: ignore
 
@@ -58,9 +68,7 @@ class Workspace:
         self._distance_unit = "meter"
         self._ga_version = "1"
         self._version = 1.0
-
         self._name = "GEOSCIENCE"
-
         self._types: Dict[uuid.UUID, ReferenceType[entity_type.EntityType]] = {}
         self._groups: Dict[uuid.UUID, ReferenceType[group.Group]] = {}
         self._objects: Dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
@@ -68,12 +76,9 @@ class Workspace:
         self._modified_attributes = False
         self._h5file = h5file
 
-        # Create a root, either from file or from scratch
         try:
             open(self.h5file)
-
             proj_attributes = H5Reader.fetch_project_attributes(self.h5file)
-
             for key, attr in proj_attributes.items():
                 setattr(self, self._attribute_map[key], attr)
 
@@ -87,27 +92,24 @@ class Workspace:
             self._root.existing_h5_entity = True
             self._root.entity_type.existing_h5_entity = True
 
-            # Get all objects in the file
             self.fetch_children(self._root, recursively=True)
-        #
+
         except FileNotFoundError:
             H5Writer.create_geoh5(self)
             self._root = root if root is not None else self.create_entity(RootGroup)
             self.finalize()
 
     @property
-    def attribute_map(self):
+    def attribute_map(self) -> dict:
+        """
+        Mapping between names used in the *.geoh5 database.
+        """
         return self._attribute_map
 
     @property
-    def ga_version(self):
+    def ga_version(self) -> str:
         """
-        ga_version
-
-        Returns
-        -------
-        ga_version: str="Unknown"
-            Geoscience Analyst version
+        Version of Geoscience Analyst software
         """
         return self._ga_version
 
@@ -116,14 +118,9 @@ class Workspace:
         self._ga_version = value
 
     @property
-    def version(self):
+    def version(self) -> float:
         """
-        version
-
-        Returns
-        -------
-        version: float=1.0
-            Project version
+        Project version
         """
         return self._version
 
@@ -132,14 +129,9 @@ class Workspace:
         self._version = value
 
     @property
-    def distance_unit(self):
+    def distance_unit(self) -> str:
         """
-        distance_unit
-
-        Returns
-        -------
-        distance_unit: str="meter"
-            Distance unit used by the project
+        Distance unit used in the project
         """
         return self._distance_unit
 
@@ -148,30 +140,20 @@ class Workspace:
         self._distance_unit = value
 
     @property
-    def contributors(self):
+    def contributors(self) -> np.ndarray:
         """
-        contributors
-
-        Returns
-        -------
-        contributors: List[str]
-            List of project contributors name
+        List of contributors name
         """
         return self._contributors
 
     @contributors.setter
     def contributors(self, value: List[str]):
-        self._contributors = np.asarray(value, dtype="object")
+        self._contributors = np.asarray(value, dtype=h5py.special_dtype(vlen=str))
 
     @property
-    def name(self):
+    def name(self) -> str:
         """
-        name
-
-        Returns
-        -------
-        name: str='GEOSCIENCE'
-            Name of the project
+         Name of the project
         """
         return self._name
 
