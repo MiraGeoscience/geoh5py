@@ -207,6 +207,15 @@ class BlockModel(ObjectBase):
         return None
 
     @property
+    def n_cells(self) -> Optional[int]:
+        """
+        Number of cells
+        """
+        if self.shape is not None:
+            return np.prod(self.shape)
+        return None
+
+    @property
     def centroids(self):
         """
         Cell center locations in world coordinates [x_i, y_i, z_i]:

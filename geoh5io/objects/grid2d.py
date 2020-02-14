@@ -44,8 +44,8 @@ class Grid2D(ObjectBase):
     def __init__(self, object_type: ObjectType, **kwargs):
 
         self._origin = [0, 0, 0]
-        self._u_size = None
-        self._v_size = None
+        self._u_cell_size = None
+        self._v_cell_size = None
         self._u_count = None
         self._v_count = None
         self._rotation = 0.0
@@ -268,4 +268,13 @@ class Grid2D(ObjectBase):
         """
         if self.u_count is not None and self.v_count is not None:
             return self.u_count, self.v_count
+        return None
+
+    @property
+    def n_cells(self) -> Optional[int]:
+        """
+        Number of cells
+        """
+        if self.shape is not None:
+            return np.prod(self.shape)
         return None
