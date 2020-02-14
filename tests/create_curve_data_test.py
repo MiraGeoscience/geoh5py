@@ -23,6 +23,7 @@ def test_create_curve_data():
     curve = Curve.create(workspace, vertices=xyz, name=curve_name)
 
     data_objects = curve.add_data({"vertexValues": values, "cellValues": cell_values})
+    workspace.finalize()
 
     assert all(
         data_objects[0].values == values
@@ -31,15 +32,17 @@ def test_create_curve_data():
         data_objects[1].values == cell_values
     ), "Created CELL data values differ from input"
 
-    workspace.save_entity(curve)
-    workspace.finalize()
-
     #################### Modify the vertices and data #########################
     # Re-open the workspace and read data back in
     workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
 
-    obj = workspace.get_entity(curve_name)[0]
-    assert all((obj.vertices() == xyz).flatten()), "Data locations differ from input"
+    obj_rec = workspace.get_entity(curve_name)[0]
+    assert all((obj_rec.vertices == xyz).flatten()), "Data locations differ from input"
+
+    for attr in obj_rec.attribute_map.values():
+        assert getattr(obj_rec, attr) == getattr(
+            curve, attr
+        ), f"Attribute {attr} do not match output"
 
     data_vertex = workspace.get_entity("vertexValues")[0]
     data_cell = workspace.get_entity("cellValues")[0]
@@ -52,12 +55,12 @@ def test_create_curve_data():
     ), "Loaded CELL data values differ from input"
 
     # Change the vertices of the curve
-    new_locs = random.randn(n_data, 3)
-    obj.vertices = new_locs
+    xyz = random.randn(n_data, 3)
+    obj_rec.vertices = xyz
 
     # Change the vertex values
-    new_vals = random.randn(n_data)
-    data_vertex.values = new_vals
+    values = random.randn(n_data)
+    data_vertex.values = values
 
     workspace.finalize()
 
@@ -67,14 +70,13 @@ def test_create_curve_data():
     # Read the data back in again
     obj = workspace.get_entity(curve_name)[0]
     assert all(
-        (obj.vertices() == new_locs).flatten()
+        (obj.vertices == xyz).flatten()
     ), "Modified data locations differ from input"
 
     data_vertex = workspace.get_entity("vertexValues")[0]
-    data_cell = workspace.get_entity("cellValues")[0]
 
     assert all(
-        data_vertex.values == new_vals
+        data_vertex.values == values
     ), "Modified VERTEX data values differ from input"
 
     os.remove(os.getcwd() + os.sep + "assets" + os.sep + h5file)
