@@ -567,44 +567,44 @@ class Workspace:
         return found_type if isinstance(found_type, type_class) else None
 
     def all_groups(self) -> List["group.Group"]:
+        """Get all active Group entities registered in the workspace.
+        """
         weakref_utils.remove_none_referents(self._groups)
         return [cast("group.Group", v()) for v in self._groups.values()]
 
     def find_group(self, group_uid: uuid.UUID) -> Optional["group.Group"]:
         """
-        find_group
-
         Find an existing and active Group object
-
-        :param group_uid: Unique identifier of target Group
         """
         return weakref_utils.get_clean_ref(self._groups, group_uid)
 
     def all_objects(self) -> List["object_base.ObjectBase"]:
+        """Get all active Object entities registered in the workspace.
+        """
         weakref_utils.remove_none_referents(self._objects)
         return [cast("object_base.ObjectBase", v()) for v in self._objects.values()]
 
     def find_object(self, object_uid: uuid.UUID) -> Optional["object_base.ObjectBase"]:
         """
         Find an existing and active Object
-
-        :param object_uid: Unique identifier of target Object
         """
         return weakref_utils.get_clean_ref(self._objects, object_uid)
 
     def all_data(self) -> List["data.Data"]:
+        """Get all active Data entities registered in the workspace.
+        """
         weakref_utils.remove_none_referents(self._data)
         return [cast("data.Data", v()) for v in self._data.values()]
 
     def find_data(self, data_uid: uuid.UUID) -> Optional["data.Data"]:
         """
-        Find an existing and active Data
-
-        :param data_uid: Unique identifier of target Data
+        Find an existing and active Data entity
         """
         return weakref_utils.get_clean_ref(self._data, data_uid)
 
     def find_entity(self, entity_uid: uuid.UUID) -> Optional["Entity"]:
+        """Get all active entities registered in the workspace.
+        """
         return (
             self.find_group(entity_uid)
             or self.find_data(entity_uid)
