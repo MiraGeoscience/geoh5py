@@ -100,7 +100,7 @@ class DataType(EntityType):
 
         for key, val in kwargs.items():
             if key.lower() in ["id", "uid"]:
-                uid = val
+                uid = uuid.UUID(val)
 
         entity_type = cls.find(workspace, uid)
         if entity_type is not None:

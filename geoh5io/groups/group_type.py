@@ -71,6 +71,10 @@ class GroupType(EntityType):
                 kwargs["ID"] = uid
             else:
                 kwargs["uid"] = uid
+        else:
+            for key, val in kwargs.items():
+                if key.lower() in ["id", "uid"]:
+                    uid = uuid.UUID(val)
 
         entity_type = cls.find(workspace, uid)
         if entity_type is not None:
