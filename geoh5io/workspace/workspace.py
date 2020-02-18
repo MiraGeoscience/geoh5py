@@ -287,7 +287,7 @@ class Workspace:
         H5Writer.save_entity(entity, close_file=close_file, add_children=add_children)
 
     def finalize(self):
-        """ Finalize the geoh5 file by checking for updated entities and re-building the Root"""
+        """ Finalize the h5file by checking for updated entities and re-building the Root"""
         for entity in self.all_objects() + self.all_groups() + self.all_data():
             if len(entity.modified_attributes) > 0:
                 self.save_entity(entity)
@@ -407,7 +407,7 @@ class Workspace:
 
     def fetch_children(self, entity: Entity, recursively: bool = False):
         """
-        Recover and register children entities from the geoh5 file
+        Recover and register children entities from the h5file
 
         :param entity: Parental entity
         :param recursively: Recover all children down the project tree
@@ -454,7 +454,7 @@ class Workspace:
 
     def fetch_values(self, uid: uuid.UUID) -> Optional[float]:
         """
-        Fetch the data values from the source h5 file
+        Fetch the data values from the source h5file
 
         :param uid: Unique identifier of target data object
 
@@ -464,49 +464,31 @@ class Workspace:
 
     def fetch_vertices(self, uid: uuid.UUID) -> np.ndarray:
         """
-        Get the vertices of an object from the source h5 file
+        Fetch the vertices of an object from the source h5file
 
-        Parameters
-        ----------
-        uid: uuid.UUID
-            Unique identifier of target entity
+        :param uid: Unique identifier of target entity
 
-        Returns
-        -------
-        coordinates: Coord3D
-            Coordinate entity with locations
+        :return coordinates: Array of coordinate [x, y, z] locations
         """
         return H5Reader.fetch_vertices(self.h5file, self.name, uid)
 
     def fetch_cells(self, uid: uuid.UUID) -> Cell:
         """
-        Get the cells of an object from the source h5 file
+        Fetch the cells of an object from the source h5file
 
-        Parameters
-        ----------
-        uid: uuid.UUID
-            Unique identifier of target entity
+        :param uid: Unique identifier of target entity
 
-        Returns
-        -------
-        cells: geoh5io.Cell
-            Cell object with vertices index
+        :return cells: Cell object with vertices index
         """
         return H5Reader.fetch_cells(self.h5file, self.name, uid)
 
     def fetch_octree_cells(self, uid: uuid.UUID) -> np.ndarray:
         """
-        Get the octree cells ordering from the source h5 file
+        Fetch the octree cells ordering from the source h5file
 
-        Parameters
-        ----------
-        uid: uuid.UUID
-            Unique identifier of target entity
+        :param uid: Unique identifier of target entity
 
-        Returns
-        -------
-        value: numpy.ndarray(int)
-            Array of [i, j, k, dimension] defining the octree mesh
+        :return values: Array of [i, j, k, dimension] defining the octree mesh
         """
         return H5Reader.fetch_octree_cells(self.h5file, self.name, uid)
 
@@ -514,41 +496,20 @@ class Workspace:
         self, uid: uuid.UUID
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
-        fetch_delimiters(uid)
+        Fetch the delimiter attributes from the source h5file
 
-        Fetch the delimiter attributes from the source h5 file
+        :param uid: Unique identifier of target data object
 
-        Parameters
-        ----------
-        uid: uuid.UUID
-            Unique identifier of target data object
-
-        Returns
-        -------
-        u_delimiters: numpy.array
-            Array of u_delimiters
-
-        v_delimiters: numpy.array
-            Array of v_delimiters
-
-        z_delimiters: numpy.array
-            Array of z_delimiters
+        :return (u_delimiters, v_delimiters, z_delimiters):
+            Arrays of delimiters along the u, v, and w axis
         """
         return H5Reader.fetch_delimiters(self.h5file, self.name, uid)
 
     def fetch_property_groups(self, uid: uuid.UUID) -> List[PropertyGroup]:
         """
-        Get the octree cells ordering from the source h5 file
+        Fetch all property_groups on an object from the source h5file
 
-        Parameters
-        ----------
-        uid: uuid.UUID
-            Unique identifier of target entity
-
-        Returns
-        -------
-        value: numpy.ndarray(int)
-            Array of [i, j, k, dimension] defining the octree mesh
+        :param uid: Unique identifier of target object
         """
         group_dict = H5Reader.fetch_property_groups(self.h5file, self.name, uid)
 
@@ -598,18 +559,9 @@ class Workspace:
         self, type_uid: uuid.UUID, type_class: Type["entity_type.EntityType"]
     ) -> Optional["entity_type.EntityType"]:
         """
-        find_type
-
         Find an existing and active EntityType
 
-        Parameters
-        ----------
-        type_uid: uuid.UUID
-            Unique identifier of target type
-
-        Returns
-        -------
-        entity_type: EntityType or None
+        :param type_uid: Unique identifier of target type
         """
         found_type = weakref_utils.get_clean_ref(self._types, type_uid)
         return found_type if isinstance(found_type, type_class) else None
@@ -624,14 +576,7 @@ class Workspace:
 
         Find an existing and active Group object
 
-        Parameters
-        ----------
-        group_uid: uuid.UUID
-            Unique identifier of target Group
-
-        Returns
-        -------
-        group: Group or None
+        :param group_uid: Unique identifier of target Group
         """
         return weakref_utils.get_clean_ref(self._groups, group_uid)
 
@@ -641,18 +586,9 @@ class Workspace:
 
     def find_object(self, object_uid: uuid.UUID) -> Optional["object_base.ObjectBase"]:
         """
-        find_object
-
         Find an existing and active Object
 
-        Parameters
-        ----------
-        object_uid: uuid.UUID
-            Unique identifier of target Object
-
-        Returns
-        -------
-        object: Object or None
+        :param object_uid: Unique identifier of target Object
         """
         return weakref_utils.get_clean_ref(self._objects, object_uid)
 
@@ -662,18 +598,9 @@ class Workspace:
 
     def find_data(self, data_uid: uuid.UUID) -> Optional["data.Data"]:
         """
-        find_data
-
         Find an existing and active Data
 
-        Parameters
-        ----------
-        data_uid: uuid.UUID
-            Unique identifier of target Data
-
-        Returns
-        -------
-        data: Object or None
+        :param data_uid: Unique identifier of target Data
         """
         return weakref_utils.get_clean_ref(self._data, data_uid)
 
