@@ -41,10 +41,9 @@ if TYPE_CHECKING:
 
 class Workspace:
     """
-    The Workspace class is the core object that manages all Entities
-    handled by geoh5io.
+    The Workspace class manages all Entities created or imported from the geoh5 structure.
 
-    The basic requirements needed to create a Workspace is:
+    The basic requirements needed to create a Workspace are:
 
     :param h5file: str
         File name of the target *.geoh5 file. A new project is created if
@@ -60,11 +59,12 @@ class Workspace:
         "Version": "version",
     }
 
-    def __init__(self, h5file: str = "Analyst.geoh5", root: RootGroup = None):
+    def __init__(self, h5file: str = "Analyst.geoh5", **kwargs):
 
         self._contributors = np.asarray(
             ["UserName"], dtype=h5py.special_dtype(vlen=str)
         )
+        self._root: Optional[Entity] = None
         self._distance_unit = "meter"
         self._ga_version = "1"
         self._version = 1.0
@@ -75,6 +75,14 @@ class Workspace:
         self._data: Dict[uuid.UUID, ReferenceType[data.Data]] = {}
         self._modified_attributes = False
         self._h5file = h5file
+
+        for attr, item in kwargs.items():
+            try:
+                if attr in self._attribute_map.keys():
+                    attr = self._attribute_map[attr]
+                setattr(self, attr, item)
+            except AttributeError:
+                continue
 
         try:
             open(self.h5file)
@@ -96,7 +104,7 @@ class Workspace:
 
         except FileNotFoundError:
             H5Writer.create_geoh5(self)
-            self._root = root if root is not None else self.create_entity(RootGroup)
+            self._root = self.create_entity(RootGroup)
             self.finalize()
 
     @property
@@ -158,59 +166,45 @@ class Workspace:
         return self._name
 
     @property
-    def list_groups_name(self):
+    def list_groups_name(self) -> Dict[uuid.UUID, str]:
         """
-        list_groups_name
-
-        Returns
-        -------
-        groups: List[str]
-            Names of all groups registered in the workspace
+        List all registered groups with name
         """
         groups_name = {}
         for key, val in self._groups.items():
-            groups_name[key] = val.__call__().name
+            entity = val.__call__()
+            if entity is not None:
+                groups_name[key] = entity.name
         return groups_name
 
     @property
-    def list_objects_name(self):
+    def list_objects_name(self) -> Dict[uuid.UUID, str]:
         """
-        list_objects_name
-
-        Returns
-        -------
-        objects: List[str]
-            Names of all objects registered in the workspace
+        List all registered objects with name
         """
         objects_name = {}
         for key, val in self._objects.items():
-            objects_name[key] = val.__call__().name
+            entity = val.__call__()
+            if entity is not None:
+                objects_name[key] = entity.name
         return objects_name
 
     @property
-    def list_data_name(self):
+    def list_data_name(self) -> Dict[uuid.UUID, str]:
         """
-        list_data_name
-
-        Returns
-        -------
-        data: List[str]
-            Names of all data registered in the workspace
+        List all registered data with name
         """
         data_name = {}
         for key, val in self._data.items():
-            data_name[key] = val.__call__().name
+            entity = val.__call__()
+            if entity is not None:
+                data_name[key] = entity.name
         return data_name
 
     @property
-    def list_entities_name(self):
+    def list_entities_name(self) -> Dict[uuid.UUID, str]:
         """
-        list_entities_name
-
-        Returns
-        -------
-        data: List[str]
-            Names of all entities registered in the workspace
+        List all registered entities with name
         """
         entities_name = self.list_groups_name
         entities_name.update(self.list_objects_name)
@@ -218,31 +212,34 @@ class Workspace:
         return entities_name
 
     @property
-    def root(self) -> Entity:
+    def root(self) -> Optional[Entity]:
         """
-        root
+        RootGroup entity with no parent
+        """
+        return self._root
 
-        Returns
-        -------
-        root: geoh5io.Group
-            Group entity corresponding to the root (Workspace)
-        """
+    @root.setter
+    def root(self, entity) -> Optional[Entity]:
+        if self._root is None:
+            assert isinstance(
+                entity, RootGroup
+            ), f"The given root entity must be of type {RootGroup}"
+            self._root = entity
+
         return self._root
 
     @property
     def h5file(self) -> str:
         """
-        h5file
-
-        Returns
-        -------
-        h5file: str
-            File name with path to the target geoh5 database
+        Target *.geoh5 file name with path
         """
         return self._h5file
 
     @property
     def modified_attributes(self) -> bool:
+        """
+        Flag to update the workspace attributes on file
+        """
         return self._modified_attributes
 
     @modified_attributes.setter
@@ -251,6 +248,9 @@ class Workspace:
 
     @property
     def workspace(self):
+        """
+        :return self: The Workspace
+        """
         return self
 
     @staticmethod
@@ -271,25 +271,18 @@ class Workspace:
         :param entity: Entity to be created
         :param kwargs: List of attributes to set on new entity
 
-        :return: The new entity
+        :return entity: The new entity
         """
         return entity.create(cls, **kwargs)
 
     @staticmethod
     def save_entity(entity: Entity, close_file: bool = True, add_children: bool = True):
         """
-        save_entity
+        Save or update an entity to geoh5
 
-        Parameters
-        ----------
-        entity: geoh5io.Entity
-            Entity to be written to the project geoh5 file
-
-        close_file: bool=True
-            Close the geoh5 database after writing is completed
-
-        add_children: bool=True
-            Add children objects to the geoh5
+        :param entity: Entity to be written to geoh5
+        :param close_file: Close the geoh5 database after writing is completed
+        :param add_children: Add children entities to geoh5
         """
         H5Writer.save_entity(entity, close_file=close_file, add_children=add_children)
 
@@ -303,19 +296,11 @@ class Workspace:
 
     def get_entity(self, name: Union[str, uuid.UUID]) -> List[Optional[Entity]]:
         """
-        get_entity(name)
-
         Retrieve an entity from one of its identifier, either by name or uuid
 
-        Parameters
-        ----------
-        name: str | uuid.UUID
-            Object identifier, either name or uuid
+        :param name: Object identifier, either name or uuid.
 
-        Returns
-        -------
-        object_list: List[Entity]
-            List of entities with the same given name
+        :return: object_list: List of entities with the same given name
         """
         if isinstance(name, uuid.UUID):
             list_entity_uid = [name]
@@ -333,13 +318,13 @@ class Workspace:
 
     def create_entity(self, entity_class, save_on_creation=True, **kwargs) -> Entity:
         """
-        create_entity(entity_class, name, uuid, type_uuid)
+        create_entity(entity_class, name, uuid.UUID, type_uuid)
 
         Function to create and register a new entity and its entity_type.
 
         :param entity_class: Type of entity to be created
 
-        :return: entity: Newly created entity registered to the workspace
+        :return entity: Newly created entity registered to the workspace
         """
         created_entity: Optional[Entity] = None
 
@@ -420,18 +405,12 @@ class Workspace:
 
         raise RuntimeError(f"Error creating the Entity of class {entity_class}")
 
-    def fetch_children(self, entity: Entity, recursively=False):
+    def fetch_children(self, entity: Entity, recursively: bool = False):
         """
-        fetch_children(entity, recursively=False)
-
         Recover and register children entities from the geoh5 file
 
-        Parameters
-        ----------
-        entity: Entity
-            Parental entity
-        recursively: bool=False
-            Recover all children down the project tree
+        :param entity: Parental entity
+        :param recursively: Recover all children down the project tree
         """
         base_classes = {"group": Group, "object": ObjectBase, "data": Data}
 
@@ -475,19 +454,11 @@ class Workspace:
 
     def fetch_values(self, uid: uuid.UUID) -> Optional[float]:
         """
-        fetch_values(uid)
-
         Fetch the data values from the source h5 file
 
-        Parameters
-        ----------
-        uid: uuid.UUID
-            Unique identifier of target data object
+        :param uid: Unique identifier of target data object
 
-        Returns
-        -------
-        value: numpy.array
-            Array of values
+        :return value: Array of values
         """
         return H5Reader.fetch_values(self.h5file, self.name, uid)
 
