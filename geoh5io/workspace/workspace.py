@@ -24,7 +24,7 @@ import h5py
 import numpy as np
 
 from geoh5io import data, groups, objects
-from geoh5io.data import Data
+from geoh5io.data import Data, DataType
 from geoh5io.groups import CustomGroup, Group, PropertyGroup
 from geoh5io.io import H5Reader, H5Writer
 from geoh5io.objects import Cell, ObjectBase
@@ -36,7 +36,7 @@ from .root_group import RootGroup
 if TYPE_CHECKING:
     from geoh5io.groups import group
     from geoh5io.objects import object_base
-    from geoh5io.shared import entity_type
+    from geoh5io.shared import EntityType
 
 
 class Workspace:
@@ -69,7 +69,7 @@ class Workspace:
         self._ga_version = "1"
         self._version = 1.0
         self._name = "GEOSCIENCE"
-        self._types: Dict[uuid.UUID, ReferenceType[entity_type.EntityType]] = {}
+        self._types: Dict[uuid.UUID, ReferenceType[EntityType]] = {}
         self._groups: Dict[uuid.UUID, ReferenceType[group.Group]] = {}
         self._objects: Dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
         self._data: Dict[uuid.UUID, ReferenceType[data.Data]] = {}
@@ -292,6 +292,10 @@ class Workspace:
             if len(entity.modified_attributes) > 0:
                 self.save_entity(entity)
 
+        for entity_type in self.all_types():
+            if len(entity_type.modified_attributes) > 0:
+                H5Writer.add_entity_type(entity_type)
+
         H5Writer.finalize(self)
 
     def get_entity(self, name: Union[str, uuid.UUID]) -> List[Optional[Entity]]:
@@ -329,16 +333,77 @@ class Workspace:
         created_entity: Optional[Entity] = None
 
         # Assume that entity is being created from its class
+        entity_kwargs: Dict = dict()
         if "entity" in kwargs.keys():
             entity_kwargs = kwargs["entity"]
-        else:
-            entity_kwargs = {}
 
+        entity_type_kwargs: Dict = dict()
         if "entity_type" in kwargs.keys():
             entity_type_kwargs = kwargs["entity_type"]
-        else:
-            entity_type_kwargs = {}
 
+        if entity_class is RootGroup:
+            created_entity = RootGroup(
+                RootGroup.find_or_create_type(self, **entity_type_kwargs),
+                **entity_kwargs,
+            )
+        elif entity_class is Data:
+            created_entity = self.create_data(
+                entity_class, entity_kwargs, entity_type_kwargs
+            )
+        else:
+            created_entity = self.create_object_or_group(
+                entity_class, entity_kwargs, entity_type_kwargs
+            )
+
+        if created_entity is not None:
+            if save_on_creation:
+                self.save_entity(created_entity)
+            return created_entity
+
+        raise RuntimeError(f"Error creating the Entity of class {entity_class}")
+
+    def create_data(
+        self, entity_class, entity_kwargs, entity_type_kwargs
+    ) -> Optional[Entity]:
+        """
+
+        :param entity_class:
+        :param entity_kwargs:
+        :param entity_type_kwargs:
+        :returns entity:
+        """
+        if isinstance(entity_type_kwargs, DataType):
+            data_type = entity_type_kwargs
+        else:
+            data_type = data.data_type.DataType.find_or_create(
+                self, **entity_type_kwargs
+            )
+
+        for _, member in inspect.getmembers(data):
+            if (
+                inspect.isclass(member)
+                and issubclass(member, entity_class)
+                and member is not entity_class
+                and hasattr(member, "primitive_type")
+                and inspect.ismethod(member.primitive_type)
+                and data_type.primitive_type is member.primitive_type()
+            ):
+                created_entity = member(data_type, **entity_kwargs)
+
+                return created_entity
+
+        return None
+
+    def create_object_or_group(
+        self, entity_class, entity_kwargs, entity_type_kwargs
+    ) -> Optional[Entity]:
+        """
+
+        :param entity_class:
+        :param entity_kwargs:
+        :param entity_type_kwargs:
+        :return entity:
+        """
         entity_type_uid = None
         for key, val in entity_type_kwargs.items():
             if key.lower() in ["id", "uid"]:
@@ -350,60 +415,33 @@ class Workspace:
             else:
                 entity_type_uid = uuid.uuid4()
 
-        if entity_class is RootGroup:
-            created_entity = RootGroup(
-                RootGroup.find_or_create_type(self, **entity_type_kwargs),
-                **entity_kwargs,
-            )
+        entity_class = entity_class.__bases__
+        for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
+            if (
+                inspect.isclass(member)
+                and issubclass(member, entity_class)
+                and member is not entity_class
+                and hasattr(member, "default_type_uid")
+                and not member == CustomGroup
+                and member.default_type_uid() == entity_type_uid
+            ):
+                entity_type = member.find_or_create_type(self, **entity_type_kwargs)
+                created_entity = member(entity_type, **entity_kwargs)
 
-        elif entity_class is Data:
-            data_type = data.data_type.DataType.find_or_create(
+                return created_entity
+
+        # Special case for CustomGroup without uuid
+        if entity_class == Group:
+            entity_type = groups.custom_group.CustomGroup.find_or_create_type(
                 self, **entity_type_kwargs
             )
+            created_entity = groups.custom_group.CustomGroup(
+                entity_type, **entity_kwargs
+            )
 
-            for _, member in inspect.getmembers(data):
-
-                if (
-                    inspect.isclass(member)
-                    and issubclass(member, entity_class)
-                    and member is not entity_class
-                    and hasattr(member, "primitive_type")
-                    and inspect.ismethod(member.primitive_type)
-                    and data_type.primitive_type is member.primitive_type()
-                ):
-                    created_entity = member(data_type, **entity_kwargs)
-                    break
-
-        else:
-            entity_class = entity_class.__bases__
-            for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
-                if (
-                    inspect.isclass(member)
-                    and issubclass(member, entity_class)
-                    and member is not entity_class
-                    and hasattr(member, "default_type_uid")
-                    and not member == CustomGroup
-                    and member.default_type_uid() == entity_type_uid
-                ):
-                    entity_type = member.find_or_create_type(self, **entity_type_kwargs)
-                    created_entity = member(entity_type, **entity_kwargs)
-                    break
-
-            # Special case for CustomGroup without uuid
-            if (created_entity is None) and entity_class == Group:
-                entity_type = groups.custom_group.CustomGroup.find_or_create_type(
-                    self, **entity_type_kwargs
-                )
-                created_entity = groups.custom_group.CustomGroup(
-                    entity_type, **entity_kwargs
-                )
-
-        if created_entity is not None:
-            if save_on_creation:
-                self.save_entity(created_entity)
             return created_entity
 
-        raise RuntimeError(f"Error creating the Entity of class {entity_class}")
+        return None
 
     def fetch_children(self, entity: Entity, recursively: bool = False):
         """
@@ -543,7 +581,7 @@ class Workspace:
         if Workspace._active_ref() is self:
             Workspace._active_ref = type(None)
 
-    def _register_type(self, entity_type: "entity_type.EntityType"):
+    def _register_type(self, entity_type: "EntityType"):
         weakref_utils.insert_once(self._types, entity_type.uid, entity_type)
 
     def _register_group(self, group: "group.Group"):
@@ -555,9 +593,15 @@ class Workspace:
     def _register_object(self, obj: "object_base.ObjectBase"):
         weakref_utils.insert_once(self._objects, obj.uid, obj)
 
+    def all_types(self) -> List["EntityType"]:
+        """Get all active entity types registered in the workspace.
+        """
+        weakref_utils.remove_none_referents(self._types)
+        return [cast("EntityType", v()) for v in self._types.values()]
+
     def find_type(
-        self, type_uid: uuid.UUID, type_class: Type["entity_type.EntityType"]
-    ) -> Optional["entity_type.EntityType"]:
+        self, type_uid: uuid.UUID, type_class: Type["EntityType"]
+    ) -> Optional["EntityType"]:
         """
         Find an existing and active EntityType
 

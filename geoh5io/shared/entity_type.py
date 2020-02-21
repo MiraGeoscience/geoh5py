@@ -21,7 +21,7 @@ class EntityType(ABC):
         self._workspace = weakref.ref(workspace)
 
         self._uid: uuid.UUID = uuid.uuid4()
-        self._name = "None"
+        self._name: Optional[str] = None
         self._description: Optional[str] = None
         self._existing_h5_entity = False
         self._modified_attributes: List[str] = []
@@ -88,6 +88,7 @@ class EntityType(ABC):
     def uid(self, uid: Union[str, uuid.UUID]):
         if isinstance(uid, str):
             uid = uuid.UUID(uid)
+        self.modified_attributes = "attributes"
 
         self._uid = uid
 
@@ -98,6 +99,15 @@ class EntityType(ABC):
     @name.setter
     def name(self, name: str):
         self._name = name
+        self.modified_attributes = "attributes"
+
+    @name.getter
+    def name(self):
+
+        if self._name is None:
+            return str(self.uid)
+
+        return self._name
 
     @property
     def description(self) -> Optional[str]:
@@ -106,6 +116,7 @@ class EntityType(ABC):
     @description.setter
     def description(self, description: str):
         self._description = description
+        self.modified_attributes = "attributes"
 
     @description.getter
     def description(self):

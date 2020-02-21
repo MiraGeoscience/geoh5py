@@ -121,6 +121,14 @@ class H5Reader:
         for key, value in entity["Type"].attrs.items():
             type_attributes["entity_type"][key] = value
 
+        if "Color map" in entity["Type"].keys():
+            type_attributes["entity_type"]["color_map"] = {}
+            for key, value in entity["Type"]["Color map"].attrs.items():
+                type_attributes["entity_type"]["color_map"][key] = value
+            type_attributes["entity_type"]["color_map"]["values"] = entity["Type"][
+                "Color map"
+            ][:]
+
         # Check if the entity has property_group
         if "PropertyGroups" in entity.keys():
             for pg_id in entity["PropertyGroups"].keys():

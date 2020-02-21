@@ -233,18 +233,14 @@ class ObjectBase(Entity):
         :return: List of created Data objects data:
         """
         data_objects = []
-        for key, value in data.items():
-            if isinstance(value, ndarray):
-                kwargs = {"values": value}
-            elif isinstance(value, dict):
-                kwargs = value
-                assert "values" in list(
-                    kwargs.keys()
-                ), f"Given kwargs for data {key} should include 'values'"
-            else:
-                raise RuntimeError(
-                    f"Given value to data {key} should of type {dict} or {ndarray}"
-                )
+        for key, kwargs in data.items():
+            assert isinstance(kwargs, dict), (
+                f"Given value to data {key} should of type {dict}. "
+                f"Type {type(kwargs)} given instead."
+            )
+            assert "values" in list(
+                kwargs.keys()
+            ), f"Given kwargs for data {key} should include 'values'"
 
             kwargs["parent"] = self
             kwargs["name"] = key
@@ -263,8 +259,20 @@ class ObjectBase(Entity):
                 else:
                     kwargs["association"] = "OBJECT"
 
+            if "entity_type" in list(kwargs.keys()):
+                entity_type = kwargs["entity_type"]
+            else:
+                if isinstance(kwargs["values"], ndarray):
+                    entity_type = {"primitive_type": "FLOAT"}
+                elif isinstance(kwargs["values"], str):
+                    entity_type = {"primitive_type": "TEXT"}
+                else:
+                    raise NotImplementedError(
+                        "Only add_data values of type FLOAT and TEXT have been implemented"
+                    )
+
             data_object = self.workspace.create_entity(
-                Data, entity=kwargs, entity_type={"primitive_type": "FLOAT"}
+                Data, entity=kwargs, entity_type=entity_type
             )
 
             if property_group is not None:

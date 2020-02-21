@@ -48,7 +48,6 @@ def test_create_point_data():
                     getattr(object_a, attr[1:]), getattr(object_b, attr[1:])
                 )
             else:
-                print(getattr(object_a, attr[1:]), getattr(object_b, attr[1:]))
                 assert np.all(
                     getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
                 ), f"Output attribute {attr[1:]} for {object_a} do not match input {object_b}"

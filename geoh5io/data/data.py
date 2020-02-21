@@ -54,6 +54,14 @@ class Data(Entity):
     def entity_type(self) -> DataType:
         return self._entity_type
 
+    @entity_type.setter
+    def entity_type(self, data_type: DataType):
+
+        self._entity_type = data_type
+
+        self.modified_attributes = "entity_type"
+        return self._entity_type
+
     @classmethod
     @abstractmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:

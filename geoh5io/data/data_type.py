@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Optional, Type, cast
+from typing import TYPE_CHECKING, Dict, Optional, Type, cast
 
 from geoh5io.shared import EntityType
 
 from .color_map import ColorMap
-from .data_unit import DataUnit
 from .geometric_data_constants import GeometricDataConstants
 from .primitive_type_enum import PrimitiveTypeEnum
 
@@ -29,13 +28,12 @@ class DataType(EntityType):
     )
 
     _primitive_type: Optional[PrimitiveTypeEnum] = None
-    # TODO : add Property and Setters
     _color_map: Optional[ColorMap] = None
-    _units = None
-    _number_of_bins = 50
+    _units: Optional[str] = None
+    _number_of_bins: int = 50
     _transparent_no_data = True
-    _mapping = "equal_area"
-    _hidden = False
+    _mapping: str = "equal_area"
+    _hidden: bool = False
 
     def __init__(self, workspace: "workspace.Workspace", **kwargs):
         assert workspace is not None
@@ -48,13 +46,81 @@ class DataType(EntityType):
         return False
 
     @property
-    def units(self) -> Optional[DataUnit]:
+    def color_map(self) -> Optional[ColorMap]:
+        """
+        Colormap used for plotting
+        """
+        return self._color_map
+
+    @color_map.setter
+    def color_map(self, color_map: Dict):
+        assert "values" in list(color_map.keys()), f"color_map must contain 'values' "
+        self._color_map = ColorMap(**color_map)
+        self.modified_attributes = "Color map"
+
+    @property
+    def units(self) -> Optional[str]:
+        """
+        Data units
+        """
         return self._units
 
     @units.setter
-    def units(self, unit_name):
-        assert isinstance(unit_name, str), f"Units must be of type {str}"
-        self._units = DataUnit(unit_name)
+    def units(self, unit: str):
+        self._units = unit
+        self.modified_attributes = "attributes"
+
+    @property
+    def number_of_bins(self) -> Optional[int]:
+        """
+        Number of bins used by the histogram
+        """
+        return self._number_of_bins
+
+    @number_of_bins.setter
+    def number_of_bins(self, n_bins: int):
+        self._number_of_bins = n_bins
+        self.modified_attributes = "attributes"
+
+    @property
+    def transparent_no_data(self) -> bool:
+        """
+        Use transparent for no-data-value
+        """
+        return self._transparent_no_data
+
+    @transparent_no_data.setter
+    def transparent_no_data(self, value: bool):
+        self._transparent_no_data = value
+        self.modified_attributes = "attributes"
+
+    @property
+    def hidden(self) -> bool:
+        """
+        Hidden data
+        """
+        return self._hidden
+
+    @hidden.setter
+    def hidden(self, value: bool):
+        self._hidden = value
+        self.modified_attributes = "attributes"
+
+    @property
+    def mapping(self) -> str:
+        """
+        Color stretching type
+        """
+        return self._mapping
+
+    @mapping.setter
+    def mapping(self, value: str):
+        mappings = ["linear", "equal_area", "logarithmic", "cdf", "missing"]
+        assert (
+            value in mappings
+        ), f"Mapping {value} was provided but should be one of {mappings}"
+        self._mapping = value
+        self.modified_attributes = "attributes"
 
     @property
     def primitive_type(self) -> Optional[PrimitiveTypeEnum]:

@@ -32,7 +32,7 @@ def test_create_grid_2d_data():
         allow_move=False,
     )
 
-    data = grid.add_data({"DataValues": values})
+    data = grid.add_data({"DataValues": {"values": values}})
     grid.rotation = 45.0
 
     workspace.finalize()
@@ -53,7 +53,6 @@ def test_create_grid_2d_data():
                     getattr(object_a, attr[1:]), getattr(object_b, attr[1:])
                 )
             else:
-                print(getattr(object_a, attr[1:]), getattr(object_b, attr[1:]))
                 assert np.all(
                     getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
                 ), f"Output attribute {attr[1:]} for {object_a} do not match input {object_b}"
