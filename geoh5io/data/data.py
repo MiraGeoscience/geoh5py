@@ -19,13 +19,21 @@ class Data(Entity):
     def __init__(self, data_type: DataType, **kwargs):
         assert data_type is not None
         assert data_type.primitive_type == self.primitive_type()
-        self.no_data_value = 1.17549435e-38
+        self._no_data_value = 1.17549435e-38
         self._entity_type = data_type
         self._association: Optional[DataAssociationEnum] = None
         self._values = None
         super().__init__(**kwargs)
 
         data_type.workspace._register_data(self)
+
+    @property
+    def no_data_value(self) -> float:
+        """
+        Default no-data-value
+        :return:
+        """
+        return self._no_data_value
 
     @property
     def n_values(self) -> Optional[int]:

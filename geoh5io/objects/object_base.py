@@ -1,3 +1,5 @@
+# pylint: disable=R0912
+
 import uuid
 from abc import abstractmethod
 from typing import TYPE_CHECKING, List, Optional, Union
@@ -233,43 +235,49 @@ class ObjectBase(Entity):
         :return: List of created Data objects data:
         """
         data_objects = []
-        for key, kwargs in data.items():
-            assert isinstance(kwargs, dict), (
-                f"Given value to data {key} should of type {dict}. "
-                f"Type {type(kwargs)} given instead."
+        for name, attr in data.items():
+            assert isinstance(attr, dict), (
+                f"Given value to data {name} should of type {dict}. "
+                f"Type {type(attr)} given instead."
             )
             assert "values" in list(
-                kwargs.keys()
-            ), f"Given kwargs for data {key} should include 'values'"
+                attr.keys()
+            ), f"Given attr for data {name} should include 'values'"
 
-            kwargs["parent"] = self
-            kwargs["name"] = key
+            attr["name"] = name
 
-            if "association" not in list(kwargs.keys()):
+            if "association" not in list(attr.keys()):
                 if (
                     getattr(self, "n_cells", None) is not None
-                    and kwargs["values"].shape[0] == self.n_cells
+                    and attr["values"].ravel().shape[0] == self.n_cells
                 ):
-                    kwargs["association"] = "CELL"
+                    attr["association"] = "CELL"
                 elif (
                     getattr(self, "n_vertices", None) is not None
-                    and kwargs["values"].shape[0] == self.n_vertices
+                    and attr["values"].ravel().shape[0] == self.n_vertices
                 ):
-                    kwargs["association"] = "VERTEX"
+                    attr["association"] = "VERTEX"
                 else:
-                    kwargs["association"] = "OBJECT"
+                    attr["association"] = "OBJECT"
 
-            if "entity_type" in list(kwargs.keys()):
-                entity_type = kwargs["entity_type"]
+            if "entity_type" in list(attr.keys()):
+                entity_type = attr["entity_type"]
             else:
-                if isinstance(kwargs["values"], ndarray):
+                if isinstance(attr["values"], ndarray):
                     entity_type = {"primitive_type": "FLOAT"}
-                elif isinstance(kwargs["values"], str):
+                elif isinstance(attr["values"], str):
                     entity_type = {"primitive_type": "TEXT"}
                 else:
                     raise NotImplementedError(
                         "Only add_data values of type FLOAT and TEXT have been implemented"
                     )
+
+            # Re-order to set parent first
+            kwargs = {"parent": self, "association": attr["association"]}
+            for key, val in attr.items():
+                if key in ["parent", "association"]:
+                    continue
+                kwargs[key] = val
 
             data_object = self.workspace.create_entity(
                 Data, entity=kwargs, entity_type=entity_type
