@@ -19,13 +19,30 @@ class Data(Entity):
     def __init__(self, data_type: DataType, **kwargs):
         assert data_type is not None
         assert data_type.primitive_type == self.primitive_type()
-
+        self.no_data_value = 1.17549435e-38
         self._entity_type = data_type
         self._association: Optional[DataAssociationEnum] = None
         self._values = None
         super().__init__(**kwargs)
 
         data_type.workspace._register_data(self)
+
+    @property
+    def n_values(self) -> Optional[int]:
+        """
+        Number of expected data values
+        :return:
+        """
+        if self.association is DataAssociationEnum.VERTEX:
+            return self.parent.n_vertices
+        if self.association is DataAssociationEnum.CELL:
+            return self.parent.n_cells
+        if self.association is DataAssociationEnum.FACE:
+            return self.parent.n_faces
+        if self.association is DataAssociationEnum.OBJECT:
+            return 1
+
+        return None
 
     @property
     def values(self):
