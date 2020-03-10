@@ -7,3 +7,4 @@ class DataAssociationEnum(Enum):
     CELL = 2
     VERTEX = 3
     FACE = 4
+    GROUP = 5
