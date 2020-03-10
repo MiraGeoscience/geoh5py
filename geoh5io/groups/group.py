@@ -2,12 +2,11 @@ import uuid
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Optional
 
-from geoh5io.shared import Entity
-
+from ..shared import Entity
 from .group_type import GroupType
 
 if TYPE_CHECKING:
-    from geoh5io import workspace
+    from .. import workspace
 
 
 class Group(Entity):

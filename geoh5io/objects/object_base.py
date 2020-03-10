@@ -6,14 +6,13 @@ from typing import TYPE_CHECKING, List, Optional, Union
 
 from numpy import ndarray
 
-from geoh5io.data import Data
-from geoh5io.groups import PropertyGroup
-from geoh5io.shared import Entity
-
+from ..data import Data
+from ..groups import PropertyGroup
+from ..shared import Entity
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
-    from geoh5io import workspace
+    from .. import workspace
 
 
 class ObjectBase(Entity):

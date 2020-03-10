@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, List, Optional, Type, TypeVar, Union, cast
 
 if TYPE_CHECKING:
-    from geoh5io import workspace as ws
+    from .. import workspace as ws
 
 
 TEntityType = TypeVar("TEntityType", bound="EntityType")

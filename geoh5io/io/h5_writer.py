@@ -6,14 +6,14 @@ from typing import TYPE_CHECKING, Optional, Union
 import h5py
 from numpy import asarray, dtype, float64, int8
 
-from geoh5io.data import Data, DataType
-from geoh5io.groups import Group, GroupType
-from geoh5io.objects import ObjectBase, ObjectType
-from geoh5io.shared import Entity
-from geoh5io.workspace import RootGroup
+from ..data import Data, DataType
+from ..groups import Group, GroupType
+from ..objects import ObjectBase, ObjectType
+from ..shared import Entity
+from ..workspace import RootGroup
 
 if TYPE_CHECKING:
-    from geoh5io import shared
+    from .. import shared
 
 
 class H5Writer:

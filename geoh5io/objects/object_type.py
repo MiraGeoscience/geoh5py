@@ -3,10 +3,10 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from geoh5io.shared import EntityType
+from ..shared import EntityType
 
 if TYPE_CHECKING:
-    from geoh5io import workspace
+    from .. import workspace
 
 
 class ObjectType(EntityType):

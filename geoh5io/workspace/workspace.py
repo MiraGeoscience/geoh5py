@@ -23,20 +23,19 @@ from weakref import ReferenceType
 import h5py
 import numpy as np
 
-from geoh5io import data, groups, objects
-from geoh5io.data import Data, DataType
-from geoh5io.groups import CustomGroup, Group, PropertyGroup
-from geoh5io.io import H5Reader, H5Writer
-from geoh5io.objects import Cell, ObjectBase
-from geoh5io.shared import weakref_utils
-from geoh5io.shared.entity import Entity
-
+from .. import data, groups, objects
+from ..data import Data, DataType
+from ..groups import CustomGroup, Group, PropertyGroup
+from ..io import H5Reader, H5Writer
+from ..objects import Cell, ObjectBase
+from ..shared import weakref_utils
+from ..shared.entity import Entity
 from .root_group import RootGroup
 
 if TYPE_CHECKING:
-    from geoh5io.groups import group
-    from geoh5io.objects import object_base
-    from geoh5io.shared import EntityType
+    from ..groups import group
+    from ..objects import object_base
+    from ..shared import EntityType
 
 
 class Workspace:

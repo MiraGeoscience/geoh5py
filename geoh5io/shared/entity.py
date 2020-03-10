@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, List, Union
 
 if TYPE_CHECKING:
-    from geoh5io import shared
+    from .. import shared
 
 
 class Entity(ABC):

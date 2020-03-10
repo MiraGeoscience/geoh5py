@@ -3,14 +3,13 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING, Dict, Optional, Type, cast
 
-from geoh5io.shared import EntityType
-
+from ..shared import EntityType
 from .color_map import ColorMap
 from .geometric_data_constants import GeometricDataConstants
 from .primitive_type_enum import PrimitiveTypeEnum
 
 if TYPE_CHECKING:
-    from geoh5io import workspace
+    from .. import workspace
     from . import data  # noqa: F401
 
 

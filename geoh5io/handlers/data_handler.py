@@ -3,17 +3,17 @@
 import uuid
 from typing import TYPE_CHECKING, List
 
-from geoh5io import interfaces
-from geoh5io.workspace import Workspace
+from .. import interfaces
+from ..workspace import Workspace
 
 if TYPE_CHECKING:
-    from geoh5io.interfaces.data import Data as i_Data
-    from geoh5io.interfaces.data import DataQuery as i_DataQuery
-    from geoh5io.interfaces.data import DataType as i_DataType
-    from geoh5io.interfaces.data import DataTypeQuery as i_DataTypeQuery
-    from geoh5io.interfaces.data import ReferencedValues as i_ReferencedValues
-    from geoh5io.interfaces.data import DataSlab as i_DataSlab
-    from geoh5io.interfaces.shared import Uuid as i_Uuid
+    from ..interfaces.data import Data as i_Data
+    from ..interfaces.data import DataQuery as i_DataQuery
+    from ..interfaces.data import DataType as i_DataType
+    from ..interfaces.data import DataTypeQuery as i_DataTypeQuery
+    from ..interfaces.data import ReferencedValues as i_ReferencedValues
+    from ..interfaces.data import DataSlab as i_DataSlab
+    from ..interfaces.shared import Uuid as i_Uuid
 
 
 class DataHandler:

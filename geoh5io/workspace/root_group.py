@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from geoh5io.groups import GroupType, NoTypeGroup
+from ..groups import GroupType, NoTypeGroup
 
 
 class RootGroup(NoTypeGroup):

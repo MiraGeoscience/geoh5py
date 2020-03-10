@@ -1,8 +1,8 @@
 import uuid
 from typing import List, Union
 
-from geoh5io.data import DataAssociationEnum
-from geoh5io.shared import Entity
+from ..data import DataAssociationEnum
+from ..shared import Entity
 
 
 class PropertyGroup:

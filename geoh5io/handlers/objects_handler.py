@@ -3,25 +3,23 @@
 import uuid
 from typing import TYPE_CHECKING, Dict, List
 
-from geoh5io import interfaces
-from geoh5io.workspace import Workspace
+from .. import interfaces
+from ..workspace import Workspace
 
 if TYPE_CHECKING:
-    from geoh5io.interfaces.objects import Object as i_Object
-    from geoh5io.interfaces.objects import ObjectQuery as i_ObjectQuery
-    from geoh5io.interfaces.objects import Points as i_Points
-    from geoh5io.interfaces.objects import Curve as i_Curve
-    from geoh5io.interfaces.objects import Surface as i_Surface
-    from geoh5io.interfaces.objects import Grid2D as i_Grid2D
-    from geoh5io.interfaces.objects import BlockModel as i_BlockModel
-    from geoh5io.interfaces.objects import Drillhole as i_Drillhole
-    from geoh5io.interfaces.objects import GeoImage as i_GeoImage
-    from geoh5io.interfaces.objects import Octree as i_Octree
-    from geoh5io.interfaces.objects import Label as i_Label
-    from geoh5io.interfaces.objects import (
-        GeometryTransformation as i_GeometryTransformation,
-    )
-    from geoh5io.interfaces.shared import Uuid as i_Uuid
+    from ..interfaces.objects import Object as i_Object
+    from ..interfaces.objects import ObjectQuery as i_ObjectQuery
+    from ..interfaces.objects import Points as i_Points
+    from ..interfaces.objects import Curve as i_Curve
+    from ..interfaces.objects import Surface as i_Surface
+    from ..interfaces.objects import Grid2D as i_Grid2D
+    from ..interfaces.objects import BlockModel as i_BlockModel
+    from ..interfaces.objects import Drillhole as i_Drillhole
+    from ..interfaces.objects import GeoImage as i_GeoImage
+    from ..interfaces.objects import Octree as i_Octree
+    from ..interfaces.objects import Label as i_Label
+    from ..interfaces.objects import GeometryTransformation as i_GeometryTransformation
+    from ..interfaces.shared import Uuid as i_Uuid
 
 
 # pylint: disable=too-many-public-methods

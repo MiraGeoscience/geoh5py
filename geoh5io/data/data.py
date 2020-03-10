@@ -1,14 +1,13 @@
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Optional, Type
 
-from geoh5io.shared import Entity
-
+from ..shared import Entity
 from .data_association_enum import DataAssociationEnum
 from .data_type import DataType
 from .primitive_type_enum import PrimitiveTypeEnum
 
 if TYPE_CHECKING:
-    from geoh5io import workspace
+    from .. import workspace
 
 
 class Data(Entity):

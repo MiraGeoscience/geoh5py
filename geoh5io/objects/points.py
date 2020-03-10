@@ -3,8 +3,7 @@ from typing import Optional
 
 from numpy import ndarray
 
-from geoh5io.shared import Coord3D
-
+from ..shared import Coord3D
 from .object_base import ObjectBase, ObjectType
 
 

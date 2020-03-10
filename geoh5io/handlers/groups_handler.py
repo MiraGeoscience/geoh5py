@@ -1,32 +1,36 @@
 # pylint: skip-file
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
-from geoh5io import interfaces
-from geoh5io.workspace import Workspace
+from .. import interfaces
+from ..workspace import Workspace
 
 if TYPE_CHECKING:
-    from geoh5io.interfaces.groups import Group as i_Group
-    from geoh5io.interfaces.groups import GroupQuery as i_GroupQuery
-    from geoh5io.interfaces.shared import Uuid as i_Uuid
+    from ..interfaces.groups import Group as i_Group
+    from ..interfaces.groups import GroupQuery as i_GroupQuery
+    from ..interfaces.shared import Uuid as i_Uuid
 
 
 class GroupsHandler:
     @staticmethod
-    def get_root() -> i_Group:
+    def get_root() -> Optional[i_Group]:
         root = Workspace.active().root
 
-        root_entity = interfaces.shared.Entity(
-            uid=interfaces.shared.Uuid(str(root.uid)),
-            type_uid=interfaces.shared.Uuid(str(root.entity_type.uid)),
-            name=root.name,
-            visible=root.visible,
-            allow_delete=root.allow_delete,
-            allow_rename=root.allow_rename,
-            is_public=root.is_public,
-        )
+        if root is not None:
+            root_entity = interfaces.shared.Entity(
+                uid=interfaces.shared.Uuid(str(root.uid)),
+                type_uid=interfaces.shared.Uuid(str(root.entity_type.uid)),
+                name=root.name,
+                visible=root.visible,
+                allow_delete=root.allow_delete,
+                allow_rename=root.allow_rename,
+                is_public=root.public,
+            )
 
-        return interfaces.groups.Group(entity_=root_entity, allow_move=root.allow_move)
+            return interfaces.groups.Group(
+                entity_=root_entity, allow_move=root.allow_move
+            )
+        return None
 
     def get_type(self, group_class: int) -> i_Uuid:
         # TODO

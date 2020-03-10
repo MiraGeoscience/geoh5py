@@ -3,8 +3,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from geoh5io.data import FloatData
-
+from ..data import FloatData
 from .object_base import ObjectBase, ObjectType
 
 

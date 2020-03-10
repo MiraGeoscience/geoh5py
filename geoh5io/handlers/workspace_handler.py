@@ -2,12 +2,12 @@
 
 from typing import TYPE_CHECKING, List
 
-from geoh5io import interfaces
+from .. import interfaces
 
 if TYPE_CHECKING:
-    from geoh5io.interfaces.workspace import Workspace as i_Workspace
-    from geoh5io.interfaces.shared import Uuid as i_Uuid
-    from geoh5io.interfaces.shared import VersionString as i_VersionString
+    from ..interfaces.workspace import Workspace as i_Workspace
+    from ..interfaces.shared import Uuid as i_Uuid
+    from ..interfaces.shared import VersionString as i_VersionString
 
 
 class WorkspaceHandler:
