@@ -56,3 +56,23 @@ class Curve(Points):
         :return: Default unique identifier
         """
         return cls.__TYPE_UID
+
+
+class SurveyAirborneMagnetics(Curve):
+    """
+    An airborne magnetic survey object
+    """
+
+    __TYPE_UID = uuid.UUID(
+        fields=(0x4B99204C, 0xD133, 0x4579, 0xA9, 0x16, 0xA9C8B98CFCCB)
+    )
+
+    def __init__(self, object_type: ObjectType, **kwargs):
+        super().__init__(object_type, **kwargs)
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        """
+        :return: Default unique identifier
+        """
+        return cls.__TYPE_UID

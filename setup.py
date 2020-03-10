@@ -21,18 +21,17 @@ CLASSIFIERS = [
     "Natural Language :: English",
 ]
 
-with open("README.md") as f:
-    LONG_DESCRIPTION = "".join(f.readlines())
+# with open("README.md") as f:
+#     LONG_DESCRIPTION = "".join(f.readlines())
 
 setup(
     name="gh5py",
     version="0.1.0",
     packages=find_packages(),
-    install_requires=[],
+    install_requires=["h5py"],
     author="Mira Geoscience",
     author_email="domfournier@mirageoscience.com",
     description="Geoscience Analyst API",
-    long_description=LONG_DESCRIPTION,
     keywords="geophysics, geologists",
     url="https://gh5py.readthedocs.io/en/latest/",
     download_url="https://github.com/MiraGeoscience/GeoH5io.git",

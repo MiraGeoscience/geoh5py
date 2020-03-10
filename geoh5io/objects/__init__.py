@@ -3,7 +3,7 @@
 
 from .block_model import BlockModel
 from .cell import Cell
-from .curve import Curve
+from .curve import Curve, SurveyAirborneMagnetics
 from .drillhole import Drillhole
 from .geo_image import GeoImage
 from .grid2d import Grid2D
