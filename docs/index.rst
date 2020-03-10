@@ -68,7 +68,7 @@ Contents:
 .. toctree::
    :maxdepth: 1
 
-   content/tutorials/index.rst
+   tutorials/index.rst
    content/api/geoh5io.rst
 
 
