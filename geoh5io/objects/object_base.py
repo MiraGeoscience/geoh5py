@@ -317,4 +317,4 @@ class ObjectBase(Entity):
         for child in self.children:
             if isinstance(child, Data):
                 name_list.append(child.name)
-        return name_list
+        return sorted(name_list)
