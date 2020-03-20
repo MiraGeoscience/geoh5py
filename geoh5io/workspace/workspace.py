@@ -359,7 +359,7 @@ class Workspace:
                 self.save_entity(created_entity)
             return created_entity
 
-        raise RuntimeError(f"Error creating the Entity of class {entity_class}")
+        return None
 
     def create_data(
         self, entity_class, entity_kwargs, entity_type_kwargs
