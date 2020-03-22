@@ -212,12 +212,13 @@ def export_curve_2_shapefile(
             values += [attribute.values[ind_vert]]
 
     # Define a polygon feature geometry with one attribute
-    attr_name = attribute.name.replace(":", "_")
+    schema = {'geometry': 'LineString'}
 
-    schema = {
-        'geometry': 'LineString',
-        'properties': {attr_name: "float"},
-    }
+    if attribute:
+        attr_name = attribute.name.replace(":", "_")
+        schema['properties'] = {attr_name: "float"},
+    else:
+        schema['properties'] = {"id": "int"}
 
     with fiona.open(
             file_name + '.shp', 'w', driver='ESRI Shapefile', schema=schema, crs=crs
@@ -229,10 +230,13 @@ def export_curve_2_shapefile(
             if len(poly) > 1:
                 pline = LineString(list(tuple(map(tuple, poly))))
 
+                res = {}
+                res['properties'] = {}
+
                 if attribute and values:
-                    res = {}
-                    res['properties'] = {}
                     res['properties'][attr_name] = np.mean(values[ii])
+                else:
+                    res['properties']["id"] = ii
 
                 # geometry of of the original polygon shapefile
                 res['geometry'] = mapping(pline)
@@ -336,16 +340,23 @@ def export_widget(h5file):
             export.value = False  # Reset button
 
             entity = workspace.get_entity(objects.value)[0]
-            data_obj = entity.get_data(data.value)[0]
+
+            if entity.get_data(data.value):
+                data_values = entity.get_data(data.value)[0].values
+            else:
+                data_values = []
 
             values = []
             if file_type.value == 'xyz':
                 if getattr(entity, 'vertices', None) is not None:
-                    values = np.c_[entity.vertices, data_obj.values]
+                    values = entity.vertices
                 elif getattr(entity, 'centroids', None) is not None:
-                    values = np.c_[entity.centroids, data_obj.values]
+                    values = entity.centroids
 
                 if len(values) > 0:
+                    if data_values:
+                        values = np.c_[values, data_values]
+
                     np.savetxt(f"{export_as.value}.xyz", values)
                     print(f"Object saved to {export_as.value}.xyz")
                 else:
@@ -409,6 +420,7 @@ def export_widget(h5file):
     )
 
     return VBox([objects, data, type_widget, export_as, export])
+
 
 def contour_values_widget(h5file, contours=""):
     """
@@ -598,7 +610,8 @@ def coordinate_transformation_widget(
     """
 
     """
-    from pyproj import Proj, transform
+    # from pyproj import Proj, transform
+    from fiona.transform import transform
 
     workspace = Workspace(h5file)
 
@@ -606,21 +619,18 @@ def coordinate_transformation_widget(
 
         out_list = []
         if epsg_in != 0 and epsg_out != 0:
-            try:
-                inProj = Proj(f'epsg:{int(epsg_in)}')
-                labels_in = None
-                if str(inProj.definition).find('longlat') != -1:
-                    labels_in = ['Lon', "Lat"]
-            except Exception:
-                print(sys.exc_info()[1])
+            inProj = f'EPSG:{int(epsg_in)}'
+            outProj = f'EPSG:{int(epsg_out)}'
 
-            try:
-                outProj = Proj(f'epsg:{int(epsg_out)}')
-                labels_out = None
-                if str(outProj.definition).find('longlat') != -1:
-                    labels_out = ['Lon', "Lat"]
-            except Exception:
-                print(sys.exc_info()[1])
+            if epsg_in == "4326":
+                labels_in = ['Lon', "Lat"]
+            else:
+                labels_in = ["Easting", 'Northing']
+            if epsg_out == "4326":
+                labels_out = ['Lon', "Lat"]
+            else:
+                labels_out = ["Easting", 'Northing']
+
 
             if plot_it:
                 fig = plt.figure(figsize=(10, 10))
@@ -640,12 +650,14 @@ def coordinate_transformation_widget(
                     print(f"Skipping {name}. Entity dies not have vertices")
                     continue
 
-                x, y = obj.vertices[:, 0], obj.vertices[:, 1]
-                if str(inProj.definition).find('longlat') != -1:
+                x, y = obj.vertices[:, 0].tolist(), obj.vertices[:, 1].tolist()
+
+                if epsg_in == "4326":
                     x, y = y, x
 
                 x2, y2 = transform(inProj, outProj, x, y)
-                if str(outProj.definition).find('longlat') != -1:
+
+                if epsg_in == "4326":
                     x2, y2 = y2, x2
 
                 if export:
@@ -744,14 +756,19 @@ def edge_detection_widget(
     :param line_length [Hough]: Minimum accepted pixel length of detected lines
     :param line_gap [Hough]: Maximum gap between pixels to still form a line.
     """
-    objects, data = object_data_selection_widget(h5file)
-    assert isinstance(grid, Grid2D), "This application is only designed for Grid2D objects"
 
-    X = grid.centroids[:, 0].reshape(grid.shape, order="F")
-    Y = grid.centroids[:, 1].reshape(grid.shape, order="F")
-    grid_data = data.values.reshape(grid.shape, order="F")
+    workspace = Workspace(h5file)
 
-    def compute_plot(sigma, threshold, line_length, line_gap, export_as, export):
+    def compute_plot(grid_obj, data_obj, sigma, threshold, line_length, line_gap, export_as, export):
+
+        grid = workspace.get_entity(grid_obj)[0]
+        data = grid.get_data(data_obj)[0]
+
+        assert isinstance(grid, Grid2D), "This application is only designed for Grid2D objects"
+
+        X = grid.centroids[:, 0].reshape(grid.shape, order="F")
+        Y = grid.centroids[:, 1].reshape(grid.shape, order="F")
+        grid_data = data.values.reshape(grid.shape, order="F")
 
         # Parameters controling the edge detection
         edges = canny(grid_data.T, sigma=sigma)
@@ -812,10 +829,12 @@ def edge_detection_widget(
 
         return lines
 
+    objects, data_obj = object_data_selection_widget(h5file)
+
     def saveIt(_):
         if export.value:
             export.value = False
-            print(f'Lines {export_as.value} exported to: {grid.workspace.h5file}')
+            print(f'Lines {export_as.value} exported to: {workspace.h5file}')
 
     def saveItAs(_):
         export_as.value = (
@@ -825,7 +844,7 @@ def edge_detection_widget(
     export = widgets.ToggleButton(
         value=False,
         description='Export to GA',
-        button_style='',
+        button_style='danger',
         tooltip='Description',
         icon='check'
         )
@@ -833,23 +852,31 @@ def edge_detection_widget(
     export.observe(saveIt)
 
     sigma = widgets.FloatSlider(
-        min=0., max=10, step=0.1, value=sigma, continuous_update=False
+        min=0., max=10, step=0.1, value=sigma, continuous_update=False,
+        description="Sigma",
+        style={'description_width': 'initial'}
     )
 
     sigma.observe(saveItAs)
 
     line_length = widgets.IntSlider(
-        min=1., max=10., step=1., value=line_length, continuous_update=False
+        min=1., max=10., step=1., value=line_length, continuous_update=False,
+        description="Line Length",
+        style={'description_width': 'initial'}
     )
     line_length.observe(saveItAs)
 
     line_gap = widgets.IntSlider(
-        min=1., max=10., step=1., value=line_gap, continuous_update=False
+        min=1., max=10., step=1., value=line_gap, continuous_update=False,
+        description="Line Gap",
+        style={'description_width': 'initial'}
     )
     line_gap.observe(saveItAs)
 
     threshold = widgets.IntSlider(
-        min=1., max=10., step=1., value=threshold, continuous_update=False
+        min=1., max=10., step=1., value=threshold, continuous_update=False,
+        description="Threshold",
+        style={'description_width': 'initial'}
     )
     threshold.observe(saveItAs)
 
@@ -859,15 +886,32 @@ def edge_detection_widget(
         disabled=False
     )
 
-    out = widgets.interactive(
-        compute_plot,
-        sigma=sigma,
-        threshold=threshold,
-        line_length=line_length,
-        line_gap=line_gap,
-        export_as=export_as,
-        export=export,
-    )
+    out = HBox([
+        VBox([
+            objects, data_obj, sigma, threshold, line_length, line_gap, export_as, export
+        ]),
+        widgets.interactive_output(
+            compute_plot, {
+                "grid_obj": objects,
+                "data_obj": data_obj,
+                "sigma": sigma,
+                "threshold": threshold,
+                "line_length": line_length,
+                "line_gap": line_gap,
+                "export_as": export_as,
+                "export": export,
+            }
+        )
+    ])
+    # out = widgets.interactive(
+    #     compute_plot,
+    #     sigma=sigma,
+    #     threshold=threshold,
+    #     line_length=line_length,
+    #     line_gap=line_gap,
+    #     export_as=export_as,
+    #     export=export,
+    # )
 
     return out
 
