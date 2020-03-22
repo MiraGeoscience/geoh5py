@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 
-from numpy import arange, c_, ndarray
+from numpy import arange, c_, ndarray, zeros, unique
 
 from .object_base import ObjectType
 from .points import Points
@@ -21,6 +21,7 @@ class Curve(Points):
     def __init__(self, object_type: ObjectType, **kwargs):
 
         self._cells: Optional[ndarray] = None
+        self._line_id: Optional[ndarray] = None
         super().__init__(object_type, **kwargs)
 
         if object_type.name == "None":
@@ -49,6 +50,39 @@ class Curve(Points):
         assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
         self.modified_attributes = "cells"
         self._cells = indices
+        self._line_id = None
+
+    @property
+    def line_id(self):
+        """
+        List of connected cells forming unique line_id
+        """
+        if getattr(self, "_line_id", None) is None and self.cells is not None:
+
+            cells = self.cells
+            line_id = zeros(self.cells.shape[0], dtype='int')
+            count = 0
+            for ii in range(1, cells.shape[0]):
+
+                if cells[ii, 0] != cells[ii - 1, 1]:
+                    count += 1
+
+                line_id[ii] = count
+
+            self._line_id = line_id
+
+        return self._line_id
+
+    @property
+    def unique_lines(self):
+        """
+        Unique lines connected by cells
+        """
+        if self.line_id is not None:
+
+            return unique(self.line_id).tolist()
+
+        return None
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
