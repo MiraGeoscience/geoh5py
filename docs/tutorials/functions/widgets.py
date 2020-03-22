@@ -216,7 +216,7 @@ def export_curve_2_shapefile(
 
     if attribute:
         attr_name = attribute.name.replace(":", "_")
-        schema['properties'] = {attr_name: "float"},
+        schema['properties'] = {attr_name: "float"}
     else:
         schema['properties'] = {"id": "int"}
 
@@ -354,7 +354,7 @@ def export_widget(h5file):
                     values = entity.centroids
 
                 if len(values) > 0:
-                    if data_values:
+                    if any(data_values):
                         values = np.c_[values, data_values]
 
                     np.savetxt(f"{export_as.value}.xyz", values)
@@ -481,25 +481,27 @@ def contour_values_widget(h5file, contours=""):
         if isinstance(entity, Grid2D):
             xx = entity.centroids[:, 0].reshape(entity.shape, order="F")
             yy = entity.centroids[:, 1].reshape(entity.shape, order="F")
-            grid_data = data.values.reshape(xx.shape, order="F")
 
-            plt.pcolormesh(xx, yy, grid_data, cmap=cmap)
-            format_labels(xx, yy, axs)
-            if contours is not None:
-                contour_sets = axs.contour(
-                    xx, yy, grid_data, len(contours), levels=contours,
-                    colors='k', linewidths=0.5
-                )
+            if len(data.values) == entity.n_cells:
+                grid_data = data.values.reshape(xx.shape, order="F")
+
+                plt.pcolormesh(xx, yy, grid_data, cmap=cmap)
+                format_labels(xx, yy, axs)
+                if contours is not None:
+                    contour_sets = axs.contour(
+                        xx, yy, grid_data, len(contours), levels=contours,
+                        colors='k', linewidths=0.5
+                    )
 
         elif isinstance(entity, (Points, Curve, Surface)):
-            xx = entity.vertices[:, 0]
-            yy = entity.vertices[:, 1]
 
-            values = data.values
-            axs.scatter(xx, yy, 5, values, cmap=cmap)
-            if contours is not None:
-                contour_sets = axs.tricontour(xx, yy, values, levels=contours, linewidths=0.5, colors='k')
-            format_labels(xx, yy, axs)
+            if len(data.values) == entity.n_vertices:
+                xx = entity.vertices[:, 0]
+                yy = entity.vertices[:, 1]
+                axs.scatter(xx, yy, 5, data.values, cmap=cmap)
+                if contours is not None:
+                    contour_sets = axs.tricontour(xx, yy, data.values, levels=contours, linewidths=0.5, colors='k')
+                format_labels(xx, yy, axs)
         else:
             return None
 
@@ -509,7 +511,7 @@ def contour_values_widget(h5file, contours=""):
         if export.value:
 
             entity = workspace.get_entity(objects.value)[0]
-            export.value = False
+            data_name = data.value
 
             if out.result is not None:
 
@@ -526,31 +528,36 @@ def contour_values_widget(h5file, contours=""):
                         values.append(np.ones(n_v) * level)
 
                         count += n_v
+                if vertices:
+                    vertices = np.vstack(vertices)
 
-                vertices = np.vstack(vertices)
-
-                if z_value.value:
-                    vertices = np.c_[vertices, np.hstack(values)]
-                else:
-
-                    if isinstance(entity, (Points, Curve, Surface)):
-                        z_interp = LinearNDInterpolator(
-                            entity.vertices[:, :2], entity.vertices[:, 2]
-                        )
-                        vertices = np.c_[vertices, z_interp(vertices)]
+                    if z_value.value:
+                        vertices = np.c_[vertices, np.hstack(values)]
                     else:
-                        vertices = np.c_[vertices, np.ones(vertices.shape[0]) * entity.origin['z']]
 
-                curve = Curve.create(
-                    entity.workspace,
-                    name=export_as.value,
-                    vertices=vertices,
-                    cells=np.vstack(cells).astype('uint32')
-                )
-                curve.add_data({contours.value: {"values": np.hstack(values)}})
+                        if isinstance(entity, (Points, Curve, Surface)):
+                            z_interp = LinearNDInterpolator(
+                                entity.vertices[:, :2], entity.vertices[:, 2]
+                            )
+                            vertices = np.c_[vertices, z_interp(vertices)]
+                        else:
+                            vertices = np.c_[vertices, np.ones(vertices.shape[0]) * entity.origin['z']]
 
-                objects.options = list(entity.workspace.list_objects_name.values())
-                data.options = entity.get_data_list()
+                    curve = Curve.create(
+                        entity.workspace,
+                        name=export_as.value,
+                        vertices=vertices,
+                        cells=np.vstack(cells).astype('uint32')
+                    )
+                    curve.add_data({contours.value: {"values": np.hstack(values)}})
+
+
+                    objects.options = list(entity.workspace.list_objects_name.values())
+                    objects.value = entity.name
+                    data.options = entity.get_data_list()
+                    data.value = data_name
+
+                export.value = False
 
     def updateContours(_):
         export_as.value = (
