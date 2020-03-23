@@ -108,12 +108,15 @@ class ObjectBase(Entity):
 
     @property_groups.setter
     def property_groups(self, prop_groups: List[PropertyGroup]):
+        # Check for existing property_group
         for prop_group in prop_groups:
-            prop_group.parent = self
+            if not any(
+                [pg.uid == prop_group.uid for pg in self.property_groups]
+            ) and not any([pg.name == prop_group.name for pg in self.property_groups]):
+                prop_group.parent = self
 
-        # First time start with an empty list
-        self.modified_attributes = "property_groups"
-        self._property_groups = self.property_groups + prop_groups
+                self.modified_attributes = "property_groups"
+                self._property_groups = self.property_groups + [prop_group]
 
     @classmethod
     def find_or_create_type(
@@ -134,7 +137,7 @@ class ObjectBase(Entity):
         ...
 
     def add_data_to_group(
-        self, data: Union[Data, uuid.UUID, str], group_name: str
+        self, data: Union[Data, uuid.UUID, str], name: str
     ) -> PropertyGroup:
         """
         Append data to a property group where the data can be a Data object, its name
@@ -142,15 +145,15 @@ class ObjectBase(Entity):
         All given data must be children of the object.
 
         :param data: Data object or uuid of data
-        :param group_name: Name of a property group. A new group is created
+        :param name: Name of a property group. A new group is created
         if none exist with the given name.
 
         :return: property_group: The target property_group
         """
-        prop_group = self.get_property_group(group_name)
-
-        if prop_group is None:
-            prop_group = self.create_property_group(group_name=group_name)
+        # prop_group = self.get_property_group(name)
+        #
+        # if prop_group is None:
+        prop_group = self.find_or_create_property_group(name=name)
 
         if isinstance(data, Data):
             uid = [data.uid]
@@ -169,7 +172,7 @@ class ObjectBase(Entity):
 
         return prop_group
 
-    def create_property_group(self, **kwargs) -> PropertyGroup:
+    def find_or_create_property_group(self, **kwargs) -> PropertyGroup:
         """
         Create property groups from given group names and properties.
         An existing property_group is returned if one exists with the same name.
@@ -179,11 +182,12 @@ class ObjectBase(Entity):
         :return: A new or existing property_group object
         """
         prop_group = PropertyGroup(**kwargs)
-
-        self.property_groups = [prop_group]
-
-        prop_group.parent = self
-        self.modified_attributes = "property_groups"
+        if any([pg.name == prop_group.name for pg in self.property_groups]):
+            prop_group = [
+                pg for pg in self.property_groups if pg.name == prop_group.name
+            ][0]
+        else:
+            self.property_groups = [prop_group]
 
         return prop_group
 
@@ -191,27 +195,25 @@ class ObjectBase(Entity):
         self, group_id: Union[str, uuid.UUID]
     ) -> Optional[PropertyGroup]:
         """
-        Retrieve a property_group from one of its identifier, either by group_name or uuid
+        Retrieve a property_group from one of its identifier, either by name or uuid
 
-        :param group_id: PropertyGroup identifier, either group_name or uuid
+        :param group_id: PropertyGroup identifier, either name or uuid
 
-        :return: PropertyGroup with the given group_name
+        :return: PropertyGroup with the given name
         """
         if isinstance(group_id, uuid.UUID):
             groups_list = [pg for pg in self.property_groups if pg.uid == group_id]
 
         else:  # Extract all groups uuid with matching group_id
-            groups_list = [
-                pg for pg in self.property_groups if pg.group_name == group_id
-            ]
+            groups_list = [pg for pg in self.property_groups if pg.name == group_id]
 
-        if len(groups_list) < 1:
+        try:
+            prop_group = groups_list[0]
+        except IndexError:
+            print(f"No property_group {group_id} found.")
             return None
 
-        assert (
-            len(groups_list) == 1
-        ), "Multiple property groups with the same name have been found. Only keep one"
-        return groups_list[0]
+        return prop_group
 
     def add_data(
         self, data: dict, property_group: str = None

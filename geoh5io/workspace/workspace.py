@@ -96,10 +96,12 @@ class Workspace:
             self._root = self.create_entity(
                 RootGroup, save_on_creation=False, **{**attributes, **type_attributes}
             )
-            self._root.existing_h5_entity = True
-            self._root.entity_type.existing_h5_entity = True
 
-            self.fetch_children(self._root, recursively=True)
+            if self._root is not None:
+                self._root.existing_h5_entity = True
+                self._root.entity_type.existing_h5_entity = True
+
+                self.fetch_children(self._root, recursively=True)
 
         except FileNotFoundError:
             H5Writer.create_geoh5(self)
@@ -319,7 +321,9 @@ class Workspace:
 
         return entity_list
 
-    def create_entity(self, entity_class, save_on_creation=True, **kwargs) -> Entity:
+    def create_entity(
+        self, entity_class, save_on_creation=True, **kwargs
+    ) -> Optional[Entity]:
         """
         create_entity(entity_class, name, uuid.UUID, type_uuid)
 
@@ -487,7 +491,7 @@ class Workspace:
 
             if isinstance(recovered_object, ObjectBase) and len(property_groups) > 0:
                 for kwargs in property_groups.values():
-                    recovered_object.create_property_group(**kwargs)
+                    recovered_object.find_or_create_property_group(**kwargs)
 
     def fetch_values(self, uid: uuid.UUID) -> Optional[float]:
         """

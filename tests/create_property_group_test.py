@@ -8,7 +8,7 @@ from geoh5io.workspace import Workspace
 
 def test_create_property_group():
 
-    h5file = r"temp\prop_group_test.geoh5"
+    h5file = r"prop_group_test.geoh5"
 
     obj_name = "myCurve"
     # Generate a curve with multiple data

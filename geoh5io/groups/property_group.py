@@ -10,7 +10,7 @@ class PropertyGroup:
 
     _attribute_map = {
         "Association": "association",
-        "Group Name": "group_name",
+        "Group Name": "name",
         "ID": "uid",
         "Properties": "properties",
         "Property Group Type": "property_group_type",
@@ -18,7 +18,7 @@ class PropertyGroup:
 
     def __init__(self, **kwargs):
 
-        self._group_name = "prop_group"
+        self._name = "prop_group"
         self._uid = uuid.uuid4()
         self._association: DataAssociationEnum = DataAssociationEnum.VERTEX
         self._properties: List[uuid.UUID] = []
@@ -63,12 +63,12 @@ class PropertyGroup:
         self._uid = uid
 
     @property
-    def group_name(self) -> str:
-        return self._group_name
+    def name(self) -> str:
+        return self._name
 
-    @group_name.setter
-    def group_name(self, new_group_name: str):
-        self._group_name = new_group_name
+    @name.setter
+    def name(self, new_name: str):
+        self._name = new_name
 
     @property
     def association(self) -> DataAssociationEnum:
