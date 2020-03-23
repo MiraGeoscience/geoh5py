@@ -8,7 +8,7 @@ from geoh5io.workspace import Workspace
 
 def test_create_curve_data():
 
-    h5file = r"temp\testCurve.geoh5"
+    h5file = r"testCurve.geoh5"
     curve_name = "TestCurve"
 
     # Generate a random cloud of points

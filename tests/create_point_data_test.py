@@ -9,7 +9,7 @@ from geoh5io.workspace import Workspace
 
 def test_create_point_data():
 
-    h5file = r"temp\testPoints.geoh5"
+    h5file = r"testPoints.geoh5"
     name = "MyTestPointset"
     new_name = "TestName"
 

@@ -8,7 +8,7 @@ from geoh5io.workspace import Workspace
 
 def test_octree():
 
-    h5file = r"temp\octree.geoh5"
+    h5file = r"octree.geoh5"
     name = "MyTestOctree"
 
     # Create a workspace

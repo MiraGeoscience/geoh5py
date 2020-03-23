@@ -9,7 +9,7 @@ from geoh5io.workspace import Workspace
 
 def test_create_block_model_data():
 
-    h5file = r"temp\block_model.geoh5"
+    h5file = r"block_model.geoh5"
     name = "MyTestBlockModel"
 
     # Generate a 3D array

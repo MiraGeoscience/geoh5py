@@ -6,7 +6,7 @@ from geoh5io.workspace import Workspace
 
 def test_create_group():
 
-    h5file = r"temp\testGroup.geoh5"
+    h5file = r"testGroup.geoh5"
 
     group_name = "MyTestContainer"
 

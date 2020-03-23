@@ -9,7 +9,7 @@ from geoh5io.workspace import Workspace
 
 def test_create_grid_2d_data():
 
-    h5file = r"temp\test2Grid.geoh5"
+    h5file = r"test2Grid.geoh5"
     name = "MyTestGrid2D"
 
     # Generate a 2D array
