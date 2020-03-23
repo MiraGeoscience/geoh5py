@@ -7,14 +7,13 @@ API: geoh5io
 
    geoh5io.data
    geoh5io.groups
-   geoh5io.handlers
-   geoh5io.interfaces
    geoh5io.io
    geoh5io.objects
    geoh5io.shared
    geoh5io.workspace
 
-
+.. geoh5io.handlers
+.. geoh5io.interfaces
 
 .. automodule:: geoh5io
    :members:
