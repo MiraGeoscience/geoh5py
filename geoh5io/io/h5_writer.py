@@ -7,16 +7,18 @@ import h5py
 from numpy import asarray, dtype, float64, int8
 
 from ..data import Data, DataType
-from ..groups import Group, GroupType
+from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import Entity
-from ..workspace import RootGroup
 
 if TYPE_CHECKING:
     from .. import shared
 
 
 class H5Writer:
+    """
+        H5 file Writer
+    """
 
     str_type = h5py.special_dtype(vlen=str)
 
@@ -28,8 +30,6 @@ class H5Writer:
         close_file: bool = True,
     ):
         """
-        create_geoh5(workspace, file=None, close_file=True)
-
         Create a geoh5 file and add the default groups structure
 
         Parameters

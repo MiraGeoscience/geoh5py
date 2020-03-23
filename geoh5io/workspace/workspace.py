@@ -25,12 +25,11 @@ import numpy as np
 
 from .. import data, groups, objects
 from ..data import Data, DataType
-from ..groups import CustomGroup, Group, PropertyGroup
+from ..groups import CustomGroup, Group, PropertyGroup, RootGroup
 from ..io import H5Reader, H5Writer
 from ..objects import Cell, ObjectBase
 from ..shared import weakref_utils
 from ..shared.entity import Entity
-from .root_group import RootGroup
 
 if TYPE_CHECKING:
     from ..groups import group

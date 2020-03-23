@@ -4,7 +4,7 @@ from typing import Type
 import pytest
 
 from geoh5io import groups
-from geoh5io.groups import CustomGroup, Group, GroupType
+from geoh5io.groups import CustomGroup, Group, GroupType, RootGroup
 from geoh5io.objects import ObjectType
 from geoh5io.workspace import Workspace
 
@@ -14,7 +14,7 @@ def all_group_types():
         if (
             inspect.isclass(obj)
             and issubclass(obj, Group)
-            and obj not in [Group, CustomGroup]
+            and obj not in [Group, CustomGroup, RootGroup]
         ):
             yield obj
 
@@ -33,7 +33,8 @@ def test_group_instantiation(group_class: Type[Group]):
     # searching for the wrong type
     assert the_workspace.find_type(group_type.uid, ObjectType) is None
 
-    type_used_by_root = the_workspace.root.entity_type is group_type
+    if the_workspace.root is not None:
+        type_used_by_root = the_workspace.root.entity_type is group_type
     created_group = group_class(group_type, name="test group")
     assert created_group.uid is not None
     assert created_group.uid.int != 0
