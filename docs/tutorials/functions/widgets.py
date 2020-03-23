@@ -1017,7 +1017,7 @@ def em1d_inversion_widget(h5file, plot_profile=True, start_channel=None):
         component_list = []
 
         for pg in entity.property_groups:
-            component_list.append(pg.group_name)
+            component_list.append(pg.name)
 
         return component_list
 
@@ -1167,7 +1167,7 @@ def em1d_inversion_widget(h5file, plot_profile=True, start_channel=None):
                     value = []
                     if p_g is not None:
                         data_list = [workspace.get_entity(data)[0].name for data in p_g.properties]
-                        value = find_value(data_list, [p_g.group_name+key])
+                        value = find_value(data_list, [p_g.name+key])
                     else:
                         data_list = entity.get_data_list()
                     if not value:
@@ -1558,7 +1558,7 @@ def plot_em_data(h5file):
         data_list = entity.get_data_list()
         obj = get_parental_child(objects.value)[0]
 
-        options = [pg.group_name for pg in obj.property_groups]
+        options = [pg.name for pg in obj.property_groups]
         options = [option for option in sorted(options)]
         groups.options = options
         groups.value = [groups.options[0]]
@@ -1594,7 +1594,7 @@ def plot_em_data(h5file):
         description='Lines field',
     )
 
-    options = [pg.group_name for pg in obj.property_groups]
+    options = [pg.name for pg in obj.property_groups]
     options = [option for option in sorted(options)]
     groups = widgets.SelectMultiple(
         options=options,
