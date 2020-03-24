@@ -28,19 +28,11 @@ Anaconda to handle the various packages.
 
 Step 1- Setup Anaconda
 ^^^^^^^^^^^^^^^^^^^^^^
-`Download Anaconda <https://www.anaconda.com/download/>`_
+`Download and install Anaconda <https://www.anaconda.com/download/>`_
 
-- Launch the installation
-
-	.. figure:: ./images/installation/MinicondaInstaller.png
-	    :align: center
-	    :width: 400
-
-- We recommended letting Anaconda set the Environment Path:
-
-	.. figure:: ./images/installation/AnacondaPath.png
-	    :align: center
-	    :width: 400
+.. figure:: ./images/installation/MinicondaInstaller.png
+    :align: center
+    :width: 400
 
 
 Step 2: Install **geoh5py**
