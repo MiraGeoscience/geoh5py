@@ -13,6 +13,7 @@ from ..shared import Entity
 
 if TYPE_CHECKING:
     from .. import shared
+    from .. import workspace
 
 
 class H5Writer:
@@ -25,31 +26,20 @@ class H5Writer:
     @classmethod
     def create_geoh5(
         cls,
-        workspace,
+        workspace: "workspace.Workspace",
         file: Optional[Union[str, h5py.File]] = None,
         close_file: bool = True,
     ):
         """
         Create a geoh5 file and add the default groups structure
 
-        Parameters
-        ----------
-        workspace: geoh5io.Workspace
-            Workspace object defining the project structure
+        :param workspace: Workspace object defining the project structure
+        :param file: File name for the geoh5.
+        :param close_file: Close geoh5 file after write
 
-        file: str optional
-            File name for the geoh5. Takes the default Workspace.h5file name if omitted
-
-        close_file: bool optional
-           Close h5 file after write [True] or False
-
-        Returns
-        -------
-        h5file: h5py.File
-            Pointer to a geoh5 file. Active link if "close_file" is False)
+        :return h5file: Pointer to a geoh5 file with an active link
+        if "close_file" is False.
         """
-        # attr = workspace.get_workspace_attributes()
-
         # Take default name
         if file is None:
             file = workspace.h5file
@@ -85,16 +75,9 @@ class H5Writer:
 
         Add vertices to a points object.
 
-        Parameters
-        ----------
-        file: str or h5py.File
-            Name or handle to a geoh5 file
-
-        entity: geoh5io.Entity
-            Target entity to which vertices are being written
-
-        close_file: bool optional
-           Close h5 file after write [True] or False
+        :param file: Name or handle to a geoh5 file
+        :param entity: Target entity
+        :param close_file: Close geoh5 file after write
         """
         h5file = cls.fetch_h5_handle(file, entity)
 
@@ -120,20 +103,11 @@ class H5Writer:
         cls, entity, file: Optional[Union[str, h5py.File]] = None, close_file=True
     ):
         """
-        add_cell_delimiters(file, entity, close_file=True)
-
         Add (u, v, z) cell delimiters to a block_model object.
 
-        Parameters
-        ----------
-        file: str or h5py.File
-            Name or handle to a *.geoh5 file
-
-        entity: geoh5io.Entity
-            Target entity to which cells are being written
-
-        close_file: bool optional
-           Close h5 file after write [True] or False
+        :param file: Name or handle to a geoh5 file
+        :param entity: Target entity
+        :param close_file: Close geoh5 file after write
         """
         h5file = cls.fetch_h5_handle(file, entity)
 
@@ -184,20 +158,11 @@ class H5Writer:
         cls, entity, file: Optional[Union[str, h5py.File]] = None, close_file=True
     ):
         """
-        add_cells(file, entity, close_file=True)
-
         Add cells to an object.
 
-        Parameters
-        ----------
-        file: str or h5py.File
-            Name or handle to a *.geoh5 file
-
-        entity: geoh5io.Entity
-            Target entity to which cells are being written
-
-        close_file: bool optional
-           Close h5 file after write [True] or False
+        :param file: Name or handle to a geoh5 file
+        :param entity: Target entity
+        :param close_file: Close geoh5 file after write
         """
         h5file = cls.fetch_h5_handle(file, entity)
 
@@ -225,7 +190,7 @@ class H5Writer:
 
         :param file: Name or handle to a geoh5 file
         :param entity_type: Target entity_type with color_map
-        :param close_file: Close h5 file after write
+        :param close_file: Close geoh5 file after write
         """
         h5file = cls.fetch_h5_handle(file, entity_type)
         color_map = getattr(entity_type, "color_map", None)
@@ -245,20 +210,11 @@ class H5Writer:
         cls, entity, file: Optional[Union[str, h5py.File]] = None, close_file=True
     ):
         """
-        add_octree_cells(file, entity, close_file=True)
-
         Add octree cells to an object.
 
-        Parameters
-        ----------
-        file: str or h5py.File
-            Name or handle to a *.geoh5 file
-
-        entity: geoh5io.Entity
-            Target entity to which cells are being written
-
-        close_file: bool optional
-           Close h5 file after write [True] or False
+        :param file: Name or handle to a geoh5 file
+        :param entity: Target entity_type with color_map
+        :param close_file: Close geoh5 file after write
         """
         h5file = cls.fetch_h5_handle(file, entity)
 
@@ -286,23 +242,12 @@ class H5Writer:
         close_file=True,
     ):
         """
-        add_data_values(file, entity, values, close_file=True)
+        Add data values to an entity
 
-        Add a type to the geoh5 project.
-
-        Parameters
-        ----------
-        file: str or h5py.File
-            Name or handle to a geoh5 file
-
-        entity: geoh5io.Entity
-            Target entity to which vertices are being written
-
-        values: numpy.array or str
-            Array of values to be added to the geoh5 file
-
-        close_file: bool optional
-           Close h5 file after write [True] or False
+        :param file: Name or handle to a geoh5 file
+        :param entity: Target entity_type with color_map
+        :param values: Array of values to be added to the geoh5 file
+        :param close_file: Close geoh5 file after write
         """
         h5file = cls.fetch_h5_handle(file, entity)
 
@@ -317,20 +262,12 @@ class H5Writer:
     @classmethod
     def fetch_handle(cls, file: Optional[Union[str, h5py.File]], entity):
         """
-        fetch_handle(file, entity)
+        Get a live handle pointing to an entity in geoh5 file.
 
-        Parameters
-        ----------
-        file: str
-            Target geoh5 file
+        :param file: Target geoh5 file
+        :param entity: Entity to be retrieved from the geoh5 file
 
-        entity: Entity
-            Entity to be retrieved from the geoh5 file
-
-        Returns
-        -------
-        entity_handle: h5py.File
-            Pointer to an existing entity or None if not found
+        :return entity_handle: Pointer to an existing entity or None if not found
         """
         cls.str_type = h5py.special_dtype(vlen=str)
 
@@ -367,17 +304,10 @@ class H5Writer:
     @classmethod
     def finalize(cls, workspace, close_file=False):
         """
-        finalize(workspace, file=None, close_file=True)
+        Add/replace the Root of a geoh5 tree structure
 
-        Build the Root of a project
-
-        Parameters
-        ----------
-        workspace: geoh5io.Workspace
-            Workspace object defining the project structure
-
-        close_file: bool optional
-           Close h5 file after write [True] or False
+        :param workspace: Workspace object defining the project structure
+        :param close_file: Close geoh5 file after write [True] or False
         """
         h5file = cls.fetch_h5_handle(workspace.h5file, workspace)
         workspace_group: Entity = workspace.get_entity("Workspace")[0]
@@ -400,30 +330,16 @@ class H5Writer:
         close_file=True,
     ):
         """
-        add_entity(file, entity_type, values=None, close_file=True)
-
         Add an entity, its attributes and values to a geoh5 project.
         If the entity is already in the geoh5, the function returns a
         pointer to the object on file.
 
-        Parameters
-        ----------
-        file: str or h5py.File
-            Name or handle to a geoh5 file
+        :param file: Name or handle to a geoh5 file
+        :param entity: Entity to be added to the geoh5 file
+        :param values: Array of values to be added to Data entity
+        :param close_file: Close h5 file after write
 
-        entity: geoh5io.Entity
-            Entity to be added to the geoh5 file
-
-        values: numpy.array optional
-            Array of values to be added to Data entity
-
-        close_file: bool optional = True
-           Close h5 file after write
-
-        Returns
-        -------
-        type: h5py.File
-            Pointer to written entity. Active link if "close_file" is False
+        :param entity: Pointer to the written entity. Active link if "close_file" is False
         """
         cls.str_type = h5py.special_dtype(vlen=str)
 
