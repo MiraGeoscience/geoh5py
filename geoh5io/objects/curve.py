@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 
-from numpy import arange, c_, ndarray, zeros, unique
+from numpy import arange, c_, ndarray, unique, zeros
 
 from .object_base import ObjectType
 from .points import Points
@@ -9,9 +9,8 @@ from .points import Points
 
 class Curve(Points):
     """
-    A ``Curve`` object is defined by a series of cells (segments)
-    connecting a set of vertices (points). Data can be associated to both the
-    cells and vertices.
+    A Curve object is defined by a series of cells (segments) connecting a set of
+    vertices. Data can be associated to both the cells and vertices.
     """
 
     __TYPE_UID = uuid.UUID(
@@ -30,8 +29,9 @@ class Curve(Points):
     @property
     def cells(self) -> Optional[ndarray]:
         """
-        Array of indices defining the connection between vertices:
-        array of int, shape (*, 2)
+        Array of indices defining the connection between vertices
+
+        :return cells: Array of int, shape ("*", 2)
         """
         if getattr(self, "_cells", None) is None:
             if self.existing_h5_entity:
@@ -60,14 +60,14 @@ class Curve(Points):
         if getattr(self, "_line_id", None) is None and self.cells is not None:
 
             cells = self.cells
-            line_id = zeros(self.cells.shape[0], dtype='int')
+            line_id = zeros(self.cells.shape[0], dtype="int")
             count = 0
-            for ii in range(1, cells.shape[0]):
+            for ind in range(1, cells.shape[0]):
 
-                if cells[ii, 0] != cells[ii - 1, 1]:
+                if cells[ind, 0] != cells[ind - 1, 1]:
                     count += 1
 
-                line_id[ii] = count
+                line_id[ind] = count
 
             self._line_id = line_id
 

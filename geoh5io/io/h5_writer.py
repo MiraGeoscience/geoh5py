@@ -37,8 +37,7 @@ class H5Writer:
         :param file: File name for the geoh5.
         :param close_file: Close geoh5 file after write
 
-        :return h5file: Pointer to a geoh5 file with an active link
-        if "close_file" is False.
+        :return h5file: Pointer to a geoh5 file with an active link if "close_file" is False.
         """
         # Take default name
         if file is None:
@@ -339,7 +338,7 @@ class H5Writer:
         :param values: Array of values to be added to Data entity
         :param close_file: Close h5 file after write
 
-        :param entity: Pointer to the written entity. Active link if "close_file" is False
+        :return entity: Pointer to the written entity. Active link if "close_file" is False
         """
         cls.str_type = h5py.special_dtype(vlen=str)
 

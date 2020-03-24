@@ -8,19 +8,18 @@ from .object_base import ObjectBase, ObjectType
 
 class Grid2D(ObjectBase):
     """
-    The ``Grid2D`` is a rectilinear array uniform cell size. The grid can
-    be oriented in 3D space through ``rotation`` and ``dip`` parameters.
+    A Grid2D is a rectilinear array uniform cell size. The grid can
+    be oriented in 3D space through rotation and dip parameters.
+    Nodal coordinates are determined relative to the origin and the sign
+    of cell delimiters. Negative and positive cell delimiters are accepted
+    to denote relative "left/right" offsets.
 
-    The basic requirements needed to create an Octree mesh are:
-        u, v_count = Number of cells along each axis
-        u, v_cell_size = Cell size along each axis
-
-                origin      origin
-               V            V
-     .____.____.            .____.____.
-    -2.  -1.   O            O    1.   2.
-    (-) cell_size         (+) cell_size
-
+    Coordinates
+    2  3  4  5  6
+    origin   V
+    .__.__.__.__.__
+    -1 -1 -1  1  1
+    Delimiters
     """
 
     __TYPE_UID = uuid.UUID(

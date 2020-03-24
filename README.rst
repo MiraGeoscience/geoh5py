@@ -114,3 +114,12 @@ Without any server running:
 .. code-block:: bash
 
   python example/Client.py
+
+Build the docs
+==============
+
+To build the api docs using autodocs
+
+.. code-block:: bash
+
+  sphinx-apidoc -o source/ ../geoh5io

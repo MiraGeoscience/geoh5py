@@ -8,6 +8,10 @@ from .points import Points
 
 
 class Surface(Points):
+    """
+    Surface object defined by vertices and cells
+    """
+
     __TYPE_UID = uuid.UUID(
         fields=(0xF26FEBA3, 0xADED, 0x494B, 0xB9, 0xE9, 0xB2BBCBE298E1)
     )
@@ -24,15 +28,8 @@ class Surface(Points):
     @property
     def cells(self) -> Optional[ndarray]:
         """
-        @property
-        cells(xyz)
-
-        Function to return the object cells coordinates.
-
-        Returns
-        -------
-        cells: geoh5io.objects.Cell
-            Cell object holding vertices index
+        Array of vertices index forming triangles
+        :return cells: array of int, shape ("*", 3)
         """
         if getattr(self, "_cells", None) is None:
             if self.existing_h5_entity:
@@ -49,19 +46,7 @@ class Surface(Points):
     @cells.setter
     def cells(self, indices: ndarray):
         """
-        @property.setter
-
-        cells(id1, id2, id3)
-
-        Parameters
-        ----------
-        indices: numpy.array
-            Integer values [n x 3]
-
-        Returns
-        -------
-        cells: geoh5io.objects.Cell
-            Cell object holding vertices index
+        :param indices: array of int, shape ("*", 3)
         """
         assert indices.dtype in [
             "int32",

@@ -39,13 +39,12 @@ if TYPE_CHECKING:
 
 class Workspace:
     """
-    The Workspace class manages all Entities created or imported from the geoh5 structure.
+    The Workspace class manages all Entities created or imported from the *geoh5* structure.
 
     The basic requirements needed to create a Workspace are:
 
-    :param h5file: str
-        File name of the target *.geoh5 file. A new project is created if
-        the target file cannot by found on disk.
+    :param h5file: File name of the target *geoh5* file.
+        A new project is created if the target file cannot by found on disk.
     """
 
     _active_ref: ClassVar[ReferenceType[Workspace]] = type(None)  # type: ignore
@@ -110,7 +109,7 @@ class Workspace:
     @property
     def attribute_map(self) -> dict:
         """
-        Mapping between names used in the *.geoh5 database.
+        Mapping between names used in the geoh5 database.
         """
         return self._attribute_map
 
@@ -231,7 +230,7 @@ class Workspace:
     @property
     def h5file(self) -> str:
         """
-        Target *.geoh5 file name with path
+        Target *geoh5* file name with path
         """
         return self._h5file
 

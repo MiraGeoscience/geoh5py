@@ -9,11 +9,7 @@ from .object_base import ObjectBase, ObjectType
 
 class Points(ObjectBase):
     """
-    Points object.
-
-    Functions
-    ---------
-
+    Points object
     """
 
     __TYPE_UID = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
@@ -35,7 +31,7 @@ class Points(ObjectBase):
     @property
     def vertices(self) -> Optional[ndarray]:
         """
-        Array of vertices coordinates, shape (*, 3)
+        Array of vertices coordinates, shape ("*", 3)
         """
         if (getattr(self, "_vertices", None) is None) and self.existing_h5_entity:
             self._vertices = self.workspace.fetch_vertices(self.uid)

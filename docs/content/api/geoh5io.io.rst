@@ -1,18 +1,19 @@
-geoh5io.io
-==========
+geoh5io.io package
+==================
 
+Submodules
+----------
 
-
-geoh5io.io.h5\_reader
----------------------
+geoh5io.io.h5\_reader module
+----------------------------
 
 .. automodule:: geoh5io.io.h5_reader
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5io.io.h5\_writer
----------------------
+geoh5io.io.h5\_writer module
+----------------------------
 
 .. automodule:: geoh5io.io.h5_writer
    :members:
@@ -20,7 +21,8 @@ geoh5io.io.h5\_writer
    :show-inheritance:
 
 
-
+Module contents
+---------------
 
 .. automodule:: geoh5io.io
    :members:

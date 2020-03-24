@@ -9,22 +9,17 @@ from .object_base import ObjectBase, ObjectType
 class BlockModel(ObjectBase):
     """
     Rectilinear ``BlockModel``, or 3D tensor mesh, is a container for models defined
-    by three perpendicular axes. Each axis is divided into discrete
-    intervals that define the cell dimensions.
+    by three perpendicular axes. Each axis is divided into discrete intervals that
+    define the cell dimensions. Nodal coordinates are determined relative
+    to the origin and the sign of cell delimiters. Negative and positive cell delimiters
+    are accepted to denote relative "left/right" offsets.
 
-    The basic requirements needed to create a BlockModel mesh are:
-
-    :param u_cell_delimiters: ndarray of floats
-    :param v_cell_delimiters: ndarray of floats
-    :param z_cell_delimiters: ndarray of floats
-
-    Vectors defining the nodal position along each axis relative to the origin.
-
-            origin
-               V
-     .____.____.____.____.
-    -2.  -1.   O    1.   2.
-
+    Coordinates
+    2  3  4  5  6
+    origin   V
+    .__.__.__.__.__
+    -1 -1 -1  1  1
+    Delimiters
     """
 
     __TYPE_UID = uuid.UUID(

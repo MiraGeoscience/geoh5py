@@ -146,9 +146,9 @@ class ObjectBase(Entity):
 
         :param data: Data object or uuid of data
         :param name: Name of a property group. A new group is created
-        if none exist with the given name.
+            if none exist with the given name.
 
-        :return: property_group: The target property_group
+        :return property_group: The target property_group
         """
         # prop_group = self.get_property_group(name)
         #
@@ -221,19 +221,13 @@ class ObjectBase(Entity):
         """
         Create data with association from dictionary of data objects name and values.
         The provided values can either be a dictionary of kwargs accepted by the target
-        Data object class or an array of values.
-        If not provided as argument, a data association type is assigned based on
-        the length of the given values.
+        Data object class or an array of values. If not provided as argument, a data
+        association type is assigned based on the length of the given values.
 
-        :param data: Dictionary of data to be added to the object, such as
-            data = {
-            "data_name1": {'values', values1, 'association': 'VERTEX', ...},
-                and/or
-            "data_name2": values2,
-            ...
-            }
+        :param data: Dictionary of data to be added to the object,
+            e.g. data = {"data_name1": {'values', values1, 'association': 'VERTEX', ...}, ...}
 
-        :return: List of created Data objects data:
+        :return data_list: List of new Data objects
         """
         data_objects = []
         for name, attr in data.items():
