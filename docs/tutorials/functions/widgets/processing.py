@@ -7,7 +7,7 @@ from skimage.feature import canny
 from skimage.transform import probabilistic_hough_line
 
 import ipywidgets as widgets
-from ipywidgets.widgets import VBox, HBox
+from ipywidgets.widgets import VBox, HBox, Layout, Label
 
 from scipy.interpolate import LinearNDInterpolator
 
@@ -15,7 +15,7 @@ from geoh5io.workspace import Workspace
 from geoh5io.objects import Grid2D, Curve, Points, Surface
 from geoh5io.groups import ContainerGroup
 from .selection import object_data_selection_widget
-from ..utils import format_labels
+from .plotting import format_labels
 
 
 def contour_values_widget(h5file, contours=""):
@@ -186,7 +186,6 @@ def contour_values_widget(h5file, contours=""):
 
     export_as = widgets.Text(
         value=data.value + "_" + contours.value,
-        description="Save as:",
         indent=False,
         disabled=False
     )
@@ -197,16 +196,15 @@ def contour_values_widget(h5file, contours=""):
         description="Assign Z from values"
     )
 
-    out = widgets.interactive_output(
-        compute_plot, {
-            "entity_name": objects,
-            "data_name": data,
-            "contours": contours,
-        }
+    out = widgets.interactive(
+        compute_plot,
+            entity_name=objects,
+            data_name=data,
+            contours=contours,
     )
 
     contours.value = contours.value
-    return widgets.HBox([VBox([objects, data, contours, export_as, z_value, export]), out])
+    return widgets.HBox([out, VBox([Label("Save as"), export_as, z_value, export], layout=Layout(width="50%"))])
 
 
 def coordinate_transformation_widget(

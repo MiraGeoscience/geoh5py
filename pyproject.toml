@@ -30,7 +30,7 @@ force_grid_wrap = 0
 use_parentheses = true
 line_length = 88
 # auto-updated by seed-isort-config
-known_third_party = ["Add2Build", "SimPEG", "StringIO", "autodoc", "edit_on_github", "empymod", "environmentSetup", "h5py", "ipywidgets", "matplotlib", "numpy", "properties", "pymatsolver", "pytest", "scipy", "setuptools", "simpegEM1D", "skimage", "thriftpy2", "toml", "urllib2"]
+known_third_party = ["Add2Build", "SimPEG", "StringIO", "autodoc", "dask", "discretize", "edit_on_github", "empymod", "environmentSetup", "h5py", "ipywidgets", "matplotlib", "numpy", "properties", "pymatsolver", "pytest", "scipy", "setuptools", "simpegEM1D", "skimage", "thriftpy2", "toml", "urllib2", "utils"]
 
 [tool.black]
 # defaults are just fine

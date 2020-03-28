@@ -1,11 +1,193 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import ipywidgets as widgets
 from ipywidgets.widgets import Dropdown, VBox, HBox
 
 from geoh5io.workspace import Workspace
-from geoh5io.objects import Curve
-from ..utils import plot_profile_data_selection
+from geoh5io.objects import Curve, Points, Grid2D, Surface
+from ..utils import filter_xy
+
+
+def plot_profile_data_selection(
+    entity, field_list,
+    uncertainties=None, selection={}, downsampling=None,
+    plot_legend=False, ax=None, color=[0, 0, 0]
+):
+
+    locations = entity.vertices
+
+    if ax is None:
+        fig = plt.figure(figsize=(8, 8))
+        ax = plt.subplot()
+
+    pos = ax.get_position()
+    xx, yy = [], []
+    threshold = 1e-14
+    for key, values in selection.items():
+
+        for line in values:
+
+            if entity.get_data(key):
+                ind = np.where((entity.get_data(key)[0].values == line))[0]
+            else:
+                continue
+            if len(ind) == 0:
+                continue
+
+            if downsampling is not None:
+                _, _, _, dwn_ind = filter_xy(
+                    locations[ind, 0], locations[ind, 1], None, downsampling, return_indices=True
+                )
+
+                ind = ind[dwn_ind]
+
+            xyLocs = locations[ind, :]
+
+            if np.std(xyLocs[:, 0]) > np.std(xyLocs[:, 1]):
+                dist = xyLocs[:, 0].copy()
+            else:
+                dist = xyLocs[:, 1].copy()
+
+            dist -= dist.min()
+            order = np.argsort(dist)
+            legend = []
+
+            c_increment = [(1-c)/(len(field_list)+1) for c in color]
+
+            for ii, field in enumerate(field_list):
+                if entity.get_data(field) and entity.get_data(field)[0].values is not None:
+                    values = entity.get_data(field)[0].values[ind][order]
+
+                    xx.append(dist[order][~np.isnan(values)])
+                    yy.append(values[~np.isnan(values)])
+
+                    if uncertainties is not None:
+                        ax.errorbar(
+                            xx[-1], yy[-1],
+                            yerr=uncertainties[ii][0]*np.abs(yy[-1]) + uncertainties[ii][1],
+                            color=[c+ii*i for c, i in zip(color, c_increment)]
+                        )
+                    else:
+                        ax.plot(xx[-1], yy[-1], color=[c+ii*i for c, i in zip(color, c_increment)])
+                    legend.append(field)
+
+                    threshold = np.max([
+                        threshold,
+                        np.percentile(
+                            np.abs(yy[-1]), 2)
+                    ])
+
+            if plot_legend:
+                ax.legend(legend, loc=3, bbox_to_anchor=(0, -0.25), ncol=3)
+
+            if xx and yy:
+                format_labels(
+                    np.hstack(xx),
+                    np.hstack(yy),
+                    ax,
+                    labels=["Distance (m)", "Fields"],
+                    aspect='auto'
+                )
+
+    # ax.set_position([pos.x0, pos.y0, pos.width*2., pos.height])
+    # ax.set_aspect(1)
+    return ax, threshold
+
+
+def plot_plan_data_selection(
+    entity, data, **kwargs
+):
+
+    locations = entity.vertices
+    if "downsampling" not in kwargs.keys():
+        downsampling = 0
+    else:
+        downsampling = kwargs["downsampling"]
+
+    if data.entity_type.color_map is not None:
+        new_cmap = data.entity_type.color_map.values
+        values = new_cmap['Value']
+        values -= values.min()
+        values /= values.max()
+
+        cdict = {
+            'red': np.c_[values, new_cmap['Red'] / 255, new_cmap['Red'] / 255].tolist(),
+            'green': np.c_[values, new_cmap['Green'] / 255, new_cmap['Green'] / 255].tolist(),
+            'blue': np.c_[values, new_cmap['Blue'] / 255, new_cmap['Blue'] / 255].tolist(),
+        }
+        cmap = colors.LinearSegmentedColormap(
+            'custom_map', segmentdata=cdict, N=len(values)
+        )
+    else:
+        cmap = "Spectral_r"
+
+    values = None
+    if isinstance(getattr(data, "values", None), np.ndarray):
+        if not isinstance(data.values[0], str):
+            values = data.values
+
+    color_norm = None
+    if "color_norm" in kwargs.keys():
+        color_norm = kwargs["color_norm"]
+
+    window = None
+    if "window" in kwargs.keys():
+        window = kwargs['window']
+
+    if values is not None:
+        if "ax" not in kwargs.keys():
+            plt.figure(figsize=(8, 8))
+            ax = plt.subplot()
+        else:
+            ax = kwargs["ax"]
+        if isinstance(entity, Grid2D) and values is not None:
+
+
+            x = entity.centroids[:, 0].reshape(entity.shape, order="F")
+            y = entity.centroids[:, 1].reshape(entity.shape, order="F")
+            values = values.reshape(entity.shape, order="F")
+            x, y, values = filter_xy(x, y, values, downsampling, window=window)
+            out = ax.pcolormesh(x, y, values, cmap=cmap, norm=color_norm)
+
+            if "contours" in kwargs.keys():
+                ax.contour(
+                    x, y, values,
+                    levels=kwargs['contours'], colors='k', linewidths=1.0
+                )
+
+        elif isinstance(entity, Points) or isinstance(entity, Curve) or isinstance(entity, Surface):
+
+            x, y, values = filter_xy(
+                entity.vertices[:, 0], entity.vertices[:, 1],
+                values, downsampling, window=window)
+
+            out = ax.scatter(
+                x, y, 5, values, cmap=cmap, norm=color_norm)
+
+            if "contours" in kwargs.keys():
+                ind = ~np.isnan(values)
+                ax.tricontour(
+                    x[ind], y[ind], values[ind],
+                    levels=kwargs['contours'], colors='k', linewidths=1.0
+                )
+
+        else:
+            print("Sorry, 'plot=True' option only implemented for Grid2D, Points and Curve objects")
+
+        format_labels(x, y, ax)
+        plt.colorbar(out, ax=ax)
+
+        if "highlight_selection" in kwargs.keys():
+            for key, values in kwargs["highlight_selection"].items():
+
+                for line in values:
+                    ind = np.where((entity.get_data(key)[0].values == line))[0]
+                    x, y, values = locations[ind, 0], locations[ind, 1], entity.get_data(key)[0].values[ind]
+                    x, y, _ = filter_xy(x, y, values, downsampling)
+                    ax.scatter(x, y, 3, 'r')
+
+        return ax
 
 
 def plot_em_data_widget(h5file):
@@ -150,3 +332,17 @@ def plot_em_data_widget(h5file):
     ])
     return layout
 
+def format_labels(x, y, axs, labels=None, aspect='equal'):
+    if labels is None:
+        axs.set_ylabel("Northing (m)")
+        axs.set_xlabel("Easting (m)")
+    else:
+        axs.set_xlabel(labels[0])
+        axs.set_ylabel(labels[1])
+    xticks = np.linspace(x.min(), x.max(), 5, dtype=int)
+    yticks = np.linspace(y.min(), y.max(), 5, dtype=int)
+    axs.set_yticks(yticks)
+    axs.set_yticklabels(yticks, rotation=90, va='center')
+    axs.set_xticks(xticks)
+    axs.set_xticklabels(xticks, va='center')
+    axs.set_aspect(aspect)

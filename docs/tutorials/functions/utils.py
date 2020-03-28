@@ -1,168 +1,12 @@
-import sys
-import os
 import numpy as np
-import re
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
-
-from skimage.feature import canny
-from skimage.transform import probabilistic_hough_line
-
-import ipywidgets as widgets
-from ipywidgets.widgets import Label, Dropdown, Layout, VBox, HBox
-
 from scipy.spatial import cKDTree
-from scipy.interpolate import LinearNDInterpolator
-
-from geoh5io.workspace import Workspace
-from geoh5io.objects import Grid2D, Curve, Points, Surface, BlockModel
-from geoh5io.groups import ContainerGroup
-import json
-
-
-def format_labels(x, y, axs, labels=None, aspect='equal'):
-    if labels is None:
-        axs.set_ylabel("Northing (m)")
-        axs.set_xlabel("Easting (m)")
-    else:
-        axs.set_xlabel(labels[0])
-        axs.set_ylabel(labels[1])
-    xticks = np.linspace(x.min(), x.max(), 5, dtype=int)
-    yticks = np.linspace(y.min(), y.max(), 5, dtype=int)
-    axs.set_yticks(yticks)
-    axs.set_yticklabels(yticks, rotation=90, va='center')
-    axs.set_xticks(xticks)
-    axs.set_xticklabels(xticks, va='center')
-    axs.set_aspect(aspect)
-
-
-def plot_profile_data_selection(
-    entity, field_list,
-    uncertainties=None, selection={}, downsampling=None,
-    plot_legend=False, ax=None, color=[0, 0, 0]
-):
-
-    locations = entity.vertices
-
-    if downsampling is None:
-        downsampling = np.ones(locations.shape[0], dtype='bool')
-
-    if ax is None:
-        fig = plt.figure(figsize=(8, 8))
-        ax = plt.subplot()
-
-    pos = ax.get_position()
-    xx, yy = [], []
-    threshold = 1e-14
-    for key, values in selection.items():
-
-        for line in values:
-
-            if entity.get_data(key):
-                ind = np.where((entity.get_data(key)[0].values == line) * downsampling)[0]
-            else:
-                continue
-            if len(ind) == 0:
-                continue
-
-            xyLocs = locations[ind, :]
-
-            if np.std(xyLocs[:, 0]) > np.std(xyLocs[:, 1]):
-                dist = xyLocs[:, 0].copy()
-            else:
-                dist = xyLocs[:, 1].copy()
-
-            dist -= dist.min()
-            order = np.argsort(dist)
-            legend = []
-
-            c_increment = [(1-c)/(len(field_list)+1) for c in color]
-
-            for ii, field in enumerate(field_list):
-                if entity.get_data(field) and entity.get_data(field)[0].values is not None:
-                    values = entity.get_data(field)[0].values[ind][order]
-
-                    xx.append(dist[order][~np.isnan(values)])
-                    yy.append(values[~np.isnan(values)])
-
-                    if uncertainties is not None:
-                        ax.errorbar(
-                            xx[-1], yy[-1],
-                            yerr=uncertainties[ii][0]*np.abs(yy[-1]) + uncertainties[ii][1],
-                            color=[c+ii*i for c, i in zip(color, c_increment)]
-                        )
-                    else:
-                        ax.plot(xx[-1], yy[-1], color=[c+ii*i for c, i in zip(color, c_increment)])
-                    legend.append(field)
-
-                    threshold = np.max([
-                        threshold,
-                        np.percentile(
-                            np.abs(yy[-1]), 2)
-                    ])
-
-            if plot_legend:
-                ax.legend(legend, loc=3, bbox_to_anchor=(0, -0.25), ncol=3)
-
-            if xx and yy:
-                format_labels(
-                    np.hstack(xx),
-                    np.hstack(yy),
-                    ax,
-                    labels=["Distance (m)", "Fields"],
-                    aspect='auto'
-                )
-
-    # ax.set_position([pos.x0, pos.y0, pos.width*2., pos.height])
-    # ax.set_aspect(1)
-    return ax, threshold
-
-
-def plot_plan_data_selection(
-    entity, field_list,
-    selection={}, downsampling=None,
-    ax=None
-):
-
-    locations = entity.vertices
-
-    if downsampling is None:
-        downsampling = np.ones(locations.shape[0], dtype='bool')
-
-    if ax is None:
-        plt.figure(figsize=(8, 8))
-        ax = plt.subplot()
-
-    if entity.get_data(field_list[0]):
-        data = entity.get_data(field_list[0])[0].values[downsampling]
-        ax.scatter(
-            locations[downsampling, 0],
-            locations[downsampling, 1], 1,
-            data, marker=',',
-            norm=colors.SymLogNorm(linthresh=np.percentile(np.abs(data), 5))
-        )
-        xx, yy = [], []
-        for key, values in selection.items():
-
-            for line in values:
-
-                ind = np.where((entity.get_data(key)[0].values == line) * downsampling)[0]
-
-                xyLocs = locations[ind, :]
-
-                ax.scatter(xyLocs[:, 0], xyLocs[:, 1], 3, 'r')
-
-        ax.set_aspect("equal")
-        format_labels(locations[:, 0], locations[:, 1], ax)
-
-    return ax
 
 
 def find_value(labels, strings):
     value = None
     for name in labels:
         for string in strings:
-            if string.lower() in name.lower():
+            if (string.lower() in name.lower()) or (name.lower() in string.lower()):
                 value = name
     return value
 
@@ -241,3 +85,87 @@ def export_curve_2_shapefile(
                 # geometry of of the original polygon shapefile
                 res['geometry'] = mapping(pline)
                 c.write(res)
+
+
+def filter_xy(x, y, data, distance, return_indices=False, window=None):
+    """
+    Downsample xy data based on minimum distance
+    """
+
+    filter_xy = np.zeros_like(x, dtype='bool')
+    if x.ndim == 1:
+        if distance > 0:
+            xx = np.arange(x.min() - distance, x.max() + distance, distance)
+            yy = np.arange(y.min() - distance, y.max() + distance, distance)
+
+            X, Y = np.meshgrid(xx, yy)
+
+            tree = cKDTree(np.c_[x, y])
+            rad, ind = tree.query(np.c_[X.ravel(), Y.ravel()])
+            takeout = np.unique(ind[rad < 2**0.5*distance])
+
+            filter_xy[takeout] = True
+
+        else:
+            filter_xy = np.ones_like(x, dtype='bool')
+    elif distance > 0:
+
+        dwn_x = int(np.ceil(distance / np.min(x[1:] - x[:-1])))
+        dwn_y = int(np.ceil(distance / np.min(x[1:] - x[:-1])))
+        filter_xy[::dwn_x, ::dwn_y] = True
+
+
+    mask = np.ones_like(x, dtype='bool')
+    if window is not None:
+        x_lim = [
+            window['center'][0] - window['size'][0] / 2,
+            window['center'][0] + window['size'][0] / 2
+        ]
+        y_lim = [
+            window['center'][1] - window['size'][1] / 2,
+            window['center'][1] + window['size'][1] / 2
+        ]
+
+        xy_rot = rotate_xy(
+            np.c_[x.ravel(), y.ravel()], window['center'], window['azimuth']
+        )
+
+        mask = (
+                (xy_rot[:, 0] > x_lim[0]) *
+                (xy_rot[:, 0] < x_lim[1]) *
+                (xy_rot[:, 1] > y_lim[0]) *
+                (xy_rot[:, 1] < y_lim[1])
+            ).reshape(x.shape)
+
+    if data is not None:
+        data = data.copy()
+        data[(filter_xy * mask)==False] = np.nan
+
+    if x.ndim == 1:
+        x, y = x[filter_xy], y[filter_xy]
+        if data is not None:
+            data = data[filter_xy]
+    else:
+        x, y = x[::dwn_x, ::dwn_y], y[::dwn_x, ::dwn_y]
+        if data is not None:
+            data = data[::dwn_x, ::dwn_y]
+
+    if return_indices:
+        return x, y, data, filter_xy*mask
+    else:
+        return x, y, data
+
+
+def rotate_xy(xyz, center, angle):
+    R = np.r_[
+        np.c_[np.cos(np.pi * angle / 180), -np.sin(np.pi * angle / 180)],
+        np.c_[np.sin(np.pi * angle / 180), np.cos(np.pi * angle / 180)]
+    ]
+
+    locs = xyz.copy()
+    locs[:, 0] -= center[0]
+    locs[:, 1] -= center[1]
+
+    xy_rot = np.dot(R, locs[:, :2].T).T
+
+    return np.c_[xy_rot[:, 0] + center[0], xy_rot[:, 1] + center[1], locs[:, 2:]]

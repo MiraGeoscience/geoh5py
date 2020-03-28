@@ -1,1 +1,1 @@
-from . import widgets, utils, simpegEM1D
+from . import widgets, utils
