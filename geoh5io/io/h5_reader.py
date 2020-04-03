@@ -7,59 +7,17 @@ from numpy import c_, int8, ndarray, r_
 
 class H5Reader:
     """
-        H5 file Reader
+        Class to read information from a geoh5 file.
     """
-
-    @classmethod
-    def get_project_attributes(cls, h5file: str, base: str) -> dict:
-        """
-        get_project_attributes(h5file, base)
-
-        Get the project attributes
-
-        Parameters
-        ----------
-        h5file: str
-            Name of the project h5file
-
-        base: str
-            Name of the base project group ['GEOSCIENCE']
-
-        Returns
-        -------
-
-        attributes: dict
-            Dictionary of attributes
-        """
-        project = h5py.File(h5file, "r")
-        project_attrs = {}
-
-        for key in project[base].attrs.keys():
-
-            attr = key.lower().replace(" ", "_")
-
-            project_attrs[attr] = project[base].attrs[key]
-
-        project.close()
-
-        return project_attrs
 
     @classmethod
     def fetch_project_attributes(cls, h5file: str) -> Dict[Any, Any]:
         """
-        fetch_project_attributes(h5file)
-
         Get attributes og object from geoh5
 
-        Parameters
-        ----------
-        h5file: str
-            Name of the project h5file
+        :param h5file: Name of the project h5file
 
-        Returns
-        -------
-        attributes: dict
-            Dictionary of attributes from geoh5
+        :return attributes: Dictionary of attributes recovered from geoh5
         """
         project = h5py.File(h5file, "r")
         name = list(project.keys())[0]
@@ -74,33 +32,22 @@ class H5Reader:
 
     @classmethod
     def fetch_attributes(
-        cls, h5file: str, name: str, uid: uuid.UUID, entity_type: str
+        cls, h5file: str, uid: uuid.UUID, entity_type: str
     ) -> Tuple[dict, dict, dict]:
         """
-        fetch_attributes(h5file, name, uid, entity_type)
+        Get attributes of object from geoh5
 
-        Get attributes og object from geoh5
+        :param h5file: Name of the project h5file
+        :param uid: Unique identifier
+        :param entity_type: Type of entity from
+        "group", "data", "object", "group_type", "data_type", "object_type"
 
-        Parameters
-        ----------
-        h5file: str
-            Name of the project h5file
-
-        name: str
-            Name of the project group ['GEOSCIENCE']
-
-        uid: uuid.UUID
-            Unique identifier
-
-        entity_type: str
-            Type of entity from "group", "data", "object", "group_type", "data_type", "object_type"
-
-        Returns
-        -------
-        attributes: dict
-            Dictionary of attributes from geoh5
+        :return attributes: Dictionary of attributes of an entity
+        :return type_attributes: Dictionary of attributes of the entity type
+        :return property_groups: Dictionary of property groups
         """
         project = h5py.File(h5file, "r")
+        name = list(project.keys())[0]
         attributes: Dict = {"entity": {}}
         type_attributes: Dict = {"entity_type": {}}
         property_groups: Dict = {}
@@ -142,40 +89,25 @@ class H5Reader:
         return attributes, type_attributes, property_groups
 
     @classmethod
-    def fetch_children(
-        cls, h5file: str, base: str, uid: uuid.UUID, entity_type: str
-    ) -> dict:
+    def fetch_children(cls, h5file: str, uid: uuid.UUID, entity_type: str) -> dict:
         """
-        fetch_children(h5file, base, uid, entity_type)
-
         Get children of object from geoh5
 
-        Parameters
-        ----------
-        h5file: str
-            Name of the project h5file
+        :param h5file: Name of the project h5file
+        :param uid: Unique identifier
+        :param entity_type: Type of entity from
+        "group", "data", "object", "group_type", "data_type", "object_type"
 
-        base: str
-            Name of the base project group ['GEOSCIENCE']
-
-        uid: uuid.UUID
-            Unique identifier
-
-        entity_type: str
-            Type of entity from "group", "data", "object", "group_type", "data_type", "object_type"
-
-        Returns
-        -------
-        children: list of dict
+        :return children: [{uuid: type}, ... ]
             List of dictionaries for the children uid and type
         """
         project = h5py.File(h5file, "r")
-
+        name = list(project.keys())[0]
         children = {}
         entity_type = entity_type.capitalize()
         if entity_type in ["Group", "Object"]:
             entity_type += "s"
-        entity = project[base][entity_type][cls.uuid_str(uid)]
+        entity = project[name][entity_type][cls.uuid_str(uid)]
 
         for child_type, child_list in entity.items():
             if child_type in ["Type", "PropertyGroups"]:
@@ -192,100 +124,60 @@ class H5Reader:
         return children
 
     @classmethod
-    def fetch_vertices(
-        cls, h5file: Optional[str], base: str, uid: uuid.UUID
-    ) -> ndarray:
+    def fetch_vertices(cls, h5file: Optional[str], uid: uuid.UUID) -> ndarray:
         """
-        fetch_vertices(h5file, base, uid)
+        Get the vertices of an object.
 
-        Get the vertices of an object
+        :param h5file: Name of the project h5file
+        :param uid: Unique identifier of the target object
 
-        Parameters
-        ----------
-        h5file: str
-            Name of the project h5file
-
-        base: str
-            Name of the base project group ['GEOSCIENCE']
-
-        uid: uuid.UUID
-            Unique identifier of the target object
-
-        Returns
-        -------
-        vertices: geoh5io.Coord3D
-            Coordinate object with vertex locations
+        :return vertices: numpy.ndarray of float, shape ("*", 3)
+            Array of coordinates [x, y, z]
         """
         project = h5py.File(h5file, "r")
-
-        x = project[base]["Objects"][cls.uuid_str(uid)]["Vertices"]["x"]
-        y = project[base]["Objects"][cls.uuid_str(uid)]["Vertices"]["y"]
-        z = project[base]["Objects"][cls.uuid_str(uid)]["Vertices"]["z"]
+        name = list(project.keys())[0]
+        x = project[name]["Objects"][cls.uuid_str(uid)]["Vertices"]["x"]
+        y = project[name]["Objects"][cls.uuid_str(uid)]["Vertices"]["y"]
+        z = project[name]["Objects"][cls.uuid_str(uid)]["Vertices"]["z"]
 
         project.close()
 
         return c_[x, y, z]
 
     @classmethod
-    def fetch_cells(cls, h5file: Optional[str], base: str, uid: uuid.UUID) -> ndarray:
+    def fetch_cells(cls, h5file: Optional[str], uid: uuid.UUID) -> ndarray:
         """
-        fetch_cells(h5file, base, uid)
-
         Get the cells of an object
 
-        Parameters
-        ----------
-        h5file: str
-            Name of the project h5file
+        :param h5file: Name of the project h5file
+        :param uid: Unique identifier of the target object
 
-        base: str
-            Name of the base project group ['GEOSCIENCE']
-
-        uid: uuid.UUID
-            Unique identifier of the target object
-
-        Returns
-        -------
-        cells: geoh5io.Cell
-            Cell object with vertex indices defining the cell
+        :return cells: numpy.ndarray of int, shape ("*", 3)
+            Array of vertex indices defining each cell
         """
         project = h5py.File(h5file, "r")
-
-        indices = project[base]["Objects"][cls.uuid_str(uid)]["Cells"][:]
+        name = list(project.keys())[0]
+        indices = project[name]["Objects"][cls.uuid_str(uid)]["Cells"][:]
 
         project.close()
 
         return indices
 
     @classmethod
-    def fetch_values(
-        cls, h5file: Optional[str], base: str, uid: uuid.UUID
-    ) -> Optional[float]:
+    def fetch_values(cls, h5file: Optional[str], uid: uuid.UUID) -> Optional[float]:
         """
-        fetch_values(h5file, base, uid)
-
         Get the values of an entity
 
-        Parameters
-        ----------
-        h5file: str
-            Name of the project h5file
+        :param h5file: Name of the project h5file
+        :param uid: Unique identifier of the target entity
 
-        base: str
-            Name of the base project group ['GEOSCIENCE']
-
-        uid: uuid.UUID
-            Unique identifier of the target entity
-
-        Returns
-        -------
-        values: numpy.array
+        :return values: array of float
             Array of values
         """
         project = h5py.File(h5file, "r")
-
-        if "Data" in list(project[base]["Data"][cls.uuid_str(uid)].keys()):
-            values = r_[project[base]["Data"][cls.uuid_str(uid)]["Data"]]
+        name = list(project.keys())[0]
+        if "Data" in list(project[name]["Data"][cls.uuid_str(uid)].keys()):
+            values = r_[project[name]["Data"][cls.uuid_str(uid)]["Data"]]
         else:
             values = None
 
@@ -295,45 +187,28 @@ class H5Reader:
 
     @classmethod
     def fetch_delimiters(
-        cls, h5file: Optional[str], base: str, uid: uuid.UUID
+        cls, h5file: Optional[str], uid: uuid.UUID
     ) -> Tuple[ndarray, ndarray, ndarray]:
         """
-        fetch_delimiters(h5file, base, uid)
-
         Get the delimiters of an entity
 
-        Parameters
-        ----------
-        h5file: str
-            Name of the project h5file
+        :param h5file: Name of the project h5file
+        :param uid: Unique identifier of the target entity
 
-        base: str
-            Name of the base project group ['GEOSCIENCE']
-
-        uid: uuid.UUID
-            Unique identifier of the target entity
-
-        Returns
-        -------
-        u_delimiters: numpy.array
-            Array of u_delimiters
-
-        v_delimiters: numpy.array
-            Array of v_delimiters
-
-        z_delimiters: numpy.array
-            Array of z_delimiters
+        :return u_delimiters: Array of u_delimiters
+        :return v_delimiters: Array of v_delimiters
+        :return z_delimiters: Array of z_delimiters
         """
         project = h5py.File(h5file, "r")
-
+        name = list(project.keys())[0]
         u_delimiters = r_[
-            project[base]["Objects"][cls.uuid_str(uid)]["U cell delimiters"]
+            project[name]["Objects"][cls.uuid_str(uid)]["U cell delimiters"]
         ]
         v_delimiters = r_[
-            project[base]["Objects"][cls.uuid_str(uid)]["V cell delimiters"]
+            project[name]["Objects"][cls.uuid_str(uid)]["V cell delimiters"]
         ]
         z_delimiters = r_[
-            project[base]["Objects"][cls.uuid_str(uid)]["Z cell delimiters"]
+            project[name]["Objects"][cls.uuid_str(uid)]["Z cell delimiters"]
         ]
 
         project.close()
@@ -341,34 +216,19 @@ class H5Reader:
         return u_delimiters, v_delimiters, z_delimiters
 
     @classmethod
-    def fetch_octree_cells(
-        cls, h5file: Optional[str], base: str, uid: uuid.UUID
-    ) -> ndarray:
+    def fetch_octree_cells(cls, h5file: Optional[str], uid: uuid.UUID) -> ndarray:
         """
-        fetch_octree_cells(h5file, base, uid)
+        Get the cells of an octree mesh
 
-        Get the octree_cells of an octree mesh
+        :param h5file: Name of the project h5file
+        :param uid: Unique identifier of the target entity
 
-        Parameters
-        ----------
-        h5file: str
-            Name of the project h5file
-
-        base: str
-            Name of the base project group ['GEOSCIENCE']
-
-        uid: uuid.UUID
-            Unique identifier of the target entity
-
-        Returns
-        -------
-        octree_cells: numpy.ndarray(int)
+        :return octree_cells: numpy.ndarray of int, shape ("*", 3)
             Array of octree_cells
-
         """
         project = h5py.File(h5file, "r")
-
-        octree_cells = r_[project[base]["Objects"][cls.uuid_str(uid)]["Octree Cells"]]
+        name = list(project.keys())[0]
+        octree_cells = r_[project[name]["Objects"][cls.uuid_str(uid)]["Octree Cells"]]
 
         project.close()
 
@@ -376,31 +236,21 @@ class H5Reader:
 
     @classmethod
     def fetch_property_groups(
-        cls, h5file: Optional[str], base: str, uid: uuid.UUID
+        cls, h5file: Optional[str], uid: uuid.UUID
     ) -> Dict[str, Dict[str, str]]:
         """
-        fetch_property_groups(h5file, base, uid)
+        Get the property groups of an object.
 
-        Parameters
-        ----------
-        h5file: str
-            Name of the project h5file
+        :param h5file: Name of the project h5file
+        :param uid: Unique identifier of the target entity
 
-        base: str
-            Name of the base project group ['GEOSCIENCE']
-
-        uid: uuid.UUID
-            Unique identifier of the target entity
-
-        Returns
-        -------
-        property_group_attributes: dict
-            Dictionary of property_groups attributes
-
+        :return property_group_attributes: dict
+            Dictionary of property_groups and respective attributes
+            {"prop_group1": {"attribute": value, ...}, ...}
         """
         project = h5py.File(h5file, "r")
-
-        pg_handle = project[base]["Objects"][cls.uuid_str(uid)]["PropertyGroups"]
+        name = list(project.keys())[0]
+        pg_handle = project[name]["Objects"][cls.uuid_str(uid)]["PropertyGroups"]
 
         property_groups: Dict[str, Dict[str, str]] = {}
         for pg_uid in pg_handle.keys():

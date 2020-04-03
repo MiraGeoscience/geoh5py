@@ -89,7 +89,7 @@ class Workspace:
 
             # Get the Root attributes
             attributes, type_attributes, _ = H5Reader.fetch_attributes(
-                self.h5file, self.name, uuid.uuid4(), "Root"
+                self.h5file, uuid.uuid4(), "Root"
             )
             self._root = self.create_entity(
                 RootGroup, save_on_creation=False, **{**attributes, **type_attributes}
@@ -460,13 +460,11 @@ class Workspace:
         else:
             entity_type = "data"
 
-        children_list = H5Reader.fetch_children(
-            self.h5file, self.name, entity.uid, entity_type
-        )
+        children_list = H5Reader.fetch_children(self.h5file, entity.uid, entity_type)
 
         for uid, child_type in children_list.items():
             attributes, type_attributes, property_groups = H5Reader.fetch_attributes(
-                self.h5file, self.name, uid, child_type
+                self.h5file, uid, child_type
             )
 
             recovered_object = self.create_entity(
@@ -499,7 +497,7 @@ class Workspace:
 
         :return value: Array of values
         """
-        return H5Reader.fetch_values(self.h5file, self.name, uid)
+        return H5Reader.fetch_values(self.h5file, uid)
 
     def fetch_vertices(self, uid: uuid.UUID) -> np.ndarray:
         """
@@ -509,7 +507,7 @@ class Workspace:
 
         :return coordinates: Array of coordinate [x, y, z] locations
         """
-        return H5Reader.fetch_vertices(self.h5file, self.name, uid)
+        return H5Reader.fetch_vertices(self.h5file, uid)
 
     def fetch_cells(self, uid: uuid.UUID) -> Cell:
         """
@@ -519,7 +517,7 @@ class Workspace:
 
         :return cells: Cell object with vertices index
         """
-        return H5Reader.fetch_cells(self.h5file, self.name, uid)
+        return H5Reader.fetch_cells(self.h5file, uid)
 
     def fetch_octree_cells(self, uid: uuid.UUID) -> np.ndarray:
         """
@@ -529,7 +527,7 @@ class Workspace:
 
         :return values: Array of [i, j, k, dimension] defining the octree mesh
         """
-        return H5Reader.fetch_octree_cells(self.h5file, self.name, uid)
+        return H5Reader.fetch_octree_cells(self.h5file, uid)
 
     def fetch_delimiters(
         self, uid: uuid.UUID
@@ -542,7 +540,7 @@ class Workspace:
         :return (u_delimiters, v_delimiters, z_delimiters):
             Arrays of delimiters along the u, v, and w axis
         """
-        return H5Reader.fetch_delimiters(self.h5file, self.name, uid)
+        return H5Reader.fetch_delimiters(self.h5file, uid)
 
     def fetch_property_groups(self, uid: uuid.UUID) -> List[PropertyGroup]:
         """
@@ -550,7 +548,7 @@ class Workspace:
 
         :param uid: Unique identifier of target object
         """
-        group_dict = H5Reader.fetch_property_groups(self.h5file, self.name, uid)
+        group_dict = H5Reader.fetch_property_groups(self.h5file, uid)
 
         property_groups = []
         for pg_id, attrs in group_dict.items():
