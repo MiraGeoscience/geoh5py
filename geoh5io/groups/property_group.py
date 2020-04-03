@@ -6,7 +6,7 @@ from ..shared import Entity
 
 
 class PropertyGroup:
-    """ Group for properties"""
+    """ Group for properties not registered to the workspace"""
 
     _attribute_map = {
         "Association": "association",

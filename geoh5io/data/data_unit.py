@@ -2,6 +2,10 @@ from typing import Optional
 
 
 class DataUnit:
+    """
+    Data unit
+    """
+
     def __init__(self, unit_name: str = None):
         self._rep = unit_name
 

@@ -11,6 +11,9 @@ if TYPE_CHECKING:
 
 
 class Data(Entity):
+    """
+    Data class
+    """
 
     _attribute_map = Entity._attribute_map.copy()
     _attribute_map.update({"Association": "association"})
@@ -29,16 +32,14 @@ class Data(Entity):
     @property
     def no_data_value(self) -> float:
         """
-        Default no-data-value
-        :return:
+        :return: Default no-data-value
         """
         return self._no_data_value
 
     @property
     def n_values(self) -> Optional[int]:
         """
-        Number of expected data values
-        :return:
+        :return: Number of expected data values
         """
         if self.association is DataAssociationEnum.VERTEX:
             return self.parent.n_vertices

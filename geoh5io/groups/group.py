@@ -10,6 +10,8 @@ if TYPE_CHECKING:
 
 
 class Group(Entity):
+    """ Base Group class """
+
     def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
         super().__init__(**kwargs)

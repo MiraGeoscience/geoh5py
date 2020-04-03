@@ -4,7 +4,7 @@ from .group import Group, GroupType
 
 
 class GiftoolsGroup(Group):
-    """ The type for the basic Container group."""
+    """ The type for a GIFtools group."""
 
     __TYPE_UID = uuid.UUID(
         fields=(0x585B3218, 0xC24B, 0x41FE, 0xAD, 0x1F, 0x24D5E6E8348A)

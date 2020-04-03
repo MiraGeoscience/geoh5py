@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 
 
 class DataType(EntityType):
+    """
+    DataType class
+    """
 
     _attribute_map = EntityType._attribute_map.copy()
     _attribute_map.update(
