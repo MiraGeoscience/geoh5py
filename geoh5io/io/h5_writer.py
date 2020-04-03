@@ -4,7 +4,7 @@ import uuid
 from typing import TYPE_CHECKING, Optional, Union
 
 import h5py
-from numpy import asarray, dtype, float64, int8
+from numpy import asarray, dtype, float64, int8, ndarray
 
 from ..data import Data, DataType
 from ..groups import Group, GroupType, RootGroup
@@ -67,11 +67,12 @@ class H5Writer:
 
     @classmethod
     def add_vertices(
-        cls, entity, file: Optional[Union[str, h5py.File]] = None, close_file=True
+        cls,
+        entity,
+        file: Optional[Union[str, h5py.File]] = None,
+        close_file: bool = True,
     ):
         """
-        add_vertices(file, entity, close_file=True)
-
         Add vertices to a points object.
 
         :param file: Name or handle to a geoh5 file
@@ -99,7 +100,10 @@ class H5Writer:
 
     @classmethod
     def add_cell_delimiters(
-        cls, entity, file: Optional[Union[str, h5py.File]] = None, close_file=True
+        cls,
+        entity,
+        file: Optional[Union[str, h5py.File]] = None,
+        close_file: bool = True,
     ):
         """
         Add (u, v, z) cell delimiters to a block_model object.
@@ -154,7 +158,10 @@ class H5Writer:
 
     @classmethod
     def add_cells(
-        cls, entity, file: Optional[Union[str, h5py.File]] = None, close_file=True
+        cls,
+        entity,
+        file: Optional[Union[str, h5py.File]] = None,
+        close_file: bool = True,
     ):
         """
         Add cells to an object.
@@ -182,7 +189,7 @@ class H5Writer:
         cls,
         entity_type: "shared.EntityType",
         file: Optional[Union[str, h5py.File]] = None,
-        close_file=True,
+        close_file: bool = True,
     ):
         """
         Add colormap to the data_type
@@ -206,7 +213,10 @@ class H5Writer:
 
     @classmethod
     def add_octree_cells(
-        cls, entity, file: Optional[Union[str, h5py.File]] = None, close_file=True
+        cls,
+        entity,
+        file: Optional[Union[str, h5py.File]] = None,
+        close_file: bool = True,
     ):
         """
         Add octree cells to an object.
@@ -238,7 +248,7 @@ class H5Writer:
         entity,
         values,
         file: Optional[Union[str, h5py.File]] = None,
-        close_file=True,
+        close_file: bool = True,
     ):
         """
         Add data values to an entity
@@ -326,7 +336,7 @@ class H5Writer:
         entity,
         file: Optional[Union[str, h5py.File]] = None,
         values=None,
-        close_file=True,
+        close_file: bool = True,
     ):
         """
         Add an entity, its attributes and values to a geoh5 project.
@@ -479,32 +489,18 @@ class H5Writer:
         cls,
         entity: Entity,
         file: Optional[Union[str, h5py.File]] = None,
-        close_file=True,
+        close_file: bool = True,
         recursively=False,
     ):
         """
-        add_to_parent(file, entity, close_file=True, recursively=False)
-
         Add an entity, its attributes and values to a geoh5 project.
         If the entity is already in the geoh5, the function returns a
         pointer to the object on file.
 
-        Parameters
-        ----------
-        file: str or h5py.File
-            Name or handle to a geoh5 file
-
-        entity: geoh5io.Entity
-            Entity to be added or linked to a parent in geoh5
-
-        parent: geoh5io.Entity
-            Parent entity to be written under Entity or [None]
-
-        close_file: bool optional
-           Close h5 file after write: [True] or False
-
-        recursively: bool optional = False
-            Add parents recursively until reaching the top Workspace group: True or [False]
+        :param file: Name or handle to a geoh5 file
+        :param entity: Entity to be added or linked to a parent in geoh5
+        :param close_file: Close h5 file after write: [True] or False
+        :param recursively: Add parents recursively until reaching the Root
         """
 
         h5file = cls.fetch_h5_handle(file, entity)
@@ -557,31 +553,16 @@ class H5Writer:
         cls,
         entity: Entity,
         file: Optional[Union[str, h5py.File]] = None,
-        close_file=True,
-        add_children=True,
+        close_file: bool = True,
+        add_children: bool = True,
     ):
         """
-        save_entity(entity, file, close_file=True)
+        Write an entity to geoh5 with its children
 
-        Function to add an entity to geoh5 with its parents
-
-        Parameters
-        ----------
-        entity: geoh5io.Entity
-            Entity to be added to a geoh5
-
-        parent: geoh5io.Entity = None
-            Parent entity to be written under
-
-        file: str or h5py.File
-            Name or handle to a geoh5 file
-
-        close_file: bool optional = True
-           Close h5 file after write
-
-        add_children: bool optional = True
-            Add children associated with entity
-
+        :param entity: Entity to be added to a geoh5
+        :param file: Name or handle to a geoh5 file
+        :param close_file: Close geoh5 file after write
+        :param add_children: Add children associated with entity
         """
         h5file = cls.fetch_h5_handle(file, entity)
 
@@ -609,25 +590,16 @@ class H5Writer:
         cls,
         entity: Entity,
         file: Optional[Union[str, h5py.File]] = None,
-        values=None,
-        close_file=True,
+        values: Optional[ndarray] = None,
+        close_file: bool = True,
     ):
         """
+        Write data values to an entity
 
-        Parameters
-        ----------
-        entity: geoh5io.Entity
-            Entity to be added to the geoh5 file
-
-        file: str or h5py.File
-            Name or handle to a geoh5 file
-
-        values: numpy.array optional
-            Array of values to be added to Data entity
-
-        close_file: bool optional = True
-           Close h5 file after write
-
+        :param entity: Entity to be added to the geoh5 file
+        :param file: Name or handle to a geoh5 file
+        :param values: Array of values to be added
+        :param close_file: Close h5 file after write
         """
         h5file = cls.fetch_h5_handle(file, entity)
 
@@ -660,24 +632,17 @@ class H5Writer:
 
     @classmethod
     def add_attributes(
-        cls, entity, file: Optional[Union[str, h5py.File]] = None, close_file=True
+        cls,
+        entity,
+        file: Optional[Union[str, h5py.File]] = None,
+        close_file: bool = True,
     ):
         """
+        Write attributes of an entity
 
-        Parameters
-        ----------
-        file: str or h5py.File
-            Name or handle to a geoh5 file
-
-        entity: geoh5io.Entity
-            Entity to be added to the geoh5 file
-
-        values: numpy.array optional
-            Array of values to be added to Data entity
-
-        close_file: bool optional = True
-           Close h5 file after write
-
+        :param file: Name or handle to a geoh5 file
+        :param entity: Entity with attributes to be added to the geoh5 file
+        :param close_file: Close h5 file after write
         """
         h5file = cls.fetch_h5_handle(file, entity)
         entity_handle = H5Writer.fetch_handle(file, entity)
@@ -715,21 +680,17 @@ class H5Writer:
 
     @classmethod
     def add_property_groups(
-        cls, entity, file: Optional[Union[str, h5py.File]] = None, close_file=True
+        cls,
+        entity,
+        file: Optional[Union[str, h5py.File]] = None,
+        close_file: bool = True,
     ):
         """
-        add_property_groups(h5file, entity)
+        Write property_groups associated with entity data children
 
-        Parameters
-        ----------
-        h5file: str or h5py.File
-            Name or handle to a geoh5 file
-
-        entity: geoh5io.Entity
-            Entity to be added to the geoh5 file
-
-        close_file: bool optional = True
-           Close h5 file after write
+        :param file: Name or handle to a geoh5 file
+        :param entity: Entity to be added to the geoh5 file
+        :param close_file: Close h5 file after write
         """
         h5file = cls.fetch_h5_handle(file, entity)
 
@@ -784,20 +745,11 @@ class H5Writer:
         close_file: bool = True,
     ):
         """
-        update_attributes(h5file, entity, close_file=True)
+        Update the attributes of an entity specified by the geoh5
 
-        Update the attributes of an entity specified by the h5
-
-        Parameters
-        ----------
-        file: str or h5py.File
-            Name or handle to a geoh5 file
-
-        entity: geoh5io.Entity
-            Entity to be added to the geoh5 file
-
-        close_file: bool optional = True
-           Close h5 file after write
+        :param entity: Entity to be added to the geoh5 file
+        :param file: Name or handle to a geoh5 file
+        :param close_file: Close h5 file after write
         """
         file = cls.fetch_h5_handle(file, entity)
         entity_handle = H5Writer.fetch_handle(file, entity)
@@ -837,14 +789,20 @@ class H5Writer:
 
     @staticmethod
     def uuid_value(value: str) -> uuid.UUID:
+        """Convert string to uuid.UUID
+        """
         return uuid.UUID(value)
 
     @staticmethod
     def uuid_str(value: uuid.UUID) -> str:
+        """Convert uuid.UUID to string used in geoh5
+        """
         return "{" + str(value) + "}"
 
     @staticmethod
     def bool_value(value: int8) -> bool:
+        """Convert integer to bool
+        """
         return bool(value)
 
     @staticmethod
@@ -853,15 +811,12 @@ class H5Writer:
         entity: Union[Entity, "shared.EntityType"],
     ) -> h5py.File:
         """
-        fetch_h5_handle(file)
+        Open in read+ mode a geoh5 file
 
-        Check if file reference to an existing hdf5
+        :param file: Name or handle to a geoh5 file
+        :param entity: Entity to be added to the geoh5 file
 
-        Returns
-        -------
-        h5py: h5py.File
-            Handle to an opened h5py file
-
+        :return h5py.File: Handle to an opened h5py file
         """
         if file is None:
             h5file = h5py.File(entity.workspace.h5file, "r+")
