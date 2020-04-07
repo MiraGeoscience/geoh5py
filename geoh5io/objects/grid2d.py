@@ -1,7 +1,22 @@
 import uuid
 from typing import Optional, Tuple
 
-import numpy as np
+from numpy import (
+    asarray,
+    c_,
+    cos,
+    cumsum,
+    deg2rad,
+    dot,
+    meshgrid,
+    ndarray,
+    ones,
+    prod,
+    r_,
+    ravel,
+    sin,
+    zeros,
+)
 
 from .object_base import ObjectBase, ObjectType
 
@@ -70,9 +85,9 @@ class Grid2D(ObjectBase):
         return cls.__TYPE_UID
 
     @property
-    def origin(self):
+    def origin(self) -> ndarray:
         """
-        Coordinates of the origin: array of floats, shape (3,)
+        Coordinates of the origin: shape (3,)
         """
         return self._origin
 
@@ -80,7 +95,7 @@ class Grid2D(ObjectBase):
     def origin(self, value):
         if value is not None:
 
-            if isinstance(value, np.ndarray):
+            if isinstance(value, ndarray):
                 value = value.tolist()
 
             assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
@@ -88,15 +103,15 @@ class Grid2D(ObjectBase):
             self.modified_attributes = "attributes"
             self._centroids = None
 
-            value = np.asarray(
+            value = asarray(
                 tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
             )
             self._origin = value
 
     @property
-    def dip(self):
+    def dip(self) -> float:
         """"
-        Dip angle (positive down) in degree: float
+        Dip angle (positive down) in degree
         """
         return self._dip
 
@@ -118,7 +133,7 @@ class Grid2D(ObjectBase):
     @u_cell_size.setter
     def u_cell_size(self, value):
         if value is not None:
-            value = np.r_[value]
+            value = r_[value]
             assert len(value) == 1, "u_cell_size must be a float of shape (1,)"
 
             self.modified_attributes = "attributes"
@@ -129,14 +144,14 @@ class Grid2D(ObjectBase):
     @property
     def v_cell_size(self) -> Optional[float]:
         """
-        Cell size along the v-axis: float
+        Cell size along the v-axis
         """
         return self._v_cell_size
 
     @v_cell_size.setter
     def v_cell_size(self, value):
         if value is not None:
-            value = np.r_[value]
+            value = r_[value]
             assert len(value) == 1, "v_cell_size must be a float of shape (1,)"
             self.modified_attributes = "attributes"
             self._centroids = None
@@ -153,7 +168,7 @@ class Grid2D(ObjectBase):
     @u_count.setter
     def u_count(self, value):
         if value is not None:
-            value = np.r_[value]
+            value = r_[value]
             assert len(value) == 1, "u_count must be an integer of shape (1,)"
             self.modified_attributes = "attributes"
             self._centroids = None
@@ -170,7 +185,7 @@ class Grid2D(ObjectBase):
     @v_count.setter
     def v_count(self, value):
         if value is not None:
-            value = np.r_[value]
+            value = r_[value]
             assert len(value) == 1, "v_count must be an integer of shape (1,)"
             self.modified_attributes = "attributes"
             self._centroids = None
@@ -187,7 +202,7 @@ class Grid2D(ObjectBase):
     @rotation.setter
     def rotation(self, value):
         if value is not None:
-            value = np.r_[value]
+            value = r_[value]
             assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
             self.modified_attributes = "attributes"
             self._centroids = None
@@ -214,49 +229,60 @@ class Grid2D(ObjectBase):
             self._vertical = value
 
     @property
-    def cell_center_u(self):
+    def cell_center_u(self) -> ndarray:
         """
-        The cell center location along u-axis: array of floats, shape(u_count,)
+        The cell center location along u-axis: shape(u_count,)
         """
-        return (
-            np.cumsum(np.ones(self.u_count) * self.u_cell_size) - self.u_cell_size / 2.0
-        )
+        if self.u_count is not None and self.u_cell_size is not None:
+            return (
+                cumsum(ones(self.u_count) * self.u_cell_size) - self.u_cell_size / 2.0
+            )
+        return None
 
     @property
-    def cell_center_v(self):
+    def cell_center_v(self) -> ndarray:
         """
-        The cell center location along v-axis: array of floats, shape(u_count,)
+        The cell center location along v-axis: shape(u_count,)
         """
-        return (
-            np.cumsum(np.ones(self.v_count) * self.v_cell_size) - self.v_cell_size / 2.0
-        )
+        if self.v_count is not None and self.v_cell_size is not None:
+            return (
+                cumsum(ones(self.v_count) * self.v_cell_size) - self.v_cell_size / 2.0
+            )
+        return None
 
     @property
-    def centroids(self):
+    def centroids(self) -> ndarray:
         """
-        Cell center locations in world coordinates [x_i, y_i, z_i]:
-        array of floats, shape(n_cells, 3)
+        Cell center locations in world coordinates [x_i, y_i, z_i]: shape(n_cells, 3)
         """
-        if getattr(self, "_centroids", None) is None:
+        if (
+            getattr(self, "_centroids", None) is None
+            and self.cell_center_u is not None
+            and self.cell_center_v is not None
+            and self.n_cells is not None
+            and self.origin is not None
+        ):
 
-            angle = np.deg2rad(self.rotation)
-            rot = np.r_[
-                np.c_[np.cos(angle), -np.sin(angle), 0],
-                np.c_[np.sin(angle), np.cos(angle), 0],
-                np.c_[0, 0, 1],
+            angle = deg2rad(self.rotation)
+            rot = r_[
+                c_[cos(angle), -sin(angle), 0],
+                c_[sin(angle), cos(angle), 0],
+                c_[0, 0, 1],
             ]
 
-            u_grid, v_grid = np.meshgrid(self.cell_center_u, self.cell_center_v)
+            u_grid, v_grid = meshgrid(self.cell_center_u, self.cell_center_v)
             if self.vertical:
-                xyz = np.c_[np.ravel(u_grid), np.zeros(self.n_cells), np.ravel(v_grid)]
+                xyz = c_[ravel(u_grid), zeros(self.n_cells), ravel(v_grid)]
 
             else:
-                xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.zeros(self.n_cells)]
+                xyz = c_[ravel(u_grid), ravel(v_grid), zeros(self.n_cells)]
 
-            self._centroids = np.dot(rot, xyz.T).T
+            centroids = dot(rot, xyz.T).T
 
             for ind, axis in enumerate(["x", "y", "z"]):
-                self._centroids[:, ind] += self.origin[axis]
+                centroids[:, ind] += self.origin[axis]
+
+            self._centroids = centroids
 
         return self._centroids
 
@@ -275,5 +301,5 @@ class Grid2D(ObjectBase):
         Number of cells
         """
         if self.shape is not None:
-            return np.prod(self.shape)
+            return prod(self.shape)
         return None
