@@ -14,7 +14,19 @@ class RootGroup(NoTypeGroup):
         super().__init__(group_type, **kwargs)
 
         # Hard wired attributes
+        self._parent = None
         self._allow_move = False
         self._allow_delete = False
         self._allow_rename = False
         self._name = self.__ROOT_NAME
+
+    @property
+    def parent(self):
+        """
+        Parental entity of root is always None
+        """
+        return self._parent
+
+    @parent.setter
+    def parent(self, _):
+        self._parent = None
