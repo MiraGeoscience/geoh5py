@@ -25,6 +25,10 @@ class Data(Entity):
         self._entity_type = data_type
         self._association: Optional[DataAssociationEnum] = None
         self._values = None
+
+        if "association" in kwargs.keys():
+            setattr(self, "association", kwargs["association"])
+
         super().__init__(**kwargs)
 
         data_type.workspace._register_data(self)

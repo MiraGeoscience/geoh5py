@@ -31,6 +31,9 @@ class Entity(ABC):
         self._existing_h5_entity = False
         self._modified_attributes: List[str] = []
 
+        if "parent" in kwargs.keys():
+            setattr(self, "parent", kwargs["parent"])
+
         for attr, item in kwargs.items():
             try:
                 if attr in self._attribute_map.keys():
@@ -197,14 +200,18 @@ class Entity(ABC):
         else:
             uid = parent.uid
 
+        # Remove as child of previous parent
+        if self.parent is not None:
+            self._parent.remove_children([self])
+
         self._parent = self.workspace.get_entity(uid)[0]
-        self._parent.add_child(self)
+        self._parent.add_children([self])
 
     @parent.getter
     def parent(self):
-        if (self._parent is None) and (self.name != "Workspace"):
-            self._parent = self.workspace.get_entity("Workspace")[0]
-            self._parent.add_child(self)
+        if self._parent is None:
+            self._parent = self.workspace.root
+            self._parent.add_children([self])
 
         return self._parent
 
@@ -215,16 +222,23 @@ class Entity(ABC):
         """
         return self._children
 
-    def add_child(self, entity):
+    def add_children(self, children: List["shared.Entity"]):
         """
-        add_child
+        add_children
 
-        Parameters
-        ----------
-        entity: Entity
-            Add a child entity to the list of children
+        :param children: Add children entities to the list of children
         """
-        self._children.append(entity)
+        for child in children:
+            if child not in self._children:
+                self._children.append(child)
+
+    def remove_children(self, children: List["shared.Entity"]):
+        """
+        remove_children
+
+        :param children: Remove children entities to the list of children
+        """
+        self._children = [child for child in self._children if child not in children]
 
     @classmethod
     def create(cls, workspace, **kwargs):
@@ -253,3 +267,24 @@ class Entity(ABC):
         workspace.finalize()
 
         return new_object
+
+    def copy(self, parent=None, copy_children: bool = True):
+        """
+        Function to copy an entity to a different parent entity
+
+        :param parent: Target parent to copy the entity under
+        :param copy_children: Copy all children of the entity
+
+        :return: Entity: Registered to the workspace.
+        """
+
+        if parent is None:
+            new_entity = self.parent.workspace.copy_to_parent(
+                self, self.parent, copy_children=copy_children
+            )
+        else:
+            new_entity = parent.workspace.copy_to_parent(
+                self, parent, copy_children=copy_children
+            )
+
+        return new_entity

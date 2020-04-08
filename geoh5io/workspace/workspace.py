@@ -444,6 +444,53 @@ class Workspace:
 
         return None
 
+    def copy_to_parent(self, entity, parent, copy_children: bool = True):
+        """
+        Function to copy an entity to a different parent entity
+
+        :param entity: Entity to be copied
+        :param parent: Target parent to copy the entity under
+        :param copy_children: Copy all children of the entity
+
+        :return: Entity: Registered to the workspace.
+        """
+
+        entity_kwargs: dict = {"entity": {}}
+        for key, val in entity.__dict__.items():
+            if key not in ["_uid", "_entity_type"]:
+                entity_kwargs["entity"][key[1:]] = val
+
+        entity_type_kwargs: dict = {"entity_type": {}}
+        for key, val in entity.entity_type.__dict__.items():
+            if key not in ["_workspace"]:
+                entity_type_kwargs["entity_type"][key[1:]] = val
+
+        if parent is None:
+            parent = entity.parent
+        elif isinstance(parent, Workspace):
+            parent = parent.root
+
+        entity_kwargs["entity"]["parent"] = parent
+
+        if isinstance(entity, Data):
+            entity_type = Data
+        else:
+            entity_type = type(entity)
+
+        new_object = parent.workspace.create_entity(
+            entity_type, **{**entity_kwargs, **entity_type_kwargs}
+        )
+
+        if copy_children:
+            for child in entity.children:
+                new_object.add_children(
+                    [self.copy_to_parent(child, parent=new_object, copy_children=True)]
+                )
+
+        new_object.workspace.finalize()
+
+        return new_object
+
     def fetch_children(self, entity: Entity, recursively: bool = False):
         """
         Recover and register children entities from the h5file
@@ -467,11 +514,14 @@ class Workspace:
                 self.h5file, uid, child_type
             )
 
-            recovered_object = self.create_entity(
-                base_classes[child_type],
-                save_on_creation=False,
-                **{**attributes, **type_attributes},
-            )
+            if self.get_entity(uid)[0] is not None:
+                recovered_object = self.get_entity(uid)[0]
+            else:
+                recovered_object = self.create_entity(
+                    base_classes[child_type],
+                    save_on_creation=False,
+                    **{**attributes, **type_attributes},
+                )
 
             if recovered_object is not None:
 
