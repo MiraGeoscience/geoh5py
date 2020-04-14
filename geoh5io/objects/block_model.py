@@ -145,7 +145,7 @@ class BlockModel(ObjectBase):
     @property
     def rotation(self) -> Optional[float]:
         """
-        Clockwise rotation angle (degree) about the vertical axis: float
+        Clockwise rotation angle (degree) about the vertical axis
         """
         return self._rotation
 

@@ -29,9 +29,8 @@ class Curve(Points):
     @property
     def cells(self) -> Optional[ndarray]:
         """
-        Array of indices defining the connection between vertices
-
-        :return cells: Array of int, shape ("*", 2)
+        Array of indices defining the connection between vertices:
+        numpy.ndarray of int, shape ("*", 2)
         """
         if getattr(self, "_cells", None) is None:
             if self.existing_h5_entity:
@@ -55,7 +54,8 @@ class Curve(Points):
     @property
     def line_id(self):
         """
-        List of connected cells forming unique line_id
+        Connections of cells forming unique line_id:
+        list of numpy.ndarray of int, shape ("*", 2)
         """
         if getattr(self, "_line_id", None) is None and self.cells is not None:
 

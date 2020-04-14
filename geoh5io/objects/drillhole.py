@@ -7,6 +7,10 @@ from .object_base import ObjectBase, ObjectType
 
 
 class Drillhole(ObjectBase):
+    """
+    Drillhole object class: NOT IMPLEMENTED
+    """
+
     __TYPE_UID = uuid.UUID(
         fields=(0x7CAEBF0E, 0xD16E, 0x11E3, 0xBC, 0x69, 0xE4632694AA37)
     )
