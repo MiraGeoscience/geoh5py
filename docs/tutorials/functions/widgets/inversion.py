@@ -6,60 +6,115 @@ import ipywidgets as widgets
 from ipywidgets.widgets import Label, Dropdown, Layout, VBox, HBox, Text
 
 
-from geoh5io.workspace import Workspace
-from geoh5io.objects import Curve, BlockModel
+from ..geoh5io.workspace import Workspace
+from ..geoh5io.objects import Curve, BlockModel, Octree, Surface
 import json
 from .plotting import plot_profile_data_selection, plot_plan_data_selection
 from ..utils import find_value, rotate_xy
 
 
-def pf_inversion_widget(h5file, plot=False, resolution=50, inducing_field="50000, 90, 0"):
+def pf_inversion_widget(
+        h5file,
+        plot_scatter_xy=None,
+        resolution=50,
+        inducing_field="50000, 90, 0",
+        objects=None
+):
     workspace = Workspace(h5file)
 
     units = {"Gravity": "g/cc", "Magnetics": "SI"}
     names = list(workspace.list_objects_name.values())
 
     def update_data_list(_):
-        obj = workspace.get_entity(objects.value)[0]
 
-        data.options = [name for name in obj.get_data_list() if "visual" not in name.lower()]
-        if data.options:
-            data.value = data.options[0]
+        if workspace.get_entity(objects.value):
+            obj = workspace.get_entity(objects.value)[0]
 
-        sensor_value.options = [name for name in obj.get_data_list() if "visual" not in name.lower()] + ["Vertices"]
-        sensor_value.value = "Vertices"
+            data.options = [name for name in obj.get_data_list() if "visual" not in name.lower()]
+            if data.options:
+                data.value = [data.options[0]]
+
+            sensor_value.options = [name for name in obj.get_data_list() if "visual" not in name.lower()] + ["Vertices"]
+            sensor_value.value = "Vertices"
+            write.button_style = 'warning'
+            run.button_style = 'danger'
 
     def update_data_options(_):
-        obj = workspace.get_entity(objects.value)[0]
+        if workspace.get_entity(objects.value):
+            obj = workspace.get_entity(objects.value)[0]
 
-        if obj.get_data(data.value):
-            data_obj = obj.get_data(data.value)[0]
-            uncertainties.value = f"0, {np.percentile(np.abs(data_obj.values), 10)}"
+            if survey_type.value == "Magnetics":
+                data_type_list = ["tmi", 'bxx', "bxy", "bxz", 'byy', "byz", "bzz"]
+            else:
+                data_type_list = ["gz", 'gxx', "gxy", "gxz", 'gyy', "gyz", "gzz"]
 
-        if data.value is not None:
-            data_type.value = find_value(data_type.options, [data.value.lower()])
+            channel_specs = {}
+            for channel in data.value:
+                if obj.get_data(channel):
+
+                    data_obj = obj.get_data(channel)[0]
+                    values = np.abs(data_obj.values)
+                    channel_specs[channel] = VBox([
+                        Dropdown(
+                            description='Data type',
+                            options=data_type_list,
+                            value=find_value(data_type_list, [channel])
+                        ),
+                        Text(
+                            description='Uncertainty (%, floor): ',
+                            value=f"0, {np.percentile(values[values > 2e-18], 5)}",
+                            style={'description_width': 'initial'}
+                        )
+                    ])
+
+            components.specs = channel_specs
+            components.options = list(channel_specs.keys())
+
+            if list(channel_specs.keys()):
+                components.value = list(channel_specs.keys())[0]
+                components_panel.children = [components, channel_specs[components.value]]
+
+            write.button_style = 'warning'
+            run.button_style = 'danger'
 
     def update_topo_list(_):
-        obj = workspace.get_entity(topo_objects.value)[0]
-        topo_value.options = [name for name in obj.get_data_list() if "visual" not in name.lower()] + ['Vertices']
+        if workspace.get_entity(topo_objects.value):
+            obj = workspace.get_entity(topo_objects.value)[0]
+            topo_value.options = [name for name in obj.get_data_list() if "visual" not in name.lower()] + ['Vertices']
+
+            write.button_style = 'warning'
+            run.button_style = 'danger'
 
     objects = Dropdown(
         options=names,
+        value=objects,
         description='Object:',
     )
 
     objects.observe(update_data_list, names="value")
 
-    data = Dropdown(
-        description='Channel: ',
-    )
-
-    uncertainties = Text(
-        description='Uncertainty (%, floor): ',
-        style={'description_width': 'initial'}
+    data = widgets.SelectMultiple(
+        description='Channels: ',
     )
 
     data.observe(update_data_options, names="value")
+
+    components = widgets.Dropdown(
+        description='Component Specs'
+    )
+
+    components_panel = VBox([components])
+
+    def update_component_panel(_):
+        if components.value is not None:
+            components_panel.children = [components, components.specs[components.value]]
+        else:
+            components_panel.children = [components]
+
+        write.button_style = 'warning'
+        run.button_style = 'danger'
+
+    components.observe(update_component_panel, names="value")
 
     ###################### Data selection ######################
     # Fetch vertices in the project
@@ -106,80 +161,92 @@ def pf_inversion_widget(h5file, plot=False, resolution=50, inducing_field="50000
     resolution = widgets.FloatText(value=resolution, description="Resolution (m)",
                                    style={'description_width': 'initial'})
 
+    data_count = Label("Data Count: 0", tooltip='Keep <1500 for speed')
+
     def plot_selection(
-            entity_name, data_name, uncertainties, resolution,
+            entity_name, data_names, resolution,
             center_x, center_y,
-            width_x, width_y, azimuth
+            width_x, width_y, azimuth,
+            zoom_extent
     ):
-        obj = workspace.get_entity(entity_name)[0]
+        if workspace.get_entity(entity_name):
+            obj = workspace.get_entity(entity_name)[0]
 
-        if obj.get_data(data_name):
-            fig = plt.figure(figsize=(10, 10))
-            ax1 = plt.subplot()
+            if len(data_names)>0 and obj.get_data(data_names[0]):
+                fig = plt.figure(figsize=(10, 10))
+                ax1 = plt.subplot()
 
-            corners = np.r_[np.c_[-1., -1.], np.c_[-1., 1.], np.c_[1., 1.], np.c_[1., -1.], np.c_[-1., -1.]]
-            corners[:, 0] *= width_x/2
-            corners[:, 1] *= width_y/2
-            corners = rotate_xy(corners, [0,0], -azimuth)
-            ax1.plot(corners[:, 0] + center_x, corners[:, 1] + center_y, 'k')
+                corners = np.r_[np.c_[-1., -1.], np.c_[-1., 1.], np.c_[1., 1.], np.c_[1., -1.], np.c_[-1., -1.]]
+                corners[:, 0] *= width_x/2
+                corners[:, 1] *= width_y/2
+                corners = rotate_xy(corners, [0,0], -azimuth)
+                ax1.plot(corners[:, 0] + center_x, corners[:, 1] + center_y, 'k')
+                data_obj = obj.get_data(data_names[0])[0]
+                _, ind_filter = plot_plan_data_selection(
+                    obj, data_obj,
+                    **{
+                        "ax": ax1,
+                        "downsampling": resolution,
+                        "window": {
+                            "center": [center_x, center_y],
+                            "size": [width_x, width_y],
+                            "azimuth": azimuth
+                        },
+                        "zoom_extent": zoom_extent
+                    }
+                )
+                data_count.value = f"Data Count: {ind_filter.sum()}"
+                # if plot_scatter_xy is not None:
+                #     if isinstance(plot_scatter_x, np.ndarray):
+                #         ax1.scatter(plot_scatter_xy[:, 0], plot_scatter_xy[:, 1], 5, 'k')
+            write.button_style = 'warning'
+            run.button_style = 'danger'
 
-            data_obj = obj.get_data(data_name)[0]
-            floor = float(uncertainties.split(",")[1])
-            plot_plan_data_selection(
-                obj, data_obj,
-                **{
-                    "ax": ax1,
-                    "downsampling": resolution,
-                    "window": {
-                        "center": [center_x, center_y],
-                        "size": [width_x, width_y],
-                        "azimuth": azimuth
-                    },
-                    "contours": [-floor, floor]
-                }
-            )
-
+    zoom_extent = widgets.ToggleButton(
+        value=False,
+        description='Zoom on selection',
+        tooltip='Keep plot extent on selection',
+        icon='check'
+    )
 
     plot_window = widgets.interactive_output(
         plot_selection, {
             "entity_name": objects,
-            "data_name": data,
-            "uncertainties": uncertainties,
+            "data_names": data,
             "resolution": resolution,
             "center_x": center_x,
             "center_y": center_y,
             "width_x": width_x,
             "width_y": width_y,
             "azimuth": azimuth,
+            "zoom_extent": zoom_extent
         }
     )
 
     selection_panel = VBox([
         Label("Window & Downsample"),
-        VBox([
-            center_x,
+        VBox([resolution, data_count,
             HBox([
-                center_y,
+                center_y, width_y,
                 plot_window,
-                width_y
             ], layout=Layout(align_items='center')),
-            VBox([width_x, azimuth, resolution], layout=Layout(align_items='center'))
+            VBox([width_x, center_x, azimuth, zoom_extent], layout=Layout(align_items='center'))
         ], layout=Layout(align_items='center'))
     ])
 
     def update_survey_type(_):
         if survey_type.value == "Magnetics":
-            data_type.options = ["tmi", 'bxx', "bxy", "bxz", 'byy', "byz", "bzz"]
-
-            survey_type_panel.children = [Label("Data"), survey_type, objects, data, data_type, uncertainties, inducing_field]
+            survey_type_panel.children = [Label("Data"), survey_type, objects, data, components_panel, inducing_field]
         else:
-            data_type.options = ["gz", 'gxx', "gxy", "gxz", 'gyy', "gyz", "gzz"]
-            survey_type_panel.children = [Label("Data"), survey_type, objects, data, data_type, uncertainties]
+            survey_type_panel.children = [Label("Data"), survey_type, objects, data, components_panel]
 
-        if data.value is not None:
-            data_type.value = find_value(data_type.options, [data.value.lower()])
+        update_data_options("")
+
         if ref_mod.children[1].children[1].children:
             ref_mod.children[1].children[1].children[0].decription = units[survey_type.value]
+
+        write.button_style = 'warning'
+        run.button_style = 'danger'
 
     survey_type = Dropdown(
         options=["Magnetics", "Gravity"],
@@ -192,11 +259,11 @@ def pf_inversion_widget(h5file, plot=False, resolution=50, inducing_field="50000
     )
     survey_type.observe(update_survey_type)
 
-    data_type = Dropdown(
-        description="Data Type:",
-    )
+    # data_type = Dropdown(
+    #     description="Data Type:",
+    # )
 
-    survey_type_panel = VBox([survey_type, objects, data, data_type, uncertainties])
+    survey_type_panel = VBox([survey_type, objects, data, components_panel])
 
     ###################### Spatial parameters ######################
     ########## TOPO #########
@@ -210,7 +277,6 @@ def pf_inversion_widget(h5file, plot=False, resolution=50, inducing_field="50000
     topo_value = Dropdown(
         description='Channel: ',
     )
-    update_topo_list("")
 
     topo_panel = VBox([topo_objects, topo_value])
 
@@ -231,6 +297,8 @@ def pf_inversion_widget(h5file, plot=False, resolution=50, inducing_field="50000
 
     def update_topo_options(_):
         topo_options_panel.children = [topo_options_button, topo_options[topo_options_button.value]]
+        write.button_style = 'warning'
+        run.button_style = 'danger'
 
     topo_options_button.observe(update_topo_options)
 
@@ -264,6 +332,8 @@ def pf_inversion_widget(h5file, plot=False, resolution=50, inducing_field="50000
             sensor_options_button.value = "Channel"
 
         sensor_options_panel.children = [sensor_options_button, sensor_options[sensor_options_button.value]]
+        write.button_style = 'warning'
+        run.button_style = 'danger'
 
     sensor_options_button.observe(update_sensor_options)
 
@@ -286,6 +356,8 @@ def pf_inversion_widget(h5file, plot=False, resolution=50, inducing_field="50000
 
     def spatial_option_change(_):
         spatial_panel.children[1].children = [spatial_choices, spatial_options[spatial_choices.value]]
+        write.button_style = 'warning'
+        run.button_style = 'danger'
 
     spatial_choices.observe(spatial_option_change)
 
@@ -304,12 +376,20 @@ def pf_inversion_widget(h5file, plot=False, resolution=50, inducing_field="50000
                 input_dict["inversion_type"] = 'mvis'
                 input_dict["inducing_field_aid"] = np.asarray(inducing_field.value.split(",")).astype(float).tolist()
 
+            uncertainties = []
+            channels = []
+            comps = []
+            for channel, specs in components.specs.items():
+                channels.append(channel)
+                uncertainties.append(np.asarray(specs.children[1].value.split(",")).astype(float).tolist())
+                comps.append(specs.children[0].value)
+
             input_dict["data_type"] = {
                 "GA_object": {
                     "name": objects.value,
-                    "data": data.value,
-                    "components": [data_type.value],
-                    "uncertainties": np.asarray(uncertainties.value.split(",")).astype(float).tolist()
+                    "data": channels,
+                    "components": comps,
+                    "uncertainties": uncertainties
                 }
             }
 
@@ -335,41 +415,67 @@ def pf_inversion_widget(h5file, plot=False, resolution=50, inducing_field="50000
                         "azimuth": azimuth.value
             }
 
-            if ref_type.value == "None":
-                input_dict["alphas"] = [0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1]
-            else:
-                input_dict["model_reference"] = ref_mod.children[1].children[1].children[0].value
+            input_dict["alphas"] = np.asarray(alpha_values.value.split(",")).astype(float).tolist()
 
-            input_dict["core_cell_size"] = [resolution.value/2, resolution.value/2, resolution.value/2]
-            input_dict["octree_levels_topo"] = [0, 3, 3]
-            input_dict["octree_levels_obs"] = [5, 5, 5]
+            if ref_type.value != "None":
+                input_dict["model_reference"] = ref_mod.children[1].children[1].children[0].value
+            else:
+                input_dict["alphas"][0] = 0
+
+            input_dict["model_norms"] = np.asarray(norms.value.split(",")).astype(float).tolist()
+            # input_dict["core_cell_size"] = [resolution.value/2, resolution.value/2, resolution.value/2]
+            # input_dict["octree_levels_topo"] = [0, 0, 3]
+            # input_dict["octree_levels_obs"] = [8, 8, 8]
+            input_dict["core_cell_size"] = np.asarray(core_cell_size.value.split(",")).astype(float).tolist()
+            input_dict["octree_levels_topo"] = np.asarray(octree_levels_topo.value.split(",")).astype(float).tolist()
+            input_dict["octree_levels_obs"] = np.asarray(octree_levels_obs.value.split(",")).astype(float).tolist()
+            input_dict['depth_core'] = {'value': depth_core.value}
+
+            input_dict["octree_levels_padding"] = [5, 5, 5]
             input_dict["padding_distance"] = [
                 [width_x.value/2, width_x.value/2],
                 [width_y.value / 2, width_y.value / 2],
                 [np.min([width_x.value / 2, width_y.value / 2]), 0]
             ]
-            input_dict['depth_core'] = {'auto': 0.2}
+            # input_dict['depth_core'] = {'auto': 0.5}
+
+            if forward_only.value:
+                input_dict['forward_only'] = []
 
             with open(f"{out_group.value}.json", 'w') as f:
                 json.dump(input_dict, f)
 
-        write.value = False
+            write.value = False
+            write.button_style = ''
+            run.button_style = 'success'
 
-    def invert_unclick(_):
-        if invert.value:
+    def run_unclick(_):
+        if run.value:
             prompt = os.system(
                 "start cmd.exe @cmd /k " + f"\"python functions/pf_inversion.py {out_group.value}.json\"")
-            invert.value = False
+            run.value = False
+            run.button_style = ''
 
-    invert = widgets.ToggleButton(
+    forward_only = widgets.Checkbox(
         value=False,
-        description='Invert',
+        description="Forward only",
+        tooltip='Forward response of reference model',
+    )
+
+    def update_options(_):
+        write.button_style = 'warning'
+        run.button_style = 'danger'
+
+    forward_only.observe(update_options)
+
+    run = widgets.ToggleButton(
+        value=False,
+        description='Run SimPEG',
         button_style='danger',
-        tooltip='Run simpegEM1D',
         icon='check'
     )
 
-    invert.observe(invert_unclick)
+    run.observe(run_unclick)
 
     out_group = widgets.Text(
         value='Inversion_',
@@ -380,7 +486,7 @@ def pf_inversion_widget(h5file, plot=False, resolution=50, inducing_field="50000
     write = widgets.ToggleButton(
         value=False,
         description='Write input',
-        button_style='',
+        button_style='warning',
         tooltip='Write json input file',
         icon='check'
     )
@@ -392,13 +498,27 @@ def pf_inversion_widget(h5file, plot=False, resolution=50, inducing_field="50000
         description='Target misfit',
         disabled=False
     )
-
+    chi_factor.observe(update_options)
     ref_type = widgets.RadioButtons(
         options=["None", 'Value', 'Model'],
-        value='None',
+        value='Value',
         disabled=False
     )
-
+    ref_type.observe(update_options)
+    alpha_values = widgets.Text(
+        value='1, 1, 1, 1',
+        description='Regularization (m, x, y, z)',
+        disabled=False,
+        style={'description_width': 'initial'}
+    )
+    alpha_values.observe(update_options)
+    norms = widgets.Text(
+        value='2, 2, 2, 2',
+        description='Norms (m, x, y, z)',
+        disabled=False,
+        style={'description_width': 'initial'}
+    )
+    norms.observe(update_options)
     def update_ref(_):
 
         if ref_mod.children[1].children[0].value == 'Model':
@@ -406,7 +526,7 @@ def pf_inversion_widget(h5file, plot=False, resolution=50, inducing_field="50000
             model_list = []
 
             for obj in workspace.all_objects():
-                if isinstance(obj, BlockModel):
+                if isinstance(obj, BlockModel) or isinstance(obj, Octree):
 
                     for data in obj.children:
 
@@ -417,6 +537,7 @@ def pf_inversion_widget(h5file, plot=False, resolution=50, inducing_field="50000
                 description='3D Model',
                 options=model_list,
             )]
+            alpha_values.value= '1, 1, 1, 1'
 
         elif ref_mod.children[1].children[0].value == 'Value':
 
@@ -424,17 +545,79 @@ def pf_inversion_widget(h5file, plot=False, resolution=50, inducing_field="50000
                 description=units[survey_type.value],
                 value=0.,
             )]
-
+            alpha_values.value = '1, 1, 1, 1'
         else:
             ref_mod.children[1].children[1].children = []
+            alpha_values.value = '0, 1, 1, 1'
+
+        write.button_style = 'warning'
+        run.button_style = 'danger'
+
 
     ref_type.observe(update_ref)
-    ref_mod = widgets.VBox([Label('Reference model'), widgets.VBox([ref_type, widgets.VBox([])])])
+    ref_mod = widgets.VBox([
+        Label('Reference model'),
+        widgets.VBox([ref_type, widgets.VBox([
+            widgets.FloatText(
+                description=units[survey_type.value],
+                value=0.,
+            )
+        ])])])
+
+    core_cell_size = widgets.Text(
+        value='25, 25, 25',
+        description='Smallest cells',
+        disabled=False,
+        style={'description_width': 'initial'}
+    )
+
+    octree_levels_topo = widgets.Text(
+        value='0, 0, 3',
+        description='Layers below topo',
+        disabled=False,
+        style={'description_width': 'initial'}
+    )
+
+    octree_levels_obs = widgets.Text(
+        value='8, 8, 8',
+        description='Layers below data',
+        disabled=False,
+        style={'description_width': 'initial'}
+    )
+
+    depth_core = widgets.FloatText(
+        value=500,
+        description='Core depth (m)',
+        disabled=False,
+        style={'description_width': 'initial'}
+    )
+
+    mesh_panel = widgets.VBox([
+        Label('Octree Mesh'),
+        widgets.VBox([
+            core_cell_size,
+            octree_levels_topo,
+            octree_levels_obs,
+            depth_core
+        ])
+    ])
+
+    def update_octree_param(_):
+
+        core_cell_size.value = f"{resolution.value/2}, {resolution.value/2}, {resolution.value/2}"
+        depth_core.value = np.min([width_x.value, width_y.value])/2.
+
+    width_x.observe(update_octree_param)
+    width_y.observe(update_octree_param)
+    resolution.observe(update_octree_param)
 
     inversion_options = {
         "output name": out_group,
         "target misfit": chi_factor,
         "reference model": ref_mod,
+        "regularization": alpha_values,
+        "norms": norms,
+        "octree mesh": mesh_panel
     }
 
     option_choices = widgets.Dropdown(
@@ -455,8 +638,12 @@ def pf_inversion_widget(h5file, plot=False, resolution=50, inducing_field="50000
     ], layout=Layout(width="100%"))
 
     survey_type.value = "Gravity"
+    update_topo_list("")
 
-    return VBox([HBox([survey_type_panel, spatial_panel]), selection_panel, inversion_panel, write, invert])
+    return VBox([
+        HBox([survey_type_panel, spatial_panel]),
+        selection_panel, inversion_panel, forward_only, write, run
+    ])
 
 
 def em1d_inversion_widget(h5file, plot_profile=True, start_channel=None, object_name=None):
@@ -474,13 +661,14 @@ def em1d_inversion_widget(h5file, plot_profile=True, start_channel=None, object_
         em_system_specs = json.load(aem_systems)
 
     def get_parental_child(parental_name):
+        if parental_name is not None:
+            parent, child = parental_name.split(".")
 
-        parent, child = parental_name.split(".")
+            parent_entity = workspace.get_entity(parent)[0]
 
-        parent_entity = workspace.get_entity(parent)[0]
-
-        children = [entity for entity in parent_entity.children if entity.name==child]
-        return children
+            children = [entity for entity in parent_entity.children if entity.name==child]
+            return children
+        return None
 
     def find_value(labels, strings):
         value = None
@@ -503,26 +691,26 @@ def em1d_inversion_widget(h5file, plot_profile=True, start_channel=None, object_
         description='Object:',
     )
     def object_observer(_):
+        if get_parental_child(objects.value):
+            entity = get_parental_child(objects.value)[0]
+            data_list = entity.get_data_list()
 
-        entity = get_parental_child(objects.value)[0]
-        data_list = entity.get_data_list()
+            # Update topo field
+            topo.options = data_list
+            topo.value = find_value(data_list, ['dem', "topo"])
+            line_field.options = data_list
+            line_field.value = find_value(data_list, ['line'])
 
-        # Update topo field
-        topo.options = data_list
-        topo.value = find_value(data_list, ['dem', "topo"])
-        line_field.options = data_list
-        line_field.value = find_value(data_list, ['line'])
+            if get_comp_list(entity):
+                components.options = get_comp_list(entity)
+                components.value = get_comp_list(entity)[0]
 
-        if get_comp_list(entity):
-            components.options = get_comp_list(entity)
-            components.value = get_comp_list(entity)[0]
+            for aem_system, specs in em_system_specs.items():
+                if any([specs["flag"] in channel for channel in data_list]):
+                    system.value = aem_system
 
-        for aem_system, specs in em_system_specs.items():
-            if any([specs["flag"] in channel for channel in data_list]):
-                system.value = aem_system
-
-        system_observer("")
-        line_field_observer("")
+            system_observer("")
+            line_field_observer("")
 
     objects.observe(object_observer, names='value')
 
@@ -734,46 +922,54 @@ def em1d_inversion_widget(h5file, plot_profile=True, start_channel=None, object_
         line_ids, downsampling, plot_uncert, scale
     ):
         workspace = Workspace(h5file)
-        entity = get_parental_child(objects.value)[0]
 
-        if plot_uncert:
-            uncerts = fetch_uncertainties()
-        else:
-            uncerts = None
+        if get_parental_child(objects.value):
+            entity = get_parental_child(objects.value)[0]
 
-        locations = entity.vertices
-        parser = np.ones(locations.shape[0], dtype='bool')
+            if plot_uncert:
+                uncerts = fetch_uncertainties()
+            else:
+                uncerts = None
 
-        fig = plt.figure(figsize=(12, 8))
-        ax1 = plt.subplot(2, 1, 1)
-        ax2 = plt.subplot(2, 1, 2)
-        if hasattr(system, "data_channel_options"):
-            plot_field = get_fields_list(system.data_channel_options)
+            locations = entity.vertices
+            parser = np.ones(locations.shape[0], dtype='bool')
 
-            if entity.get_data(plot_field[0]):
-                data = entity.get_data(plot_field[0])[0]
-                plot_plan_data_selection(
-                        entity, data, **{
-                            "highlight_selection": {line_field.value: line_ids},
-                            "downsampling": downsampling,
-                            "ax": ax1,
-                            "color_norm": colors.SymLogNorm(linthresh=np.percentile(np.abs(data.values), 5))
-                        }
-                )
+            fig = plt.figure(figsize=(12, 8))
+            ax1 = plt.subplot(2, 1, 1)
+            ax2 = plt.subplot(2, 1, 2)
+            if hasattr(system, "data_channel_options"):
+                plot_field = get_fields_list(system.data_channel_options)
 
-                if plot_profile:
-                    ax2, threshold = plot_profile_data_selection(
-                        entity, plot_field,
-                        selection={line_field.value: line_ids},
-                        downsampling=downsampling,
-                        uncertainties=uncerts,
-                        ax=ax2
+                if entity.get_data(plot_field[0]):
+                    data = entity.get_data(plot_field[0])[0]
+
+                    plot_plan_data_selection(
+                            entity, data, **{
+                                "highlight_selection": {line_field.value: line_ids},
+                                "downsampling": downsampling,
+                                "ax": ax1,
+                                "color_norm": colors.SymLogNorm(linthresh=np.percentile(np.abs(data.values), 5))
+                            }
                     )
-                    plt.yscale(scale, linthreshy=threshold)
+
+                    if plot_profile:
+                        ax2, threshold = plot_profile_data_selection(
+                            entity, plot_field,
+                            selection={line_field.value: line_ids},
+                            downsampling=downsampling,
+                            uncertainties=uncerts,
+                            ax=ax2
+                        )
+                        plt.yscale(scale, linthreshy=threshold)
+
+    if em_system_specs[system.value]['type'] == 'time':
+        uncert_type ='Estimated (%|data| + background)'
+    else:
+        uncert_type = 'User input (\%|data| + floor)'
 
     uncert_mode = widgets.RadioButtons(
         options=['Estimated (%|data| + background)', 'User input (\%|data| + floor)'],
-        value='Estimated (%|data| + background)',
+        value=uncert_type,
         disabled=False
     )
 
@@ -823,6 +1019,7 @@ def em1d_inversion_widget(h5file, plot_profile=True, start_channel=None, object_
             input_dict['downsampling'] = str(downsampling.value)
             input_dict['chi_factor'] = [chi_factor.value]
             input_dict['out_group'] = out_group.value
+            input_dict["model_norms"] = np.asarray(norms.value.split(",")).astype(float).tolist()
 
             if ref_mod.children[1].children[1].children:
                 input_dict['reference'] = ref_mod.children[1].children[1].children[0].value
@@ -875,7 +1072,7 @@ def em1d_inversion_widget(h5file, plot_profile=True, start_channel=None, object_
             model_list = []
 
             for obj in workspace.all_objects():
-                if isinstance(obj, BlockModel):
+                if isinstance(obj, (BlockModel, Octree, Surface)):
 
                     for data in obj.children:
 
@@ -936,11 +1133,19 @@ def em1d_inversion_widget(h5file, plot_profile=True, start_channel=None, object_
     ref_type.observe(update_ref)
     ref_mod = widgets.VBox([Label('Reference conductivity'), widgets.VBox([ref_type, widgets.VBox([])])])
 
+    norms = widgets.Text(
+        value='2, 2, 2, 2',
+        description='Norms (m, x, y, z)',
+        disabled=False,
+        style={'description_width': 'initial'}
+    )
+
     inversion_options = {
         "output name": out_group,
         "target misfit": chi_factor,
         "reference model": ref_mod,
-        "uncertainties": uncert_panel
+        "uncertainties": uncert_panel,
+        "norms": norms
     }
 
     option_choices = widgets.Dropdown(
@@ -961,8 +1166,8 @@ def em1d_inversion_widget(h5file, plot_profile=True, start_channel=None, object_
     # Trigger all observers
     if object_name is not None and object_name in names:
         objects.value = object_name
-    else:
-        objects.value = names[0]
+    # else:
+    #     objects.value = names[0]
 
     object_observer("")
 

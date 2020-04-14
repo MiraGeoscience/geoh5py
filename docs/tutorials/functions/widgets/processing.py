@@ -11,9 +11,9 @@ from ipywidgets.widgets import VBox, HBox, Layout, Label
 
 from scipy.interpolate import LinearNDInterpolator
 
-from geoh5io.workspace import Workspace
-from geoh5io.objects import Grid2D, Curve, Points, Surface
-from geoh5io.groups import ContainerGroup
+from ..geoh5io.workspace import Workspace
+from ..geoh5io.objects import Grid2D, Curve, Points, Surface
+from ..geoh5io.groups import ContainerGroup
 from .selection import object_data_selection_widget
 from .plotting import format_labels
 
@@ -147,7 +147,6 @@ def contour_values_widget(h5file, contours=""):
                     )
                     curve.add_data({contours.value: {"values": np.hstack(values)}})
 
-
                     objects.options = list(entity.workspace.list_objects_name.values())
                     objects.value = entity.name
                     data.options = entity.get_data_list()
@@ -213,11 +212,18 @@ def coordinate_transformation_widget(
     """
 
     """
-    from fiona.transform import transform
+    try:
+        import fiona
+        from fiona.transform import transform
+    except ModuleNotFoundError as err:
+        print(err, "Trying to install through geopandas, hang tight...")
+        import os
+        os.system("conda install -c conda-forge geopandas=0.7.0")
+        from fiona.transform import transform
 
     workspace = Workspace(h5file)
 
-    def listObjects(obj_names, epsg_in, epsg_out, export, plot_it):
+    def listObjects(obj_names, epsg_in, epsg_out, create_copy, export, plot_it):
 
         out_list = []
         if epsg_in != 0 and epsg_out != 0:
@@ -240,7 +246,7 @@ def coordinate_transformation_widget(
                 ax2 = plt.subplot(1, 2, 2)
                 X1, Y1, X2, Y2 = [], [], [], []
 
-            if export:
+            if export and create_copy:
                 group = ContainerGroup.create(
                     workspace,
                     name=f'Projection epsg:{int(epsg_out)}'
@@ -263,22 +269,31 @@ def coordinate_transformation_widget(
                     x2, y2 = y2, x2
 
                 if export:
-                    # Save the result to geoh5
-                    out_list.append(
-                        type(obj).create(
+
+                    if create_copy:
+                        # Save the result to geoh5
+                        new_obj = type(obj).create(
                             obj.workspace,
                             name=name,
                             parent=group,
                             vertices=np.c_[x2, y2, obj.vertices[:, 2]],
-                            cells=getattr(obj, 'cells', None)
+                            cells=getattr(obj, 'cells', None),
                         )
-                    )
+
+                        out_list.append(new_obj)
+
+                        [new_obj.add_child(child) for child in obj.children]
+
+                    else:
+                        obj.vertices = np.c_[x2, y2, obj.vertices[:, 2]]
+
 
                 if plot_it:
                     ax1.scatter(x, y, 5)
                     ax2.scatter(x2, y2, 5)
                     X1.append(x), Y1.append(y), X2.append(x2), Y2.append(y2)
 
+            workspace.finalize()
             if plot_it:
                 format_labels(np.hstack(X1), np.hstack(Y1), ax1, labels=labels_in)
                 format_labels(np.hstack(X2), np.hstack(Y2), ax2, labels=labels_out)
@@ -310,8 +325,15 @@ def coordinate_transformation_widget(
         )
 
     export.observe(saveIt)
+
+    create_copy = widgets.Checkbox(
+        value=False,
+        indent=True,
+        description="Create copy"
+    )
+
     plot_it = widgets.ToggleButton(
-        value=True,
+        value=False,
         description='Plot',
         button_style='',
         tooltip='Description',
@@ -332,7 +354,7 @@ def coordinate_transformation_widget(
     )
 
     out = widgets.interactive(
-        listObjects, obj_names=objects, epsg_in=epsg_in, epsg_out=epsg_out, export=export, plot_it=plot_it
+        listObjects, obj_names=objects, epsg_in=epsg_in, epsg_out=epsg_out, create_copy=create_copy, export=export, plot_it=plot_it
     )
 
     return out

@@ -3,8 +3,8 @@ import numpy as np
 import ipywidgets as widgets
 from ipywidgets.widgets import VBox, HBox
 
-from geoh5io.workspace import Workspace
-from geoh5io.objects import Curve
+from ..geoh5io.workspace import Workspace
+from ..geoh5io.objects import Curve
 from ..utils import export_curve_2_shapefile
 from .selection import object_data_selection_widget
 

@@ -4,8 +4,8 @@ import matplotlib.colors as colors
 import ipywidgets as widgets
 from ipywidgets.widgets import Dropdown, VBox, HBox
 
-from geoh5io.workspace import Workspace
-from geoh5io.objects import Curve, Points, Grid2D, Surface
+from ..geoh5io.workspace import Workspace
+from ..geoh5io.objects import Curve, Points, Grid2D, Surface
 from ..utils import filter_xy
 
 
@@ -105,27 +105,11 @@ def plot_plan_data_selection(
     else:
         downsampling = kwargs["downsampling"]
 
-    if data.entity_type.color_map is not None:
-        new_cmap = data.entity_type.color_map.values
-        values = new_cmap['Value']
-        values -= values.min()
-        values /= values.max()
-
-        cdict = {
-            'red': np.c_[values, new_cmap['Red'] / 255, new_cmap['Red'] / 255].tolist(),
-            'green': np.c_[values, new_cmap['Green'] / 255, new_cmap['Green'] / 255].tolist(),
-            'blue': np.c_[values, new_cmap['Blue'] / 255, new_cmap['Blue'] / 255].tolist(),
-        }
-        cmap = colors.LinearSegmentedColormap(
-            'custom_map', segmentdata=cdict, N=len(values)
-        )
-    else:
-        cmap = "Spectral_r"
-
     values = None
     if isinstance(getattr(data, "values", None), np.ndarray):
         if not isinstance(data.values[0], str):
-            values = data.values
+            values = data.values.copy()
+            values[np.abs(values) < 1e-18] = np.nan
 
     color_norm = None
     if "color_norm" in kwargs.keys():
@@ -136,18 +120,45 @@ def plot_plan_data_selection(
         window = kwargs['window']
 
     if values is not None:
+
+        if data.entity_type.color_map is not None:
+            new_cmap = data.entity_type.color_map.values
+            cmap_values = new_cmap['Value']
+            cmap_values = cmap_values[~np.isnan(cmap_values)]
+            cmap_values -= cmap_values.min()
+            cmap_values /= (cmap_values.max() + 1e-16)
+
+            if cmap_values.min() != cmap_values.max():
+                cdict = {
+                    'red': np.c_[cmap_values, new_cmap['Red'] / 255, new_cmap['Red'] / 255].tolist(),
+                    'green': np.c_[cmap_values, new_cmap['Green'] / 255, new_cmap['Green'] / 255].tolist(),
+                    'blue': np.c_[cmap_values, new_cmap['Blue'] / 255, new_cmap['Blue'] / 255].tolist(),
+                }
+                cmap = colors.LinearSegmentedColormap(
+                    'custom_map', segmentdata=cdict, N=len(cmap_values)
+                )
+            else:
+                cmap = "Spectral_r"
+        else:
+            cmap = "Spectral_r"
+
         if "ax" not in kwargs.keys():
             plt.figure(figsize=(8, 8))
             ax = plt.subplot()
         else:
             ax = kwargs["ax"]
+
+        if np.all(np.isnan(values)):
+            return ax, np.zeros_like(values, dtype='bool')
+
         if isinstance(entity, Grid2D) and values is not None:
-
-
             x = entity.centroids[:, 0].reshape(entity.shape, order="F")
             y = entity.centroids[:, 1].reshape(entity.shape, order="F")
             values = values.reshape(entity.shape, order="F")
-            x, y, values = filter_xy(x, y, values, downsampling, window=window)
+            x, y, values, ind_filter = filter_xy(
+                x, y, values, downsampling,
+                window=window, return_indices=True
+            )
             out = ax.pcolormesh(x, y, values, cmap=cmap, norm=color_norm)
 
             if "contours" in kwargs.keys():
@@ -158,9 +169,11 @@ def plot_plan_data_selection(
 
         elif isinstance(entity, Points) or isinstance(entity, Curve) or isinstance(entity, Surface):
 
-            x, y, values = filter_xy(
+            x, y, values, ind_filter = filter_xy(
                 entity.vertices[:, 0], entity.vertices[:, 1],
-                values, downsampling, window=window)
+                values, downsampling, window=window,
+                return_indices=True
+            )
 
             out = ax.scatter(
                 x, y, 5, values, cmap=cmap, norm=color_norm)
@@ -175,8 +188,16 @@ def plot_plan_data_selection(
         else:
             print("Sorry, 'plot=True' option only implemented for Grid2D, Points and Curve objects")
 
-        format_labels(x, y, ax)
-        plt.colorbar(out, ax=ax)
+        if "zoom_extent" in kwargs.keys() and kwargs["zoom_extent"]:
+            ind = ~np.isnan(values)
+            ax.set_xlim([x[ind].min(), x[ind].max()])
+            ax.set_ylim([y[ind].min(), y[ind].max()])
+            format_labels(x[ind], y[ind], ax)
+        else:
+            format_labels(x, y, ax)
+
+        if values[~np.isnan(values)].min() != values[~np.isnan(values)].max():
+            plt.colorbar(out, ax=ax)
 
         if "highlight_selection" in kwargs.keys():
             for key, values in kwargs["highlight_selection"].items():
@@ -187,7 +208,7 @@ def plot_plan_data_selection(
                     x, y, _ = filter_xy(x, y, values, downsampling)
                     ax.scatter(x, y, 3, 'r')
 
-        return ax
+        return ax, ind_filter
 
 
 def plot_em_data_widget(h5file):

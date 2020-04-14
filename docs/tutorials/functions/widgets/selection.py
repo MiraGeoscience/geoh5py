@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from ipywidgets import Dropdown, VBox, HBox, interactive_output
-from geoh5io.workspace import Workspace
+from ..geoh5io.workspace import Workspace
+from ..geoh5io.objects import Grid2D, Curve, Points
 from .plotting import plot_plan_data_selection
-from geoh5io.objects import Grid2D, Curve, Points
 from .plotting import format_labels
 
 
