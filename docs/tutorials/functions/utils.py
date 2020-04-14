@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.spatial import cKDTree
+from geoh5io.objects import Octree
 
 
 def find_value(labels, strings):
@@ -14,10 +15,20 @@ def find_value(labels, strings):
 def export_curve_2_shapefile(
         curve, attribute=None, epsg=None, file_name=None
 ):
-    from shapely.geometry import mapping, LineString
-    import fiona
-    from fiona.crs import from_epsg
     import urllib
+
+    try:
+        from shapely.geometry import mapping, LineString
+        import fiona
+        from fiona.crs import from_epsg
+
+    except ModuleNotFoundError as err:
+        print(err, "Trying to install through geopandas, hang tight...")
+        import os
+        os.system("conda install -c conda-forge geopandas=0.7.0")
+        from shapely.geometry import mapping, LineString
+        import fiona
+        from fiona.crs import from_epsg
 
     if epsg is not None and epsg.isdigit():
         crs = from_epsg(int(epsg))
@@ -95,19 +106,37 @@ def filter_xy(x, y, data, distance, return_indices=False, window=None):
     filter_xy = np.zeros_like(x, dtype='bool')
     if x.ndim == 1:
         if distance > 0:
-            xx = np.arange(x.min() - distance, x.max() + distance, distance)
-            yy = np.arange(y.min() - distance, y.max() + distance, distance)
+            # xx = np.arange(x.min() - distance, x.max() + distance, distance)
+            # yy = np.arange(y.min() - distance, y.max() + distance, distance)
 
-            X, Y = np.meshgrid(xx, yy)
+            # X, Y = np.meshgrid(xx, yy)
 
-            tree = cKDTree(np.c_[x, y])
-            rad, ind = tree.query(np.c_[X.ravel(), Y.ravel()])
-            takeout = np.unique(ind[rad < 2**0.5*distance])
+            # tree = cKDTree(np.c_[x, y])
+            # rad, ind = tree.query(np.c_[X.ravel(), Y.ravel()])
+            # takeout = np.unique(ind[rad < 2**0.5*distance])
 
-            filter_xy[takeout] = True
+            # filter_xy[takeout] = True
+            locXYZ = np.c_[x, y]
+
+            tree = cKDTree(locXYZ)
+
+            nstn = x.shape[0]
+            # Initialize the filter
+            filter_xy = np.ones(nstn, dtype='bool')
+
+            count = -1
+            for ii in range(nstn):
+
+                if filter_xy[ii]:
+
+                    ind = tree.query_ball_point(locXYZ[ii, :2], distance)
+
+                    filter_xy[ind] = False
+                    filter_xy[ii] = True
 
         else:
             filter_xy = np.ones_like(x, dtype='bool')
+
     elif distance > 0:
 
         dwn_x = int(np.ceil(distance / np.min(x[1:] - x[:-1])))
@@ -169,3 +198,73 @@ def rotate_xy(xyz, center, angle):
     xy_rot = np.dot(R, locs[:, :2].T).T
 
     return np.c_[xy_rot[:, 0] + center[0], xy_rot[:, 1] + center[1], locs[:, 2:]]
+
+
+def treemesh_2_octree(workspace, treemesh, parent=None):
+
+    indArr, levels = treemesh._ubc_indArr
+    ubc_order = treemesh._ubc_order
+
+    indArr = indArr[ubc_order] - 1
+    levels = levels[ubc_order]
+
+    mesh_object = Octree.create(
+        workspace,
+        name=f"Mesh",
+        origin=treemesh.x0,
+        u_count=treemesh.h[0].size,
+        v_count=treemesh.h[1].size,
+        w_count=treemesh.h[2].size,
+        u_cell_size=treemesh.h[0][0],
+        v_cell_size=treemesh.h[1][0],
+        w_cell_size=-treemesh.h[2][0],
+        octree_cells=np.c_[indArr, levels],
+        parent=parent
+    )
+
+    print(parent, mesh_object)
+
+    return mesh_object
+
+
+def octree_2_treemesh(mesh):
+    """
+    Convert a geoh5 Octree mesh to discretize.TreeMesh
+
+    Modified code from module discretize.TreeMesh.readUBC function.
+    """
+
+    from discretize import TreeMesh
+
+    tswCorn = np.asarray(mesh.origin.tolist())
+
+    smallCell = [mesh.u_cell_size, mesh.v_cell_size, mesh.w_cell_size]
+
+    nCunderMesh = [mesh.u_count, mesh.v_count, mesh.w_count]
+
+    h1, h2, h3 = [np.ones(nr) * np.abs(sz) for nr, sz in zip(nCunderMesh, smallCell)]
+
+    x0 = tswCorn - np.array([0, 0, np.sum(h3)])
+
+    ls = np.log2(nCunderMesh).astype(int)
+    if ls[0] == ls[1] and ls[1] == ls[2]:
+        max_level = ls[0]
+    else:
+        max_level = min(ls) + 1
+
+    treemesh = TreeMesh([h1, h2, h3], x0=x0)
+
+    # Convert indArr to points in coordinates of underlying cpp tree
+    # indArr is ix, iy, iz(top-down) need it in ix, iy, iz (bottom-up)
+    cells = np.vstack(mesh.octree_cells.tolist())
+
+    levels = cells[:, -1]
+    indArr = cells[:, :-1]
+
+    indArr = 2 * indArr + levels[:, None]  # get cell center index
+    indArr[:, 2] = 2 * nCunderMesh[2] - indArr[:, 2]  # switch direction of iz
+    levels = max_level - np.log2(levels)  # calculate level
+
+    treemesh.__setstate__((indArr, levels))
+
+    return treemesh
