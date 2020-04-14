@@ -123,6 +123,27 @@ def inversion(argv):
     selection = input_param['lines']
     downsampling = np.float(input_param['downsampling'])
 
+    if "model_norms" in list(input_param.keys()):
+        model_norms = input_param["model_norms"]
+    else:
+        model_norms = [2, 2, 2, 2]
+
+    model_norms = np.c_[model_norms].T
+
+    if (
+        "max_irls_iterations" in list(input_param.keys())
+    ):
+
+        max_irls_iterations = input_param["max_irls_iterations"]
+        assert max_irls_iterations >= 0, "Max IRLS iterations must be >= 0"
+    else:
+        if np.all(model_norms == 2):
+            # Cartesian or not sparse
+            max_irls_iterations = 2
+        else:
+            # Spherical or sparse
+            max_irls_iterations = 10
+
     locations = entity.vertices
     dem = entity.get_data(input_param['topo'])[0].values
 
@@ -201,9 +222,11 @@ def inversion(argv):
 
             if np.std(y_loc) > np.std(x_loc):
                 tri2D = Delaunay(np.c_[np.ravel(Y), np.ravel(Z)])
+                topo_top = sp.interpolate.interp1d(y_loc, z_loc)
 
             else:
                 tri2D = Delaunay(np.c_[np.ravel(X), np.ravel(Z)])
+                topo_top = sp.interpolate.interp1d(x_loc, z_loc)
 
             max_length = 1000
             indx = np.ones(tri2D.simplices.shape[0], dtype=bool)
@@ -214,6 +237,24 @@ def inversion(argv):
                     tri2D.points[tri2D.simplices[:, ii-1]],
                     axis=1
                 ) < max_length
+
+                center_x = np.mean(
+                    np.c_[
+                        tri2D.points[tri2D.simplices[:, ii], 0],
+                        tri2D.points[tri2D.simplices[:, ii-1], 0]
+                    ], axis=1
+                )
+
+                center_z = np.mean(
+                    np.c_[
+                        tri2D.points[tri2D.simplices[:, ii], 1],
+                        tri2D.points[tri2D.simplices[:, ii-1], 1]
+                    ], axis=1
+                )
+
+                indx *= center_z < topo_top(center_x)
+                indx *= center_z > (topo_top(center_x) - hz.sum())
+
 
             # Remove the simplices too long
             tri2D.simplices = tri2D.simplices[indx, :]
@@ -262,7 +303,10 @@ def inversion(argv):
             con_object = workspace.get_entity(input_param['reference'])[0]
             con_model = con_object.values
 
-            grid = con_object.parent.centroids
+            if hasattr(con_object.parent, 'centroids'):
+                grid = con_object.parent.centroids
+            else:
+                grid = con_object.parent.vertices
 
             tree = cKDTree(grid)
             _, ind = tree.query(np.vstack(model_vertices))
@@ -405,7 +449,7 @@ def inversion(argv):
 
         IRLS = Directives.Update_IRLS(
             maxIRLSiter=0, minGNiter=1, fix_Jmatrix=True, betaSearch=False,
-            chifact_start=chi_target*5, chifact_target=chi_target*5
+            chifact_start=chi_target, chifact_target=chi_target
         )
         # opt = Optimization.InexactGaussNewton(maxIter=10)
         opt = Optimization.ProjectedGNCG(
@@ -466,7 +510,7 @@ def inversion(argv):
             pc_floor = np.asarray(input_param['uncert']["channels"][channel]).astype(float)
 
             if input_param['uncert']['mode'] == 'Estimated (%|data| + background)':
-
+                print("Re-adjusting uncertainties with predicted (%|data| + background)")
                 uncert[ind::(nF*2)] = dobs[ind::nF*2] * pc_floor[0] + np.median(pred[ind::(nF*2)]) * (1-pc_floor[0])
 
             d_i = curve.add_data({
@@ -492,6 +536,7 @@ def inversion(argv):
         alpha_y=1.,
         gradientType='total'
     )
+    reg.norms = model_norms
 
     wr = prob.getJtJdiag(m0)**0.5
     wr /= wr.max()
@@ -506,11 +551,7 @@ def inversion(argv):
         xyz[:, :2] + np.random.randn(xyz.shape[0], 2), hz,
         minimum_distance=min_distance
     )
-    p = 2
-    qx, qz = 0., 0.
-    reg.norms = np.c_[p, qx, qz, 0.]
-    # reg.cell_weights = wr
-    # reg.mref = mref
+
     opt = Optimization.ProjectedGNCG(
         maxIter=15, lower=np.log(lower_bound),
         upper=np.log(upper_bound), maxIterLS=20,
@@ -521,9 +562,7 @@ def inversion(argv):
 
     # beta = Directives.BetaSchedule(coolingFactor=0.5, coolingRate=1)
     update_Jacobi = Directives.UpdatePreconditioner()
-    saveDict = Directives.SaveOutputDictEveryIteration()
     sensW = Directives.UpdateSensitivityWeights()
-    target = Directives.TargetMisfit()
     saveModel = SaveIterationsGeoH5(
         h5_object=surface, sorting=model_ordering,
         mapping=mapping, attribute="model"
@@ -536,11 +575,12 @@ def inversion(argv):
     )
 
     IRLS = Directives.Update_IRLS(
-        maxIRLSiter=10, minGNiter=1, betaSearch=False, beta_tol=0.25,
+        maxIRLSiter=max_irls_iterations,
+        minGNiter=1, betaSearch=False, beta_tol=0.25,
         chifact_start=chi_target, chifact_target=chi_target,
     )
 
-    betaest = Directives.BetaEstimate_ByEig(beta0_ratio=1.)
+    betaest = Directives.BetaEstimate_ByEig(beta0_ratio=10.)
     inv = Inversion.BaseInversion(
         invProb, directiveList=[
             saveModel, savePred, sensW, IRLS, update_Jacobi, betaest
