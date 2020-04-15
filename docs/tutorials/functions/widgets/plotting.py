@@ -235,7 +235,7 @@ def plot_em_data_widget(h5file):
         return value
 
     def plot_profiles(
-        entity_name, groups, line_field, lines, scale
+        entity_name, groups, line_field, lines, scale, threshold
     ):
 
         fig = plt.figure(figsize=(12, 12))
@@ -249,7 +249,6 @@ def plot_em_data_widget(h5file):
             [0, 0, 1]
         ]
 
-        threshold = 1e-16
         for group, color in zip(groups, colors):
 
             prop_group = entity.get_property_group(group)
@@ -257,7 +256,7 @@ def plot_em_data_widget(h5file):
             if prop_group is not None:
                 fields = [entity.workspace.get_entity(uid)[0].name for uid in prop_group.properties]
 
-                ax, threshold = plot_profile_data_selection(
+                ax, _ = plot_profile_data_selection(
                     prop_group.parent, fields,
                     selection={line_field: lines},
                     ax=ax,
@@ -265,7 +264,8 @@ def plot_em_data_widget(h5file):
                 )
 
         ax.grid(True)
-        plt.yscale(scale, linthreshy=threshold)
+
+        plt.yscale(scale, linthreshy=10.**threshold)
 
     def updateList(_):
         entity = get_parental_child(objects.value)[0]
@@ -338,7 +338,12 @@ def plot_em_data_widget(h5file):
         description='Scaling',
     )
 
-    apps = VBox([objects, line_field, lines, groups, scale])
+    threshold = widgets.FloatSlider(
+        min=-16, max=-1, value=-12,
+        steps=0.5, description="Log-linear threshold", continuous_update=False, style={'description_width': 'initial'}
+    )
+
+    apps = VBox([objects, line_field, lines, groups, scale, threshold])
     layout = HBox([
         apps,
         widgets.interactive_output(
@@ -348,6 +353,7 @@ def plot_em_data_widget(h5file):
                         "line_field": line_field,
                         "lines": lines,
                         "scale": scale,
+                        "threshold": threshold
                         }
                     )
     ])

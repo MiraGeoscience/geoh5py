@@ -122,6 +122,27 @@ def inversion(argv):
     selection = input_param['lines']
     downsampling = np.float(input_param['downsampling'])
 
+    if "model_norms" in list(input_param.keys()):
+        model_norms = input_param["model_norms"]
+    else:
+        model_norms = np.c_[2, 2, 2, 2]
+
+    model_norms = np.c_[model_norms].T
+
+    if (
+        "max_irls_iterations" in list(input_param.keys())
+    ):
+
+        max_irls_iterations = input_param["max_irls_iterations"]
+        assert max_irls_iterations >= 0, "Max IRLS iterations must be >= 0"
+    else:
+        if np.all(model_norms == 2):
+            # Cartesian or not sparse
+            max_irls_iterations = 2
+        else:
+            # Spherical or sparse
+            max_irls_iterations = 10
+
     locations = entity.vertices
     dem = entity.get_data(input_param['topo'])[0].values
 
@@ -148,7 +169,7 @@ def inversion(argv):
     times = np.r_[times]
     nT = len(times)
 
-    hz = np.ones(20)*5*np.exp(np.arange(0, 20)*.115)
+    hz = np.ones(22)*5*np.exp(np.arange(0, 22)*.115)
     CCz = -np.cumsum(hz) + hz/2.
     nZ = hz.shape[0]
 
@@ -212,9 +233,11 @@ def inversion(argv):
 
             if np.std(y_loc) > np.std(x_loc):
                 tri2D = Delaunay(np.c_[np.ravel(Y), np.ravel(Z)])
+                topo_top = sp.interpolate.interp1d(y_loc, z_loc)
 
             else:
                 tri2D = Delaunay(np.c_[np.ravel(X), np.ravel(Z)])
+                topo_top = sp.interpolate.interp1d(x_loc, z_loc)
 
             max_length = 1000
             indx = np.ones(tri2D.simplices.shape[0], dtype=bool)
@@ -225,6 +248,24 @@ def inversion(argv):
                     tri2D.points[tri2D.simplices[:, ii-1]],
                     axis=1
                 ) < max_length
+
+                center_x = np.mean(
+                    np.c_[
+                        tri2D.points[tri2D.simplices[:, ii], 0],
+                        tri2D.points[tri2D.simplices[:, ii-1], 0]
+                    ], axis=1
+                )
+
+                center_z = np.mean(
+                    np.c_[
+                        tri2D.points[tri2D.simplices[:, ii], 1],
+                        tri2D.points[tri2D.simplices[:, ii-1], 1]
+                    ], axis=1
+                )
+
+                indx *= center_z < topo_top(center_x)
+                indx *= center_z > (topo_top(center_x) - hz.sum())
+
             # Remove the simplices too long
             tri2D.simplices = tri2D.simplices[indx, :]
             tri2D.vertices = tri2D.vertices[indx, :]
@@ -275,7 +316,10 @@ def inversion(argv):
             con_object = workspace.get_entity(input_param['reference'])[0]
             con_model = con_object.values
 
-            grid = con_object.parent.centroids
+            if hasattr(con_object.parent, 'centroids'):
+                grid = con_object.parent.centroids
+            else:
+                grid = con_object.parent.vertices
 
             tree = cKDTree(grid)
             _, ind = tree.query(np.vstack(model_vertices))
@@ -301,7 +345,7 @@ def inversion(argv):
             pc_floor = np.asarray(input_param['uncert']["channels"][channel]).astype(float)
 
             dobs[ind::nT] = entity.get_data(input_param['data'][channel])[0].values[stn_id]
-            uncertainties[ind::nT] = dobs[ind::nT] * pc_floor[0] + pc_floor[1] * (1-pc_floor[0])
+            uncertainties[ind::nT] = dobs[ind::nT] * pc_floor[0] + pc_floor[1]
 
     dobs[np.isnan(dobs)] = -1e-14
 
@@ -361,17 +405,17 @@ def inversion(argv):
 
     survey.dobs = dobs
     survey.std = uncertainties
-    if reference is "BFHS" or input_param['uncert']['mode'] == 'Estimated (%|data| + background)':
+    if reference is "BFHS": # or input_param['uncert']['mode'] == 'Estimated (%|data| + background)':
         print("**** Best-fitting halfspace inversion ****")
         mesh1D = Mesh.TensorMesh([1], [0.])
-        sig_half = 1e-3
+        sig_half = 5e-3
 
         hz_BFHS = np.r_[1.]
         mapping = Maps.ExpMap(nP=n_sounding)
         expmap = Maps.ExpMap(nP=n_sounding)
         # expmap_h = Maps.ExpMap(nP=1)
         sigmaMap = expmap
-        time_index = np.arange(2)
+        time_index = np.arange(3)
         dobs_reduced = get_data_time_index(survey.dobs, n_sounding, time, time_index)
         unct_reduced = get_data_time_index(survey.std, n_sounding, time, time_index)
         surveyHS = GlobalEM1DSurveyTD(
@@ -412,7 +456,7 @@ def inversion(argv):
         reg_sigma = LateralConstraint(
                     mesh_reg, mapping=regmap,
                     alpha_s=1.,
-                    alpha_x=1.,
+                    alpha_x=1,
                     alpha_y=1.,
                 )
         reg_sigma.get_grad_horizontal(xyz[:, :2], hz_BFHS, dim=2)
@@ -421,7 +465,7 @@ def inversion(argv):
             maxIRLSiter=0, minGNiter=1, betaSearch=False
         )
         opt = Optimization.ProjectedGNCG(
-            maxIter=5, lower=np.log(lower_bound),
+            maxIter=10, lower=np.log(lower_bound),
             upper=np.log(upper_bound), maxIterLS=20,
             maxIterCG=30, tolCG=1e-3
         )
@@ -467,8 +511,8 @@ def inversion(argv):
         )
         curve.add_data_to_group(d, f"Iteration_0")
 
-    floor = np.abs(np.percentile(pred, 2))
-    print(floor)
+    # floor = np.abs(np.percentile(pred, 2))
+    # print(floor)
     for tt, channel in enumerate(channels):
         pc_floor = np.asarray(input_param['uncert']["channels"][channel]).astype(float)
 
@@ -476,7 +520,7 @@ def inversion(argv):
 
 
             uncertainties[tt::nT] = (
-                np.abs(pred[tt::nT]) * pc_floor[0] + pc_floor[1] * normalization
+                np.max(np.c_[np.abs(pred[tt::nT]), np.abs(dobs[tt::nT])], axis=1) * pc_floor[0] + pc_floor[1] * normalization
                 # np.abs(dobs[tt::nT]) * pc_floor[0] + np.abs(np.median(pred[tt::nT])) * (1-pc_floor[0])
                 # np.abs(dobs[tt::nT]) * pc_floor[0] + floor #np.abs(np.percentile(pred[tt::nT], 2)) * (1-pc_floor[0])
             )
@@ -506,9 +550,9 @@ def inversion(argv):
     reg = LateralConstraint(
         mesh_reg, mapping=Maps.IdentityMap(nP=mesh_reg.nC),
         alpha_s=1.,
-        alpha_x=1.,
+        alpha_x=1,
         alpha_y=1.,
-        gradientType='component'
+        gradientType='total'
     )
 
     min_distance = None
@@ -521,9 +565,7 @@ def inversion(argv):
     )
 
     reg.eps_q = 1e-2
-    p = 2
-    qx, qz = 0., 0.
-    reg.norms = np.c_[p, qx, qz, 0.]
+    reg.norms = model_norms
 
     opt = Optimization.ProjectedGNCG(
         maxIter=15, lower=np.log(lower_bound),
@@ -549,7 +591,8 @@ def inversion(argv):
     )
 
     IRLS = Directives.Update_IRLS(
-        maxIRLSiter=3, minGNiter=1, betaSearch=False, beta_tol=0.25,
+        maxIRLSiter=max_irls_iterations,
+        minGNiter=1, betaSearch=False, beta_tol=0.25,
         chifact_start=chi_target, chifact_target=chi_target
     )
 
