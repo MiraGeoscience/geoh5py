@@ -1,5 +1,5 @@
 #
-# gh5py documentation build configuration file, created by
+# geoh5py documentation build configuration file, created by
 # sphinx-quickstart on Tue Sep 16 16:41:10 2014.
 #
 # This file is execfile()d with the current directory set to its
@@ -77,7 +77,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "gh5py"
+project = "geoh5py"
 
 # The short X.Y version.
 version = "0.1.0"
@@ -89,14 +89,6 @@ release = "0.1.0"
 exclude_patterns = ["_build", "AUTHORS.rst", "table_*", "**.ipynb_checkpoints"]
 
 linkcheck_ignore = [
-    "https://en.wikipedia.org/wiki/Seismic_source#/media/*",
-    "http://www.sgl.com/technicalpapers/EAGEabst-final-TV.pdf",
-    "http://geogratis.gc.ca/site/eng/extraction",
-    "http://www.ngdc.noaa.gov/*",
-    "http://www.eoas.ubc.ca/courses/eosc350/content/*",
-    "http://www.eos.ubc.ca/courses/eosc350/content/*",
-    "https://vimeo.com/*",
-    "https://www.researchgate.net/*",
 ]
 linkcheck_retries = 3
 linkcheck_timeout = 2000
@@ -166,7 +158,7 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 #   'display_github': 'True',
 # }
 
-html_logo = 'images/gh5py.png'
+#html_logo = 'images/geoh5py.png'
 
 check_meta = False
 
@@ -241,7 +233,7 @@ html_show_copyright = False
 # html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "gh5pyDocumentation"
+htmlhelp_basename = "geoh5pyDocumentation"
 
 numfig = True
 # -- Options for LaTeX output ---------------------------------------------
@@ -261,8 +253,8 @@ latex_elements = {
 latex_documents = [
     (
         "index",
-        "gh5pyDocumentation.tex",
-        "gh5py Documentation",
+        "geoh5pyDocumentation.tex",
+        "geoh5py Documentation",
         "MiraGeoscience",
         "manual",
     )
@@ -294,7 +286,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ("index", "gh5pyDocumentation", "gh5py Documentation", ["MiraGeoscience"], 1)
+    ("index", "geoh5pyDocumentation", "geoh5py Documentation", ["MiraGeoscience"], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -309,10 +301,10 @@ man_pages = [
 texinfo_documents = [
     (
         "index",
-        "gh5pyDocumentation",
-        "gh5py Documentation",
+        "geoh5pyDocumentation",
+        "geoh5py Documentation",
         "MiraGeoscience",
-        "gh5py",
+        "geoh5py",
         "API for geoh5 database and Geoscience Analyst.",
         "Miscellaneous",
     )

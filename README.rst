@@ -122,4 +122,4 @@ To build the api docs using autodocs
 
 .. code-block:: bash
 
-  sphinx-apidoc -o source/ ../geoh5io
+  sphinx-apidoc -o source/ ../geoh5py

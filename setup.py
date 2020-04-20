@@ -9,7 +9,7 @@ CLASSIFIERS = [
     "Development Status :: 1 - Beta",
     "Intended Audience :: Industry",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: LGPL License",
     "Programming Language :: Python",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Mathematics",
@@ -25,18 +25,18 @@ CLASSIFIERS = [
 #     LONG_DESCRIPTION = "".join(f.readlines())
 
 setup(
-    name="gh5py",
+    name="geoh5py",
     version="0.1.0",
     packages=find_packages(),
-    install_requires=["h5py"],
+    install_requires=["numpy", "h5py"],
     author="Mira Geoscience",
     author_email="domfournier@mirageoscience.com",
     description="Geoscience Analyst API",
     keywords="geophysics, geologists",
-    url="https://gh5py.readthedocs.io/en/latest/",
+    url="https://geoh5py.readthedocs.io/en/latest/",
     download_url="https://github.com/MiraGeoscience/GeoH5io.git",
     classifiers=CLASSIFIERS,
     platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
-    license="MIT License",
+    license="LGPL License",
     use_2to3=False,
 )
