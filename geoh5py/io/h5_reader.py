@@ -40,7 +40,7 @@ class H5Reader:
         :param h5file: Name of the project h5file
         :param uid: Unique identifier
         :param entity_type: Type of entity from
-        "group", "data", "object", "group_type", "data_type", "object_type"
+            "group", "data", "object", "group_type", "data_type", "object_type"
 
         :return attributes: Dictionary of attributes of an entity
         :return type_attributes: Dictionary of attributes of the entity type
@@ -96,7 +96,7 @@ class H5Reader:
         :param h5file: Name of the project h5file
         :param uid: Unique identifier
         :param entity_type: Type of entity from
-        "group", "data", "object", "group_type", "data_type", "object_type"
+            "group", "data", "object", "group_type", "data_type", "object_type"
 
         :return children: [{uuid: type}, ... ]
             List of dictionaries for the children uid and type

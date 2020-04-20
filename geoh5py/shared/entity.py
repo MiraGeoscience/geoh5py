@@ -195,17 +195,18 @@ class Entity(ABC):
     @parent.setter
     def parent(self, parent: Union["shared.Entity", uuid.UUID]):
 
-        if isinstance(parent, uuid.UUID):
-            uid = parent
-        else:
-            uid = parent.uid
+        if parent is not None:
+            if isinstance(parent, uuid.UUID):
+                uid = parent
+            else:
+                uid = parent.uid
 
-        # Remove as child of previous parent
-        if self.parent is not None:
-            self._parent.remove_children([self])
+            # Remove as child of previous parent
+            if self.parent is not None:
+                self._parent.remove_children([self])
 
-        self._parent = self.workspace.get_entity(uid)[0]
-        self._parent.add_children([self])
+            self._parent = self.workspace.get_entity(uid)[0]
+            self._parent.add_children([self])
 
     @parent.getter
     def parent(self):

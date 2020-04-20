@@ -456,14 +456,16 @@ class Workspace:
         """
 
         entity_kwargs: dict = {"entity": {}}
-        for key, val in entity.__dict__.items():
+        for key in entity.__dict__.keys():
             if key not in ["_uid", "_entity_type"]:
-                entity_kwargs["entity"][key[1:]] = val
+                entity_kwargs["entity"][key[1:]] = getattr(entity, key[1:])
 
         entity_type_kwargs: dict = {"entity_type": {}}
-        for key, val in entity.entity_type.__dict__.items():
+        for key in entity.entity_type.__dict__.keys():
             if key not in ["_workspace"]:
-                entity_type_kwargs["entity_type"][key[1:]] = val
+                entity_type_kwargs["entity_type"][key[1:]] = getattr(
+                    entity.entity_type, key[1:]
+                )
 
         if parent is None:
             parent = entity.parent
