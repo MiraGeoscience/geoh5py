@@ -1,5 +1,5 @@
-from geoh5io.data import DataType, GeometricDataConstants
-from geoh5io.workspace import Workspace
+from geoh5py.data import DataType, GeometricDataConstants
+from geoh5py.workspace import Workspace
 
 
 def test_xyz_dataype():

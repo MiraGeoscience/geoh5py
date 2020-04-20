@@ -3,8 +3,8 @@ import os
 import numpy as np
 from scipy import spatial
 
-from geoh5io.objects import Surface
-from geoh5io.workspace import Workspace
+from geoh5py.objects import Surface
+from geoh5py.workspace import Workspace
 
 
 def test_create_surface_data():

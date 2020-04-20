@@ -2,9 +2,9 @@ import os
 
 import numpy as np
 
-from geoh5io.objects import Grid2D
-from geoh5io.shared import Entity, EntityType
-from geoh5io.workspace import Workspace
+from geoh5py.objects import Grid2D
+from geoh5py.shared import Entity, EntityType
+from geoh5py.workspace import Workspace
 
 
 def test_create_grid_2d_data():

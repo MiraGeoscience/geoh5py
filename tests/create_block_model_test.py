@@ -2,9 +2,9 @@ import os
 
 import numpy as np
 
-from geoh5io.objects import BlockModel
-from geoh5io.shared import Entity, EntityType
-from geoh5io.workspace import Workspace
+from geoh5py.objects import BlockModel
+from geoh5py.shared import Entity, EntityType
+from geoh5py.workspace import Workspace
 
 
 def test_create_block_model_data():

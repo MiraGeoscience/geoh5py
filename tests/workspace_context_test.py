@@ -1,6 +1,6 @@
 import pytest
 
-from geoh5io.workspace import Workspace, active_workspace
+from geoh5py.workspace import Workspace, active_workspace
 
 
 def test_workspace_context():

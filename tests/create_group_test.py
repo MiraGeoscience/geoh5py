@@ -1,7 +1,7 @@
 import os
 
-from geoh5io.groups import ContainerGroup
-from geoh5io.workspace import Workspace
+from geoh5py.groups import ContainerGroup
+from geoh5py.workspace import Workspace
 
 
 def test_create_group():

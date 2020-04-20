@@ -3,10 +3,10 @@ from typing import Type
 
 import pytest
 
-from geoh5io import objects
-from geoh5io.groups import GroupType
-from geoh5io.objects import ObjectBase, ObjectType
-from geoh5io.workspace import Workspace
+from geoh5py import objects
+from geoh5py.groups import GroupType
+from geoh5py.objects import ObjectBase, ObjectType
+from geoh5py.workspace import Workspace
 
 
 def all_object_types():

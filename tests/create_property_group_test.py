@@ -2,8 +2,8 @@ import os
 
 from numpy import c_, cos, linspace, pi, zeros
 
-from geoh5io.objects import Curve
-from geoh5io.workspace import Workspace
+from geoh5py.objects import Curve
+from geoh5py.workspace import Workspace
 
 
 def test_create_property_group():

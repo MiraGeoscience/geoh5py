@@ -3,10 +3,10 @@ from typing import Type
 
 import pytest
 
-from geoh5io import data
-from geoh5io.data import Data, DataAssociationEnum, DataType
-from geoh5io.objects import ObjectType
-from geoh5io.workspace import Workspace
+from geoh5py import data
+from geoh5py.data import Data, DataAssociationEnum, DataType
+from geoh5py.objects import ObjectType
+from geoh5py.workspace import Workspace
 
 
 def all_data_types():
