@@ -178,7 +178,7 @@ class Grid2D(ObjectBase):
             self._v_count = int(value)
 
     @property
-    def rotation(self) -> Optional[float]:
+    def rotation(self) -> float:
         """
         Clockwise rotation angle about the vertical axis in degree: float
         """

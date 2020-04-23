@@ -85,7 +85,7 @@ class Octree(ObjectBase):
             self._origin = value
 
     @property
-    def rotation(self) -> Optional[float]:
+    def rotation(self) -> float:
         """
         Clockwise rotation angle (degree) about the vertical axis: float
         """

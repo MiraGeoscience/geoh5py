@@ -143,7 +143,7 @@ class BlockModel(ObjectBase):
             self._z_cell_delimiters = value.astype(float)
 
     @property
-    def rotation(self) -> Optional[float]:
+    def rotation(self) -> float:
         """
         Clockwise rotation angle (degree) about the vertical axis
         """
