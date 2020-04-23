@@ -1,7 +1,7 @@
 import uuid
 from typing import List, Optional, Union
 
-from numpy import arange, asarray, c_, ndarray, unique, vstack, where, zeros
+import numpy as np
 
 from .object_base import ObjectType
 from .points import Points
@@ -19,34 +19,34 @@ class Curve(Points):
 
     def __init__(self, object_type: ObjectType, **kwargs):
 
-        self._cells: Optional[ndarray] = None
-        self._parts: Optional[ndarray] = None
+        self._cells: Optional[np.ndarray] = None
+        self._parts: Optional[np.ndarray] = None
         super().__init__(object_type, **kwargs)
 
         if object_type.name == "None":
             self.entity_type.name = "Curve"
 
     @property
-    def cells(self) -> Optional[ndarray]:
+    def cells(self) -> Optional[np.ndarray]:
         """
         Array of indices defining the connection between vertices:
-        numpy.ndarray of int, shape ("*", 2)
+        numpy.np.ndarray of int, shape ("*", 2)
         """
         if getattr(self, "_cells", None) is None:
             if self._parts is not None:
                 cells = []
                 for part_id in self.unique_parts:
-                    ind = where(self.parts == part_id)[0]
-                    cells.append(c_[ind[:-1], ind[1:]])
-                self._cells = vstack(cells)
+                    ind = np.where(self.parts == part_id)[0]
+                    cells.append(np.c_[ind[:-1], ind[1:]])
+                self._cells = np.vstack(cells)
 
             elif self.existing_h5_entity:
                 self._cells = self.workspace.fetch_cells(self.uid)
             else:
                 if self.vertices is not None:
                     n_segments = self.vertices.shape[0]
-                    self._cells = c_[
-                        arange(0, n_segments - 1), arange(1, n_segments)
+                    self._cells = np.c_[
+                        np.arange(0, n_segments - 1), np.arange(1, n_segments)
                     ].astype("uint32")
 
         return self._cells
@@ -61,12 +61,12 @@ class Curve(Points):
     @property
     def parts(self):
         """
-        Line identifier: numpy.ndarray of int, shape (n_vertices, )
+        Line identifier: numpy.np.ndarray of int, shape (n_vertices, )
         """
         if getattr(self, "_parts", None) is None and self.cells is not None:
 
             cells = self.cells
-            parts = zeros(self.vertices.shape[0], dtype="int")
+            parts = np.zeros(self.vertices.shape[0], dtype="int")
             count = 0
             for ind in range(1, cells.shape[0]):
 
@@ -80,10 +80,10 @@ class Curve(Points):
         return self._parts
 
     @parts.setter
-    def parts(self, indices: Union[List, ndarray]):
+    def parts(self, indices: Union[List, np.ndarray]):
         if self.vertices is not None:
             if isinstance(indices, list):
-                indices = asarray(indices)
+                indices = np.asarray(indices)
 
             assert indices.dtype == int, "Indices array must be of type 'uint32'"
             assert indices.shape == (
@@ -101,7 +101,7 @@ class Curve(Points):
         """
         if self.parts is not None:
 
-            return unique(self.parts).tolist()
+            return np.unique(self.parts).tolist()
 
         return None
 

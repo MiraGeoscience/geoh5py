@@ -28,7 +28,7 @@ setup(
     name="geoh5py",
     version="0.1.0",
     packages=find_packages(),
-    install_requires=["numpy", "h5py"],
+    install_requires=["numpy", "scipy", "h5py"],
     author="Mira Geoscience",
     author_email="domfournier@mirageoscience.com",
     description="Geoscience Analyst API",

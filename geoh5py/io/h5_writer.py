@@ -4,7 +4,7 @@ import uuid
 from typing import TYPE_CHECKING, Optional, Union
 
 import h5py
-from numpy import asarray, dtype, float64, int8, ndarray
+import numpy as np
 
 from ..data import Data, DataType
 from ..groups import Group, GroupType, RootGroup
@@ -86,7 +86,9 @@ class H5Writer:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
 
             # Adding vertices
-            loc_type = dtype([("x", float64), ("y", float64), ("z", float64)])
+            loc_type = np.dtype(
+                [("x", np.float64), ("y", np.float64), ("z", np.float64)]
+            )
 
             vertices = entity_handle.create_dataset(
                 "Vertices", (xyz.shape[0],), dtype=loc_type
@@ -590,7 +592,7 @@ class H5Writer:
         cls,
         entity: Entity,
         file: Optional[Union[str, h5py.File]] = None,
-        values: Optional[ndarray] = None,
+        values: Optional[np.ndarray] = None,
         close_file: bool = True,
     ):
         """
@@ -664,7 +666,7 @@ class H5Writer:
             if key in ["Association", "Primitive type"]:
                 value = value.name.lower().capitalize()
 
-            if isinstance(value, (int8, bool)):
+            if isinstance(value, (np.int8, bool)):
                 entity_handle.attrs.create(key, int(value), dtype="int8")
 
             elif isinstance(value, str):
@@ -674,7 +676,7 @@ class H5Writer:
                 entity_handle.attrs.create(key, "None", dtype=str_type)
 
             else:
-                entity_handle.attrs.create(key, value, dtype=asarray(value).dtype)
+                entity_handle.attrs.create(key, value, dtype=np.asarray(value).dtype)
         if close_file:
             h5file.close()
 
@@ -726,7 +728,7 @@ class H5Writer:
                         value = value.name.capitalize()
 
                     elif key == "Properties":
-                        value = asarray([cls.uuid_str(val) for val in value])
+                        value = np.asarray([cls.uuid_str(val) for val in value])
 
                     elif key == "ID":
                         value = cls.uuid_str(value)
@@ -800,7 +802,7 @@ class H5Writer:
         return "{" + str(value) + "}"
 
     @staticmethod
-    def bool_value(value: int8) -> bool:
+    def bool_value(value: np.int8) -> bool:
         """Convert integer to bool
         """
         return bool(value)

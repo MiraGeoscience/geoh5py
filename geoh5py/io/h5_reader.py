@@ -2,7 +2,7 @@ import uuid
 from typing import Any, Dict, Optional, Tuple
 
 import h5py
-from numpy import c_, int8, ndarray, r_
+import numpy as np
 
 
 class H5Reader:
@@ -69,10 +69,10 @@ class H5Reader:
             type_attributes["entity_type"][key] = value
 
         if "Color map" in entity["Type"].keys():
-            type_attributes["entity_type"]["color_map"] = {}
+            type_attributes["entity_type"]["colonp.r_map"] = {}
             for key, value in entity["Type"]["Color map"].attrs.items():
-                type_attributes["entity_type"]["color_map"][key] = value
-            type_attributes["entity_type"]["color_map"]["values"] = entity["Type"][
+                type_attributes["entity_type"]["colonp.r_map"][key] = value
+            type_attributes["entity_type"]["colonp.r_map"]["values"] = entity["Type"][
                 "Color map"
             ][:]
 
@@ -124,7 +124,7 @@ class H5Reader:
         return children
 
     @classmethod
-    def fetch_vertices(cls, h5file: Optional[str], uid: uuid.UUID) -> ndarray:
+    def fetch_vertices(cls, h5file: Optional[str], uid: uuid.UUID) -> np.ndarray:
         """
         Get the vertices of an object.
 
@@ -142,10 +142,10 @@ class H5Reader:
 
         project.close()
 
-        return c_[x, y, z]
+        return np.c_[x, y, z]
 
     @classmethod
-    def fetch_cells(cls, h5file: Optional[str], uid: uuid.UUID) -> ndarray:
+    def fetch_cells(cls, h5file: Optional[str], uid: uuid.UUID) -> np.ndarray:
         """
         Get the cells of an object
 
@@ -177,7 +177,7 @@ class H5Reader:
         project = h5py.File(h5file, "r")
         name = list(project.keys())[0]
         if "Data" in list(project[name]["Data"][cls.uuid_str(uid)].keys()):
-            values = r_[project[name]["Data"][cls.uuid_str(uid)]["Data"]]
+            values = np.r_[project[name]["Data"][cls.uuid_str(uid)]["Data"]]
         else:
             values = None
 
@@ -188,7 +188,7 @@ class H5Reader:
     @classmethod
     def fetch_delimiters(
         cls, h5file: Optional[str], uid: uuid.UUID
-    ) -> Tuple[ndarray, ndarray, ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Get the delimiters of an entity
 
@@ -201,13 +201,13 @@ class H5Reader:
         """
         project = h5py.File(h5file, "r")
         name = list(project.keys())[0]
-        u_delimiters = r_[
+        u_delimiters = np.r_[
             project[name]["Objects"][cls.uuid_str(uid)]["U cell delimiters"]
         ]
-        v_delimiters = r_[
+        v_delimiters = np.r_[
             project[name]["Objects"][cls.uuid_str(uid)]["V cell delimiters"]
         ]
-        z_delimiters = r_[
+        z_delimiters = np.r_[
             project[name]["Objects"][cls.uuid_str(uid)]["Z cell delimiters"]
         ]
 
@@ -216,7 +216,7 @@ class H5Reader:
         return u_delimiters, v_delimiters, z_delimiters
 
     @classmethod
-    def fetch_octree_cells(cls, h5file: Optional[str], uid: uuid.UUID) -> ndarray:
+    def fetch_octree_cells(cls, h5file: Optional[str], uid: uuid.UUID) -> np.ndarray:
         """
         Get the cells of an octree mesh
 
@@ -228,7 +228,9 @@ class H5Reader:
         """
         project = h5py.File(h5file, "r")
         name = list(project.keys())[0]
-        octree_cells = r_[project[name]["Objects"][cls.uuid_str(uid)]["Octree Cells"]]
+        octree_cells = np.r_[
+            project[name]["Objects"][cls.uuid_str(uid)]["Octree Cells"]
+        ]
 
         project.close()
 
@@ -262,7 +264,7 @@ class H5Reader:
         return property_groups
 
     @staticmethod
-    def bool_value(value: int8) -> bool:
+    def bool_value(value: np.int8) -> bool:
         return bool(value)
 
     @staticmethod

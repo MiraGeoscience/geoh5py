@@ -1,7 +1,8 @@
 import uuid
 from typing import Optional
 
-from numpy import arange, c_, ndarray
+from numpy import ndarray
+from scipy import spatial
 
 from .object_base import ObjectType
 from .points import Points
@@ -36,10 +37,8 @@ class Surface(Points):
                 self._cells = self.workspace.fetch_cells(self.uid)
             else:
                 if self.vertices is not None:
-                    n_segments = self.vertices.shape[0]
-                    self._cells = c_[
-                        arange(0, n_segments - 1), arange(1, n_segments)
-                    ].astype("uint32")
+                    surface = spatial.Delaunay(self.vertices[:, :2])
+                    self._cells = surface.simplices
 
         return self._cells
 

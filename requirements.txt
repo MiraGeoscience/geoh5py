@@ -1,3 +1,4 @@
+scipy
 numpy
 h5py
 sphinx
