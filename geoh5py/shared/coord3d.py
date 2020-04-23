@@ -1,8 +1,8 @@
-from numpy import empty, ndarray
+import numpy as np
 
 
 class Coord3D:
-    def __init__(self, xyz: ndarray = empty((1, 3))):
+    def __init__(self, xyz: np.ndarray = np.empty((1, 3))):
         self._xyz = xyz
 
     @property
@@ -18,7 +18,7 @@ class Coord3D:
         return self._xyz[:, 2]
 
     @property
-    def locations(self) -> ndarray:
+    def locations(self) -> np.ndarray:
         return self._xyz
 
     def __getitem__(self, item) -> float:

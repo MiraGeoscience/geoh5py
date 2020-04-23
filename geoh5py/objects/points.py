@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 
-from numpy import ndarray
+import numpy as np
 
 from ..shared import Coord3D
 from .object_base import ObjectBase, ObjectType
@@ -29,7 +29,7 @@ class Points(ObjectBase):
         return cls.__TYPE_UID
 
     @property
-    def vertices(self) -> Optional[ndarray]:
+    def vertices(self) -> Optional[np.ndarray]:
         """
         Array of vertices coordinates, shape ("*", 3)
         """
@@ -39,6 +39,6 @@ class Points(ObjectBase):
         return self._vertices
 
     @vertices.setter
-    def vertices(self, xyz: ndarray):
+    def vertices(self, xyz: np.ndarray):
         self.modified_attributes = "vertices"
         self._vertices = xyz

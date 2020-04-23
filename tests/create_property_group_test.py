@@ -1,6 +1,6 @@
 import os
 
-from numpy import c_, cos, linspace, pi, zeros
+import numpy as np
 
 from geoh5py.objects import Curve
 from geoh5py.workspace import Workspace
@@ -13,7 +13,7 @@ def test_create_property_group():
     obj_name = "myCurve"
     # Generate a curve with multiple data
     n_stn = 12
-    xyz = c_[linspace(0, 2 * pi, n_stn), zeros(n_stn), zeros(n_stn)]
+    xyz = np.c_[np.linspace(0, 2 * np.pi, n_stn), np.zeros(n_stn), np.zeros(n_stn)]
 
     # Create a workspace
     workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
@@ -22,7 +22,7 @@ def test_create_property_group():
 
     # Add data
     for i in range(4):
-        values = cos(xyz[:, 0] / (i + 1))
+        values = np.cos(xyz[:, 0] / (i + 1))
         curve.add_data({f"Period{i+1}": {"values": values}}, property_group="myGroup")
 
     # Property group object should have been created

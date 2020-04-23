@@ -1,7 +1,7 @@
 import uuid
 from typing import List, Optional
 
-from numpy import ndarray
+import numpy as np
 
 from .object_base import ObjectBase, ObjectType
 
@@ -18,10 +18,10 @@ class Drillhole(ObjectBase):
     def __init__(self, object_type: ObjectType, **kwargs):
 
         # TODO
-        self._vertices: Optional[ndarray] = None
-        self._cells: Optional[ndarray] = None
-        self._collar: Optional[ndarray] = None
-        self._surveys: Optional[ndarray] = None
+        self._vertices: Optional[np.ndarray] = None
+        self._cells: Optional[np.ndarray] = None
+        self._collar: Optional[np.ndarray] = None
+        self._surveys: Optional[np.ndarray] = None
         self._trace: List = []
 
         super().__init__(object_type, **kwargs)

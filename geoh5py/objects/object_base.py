@@ -4,7 +4,7 @@ import uuid
 from abc import abstractmethod
 from typing import TYPE_CHECKING, List, Optional, Union
 
-from numpy import ndarray
+import numpy as np
 
 from ..data import Data
 from ..groups import PropertyGroup
@@ -258,7 +258,7 @@ class ObjectBase(Entity):
             if "entity_type" in list(attr.keys()):
                 entity_type = attr["entity_type"]
             else:
-                if isinstance(attr["values"], ndarray):
+                if isinstance(attr["values"], np.ndarray):
                     entity_type = {"primitive_type": "FLOAT"}
                 elif isinstance(attr["values"], str):
                     entity_type = {"primitive_type": "TEXT"}

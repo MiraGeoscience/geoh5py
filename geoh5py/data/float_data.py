@@ -1,4 +1,4 @@
-from numpy import ndarray, ones, ravel
+import numpy as np
 
 from .data import Data, DataType, PrimitiveTypeEnum
 
@@ -16,7 +16,7 @@ class FloatData(Data):
         return PrimitiveTypeEnum.FLOAT
 
     @property
-    def values(self) -> ndarray:
+    def values(self) -> np.ndarray:
         """
         :return: values: An array of float values
         """
@@ -32,10 +32,10 @@ class FloatData(Data):
         self.modified_attributes = "values"
         self._values = self.check_vector_length(values)
 
-    def check_vector_length(self, values) -> ndarray:
+    def check_vector_length(self, values) -> np.ndarray:
 
-        full_vector = ones(self.n_values) * self.no_data_value
-        full_vector[: len(ravel(values))] = ravel(values)
+        full_vector = np.ones(self.n_values) * self.no_data_value
+        full_vector[: len(np.ravel(values))] = np.ravel(values)
 
         return full_vector
 

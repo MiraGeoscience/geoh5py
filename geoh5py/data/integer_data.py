@@ -1,4 +1,4 @@
-from numpy import ndarray, ravel
+import numpy as np
 
 from .data import Data, PrimitiveTypeEnum
 
@@ -9,7 +9,7 @@ class IntegerData(Data):
         return PrimitiveTypeEnum.INTEGER
 
     @property
-    def values(self) -> ndarray:
+    def values(self) -> np.ndarray:
         """
         :return: values: An array of float values
         """
@@ -21,7 +21,7 @@ class IntegerData(Data):
     @values.setter
     def values(self, values):
         self.modified_attributes = "values"
-        self._values = ravel(values).astype(int)
+        self._values = np.ravel(values).astype(int)
 
     def __call__(self):
         return self.values

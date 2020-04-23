@@ -267,7 +267,7 @@ class Grid2D(ObjectBase):
             centroids = np.asarray(np.dot(rot, xyz.T).T)
 
             for ind, axis in enumerate(["x", "y", "z"]):
-                centroids[:, ind] = centroids[:, ind] + self.origin[axis]
+                centroids[:, ind] += self.origin[axis]
 
             self._centroids = centroids
 
