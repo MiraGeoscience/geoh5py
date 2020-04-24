@@ -8,7 +8,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-doc/build/
+doc/_build/
 develop-eggs/
 dist/
 downloads/
@@ -104,3 +104,6 @@ venv.bak/
 .mypy_cache/
 /.idea/
 /config.toml
+
+# geoh5 locks
+*.geoh5.lock

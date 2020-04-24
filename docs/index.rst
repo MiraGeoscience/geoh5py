@@ -1,0 +1,79 @@
+geoh5py: Python API for Geoscience Analyst
+==========================================
+
+
+Welcome to the documentation page for **geoh5py**!
+
+In short
+^^^^^^^^
+
+The **geoh5py** library has been created for the manipulation and storage of a wide range of
+geoscientific data (points, curve, surface, 2D and 3D grids) in
+``*.geoh5`` file format. Users will be able to directly leverage the powerful visualization
+capabilities of `Geoscience Analyst <https://mirageoscience.com/mining-industry-software/geoscience-analyst/>`_.
+
+.. figure:: ./images/GA_demo.png
+	    :align: center
+	    :width: 400
+
+
+Installation
+^^^^^^^^^^^^
+
+**geoh5py** is currently written for Python 3.6 or higher, and depends on `NumPy <https://numpy.org/>`_ and
+`h5py <https://www.h5py.org/>`_. Users will likely want to also make use of advanced processing
+techniques made available under the python ecosystem. We therefore recommend installing
+Anaconda to handle the various packages.
+
+
+Step 1- Setup Anaconda
+^^^^^^^^^^^^^^^^^^^^^^
+`Download and install Anaconda <https://www.anaconda.com/download/>`_
+
+.. figure:: ./images/installation/MinicondaInstaller.png
+    :align: center
+    :width: 400
+
+
+Step 2: Install **geoh5py**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Install **geoh5py** from PyPI::
+
+    $ pip install geoh5py
+
+To install the latest development version of **geoh5py**, you can use pip with the
+latest GitHub master::
+
+    $ pip install git+https://github.com/domfournier/GeoH5io.git
+
+To work with **geoh5py** source code in development, install from GitHub::
+
+    $ git clone --recursive https://github.com/domfournier/GeoH5io.git
+    $ cd geoh5py
+    $ python setup.py install
+
+
+Contents:
+^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+   content/user_guide/index.rst
+   content/api/geoh5py.rst
+
+
+Feedback:
+^^^^^^^^^
+
+Have comments or suggestions? Submit feedback.
+All the content can be found on our github_ repository.
+
+.. _github: https://github.com/domfournier/GeoH5io
+
+
+Contributors:
+^^^^^^^^^^^^^
+
+.. include:: AUTHORS.rst

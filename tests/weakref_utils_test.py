@@ -2,7 +2,7 @@ import weakref
 
 import pytest
 
-from geoh5io.shared import weakref_utils
+from geoh5py.shared import weakref_utils
 
 
 class AnyObject:

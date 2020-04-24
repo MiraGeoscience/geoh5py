@@ -1,4 +1,4 @@
-from geoh5io import __version__
+from geoh5py import __version__
 
 
 def test_version():

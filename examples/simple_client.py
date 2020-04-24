@@ -5,7 +5,7 @@ import toml
 from thriftpy2.protocol import TBinaryProtocolFactory, TMultiplexedProtocolFactory
 from thriftpy2.rpc import client_context
 
-from geoh5io import interfaces
+from geoh5py import interfaces
 
 
 # TODO: share this code between app and client demo

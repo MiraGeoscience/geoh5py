@@ -1,4 +1,4 @@
-name: geoh5io Python package
+name: geoh5py Python package
 
 on:
   push:
@@ -54,12 +54,12 @@ jobs:
       if: github.event_name == 'pull_request'
       run: >-
         poetry run pylint -j0 $(
-        git diff --name-only refs/remotes/origin/${{github.base_ref}}... | grep -E '^geoh5io/.*\.py$'
-        || echo 'geoh5io/__init__.py'
+        git diff --name-only refs/remotes/origin/${{github.base_ref}}... | grep -E '^geoh5py/.*\.py$'
+        || echo 'geoh5py/__init__.py'
         )
     - name: Run pylint on all files
       if: github.event_name == 'push'
-      run: poetry run pylint -j0 geoh5io
+      run: poetry run pylint -j0 geoh5py
 
   pytest:
     name: pytest
@@ -77,7 +77,7 @@ jobs:
         curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
         poetry install
     - name: Run pytest
-      run: poetry run pytest --cov-report=xml --cov=geoh5io --cov-branch --cov-fail-under=80
+      run: poetry run pytest --cov-report=xml --cov=geoh5py --cov-branch --cov-fail-under=80
     - name: Upload coverage to Codecov
       if: success()
       run: >-

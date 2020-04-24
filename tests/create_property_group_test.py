@@ -1,0 +1,57 @@
+import tempfile
+from pathlib import Path
+
+import numpy as np
+
+from geoh5py.objects import Curve
+from geoh5py.workspace import Workspace
+
+
+def test_create_property_group():
+
+    obj_name = "myCurve"
+    # Generate a curve with multiple data
+    n_stn = 12
+    xyz = np.c_[np.linspace(0, 2 * np.pi, n_stn), np.zeros(n_stn), np.zeros(n_stn)]
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        h5file_path = Path(tempdir) / r"prop_group_test.geoh5"
+
+        # Create a workspace
+        workspace = Workspace(h5file_path)
+
+        curve = Curve.create(workspace, vertices=xyz, name=obj_name)
+
+        # Add data
+        for i in range(4):
+            values = np.cos(xyz[:, 0] / (i + 1))
+            curve.add_data(
+                {f"Period{i+1}": {"values": values}}, property_group="myGroup"
+            )
+
+        # Property group object should have been created
+        prop_group = curve.get_property_group("myGroup")
+
+        # Create a new group by data name
+        single_data_group = curve.add_data_to_group(f"Period{1}", "Singleton")
+
+        assert (
+            workspace.find_data(single_data_group.properties[0]).name == f"Period{1}"
+        ), "Failed at creating a property group by data name"
+        workspace.finalize()
+
+        # Re-open the workspace
+        workspace = Workspace(h5file_path)
+
+        # Read the property_group back in
+        rec_prop_group = workspace.get_entity(obj_name)[0].get_property_group("myGroup")
+
+        attrs = rec_prop_group.attribute_map
+        check_list = [
+            attr
+            for attr in attrs.values()
+            if getattr(rec_prop_group, attr) != getattr(prop_group, attr)
+        ]
+        assert (
+            len(check_list) == 0
+        ), f"Attribute{check_list} of PropertyGroups in output differ from input"

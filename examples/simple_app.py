@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from geoh5io.handlers import (
+from geoh5py.handlers import (
     DataHandler,
     GroupsHandler,
     ObjectsHandler,
