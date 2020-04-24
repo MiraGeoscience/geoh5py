@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 
-from numpy import ndarray
+import numpy as np
 
 from .object_base import ObjectType
 from .points import Points
@@ -18,7 +18,7 @@ class Surface(Points):
 
     def __init__(self, object_type: ObjectType, **kwargs):
 
-        self._cells: Optional[ndarray] = None
+        self._cells: Optional[np.ndarray] = None
 
         super().__init__(object_type, **kwargs)
 
@@ -26,7 +26,7 @@ class Surface(Points):
             self.entity_type.name = "Surface"
 
     @property
-    def cells(self) -> Optional[ndarray]:
+    def cells(self) -> Optional[np.ndarray]:
         """
         Array of vertices index forming triangles
         :return cells: array of int, shape ("*", 3)
@@ -34,11 +34,17 @@ class Surface(Points):
         if getattr(self, "_cells", None) is None:
             if self.existing_h5_entity:
                 self._cells = self.workspace.fetch_cells(self.uid)
+            else:
+                if self.vertices is not None:
+                    n_segments = self.vertices.shape[0]
+                    self._cells = np.c_[
+                        np.arange(0, n_segments - 1), np.arange(1, n_segments)
+                    ].astype("uint32")
 
         return self._cells
 
     @cells.setter
-    def cells(self, indices: ndarray):
+    def cells(self, indices: np.ndarray):
         """
         :param indices: array of int, shape ("*", 3)
         """
