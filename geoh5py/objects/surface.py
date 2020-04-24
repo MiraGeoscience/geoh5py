@@ -2,7 +2,6 @@ import uuid
 from typing import Optional
 
 from numpy import ndarray
-from scipy import spatial
 
 from .object_base import ObjectType
 from .points import Points
@@ -35,10 +34,6 @@ class Surface(Points):
         if getattr(self, "_cells", None) is None:
             if self.existing_h5_entity:
                 self._cells = self.workspace.fetch_cells(self.uid)
-            else:
-                if self.vertices is not None:
-                    surface = spatial.Delaunay(self.vertices[:, :2])
-                    self._cells = surface.simplices
 
         return self._cells
 
