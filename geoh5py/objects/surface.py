@@ -34,12 +34,6 @@ class Surface(Points):
         if getattr(self, "_cells", None) is None:
             if self.existing_h5_entity:
                 self._cells = self.workspace.fetch_cells(self.uid)
-            else:
-                if self.vertices is not None:
-                    n_segments = self.vertices.shape[0]
-                    self._cells = np.c_[
-                        np.arange(0, n_segments - 1), np.arange(1, n_segments)
-                    ].astype("uint32")
 
         return self._cells
 
