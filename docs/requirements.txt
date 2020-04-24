@@ -7,4 +7,3 @@ sphinxcontrib-bibtex
 nbsphinx
 nbstripout
 numpydoc
-
