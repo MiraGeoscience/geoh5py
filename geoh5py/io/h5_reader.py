@@ -69,10 +69,10 @@ class H5Reader:
             type_attributes["entity_type"][key] = value
 
         if "Color map" in entity["Type"].keys():
-            type_attributes["entity_type"]["colonp.r_map"] = {}
+            type_attributes["entity_type"]["color_map"] = {}
             for key, value in entity["Type"]["Color map"].attrs.items():
-                type_attributes["entity_type"]["colonp.r_map"][key] = value
-            type_attributes["entity_type"]["colonp.r_map"]["values"] = entity["Type"][
+                type_attributes["entity_type"]["color_map"][key] = value
+            type_attributes["entity_type"]["color_map"]["values"] = entity["Type"][
                 "Color map"
             ][:]
 
