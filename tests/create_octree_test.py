@@ -12,7 +12,7 @@ def test_octree():
     name = "MyTestOctree"
 
     # Create a workspace
-    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    workspace = Workspace(os.path.join(os.getcwd(), h5file))
 
     # Create an octree mesh with variable dimensions
     mesh = Octree.create(
@@ -38,7 +38,7 @@ def test_octree():
     workspace.finalize()
 
     # Read the mesh back in
-    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    workspace = Workspace(os.path.join(os.getcwd(), h5file))
 
     mesh2 = workspace.get_entity(name)[0]
 
@@ -53,4 +53,4 @@ def test_octree():
         np.r_[mesh2.rotation] == np.r_[mesh.rotation]
     ), "Mesh output differs from mesh input"
 
-    os.remove(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    os.remove(os.path.join(os.getcwd(), h5file))

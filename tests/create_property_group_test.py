@@ -16,7 +16,7 @@ def test_create_property_group():
     xyz = np.c_[np.linspace(0, 2 * np.pi, n_stn), np.zeros(n_stn), np.zeros(n_stn)]
 
     # Create a workspace
-    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    workspace = Workspace(os.path.join(os.getcwd(), h5file))
 
     curve = Curve.create(workspace, vertices=xyz, name=obj_name)
 
@@ -37,7 +37,7 @@ def test_create_property_group():
     workspace.finalize()
 
     # Re-open the workspace
-    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    workspace = Workspace(os.path.join(os.getcwd(), h5file))
 
     # Read the property_group back in
     rec_prop_group = workspace.get_entity(obj_name)[0].get_property_group("myGroup")
@@ -52,4 +52,4 @@ def test_create_property_group():
         len(check_list) == 0
     ), f"Attribute{check_list} of PropertyGroups in output differ from input"
 
-    os.remove(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    os.remove(os.path.join(os.getcwd(), h5file))

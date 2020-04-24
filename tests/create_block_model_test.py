@@ -47,7 +47,7 @@ def test_create_block_model_data():
     ]
 
     # # Create a workspace
-    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    workspace = Workspace(os.path.join(os.getcwd(), h5file))
 
     grid = BlockModel.create(
         workspace,
@@ -74,7 +74,7 @@ def test_create_block_model_data():
     )
 
     # Read the data back in from a fresh workspace
-    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    workspace = Workspace(os.path.join(os.getcwd(), h5file))
 
     rec_obj = workspace.get_entity(name)[0]
     rec_data = workspace.get_entity("DataValues")[0]
@@ -95,4 +95,4 @@ def test_create_block_model_data():
     compare_objects(grid, rec_obj)
     compare_objects(data, rec_data)
 
-    os.remove(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    os.remove(os.path.join(os.getcwd(), h5file))

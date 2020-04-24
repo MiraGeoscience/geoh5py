@@ -19,7 +19,7 @@ def test_create_point_data():
     values = np.random.randn(n_data)
 
     # Create a workspace
-    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    workspace = Workspace(os.path.join(os.getcwd(), h5file))
 
     points = Points.create(workspace, vertices=xyz, name=name, allow_move=False)
 
@@ -34,7 +34,7 @@ def test_create_point_data():
     workspace.finalize()
 
     # Read the data back in from a fresh workspace
-    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    workspace = Workspace(os.path.join(os.getcwd(), h5file))
 
     rec_obj = workspace.get_entity(name)[0]
     rec_data = workspace.get_entity(new_name)[0]
@@ -55,4 +55,4 @@ def test_create_point_data():
     compare_objects(points, rec_obj)
     compare_objects(data, rec_data)
 
-    os.remove(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    os.remove(os.path.join(os.getcwd(), h5file))

@@ -19,7 +19,7 @@ def test_create_grid_2d_data():
     values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
 
     # # Create a workspace
-    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    workspace = Workspace(os.path.join(os.getcwd(), h5file))
 
     grid = Grid2D.create(
         workspace,
@@ -38,7 +38,7 @@ def test_create_grid_2d_data():
     workspace.finalize()
 
     # Read the data back in from a fresh workspace
-    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    workspace = Workspace(os.path.join(os.getcwd(), h5file))
 
     rec_obj = workspace.get_entity(name)[0]
 
@@ -60,4 +60,4 @@ def test_create_grid_2d_data():
     compare_objects(grid, rec_obj)
     compare_objects(data, rec_data)
 
-    os.remove(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    os.remove(os.path.join(os.getcwd(), h5file))

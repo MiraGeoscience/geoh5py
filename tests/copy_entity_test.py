@@ -19,7 +19,7 @@ def test_copy_entity():
     values = np.random.randn(n_data)
 
     # Create a workspace
-    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    workspace = Workspace(os.path.join(os.getcwd(), h5file))
     points = Points.create(workspace, vertices=xyz)
     data = points.add_data({"DataValues": {"association": "VERTEX", "values": values}})
 
@@ -34,7 +34,7 @@ def test_copy_entity():
     workspace.finalize()
 
     # Read the data back in from a fresh workspace
-    new_workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + new_h5file)
+    new_workspace = Workspace(os.path.join(os.getcwd(), new_h5file))
 
     points.copy(parent=new_workspace)
     surface.copy(parent=new_workspace)
@@ -60,5 +60,5 @@ def test_copy_entity():
     compare_objects(surface, rec_surface)
     compare_objects(data, rec_data)
 
-    os.remove(os.getcwd() + os.sep + "assets" + os.sep + h5file)
-    os.remove(os.getcwd() + os.sep + "assets" + os.sep + new_h5file)
+    os.remove(os.path.join(os.getcwd(), h5file))
+    os.remove(os.path.join(os.getcwd(), new_h5file))

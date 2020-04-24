@@ -18,7 +18,7 @@ def test_create_curve_data():
     cell_values = random.randn(n_data - 1)
 
     # Create a workspace
-    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    workspace = Workspace(os.path.join(os.getcwd(), h5file))
 
     curve = Curve.create(workspace, vertices=xyz, name=curve_name)
 
@@ -36,7 +36,7 @@ def test_create_curve_data():
 
     #################### Modify the vertices and data #########################
     # Re-open the workspace and read data back in
-    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    workspace = Workspace(os.path.join(os.getcwd(), h5file))
 
     obj_rec = workspace.get_entity(curve_name)[0]
     assert all((obj_rec.vertices == xyz).flatten()), "Data locations differ from input"
@@ -67,7 +67,7 @@ def test_create_curve_data():
     workspace.finalize()
 
     ##################### READ BACK AND COMPARE ############################
-    workspace = Workspace(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    workspace = Workspace(os.path.join(os.getcwd(), h5file))
 
     # Read the data back in again
     obj = workspace.get_entity(curve_name)[0]
@@ -81,4 +81,4 @@ def test_create_curve_data():
         data_vertex.values == values
     ), "Modified VERTEX data values differ from input"
 
-    os.remove(os.getcwd() + os.sep + "assets" + os.sep + h5file)
+    os.remove(os.path.join(os.getcwd(), h5file))
