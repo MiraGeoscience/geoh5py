@@ -13,8 +13,8 @@
 
 # on_rtd is whether we are on readthedocs.org
 import os
-import subprocess
 import sys
+
 # import geoh5py
 
 sys.path.append(os.path.abspath("./_ext"))
@@ -34,11 +34,11 @@ needs_sphinx = "2.2.1"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.viewcode',
-    'numpydoc',
-    'sphinx_issues',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.viewcode",
+    "numpydoc",
+    "sphinx_issues",
     "nbsphinx",
 ]
 
@@ -88,8 +88,7 @@ release = "0.1.0"
 # directories to ignore when looking for source files.
 exclude_patterns = ["_build", "AUTHORS.rst", "table_*", "**.ipynb_checkpoints"]
 
-linkcheck_ignore = [
-]
+linkcheck_ignore = []
 linkcheck_retries = 3
 linkcheck_timeout = 2000
 
@@ -158,7 +157,7 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 #   'display_github': 'True',
 # }
 
-#html_logo = 'images/geoh5py.png'
+# html_logo = 'images/geoh5py.png'
 
 check_meta = False
 
@@ -344,10 +343,10 @@ def nbstripout():
 
     # search for images that have been missed
     for root, dirList, fileList in os.walk(cwd):
-        if 'Workspace' not in root:
+        if "Workspace" not in root:
             for filename in fileList:
-                if 'ipynb' in filename:
-                    os.system('nbstripout ' + os.path.join(root, filename))
+                if "ipynb" in filename:
+                    os.system("nbstripout " + os.path.join(root, filename))
 
 
 nbstripout()
