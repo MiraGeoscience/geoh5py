@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "GeoH5io"
+name = "geoh5py"
 version = "0.1.0"
-description = "Read and write GeoH5 files from Python"
+description = "Read and write .geoh5 files from Python"
 authors = ["Mira Geoscience <support@mirageoscience.com>"]
 
 [tool.poetry.dependencies]

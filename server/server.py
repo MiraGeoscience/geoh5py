@@ -7,8 +7,8 @@ from thriftpy2.server import TThreadedServer
 from thriftpy2.thrift import TMultiplexedProcessor, TProcessor
 from thriftpy2.transport import TBufferedTransportFactory, TServerSocket
 
-from geoh5io import interfaces
-from geoh5io.handlers import (
+from geoh5py import interfaces
+from geoh5py.handlers import (
     DataHandler,
     GroupsHandler,
     ObjectsHandler,

@@ -15,7 +15,7 @@
 import os
 import subprocess
 import sys
-# import geoh5io
+# import geoh5py
 
 sys.path.append(os.path.abspath("./_ext"))
 sys.path.append(os.path.abspath(".."))
@@ -115,7 +115,7 @@ pygments_style = "sphinx"
 # modindex_common_prefix = []
 
 # API doc options
-apidoc_module_dir = "../geoh5io"
+apidoc_module_dir = "../geoh5py"
 apidoc_output_dir = "content/api/generated"
 apidoc_toc_file = False
 apidoc_excluded_paths = []
@@ -129,8 +129,8 @@ apidoc_separate_modules = True
 
 # -- Edit on Github Extension ---------------------------------------------
 
-edit_on_github_project = "mira/geoh5io"
 edit_on_github_branch = "master"
+edit_on_github_project = "mirageoscience/geoh5io"
 edit_on_github_directory = "docs"
 
 # -- Options for HTML output ----------------------------------------------
@@ -366,4 +366,4 @@ nbstripout()
 # )
 
 # TODO: build the source
-# sphinx-apidoc --templatedir templates/ -o content/api/ ../geoh5io
+# sphinx-apidoc --templatedir templates/ -o content/api/ ../geoh5py
