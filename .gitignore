@@ -104,3 +104,6 @@ venv.bak/
 .mypy_cache/
 /.idea/
 /config.toml
+
+# geoh5 locks
+*.geoh5.lock
