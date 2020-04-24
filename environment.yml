@@ -1,4 +1,4 @@
-name: geoh5io
+name: geoh5py
 
 channels:
   - conda-forge
