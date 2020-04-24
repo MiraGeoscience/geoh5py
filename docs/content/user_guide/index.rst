@@ -7,3 +7,6 @@ This section provides a collection of tutorials for common use of the **gh5py**
    :maxdepth: 1
 
    workspace.ipynb
+   groups.ipynb
+   objects.ipynb
+   data.ipynb
