@@ -1,14 +1,14 @@
 {%- macro automodule(modname, options) -%}
 .. automodule:: {{ modname }}
 {%- for option in options %}
-   :{{ option }}:
+:{{ option }}:
 {%- endfor %}
 {%- endmacro %}
 
 {%- macro toctree(docnames) -%}
 .. toctree::
 {% for docname in docnames %}
-   {{ docname }}
+{{ docname }}
 {%- endfor %}
 {%- endmacro %}
 

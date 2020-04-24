@@ -4,6 +4,5 @@
 {% endif -%}
 .. automodule:: {{ qualname }}
 {%- for option in automodule_options %}
-   :{{ option }}:
+:{{ option }}:
 {%- endfor %}
-
