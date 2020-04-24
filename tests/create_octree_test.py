@@ -1,4 +1,5 @@
-import os
+import tempfile
+from pathlib import Path
 
 import numpy as np
 
@@ -8,49 +9,49 @@ from geoh5py.workspace import Workspace
 
 def test_octree():
 
-    h5file = r"octree.geoh5"
     name = "MyTestOctree"
 
-    # Create a workspace
-    workspace = Workspace(os.path.join(os.getcwd(), h5file))
+    with tempfile.TemporaryDirectory() as tempdir:
+        h5file_path = Path(tempdir) / r"octree.geoh5"
 
-    # Create an octree mesh with variable dimensions
-    mesh = Octree.create(
-        workspace,
-        name=name,
-        origin=[0, 0, 0],
-        u_count=32,
-        v_count=16,
-        w_count=8,
-        u_cell_size=1.0,
-        v_cell_size=1.0,
-        w_cell_size=2.0,
-        rotation=45,
-    )
+        # Create a workspace
+        workspace = Workspace(h5file_path)
 
-    # Refine globally to first octree
-    # mesh.refine(1)
+        # Create an octree mesh with variable dimensions
+        mesh = Octree.create(
+            workspace,
+            name=name,
+            origin=[0, 0, 0],
+            u_count=32,
+            v_count=16,
+            w_count=8,
+            u_cell_size=1.0,
+            v_cell_size=1.0,
+            w_cell_size=2.0,
+            rotation=45,
+        )
 
-    assert mesh.n_cells == 8, "Number of octree cells after refine is wrong"
+        # Refine globally to first octree
+        # mesh.refine(1)
 
-    # Refine
-    workspace.save_entity(mesh)
-    workspace.finalize()
+        assert mesh.n_cells == 8, "Number of octree cells after refine is wrong"
 
-    # Read the mesh back in
-    workspace = Workspace(os.path.join(os.getcwd(), h5file))
+        # Refine
+        workspace.save_entity(mesh)
+        workspace.finalize()
 
-    mesh2 = workspace.get_entity(name)[0]
+        # Read the mesh back in
+        workspace = Workspace(h5file_path)
 
-    assert all(
-        mesh2.octree_cells == mesh.octree_cells
-    ), "Mesh output differs from mesh input"
-    assert all(
-        np.r_[mesh2.origin] == np.r_[mesh.origin]
-    ), "Mesh output differs from mesh input"
+        mesh2 = workspace.get_entity(name)[0]
 
-    assert all(
-        np.r_[mesh2.rotation] == np.r_[mesh.rotation]
-    ), "Mesh output differs from mesh input"
+        assert all(
+            mesh2.octree_cells == mesh.octree_cells
+        ), "Mesh output differs from mesh input"
+        assert all(
+            np.r_[mesh2.origin] == np.r_[mesh.origin]
+        ), "Mesh output differs from mesh input"
 
-    os.remove(os.path.join(os.getcwd(), h5file))
+        assert all(
+            np.r_[mesh2.rotation] == np.r_[mesh.rotation]
+        ), "Mesh output differs from mesh input"

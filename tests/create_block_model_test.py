@@ -1,4 +1,5 @@
-import os
+import tempfile
+from pathlib import Path
 
 import numpy as np
 
@@ -7,9 +8,20 @@ from geoh5py.shared import Entity, EntityType
 from geoh5py.workspace import Workspace
 
 
+def compare_objects(object_a, object_b):
+    for attr in object_a.__dict__.keys():
+        if attr in ["_workspace", "_children"]:
+            continue
+        if isinstance(getattr(object_a, attr[1:]), (Entity, EntityType)):
+            compare_objects(getattr(object_a, attr[1:]), getattr(object_b, attr[1:]))
+        else:
+            assert np.all(
+                getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
+            ), f"Output attribute {attr[1:]} for {object_a} do not match input {object_b}"
+
+
 def test_create_block_model_data():
 
-    h5file = r"block_model.geoh5"
     name = "MyTestBlockModel"
 
     # Generate a 3D array
@@ -46,53 +58,41 @@ def test_create_block_model_data():
         ),
     ]
 
-    # # Create a workspace
-    workspace = Workspace(os.path.join(os.getcwd(), h5file))
+    with tempfile.TemporaryDirectory() as tempdir:
+        h5file_path = Path(tempdir) / r"block_model.geoh5"
 
-    grid = BlockModel.create(
-        workspace,
-        origin=[0, 0, 0],
-        u_cell_delimiters=nodal_x,
-        v_cell_delimiters=nodal_y,
-        z_cell_delimiters=nodal_z,
-        name=name,
-        rotation=30,
-        allow_move=False,
-    )
+        # Create a workspace
+        workspace = Workspace(h5file_path)
 
-    data = grid.add_data(
-        {
-            "DataValues": {
-                "association": "CELL",
-                "values": (
-                    np.cos(grid.centroids[:, 0])
-                    * np.cos(grid.centroids[:, 1])
-                    * np.cos(grid.centroids[:, 2])
-                ),
+        grid = BlockModel.create(
+            workspace,
+            origin=[0, 0, 0],
+            u_cell_delimiters=nodal_x,
+            v_cell_delimiters=nodal_y,
+            z_cell_delimiters=nodal_z,
+            name=name,
+            rotation=30,
+            allow_move=False,
+        )
+
+        data = grid.add_data(
+            {
+                "DataValues": {
+                    "association": "CELL",
+                    "values": (
+                        np.cos(grid.centroids[:, 0])
+                        * np.cos(grid.centroids[:, 1])
+                        * np.cos(grid.centroids[:, 2])
+                    ),
+                }
             }
-        }
-    )
+        )
 
-    # Read the data back in from a fresh workspace
-    workspace = Workspace(os.path.join(os.getcwd(), h5file))
+        # Read the data back in from a fresh workspace
+        workspace = Workspace(h5file_path)
 
-    rec_obj = workspace.get_entity(name)[0]
-    rec_data = workspace.get_entity("DataValues")[0]
+        rec_obj = workspace.get_entity(name)[0]
+        rec_data = workspace.get_entity("DataValues")[0]
 
-    def compare_objects(object_a, object_b):
-        for attr in object_a.__dict__.keys():
-            if attr in ["_workspace", "_children"]:
-                continue
-            if isinstance(getattr(object_a, attr[1:]), (Entity, EntityType)):
-                compare_objects(
-                    getattr(object_a, attr[1:]), getattr(object_b, attr[1:])
-                )
-            else:
-                assert np.all(
-                    getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
-                ), f"Output attribute {attr[1:]} for {object_a} do not match input {object_b}"
-
-    compare_objects(grid, rec_obj)
-    compare_objects(data, rec_data)
-
-    os.remove(os.path.join(os.getcwd(), h5file))
+        compare_objects(grid, rec_obj)
+        compare_objects(data, rec_data)

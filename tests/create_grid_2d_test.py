@@ -1,4 +1,5 @@
-import os
+import tempfile
+from pathlib import Path
 
 import numpy as np
 
@@ -7,9 +8,20 @@ from geoh5py.shared import Entity, EntityType
 from geoh5py.workspace import Workspace
 
 
+def compare_objects(object_a, object_b):
+    for attr in object_a.__dict__.keys():
+        if attr in ["_workspace", "_children"]:
+            continue
+        if isinstance(getattr(object_a, attr[1:]), (Entity, EntityType)):
+            compare_objects(getattr(object_a, attr[1:]), getattr(object_b, attr[1:]))
+        else:
+            assert np.all(
+                getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
+            ), f"Output attribute {attr[1:]} for {object_a} do not match input {object_b}"
+
+
 def test_create_grid_2d_data():
 
-    h5file = r"test2Grid.geoh5"
     name = "MyTestGrid2D"
 
     # Generate a 2D array
@@ -18,46 +30,34 @@ def test_create_grid_2d_data():
     origin = [0, 0, 0]
     values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
 
-    # # Create a workspace
-    workspace = Workspace(os.path.join(os.getcwd(), h5file))
+    with tempfile.TemporaryDirectory() as tempdir:
+        h5file_path = Path(tempdir) / r"test2Grid.geoh5"
 
-    grid = Grid2D.create(
-        workspace,
-        origin=origin,
-        u_cell_size=d_x,
-        v_cell_size=d_y,
-        u_count=n_x,
-        v_count=n_y,
-        name=name,
-        allow_move=False,
-    )
+        # Create a workspace
+        workspace = Workspace(h5file_path)
 
-    data = grid.add_data({"DataValues": {"values": values}})
-    grid.rotation = 45.0
+        grid = Grid2D.create(
+            workspace,
+            origin=origin,
+            u_cell_size=d_x,
+            v_cell_size=d_y,
+            u_count=n_x,
+            v_count=n_y,
+            name=name,
+            allow_move=False,
+        )
 
-    workspace.finalize()
+        data = grid.add_data({"DataValues": {"values": values}})
+        grid.rotation = 45.0
 
-    # Read the data back in from a fresh workspace
-    workspace = Workspace(os.path.join(os.getcwd(), h5file))
+        workspace.finalize()
 
-    rec_obj = workspace.get_entity(name)[0]
+        # Read the data back in from a fresh workspace
+        workspace = Workspace(h5file_path)
 
-    rec_data = workspace.get_entity("DataValues")[0]
+        rec_obj = workspace.get_entity(name)[0]
 
-    def compare_objects(object_a, object_b):
-        for attr in object_a.__dict__.keys():
-            if attr in ["_workspace", "_children"]:
-                continue
-            if isinstance(getattr(object_a, attr[1:]), (Entity, EntityType)):
-                compare_objects(
-                    getattr(object_a, attr[1:]), getattr(object_b, attr[1:])
-                )
-            else:
-                assert np.all(
-                    getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
-                ), f"Output attribute {attr[1:]} for {object_a} do not match input {object_b}"
+        rec_data = workspace.get_entity("DataValues")[0]
 
-    compare_objects(grid, rec_obj)
-    compare_objects(data, rec_data)
-
-    os.remove(os.path.join(os.getcwd(), h5file))
+        compare_objects(grid, rec_obj)
+        compare_objects(data, rec_data)
