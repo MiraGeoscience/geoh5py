@@ -1,8 +1,25 @@
 [tool.poetry]
 name = "geoh5py"
-version = "0.1.0"
+version = "0.0.1"
+license = "LGPL-3.0-or-later"
 description = "Read and write .geoh5 files from Python"
 authors = ["Mira Geoscience <support@mirageoscience.com>"]
+repository = "https://github.com/MiraGeoscience/GeoH5io"
+documentation = "https://geoh5py.readthedocs.io/en/latest/"
+homepage = "https://mirageoscience.com"
+readme = "README.rst"
+keywords = ["geology", "geophysics", "data", "interoperability"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Topic :: Database",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
 
 [tool.poetry.dependencies]
 python = "^3.7"
@@ -10,7 +27,6 @@ h5py = "^2.10"
 toml = "^0.10.0"
 thriftpy2 = "^0.4.6"
 cython = {version = "^0.29.13", optional = true}
-sphinx = {version = "^2.2", optional = true}
 
 [tool.poetry.dev-dependencies]
 pylint = "^2.3"
@@ -18,10 +34,14 @@ pytest = "^3.0"
 thrift-pyi = "^0.1.0"
 pytest-cov = "^2.7.1"
 scipy = "^1.4.1"
+poetry-setup = "^0.3.6"
+sphinx = "^3.0"
+sphinx-rtd-theme = "^0.4.3"
+sphinx-autodoc-typehints = "^1.10"
+lockfile = "^0.12.2"
 
 [tool.poetry.extras]
 cython = ["cython"]
-doc = ["sphinx"]
 
 [tool.isort]
 # settings for compatibility between ``isort`` and ``black`` formatting
@@ -31,7 +51,7 @@ force_grid_wrap = 0
 use_parentheses = true
 line_length = 88
 # auto-updated by seed-isort-config
-known_third_party = ["Add2Build", "StringIO", "autodoc", "edit_on_github", "environmentSetup", "h5py", "numpy", "pytest", "scipy", "setuptools", "thriftpy2", "toml", "urllib2"]
+known_third_party = ["Add2Build", "StringIO", "autodoc", "edit_on_github", "environmentSetup", "h5py", "numpy", "pytest", "scipy", "thriftpy2", "toml", "urllib2"]
 
 [tool.black]
 # defaults are just fine
