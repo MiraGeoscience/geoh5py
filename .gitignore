@@ -100,10 +100,13 @@ venv.bak/
 # mkdocs documentation
 /site
 
+#pycharm
+/.idea/*
+!/.idea/scopes/
+!/.idea/copyright/
+
 # mypy
 .mypy_cache/
-/.idea/
-/config.toml
 
 # geoh5 locks
 *.geoh5.lock
