@@ -213,8 +213,9 @@ class BlockModel(ObjectBase):
     @property
     def centroids(self):
         """
-        Cell center locations in world coordinates [x_i, y_i, z_i]:
-        array of floats, shape(n_cells, 3)
+        Cell center locations in world coordinates [[x_i, y_i, z_i], ...]
+
+        :return centroids: array of floats, shape(nC, 3)
         """
         if getattr(self, "_centroids", None) is None:
 
