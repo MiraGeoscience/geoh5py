@@ -31,10 +31,7 @@ def test_octree():
             rotation=45,
         )
 
-        # Refine globally to first octree
-        # mesh.refine(1)
-
-        assert mesh.n_cells == 8, "Number of octree cells after refine is wrong"
+        assert mesh.n_cells == 8, "Number of octree cells after base_refine is wrong"
 
         # Refine
         workspace.save_entity(mesh)
