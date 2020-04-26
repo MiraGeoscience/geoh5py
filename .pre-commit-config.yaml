@@ -40,6 +40,12 @@ repos:
         language: system
         types: [python]
         exclude: ^doc/
+    -   id: check-copyright
+        name: Check copyright
+        entry: python devtools/check-copyright.py
+        language: python
+        types: [python]
+        exclude: (devtools|docs)/
 -   repo: https://github.com/codespell-project/codespell
     rev: v1.16.0
     hooks:
