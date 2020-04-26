@@ -87,7 +87,7 @@ class Octree(ObjectBase):
     @property
     def rotation(self) -> float:
         """
-        Clockwise rotation angle (degree) about the vertical axis: float
+        Clockwise rotation angle (degree) about the vertical axis
         """
         return self._rotation
 
@@ -104,7 +104,7 @@ class Octree(ObjectBase):
     @property
     def u_count(self) -> Optional[int]:
         """
-        Number of base cells along u-axis: int
+        Number of base cells along u-axis
         """
         return self._u_count
 
@@ -121,7 +121,7 @@ class Octree(ObjectBase):
     @property
     def v_count(self) -> Optional[int]:
         """
-        Number of base cells along v-axis: int
+        Number of base cells along v-axis
         """
         return self._v_count
 
@@ -138,7 +138,7 @@ class Octree(ObjectBase):
     @property
     def w_count(self) -> Optional[int]:
         """
-        Number of base cells along w-axis: int
+        Number of base cells along w-axis
         """
         return self._w_count
 
@@ -155,12 +155,7 @@ class Octree(ObjectBase):
     @property
     def u_cell_size(self) -> Optional[float]:
         """
-        u_cell_size
-
-        Returns
-        -------
-        u_cell_size: float
-            Cell size along the u-coordinate
+        Base cell size along the u-coordinate
         """
         return self._u_cell_size
 
@@ -177,12 +172,7 @@ class Octree(ObjectBase):
     @property
     def v_cell_size(self) -> Optional[float]:
         """
-        v_cell_size
-
-        Returns
-        -------
-        v_cell_size: float
-            Cell size along the v-coordinate
+        Base cell size along the v-coordinate
         """
         return self._v_cell_size
 
@@ -199,12 +189,7 @@ class Octree(ObjectBase):
     @property
     def w_cell_size(self) -> Optional[float]:
         """
-        w_cell_size
-
-        Returns
-        -------
-        w_cell_size: float
-            Cell size along the w-coordinate
+        Base cell size along the w-coordinate
         """
         return self._w_cell_size
 
@@ -221,13 +206,11 @@ class Octree(ObjectBase):
     @property
     def octree_cells(self) -> Optional[np.ndarray]:
         """
-        octree_cells
-
-        Returns
-        -------
-        octree_cells: numpy.ndarray(int) of shape (nC, 4)
-            Array defining the i,j,k ordering and cell dimensions
+        Array defining the i,j,k ordering and cell dimensions
             [i, j, k, n_cells]
+
+        :return octree_cells: numpy.ndarray(int) of shape (nC, 4)
+
         """
         if getattr(self, "_octree_cells", None) is None:
             if self.existing_h5_entity:
@@ -270,14 +253,9 @@ class Octree(ObjectBase):
     @property
     def centroids(self):
         """
-        centroids
-        Cell center locations of each cell
+        Coordinate locations of each cell centers [[x_i, y_i, z_i], ...]
 
-        Returns
-        -------
-        centroids: array of floats, shape(nC, 3)
-            The cell center locations [x_i, y_i, z_i]
-
+        :return centroids: array of floats, shape(nC, 3)
         """
         if getattr(self, "_centroids", None) is None:
             assert self.octree_cells is not None, "octree_cells must be set"
@@ -314,39 +292,15 @@ class Octree(ObjectBase):
     @property
     def n_cells(self) -> Optional[int]:
         """
-        n_cells
-
-        Returns
-        -------
-            n_cells: int
-                Number of cells
+        Total number of cells in the mesh
         """
         if self.octree_cells is not None:
             return self.octree_cells.shape[0]
         return None
 
-    def sort_children_data(self, indices):
-        """
-        sort_valued_children(entity)
-
-        Change the order of values of children of an entity
-
-        Parameters
-        ----------
-        entity: Entity
-            The parent entity
-        indices: numpy.ndarray(int)
-            Array of indices used to sort the data
-
-        """
-        for child in self.children:
-            if isinstance(child, FloatData):
-                if (child.values is not None) and (child.association.name in ["CELL"]):
-                    child.values = child.values[indices]
-
     def base_refine(self):
         """
-        Function to refine the mesh to its base octree level resulting in a
+        Refine the mesh to its base octree level resulting in a
         single cell along the shortest dimension.
         """
         assert (
