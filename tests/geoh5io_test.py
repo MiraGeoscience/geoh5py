@@ -15,8 +15,18 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from geoh5py import __version__
+from pathlib import Path
+
+import toml
+
+import geoh5py
+
+
+def get_version():
+    path = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    pyproject = toml.loads(open(str(path)).read())
+    return pyproject["tool"]["poetry"]["version"]
 
 
 def test_version():
-    assert __version__ == "0.1.0"
+    assert geoh5py.__version__ == get_version()
