@@ -40,9 +40,13 @@ sphinx = "^3.0"
 sphinx-rtd-theme = "^0.4.3"
 sphinx-autodoc-typehints = "^1.10"
 lockfile = "^0.12.2"
+poetry-publish = "^0.3.1"
 
 [tool.poetry.extras]
 cython = ["cython"]
+
+[tool.poetry.scripts]
+publish = 'devtools.publish:publish'
 
 [tool.isort]
 # settings for compatibility between ``isort`` and ``black`` formatting
@@ -52,7 +56,7 @@ force_grid_wrap = 0
 use_parentheses = true
 line_length = 88
 # auto-updated by seed-isort-config
-known_third_party = ["Add2Build", "StringIO", "autodoc", "edit_on_github", "environmentSetup", "h5py", "numpy", "pytest", "scipy", "thriftpy2", "toml", "urllib2"]
+known_third_party = ["Add2Build", "StringIO", "autodoc", "edit_on_github", "environmentSetup", "h5py", "numpy", "poetry_publish", "pytest", "scipy", "thriftpy2", "toml", "urllib2"]
 
 [tool.black]
 # defaults are just fine
