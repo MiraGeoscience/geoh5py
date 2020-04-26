@@ -63,7 +63,10 @@ jobs:
 
   pytest:
     name: pytest
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.platform }}
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python version
@@ -79,6 +82,8 @@ jobs:
     - name: Run pytest
       run: poetry run pytest --cov-report=xml --cov=geoh5py --cov-branch --cov-fail-under=80
     - name: Upload coverage to Codecov
-      if: success()
-      run: >-
-        bash <(curl -s https://codecov.io/bash) -t ${{secrets.CODECOV_UPLOAD_TOKEN}} -n GitHub
+      if: success() && matrix.platform == 'windows-latest'
+      uses: codecov/codecov-action@v1.0.6
+      with:
+        name: GitHub
+        token: ${{secrets.CODECOV_UPLOAD_TOKEN}}
