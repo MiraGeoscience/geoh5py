@@ -43,7 +43,7 @@ repos:
         entry: poetry run pylint
         language: system
         types: [python]
-        exclude: docs/
+        exclude: (devtools|docs)/
     -   id: check-copyright
         name: Check copyright
         entry: python devtools/check-copyright.py
