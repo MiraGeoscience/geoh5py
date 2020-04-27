@@ -416,11 +416,13 @@ python-versions = "^3.6"
 version = "0.3.1"
 
 [package.dependencies]
-python-creole = "*"
 twine = "*"
 
+[package.extras]
+creole = ["python-creole"]
+
 [package.source]
-reference = "028b3e7bc104ce229129ccf40259c793d03bdbc1"
+reference = "c4d8712b7c1131b5aa9d7521180c85eba1f8e32a"
 type = "git"
 url = "https://github.com/MiraGeoscience/poetry-publish.git"
 [[package]]
@@ -510,17 +512,6 @@ pytest = ">=3.6"
 
 [package.extras]
 testing = ["fields", "hunter", "process-tests (2.0.2)", "six", "virtualenv"]
-
-[[package]]
-category = "dev"
-description = "python-creole is an open-source (GPL) markup converter in pure Python for: creole2html, html2creole, html2ReSt, html2textile"
-name = "python-creole"
-optional = false
-python-versions = ">=3.6,<4.0"
-version = "1.4.6"
-
-[package.dependencies]
-docutils = "*"
 
 [[package]]
 category = "dev"
@@ -1267,10 +1258,6 @@ pytest = [
 pytest-cov = [
     {file = "pytest-cov-2.8.1.tar.gz", hash = "sha256:cc6742d8bac45070217169f5f72ceee1e0e55b0221f54bcf24845972d3a47f2b"},
     {file = "pytest_cov-2.8.1-py2.py3-none-any.whl", hash = "sha256:cdbdef4f870408ebdbfeb44e63e07eb18bb4619fae852f6e760645fa36172626"},
-]
-python-creole = [
-    {file = "python-creole-1.4.6.tar.gz", hash = "sha256:7e568876b7bfc9b9637eaa3d278fb4e3af896632800b2d068d2c27ee831c2678"},
-    {file = "python_creole-1.4.6-py3-none-any.whl", hash = "sha256:ad8bc005bbe7efd91cf37c4227365f456fd593af76b2b04cdce1704fcf36a368"},
 ]
 pytz = [
     {file = "pytz-2019.3-py2.py3-none-any.whl", hash = "sha256:1c557d7d0e871de1f5ccd5833f60fb2550652da6be2693c1e02300743d21500d"},
