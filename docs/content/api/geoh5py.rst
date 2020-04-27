@@ -1,8 +1,8 @@
-geoh5py package
-===============
+API
+===
 
-Subpackages
------------
+.. Subpackages
+.. -----------
 
 .. toctree::
 
@@ -13,10 +13,10 @@ Subpackages
    geoh5py.shared
    geoh5py.workspace
 
-Module contents
----------------
+.. Module contents
+.. ---------------
 
-.. automodule:: geoh5py
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. .. automodule:: geoh5py
+..    :members:
+..    :undoc-members:
+..    :show-inheritance:
