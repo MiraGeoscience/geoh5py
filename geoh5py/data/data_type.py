@@ -73,7 +73,7 @@ class DataType(EntityType):
 
     @color_map.setter
     def color_map(self, color_map: Dict):
-        assert "values" in list(color_map.keys()), f"color_map must contain 'values' "
+        assert "values" in list(color_map.keys()), "'color_map' must contain 'values'"
         self._color_map = ColorMap(**color_map)
         self.modified_attributes = "Color map"
 
