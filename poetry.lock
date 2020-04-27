@@ -409,16 +409,20 @@ version = "3.11"
 
 [[package]]
 category = "dev"
-description = "Helper to build and upload a project that used poetry to PyPi, with prechecks"
+description = ""
 name = "poetry-publish"
 optional = false
-python-versions = ">=3.6,<4.0"
+python-versions = "^3.6"
 version = "0.3.1"
 
 [package.dependencies]
 python-creole = "*"
 twine = "*"
 
+[package.source]
+reference = "028b3e7bc104ce229129ccf40259c793d03bdbc1"
+type = "git"
+url = "https://github.com/MiraGeoscience/poetry-publish.git"
 [[package]]
 category = "dev"
 description = "library with cross-python path, ini-parsing, io, code, log facilities"
@@ -882,7 +886,7 @@ testing = ["jaraco.itertools", "func-timeout"]
 cython = ["cython"]
 
 [metadata]
-content-hash = "76eb1c07a42e8c2c96118420c8ac1bce5e4a3147bd86b7929bd172f78f733a6c"
+content-hash = "67957f783266f1e7dcd3afec37dfa9b1e241596c279f690522f0711037e68f34"
 python-versions = "^3.7"
 
 [metadata.files]
@@ -1231,10 +1235,7 @@ ply = [
     {file = "ply-3.11-py2.py3-none-any.whl", hash = "sha256:096f9b8350b65ebd2fd1346b12452efe5b9607f7482813ffca50c22722a807ce"},
     {file = "ply-3.11.tar.gz", hash = "sha256:00c7c1aaa88358b9c765b6d3000c6eec0ba42abca5351b095321aef446081da3"},
 ]
-poetry-publish = [
-    {file = "poetry-publish-0.3.1.tar.gz", hash = "sha256:54c40d8297f5c4080c4f8de80df873ea890c6e87851268f8dddeb41764ddc311"},
-    {file = "poetry_publish-0.3.1-py3-none-any.whl", hash = "sha256:398cf64dd0215c280fb70c451ce7cdbf08f704184f5e2dad287c66a96a938210"},
-]
+poetry-publish = []
 py = [
     {file = "py-1.8.1-py2.py3-none-any.whl", hash = "sha256:c20fdd83a5dbc0af9efd622bee9a5564e278f6380fffcacc43ba6f43db2813b0"},
     {file = "py-1.8.1.tar.gz", hash = "sha256:5e27081401262157467ad6e7f851b7aa402c5852dbcb3dae06768434de5752aa"},

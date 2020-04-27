@@ -39,7 +39,7 @@ sphinx = "^3.0"
 sphinx-rtd-theme = "^0.4.3"
 sphinx-autodoc-typehints = "^1.10"
 lockfile = "^0.12.2"
-poetry-publish = "^0.3.1"
+poetry-publish = {git = "https://github.com/MiraGeoscience/poetry-publish.git", rev = "pending_fixes"}
 
 [tool.poetry.extras]
 cython = ["cython"]
