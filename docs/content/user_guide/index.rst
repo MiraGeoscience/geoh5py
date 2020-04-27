@@ -1,12 +1,10 @@
 User Guide
 ==========
 
-This section provides a collection of tutorials for common use of the **gh5py**
+This section provides a collection of tutorials for common use of the **geoh5py** package.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    workspace.ipynb
-   groups.ipynb
-   objects.ipynb
-   data.ipynb
+   entities.ipynb
