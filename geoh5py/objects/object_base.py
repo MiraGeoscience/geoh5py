@@ -154,7 +154,7 @@ class ObjectBase(Entity):
         ...
 
     def add_data_to_group(
-        self, data: Union[Data, uuid.UUID, str], name: str
+        self, data: Union[List, Data, uuid.UUID, str], name: str
     ) -> PropertyGroup:
         """
         Append data to a property group where the data can be a Data object, its name
@@ -172,12 +172,22 @@ class ObjectBase(Entity):
         # if prop_group is None:
         prop_group = self.find_or_create_property_group(name=name)
 
-        if isinstance(data, Data):
-            uid = [data.uid]
-        elif isinstance(data, str):
-            uid = [obj.uid for obj in self.workspace.get_entity(data)]
+        def reference_to_uid(value):
+            if isinstance(value, Data):
+                uid = [value.uid]
+            elif isinstance(value, str):
+                uid = [obj.uid for obj in self.workspace.get_entity(value)]
+            elif isinstance(value, uuid.UUID):
+                uid = [value]
+            return uid
+
+        if isinstance(data, list):
+            uid = []
+
+            for datum in data:
+                uid += reference_to_uid(datum)
         else:
-            uid = [data]
+            uid = reference_to_uid(data)
 
         for i in uid:
             assert i in [
