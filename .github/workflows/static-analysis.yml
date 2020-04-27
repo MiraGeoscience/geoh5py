@@ -54,7 +54,7 @@ jobs:
       if: github.event_name == 'pull_request'
       run: >-
         poetry run pylint -j0 $(
-        git diff --name-only refs/remotes/origin/${{github.base_ref}}... | grep -E '^(geoh5py|tests)/.*\.py$'
+        git diff --diff-filter=AM --name-only refs/remotes/origin/${{github.base_ref}}... | grep -E '^(geoh5py|tests)/.*\.py$'
         || echo 'geoh5py/__init__.py'
         )
     - name: Run pylint on all files

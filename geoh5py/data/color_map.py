@@ -63,7 +63,7 @@ class ColorMap:
         else:
             assert (
                 values.shape[1] == 5
-            ), f"'values' must be a an array of shape (*, 5) for [value, r, g, b, a]"
+            ), "'values' must be a an array of shape (*, 5) for [value, r, g, b, a]"
             self._values = np.core.records.fromarrays(
                 values.T, names=names, formats=formats
             )

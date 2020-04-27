@@ -129,7 +129,7 @@ apidoc_separate_modules = True
 # -- Edit on Github Extension ---------------------------------------------
 
 edit_on_github_branch = "master"
-edit_on_github_project = "mirageoscience/geoh5io"
+edit_on_github_project = "mirageoscience/geoh5py"
 edit_on_github_directory = "docs"
 
 # -- Options for HTML output ----------------------------------------------

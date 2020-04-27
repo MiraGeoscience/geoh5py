@@ -1,6 +1,0 @@
-# This is a configuration in TOML format.
-# (Copy as config.toml in you startup and change values as you see fit)
-
-PORT = 9090
-HOST = "localhost"
-TIMEOUT = 30 # in seconds

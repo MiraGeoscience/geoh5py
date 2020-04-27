@@ -8,7 +8,7 @@ dependencies:
   - git
   - pip
   - pip:
-    - git+https://github.com/MiraGeoscience/GeoH5io.git
+    - git+https://github.com/MiraGeoscience/geoh5py.git
     - sphinx
     - sphinx_rtd_theme
     - sphinxcontrib-bibtex
