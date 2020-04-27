@@ -45,11 +45,11 @@ Install **geoh5py** from PyPI::
 To install the latest development version of **geoh5py**, you can use pip with the
 latest GitHub master::
 
-    $ pip install git+https://github.com/domfournier/GeoH5io.git
+    $ pip install git+https://github.com/MiraGeoscience/geoh5py.git
 
 To work with **geoh5py** source code in development, install from GitHub::
 
-    $ git clone --recursive https://github.com/domfournier/GeoH5io.git
+    $ git clone --recursive https://github.com/MiraGeoscience/geoh5py.git
     $ cd geoh5py
     $ python setup.py install
 
@@ -70,7 +70,7 @@ Feedback:
 Have comments or suggestions? Submit feedback.
 All the content can be found on our github_ repository.
 
-.. _github: https://github.com/domfournier/GeoH5io
+.. _github: https://github.com/MiraGeoscience/geoh5py
 
 
 Contributors:

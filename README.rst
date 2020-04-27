@@ -1,5 +1,5 @@
-.. image:: https://codecov.io/gh/MiraGeoscience/GeoH5io/branch/development/graph/badge.svg?token=cBBxmt1WiA
-  :target: https://codecov.io/gh/MiraGeoscience/GeoH5io
+.. image:: https://codecov.io/gh/MiraGeoscience/geoh5py/branch/development/graph/badge.svg?token=cBBxmt1WiA
+  :target: https://codecov.io/gh/MiraGeoscience/geoh5py
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
   :target: https://github.com/psf/black
 
