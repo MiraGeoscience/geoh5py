@@ -15,20 +15,22 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from pathlib import Path
-from types import ModuleType
-from typing import Dict
+try:
+    import thriftpy2
+except (ModuleNotFoundError, ImportError):
+    pass
+else:
+    from pathlib import Path
+    from types import ModuleType
+    from typing import Dict
 
-import thriftpy2
+    _INTERFACES_PATH = Path("interfaces")
+    _INTERFACES: Dict[str, ModuleType] = {}
 
-_INTERFACES_PATH = Path("interfaces")
-_INTERFACES: Dict[str, ModuleType] = {}
-
-
-def __getattr__(name):
-    try:
-        return _INTERFACES[name]
-    except KeyError:
-        interface = thriftpy2.load(str(_INTERFACES_PATH.joinpath(f"{name}.thrift")))
-        _INTERFACES[name] = interface
-        return interface
+    def __getattr__(name):
+        try:
+            return _INTERFACES[name]
+        except KeyError:
+            interface = thriftpy2.load(str(_INTERFACES_PATH.joinpath(f"{name}.thrift")))
+            _INTERFACES[name] = interface
+            return interface
