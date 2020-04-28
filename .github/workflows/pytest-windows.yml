@@ -1,0 +1,31 @@
+name: pytest on Windows
+
+on:
+  pull_request:
+    branches:
+    - development
+
+jobs:
+  pytest:
+    name: pytest
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python version
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Environment
+      run: echo ::add-path::$HOME/.poetry/bin
+    - name: Install
+      run: |
+        curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+        poetry install
+    - name: pytest
+      run: poetry run pytest --cov-report=xml --cov=geoh5py --cov-branch --cov-fail-under=80
+    - name: Codecov
+      if: success()
+      uses: codecov/codecov-action@v1.0.6
+      with:
+        name: GitHub
+        token: ${{secrets.CODECOV_UPLOAD_TOKEN}}

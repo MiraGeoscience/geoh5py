@@ -1,7 +1,7 @@
 
 default_language_version:
     python: python3
-exclude: 'docs/(conf.py|_ext/)'
+exclude: docs/(conf.py|_ext/)
 fail_fast: false
 repos:
 -   repo: https://github.com/psf/black
@@ -21,8 +21,12 @@ repos:
     rev: v1.1
     hooks:
     -   id: autoflake
+-   repo: https://gitlab.com/pycqa/flake8
+    rev: 3.7.9
+    hooks:
+    -   id: flake8
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v2.2.1
+    rev: v2.3.0
     hooks:
     -   id: pyupgrade
         args: [--py36-plus]
@@ -39,7 +43,13 @@ repos:
         entry: poetry run pylint
         language: system
         types: [python]
-        exclude: ^doc/
+        exclude: (devtools|docs)/
+    -   id: check-copyright
+        name: Check copyright
+        entry: python devtools/check-copyright.py
+        language: python
+        types: [python]
+        exclude: (devtools|docs)/
 -   repo: https://github.com/codespell-project/codespell
     rev: v1.16.0
     hooks:
@@ -59,7 +69,6 @@ repos:
         exclude: \.mdj$
     -   id: mixed-line-ending
     -   id: name-tests-test
-    -   id: flake8
 -   repo: local
     hooks:
     -   id: rstcheck
