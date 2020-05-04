@@ -2,29 +2,23 @@ Installation
 ============
 
 **geoh5py** is currently written for Python 3.6 or higher, and depends on `NumPy <https://numpy.org/>`_ and
-`h5py <https://www.h5py.org/>`_. Users will likely want to also make use of advanced processing
-techniques made available under the python ecosystem. We therefore recommend installing
-Anaconda to handle the various packages.
+`h5py <https://www.h5py.org/>`_.
 
 
-Step 1- Setup Anaconda
-----------------------
-`Download and install Anaconda <https://www.anaconda.com/download/>`_
 
-.. figure:: ../images/installation/MinicondaInstaller.png
-    :align: center
-    :width: 400
+.. note:: Users will likely want to take advantage of other packages available in the Python ecosystem. We therefore recommend using `Anaconda <https://www.anaconda.com/download/>`_ to manage the installation.
+
+	.. figure:: ../images/installation/MinicondaInstaller.png
+	    :align: center
+	    :width: 200
 
 
-Step 2: Install **geoh5py**
----------------------------
-
-From an Anaconda Prompt, install **geoh5py** from PyPI::
+Install **geoh5py** from PyPI::
 
     $ pip install geoh5py
 
-To install the latest development version of **geoh5py**, you can use pip with the
-latest GitHub master::
+To install the latest development version of **geoh5py**, you can use ``pip`` with the
+latest GitHub ``development`` branch::
 
     $ pip install git+https://github.com/MiraGeoscience/geoh5py.git
 
