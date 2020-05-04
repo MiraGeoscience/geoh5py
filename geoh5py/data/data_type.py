@@ -66,8 +66,14 @@ class DataType(EntityType):
 
     @property
     def color_map(self) -> Optional[ColorMap]:
-        """
-        Colormap used for plotting
+        r"""
+        :obj:`~geoh5py.data.color_map.ColorMap`: Colormap used for plotting
+
+        The colormap can be set from a :obj:`dict` of sorted values with
+        corresponding RGBA color.
+
+        .. math:: \{val_1: [r_1, g_1, b_1, a_1], ..., val_i: [r_i, g_i, b_i, a_i]\}
+
         """
         return self._color_map
 
@@ -80,7 +86,7 @@ class DataType(EntityType):
     @property
     def units(self) -> Optional[str]:
         """
-        Data units
+        :obj:`str`: Data units
         """
         return self._units
 
@@ -92,7 +98,7 @@ class DataType(EntityType):
     @property
     def number_of_bins(self) -> Optional[int]:
         """
-        Number of bins used by the histogram
+        :obj:`int`: Number of bins used by the histogram [50]
         """
         return self._number_of_bins
 
@@ -104,7 +110,7 @@ class DataType(EntityType):
     @property
     def transparent_no_data(self) -> bool:
         """
-        Use transparent for no-data-value
+        :obj:`bool`: Use transparent for no-data-value [True]
         """
         return self._transparent_no_data
 
@@ -116,7 +122,7 @@ class DataType(EntityType):
     @property
     def hidden(self) -> bool:
         """
-        Hidden data
+        :obj:`bool`: Hidden data [False]
         """
         return self._hidden
 
@@ -128,7 +134,8 @@ class DataType(EntityType):
     @property
     def mapping(self) -> str:
         """
-        Color stretching type
+        :obj:`str`: Color stretching type chosen from:
+        'linear', ['equal_area'], 'logarithmic', 'cdf', 'missing'
         """
         return self._mapping
 
@@ -143,6 +150,9 @@ class DataType(EntityType):
 
     @property
     def primitive_type(self) -> Optional[PrimitiveTypeEnum]:
+        """
+        :obj:`~geoh5py.data.primitive_type_enum.PrimitiveTypeEnum`
+        """
         return self._primitive_type
 
     @primitive_type.setter
@@ -159,11 +169,12 @@ class DataType(EntityType):
     def create(
         cls, workspace: "workspace.Workspace", data_class: Type["data.Data"]
     ) -> DataType:
-        """ Creates a new instance of DataType with the primitive type from the given Data
-        implementation class.
+        """ Creates a new instance of :obj:`~geoh5py.data.data_type.DataType` with
+        corresponding :obj:`~geoh5py.data.primitive_type_enum.PrimitiveTypeEnum`
 
-        :param data_class: A Data implementation class.
-        :return: A new instance of DataType.
+        :param data_class: A :obj:`~geoh5py.data.data.Data` implementation class.
+
+        :return: A new instance of :obj:`~geoh5py.data.data_type.DataType`.
         """
         uid = uuid.uuid4()
         primitive_type = data_class.primitive_type()
@@ -173,9 +184,6 @@ class DataType(EntityType):
     def find_or_create(cls, workspace: "workspace.Workspace", **kwargs) -> DataType:
         """ Find or creates an EntityType with given UUID that matches the given
         Group implementation class.
-
-        It is expected to have a single instance of EntityType in the Workspace
-        for each concrete Entity class.
 
         :param workspace: An active Workspace class
 

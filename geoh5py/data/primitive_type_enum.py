@@ -19,6 +19,12 @@ from enum import Enum
 
 
 class PrimitiveTypeEnum(Enum):
+    """
+    Known data type.
+
+    Available options:
+    """
+
     INVALID = 0
     INTEGER = 1
     FLOAT = 2

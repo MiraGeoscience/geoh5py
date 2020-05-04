@@ -53,14 +53,15 @@ class Data(Entity):
     @property
     def no_data_value(self) -> float:
         """
-        :return: Default no-data-value
+        :obj:`float`: Default no-data-value
         """
         return self._no_data_value
 
     @property
     def n_values(self) -> Optional[int]:
         """
-        :return: Number of expected data values
+        :obj:`int`: Number of expected data values based on
+        :obj:`~geoh5py.data.data.Data.association`
         """
         if self.association is DataAssociationEnum.VERTEX:
             return self.parent.n_vertices
@@ -75,6 +76,9 @@ class Data(Entity):
 
     @property
     def values(self):
+        """
+        Data values
+        """
         return self._values
 
     @property

@@ -40,11 +40,11 @@ class ColorMap:
     @property
     def values(self) -> np.ndarray:
         """
-        Colormap defined by an array of RGBA and values such that
+        :obj:`numpy.array`: Colormap defined by values and corresponding RGBA:
 
-        [[V_1, R_1, G_1, B_1, A_1], ..., [V_i, R_i, G_i, B_i, A_i]]
+        .. math:: [[V_1, R_1, G_1, B_1, A_1], ..., [V_i, R_i, G_i, B_i, A_i]]
 
-        where V (Value) are sorted float values defining the position of each RGBA.
+        where V (Values) are sorted floats defining the position of each RGBA.
         R (Red), G (Green), B (Blue) and A (Alpha) are integer values between [0, 255].
         """
         return self._values
@@ -71,7 +71,7 @@ class ColorMap:
     @property
     def name(self) -> str:
         """
-        Name of the colormap
+        :obj:`str`: Name of the colormap
         """
         return self._name
 
