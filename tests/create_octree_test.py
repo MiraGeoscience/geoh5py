@@ -55,7 +55,6 @@ def test_octree():
 
         # Read the mesh back in
         workspace = Workspace(h5file_path)
-
         mesh2 = workspace.get_entity(name)[0]
 
         assert all(
