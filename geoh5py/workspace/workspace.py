@@ -310,7 +310,7 @@ class Workspace:
 
         for entity_type in self.all_types():
             if len(entity_type.modified_attributes) > 0:
-                H5Writer.add_entity_type(entity_type)
+                H5Writer.write_entity_type(entity_type)
 
         H5Writer.finalize(self)
 
