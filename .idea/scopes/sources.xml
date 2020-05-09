@@ -1,3 +1,3 @@
 <component name="DependencyValidationManager">
-  <scope name="sources" pattern="file[GeoH5io]:server//*||file[GeoH5io]:tests//*||file[GeoH5io]:examples//*||file[GeoH5io]:geoh5py//*" />
+  <scope name="sources" pattern="file[geoh5py]:geoh5py//*||file[geoh5py]:examples//*||file[geoh5py]:tests//*" />
 </component>
