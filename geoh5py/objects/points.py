@@ -48,7 +48,7 @@ class Points(ObjectBase):
     @property
     def vertices(self) -> Optional[np.ndarray]:
         """
-        Array of vertices coordinates, shape ("*", 3)
+        :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`
         """
         if (getattr(self, "_vertices", None) is None) and self.existing_h5_entity:
             self._vertices = self.workspace.fetch_vertices(self.uid)
