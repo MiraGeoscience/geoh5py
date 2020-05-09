@@ -1,9 +1,6 @@
 API
 ===
 
-.. Subpackages
-.. -----------
-
 .. toctree::
 
    geoh5py.data
@@ -12,11 +9,3 @@ API
    geoh5py.objects
    geoh5py.shared
    geoh5py.workspace
-
-.. Module contents
-.. ---------------
-
-.. .. automodule:: geoh5py
-..    :members:
-..    :undoc-members:
-..    :show-inheritance:
