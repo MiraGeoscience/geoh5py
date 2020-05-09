@@ -4,17 +4,9 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.6
+  - python=3.7
+  - h5py
   - git
   - pip
   - pip:
     - git+https://github.com/MiraGeoscience/geoh5py.git
-    - sphinx
-    - sphinx_rtd_theme
-    - sphinxcontrib-bibtex
-    - nbsphinx
-    - nbstripout
-    - numpydoc
-    - download
-    - tqdm
-  - matplotlib
