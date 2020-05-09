@@ -8,6 +8,7 @@ dependencies:
   - h5py
   - pip:
     - sphinx
+    - sphinx_issues
     - sphinx_rtd_theme
     - sphinxcontrib-bibtex
     - nbsphinx
