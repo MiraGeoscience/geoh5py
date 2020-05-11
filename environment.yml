@@ -14,3 +14,4 @@ dependencies:
     - nbsphinx
     - nbstripout
     - numpydoc
+    - jupyter_client
