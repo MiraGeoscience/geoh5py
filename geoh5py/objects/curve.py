@@ -100,9 +100,10 @@ class Curve(Points):
     def parts(self, indices: Union[List, np.ndarray]):
         if self.vertices is not None:
             if isinstance(indices, list):
-                indices = np.asarray(indices)
+                indices = np.asarray(indices, dtype="int32")
+            else:
+                indices = indices.astype("int32")
 
-            assert indices.dtype == int, "Indices array must be of type 'uint32'"
             assert indices.shape == (
                 self.vertices.shape[0],
             ), f"Provided parts must be of shape {self.vertices.shape[0]}"
