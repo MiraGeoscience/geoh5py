@@ -67,7 +67,7 @@ class BlockModel(ObjectBase):
     @property
     def origin(self) -> np.array:
         """
-        Coordinates of the origin: array of floats, shape (3,)
+        :obj:`numpy.array` shape (3,): Coordinates of the origin
         """
         return self._origin
 
