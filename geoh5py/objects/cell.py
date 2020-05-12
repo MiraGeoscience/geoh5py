@@ -17,5 +17,9 @@
 
 
 class Cell:
+    """
+        .. warning:: Not yet implemented.
+    """
+
     def __init__(self):
         self._rep = None
