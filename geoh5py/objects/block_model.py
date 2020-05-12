@@ -105,7 +105,7 @@ class BlockModel(ObjectBase):
     @property
     def origin(self) -> np.array:
         """
-        :obj:`numpy.array`, shape (3,): Coordinates of the origin
+        :obj:`numpy.array`, shape (3, ): Coordinates of the origin
         """
         return self._origin
 
@@ -115,7 +115,9 @@ class BlockModel(ObjectBase):
             if isinstance(value, np.ndarray):
                 value = value.tolist()
 
-            assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
+            assert (
+                len(value) == 3
+            ), "Origin must be a list or numpy array of shape (3, )"
 
             self.modified_attributes = "attributes"
             self._centroids = None
@@ -145,7 +147,7 @@ class BlockModel(ObjectBase):
     @property
     def shape(self) -> Optional[Tuple]:
         """
-        :obj:`list`, len (3,): Number of cells along the u, v and z-axis
+        :obj:`list`, len (3, ): Number of cells along the u, v and z-axis
         """
         if (
             self.u_cells is not None
