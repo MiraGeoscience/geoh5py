@@ -172,18 +172,23 @@ class ObjectBase(Entity):
         # if prop_group is None:
         prop_group = self.find_or_create_property_group(name=name)
 
+        children_uid = [child.uid for child in self.children]
+
         def reference_to_uid(value):
             if isinstance(value, Data):
                 uid = [value.uid]
             elif isinstance(value, str):
-                uid = [obj.uid for obj in self.workspace.get_entity(value)]
+                uid = [
+                    obj.uid
+                    for obj in self.workspace.get_entity(value)
+                    if obj.uid in children_uid
+                ]
             elif isinstance(value, uuid.UUID):
                 uid = [value]
             return uid
 
         if isinstance(data, list):
             uid = []
-
             for datum in data:
                 uid += reference_to_uid(datum)
         else:
