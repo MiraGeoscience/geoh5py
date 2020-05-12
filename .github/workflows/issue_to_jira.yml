@@ -1,0 +1,38 @@
+# This workflow will create a JIRA issue upon creation of a GitHub issue
+
+name: Create JIRA issue
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create JIRA issue
+        env:
+          jiraAuth: ${{ secrets.JIRA_BASIC_AUTH }}
+          curlData: |
+            '{
+              "fields": {
+                "project":
+                {
+                  "key": "GEOIO"
+                },
+                "summary": "${{ event.issue.title }}",
+                "description": "${{ event.issue.body }}\\n\\n_Created from GitHub Action_",
+                "issuetype": {
+                  "name": "Story"
+                }
+              }
+            }'
+        run: >
+          curl
+          -D-
+          -H "Authorization: Basic $jiraAuth"
+          -X POST
+          --data $curlData
+          -H "Content-Type: application/json"
+          https://bugs.mirageoscience.com/rest/api/2/issue/
