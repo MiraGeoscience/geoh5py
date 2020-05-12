@@ -10,9 +10,15 @@ geoscientific data (points, curve, surface, 2D and 3D grids) in
 ``*.geoh5`` file format. Users will be able to directly leverage the powerful visualization
 capabilities of `Geoscience Analyst <https://mirageoscience.com/mining-industry-software/geoscience-analyst/>`_.
 
-See also the description of `the geoh5 file format`_.
 
-.. _the geoh5 file format: doc/source/GeoH5.textile
+Documentation
+^^^^^^^^^^^^^
+
+`Online documentation <https://geoh5py.readthedocs.io/en/latest/>`_
+
+See also documentation for the `geoh5 file format`_.
+
+.. _geoh5 file format: doc/source/GeoH5.textile
 
 
 Installation
