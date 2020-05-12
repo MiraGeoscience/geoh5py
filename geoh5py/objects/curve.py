@@ -47,7 +47,8 @@ class Curve(Points):
     def cells(self) -> Optional[np.ndarray]:
         r"""
         :obj:`numpy.ndarray` of :obj:`int`, shape (\*, 2):
-        Array of indices defining segments connecting vertices
+        Array of indices defining segments connecting vertices. Defined based on
+        :obj:`~geoh5py.objects.curve.Curve.parts` if set by the user.
         """
         if getattr(self, "_cells", None) is None:
             if self._parts is not None:
@@ -87,9 +88,9 @@ class Curve(Points):
         """
         :obj:`numpy.array` of :obj:`int`, shape
         (:obj:`~geoh5py.objects.object_base.ObjectBase.n_vertices`, 2):
-        Identifiers for connected line segments. Defined by the
+        Group identifiers for vertices connected by line segments as defined by the
         :obj:`~geoh5py.objects.curve.Curve.cells`
-        property if not directly assigned by the user.
+        property. Cells property is re-assigned with the setting of parts.
         """
         if getattr(self, "_parts", None) is None and self.cells is not None:
 
@@ -137,7 +138,10 @@ class Curve(Points):
 
 class SurveyAirborneMagnetics(Curve):
     """
-    An airborne magnetic survey object
+    An airborne magnetic survey object.
+
+    .. warning:: Partially implemented.
+
     """
 
     __TYPE_UID = uuid.UUID(
