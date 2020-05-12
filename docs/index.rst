@@ -1,5 +1,5 @@
-geoh5py: Python API for Geoscience Analyst
-==========================================
+geoh5py: Python API for geoh5. An open file format for geoscientific data
+=========================================================================
 
 
 Welcome to the documentation page for **geoh5py**!
@@ -15,7 +15,7 @@ capabilities of `Geoscience Analyst <https://mirageoscience.com/mining-industry-
 
 .. figure:: ./images/GA_demo.png
 	    :align: center
-	    :width: 400
+	    :width: 600
 
 
 Contents:
