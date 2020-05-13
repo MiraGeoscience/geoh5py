@@ -50,7 +50,6 @@ jobs:
     env:
       POETRY_VIRTUALENVS_CREATE: false
       POETRY_VIRTUALENVS_IN_PROJECT: false
-      POETRY_VIRTUALENVS_PATH: ~/.virtualenvs
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python version
@@ -63,13 +62,13 @@ jobs:
       run: echo ::add-path::$HOME/.poetry/bin
     - name: Get poetry cache directory
       id: poetry-cache
-      run: echo "::set-output name=dir::$(poetry config virtualenvs.path)"
+      run: echo "::set-output name=dir::$(poetry config cache-dir)"
     - name: Cache dependencies
       uses: actions/cache@v1
       with:
         path: ${{ steps.poetry-cache.outputs.dir }}
-        key: ${{ runner.os }}-poetry-venvs-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: ${{ runner.os }}-poetry-venvs-
+        key: ${{ runner.os }}-poetry-cache-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-cache-
     - name: Install dependencies
       run: poetry install -vvv
     - name: Run pylint on modified files
