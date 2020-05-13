@@ -9,6 +9,10 @@ jobs:
   pytest:
     name: pytest
     runs-on: windows-latest
+    env:
+      POETRY_VIRTUALENVS_CREATE: false
+      POETRY_VIRTUALENVS_IN_PROJECT: false
+      POETRY_VIRTUALENVS_PATH: ~/.virtualenvs
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python version
@@ -21,13 +25,13 @@ jobs:
       run: echo ::add-path::$HOME/.poetry/bin
     - name: Get poetry cache directory
       id: poetry-cache
-      run: echo "::set-output name=dir::$(poetry config cache-dir)"
+      run: echo "::set-output name=dir::$(poetry config virtualenvs.path)"
     - name: Cache dependencies
       uses: actions/cache@v1
       with:
         path: ${{ steps.poetry-cache.outputs.dir }}
-        key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: ${{ runner.os }}-poetry-
+        key: ${{ runner.os }}-poetry-venvs-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-venvs-
     - name: Install dependencies
       run: poetry install
     - name: pytest
