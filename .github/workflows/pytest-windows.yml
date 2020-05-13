@@ -15,7 +15,10 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
-    - uses: dschep/install-poetry-action@v1.3
+    - name: Install Poetry
+      run: curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+    - name: Environment
+      run: echo ::add-path::$HOME/.poetry/bin
     - name: Get poetry cache directory
       id: poetry-cache
       run: echo "::set-output name=dir::$(poetry config cache-dir)"
