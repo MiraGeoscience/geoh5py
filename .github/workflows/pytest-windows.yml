@@ -33,7 +33,7 @@ jobs:
         key: ${{ runner.os }}-poetry-venvs-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-venvs-
     - name: Install dependencies
-      run: poetry install
+      run: poetry install -vvv
     - name: pytest
       run: poetry run pytest --cov-report=xml --cov=geoh5py --cov-branch --cov-fail-under=80
     - name: Codecov

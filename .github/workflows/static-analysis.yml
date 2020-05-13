@@ -71,7 +71,7 @@ jobs:
         key: ${{ runner.os }}-poetry-venvs-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-venvs-
     - name: Install dependencies
-      run: poetry install
+      run: poetry install -vvv
     - name: Run pylint on modified files
       if: github.event_name == 'pull_request'
       run: >-
