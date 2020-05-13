@@ -19,6 +19,7 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
+
 from geoh5py.objects import Octree
 from geoh5py.workspace import Workspace
 
