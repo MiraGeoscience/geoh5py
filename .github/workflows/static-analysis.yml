@@ -25,13 +25,13 @@ jobs:
     - name: set PY_HASH
       run: echo "::set-env name=PY_HASH::$(python -c 'import hashlib, sys;print(hashlib.sha256(sys.version.encode()+sys.executable.encode()).hexdigest())')"
     - name: Cache pre-commit tools
-       uses: actions/cache@v1
-       with:
-         path: ~/.cache/pre-commit
-         key: precommit-${{ env.PY_HASH }}-${{ hashFiles('.pre-commit-config.yaml') }}
-         restore-keys: |
-           precommit-${{ env.PY_HASH }}-
-           precommit-
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/pre-commit
+        key: precommit-${{ env.PY_HASH }}-${{ hashFiles('.pre-commit-config.yaml') }}
+        restore-keys: |
+          precommit-${{ env.PY_HASH }}-
+          precommit-
     - uses: pre-commit/action@v1.0.1
     - name: Git show refs
       run: git show-ref
@@ -53,11 +53,17 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
-    - name: Environment
-      run: echo ::add-path::$HOME/.poetry/bin
-    - name: Install
-      run: |
-        curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+    - uses: dschep/install-poetry-action@v1.3
+    - name: Get poetry cache directory
+      id: poetry-cache
+      run: echo "::set-output name=dir::$(poetry config cache-dir)"
+    - name: Cache dependencies
+      uses: actions/cache@v1
+      with:
+        path: ${{ steps.poetry-cache.outputs.dir }}
+        key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-
+    - name: Install dependencies
         poetry install
     - name: Run pylint on modified files
       if: github.event_name == 'pull_request'
