@@ -27,12 +27,14 @@ jobs:
       run: echo "::set-output name=dir::$(poetry config cache-dir | sed -e 's/\bpypoetry\b/pip/')"
     - name: Cache dependencies
       uses: actions/cache@v1
+      id: cache
       with:
         path: ${{ steps.poetry-cache.outputs.dir }}
         key: ${{ runner.os }}-poetry-pip-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-pip-
     - name: Install dependencies
       run: poetry install -vvv
+      if: steps.cache.outputs.cache-hit != 'true'
     - name: pytest
       run: poetry run pytest --cov-report=xml --cov=geoh5py --cov-branch --cov-fail-under=80
     - name: Codecov
