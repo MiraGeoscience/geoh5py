@@ -17,8 +17,8 @@ jobs:
         os: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     env:
-      POETRY_VIRTUALENVS_CREATE: false
-      POETRY_VIRTUALENVS_IN_PROJECT: false
+      POETRY_VIRTUALENVS_CREATE: true
+      POETRY_VIRTUALENVS_IN_PROJECT: true
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python version
@@ -29,19 +29,15 @@ jobs:
       run: curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
     - name: Environment
       run: echo ::add-path::$HOME/.poetry/bin
-    - name: Get poetry cache directory
-      id: poetry-cache
-      run: echo "::set-output name=dir::$(poetry config cache-dir | sed -e 's/\bpypoetry\b/pip/')"
     - name: Cache dependencies
       uses: actions/cache@v1
       id: cache
       with:
-        path: ${{ steps.poetry-cache.outputs.dir }}
-        key: ${{ runner.os }}-poetry-pip-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: ${{ runner.os }}-poetry-pip-
+        path: .venv
+        key: ${{ runner.os }}-poetry.venv-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry.venv-
     - name: Install dependencies
       run: poetry install -vvv
-      if: steps.cache.outputs.cache-hit != 'true'
     - name: pytest
       run: poetry run pytest --cov-report=xml --cov=geoh5py --cov-branch --cov-fail-under=80
     - name: codecov
