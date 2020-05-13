@@ -24,13 +24,13 @@ jobs:
       run: echo ::add-path::$HOME/.poetry/bin
     - name: Get poetry cache directory
       id: poetry-cache
-      run: echo "::set-output name=dir::$(poetry config cache-dir)"
+      run: echo "::set-output name=dir::$(poetry config cache-dir | sed -e 's/\bpypoetry\b/pip/')"
     - name: Cache dependencies
       uses: actions/cache@v1
       with:
         path: ${{ steps.poetry-cache.outputs.dir }}
-        key: ${{ runner.os }}-poetry-cache-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: ${{ runner.os }}-poetry-cache-
+        key: ${{ runner.os }}-poetry-pip-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-pip-
     - name: Install dependencies
       run: poetry install -vvv
     - name: pytest
