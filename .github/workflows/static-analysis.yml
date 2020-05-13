@@ -1,14 +1,14 @@
 name: static analysis
 
 on:
-  push:
-    branches:
-    - development
-    - master
   pull_request:
     branches:
-    - development
-    - master
+      - development
+      - master
+  push:
+    branches:
+      - development
+      - master
 
 jobs:
   pre-commit:
