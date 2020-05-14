@@ -3,16 +3,20 @@
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
   :target: https://github.com/psf/black
 
+
 geoh5py: Python API for geoh5, an open file format for geoscientific data
 =========================================================================
 The **geoh5py** library has been created for the manipulation and storage of a wide range of
 geoscientific data (points, curve, surface, 2D and 3D grids) in
 ``*.geoh5`` file format. Users will be able to directly leverage the powerful visualization
-capabilities of `Geoscience Analyst <https://mirageoscience.com/mining-industry-software/geoscience-analyst/>`_.
+capabilities of `Geoscience ANALYST <https://mirageoscience.com/mining-industry-software/geoscience-analyst/>`_.
 
 
 Documentation
 ^^^^^^^^^^^^^
+
+.. image:: https://readthedocs.org/projects/geoh5py/badge/badge.svg
+  :target: https://geoh5py.readthedocs.io
 
 `Online documentation <https://geoh5py.readthedocs.io/en/latest/>`_
 
