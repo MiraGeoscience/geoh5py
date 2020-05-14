@@ -23,7 +23,10 @@ from ..shared import Entity
 
 
 class PropertyGroup:
-    """ Group for properties not registered to the workspace"""
+    """
+    Property group listing data children of an object.
+    This group is not registered to the workspace and only visible to the parent object.
+    """
 
     _attribute_map = {
         "Association": "association",
@@ -53,8 +56,7 @@ class PropertyGroup:
     @property
     def parent(self) -> Entity:
         """
-        The parent of an object in the workspace
-        :return: The parent entity
+        The parent :obj:`~geoh5py.objects.object_base.ObjectBase`
         """
         return self._parent
 
@@ -65,12 +67,15 @@ class PropertyGroup:
     @property
     def attribute_map(self) -> dict:
         """
-        :return: Mapping between attribute names used in database and geoh5py
+        :obj:`dict` Attribute names mapping between geoh5 and geoh5py
         """
         return self._attribute_map
 
     @property
     def uid(self) -> uuid.UUID:
+        """
+        :obj:`uuid.UUID` Unique identifier
+        """
         return self._uid
 
     @uid.setter
@@ -81,6 +86,9 @@ class PropertyGroup:
 
     @property
     def name(self) -> str:
+        """
+        :obj:`str` Name of the group
+        """
         return self._name
 
     @name.setter
@@ -89,6 +97,9 @@ class PropertyGroup:
 
     @property
     def association(self) -> DataAssociationEnum:
+        """
+        :obj:`~geoh5py.data.data_association_enum.DataAssociationEnum` Data association
+        """
         return self._association
 
     @association.setter
@@ -105,6 +116,10 @@ class PropertyGroup:
 
     @property
     def properties(self) -> List[uuid.UUID]:
+        """
+        List of unique identifiers for the :obj:`~geoh5py.data.data.Data`
+        contained in the property group.
+        """
         return self._properties
 
     @properties.setter
