@@ -304,7 +304,7 @@ texinfo_documents = [
         "geoh5py Documentation",
         "MiraGeoscience",
         "geoh5py",
-        "API for geoh5 database and Geoscience Analyst.",
+        "API for geoh5 database and Geoscience ANALYST.",
         "Miscellaneous",
     )
 ]

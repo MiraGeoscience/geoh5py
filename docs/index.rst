@@ -11,7 +11,7 @@ The **geoh5py** library has been created for the manipulation and storage of a w
 geoscientific data (points, curve, surface, 2D and 3D grids) in
 `geoh5 file format <https://gist.github.com/jincandescent/06a3bd4e0e54360ad191>`_.
 Users will be able to directly leverage the powerful visualization
-capabilities of `Geoscience Analyst <https://mirageoscience.com/mining-industry-software/geoscience-analyst/>`_ along with open-source code from the Python ecosystem.
+capabilities of `Geoscience ANALYST <https://mirageoscience.com/mining-industry-software/geoscience-analyst/>`_ along with open-source code from the Python ecosystem.
 
 .. figure:: ./images/GA_demo.png
 	    :align: center
