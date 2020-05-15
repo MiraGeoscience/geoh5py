@@ -41,7 +41,7 @@ class ObjectType(EntityType):
     def find_or_create(
         cls, workspace: "workspace.Workspace", entity_class, **kwargs
     ) -> ObjectType:
-        """ Find or creates an EntityType with given UUID that matches the given
+        """ Find or creates an EntityType with given :obj:`uuid.UUID` that matches the given
         Group implementation class.
 
         It is expected to have a single instance of EntityType in the Workspace

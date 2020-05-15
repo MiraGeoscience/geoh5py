@@ -105,7 +105,13 @@ class Grid2D(ObjectBase):
         shape (:obj:`~geoh5py.objects.grid2d.Grid2D.n_cells`, 3):
         Cell center locations in world coordinates.
 
-        .. math:: [[x_1, y_1, z_1], ..., [x_i, y_i, z_i]]
+        .. code-block:: python
+
+            centroids = [
+                [x_1, y_1, z_1],
+                ...,
+                [x_N, y_N, z_N]
+            ]
         """
         if (
             getattr(self, "_centroids", None) is None

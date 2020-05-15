@@ -72,7 +72,13 @@ class DataType(EntityType):
         The colormap can be set from a :obj:`dict` of sorted values with
         corresponding RGBA color.
 
-        .. math:: \{val_1: [r_1, g_1, b_1, a_1], ..., val_i: [r_i, g_i, b_i, a_i]\}
+        .. code-block:: python
+
+            color_map = {
+                val_1: [r_1, g_1, b_1, a_1],
+                ...,
+                val_i: [r_i, g_i, b_i, a_i]
+            }
 
         """
         return self._color_map

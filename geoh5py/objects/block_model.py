@@ -25,10 +25,10 @@ from .object_base import ObjectBase, ObjectType
 
 class BlockModel(ObjectBase):
     """
-    Rectilinear ``BlockModel``, or 3D tensor mesh, is a container for models defined
-    by three perpendicular axes. Each axis is divided into discrete intervals that
-    define the cell dimensions. Nodal coordinates are determined relative
-    to the origin and the sign of cell delimiters. Negative and positive cell delimiters
+    Rectilinear 3D tensor mesh defined by three perpendicular axes.
+    Each axis is divided into discrete intervals that define the cell dimensions.
+    Nodal coordinates are determined relative to the origin and the sign of cell delimiters.
+    Negative and positive cell delimiters
     are accepted to denote relative offsets from the origin.
     """
 
@@ -57,8 +57,13 @@ class BlockModel(ObjectBase):
         shape (:obj:`~geoh5py.objects.block_model.BlockModel.n_cells`, 3):
         Cell center locations in world coordinates.
 
-        .. math:: [[x_1, y_1, z_1], ..., [x_i, y_i, z_i]]
+        .. code-block:: python
 
+            centroids = [
+                [x_1, y_1, z_1],
+                ...,
+                [x_N, y_N, z_N]
+            ]
         """
         if getattr(self, "_centroids", None) is None:
 

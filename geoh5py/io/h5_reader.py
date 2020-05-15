@@ -227,7 +227,13 @@ class H5Reader:
         :return property_group_attributes: :obj:`dict` of property groups
             and respective attributes
 
-        .. math:: \{"group_1": \{"attribute": value, ...\}, \{...\}\}
+        .. code-block:: python
+
+            property_group = {
+                "group_1": {"attribute": value, ...},
+                ...,
+                "group_N": {"attribute": value, ...},
+            }
         """
         project = h5py.File(h5file, "r")
         name = list(project.keys())[0]

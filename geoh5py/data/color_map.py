@@ -42,7 +42,12 @@ class ColorMap:
         """
         :obj:`numpy.array`: Colormap defined by values and corresponding RGBA:
 
-        .. math:: [[V_1, R_1, G_1, B_1, A_1], ..., [V_i, R_i, G_i, B_i, A_i]]
+        .. code-block:: python
+
+            values = [
+                [V_1, R_1, G_1, B_1, A_1],
+                ..., [V_i, R_i, G_i, B_i, A_i]
+            ]
 
         where V (Values) are sorted floats defining the position of each RGBA.
         R (Red), G (Green), B (Blue) and A (Alpha) are integer values between [0, 255].
