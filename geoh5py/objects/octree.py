@@ -25,12 +25,8 @@ from .object_base import ObjectBase, ObjectType
 
 class Octree(ObjectBase):
     """
-    Octree mesh class that uses a tree structure where cells
+    Octree mesh class that uses a tree structure such that cells
     can be subdivided it into eight octants.
-
-    The basic requirements needed to create an Octree mesh are:
-        u, v, and w_count = Number of cells (power of 2) along each axis
-        u, v, and w_cell_size = Cell size along each axis
     """
 
     __TYPE_UID = uuid.UUID(
@@ -68,251 +64,7 @@ class Octree(ObjectBase):
         if object_type.name == "None":
             self.entity_type.name = "Octree"
 
-        # if object_type.description is None:
-        #     self.entity_type.description = "Octree"
-
         object_type.workspace._register_object(self)
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
-
-    @property
-    def origin(self):
-        """
-        Coordinates of the origin: array of floats, shape (3,)
-        """
-        return self._origin
-
-    @origin.setter
-    def origin(self, value):
-        if value is not None:
-            if isinstance(value, np.ndarray):
-                value = value.tolist()
-
-            assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
-
-            self.modified_attributes = "attributes"
-            self._centroids = None
-
-            value = np.asarray(
-                tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
-            )
-            self._origin = value
-
-    @property
-    def rotation(self) -> float:
-        """
-        Clockwise rotation angle (degree) about the vertical axis
-        """
-        return self._rotation
-
-    @rotation.setter
-    def rotation(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
-            self.modified_attributes = "attributes"
-            self._centroids = None
-
-            self._rotation = value.astype(float)
-
-    @property
-    def u_count(self) -> Optional[int]:
-        """
-        Number of base cells along u-axis
-        """
-        return self._u_count
-
-    @u_count.setter
-    def u_count(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "u_count must be type(int) of shape (1,)"
-            self.modified_attributes = "attributes"
-            self._centroids = None
-
-            self._u_count = int(value)
-
-    @property
-    def v_count(self) -> Optional[int]:
-        """
-        Number of base cells along v-axis
-        """
-        return self._v_count
-
-    @v_count.setter
-    def v_count(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "v_count must be type(int) of shape (1,)"
-            self.modified_attributes = "attributes"
-            self._centroids = None
-
-            self._v_count = int(value)
-
-    @property
-    def w_count(self) -> Optional[int]:
-        """
-        Number of base cells along w-axis
-        """
-        return self._w_count
-
-    @w_count.setter
-    def w_count(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "w_count must be type(int) of shape (1,)"
-            self.modified_attributes = "attributes"
-            self._centroids = None
-
-            self._w_count = int(value)
-
-    @property
-    def u_cell_size(self) -> Optional[float]:
-        """
-        Base cell size along the u-coordinate
-        """
-        return self._u_cell_size
-
-    @u_cell_size.setter
-    def u_cell_size(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "u_cell_size must be type(float) of shape (1,)"
-            self.modified_attributes = "attributes"
-            self._centroids = None
-
-            self._u_cell_size = value.astype(float)
-
-    @property
-    def v_cell_size(self) -> Optional[float]:
-        """
-        Base cell size along the v-coordinate
-        """
-        return self._v_cell_size
-
-    @v_cell_size.setter
-    def v_cell_size(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "v_cell_size must be type(float) of shape (1,)"
-            self.modified_attributes = "attributes"
-            self._centroids = None
-
-            self._v_cell_size = value.astype(float)
-
-    @property
-    def w_cell_size(self) -> Optional[float]:
-        """
-        Base cell size along the w-coordinate
-        """
-        return self._w_cell_size
-
-    @w_cell_size.setter
-    def w_cell_size(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "w_cell_size must be type(float) of shape (1,)"
-            self.modified_attributes = "attributes"
-            self._centroids = None
-
-            self._w_cell_size = value.astype(float)
-
-    @property
-    def octree_cells(self) -> Optional[np.ndarray]:
-        """
-        Array defining the i,j,k ordering and cell dimensions
-            [i, j, k, n_cells]
-
-        :return octree_cells: numpy.ndarray(int) of shape (nC, 4)
-
-        """
-        if getattr(self, "_octree_cells", None) is None:
-            if self.existing_h5_entity:
-                octree_cells = self.workspace.fetch_octree_cells(self.uid)
-                self._octree_cells = octree_cells
-
-            else:
-                self.base_refine()
-
-        return self._octree_cells
-
-    @octree_cells.setter
-    def octree_cells(self, value):
-        if value is not None:
-            value = np.vstack(value)
-
-            assert (
-                value.shape[1] == 4
-            ), "'octree_cells' requires an ndarray of shape (*, 4)"
-            self.modified_attributes = "octree_cells"
-            self._centroids = None
-
-            self._octree_cells = np.core.records.fromarrays(
-                value.T, names="I, J, K, NCells", formats="<i4, <i4, <i4, <i4"
-            )
-
-    @property
-    def shape(self) -> Optional[Tuple]:
-        """
-        Number of base cells along the u, v and w-axis
-        """
-        if (
-            self.u_count is not None
-            and self.v_count is not None
-            and self.w_count is not None
-        ):
-            return self.u_count, self.v_count, self.w_count
-        return None
-
-    @property
-    def centroids(self):
-        """
-        Coordinate locations of each cell centers [[x_i, y_i, z_i], ...]
-
-        :return centroids: array of floats, shape(nC, 3)
-        """
-        if getattr(self, "_centroids", None) is None:
-            assert self.octree_cells is not None, "octree_cells must be set"
-            assert self.u_cell_size is not None, "u_cell_size must be set"
-            assert self.v_cell_size is not None, "v_cell_size must be set"
-            assert self.w_cell_size is not None, "w_cell_size must be set"
-
-            angle = np.deg2rad(self.rotation)
-            rot = np.r_[
-                np.c_[np.cos(angle), -np.sin(angle), 0],
-                np.c_[np.sin(angle), np.cos(angle), 0],
-                np.c_[0, 0, 1],
-            ]
-
-            u_grid = (
-                self.octree_cells["I"] + self.octree_cells["NCells"] / 2.0
-            ) * self.u_cell_size
-            v_grid = (
-                self.octree_cells["J"] + self.octree_cells["NCells"] / 2.0
-            ) * self.v_cell_size
-            w_grid = (
-                self.octree_cells["K"] + self.octree_cells["NCells"] / 2.0
-            ) * self.w_cell_size
-
-            xyz = np.c_[u_grid, v_grid, w_grid]
-
-            self._centroids = np.dot(rot, xyz.T).T
-
-            for ind, axis in enumerate(["x", "y", "z"]):
-                self._centroids[:, ind] += self.origin[axis]
-
-        return self._centroids
-
-    @property
-    def n_cells(self) -> Optional[int]:
-        """
-        Total number of cells in the mesh
-        """
-        if self.octree_cells is not None:
-            return self.octree_cells.shape[0]
-        return None
 
     def base_refine(self):
         """
@@ -356,3 +108,258 @@ class Octree(ObjectBase):
             names=["I", "J", "K", "NCells"],
             formats=["<i4", "<i4", "<i4", "<i4"],
         )
+
+    @property
+    def centroids(self):
+        """
+        :obj:`numpy.array`,
+        shape (:obj:`~geoh5py.objects.octree.Octree.n_cells`, 3):
+        Cell center locations in world coordinates.
+
+        .. code-block:: python
+
+            centroids = [
+                [x_1, y_1, z_1],
+                ...,
+                [x_N, y_N, z_N]
+            ]
+        """
+        if getattr(self, "_centroids", None) is None:
+            assert self.octree_cells is not None, "octree_cells must be set"
+            assert self.u_cell_size is not None, "u_cell_size must be set"
+            assert self.v_cell_size is not None, "v_cell_size must be set"
+            assert self.w_cell_size is not None, "w_cell_size must be set"
+
+            angle = np.deg2rad(self.rotation)
+            rot = np.r_[
+                np.c_[np.cos(angle), -np.sin(angle), 0],
+                np.c_[np.sin(angle), np.cos(angle), 0],
+                np.c_[0, 0, 1],
+            ]
+
+            u_grid = (
+                self.octree_cells["I"] + self.octree_cells["NCells"] / 2.0
+            ) * self.u_cell_size
+            v_grid = (
+                self.octree_cells["J"] + self.octree_cells["NCells"] / 2.0
+            ) * self.v_cell_size
+            w_grid = (
+                self.octree_cells["K"] + self.octree_cells["NCells"] / 2.0
+            ) * self.w_cell_size
+
+            xyz = np.c_[u_grid, v_grid, w_grid]
+
+            self._centroids = np.dot(rot, xyz.T).T
+
+            for ind, axis in enumerate(["x", "y", "z"]):
+                self._centroids[:, ind] += self.origin[axis]
+
+        return self._centroids
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID
+
+    @property
+    def n_cells(self) -> Optional[int]:
+        """
+        :obj:`int`: Total number of cells in the mesh
+        """
+        if self.octree_cells is not None:
+            return self.octree_cells.shape[0]
+        return None
+
+    @property
+    def octree_cells(self) -> Optional[np.ndarray]:
+        """
+        :obj:`numpy.ndarray(int)` shape (:obj:`~geoh5py.objects.octree.Octree.n_cells`, 4):
+        Array defining the i, j, k position and size of each cell.
+        The size defines the width of a cell in number of base cells.
+
+         .. code-block:: python
+
+            cells = [
+                [i_1, j_1, k_1, size_1],
+                ...,
+                [i_N, j_N, k_N, size_N]
+            ]
+        """
+        if getattr(self, "_octree_cells", None) is None:
+            if self.existing_h5_entity:
+                octree_cells = self.workspace.fetch_octree_cells(self.uid)
+                self._octree_cells = octree_cells
+
+            else:
+                self.base_refine()
+
+        return self._octree_cells
+
+    @octree_cells.setter
+    def octree_cells(self, value):
+        if value is not None:
+            value = np.vstack(value)
+
+            assert (
+                value.shape[1] == 4
+            ), "'octree_cells' requires an ndarray of shape (*, 4)"
+            self.modified_attributes = "octree_cells"
+            self._centroids = None
+
+            self._octree_cells = np.core.records.fromarrays(
+                value.T, names="I, J, K, NCells", formats="<i4, <i4, <i4, <i4"
+            )
+
+    @property
+    def origin(self):
+        """
+        :obj:`numpy.array`, shape (3, ): Coordinates of the origin
+        """
+        return self._origin
+
+    @origin.setter
+    def origin(self, value):
+        if value is not None:
+            if isinstance(value, np.ndarray):
+                value = value.tolist()
+
+            assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
+
+            self.modified_attributes = "attributes"
+            self._centroids = None
+
+            value = np.asarray(
+                tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
+            )
+            self._origin = value
+
+    @property
+    def rotation(self) -> float:
+        """
+        :obj:`float`: Clockwise rotation angle (degree) about the vertical axis.
+        """
+        return self._rotation
+
+    @rotation.setter
+    def rotation(self, value):
+        if value is not None:
+            value = np.r_[value]
+            assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
+            self.modified_attributes = "attributes"
+            self._centroids = None
+
+            self._rotation = value.astype(float)
+
+    @property
+    def shape(self) -> Optional[Tuple]:
+        """
+        :obj:`list`, len (3, ): Number of cells along the u, v and w-axis
+        """
+        if (
+            self.u_count is not None
+            and self.v_count is not None
+            and self.w_count is not None
+        ):
+            return self.u_count, self.v_count, self.w_count
+        return None
+
+    @property
+    def u_cell_size(self) -> Optional[float]:
+        """
+        :obj:`float`: Base cell size along the u-axis
+        """
+        return self._u_cell_size
+
+    @u_cell_size.setter
+    def u_cell_size(self, value):
+        if value is not None:
+            value = np.r_[value]
+            assert len(value) == 1, "u_cell_size must be type(float) of shape (1,)"
+            self.modified_attributes = "attributes"
+            self._centroids = None
+
+            self._u_cell_size = value.astype(float)
+
+    @property
+    def u_count(self) -> Optional[int]:
+        """
+        :obj:`int`: Number of cells along u-axis
+        """
+        return self._u_count
+
+    @u_count.setter
+    def u_count(self, value):
+        if value is not None:
+            value = np.r_[value]
+            assert len(value) == 1, "u_count must be type(int) of shape (1,)"
+            self.modified_attributes = "attributes"
+            self._centroids = None
+
+            self._u_count = int(value)
+
+    @property
+    def v_cell_size(self) -> Optional[float]:
+        """
+        :obj:`float`: Base cell size along the v-axis
+        """
+        return self._v_cell_size
+
+    @v_cell_size.setter
+    def v_cell_size(self, value):
+        if value is not None:
+            value = np.r_[value]
+            assert len(value) == 1, "v_cell_size must be type(float) of shape (1,)"
+            self.modified_attributes = "attributes"
+            self._centroids = None
+
+            self._v_cell_size = value.astype(float)
+
+    @property
+    def v_count(self) -> Optional[int]:
+        """
+        :obj:`int`: Number of cells along v-axis
+        """
+        return self._v_count
+
+    @v_count.setter
+    def v_count(self, value):
+        if value is not None:
+            value = np.r_[value]
+            assert len(value) == 1, "v_count must be type(int) of shape (1,)"
+            self.modified_attributes = "attributes"
+            self._centroids = None
+
+            self._v_count = int(value)
+
+    @property
+    def w_cell_size(self) -> Optional[float]:
+        """
+        :obj:`float`: Base cell size along the w-axis
+        """
+        return self._w_cell_size
+
+    @w_cell_size.setter
+    def w_cell_size(self, value):
+        if value is not None:
+            value = np.r_[value]
+            assert len(value) == 1, "w_cell_size must be type(float) of shape (1,)"
+            self.modified_attributes = "attributes"
+            self._centroids = None
+
+            self._w_cell_size = value.astype(float)
+
+    @property
+    def w_count(self) -> Optional[int]:
+        """
+        :obj:`int`: Number of cells along w-axis
+        """
+        return self._w_count
+
+    @w_count.setter
+    def w_count(self, value):
+        if value is not None:
+            value = np.r_[value]
+            assert len(value) == 1, "w_count must be type(int) of shape (1,)"
+            self.modified_attributes = "attributes"
+            self._centroids = None
+
+            self._w_count = int(value)
