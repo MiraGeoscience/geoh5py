@@ -29,14 +29,7 @@ class Grid2D(ObjectBase):
     be oriented in 3D space through rotation and dip parameters.
     Nodal coordinates are determined relative to the origin and the sign
     of cell delimiters. Negative and positive cell delimiters are accepted
-    to denote relative "left/right" offsets.
-
-    Coordinates
-    2  3  4  5  6
-    origin   V
-    .__.__.__.__.__
-    -1 -1 -1  1  1
-    Delimiters
+    to denote "left/right" offsets relative to the origin.
     """
 
     __TYPE_UID = uuid.UUID(
@@ -79,6 +72,71 @@ class Grid2D(ObjectBase):
 
         object_type.workspace._register_object(self)
 
+    @property
+    def cell_center_u(self) -> np.ndarray:
+        """
+        :obj:`numpy.array` shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, ):
+        Cell center local coordinate along the u-axis
+        """
+        if self.u_count is not None and self.u_cell_size is not None:
+            return (
+                np.cumsum(np.ones(self.u_count) * self.u_cell_size)
+                - self.u_cell_size / 2.0
+            )
+        return None
+
+    @property
+    def cell_center_v(self) -> np.ndarray:
+        """
+        :obj:`numpy.array` shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, ):
+        The cell center local coordinate along the v-axis.
+        """
+        if self.v_count is not None and self.v_cell_size is not None:
+            return (
+                np.cumsum(np.ones(self.v_count) * self.v_cell_size)
+                - self.v_cell_size / 2.0
+            )
+        return None
+
+    @property
+    def centroids(self) -> np.ndarray:
+        """
+        :obj:`numpy.array`,
+        shape (:obj:`~geoh5py.objects.grid2d.Grid2D.n_cells`, 3):
+        Cell center locations in world coordinates.
+
+        .. math:: [[x_1, y_1, z_1], ..., [x_i, y_i, z_i]]
+        """
+        if (
+            getattr(self, "_centroids", None) is None
+            and self.cell_center_u is not None
+            and self.cell_center_v is not None
+            and self.n_cells is not None
+            and self.origin is not None
+        ):
+            angle = np.deg2rad(self.rotation)
+            rot = np.r_[
+                np.c_[np.cos(angle), -np.sin(angle), 0],
+                np.c_[np.sin(angle), np.cos(angle), 0],
+                np.c_[0, 0, 1],
+            ]
+            u_grid, v_grid = np.meshgrid(self.cell_center_u, self.cell_center_v)
+
+            if self.vertical:
+                xyz = np.c_[np.ravel(u_grid), np.zeros(self.n_cells), np.ravel(v_grid)]
+
+            else:
+                xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.zeros(self.n_cells)]
+
+            centroids = np.asarray(np.dot(rot, xyz.T).T)
+
+            for ind, axis in enumerate(["x", "y", "z"]):
+                centroids[:, ind] += self.origin[axis]
+
+            self._centroids = centroids
+
+        return self._centroids
+
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         """
@@ -87,9 +145,33 @@ class Grid2D(ObjectBase):
         return cls.__TYPE_UID
 
     @property
+    def dip(self) -> float:
+        """"
+        :obj:`float`: Dip angle from horizontal (positive down) in degree
+        """
+        return self._dip
+
+    @dip.setter
+    def dip(self, value):
+        if value is not None:
+            assert isinstance(value, float), "Dip angle must be a float"
+            self.modified_attributes = "attributes"
+            self._centroids = None
+            self._dip = value
+
+    @property
+    def n_cells(self) -> Optional[int]:
+        """
+        :obj:`int`: Total number of cells
+        """
+        if self.shape is not None:
+            return np.prod(self.shape)
+        return None
+
+    @property
     def origin(self) -> np.ndarray:
         """
-        Coordinates of the origin: shape (3,)
+        :obj:`numpy.array`, shape (3, ): Coordinates of the origin
         """
         return self._origin
 
@@ -111,24 +193,35 @@ class Grid2D(ObjectBase):
             self._origin = value
 
     @property
-    def dip(self) -> float:
-        """"
-        Dip angle (positive down) in degree
+    def rotation(self) -> float:
         """
-        return self._dip
+        :obj:`float`: Clockwise rotation angle (degree) about the vertical axis.
+        """
+        return self._rotation
 
-    @dip.setter
-    def dip(self, value):
+    @rotation.setter
+    def rotation(self, value):
         if value is not None:
-            assert isinstance(value, float), "Dip angle must be a float"
+            value = np.r_[value]
+            assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
             self.modified_attributes = "attributes"
             self._centroids = None
-            self._dip = value
+
+            self._rotation = value.astype(float)
+
+    @property
+    def shape(self) -> Optional[Tuple]:
+        """
+        :obj:`list`, len (2, ): Number of cells along the u and v-axis
+        """
+        if self.u_count is not None and self.v_count is not None:
+            return self.u_count, self.v_count
+        return None
 
     @property
     def u_cell_size(self) -> Optional[float]:
         """
-        Cell size along the u-axis: float
+        :obj:`float`: Cell size along the u-axis
         """
         return self._u_cell_size
 
@@ -144,26 +237,9 @@ class Grid2D(ObjectBase):
             self._u_cell_size = value.astype(float)
 
     @property
-    def v_cell_size(self) -> Optional[float]:
-        """
-        Cell size along the v-axis
-        """
-        return self._v_cell_size
-
-    @v_cell_size.setter
-    def v_cell_size(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "v_cell_size must be a float of shape (1,)"
-            self.modified_attributes = "attributes"
-            self._centroids = None
-
-            self._v_cell_size = value.astype(float)
-
-    @property
     def u_count(self) -> Optional[int]:
         """
-        Number of cells along u-axis: int
+        :obj:`int`: Number of cells along u-axis
         """
         return self._u_count
 
@@ -178,9 +254,26 @@ class Grid2D(ObjectBase):
             self._u_count = int(value)
 
     @property
+    def v_cell_size(self) -> Optional[float]:
+        """
+        :obj:`float`: Cell size along the v-axis
+        """
+        return self._v_cell_size
+
+    @v_cell_size.setter
+    def v_cell_size(self, value):
+        if value is not None:
+            value = np.r_[value]
+            assert len(value) == 1, "v_cell_size must be a float of shape (1,)"
+            self.modified_attributes = "attributes"
+            self._centroids = None
+
+            self._v_cell_size = value.astype(float)
+
+    @property
     def v_count(self) -> Optional[int]:
         """
-        Number of cells along v-axis: int
+        :obj:`int`: Number of cells along v-axis
         """
         return self._v_count
 
@@ -195,26 +288,9 @@ class Grid2D(ObjectBase):
             self._v_count = int(value)
 
     @property
-    def rotation(self) -> float:
-        """
-        Clockwise rotation angle about the vertical axis in degree: float
-        """
-        return self._rotation
-
-    @rotation.setter
-    def rotation(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
-            self.modified_attributes = "attributes"
-            self._centroids = None
-
-            self._rotation = value.astype(float)
-
-    @property
     def vertical(self) -> Optional[bool]:
         """
-        Set the grid to be vertical: bool
+        :obj:`bool`: Set the grid to be vertical.
         """
         return self._vertical
 
@@ -229,81 +305,3 @@ class Grid2D(ObjectBase):
             self._centroids = None
 
             self._vertical = value
-
-    @property
-    def cell_center_u(self) -> np.ndarray:
-        """
-        The cell center location along u-axis: shape(u_count,)
-        """
-        if self.u_count is not None and self.u_cell_size is not None:
-            return (
-                np.cumsum(np.ones(self.u_count) * self.u_cell_size)
-                - self.u_cell_size / 2.0
-            )
-        return None
-
-    @property
-    def cell_center_v(self) -> np.ndarray:
-        """
-        The cell center location along v-axis: shape(u_count,)
-        """
-        if self.v_count is not None and self.v_cell_size is not None:
-            return (
-                np.cumsum(np.ones(self.v_count) * self.v_cell_size)
-                - self.v_cell_size / 2.0
-            )
-        return None
-
-    @property
-    def centroids(self) -> np.ndarray:
-        """
-        Cell center locations in world coordinates [x_i, y_i, z_i]: shape(n_cells, 3)
-        """
-        if (
-            getattr(self, "_centroids", None) is None
-            and self.cell_center_u is not None
-            and self.cell_center_v is not None
-            and self.n_cells is not None
-            and self.origin is not None
-        ):
-
-            angle = np.deg2rad(self.rotation)
-            rot = np.r_[
-                np.c_[np.cos(angle), -np.sin(angle), 0],
-                np.c_[np.sin(angle), np.cos(angle), 0],
-                np.c_[0, 0, 1],
-            ]
-
-            u_grid, v_grid = np.meshgrid(self.cell_center_u, self.cell_center_v)
-            if self.vertical:
-                xyz = np.c_[np.ravel(u_grid), np.zeros(self.n_cells), np.ravel(v_grid)]
-
-            else:
-                xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.zeros(self.n_cells)]
-
-            centroids = np.asarray(np.dot(rot, xyz.T).T)
-
-            for ind, axis in enumerate(["x", "y", "z"]):
-                centroids[:, ind] += self.origin[axis]
-
-            self._centroids = centroids
-
-        return self._centroids
-
-    @property
-    def shape(self) -> Optional[Tuple]:
-        """
-        Number of cells along the u, v and z-axis: list[int], length (3,)
-        """
-        if self.u_count is not None and self.v_count is not None:
-            return self.u_count, self.v_count
-        return None
-
-    @property
-    def n_cells(self) -> Optional[int]:
-        """
-        Number of cells
-        """
-        if self.shape is not None:
-            return np.prod(self.shape)
-        return None
