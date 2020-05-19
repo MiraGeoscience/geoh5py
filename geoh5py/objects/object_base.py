@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 class ObjectBase(Entity):
     """
-    Objects base class.
+    Object base class.
     """
 
     _attribute_map = Entity._attribute_map.copy()
@@ -211,7 +211,7 @@ class ObjectBase(Entity):
         """
         Find or create a type for a given object class
 
-        :param Current workspace: Workspace
+        :param workspace: Target :obj:`~geoh5py.workspace.workspace.Workspace`
 
         :return: A new or existing object type
         """
@@ -222,7 +222,8 @@ class ObjectBase(Entity):
         Find or create :obj:`~geoh5py.groups.property_group.PropertyGroup`
         from given name and properties.
 
-        :param kwargs: Any arguments taken by the PropertyGroup class
+        :param kwargs: Any arguments taken by the
+            :obj:`~geoh5py.groups.property_group.PropertyGroup` class
 
         :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
@@ -271,7 +272,7 @@ class ObjectBase(Entity):
         Retrieve a :obj:`~geoh5py.groups.property_group.PropertyGroup` from one of its
         identifier.
 
-        :param group_id: PropertyGroup identifier, either name or uuid
+        :param uid: PropertyGroup identifier, either by its name or uuid
 
         :return: PropertyGroup with the given name
         """
@@ -321,7 +322,7 @@ class ObjectBase(Entity):
     @property
     def property_groups(self) -> List[PropertyGroup]:
         """
-        :obj:`list`: List of property (data) groups.
+        :obj:`list` of :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
         return self._property_groups
 

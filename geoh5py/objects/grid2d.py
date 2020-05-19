@@ -25,11 +25,10 @@ from .object_base import ObjectBase, ObjectType
 
 class Grid2D(ObjectBase):
     """
-    A Grid2D is a rectilinear array uniform cell size. The grid can
+    Rectilinear grid of uniform cell size. The grid can
     be oriented in 3D space through rotation and dip parameters.
     Nodal coordinates are determined relative to the origin and the sign
-    of cell delimiters. Negative and positive cell delimiters are accepted
-    to denote "left/right" offsets relative to the origin.
+    of cell delimiters.
     """
 
     __TYPE_UID = uuid.UUID(
@@ -66,16 +65,13 @@ class Grid2D(ObjectBase):
 
         if object_type.name == "None":
             self.entity_type.name = "Grid"
-        #
-        # if object_type.description is None:
-        #     self.entity_type.description = "Grid"
 
         object_type.workspace._register_object(self)
 
     @property
     def cell_center_u(self) -> np.ndarray:
         """
-        :obj:`numpy.array` shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, ):
+        :obj:`numpy.array` of :obj:`float`, shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, ):
         Cell center local coordinate along the u-axis
         """
         if self.u_count is not None and self.u_cell_size is not None:
@@ -88,7 +84,7 @@ class Grid2D(ObjectBase):
     @property
     def cell_center_v(self) -> np.ndarray:
         """
-        :obj:`numpy.array` shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, ):
+        :obj:`numpy.array` of :obj:`float` shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, ):
         The cell center local coordinate along the v-axis.
         """
         if self.v_count is not None and self.v_cell_size is not None:
@@ -101,7 +97,7 @@ class Grid2D(ObjectBase):
     @property
     def centroids(self) -> np.ndarray:
         """
-        :obj:`numpy.array`,
+        :obj:`numpy.array` of :obj:`float`,
         shape (:obj:`~geoh5py.objects.grid2d.Grid2D.n_cells`, 3):
         Cell center locations in world coordinates.
 
@@ -177,7 +173,7 @@ class Grid2D(ObjectBase):
     @property
     def origin(self) -> np.ndarray:
         """
-        :obj:`numpy.array`, shape (3, ): Coordinates of the origin
+        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin
         """
         return self._origin
 
@@ -218,7 +214,7 @@ class Grid2D(ObjectBase):
     @property
     def shape(self) -> Optional[Tuple]:
         """
-        :obj:`list`, len (2, ): Number of cells along the u and v-axis
+        :obj:`list` of :obj:`int`, len (2, ): Number of cells along the u and v-axis
         """
         if self.u_count is not None and self.v_count is not None:
             return self.u_count, self.v_count

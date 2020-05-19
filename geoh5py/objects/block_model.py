@@ -45,7 +45,6 @@ class BlockModel(ObjectBase):
         self._v_cell_delimiters = None
         self._z_cell_delimiters = None
         self._centroids = None
-
         super().__init__(object_type, **kwargs)
 
         object_type.workspace._register_object(self)
@@ -110,7 +109,7 @@ class BlockModel(ObjectBase):
     @property
     def origin(self) -> np.array:
         """
-        :obj:`numpy.array`, shape (3, ): Coordinates of the origin
+        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin
         """
         return self._origin
 
@@ -152,7 +151,7 @@ class BlockModel(ObjectBase):
     @property
     def shape(self) -> Optional[Tuple]:
         """
-        :obj:`list`, len (3, ): Number of cells along the u, v and z-axis
+        :obj:`list` of :obj:`int`, len (3, ): Number of cells along the u, v and z-axis
         """
         if (
             self.u_cells is not None
@@ -167,7 +166,8 @@ class BlockModel(ObjectBase):
     @property
     def u_cell_delimiters(self) -> Optional[np.ndarray]:
         """
-        :obj:`numpy.array`: Nodal offsets along the u-axis relative to the origin.
+        :obj:`numpy.array` of :obj:`float`:
+        Nodal offsets along the u-axis relative to the origin.
         """
         if (
             getattr(self, "_u_cell_delimiters", None) is None
@@ -191,7 +191,8 @@ class BlockModel(ObjectBase):
     @property
     def u_cells(self) -> Optional[np.ndarray]:
         """
-        :obj:`numpy.array`, shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [0], ):
+        :obj:`numpy.array` of :obj:`float`,
+        shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [0], ):
         Cell size along the u-axis
         """
         if self.u_cell_delimiters is not None:
@@ -201,7 +202,8 @@ class BlockModel(ObjectBase):
     @property
     def v_cell_delimiters(self) -> Optional[np.ndarray]:
         """
-        :obj:`numpy.array`: Nodal offsets along the v-axis relative to the origin.
+        :obj:`numpy.array` of :obj:`float`:
+        Nodal offsets along the v-axis relative to the origin.
         """
         if (
             getattr(self, "_v_cell_delimiters", None) is None
@@ -225,7 +227,8 @@ class BlockModel(ObjectBase):
     @property
     def v_cells(self) -> Optional[np.ndarray]:
         """
-        :obj:`numpy.array`, shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [1], ):
+        :obj:`numpy.array` of :obj:`float`,
+        shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [1], ):
         Cell size along the v-axis
         """
         if self.v_cell_delimiters is not None:
@@ -235,7 +238,8 @@ class BlockModel(ObjectBase):
     @property
     def z_cell_delimiters(self) -> Optional[np.ndarray]:
         """
-        :obj:`numpy.array`: Nodal offsets along the z-axis relative to the origin (positive up).
+        :obj:`numpy.array` of :obj:`float`:
+        Nodal offsets along the z-axis relative to the origin (positive up).
         """
         if (
             getattr(self, "_z_cell_delimiters", None) is None
@@ -259,7 +263,8 @@ class BlockModel(ObjectBase):
     @property
     def z_cells(self) -> Optional[np.ndarray]:
         """
-        :obj:`numpy.array`, shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [2], ):
+        :obj:`numpy.array` of :obj:`float`,
+        shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [2], ):
         Cell size along the z-axis
         """
         if self.z_cell_delimiters is not None:

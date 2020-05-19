@@ -46,7 +46,7 @@ class Surface(Points):
     def cells(self) -> Optional[np.ndarray]:
         """
         Array of vertices index forming triangles
-        :return cells: array of int, shape ("*", 3)
+        :return cells: :obj:`numpy.array` of :obj:`int`, shape ("*", 3)
         """
         if getattr(self, "_cells", None) is None:
             if self.existing_h5_entity:
@@ -56,9 +56,9 @@ class Surface(Points):
 
     @cells.setter
     def cells(self, indices: np.ndarray):
-        """
-        :param indices: array of int, shape ("*", 3)
-        """
+        if isinstance(indices, list):
+            indices = np.vstack(indices)
+
         assert indices.dtype in [
             "int32",
             "uint32",

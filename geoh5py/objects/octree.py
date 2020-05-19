@@ -112,7 +112,7 @@ class Octree(ObjectBase):
     @property
     def centroids(self):
         """
-        :obj:`numpy.array`,
+        :obj:`numpy.array` of :obj:`float`,
         shape (:obj:`~geoh5py.objects.octree.Octree.n_cells`, 3):
         Cell center locations in world coordinates.
 
@@ -172,7 +172,8 @@ class Octree(ObjectBase):
     @property
     def octree_cells(self) -> Optional[np.ndarray]:
         """
-        :obj:`numpy.ndarray(int)` shape (:obj:`~geoh5py.objects.octree.Octree.n_cells`, 4):
+        :obj:`numpy.ndarray` of :obj:`int`,
+        shape (:obj:`~geoh5py.objects.octree.Octree.n_cells`, 4):
         Array defining the i, j, k position and size of each cell.
         The size defines the width of a cell in number of base cells.
 
@@ -212,7 +213,7 @@ class Octree(ObjectBase):
     @property
     def origin(self):
         """
-        :obj:`numpy.array`, shape (3, ): Coordinates of the origin
+        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin
         """
         return self._origin
 
@@ -252,7 +253,7 @@ class Octree(ObjectBase):
     @property
     def shape(self) -> Optional[Tuple]:
         """
-        :obj:`list`, len (3, ): Number of cells along the u, v and w-axis
+        :obj:`list` of :obj:`int`, len (3, ): Number of cells along the u, v and w-axis
         """
         if (
             self.u_count is not None

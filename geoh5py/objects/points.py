@@ -26,7 +26,7 @@ from .object_base import ObjectBase, ObjectType
 
 class Points(ObjectBase):
     """
-    Points object
+    Points object made up of vertices.
     """
 
     __TYPE_UID = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")

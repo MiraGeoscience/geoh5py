@@ -17,6 +17,13 @@
 
 
 class SurveyLocation:
+    """
+    Survey location object.
+
+    .. warning:: Not yet implemented.
+
+    """
+
     def __init__(self):
         self.depth = None
         self.dip = None

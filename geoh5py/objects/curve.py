@@ -27,7 +27,7 @@ from .points import Points
 class Curve(Points):
     """
     Curve object defined by a series of line segments (:obj:`~geoh5py.objects.curve.Curve.cells`)
-    that connect :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
+    connecting :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
     """
 
     __TYPE_UID = uuid.UUID(
