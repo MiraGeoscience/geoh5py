@@ -17,5 +17,12 @@
 
 
 class DateTime:
+    """
+    Time stamp
+
+    .. warning:: Not implemented
+
+    """
+
     def __init__(self):
         self._rep = None

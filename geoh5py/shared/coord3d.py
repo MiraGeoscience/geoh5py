@@ -19,6 +19,13 @@ import numpy as np
 
 
 class Coord3D:
+    """
+    Coordinate of vertices.
+
+    .. warning:: Replaced by :obj:`numpy.array`
+
+    """
+
     def __init__(self, xyz: np.ndarray = np.empty((1, 3))):
         self._xyz = xyz
 
