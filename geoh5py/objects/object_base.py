@@ -19,11 +19,12 @@
 
 import uuid
 from abc import abstractmethod
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional, Union
 
 import numpy as np
 
-from ..data import Data
+from ..data import CommentsData, Data
 from ..groups import PropertyGroup
 from ..shared import Entity
 from .object_type import ObjectType
@@ -47,10 +48,37 @@ class ObjectBase(Entity):
         self._entity_type = object_type
         self._property_groups: List[PropertyGroup] = []
         self._last_focus = "None"
-
+        self._comments = None
         # self._clipping_ids: List[uuid.UUID] = []
 
         super().__init__(**kwargs)
+
+    def add_comment(self, comment: str, author: str = None):
+        """
+        Add text comment to an object.
+
+        :param comment: Text to be added as comment.
+        :param author: Author's name or :obj:`~geoh5py.workspace.workspace.Worspace.contributors`
+        """
+
+        date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        if author is None:
+            author = self.workspace.contributors
+
+        comment_dict = {"Author": author, "Date": date, "Text": comment}
+
+        if self.comments is None:
+            self.add_data(
+                {
+                    "UserComments": {
+                        "values": [comment_dict],
+                        "association": "OBJECT",
+                        "entity_type": {"primitive_type": "TEXT"},
+                    }
+                }
+            )
+        else:
+            self.comments.values = self.comments.values + [comment_dict]
 
     def add_data(
         self, data: dict, property_group: str = None
@@ -117,7 +145,7 @@ class ObjectBase(Entity):
             # Re-order to set parent first
             kwargs = {"parent": self, "association": attr["association"]}
             for key, val in attr.items():
-                if key in ["parent", "association"]:
+                if key in ["parent", "association", "entity_type"]:
                     continue
                 kwargs[key] = val
 
@@ -187,6 +215,17 @@ class ObjectBase(Entity):
     @property
     def cells(self):
         ...
+
+    @property
+    def comments(self):
+        """
+        Fetch a :obj:`~geoh5py.data.text_data.CommentsData` entity from children.
+        """
+        for child in self.children:
+            if isinstance(child, CommentsData):
+                return child
+
+        return None
 
     @classmethod
     @abstractmethod

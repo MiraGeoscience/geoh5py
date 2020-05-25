@@ -17,13 +17,14 @@
 
 # pylint: disable=R0904
 
+import json
 import uuid
 from typing import TYPE_CHECKING, Optional, Union
 
 import h5py
 import numpy as np
 
-from ..data import Data, DataType
+from ..data import CommentsData, Data, DataType
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import Entity
@@ -451,7 +452,7 @@ class H5Writer:
         Add data :obj:`~geoh5py.data.data.Data.values`
 
         :param file: Name or handle to a geoh5 file
-        :param entity: Target entity_type with color_map
+        :param entity: Target entity
         :param values: Array of values to be added to the geoh5 file
         :param close_file: Close geoh5 file after write
         """
@@ -460,7 +461,18 @@ class H5Writer:
         entity_handle = H5Writer.fetch_handle(h5file, entity)
 
         # Adding an array of values
-        entity_handle.create_dataset("Data", data=values)
+        if isinstance(entity, CommentsData):
+
+            comments = {"Comments": values}
+            entity_handle.create_dataset(
+                "Data",
+                data=json.dumps(comments, indent=4),
+                dtype=h5py.special_dtype(vlen=str),
+                shape=(1,),
+            )
+
+        else:
+            entity_handle.create_dataset("Data", data=values)
 
         if close_file:
             h5file.close()

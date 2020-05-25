@@ -41,7 +41,7 @@ import h5py
 import numpy as np
 
 from .. import data, groups, objects
-from ..data import Data, DataType
+from ..data import CommentsData, Data, DataType
 from ..groups import CustomGroup, Group, PropertyGroup, RootGroup
 from ..io import H5Reader, H5Writer
 from ..objects import Cell, ObjectBase
@@ -406,6 +406,12 @@ class Workspace:
                 and inspect.ismethod(member.primitive_type)
                 and data_type.primitive_type is member.primitive_type()
             ):
+                if (
+                    member is CommentsData
+                    and "UserComments" not in entity_kwargs.values()
+                ):
+                    continue
+
                 created_entity = member(data_type, **entity_kwargs)
 
                 return created_entity

@@ -17,8 +17,10 @@
 
 import uuid
 from abc import abstractmethod
+from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
+from ..data import CommentsData, Data
 from ..shared import Entity
 from .group_type import GroupType
 
@@ -34,6 +36,47 @@ class Group(Entity):
         super().__init__(**kwargs)
 
         self._entity_type = group_type
+
+    def add_comment(self, comment: str, author: str = None):
+        """
+        Add text comment to an object.
+
+        :param comment: Text to be added as comment.
+        :param author: Author's name or :obj:`~geoh5py.workspace.workspace.Worspace.contributors`
+        """
+
+        date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        if author is None:
+            author = self.workspace.contributors
+
+        comment_dict = {"Author": author, "Date": date, "Text": comment}
+
+        if self.comments is None:
+
+            self.workspace.create_entity(
+                Data,
+                entity={
+                    "name": "UserComments",
+                    "values": [comment_dict],
+                    "parent": self,
+                    "association": "OBJECT",
+                },
+                entity_type={"primitive_type": "TEXT"},
+            )
+
+        else:
+            self.comments.values = self.comments.values + [comment_dict]
+
+    @property
+    def comments(self):
+        """
+        Fetch a :obj:`~geoh5py.data.text_data.CommentsData` entity from children.
+        """
+        for child in self.children:
+            if isinstance(child, CommentsData):
+                return child
+
+        return None
 
     @property
     def entity_type(self) -> GroupType:

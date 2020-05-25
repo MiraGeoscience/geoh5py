@@ -24,6 +24,9 @@ if TYPE_CHECKING:
 
 
 class Entity(ABC):
+    """
+    Base Entity class
+    """
 
     _attribute_map = {
         "Allow delete": "allow_delete",
