@@ -22,7 +22,7 @@ Documentation
 
 See also documentation for the `geoh5 file format`_.
 
-.. _geoh5 file format: doc/source/GeoH5.textile
+.. _geoh5 file format: https://gist.github.com/jincandescent/06a3bd4e0e54360ad191
 
 
 Installation
