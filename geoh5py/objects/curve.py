@@ -90,7 +90,8 @@ class Curve(Points):
         (:obj:`~geoh5py.objects.object_base.ObjectBase.n_vertices`, 2):
         Group identifiers for vertices connected by line segments as defined by the
         :obj:`~geoh5py.objects.curve.Curve.cells`
-        property. Cells property is re-assigned with the setting of parts.
+        property. The definition of the :obj:`~geoh5py.objects.curve.Curve.cells`
+        property get modified by the setting of parts.
         """
         if getattr(self, "_parts", None) is None and self.cells is not None:
 
@@ -127,7 +128,8 @@ class Curve(Points):
     @property
     def unique_parts(self):
         """
-        :obj:`list` of :obj:`int`: Unique part identifiers
+        :obj:`list` of :obj:`int`: Unique :obj:`~geoh5py.objects.curve.Curve.parts`
+        identifiers
         """
         if self.parts is not None:
 
