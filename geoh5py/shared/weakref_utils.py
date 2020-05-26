@@ -42,8 +42,10 @@ def get_clean_ref(some_dict: Dict[K, ReferenceType[T]], key: K) -> Optional[T]:
     Gets the referent value for the given ``key`` in a ``some_dict`` of ``weakref`` values.
     In case ``key`` points to a reference to a deleted value, remove that key from ``some_dict``
     on the fly, and returns None.
+
     :param some_dict: The dictionary of ``weakref`` values.
     :param key: The key
+
     :return: the referent value for ``key`` if found in the the dictionary, else None.
     """
     ref = some_dict.get(key, None)
@@ -57,11 +59,13 @@ def get_clean_ref(some_dict: Dict[K, ReferenceType[T]], key: K) -> Optional[T]:
 
 def insert_once(some_dict: Dict[K, ReferenceType], key: K, value):
     """
-    TODO
-    :param some_dict:
-    :param key:
-    :param value:
-    :return:
+    Check if the reference to an Entity with uuid is already in use.
+
+    :param some_dict: Dictionary of UUID keys and weakref values.
+    :param key: UUID key to be checked.
+    :param value: Entity to be checked
+
+    :return: Dictionary with clean weakref
     """
     existing_ref = some_dict.get(key, None)
     if existing_ref is not None and existing_ref() is not None:
