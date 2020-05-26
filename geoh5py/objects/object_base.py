@@ -58,12 +58,13 @@ class ObjectBase(Entity):
         Add text comment to an object.
 
         :param comment: Text to be added as comment.
-        :param author: Author's name or :obj:`~geoh5py.workspace.workspace.Worspace.contributors`
+        :param author: Name of author or defaults to
+            :obj:`~geoh5py.workspace.workspace.Workspace.contributors`
         """
 
         date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         if author is None:
-            author = self.workspace.contributors
+            author = ",".join(self.workspace.contributors)
 
         comment_dict = {"Author": author, "Date": date, "Text": comment}
 
@@ -85,7 +86,7 @@ class ObjectBase(Entity):
     ) -> Union[Data, List[Data]]:
         """
         Create :obj:`~geoh5py.data.data.Data` from dictionary of name and arguments.
-        The provided arguments can be any property of the target class.
+        The provided arguments can be any property of the target Data class.
 
         :param data: Dictionary of data to be added to the object, e.g.
 
@@ -214,6 +215,11 @@ class ObjectBase(Entity):
 
     @property
     def cells(self):
+        """
+        :obj:`numpy.array` of :obj:`int`: Array of indices
+        defining the connection between
+        :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
+        """
         ...
 
     @property
@@ -379,4 +385,8 @@ class ObjectBase(Entity):
 
     @property
     def vertices(self):
+        r"""
+        :obj:`numpy.array` of :obj:`float`, shape (\*, 3): Array of x, y, z coordinates
+        defining the position of points in 3D space.
+        """
         ...

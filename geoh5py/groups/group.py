@@ -47,7 +47,7 @@ class Group(Entity):
 
         date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         if author is None:
-            author = self.workspace.contributors
+            author = ",".join(self.workspace.contributors)
 
         comment_dict = {"Author": author, "Date": date, "Text": comment}
 
