@@ -53,17 +53,17 @@ def test_user_comments():
         group_comment_1 = "group text comment"
         group_comment_2 = "my other comment"
         author = "Jane Doe"
-        group.add_comment(group_comment_1, author=author)
+        group.add_comment(group_comment_1)
 
-        group.add_comment(group_comment_2, author=author)
+        group.add_comment(group_comment_2)
 
         workspace.finalize()
 
         workspace = Workspace(h5file_path)
         group_in = workspace.get_entity("myGroup")[0]
 
-        assert (
-            group_in.comments.values[0]["Author"] == author
+        assert group_in.comments.values[0]["Author"] == ",".join(
+            workspace.contributors
         ), "Issue with 'Author of object comments"
         assert (
             group_in.comments.values[0]["Text"] == group_comment_1
