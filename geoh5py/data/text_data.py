@@ -60,8 +60,6 @@ class CommentsData(Data):
                     "Text": "A text comment."
                 },
             ]
-
-        where "Date" can be generated from datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     """
 
     @classmethod
@@ -74,9 +72,10 @@ class CommentsData(Data):
         :obj:`list` List of comments
         """
         if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
-            comment_str = self.workspace.fetch_values(self.uid)[0]
+            comment_str = self.workspace.fetch_values(self.uid)
 
-            self._values = json.loads(comment_str)["Comments"]
+            if comment_str is not None:
+                self._values = json.loads(comment_str[0])["Comments"]
 
         return self._values
 
