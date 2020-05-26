@@ -123,151 +123,13 @@ class Workspace:
             self._root = self.create_entity(RootGroup)
             self.finalize()
 
-    @property
-    def attribute_map(self) -> dict:
-        """
-        Mapping between names used in the geoh5 database.
-        """
-        return self._attribute_map
+    def activate(self):
+        """ Makes this workspace the active one.
 
-    @property
-    def ga_version(self) -> str:
+            In case the workspace gets deleted, Workspace.active() safely returns None.
         """
-        Version of Geoscience Analyst software
-        """
-        return self._ga_version
-
-    @ga_version.setter
-    def ga_version(self, value: str):
-        self._ga_version = value
-
-    @property
-    def version(self) -> float:
-        """
-        Project version
-        """
-        return self._version
-
-    @version.setter
-    def version(self, value: float):
-        self._version = value
-
-    @property
-    def distance_unit(self) -> str:
-        """
-        Distance unit used in the project
-        """
-        return self._distance_unit
-
-    @distance_unit.setter
-    def distance_unit(self, value: str):
-        self._distance_unit = value
-
-    @property
-    def contributors(self) -> np.ndarray:
-        """
-        List of contributors name
-        """
-        return self._contributors
-
-    @contributors.setter
-    def contributors(self, value: List[str]):
-        self._contributors = np.asarray(value, dtype=h5py.special_dtype(vlen=str))
-
-    @property
-    def name(self) -> str:
-        """
-         Name of the project
-        """
-        return self._name
-
-    @property
-    def list_groups_name(self) -> Dict[uuid.UUID, str]:
-        """
-        List all registered groups with name
-        """
-        groups_name = {}
-        for key, val in self._groups.items():
-            entity = val.__call__()
-            if entity is not None:
-                groups_name[key] = entity.name
-        return groups_name
-
-    @property
-    def list_objects_name(self) -> Dict[uuid.UUID, str]:
-        """
-        List all registered objects with name
-        """
-        objects_name = {}
-        for key, val in self._objects.items():
-            entity = val.__call__()
-            if entity is not None:
-                objects_name[key] = entity.name
-        return objects_name
-
-    @property
-    def list_data_name(self) -> Dict[uuid.UUID, str]:
-        """
-        List all registered data with name
-        """
-        data_name = {}
-        for key, val in self._data.items():
-            entity = val.__call__()
-            if entity is not None:
-                data_name[key] = entity.name
-        return data_name
-
-    @property
-    def list_entities_name(self) -> Dict[uuid.UUID, str]:
-        """
-        List all registered entities with name
-        """
-        entities_name = self.list_groups_name
-        entities_name.update(self.list_objects_name)
-        entities_name.update(self.list_data_name)
-        return entities_name
-
-    @property
-    def root(self) -> Optional[Entity]:
-        """
-        RootGroup entity with no parent
-        """
-        return self._root
-
-    @root.setter
-    def root(self, entity) -> Optional[Entity]:
-        if self._root is None:
-            assert isinstance(
-                entity, RootGroup
-            ), f"The given root entity must be of type {RootGroup}"
-            self._root = entity
-
-        return self._root
-
-    @property
-    def h5file(self) -> str:
-        """
-        Target *geoh5* file name with path
-        """
-        return self._h5file
-
-    @property
-    def modified_attributes(self) -> bool:
-        """
-        Flag to update the workspace attributes on file
-        """
-        return self._modified_attributes
-
-    @modified_attributes.setter
-    def modified_attributes(self, value: bool):
-        self._modified_attributes = value
-
-    @property
-    def workspace(self):
-        """
-        :return self: The Workspace
-        """
-        return self
+        if Workspace._active_ref() is not self:
+            Workspace._active_ref = weakref.ref(self)
 
     @staticmethod
     def active() -> Workspace:
@@ -279,197 +141,51 @@ class Workspace:
         # so that type check does not complain of possible returned None
         return cast(Workspace, active_one)
 
-    @classmethod
-    def create(cls, entity: Entity, **kwargs) -> Entity:
+    def all_data(self) -> List["data.Data"]:
+        """Get all active Data entities registered in the workspace.
         """
-        Create and register a new Entity.
+        weakref_utils.remove_none_referents(self._data)
+        return [cast("data.Data", v()) for v in self._data.values()]
 
-        :param entity: Entity to be created
-        :param kwargs: List of attributes to set on new entity
-
-        :return entity: The new entity
+    def all_groups(self) -> List["group.Group"]:
+        """Get all active Group entities registered in the workspace.
         """
-        return entity.create(cls, **kwargs)
+        weakref_utils.remove_none_referents(self._groups)
+        return [cast("group.Group", v()) for v in self._groups.values()]
 
-    @staticmethod
-    def save_entity(entity: Entity, close_file: bool = True, add_children: bool = True):
+    def all_objects(self) -> List["object_base.ObjectBase"]:
+        """Get all active Object entities registered in the workspace.
         """
-        Save or update an entity to geoh5
+        weakref_utils.remove_none_referents(self._objects)
+        return [cast("object_base.ObjectBase", v()) for v in self._objects.values()]
 
-        :param entity: Entity to be written to geoh5
-        :param close_file: Close the geoh5 database after writing is completed
-        :param add_children: Add children entities to geoh5
+    def all_types(self) -> List["EntityType"]:
+        """Get all active entity types registered in the workspace.
         """
-        H5Writer.save_entity(entity, close_file=close_file, add_children=add_children)
+        weakref_utils.remove_none_referents(self._types)
+        return [cast("EntityType", v()) for v in self._types.values()]
 
-    def finalize(self):
-        """ Finalize the h5file by checking for updated entities and re-building the Root"""
-        for entity in self.all_objects() + self.all_groups() + self.all_data():
-            if len(entity.modified_attributes) > 0:
-                self.save_entity(entity)
-
-        for entity_type in self.all_types():
-            if len(entity_type.modified_attributes) > 0:
-                H5Writer.write_entity_type(entity_type)
-
-        H5Writer.finalize(self)
-
-    def get_entity(self, name: Union[str, uuid.UUID]) -> List[Optional[Entity]]:
+    @property
+    def attribute_map(self) -> dict:
         """
-        Retrieve an entity from one of its identifier, either by name or uuid
-
-        :param name: Object identifier, either name or uuid.
-
-        :return: object_list: List of entities with the same given name
+        Mapping between names used in the geoh5 database.
         """
-        if isinstance(name, uuid.UUID):
-            list_entity_uid = [name]
+        return self._attribute_map
 
-        else:  # Extract all objects uuid with matching name
-            list_entity_uid = [
-                key for key, val in self.list_entities_name.items() if val == name
-            ]
-
-        entity_list: List[Optional[Entity]] = []
-        for uid in list_entity_uid:
-            entity_list.append(self.find_entity(uid))
-
-        return entity_list
-
-    def create_entity(
-        self, entity_class, save_on_creation=True, **kwargs
-    ) -> Optional[Entity]:
+    @property
+    def contributors(self) -> np.ndarray:
         """
-        create_entity(entity_class, name, uuid.UUID, type_uuid)
-
-        Function to create and register a new entity and its entity_type.
-
-        :param entity_class: Type of entity to be created
-
-        :return entity: Newly created entity registered to the workspace
+        :obj:`numpy.array` of :obj:`str` List of contributors name
         """
-        created_entity: Optional[Entity] = None
+        return self._contributors
 
-        # Assume that entity is being created from its class
-        entity_kwargs: Dict = dict()
-        if "entity" in kwargs.keys():
-            entity_kwargs = kwargs["entity"]
-
-        entity_type_kwargs: Dict = dict()
-        if "entity_type" in kwargs.keys():
-            entity_type_kwargs = kwargs["entity_type"]
-
-        if entity_class is RootGroup:
-            created_entity = RootGroup(
-                RootGroup.find_or_create_type(self, **entity_type_kwargs),
-                **entity_kwargs,
-            )
-        elif entity_class is Data:
-            created_entity = self.create_data(
-                entity_class, entity_kwargs, entity_type_kwargs
-            )
-        else:
-            created_entity = self.create_object_or_group(
-                entity_class, entity_kwargs, entity_type_kwargs
-            )
-
-        if created_entity is not None:
-            if save_on_creation:
-                self.save_entity(created_entity)
-            return created_entity
-
-        return None
-
-    def create_data(
-        self, entity_class, entity_kwargs, entity_type_kwargs
-    ) -> Optional[Entity]:
-        """
-
-        :param entity_class:
-        :param entity_kwargs:
-        :param entity_type_kwargs:
-        :returns entity:
-        """
-        if isinstance(entity_type_kwargs, DataType):
-            data_type = entity_type_kwargs
-        else:
-            data_type = data.data_type.DataType.find_or_create(
-                self, **entity_type_kwargs
-            )
-
-        for _, member in inspect.getmembers(data):
-            if (
-                inspect.isclass(member)
-                and issubclass(member, entity_class)
-                and member is not entity_class
-                and hasattr(member, "primitive_type")
-                and inspect.ismethod(member.primitive_type)
-                and data_type.primitive_type is member.primitive_type()
-            ):
-                if (
-                    member is CommentsData
-                    and "UserComments" not in entity_kwargs.values()
-                ):
-                    continue
-
-                created_entity = member(data_type, **entity_kwargs)
-
-                return created_entity
-
-        return None
-
-    def create_object_or_group(
-        self, entity_class, entity_kwargs, entity_type_kwargs
-    ) -> Optional[Entity]:
-        """
-
-        :param entity_class:
-        :param entity_kwargs:
-        :param entity_type_kwargs:
-        :return entity:
-        """
-        entity_type_uid = None
-        for key, val in entity_type_kwargs.items():
-            if key.lower() in ["id", "uid"]:
-                entity_type_uid = uuid.UUID(str(val))
-
-        if entity_type_uid is None:
-            if hasattr(entity_class, "default_type_uid"):
-                entity_type_uid = entity_class.default_type_uid()
-            else:
-                entity_type_uid = uuid.uuid4()
-
-        entity_class = entity_class.__bases__
-        for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
-            if (
-                inspect.isclass(member)
-                and issubclass(member, entity_class)
-                and member is not entity_class
-                and hasattr(member, "default_type_uid")
-                and not member == CustomGroup
-                and member.default_type_uid() == entity_type_uid
-            ):
-                entity_type = member.find_or_create_type(self, **entity_type_kwargs)
-                created_entity = member(entity_type, **entity_kwargs)
-
-                return created_entity
-
-        # Special case for CustomGroup without uuid
-        if entity_class == Group:
-            entity_type = groups.custom_group.CustomGroup.find_or_create_type(
-                self, **entity_type_kwargs
-            )
-            created_entity = groups.custom_group.CustomGroup(
-                entity_type, **entity_kwargs
-            )
-
-            return created_entity
-
-        return None
+    @contributors.setter
+    def contributors(self, value: List[str]):
+        self._contributors = np.asarray(value, dtype=h5py.special_dtype(vlen=str))
 
     def copy_to_parent(self, entity, parent, copy_children: bool = True):
         """
-        Function to copy an entity to a different parent entity
+        Copy an entity to a different parent with copies of children
 
         :param entity: Entity to be copied
         :param parent: Target parent to copy the entity under
@@ -515,6 +231,183 @@ class Workspace:
         new_object.workspace.finalize()
 
         return new_object
+
+    @classmethod
+    def create(cls, entity: Entity, **kwargs) -> Entity:
+        """
+        Create and register a new Entity.
+
+        :param entity: Entity to be created
+        :param kwargs: List of attributes to set on new entity
+
+        :return entity: The new entity
+        """
+        return entity.create(cls, **kwargs)
+
+    def create_data(
+        self,
+        entity_class,
+        entity_kwargs: dict,
+        entity_type_kwargs: Union[dict, DataType],
+    ) -> Optional[Entity]:
+        """
+        Create a new Data entity with attributes.
+
+        :param entity_class: :obj:`~geoh5py.data.data.Data` class
+        :param entity_kwargs: Properties of the entity
+        :param entity_type_kwargs: Properties of the entity_type
+
+        :returns entity: Newly created entity
+        """
+        if isinstance(entity_type_kwargs, DataType):
+            data_type = entity_type_kwargs
+        else:
+            data_type = data.data_type.DataType.find_or_create(
+                self, **entity_type_kwargs
+            )
+
+        for _, member in inspect.getmembers(data):
+            if (
+                inspect.isclass(member)
+                and issubclass(member, entity_class)
+                and member is not entity_class
+                and hasattr(member, "primitive_type")
+                and inspect.ismethod(member.primitive_type)
+                and data_type.primitive_type is member.primitive_type()
+            ):
+                if (
+                    member is CommentsData
+                    and "UserComments" not in entity_kwargs.values()
+                ):
+                    continue
+
+                created_entity = member(data_type, **entity_kwargs)
+
+                return created_entity
+
+        return None
+
+    def create_entity(
+        self, entity_class, save_on_creation: bool = True, **kwargs
+    ) -> Optional[Entity]:
+        """
+        Function to create and register a new entity and its entity_type.
+
+        :param entity_class: Type of entity to be created
+        :param save_on_creation: Save the entity to h5file immediately
+
+        :return entity: Newly created entity registered to the workspace
+        """
+        created_entity: Optional[Entity] = None
+
+        # Assume that entity is being created from its class
+        entity_kwargs: Dict = dict()
+        if "entity" in kwargs.keys():
+            entity_kwargs = kwargs["entity"]
+
+        entity_type_kwargs: Dict = dict()
+        if "entity_type" in kwargs.keys():
+            entity_type_kwargs = kwargs["entity_type"]
+
+        if entity_class is RootGroup:
+            created_entity = RootGroup(
+                RootGroup.find_or_create_type(self, **entity_type_kwargs),
+                **entity_kwargs,
+            )
+        elif entity_class is Data:
+            created_entity = self.create_data(
+                entity_class, entity_kwargs, entity_type_kwargs
+            )
+        else:
+            created_entity = self.create_object_or_group(
+                entity_class, entity_kwargs, entity_type_kwargs
+            )
+
+        if created_entity is not None:
+            if save_on_creation:
+                self.save_entity(created_entity)
+            return created_entity
+
+        return None
+
+    def create_object_or_group(
+        self, entity_class, entity_kwargs: dict, entity_type_kwargs: dict
+    ) -> Optional[Entity]:
+        """
+        Create an object or a group with attributes.
+
+        :param entity_class: :obj:`~geoh5py.objects.object_base.ObjectBase` or
+            :obj:`~geoh5py.groups.group.Group` class
+        :param entity_kwargs: Attributes of the entity
+        :param entity_type_kwargs: Attributes of the entity_type
+
+        :return entity: A new Object of Group
+        """
+        entity_type_uid = None
+        for key, val in entity_type_kwargs.items():
+            if key.lower() in ["id", "uid"]:
+                entity_type_uid = uuid.UUID(str(val))
+
+        if entity_type_uid is None:
+            if hasattr(entity_class, "default_type_uid"):
+                entity_type_uid = entity_class.default_type_uid()
+            else:
+                entity_type_uid = uuid.uuid4()
+
+        entity_class = entity_class.__bases__
+        for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
+            if (
+                inspect.isclass(member)
+                and issubclass(member, entity_class)
+                and member is not entity_class
+                and hasattr(member, "default_type_uid")
+                and not member == CustomGroup
+                and member.default_type_uid() == entity_type_uid
+            ):
+                entity_type = member.find_or_create_type(self, **entity_type_kwargs)
+                created_entity = member(entity_type, **entity_kwargs)
+
+                return created_entity
+
+        # Special case for CustomGroup without uuid
+        if entity_class == Group:
+            entity_type = groups.custom_group.CustomGroup.find_or_create_type(
+                self, **entity_type_kwargs
+            )
+            created_entity = groups.custom_group.CustomGroup(
+                entity_type, **entity_kwargs
+            )
+
+            return created_entity
+
+        return None
+
+    def deactivate(self):
+        """ Deactivate this workspace if it was the active one, else does nothing.
+        """
+        if Workspace._active_ref() is self:
+            Workspace._active_ref = type(None)
+
+    @property
+    def distance_unit(self) -> str:
+        """
+        :obj:`str` Distance unit used in the project
+        """
+        return self._distance_unit
+
+    @distance_unit.setter
+    def distance_unit(self, value: str):
+        self._distance_unit = value
+
+    def fetch_cells(self, uid: uuid.UUID) -> Cell:
+        """
+        Fetch the cells of an object from the source h5file
+
+        :param uid: Unique identifier of target entity
+
+        :return cells: Cell object with vertices index
+        """
+        return H5Reader.fetch_cells(self.h5file, uid)
 
     def fetch_children(self, entity: Entity, recursively: bool = False):
         """
@@ -564,46 +457,6 @@ class Workspace:
                 for kwargs in property_groups.values():
                     recovered_object.find_or_create_property_group(**kwargs)
 
-    def fetch_values(self, uid: uuid.UUID) -> Optional[float]:
-        """
-        Fetch the data values from the source h5file
-
-        :param uid: Unique identifier of target data object
-
-        :return value: Array of values
-        """
-        return H5Reader.fetch_values(self.h5file, uid)
-
-    def fetch_vertices(self, uid: uuid.UUID) -> np.ndarray:
-        """
-        Fetch the vertices of an object from the source h5file
-
-        :param uid: Unique identifier of target entity
-
-        :return coordinates: Array of coordinate [x, y, z] locations
-        """
-        return H5Reader.fetch_vertices(self.h5file, uid)
-
-    def fetch_cells(self, uid: uuid.UUID) -> Cell:
-        """
-        Fetch the cells of an object from the source h5file
-
-        :param uid: Unique identifier of target entity
-
-        :return cells: Cell object with vertices index
-        """
-        return H5Reader.fetch_cells(self.h5file, uid)
-
-    def fetch_octree_cells(self, uid: uuid.UUID) -> np.ndarray:
-        """
-        Fetch the octree cells ordering from the source h5file
-
-        :param uid: Unique identifier of target entity
-
-        :return values: Array of [i, j, k, dimension] defining the octree mesh
-        """
-        return H5Reader.fetch_octree_cells(self.h5file, uid)
-
     def fetch_delimiters(
         self, uid: uuid.UUID
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -616,6 +469,16 @@ class Workspace:
             Arrays of delimiters along the u, v, and w axis
         """
         return H5Reader.fetch_delimiters(self.h5file, uid)
+
+    def fetch_octree_cells(self, uid: uuid.UUID) -> np.ndarray:
+        """
+        Fetch the octree cells ordering from the source h5file
+
+        :param uid: Unique identifier of target entity
+
+        :return values: Array of [i, j, k, dimension] defining the octree mesh
+        """
+        return H5Reader.fetch_octree_cells(self.h5file, uid)
 
     def fetch_property_groups(self, uid: uuid.UUID) -> List[PropertyGroup]:
         """
@@ -641,78 +504,37 @@ class Workspace:
 
         return property_groups
 
-    def activate(self):
-        """ Makes this workspace the active one.
-
-            In case the workspace gets deleted, Workspace.active() safely returns None.
+    def fetch_values(self, uid: uuid.UUID) -> Optional[float]:
         """
-        if Workspace._active_ref() is not self:
-            Workspace._active_ref = weakref.ref(self)
+        Fetch the data values from the source h5file
 
-    def deactivate(self):
-        """ Deactivate this workspace if it was the active one, else does nothing.
+        :param uid: Unique identifier of target data object
+
+        :return value: Array of values
         """
-        if Workspace._active_ref() is self:
-            Workspace._active_ref = type(None)
+        return H5Reader.fetch_values(self.h5file, uid)
 
-    def _register_type(self, entity_type: "EntityType"):
-        weakref_utils.insert_once(self._types, entity_type.uid, entity_type)
-
-    def _register_group(self, group: "group.Group"):
-        weakref_utils.insert_once(self._groups, group.uid, group)
-
-    def _register_data(self, data_obj: "data.Data"):
-        weakref_utils.insert_once(self._data, data_obj.uid, data_obj)
-
-    def _register_object(self, obj: "object_base.ObjectBase"):
-        weakref_utils.insert_once(self._objects, obj.uid, obj)
-
-    def all_types(self) -> List["EntityType"]:
-        """Get all active entity types registered in the workspace.
+    def fetch_vertices(self, uid: uuid.UUID) -> np.ndarray:
         """
-        weakref_utils.remove_none_referents(self._types)
-        return [cast("EntityType", v()) for v in self._types.values()]
+        Fetch the vertices of an object from the source h5file
 
-    def find_type(
-        self, type_uid: uuid.UUID, type_class: Type["EntityType"]
-    ) -> Optional["EntityType"]:
-        """
-        Find an existing and active EntityType
+        :param uid: Unique identifier of target entity
 
-        :param type_uid: Unique identifier of target type
+        :return coordinates: Array of coordinate [x, y, z] locations
         """
-        found_type = weakref_utils.get_clean_ref(self._types, type_uid)
-        return found_type if isinstance(found_type, type_class) else None
+        return H5Reader.fetch_vertices(self.h5file, uid)
 
-    def all_groups(self) -> List["group.Group"]:
-        """Get all active Group entities registered in the workspace.
-        """
-        weakref_utils.remove_none_referents(self._groups)
-        return [cast("group.Group", v()) for v in self._groups.values()]
+    def finalize(self):
+        """ Finalize the h5file by checking for updated entities and re-building the Root"""
+        for entity in self.all_objects() + self.all_groups() + self.all_data():
+            if len(entity.modified_attributes) > 0:
+                self.save_entity(entity)
 
-    def find_group(self, group_uid: uuid.UUID) -> Optional["group.Group"]:
-        """
-        Find an existing and active Group object
-        """
-        return weakref_utils.get_clean_ref(self._groups, group_uid)
+        for entity_type in self.all_types():
+            if len(entity_type.modified_attributes) > 0:
+                H5Writer.write_entity_type(entity_type)
 
-    def all_objects(self) -> List["object_base.ObjectBase"]:
-        """Get all active Object entities registered in the workspace.
-        """
-        weakref_utils.remove_none_referents(self._objects)
-        return [cast("object_base.ObjectBase", v()) for v in self._objects.values()]
-
-    def find_object(self, object_uid: uuid.UUID) -> Optional["object_base.ObjectBase"]:
-        """
-        Find an existing and active Object
-        """
-        return weakref_utils.get_clean_ref(self._objects, object_uid)
-
-    def all_data(self) -> List["data.Data"]:
-        """Get all active Data entities registered in the workspace.
-        """
-        weakref_utils.remove_none_referents(self._data)
-        return [cast("data.Data", v()) for v in self._data.values()]
+        H5Writer.finalize(self)
 
     def find_data(self, data_uid: uuid.UUID) -> Optional["data.Data"]:
         """
@@ -728,6 +550,192 @@ class Workspace:
             or self.find_data(entity_uid)
             or self.find_object(entity_uid)
         )
+
+    def find_group(self, group_uid: uuid.UUID) -> Optional["group.Group"]:
+        """
+        Find an existing and active Group object
+        """
+        return weakref_utils.get_clean_ref(self._groups, group_uid)
+
+    def find_object(self, object_uid: uuid.UUID) -> Optional["object_base.ObjectBase"]:
+        """
+        Find an existing and active Object
+        """
+        return weakref_utils.get_clean_ref(self._objects, object_uid)
+
+    def find_type(
+        self, type_uid: uuid.UUID, type_class: Type["EntityType"]
+    ) -> Optional["EntityType"]:
+        """
+        Find an existing and active EntityType
+
+        :param type_uid: Unique identifier of target type
+        """
+        found_type = weakref_utils.get_clean_ref(self._types, type_uid)
+        return found_type if isinstance(found_type, type_class) else None
+
+    @property
+    def ga_version(self) -> str:
+        """
+        :obj:`str` Version of Geoscience Analyst software
+        """
+        return self._ga_version
+
+    @ga_version.setter
+    def ga_version(self, value: str):
+        self._ga_version = value
+
+    def get_entity(self, name: Union[str, uuid.UUID]) -> List[Optional[Entity]]:
+        """
+        Retrieve an entity from one of its identifier, either by name or uuid
+
+        :param name: Object identifier, either name or uuid.
+
+        :return: object_list: List of entities with the same given name
+        """
+        if isinstance(name, uuid.UUID):
+            list_entity_uid = [name]
+
+        else:  # Extract all objects uuid with matching name
+            list_entity_uid = [
+                key for key, val in self.list_entities_name.items() if val == name
+            ]
+
+        entity_list: List[Optional[Entity]] = []
+        for uid in list_entity_uid:
+            entity_list.append(self.find_entity(uid))
+
+        return entity_list
+
+    @property
+    def h5file(self) -> str:
+        """
+        :str: Target *geoh5* file name with path
+        """
+        return self._h5file
+
+    @property
+    def list_data_name(self) -> Dict[uuid.UUID, str]:
+        """
+        :obj:`dict` of UUID keys and name values for all registered Data
+        """
+        data_name = {}
+        for key, val in self._data.items():
+            entity = val.__call__()
+            if entity is not None:
+                data_name[key] = entity.name
+        return data_name
+
+    @property
+    def list_entities_name(self) -> Dict[uuid.UUID, str]:
+        """
+        :obj:`dict` of UUID keys and name values for all registered Entities
+        """
+        entities_name = self.list_groups_name
+        entities_name.update(self.list_objects_name)
+        entities_name.update(self.list_data_name)
+        return entities_name
+
+    @property
+    def list_groups_name(self) -> Dict[uuid.UUID, str]:
+        """
+        :obj:`dict` of UUID keys and name values for all registered Groups
+        """
+        groups_name = {}
+        for key, val in self._groups.items():
+            entity = val.__call__()
+            if entity is not None:
+                groups_name[key] = entity.name
+        return groups_name
+
+    @property
+    def list_objects_name(self) -> Dict[uuid.UUID, str]:
+        """
+        :obj:`dict` of UUID keys and name values for all registered Objects
+        """
+        objects_name = {}
+        for key, val in self._objects.items():
+            entity = val.__call__()
+            if entity is not None:
+                objects_name[key] = entity.name
+        return objects_name
+
+    @property
+    def modified_attributes(self) -> bool:
+        """
+        :obj:`list[str]` List of attributes to be updated in associated workspace
+        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
+        """
+        return self._modified_attributes
+
+    @modified_attributes.setter
+    def modified_attributes(self, value: bool):
+        self._modified_attributes = value
+
+    @property
+    def name(self) -> str:
+        """
+         :obj:`str` Name of the project
+        """
+        return self._name
+
+    def _register_type(self, entity_type: "EntityType"):
+        weakref_utils.insert_once(self._types, entity_type.uid, entity_type)
+
+    def _register_group(self, group: "group.Group"):
+        weakref_utils.insert_once(self._groups, group.uid, group)
+
+    def _register_data(self, data_obj: "data.Data"):
+        weakref_utils.insert_once(self._data, data_obj.uid, data_obj)
+
+    def _register_object(self, obj: "object_base.ObjectBase"):
+        weakref_utils.insert_once(self._objects, obj.uid, obj)
+
+    @property
+    def root(self) -> Optional[Entity]:
+        """
+        :obj:`~geoh5py.groups.root_group.RootGroup` entity.
+        """
+        return self._root
+
+    @root.setter
+    def root(self, entity) -> Optional[Entity]:
+        if self._root is None:
+            assert isinstance(
+                entity, RootGroup
+            ), f"The given root entity must be of type {RootGroup}"
+            self._root = entity
+
+        return self._root
+
+    @staticmethod
+    def save_entity(entity: Entity, close_file: bool = True, add_children: bool = True):
+        """
+        Save or update an entity to geoh5
+
+        :param entity: Entity to be written to geoh5
+        :param close_file: Close the geoh5 database after writing is completed
+        :param add_children: Add children entities to geoh5
+        """
+        H5Writer.save_entity(entity, close_file=close_file, add_children=add_children)
+
+    @property
+    def version(self) -> float:
+        """
+        :obj:`float` Project version
+        """
+        return self._version
+
+    @version.setter
+    def version(self, value: float):
+        self._version = value
+
+    @property
+    def workspace(self):
+        """
+        :return self: The Workspace
+        """
+        return self
 
 
 @contextmanager
