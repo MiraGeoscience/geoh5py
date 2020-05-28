@@ -16,7 +16,7 @@ Documentation
 
 See also documentation for the `geoh5 file format`_.
 
-.. _geoh5 file format: doc/content/geoh5_file_format.textile
+.. _geoh5 file format: docs/content/geoh5_file_format.textile
 
 
 Installation
