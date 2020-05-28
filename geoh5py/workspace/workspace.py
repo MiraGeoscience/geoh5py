@@ -341,7 +341,7 @@ class Workspace:
         :param entity_kwargs: Attributes of the entity.
         :param entity_type_kwargs: Attributes of the entity_type.
 
-        :return: A new Object of Group.
+        :return: A new Object or Group.
         """
         entity_type_uid = None
         for key, val in entity_type_kwargs.items():
@@ -576,7 +576,7 @@ class Workspace:
     @property
     def ga_version(self) -> str:
         """
-        :obj:`str` Version of Geoscience Analyst software
+        :obj:`str` Version of Geoscience Analyst software.
         """
         return self._ga_version
 
@@ -590,7 +590,7 @@ class Workspace:
 
         :param name: Object identifier, either name or uuid.
 
-        :return: object_list: List of entities with the same given name
+        :return: List of entities with the same given name.
         """
         if isinstance(name, uuid.UUID):
             list_entity_uid = [name]
@@ -674,7 +674,7 @@ class Workspace:
     @property
     def name(self) -> str:
         """
-         :obj:`str` Name of the project
+         :obj:`str` Name of the project.
         """
         return self._name
 

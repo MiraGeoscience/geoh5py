@@ -258,7 +258,7 @@ class ObjectBase(Entity):
 
         :param workspace: Target :obj:`~geoh5py.workspace.workspace.Workspace`.
 
-        :return: The object type instance for the given object class.
+        :return: The ObjectType instance for the given object class.
         """
         return ObjectType.find_or_create(workspace, cls, **kwargs)
 

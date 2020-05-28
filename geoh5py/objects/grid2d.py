@@ -150,7 +150,7 @@ class Grid2D(ObjectBase):
     @property
     def dip(self) -> float:
         """
-        :obj:`float`: Dip angle from horizontal (positive down) in degree.
+        :obj:`float`: Dip angle from horizontal (positive down) in degrees.
         """
         return self._dip
 
