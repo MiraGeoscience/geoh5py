@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "geoh5py"
-version = "0.0.4-dev"
+version = "0.1.0"
 license = "LGPL-3.0-or-later"
 description = "Read and write .geoh5 files from Python"
 authors = ["Mira Geoscience <support@mirageoscience.com>"]
@@ -10,7 +10,7 @@ homepage = "https://mirageoscience.com"
 readme = "package.rst"
 keywords = ["geology", "geophysics", "data", "interoperability"]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
     "Natural Language :: English",
