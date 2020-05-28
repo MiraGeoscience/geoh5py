@@ -12,9 +12,6 @@ capabilities of `Geoscience ANALYST <https://mirageoscience.com/mining-industry-
 Documentation
 ^^^^^^^^^^^^^
 
-.. image:: https://readthedocs.org/projects/geoh5py/badge/badge.svg
-  :target: https://geoh5py.readthedocs.io
-
 `Online documentation <https://geoh5py.readthedocs.io/en/latest/>`_
 
 See also documentation for the `geoh5 file format`_.
