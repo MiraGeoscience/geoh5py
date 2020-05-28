@@ -109,7 +109,7 @@ class BlockModel(ObjectBase):
     @property
     def origin(self) -> np.array:
         """
-        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin
+        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin.
         """
         return self._origin
 
@@ -134,7 +134,7 @@ class BlockModel(ObjectBase):
     @property
     def rotation(self) -> float:
         """
-        :obj:`float`: Clockwise rotation angle (degree) about the vertical axis
+        :obj:`float`: Clockwise rotation angle (degree) about the vertical axis.
         """
         return self._rotation
 
@@ -193,7 +193,7 @@ class BlockModel(ObjectBase):
         """
         :obj:`numpy.array` of :obj:`float`,
         shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [0], ):
-        Cell size along the u-axis
+        Cell size along the u-axis.
         """
         if self.u_cell_delimiters is not None:
             return self.u_cell_delimiters[1:] - self.u_cell_delimiters[:-1]
@@ -229,7 +229,7 @@ class BlockModel(ObjectBase):
         """
         :obj:`numpy.array` of :obj:`float`,
         shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [1], ):
-        Cell size along the v-axis
+        Cell size along the v-axis.
         """
         if self.v_cell_delimiters is not None:
             return self.v_cell_delimiters[1:] - self.v_cell_delimiters[:-1]

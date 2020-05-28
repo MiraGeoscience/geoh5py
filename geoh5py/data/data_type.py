@@ -176,7 +176,7 @@ class DataType(EntityType):
         cls, workspace: "workspace.Workspace", data_class: Type["data.Data"]
     ) -> DataType:
         """ Creates a new instance of :obj:`~geoh5py.data.data_type.DataType` with
-        corresponding :obj:`~geoh5py.data.primitive_type_enum.PrimitiveTypeEnum`
+        corresponding :obj:`~geoh5py.data.primitive_type_enum.PrimitiveTypeEnum`.
 
         :param data_class: A :obj:`~geoh5py.data.data.Data` implementation class.
 

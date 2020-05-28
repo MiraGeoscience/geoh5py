@@ -253,7 +253,7 @@ class Octree(ObjectBase):
     @property
     def shape(self) -> Optional[Tuple]:
         """
-        :obj:`list` of :obj:`int`, len (3, ): Number of cells along the u, v and w-axis
+        :obj:`list` of :obj:`int`, len (3, ): Number of cells along the u, v and w-axis.
         """
         if (
             self.u_count is not None
@@ -266,7 +266,7 @@ class Octree(ObjectBase):
     @property
     def u_cell_size(self) -> Optional[float]:
         """
-        :obj:`float`: Base cell size along the u-axis
+        :obj:`float`: Base cell size along the u-axis.
         """
         return self._u_cell_size
 
@@ -283,7 +283,7 @@ class Octree(ObjectBase):
     @property
     def u_count(self) -> Optional[int]:
         """
-        :obj:`int`: Number of cells along u-axis
+        :obj:`int`: Number of cells along u-axis.
         """
         return self._u_count
 
@@ -300,7 +300,7 @@ class Octree(ObjectBase):
     @property
     def v_cell_size(self) -> Optional[float]:
         """
-        :obj:`float`: Base cell size along the v-axis
+        :obj:`float`: Base cell size along the v-axis.
         """
         return self._v_cell_size
 
@@ -317,7 +317,7 @@ class Octree(ObjectBase):
     @property
     def v_count(self) -> Optional[int]:
         """
-        :obj:`int`: Number of cells along v-axis
+        :obj:`int`: Number of cells along v-axis.
         """
         return self._v_count
 
@@ -334,7 +334,7 @@ class Octree(ObjectBase):
     @property
     def w_cell_size(self) -> Optional[float]:
         """
-        :obj:`float`: Base cell size along the w-axis
+        :obj:`float`: Base cell size along the w-axis.
         """
         return self._w_cell_size
 
@@ -351,7 +351,7 @@ class Octree(ObjectBase):
     @property
     def w_count(self) -> Optional[int]:
         """
-        :obj:`int`: Number of cells along w-axis
+        :obj:`int`: Number of cells along w-axis.
         """
         return self._w_count
 

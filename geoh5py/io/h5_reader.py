@@ -32,7 +32,7 @@ class H5Reader:
         cls, h5file: str, uid: uuid.UUID, entity_type: str
     ) -> Tuple[dict, dict, dict]:
         """
-        Get attributes of an :obj:`~geoh5py.shared.entity.Entity`
+        Get attributes of an :obj:`~geoh5py.shared.entity.Entity`.
 
         :param h5file: Name of the target geoh5 file
         :param uid: Unique identifier
@@ -90,12 +90,12 @@ class H5Reader:
     @classmethod
     def fetch_cells(cls, h5file: Optional[str], uid: uuid.UUID) -> np.ndarray:
         """
-        Get an object's :obj:`~geoh5py.objects.object_base.ObjectBase.cells`
+        Get an object's :obj:`~geoh5py.objects.object_base.ObjectBase.cells`.
 
-        :param h5file: Name of the target geoh5 file
-        :param uid: Unique identifier of the target object
+        :param h5file: Name of the target geoh5 file.
+        :param uid: Unique identifier of the target object.
 
-        :return cells: :obj:`numpy.ndarray` of :obj:`int`
+        :return cells: :obj:`numpy.ndarray` of :obj:`int`.
         """
         project = h5py.File(h5file, "r")
         name = list(project.keys())[0]
@@ -109,7 +109,7 @@ class H5Reader:
     def fetch_children(cls, h5file: str, uid: uuid.UUID, entity_type: str) -> dict:
         """
         Get :obj:`~geoh5py.shared.entity.Entity.children` of an
-        :obj:`~geoh5py.shared.entity.Entity`
+        :obj:`~geoh5py.shared.entity.Entity`.
 
         :param h5file: Name of the target geoh5 file
         :param uid: Unique identifier
@@ -146,10 +146,10 @@ class H5Reader:
         cls, h5file: Optional[str], uid: uuid.UUID
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
-        Get the delimiters of a :obj:`~geoh5py.objects.block_model.BlockModel`
+        Get the delimiters of a :obj:`~geoh5py.objects.block_model.BlockModel`.
 
-        :param h5file: Name of the target geoh5 file
-        :param uid: Unique identifier of the target entity
+        :param h5file: Name of the target geoh5 file.
+        :param uid: Unique identifier of the target entity.
 
         Returns
         -------
@@ -179,10 +179,10 @@ class H5Reader:
         Get :obj:`~geoh5py.objects.octree.Octree`
         :obj:`~geoh5py.objects.object_base.ObjectBase.cells`.
 
-        :param h5file: Name of the target geoh5 file
-        :param uid: Unique identifier of the target entity
+        :param h5file: Name of the target geoh5 file.
+        :param uid: Unique identifier of the target entity.
 
-        :return octree_cells: :obj:`numpy.ndarray` of :obj:`int`
+        :return octree_cells: :obj:`numpy.ndarray` of :obj:`int`.
         """
         project = h5py.File(h5file, "r")
         name = list(project.keys())[0]
@@ -197,11 +197,11 @@ class H5Reader:
     @classmethod
     def fetch_project_attributes(cls, h5file: str) -> Dict[Any, Any]:
         """
-        Get attributes of an :obj:`~geoh5py.shared.entity.Entity`
+        Get attributes of an :obj:`~geoh5py.shared.entity.Entity`.
 
-        :param h5file: Name of the target geoh5 file
+        :param h5file: Name of the target geoh5 file.
 
-        :return attributes: :obj:`dict` of attributes
+        :return attributes: :obj:`dict` of attributes.
         """
         project = h5py.File(h5file, "r")
         name = list(project.keys())[0]
@@ -219,13 +219,13 @@ class H5Reader:
         cls, h5file: Optional[str], uid: uuid.UUID
     ) -> Dict[str, Dict[str, str]]:
         r"""
-        Get the property groups
+        Get the property groups.
 
         :param h5file: Name of the target geoh5 file
         :param uid: Unique identifier of the target entity
 
         :return property_group_attributes: :obj:`dict` of property groups
-            and respective attributes
+            and respective attributes.
 
         .. code-block:: python
 

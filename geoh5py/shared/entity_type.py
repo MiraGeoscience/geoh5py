@@ -71,7 +71,7 @@ class EntityType(ABC):
     @description.getter
     def description(self):
         """
-        :obj:`str` Entity type description
+        :obj:`str` Entity type description.
         """
         if self._description is None:
             self.description = self.name
@@ -82,7 +82,7 @@ class EntityType(ABC):
     def existing_h5_entity(self) -> bool:
         """
         :obj:`bool` Entity already present in
-        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`
+        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
         """
         return self._existing_h5_entity
 
@@ -141,7 +141,7 @@ class EntityType(ABC):
     @name.getter
     def name(self):
         """
-        :obj:`str` Name of the entity type
+        :obj:`str` Name of the entity type.
         """
         if self._name is None:
             return str(self.uid)
@@ -172,6 +172,6 @@ class EntityType(ABC):
         workspace = self._workspace()
 
         # Workspace should never be null, unless this is a dangling type object,
-        # which workspace has been deleted.
+        # which means workspace has been deleted.
         assert workspace is not None
         return workspace

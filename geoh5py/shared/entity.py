@@ -124,7 +124,7 @@ class Entity(ABC):
 
     def copy(self, parent=None, copy_children: bool = True):
         """
-        Function to copy an entity to a different parent entity
+        Function to copy an entity to a different parent entity.
 
         :param parent: Target parent to copy the entity under. Copied to current
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
@@ -145,9 +145,9 @@ class Entity(ABC):
     @classmethod
     def create(cls, workspace, **kwargs):
         """
-        Function to create an entity
+        Function to create an entity.
 
-        :param workspace: Workspace to be added to
+        :param workspace: Workspace to be added to.
         :param kwargs: List of keyword arguments defining the properties of a class.
 
         :return entity: Registered Entity to the workspace.
@@ -179,7 +179,7 @@ class Entity(ABC):
     def existing_h5_entity(self) -> bool:
         """
         :obj:`bool` Entity already present in
-        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`
+        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
         """
         return self._existing_h5_entity
 
@@ -286,7 +286,7 @@ class Entity(ABC):
             Removing a child entity without re-assigning it to a different
             parent may cause it to become inactive. Inactive entities are removed
             from the workspace by
-            :func:`~geoh5py.shared.weakref_utils.remove_none_referents`
+            :func:`~geoh5py.shared.weakref_utils.remove_none_referents`.
         """
         self._children = [child for child in self._children if child not in children]
 
@@ -315,7 +315,7 @@ class Entity(ABC):
     @property
     def visible(self) -> bool:
         """
-        :obj:`bool` Entity visible in camera (checked in ANALYST object tree)
+        :obj:`bool` Entity visible in camera (checked in ANALYST object tree).
         """
         return self._visible
 
@@ -327,6 +327,6 @@ class Entity(ABC):
     @property
     def workspace(self):
         """
-        :obj:`~geoh5py.workspace.workspace.Workspace` to which the Entity belongs to
+        :obj:`~geoh5py.workspace.workspace.Workspace` to which the Entity belongs to.
         """
         return self.entity_type.workspace

@@ -175,7 +175,7 @@ class Workspace:
     @property
     def contributors(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`str` List of contributors name
+        :obj:`numpy.array` of :obj:`str` List of contributors name.
         """
         return self._contributors
 
@@ -185,13 +185,13 @@ class Workspace:
 
     def copy_to_parent(self, entity, parent, copy_children: bool = True):
         """
-        Copy an entity to a different parent with copies of children
+        Copy an entity to a different parent with copies of children.
 
-        :param entity: Entity to be copied
-        :param parent: Target parent to copy the entity under
-        :param copy_children: Copy all children of the entity
+        :param entity: Entity to be copied.
+        :param parent: Target parent to copy the entity under.
+        :param copy_children: Copy all children of the entity.
 
-        :return: Entity: Registered to the workspace.
+        :return: The Entity registered to the workspace.
         """
 
         entity_kwargs: dict = {"entity": {}}
@@ -253,11 +253,11 @@ class Workspace:
         """
         Create a new Data entity with attributes.
 
-        :param entity_class: :obj:`~geoh5py.data.data.Data` class
-        :param entity_kwargs: Properties of the entity
-        :param entity_type_kwargs: Properties of the entity_type
+        :param entity_class: :obj:`~geoh5py.data.data.Data` class.
+        :param entity_kwargs: Properties of the entity.
+        :param entity_type_kwargs: Properties of the entity_type.
 
-        :returns entity: Newly created entity
+        :return: The newly created entity.
         """
         if isinstance(entity_type_kwargs, DataType):
             data_type = entity_type_kwargs
@@ -337,11 +337,11 @@ class Workspace:
         Create an object or a group with attributes.
 
         :param entity_class: :obj:`~geoh5py.objects.object_base.ObjectBase` or
-            :obj:`~geoh5py.groups.group.Group` class
-        :param entity_kwargs: Attributes of the entity
-        :param entity_type_kwargs: Attributes of the entity_type
+            :obj:`~geoh5py.groups.group.Group` class.
+        :param entity_kwargs: Attributes of the entity.
+        :param entity_type_kwargs: Attributes of the entity_type.
 
-        :return entity: A new Object of Group
+        :return: A new Object of Group.
         """
         entity_type_uid = None
         for key, val in entity_type_kwargs.items():
@@ -391,7 +391,7 @@ class Workspace:
     @property
     def distance_unit(self) -> str:
         """
-        :obj:`str` Distance unit used in the project
+        :obj:`str` Distance unit used in the project.
         """
         return self._distance_unit
 
@@ -401,11 +401,11 @@ class Workspace:
 
     def fetch_cells(self, uid: uuid.UUID) -> Cell:
         """
-        Fetch the cells of an object from the source h5file
+        Fetch the cells of an object from the source h5file.
 
-        :param uid: Unique identifier of target entity
+        :param uid: Unique identifier of target entity.
 
-        :return cells: Cell object with vertices index
+        :return: Cell object with vertices index.
         """
         return H5Reader.fetch_cells(self.h5file, uid)
 
@@ -461,12 +461,11 @@ class Workspace:
         self, uid: uuid.UUID
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
-        Fetch the delimiter attributes from the source h5file
+        Fetch the delimiter attributes from the source h5file.
 
-        :param uid: Unique identifier of target data object
+        :param uid: Unique identifier of target data object.
 
-        :return (u_delimiters, v_delimiters, z_delimiters):
-            Arrays of delimiters along the u, v, and w axis
+        :return: Arrays of delimiters along the u, v, and w axis (u_delimiters, v_delimiters, z_delimiters).
         """
         return H5Reader.fetch_delimiters(self.h5file, uid)
 
@@ -506,21 +505,21 @@ class Workspace:
 
     def fetch_values(self, uid: uuid.UUID) -> Optional[float]:
         """
-        Fetch the data values from the source h5file
+        Fetch the data values from the source h5file.
 
-        :param uid: Unique identifier of target data object
+        :param uid: Unique identifier of target data object.
 
-        :return value: Array of values
+        :return: Array of values.
         """
         return H5Reader.fetch_values(self.h5file, uid)
 
     def fetch_vertices(self, uid: uuid.UUID) -> np.ndarray:
         """
-        Fetch the vertices of an object from the source h5file
+        Fetch the vertices of an object from the source h5file.
 
-        :param uid: Unique identifier of target entity
+        :param uid: Unique identifier of target entity.
 
-        :return coordinates: Array of coordinate [x, y, z] locations
+        :return: Array of coordinate [x, y, z] locations.
         """
         return H5Reader.fetch_vertices(self.h5file, uid)
 
@@ -538,7 +537,7 @@ class Workspace:
 
     def find_data(self, data_uid: uuid.UUID) -> Optional["data.Data"]:
         """
-        Find an existing and active Data entity
+        Find an existing and active Data entity.
         """
         return weakref_utils.get_clean_ref(self._data, data_uid)
 
@@ -553,13 +552,13 @@ class Workspace:
 
     def find_group(self, group_uid: uuid.UUID) -> Optional["group.Group"]:
         """
-        Find an existing and active Group object
+        Find an existing and active Group object.
         """
         return weakref_utils.get_clean_ref(self._groups, group_uid)
 
     def find_object(self, object_uid: uuid.UUID) -> Optional["object_base.ObjectBase"]:
         """
-        Find an existing and active Object
+        Find an existing and active Object.
         """
         return weakref_utils.get_clean_ref(self._objects, object_uid)
 
@@ -587,7 +586,7 @@ class Workspace:
 
     def get_entity(self, name: Union[str, uuid.UUID]) -> List[Optional[Entity]]:
         """
-        Retrieve an entity from one of its identifier, either by name or uuid
+        Retrieve an entity from one of its identifier, either by name or :obj:`uuid.UUID`.
 
         :param name: Object identifier, either name or uuid.
 
@@ -610,14 +609,14 @@ class Workspace:
     @property
     def h5file(self) -> str:
         """
-        :str: Target *geoh5* file name with path
+        :str: Target *geoh5* file name with path.
         """
         return self._h5file
 
     @property
     def list_data_name(self) -> Dict[uuid.UUID, str]:
         """
-        :obj:`dict` of UUID keys and name values for all registered Data
+        :obj:`dict` of :obj:`uuid.UUID` keys and name values for all registered Data.
         """
         data_name = {}
         for key, val in self._data.items():
@@ -629,7 +628,7 @@ class Workspace:
     @property
     def list_entities_name(self) -> Dict[uuid.UUID, str]:
         """
-        :obj:`dict` of UUID keys and name values for all registered Entities
+        :return: :obj:`dict` of :obj:`uuid.UUID` keys and name values for all registered Entities.
         """
         entities_name = self.list_groups_name
         entities_name.update(self.list_objects_name)
@@ -639,7 +638,7 @@ class Workspace:
     @property
     def list_groups_name(self) -> Dict[uuid.UUID, str]:
         """
-        :obj:`dict` of UUID keys and name values for all registered Groups
+        :obj:`dict` of :obj:`uuid.UUID` keys and name values for all registered Groups.
         """
         groups_name = {}
         for key, val in self._groups.items():
@@ -651,7 +650,7 @@ class Workspace:
     @property
     def list_objects_name(self) -> Dict[uuid.UUID, str]:
         """
-        :obj:`dict` of UUID keys and name values for all registered Objects
+        :obj:`dict` of :obj:`uuid.UUID` keys and name values for all registered Objects.
         """
         objects_name = {}
         for key, val in self._objects.items():
@@ -711,18 +710,18 @@ class Workspace:
     @staticmethod
     def save_entity(entity: Entity, close_file: bool = True, add_children: bool = True):
         """
-        Save or update an entity to geoh5
+        Save or update an entity to geoh5.
 
-        :param entity: Entity to be written to geoh5
-        :param close_file: Close the geoh5 database after writing is completed
-        :param add_children: Add children entities to geoh5
+        :param entity: Entity to be written to geoh5.
+        :param close_file: Close the geoh5 database after writing is completed.
+        :param add_children: Add children entities to geoh5.
         """
         H5Writer.save_entity(entity, close_file=close_file, add_children=add_children)
 
     @property
     def version(self) -> float:
         """
-        :obj:`float` Project version
+        :obj:`float` Version of the geoh5 file format.
         """
         return self._version
 
@@ -733,7 +732,7 @@ class Workspace:
     @property
     def workspace(self):
         """
-        :return self: The Workspace
+        This workspace instance itself.
         """
         return self
 

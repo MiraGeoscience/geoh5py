@@ -28,7 +28,7 @@ class IntegerData(Data):
     @property
     def values(self) -> np.ndarray:
         """
-        :return: values: An array of :obj:`int` values
+        :return: values: An array of :obj:`int` values.
         """
         if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
             self._values = self.workspace.fetch_values(self.uid)

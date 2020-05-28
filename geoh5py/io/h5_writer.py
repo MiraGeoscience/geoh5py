@@ -43,7 +43,7 @@ class H5Writer:
 
     @staticmethod
     def bool_value(value: np.int8) -> bool:
-        """Convert integer to bool
+        """Convert integer to bool.
         """
         return bool(value)
 
@@ -55,14 +55,14 @@ class H5Writer:
         close_file: bool = True,
     ):
         """
-            Create a geoh5 file and add the core structure
+            Create a geoh5 file and add the core structure.
 
             :param workspace: :obj:`~geoh5py.workspace.workspace.Workspace` object
                 defining the project structure.
-            :param file: Name or handle to a geoh5 file
-            :param close_file: Close file after write
+            :param file: Name or handle to a geoh5 file.
+            :param close_file: Close file after write.
 
-            :return h5file: Pointer to a geoh5 file
+            :return h5file: Pointer to a geoh5 file.
             """
         # Take default name
         if file is None:
@@ -96,12 +96,12 @@ class H5Writer:
         entity: Union[Entity, "shared.EntityType"],
     ) -> h5py.File:
         """
-        Open in read+ mode a geoh5 file
+        Open in read+ mode a geoh5 file.
 
-        :param file: Name or handle to a geoh5 file
-        :param entity: Target :obj:`~geoh5py.shared.entity.Entity`
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
 
-        :return h5py.File: Handle to an opened h5py file
+        :return h5py.File: Handle to an opened h5py file.
         """
         if file is None:
             h5file = h5py.File(entity.workspace.h5file, "r+")
@@ -148,7 +148,7 @@ class H5Writer:
         elif isinstance(entity, GroupType):
             base_handle = h5file[base]["Types"]["Group types"]
         else:
-            raise RuntimeError(f"Cannot add object '{entity}' to geoh5.")
+            raise RuntimeError(f"Type of object '{entity}' is not supported for geoh5.")
 
         # Check if already in the project
         if cls.uuid_str(uid) in list(base_handle.keys()):
@@ -159,10 +159,10 @@ class H5Writer:
     @classmethod
     def finalize(cls, workspace, close_file=False):
         """
-        Add/replace the :obj:`~geoh5py.groups.root_group.RootGroup` in geoh5
+        Add/replace the :obj:`~geoh5py.groups.root_group.RootGroup` in geoh5.
 
-        :param workspace: Workspace object defining the project structure
-        :param close_file: Close file after write [False]
+        :param workspace: Workspace object defining the project structure.
+        :param close_file: Close file after write. [False]
         """
         h5file = cls.fetch_h5_handle(workspace.h5file, workspace)
         workspace_group: Entity = workspace.get_entity("Workspace")[0]
@@ -186,12 +186,12 @@ class H5Writer:
     ):
         """
         Write an :obj:`~geoh5py.shared.entity.Entity` to geoh5 with its
-        :obj:`~geoh5py.shared.entity.Entity.children`
+        :obj:`~geoh5py.shared.entity.Entity.children`.
 
-        :param entity: Target :obj:`~geoh5py.shared.entity.Entity`
-        :param file: Name or handle to a geoh5 file
-        :param close_file: Close file after write
-        :param add_children: Add :obj:`~geoh5py.shared.entity.Entity.children`
+        :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
+        :param file: Name or handle to a geoh5 file.
+        :param close_file: Close file after write.
+        :param add_children: Add :obj:`~geoh5py.shared.entity.Entity.children`.
         """
         h5file = cls.fetch_h5_handle(file, entity)
 
@@ -224,11 +224,11 @@ class H5Writer:
         close_file: bool = True,
     ):
         """
-        Update the attributes of an :obj:`~geoh5py.shared.entity.Entity`
+        Update the attributes of an :obj:`~geoh5py.shared.entity.Entity`.
 
-        :param entity: Target :obj:`~geoh5py.shared.entity.Entity`
-        :param file: Name or handle to a geoh5 file
-        :param close_file: Close file after write
+        :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
+        :param file: Name or handle to a geoh5 file.
+        :param close_file: Close file after write.
         """
         file = cls.fetch_h5_handle(file, entity)
         entity_handle = H5Writer.fetch_handle(file, entity)
@@ -268,13 +268,13 @@ class H5Writer:
 
     @staticmethod
     def uuid_value(value: str) -> uuid.UUID:
-        """Convert string to uuid.UUID
+        """Convert string to :obj:`uuid.UUID`.
         """
         return uuid.UUID(value)
 
     @staticmethod
     def uuid_str(value: uuid.UUID) -> str:
-        """Convert uuid.UUID to string used in geoh5
+        """Convert :obj:`uuid.UUID` to string used in geoh5.
         """
         return "{" + str(value) + "}"
 
@@ -286,11 +286,11 @@ class H5Writer:
         close_file: bool = True,
     ):
         """
-        Write attributes of an :obj:`~geoh5py.shared.entity.Entity`
+        Write attributes of an :obj:`~geoh5py.shared.entity.Entity`.
 
-        :param file: Name or handle to a geoh5 file
-        :param entity: Entity with attributes to be added to the geoh5 file
-        :param close_file: Close file after write
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Entity with attributes to be added to the geoh5 file.
+        :param close_file: Close file after write.
         """
         h5file = cls.fetch_h5_handle(file, entity)
         entity_handle = H5Writer.fetch_handle(file, entity)
@@ -392,7 +392,7 @@ class H5Writer:
         close_file: bool = True,
     ):
         """
-        Add :obj:`~geoh5py.objects.object_base.ObjectBase.cells`
+        Add :obj:`~geoh5py.objects.object_base.ObjectBase.cells`.
 
         :param file: Name or handle to a geoh5 file
         :param entity: Target entity
@@ -421,7 +421,7 @@ class H5Writer:
     ):
         """
         Add :obj:`~geoh5py.data.color_map.ColorMap` to a
-        :obj:`~geoh5py.data.data_type.DataType`
+        :obj:`~geoh5py.data.data_type.DataType`.
 
         :param file: Name or handle to a geoh5 file
         :param entity_type: Target entity_type with color_map
@@ -449,12 +449,12 @@ class H5Writer:
         close_file: bool = True,
     ):
         """
-        Add data :obj:`~geoh5py.data.data.Data.values`
+        Add data :obj:`~geoh5py.data.data.Data.values`.
 
-        :param file: Name or handle to a geoh5 file
-        :param entity: Target entity
-        :param values: Array of values to be added to the geoh5 file
-        :param close_file: Close geoh5 file after write
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Target entity.
+        :param values: Array of values to be added to the geoh5 file.
+        :param close_file: Close geoh5 file after write.
         """
         h5file = cls.fetch_h5_handle(file, entity)
 
@@ -489,12 +489,12 @@ class H5Writer:
         Add an :obj:`~geoh5py.shared.entity.Entity` and its attributes to geoh5.
         The function returns a pointer to the entity if already present on file.
 
-        :param file: Name or handle to a geoh5 file
-        :param entity: Target :obj:`~geoh5py.shared.entity.Entity`
-        :param values: Array of values to be added to Data entity
-        :param close_file: Close file after write
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
+        :param values: Array of values to be added to Data entity.
+        :param close_file: Close file after write.
 
-        :return entity: Pointer to the written entity. Active link if "close_file" is False
+        :return entity: Pointer to the written entity. Active link if "close_file" is False.
         """
         cls.str_type = h5py.special_dtype(vlen=str)
 
@@ -579,11 +579,11 @@ class H5Writer:
         """
         Add an :obj:`~geoh5py.shared.entity_type.EntityType` to geoh5.
 
-        :param entity_type: Entity with type to be added
-        :param file: Name or handle to a geoh5 file
-        :param close_file: Close file after write
+        :param entity_type: Entity with type to be added.
+        :param file: Name or handle to a geoh5 file.
+        :param close_file: Close file after write.
 
-        :return type: Pointer to :obj:`~geoh5py.shared.entity_type.EntityType` in geoh5
+        :return type: Pointer to :obj:`~geoh5py.shared.entity_type.EntityType` in geoh5.
         """
         h5file = cls.fetch_h5_handle(file, entity_type)
 
@@ -641,9 +641,9 @@ class H5Writer:
         Add :obj:`~geoh5py.object.object_base.ObjectBase.cells` of an
         :obj:`~geoh5py.object.octree.Octree` object to geoh5.
 
-        :param file: Name or handle to a geoh5 file
-        :param entity: Target entity_type with color_map
-        :param close_file: Close geoh5 file after write
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Target entity_type with color_map.
+        :param close_file: Close geoh5 file after write.
         """
         h5file = cls.fetch_h5_handle(file, entity)
 
@@ -671,12 +671,12 @@ class H5Writer:
         close_file: bool = True,
     ):
         """
-        Add properties of an :obj:`~geoh5py.shared.entity.Entity`
+        Add properties of an :obj:`~geoh5py.shared.entity.Entity`.
 
-        :param entity: Target :obj:`~geoh5py.shared.entity.Entity`
-        :param file: Name or handle to a geoh5 file
-        :param values: Array of values to be added
-        :param close_file: Close file after write
+        :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
+        :param file: Name or handle to a geoh5 file.
+        :param values: Array of values to be added.
+        :param close_file: Close file after write.
         """
         h5file = cls.fetch_h5_handle(file, entity)
 
@@ -720,9 +720,9 @@ class H5Writer:
         Write :obj:`~geoh5py.groups.property_group.PropertyGroup` associated with
         an :obj:`~geoh5py.shared.entity.Entity`.
 
-        :param file: Name or handle to a geoh5 file
-        :param entity: Target :obj:`~geoh5py.shared.entity.Entity`
-        :param close_file: Close file after write
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
+        :param close_file: Close file after write.
         """
         h5file = cls.fetch_h5_handle(file, entity)
 
@@ -780,11 +780,11 @@ class H5Writer:
         """
         Add/create an :obj:`~geoh5py.shared.entity.Entity` and add it to its parent.
 
-        :param file: Name or handle to a geoh5 file
-        :param entity: Entity to be added or linked to a parent in geoh5
-        :param close_file: Close file after write: [True] or False
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Entity to be added or linked to a parent in geoh5.
+        :param close_file: Close file after write: [True] or False.
         :param recursively: Add parents recursively until reaching the
-            :obj:`~geoh5py.groups.root_group.RootGroup`
+            :obj:`~geoh5py.groups.root_group.RootGroup`.
         """
 
         h5file = cls.fetch_h5_handle(file, entity)
@@ -825,7 +825,7 @@ class H5Writer:
 
         if recursively:
             H5Writer.write_to_parent(
-                entity.parent, file=h5file, close_file=False, recursively=recursively
+                entity.parent, file=h5file, close_file=False, recursively=True
             )
 
         # Close file if requested
@@ -842,9 +842,9 @@ class H5Writer:
         """
         Add :obj:`~geoh5py.objects.object_base.ObjectBase.vertices` of an object.
 
-        :param file: Name or handle to a geoh5 file
-        :param entity: Target entity
-        :param close_file: Close geoh5 file after write
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Target entity.
+        :param close_file: Close geoh5 file after write.
         """
         h5file = cls.fetch_h5_handle(file, entity)
 

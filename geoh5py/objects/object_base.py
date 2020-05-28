@@ -59,7 +59,7 @@ class ObjectBase(Entity):
 
         :param comment: Text to be added as comment.
         :param author: Name of author or defaults to
-            :obj:`~geoh5py.workspace.workspace.Workspace.contributors`
+            :obj:`~geoh5py.workspace.workspace.Workspace.contributors`.
         """
 
         date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -103,7 +103,7 @@ class ObjectBase(Entity):
                     },
             }
 
-        :return data_list: List of new Data objects
+        :return: List of new Data objects.
         """
         data_objects = []
         for name, attr in data.items():
@@ -173,11 +173,11 @@ class ObjectBase(Entity):
 
         :param data: :obj:`~geoh5py.data.data.Data` object,
             :obj:`~geoh5py.shared.entity.Entity.uid` or
-            :obj:`~geoh5py.shared.entity.Entity.name` of data
+            :obj:`~geoh5py.shared.entity.Entity.name` of data.
         :param name: Name of a :obj:`~geoh5py.groups.property_group.PropertyGroup`.
             A new group is created if none exist with the given name.
 
-        :return property_group: The target property_group
+        :return: The target property group.
         """
         prop_group = self.find_or_create_property_group(name=name)
 
@@ -241,7 +241,7 @@ class ObjectBase(Entity):
     @property
     def entity_type(self) -> ObjectType:
         """
-        :obj:`~geoh5py.shared.entity_type.EntityType`: Object type
+        :obj:`~geoh5py.shared.entity_type.EntityType`: Object type.
         """
         return self._entity_type
 
@@ -254,11 +254,11 @@ class ObjectBase(Entity):
         cls, workspace: "workspace.Workspace", **kwargs
     ) -> ObjectType:
         """
-        Find or create a type for a given object class
+        Find or create a type instance for a given object class.
 
-        :param workspace: Target :obj:`~geoh5py.workspace.workspace.Workspace`
+        :param workspace: Target :obj:`~geoh5py.workspace.workspace.Workspace`.
 
-        :return: A new or existing object type
+        :return: The object type instance for the given object class.
         """
         return ObjectType.find_or_create(workspace, cls, **kwargs)
 
@@ -268,7 +268,7 @@ class ObjectBase(Entity):
         from given name and properties.
 
         :param kwargs: Any arguments taken by the
-            :obj:`~geoh5py.groups.property_group.PropertyGroup` class
+            :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
 
         :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
@@ -302,7 +302,7 @@ class ObjectBase(Entity):
         """
         Get a list of names of all children :obj:`~geoh5py.data.data.Data`.
 
-        :return: List of names of data associated with the object
+        :return: List of names of data associated with the object.
         """
         name_list = []
         for child in self.children:
@@ -317,9 +317,9 @@ class ObjectBase(Entity):
         Retrieve a :obj:`~geoh5py.groups.property_group.PropertyGroup` from one of its
         identifier.
 
-        :param uid: PropertyGroup identifier, either by its name or uuid
+        :param uid: PropertyGroup identifier, either by its name or :obj:`uuid.UUID`.
 
-        :return: PropertyGroup with the given name
+        :return: PropertyGroup with the given name.
         """
         if isinstance(group_id, uuid.UUID):
             groups_list = [pg for pg in self.property_groups if pg.uid == group_id]
@@ -338,7 +338,7 @@ class ObjectBase(Entity):
     @property
     def last_focus(self) -> str:
         """
-        :obj:`bool`: Object visible in camera on start
+        :obj:`bool`: Object visible in camera on start.
         """
         return self._last_focus
 
@@ -349,7 +349,7 @@ class ObjectBase(Entity):
     @property
     def n_cells(self) -> Optional[int]:
         """
-        :obj:`int`: Number of cells
+        :obj:`int`: Number of cells.
         """
         if self.cells is not None:
             return self.cells.shape[0]
@@ -358,7 +358,7 @@ class ObjectBase(Entity):
     @property
     def n_vertices(self) -> Optional[int]:
         """
-        :obj:`int`: Number of vertices
+        :obj:`int`: Number of vertices.
         """
         if self.vertices is not None:
             return self.vertices.shape[0]
@@ -367,7 +367,7 @@ class ObjectBase(Entity):
     @property
     def property_groups(self) -> List[PropertyGroup]:
         """
-        :obj:`list` of :obj:`~geoh5py.groups.property_group.PropertyGroup`
+        :obj:`list` of :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         """
         return self._property_groups
 

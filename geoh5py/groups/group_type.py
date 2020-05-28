@@ -53,7 +53,7 @@ class GroupType(EntityType):
     def allow_move_content(self) -> bool:
         """
         :obj:`bool`: [True] Allow to move the group
-        :obj:`geoh5py.shared.entity.Entity.children`.
+        :obj:`~geoh5py.shared.entity.Entity.children`.
         """
         return self._allow_move_content
 
@@ -65,7 +65,7 @@ class GroupType(EntityType):
     def allow_delete_content(self) -> bool:
         """
         :obj:`bool`: [True] Allow to delete the group
-        :obj:`geoh5py.shared.entity.Entity.children`.
+        :obj:`~geoh5py.shared.entity.Entity.children`.
         """
         return self._allow_delete_content
 

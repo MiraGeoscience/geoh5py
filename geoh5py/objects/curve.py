@@ -129,7 +129,7 @@ class Curve(Points):
     def unique_parts(self):
         """
         :obj:`list` of :obj:`int`: Unique :obj:`~geoh5py.objects.curve.Curve.parts`
-        identifiers
+        identifiers.
         """
         if self.parts is not None:
 

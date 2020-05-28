@@ -73,7 +73,7 @@ class Grid2D(ObjectBase):
     def cell_center_u(self) -> np.ndarray:
         """
         :obj:`numpy.array` of :obj:`float`, shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, ):
-        Cell center local coordinate along the u-axis
+        Cell center local coordinate along the u-axis.
         """
         if self.u_count is not None and self.u_cell_size is not None:
             return (
@@ -150,7 +150,7 @@ class Grid2D(ObjectBase):
     @property
     def dip(self) -> float:
         """
-        :obj:`float`: Dip angle from horizontal (positive down) in degree
+        :obj:`float`: Dip angle from horizontal (positive down) in degree.
         """
         return self._dip
 
@@ -165,7 +165,7 @@ class Grid2D(ObjectBase):
     @property
     def n_cells(self) -> Optional[int]:
         """
-        :obj:`int`: Total number of cells
+        :obj:`int`: Total number of cells.
         """
         if self.shape is not None:
             return np.prod(self.shape)
@@ -174,7 +174,7 @@ class Grid2D(ObjectBase):
     @property
     def origin(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin
+        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin.
         """
         return self._origin
 
@@ -215,7 +215,7 @@ class Grid2D(ObjectBase):
     @property
     def shape(self) -> Optional[Tuple]:
         """
-        :obj:`list` of :obj:`int`, len (2, ): Number of cells along the u and v-axis
+        :obj:`list` of :obj:`int`, len (2, ): Number of cells along the u and v-axis.
         """
         if self.u_count is not None and self.v_count is not None:
             return self.u_count, self.v_count
@@ -224,7 +224,7 @@ class Grid2D(ObjectBase):
     @property
     def u_cell_size(self) -> Optional[float]:
         """
-        :obj:`float`: Cell size along the u-axis
+        :obj:`float`: Cell size along the u-axis.
         """
         return self._u_cell_size
 
