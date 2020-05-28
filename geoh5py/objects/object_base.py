@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=R0912
 
 import uuid
 from abc import abstractmethod

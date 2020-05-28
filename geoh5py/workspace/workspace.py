@@ -16,7 +16,6 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 # pylint: disable=R0904
-# pylint: disable=R0912
 
 from __future__ import annotations
 
@@ -465,7 +464,8 @@ class Workspace:
 
         :param uid: Unique identifier of target data object.
 
-        :return: Arrays of delimiters along the u, v, and w axis (u_delimiters, v_delimiters, z_delimiters).
+        :return: Arrays of delimiters along the u, v, and w axis
+                 (u_delimiters, v_delimiters, z_delimiters).
         """
         return H5Reader.fetch_delimiters(self.h5file, uid)
 
