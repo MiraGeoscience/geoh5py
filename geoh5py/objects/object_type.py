@@ -27,6 +27,10 @@ if TYPE_CHECKING:
 
 
 class ObjectType(EntityType):
+    """
+    Object type class
+    """
+
     def __init__(self, workspace: "workspace.Workspace", **kwargs):
         assert workspace is not None
         super().__init__(workspace, **kwargs)
@@ -37,11 +41,20 @@ class ObjectType(EntityType):
     def _is_abstract() -> bool:
         return False
 
+    @staticmethod
+    def create_custom(workspace: "workspace.Workspace") -> ObjectType:
+        """ Creates a new instance of ObjectType for an unlisted custom Object type with a
+        new auto-generated UUID.
+
+        :param workspace: An active Workspace class
+        """
+        return ObjectType(workspace)
+
     @classmethod
     def find_or_create(
         cls, workspace: "workspace.Workspace", entity_class, **kwargs
     ) -> ObjectType:
-        """ Find or creates an EntityType with given UUID that matches the given
+        """ Find or creates an EntityType with given :obj:`uuid.UUID` that matches the given
         Group implementation class.
 
         It is expected to have a single instance of EntityType in the Workspace
@@ -69,10 +82,3 @@ class ObjectType(EntityType):
             return entity_type
 
         return cls(workspace, **kwargs)
-
-    @staticmethod
-    def create_custom(workspace: "workspace.Workspace") -> ObjectType:
-        """ Creates a new instance of ObjectType for an unlisted custom Object type with a
-        new auto-generated UUID.
-        """
-        return ObjectType(workspace)

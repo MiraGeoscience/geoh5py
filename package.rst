@@ -1,16 +1,20 @@
-geoh5py: Python API for Geoscience Analyst
-==========================================
+geoh5py: Python API for geoh5. An open file format for geoscientific data
+==========================================================================
+
 The **geoh5py** library has been created for the manipulation and storage of a wide range of
 geoscientific data (points, curve, surface, 2D and 3D grids) in
-``*.geoh5`` file format. Users will be able to directly leverage the powerful visualization
-capabilities of `Geoscience Analyst <https://mirageoscience.com/mining-industry-software/geoscience-analyst/>`_.
+`geoh5 file format <https://gist.github.com/jincandescent/06a3bd4e0e54360ad191>`_.
+Users will be able to directly leverage the powerful visualization
+capabilities of `Geoscience ANALYST <https://mirageoscience.com/mining-industry-software/geoscience-analyst/>`_ along with open-source code from the Python ecosystem.
 
 Installation
 ^^^^^^^^^^^^
 **geoh5py** is currently written for Python 3.6 or higher, and depends on `NumPy <https://numpy.org/>`_ and
-`h5py <https://www.h5py.org/>`_. Users will likely want to also make use of advanced processing
-techniques made available under the python ecosystem. We therefore recommend installing
-Anaconda to handle the various packages.
+`h5py <https://www.h5py.org/>`_.
+
+.. note:: Users will likely want to take advantage of other packages available in the Python ecosystem.
+    We therefore recommend using `Anaconda <https://www.anaconda.com/download/>`_ to manage the installation.
+
 
 Install **geoh5py** from PyPI::
 
@@ -20,9 +24,13 @@ Install **geoh5py** from PyPI::
 Feedback
 ^^^^^^^^
 Have comments or suggestions? Submit feedback.
-All the content can be found on our github_ repository.
+All the content can be found on the github_ repository.
 
 .. _github: https://github.com/MiraGeoscience/geoh5py
+
+
+Visit `Mira Geoscience website <https://mirageoscience.com/>`_ to learn more about our products
+and services.
 
 
 License

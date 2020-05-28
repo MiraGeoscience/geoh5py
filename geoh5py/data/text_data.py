@@ -15,6 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
+from typing import List, Optional
+
 from .data import Data
 from .primitive_type_enum import PrimitiveTypeEnum
 
@@ -25,7 +28,10 @@ class TextData(Data):
         return PrimitiveTypeEnum.TEXT
 
     @property
-    def values(self):
+    def values(self) -> Optional[str]:
+        """
+        :obj:`str` Text value.
+        """
         if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
             self._values = self.workspace.fetch_values(self.uid)
 
@@ -33,18 +39,61 @@ class TextData(Data):
 
     @values.setter
     def values(self, values):
-        """
-        values(values)
-
-        Assign string value
-
-        Parameters
-        ----------
-        values: str
-            Text in string format
-
-        """
         self.modified_attributes = "values"
+        self._values = values
+
+    def __call__(self):
+        return self.values
+
+
+class CommentsData(Data):
+    """
+    Comments added to an Object or Group.
+    Stored as a list of dictionaries with the following keys:
+
+        .. code-block:: python
+
+            comments = [
+                {
+                    "Author": "username",
+                    "Date": "2020-05-21T10:12:15",
+                    "Text": "A text comment."
+                },
+            ]
+    """
+
+    @classmethod
+    def primitive_type(cls) -> PrimitiveTypeEnum:
+        return PrimitiveTypeEnum.TEXT
+
+    @property
+    def values(self) -> Optional[List[dict]]:
+        """
+        :obj:`list` List of comments
+        """
+        if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
+            comment_str = self.workspace.fetch_values(self.uid)
+
+            if comment_str is not None:
+                self._values = json.loads(comment_str[0])["Comments"]
+
+        return self._values
+
+    @values.setter
+    def values(self, values):
+        self.modified_attributes = "values"
+
+        if values is not None:
+            for value in values:
+                assert isinstance(value, dict), (
+                    f"Error setting CommentsData with expected input of type list[dict].\n"
+                    f"Input {type(values)} provided."
+                )
+                assert list(value.keys()) == ["Author", "Date", "Text"], (
+                    f"Comment dictionaries must include keys 'Author', 'Date' and 'Text'.\n"
+                    f"Keys {list(value.keys())} provided."
+                )
+
         self._values = values
 
     def __call__(self):

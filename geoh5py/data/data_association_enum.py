@@ -19,7 +19,10 @@ from enum import Enum
 
 
 class DataAssociationEnum(Enum):
-    """Known data association
+    """
+    Known data association between :obj:`~geoh5py.data.data.Data.values` and
+    the :obj:`~geoh5py.shared.entity.Entity.parent` object.
+    Available options:
     """
 
     UNKNOWN = 0

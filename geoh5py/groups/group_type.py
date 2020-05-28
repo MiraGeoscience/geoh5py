@@ -51,6 +51,10 @@ class GroupType(EntityType):
 
     @property
     def allow_move_content(self) -> bool:
+        """
+        :obj:`bool`: [True] Allow to move the group
+        :obj:`~geoh5py.shared.entity.Entity.children`.
+        """
         return self._allow_move_content
 
     @allow_move_content.setter
@@ -59,6 +63,10 @@ class GroupType(EntityType):
 
     @property
     def allow_delete_content(self) -> bool:
+        """
+        :obj:`bool`: [True] Allow to delete the group
+        :obj:`~geoh5py.shared.entity.Entity.children`.
+        """
         return self._allow_delete_content
 
     @allow_delete_content.setter
@@ -71,9 +79,6 @@ class GroupType(EntityType):
     ) -> GroupType:
         """ Find or creates an EntityType with given UUID that matches the given
         Group implementation class.
-
-        It is expected to have a single instance of EntityType in the Workspace
-        for each concrete Entity class.
 
         :param workspace: An active Workspace class
         :param entity_class: An Group implementation class.

@@ -1,9 +1,18 @@
 User Guide
 ==========
 
-This section provides a collection of tutorials for common use of the **gh5py**
+This section provides information on how to use the **geoh5py** package, from
+the creation of a Workspace_ to the creation and manipulation of Entities_
+
+.. figure:: ./images/workspace_tree.png
+	    :align: center
+	    :width: 600
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    workspace.ipynb
+   entities.ipynb
+
+.. _Workspace: workspace.ipynb
+.. _Entities: entities.ipynb

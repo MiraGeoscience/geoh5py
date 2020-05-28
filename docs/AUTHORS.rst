@@ -1,1 +1,1 @@
-- `Mira Geoscience, <https://mirageoscience.com/>`_
+- `Mira Geoscience <https://mirageoscience.com/>`_

@@ -1,5 +1,5 @@
-geoh5py: Python API for Geoscience Analyst
-==========================================
+geoh5py: Python API for geoh5. An open file format for geoscientific data
+=========================================================================
 
 
 Welcome to the documentation page for **geoh5py**!
@@ -9,71 +9,22 @@ In short
 
 The **geoh5py** library has been created for the manipulation and storage of a wide range of
 geoscientific data (points, curve, surface, 2D and 3D grids) in
-``*.geoh5`` file format. Users will be able to directly leverage the powerful visualization
-capabilities of `Geoscience Analyst <https://mirageoscience.com/mining-industry-software/geoscience-analyst/>`_.
+`geoh5 file format <https://gist.github.com/jincandescent/06a3bd4e0e54360ad191>`_.
+Users will be able to directly leverage the powerful visualization
+capabilities of `Geoscience ANALYST <https://mirageoscience.com/mining-industry-software/geoscience-analyst/>`_ along with open-source code from the Python ecosystem.
 
 .. figure:: ./images/GA_demo.png
 	    :align: center
-	    :width: 400
-
-
-Installation
-^^^^^^^^^^^^
-
-**geoh5py** is currently written for Python 3.6 or higher, and depends on `NumPy <https://numpy.org/>`_ and
-`h5py <https://www.h5py.org/>`_. Users will likely want to also make use of advanced processing
-techniques made available under the python ecosystem. We therefore recommend installing
-Anaconda to handle the various packages.
-
-
-Step 1- Setup Anaconda
-^^^^^^^^^^^^^^^^^^^^^^
-`Download and install Anaconda <https://www.anaconda.com/download/>`_
-
-.. figure:: ./images/installation/MinicondaInstaller.png
-    :align: center
-    :width: 400
-
-
-Step 2: Install **geoh5py**
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Install **geoh5py** from PyPI::
-
-    $ pip install geoh5py
-
-To install the latest development version of **geoh5py**, you can use pip with the
-latest GitHub master::
-
-    $ pip install git+https://github.com/MiraGeoscience/geoh5py.git
-
-To work with **geoh5py** source code in development, install from GitHub::
-
-    $ git clone --recursive https://github.com/MiraGeoscience/geoh5py.git
-    $ cd geoh5py
-    $ python setup.py install
+	    :width: 600
 
 
 Contents:
 ^^^^^^^^^
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
+   content/installation.rst
    content/user_guide/index.rst
    content/api/geoh5py.rst
-
-
-Feedback:
-^^^^^^^^^
-
-Have comments or suggestions? Submit feedback.
-All the content can be found on our github_ repository.
-
-.. _github: https://github.com/MiraGeoscience/geoh5py
-
-
-Contributors:
-^^^^^^^^^^^^^
-
-.. include:: AUTHORS.rst
+   content/feedback.rst

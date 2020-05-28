@@ -17,6 +17,13 @@
 
 
 class VersionNumber:
+    """
+    Version
+
+    .. warning:: Not implemented
+
+    """
+
     def __init__(self, number: float):
         self._value = float(number)
 

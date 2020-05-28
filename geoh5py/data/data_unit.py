@@ -23,6 +23,9 @@ class DataUnit:
     Data unit
     """
 
+    # TODO Use for data_type
+    # Currently replaced by a string value
+
     def __init__(self, unit_name: str = None):
         self._rep = unit_name
 

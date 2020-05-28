@@ -26,8 +26,8 @@ from .points import Points
 
 class Curve(Points):
     """
-    A Curve object is defined by a series of cells (segments) connecting a set of
-    vertices. Data can be associated to both the cells and vertices.
+    Curve object defined by a series of line segments (:obj:`~geoh5py.objects.curve.Curve.cells`)
+    connecting :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
     """
 
     __TYPE_UID = uuid.UUID(
@@ -45,9 +45,10 @@ class Curve(Points):
 
     @property
     def cells(self) -> Optional[np.ndarray]:
-        """
-        Array of indices defining the connection between vertices:
-        numpy.np.ndarray of int, shape ("*", 2)
+        r"""
+        :obj:`numpy.ndarray` of :obj:`int`, shape (\*, 2):
+        Array of indices defining segments connecting vertices. Defined based on
+        :obj:`~geoh5py.objects.curve.Curve.parts` if set by the user.
         """
         if getattr(self, "_cells", None) is None:
             if self._parts is not None:
@@ -75,10 +76,22 @@ class Curve(Points):
         self._cells = indices
         self._parts = None
 
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        """
+        :return: Default unique identifier
+        """
+        return cls.__TYPE_UID
+
     @property
     def parts(self):
         """
-        Line identifier: numpy.np.ndarray of int, shape (n_vertices, )
+        :obj:`numpy.array` of :obj:`int`, shape
+        (:obj:`~geoh5py.objects.object_base.ObjectBase.n_vertices`, 2):
+        Group identifiers for vertices connected by line segments as defined by the
+        :obj:`~geoh5py.objects.curve.Curve.cells`
+        property. The definition of the :obj:`~geoh5py.objects.curve.Curve.cells`
+        property get modified by the setting of parts.
         """
         if getattr(self, "_parts", None) is None and self.cells is not None:
 
@@ -100,9 +113,10 @@ class Curve(Points):
     def parts(self, indices: Union[List, np.ndarray]):
         if self.vertices is not None:
             if isinstance(indices, list):
-                indices = np.asarray(indices)
+                indices = np.asarray(indices, dtype="int32")
+            else:
+                indices = indices.astype("int32")
 
-            assert indices.dtype == int, "Indices array must be of type 'uint32'"
             assert indices.shape == (
                 self.vertices.shape[0],
             ), f"Provided parts must be of shape {self.vertices.shape[0]}"
@@ -114,7 +128,8 @@ class Curve(Points):
     @property
     def unique_parts(self):
         """
-        Unique parts connected by cells
+        :obj:`list` of :obj:`int`: Unique :obj:`~geoh5py.objects.curve.Curve.parts`
+        identifiers.
         """
         if self.parts is not None:
 
@@ -122,17 +137,13 @@ class Curve(Points):
 
         return None
 
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
-
 
 class SurveyAirborneMagnetics(Curve):
     """
-    An airborne magnetic survey object
+    An airborne magnetic survey object.
+
+    .. warning:: Partially implemented.
+
     """
 
     __TYPE_UID = uuid.UUID(

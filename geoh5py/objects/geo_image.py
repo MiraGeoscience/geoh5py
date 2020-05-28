@@ -22,7 +22,10 @@ from .object_base import ObjectBase, ObjectType
 
 class GeoImage(ObjectBase):
     """
-    Image object class: NOT IMPLEMENTED
+    Image object class.
+
+    .. warning:: Not yet implemented.
+
     """
 
     __TYPE_UID = uuid.UUID(

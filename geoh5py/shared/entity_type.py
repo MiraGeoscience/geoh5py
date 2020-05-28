@@ -53,18 +53,60 @@ class EntityType(ABC):
 
     @property
     def attribute_map(self):
+        """
+        :obj:`dict` Correspondence map between property names used in geoh5py and
+        geoh5.
+        """
         return self._attribute_map
 
     @property
+    def description(self) -> Optional[str]:
+        return self._description
+
+    @description.setter
+    def description(self, description: str):
+        self._description = description
+        self.modified_attributes = "attributes"
+
+    @description.getter
+    def description(self):
+        """
+        :obj:`str` Entity type description.
+        """
+        if self._description is None:
+            self.description = self.name
+
+        return self._description
+
+    @property
     def existing_h5_entity(self) -> bool:
+        """
+        :obj:`bool` Entity already present in
+        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
+        """
         return self._existing_h5_entity
 
     @existing_h5_entity.setter
     def existing_h5_entity(self, value: bool):
         self._existing_h5_entity = value
 
+    @classmethod
+    def find(
+        cls: Type[TEntityType], workspace: "ws.Workspace", type_uid: uuid.UUID
+    ) -> Optional[TEntityType]:
+        """ Finds in the given Workspace the EntityType with the given UUID for
+        this specific EntityType implementation class.
+
+        :return: EntityType of None
+        """
+        return cast(TEntityType, workspace.find_type(type_uid, cls))
+
     @property
     def modified_attributes(self):
+        """
+        :obj:`list[str]` List of attributes to be updated in associated workspace
+        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
+        """
         return self._modified_attributes
 
     @modified_attributes.setter
@@ -88,17 +130,30 @@ class EntityType(ABC):
         return True
 
     @property
-    def workspace(self) -> "ws.Workspace":
-        """ Return the workspace which owns this type. """
-        workspace = self._workspace()
+    def name(self) -> Optional[str]:
+        return self._name
 
-        # Workspace should never be null, unless this is a dangling type object,
-        # which workspace has been deleted.
-        assert workspace is not None
-        return workspace
+    @name.setter
+    def name(self, name: str):
+        self._name = name
+        self.modified_attributes = "attributes"
+
+    @name.getter
+    def name(self):
+        """
+        :obj:`str` Name of the entity type.
+        """
+        if self._name is None:
+            return str(self.uid)
+
+        return self._name
 
     @property
     def uid(self) -> uuid.UUID:
+        """
+        :obj:`uuid.UUID` The unique identifier of an entity, either as stored
+        in geoh5 or generated in :func:`~uuid.UUID.uuid4` format.
+        """
         return self._uid
 
     @uid.setter
@@ -110,46 +165,13 @@ class EntityType(ABC):
         self._uid = uid
 
     @property
-    def name(self) -> Optional[str]:
-        return self._name
-
-    @name.setter
-    def name(self, name: str):
-        self._name = name
-        self.modified_attributes = "attributes"
-
-    @name.getter
-    def name(self):
-
-        if self._name is None:
-            return str(self.uid)
-
-        return self._name
-
-    @property
-    def description(self) -> Optional[str]:
-        return self._description
-
-    @description.setter
-    def description(self, description: str):
-        self._description = description
-        self.modified_attributes = "attributes"
-
-    @description.getter
-    def description(self):
-
-        if self._description is None:
-            self.description = self.name
-
-        return self._description
-
-    @classmethod
-    def find(
-        cls: Type[TEntityType], workspace: "ws.Workspace", type_uid: uuid.UUID
-    ) -> Optional[TEntityType]:
-        """ Finds in the given Workspace the EntityType with the given UUID for
-        this specific EntityType implementation class.
-
-        Returns None if not found.
+    def workspace(self) -> "ws.Workspace":
         """
-        return cast(TEntityType, workspace.find_type(type_uid, cls))
+        :obj:`~geoh5py.workspace.workspace.Workspace` registering this type.
+        """
+        workspace = self._workspace()
+
+        # Workspace should never be null, unless this is a dangling type object,
+        # which means workspace has been deleted.
+        assert workspace is not None
+        return workspace

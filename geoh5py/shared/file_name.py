@@ -17,5 +17,12 @@
 
 
 class FileName:
+    """
+    File name
+
+    .. warning:: Not implemented
+
+    """
+
     def __init__(self):
         self._rep = None

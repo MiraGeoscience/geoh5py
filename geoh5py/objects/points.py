@@ -26,7 +26,7 @@ from .object_base import ObjectBase, ObjectType
 
 class Points(ObjectBase):
     """
-    Points object
+    Points object made up of vertices.
     """
 
     __TYPE_UID = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
@@ -48,7 +48,7 @@ class Points(ObjectBase):
     @property
     def vertices(self) -> Optional[np.ndarray]:
         """
-        Array of vertices coordinates, shape ("*", 3)
+        :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`
         """
         if (getattr(self, "_vertices", None) is None) and self.existing_h5_entity:
             self._vertices = self.workspace.fetch_vertices(self.uid)

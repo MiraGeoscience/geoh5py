@@ -16,7 +16,7 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Optional, Type, Union
 
 from ..shared import Entity
 from .data_association_enum import DataAssociationEnum
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 class Data(Entity):
     """
-    Data class
+    Base class for Data entities.
     """
 
     _attribute_map = Entity._attribute_map.copy()
@@ -53,14 +53,15 @@ class Data(Entity):
     @property
     def no_data_value(self) -> float:
         """
-        :return: Default no-data-value
+        :obj:`float`: Default no-data-value
         """
         return self._no_data_value
 
     @property
     def n_values(self) -> Optional[int]:
         """
-        :return: Number of expected data values
+        :obj:`int`: Number of expected data values based on
+        :obj:`~geoh5py.data.data.Data.association`
         """
         if self.association is DataAssociationEnum.VERTEX:
             return self.parent.n_vertices
@@ -75,14 +76,25 @@ class Data(Entity):
 
     @property
     def values(self):
+        """
+        Data values
+        """
         return self._values
 
     @property
     def association(self) -> Optional[DataAssociationEnum]:
+        """
+        :obj:`~geoh5py.data.data_association_enum.DataAssociationEnum`:
+        Relationship made between the
+        :func:`~geoh5py.data.data.Data.values` and elements of the
+        :obj:`~geoh5py.shared.entity.Entity.parent` object.
+        Association can be set from a :obj:`str` chosen from the list of available
+        :obj:`~geoh5py.data.data_association_enum.DataAssociationEnum` options.
+        """
         return self._association
 
     @association.setter
-    def association(self, value):
+    def association(self, value: Union[str, DataAssociationEnum]):
         if isinstance(value, str):
 
             assert value.upper() in list(
@@ -98,6 +110,9 @@ class Data(Entity):
 
     @property
     def entity_type(self) -> DataType:
+        """
+        :obj:`~geoh5py.data.data_type.DataType`
+        """
         return self._entity_type
 
     @entity_type.setter

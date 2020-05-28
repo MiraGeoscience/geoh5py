@@ -22,7 +22,7 @@ from .group import GroupType
 
 
 class RootGroup(NoTypeGroup):
-    """ The type for the workspace root group."""
+    """The Root group of a workspace."""
 
     __ROOT_NAME = "Workspace"
 

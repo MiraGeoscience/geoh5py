@@ -21,6 +21,13 @@ from .object_base import ObjectBase, ObjectType
 
 
 class Label(ObjectBase):
+    """
+    Label object for annotation in viewport.
+
+    .. warning:: Not yet implemented.
+
+    """
+
     __TYPE_UID = uuid.UUID(
         fields=(0xE79F449D, 0x74E3, 0x4598, 0x9C, 0x9C, 0x351A28B8B69E)
     )

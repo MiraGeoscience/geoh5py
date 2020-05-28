@@ -31,5 +31,5 @@ from .integer_data import IntegerData
 from .primitive_type_enum import PrimitiveTypeEnum
 from .reference_value_map import ReferenceValue, ReferenceValueMap
 from .referenced_data import ReferencedData
-from .text_data import TextData
+from .text_data import CommentsData, TextData
 from .unknown_data import UnknownData

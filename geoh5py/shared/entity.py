@@ -24,6 +24,9 @@ if TYPE_CHECKING:
 
 
 class Entity(ABC):
+    """
+    Base Entity class
+    """
 
     _attribute_map = {
         "Allow delete": "allow_delete",
@@ -59,20 +62,147 @@ class Entity(ABC):
             except AttributeError:
                 continue
 
+    def add_children(self, children: List["shared.Entity"]):
+        """
+        :param children: Add a list of entities as
+            :obj:`~geoh5py.shared.entity.Entity.children`
+        """
+        for child in children:
+            if child not in self._children:
+                self._children.append(child)
+
+    @property
+    def allow_delete(self) -> bool:
+        """
+        :obj:`bool` Entity can be deleted from the workspace.
+        """
+        return self._allow_delete
+
+    @allow_delete.setter
+    def allow_delete(self, value: bool):
+        self._allow_delete = value
+        self.modified_attributes = "attributes"
+
+    @property
+    def allow_move(self) -> bool:
+        """
+        :obj:`bool` Entity can change :obj:`~geoh5py.shared.entity.Entity.parent`
+        """
+        return self._allow_move
+
+    @allow_move.setter
+    def allow_move(self, value: bool):
+        self._allow_move = value
+        self.modified_attributes = "attributes"
+
+    @property
+    def allow_rename(self) -> bool:
+        """
+        :obj:`bool` Entity can change name
+        """
+        return self._allow_rename
+
+    @allow_rename.setter
+    def allow_rename(self, value: bool):
+        self._allow_rename = value
+        self.modified_attributes = "attributes"
+
     @property
     def attribute_map(self):
+        """
+        :obj:`dict` Correspondence map between property names used in geoh5py and
+        geoh5.
+        """
         return self._attribute_map
 
     @property
+    def children(self):
+        """
+        :obj:`list` Children entities in the workspace tree
+        """
+        return self._children
+
+    def copy(self, parent=None, copy_children: bool = True):
+        """
+        Function to copy an entity to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: Create copies of all children entities along with it.
+
+        :return entity: Registered Entity to the workspace.
+        """
+
+        if parent is None:
+            parent = self.parent
+
+        new_entity = parent.workspace.copy_to_parent(
+            self, parent, copy_children=copy_children
+        )
+
+        return new_entity
+
+    @classmethod
+    def create(cls, workspace, **kwargs):
+        """
+        Function to create an entity.
+
+        :param workspace: Workspace to be added to.
+        :param kwargs: List of keyword arguments defining the properties of a class.
+
+        :return entity: Registered Entity to the workspace.
+        """
+        if "entity_type_uid" in kwargs.keys():
+            entity_type_kwargs = {"entity_type": {"uid": kwargs["entity_type_uid"]}}
+        else:
+            entity_type_kwargs = {}
+
+        entity_kwargs = {"entity": kwargs}
+        new_object = workspace.create_entity(
+            cls, **{**entity_kwargs, **entity_type_kwargs}
+        )
+
+        # Add to root if parent is not set
+        if new_object.parent is None:
+            new_object.parent = workspace.root
+
+        workspace.finalize()
+
+        return new_object
+
+    @property
+    @abstractmethod
+    def entity_type(self) -> "shared.EntityType":
+        ...
+
+    @property
     def existing_h5_entity(self) -> bool:
+        """
+        :obj:`bool` Entity already present in
+        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
+        """
         return self._existing_h5_entity
 
     @existing_h5_entity.setter
     def existing_h5_entity(self, value: bool):
         self._existing_h5_entity = value
 
+    @classmethod
+    def fix_up_name(cls, name: str) -> str:
+        """ If the given  name is not a valid one, transforms it to make it valid
+        :return: a valid name built from the given name. It simply returns the given name
+        if it was already valid.
+        """
+        # TODO: implement an actual fixup
+        #  (possibly it has to be abstract with different implementations per Entity type)
+        return name
+
     @property
     def modified_attributes(self):
+        """
+        :obj:`list[str]` List of attributes to be updated in associated workspace
+        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
+        """
         return self._modified_attributes
 
     @modified_attributes.setter
@@ -90,29 +220,9 @@ class Entity(ABC):
                         self._modified_attributes.append(value)
 
     @property
-    def uid(self) -> uuid.UUID:
-        return self._uid
-
-    @uid.setter
-    def uid(self, uid: Union[str, uuid.UUID]):
-
-        if isinstance(uid, str):
-            uid = uuid.UUID(uid)
-
-        self._uid = uid
-
-    @uid.getter
-    def uid(self):
-
-        if self._uid is None:
-            self._uid = uuid.uuid4()
-
-        return self._uid
-
-    @property
     def name(self) -> str:
         """
-        Name of the entity
+        :obj:`str` Name of the entity
         """
         return self._name
 
@@ -122,91 +232,7 @@ class Entity(ABC):
         self.modified_attributes = "attributes"
 
     @property
-    def visible(self) -> bool:
-        return self._visible
-
-    @visible.setter
-    def visible(self, value: bool):
-        self._visible = value
-        self.modified_attributes = "attributes"
-
-    @property
-    def allow_delete(self) -> bool:
-        """
-        bool: if True the Entity can be deleted from the geoh5
-        """
-        return self._allow_delete
-
-    @allow_delete.setter
-    def allow_delete(self, value: bool):
-        self._allow_delete = value
-        self.modified_attributes = "attributes"
-
-    @property
-    def allow_move(self) -> bool:
-        """
-        bool: if True the Entity can change parent
-        """
-        return self._allow_move
-
-    @allow_move.setter
-    def allow_move(self, value: bool):
-        self._allow_move = value
-        self.modified_attributes = "attributes"
-
-    @property
-    def allow_rename(self) -> bool:
-        """
-        bool: if True the Entity can change name
-        """
-        return self._allow_rename
-
-    @allow_rename.setter
-    def allow_rename(self, value: bool):
-        self._allow_rename = value
-        self.modified_attributes = "attributes"
-
-    @property
-    def public(self) -> bool:
-        """
-        public
-
-        bool: if True the Entity is visible in camera
-        """
-        return self._public
-
-    @public.setter
-    def public(self, value: bool):
-        self._public = value
-        self.modified_attributes = "attributes"
-
-    @property
-    def workspace(self):
-        """
-        Workspace to which the Entity belongs
-        """
-        return self.entity_type.workspace
-
-    @classmethod
-    def fix_up_name(cls, name: str) -> str:
-        """ If the given  name is not a valid one, transforms it to make it valid
-        :return: a valid name built from the given name. It simply returns the given name
-        if it was already valid.
-        """
-        # TODO: implement an actual fixup
-        #  (possibly it has to be abstract with different implementations per Entity type)
-        return name
-
-    @property
-    @abstractmethod
-    def entity_type(self) -> "shared.EntityType":
-        ...
-
-    @property
     def parent(self):
-        """
-        Parental entity in the workspace tree
-        """
         return self._parent
 
     @parent.setter
@@ -227,6 +253,10 @@ class Entity(ABC):
 
     @parent.getter
     def parent(self):
+        """
+        Parental :obj:`~geoh5py.shared.entity.Entity` in the workspace tree. The
+        workspace :obj:`~geoh5py.groups.root_group.RootGroup` is used by default.
+        """
         if self._parent is None:
             self._parent = self.workspace.root
             self._parent.add_children([self])
@@ -234,75 +264,69 @@ class Entity(ABC):
         return self._parent
 
     @property
-    def children(self):
+    def public(self) -> bool:
         """
-        List of children entities in the workspace tree
+        :obj:`bool` Entity is accessible in the workspace tree and other parts
+            of the the user interface in ANALYST.
         """
-        return self._children
+        return self._public
 
-    def add_children(self, children: List["shared.Entity"]):
-        """
-        add_children
-
-        :param children: Add children entities to the list of children
-        """
-        for child in children:
-            if child not in self._children:
-                self._children.append(child)
+    @public.setter
+    def public(self, value: bool):
+        self._public = value
+        self.modified_attributes = "attributes"
 
     def remove_children(self, children: List["shared.Entity"]):
         """
-        remove_children
+        Remove children from the list of children entities.
 
-        :param children: Remove children entities to the list of children
+        :param children: List of entities
+
+        .. warning::
+            Removing a child entity without re-assigning it to a different
+            parent may cause it to become inactive. Inactive entities are removed
+            from the workspace by
+            :func:`~geoh5py.shared.weakref_utils.remove_none_referents`.
         """
         self._children = [child for child in self._children if child not in children]
 
-    @classmethod
-    def create(cls, workspace, **kwargs):
+    @property
+    def uid(self) -> uuid.UUID:
+        return self._uid
+
+    @uid.setter
+    def uid(self, uid: Union[str, uuid.UUID]):
+        if isinstance(uid, str):
+            uid = uuid.UUID(uid)
+
+        self._uid = uid
+
+    @uid.getter
+    def uid(self):
         """
-        Function to create an object with data
-
-        :param workspace: Workspace to be added to
-        :param kwargs: List of keyword arguments
-
-        :return: Entity: Registered to the workspace.
+        :obj:`uuid.UUID` The unique identifier of an entity, either as stored
+        in geoh5 or generated in :func:`~uuid.UUID.uuid4` format.
         """
-        if "entity_type_uid" in kwargs.keys():
-            entity_type_kwargs = {"entity_type": {"uid": kwargs["entity_type_uid"]}}
-        else:
-            entity_type_kwargs = {}
+        if self._uid is None:
+            self._uid = uuid.uuid4()
 
-        entity_kwargs = {"entity": kwargs}
-        new_object = workspace.create_entity(
-            cls, **{**entity_kwargs, **entity_type_kwargs}
-        )
+        return self._uid
 
-        # Add to root if parent is not set
-        if new_object.parent is None:
-            new_object.parent = workspace.root
-
-        workspace.finalize()
-
-        return new_object
-
-    def copy(self, parent=None, copy_children: bool = True):
+    @property
+    def visible(self) -> bool:
         """
-        Function to copy an entity to a different parent entity
-
-        :param parent: Target parent to copy the entity under
-        :param copy_children: Copy all children of the entity
-
-        :return: Entity: Registered to the workspace.
+        :obj:`bool` Entity visible in camera (checked in ANALYST object tree).
         """
+        return self._visible
 
-        if parent is None:
-            new_entity = self.parent.workspace.copy_to_parent(
-                self, self.parent, copy_children=copy_children
-            )
-        else:
-            new_entity = parent.workspace.copy_to_parent(
-                self, parent, copy_children=copy_children
-            )
+    @visible.setter
+    def visible(self, value: bool):
+        self._visible = value
+        self.modified_attributes = "attributes"
 
-        return new_entity
+    @property
+    def workspace(self):
+        """
+        :obj:`~geoh5py.workspace.workspace.Workspace` to which the Entity belongs to.
+        """
+        return self.entity_type.workspace

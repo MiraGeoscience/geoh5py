@@ -304,7 +304,7 @@ texinfo_documents = [
         "geoh5py Documentation",
         "MiraGeoscience",
         "geoh5py",
-        "API for geoh5 database and Geoscience Analyst.",
+        "API for geoh5 database and Geoscience ANALYST.",
         "Miscellaneous",
     )
 ]
@@ -337,7 +337,7 @@ sys.path.append(os.getcwd())
 # -- Strip all notebooks before
 
 
-def nbstripout():
+def clean_state():
     # get relevant directories
     cwd = os.getcwd()
 
@@ -347,9 +347,11 @@ def nbstripout():
             for filename in fileList:
                 if "ipynb" in filename:
                     os.system("nbstripout " + os.path.join(root, filename))
+                if ".geoh5" in filename:
+                    os.remove(os.path.join(root, filename))
 
 
-nbstripout()
+clean_state()
 # # Build the API
 # dirname, filename = os.path.split(os.path.abspath(__file__))
 # subprocess.run(

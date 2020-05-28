@@ -17,6 +17,13 @@
 
 
 class VersionString:
+    """
+    Version of Geoscience ANALYST
+
+    .. warning:: Not implemented
+
+    """
+
     def __init__(self, value: str):
         self._value = value
 

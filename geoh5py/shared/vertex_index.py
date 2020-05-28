@@ -17,5 +17,12 @@
 
 
 class VertexIndex:
+    """
+    Indices
+
+    .. warning:: Not implemented
+
+    """
+
     def __init__(self):
         self._rep = None

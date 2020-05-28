@@ -25,7 +25,10 @@ from .object_base import ObjectBase, ObjectType
 
 class Drillhole(ObjectBase):
     """
-    Drillhole object class: NOT IMPLEMENTED
+    Drillhole object class
+
+    .. warning:: Not yet implemented.
+
     """
 
     __TYPE_UID = uuid.UUID(
