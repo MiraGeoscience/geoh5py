@@ -1,13 +1,4 @@
-.. image:: https://codecov.io/gh/MiraGeoscience/geoh5py/branch/development/graph/badge.svg?token=cBBxmt1WiA
-  :target: https://codecov.io/gh/MiraGeoscience/geoh5py
-.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
-  :target: https://github.com/psf/black
-.. image:: https://img.shields.io/pypi/v/geoh5py.svg
-  :target: https://pypi.python.org/pypi/geoh5py/
-.. image:: https://img.shields.io/pypi/status/geoh5py.svg
-  :target: https://pypi.python.org/pypi/geoh5py/
-.. image:: https://img.shields.io/pypi/pyversions/geoh5py.svg
-  :target: https://pypi.python.org/pypi/geoh5py/
+|coverage| |docs| |style| |version| |status| |pyversions|
 
 
 geoh5py: Python API for geoh5, an open file format for geoscientific data
@@ -98,6 +89,30 @@ To build the api docs using autodocs
 .. code-block:: bash
 
   sphinx-apidoc -o source/ ../geoh5py
+
+.. |docs| image:: https://readthedocs.org/projects/geoh5py/badge/
+    :alt: Documentation Status
+    :target: https://geoh5py.readthedocs.io/en/latest/?badge=latest
+
+.. |coverage| image:: https://codecov.io/gh/MiraGeoscience/geoh5py/branch/development/graph/badge.svg?token=cBBxmt1WiA
+    :alt: Test coverage
+    :target: https://codecov.io/gh/MiraGeoscience/geoh5py
+
+.. |style| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :alt: Coding style
+    :target: https://github.com/pf/black
+
+.. |version| image:: https://img.shields.io/pypi/v/geoh5py.svg
+    :alt: version on PyPI
+    :target: https://pypi.python.org/pypi/geoh5py/
+
+.. |status| image:: https://img.shields.io/pypi/status/geoh5py.svg
+    :alt: version status on PyPI
+    :target: https://pypi.python.org/pypi/geoh5py/
+
+.. |pyversions| image:: https://img.shields.io/pypi/pyversions/geoh5py.svg
+    :alt: Python versions
+    :target: https://pypi.python.org/pypi/geoh5py/
 
 
 License
