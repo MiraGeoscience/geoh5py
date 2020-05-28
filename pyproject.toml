@@ -2,7 +2,7 @@
 name = "geoh5py"
 version = "0.1.0"
 license = "LGPL-3.0-or-later"
-description = "Read and write .geoh5 files from Python"
+description = "Python API for geoh5, an open file format for geoscientific data"
 authors = ["Mira Geoscience <support@mirageoscience.com>"]
 repository = "https://github.com/MiraGeoscience/geoh5py"
 documentation = "https://geoh5py.readthedocs.io/en/latest/"
