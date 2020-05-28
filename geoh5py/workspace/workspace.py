@@ -86,7 +86,6 @@ class Workspace:
         self._groups: Dict[uuid.UUID, ReferenceType[group.Group]] = {}
         self._objects: Dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
         self._data: Dict[uuid.UUID, ReferenceType[data.Data]] = {}
-        self._modified_attributes = False
         self._h5file = h5file
 
         for attr, item in kwargs.items():
@@ -658,18 +657,6 @@ class Workspace:
             if entity is not None:
                 objects_name[key] = entity.name
         return objects_name
-
-    @property
-    def modified_attributes(self) -> bool:
-        """
-        :obj:`list[str]` List of attributes to be updated in associated workspace
-        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
-        """
-        return self._modified_attributes
-
-    @modified_attributes.setter
-    def modified_attributes(self, value: bool):
-        self._modified_attributes = value
 
     @property
     def name(self) -> str:
