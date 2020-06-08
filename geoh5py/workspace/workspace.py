@@ -209,6 +209,10 @@ class Workspace:
         elif isinstance(parent, Workspace):
             parent = parent.root
 
+        # Assign the same uid if possible
+        if parent.workspace.get_entity(entity.uid)[0] is None:
+            entity_kwargs["entity"]["uid"] = entity.uid
+
         entity_kwargs["entity"]["parent"] = parent
 
         if isinstance(entity, Data):
