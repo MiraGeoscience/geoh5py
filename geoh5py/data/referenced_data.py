@@ -18,15 +18,25 @@
 from .data_type import DataType
 from .float_data import FloatData
 from .primitive_type_enum import PrimitiveTypeEnum
-from .reference_value_map import ReferenceValueMap
 
 
 class ReferencedData(FloatData):
+    """
+    Reference data described by indices and associated strings.
+    """
+
     def __init__(self, data_type: DataType, **kwargs):
         super().__init__(data_type, **kwargs)
 
-        self._value_map = ReferenceValueMap()
+        self._value_map = self.entity_type.value_map
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.REFERENCED
+
+    @property
+    def value_map(self):
+        """
+        Pointer to the :obj:`data.data_type.DataType.value_map`
+        """
+        return self._value_map

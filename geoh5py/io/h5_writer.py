@@ -441,6 +441,40 @@ class H5Writer:
             h5file.close()
 
     @classmethod
+    def write_value_map(
+        cls,
+        entity_type: "shared.EntityType",
+        file: Optional[Union[str, h5py.File]] = None,
+        close_file: bool = True,
+    ):
+        """
+        Add :obj:`~geoh5py.data.value_map.ColorMap` to a
+        :obj:`~geoh5py.data.data_type.DataType`.
+
+        :param file: Name or handle to a geoh5 file
+        :param entity_type: Target entity_type with value_map
+        :param close_file: Close geoh5 file after write
+        """
+        h5file = cls.fetch_h5_handle(file, entity_type)
+        reference_value_map = getattr(entity_type, "value_map", None)
+
+        names = ["Key", "Value"]
+        formats = ["<u4", h5py.special_dtype(vlen=str)]
+
+        if reference_value_map is not None and reference_value_map.map is not None:
+            entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)
+
+            dtype = dict(names=names, formats=formats)
+            array = np.array(list(reference_value_map.map.items()), dtype=dtype)
+
+            entity_type_handle.create_dataset(
+                "Value map", array.shape, data=array, dtype=array.dtype
+            )
+
+        if close_file:
+            h5file.close()
+
+    @classmethod
     def write_data_values(
         cls,
         entity,
@@ -621,6 +655,9 @@ class H5Writer:
 
         if hasattr(entity_type, "color_map"):
             H5Writer.write_color_map(entity_type, file=h5file, close_file=False)
+
+        if hasattr(entity_type, "value_map"):
+            H5Writer.write_value_map(entity_type, file=h5file, close_file=False)
 
         if close_file:
             h5file.close()
