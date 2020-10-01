@@ -233,35 +233,47 @@ class H5Writer:
         file = cls.fetch_h5_handle(file, entity)
         entity_handle = H5Writer.fetch_handle(file, entity)
 
+        attr_dict = {
+            "values": "Data",
+            "cells": "Cells",
+            "vertices": "Vertices",
+            "octree_cells": "Octree Cells",
+            "property_groups": "PropertyGroups",
+            "color_map": "Color map",
+        }
+
         for attr in entity.modified_attributes:
+
+            try:
+                del entity_handle[attr_dict[attr]]
+            except KeyError:
+                pass
+
             if attr == "values":
-                del entity_handle["Data"]
                 cls.write_data_values(
                     entity, entity.values, file=file, close_file=close_file
                 )
 
             elif attr == "cells":
-                del entity_handle["Cells"]
                 cls.write_cells(entity, file=file, close_file=close_file)
 
             elif attr == "vertices":
-                del entity_handle["Vertices"]
                 cls.write_vertices(entity, file=file, close_file=close_file)
 
             elif attr == "octree_cells":
-                del entity_handle["Octree Cells"]
                 cls.write_octree_cells(entity, file=file, close_file=close_file)
 
             elif attr == "property_groups":
-                del entity_handle["PropertyGroups"]
                 cls.write_property_groups(entity, file=file, close_file=close_file)
 
             elif attr == "cell_delimiters":
                 cls.write_cell_delimiters(entity, file=file, close_file=close_file)
 
-            elif attr == "Color map":
-                del entity_handle["Color map"]
+            elif attr == "color_map":
                 cls.write_color_map(entity, file=file, close_file=close_file)
+
+            # elif attr == "visible":
+            #     cls.write_visible(entity, file=file, close_file=close_file)
 
             else:
                 cls.write_attributes(entity, file=file, close_file=close_file)
@@ -353,6 +365,8 @@ class H5Writer:
                 "U cell delimiters",
                 data=u_cell_delimiters,
                 dtype=u_cell_delimiters.dtype,
+                compression="gzip",
+                compression_opts=9,
             )
 
         if hasattr(entity, "v_cell_delimiters") and (
@@ -366,6 +380,8 @@ class H5Writer:
                 "V cell delimiters",
                 data=v_cell_delimiters,
                 dtype=v_cell_delimiters.dtype,
+                compression="gzip",
+                compression_opts=9,
             )
 
         if hasattr(entity, "z_cell_delimiters") and (
@@ -379,6 +395,8 @@ class H5Writer:
                 "Z cell delimiters",
                 data=z_cell_delimiters,
                 dtype=z_cell_delimiters.dtype,
+                compression="gzip",
+                compression_opts=9,
             )
 
         if close_file:
@@ -406,7 +424,12 @@ class H5Writer:
 
             # Adding cells
             entity_handle.create_dataset(
-                "Cells", indices.shape, data=indices, dtype=indices.dtype
+                "Cells",
+                indices.shape,
+                data=indices,
+                dtype=indices.dtype,
+                compression="gzip",
+                compression_opts=9,
             )
 
         if close_file:
@@ -434,7 +457,12 @@ class H5Writer:
             entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)
             map_values = color_map.values
             entity_type_handle.create_dataset(
-                "Color map", map_values.shape, data=map_values, dtype=map_values.dtype
+                "Color map",
+                map_values.shape,
+                data=map_values,
+                dtype=map_values.dtype,
+                compression="gzip",
+                compression_opts=9,
             )
 
         if close_file:
@@ -475,6 +503,31 @@ class H5Writer:
             h5file.close()
 
     @classmethod
+    def write_visible(
+        cls,
+        entity,
+        file: Optional[Union[str, h5py.File]] = None,
+        close_file: bool = True,
+    ):
+        """
+        Needs revision once Visualization is implemented
+        """
+        h5file = cls.fetch_h5_handle(file, entity)
+        entity_handle = H5Writer.fetch_handle(h5file, entity)
+
+        dtype = np.dtype(
+            [("ViewID", h5py.special_dtype(vlen=str)), ("Visible", "int8")]
+        )
+
+        if entity.visible:
+
+            visible = entity_handle.create_dataset("Visible", shape=(1,), dtype=dtype)
+            visible["Visible"] = 1
+
+        if close_file:
+            h5file.close()
+
+    @classmethod
     def write_data_values(
         cls,
         entity,
@@ -506,7 +559,9 @@ class H5Writer:
             )
 
         else:
-            entity_handle.create_dataset("Data", data=values)
+            entity_handle.create_dataset(
+                "Data", data=values, compression="gzip", compression_opts=9
+            )
 
         if close_file:
             h5file.close()
@@ -694,6 +749,8 @@ class H5Writer:
                 octree_cells.shape,
                 data=octree_cells,
                 dtype=octree_cells.dtype,
+                compression="gzip",
+                compression_opts=9,
             )
 
         if close_file:
@@ -893,9 +950,12 @@ class H5Writer:
             loc_type = np.dtype(
                 [("x", np.float64), ("y", np.float64), ("z", np.float64)]
             )
-
             vertices = entity_handle.create_dataset(
-                "Vertices", (xyz.shape[0],), dtype=loc_type
+                "Vertices",
+                (xyz.shape[0],),
+                dtype=loc_type,
+                compression="gzip",
+                compression_opts=9,
             )
             vertices["x"] = xyz[:, 0]
             vertices["y"] = xyz[:, 1]
