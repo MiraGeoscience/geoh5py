@@ -600,6 +600,9 @@ class H5Writer:
 
         uid = entity.uid
 
+        if entity_type not in list(h5file[base].keys()):
+            h5file[base].create_group(entity_type)
+
         # Check if already in the project
         if cls.uuid_str(uid) in list(h5file[base][entity_type].keys()):
 
@@ -692,6 +695,9 @@ class H5Writer:
             return None
 
         # Check if already in the project
+        if entity_type_str not in list(h5file[base]["Types"].keys()):
+            h5file[base]["Types"].create_group(entity_type_str)
+
         if cls.uuid_str(uid) in list(h5file[base]["Types"][entity_type_str].keys()):
 
             if any([entity_type.modified_attributes]):
