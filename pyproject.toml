@@ -52,7 +52,7 @@ use_parentheses = true
 line_length = 88
 # auto-updated by seed-isort-config
 
-known_third_party = ["Add2Build", "StringIO", "autodoc", "edit_on_github", "environmentSetup", "h5py", "numpy", "poetry_publish", "pytest", "scipy", "setuptools", "toml", "urllib2"]
+known_third_party = []
 
 
 [tool.black]
