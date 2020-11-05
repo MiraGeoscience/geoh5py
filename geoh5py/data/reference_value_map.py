@@ -15,10 +15,11 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from abc import ABC
 from typing import Dict
 
 
-class ReferenceValueMap:
+class ReferenceValueMap(ABC):
     """ Maps from reference index to reference value of ReferencedData.
     """
 
@@ -34,6 +35,9 @@ class ReferenceValueMap:
 
     def __len__(self):
         return len(self._map)
+
+    def __call__(self):
+        return self._map
 
     @property
     def map(self):

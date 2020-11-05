@@ -16,11 +16,11 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 from .data_type import DataType
-from .float_data import FloatData
+from .integer_data import IntegerData
 from .primitive_type_enum import PrimitiveTypeEnum
 
 
-class ReferencedData(FloatData):
+class ReferencedData(IntegerData):
     """
     Reference data described by indices and associated strings.
     """
@@ -28,7 +28,8 @@ class ReferencedData(FloatData):
     def __init__(self, data_type: DataType, **kwargs):
         super().__init__(data_type, **kwargs)
 
-        self._value_map = self.entity_type.value_map
+        if "value_map" in kwargs.keys():
+            self.entity_type.value_map = kwargs["value_map"]
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
@@ -39,4 +40,4 @@ class ReferencedData(FloatData):
         """
         Pointer to the :obj:`data.data_type.DataType.value_map`
         """
-        return self._value_map
+        return self.entity_type.value_map
