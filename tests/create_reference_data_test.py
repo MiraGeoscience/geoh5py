@@ -22,6 +22,7 @@ from abc import ABC
 from pathlib import Path
 
 import numpy as np
+
 from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
