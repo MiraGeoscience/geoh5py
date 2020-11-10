@@ -16,6 +16,9 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import uuid
+from typing import Optional
+
+import numpy as np
 
 from .object_base import ObjectBase, ObjectType
 
@@ -38,7 +41,53 @@ class GeoImage(ObjectBase):
         self._vertices = None
         super().__init__(object_type, **kwargs)
 
+        if object_type.name == "None":
+            self.entity_type.name = "GeoImage"
+
         object_type.workspace._register_object(self)
+
+    @property
+    def cells(self) -> Optional[np.ndarray]:
+        r"""
+        :obj:`numpy.ndarray` of :obj:`int`, shape (\*, 2):
+        Array of indices defining segments connecting vertices. Defined based on
+        :obj:`~geoh5py.objects.curve.Curve.parts` if set by the user.
+        """
+        if getattr(self, "_cells", None) is None:
+
+            if self.existing_h5_entity:
+                self._cells = self.workspace.fetch_cells(self.uid)
+            else:
+                if self.vertices is not None:
+                    n_segments = self.vertices.shape[0]
+                    self._cells = np.c_[
+                        np.arange(0, n_segments - 1), np.arange(1, n_segments)
+                    ].astype("uint32")
+
+        return self._cells
+
+    @cells.setter
+    def cells(self, indices):
+        assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
+        self.modified_attributes = "cells"
+        self._cells = indices
+        self._parts = None
+
+    @property
+    def vertices(self) -> Optional[np.ndarray]:
+        """
+        :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`:
+        Defines the four corners of the geo_image
+        """
+        if (getattr(self, "_vertices", None) is None) and self.existing_h5_entity:
+            self._vertices = self.workspace.fetch_vertices(self.uid)
+
+        return self._vertices
+
+    @vertices.setter
+    def vertices(self, xyz: np.ndarray):
+        self.modified_attributes = "vertices"
+        self._vertices = xyz
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

@@ -15,6 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Optional
+
 from .data import Data, PrimitiveTypeEnum
 
 
@@ -22,6 +24,39 @@ class FilenameData(Data):
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.FILENAME
+
+    @property
+    def file_name(self) -> Optional[str]:
+        """
+        :obj:`str` Text value.
+        """
+        if (getattr(self, "_file_name", None) is None) and self.existing_h5_entity:
+            self._file_name = self.workspace.fetch_values(self.uid)[0]
+
+        return self._file_name
+
+    @file_name.setter
+    def file_name(self, value):
+        self.modified_attributes = "values"
+        self._file_name = value
+
+    @property
+    def values(self) -> Optional[str]:
+        """
+        :obj:`str` Text value.
+        """
+        if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
+            self._values = self.workspace.fetch_file_values(self.uid, self.file_name)
+
+        return self._values
+
+    @values.setter
+    def values(self, values):
+        self.modified_attributes = "values"
+        self._values = values
+
+    def __call__(self):
+        return self.values
 
     # TODO: implement specialization to access values.
     # Stored as a 1D array of 32-bit unsigned integer type (native).

@@ -278,6 +278,29 @@ class H5Reader:
         return values
 
     @classmethod
+    def fetch_file_values(
+        cls, h5file: Optional[str], uid: uuid.UUID, file_name: str
+    ) -> Optional[float]:
+        """
+        Get data from file :obj:`~geoh5py.data.data.Data.values`
+
+        :param h5file: Name of the target geoh5 file
+        :param uid: Unique identifier of the target entity
+
+        :return values: :obj:`numpy.array` of :obj:`float`
+        """
+        project = h5py.File(h5file, "r")
+        name = list(project.keys())[0]
+        if file_name in list(project[name]["Data"][cls.uuid_str(uid)].keys()):
+            values = project[name]["Data"][cls.uuid_str(uid)][file_name][()]
+        else:
+            values = None
+
+        project.close()
+
+        return values
+
+    @classmethod
     def fetch_values(cls, h5file: Optional[str], uid: uuid.UUID) -> Optional[float]:
         """
         Get data :obj:`~geoh5py.data.data.Data.values`
