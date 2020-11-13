@@ -522,15 +522,15 @@ class Workspace:
         """
         return H5Reader.fetch_values(self.h5file, uid)
 
-    def fetch_file_values(self, uid: uuid.UUID, file_name: str) -> Optional[float]:
+    def fetch_file_object(self, uid: uuid.UUID, file_name: str) -> Optional[float]:
         """
-        Fetch the data values in the stored file from the source h5file.
+        Fetch an image from file name.
 
         :param uid: Unique identifier of target data object.
 
         :return: Array of values.
         """
-        return H5Reader.fetch_file_values(self.h5file, uid, file_name)
+        return H5Reader.fetch_file_object(self.h5file, uid, file_name)
 
     def fetch_vertices(self, uid: uuid.UUID) -> np.ndarray:
         """

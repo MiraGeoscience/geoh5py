@@ -16,10 +16,12 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import uuid
+from tempfile import TemporaryFile
 from typing import Any, Dict, Optional, Tuple
 
 import h5py
 import numpy as np
+from PIL import Image  # pylint: disable=import-error
 
 
 class H5Reader:
@@ -278,11 +280,11 @@ class H5Reader:
         return values
 
     @classmethod
-    def fetch_file_values(
+    def fetch_file_object(
         cls, h5file: Optional[str], uid: uuid.UUID, file_name: str
     ) -> Optional[float]:
         """
-        Get data from file :obj:`~geoh5py.data.data.Data.values`
+        Load data associated with an image file
 
         :param h5file: Name of the target geoh5 file
         :param uid: Unique identifier of the target entity
@@ -291,8 +293,18 @@ class H5Reader:
         """
         project = h5py.File(h5file, "r")
         name = list(project.keys())[0]
+
+        implemented = ["tiff", "tif"]
+
         if file_name in list(project[name]["Data"][cls.uuid_str(uid)].keys()):
-            values = project[name]["Data"][cls.uuid_str(uid)][file_name][()]
+
+            assert (
+                file_name.split(".")[-1] in implemented
+            ), f"File format {implemented} currently implemented."
+
+            with TemporaryFile() as tempfile:
+                tempfile.write(project[name]["Data"][cls.uuid_str(uid)][file_name][()])
+                values = Image.open(tempfile).copy()
         else:
             values = None
 

@@ -17,10 +17,16 @@
 
 from typing import Optional
 
+from numpy import array
+from PIL.Image import Image  # pylint: disable=import-error
+
 from .data import Data, PrimitiveTypeEnum
 
 
 class FilenameData(Data):
+
+    _file_object = None
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.FILENAME
@@ -41,12 +47,25 @@ class FilenameData(Data):
         self._file_name = value
 
     @property
+    def file_object(self):
+        if (
+            self.file_name is not None
+            and self.existing_h5_entity
+            and getattr(self, "_file_object", None) is None
+        ):
+            self._file_object = self.workspace.fetch_file_object(
+                self.uid, self.file_name
+            )
+        return self._file_object
+
+    @property
     def values(self) -> Optional[str]:
         """
         :obj:`str` Text value.
         """
-        if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
-            self._values = self.workspace.fetch_file_values(self.uid, self.file_name)
+        if getattr(self, "_values", None) is None:
+            if isinstance(self.file_object, Image):
+                self._values = array(self._file_object)
 
         return self._values
 
@@ -56,7 +75,7 @@ class FilenameData(Data):
         self._values = values
 
     def __call__(self):
-        return self.values
+        return self._file_name
 
     # TODO: implement specialization to access values.
     # Stored as a 1D array of 32-bit unsigned integer type (native).
