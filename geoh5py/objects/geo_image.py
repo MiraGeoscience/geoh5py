@@ -16,10 +16,11 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import uuid
-from typing import Optional
+from typing import List, Optional, Union
 
 import numpy as np
 
+from ..data import Data
 from .object_base import ObjectBase, ObjectType
 
 
@@ -92,3 +93,86 @@ class GeoImage(ObjectBase):
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
+
+    def add_data(
+        self, data: dict, property_group: str = None
+    ) -> Union[Data, List[Data]]:
+        """
+        Create :obj:`~geoh5py.data.data.Data` from dictionary of name and arguments.
+        The provided arguments can be any property of the target Data class.
+
+        :param data: Dictionary of data to be added to the object, e.g.
+
+        .. code-block:: python
+
+            data = {
+                "data_A": {
+                    'values', [v_1, v_2, ...],
+                    'association': 'VERTEX'
+                    },
+                "data_B": {
+                    'values', [v_1, v_2, ...],
+                    'association': 'CELLS'
+                    },
+            }
+
+        :return: List of new Data objects.
+        """
+        data_objects = []
+        for name, attr in data.items():
+            assert isinstance(attr, dict), (
+                f"Given value to data {name} should of type {dict}. "
+                f"Type {type(attr)} given instead."
+            )
+            assert "values" in list(
+                attr.keys()
+            ), f"Given attr for data {name} should include 'values'"
+
+            attr["name"] = name
+
+            if "association" not in list(attr.keys()):
+                if (
+                    getattr(self, "n_cells", None) is not None
+                    and attr["values"].ravel().shape[0] == self.n_cells
+                ):
+                    attr["association"] = "CELL"
+                elif (
+                    getattr(self, "n_vertices", None) is not None
+                    and attr["values"].ravel().shape[0] == self.n_vertices
+                ):
+                    attr["association"] = "VERTEX"
+                else:
+                    attr["association"] = "OBJECT"
+
+            if "entity_type" in list(attr.keys()):
+                entity_type = attr["entity_type"]
+            else:
+                if isinstance(attr["values"], np.ndarray):
+                    entity_type = {"primitive_type": "FLOAT"}
+                elif isinstance(attr["values"], str):
+                    entity_type = {"primitive_type": "TEXT"}
+                else:
+                    raise NotImplementedError(
+                        "Only add_data values of type FLOAT and TEXT have been implemented"
+                    )
+
+            # Re-order to set parent first
+            kwargs = {"parent": self, "association": attr["association"]}
+            for key, val in attr.items():
+                if key in ["parent", "association", "entity_type"]:
+                    continue
+                kwargs[key] = val
+
+            data_object = self.workspace.create_entity(
+                Data, entity=kwargs, entity_type=entity_type
+            )
+
+            if property_group is not None:
+                self.add_data_to_group(data_object, property_group)
+
+            data_objects.append(data_object)
+
+        if len(data_objects) == 1:
+            return data_object
+
+        return data_objects
