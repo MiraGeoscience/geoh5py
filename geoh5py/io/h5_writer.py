@@ -19,12 +19,15 @@
 
 import json
 import uuid
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Optional, Union
 
 import h5py
 import numpy as np
+from PIL import Image
 
-from ..data import CommentsData, Data, DataType
+from ..data import CommentsData, Data, DataType, FilenameData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import Entity
@@ -549,7 +552,6 @@ class H5Writer:
 
         # Adding an array of values
         if isinstance(entity, CommentsData):
-
             comments = {"Comments": values}
             entity_handle.create_dataset(
                 "Data",
@@ -557,7 +559,12 @@ class H5Writer:
                 dtype=h5py.special_dtype(vlen=str),
                 shape=(1,),
             )
-
+        elif isinstance(entity, FilenameData):
+            with TemporaryDirectory() as tempdir:
+                tempfile = Path(tempdir) / r"image.tiff"
+                new_image = Image.fromarray(values)
+                new_image.save(tempfile)
+                entity_handle.create_dataset("Data", data=open(tempfile, "rb"))
         else:
             entity_handle.create_dataset(
                 "Data", data=values, compression="gzip", compression_opts=9

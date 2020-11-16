@@ -37,8 +37,9 @@ class GeoImage(ObjectBase):
 
     def __init__(self, object_type: ObjectType, **kwargs):
 
-        # TODO
         self._vertices = None
+        self._cells = None
+
         super().__init__(object_type, **kwargs)
 
         if object_type.name == "None":
@@ -71,7 +72,6 @@ class GeoImage(ObjectBase):
         assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
         self.modified_attributes = "cells"
         self._cells = indices
-        self._parts = None
 
     @property
     def vertices(self) -> Optional[np.ndarray]:

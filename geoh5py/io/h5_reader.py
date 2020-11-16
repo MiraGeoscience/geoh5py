@@ -21,7 +21,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import h5py
 import numpy as np
-from PIL import Image  # pylint: disable=import-error
+from PIL import Image
 
 
 class H5Reader:
