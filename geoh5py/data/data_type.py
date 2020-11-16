@@ -118,9 +118,6 @@ class DataType(EntityType):
         ), f"'value_map' must be a {dict} or {ReferenceValueMap}"
 
         if isinstance(value_map, dict):
-            assert all(
-                [val > 0 for val in value_map.keys()]
-            ), f"Value_map keys must be of type {int} > 0. Input values {value_map.keys()}"
             value_map = ReferenceValueMap(value_map)
 
         self._value_map = value_map
