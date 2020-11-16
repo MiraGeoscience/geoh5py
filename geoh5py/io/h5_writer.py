@@ -476,7 +476,7 @@ class H5Writer:
         close_file: bool = True,
     ):
         """
-        Add :obj:`~geoh5py.data.value_map.ColorMap` to a
+        Add :obj:`~geoh5py.data.reference_value_map.ReferenceValueMap` to a
         :obj:`~geoh5py.data.data_type.DataType`.
 
         :param file: Name or handle to a geoh5 file

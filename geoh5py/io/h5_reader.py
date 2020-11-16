@@ -257,7 +257,7 @@ class H5Reader:
         return property_groups
 
     @classmethod
-    def fetch_value_map(cls, h5file: Optional[str], uid: uuid.UUID) -> Optional[float]:
+    def fetch_value_map(cls, h5file: Optional[str], uid: uuid.UUID) -> Optional[dict]:
         """
         Get data :obj:`~geoh5py.data.data.Data.value_map`
 
