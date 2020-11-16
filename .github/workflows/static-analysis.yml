@@ -23,7 +23,7 @@ jobs:
       with:
         python-version: 3.7
     - name: set PY_HASH
-      run: echo "::set-env name=PY_HASH::$(python -c 'import hashlib, sys;print(hashlib.sha256(sys.version.encode()+sys.executable.encode()).hexdigest())')"
+      run: echo "PY_HASH=$(python -c 'import hashlib, sys;print(hashlib.sha256(sys.version.encode()+sys.executable.encode()).hexdigest())')" >> $GITHUB_ENV
     - name: Cache pre-commit tools
       uses: actions/cache@v1
       with:
@@ -59,7 +59,7 @@ jobs:
     - name: Install Poetry
       run: curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
     - name: Environment
-      run: echo ::add-path::$HOME/.poetry/bin
+      run: echo "$HOME/.poetry/bin" >> $GITHUB_PATH
     - name: Cache dependencies
       uses: actions/cache@v1
       id: cache
