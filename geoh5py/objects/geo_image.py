@@ -98,23 +98,9 @@ class GeoImage(ObjectBase):
         self, data: dict, property_group: str = None
     ) -> Union[Data, List[Data]]:
         """
-        Create :obj:`~geoh5py.data.data.Data` from dictionary of name and arguments.
+        Create a :obj:`~geoh5py.data.filename_data.FilenameData`
+        from dictionary of name and arguments.
         The provided arguments can be any property of the target Data class.
-
-        :param data: Dictionary of data to be added to the object, e.g.
-
-        .. code-block:: python
-
-            data = {
-                "data_A": {
-                    'values', [v_1, v_2, ...],
-                    'association': 'VERTEX'
-                    },
-                "data_B": {
-                    'values', [v_1, v_2, ...],
-                    'association': 'CELLS'
-                    },
-            }
 
         :return: List of new Data objects.
         """
@@ -129,20 +115,7 @@ class GeoImage(ObjectBase):
             ), f"Given attr for data {name} should include 'values'"
 
             attr["name"] = name
-
-            if "association" not in list(attr.keys()):
-                if (
-                    getattr(self, "n_cells", None) is not None
-                    and attr["values"].ravel().shape[0] == self.n_cells
-                ):
-                    attr["association"] = "CELL"
-                elif (
-                    getattr(self, "n_vertices", None) is not None
-                    and attr["values"].ravel().shape[0] == self.n_vertices
-                ):
-                    attr["association"] = "VERTEX"
-                else:
-                    attr["association"] = "OBJECT"
+            attr["association"] = "OBJECT"
 
             if "entity_type" in list(attr.keys()):
                 entity_type = attr["entity_type"]
