@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, List, Optional, Union
 import numpy as np
 
 from ..data import CommentsData, Data
+from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
 from .object_type import ObjectType
@@ -117,6 +118,7 @@ class ObjectBase(Entity):
             attr["name"] = name
 
             if "association" not in list(attr.keys()):
+                attr["association"] = "OBJECT"
                 if (
                     getattr(self, "n_cells", None) is not None
                     and attr["values"].ravel().shape[0] == self.n_cells
@@ -127,11 +129,14 @@ class ObjectBase(Entity):
                     and attr["values"].ravel().shape[0] == self.n_vertices
                 ):
                     attr["association"] = "VERTEX"
-                else:
-                    attr["association"] = "OBJECT"
 
             if "entity_type" in list(attr.keys()):
                 entity_type = attr["entity_type"]
+            elif "type" in list(attr.keys()):
+                assert attr["type"].upper() in list(
+                    PrimitiveTypeEnum.__members__.keys()
+                ), f"Data 'type' should be one of {list(PrimitiveTypeEnum.__members__.keys())}"
+                entity_type = {"primitive_type": attr["type"].upper()}
             else:
                 if isinstance(attr["values"], np.ndarray):
                     entity_type = {"primitive_type": "FLOAT"}
@@ -145,7 +150,7 @@ class ObjectBase(Entity):
             # Re-order to set parent first
             kwargs = {"parent": self, "association": attr["association"]}
             for key, val in attr.items():
-                if key in ["parent", "association", "entity_type"]:
+                if key in ["parent", "association", "entity_type", "type"]:
                     continue
                 kwargs[key] = val
 

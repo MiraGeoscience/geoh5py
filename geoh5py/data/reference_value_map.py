@@ -15,34 +15,38 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Dict, Optional
+from abc import ABC
+from typing import Dict
 
 
-class ReferenceValue:
-    """ Represents a value for ReferencedData as a string.
-    """
-
-    def __init__(self, value: str = None):
-        self._value = value
-
-    @property
-    def value(self) -> Optional[str]:
-        return self._value
-
-    def __str__(self):
-        # TODO: representation for None?
-        return str(self._value)
-
-
-class ReferenceValueMap:
+class ReferenceValueMap(ABC):
     """ Maps from reference index to reference value of ReferencedData.
     """
 
-    def __init__(self, color_map: Dict[int, ReferenceValue] = None):
+    def __init__(self, color_map: Dict[int, str] = None):
         self._map = dict() if color_map is None else color_map
 
-    def __getitem__(self, item: int) -> ReferenceValue:
+    def __getitem__(self, item: int) -> str:
         return self._map[item]
+
+    def __setitem__(self, key, value):
+        self._map[key] = value
+        return self._map[key]
 
     def __len__(self):
         return len(self._map)
+
+    def __call__(self):
+        return self._map
+
+    @property
+    def map(self):
+        """
+        :obj:`dict`: A reference dictionary mapping values to strings
+        """
+        return self._map
+
+    @map.setter
+    def map(self, value):
+        assert isinstance(value, dict), "Map values must be a dictionary"
+        self._map = value

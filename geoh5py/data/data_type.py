@@ -18,12 +18,13 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Dict, Optional, Type, Union, cast
 
 from ..shared import EntityType
 from .color_map import ColorMap
 from .geometric_data_constants import GeometricDataConstants
 from .primitive_type_enum import PrimitiveTypeEnum
+from .reference_value_map import ReferenceValueMap
 
 if TYPE_CHECKING:
     from .. import workspace
@@ -47,6 +48,7 @@ class DataType(EntityType):
     )
 
     _primitive_type: Optional[PrimitiveTypeEnum] = None
+    _value_map: Optional[ReferenceValueMap] = None
     _color_map: Optional[ColorMap] = None
     _units: Optional[str] = None
     _number_of_bins: int = 50
@@ -87,7 +89,42 @@ class DataType(EntityType):
     def color_map(self, color_map: Dict):
         assert "values" in list(color_map.keys()), "'color_map' must contain 'values'"
         self._color_map = ColorMap(**color_map)
-        self.modified_attributes = "Color map"
+        self.modified_attributes = "color_map"
+
+    @property
+    def value_map(self) -> Optional[ReferenceValueMap]:
+        r"""
+        :obj:`~geoh5py.data.reference_value_map.ReferenceValueMap`:
+        Reference value map for :obj:`~geoh5py.data.reference_data.ReferenceData`
+
+        The value_map can be set from a :obj:`dict` of sorted values with
+        corresponding :obj:`str` description.
+
+        .. code-block:: python
+
+            value_map = {
+                val_1: str_1,
+                ...,
+                val_i: str_i
+            }
+
+        """
+        return self._value_map
+
+    @value_map.setter
+    def value_map(self, value_map: Union[Dict, ReferenceValueMap]):
+        assert isinstance(
+            value_map, (dict, ReferenceValueMap)
+        ), f"'value_map' must be a {dict} or {ReferenceValueMap}"
+
+        if isinstance(value_map, dict):
+            assert all(
+                [(val >= 0) & isinstance(val, int) for val in value_map.keys()]
+            ), f"Value_map keys must be of type {int} >= 0. Input values {value_map.keys()}"
+            value_map = ReferenceValueMap(value_map)
+
+        self._value_map = value_map
+        self.modified_attributes = "Value map"
 
     @property
     def units(self) -> Optional[str]:

@@ -195,19 +195,29 @@ class Workspace:
         entity_kwargs: dict = {"entity": {}}
         for key in entity.__dict__.keys():
             if key not in ["_uid", "_entity_type"]:
-                entity_kwargs["entity"][key[1:]] = getattr(entity, key[1:])
+                if key[0] == "_":
+                    key = key[1:]
+
+                entity_kwargs["entity"][key] = getattr(entity, key)
 
         entity_type_kwargs: dict = {"entity_type": {}}
         for key in entity.entity_type.__dict__.keys():
             if key not in ["_workspace"]:
-                entity_type_kwargs["entity_type"][key[1:]] = getattr(
-                    entity.entity_type, key[1:]
+                if key[0] == "_":
+                    key = key[1:]
+
+                entity_type_kwargs["entity_type"][key] = getattr(
+                    entity.entity_type, key
                 )
 
         if parent is None:
             parent = entity.parent
         elif isinstance(parent, Workspace):
             parent = parent.root
+
+        # Assign the same uid if possible
+        if parent.workspace.get_entity(entity.uid)[0] is None:
+            entity_kwargs["entity"]["uid"] = entity.uid
 
         entity_kwargs["entity"]["parent"] = parent
 
