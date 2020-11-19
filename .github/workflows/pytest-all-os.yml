@@ -24,9 +24,9 @@ jobs:
       POETRY_VIRTUALENVS_CREATE: true
       POETRY_VIRTUALENVS_IN_PROJECT: true
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Set up Python version
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: 3.7
     - name: Install Poetry
@@ -34,7 +34,7 @@ jobs:
     - name: Environment
       run: echo "$HOME/.poetry/bin" >> $GITHUB_PATH
     - name: Cache dependencies
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       id: cache
       with:
         path: .venv
@@ -46,7 +46,7 @@ jobs:
       run: poetry run pytest --cov-report=xml --cov=geoh5py --cov-branch --cov-fail-under=80
     - name: codecov
       if: success() && matrix.os == 'windows-latest'
-      uses: codecov/codecov-action@v1.0.6
+      uses: codecov/codecov-action@v1
       with:
         name: GitHub
         token: ${{secrets.CODECOV_UPLOAD_TOKEN}}
