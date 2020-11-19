@@ -38,7 +38,7 @@ jobs:
           https://bugs.mirageoscience.com/rest/api/2/issue/
           | echo "::set-output name=jira_id::$(jq -r '.key')"
       - name: Post JIRA link
-        uses: peter-evans/create-or-update-comment@v1.4.1
+        uses: peter-evans/create-or-update-comment@v1
         with:
           # The number of the issue or pull request in which to create a comment.
           issue-number: ${{ github.event.issue.number }}
