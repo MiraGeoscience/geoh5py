@@ -31,7 +31,7 @@ class WorkspaceHandler:
     @staticmethod
     def get_api_version() -> i_VersionString:
         version = interfaces.shared.VersionString()
-        version.value = interfaces.api.API_VERSION
+        version.value = interfaces.api.API_VERSION  # type: ignore
         return version
 
     def create_geoh5(self, file_path: str) -> i_Workspace:
