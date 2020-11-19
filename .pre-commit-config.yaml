@@ -54,7 +54,7 @@ repos:
     rev: v1.17.1
     hooks:
     -   id: codespell
-        exclude: \.ipynb$
+        exclude: (\.ipynb$|^\.github/workflows/issue_to_jira.yml$)
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.3.0
     hooks:
