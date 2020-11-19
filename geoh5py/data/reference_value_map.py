@@ -20,8 +20,7 @@ from typing import Dict
 
 
 class ReferenceValueMap(ABC):
-    """ Maps from reference index to reference value of ReferencedData.
-    """
+    """Maps from reference index to reference value of ReferencedData."""
 
     def __init__(self, color_map: Dict[int, str] = None):
         self._map = dict() if color_map is None else color_map

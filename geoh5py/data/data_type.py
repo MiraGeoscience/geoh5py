@@ -20,6 +20,8 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING, Dict, Optional, Type, Union, cast
 
+import numpy as np
+
 from ..shared import EntityType
 from .color_map import ColorMap
 from .geometric_data_constants import GeometricDataConstants
@@ -119,8 +121,11 @@ class DataType(EntityType):
 
         if isinstance(value_map, dict):
             assert all(
-                [(val >= 0) & isinstance(val, int) for val in value_map.keys()]
-            ), f"Value_map keys must be of type {int} >= 0. Input values {value_map.keys()}"
+                [
+                    np.issubdtype(type(val), np.integer) and (val >= 0)
+                    for val in value_map.keys()
+                ]
+            ), f"Value_map keys must be of integer type >= 0. Input values {value_map.keys()}"
             value_map = ReferenceValueMap(value_map)
 
         self._value_map = value_map
@@ -212,7 +217,7 @@ class DataType(EntityType):
     def create(
         cls, workspace: "workspace.Workspace", data_class: Type["data.Data"]
     ) -> DataType:
-        """ Creates a new instance of :obj:`~geoh5py.data.data_type.DataType` with
+        """Creates a new instance of :obj:`~geoh5py.data.data_type.DataType` with
         corresponding :obj:`~geoh5py.data.primitive_type_enum.PrimitiveTypeEnum`.
 
         :param data_class: A :obj:`~geoh5py.data.data.Data` implementation class.
@@ -225,7 +230,7 @@ class DataType(EntityType):
 
     @classmethod
     def find_or_create(cls, workspace: "workspace.Workspace", **kwargs) -> DataType:
-        """ Find or creates an EntityType with given UUID that matches the given
+        """Find or creates an EntityType with given UUID that matches the given
         Group implementation class.
 
         :param workspace: An active Workspace class
