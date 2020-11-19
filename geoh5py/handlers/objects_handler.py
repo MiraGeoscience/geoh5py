@@ -24,18 +24,18 @@ from .. import interfaces
 from ..workspace import Workspace
 
 if TYPE_CHECKING:
-    from ..interfaces.objects import Object as i_Object
-    from ..interfaces.objects import ObjectQuery as i_ObjectQuery
-    from ..interfaces.objects import Points as i_Points
-    from ..interfaces.objects import Curve as i_Curve
-    from ..interfaces.objects import Surface as i_Surface
-    from ..interfaces.objects import Grid2D as i_Grid2D
     from ..interfaces.objects import BlockModel as i_BlockModel
+    from ..interfaces.objects import Curve as i_Curve
     from ..interfaces.objects import Drillhole as i_Drillhole
     from ..interfaces.objects import GeoImage as i_GeoImage
-    from ..interfaces.objects import Octree as i_Octree
-    from ..interfaces.objects import Label as i_Label
     from ..interfaces.objects import GeometryTransformation as i_GeometryTransformation
+    from ..interfaces.objects import Grid2D as i_Grid2D
+    from ..interfaces.objects import Label as i_Label
+    from ..interfaces.objects import Object as i_Object
+    from ..interfaces.objects import ObjectQuery as i_ObjectQuery
+    from ..interfaces.objects import Octree as i_Octree
+    from ..interfaces.objects import Points as i_Points
+    from ..interfaces.objects import Surface as i_Surface
     from ..interfaces.shared import Uuid as i_Uuid
 
 

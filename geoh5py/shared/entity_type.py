@@ -94,7 +94,7 @@ class EntityType(ABC):
     def find(
         cls: Type[TEntityType], workspace: "ws.Workspace", type_uid: uuid.UUID
     ) -> Optional[TEntityType]:
-        """ Finds in the given Workspace the EntityType with the given UUID for
+        """Finds in the given Workspace the EntityType with the given UUID for
         this specific EntityType implementation class.
 
         :return: EntityType of None

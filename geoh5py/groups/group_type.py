@@ -77,7 +77,7 @@ class GroupType(EntityType):
     def find_or_create(
         cls, workspace: "workspace.Workspace", entity_class, **kwargs
     ) -> GroupType:
-        """ Find or creates an EntityType with given UUID that matches the given
+        """Find or creates an EntityType with given UUID that matches the given
         Group implementation class.
 
         :param workspace: An active Workspace class
@@ -106,7 +106,7 @@ class GroupType(EntityType):
 
     @staticmethod
     def create_custom(workspace: "workspace.Workspace", **kwargs) -> GroupType:
-        """ Creates a new instance of GroupType for an unlisted custom Group type with a
+        """Creates a new instance of GroupType for an unlisted custom Group type with a
         new auto-generated UUID.
         """
         return GroupType(workspace, **kwargs)

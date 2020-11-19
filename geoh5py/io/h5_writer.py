@@ -30,8 +30,7 @@ from ..objects import ObjectBase, ObjectType
 from ..shared import Entity
 
 if TYPE_CHECKING:
-    from .. import shared
-    from .. import workspace
+    from .. import shared, workspace
 
 
 class H5Writer:
@@ -43,8 +42,7 @@ class H5Writer:
 
     @staticmethod
     def bool_value(value: np.int8) -> bool:
-        """Convert integer to bool.
-        """
+        """Convert integer to bool."""
         return bool(value)
 
     @classmethod
@@ -55,15 +53,15 @@ class H5Writer:
         close_file: bool = True,
     ):
         """
-            Create a geoh5 file and add the core structure.
+        Create a geoh5 file and add the core structure.
 
-            :param workspace: :obj:`~geoh5py.workspace.workspace.Workspace` object
-                defining the project structure.
-            :param file: Name or handle to a geoh5 file.
-            :param close_file: Close file after write.
+        :param workspace: :obj:`~geoh5py.workspace.workspace.Workspace` object
+            defining the project structure.
+        :param file: Name or handle to a geoh5 file.
+        :param close_file: Close file after write.
 
-            :return h5file: Pointer to a geoh5 file.
-            """
+        :return h5file: Pointer to a geoh5 file.
+        """
         # Take default name
         if file is None:
             file = workspace.h5file
@@ -280,14 +278,12 @@ class H5Writer:
 
     @staticmethod
     def uuid_value(value: str) -> uuid.UUID:
-        """Convert string to :obj:`uuid.UUID`.
-        """
+        """Convert string to :obj:`uuid.UUID`."""
         return uuid.UUID(value)
 
     @staticmethod
     def uuid_str(value: uuid.UUID) -> str:
-        """Convert :obj:`uuid.UUID` to string used in geoh5.
-        """
+        """Convert :obj:`uuid.UUID` to string used in geoh5."""
         return "{" + str(value) + "}"
 
     @classmethod
