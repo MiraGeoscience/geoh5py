@@ -22,8 +22,7 @@ from .group import Group, GroupType
 
 
 class CustomGroup(Group):
-    """ A custom group, for an unlisted Group type.
-    """
+    """A custom group, for an unlisted Group type."""
 
     _name = "Custom"
     _description = "Custom"

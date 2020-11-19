@@ -43,7 +43,7 @@ class ObjectType(EntityType):
 
     @staticmethod
     def create_custom(workspace: "workspace.Workspace") -> ObjectType:
-        """ Creates a new instance of ObjectType for an unlisted custom Object type with a
+        """Creates a new instance of ObjectType for an unlisted custom Object type with a
         new auto-generated UUID.
 
         :param workspace: An active Workspace class
@@ -54,7 +54,7 @@ class ObjectType(EntityType):
     def find_or_create(
         cls, workspace: "workspace.Workspace", entity_class, **kwargs
     ) -> ObjectType:
-        """ Find or creates an EntityType with given :obj:`uuid.UUID` that matches the given
+        """Find or creates an EntityType with given :obj:`uuid.UUID` that matches the given
         Group implementation class.
 
         It is expected to have a single instance of EntityType in the Workspace

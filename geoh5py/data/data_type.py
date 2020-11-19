@@ -217,7 +217,7 @@ class DataType(EntityType):
     def create(
         cls, workspace: "workspace.Workspace", data_class: Type["data.Data"]
     ) -> DataType:
-        """ Creates a new instance of :obj:`~geoh5py.data.data_type.DataType` with
+        """Creates a new instance of :obj:`~geoh5py.data.data_type.DataType` with
         corresponding :obj:`~geoh5py.data.primitive_type_enum.PrimitiveTypeEnum`.
 
         :param data_class: A :obj:`~geoh5py.data.data.Data` implementation class.
@@ -230,7 +230,7 @@ class DataType(EntityType):
 
     @classmethod
     def find_or_create(cls, workspace: "workspace.Workspace", **kwargs) -> DataType:
-        """ Find or creates an EntityType with given UUID that matches the given
+        """Find or creates an EntityType with given UUID that matches the given
         Group implementation class.
 
         :param workspace: An active Workspace class

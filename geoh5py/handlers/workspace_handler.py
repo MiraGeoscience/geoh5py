@@ -22,16 +22,16 @@ from typing import TYPE_CHECKING, List
 from .. import interfaces
 
 if TYPE_CHECKING:
-    from ..interfaces.workspace import Workspace as i_Workspace
     from ..interfaces.shared import Uuid as i_Uuid
     from ..interfaces.shared import VersionString as i_VersionString
+    from ..interfaces.workspace import Workspace as i_Workspace
 
 
 class WorkspaceHandler:
     @staticmethod
     def get_api_version() -> i_VersionString:
         version = interfaces.shared.VersionString()
-        version.value = interfaces.api.API_VERSION
+        version.value = interfaces.api.API_VERSION  # type: ignore
         return version
 
     def create_geoh5(self, file_path: str) -> i_Workspace:
@@ -58,10 +58,14 @@ class WorkspaceHandler:
         # TODO
         pass
 
-    def close(self,) -> None:
+    def close(
+        self,
+    ) -> None:
         # TODO
         pass
 
-    def get_contributors(self,) -> List[str]:
+    def get_contributors(
+        self,
+    ) -> List[str]:
         # TODO
         pass
