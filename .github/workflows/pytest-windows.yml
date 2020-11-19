@@ -19,7 +19,7 @@ jobs:
       with:
         python-version: 3.7
     - name: Install Poetry
-      run: curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+      run: (Invoke-WebRequest -Uri https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py -UseBasicParsing).Content | python -
     - name: Environment
       run: echo "$HOME/.poetry/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Cache dependencies
