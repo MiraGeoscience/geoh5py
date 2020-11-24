@@ -43,8 +43,7 @@ class GeoImage(ObjectBase):
 
         super().__init__(object_type, **kwargs)
 
-        if object_type.name == "None":
-            self.entity_type.name = "GeoImage"
+        self.entity_type.name = "GeoImage"
 
         object_type.workspace._register_object(self)
 
@@ -60,11 +59,7 @@ class GeoImage(ObjectBase):
             if self.existing_h5_entity:
                 self._cells = self.workspace.fetch_cells(self.uid)
             else:
-                if self.vertices is not None:
-                    n_segments = self.vertices.shape[0]
-                    self._cells = np.c_[
-                        np.arange(0, n_segments - 1), np.arange(1, n_segments)
-                    ].astype("uint32")
+                self._cells = np.c_[[0, 1, 2, 0], [0, 2, 3, 0]].T.astype("uint32")
 
         return self._cells
 
@@ -114,20 +109,9 @@ class GeoImage(ObjectBase):
                 attr.keys()
             ), f"Given attr for data {name} should include 'values'"
 
-            attr["name"] = name
+            attr["name"] = "GeoImageMesh_Image"
             attr["association"] = "OBJECT"
-
-            if "entity_type" in list(attr.keys()):
-                entity_type = attr["entity_type"]
-            else:
-                if isinstance(attr["values"], np.ndarray):
-                    entity_type = {"primitive_type": "FLOAT"}
-                elif isinstance(attr["values"], str):
-                    entity_type = {"primitive_type": "TEXT"}
-                else:
-                    raise NotImplementedError(
-                        "Only add_data values of type FLOAT and TEXT have been implemented"
-                    )
+            entity_type = {"name": "GeoImageMesh_Image", "primitive_type": "FILENAME"}
 
             # Re-order to set parent first
             kwargs = {"parent": self, "association": attr["association"]}
@@ -139,10 +123,6 @@ class GeoImage(ObjectBase):
             data_object = self.workspace.create_entity(
                 Data, entity=kwargs, entity_type=entity_type
             )
-
-            if property_group is not None:
-                self.add_data_to_group(data_object, property_group)
-
             data_objects.append(data_object)
 
         if len(data_objects) == 1:

@@ -21,11 +21,17 @@ from numpy import array
 from PIL.Image import Image  # pylint: disable=import-error
 
 from .data import Data, PrimitiveTypeEnum
+from .data_type import DataType
 
 
 class FilenameData(Data):
 
     _file_object = None
+    _name = "GeoImageMesh_Image"
+
+    def __init__(self, data_type: DataType, **kwargs):
+        super().__init__(data_type, **kwargs)
+        self._public = False
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
@@ -36,8 +42,12 @@ class FilenameData(Data):
         """
         :obj:`str` Text value.
         """
-        if (getattr(self, "_file_name", None) is None) and self.existing_h5_entity:
-            self._file_name = self.workspace.fetch_values(self.uid)[0]
+        if getattr(self, "_file_name", None) is None:
+
+            if self.existing_h5_entity:
+                self._file_name = self.workspace.fetch_values(self.uid)[0]
+            else:
+                self._file_name = self.parent.name + ".tiff"
 
         return self._file_name
 
@@ -72,7 +82,10 @@ class FilenameData(Data):
     @values.setter
     def values(self, values):
         self.modified_attributes = "values"
-        self._values = values
+
+        values -= values.min()
+        values *= 255 / values.max()
+        self._values = values.astype("uint8")
 
     def __call__(self):
         return self._file_name

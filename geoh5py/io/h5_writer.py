@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING, Optional, Union
 
 import h5py
 import numpy as np
-from PIL import Image
+from PIL import Image  # pylint: disable=import-error
 
 from ..data import CommentsData, Data, DataType, FilenameData
 from ..groups import Group, GroupType, RootGroup
@@ -556,11 +556,20 @@ class H5Writer:
                 shape=(1,),
             )
         elif isinstance(entity, FilenameData):
+            entity_handle.create_dataset(
+                "Data",
+                data=entity.file_name,
+                dtype=h5py.special_dtype(vlen=str),
+                shape=(1,),
+            )
             with TemporaryDirectory() as tempdir:
                 tempfile = Path(tempdir) / r"image.tiff"
                 new_image = Image.fromarray(values)
                 new_image.save(tempfile)
-                entity_handle.create_dataset("Data", data=open(tempfile, "rb"))
+                values = open(tempfile, "rb").read()
+                entity_handle.create_dataset(
+                    entity.file_name, data=np.asarray(np.void(values[:])), shape=(1,)
+                )
         else:
             entity_handle.create_dataset(
                 "Data", data=values, compression="gzip", compression_opts=9
