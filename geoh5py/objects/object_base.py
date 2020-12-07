@@ -286,7 +286,7 @@ class ObjectBase(Entity):
 
         return prop_group
 
-    def get_data(self, name: str) -> List[Data]:
+    def get_data(self, name: Union[str, uuid.UUID]) -> List[Data]:
         """
         Get a child :obj:`~geoh5py.data.data.Data` by name.
 
@@ -297,12 +297,15 @@ class ObjectBase(Entity):
         entity_list = []
 
         for child in self.children:
-            if isinstance(child, Data) and child.name == name:
-                entity_list.append(child)
+            if isinstance(child, Data):
+                if (
+                    isinstance(name, uuid.UUID) and child.uid == name
+                ) or child.name == name:
+                    entity_list.append(child)
 
         return entity_list
 
-    def get_data_list(self) -> List[str]:
+    def get_data_list(self, attribute="name") -> List[str]:
         """
         Get a list of names of all children :obj:`~geoh5py.data.data.Data`.
 
@@ -311,7 +314,7 @@ class ObjectBase(Entity):
         name_list = []
         for child in self.children:
             if isinstance(child, Data):
-                name_list.append(child.name)
+                name_list.append(getattr(child, attribute))
         return sorted(name_list)
 
     def get_property_group(
