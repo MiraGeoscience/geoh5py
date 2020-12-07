@@ -88,9 +88,18 @@ class DataType(EntityType):
         return self._color_map
 
     @color_map.setter
-    def color_map(self, color_map: Dict):
-        assert "values" in list(color_map.keys()), "'color_map' must contain 'values'"
-        self._color_map = ColorMap(**color_map)
+    def color_map(self, color_map: Union[Dict, ColorMap]):
+        if isinstance(color_map, dict):
+            assert "values" in list(
+                color_map.keys()
+            ), "'color_map' must contain 'values'"
+            self._color_map = ColorMap(parent=self, **color_map)
+        else:
+            assert isinstance(
+                color_map, ColorMap
+            ), f"'color_map' must be of type {dict} or {ColorMap}"
+            self._color_map = color_map
+
         self.modified_attributes = "color_map"
 
     @property
@@ -129,7 +138,7 @@ class DataType(EntityType):
             value_map = ReferenceValueMap(value_map)
 
         self._value_map = value_map
-        self.modified_attributes = "Value map"
+        self.modified_attributes = "value_map"
 
     @property
     def units(self) -> Optional[str]:

@@ -238,6 +238,7 @@ class H5Writer:
             "octree_cells": "Octree Cells",
             "property_groups": "PropertyGroups",
             "color_map": "Color map",
+            "value_map": "Value map",
         }
 
         for attr in entity.modified_attributes:
@@ -269,6 +270,9 @@ class H5Writer:
 
             elif attr == "color_map":
                 cls.write_color_map(entity, file=file, close_file=close_file)
+
+            elif attr == "value_map":
+                cls.write_value_map(entity, file=file, close_file=close_file)
 
             # elif attr == "visible":
             #     cls.write_visible(entity, file=file, close_file=close_file)
@@ -699,7 +703,7 @@ class H5Writer:
             if any([entity_type.modified_attributes]):
                 cls.update_attributes(entity_type, file=h5file, close_file=False)
                 entity_type.modified_attributes = []
-                entity_type.existing_h5_entity = False
+                entity_type.existing_h5_entity = True
 
             else:
                 entity_type.existing_h5_entity = True
@@ -719,7 +723,7 @@ class H5Writer:
         if close_file:
             h5file.close()
 
-        entity_type.modified_attributes = False
+        entity_type.modified_attributes = []
         entity_type.existing_h5_entity = True
 
         return new_type

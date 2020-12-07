@@ -17,6 +17,8 @@
 
 import numpy as np
 
+from ..shared import EntityType
+
 
 class ColorMap:
     """Records colors assigned to value ranges (where Value is the start of the range)."""
@@ -27,6 +29,7 @@ class ColorMap:
 
         self._values = dict()
         self._name = "Unknown"
+        self._parent = None
 
         for attr, item in kwargs.items():
             try:
@@ -71,6 +74,7 @@ class ColorMap:
             self._values = np.core.records.fromarrays(
                 values.T, names=names, formats=formats
             )
+        self.parent.modified_attributes = "color_map"
 
     @property
     def name(self) -> str:
@@ -82,6 +86,21 @@ class ColorMap:
     @name.setter
     def name(self, value: str):
         self._name = value
+        self.parent.modified_attributes = "color_map"
+
+    @property
+    def parent(self):
+        """
+        The parent data type
+        """
+        return self._parent
+
+    @parent.setter
+    def parent(self, parent):
+        assert isinstance(
+            parent, EntityType
+        ), f"The parent of a ColorMap must be of type{EntityType}"
+        self._parent = parent
 
     def __len__(self):
         return len(self._values)
