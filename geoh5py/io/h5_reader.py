@@ -326,13 +326,12 @@ class H5Reader:
         """
         project = h5py.File(h5file, "r")
         root = list(project.keys())[0]
-        x = project[root]["Objects"][cls.uuid_str(uid)][cls.key_map[name]]["x"]
-        y = project[root]["Objects"][cls.uuid_str(uid)][cls.key_map[name]]["y"]
-        z = project[root]["Objects"][cls.uuid_str(uid)][cls.key_map[name]]["z"]
-
+        coordinates = np.asarray(
+            project[root]["Objects"][cls.uuid_str(uid)][cls.key_map[name]]
+        )
         project.close()
 
-        return np.c_[x, y, z]
+        return coordinates
 
     @classmethod
     def fetch_trace_depth(cls, h5file: Optional[str], uid: uuid.UUID) -> np.ndarray:

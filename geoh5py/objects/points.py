@@ -51,7 +51,8 @@ class Points(ObjectBase):
         :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`
         """
         if (getattr(self, "_vertices", None) is None) and self.existing_h5_entity:
-            self._vertices = self.workspace.fetch_coordinates(self.uid, "vertices")
+            vertices = self.workspace.fetch_coordinates(self.uid, "vertices")
+            self._vertices = np.c_[vertices["x"], vertices["y"], vertices["z"]]
 
         return self._vertices
 

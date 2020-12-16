@@ -116,7 +116,8 @@ class Drillhole(Points):
         :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the surveys
         """
         if (getattr(self, "_surveys", None) is None) and self.existing_h5_entity:
-            self._surveys = self.workspace.fetch_coordinates(self.uid, "surveys")
+            surveys = self.workspace.fetch_coordinates(self.uid, "surveys")
+            self._surveys = np.c_[surveys["Depth"], surveys["Dip"], surveys["Azimuth"]]
 
         return self._surveys
 
@@ -137,7 +138,8 @@ class Drillhole(Points):
         Drillhole trace defining the path in 3D
         """
         if (getattr(self, "_trace", None) is None) and self.existing_h5_entity:
-            self._trace = self.workspace.fetch_coordinates(self.uid, "trace")
+            trace = self.workspace.fetch_coordinates(self.uid, "trace")
+            self._trace = np.c_[trace["x"], trace["y"], trace["z"]]
 
         return self._trace
 
