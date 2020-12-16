@@ -27,6 +27,18 @@ class H5Reader:
     Class to read information from a geoh5 file.
     """
 
+    key_map = {
+        "values": "Data",
+        "cells": "Cells",
+        "surveys": "Surveys",
+        "trace": "Trace",
+        "trace_depth": "TraceDepth",
+        "vertices": "Vertices",
+        "octree_cells": "Octree Cells",
+        "property_groups": "PropertyGroups",
+        "color_map": "Color map",
+    }
+
     @classmethod
     def fetch_attributes(
         cls, h5file: str, uid: uuid.UUID, entity_type: str
@@ -299,25 +311,89 @@ class H5Reader:
         return values
 
     @classmethod
-    def fetch_vertices(cls, h5file: Optional[str], uid: uuid.UUID) -> np.ndarray:
+    def fetch_coordinates(
+        cls, h5file: Optional[str], uid: uuid.UUID, name: str
+    ) -> np.ndarray:
         """
-        Get an object :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`
+        Get an object coordinates data.
 
         :param h5file: Name of the target geoh5 file
         :param uid: Unique identifier of the target object
+        :param name: Type of coordinates 'vertices', 'trace' or 'surveys'
 
-        :return vertices: :obj:`numpy.ndarray` of [x, y, z] coordinates
+        :return surveys: :obj:`numpy.ndarray` of [x, y, z] coordinates
 
         """
         project = h5py.File(h5file, "r")
-        name = list(project.keys())[0]
-        x = project[name]["Objects"][cls.uuid_str(uid)]["Vertices"]["x"]
-        y = project[name]["Objects"][cls.uuid_str(uid)]["Vertices"]["y"]
-        z = project[name]["Objects"][cls.uuid_str(uid)]["Vertices"]["z"]
+        root = list(project.keys())[0]
+        x = project[root]["Objects"][cls.uuid_str(uid)][cls.key_map[name]]["x"]
+        y = project[root]["Objects"][cls.uuid_str(uid)][cls.key_map[name]]["y"]
+        z = project[root]["Objects"][cls.uuid_str(uid)][cls.key_map[name]]["z"]
 
         project.close()
 
         return np.c_[x, y, z]
+
+    @classmethod
+    def fetch_trace_depth(cls, h5file: Optional[str], uid: uuid.UUID) -> np.ndarray:
+        """
+        Get an object :obj:`~geoh5py.objects.drillhole.Drillhole.trace_depth` data
+
+        :param h5file: Name of the target geoh5 file
+        :param uid: Unique identifier of the target object
+
+        :return surveys: :obj:`numpy.ndarray` of [x, y, z] coordinates
+
+        """
+        project = h5py.File(h5file, "r")
+        root = list(project.keys())[0]
+        trace_depth = project[root]["Objects"][cls.uuid_str(uid)]["TraceDepth"]
+
+        project.close()
+
+        return trace_depth
+
+    # @classmethod
+    #     # def fetch_trace(cls, h5file: Optional[str], uid: uuid.UUID) -> np.ndarray:
+    #     #     """
+    #     #     Get an object :obj:`~geoh5py.objects.drillhole.Drillhole.trace`
+    #     #
+    #     #     :param h5file: Name of the target geoh5 file
+    #     #     :param uid: Unique identifier of the target object
+    #     #
+    #     #     :return trace: :obj:`numpy.ndarray` of [x, y, z] coordinates
+    #     #
+    #     #     """
+    #     #     project = h5py.File(h5file, "r")
+    #     #     name = list(project.keys())[0]
+    #     #     x = project[name]["Objects"][cls.uuid_str(uid)]["Trace"]["x"]
+    #     #     y = project[name]["Objects"][cls.uuid_str(uid)]["Trace"]["y"]
+    #     #     z = project[name]["Objects"][cls.uuid_str(uid)]["Trace"]["z"]
+    #     #
+    #     #     project.close()
+    #     #
+    #     #     return np.c_[x, y, z]
+    #     #
+    #     # @classmethod
+    #     # def fetch_vertices(cls, h5file: Optional[str], uid: uuid.UUID) -> np.ndarray:
+    #     #     """
+    #     #     Get an object :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`
+    #     #
+    #     #     :param h5file: Name of the target geoh5 file
+    #     #     :param uid: Unique identifier of the target object
+    #     #
+    #     #     :return vertices: :obj:`numpy.ndarray` of [x, y, z] coordinates
+    #     #
+    #     #     """
+    #     #     project = h5py.File(h5file, "r")
+    #     #     name = list(project.keys())[0]
+    #     #     x = project[name]["Objects"][cls.uuid_str(uid)]["Vertices"]["x"]
+    #     #     y = project[name]["Objects"][cls.uuid_str(uid)]["Vertices"]["y"]
+    #     #     z = project[name]["Objects"][cls.uuid_str(uid)]["Vertices"]["z"]
+    #     #
+    #     #     project.close()
+    #     #
+    #     #     return np.c_[x, y, z]
 
     @staticmethod
     def bool_value(value: np.int8) -> bool:
