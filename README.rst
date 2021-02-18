@@ -130,4 +130,4 @@ along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 Copyright
 ^^^^^^^^^
-Copyright (c) 2020 Mira Geoscience Ltd.
+Copyright (c) 2021 Mira Geoscience Ltd.
