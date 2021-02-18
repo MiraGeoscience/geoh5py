@@ -119,11 +119,14 @@ class H5Reader:
         """
         project = h5py.File(h5file, "r")
         name = list(project.keys())[0]
-        indices = project[name]["Objects"][cls.uuid_str(uid)]["Cells"][:]
 
-        project.close()
+        try:
+            indices = project[name]["Objects"][cls.uuid_str(uid)]["Cells"][:]
+            project.close()
+            return indices
 
-        return indices
+        except KeyError:
+            project.close()
 
     @classmethod
     def fetch_children(cls, h5file: str, uid: uuid.UUID, entity_type: str) -> dict:
@@ -326,12 +329,15 @@ class H5Reader:
         """
         project = h5py.File(h5file, "r")
         root = list(project.keys())[0]
-        coordinates = np.asarray(
-            project[root]["Objects"][cls.uuid_str(uid)][cls.key_map[name]]
-        )
-        project.close()
 
-        return coordinates
+        try:
+            coordinates = np.asarray(
+                project[root]["Objects"][cls.uuid_str(uid)][cls.key_map[name]]
+            )
+            project.close()
+            return coordinates
+        except KeyError:
+            project.close()
 
     @classmethod
     def fetch_trace_depth(cls, h5file: Optional[str], uid: uuid.UUID) -> np.ndarray:
