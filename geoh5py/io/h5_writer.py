@@ -544,24 +544,18 @@ class H5Writer:
         :param close_file: Close geoh5 file after write.
         """
         h5file = cls.fetch_h5_handle(file, entity)
+        entity_handle = H5Writer.fetch_handle(h5file, entity)
 
         if getattr(entity, attribute, None) is not None:
-            values = getattr(entity, attribute)
-            entity_handle = H5Writer.fetch_handle(h5file, entity)
-
-            # Adding surveys
-            coordinates = entity_handle.create_dataset(
+            entity_handle.create_dataset(
                 cls.key_map[attribute],
-                (values.shape[0],),
-                dtype=np.dtype(
-                    [("x", np.float64), ("y", np.float64), ("z", np.float64)]
-                ),
+                data=getattr(entity, "_" + attribute),
                 compression="gzip",
                 compression_opts=9,
             )
-            coordinates["x"] = values[:, 0]
-            coordinates["y"] = values[:, 1]
-            coordinates["z"] = values[:, 2]
+
+        elif attribute in entity_handle.keys():
+            del entity_handle[attribute]
 
         if close_file:
             h5file.close()
