@@ -37,19 +37,23 @@ class Drillhole(Points):
     )
 
     _attribute_map = Points._attribute_map.copy()
-    _attribute_map.update({"Cost": "cost", "Collar": "collar", "Planning": "planning"})
+    _attribute_map.update(
+        {
+            "Cost": "cost",
+            "Collar": "collar",
+            "Planning": "planning",
+        }
+    )
 
     def __init__(self, object_type: ObjectType, **kwargs):
 
-        # TODO
-        self._vertices: Optional[np.ndarray] = None
         self._cells: Optional[np.ndarray] = None
         self._collar: Optional[np.ndarray] = None
-        self._surveys: Optional[np.ndarray] = None
-        self._trace: Optional[np.ndarray] = None
-        self._trace_depth: Optional[np.ndarray] = None
         self._cost: Optional[float] = 0.0
         self._planning: Text = "Default"
+        self._surveys: np.recarray = None
+        self._trace: np.recarray = None
+        self._trace_depth: Optional[np.ndarray] = None
 
         super().__init__(object_type, **kwargs)
 
@@ -101,7 +105,7 @@ class Drillhole(Points):
     @property
     def cost(self):
         """
-        Cost estimate of the drillhole
+        :obj:`float`: Cost estimate of the drillhole
         """
         return self._cost
 
@@ -116,10 +120,12 @@ class Drillhole(Points):
         :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the surveys
         """
         if (getattr(self, "_surveys", None) is None) and self.existing_h5_entity:
-            surveys = self.workspace.fetch_coordinates(self.uid, "surveys")
-            self._surveys = np.c_[surveys["Depth"], surveys["Dip"], surveys["Azimuth"]]
+            self._surveys = self.workspace.fetch_coordinates(self.uid, "surveys")
 
-        return self._surveys
+        if getattr(self, "_surveys", None) is not None:
+            return self._surveys.view("<f8").reshape((-1, 3))
+
+        return None
 
     @surveys.setter
     def surveys(self, value):
@@ -129,29 +135,30 @@ class Drillhole(Points):
             assert value.shape[1] == 3, "'surveys' requires an ndarray of shape (*, 3)"
             self.modified_attributes = "surveys"
             self._surveys = np.core.records.fromarrays(
-                value.T, names="Depth, Dip, Azimuth", formats="<f8, <f8, <f8, <f8"
+                value.T, names="Depth, Dip, Azimuth", formats="<f8, <f8, <f8"
             )
+
+            # Reset the trace
+            self.modified_attributes = "trace"
+            self._trace = None
 
     @property
     def trace(self) -> Optional[np.ndarray]:
         """
-        Drillhole trace defining the path in 3D
+        :obj:`numpy.array`: Drillhole trace defining the path in 3D
         """
         if (getattr(self, "_trace", None) is None) and self.existing_h5_entity:
-            trace = self.workspace.fetch_coordinates(self.uid, "trace")
-            self._trace = np.c_[trace["x"], trace["y"], trace["z"]]
+            self._trace = self.workspace.fetch_coordinates(self.uid, "trace")
 
-        return self._trace
+        if getattr(self, "_trace", None) is not None:
+            return self._trace.view("<f8").reshape((-1, 3))
 
-    @trace.setter
-    def trace(self, xyz: np.ndarray):
-        self.modified_attributes = "trace"
-        self._trace = xyz
+        return None
 
     @property
     def trace_depth(self) -> Optional[np.ndarray]:
         """
-        Drillhole trace depth from top to bottom
+        :obj:`numpy.array`: Drillhole trace depth from top to bottom
         """
         if getattr(self, "_trace_depth", None) is None and self.trace is not None:
             trace = self.trace
@@ -162,7 +169,7 @@ class Drillhole(Points):
     @property
     def planning(self):
         """
-        Cost estimate of the drillhole
+        :obj:`str`: Status of the hole: ["Default", "Ongoing", "Planned", "Completed"]
         """
         return self._planning
 
