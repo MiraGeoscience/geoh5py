@@ -91,7 +91,7 @@ class H5Reader:
             value_map = entity["Type"]["Value map"][:]
             mapping = {}
             for key, value in value_map.tolist():
-                mapping[key] = value
+                mapping[key] = value.decode("utf-8")
 
             type_attributes["entity_type"]["value_map"] = mapping
 
