@@ -20,6 +20,7 @@ from typing import Optional, Text
 
 import numpy as np
 
+from ..data.data_association_enum import DataAssociationEnum
 from .object_base import ObjectType
 from .points import Points
 
@@ -178,3 +179,31 @@ class Drillhole(Points):
         choices = ["Default", "Ongoing", "Planned", "Completed"]
         assert value in choices, f"Provided planning value must be one of {choices}"
         self._planning = value
+
+    def validate_data_association(self, attribute_dict):
+        """
+        Get a dictionary of attributes and validate the data 'association'
+        with special actions for drillhole objects.
+        """
+
+        if "association" not in list(attribute_dict.keys()):
+            attribute_dict["association"] = "OBJECT"
+            if (
+                getattr(self, "n_cells", None) is not None
+                and attribute_dict["values"].ravel().shape[0] == self.n_cells
+            ):
+                attribute_dict["association"] = "CELL"
+            elif (
+                getattr(self, "n_vertices", None) is not None
+                and attribute_dict["values"].ravel().shape[0] == self.n_vertices
+            ):
+                attribute_dict["association"] = "VERTEX"
+
+        else:
+            assert attribute_dict["association"] in [
+                enum.name for enum in DataAssociationEnum
+            ], (
+                "Data 'association' must be one of "
+                + f"{[enum.name for enum in DataAssociationEnum]}. "
+                + f"{attribute_dict['association']} provided."
+            )
