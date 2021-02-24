@@ -359,48 +359,6 @@ class H5Reader:
 
         return trace_depth
 
-    # @classmethod
-    #     # def fetch_trace(cls, h5file: Optional[str], uid: uuid.UUID) -> np.ndarray:
-    #     #     """
-    #     #     Get an object :obj:`~geoh5py.objects.drillhole.Drillhole.trace`
-    #     #
-    #     #     :param h5file: Name of the target geoh5 file
-    #     #     :param uid: Unique identifier of the target object
-    #     #
-    #     #     :return trace: :obj:`numpy.ndarray` of [x, y, z] coordinates
-    #     #
-    #     #     """
-    #     #     project = h5py.File(h5file, "r")
-    #     #     name = list(project.keys())[0]
-    #     #     x = project[name]["Objects"][cls.uuid_str(uid)]["Trace"]["x"]
-    #     #     y = project[name]["Objects"][cls.uuid_str(uid)]["Trace"]["y"]
-    #     #     z = project[name]["Objects"][cls.uuid_str(uid)]["Trace"]["z"]
-    #     #
-    #     #     project.close()
-    #     #
-    #     #     return np.c_[x, y, z]
-    #     #
-    #     # @classmethod
-    #     # def fetch_vertices(cls, h5file: Optional[str], uid: uuid.UUID) -> np.ndarray:
-    #     #     """
-    #     #     Get an object :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`
-    #     #
-    #     #     :param h5file: Name of the target geoh5 file
-    #     #     :param uid: Unique identifier of the target object
-    #     #
-    #     #     :return vertices: :obj:`numpy.ndarray` of [x, y, z] coordinates
-    #     #
-    #     #     """
-    #     #     project = h5py.File(h5file, "r")
-    #     #     name = list(project.keys())[0]
-    #     #     x = project[name]["Objects"][cls.uuid_str(uid)]["Vertices"]["x"]
-    #     #     y = project[name]["Objects"][cls.uuid_str(uid)]["Vertices"]["y"]
-    #     #     z = project[name]["Objects"][cls.uuid_str(uid)]["Vertices"]["z"]
-    #     #
-    #     #     project.close()
-    #     #
-    #     #     return np.c_[x, y, z]
-
     @staticmethod
     def bool_value(value: np.int8) -> bool:
         return bool(value)
