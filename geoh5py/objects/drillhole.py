@@ -16,12 +16,12 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import uuid
-from typing import Optional, Text
+from typing import List, Optional, Text, Union
 
 import numpy as np
 
-from ..data.data_association_enum import DataAssociationEnum
-from .object_base import ObjectType
+from ..data.data import Data
+from .object_base import ObjectType, validate_data_type
 from .points import Points
 
 
@@ -55,7 +55,6 @@ class Drillhole(Points):
         self._surveys: np.recarray = None
         self._trace: np.recarray = None
         self._trace_depth: Optional[np.ndarray] = None
-        self._depth = None
         self._locations = None
         self._deviation_x = None
         self._deviation_y = None
@@ -68,16 +67,78 @@ class Drillhole(Points):
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
 
-    @property
-    def azimuth(self):
+    def add_data(
+        self, data: dict, property_group: str = None
+    ) -> Union[Data, List[Data]]:
         """
-        :obj:`numpy.ndarray`: Pointer to
-        :obj:`~geoh5py.objects.drillole.Drillhole.surveys` 'Azimuth' values.
-        """
-        if self.surveys is not None:
-            return self.surveys["Azimuth"]
+        Create :obj:`~geoh5py.data.data.Data` specific to the drillhole object
+        from dictionary of name and arguments. A keyword 'depth' or 'from-to'
+        with corresponding depth values is expected in order to locate the
+        data along the well path.
 
-        return None
+        :param data: Dictionary of data to be added to the object, e.g.
+
+        .. code-block:: python
+
+            data_dict = {
+                "data_A": {
+                    'values', [v_1, v_2, ...],
+                    "from-to": numpy.ndarray,
+                    },
+                "data_B": {
+                    'values', [v_1, v_2, ...],
+                    "depth": numpy.ndarray,
+                    },
+            }
+
+        :return: List of new Data objects.
+        """
+        data_objects = []
+
+        for name, attr in data.items():
+            assert isinstance(attr, dict), (
+                f"Given value to data {name} should of type {dict}. "
+                f"Type {type(attr)} given instead."
+            )
+            assert "values" in list(
+                attr.keys()
+            ), f"Given attr for data {name} should include 'values'"
+
+            attr["name"] = name
+
+            if "depth" in list(attr.keys()):
+                attr["association"] = "VERTEX"
+                attr["values"] = self.validate_log_data(attr["depth"], attr["values"])
+            elif "from-to" in list(attr.keys()):
+                attr["association"] = "CELL"
+                attr["values"] = self.validate_log_data(attr["depth"], attr["values"])
+            else:
+                assert attr["association"] == "OBJECT", (
+                    "Input data dictionary must contain {key:values} "
+                    + "{'depth':numpy.ndarray}, {'from-to':numpy.ndarray} "
+                    + "or {'association': 'OBJECT'}."
+                )
+
+            entity_type = validate_data_type(attr)
+            kwargs = {"parent": self, "association": attr["association"]}
+            for key, val in attr.items():
+                if key in ["parent", "association", "entity_type", "type"]:
+                    continue
+                kwargs[key] = val
+
+            data_object = self.workspace.create_entity(
+                Data, entity=kwargs, entity_type=entity_type
+            )
+
+            if property_group is not None:
+                self.add_data_to_group(data_object, property_group)
+
+            data_objects.append(data_object)
+
+        if len(data_objects) == 1:
+            return data_object
+
+        return data_objects
 
     @property
     def cells(self) -> Optional[np.ndarray]:
@@ -133,28 +194,6 @@ class Drillhole(Points):
         self._cost = value
 
     @property
-    def depth(self):
-        """
-        :obj:`numpy.ndarray`: Pointer to
-        :obj:`~geoh5py.objects.drillole.Drillhole.surveys` 'Depth' values.
-        """
-        if self.surveys is not None:
-            return self.surveys["Depth"]
-
-        return None
-
-    @property
-    def dip(self):
-        """
-        :obj:`numpy.ndarray`: Pointer to
-        :obj:`~geoh5py.objects.drillole.Drillhole.surveys` 'Dip' values.
-        """
-        if self.surveys is not None:
-            return self.surveys["Dip"]
-
-        return None
-
-    @property
     def deviation_length(self):
         """
         Store the survey lengths
@@ -163,7 +202,9 @@ class Drillhole(Points):
             getattr(self, "_deviation_length", None) is None
             and self.surveys is not None
         ):
-            self._deviation_length = self.depth[1:] - self.depth[:-1]
+            self._deviation_length = (
+                self.surveys["Depth"][1:] - self.surveys["Depth"][:-1]
+            )
 
         return self._deviation_length
 
@@ -173,12 +214,12 @@ class Drillhole(Points):
         :obj:`numpy.ndarray`: Store the change in x-coordinates along the well path.
         """
         if getattr(self, "_deviation_x", None) is None and self.surveys is not None:
-            dx_in = np.cos(np.deg2rad(450.0 - self.azimuth[:-1] % 360.0)) * np.cos(
-                np.deg2rad(self.dip[:-1])
-            )
-            dx_out = np.cos(np.deg2rad(450.0 - self.azimuth[1:] % 360.0)) * np.cos(
-                np.deg2rad(self.dip[1:])
-            )
+            dx_in = np.cos(
+                np.deg2rad(450.0 - self.surveys["Azimuth"][:-1] % 360.0)
+            ) * np.cos(np.deg2rad(self.surveys["Dip"][:-1]))
+            dx_out = np.cos(
+                np.deg2rad(450.0 - self.surveys["Azimuth"][1:] % 360.0)
+            ) * np.cos(np.deg2rad(self.surveys["Dip"][1:]))
             ddx = (dx_out - dx_in) / self.deviation_length / 2.0
             self._deviation_x = dx_in + self.deviation_length * ddx
 
@@ -190,12 +231,12 @@ class Drillhole(Points):
         :obj:`numpy.ndarray`: Store the change in y-coordinates along the well path.
         """
         if getattr(self, "_deviation_y", None) is None and self.surveys is not None:
-            dy_in = np.sin(np.deg2rad(450.0 - self.azimuth[:-1] % 360.0)) * np.cos(
-                np.deg2rad(self.dip[:-1])
-            )
-            dy_out = np.sin(np.deg2rad(450.0 - self.azimuth[1:] % 360.0)) * np.cos(
-                np.deg2rad(self.dip[1:])
-            )
+            dy_in = np.sin(
+                np.deg2rad(450.0 - self.surveys["Azimuth"][:-1] % 360.0)
+            ) * np.cos(np.deg2rad(self.surveys["Dip"][:-1]))
+            dy_out = np.sin(
+                np.deg2rad(450.0 - self.surveys["Azimuth"][1:] % 360.0)
+            ) * np.cos(np.deg2rad(self.surveys["Dip"][1:]))
             ddy = (dy_out - dy_in) / self.deviation_length / 2.0
             self._deviation_y = dy_in + self.deviation_length * ddy
 
@@ -207,8 +248,8 @@ class Drillhole(Points):
         :obj:`numpy.ndarray`: Store the change in z-coordinates along the well path.
         """
         if getattr(self, "_deviation_z", None) is None and self.surveys is not None:
-            dz_in = np.sin(np.deg2rad(self.dip[:-1]))
-            dz_out = np.sin(np.deg2rad(self.dip[1:]))
+            dz_in = np.sin(np.deg2rad(self.surveys["Dip"][:-1]))
+            dz_out = np.sin(np.deg2rad(self.surveys["Dip"][1:]))
             ddz = (dz_out - dz_in) / self.deviation_length / 2.0
             self._deviation_z = dz_in + self.deviation_length * ddz
 
@@ -313,11 +354,11 @@ class Drillhole(Points):
         if isinstance(depths, list):
             depths = np.asarray(depths)
 
-        indices = np.searchsorted(self.depth, depths, side="left") - 1
+        indices = np.searchsorted(self.surveys["Depth"], depths, side="left") - 1
 
         locations = (
             self.locations[indices, :]
-            + (depths - self.depth[indices])[:, None]
+            + (depths - self.surveys["Depth"][indices])[:, None]
             * np.c_[
                 self.deviation_x[indices],
                 self.deviation_y[indices],
@@ -327,23 +368,62 @@ class Drillhole(Points):
 
         return locations
 
-    def validate_data_association(self, attribute_dict):
+    def validate_log_data(self, depth, input_values, threshold=1e-4):
         """
-        Get a dictionary of attributes and validate the data 'association'
-        with special actions for drillhole objects.
+        Compare new and current depth values, append new vertices if necessary and return
+        an augmented values vector that matches the vertices indexing.
         """
 
-        if "depth" in list(attribute_dict.keys()):
-            attribute_dict["association"] = "VERTEX"
-
-        elif "from_to" in list(attribute_dict.keys()):
-            attribute_dict["association"] = "CELL"
-
-        if "association" in list(attribute_dict.keys()):
-            assert attribute_dict["association"] in [
-                enum.name for enum in DataAssociationEnum
-            ], (
-                "Data 'association' must be one of "
-                + f"{[enum.name for enum in DataAssociationEnum]}. "
-                + f"{attribute_dict['association']} provided."
+        values = input_values
+        if "DEPTH" not in self.get_data_list():  # First data appended
+            self.vertices = self.desurvey(depth)
+            self.workspace.create_entity(
+                Data,
+                entity={
+                    "parent": self,
+                    "association": "VERTEX",
+                    "name": "DEPTH",
+                    "values": depth,
+                },
+                entity_type={"primitive_type": "FLOAT"},
             )
+        else:
+            depth_obj = self.get_data("DEPTH")[0]
+            r_nn = np.searchsorted(depth_obj.values, depth, side="right")
+            lr_nn = np.c_[r_nn, r_nn - 1]
+            match = np.where(
+                np.abs(depth_obj.values[lr_nn] - depth[:, None]) < threshold
+            )
+            indices = np.c_[match[0], lr_nn[match[0], match[1]]]
+
+            if np.any(indices):
+                values = np.zeros(self.n_vertices)
+                values[indices[:, 1]] = input_values[indices[:, 0]]
+                values = np.r_[values, np.delete(input_values, indices[:, 0])]
+                depth_obj.values = np.r_[
+                    depth_obj.values, np.delete(depth, indices[:, 0])
+                ]
+                self.vertices = self.desurvey(depth_obj.values)
+
+        return values
+
+    # def validate_data_association(self, attribute_dict):
+    #     """
+    #     Get a dictionary of attributes and validate the data 'association'
+    #     with special actions for drillhole objects.
+    #     """
+    #
+    #     if "depth" in list(attribute_dict.keys()):
+    #         attribute_dict["association"] = "VERTEX"
+    #
+    #     elif "from_to" in list(attribute_dict.keys()):
+    #         attribute_dict["association"] = "CELL"
+    #
+    #     if "association" in list(attribute_dict.keys()):
+    #         assert attribute_dict["association"] in [
+    #             enum.name for enum in DataAssociationEnum
+    #         ], (
+    #             "Data 'association' must be one of "
+    #             + f"{[enum.name for enum in DataAssociationEnum]}. "
+    #             + f"{attribute_dict['association']} provided."
+    #         )
