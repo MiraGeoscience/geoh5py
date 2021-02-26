@@ -309,13 +309,14 @@ class H5Reader:
         name = list(project.keys())[0]
         if "Data" in list(project[name]["Data"][cls.uuid_str(uid)].keys()):
             values = np.r_[project[name]["Data"][cls.uuid_str(uid)]["Data"]]
-            if values.dtype in [float, "float64", "float32"]:
-                ind = values == FLOAT_NDV
-            else:
-                ind = values == INTEGER_NDV
-                values = values.astype("float64")
+            if not isinstance(values[0], (str, bytes)):
+                if values.dtype in [float, "float64", "float32"]:
+                    ind = values == FLOAT_NDV
+                else:
+                    ind = values == INTEGER_NDV
+                    values = values.astype("float64")
 
-            values[ind] = np.nan
+                values[ind] = np.nan
         else:
             values = None
 
