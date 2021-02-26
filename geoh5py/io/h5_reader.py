@@ -307,6 +307,7 @@ class H5Reader:
         name = list(project.keys())[0]
         if "Data" in list(project[name]["Data"][cls.uuid_str(uid)].keys()):
             values = np.r_[project[name]["Data"][cls.uuid_str(uid)]["Data"]]
+            values[(values > 1e-38) & (values < 2e-38)] = np.nan
         else:
             values = None
 

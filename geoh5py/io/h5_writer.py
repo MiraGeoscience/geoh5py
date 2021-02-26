@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Optional, Union
 import h5py
 import numpy as np
 
-from ..data import CommentsData, Data, DataType
+from ..data import NDV, CommentsData, Data, DataType
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import Entity
@@ -593,6 +593,7 @@ class H5Writer:
             )
 
         else:
+            values[np.isnan(values)] = NDV
             entity_handle.create_dataset(
                 cls.key_map[attribute],
                 data=values,
