@@ -21,6 +21,8 @@ from typing import Any, Dict, Optional, Tuple, Union
 import h5py
 import numpy as np
 
+from ..data import FLOAT_NDV, INTEGER_NDV
+
 
 class H5Reader:
     """
@@ -307,7 +309,13 @@ class H5Reader:
         name = list(project.keys())[0]
         if "Data" in list(project[name]["Data"][cls.uuid_str(uid)].keys()):
             values = np.r_[project[name]["Data"][cls.uuid_str(uid)]["Data"]]
-            values[(values > 1e-38) & (values < 2e-38)] = np.nan
+            if values.dtype in [float, "float64", "float32"]:
+                ind = values == FLOAT_NDV
+            else:
+                ind = values == INTEGER_NDV
+                values = values.astype("float64")
+
+            values[ind] = np.nan
         else:
             values = None
 

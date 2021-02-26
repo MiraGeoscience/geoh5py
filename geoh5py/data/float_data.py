@@ -17,7 +17,7 @@
 
 import numpy as np
 
-from .data import NDV, Data, DataType, PrimitiveTypeEnum
+from .data import Data, DataType, PrimitiveTypeEnum
 
 
 class FloatData(Data):
@@ -52,7 +52,7 @@ class FloatData(Data):
     def check_vector_length(self, values) -> np.ndarray:
 
         if self.n_values is not None:
-            full_vector = np.ones(self.n_values) * NDV
+            full_vector = np.ones(self.n_values) * np.nan
             full_vector[: len(np.ravel(values))] = np.ravel(values)
 
             return full_vector

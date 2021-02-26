@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Optional, Union
 import h5py
 import numpy as np
 
-from ..data import NDV, CommentsData, Data, DataType
+from ..data import FLOAT_NDV, INTEGER_NDV, CommentsData, Data, DataType, IntegerData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import Entity
@@ -593,10 +593,18 @@ class H5Writer:
             )
 
         else:
-            values[np.isnan(values)] = NDV
+            out_vals = values.copy()
+            if isinstance(entity, IntegerData):
+                out_vals = np.round(out_vals)
+                out_vals[np.isnan(out_vals)] = INTEGER_NDV
+                dtype = "int32"
+            else:
+                out_vals[np.isnan(out_vals)] = FLOAT_NDV
+                dtype = "float64"
+
             entity_handle.create_dataset(
                 cls.key_map[attribute],
-                data=values,
+                data=out_vals.astype(dtype),
                 compression="gzip",
                 compression_opts=9,
             )

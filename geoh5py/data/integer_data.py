@@ -15,30 +15,15 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import numpy as np
 
-from .data import Data, PrimitiveTypeEnum
+from .data import PrimitiveTypeEnum
+from .float_data import FloatData
 
 
-class IntegerData(Data):
+class IntegerData(FloatData):
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.INTEGER
-
-    @property
-    def values(self) -> np.ndarray:
-        """
-        :return: values: An array of :obj:`int` values.
-        """
-        if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
-            self._values = self.workspace.fetch_values(self.uid)
-
-        return self._values
-
-    @values.setter
-    def values(self, values):
-        self.modified_attributes = "values"
-        self._values = np.ravel(values).astype(int)
 
     def __call__(self):
         return self.values
