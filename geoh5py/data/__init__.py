@@ -19,7 +19,7 @@
 # flake8: noqa
 
 from .blob_data import BlobData
-from .data import Data
+from .data import NDV, Data
 from .data_association_enum import DataAssociationEnum
 from .data_type import DataType
 from .data_unit import DataUnit
