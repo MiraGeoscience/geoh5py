@@ -51,6 +51,9 @@ class Data(Entity):
 
         super().__init__(**kwargs)
 
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = self.name
+
         data_type.workspace._register_data(self)
 
     @property

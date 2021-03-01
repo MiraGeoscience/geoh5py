@@ -33,8 +33,8 @@ class NoTypeObject(ObjectBase):
     def __init__(self, object_type: ObjectType, **kwargs):
         super().__init__(object_type, **kwargs)
 
-        if object_type.name == "None":
-            self.entity_type.name = "Unknown"
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = "NoType"
 
         object_type.workspace._register_object(self)
 

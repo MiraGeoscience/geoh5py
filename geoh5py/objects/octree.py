@@ -61,7 +61,7 @@ class Octree(ObjectBase):
         self._centroids = None
         super().__init__(object_type, **kwargs)
 
-        if object_type.name == "None":
+        if self.entity_type.name == "Entity":
             self.entity_type.name = "Octree"
 
         object_type.workspace._register_object(self)

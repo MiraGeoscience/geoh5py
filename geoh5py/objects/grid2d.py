@@ -64,8 +64,8 @@ class Grid2D(ObjectBase):
 
         super().__init__(object_type, **kwargs)
 
-        if object_type.name == "None":
-            self.entity_type.name = "Grid"
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = "Grid2D"
 
         object_type.workspace._register_object(self)
 
