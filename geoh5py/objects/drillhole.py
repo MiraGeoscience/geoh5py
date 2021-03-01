@@ -21,6 +21,7 @@ from typing import List, Optional, Text, Union
 import numpy as np
 
 from ..data.data import Data
+from ..shared.utils import match_values, merge_arrays
 from .object_base import ObjectType, validate_data_type
 from .points import Points
 
@@ -59,9 +60,11 @@ class Drillhole(Points):
         self._deviation_x = None
         self._deviation_y = None
         self._deviation_z = None
-        self._deviation_length = None
 
         super().__init__(object_type, **kwargs)
+
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = "Drillhole"
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -111,7 +114,9 @@ class Drillhole(Points):
                 attr["values"] = self.validate_log_data(attr["depth"], attr["values"])
             elif "from-to" in list(attr.keys()):
                 attr["association"] = "CELL"
-                attr["values"] = self.validate_log_data(attr["depth"], attr["values"])
+                attr["values"] = self.validate_interval_data(
+                    attr["from-to"], attr["values"]
+                )
             else:
                 assert attr["association"] == "OBJECT", (
                     "Input data dictionary must contain {key:values} "
@@ -135,6 +140,9 @@ class Drillhole(Points):
 
             data_objects.append(data_object)
 
+        # Check the depths and re-sort data if necessary
+        self.sort_depths()
+        self.workspace.finalize()
         if len(data_objects) == 1:
             return data_object
 
@@ -180,6 +188,7 @@ class Drillhole(Points):
                 tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
             )
             self._collar = value
+        self._locations = None
 
     @property
     def cost(self):
@@ -194,34 +203,20 @@ class Drillhole(Points):
         self._cost = value
 
     @property
-    def deviation_length(self):
-        """
-        Store the survey lengths
-        """
-        if (
-            getattr(self, "_deviation_length", None) is None
-            and self.surveys is not None
-        ):
-            self._deviation_length = (
-                self.surveys["Depth"][1:] - self.surveys["Depth"][:-1]
-            )
-
-        return self._deviation_length
-
-    @property
     def deviation_x(self):
         """
         :obj:`numpy.ndarray`: Store the change in x-coordinates along the well path.
         """
         if getattr(self, "_deviation_x", None) is None and self.surveys is not None:
+            lengths = self.surveys["Depth"][1:] - self.surveys["Depth"][:-1]
             dx_in = np.cos(
                 np.deg2rad(450.0 - self.surveys["Azimuth"][:-1] % 360.0)
             ) * np.cos(np.deg2rad(self.surveys["Dip"][:-1]))
             dx_out = np.cos(
                 np.deg2rad(450.0 - self.surveys["Azimuth"][1:] % 360.0)
             ) * np.cos(np.deg2rad(self.surveys["Dip"][1:]))
-            ddx = (dx_out - dx_in) / self.deviation_length / 2.0
-            self._deviation_x = dx_in + self.deviation_length * ddx
+            ddx = (dx_out - dx_in) / lengths / 2.0
+            self._deviation_x = dx_in + lengths * ddx
 
         return self._deviation_x
 
@@ -231,14 +226,15 @@ class Drillhole(Points):
         :obj:`numpy.ndarray`: Store the change in y-coordinates along the well path.
         """
         if getattr(self, "_deviation_y", None) is None and self.surveys is not None:
+            lengths = self.surveys["Depth"][1:] - self.surveys["Depth"][:-1]
             dy_in = np.sin(
                 np.deg2rad(450.0 - self.surveys["Azimuth"][:-1] % 360.0)
             ) * np.cos(np.deg2rad(self.surveys["Dip"][:-1]))
             dy_out = np.sin(
                 np.deg2rad(450.0 - self.surveys["Azimuth"][1:] % 360.0)
             ) * np.cos(np.deg2rad(self.surveys["Dip"][1:]))
-            ddy = (dy_out - dy_in) / self.deviation_length / 2.0
-            self._deviation_y = dy_in + self.deviation_length * ddy
+            ddy = (dy_out - dy_in) / lengths / 2.0
+            self._deviation_y = dy_in + lengths * ddy
 
         return self._deviation_y
 
@@ -248,10 +244,11 @@ class Drillhole(Points):
         :obj:`numpy.ndarray`: Store the change in z-coordinates along the well path.
         """
         if getattr(self, "_deviation_z", None) is None and self.surveys is not None:
+            lengths = self.surveys["Depth"][1:] - self.surveys["Depth"][:-1]
             dz_in = np.sin(np.deg2rad(self.surveys["Dip"][:-1]))
             dz_out = np.sin(np.deg2rad(self.surveys["Dip"][1:]))
-            ddz = (dz_out - dz_in) / self.deviation_length / 2.0
-            self._deviation_z = dz_in + self.deviation_length * ddz
+            ddz = (dz_out - dz_in) / lengths / 2.0
+            self._deviation_z = dz_in + lengths * ddz
 
         return self._deviation_z
 
@@ -265,10 +262,11 @@ class Drillhole(Points):
             and self.collar is not None
             and self.surveys is not None
         ):
+            lengths = self.surveys["Depth"][1:] - self.surveys["Depth"][:-1]
             self._locations = np.c_[
-                self.collar["x"] + np.cumsum(self.deviation_length * self.deviation_x),
-                self.collar["y"] + np.cumsum(self.deviation_length * self.deviation_y),
-                self.collar["z"] + np.cumsum(self.deviation_length * self.deviation_z),
+                self.collar["x"] + np.cumsum(np.r_[0.0, lengths * self.deviation_x]),
+                self.collar["y"] + np.cumsum(np.r_[0.0, lengths * self.deviation_y]),
+                self.collar["z"] + np.cumsum(np.r_[0.0, lengths * self.deviation_z]),
             ]
 
         return self._locations
@@ -300,6 +298,10 @@ class Drillhole(Points):
             # Reset the trace
             self.modified_attributes = "trace"
             self._trace = None
+        self._deviation_x = None
+        self._deviation_y = None
+        self._deviation_z = None
+        self._locations = None
 
     @property
     def trace(self) -> Optional[np.ndarray]:
@@ -338,10 +340,26 @@ class Drillhole(Points):
         assert value in choices, f"Provided planning value must be one of {choices}"
         self._planning = value
 
-    def add_depth_vertices(self, depth):
-        """
-        Get a list of depths to be converted to vertices along the well path
-        """
+    @property
+    def _from(self):
+        data_obj = self.get_data("FROM")
+        if data_obj:
+            return data_obj[0]
+        return None
+
+    @property
+    def _to(self):
+        data_obj = self.get_data("TO")
+        if data_obj:
+            return data_obj[0]
+        return None
+
+    @property
+    def _depth(self):
+        data_obj = self.get_data("DEPTH")
+        if data_obj:
+            return data_obj[0]
+        return None
 
     def desurvey(self, depths):
         """
@@ -354,8 +372,10 @@ class Drillhole(Points):
         if isinstance(depths, list):
             depths = np.asarray(depths)
 
-        indices = np.searchsorted(self.surveys["Depth"], depths, side="left") - 1
-
+        indices = np.minimum(
+            np.searchsorted(self.surveys["Depth"], depths, side="left") - 1,
+            self.surveys.shape[0] - 2,
+        )
         locations = (
             self.locations[indices, :]
             + (depths - self.surveys["Depth"][indices])[:, None]
@@ -368,15 +388,35 @@ class Drillhole(Points):
 
         return locations
 
-    def validate_log_data(self, depth, input_values, threshold=1e-4):
+    def add_vertices(self, xyz):
+        """
+        Function to add vertices to the drillhole
+        """
+        indices = np.arange(xyz.shape[0])
+        if self.n_vertices is None:
+            self.vertices = xyz
+        else:
+            indices += self.vertices.shape[0]
+            self.vertices = np.vstack([self.vertices, xyz])
+
+        return indices.astype("uint32")
+
+    def validate_log_data(self, depth, input_values, tolerance=1e-4):
         """
         Compare new and current depth values, append new vertices if necessary and return
         an augmented values vector that matches the vertices indexing.
         """
+        assert depth.shape == input_values.shape, (
+            f"Mismatch between input 'depth' shape{depth.shape} "
+            + f"and 'values' shape{input_values.shape}"
+        )
 
-        values = input_values
-        if "DEPTH" not in self.get_data_list():  # First data appended
-            self.vertices = self.desurvey(depth)
+        if self._depth is None:  # First data appended
+            self.add_vertices(self.desurvey(depth))
+            depth = np.r_[np.ones(self.n_vertices - depth.shape[0]) * np.nan, depth]
+            values = np.r_[
+                np.ones(self.n_vertices - input_values.shape[0]) * np.nan, input_values
+            ]
             self.workspace.create_entity(
                 Data,
                 entity={
@@ -388,42 +428,125 @@ class Drillhole(Points):
                 entity_type={"primitive_type": "FLOAT"},
             )
         else:
-            depth_obj = self.get_data("DEPTH")[0]
-            r_nn = np.searchsorted(depth_obj.values, depth, side="right")
-            lr_nn = np.c_[r_nn, r_nn - 1]
-            match = np.where(
-                np.abs(depth_obj.values[lr_nn] - depth[:, None]) < threshold
+            depths, indices = merge_arrays(
+                self._depth.values, depth, return_mapping=True, tolerance=tolerance
             )
-            indices = np.c_[match[0], lr_nn[match[0], match[1]]]
-
-            if np.any(indices):
-                values = np.zeros(self.n_vertices)
-                values[indices[:, 1]] = input_values[indices[:, 0]]
-                values = np.r_[values, np.delete(input_values, indices[:, 0])]
-                depth_obj.values = np.r_[
-                    depth_obj.values, np.delete(depth, indices[:, 0])
-                ]
-                self.vertices = self.desurvey(depth_obj.values)
+            values = merge_arrays(
+                np.ones(self.n_vertices) * np.nan, input_values, mapping=indices
+            )
+            self.add_vertices(self.desurvey(np.delete(depth, indices[:, 1])))
+            self._depth.values = depths
+            self.workspace.finalize()
 
         return values
 
-    # def validate_data_association(self, attribute_dict):
-    #     """
-    #     Get a dictionary of attributes and validate the data 'association'
-    #     with special actions for drillhole objects.
-    #     """
-    #
-    #     if "depth" in list(attribute_dict.keys()):
-    #         attribute_dict["association"] = "VERTEX"
-    #
-    #     elif "from_to" in list(attribute_dict.keys()):
-    #         attribute_dict["association"] = "CELL"
-    #
-    #     if "association" in list(attribute_dict.keys()):
-    #         assert attribute_dict["association"] in [
-    #             enum.name for enum in DataAssociationEnum
-    #         ], (
-    #             "Data 'association' must be one of "
-    #             + f"{[enum.name for enum in DataAssociationEnum]}. "
-    #             + f"{attribute_dict['association']} provided."
-    #         )
+    def validate_interval_data(self, from_to, input_values, tolerance=1e-4):
+        """
+        Compare new and current depth values, append new vertices if necessary and return
+        an augmented values vector that matches the vertices indexing.
+        """
+        assert from_to.shape[0] == input_values.shape[0], (
+            f"Mismatch between input 'from_to' shape{from_to.shape} "
+            + f"and 'values' shape{input_values.shape}"
+        )
+        assert from_to.shape[1] == 2, "The `from-to` values must have shape(*, 2)"
+
+        if (self._from is None) and (self._to is None):
+            uni_depth, inv_map = np.unique(from_to, return_inverse=True)
+            self.cells = self.add_vertices(self.desurvey(uni_depth))[inv_map].reshape(
+                (-1, 2)
+            )
+            self.workspace.create_entity(
+                Data,
+                entity={
+                    "parent": self,
+                    "association": "CELL",
+                    "name": "FROM",
+                    "values": from_to[:, 0],
+                },
+                entity_type={"primitive_type": "FLOAT"},
+            )
+            self.workspace.create_entity(
+                Data,
+                entity={
+                    "parent": self,
+                    "association": "CELL",
+                    "name": "TO",
+                    "values": from_to[:, 1],
+                },
+                entity_type={"primitive_type": "FLOAT"},
+            )
+        else:
+            from_ind = match_values(
+                self._from.values, from_to[:, 0], tolerance=tolerance
+            )
+            to_ind = match_values(self._to.values, from_to[:, 1], tolerance=tolerance)
+
+            # Find matching cells
+            in_match = np.ones((self._from.values.shape[0], 2)) * np.nan
+            in_match[from_ind[:, 0], 0] = from_ind[:, 1]
+            in_match[to_ind[:, 0], 1] = to_ind[:, 1]
+
+            out_match = np.ones_like(from_to) * np.nan
+            out_match[from_ind[:, 1], 0] = from_ind[:, 0]
+            out_match[to_ind[:, 1], 1] = to_ind[:, 0]
+
+            cell_map = np.c_[
+                np.where(in_match[:, 0] == in_match[:, 1])[0],
+                np.where(out_match[:, 0] == out_match[:, 1])[0],
+            ]
+
+            # Add vertices
+            vert_new = np.ones_like(from_to, dtype="bool")
+            vert_new[from_ind[:, 1], 0] = False
+            vert_new[to_ind[:, 1], 1] = False
+            ind_new = np.where(vert_new.flatten())[0]
+            uni_new, inv_map = np.unique(
+                from_to.flatten()[ind_new], return_inverse=True
+            )
+
+            # Add cells
+            new_cells = np.ones_like(from_to.flatten()) * np.nan
+            new_cells[ind_new] = self.add_vertices(self.desurvey(uni_new))[inv_map]
+            new_cells = new_cells.reshape((-1, 2))
+            new_cells[from_ind[:, 1], 0] = self.cells[from_ind[:, 0], 0]
+            new_cells[to_ind[:, 1], 1] = self.cells[to_ind[:, 0], 1]
+            new_cells = np.delete(new_cells, cell_map[:, 1], 0)
+
+            # Append values
+            input_values = merge_arrays(
+                np.ones(self.n_cells) * np.nan, input_values, mapping=cell_map
+            )
+
+            self.cells = np.r_[self.cells, new_cells.astype("uint32")]
+            self.get_data("FROM")[0].values = merge_arrays(
+                self._from.values, from_to[:, 0], mapping=cell_map
+            )
+            self.get_data("TO")[0].values = merge_arrays(
+                self._to.values, from_to[:, 1], mapping=cell_map
+            )
+
+        return input_values
+
+    def sort_depths(self):
+        """
+        Read the 'DEPTH' data and sort all Data.values if needed
+        """
+        if self.get_data("DEPTH"):
+            data_obj = self.get_data("DEPTH")[0]
+            depths = data_obj.check_vector_length(data_obj.values)
+            if not np.all(np.diff(depths) >= 0):
+                sort_ind = np.argsort(depths)
+
+                for child in self.children:
+                    if isinstance(child, Data) and child.association.name == "VERTEX":
+                        child.values = child.check_vector_length(child.values)[sort_ind]
+
+                if self.vertices is not None:
+                    self.vertices = self.vertices[sort_ind, :]
+
+                if self.cells is not None:
+                    key_map = np.argsort(sort_ind)[self.cells.flatten()]
+                    self.cells = key_map.reshape((-1, 2)).astype("uint32")
+
+        self.workspace.finalize()
