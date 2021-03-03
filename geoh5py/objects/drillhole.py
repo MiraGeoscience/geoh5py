@@ -70,84 +70,6 @@ class Drillhole(Points):
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
 
-    def add_data(
-        self, data: dict, property_group: str = None
-    ) -> Union[Data, List[Data]]:
-        """
-        Create :obj:`~geoh5py.data.data.Data` specific to the drillhole object
-        from dictionary of name and arguments. A keyword 'depth' or 'from-to'
-        with corresponding depth values is expected in order to locate the
-        data along the well path.
-
-        :param data: Dictionary of data to be added to the object, e.g.
-
-        .. code-block:: python
-
-            data_dict = {
-                "data_A": {
-                    'values', [v_1, v_2, ...],
-                    "from-to": numpy.ndarray,
-                    },
-                "data_B": {
-                    'values', [v_1, v_2, ...],
-                    "depth": numpy.ndarray,
-                    },
-            }
-
-        :return: List of new Data objects.
-        """
-        data_objects = []
-
-        for name, attr in data.items():
-            assert isinstance(attr, dict), (
-                f"Given value to data {name} should of type {dict}. "
-                f"Type {type(attr)} given instead."
-            )
-            assert "values" in list(
-                attr.keys()
-            ), f"Given attr for data {name} should include 'values'"
-
-            attr["name"] = name
-
-            if "depth" in list(attr.keys()):
-                attr["association"] = "VERTEX"
-                attr["values"] = self.validate_log_data(attr["depth"], attr["values"])
-            elif "from-to" in list(attr.keys()):
-                attr["association"] = "CELL"
-                attr["values"] = self.validate_interval_data(
-                    attr["from-to"], attr["values"]
-                )
-            else:
-                assert attr["association"] == "OBJECT", (
-                    "Input data dictionary must contain {key:values} "
-                    + "{'depth':numpy.ndarray}, {'from-to':numpy.ndarray} "
-                    + "or {'association': 'OBJECT'}."
-                )
-
-            entity_type = validate_data_type(attr)
-            kwargs = {"parent": self, "association": attr["association"]}
-            for key, val in attr.items():
-                if key in ["parent", "association", "entity_type", "type"]:
-                    continue
-                kwargs[key] = val
-
-            data_object = self.workspace.create_entity(
-                Data, entity=kwargs, entity_type=entity_type
-            )
-
-            if property_group is not None:
-                self.add_data_to_group(data_object, property_group)
-
-            data_objects.append(data_object)
-
-        # Check the depths and re-sort data if necessary
-        self.sort_depths()
-        self.workspace.finalize()
-        if len(data_objects) == 1:
-            return data_object
-
-        return data_objects
-
     @property
     def cells(self) -> Optional[np.ndarray]:
         r"""
@@ -182,13 +104,15 @@ class Drillhole(Points):
             assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
 
             self.modified_attributes = "attributes"
-            self._centroids = None
-
             value = np.asarray(
                 tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
             )
             self._collar = value
         self._locations = None
+
+        if self.trace is not None:
+            self.modified_attributes = "trace"
+            self._trace = None
 
     @property
     def cost(self):
@@ -272,6 +196,19 @@ class Drillhole(Points):
         return self._locations
 
     @property
+    def planning(self):
+        """
+        :obj:`str`: Status of the hole: ["Default", "Ongoing", "Planned", "Completed"]
+        """
+        return self._planning
+
+    @planning.setter
+    def planning(self, value):
+        choices = ["Default", "Ongoing", "Planned", "Completed"]
+        assert value in choices, f"Provided planning value must be one of {choices}"
+        self._planning = value
+
+    @property
     def surveys(self):
         """
         :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the surveys
@@ -328,19 +265,6 @@ class Drillhole(Points):
         return self._trace_depth
 
     @property
-    def planning(self):
-        """
-        :obj:`str`: Status of the hole: ["Default", "Ongoing", "Planned", "Completed"]
-        """
-        return self._planning
-
-    @planning.setter
-    def planning(self, value):
-        choices = ["Default", "Ongoing", "Planned", "Completed"]
-        assert value in choices, f"Provided planning value must be one of {choices}"
-        self._planning = value
-
-    @property
     def _from(self):
         data_obj = self.get_data("FROM")
         if data_obj:
@@ -360,6 +284,86 @@ class Drillhole(Points):
         if data_obj:
             return data_obj[0]
         return None
+
+    def add_data(
+        self, data: dict, property_group: str = None
+    ) -> Union[Data, List[Data]]:
+        """
+        Create :obj:`~geoh5py.data.data.Data` specific to the drillhole object
+        from dictionary of name and arguments. A keyword 'depth' or 'from-to'
+        with corresponding depth values is expected in order to locate the
+        data along the well path.
+
+        :param data: Dictionary of data to be added to the object, e.g.
+
+        .. code-block:: python
+
+            data_dict = {
+                "data_A": {
+                    'values', [v_1, v_2, ...],
+                    "from-to": numpy.ndarray,
+                    },
+                "data_B": {
+                    'values', [v_1, v_2, ...],
+                    "depth": numpy.ndarray,
+                    },
+            }
+
+        :return: List of new Data objects.
+        """
+        data_objects = []
+
+        for name, attr in data.items():
+            assert isinstance(attr, dict), (
+                f"Given value to data {name} should of type {dict}. "
+                f"Type {type(attr)} given instead."
+            )
+            assert "values" in list(
+                attr.keys()
+            ), f"Given attr for data {name} should include 'values'"
+
+            attr["name"] = name
+
+            if "depth" in list(attr.keys()):
+                attr["association"] = "VERTEX"
+                attr["values"] = self.validate_log_data(attr["depth"], attr["values"])
+                del attr["depth"]
+            elif "from-to" in list(attr.keys()):
+                attr["association"] = "CELL"
+                attr["values"] = self.validate_interval_data(
+                    attr["from-to"], attr["values"]
+                )
+                del attr["from-to"]
+            else:
+                assert attr["association"] == "OBJECT", (
+                    "Input data dictionary must contain {key:values} "
+                    + "{'depth':numpy.ndarray}, {'from-to':numpy.ndarray} "
+                    + "or {'association': 'OBJECT'}."
+                )
+
+            entity_type = validate_data_type(attr)
+            kwargs = {"parent": self, "association": attr["association"]}
+            for key, val in attr.items():
+                if key in ["parent", "association", "entity_type", "type"]:
+                    continue
+                kwargs[key] = val
+
+            data_object = self.workspace.create_entity(
+                Data, entity=kwargs, entity_type=entity_type
+            )
+
+            if property_group is not None:
+                self.add_data_to_group(data_object, property_group)
+
+            data_objects.append(data_object)
+
+        # Check the depths and re-sort data if necessary
+        self.sort_depths()
+        self.workspace.finalize()
+        if len(data_objects) == 1:
+            return data_object
+
+        return data_objects
 
     def desurvey(self, depths):
         """
