@@ -247,6 +247,8 @@ class H5Writer:
 
             try:
                 del entity_handle[cls.key_map[attr]]
+                if getattr(entity, attr, None) is None:
+                    continue
             except KeyError:
                 pass
 
@@ -257,10 +259,7 @@ class H5Writer:
                 cls.write_cells(entity, file=file, close_file=close_file)
 
             elif attr in ["surveys", "trace", "vertices"]:
-                if getattr(entity, attr, None) is not None:
-                    cls.write_coordinates(
-                        entity, attr, file=file, close_file=close_file
-                    )
+                cls.write_coordinates(entity, attr, file=file, close_file=close_file)
 
             elif attr == "octree_cells":
                 cls.write_octree_cells(entity, file=file, close_file=close_file)
