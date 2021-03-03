@@ -548,16 +548,6 @@ class Workspace:
         """
         return H5Reader.fetch_values(self.h5file, uid)
 
-    # def fetch_vertices(self, uid: uuid.UUID) -> np.ndarray:
-    #     """
-    #     Fetch the vertices of an object from the source h5file.
-    #
-    #     :param uid: Unique identifier of target entity.
-    #
-    #     :return: Array of coordinate [x, y, z] locations.
-    #     """
-    #     return H5Reader.fetch_vertices(self.h5file, uid)
-
     def finalize(self):
         """ Finalize the h5file by checking for updated entities and re-building the Root"""
         for entity in self.all_objects() + self.all_groups() + self.all_data():
