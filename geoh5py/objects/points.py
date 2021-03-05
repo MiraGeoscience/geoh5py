@@ -35,9 +35,6 @@ class Points(ObjectBase):
 
         super().__init__(object_type, **kwargs)
 
-        if self.entity_type.name == "Entity":
-            self.entity_type.name = "Points"
-
         object_type.workspace._register_object(self)
 
     @classmethod

@@ -52,7 +52,13 @@ class ObjectBase(Entity):
         self._comments = None
         # self._clipping_ids: List[uuid.UUID] = []
 
+        if not any([key for key in kwargs if key in ["name", "Name"]]):
+            kwargs["name"] = type(self).__name__
+
         super().__init__(**kwargs)
+
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = type(self).__name__
 
     def add_comment(self, comment: str, author: str = None):
         """

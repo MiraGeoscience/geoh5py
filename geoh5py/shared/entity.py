@@ -61,6 +61,7 @@ class Entity(ABC):
                 setattr(self, attr, item)
             except AttributeError:
                 continue
+        self.modified_attributes = []
 
     def add_children(self, children: List["shared.Entity"]):
         """

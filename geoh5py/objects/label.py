@@ -40,12 +40,6 @@ class Label(ObjectBase):
 
         super().__init__(object_type, **kwargs)
 
-        if self.entity_type.name == "Entity":
-            self.entity_type.name = "Label"
-
-        # if object_type.description is None:
-        #     self.entity_type.description = "Label"
-
         object_type.workspace._register_object(self)
 
     @classmethod

@@ -63,9 +63,6 @@ class Drillhole(Points):
 
         super().__init__(object_type, **kwargs)
 
-        if self.entity_type.name == "Entity":
-            self.entity_type.name = "Drillhole"
-
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
@@ -410,7 +407,7 @@ class Drillhole(Points):
         Compare new and current depth values, append new vertices if necessary and return
         an augmented values vector that matches the vertices indexing.
         """
-        assert depth.shape == input_values.shape, (
+        assert len(depth) == len(input_values), (
             f"Mismatch between input 'depth' shape{depth.shape} "
             + f"and 'values' shape{input_values.shape}"
         )
@@ -449,7 +446,7 @@ class Drillhole(Points):
         Compare new and current depth values, append new vertices if necessary and return
         an augmented values vector that matches the vertices indexing.
         """
-        assert from_to.shape[0] == input_values.shape[0], (
+        assert from_to.shape[0] == len(input_values), (
             f"Mismatch between input 'from_to' shape{from_to.shape} "
             + f"and 'values' shape{input_values.shape}"
         )
