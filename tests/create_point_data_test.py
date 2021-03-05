@@ -27,7 +27,7 @@ from geoh5py.workspace import Workspace
 
 def test_create_point_data():
 
-    name = "MyTestPointset"
+    name = "Points"
     new_name = "TestName"
 
     # Generate a random cloud of points
@@ -41,10 +41,14 @@ def test_create_point_data():
         # Create a workspace
         workspace = Workspace(h5file_path)
 
-        points = Points.create(workspace, vertices=xyz, name=name, allow_move=False)
+        points = Points.create(workspace, vertices=xyz, allow_move=False)
 
         data = points.add_data(
             {"DataValues": {"association": "VERTEX", "values": values}}
+        )
+
+        tag = points.add_data(
+            {"my_comment": {"association": "OBJECT", "values": "hello_world"}}
         )
 
         # Change some data attributes for testing
@@ -60,6 +64,7 @@ def test_create_point_data():
 
         rec_obj = workspace.get_entity(name)[0]
         rec_data = workspace.get_entity(new_name)[0]
+        rec_tag = workspace.get_entity("my_comment")[0]
 
         def compare_objects(object_a, object_b):
             for attr in object_a.__dict__.keys():
@@ -76,3 +81,4 @@ def test_create_point_data():
 
         compare_objects(points, rec_obj)
         compare_objects(data, rec_data)
+        compare_objects(tag, rec_tag)
