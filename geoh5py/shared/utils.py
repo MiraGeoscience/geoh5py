@@ -42,7 +42,9 @@ def match_values(vec_a, vec_b, tolerance=1e-4):
     return indices
 
 
-def merge_arrays(head, tail, mapping=None, tolerance=1e-4, return_mapping=False):
+def merge_arrays(
+    head, tail, replace="A->B", mapping=None, tolerance=1e-4, return_mapping=False
+):
     """
     Given two numpy.arrays of different length, find the matching values and append both arrays.
 
@@ -63,7 +65,11 @@ def merge_arrays(head, tail, mapping=None, tolerance=1e-4, return_mapping=False)
         mapping = match_values(head, tail, tolerance=tolerance)
 
     if np.any(mapping):
-        head[mapping[:, 0]] = tail[mapping[:, 1]]
+        if replace == "B->A":
+            head[mapping[:, 0]] = tail[mapping[:, 1]]
+        else:
+            tail[mapping[:, 1]] = head[mapping[:, 0]]
+
         tail = np.delete(tail, mapping[:, 1])
 
     if return_mapping:

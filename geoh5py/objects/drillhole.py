@@ -321,14 +321,21 @@ class Drillhole(Points):
 
             attr["name"] = name
 
+            tolerance = 1e-3
+            if "tolerance" in list(attr.keys()):
+                assert attr["tolerance"] > 0, "Input depth 'tolerance' must be >0."
+                tolerance = attr["tolerance"]
+
             if "depth" in list(attr.keys()):
                 attr["association"] = "VERTEX"
-                attr["values"] = self.validate_log_data(attr["depth"], attr["values"])
+                attr["values"] = self.validate_log_data(
+                    attr["depth"], attr["values"], tolerance=tolerance
+                )
                 del attr["depth"]
             elif "from-to" in list(attr.keys()):
                 attr["association"] = "CELL"
                 attr["values"] = self.validate_interval_data(
-                    attr["from-to"], attr["values"]
+                    attr["from-to"], attr["values"], tolerance=tolerance
                 )
                 del attr["from-to"]
             else:
@@ -412,6 +419,8 @@ class Drillhole(Points):
             + f"and 'values' shape{input_values.shape}"
         )
 
+        input_values = np.r_[input_values]
+
         if self._depth is None:  # First data appended
             self.add_vertices(self.desurvey(depth))
             depth = np.r_[np.ones(self.n_vertices - depth.shape[0]) * np.nan, depth]
@@ -433,7 +442,10 @@ class Drillhole(Points):
                 self._depth.values, depth, return_mapping=True, tolerance=tolerance
             )
             values = merge_arrays(
-                np.ones(self.n_vertices) * np.nan, input_values, mapping=indices
+                np.ones(self.n_vertices) * np.nan,
+                input_values,
+                replace="B->A",
+                mapping=indices,
             )
             self.add_vertices(self.desurvey(np.delete(depth, indices[:, 1])))
             self._depth.values = depths
@@ -446,6 +458,9 @@ class Drillhole(Points):
         Compare new and current depth values, append new vertices if necessary and return
         an augmented values vector that matches the vertices indexing.
         """
+        if isinstance(from_to, list):
+            from_to = np.vtack(from_to)
+
         assert from_to.shape[0] == len(input_values), (
             f"Mismatch between input 'from_to' shape{from_to.shape} "
             + f"and 'values' shape{input_values.shape}"
@@ -516,14 +531,17 @@ class Drillhole(Points):
 
             # Append values
             input_values = merge_arrays(
-                np.ones(self.n_cells) * np.nan, input_values, mapping=cell_map
+                np.ones(self.n_cells) * np.nan,
+                np.r_[input_values],
+                replace="B->A",
+                mapping=cell_map,
             )
 
             self.cells = np.r_[self.cells, new_cells.astype("uint32")]
-            self.get_data("FROM")[0].values = merge_arrays(
+            self._from.values = merge_arrays(
                 self._from.values, from_to[:, 0], mapping=cell_map
             )
-            self.get_data("TO")[0].values = merge_arrays(
+            self._to.values = merge_arrays(
                 self._to.values, from_to[:, 1], mapping=cell_map
             )
 
