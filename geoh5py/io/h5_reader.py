@@ -317,6 +317,8 @@ class H5Reader:
                     values = values.astype("float64")
 
                 values[ind] = np.nan
+            else:
+                values = cls.check_byte_str(values[0])
         else:
             values = None
 

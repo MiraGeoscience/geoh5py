@@ -24,7 +24,15 @@ from typing import TYPE_CHECKING, Optional, Union
 import h5py
 import numpy as np
 
-from ..data import FLOAT_NDV, INTEGER_NDV, CommentsData, Data, DataType, IntegerData
+from ..data import (
+    FLOAT_NDV,
+    INTEGER_NDV,
+    CommentsData,
+    Data,
+    DataType,
+    IntegerData,
+    TextData,
+)
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import Entity
@@ -591,19 +599,25 @@ class H5Writer:
                 shape=(1,),
             )
 
+        elif isinstance(entity, TextData):
+            entity_handle.create_dataset(
+                cls.key_map[attribute],
+                data=values,
+                dtype=h5py.special_dtype(vlen=str),
+                shape=(1,),
+            )
         else:
             out_vals = values.copy()
             if isinstance(entity, IntegerData):
-                out_vals = np.round(out_vals)
+                out_vals = np.round(out_vals).astype("int32")
                 out_vals[np.isnan(out_vals)] = INTEGER_NDV
-                dtype = "int32"
             else:
+                out_vals = values.copy().astype("float64")
                 out_vals[np.isnan(out_vals)] = FLOAT_NDV
-                dtype = "float64"
 
             entity_handle.create_dataset(
                 cls.key_map[attribute],
-                data=out_vals.astype(dtype),
+                data=out_vals,
                 compression="gzip",
                 compression_opts=9,
             )
