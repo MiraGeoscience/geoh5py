@@ -43,7 +43,7 @@ from .. import data, groups, objects
 from ..data import CommentsData, Data, DataType
 from ..groups import CustomGroup, Group, PropertyGroup, RootGroup
 from ..io import H5Reader, H5Writer
-from ..objects import Cell, ObjectBase
+from ..objects import ObjectBase
 from ..shared import weakref_utils
 from ..shared.entity import Entity
 
@@ -402,7 +402,7 @@ class Workspace:
     def distance_unit(self, value: str):
         self._distance_unit = value
 
-    def fetch_cells(self, uid: uuid.UUID) -> Cell:
+    def fetch_cells(self, uid: uuid.UUID) -> np.ndarray:
         """
         Fetch the cells of an object from the source h5file.
 
