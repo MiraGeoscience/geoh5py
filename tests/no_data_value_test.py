@@ -45,7 +45,6 @@ def test_no_data_values():
             {
                 "DataFloatValues": {"association": "VERTEX", "values": float_values},
                 "DataIntValues": {
-                    "association": "VERTEX",
                     "values": int_values,
                     "type": "INTEGER",
                 },
