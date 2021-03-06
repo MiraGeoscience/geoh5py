@@ -18,30 +18,13 @@
 import random
 import string
 import tempfile
-from abc import ABC
 from pathlib import Path
 
 import numpy as np
 
 from geoh5py.objects import Drillhole
+from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
-
-
-def compare_objects(object_a, object_b):
-    for attr in object_a.__dict__.keys():
-        if attr in ["_workspace", "_children"]:
-            continue
-        if isinstance(getattr(object_a, attr[1:]), ABC):
-            compare_objects(getattr(object_a, attr[1:]), getattr(object_b, attr[1:]))
-        else:
-            if isinstance(getattr(object_a, attr[1:]), np.ndarray):
-                np.testing.assert_array_equal(
-                    getattr(object_a, attr[1:]), getattr(object_b, attr[1:])
-                )
-            else:
-                assert np.all(
-                    getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
-                ), f"Output attribute {attr[1:]} for {object_a} do not match input {object_b}"
 
 
 def test_create_drillhole_data():
@@ -101,6 +84,6 @@ def test_create_drillhole_data():
         data_log_rec = new_workspace.get_entity("log_values")[0]
 
         # Check entities
-        compare_objects(well, obj_rec)
-        compare_objects(data_objects[0], data_interv_rec)
-        compare_objects(data_objects[1], data_log_rec)
+        compare_entities(well, obj_rec)
+        compare_entities(data_objects[0], data_interv_rec)
+        compare_entities(data_objects[1], data_log_rec)

@@ -15,6 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from abc import ABC
+from typing import List, Optional
+
 import numpy as np
 
 
@@ -76,3 +79,26 @@ def merge_arrays(
         return np.r_[head, tail], mapping
 
     return np.r_[head, tail]
+
+
+def compare_entities(object_a, object_b, ignore: Optional[List] = None):
+
+    ignore_list = ["_workspace", "_children"]
+    if ignore is not None:
+        for item in ignore:
+            ignore_list.append(item)
+
+    for attr in object_a.__dict__.keys():
+        if attr in ignore_list:
+            continue
+        if isinstance(getattr(object_a, attr[1:]), ABC):
+            compare_entities(getattr(object_a, attr[1:]), getattr(object_b, attr[1:]))
+        else:
+            if isinstance(getattr(object_a, attr[1:]), np.ndarray):
+                np.testing.assert_array_equal(
+                    getattr(object_a, attr[1:]), getattr(object_b, attr[1:])
+                )
+            else:
+                assert np.all(
+                    getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
+                ), f"Output attribute '{attr[1:]}' for {object_a} do not match input {object_b}"
