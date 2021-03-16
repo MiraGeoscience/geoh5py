@@ -45,7 +45,7 @@ class Entity(ABC):
         self._children: List = []
         self._visible = True
         self._allow_delete = True
-        self._allow_move = False
+        self._allow_move = True
         self._allow_rename = True
         self._public = True
         self._existing_h5_entity = False
