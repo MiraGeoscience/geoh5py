@@ -15,12 +15,12 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import numpy as np
 
-from .data import Data, DataType, PrimitiveTypeEnum
+from .data import DataType, PrimitiveTypeEnum
+from .numeric_data import NumericData
 
 
-class FloatData(Data):
+class FloatData(NumericData):
     """
     Data container for floats values
     """
@@ -38,37 +38,3 @@ class FloatData(Data):
         No-Data-Value
         """
         return 1.17549435e-38
-
-    @property
-    def values(self) -> np.ndarray:
-        """
-        :return: values: An array of float values
-        """
-        if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
-            self._values = self.workspace.fetch_values(self.uid)
-
-        if self._values is not None:
-            self._values = self.check_vector_length(self._values)
-
-        return self._values
-
-    @values.setter
-    def values(self, values):
-        self.modified_attributes = "values"
-        self._values = self.check_vector_length(values)
-
-    def check_vector_length(self, values) -> np.ndarray:
-        """
-        Check for possible mismatch between the length of values
-        stored and the expected number of cells or vertices.
-        """
-        if self.n_values is not None and len(values) < self.n_values:
-            full_vector = np.ones(self.n_values) * np.nan
-            full_vector[: len(np.ravel(values))] = np.ravel(values)
-
-            return full_vector
-
-        return values
-
-    def __call__(self):
-        return self.values

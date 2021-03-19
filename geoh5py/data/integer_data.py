@@ -17,10 +17,10 @@
 
 
 from .data import PrimitiveTypeEnum
-from .float_data import FloatData
+from .numeric_data import NumericData
 
 
-class IntegerData(FloatData):
+class IntegerData(NumericData):
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.INTEGER
@@ -31,6 +31,3 @@ class IntegerData(FloatData):
         No-Data-Value
         """
         return -2147483648
-
-    def __call__(self):
-        return self.values
