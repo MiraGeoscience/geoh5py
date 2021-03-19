@@ -321,7 +321,7 @@ class Drillhole(Points):
 
             attr["name"] = name
 
-            tolerance = 1e-3
+            tolerance = 1e-2
             if "tolerance" in list(attr.keys()):
                 assert attr["tolerance"] > 0, "Input depth 'tolerance' must be >0."
                 tolerance = attr["tolerance"]
