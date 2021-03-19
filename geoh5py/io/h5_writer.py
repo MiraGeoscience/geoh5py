@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Optional, Union
 import h5py
 import numpy as np
 
-from ..data import FLOAT_NDV, CommentsData, Data, DataType, IntegerData, TextData
+from ..data import CommentsData, Data, DataType, IntegerData, TextData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import Entity
@@ -603,7 +603,7 @@ class H5Writer:
             if isinstance(entity, IntegerData):
                 out_vals = np.round(out_vals).astype("int32")
             else:
-                out_vals[np.isnan(out_vals)] = FLOAT_NDV
+                out_vals[np.isnan(out_vals)] = entity.ndv()
 
             entity_handle.create_dataset(
                 cls.key_map[attribute],

@@ -25,5 +25,12 @@ class IntegerData(FloatData):
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.INTEGER
 
+    @classmethod
+    def ndv(cls) -> int:
+        """
+        No-Data-Value
+        """
+        return -2147483648
+
     def __call__(self):
         return self.values

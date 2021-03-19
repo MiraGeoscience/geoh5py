@@ -32,6 +32,13 @@ class FloatData(Data):
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.FLOAT
 
+    @classmethod
+    def ndv(cls) -> float:
+        """
+        No-Data-Value
+        """
+        return 1.17549435e-38
+
     @property
     def values(self) -> np.ndarray:
         """

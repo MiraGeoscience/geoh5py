@@ -27,10 +27,6 @@ if TYPE_CHECKING:
     from .. import workspace
 
 
-FLOAT_NDV = 1.17549435e-38
-INTEGER_NDV = -2147483648
-
-
 class Data(Entity):
     """
     Base class for Data entities.
