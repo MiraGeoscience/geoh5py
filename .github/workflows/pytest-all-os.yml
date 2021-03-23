@@ -53,7 +53,7 @@ jobs:
     - name: pytest
       run: poetry run pytest --cov-report=xml --cov=geoh5py --cov-branch --cov-fail-under=80
     - name: codecov
-      if: success() && matrix.os == 'windows-latest'
+      if: success() && matrix.os == 'windows-latest' && matrix.python_ver == '3.7'
       uses: codecov/codecov-action@v1
       with:
         name: GitHub
