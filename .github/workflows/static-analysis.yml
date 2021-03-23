@@ -5,6 +5,10 @@ on:
     branches:
       - development
       - master
+  pull_request_target:
+    branches:
+      - development
+      - master
   push:
     branches:
       - development
