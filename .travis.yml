@@ -1,7 +1,7 @@
 language: python
 
 python:
-  - 3.6
+  - 3.7
 
 sudo: false
 
@@ -15,7 +15,7 @@ env:
   global:
     - DEPLOY_DIR=tests/docs
     - MASTER_BRANCH=master
-    - PYPI_PY=3.6  # deploy to pypi from python 3.6
+    - PYPI_PY=3.7  # deploy to pypi from python 3.7
 
   matrix:
     - TEST_DIR=tests
