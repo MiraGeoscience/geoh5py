@@ -1,13 +1,25 @@
 name: pytest on multiple OS
 
 on:
-  push:
-    branches:
-    - development
-    - master
   pull_request:
     branches:
       - master
+      - release/**
+      - feature/**
+      - hotfix/**
+  pull_request_target:
+    branches:
+      - master
+      - release/**
+      - feature/**
+      - hotfix/**
+  push:
+    branches:
+      - development
+      - master
+      - release/**
+      - feature/**
+      - hotfix/**
 
 jobs:
   pytest:
