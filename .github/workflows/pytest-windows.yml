@@ -8,6 +8,10 @@ on:
 jobs:
   pytest:
     name: pytest
+    strategy:
+      fail-fast: false
+      matrix:
+        python_ver: [3.7, 3.8]
     defaults:
       run:
         shell: bash
@@ -20,7 +24,7 @@ jobs:
     - name: Set up Python version
       uses: actions/setup-python@v2
       with:
-        python-version: 3.7
+        python-version: ${{ matrix.python_ver }}
     - name: Get full Python version
       id: full-python-version
       shell: bash
@@ -44,7 +48,7 @@ jobs:
     - name: pytest
       run: poetry run pytest --cov-report=xml --cov=geoh5py --cov-branch --cov-fail-under=80
     - name: Codecov
-      if: success()
+      if: success() && matrix.python_ver == '3.7'
       uses: codecov/codecov-action@v1
       with:
         name: GitHub
