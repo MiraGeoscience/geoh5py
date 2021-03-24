@@ -2,11 +2,7 @@ name: pytest on Windows
 
 on:
   pull_request:
-    branches:
-    - development
   pull_request_target:
-    branches:
-      - development
 
 jobs:
   pytest:
