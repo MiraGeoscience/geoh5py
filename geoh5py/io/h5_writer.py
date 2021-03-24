@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Optional, Union
 import h5py
 import numpy as np
 
-from ..data import CommentsData, Data, DataType
+from ..data import CommentsData, Data, DataType, TextData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import Entity
@@ -554,6 +554,13 @@ class H5Writer:
                 shape=(1,),
             )
 
+        elif isinstance(entity, TextData):
+            entity_handle.create_dataset(
+                "Data",
+                data=values,
+                dtype=h5py.special_dtype(vlen=str),
+                shape=(1,),
+            )
         else:
             entity_handle.create_dataset(
                 "Data", data=values, compression="gzip", compression_opts=9
