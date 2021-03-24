@@ -54,7 +54,11 @@ def test_write_reread_non_ascii_filename():
             assert dataset.dtype == np.dtype("int32")
 
 
-# this one will fail on Windows: enabling it just to test PR from fork
+@pytest.mark.xfail(
+    sys.platform == "win32",
+    raises=UnicodeEncodeError,
+    reason="H5 library version < 1.12 does not support non-ASCII filename",
+)
 def test_existing_non_ascii_filename():
     with tempfile.TemporaryDirectory() as tempdir:
         file_path = Path(tempdir) / NON_ASCII_FILENAME
