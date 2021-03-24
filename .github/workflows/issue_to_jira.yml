@@ -19,7 +19,7 @@ jobs:
             {
               "fields": {
                 "project": {
-                  "key": "GEOIO"
+                  "key": "GEOPY"
                 },
                 "summary": "${{ github.event.issue.title }}",
                 "description": "_from [GitHub issue #${{ github.event.issue.number }}|${{ github.event.issue.html_url }}]_",
