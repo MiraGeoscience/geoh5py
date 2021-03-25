@@ -27,4 +27,5 @@ Contents:
    content/installation.rst
    content/user_guide/index.rst
    content/api/geoh5py.rst
+   content/geoh5_file_format.rst
    content/feedback.rst
