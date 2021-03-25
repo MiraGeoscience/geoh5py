@@ -40,11 +40,14 @@ def test_create_property_group():
         curve = Curve.create(workspace, vertices=xyz, name=obj_name)
 
         # Add data
+        props = []
         for i in range(4):
             values = np.cos(xyz[:, 0] / (i + 1))
-            curve.add_data(
-                {f"Period{i+1}": {"values": values}}, property_group="myGroup"
-            )
+            props += [
+                curve.add_data(
+                    {f"Period{i+1}": {"values": values}}, property_group="myGroup"
+                )
+            ]
 
         # Property group object should have been created
         prop_group = curve.get_property_group("myGroup")
@@ -55,6 +58,9 @@ def test_create_property_group():
         assert (
             workspace.find_data(single_data_group.properties[0]).name == f"Period{1}"
         ), "Failed at creating a property group by data name"
+
+        # Remove on props from the list
+        curve.remove_data_from_group(props[-1], "myGroup")
         workspace.finalize()
 
         # Re-open the workspace
