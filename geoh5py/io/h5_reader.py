@@ -16,7 +16,7 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import uuid
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
 
 import h5py
 import numpy as np
@@ -79,6 +79,7 @@ class H5Reader:
             value_map = entity["Type"]["Value map"][:]
             mapping = {}
             for key, value in value_map.tolist():
+                value = cls.check_byte_str(value)
                 mapping[key] = value
 
             type_attributes["entity_type"]["value_map"] = mapping
@@ -291,6 +292,8 @@ class H5Reader:
         name = list(project.keys())[0]
         if "Data" in list(project[name]["Data"][cls.uuid_str(uid)].keys()):
             values = np.r_[project[name]["Data"][cls.uuid_str(uid)]["Data"]]
+            if isinstance(values[0], (str, bytes)):
+                values = cls.check_byte_str(values[0])
         else:
             values = None
 
@@ -330,3 +333,9 @@ class H5Reader:
     @staticmethod
     def uuid_str(value: uuid.UUID) -> str:
         return "{" + str(value) + "}"
+
+    @staticmethod
+    def check_byte_str(value: Union[bytes, str]) -> str:
+        if isinstance(value, bytes):
+            value = value.decode("utf-8")
+        return value
