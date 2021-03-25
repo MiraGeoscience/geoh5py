@@ -9,7 +9,7 @@ capabilities of `Geoscience ANALYST <https://mirageoscience.com/mining-industry-
 
 Installation
 ^^^^^^^^^^^^
-**geoh5py** is currently written for Python 3.6 or higher, and depends on `NumPy <https://numpy.org/>`_ and
+**geoh5py** is currently written for Python 3.7 or higher, and depends on `NumPy <https://numpy.org/>`_ and
 `h5py <https://www.h5py.org/>`_.
 
 .. note:: Users will likely want to take advantage of other packages available in the Python ecosystem.

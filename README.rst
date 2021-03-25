@@ -21,7 +21,7 @@ See also documentation for the `geoh5 file format`_.
 
 Installation
 ^^^^^^^^^^^^
-**geoh5py** is currently written for Python 3.6 or higher, and depends on `NumPy <https://numpy.org/>`_ and
+**geoh5py** is currently written for Python 3.7 or higher, and depends on `NumPy <https://numpy.org/>`_ and
 `h5py <https://www.h5py.org/>`_. Users will likely want to also make use of advanced processing
 techniques made available under the python ecosystem. We therefore recommend installing
 Anaconda to handle the various packages.
