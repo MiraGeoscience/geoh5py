@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
