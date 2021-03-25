@@ -178,14 +178,13 @@ class Entity(ABC):
             child.delete()
 
         self.parent.children.remove(self)
-        self.workspace.delete_entity(self)
 
-    # def delete_child(self, child):
-    #     """
-    #     Function to delete a child entity from workspace and geoh5
-    #     """
-    #     self.children.remove(child)
-    #     self.workspace.delete_entity(child)
+        if getattr(self.parent, "property_groups", None) is not None:
+            for prop_group in self.parent.property_groups:
+                if self.uid in prop_group.properties:
+                    self.parent.remove_data_from_group(self.uid, prop_group.name)
+
+        self.workspace.delete_entity(self)
 
     @property
     @abstractmethod
