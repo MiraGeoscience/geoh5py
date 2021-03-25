@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 
 from geoh5py.groups import ContainerGroup
-from geoh5py.objects import Points
+from geoh5py.objects import Curve
 from geoh5py.workspace import Workspace
 
 
@@ -39,14 +39,32 @@ def test_delete_entities():
 
         group = ContainerGroup.create(workspace)
 
-        points = Points.create(workspace, vertices=xyz, parent=group)
+        points = Curve.create(workspace, vertices=xyz, parent=group)
 
         data = points.add_data(
             {"DataValues": {"association": "VERTEX", "values": values}}
         )
 
-        points.delete()
+        # Add data
+        d_group = []
+        for i in range(4):
+            values = np.random.randn(points.n_vertices)
+            d_group += [
+                points.add_data(
+                    {f"Period{i + 1}": {"values": values}}, property_group="myGroup"
+                )
+            ]
 
+        # Property group object should have been created
+        prop_group = points.get_property_group("myGroup")
+
+        workspace.finalize()
+        d_group[2].delete()
+        assert (
+            d_group[2].uid not in prop_group.properties
+        ), "Data uid was not removed from the property_group"
+
+        points.delete()
         assert (
             (len(group.children) == 0)
             and (points.uid not in list(workspace.objects.keys()))
@@ -54,7 +72,6 @@ def test_delete_entities():
         ), "Object and data were not fully removed from the workspace"
 
         group.delete()
-
         assert group.uid not in list(
             workspace.groups.keys()
         ), "Group object not fully remove from the workspace"
