@@ -89,6 +89,20 @@ class H5Writer:
         return h5file
 
     @staticmethod
+    def delete_entity(entity: Entity, type_key: str):
+
+        h5file = entity.workspace.h5file
+        parent_handle = H5Writer.fetch_handle(h5file, entity.parent)
+        del parent_handle[type_key][H5Writer.uuid_str(entity.uid)]
+        parent_type_handle = H5Writer.fetch_handle(h5file, entity, return_parent=True)
+        del parent_type_handle[H5Writer.uuid_str(entity.uid)]
+        entity_type_handle = H5Writer.fetch_handle(
+            h5file, entity.entity_type, return_parent=True
+        )
+        del entity_type_handle[H5Writer.uuid_str(entity.entity_type.uid)]
+        del entity
+
+    @staticmethod
     def fetch_h5_handle(
         file: Optional[Union[str, h5py.File]],
         entity: Union[Entity, "shared.EntityType"],
@@ -113,7 +127,9 @@ class H5Writer:
         return h5file
 
     @classmethod
-    def fetch_handle(cls, file: Optional[Union[str, h5py.File]], entity):
+    def fetch_handle(
+        cls, file: Optional[Union[str, h5py.File]], entity, return_parent: bool = False
+    ):
         """
         Get a pointer to an :obj:`~geoh5py.shared.entity.Entity` in geoh5.
 
@@ -150,6 +166,10 @@ class H5Writer:
 
         # Check if already in the project
         if cls.uuid_str(uid) in list(base_handle.keys()):
+
+            if return_parent:
+                return base_handle
+
             return base_handle[cls.uuid_str(uid)]
 
         return None

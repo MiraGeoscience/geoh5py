@@ -386,6 +386,33 @@ class Workspace:
 
         return None
 
+    @property
+    def data(self) -> dict:
+        """
+        Dictionary of data entities uuid with corresponding weakref
+        """
+        return self._data
+
+    def delete_entity(self, entity: Entity):
+        """Delete an entity and its children from the workspace and geoh5"""
+
+        if isinstance(entity, Data):
+            key = "Data"
+            del self.data[entity.uid]
+        elif isinstance(entity, Group):
+            key = "Groups"
+            del self.groups[entity.uid]
+        elif isinstance(entity, ObjectBase):
+            key = "Objects"
+            del self.objects[entity.uid]
+        else:
+            print("Only entity of type 'Data', 'Group' or 'Object' are deletable.")
+            return
+
+        H5Writer.delete_entity(entity, key)
+
+        self.finalize()  # Re-build the Root
+
     def deactivate(self):
         """Deactivate this workspace if it was the active one, else does nothing."""
         if Workspace._active_ref() is self:
@@ -539,7 +566,7 @@ class Workspace:
 
         H5Writer.finalize(self)
 
-    def find_data(self, data_uid: uuid.UUID) -> Optional["data.Data"]:
+    def find_data(self, data_uid: uuid.UUID) -> Optional["Entity"]:
         """
         Find an existing and active Data entity.
         """
@@ -610,6 +637,14 @@ class Workspace:
         return entity_list
 
     @property
+    def groups(self) -> dict:
+        """
+        Dictionary of group entities uuid with corresponding weakref
+        """
+
+        return self._groups
+
+    @property
     def h5file(self) -> str:
         """
         :str: Target *geoh5* file name with path.
@@ -669,13 +704,21 @@ class Workspace:
         """
         return self._name
 
+    @property
+    def objects(self) -> dict:
+        """
+        Dictionary of object entities uuid with corresponding weakref
+        """
+
+        return self._objects
+
     def _register_type(self, entity_type: "EntityType"):
         weakref_utils.insert_once(self._types, entity_type.uid, entity_type)
 
     def _register_group(self, group: "group.Group"):
         weakref_utils.insert_once(self._groups, group.uid, group)
 
-    def _register_data(self, data_obj: "data.Data"):
+    def _register_data(self, data_obj: "Entity"):
         weakref_utils.insert_once(self._data, data_obj.uid, data_obj)
 
     def _register_object(self, obj: "object_base.ObjectBase"):

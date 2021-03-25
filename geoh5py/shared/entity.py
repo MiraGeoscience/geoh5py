@@ -170,6 +170,23 @@ class Entity(ABC):
 
         return new_object
 
+    def delete(self):
+        """
+        Function to delete itself and children recursively from the workspace
+        """
+        for child in self.children:
+            child.delete()
+
+        self.parent.children.remove(self)
+        self.workspace.delete_entity(self)
+
+    # def delete_child(self, child):
+    #     """
+    #     Function to delete a child entity from workspace and geoh5
+    #     """
+    #     self.children.remove(child)
+    #     self.workspace.delete_entity(child)
+
     @property
     @abstractmethod
     def entity_type(self) -> "shared.EntityType":
