@@ -60,5 +60,5 @@ known_third_party = ["Add2Build", "StringIO", "autodoc", "edit_on_github", "envi
 # defaults are just fine
 
 [build-system]
-requires = ["poetry>=0.12"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.masonry.api"
