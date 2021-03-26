@@ -47,6 +47,10 @@ def test_create_point_data():
             {"DataValues": {"association": "VERTEX", "values": values}}
         )
 
+        text_data = points.add_data(
+            {"my_comment": {"association": "OBJECT", "values": "hello_world"}}
+        )
+
         # Change some data attributes for testing
         data.allow_delete = False
         data.allow_move = True
@@ -60,6 +64,7 @@ def test_create_point_data():
 
         rec_obj = workspace.get_entity(name)[0]
         rec_data = workspace.get_entity(new_name)[0]
+        rec_text_data = workspace.get_entity("my_comment")[0]
 
         def compare_objects(object_a, object_b):
             for attr in object_a.__dict__.keys():
@@ -76,3 +81,4 @@ def test_create_point_data():
 
         compare_objects(points, rec_obj)
         compare_objects(data, rec_data)
+        compare_objects(text_data, rec_text_data)
