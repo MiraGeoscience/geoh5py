@@ -72,6 +72,5 @@ def test_delete_entities():
         ), "Object and data were not fully removed from the workspace"
 
         group.delete()
-        assert group.uid not in list(
-            workspace.groups.keys()
+        assert group not in workspace.all_groups()
         ), "Group object not fully remove from the workspace"
