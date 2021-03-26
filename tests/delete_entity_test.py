@@ -67,8 +67,8 @@ def test_delete_entities():
         points.delete()
         assert (
             (len(group.children) == 0)
-            and (points.uid not in list(workspace.objects.keys()))
-            and (data.uid not in list(workspace.data.keys()))
+            and (points not in workspace.all_objects())
+            and (data not in workspace.all_data())
         ), "Object and data were not fully removed from the workspace"
 
         group.delete()
