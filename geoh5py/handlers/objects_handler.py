@@ -51,7 +51,7 @@ class ObjectsHandler:
 
     @staticmethod
     def get_all() -> List[i_Object]:
-        Workspace.active().all_data()
+        Workspace.active().data
         # TODO
         return []
 

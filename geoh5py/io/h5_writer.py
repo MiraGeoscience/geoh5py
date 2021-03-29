@@ -89,32 +89,35 @@ class H5Writer:
         return h5file
 
     @staticmethod
-    def delete_entity(entity: Entity, type_key: str):
+    def remove_entity(
+        h5file: str, uid: uuid.UUID, ref_type: str, parent: Entity = None
+    ):
         """
         Remove an entity and its type from
         """
-        h5file = entity.workspace.h5file
-        parent_handle = H5Writer.fetch_handle(h5file, entity.parent)
+        h5_handle = H5Writer.fetch_h5_handle(h5file, None)
+        base = list(h5_handle.keys())[0]
+        base_type_handle = h5_handle[base][ref_type]
+        uid_str = H5Writer.uuid_str(uid)
 
-        if parent_handle is not None:
-            del parent_handle[type_key][H5Writer.uuid_str(entity.uid)]
+        if ref_type == "Type":
+            for e_type in ["Data types", "Group types", "Object types"]:
+                if uid_str in list(base_type_handle[e_type].keys()):
+                    del base_type_handle[e_type][uid_str]
+        else:
+            if uid_str in list(base_type_handle.keys()):
+                del base_type_handle[uid_str]
 
-        parent_type_handle = H5Writer.fetch_handle(h5file, entity, return_parent=True)
+            if parent is not None:
+                parent_handle = H5Writer.fetch_handle(h5file, parent)
 
-        if parent_type_handle is not None:
-            del parent_type_handle[H5Writer.uuid_str(entity.uid)]
-
-        # entity_type_handle = H5Writer.fetch_handle(
-        #     h5file, entity.entity_type, return_parent=True
-        # )
-        #
-        # if entity_type_handle is not None:
-        #     del entity_type_handle[H5Writer.uuid_str(entity.entity_type.uid)]
+                if parent_handle is not None and uid_str in list(parent_handle.keys()):
+                    del parent_handle[ref_type][uid_str]
 
     @staticmethod
     def fetch_h5_handle(
         file: Optional[Union[str, h5py.File]],
-        entity: Union[Entity, "shared.EntityType"],
+        entity: Optional[Union[Entity, "shared.EntityType"]],
     ) -> h5py.File:
         """
         Open in read+ mode a geoh5 file.
@@ -124,7 +127,7 @@ class H5Writer:
 
         :return h5py.File: Handle to an opened h5py file.
         """
-        if file is None:
+        if file is None and entity is not None:
             h5file = h5py.File(entity.workspace.h5file, "r+")
 
         else:

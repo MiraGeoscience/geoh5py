@@ -60,7 +60,7 @@ def test_create_property_group():
         ), "Failed at creating a property group by data name"
 
         # Remove on props from the list
-        curve.remove_data_from_group(props[-1], "myGroup")
+        curve.remove_data_from_group(props[-1], name="myGroup")
         workspace.finalize()
 
         # Re-open the workspace

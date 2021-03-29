@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 class DataHandler:
     @staticmethod
     def get_all() -> List[i_Data]:
-        Workspace.active().all_data()
+        Workspace.active().data
         # TODO
         return []
 

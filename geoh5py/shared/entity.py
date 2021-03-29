@@ -170,22 +170,6 @@ class Entity(ABC):
 
         return new_object
 
-    def delete(self):
-        """
-        Function to delete itself and children recursively from the workspace
-        """
-        for child in self.children:
-            child.delete()
-
-        self.parent.children.remove(self)
-
-        if getattr(self.parent, "property_groups", None) is not None:
-            for prop_group in self.parent.property_groups:
-                if self.uid in prop_group.properties:
-                    self.parent.remove_data_from_group(self.uid, prop_group.name)
-
-        self.workspace.delete_entity(self)
-
     @property
     @abstractmethod
     def entity_type(self) -> "shared.EntityType":

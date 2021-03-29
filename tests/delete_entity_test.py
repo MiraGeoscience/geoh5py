@@ -24,54 +24,48 @@ from geoh5py.groups import ContainerGroup
 from geoh5py.objects import Curve
 from geoh5py.workspace import Workspace
 
+# def test_delete_entities():
 
-def test_delete_entities():
+xyz = np.random.randn(12, 3)
+values = np.random.randn(12)
 
-    n_data = 12
-    xyz = np.random.randn(n_data, 3)
-    values = np.random.randn(n_data)
+with tempfile.TemporaryDirectory() as tempdir:
+    # Create a workspace
+    workspace = Workspace(str(Path(tempdir) / r"testPoints.geoh5"))
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testPoints.geoh5"
+    group = ContainerGroup.create(workspace)
 
-        # Create a workspace
-        workspace = Workspace(h5file_path)
+    points = Curve.create(workspace, vertices=xyz, parent=group)
 
-        group = ContainerGroup.create(workspace)
+    data = points.add_data({"DataValues": {"association": "VERTEX", "values": values}})
 
-        points = Curve.create(workspace, vertices=xyz, parent=group)
+    # Add data
+    d_group = []
+    for i in range(4):
+        values = np.random.randn(points.n_vertices)
+        d_group += [
+            points.add_data(
+                {f"Period{i + 1}": {"values": values}}, property_group="myGroup"
+            )
+        ]
 
-        data = points.add_data(
-            {"DataValues": {"association": "VERTEX", "values": values}}
-        )
+    # Property group object should have been created
+    prop_group = points.get_property_group("myGroup")
 
-        # Add data
-        d_group = []
-        for i in range(4):
-            values = np.random.randn(points.n_vertices)
-            d_group += [
-                points.add_data(
-                    {f"Period{i + 1}": {"values": values}}, property_group="myGroup"
-                )
-            ]
+    workspace.finalize()
+    workspace.remove_entity(d_group[2])
+    assert (
+        d_group[2].uid not in prop_group.properties
+    ), "Data uid was not removed from the property_group"
 
-        # Property group object should have been created
-        prop_group = points.get_property_group("myGroup")
+    workspace.remove_entity(points)
+    assert (
+        (len(group.children) == 0)
+        and (points not in list(workspace.objects))
+        and (data not in list(workspace.data))
+    ), "Object and data were not fully removed from the workspace"
 
-        workspace.finalize()
-        d_group[2].delete()
-        assert (
-            d_group[2].uid not in prop_group.properties
-        ), "Data uid was not removed from the property_group"
-
-        points.delete()
-        assert (
-            (len(group.children) == 0)
-            and (points.uid not in list(workspace.objects.keys()))
-            and (data.uid not in list(workspace.data.keys()))
-        ), "Object and data were not fully removed from the workspace"
-
-        group.delete()
-        assert group.uid not in list(
-            workspace.groups.keys()
-        ), "Group object not fully remove from the workspace"
+    workspace.remove_entity(group)
+    assert group not in list(
+        workspace.groups
+    ), "Group object not fully remove from the workspace"

@@ -202,8 +202,8 @@ class ObjectBase(Entity):
         return prop_group
 
     def remove_data_from_group(
-        self, data: Union[List, Data, uuid.UUID, str], name: str
-    ) -> PropertyGroup:
+        self, data: Union[List, Data, uuid.UUID, str], name: str = None
+    ):
         """
         Remove data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
         All given data must be children of the parent object.
@@ -216,20 +216,25 @@ class ObjectBase(Entity):
 
         :return: The target property group.
         """
-        prop_group = self.find_or_create_property_group(name=name)
-        if isinstance(data, list):
-            uids = []
-            for datum in data:
-                uids += self.reference_to_uid(datum)
-        else:
-            uids = self.reference_to_uid(data)
+        if getattr(self, "property_groups", None) is not None:
 
-        for uid in uids:
-            if uid in prop_group.properties:
-                prop_group.properties.remove(uid)
-                self.modified_attributes = "property_groups"
+            if isinstance(data, list):
+                uids = []
+                for datum in data:
+                    uids += self.reference_to_uid(datum)
+            else:
+                uids = self.reference_to_uid(data)
 
-        return prop_group
+            if name is not None:
+                prop_groups = [self.find_or_create_property_group(name=name)]
+            else:
+                prop_groups = self.property_groups
+
+            for prop_group in prop_groups:
+                for uid in uids:
+                    if uid in prop_group.properties:
+                        prop_group.properties.remove(uid)
+                        self.modified_attributes = "property_groups"
 
     @property
     def cells(self):

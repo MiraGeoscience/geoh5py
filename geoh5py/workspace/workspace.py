@@ -23,6 +23,7 @@ import inspect
 import uuid
 import weakref
 from contextlib import contextmanager
+from gc import collect
 from typing import (
     TYPE_CHECKING,
     ClassVar,
@@ -139,24 +140,24 @@ class Workspace:
         # so that type check does not complain of possible returned None
         return cast(Workspace, active_one)
 
-    def all_data(self) -> List["data.Data"]:
+    def _all_data(self) -> List["data.Data"]:
         """Get all active Data entities registered in the workspace."""
-        weakref_utils.remove_none_referents(self._data)
+        self.remove_none_referents(self._data, "Data")
         return [cast("data.Data", v()) for v in self._data.values()]
 
-    def all_groups(self) -> List["group.Group"]:
+    def _all_groups(self) -> List["group.Group"]:
         """Get all active Group entities registered in the workspace."""
-        weakref_utils.remove_none_referents(self._groups)
+        self.remove_none_referents(self._groups, "Groups")
         return [cast("group.Group", v()) for v in self._groups.values()]
 
-    def all_objects(self) -> List["object_base.ObjectBase"]:
+    def _all_objects(self) -> List["object_base.ObjectBase"]:
         """Get all active Object entities registered in the workspace."""
-        weakref_utils.remove_none_referents(self._objects)
+        self.remove_none_referents(self._objects, "Objects")
         return [cast("object_base.ObjectBase", v()) for v in self._objects.values()]
 
-    def all_types(self) -> List["EntityType"]:
+    def _all_types(self) -> List["EntityType"]:
         """Get all active entity types registered in the workspace."""
-        weakref_utils.remove_none_referents(self._types)
+        self.remove_none_referents(self._types, "Types")
         return [cast("EntityType", v()) for v in self._types.values()]
 
     @property
@@ -387,31 +388,54 @@ class Workspace:
         return None
 
     @property
-    def data(self) -> dict:
+    def data(self) -> List["data.Data"]:
         """
         Dictionary of data entities uuid with corresponding weakref
         """
-        return self._data
+        return self._all_data()
 
-    def delete_entity(self, entity: Entity):
-        """Delete an entity and its children from the workspace and geoh5"""
+    def remove_entity(self, entity: Entity):
+        """
+        Function to remove an entity and its children from the workspace
+        """
+        self.workspace.remove_recursively(entity)
+        collect()
+        self.remove_none_referents(self._types, "Types")
+        self.finalize()  # Re-build the Root
+
+    def remove_none_referents(
+        self, referents: Dict[uuid.UUID, ReferenceType], rtype: str
+    ):
+        """
+        Search and remove deleted entities
+        """
+        rem_list: List = []
+        for key, value in referents.items():
+            if value is None:
+                rem_list += [key]
+                H5Writer.remove_entity(self.h5file, key, rtype)
+
+        for key in rem_list:
+            del referents[key]
+
+    def remove_recursively(self, entity: Entity):
+        """Delete an entity and its children from the workspace and geoh5 recursively"""
+
+        parent = entity.parent
+        for child in entity.children:
+            self.remove_recursively(child)
+
+        parent.children.remove(entity)
 
         if isinstance(entity, Data):
-            key = "Data"
-            del self.data[entity.uid]
+            ref_type = "Data"
+            parent.remove_data_from_group(entity)
         elif isinstance(entity, Group):
-            key = "Groups"
-            del self.groups[entity.uid]
+            ref_type = "Groups"
         elif isinstance(entity, ObjectBase):
-            key = "Objects"
-            del self.objects[entity.uid]
-        else:
-            print("Only entity of type 'Data', 'Group' or 'Object' are deletable.")
-            return
+            ref_type = "Objects"
 
-        H5Writer.delete_entity(entity, key)
-
-        self.finalize()  # Re-build the Root
+        H5Writer.remove_entity(self.h5file, entity.uid, ref_type, parent=parent)
 
     def deactivate(self):
         """Deactivate this workspace if it was the active one, else does nothing."""
@@ -556,11 +580,11 @@ class Workspace:
 
     def finalize(self):
         """ Finalize the h5file by checking for updated entities and re-building the Root"""
-        for entity in self.all_objects() + self.all_groups() + self.all_data():
+        for entity in self.objects + self.groups + self.data:
             if len(entity.modified_attributes) > 0:
                 self.save_entity(entity)
 
-        for entity_type in self.all_types():
+        for entity_type in self.types:
             if len(entity_type.modified_attributes) > 0:
                 H5Writer.write_entity_type(entity_type)
 
@@ -637,12 +661,12 @@ class Workspace:
         return entity_list
 
     @property
-    def groups(self) -> dict:
+    def groups(self) -> List["group.Group"]:
         """
         Dictionary of group entities uuid with corresponding weakref
         """
 
-        return self._groups
+        return self._all_groups()
 
     @property
     def h5file(self) -> str:
@@ -705,12 +729,12 @@ class Workspace:
         return self._name
 
     @property
-    def objects(self) -> dict:
+    def objects(self) -> List["object_base.ObjectBase"]:
         """
         Dictionary of object entities uuid with corresponding weakref
         """
 
-        return self._objects
+        return self._all_objects()
 
     def _register_type(self, entity_type: "EntityType"):
         weakref_utils.insert_once(self._types, entity_type.uid, entity_type)
@@ -751,6 +775,13 @@ class Workspace:
         :param add_children: Add children entities to geoh5.
         """
         H5Writer.save_entity(entity, close_file=close_file, add_children=add_children)
+
+    @property
+    def types(self) -> List["EntityType"]:
+        """
+        Dictionary of types uuid with corresponding weakref
+        """
+        return self._all_types()
 
     @property
     def version(self) -> float:
