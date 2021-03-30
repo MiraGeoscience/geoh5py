@@ -138,4 +138,8 @@ class PropertyGroup:
     def uid(self, uid: Union[str, uuid.UUID]):
         if isinstance(uid, str):
             uid = uuid.UUID(uid)
+
+        assert isinstance(
+            uid, uuid.UUID
+        ), f"Could not convert input uid {uid} to type uuid.UUID"
         self._uid = uid
