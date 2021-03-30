@@ -16,13 +16,14 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import uuid
+from abc import ABC
 from typing import List, Union
 
 from ..data import DataAssociationEnum
 from ..shared import Entity
 
 
-class PropertyGroup:
+class PropertyGroup(ABC):
     """
     Property group listing data children of an object.
     This group is not registered to the workspace and only visible to the parent object.

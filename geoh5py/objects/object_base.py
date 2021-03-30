@@ -295,12 +295,14 @@ class ObjectBase(Entity):
 
         :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        prop_group = PropertyGroup(**kwargs)
-        if any([pg.name == prop_group.name for pg in self.property_groups]):
+        if "name" in list(kwargs.keys()) and any(
+            [pg.name == kwargs["name"] for pg in self.property_groups]
+        ):
             prop_group = [
-                pg for pg in self.property_groups if pg.name == prop_group.name
+                pg for pg in self.property_groups if pg.name == kwargs["name"]
             ][0]
         else:
+            prop_group = PropertyGroup(**kwargs)
             self.property_groups = [prop_group]
 
         return prop_group
