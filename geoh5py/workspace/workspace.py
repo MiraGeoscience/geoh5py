@@ -398,10 +398,14 @@ class Workspace:
         """
         Function to remove an entity and its children from the workspace
         """
+        parent = entity.parent
         self.workspace.remove_recursively(entity)
+        parent.children.remove(entity)
+
+        del entity
+
         collect()
         self.remove_none_referents(self._types, "Types")
-        self.finalize()  # Re-build the Root
 
     def remove_none_referents(
         self, referents: Dict[uuid.UUID, ReferenceType], rtype: str
@@ -411,7 +415,8 @@ class Workspace:
         """
         rem_list: List = []
         for key, value in referents.items():
-            if value is None:
+
+            if value() is None:
                 rem_list += [key]
                 H5Writer.remove_entity(self.h5file, key, rtype)
 
@@ -425,7 +430,7 @@ class Workspace:
         for child in entity.children:
             self.remove_recursively(child)
 
-        parent.children.remove(entity)
+        entity.remove_children(entity.children)  # Remove link to children
 
         if isinstance(entity, Data):
             ref_type = "Data"
@@ -436,6 +441,8 @@ class Workspace:
             ref_type = "Objects"
 
         H5Writer.remove_entity(self.h5file, entity.uid, ref_type, parent=parent)
+        e_type = entity.entity_type
+        del e_type  # Remove entity_type on weakref check
 
     def deactivate(self):
         """Deactivate this workspace if it was the active one, else does nothing."""

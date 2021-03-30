@@ -100,7 +100,7 @@ class H5Writer:
         base_type_handle = h5_handle[base][ref_type]
         uid_str = H5Writer.uuid_str(uid)
 
-        if ref_type == "Type":
+        if ref_type == "Types":
             for e_type in ["Data types", "Group types", "Object types"]:
                 if uid_str in list(base_type_handle[e_type].keys()):
                     del base_type_handle[e_type][uid_str]
@@ -111,7 +111,9 @@ class H5Writer:
             if parent is not None:
                 parent_handle = H5Writer.fetch_handle(h5file, parent)
 
-                if parent_handle is not None and uid_str in list(parent_handle.keys()):
+                if parent_handle is not None and uid_str in list(
+                    parent_handle[ref_type].keys()
+                ):
                     del parent_handle[ref_type][uid_str]
 
     @staticmethod
@@ -617,15 +619,13 @@ class H5Writer:
 
                 if "entity_type" in entity.modified_attributes:
                     entity_handle = cls.fetch_handle(h5file, entity)
+                    del entity_handle["Type"]
                     new_type = H5Writer.write_entity_type(
                         entity.entity_type, file=h5file, close_file=False
                     )
-                    del entity_handle["Type"]
                     entity_handle["Type"] = new_type
 
-                else:
-                    cls.update_attributes(entity, file=h5file, close_file=False)
-
+                cls.update_attributes(entity, file=h5file, close_file=False)
                 entity.modified_attributes = []
                 entity.existing_h5_entity = True
 

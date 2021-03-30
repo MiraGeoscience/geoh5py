@@ -16,6 +16,7 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import tempfile
+from gc import collect
 from pathlib import Path
 
 import numpy as np
@@ -35,40 +36,78 @@ def test_delete_entities():
         workspace = Workspace(str(Path(tempdir) / r"testPoints.geoh5"))
 
         group = ContainerGroup.create(workspace)
+        curve_1 = Curve.create(workspace, vertices=xyz, parent=group)
+        curve_1.add_data({"DataValues": {"association": "VERTEX", "values": values}})
 
-        points = Curve.create(workspace, vertices=xyz, parent=group)
-
-        data = points.add_data(
-            {"DataValues": {"association": "VERTEX", "values": values}}
-        )
+        # Create second object with data sharing type
+        curve_2 = Curve.create(workspace, vertices=xyz, parent=group)
 
         # Add data
-        d_group = []
         for i in range(4):
-            values = np.random.randn(points.n_vertices)
-            d_group += [
-                points.add_data(
+            values = np.random.randn(curve_2.n_vertices)
+            if i == 0:  # Share the data type
+                curve_2.add_data(
+                    {
+                        f"Period{i + 1}": {
+                            "values": values,
+                            "entity_type": curve_1.children[0].entity_type,
+                        }
+                    },
+                    property_group="myGroup",
+                )
+            else:
+                curve_2.add_data(
                     {f"Period{i + 1}": {"values": values}}, property_group="myGroup"
                 )
-            ]
+        uid_out = curve_2.children[1].uid
 
-        # Property group object should have been created
-        prop_group = points.get_property_group("myGroup")
+        workspace.remove_entity(curve_2.children[0])
+        workspace.remove_entity(curve_2.children[0])
 
-        workspace.finalize()
-        workspace.remove_entity(d_group[2])
         assert (
-            d_group[2].uid not in prop_group.properties
+            uid_out not in curve_2.get_property_group("myGroup").properties
         ), "Data uid was not removed from the property_group"
-
-        workspace.remove_entity(points)
         assert (
-            (len(group.children) == 0)
-            and (points not in list(workspace.objects))
-            and (data not in list(workspace.data))
-        ), "Object and data were not fully removed from the workspace"
+            len(workspace.data) == 3
+        ), "Data were not fully removed from the workspace."
+        assert (
+            len(curve_2.children) == 2
+        ), "Data were not fully removed from the parent object."
+        assert (
+            len(workspace.types) == 6
+        ), "Data types were not properly removed from the workspace."
 
-        workspace.remove_entity(group)
-        assert group not in list(
-            workspace.groups
-        ), "Group object not fully remove from the workspace"
+        # Remove entire object with data
+        workspace.remove_entity(curve_2)
+
+        del curve_2  # Needed since still referenced in current script
+        collect()
+        assert (
+            len(workspace.groups) == 2
+        ), "Group was not fully removed from the workspace."
+        assert (
+            len(workspace.objects) == 1
+        ), "Object was not fully removed from the workspace."
+        assert (
+            len(workspace.data) == 1
+        ), "Data were not properly removed from the workspace."
+        assert (
+            len(workspace.types) == 4
+        ), "Data types were not properly removed from the workspace."
+
+        del workspace
+
+        # Re-open the project and check all was removed
+        workspace = Workspace(str(Path(tempdir) / r"testPoints.geoh5"))
+        assert (
+            len(workspace.groups) == 2
+        ), "Groups were not properly written to the workspace."
+        assert (
+            len(workspace.objects) == 1
+        ), "Objects were not properly written to the workspace."
+        assert (
+            len(workspace.data) == 1
+        ), "Data were not properly written to the workspace."
+        assert (
+            len(workspace.types) == 4
+        ), "Types were not properly written to the workspace."
