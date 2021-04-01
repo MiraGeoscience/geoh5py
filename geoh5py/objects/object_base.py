@@ -213,8 +213,6 @@ class ObjectBase(Entity):
             :obj:`~geoh5py.shared.entity.Entity.name` of data.
         :param name: Name of a :obj:`~geoh5py.groups.property_group.PropertyGroup`.
             A new group is created if none exist with the given name.
-
-        :return: The target property group. Toooooooo lonooooooooooooooooooooooooooooooooooooooog
         """
         if getattr(self, "property_groups", None) is not None:
 
