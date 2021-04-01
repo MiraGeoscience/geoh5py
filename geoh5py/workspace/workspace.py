@@ -389,9 +389,7 @@ class Workspace:
 
     @property
     def data(self) -> List["data.Data"]:
-        """
-        Dictionary of data entities uuid with corresponding weakref
-        """
+        """Get all active Data entities registered in the workspace."""
         return self._all_data()
 
     def remove_entity(self, entity: Entity):
@@ -667,10 +665,7 @@ class Workspace:
 
     @property
     def groups(self) -> List["group.Group"]:
-        """
-        Dictionary of group entities uuid with corresponding weakref
-        """
-
+        """Get all active Group entities registered in the workspace."""
         return self._all_groups()
 
     @property
@@ -735,10 +730,7 @@ class Workspace:
 
     @property
     def objects(self) -> List["object_base.ObjectBase"]:
-        """
-        Dictionary of object entities uuid with corresponding weakref
-        """
-
+        """Get all active Object entities registered in the workspace."""
         return self._all_objects()
 
     def _register_type(self, entity_type: "EntityType"):
@@ -783,9 +775,7 @@ class Workspace:
 
     @property
     def types(self) -> List["EntityType"]:
-        """
-        Dictionary of types uuid with corresponding weakref
-        """
+        """Get all active entity types registered in the workspace."""
         return self._all_types()
 
     @property
