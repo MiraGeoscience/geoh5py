@@ -224,7 +224,11 @@ class ObjectBase(Entity):
                 uids = self.reference_to_uid(data)
 
             if name is not None:
-                prop_groups = [self.find_or_create_property_group(name=name)]
+                prop_groups = [
+                    prop_group
+                    for prop_group in self.property_groups
+                    if prop_group.name == name
+                ]
             else:
                 prop_groups = self.property_groups
 
