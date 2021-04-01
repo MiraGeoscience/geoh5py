@@ -441,8 +441,6 @@ class Workspace:
             ref_type = "Objects"
 
         H5Writer.remove_entity(self.h5file, entity.uid, ref_type, parent=parent)
-        e_type = entity.entity_type
-        del e_type  # Remove entity_type on weakref check
 
     def deactivate(self):
         """Deactivate this workspace if it was the active one, else does nothing."""
