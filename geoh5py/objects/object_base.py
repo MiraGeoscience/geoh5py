@@ -184,38 +184,59 @@ class ObjectBase(Entity):
         :return: The target property group.
         """
         prop_group = self.find_or_create_property_group(name=name)
-
-        children_uid = [child.uid for child in self.children]
-
-        def reference_to_uid(value):
-            if isinstance(value, Data):
-                uid = [value.uid]
-            elif isinstance(value, str):
-                uid = [
-                    obj.uid
-                    for obj in self.workspace.get_entity(value)
-                    if obj.uid in children_uid
-                ]
-            elif isinstance(value, uuid.UUID):
-                uid = [value]
-            return uid
-
         if isinstance(data, list):
-            uid = []
+            uids = []
             for datum in data:
-                uid += reference_to_uid(datum)
+                uids += self.reference_to_uid(datum)
         else:
-            uid = reference_to_uid(data)
+            uids = self.reference_to_uid(data)
 
-        for i in uid:
-            assert i in [
+        for uid in uids:
+            assert uid in [
                 child.uid for child in self.children
-            ], f"Given data with uuid {i} does not match any known children"
-
-        prop_group.properties = uid
-        self.modified_attributes = "property_groups"
+            ], f"Given data with uuid {uid} does not match any known children"
+            if uid not in prop_group.properties:
+                prop_group.properties.append(uid)
+                self.modified_attributes = "property_groups"
 
         return prop_group
+
+    def remove_data_from_group(
+        self, data: Union[List, Data, uuid.UUID, str], name: str = None
+    ):
+        """
+        Remove data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
+        All given data must be children of the parent object.
+
+        :param data: :obj:`~geoh5py.data.data.Data` object,
+            :obj:`~geoh5py.shared.entity.Entity.uid` or
+            :obj:`~geoh5py.shared.entity.Entity.name` of data.
+        :param name: Name of a :obj:`~geoh5py.groups.property_group.PropertyGroup`.
+            A new group is created if none exist with the given name.
+        """
+        if getattr(self, "property_groups", None) is not None:
+
+            if isinstance(data, list):
+                uids = []
+                for datum in data:
+                    uids += self.reference_to_uid(datum)
+            else:
+                uids = self.reference_to_uid(data)
+
+            if name is not None:
+                prop_groups = [
+                    prop_group
+                    for prop_group in self.property_groups
+                    if prop_group.name == name
+                ]
+            else:
+                prop_groups = self.property_groups
+
+            for prop_group in prop_groups:
+                for uid in uids:
+                    if uid in prop_group.properties:
+                        prop_group.properties.remove(uid)
+                        self.modified_attributes = "property_groups"
 
     @property
     def cells(self):
@@ -276,12 +297,14 @@ class ObjectBase(Entity):
 
         :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        prop_group = PropertyGroup(**kwargs)
-        if any([pg.name == prop_group.name for pg in self.property_groups]):
+        if "name" in list(kwargs.keys()) and any(
+            [pg.name == kwargs["name"] for pg in self.property_groups]
+        ):
             prop_group = [
-                pg for pg in self.property_groups if pg.name == prop_group.name
+                pg for pg in self.property_groups if pg.name == kwargs["name"]
             ][0]
         else:
+            prop_group = PropertyGroup(**kwargs)
             self.property_groups = [prop_group]
 
         return prop_group
@@ -394,3 +417,17 @@ class ObjectBase(Entity):
         defining the position of points in 3D space.
         """
         ...
+
+    def reference_to_uid(self, value):
+        children_uid = [child.uid for child in self.children]
+        if isinstance(value, Data):
+            uid = [value.uid]
+        elif isinstance(value, str):
+            uid = [
+                obj.uid
+                for obj in self.workspace.get_entity(value)
+                if obj.uid in children_uid
+            ]
+        elif isinstance(value, uuid.UUID):
+            uid = [value]
+        return uid

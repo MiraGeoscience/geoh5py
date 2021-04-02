@@ -79,7 +79,7 @@ class H5Reader:
             value_map = entity["Type"]["Value map"][:]
             mapping = {}
             for key, value in value_map.tolist():
-                value = cls.check_byte_str(value)
+                value = cls.str_from_utf8_bytes(value)
                 mapping[key] = value
 
             type_attributes["entity_type"]["value_map"] = mapping
@@ -293,7 +293,7 @@ class H5Reader:
         if "Data" in list(project[name]["Data"][cls.uuid_str(uid)].keys()):
             values = np.r_[project[name]["Data"][cls.uuid_str(uid)]["Data"]]
             if isinstance(values[0], (str, bytes)):
-                values = cls.check_byte_str(values[0])
+                values = cls.str_from_utf8_bytes(values[0])
         else:
             values = None
 
@@ -335,7 +335,7 @@ class H5Reader:
         return "{" + str(value) + "}"
 
     @staticmethod
-    def check_byte_str(value: Union[bytes, str]) -> str:
+    def str_from_utf8_bytes(value: Union[bytes, str]) -> str:
         if isinstance(value, bytes):
             value = value.decode("utf-8")
         return value
