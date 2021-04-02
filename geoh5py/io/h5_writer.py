@@ -89,7 +89,14 @@ class H5Writer:
         return h5file
 
     @classmethod
-    def create_dataset(cls, entity_handle, dataset, label):
+    def create_dataset(cls, entity_handle, dataset: np.array, label: str):
+        """
+        Create a dataset on geoh5.
+
+        :param entity_handle: Pointer to a hdf5 group
+        :param dataset: Array of values to be written
+        :param label: Name of the dataset on file
+        """
         entity_handle.create_dataset(
             label,
             data=dataset,
