@@ -95,8 +95,6 @@ def test_delete_entities():
             len(workspace.types) == 4
         ), "Data types were not properly removed from the workspace."
 
-        del workspace
-
         # Re-open the project and check all was removed
         workspace = Workspace(str(Path(tempdir) / r"testPoints.geoh5"))
         assert (
