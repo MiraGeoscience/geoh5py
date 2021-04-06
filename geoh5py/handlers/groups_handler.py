@@ -59,7 +59,7 @@ class GroupsHandler:
 
     @staticmethod
     def get_all() -> List[i_Group]:
-        Workspace.active().all_groups()
+        Workspace.active().groups
         # TODO
         return []
 

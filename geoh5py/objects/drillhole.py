@@ -22,7 +22,7 @@ import numpy as np
 
 from ..data.data import Data
 from ..shared.utils import match_values, merge_arrays
-from .object_base import ObjectType, validate_data_type
+from .object_base import ObjectType
 from .points import Points
 
 
@@ -345,7 +345,7 @@ class Drillhole(Points):
                     + "or {'association': 'OBJECT'}."
                 )
 
-            entity_type = validate_data_type(attr)
+            entity_type = self.validate_data_type(attr)
             kwargs = {"parent": self, "association": attr["association"]}
             for key, val in attr.items():
                 if key in ["parent", "association", "entity_type", "type"]:

@@ -82,7 +82,7 @@ def test_object_instantiation(object_class):
 
 def _can_find(workspace, created_object):
     """Make sure we can find the created object in the workspace."""
-    all_objects = workspace.all_objects()
+    all_objects = workspace.objects
     assert len(all_objects) == 1
     assert next(iter(all_objects)) is created_object
     assert workspace.find_object(created_object.uid) is created_object

@@ -54,9 +54,7 @@ def test_user_comments():
         group_comment_2 = "my other comment"
         author = "Jane Doe"
         group.add_comment(group_comment_1)
-
         group.add_comment(group_comment_2)
-
         workspace.finalize()
 
         workspace = Workspace(h5file_path)
@@ -68,7 +66,6 @@ def test_user_comments():
         assert (
             group_in.comments.values[0]["Text"] == group_comment_1
         ), "Issue with 'Text' of group comments"
-
         assert (
             group_in.comments.values[1]["Text"] == group_comment_2
         ), "Issue with 'Text' of group comments"

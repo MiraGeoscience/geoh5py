@@ -79,7 +79,7 @@ def test_data_instantiation(data_class):
 
 def _can_find(workspace, created_data):
     """Make sure we can find the created data in the workspace."""
-    all_data = workspace.all_data()
+    all_data = workspace.data
     assert len(all_data) == 1
     assert next(iter(all_data)) is created_data
     assert workspace.find_data(created_data.uid) is created_data
