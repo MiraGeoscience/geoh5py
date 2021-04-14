@@ -19,19 +19,21 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
-from scipy import spatial
 
-from geoh5py.objects import Points, Surface
-from geoh5py.shared.utils import compare_entities
+from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
-def test_copy_entity():
+def test_no_data_values():
 
     # Generate a random cloud of points
     n_data = 12
     xyz = np.random.randn(n_data, 3)
-    values = np.random.randn(n_data)
+    float_values = np.random.randn(n_data)
+    float_values[3:5] = np.nan
+
+    int_values = np.random.randint(n_data, size=n_data).astype(float)
+    int_values[2:5] = np.nan
 
     with tempfile.TemporaryDirectory() as tempdir:
         h5file_path = Path(tempdir) / r"testProject.geoh5"
@@ -39,30 +41,24 @@ def test_copy_entity():
         # Create a workspace
         workspace = Workspace(h5file_path)
         points = Points.create(workspace, vertices=xyz)
-        data = points.add_data(
-            {"DataValues": {"association": "VERTEX", "values": values}}
-        )
-
-        # Create surface
-        surf_2d = spatial.Delaunay(xyz[:, :2])
-
-        # Create a geoh5 surface
-        surface = Surface.create(
-            workspace, name="mySurf", vertices=xyz, cells=getattr(surf_2d, "simplices")
+        data_objs = points.add_data(
+            {
+                "DataFloatValues": {"association": "VERTEX", "values": float_values},
+                "DataIntValues": {
+                    "values": int_values,
+                    "type": "INTEGER",
+                },
+            }
         )
 
         workspace.finalize()
 
         # Read the data back in from a fresh workspace
-        new_workspace = Workspace(Path(tempdir) / r"testProject_2.geoh5")
+        new_workspace = Workspace(h5file_path)
 
-        points.copy(parent=new_workspace)
-        surface.copy(parent=new_workspace)
+        for data in data_objs:
+            rec_data = new_workspace.get_entity(data.name)[0]
 
-        rec_points = new_workspace.get_entity(points.name)[0]
-        rec_surface = new_workspace.get_entity(surface.name)[0]
-        rec_data = new_workspace.get_entity(data.name)[0]
-
-        compare_entities(points, rec_points, ignore=["_parent"])
-        compare_entities(surface, rec_surface, ignore=["_parent"])
-        compare_entities(data, rec_data, ignore=["_parent"])
+            assert all(
+                np.isnan(rec_data.values) == np.isnan(data.values)
+            ), "Mismatch between input and recovered data values"

@@ -40,9 +40,6 @@ class Curve(Points):
         self._parts: Optional[np.ndarray] = None
         super().__init__(object_type, **kwargs)
 
-        if object_type.name == "None":
-            self.entity_type.name = "Curve"
-
     @property
     def cells(self) -> Optional[np.ndarray]:
         r"""

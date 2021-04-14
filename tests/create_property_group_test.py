@@ -50,7 +50,7 @@ def test_create_property_group():
             ]
 
         # Property group object should have been created
-        prop_group = curve.get_property_group("myGroup")
+        prop_group = curve.find_or_create_property_group(name="myGroup")
 
         # Create a new group by data name
         single_data_group = curve.add_data_to_group(f"Period{1}", "Singleton")
@@ -64,7 +64,9 @@ def test_create_property_group():
         workspace = Workspace(h5file_path)
 
         # Read the property_group back in
-        rec_prop_group = workspace.get_entity(obj_name)[0].get_property_group("myGroup")
+        rec_prop_group = workspace.get_entity(obj_name)[
+            0
+        ].find_or_create_property_group(name="myGroup")
 
         attrs = rec_prop_group.attribute_map
         check_list = [

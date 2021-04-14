@@ -65,7 +65,7 @@ def test_modify_property_group():
             ]
 
         # Property group object should have been created
-        prop_group = curve.get_property_group("myGroup")
+        prop_group = curve.find_or_create_property_group(name="myGroup")
 
         # Remove on props from the list
         curve.remove_data_from_group(props[-1], name="myGroup")
@@ -78,6 +78,6 @@ def test_modify_property_group():
 
         # Read the property_group back in
         rec_curve = workspace.get_entity(obj_name)[0]
-        rec_prop_group = rec_curve.get_property_group("myGroup")
+        rec_prop_group = rec_curve.find_or_create_property_group(name="myGroup")
 
         compare_objects(rec_prop_group, prop_group)

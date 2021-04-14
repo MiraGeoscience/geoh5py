@@ -44,7 +44,7 @@ from .. import data, groups, objects
 from ..data import CommentsData, Data, DataType
 from ..groups import CustomGroup, Group, PropertyGroup, RootGroup
 from ..io import H5Reader, H5Writer
-from ..objects import Cell, ObjectBase
+from ..objects import ObjectBase
 from ..shared import weakref_utils
 from ..shared.entity import Entity
 
@@ -456,7 +456,7 @@ class Workspace:
     def distance_unit(self, value: str):
         self._distance_unit = value
 
-    def fetch_cells(self, uid: uuid.UUID) -> Cell:
+    def fetch_cells(self, uid: uuid.UUID) -> np.ndarray:
         """
         Fetch the cells of an object from the source h5file.
 
@@ -561,6 +561,37 @@ class Workspace:
 
         return property_groups
 
+    def fetch_coordinates(self, uid: uuid.UUID, name: str) -> np.ndarray:
+        """
+        Fetch the survey values of drillhole objects
+
+        :param uid: Unique identifier of target entity
+
+        :return values: Array of [Depth, Dip, Azimuth] defining the drillhole
+        path
+        """
+        return H5Reader.fetch_coordinates(self.h5file, uid, name)
+
+    # def fetch_trace(self, uid: uuid.UUID) -> np.ndarray:
+    #     """
+    #     Fetch the trace of a drillhole objects
+    #
+    #     :param uid: Unique identifier of target entity
+    #
+    #     :return: Array of coordinate [x, y, z] locations.
+    #     """
+    #     return H5Reader.fetch_trace(self.h5file, uid)
+
+    def fetch_trace_depth(self, uid: uuid.UUID) -> np.ndarray:
+        """
+        Fetch the trace depth information of a drillhole objects
+
+        :param uid: Unique identifier of target entity
+
+        :return: Array of trace depth values.
+        """
+        return H5Reader.fetch_trace_depth(self.h5file, uid)
+
     def fetch_values(self, uid: uuid.UUID) -> Optional[float]:
         """
         Fetch the data values from the source h5file.
@@ -570,16 +601,6 @@ class Workspace:
         :return: Array of values.
         """
         return H5Reader.fetch_values(self.h5file, uid)
-
-    def fetch_vertices(self, uid: uuid.UUID) -> np.ndarray:
-        """
-        Fetch the vertices of an object from the source h5file.
-
-        :param uid: Unique identifier of target entity.
-
-        :return: Array of coordinate [x, y, z] locations.
-        """
-        return H5Reader.fetch_vertices(self.h5file, uid)
 
     def finalize(self):
         """ Finalize the h5file by checking for updated entities and re-building the Root"""

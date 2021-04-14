@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, List, Optional, Union
 import numpy as np
 
 from ..data import CommentsData, Data
+from ..data.data_association_enum import DataAssociationEnum
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
@@ -51,7 +52,13 @@ class ObjectBase(Entity):
         self._comments = None
         # self._clipping_ids: List[uuid.UUID] = []
 
+        if not any([key for key in kwargs if key in ["name", "Name"]]):
+            kwargs["name"] = type(self).__name__
+
         super().__init__(**kwargs)
+
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = type(self).__name__
 
     def add_comment(self, comment: str, author: str = None):
         """
@@ -117,35 +124,8 @@ class ObjectBase(Entity):
 
             attr["name"] = name
 
-            if "association" not in list(attr.keys()):
-                attr["association"] = "OBJECT"
-                if (
-                    getattr(self, "n_cells", None) is not None
-                    and attr["values"].ravel().shape[0] == self.n_cells
-                ):
-                    attr["association"] = "CELL"
-                elif (
-                    getattr(self, "n_vertices", None) is not None
-                    and attr["values"].ravel().shape[0] == self.n_vertices
-                ):
-                    attr["association"] = "VERTEX"
-
-            if "entity_type" in list(attr.keys()):
-                entity_type = attr["entity_type"]
-            elif "type" in list(attr.keys()):
-                assert attr["type"].upper() in list(
-                    PrimitiveTypeEnum.__members__.keys()
-                ), f"Data 'type' should be one of {list(PrimitiveTypeEnum.__members__.keys())}"
-                entity_type = {"primitive_type": attr["type"].upper()}
-            else:
-                if isinstance(attr["values"], np.ndarray):
-                    entity_type = {"primitive_type": "FLOAT"}
-                elif isinstance(attr["values"], str):
-                    entity_type = {"primitive_type": "TEXT"}
-                else:
-                    raise NotImplementedError(
-                        "Only add_data values of type FLOAT and TEXT have been implemented"
-                    )
+            self.validate_data_association(attr)
+            entity_type = self.validate_data_type(attr)
 
             # Re-order to set parent first
             kwargs = {"parent": self, "association": attr["association"]}
@@ -337,31 +317,6 @@ class ObjectBase(Entity):
                 name_list.append(child.name)
         return sorted(name_list)
 
-    def get_property_group(
-        self, group_id: Union[str, uuid.UUID]
-    ) -> Optional[PropertyGroup]:
-        """
-        Retrieve a :obj:`~geoh5py.groups.property_group.PropertyGroup` from one of its
-        identifier.
-
-        :param uid: PropertyGroup identifier, either by its name or :obj:`uuid.UUID`.
-
-        :return: PropertyGroup with the given name.
-        """
-        if isinstance(group_id, uuid.UUID):
-            groups_list = [pg for pg in self.property_groups if pg.uid == group_id]
-
-        else:  # Extract all groups uuid with matching group_id
-            groups_list = [pg for pg in self.property_groups if pg.name == group_id]
-
-        try:
-            prop_group = groups_list[0]
-        except IndexError:
-            print(f"No property_group {group_id} found.")
-            return None
-
-        return prop_group
-
     @property
     def last_focus(self) -> str:
         """
@@ -418,16 +373,59 @@ class ObjectBase(Entity):
         """
         ...
 
-    def reference_to_uid(self, value):
-        children_uid = [child.uid for child in self.children]
-        if isinstance(value, Data):
-            uid = [value.uid]
-        elif isinstance(value, str):
-            uid = [
-                obj.uid
-                for obj in self.workspace.get_entity(value)
-                if obj.uid in children_uid
-            ]
-        elif isinstance(value, uuid.UUID):
-            uid = [value]
-        return uid
+    def validate_data_association(self, attribute_dict):
+        """
+        Get a dictionary of attributes and validate the data 'association' keyword.
+        """
+
+        if "association" in list(attribute_dict.keys()):
+            assert attribute_dict["association"] in [
+                enum.name for enum in DataAssociationEnum
+            ], (
+                "Data 'association' must be one of "
+                + f"{[enum.name for enum in DataAssociationEnum]}. "
+                + f"{attribute_dict['association']} provided."
+            )
+        else:
+            attribute_dict["association"] = "OBJECT"
+            if (
+                getattr(self, "n_cells", None) is not None
+                and attribute_dict["values"].ravel().shape[0] == self.n_cells
+            ):
+                attribute_dict["association"] = "CELL"
+            elif (
+                getattr(self, "n_vertices", None) is not None
+                and attribute_dict["values"].ravel().shape[0] == self.n_vertices
+            ):
+                attribute_dict["association"] = "VERTEX"
+
+    @staticmethod
+    def validate_data_type(attribute_dict):
+        """
+        Get a dictionary of attributes and validate the type of data.
+        """
+
+        if "entity_type" in list(attribute_dict.keys()):
+            entity_type = attribute_dict["entity_type"]
+        elif "type" in list(attribute_dict.keys()):
+            assert attribute_dict["type"].upper() in list(
+                PrimitiveTypeEnum.__members__.keys()
+            ), f"Data 'type' should be one of {list(PrimitiveTypeEnum.__members__.keys())}"
+            entity_type = {"primitive_type": attribute_dict["type"].upper()}
+        else:
+            if isinstance(attribute_dict["values"], np.ndarray) and (
+                attribute_dict["values"].dtype in [np.float32, np.float64]
+            ):
+                entity_type = {"primitive_type": "FLOAT"}
+            elif isinstance(attribute_dict["values"], np.ndarray) and (
+                attribute_dict["values"].dtype in [np.uint32, np.int32]
+            ):
+                entity_type = {"primitive_type": "INTEGER"}
+            elif isinstance(attribute_dict["values"], str):
+                entity_type = {"primitive_type": "TEXT"}
+            else:
+                raise NotImplementedError(
+                    "Only add_data values of type FLOAT, INTEGER and TEXT have been implemented"
+                )
+
+        return entity_type

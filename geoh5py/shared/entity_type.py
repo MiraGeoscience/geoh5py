@@ -38,7 +38,7 @@ class EntityType(ABC):
         self._workspace = weakref.ref(workspace)
 
         self._uid: uuid.UUID = uuid.uuid4()
-        self._name: Optional[str] = None
+        self._name: Optional[str] = "Entity"
         self._description: Optional[str] = None
         self._existing_h5_entity = False
         self._modified_attributes: List[str] = []
@@ -137,16 +137,6 @@ class EntityType(ABC):
     def name(self, name: str):
         self._name = name
         self.modified_attributes = "attributes"
-
-    @name.getter
-    def name(self):
-        """
-        :obj:`str` Name of the entity type.
-        """
-        if self._name is None:
-            return str(self.uid)
-
-        return self._name
 
     @property
     def uid(self) -> uuid.UUID:

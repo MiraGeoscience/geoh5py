@@ -65,7 +65,8 @@ def test_delete_entities():
         workspace.remove_entity(curve_2.children[0])
 
         assert (
-            uid_out not in curve_2.get_property_group("myGroup").properties
+            uid_out
+            not in curve_2.find_or_create_property_group(name="myGroup").properties
         ), "Data uid was not removed from the property_group"
         assert (
             len(workspace.data) == 3

@@ -45,7 +45,7 @@ class Entity(ABC):
         self._children: List = []
         self._visible = True
         self._allow_delete = True
-        self._allow_move = False
+        self._allow_move = True
         self._allow_rename = True
         self._public = True
         self._existing_h5_entity = False
@@ -61,6 +61,7 @@ class Entity(ABC):
                 setattr(self, attr, item)
             except AttributeError:
                 continue
+        self.modified_attributes = []
 
     def add_children(self, children: List["shared.Entity"]):
         """
@@ -275,6 +276,29 @@ class Entity(ABC):
     def public(self, value: bool):
         self._public = value
         self.modified_attributes = "attributes"
+
+    def reference_to_uid(
+        self, value: Union["Entity", str, uuid.UUID]
+    ) -> List[uuid.UUID]:
+        """
+        General entity reference translation.
+
+        :param value: Either an `Entity`, string or uuid
+
+        :return: List of unique identifier associated with the input reference.
+        """
+        children_uid = [child.uid for child in self.children]
+        if isinstance(value, Entity):
+            uid = [value.uid]
+        elif isinstance(value, str):
+            uid = [
+                obj.uid
+                for obj in self.workspace.get_entity(value)
+                if obj.uid in children_uid
+            ]
+        elif isinstance(value, uuid.UUID):
+            uid = [value]
+        return uid
 
     def remove_children(self, children: List["shared.Entity"]):
         """
