@@ -67,7 +67,7 @@ def merge_arrays(
     if mapping is None:
         mapping = match_values(head, tail, tolerance=tolerance)
 
-    if np.any(mapping):
+    if mapping.shape[0] > 0:
         if replace == "B->A":
             head[mapping[:, 0]] = tail[mapping[:, 1]]
         else:
