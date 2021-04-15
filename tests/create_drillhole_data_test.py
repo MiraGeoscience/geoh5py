@@ -87,6 +87,11 @@ def test_create_drillhole_data():
         assert not np.any(
             np.isnan(well.get_data("TO")[0].values)
         ), "TO values not fully set."
+        assert (
+            well.get_data("TO")[0].values.shape[0]
+            == well.get_data("FROM")[0].values.shape[0]
+            == well.n_cells
+        ), "Shape or FROM to n_cells differ."
 
         # Add log-data
         data_objects += [
