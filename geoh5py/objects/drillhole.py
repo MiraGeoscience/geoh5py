@@ -536,14 +536,13 @@ class Drillhole(Points):
                 replace="B->A",
                 mapping=cell_map,
             )
-
-            self.cells = np.r_[self.cells, new_cells.astype("uint32")]
             self._from.values = merge_arrays(
                 self._from.values, from_to[:, 0], mapping=cell_map
             )
             self._to.values = merge_arrays(
                 self._to.values, from_to[:, 1], mapping=cell_map
             )
+            self.cells = np.r_[self.cells, new_cells.astype("uint32")]
 
         return input_values
 
