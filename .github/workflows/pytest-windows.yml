@@ -51,7 +51,7 @@ jobs:
     - name: pytest
       run: poetry run pytest --cov-report=xml --cov=geoh5py --cov-branch --cov-fail-under=80
     - name: Codecov
-      if: github.repository == 'mirageosience/geoh5py' && success() && matrix.python_ver == '3.7'
+      if: ${{ github.repository == 'MiraGeoscience/geoh5py' && success() && matrix.python_ver == '3.7' }}
       uses: codecov/codecov-action@v1.3.2
       with:
         name: GitHub
