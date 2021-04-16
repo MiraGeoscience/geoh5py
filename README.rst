@@ -128,6 +128,17 @@ You should have received a copy of the GNU Lesser General Public License
 along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
+Third Party Software
+^^^^^^^^^^^^^^^^^^^^
+The geoh5 Software may provide links to third party libraries or code (collectively “Third Party Software”)
+to implement various functions. Third Party Software does not comprise part of the Software.
+The use of Third Party Software is governed by the terms of such software license(s).
+Third Party Software notices and/or additional terms and conditions are located in the
+`THIRD_PARTY_SOFTWARE.rst`_ file.
+
+.. _THIRD_PARTY_SOFTWARE.rst: THIRD_PARTY_SOFTWARE.rst
+
+
 Copyright
 ^^^^^^^^^
 Copyright (c) 2021 Mira Geoscience Ltd.
