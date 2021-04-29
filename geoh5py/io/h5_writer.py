@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Optional, Union
 import h5py
 import numpy as np
 
-from ..data import CommentsData, Data, DataType, TextData
+from ..data import CommentsData, Data, DataType, IntegerData, TextData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import Entity
@@ -39,6 +39,18 @@ class H5Writer:
     """
 
     str_type = h5py.special_dtype(vlen=str)
+
+    key_map = {
+        "values": "Data",
+        "cells": "Cells",
+        "surveys": "Surveys",
+        "trace": "Trace",
+        "trace_depth": "TraceDepth",
+        "vertices": "Vertices",
+        "octree_cells": "Octree Cells",
+        "property_groups": "PropertyGroups",
+        "color_map": "Color map",
+    }
 
     @staticmethod
     def bool_value(value: np.int8) -> bool:
@@ -88,44 +100,82 @@ class H5Writer:
 
         return h5file
 
+    @classmethod
+    def create_dataset(cls, entity_handle, dataset: np.array, label: str):
+        """
+        Create a dataset on geoh5.
+
+        :param entity_handle: Pointer to a hdf5 group
+        :param dataset: Array of values to be written
+        :param label: Name of the dataset on file
+        """
+        entity_handle.create_dataset(
+            label,
+            data=dataset,
+            dtype=dataset.dtype,
+            compression="gzip",
+            compression_opts=9,
+        )
+
+    @staticmethod
+    def remove_entity(
+        h5file: str, uid: uuid.UUID, ref_type: str, parent: Entity = None
+    ):
+        """
+        Remove an entity and its type from the target geoh5 file.
+        """
+        h5_handle = H5Writer.fetch_h5_handle(h5file)
+        base = list(h5_handle.keys())[0]
+        base_type_handle = h5_handle[base][ref_type]
+        uid_str = H5Writer.uuid_str(uid)
+
+        if ref_type == "Types":
+            for e_type in ["Data types", "Group types", "Object types"]:
+                if uid_str in list(base_type_handle[e_type].keys()):
+                    del base_type_handle[e_type][uid_str]
+        else:
+            if uid_str in list(base_type_handle.keys()):
+                del base_type_handle[uid_str]
+
+            if parent is not None:
+                parent_handle = H5Writer.fetch_handle(h5file, parent)
+
+                if parent_handle is not None and uid_str in list(
+                    parent_handle[ref_type].keys()
+                ):
+                    del parent_handle[ref_type][uid_str]
+
     @staticmethod
     def fetch_h5_handle(
-        file: Optional[Union[str, h5py.File]],
-        entity: Union[Entity, "shared.EntityType"],
+        file: Union[str, h5py.File],
     ) -> h5py.File:
         """
-        Open in read+ mode a geoh5 file.
+        Open in read+ mode a geoh5 file from string.
 
         :param file: Name or handle to a geoh5 file.
-        :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
 
         :return h5py.File: Handle to an opened h5py file.
         """
-        if file is None:
-            h5file = h5py.File(entity.workspace.h5file, "r+")
+        if isinstance(file, h5py.File):
+            return file
 
-        else:
-            if not isinstance(file, h5py.File):
-                h5file = h5py.File(file, "r+")
-            else:
-                h5file = file
-
-        return h5file
+        return h5py.File(file, "r+")
 
     @classmethod
-    def fetch_handle(cls, file: Optional[Union[str, h5py.File]], entity):
+    def fetch_handle(
+        cls, file: Optional[Union[str, h5py.File]], entity, return_parent: bool = False
+    ):
         """
         Get a pointer to an :obj:`~geoh5py.shared.entity.Entity` in geoh5.
 
         :param file: Name or handle to a geoh5 file
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`
+        :param return_parent: Option to return the handle to the parent entity.
 
-        :return entity_handle: Pointer to an existing entity or None if not found
+        :return entity_handle: HDF5 pointer to an existing entity, parent or None if not found.
         """
         cls.str_type = h5py.special_dtype(vlen=str)
-
-        h5file = cls.fetch_h5_handle(file, entity)
-
+        h5file = cls.fetch_h5_handle(file)
         base = list(h5file.keys())[0]
 
         if entity.name == base:
@@ -150,6 +200,10 @@ class H5Writer:
 
         # Check if already in the project
         if cls.uuid_str(uid) in list(base_handle.keys()):
+
+            if return_parent:
+                return base_handle
+
             return base_handle[cls.uuid_str(uid)]
 
         return None
@@ -162,7 +216,7 @@ class H5Writer:
         :param workspace: Workspace object defining the project structure.
         :param close_file: Close file after write. [False]
         """
-        h5file = cls.fetch_h5_handle(workspace.h5file, workspace)
+        h5file = cls.fetch_h5_handle(workspace.h5file)
         workspace_group: Entity = workspace.get_entity("Workspace")[0]
         root_handle = H5Writer.fetch_handle(h5file, workspace_group)
 
@@ -191,9 +245,10 @@ class H5Writer:
         :param close_file: Close file after write.
         :param add_children: Add :obj:`~geoh5py.shared.entity.Entity.children`.
         """
-        h5file = cls.fetch_h5_handle(file, entity)
+        if file is None:
+            file = entity.workspace.h5file
 
-        # Add itself to the project
+        h5file = cls.fetch_h5_handle(file)
         new_entity = H5Writer.write_entity(entity, file=h5file, close_file=False)
 
         if add_children:
@@ -208,7 +263,6 @@ class H5Writer:
             entity, file=h5file, close_file=False, recursively=True
         )
 
-        # Check if file reference to a hdf5
         if close_file:
             h5file.close()
 
@@ -228,51 +282,35 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file.
         :param close_file: Close file after write.
         """
-        file = cls.fetch_h5_handle(file, entity)
-        entity_handle = H5Writer.fetch_handle(file, entity)
+        if file is None:
+            file = entity.workspace.h5file
 
-        attr_dict = {
-            "values": "Data",
-            "cells": "Cells",
-            "vertices": "Vertices",
-            "octree_cells": "Octree Cells",
-            "property_groups": "PropertyGroups",
-            "color_map": "Color map",
-        }
+        file = cls.fetch_h5_handle(file)
+        entity_handle = H5Writer.fetch_handle(file, entity)
 
         for attr in entity.modified_attributes:
 
             try:
-                del entity_handle[attr_dict[attr]]
+                del entity_handle[cls.key_map[attr]]
+                if getattr(entity, attr, None) is None:
+                    continue
             except KeyError:
                 pass
 
-            if attr == "values":
-                cls.write_data_values(
-                    entity, entity.values, file=file, close_file=close_file
-                )
-
+            if attr in ["values", "trace_depth"]:
+                cls.write_data_values(entity, attr, file=file, close_file=close_file)
             elif attr == "cells":
                 cls.write_cells(entity, file=file, close_file=close_file)
-
-            elif attr == "vertices":
-                cls.write_vertices(entity, file=file, close_file=close_file)
-
+            elif attr in ["surveys", "trace", "vertices"]:
+                cls.write_coordinates(entity, attr, file=file, close_file=close_file)
             elif attr == "octree_cells":
                 cls.write_octree_cells(entity, file=file, close_file=close_file)
-
             elif attr == "property_groups":
                 cls.write_property_groups(entity, file=file, close_file=close_file)
-
             elif attr == "cell_delimiters":
                 cls.write_cell_delimiters(entity, file=file, close_file=close_file)
-
             elif attr == "color_map":
                 cls.write_color_map(entity, file=file, close_file=close_file)
-
-            # elif attr == "visible":
-            #     cls.write_visible(entity, file=file, close_file=close_file)
-
             else:
                 cls.write_attributes(entity, file=file, close_file=close_file)
 
@@ -300,7 +338,10 @@ class H5Writer:
         :param entity: Entity with attributes to be added to the geoh5 file.
         :param close_file: Close file after write.
         """
-        h5file = cls.fetch_h5_handle(file, entity)
+        if file is None:
+            file = entity.workspace.h5file
+
+        h5file = cls.fetch_h5_handle(file)
         entity_handle = H5Writer.fetch_handle(file, entity)
         str_type = h5py.special_dtype(vlen=str)
 
@@ -322,13 +363,10 @@ class H5Writer:
 
             if isinstance(value, (np.int8, bool)):
                 entity_handle.attrs.create(key, int(value), dtype="int8")
-
             elif isinstance(value, str):
                 entity_handle.attrs.create(key, value, dtype=str_type)
-
             elif value is None:
                 entity_handle.attrs.create(key, "None", dtype=str_type)
-
             else:
                 entity_handle.attrs.create(key, value, dtype=np.asarray(value).dtype)
         if close_file:
@@ -348,51 +386,31 @@ class H5Writer:
         :param entity: Target entity
         :param close_file: Close geoh5 file after write
         """
-        h5file = cls.fetch_h5_handle(file, entity)
+        if file is None:
+            file = entity.workspace.h5file
+
+        h5file = cls.fetch_h5_handle(file)
+        entity_handle = H5Writer.fetch_handle(h5file, entity)
 
         if hasattr(entity, "u_cell_delimiters") and (
             entity.u_cell_delimiters is not None
         ):
-            u_cell_delimiters = entity.u_cell_delimiters
-            entity_handle = H5Writer.fetch_handle(h5file, entity)
-
-            # Adding cells
-            entity_handle.create_dataset(
-                "U cell delimiters",
-                data=u_cell_delimiters,
-                dtype=u_cell_delimiters.dtype,
-                compression="gzip",
-                compression_opts=9,
+            cls.create_dataset(
+                entity_handle, entity.u_cell_delimiters, "U cell delimiters"
             )
 
         if hasattr(entity, "v_cell_delimiters") and (
             entity.v_cell_delimiters is not None
         ):
-            v_cell_delimiters = entity.v_cell_delimiters
-            entity_handle = H5Writer.fetch_handle(h5file, entity)
-
-            # Adding cells
-            entity_handle.create_dataset(
-                "V cell delimiters",
-                data=v_cell_delimiters,
-                dtype=v_cell_delimiters.dtype,
-                compression="gzip",
-                compression_opts=9,
+            cls.create_dataset(
+                entity_handle, entity.v_cell_delimiters, "V cell delimiters"
             )
 
         if hasattr(entity, "z_cell_delimiters") and (
             entity.z_cell_delimiters is not None
         ):
-            z_cell_delimiters = entity.z_cell_delimiters
-            entity_handle = H5Writer.fetch_handle(h5file, entity)
-
-            # Adding cells
-            entity_handle.create_dataset(
-                "Z cell delimiters",
-                data=z_cell_delimiters,
-                dtype=z_cell_delimiters.dtype,
-                compression="gzip",
-                compression_opts=9,
+            cls.create_dataset(
+                entity_handle, entity.z_cell_delimiters, "Z cell delimiters"
             )
 
         if close_file:
@@ -412,21 +430,14 @@ class H5Writer:
         :param entity: Target entity
         :param close_file: Close geoh5 file after write
         """
-        h5file = cls.fetch_h5_handle(file, entity)
+        if file is None:
+            file = entity.workspace.h5file
+
+        h5file = cls.fetch_h5_handle(file)
 
         if hasattr(entity, "cells") and (entity.cells is not None):
-            indices = entity.cells
             entity_handle = H5Writer.fetch_handle(h5file, entity)
-
-            # Adding cells
-            entity_handle.create_dataset(
-                "Cells",
-                indices.shape,
-                data=indices,
-                dtype=indices.dtype,
-                compression="gzip",
-                compression_opts=9,
-            )
+            cls.create_dataset(entity_handle, entity.cells, "Cells")
 
         if close_file:
             h5file.close()
@@ -446,20 +457,15 @@ class H5Writer:
         :param entity_type: Target entity_type with color_map
         :param close_file: Close geoh5 file after write
         """
-        h5file = cls.fetch_h5_handle(file, entity_type)
+        if file is None:
+            file = entity_type.workspace.h5file
+
+        h5file = cls.fetch_h5_handle(file)
         color_map = getattr(entity_type, "color_map", None)
 
         if color_map is not None and color_map.values is not None:
             entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)
-            map_values = color_map.values
-            entity_type_handle.create_dataset(
-                "Color map",
-                map_values.shape,
-                data=map_values,
-                dtype=map_values.dtype,
-                compression="gzip",
-                compression_opts=9,
-            )
+            cls.create_dataset(entity_type_handle, color_map.values, "Color map")
 
         if close_file:
             h5file.close()
@@ -479,9 +485,11 @@ class H5Writer:
         :param entity_type: Target entity_type with value_map
         :param close_file: Close geoh5 file after write
         """
-        h5file = cls.fetch_h5_handle(file, entity_type)
-        reference_value_map = getattr(entity_type, "value_map", None)
+        if file is None:
+            file = entity_type.workspace.h5file
 
+        h5file = cls.fetch_h5_handle(file)
+        reference_value_map = getattr(entity_type, "value_map", None)
         names = ["Key", "Value"]
         formats = ["<u4", h5py.special_dtype(vlen=str)]
 
@@ -490,10 +498,7 @@ class H5Writer:
 
             dtype = dict(names=names, formats=formats)
             array = np.array(list(reference_value_map.map.items()), dtype=dtype)
-
-            entity_type_handle.create_dataset(
-                "Value map", array.shape, data=array, dtype=array.dtype
-            )
+            cls.create_dataset(entity_type_handle, array, "Value map")
 
         if close_file:
             h5file.close()
@@ -508,17 +513,51 @@ class H5Writer:
         """
         Needs revision once Visualization is implemented
         """
-        h5file = cls.fetch_h5_handle(file, entity)
-        entity_handle = H5Writer.fetch_handle(h5file, entity)
+        if file is None:
+            file = entity.workspace.h5file
 
+        h5file = cls.fetch_h5_handle(file)
+        entity_handle = H5Writer.fetch_handle(h5file, entity)
         dtype = np.dtype(
             [("ViewID", h5py.special_dtype(vlen=str)), ("Visible", "int8")]
         )
 
         if entity.visible:
-
             visible = entity_handle.create_dataset("Visible", shape=(1,), dtype=dtype)
             visible["Visible"] = 1
+
+        if close_file:
+            h5file.close()
+
+    @classmethod
+    def write_coordinates(
+        cls,
+        entity,
+        attribute,
+        file: Optional[Union[str, h5py.File]] = None,
+        close_file: bool = True,
+    ):
+        """
+        Add :obj:`~geoh5py.objects.object_base.ObjectBase.surveys` of an object.
+
+        :param entity: Target entity.
+        :param attribute: Name of the attribute to be written to geoh5
+        :param file: Name or handle to a geoh5 file.
+        :param close_file: Close geoh5 file after write.
+        """
+        h5file = cls.fetch_h5_handle(file)
+        entity_handle = H5Writer.fetch_handle(h5file, entity)
+
+        if getattr(entity, attribute, None) is not None:
+            entity_handle.create_dataset(
+                cls.key_map[attribute],
+                data=getattr(entity, "_" + attribute),
+                compression="gzip",
+                compression_opts=9,
+            )
+
+        elif attribute in entity_handle.keys():
+            del entity_handle[attribute]
 
         if close_file:
             h5file.close()
@@ -527,7 +566,7 @@ class H5Writer:
     def write_data_values(
         cls,
         entity,
-        values,
+        attribute,
         file: Optional[Union[str, h5py.File]] = None,
         close_file: bool = True,
     ):
@@ -536,19 +575,22 @@ class H5Writer:
 
         :param file: Name or handle to a geoh5 file.
         :param entity: Target entity.
-        :param values: Array of values to be added to the geoh5 file.
+        :param attribute: Name of the attribute to be written to geoh5
         :param close_file: Close geoh5 file after write.
         """
-        h5file = cls.fetch_h5_handle(file, entity)
+        if file is None:
+            file = entity.workspace.h5file
 
+        h5file = cls.fetch_h5_handle(file)
         entity_handle = H5Writer.fetch_handle(h5file, entity)
+        if getattr(entity, attribute, None) is not None:
+            values = getattr(entity, attribute)
 
         # Adding an array of values
         if isinstance(entity, CommentsData):
-
             comments = {"Comments": values}
             entity_handle.create_dataset(
-                "Data",
+                cls.key_map[attribute],
                 data=json.dumps(comments, indent=4),
                 dtype=h5py.special_dtype(vlen=str),
                 shape=(1,),
@@ -556,14 +598,23 @@ class H5Writer:
 
         elif isinstance(entity, TextData):
             entity_handle.create_dataset(
-                "Data",
+                cls.key_map[attribute],
                 data=values,
                 dtype=h5py.special_dtype(vlen=str),
                 shape=(1,),
             )
         else:
+            out_vals = values.copy()
+            if isinstance(entity, IntegerData):
+                out_vals = np.round(out_vals).astype("int32")
+            else:
+                out_vals[np.isnan(out_vals)] = entity.ndv()
+
             entity_handle.create_dataset(
-                "Data", data=values, compression="gzip", compression_opts=9
+                cls.key_map[attribute],
+                data=out_vals,
+                compression="gzip",
+                compression_opts=9,
             )
 
         if close_file:
@@ -574,7 +625,6 @@ class H5Writer:
         cls,
         entity,
         file: Optional[Union[str, h5py.File]] = None,
-        values=None,
         close_file: bool = True,
     ):
         """
@@ -583,15 +633,16 @@ class H5Writer:
 
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
-        :param values: Array of values to be added to Data entity.
         :param close_file: Close file after write.
 
         :return entity: Pointer to the written entity. Active link if "close_file" is False.
         """
+
+        if file is None:
+            file = entity.workspace.h5file
+
         cls.str_type = h5py.special_dtype(vlen=str)
-
-        h5file = cls.fetch_h5_handle(file, entity)
-
+        h5file = cls.fetch_h5_handle(file)
         base = list(h5file.keys())[0]
 
         if isinstance(entity, Data):
@@ -613,15 +664,13 @@ class H5Writer:
 
                 if "entity_type" in entity.modified_attributes:
                     entity_handle = cls.fetch_handle(h5file, entity)
+                    del entity_handle["Type"]
                     new_type = H5Writer.write_entity_type(
                         entity.entity_type, file=h5file, close_file=False
                     )
-                    del entity_handle["Type"]
                     entity_handle["Type"] = new_type
 
-                else:
-                    cls.update_attributes(entity, file=h5file, close_file=False)
-
+                cls.update_attributes(entity, file=h5file, close_file=False)
                 entity.modified_attributes = []
                 entity.existing_h5_entity = True
 
@@ -649,11 +698,10 @@ class H5Writer:
             entity.entity_type, file=h5file, close_file=False
         )
         entity_handle["Type"] = new_type
-
         entity.entity_type.modified_attributes = []
         entity.entity_type.existing_h5_entity = True
 
-        cls.write_properties(entity, file=h5file, values=values, close_file=False)
+        cls.write_properties(entity, file=h5file, close_file=False)
 
         # Check if file reference to a hdf5
         if close_file:
@@ -680,14 +728,13 @@ class H5Writer:
 
         :return type: Pointer to :obj:`~geoh5py.shared.entity_type.EntityType` in geoh5.
         """
-        h5file = cls.fetch_h5_handle(file, entity_type)
+        if file is None:
+            file = entity_type.workspace.h5file
 
+        h5file = cls.fetch_h5_handle(file)
         base = list(h5file.keys())[0]
-
-        # tree = entity_type.workspace.tree
         uid = entity_type.uid
 
-        # entity_type_str = tree[uid]["entity_type"].replace("_", " ").capitalize() + "s"
         if isinstance(entity_type, DataType):
             entity_type_str = "Data types"
         elif isinstance(entity_type, ObjectType):
@@ -746,21 +793,14 @@ class H5Writer:
         :param entity: Target entity_type with color_map.
         :param close_file: Close geoh5 file after write.
         """
-        h5file = cls.fetch_h5_handle(file, entity)
+        if file is None:
+            file = entity.workspace.h5file
+
+        h5file = cls.fetch_h5_handle(file)
 
         if hasattr(entity, "octree_cells") and (entity.octree_cells is not None):
-            octree_cells = entity.octree_cells
             entity_handle = H5Writer.fetch_handle(h5file, entity)
-
-            # Adding cells
-            entity_handle.create_dataset(
-                "Octree Cells",
-                octree_cells.shape,
-                data=octree_cells,
-                dtype=octree_cells.dtype,
-                compression="gzip",
-                compression_opts=9,
-            )
+            cls.create_dataset(entity_handle, entity.octree_cells, "Octree Cells")
 
         if close_file:
             h5file.close()
@@ -770,7 +810,6 @@ class H5Writer:
         cls,
         entity: Entity,
         file: Optional[Union[str, h5py.File]] = None,
-        values: Optional[np.ndarray] = None,
         close_file: bool = True,
     ):
         """
@@ -781,30 +820,36 @@ class H5Writer:
         :param values: Array of values to be added.
         :param close_file: Close file after write.
         """
-        h5file = cls.fetch_h5_handle(file, entity)
+        if file is None:
+            file = entity.workspace.h5file
 
-        if hasattr(entity, "values"):
-            if values is not None:
-                H5Writer.write_data_values(
-                    entity, values, file=h5file, close_file=False
-                )
+        h5file = cls.fetch_h5_handle(file)
 
-            if isinstance(entity, Data):
+        for attribute in ["values", "trace_depth"]:
+            if getattr(entity, attribute, None) is not None:
                 H5Writer.write_data_values(
-                    entity, entity.values, file=h5file, close_file=False
+                    entity, attribute, file=h5file, close_file=False
                 )
 
         if isinstance(entity, ObjectBase) and isinstance(entity.property_groups, list):
             H5Writer.write_property_groups(entity, file=h5file, close_file=False)
 
-        if getattr(entity, "vertices", None) is not None:
-            H5Writer.write_vertices(entity, file=h5file, close_file=False)
+        for attribute in ["surveys", "trace", "vertices"]:
+            if getattr(entity, attribute, None) is not None:
+                H5Writer.write_coordinates(
+                    entity, attribute, file=h5file, close_file=False
+                )
 
         if getattr(entity, "u_cell_delimiters", None) is not None:
             H5Writer.write_cell_delimiters(entity, file=h5file, close_file=False)
 
         if getattr(entity, "cells", None) is not None:
             H5Writer.write_cells(entity, file=h5file, close_file=False)
+
+        if getattr(entity, "trace_depth", None) is not None:
+            H5Writer.write_data_values(
+                entity, "trace_depth", file=h5file, close_file=False
+            )
 
         if getattr(entity, "octree_cells", None) is not None:
             H5Writer.write_octree_cells(entity, file=h5file, close_file=False)
@@ -827,7 +872,10 @@ class H5Writer:
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
         :param close_file: Close file after write.
         """
-        h5file = cls.fetch_h5_handle(file, entity)
+        if file is None:
+            file = entity.workspace.h5file
+
+        h5file = cls.fetch_h5_handle(file)
 
         if hasattr(entity, "property_groups") and isinstance(
             entity.property_groups, list
@@ -889,20 +937,17 @@ class H5Writer:
         :param recursively: Add parents recursively until reaching the
             :obj:`~geoh5py.groups.root_group.RootGroup`.
         """
+        if file is None:
+            file = entity.workspace.h5file
 
-        h5file = cls.fetch_h5_handle(file, entity)
+        h5file = cls.fetch_h5_handle(file)
 
         # If RootGroup than no parent to be added
         if isinstance(entity, RootGroup):
             return
 
-        # cls.str_type = h5py.special_dtype(vlen=str)
-
         uid = entity.uid
-
-        # Get the h5 handle
         entity_handle = H5Writer.write_entity(entity, file=h5file, close_file=False)
-
         parent_handle = H5Writer.write_entity(
             entity.parent, file=h5file, close_file=False
         )
@@ -932,43 +977,5 @@ class H5Writer:
             )
 
         # Close file if requested
-        if close_file:
-            h5file.close()
-
-    @classmethod
-    def write_vertices(
-        cls,
-        entity,
-        file: Optional[Union[str, h5py.File]] = None,
-        close_file: bool = True,
-    ):
-        """
-        Add :obj:`~geoh5py.objects.object_base.ObjectBase.vertices` of an object.
-
-        :param file: Name or handle to a geoh5 file.
-        :param entity: Target entity.
-        :param close_file: Close geoh5 file after write.
-        """
-        h5file = cls.fetch_h5_handle(file, entity)
-
-        if getattr(entity, "vertices", None) is not None:
-            xyz = entity.vertices
-            entity_handle = H5Writer.fetch_handle(h5file, entity)
-
-            # Adding vertices
-            loc_type = np.dtype(
-                [("x", np.float64), ("y", np.float64), ("z", np.float64)]
-            )
-            vertices = entity_handle.create_dataset(
-                "Vertices",
-                (xyz.shape[0],),
-                dtype=loc_type,
-                compression="gzip",
-                compression_opts=9,
-            )
-            vertices["x"] = xyz[:, 0]
-            vertices["y"] = xyz[:, 1]
-            vertices["z"] = xyz[:, 2]
-
         if close_file:
             h5file.close()

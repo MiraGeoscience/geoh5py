@@ -34,6 +34,9 @@ class ContainerGroup(Group):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
 
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = "Container Group"
+
         group_type.workspace._register_group(self)
 
     @classmethod

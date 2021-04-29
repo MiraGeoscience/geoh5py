@@ -43,7 +43,7 @@ def test_data_instantiation(data_class):
         data_type = DataType.create(the_workspace, data_class)
         assert data_type.uid is not None
         assert data_type.uid.int != 0
-        assert data_type.name == str(data_type.uid)
+        assert data_type.name == "Entity"
         assert data_type.units is None
         assert data_type.primitive_type == data_class.primitive_type()
         assert the_workspace.find_type(data_type.uid, DataType) is data_type
@@ -79,7 +79,7 @@ def test_data_instantiation(data_class):
 
 def _can_find(workspace, created_data):
     """Make sure we can find the created data in the workspace."""
-    all_data = workspace.all_data()
+    all_data = workspace.data
     assert len(all_data) == 1
     assert next(iter(all_data)) is created_data
     assert workspace.find_data(created_data.uid) is created_data

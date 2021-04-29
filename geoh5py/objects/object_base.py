@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, List, Optional, Union
 import numpy as np
 
 from ..data import CommentsData, Data
+from ..data.data_association_enum import DataAssociationEnum
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
@@ -51,7 +52,13 @@ class ObjectBase(Entity):
         self._comments = None
         # self._clipping_ids: List[uuid.UUID] = []
 
+        if not any([key for key in kwargs if key in ["name", "Name"]]):
+            kwargs["name"] = type(self).__name__
+
         super().__init__(**kwargs)
+
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = type(self).__name__
 
     def add_comment(self, comment: str, author: str = None):
         """
@@ -117,35 +124,8 @@ class ObjectBase(Entity):
 
             attr["name"] = name
 
-            if "association" not in list(attr.keys()):
-                attr["association"] = "OBJECT"
-                if (
-                    getattr(self, "n_cells", None) is not None
-                    and attr["values"].ravel().shape[0] == self.n_cells
-                ):
-                    attr["association"] = "CELL"
-                elif (
-                    getattr(self, "n_vertices", None) is not None
-                    and attr["values"].ravel().shape[0] == self.n_vertices
-                ):
-                    attr["association"] = "VERTEX"
-
-            if "entity_type" in list(attr.keys()):
-                entity_type = attr["entity_type"]
-            elif "type" in list(attr.keys()):
-                assert attr["type"].upper() in list(
-                    PrimitiveTypeEnum.__members__.keys()
-                ), f"Data 'type' should be one of {list(PrimitiveTypeEnum.__members__.keys())}"
-                entity_type = {"primitive_type": attr["type"].upper()}
-            else:
-                if isinstance(attr["values"], np.ndarray):
-                    entity_type = {"primitive_type": "FLOAT"}
-                elif isinstance(attr["values"], str):
-                    entity_type = {"primitive_type": "TEXT"}
-                else:
-                    raise NotImplementedError(
-                        "Only add_data values of type FLOAT and TEXT have been implemented"
-                    )
+            self.validate_data_association(attr)
+            entity_type = self.validate_data_type(attr)
 
             # Re-order to set parent first
             kwargs = {"parent": self, "association": attr["association"]}
@@ -184,38 +164,59 @@ class ObjectBase(Entity):
         :return: The target property group.
         """
         prop_group = self.find_or_create_property_group(name=name)
-
-        children_uid = [child.uid for child in self.children]
-
-        def reference_to_uid(value):
-            if isinstance(value, Data):
-                uid = [value.uid]
-            elif isinstance(value, str):
-                uid = [
-                    obj.uid
-                    for obj in self.workspace.get_entity(value)
-                    if obj.uid in children_uid
-                ]
-            elif isinstance(value, uuid.UUID):
-                uid = [value]
-            return uid
-
         if isinstance(data, list):
-            uid = []
+            uids = []
             for datum in data:
-                uid += reference_to_uid(datum)
+                uids += self.reference_to_uid(datum)
         else:
-            uid = reference_to_uid(data)
+            uids = self.reference_to_uid(data)
 
-        for i in uid:
-            assert i in [
+        for uid in uids:
+            assert uid in [
                 child.uid for child in self.children
-            ], f"Given data with uuid {i} does not match any known children"
-
-        prop_group.properties = uid
-        self.modified_attributes = "property_groups"
+            ], f"Given data with uuid {uid} does not match any known children"
+            if uid not in prop_group.properties:
+                prop_group.properties.append(uid)
+                self.modified_attributes = "property_groups"
 
         return prop_group
+
+    def remove_data_from_group(
+        self, data: Union[List, Data, uuid.UUID, str], name: str = None
+    ):
+        """
+        Remove data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
+        All given data must be children of the parent object.
+
+        :param data: :obj:`~geoh5py.data.data.Data` object,
+            :obj:`~geoh5py.shared.entity.Entity.uid` or
+            :obj:`~geoh5py.shared.entity.Entity.name` of data.
+        :param name: Name of a :obj:`~geoh5py.groups.property_group.PropertyGroup`.
+            A new group is created if none exist with the given name.
+        """
+        if getattr(self, "property_groups", None) is not None:
+
+            if isinstance(data, list):
+                uids = []
+                for datum in data:
+                    uids += self.reference_to_uid(datum)
+            else:
+                uids = self.reference_to_uid(data)
+
+            if name is not None:
+                prop_groups = [
+                    prop_group
+                    for prop_group in self.property_groups
+                    if prop_group.name == name
+                ]
+            else:
+                prop_groups = self.property_groups
+
+            for prop_group in prop_groups:
+                for uid in uids:
+                    if uid in prop_group.properties:
+                        prop_group.properties.remove(uid)
+                        self.modified_attributes = "property_groups"
 
     @property
     def cells(self):
@@ -276,12 +277,14 @@ class ObjectBase(Entity):
 
         :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        prop_group = PropertyGroup(**kwargs)
-        if any([pg.name == prop_group.name for pg in self.property_groups]):
+        if "name" in list(kwargs.keys()) and any(
+            [pg.name == kwargs["name"] for pg in self.property_groups]
+        ):
             prop_group = [
-                pg for pg in self.property_groups if pg.name == prop_group.name
+                pg for pg in self.property_groups if pg.name == kwargs["name"]
             ][0]
         else:
+            prop_group = PropertyGroup(**kwargs)
             self.property_groups = [prop_group]
 
         return prop_group
@@ -313,31 +316,6 @@ class ObjectBase(Entity):
             if isinstance(child, Data):
                 name_list.append(child.name)
         return sorted(name_list)
-
-    def get_property_group(
-        self, group_id: Union[str, uuid.UUID]
-    ) -> Optional[PropertyGroup]:
-        """
-        Retrieve a :obj:`~geoh5py.groups.property_group.PropertyGroup` from one of its
-        identifier.
-
-        :param uid: PropertyGroup identifier, either by its name or :obj:`uuid.UUID`.
-
-        :return: PropertyGroup with the given name.
-        """
-        if isinstance(group_id, uuid.UUID):
-            groups_list = [pg for pg in self.property_groups if pg.uid == group_id]
-
-        else:  # Extract all groups uuid with matching group_id
-            groups_list = [pg for pg in self.property_groups if pg.name == group_id]
-
-        try:
-            prop_group = groups_list[0]
-        except IndexError:
-            print(f"No property_group {group_id} found.")
-            return None
-
-        return prop_group
 
     @property
     def last_focus(self) -> str:
@@ -394,3 +372,60 @@ class ObjectBase(Entity):
         defining the position of points in 3D space.
         """
         ...
+
+    def validate_data_association(self, attribute_dict):
+        """
+        Get a dictionary of attributes and validate the data 'association' keyword.
+        """
+
+        if "association" in list(attribute_dict.keys()):
+            assert attribute_dict["association"] in [
+                enum.name for enum in DataAssociationEnum
+            ], (
+                "Data 'association' must be one of "
+                + f"{[enum.name for enum in DataAssociationEnum]}. "
+                + f"{attribute_dict['association']} provided."
+            )
+        else:
+            attribute_dict["association"] = "OBJECT"
+            if (
+                getattr(self, "n_cells", None) is not None
+                and attribute_dict["values"].ravel().shape[0] == self.n_cells
+            ):
+                attribute_dict["association"] = "CELL"
+            elif (
+                getattr(self, "n_vertices", None) is not None
+                and attribute_dict["values"].ravel().shape[0] == self.n_vertices
+            ):
+                attribute_dict["association"] = "VERTEX"
+
+    @staticmethod
+    def validate_data_type(attribute_dict):
+        """
+        Get a dictionary of attributes and validate the type of data.
+        """
+
+        if "entity_type" in list(attribute_dict.keys()):
+            entity_type = attribute_dict["entity_type"]
+        elif "type" in list(attribute_dict.keys()):
+            assert attribute_dict["type"].upper() in list(
+                PrimitiveTypeEnum.__members__.keys()
+            ), f"Data 'type' should be one of {list(PrimitiveTypeEnum.__members__.keys())}"
+            entity_type = {"primitive_type": attribute_dict["type"].upper()}
+        else:
+            if isinstance(attribute_dict["values"], np.ndarray) and (
+                attribute_dict["values"].dtype in [np.float32, np.float64]
+            ):
+                entity_type = {"primitive_type": "FLOAT"}
+            elif isinstance(attribute_dict["values"], np.ndarray) and (
+                attribute_dict["values"].dtype in [np.uint32, np.int32]
+            ):
+                entity_type = {"primitive_type": "INTEGER"}
+            elif isinstance(attribute_dict["values"], str):
+                entity_type = {"primitive_type": "TEXT"}
+            else:
+                raise NotImplementedError(
+                    "Only add_data values of type FLOAT, INTEGER and TEXT have been implemented"
+                )
+
+        return entity_type

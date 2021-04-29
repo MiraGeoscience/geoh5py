@@ -39,9 +39,6 @@ class Surface(Points):
 
         super().__init__(object_type, **kwargs)
 
-        if object_type.name == "None":
-            self.entity_type.name = "Surface"
-
     @property
     def cells(self) -> Optional[np.ndarray]:
         """

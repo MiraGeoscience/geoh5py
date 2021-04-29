@@ -16,6 +16,7 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import tempfile
+from abc import ABC
 from pathlib import Path
 
 import numpy as np
@@ -24,7 +25,21 @@ from geoh5py.objects import Curve
 from geoh5py.workspace import Workspace
 
 
-def test_create_property_group():
+def test_modify_property_group():
+    def compare_objects(object_a, object_b, ignore=None):
+        if ignore is None:
+            ignore = ["_workspace", "_children", "_parent"]
+        for attr in object_a.__dict__.keys():
+            if attr in ignore:
+                continue
+            if isinstance(getattr(object_a, attr[1:]), ABC):
+                compare_objects(
+                    getattr(object_a, attr[1:]), getattr(object_b, attr[1:])
+                )
+            else:
+                assert np.all(
+                    getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
+                ), f"Output attribute {attr[1:]} for {object_a} do not match input {object_b}"
 
     obj_name = "myCurve"
     # Generate a curve with multiple data
@@ -52,28 +67,17 @@ def test_create_property_group():
         # Property group object should have been created
         prop_group = curve.find_or_create_property_group(name="myGroup")
 
-        # Create a new group by data name
-        single_data_group = curve.add_data_to_group(f"Period{1}", "Singleton")
+        # Remove on props from the list
+        curve.remove_data_from_group(props[-1], name="myGroup")
 
-        assert (
-            workspace.find_data(single_data_group.properties[0]).name == f"Period{1}"
-        ), "Failed at creating a property group by data name"
+        assert len(prop_group.properties) == 3, "Error removing a property_group"
         workspace.finalize()
 
         # Re-open the workspace
         workspace = Workspace(h5file_path)
 
         # Read the property_group back in
-        rec_prop_group = workspace.get_entity(obj_name)[
-            0
-        ].find_or_create_property_group(name="myGroup")
+        rec_curve = workspace.get_entity(obj_name)[0]
+        rec_prop_group = rec_curve.find_or_create_property_group(name="myGroup")
 
-        attrs = rec_prop_group.attribute_map
-        check_list = [
-            attr
-            for attr in attrs.values()
-            if getattr(rec_prop_group, attr) != getattr(prop_group, attr)
-        ]
-        assert (
-            len(check_list) == 0
-        ), f"Attribute{check_list} of PropertyGroups in output differ from input"
+        compare_objects(rec_prop_group, prop_group)

@@ -21,11 +21,26 @@ from typing import Any, Dict, Optional, Tuple, Union
 import h5py
 import numpy as np
 
+from ..data.float_data import FloatData
+from ..data.integer_data import IntegerData
+
 
 class H5Reader:
     """
     Class to read information from a geoh5 file.
     """
+
+    key_map = {
+        "values": "Data",
+        "cells": "Cells",
+        "surveys": "Surveys",
+        "trace": "Trace",
+        "trace_depth": "TraceDepth",
+        "vertices": "Vertices",
+        "octree_cells": "Octree Cells",
+        "property_groups": "PropertyGroups",
+        "color_map": "Color map",
+    }
 
     @classmethod
     def fetch_attributes(
@@ -79,7 +94,8 @@ class H5Reader:
             value_map = entity["Type"]["Value map"][:]
             mapping = {}
             for key, value in value_map.tolist():
-                value = cls.check_byte_str(value)
+                value = cls.str_from_utf8_bytes(value)
+
                 mapping[key] = value
 
             type_attributes["entity_type"]["value_map"] = mapping
@@ -108,11 +124,14 @@ class H5Reader:
         """
         project = h5py.File(h5file, "r")
         name = list(project.keys())[0]
-        indices = project[name]["Objects"][cls.uuid_str(uid)]["Cells"][:]
 
-        project.close()
+        try:
+            indices = project[name]["Objects"][cls.uuid_str(uid)]["Cells"][:]
+            project.close()
+            return indices
 
-        return indices
+        except KeyError:
+            project.close()
 
     @classmethod
     def fetch_children(cls, h5file: str, uid: uuid.UUID, entity_type: str) -> dict:
@@ -290,10 +309,18 @@ class H5Reader:
         """
         project = h5py.File(h5file, "r")
         name = list(project.keys())[0]
+
         if "Data" in list(project[name]["Data"][cls.uuid_str(uid)].keys()):
             values = np.r_[project[name]["Data"][cls.uuid_str(uid)]["Data"]]
             if isinstance(values[0], (str, bytes)):
-                values = cls.check_byte_str(values[0])
+                values = cls.str_from_utf8_bytes(values[0])
+            else:
+                if values.dtype in [float, "float64", "float32"]:
+                    ind = values == FloatData.ndv()
+                else:
+                    ind = values == IntegerData.ndv()
+                    values = values.astype("float64")
+                values[ind] = np.nan
         else:
             values = None
 
@@ -302,25 +329,49 @@ class H5Reader:
         return values
 
     @classmethod
-    def fetch_vertices(cls, h5file: Optional[str], uid: uuid.UUID) -> np.ndarray:
+    def fetch_coordinates(
+        cls, h5file: Optional[str], uid: uuid.UUID, name: str
+    ) -> np.ndarray:
         """
-        Get an object :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`
+        Get an object coordinates data.
+
+        :param h5file: Name of the target geoh5 file
+        :param uid: Unique identifier of the target object
+        :param name: Type of coordinates 'vertices', 'trace' or 'surveys'
+
+        :return surveys: :obj:`numpy.ndarray` of [x, y, z] coordinates
+
+        """
+        project = h5py.File(h5file, "r")
+        root = list(project.keys())[0]
+
+        try:
+            coordinates = np.asarray(
+                project[root]["Objects"][cls.uuid_str(uid)][cls.key_map[name]]
+            )
+            project.close()
+            return coordinates
+        except KeyError:
+            project.close()
+
+    @classmethod
+    def fetch_trace_depth(cls, h5file: Optional[str], uid: uuid.UUID) -> np.ndarray:
+        """
+        Get an object :obj:`~geoh5py.objects.drillhole.Drillhole.trace_depth` data
 
         :param h5file: Name of the target geoh5 file
         :param uid: Unique identifier of the target object
 
-        :return vertices: :obj:`numpy.ndarray` of [x, y, z] coordinates
+        :return surveys: :obj:`numpy.ndarray` of [x, y, z] coordinates
 
         """
         project = h5py.File(h5file, "r")
-        name = list(project.keys())[0]
-        x = project[name]["Objects"][cls.uuid_str(uid)]["Vertices"]["x"]
-        y = project[name]["Objects"][cls.uuid_str(uid)]["Vertices"]["y"]
-        z = project[name]["Objects"][cls.uuid_str(uid)]["Vertices"]["z"]
+        root = list(project.keys())[0]
+        trace_depth = project[root]["Objects"][cls.uuid_str(uid)]["TraceDepth"]
 
         project.close()
 
-        return np.c_[x, y, z]
+        return trace_depth
 
     @staticmethod
     def bool_value(value: np.int8) -> bool:
@@ -335,7 +386,7 @@ class H5Reader:
         return "{" + str(value) + "}"
 
     @staticmethod
-    def check_byte_str(value: Union[bytes, str]) -> str:
+    def str_from_utf8_bytes(value: Union[bytes, str]) -> str:
         if isinstance(value, bytes):
             value = value.decode("utf-8")
         return value
