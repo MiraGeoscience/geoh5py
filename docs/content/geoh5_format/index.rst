@@ -1,7 +1,7 @@
+GEOH5 File Format
+=================
 
-
-GEOH5 file format v1
-====================
+[UNDER CONSTRUCTION]
 
 Overview
 --------
@@ -76,8 +76,8 @@ the same data.)
       -  Root (mandatory hard link to “workspace” group, top of group
          hierarchy)
 
-Workspace Attributes
-~~~~~~~~~~~~~~~~~~~~
+Attributes
+
 
 -  Version : (double) Version of specification used by this file
 -  Distance unit : (string) Distance unit of all data enclosed
@@ -86,37 +86,34 @@ Workspace Attributes
    contributed to this workspace
 
 Groups
-~~~~~~
+^^^^^^
 
 -  Groups
 
-   -  **{3b61160e-23ea-423a-b67c-1f8f1070fff9}**
+   -
 
-      -  Type *(mandatory hard link to a group type)*
-      -  Groups *(contains hard links to child groups)*
+      -  Type
+      -  Groups
 
-         -  {2d0eaf4c-bbc7-4c7f-8496-e36e4727fbda} *(optional hard link
-            to other group)*
+         -  {2d0eaf4c-bbc7-4c7f-8496-e36e4727fbda}
          -  …
 
-      -  Objects *(contains hard links to child objects)*
+      -  Objects
 
-         -  {0b561ab2-87a4-4b82-a5fe-a7c1f6c3c8f8} *(optional hard link
-            to object)*
+         -  {0b561ab2-87a4-4b82-a5fe-a7c1f6c3c8f8}
          -  …
 
-      -  Data *(contains hard links to child data)*
+      -  Data
 
-         -  {0803f944-1392-4a8d-87f1-c7e4c4f3f499} *(optional hard link
-            to data)*
+         -  {0803f944-1392-4a8d-87f1-c7e4c4f3f499}
          -  …
 
-   -  **{2d0eaf4c-bbc7-4c7f-8496-e36e4727fbda}**
+   -
    -  …
 
 
-Groups Attributes
-^^^^^^^^^^^^^^^^^
+Attributes
+
 
 -  Name : (string)
 -  ID : (string, UUID of this entity)
@@ -134,14 +131,14 @@ Groups Attributes
    allow renaming
 
 Notes
-^^^^^
+
 
 Though this file format technically allows objects/groups to appear
 within multiple groups simultaneously (overlapping lists), this is not
 currently supported by Geoscience ANALYST.
 
 Objects
-~~~~~~~
+^^^^^^^
 
 Most (not all) object geometry is described in terms of vertices (3D
 locations) and cells (groupings of vertices such as triangles or
@@ -151,25 +148,24 @@ type. Additional information may also be stored for some specific types.
 
 -  Objects
 
-   -  **{001d3cea-2c22-41b9-a9d6-bf0219e0a287}**
+   -
 
-      -  Type *(mandatory hard link to an object type)*
-      -  Vertices : (1D array compound dataset – double x, double y,
+      -  Type
+      -  Vertices : (1D array compound dataset - double x, double y,
          double z) : 3D points
       -  Cells : (2D array unsigned int dataset) : sets of indices from
          “Vertices” dataset (number of indices per cell depends on type)
-      -  Data *(contains hard links to child data)*
+      -  Data
 
-         -  {0782cc42-74f9-4ebf-b9b7-372939999204} *(optional hard link
-            to data)*
+         -  {0782cc42-74f9-4ebf-b9b7-372939999204}
          -  …
 
-   -  **{00501ec2-94ea-4dd7-870e-f52b772fd27d}**
+   -
    -  …
 
 
-Objects Attributes
-^^^^^^^^^^^^^^^^^^
+Attributes
+
 
 -  Name : (string)
 -  ID : (string, UUID of this entity)
@@ -187,24 +183,24 @@ Objects Attributes
    tree and other parts of the the user interface
 
 Data
-~~~~
+^^^^
 
 -  Data
 
-   -  **{001d3cea-2c22-41b9-a9d6-bf0219e0a287}**
+   -
 
-      -  Type *(mandatory hard link to a data type)*
+      -  Type
       -  Data (1D array dataset of varying types) see “Data Types”
          section for more details
 
-   -  **{00501ec2-94ea-4dd7-870e-f52b772fd27d}**
+   -
    -  …
 
 
-Data Attributes
-^^^^^^^^^^^^^^^
+Attributes
 
--  Association : (string) “Object”, “Cell” or “Vertex” – describes
+
+-  Association : (string) “Object”, “Cell” or “Vertex” - describes
    whether the property is tied to cells, vertices, or the object/group
    itself.
 -  Name : (string)
@@ -219,7 +215,7 @@ Data Attributes
    tree and other parts of the the user interface
 
 Types
-~~~~~
+^^^^^
 
 Each type can be shared by any number of groups/objects/data sets.
 
@@ -227,31 +223,31 @@ Each type can be shared by any number of groups/objects/data sets.
 
    -  Group types
 
-      -  **{05e96011-3833-11e4-a7fb-fcddabfddab1}**
+      -
       -  …
 
    -  Object types
 
-      -  **{04c88a3f-bb90-4f3b-b2db-f4c96e4aeb94}**
+      -
       -  …
 
    -  Data types
 
-      -  **{00c9da0c-e960-46cd-82ad-a3138b33e1ff}**
+      -
 
-         -  Color map : (1D compound array dataset – Value(double),
+         -  Color map : (1D compound array dataset - Value(double),
             Red(unsigned char), Green(unsigned char), Blue(unsigned
             char), Alpha(unsigned char) : Optional, records colors
             assigned to value ranges (where Value is the start of the
             range)
-         -  Value map : (1D compound array dataset – Key(unsigned int),
+         -  Value map : (1D compound array dataset - Key(unsigned int),
             Value(string)) : Required only for reference data types (aka
             classifications)
 
       -  …
 
 Group type attributes
-^^^^^^^^^^^^^^^^^^^^^
+
 
 -  Name : (string)
 -  ID : (string, UUID of this Group type, referring to the Group
@@ -263,7 +259,7 @@ Group type attributes
    1)
 
 Object type attributes
-^^^^^^^^^^^^^^^^^^^^^^
+
 
 -  Name : (string)
 -  ID : (string, UUID of this Object type, referring to the Object
@@ -271,12 +267,12 @@ Object type attributes
 -  Description : (string, optional)
 
 Data type attributes
-^^^^^^^^^^^^^^^^^^^^
+
 
 -  Name : (string)
 -  ID : (string, UUID of this Data type)
 -  Primitive type : (string) : describing the kind of data contained in
-   the associated “Data” tables – “Integer”, “Float”, “Referenced”,
+   the associated “Data” tables - “Integer”, “Float”, “Referenced”,
    “Text”, “Filename”, “DateTime” or “Blob” (see “Data types” section)
 -  Description : (string, optional)
 -  Units : (string, optional)
@@ -297,14 +293,14 @@ is often useful to assign special meanings (and specialized software
 functionality).
 
 Container
-~~~~~~~~~
+^^^^^^^^^
 
 Simple container with no special meaning. Default in Geoscience ANALYST.
 
 -  UUID : {61FBB4E8-A480-11E3-8D5A-2776BDF4F982}
 
 Drillholes group
-~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^
 
 Container restricted to containing drillhole objects, and which may
 provide convenience functionality for the drillholes within.
@@ -320,43 +316,40 @@ impractical to do so, and these types have additional datasets or
 attributes defining their geometry.
 
 Points type
-~~~~~~~~~~~
+^^^^^^^^^^^
 
 -  UUID : {202C5DB1-A56D-4004-9CAD-BAAFD8899406}
 -  No cell data.
 
 Curve type
-~~~~~~~~~~
+^^^^^^^^^^
 
 -  UUID : {6A057FDC-B355-11E3-95BE-FD84A7FFCB88}
 -  Each cell contains two vertex indices, representing a segment.
 
 Surface type
-~~~~~~~~~~~~
+^^^^^^^^^^^^
 
 -  UUID : {F26FEBA3-ADED-494B-B9E9-B2BBCBE298E1}
 -  Each cell contains three vertex indices, representing a triangle.
 
 Block model type
-~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^
 
--  UUID : {B020A277-90E2-4CD7-84D6-612EE3F25051}
+\* UUID : {B020A277-90E2-4CD7-84D6-612EE3F25051}
 
--  Each cell represents a point of a 3D rectilinear grid. For a 3D cell
-   index (i,j,k) along axes U,V and Z of length nU, nV and nZ
-   respectively,
+\* Each cell represents a point of a 3D rectilinear grid. For a 3D cell
+index (i,j,k) along axes U,V and Z of length nU, nV and nZ respectively,
 
-   ::
+::
 
-      cell index = k + i*nZ + j*nU*nZ
+   cell index = k + i*nZ + j*nU*nZ
 
 -  Without rotation angles, U points eastwards, V points northwards, and
    Z points upwards.
-
 -  Since their geometry is defined entirely by the additional data
    described below, block models do not require a Vertices or Cells
    dataset.
-
 -  Additional datasets :
 
    -  U cell delimiters : (1D array doubles) distances of cell edges
@@ -369,32 +362,29 @@ Block model type
 
 -  Additional attributes :
 
-   -  Origin : (composite type – X(double), Y(double), Z(double) )
+   -  Origin : (composite type - X (double), Y (double), Z (double) )
       origin point of grid
    -  Rotation : (double, default 0) counterclockwise angle of rotation
       around the vertical axis in degrees.
 
 2D grid type
-~~~~~~~~~~~~
+^^^^^^^^^^^^
 
--  UUID : {48f5054a-1c5c-4ca4-9048-80f36dc60a06}
+\* UUID : {48f5054a-1c5c-4ca4-9048-80f36dc60a06}
 
--  Each cell represents a point in a regular 2D grid. For a 2D cell
-   index (i,j) within axes U and V containing nU and nV cells
-   respectively,
+\* Each cell represents a point in a regular 2D grid. For a 2D cell
+index (i,j) within axes U and V containing nU and nV cells respectively,
 
-   ::
+::
 
-      cell index = i + j*nU
+   cell index = i + j*nU
 
 -  Without rotation angles, U points eastwards and V points northwards
-
 -  Since their geometry is defined entirely by the additional data
    described below, 2D grids do not require a Vertices or Cells dataset.
-
 -  Additional attributes :
 
-   -  Origin : (composite type – X(double), Y(double), Z(double) )
+   -  Origin : (composite type - X (double), Y (double), Z (double) )
       origin point of grid
    -  U Size : (double) length of U axis
    -  U Count : (double) number of cells along U axis
@@ -406,7 +396,7 @@ Block model type
       true, V axis is vertical (and rotation defined around the V axis)
 
 Drillhole type
-~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^
 
 -  UUID : {7CAEBF0E-D16E-11E3-BC69-E4632694AA37}
 -  Vertices represent points along the drillhole path (support for data
@@ -418,19 +408,19 @@ Drillhole type
    sampling intervals of various data.
 -  Additional attribute :
 
-   -  Collar : (composite – X, Y, Z) – collar location
+   -  Collar : (composite - X, Y, Z) - collar location
 
 -  Additional datasets :
 
-   -  Surveys : (1D composite array) – Depth(float), Dip(float),
-      Azimuth(float) – survey locations
-   -  Trace : (1D composite array – X, Y, Z, containing at least two
-      points) the actual drillhole geometry – points forming the
+   -  Surveys : (1D composite array) - Depth(float), Dip(float),
+      Azimuth(float) - survey locations
+   -  Trace : (1D composite array - X, Y, Z, containing at least two
+      points) the actual drillhole geometry - points forming the
       drillhole path, from collar to end of hole (optional if surveys
       and collar are present)
 
 Geoimage type
-~~~~~~~~~~~~~
+^^^^^^^^^^^^^
 
 -  UUID : {77AC043C-FE8D-4D14-8167-75E300FB835A}
 -  Vertices represent the four corners of the geolocated image. Note :
@@ -441,16 +431,16 @@ Geoimage type
    is expected to exist under this object.
 
 Label type
-~~~~~~~~~~
+^^^^^^^^^^
 
 -  UUID : {E79F449D-74E3-4598-9C9C-351A28B8B69E}
 -  Has no vertices nor cell data
 -  Additional attributes :
 
-   -  Target position : (composite type, X(double), Y(double), Z(double)
-      ) The target location of the label
-   -  Label position : (optional composite type, X(double), Y(double),
-      Z(double), defaults to same as target position ) The location
+   -  Target position : (composite type, X (double), Y (double), Z
+      (double) ) The target location of the label
+   -  Label position : (optional composite type, X (double), Y (double),
+      Z (double), defaults to same as target position ) The location
       where the text of the label is displayed
 
 Data types
@@ -470,33 +460,33 @@ single-value data with the “Object” association (in which case it is a
 1D array of length 1).
 
 Float
-~~~~~
+^^^^^
 
 -  Stored as a 1D array of 32-bit float type
--  No data value: 1.175494351e-38 (FLT\_MIN, considering use of NaN)
+-  No data value: 1.175494351e-38 (FLT_MIN, considering use of NaN)
 
 Integer
-~~~~~~~
+^^^^^^^
 
 -  Stored as a 1D array of 32-bit integer type
--  No data value: –2147483648 (INT\_MIN, considering use of NaN)
+-  No data value: –2147483648 (INT_MIN, considering use of NaN)
 
 Text
-~~~~
+^^^^
 
 -  Stored as a 1D array of UTF-8 encoded, variable-length string type
 -  No data value : empty string
 
 Referenced
-~~~~~~~~~~
+^^^^^^^^^^
 
 -  Stored as a 1D array of 32-bit unsigned integer type (native)
--  Value map : (1D composite type array dataset – Key (unsigned int),
+-  Value map : (1D composite type array dataset - Key (unsigned int),
    Value (variable-length utf8 string) ) must exist under type
 -  No data value : 0 (key is tied to value “Unknown”)
 
 DateTime
-~~~~~~~~
+^^^^^^^^
 
 -  Stored as a 1D array of variable-length strings formatted according
    to the `ISO 8601 <https://en.wikipedia.org/wiki/ISO_8601>`__ extended
@@ -505,7 +495,7 @@ DateTime
 -  No data value : empty string
 
 Filename
-~~~~~~~~
+^^^^^^^^
 
 -  Stored as a 1D array of UTF-8 encoded, variable-length string type
    designating a file name
@@ -517,7 +507,7 @@ Filename
 -  No data value : empty string
 
 Blob
-~~~~
+^^^^
 
 -  Stored as a 1D array of 8-bit char type (native) (value ‘0’ or ‘1’)
 -  For each index set to 1, an opaque dataset named after the index
@@ -538,9 +528,9 @@ External Links
    .
 
 Libraries for accessing HDF5 data
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  `C, C++, .NET <https://www.hdfgroup.org/downloads/>`__
+-  `C, C, .NET <https://www.hdfgroup.org/downloads/>`__
 -  `Python <http://www.h5py.org/>`__
 -  `Matlab <http://www.mathworks.com/help/matlab/hdf5-files.html>`__
 -  etc
