@@ -23,21 +23,21 @@ classifiers = [
 exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
-h5py = "^2.10"
-toml = "^0.10.0"
 numpy = "!=1.19.4"
+python = "^3.7"
+h5py = "^3.2.1"
 
 [tool.poetry.dev-dependencies]
+lockfile = "^0.12.2"
+poetry-publish = {git = "https://github.com/MiraGeoscience/poetry-publish.git", rev = "pending_fixes"}
 pylint = "^2.3"
 pytest = "^3.0"
 pytest-cov = "^2.7.1"
 scipy = "^1.4.1"
 sphinx = "^3.0"
-sphinx-rtd-theme = "^0.4.3"
 sphinx-autodoc-typehints = "^1.10"
-lockfile = "^0.12.2"
-poetry-publish = {git = "https://github.com/MiraGeoscience/poetry-publish.git", rev = "pending_fixes"}
+sphinx-rtd-theme = "^0.4.3"
+toml = "^0.10.2"
 
 [tool.poetry.extras]
 
