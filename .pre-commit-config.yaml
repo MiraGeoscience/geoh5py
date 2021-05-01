@@ -49,7 +49,7 @@ repos:
         entry: python devtools/check-copyright.py
         language: python
         types: [python]
-        exclude: (devtools|docs)/
+        exclude: ^(devtools/|docs/|setup.py)
 -   repo: https://github.com/codespell-project/codespell
     rev: v1.17.1
     hooks:
