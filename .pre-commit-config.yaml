@@ -82,3 +82,4 @@ repos:
     rev: v1.7.0
     hooks:
     -   id: rst-backticks
+        exclude: ^THIRD_PARTY_SOFTWARE.rst$
