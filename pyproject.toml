@@ -1,0 +1,63 @@
+[tool.poetry]
+name = "geoh5py"
+version = "0.1.0"
+license = "LGPL-3.0-or-later"
+description = "Read and write .geoh5 files from Python"
+authors = ["Mira Geoscience <support@mirageoscience.com>"]
+repository = "https://github.com/MiraGeoscience/geoh5py"
+documentation = "https://geoh5py.readthedocs.io/en/latest/"
+homepage = "https://mirageoscience.com"
+readme = "package.rst"
+keywords = ["geology", "geophysics", "data", "interoperability"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Topic :: Database",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+h5py = "^2.10"
+toml = "^0.10.0"
+
+[tool.poetry.dev-dependencies]
+pylint = "^2.3"
+pytest = "^3.0"
+pytest-cov = "^2.7.1"
+scipy = "^1.4.1"
+sphinx = "^3.0"
+sphinx-rtd-theme = "^0.4.3"
+sphinx-autodoc-typehints = "^1.10"
+lockfile = "^0.12.2"
+poetry-publish = {git = "https://github.com/MiraGeoscience/poetry-publish.git", rev = "pending_fixes"}
+
+[tool.poetry.extras]
+
+[tool.poetry.scripts]
+publish = 'devtools.publish:publish'
+
+[tool.isort]
+# settings for compatibility between ``isort`` and ``black`` formatting
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 88
+# auto-updated by seed-isort-config
+
+known_third_party = ["Add2Build", "StringIO", "autodoc", "edit_on_github", "environmentSetup", "h5py", "numpy", "poetry_publish", "pytest", "scipy", "setuptools", "toml", "urllib2"]
+
+
+[tool.black]
+# defaults are just fine
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

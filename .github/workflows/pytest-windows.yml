@@ -1,0 +1,41 @@
+name: pytest on Windows
+
+on:
+  pull_request:
+    branches:
+    - development
+
+jobs:
+  pytest:
+    name: pytest
+    runs-on: windows-latest
+    env:
+      POETRY_VIRTUALENVS_CREATE: true
+      POETRY_VIRTUALENVS_IN_PROJECT: true
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python version
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Install Poetry
+      run: curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+    - name: Environment
+      run: echo ::add-path::$HOME/.poetry/bin
+    - name: Cache dependencies
+      uses: actions/cache@v1
+      id: cache
+      with:
+        path: .venv
+        key: ${{ runner.os }}-poetry.venv-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry.venv-
+    - name: Install dependencies
+      run: poetry install -vvv
+    - name: pytest
+      run: poetry run pytest --cov-report=xml --cov=geoh5py --cov-branch --cov-fail-under=80
+    - name: Codecov
+      if: success()
+      uses: codecov/codecov-action@v1.0.6
+      with:
+        name: GitHub
+        token: ${{secrets.CODECOV_UPLOAD_TOKEN}}

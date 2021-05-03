@@ -1,0 +1,19 @@
+name: geoh5py
+
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7
+  - scipy
+  - h5py
+  - ipykernel
+  - pip:
+    - sphinx
+    - sphinx_issues
+    - sphinx_rtd_theme
+    - sphinxcontrib-bibtex
+    - nbsphinx
+    - nbstripout
+    - numpydoc
+    - jupyter_client

@@ -1,0 +1,81 @@
+name: static analysis
+
+on:
+  pull_request:
+    branches:
+      - development
+      - master
+  push:
+    branches:
+      - development
+      - master
+
+jobs:
+  pre-commit:
+    name: pre-commit
+    runs-on: ubuntu-latest
+    env:
+      SKIP: pylint # pylint will run in another dedicated job (needs poetry)
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python version
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: set PY_HASH
+      run: echo "::set-env name=PY_HASH::$(python -c 'import hashlib, sys;print(hashlib.sha256(sys.version.encode()+sys.executable.encode()).hexdigest())')"
+    - name: Cache pre-commit tools
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/pre-commit
+        key: precommit-${{ env.PY_HASH }}-${{ hashFiles('.pre-commit-config.yaml') }}
+        restore-keys: |
+          precommit-${{ env.PY_HASH }}-
+          precommit-
+    - uses: pre-commit/action@v1.0.1
+    - name: Git show refs
+      run: git show-ref
+    - name: Run pre-commit hooks on modified files
+      if: github.event_name == 'pull_request'
+      run: >-
+        git diff --name-only refs/remotes/origin/${{github.base_ref}}... |
+        xargs pre-commit run --files
+    - name: Run pre-commit hooks on all files
+      if: github.event_name == 'push'
+      run: pre-commit run --all-files
+
+  pylint:
+    name: pylint
+    runs-on: ubuntu-latest
+    env:
+      POETRY_VIRTUALENVS_CREATE: true
+      POETRY_VIRTUALENVS_IN_PROJECT: true
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python version
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Install Poetry
+      run: curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+    - name: Environment
+      run: echo ::add-path::$HOME/.poetry/bin
+    - name: Cache dependencies
+      uses: actions/cache@v1
+      id: cache
+      with:
+        path: .venv
+        key: ${{ runner.os }}-poetry.venv-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry.venv-
+    - name: Install dependencies
+      run: poetry install -vvv
+    - name: Run pylint on modified files
+      if: github.event_name == 'pull_request'
+      run: >-
+        poetry run pylint -j0 $(
+        git diff --diff-filter=AM --name-only refs/remotes/origin/${{github.base_ref}}... | grep -E '^(geoh5py|tests)/.*\.py$'
+        || echo 'geoh5py/__init__.py'
+        )
+    - name: Run pylint on all files
+      if: github.event_name == 'push'
+      run: poetry run pylint -j0 geoh5py tests
