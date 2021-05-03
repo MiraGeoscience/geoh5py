@@ -19,8 +19,7 @@ import numpy as np
 
 
 class ColorMap:
-    """ Records colors assigned to value ranges (where Value is the start of the range).
-    """
+    """Records colors assigned to value ranges (where Value is the start of the range)."""
 
     _attribute_map = {"File name": "name"}
 

@@ -12,14 +12,11 @@ capabilities of `Geoscience ANALYST <https://mirageoscience.com/mining-industry-
 Documentation
 ^^^^^^^^^^^^^
 
-.. image:: https://readthedocs.org/projects/geoh5py/badge/badge.svg
-  :target: https://geoh5py.readthedocs.io
-
 `Online documentation <https://geoh5py.readthedocs.io/en/latest/>`_
 
 See also documentation for the `geoh5 file format`_.
 
-.. _geoh5 file format: doc/content/geoh5_file_format.textile
+.. _geoh5 file format: docs/content/geoh5_file_format.textile
 
 
 Installation
@@ -94,7 +91,7 @@ To build the api docs using autodocs
     :alt: Documentation Status
     :target: https://geoh5py.readthedocs.io/en/latest/?badge=latest
 
-.. |coverage| image:: https://codecov.io/gh/MiraGeoscience/geoh5py/branch/development/graph/badge.svg?token=cBBxmt1WiA
+.. |coverage| image:: https://codecov.io/gh/MiraGeoscience/geoh5py/branch/development/graph/badge.svg
     :alt: Test coverage
     :target: https://codecov.io/gh/MiraGeoscience/geoh5py
 

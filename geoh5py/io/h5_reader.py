@@ -75,6 +75,14 @@ class H5Reader:
                 "Color map"
             ][:]
 
+        if "Value map" in entity["Type"].keys():
+            value_map = entity["Type"]["Value map"][:]
+            mapping = {}
+            for key, value in value_map.tolist():
+                mapping[key] = value
+
+            type_attributes["entity_type"]["value_map"] = mapping
+
         # Check if the entity has property_group
         if "PropertyGroups" in entity.keys():
             for pg_id in entity["PropertyGroups"].keys():
@@ -247,6 +255,27 @@ class H5Reader:
                 property_groups[pg_uid][attr] = value
 
         return property_groups
+
+    @classmethod
+    def fetch_value_map(cls, h5file: Optional[str], uid: uuid.UUID) -> Optional[dict]:
+        """
+        Get data :obj:`~geoh5py.data.data.Data.value_map`
+
+        :param h5file: Name of the target geoh5 file
+        :param uid: Unique identifier of the target entity
+
+        :return value_map: :obj:`dict` of {:obj:`int`: :obj:`str`}
+        """
+        project = h5py.File(h5file, "r")
+        name = list(project.keys())[0]
+        if "Data" in list(project[name]["Data"][cls.uuid_str(uid)].keys()):
+            values = np.r_[project[name]["Data"][cls.uuid_str(uid)]["Data"]]
+        else:
+            values = None
+
+        project.close()
+
+        return values
 
     @classmethod
     def fetch_values(cls, h5file: Optional[str], uid: uuid.UUID) -> Optional[float]:

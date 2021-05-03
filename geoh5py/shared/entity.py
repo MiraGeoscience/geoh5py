@@ -189,7 +189,7 @@ class Entity(ABC):
 
     @classmethod
     def fix_up_name(cls, name: str) -> str:
-        """ If the given  name is not a valid one, transforms it to make it valid
+        """If the given  name is not a valid one, transforms it to make it valid
         :return: a valid name built from the given name. It simply returns the given name
         if it was already valid.
         """

@@ -33,9 +33,8 @@ class Group(Entity):
 
     def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
-        super().__init__(**kwargs)
-
         self._entity_type = group_type
+        super().__init__(**kwargs)
 
     def add_comment(self, comment: str, author: str = None):
         """

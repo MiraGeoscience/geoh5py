@@ -122,9 +122,9 @@ class Workspace:
             self.finalize()
 
     def activate(self):
-        """ Makes this workspace the active one.
+        """Makes this workspace the active one.
 
-            In case the workspace gets deleted, Workspace.active() safely returns None.
+        In case the workspace gets deleted, Workspace.active() safely returns None.
         """
         if Workspace._active_ref() is not self:
             Workspace._active_ref = weakref.ref(self)
@@ -140,26 +140,22 @@ class Workspace:
         return cast(Workspace, active_one)
 
     def all_data(self) -> List["data.Data"]:
-        """Get all active Data entities registered in the workspace.
-        """
+        """Get all active Data entities registered in the workspace."""
         weakref_utils.remove_none_referents(self._data)
         return [cast("data.Data", v()) for v in self._data.values()]
 
     def all_groups(self) -> List["group.Group"]:
-        """Get all active Group entities registered in the workspace.
-        """
+        """Get all active Group entities registered in the workspace."""
         weakref_utils.remove_none_referents(self._groups)
         return [cast("group.Group", v()) for v in self._groups.values()]
 
     def all_objects(self) -> List["object_base.ObjectBase"]:
-        """Get all active Object entities registered in the workspace.
-        """
+        """Get all active Object entities registered in the workspace."""
         weakref_utils.remove_none_referents(self._objects)
         return [cast("object_base.ObjectBase", v()) for v in self._objects.values()]
 
     def all_types(self) -> List["EntityType"]:
-        """Get all active entity types registered in the workspace.
-        """
+        """Get all active entity types registered in the workspace."""
         weakref_utils.remove_none_referents(self._types)
         return [cast("EntityType", v()) for v in self._types.values()]
 
@@ -195,19 +191,29 @@ class Workspace:
         entity_kwargs: dict = {"entity": {}}
         for key in entity.__dict__.keys():
             if key not in ["_uid", "_entity_type"]:
-                entity_kwargs["entity"][key[1:]] = getattr(entity, key[1:])
+                if key[0] == "_":
+                    key = key[1:]
+
+                entity_kwargs["entity"][key] = getattr(entity, key)
 
         entity_type_kwargs: dict = {"entity_type": {}}
         for key in entity.entity_type.__dict__.keys():
             if key not in ["_workspace"]:
-                entity_type_kwargs["entity_type"][key[1:]] = getattr(
-                    entity.entity_type, key[1:]
+                if key[0] == "_":
+                    key = key[1:]
+
+                entity_type_kwargs["entity_type"][key] = getattr(
+                    entity.entity_type, key
                 )
 
         if parent is None:
             parent = entity.parent
         elif isinstance(parent, Workspace):
             parent = parent.root
+
+        # Assign the same uid if possible
+        if parent.workspace.get_entity(entity.uid)[0] is None:
+            entity_kwargs["entity"]["uid"] = entity.uid
 
         entity_kwargs["entity"]["parent"] = parent
 
@@ -381,8 +387,7 @@ class Workspace:
         return None
 
     def deactivate(self):
-        """ Deactivate this workspace if it was the active one, else does nothing.
-        """
+        """Deactivate this workspace if it was the active one, else does nothing."""
         if Workspace._active_ref() is self:
             Workspace._active_ref = type(None)
 
@@ -541,8 +546,7 @@ class Workspace:
         return weakref_utils.get_clean_ref(self._data, data_uid)
 
     def find_entity(self, entity_uid: uuid.UUID) -> Optional["Entity"]:
-        """Get all active entities registered in the workspace.
-        """
+        """Get all active entities registered in the workspace."""
         return (
             self.find_group(entity_uid)
             or self.find_data(entity_uid)
@@ -661,7 +665,7 @@ class Workspace:
     @property
     def name(self) -> str:
         """
-         :obj:`str` Name of the project.
+        :obj:`str` Name of the project.
         """
         return self._name
 
