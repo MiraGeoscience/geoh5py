@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -19,6 +19,7 @@ import tempfile
 from pathlib import Path
 
 from geoh5py.groups import ContainerGroup
+from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
@@ -37,6 +38,6 @@ def test_create_group():
         workspace.finalize()
 
         # Read the group back in
-        group_object = workspace.get_entity(group_name)
+        rec_obj = workspace.get_entity(group_name)[0]
 
-        assert group_object, "Could not read the group object %s" % group_name
+        compare_entities(group, rec_obj)

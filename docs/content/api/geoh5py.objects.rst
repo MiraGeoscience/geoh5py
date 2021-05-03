@@ -12,13 +12,6 @@ geoh5py.objects.block\_model module
    :undoc-members:
    :show-inheritance:
 
-geoh5py.objects.cell module
----------------------------
-
-.. automodule:: geoh5py.objects.cell
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 geoh5py.objects.curve module
 ----------------------------
@@ -104,14 +97,6 @@ geoh5py.objects.surface module
 ------------------------------
 
 .. automodule:: geoh5py.objects.surface
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-geoh5py.objects.survey\_location module
----------------------------------------
-
-.. automodule:: geoh5py.objects.survey_location
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -60,9 +60,6 @@ class Octree(ObjectBase):
         self._octree_cells = None
         self._centroids = None
         super().__init__(object_type, **kwargs)
-
-        if object_type.name == "None":
-            self.entity_type.name = "Octree"
 
         object_type.workspace._register_object(self)
 

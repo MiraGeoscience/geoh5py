@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -135,7 +135,7 @@ def test_custom_group_instantiation():
 
 def _can_find(workspace, created_group):
     """Make sure we can find the created group in the workspace."""
-    all_groups = workspace.all_groups()
+    all_groups = workspace.groups
     assert len(all_groups) == 2
     iter_all_groups = iter(all_groups)
     assert next(iter_all_groups) in [created_group, workspace.root]

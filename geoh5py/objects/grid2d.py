@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -63,9 +63,6 @@ class Grid2D(ObjectBase):
         self._centroids = None
 
         super().__init__(object_type, **kwargs)
-
-        if object_type.name == "None":
-            self.entity_type.name = "Grid"
 
         object_type.workspace._register_object(self)
 

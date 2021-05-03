@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -22,6 +22,7 @@ import numpy as np
 from scipy import spatial
 
 from geoh5py.objects import Surface
+from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
@@ -56,10 +57,8 @@ def test_create_surface_data():
         # Read the object from a different workspace object on the same file
         new_workspace = Workspace(h5file_path)
 
-        obj_copy = new_workspace.get_entity("mySurf")[0]
-        data_copy = obj_copy.get_data("TMI")[0]
+        rec_obj = new_workspace.get_entity("mySurf")[0]
+        rec_data = rec_obj.get_data("TMI")[0]
 
-        assert [
-            prop in obj_copy.get_data_list() for prop in surface.get_data_list()
-        ], "The surface object did not copy"
-        assert np.all(data_copy.values == data.values), "Data values were not copied"
+        compare_entities(surface, rec_obj)
+        compare_entities(data, rec_data)

@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -19,7 +19,6 @@
 # flake8: noqa
 
 from .block_model import BlockModel
-from .cell import Cell
 from .curve import Curve, SurveyAirborneMagnetics
 from .drillhole import Drillhole
 from .geo_image import GeoImage
@@ -31,4 +30,3 @@ from .object_type import ObjectType
 from .octree import Octree
 from .points import Points
 from .surface import Surface
-from .survey_location import SurveyLocation

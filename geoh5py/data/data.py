@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -38,7 +38,6 @@ class Data(Entity):
     def __init__(self, data_type: DataType, **kwargs):
         assert data_type is not None
         assert data_type.primitive_type == self.primitive_type()
-        self._no_data_value = 1.17549435e-38
         self._entity_type = data_type
         self._association: Optional[DataAssociationEnum] = None
         self._values = None
@@ -48,14 +47,10 @@ class Data(Entity):
 
         super().__init__(**kwargs)
 
-        data_type.workspace._register_data(self)
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = self.name
 
-    @property
-    def no_data_value(self) -> float:
-        """
-        :obj:`float`: Default no-data-value
-        """
-        return self._no_data_value
+        data_type.workspace._register_data(self)
 
     @property
     def n_values(self) -> Optional[int]:

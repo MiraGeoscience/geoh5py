@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -51,7 +51,7 @@ class ObjectsHandler:
 
     @staticmethod
     def get_all() -> List[i_Object]:
-        Workspace.active().all_data()
+        Workspace.active().data
         # TODO
         return []
 

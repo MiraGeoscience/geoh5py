@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -59,7 +59,7 @@ class GroupsHandler:
 
     @staticmethod
     def get_all() -> List[i_Group]:
-        Workspace.active().all_groups()
+        Workspace.active().groups
         # TODO
         return []
 

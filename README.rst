@@ -21,7 +21,7 @@ See also documentation for the `geoh5 file format`_.
 
 Installation
 ^^^^^^^^^^^^
-**geoh5py** is currently written for Python 3.6 or higher, and depends on `NumPy <https://numpy.org/>`_ and
+**geoh5py** is currently written for Python 3.7 or higher, and depends on `NumPy <https://numpy.org/>`_ and
 `h5py <https://www.h5py.org/>`_. Users will likely want to also make use of advanced processing
 techniques made available under the python ecosystem. We therefore recommend installing
 Anaconda to handle the various packages.
@@ -128,6 +128,17 @@ You should have received a copy of the GNU Lesser General Public License
 along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
+Third Party Software
+^^^^^^^^^^^^^^^^^^^^
+The geoh5 Software may provide links to third party libraries or code (collectively “Third Party Software”)
+to implement various functions. Third Party Software does not comprise part of the Software.
+The use of Third Party Software is governed by the terms of such software license(s).
+Third Party Software notices and/or additional terms and conditions are located in the
+`THIRD_PARTY_SOFTWARE.rst`_ file.
+
+.. _THIRD_PARTY_SOFTWARE.rst: THIRD_PARTY_SOFTWARE.rst
+
+
 Copyright
 ^^^^^^^^^
-Copyright (c) 2020 Mira Geoscience Ltd.
+Copyright (c) 2021 Mira Geoscience Ltd.

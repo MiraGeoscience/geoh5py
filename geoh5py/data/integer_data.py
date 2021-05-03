@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,30 +15,19 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import numpy as np
 
-from .data import Data, PrimitiveTypeEnum
+from .data import PrimitiveTypeEnum
+from .numeric_data import NumericData
 
 
-class IntegerData(Data):
+class IntegerData(NumericData):
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.INTEGER
 
-    @property
-    def values(self) -> np.ndarray:
+    @classmethod
+    def ndv(cls) -> int:
         """
-        :return: values: An array of :obj:`int` values.
+        No-Data-Value
         """
-        if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
-            self._values = self.workspace.fetch_values(self.uid)
-
-        return self._values
-
-    @values.setter
-    def values(self, values):
-        self.modified_attributes = "values"
-        self._values = np.ravel(values).astype(int)
-
-    def __call__(self):
-        return self.values
+        return -2147483648

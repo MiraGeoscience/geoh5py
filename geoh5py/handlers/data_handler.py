@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 class DataHandler:
     @staticmethod
     def get_all() -> List[i_Data]:
-        Workspace.active().all_data()
+        Workspace.active().data
         # TODO
         return []
 

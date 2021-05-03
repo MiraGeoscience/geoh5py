@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -39,9 +39,6 @@ class Curve(Points):
         self._cells: Optional[np.ndarray] = None
         self._parts: Optional[np.ndarray] = None
         super().__init__(object_type, **kwargs)
-
-        if object_type.name == "None":
-            self.entity_type.name = "Curve"
 
     @property
     def cells(self) -> Optional[np.ndarray]:

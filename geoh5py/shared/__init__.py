@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -25,6 +25,7 @@ from .distance_unit import DistanceUnit
 from .entity import Entity
 from .entity_type import EntityType
 from .file_name import FileName
+from .utils import match_values, merge_arrays
 from .version_number import VersionNumber
 from .version_string import VersionString
 from .vertex_index import VertexIndex

@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -40,14 +40,17 @@ def test_create_property_group():
         curve = Curve.create(workspace, vertices=xyz, name=obj_name)
 
         # Add data
+        props = []
         for i in range(4):
             values = np.cos(xyz[:, 0] / (i + 1))
-            curve.add_data(
-                {f"Period{i+1}": {"values": values}}, property_group="myGroup"
-            )
+            props += [
+                curve.add_data(
+                    {f"Period{i+1}": {"values": values}}, property_group="myGroup"
+                )
+            ]
 
         # Property group object should have been created
-        prop_group = curve.get_property_group("myGroup")
+        prop_group = curve.find_or_create_property_group(name="myGroup")
 
         # Create a new group by data name
         single_data_group = curve.add_data_to_group(f"Period{1}", "Singleton")
@@ -61,7 +64,9 @@ def test_create_property_group():
         workspace = Workspace(h5file_path)
 
         # Read the property_group back in
-        rec_prop_group = workspace.get_entity(obj_name)[0].get_property_group("myGroup")
+        rec_prop_group = workspace.get_entity(obj_name)[
+            0
+        ].find_or_create_property_group(name="myGroup")
 
         attrs = rec_prop_group.attribute_map
         check_list = [

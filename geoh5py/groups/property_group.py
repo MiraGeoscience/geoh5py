@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -16,13 +16,14 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import uuid
+from abc import ABC
 from typing import List, Union
 
 from ..data import DataAssociationEnum
 from ..shared import Entity
 
 
-class PropertyGroup:
+class PropertyGroup(ABC):
     """
     Property group listing data children of an object.
     This group is not registered to the workspace and only visible to the parent object.
@@ -54,48 +55,6 @@ class PropertyGroup:
                 continue
 
     @property
-    def parent(self) -> Entity:
-        """
-        The parent :obj:`~geoh5py.objects.object_base.ObjectBase`
-        """
-        return self._parent
-
-    @parent.setter
-    def parent(self, parent: Entity):
-        self._parent = parent
-
-    @property
-    def attribute_map(self) -> dict:
-        """
-        :obj:`dict` Attribute names mapping between geoh5 and geoh5py
-        """
-        return self._attribute_map
-
-    @property
-    def uid(self) -> uuid.UUID:
-        """
-        :obj:`uuid.UUID` Unique identifier
-        """
-        return self._uid
-
-    @uid.setter
-    def uid(self, uid: Union[str, uuid.UUID]):
-        if isinstance(uid, str):
-            uid = uuid.UUID(uid)
-        self._uid = uid
-
-    @property
-    def name(self) -> str:
-        """
-        :obj:`str` Name of the group
-        """
-        return self._name
-
-    @name.setter
-    def name(self, new_name: str):
-        self._name = new_name
-
-    @property
     def association(self) -> DataAssociationEnum:
         """
         :obj:`~geoh5py.data.data_association_enum.DataAssociationEnum` Data association
@@ -115,6 +74,35 @@ class PropertyGroup:
             self._association = value
 
     @property
+    def attribute_map(self) -> dict:
+        """
+        :obj:`dict` Attribute names mapping between geoh5 and geoh5py
+        """
+        return self._attribute_map
+
+    @property
+    def name(self) -> str:
+        """
+        :obj:`str` Name of the group
+        """
+        return self._name
+
+    @name.setter
+    def name(self, new_name: str):
+        self._name = new_name
+
+    @property
+    def parent(self) -> Entity:
+        """
+        The parent :obj:`~geoh5py.objects.object_base.ObjectBase`
+        """
+        return self._parent
+
+    @parent.setter
+    def parent(self, parent: Entity):
+        self._parent = parent
+
+    @property
     def properties(self) -> List[uuid.UUID]:
         """
         List of unique identifiers for the :obj:`~geoh5py.data.data.Data`
@@ -130,7 +118,7 @@ class PropertyGroup:
             if isinstance(uid, str):
                 uid = uuid.UUID(uid)
             properties.append(uid)
-        self._properties += properties
+        self._properties = properties
 
     @property
     def property_group_type(self) -> str:
@@ -139,3 +127,20 @@ class PropertyGroup:
     @property_group_type.setter
     def property_group_type(self, group_type: str):
         self._property_group_type = group_type
+
+    @property
+    def uid(self) -> uuid.UUID:
+        """
+        :obj:`uuid.UUID` Unique identifier
+        """
+        return self._uid
+
+    @uid.setter
+    def uid(self, uid: Union[str, uuid.UUID]):
+        if isinstance(uid, str):
+            uid = uuid.UUID(uid)
+
+        assert isinstance(
+            uid, uuid.UUID
+        ), f"Could not convert input uid {uid} to type uuid.UUID"
+        self._uid = uid

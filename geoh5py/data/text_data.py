@@ -1,4 +1,4 @@
-#  Copyright (c) 2020 Mira Geoscience Ltd.
+#  Copyright (c) 2021 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -75,7 +75,7 @@ class CommentsData(Data):
             comment_str = self.workspace.fetch_values(self.uid)
 
             if comment_str is not None:
-                self._values = json.loads(comment_str[0])["Comments"]
+                self._values = json.loads(comment_str)["Comments"]
 
         return self._values
 

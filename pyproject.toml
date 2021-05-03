@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "geoh5py"
-version = "0.1.1"
+version = "0.1.2"
 license = "LGPL-3.0-or-later"
 description = "Python API for geoh5, an open file format for geoscientific data"
 authors = ["Mira Geoscience <support@mirageoscience.com>"]
@@ -23,26 +23,30 @@ classifiers = [
 exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
-h5py = "^2.10"
-toml = "^0.10.0"
 numpy = "!=1.19.4"
+python = "^3.7"
+h5py = "^3.2.1"
 
 [tool.poetry.dev-dependencies]
+lockfile = "^0.12.2"
+poetry-publish = {git = "https://github.com/MiraGeoscience/poetry-publish.git", rev = "pending_fixes"}
 pylint = "^2.3"
 pytest = "^3.0"
 pytest-cov = "^2.7.1"
 scipy = "^1.4.1"
 sphinx = "^3.0"
-sphinx-rtd-theme = "^0.4.3"
 sphinx-autodoc-typehints = "^1.10"
-lockfile = "^0.12.2"
-poetry-publish = {git = "https://github.com/MiraGeoscience/poetry-publish.git", rev = "pending_fixes"}
+sphinx-rtd-theme = "^0.4.3"
+toml = "^0.10.2"
 
 [tool.poetry.extras]
 
 [tool.poetry.scripts]
 publish = 'devtools.publish:publish'
+
+[tool.dephell.main]
+from = {format = "poetry", path = "pyproject.toml"}
+to = {format = "setuppy", path = "setup.py"}
 
 [tool.isort]
 # settings for compatibility between ``isort`` and ``black`` formatting
@@ -53,12 +57,12 @@ use_parentheses = true
 line_length = 88
 # auto-updated by seed-isort-config
 
-known_third_party = ["Add2Build", "StringIO", "autodoc", "edit_on_github", "environmentSetup", "h5py", "numpy", "poetry_publish", "pytest", "scipy", "setuptools", "toml", "urllib2"]
+known_third_party = ["Add2Build", "StringIO", "autodoc", "edit_on_github", "environmentSetup", "h5py", "numpy", "poetry_publish", "pytest", "scipy", "toml", "urllib2"]
 
 
 [tool.black]
 # defaults are just fine
 
 [build-system]
-requires = ["poetry>=0.12"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.masonry.api"
