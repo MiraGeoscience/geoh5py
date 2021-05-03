@@ -60,7 +60,7 @@ setup(
         "geoh5py.io": ["*.orig"],
         "geoh5py.objects": ["*.orig"],
     },
-    install_requires=["h5py==2.*,>=2.10.0", "numpy!=1.19.4", "toml==0.*,>=0.10.0"],
+    install_requires=["h5py==3.*,>=3.2.1", "numpy!=1.19.4"],
     dependency_links=[
         "git+https://github.com/MiraGeoscience/poetry-publish.git@pending_fixes#egg=poetry-publish"
     ],
@@ -75,6 +75,7 @@ setup(
             "sphinx==3.*,>=3.0.0",
             "sphinx-autodoc-typehints==1.*,>=1.10.0",
             "sphinx-rtd-theme==0.*,>=0.4.3",
+            "toml==0.*,>=0.10.2",
         ]
     },
 )
