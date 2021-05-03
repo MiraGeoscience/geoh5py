@@ -568,7 +568,7 @@ class Workspace:
         :param uid: Unique identifier of target entity
 
         :return values: Array of [Depth, Dip, Azimuth] defining the drillhole
-        path
+            path.
         """
         return H5Reader.fetch_coordinates(self.h5file, uid, name)
 
