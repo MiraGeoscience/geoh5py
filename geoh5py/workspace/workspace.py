@@ -103,19 +103,29 @@ class Workspace:
             for key, attr in proj_attributes.items():
                 setattr(self, self._attribute_map[key], attr)
 
-            # Get the Root attributes
-            attributes, type_attributes, _ = H5Reader.fetch_attributes(
-                self.h5file, uuid.uuid4(), "Root"
-            )
-            self._root = self.create_entity(
-                RootGroup, save_on_creation=False, **{**attributes, **type_attributes}
-            )
+            try:
+                self._root = self.load_entity(uuid.uuid4(), "root")
 
-            if self._root is not None:
-                self._root.existing_h5_entity = True
-                self._root.entity_type.existing_h5_entity = True
+                if self._root is not None:
+                    self._root.existing_h5_entity = True
+                    self._root.entity_type.existing_h5_entity = True
+                    self.fetch_children(self._root, recursively=True)
 
-                self.fetch_children(self._root, recursively=True)
+            except KeyError:
+                self._root = self.create_entity(RootGroup, save_on_creation=False)
+
+                for entity_type in ["group", "object"]:
+                    uuids = H5Reader.fetch_uuids(self.h5file, entity_type)
+
+                    for uid in uuids:
+                        recovered_object = self.load_entity(uid, entity_type)
+
+                        if isinstance(recovered_object, Entity):
+                            self.fetch_children(recovered_object, recursively=True)
+                            getattr(recovered_object, "parent", None)
+
+                self.finalize()
+                print("Fetching workspace from flatten structure")
 
         except FileNotFoundError:
             H5Writer.create_geoh5(self)
@@ -473,8 +483,6 @@ class Workspace:
         :param entity: Parental entity
         :param recursively: Recover all children down the project tree
         """
-        base_classes = {"group": Group, "object": ObjectBase, "data": Data}
-
         if isinstance(entity, Group):
             entity_type = "group"
         elif isinstance(entity, ObjectBase):
@@ -485,18 +493,10 @@ class Workspace:
         children_list = H5Reader.fetch_children(self.h5file, entity.uid, entity_type)
 
         for uid, child_type in children_list.items():
-            attributes, type_attributes, property_groups = H5Reader.fetch_attributes(
-                self.h5file, uid, child_type
-            )
-
             if self.get_entity(uid)[0] is not None:
                 recovered_object = self.get_entity(uid)[0]
             else:
-                recovered_object = self.create_entity(
-                    base_classes[child_type],
-                    save_on_creation=False,
-                    **{**attributes, **type_attributes},
-                )
+                recovered_object = self.load_entity(uid, child_type)
 
             if recovered_object is not None:
 
@@ -509,10 +509,6 @@ class Workspace:
 
                 if recursively:
                     self.fetch_children(recovered_object, recursively=True)
-
-            if isinstance(recovered_object, ObjectBase) and len(property_groups) > 0:
-                for kwargs in property_groups.values():
-                    recovered_object.find_or_create_property_group(**kwargs)
 
     def fetch_delimiters(
         self, uid: uuid.UUID
@@ -741,6 +737,38 @@ class Workspace:
             if entity is not None:
                 objects_name[key] = entity.name
         return objects_name
+
+    def load_entity(self, uid: uuid.UUID, entity_type: str) -> Optional[Entity]:
+        """
+        Recover an entity from geoh5.
+
+        :param uid: Unique identifier of entity
+        :param entity_type: One of entity type 'group', 'object', 'data' or 'root'
+
+        :return entity: Entity loaded from geoh5
+        """
+        base_classes = {
+            "group": Group,
+            "object": ObjectBase,
+            "data": Data,
+            "root": RootGroup,
+        }
+        (
+            attributes,
+            type_attributes,
+            property_groups,
+        ) = H5Reader.fetch_attributes(self.h5file, uid, entity_type)
+        entity = self.create_entity(
+            base_classes[entity_type],
+            save_on_creation=False,
+            **{**attributes, **type_attributes},
+        )
+
+        if isinstance(entity, ObjectBase) and len(property_groups) > 0:
+            for kwargs in property_groups.values():
+                entity.find_or_create_property_group(**kwargs)
+
+        return entity
 
     @property
     def name(self) -> str:

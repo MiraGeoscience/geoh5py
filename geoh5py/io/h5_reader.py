@@ -60,54 +60,53 @@ class H5Reader:
         type_attributes: :obj:`dict` of attributes for the :obj:`~geoh5py.shared.entity.EntityType`
         property_groups: :obj:`dict` of data :obj:`uuid.UUID`
         """
-        project = h5py.File(h5file, "r")
-        name = list(project.keys())[0]
-        attributes: Dict = {"entity": {}}
-        type_attributes: Dict = {"entity_type": {}}
-        property_groups: Dict = {}
-        if "type" in entity_type:
-            entity_type = entity_type.replace("_", " ").capitalize() + "s"
-            entity = project[name]["Types"][entity_type][cls.uuid_str(uid)]
-        elif entity_type == "Root":
-            entity = project[name][entity_type]
-        else:
+        with h5py.File(h5file, "r") as project:
+            name = list(project.keys())[0]
+            attributes: Dict = {"entity": {}}
+            type_attributes: Dict = {"entity_type": {}}
+            property_groups: Dict = {}
             entity_type = entity_type.capitalize()
-            if entity_type in ["Group", "Object"]:
-                entity_type += "s"
-            entity = project[name][entity_type][cls.uuid_str(uid)]
+            if "type" in entity_type:
+                entity_type = entity_type.replace("_", " ") + "s"
+                entity = project[name]["Types"][entity_type][cls.uuid_str(uid)]
+            elif entity_type == "Root":
+                entity = project[name][entity_type]
+            else:
+                # entity_type = entity_type.capitalize()
+                if entity_type in ["Group", "Object"]:
+                    entity_type += "s"
+                entity = project[name][entity_type][cls.uuid_str(uid)]
 
-        for key, value in entity.attrs.items():
-            attributes["entity"][key] = value
+            for key, value in entity.attrs.items():
+                attributes["entity"][key] = value
 
-        for key, value in entity["Type"].attrs.items():
-            type_attributes["entity_type"][key] = value
+            for key, value in entity["Type"].attrs.items():
+                type_attributes["entity_type"][key] = value
 
-        if "Color map" in entity["Type"].keys():
-            type_attributes["entity_type"]["color_map"] = {}
-            for key, value in entity["Type"]["Color map"].attrs.items():
-                type_attributes["entity_type"]["color_map"][key] = value
-            type_attributes["entity_type"]["color_map"]["values"] = entity["Type"][
-                "Color map"
-            ][:]
+            if "Color map" in entity["Type"].keys():
+                type_attributes["entity_type"]["color_map"] = {}
+                for key, value in entity["Type"]["Color map"].attrs.items():
+                    type_attributes["entity_type"]["color_map"][key] = value
+                type_attributes["entity_type"]["color_map"]["values"] = entity["Type"][
+                    "Color map"
+                ][:]
 
-        if "Value map" in entity["Type"].keys():
-            value_map = entity["Type"]["Value map"][:]
-            mapping = {}
-            for key, value in value_map.tolist():
-                value = cls.str_from_utf8_bytes(value)
+            if "Value map" in entity["Type"].keys():
+                value_map = entity["Type"]["Value map"][:]
+                mapping = {}
+                for key, value in value_map.tolist():
+                    value = cls.str_from_utf8_bytes(value)
 
-                mapping[key] = value
+                    mapping[key] = value
 
-            type_attributes["entity_type"]["value_map"] = mapping
+                type_attributes["entity_type"]["value_map"] = mapping
 
-        # Check if the entity has property_group
-        if "PropertyGroups" in entity.keys():
-            for pg_id in entity["PropertyGroups"].keys():
-                property_groups[pg_id] = {"uid": pg_id}
-                for key, value in entity["PropertyGroups"][pg_id].attrs.items():
-                    property_groups[pg_id][key] = value
-
-        project.close()
+            # Check if the entity has property_group
+            if "PropertyGroups" in entity.keys():
+                for pg_id in entity["PropertyGroups"].keys():
+                    property_groups[pg_id] = {"uid": pg_id}
+                    for key, value in entity["PropertyGroups"][pg_id].attrs.items():
+                        property_groups[pg_id][key] = value
 
         attributes["entity"]["existing_h5_entity"] = True
         return attributes, type_attributes, property_groups
@@ -132,6 +131,7 @@ class H5Reader:
 
         except KeyError:
             project.close()
+            return None
 
     @classmethod
     def fetch_children(cls, h5file: str, uid: uuid.UUID, entity_type: str) -> dict:
@@ -277,6 +277,30 @@ class H5Reader:
         return property_groups
 
     @classmethod
+    def fetch_uuids(cls, h5file: Optional[str], entity_type: str) -> list:
+        """
+        Fetch all uuids of a given type from geoh5
+
+        :param h5file: Name of the target geoh5 file
+        :param entity_type: Type of entity from
+            'group', 'data', 'object', 'group_type', 'data_type', 'object_type'
+
+        :return uuids: [uuid1, uuid2, ...]
+            List of uuids
+        """
+        project = h5py.File(h5file, "r")
+        name = list(project.keys())[0]
+
+        entity_type = entity_type.capitalize()
+        if entity_type in ["Group", "Object"]:
+            entity_type += "s"
+
+        try:
+            return [cls.uuid_value(uid) for uid in project[name][entity_type].keys()]
+        except KeyError:
+            return []
+
+    @classmethod
     def fetch_value_map(cls, h5file: Optional[str], uid: uuid.UUID) -> Optional[dict]:
         """
         Get data :obj:`~geoh5py.data.data.Data.value_map`
@@ -353,6 +377,7 @@ class H5Reader:
             return coordinates
         except KeyError:
             project.close()
+            return None
 
     @classmethod
     def fetch_trace_depth(cls, h5file: Optional[str], uid: uuid.UUID) -> np.ndarray:

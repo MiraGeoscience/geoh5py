@@ -27,7 +27,7 @@ import numpy as np
 from ..data import CommentsData, Data, DataType, IntegerData, TextData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
-from ..shared import Entity
+from ..shared import Entity, EntityType
 
 if TYPE_CHECKING:
     from .. import shared, workspace
@@ -177,26 +177,34 @@ class H5Writer:
         cls.str_type = h5py.special_dtype(vlen=str)
         h5file = cls.fetch_h5_handle(file)
         base = list(h5file.keys())[0]
+        base_handle = h5file[base]
 
         if entity.name == base:
-            return h5file[base]
+            return base_handle
 
         uid = entity.uid
+        hierarchy = {
+            Data: "Data",
+            ObjectBase: "Objects",
+            Group: "Groups",
+            DataType: "Data types",
+            ObjectType: "Object types",
+            GroupType: "Group types",
+        }
 
-        if isinstance(entity, Data):
-            base_handle = h5file[base]["Data"]
-        elif isinstance(entity, ObjectBase):
-            base_handle = h5file[base]["Objects"]
-        elif isinstance(entity, Group):
-            base_handle = h5file[base]["Groups"]
-        elif isinstance(entity, DataType):
-            base_handle = h5file[base]["Types"]["Data types"]
-        elif isinstance(entity, ObjectType):
-            base_handle = h5file[base]["Types"]["Object types"]
-        elif isinstance(entity, GroupType):
-            base_handle = h5file[base]["Types"]["Group types"]
-        else:
-            raise RuntimeError(f"Type of object '{entity}' is not supported for geoh5.")
+        if isinstance(entity, EntityType):
+            try:
+                base_handle = base_handle["Types"]
+            except KeyError:
+                base_handle = base_handle.create_group("Types")
+
+        for key, value in hierarchy.items():
+            if isinstance(entity, key):
+                try:
+                    base_handle = base_handle[value]
+                except KeyError:
+                    base_handle = base_handle.create_group(value)
+                break
 
         # Check if already in the project
         if cls.uuid_str(uid) in list(base_handle.keys()):
@@ -218,10 +226,12 @@ class H5Writer:
         """
         h5file = cls.fetch_h5_handle(workspace.h5file)
         workspace_group: Entity = workspace.get_entity("Workspace")[0]
-        root_handle = H5Writer.fetch_handle(h5file, workspace_group)
+        root_handle = cls.save_entity(workspace_group, close_file=False)
 
         if "Root" in h5file[workspace.name].keys():
             del h5file[workspace.name]["Root"]
+        else:
+            h5file[workspace.name].create_group = "Root"
 
         h5file[workspace.name]["Root"] = root_handle
 
