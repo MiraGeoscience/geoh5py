@@ -92,7 +92,9 @@ def compare_entities(object_a, object_b, ignore: Optional[List] = None):
         if attr in ignore_list:
             continue
         if isinstance(getattr(object_a, attr[1:]), ABC):
-            compare_entities(getattr(object_a, attr[1:]), getattr(object_b, attr[1:]))
+            compare_entities(
+                getattr(object_a, attr[1:]), getattr(object_b, attr[1:]), ignore=ignore
+            )
         else:
             if isinstance(getattr(object_a, attr[1:]), np.ndarray):
                 np.testing.assert_array_equal(
