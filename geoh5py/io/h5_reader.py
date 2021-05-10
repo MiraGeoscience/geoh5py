@@ -121,17 +121,16 @@ class H5Reader:
 
         :return cells: :obj:`numpy.ndarray` of :obj:`int`.
         """
-        project = h5py.File(h5file, "r")
-        name = list(project.keys())[0]
+        with h5py.File(h5file, "r") as project:
 
-        try:
-            indices = project[name]["Objects"][cls.uuid_str(uid)]["Cells"][:]
-            project.close()
-            return indices
+            name = list(project.keys())[0]
 
-        except KeyError:
-            project.close()
-            return None
+            try:
+                indices = project[name]["Objects"][cls.uuid_str(uid)]["Cells"][:]
+                return indices
+
+            except KeyError:
+                return None
 
     @classmethod
     def fetch_children(cls, h5file: str, uid: uuid.UUID, entity_type: str) -> dict:
@@ -147,25 +146,23 @@ class H5Reader:
         :return children: [{uuid: type}, ... ]
             List of dictionaries for the children uid and type
         """
-        project = h5py.File(h5file, "r")
-        name = list(project.keys())[0]
-        children = {}
-        entity_type = entity_type.capitalize()
-        if entity_type in ["Group", "Object"]:
-            entity_type += "s"
-        entity = project[name][entity_type][cls.uuid_str(uid)]
+        with h5py.File(h5file, "r") as project:
+            name = list(project.keys())[0]
+            children = {}
+            entity_type = entity_type.capitalize()
+            if entity_type in ["Group", "Object"]:
+                entity_type += "s"
+            entity = project[name][entity_type][cls.uuid_str(uid)]
 
-        for child_type, child_list in entity.items():
-            if child_type in ["Type", "PropertyGroups"]:
-                continue
+            for child_type, child_list in entity.items():
+                if child_type in ["Type", "PropertyGroups"]:
+                    continue
 
-            if isinstance(child_list, h5py.Group):
-                for uid_str in child_list.keys():
-                    children[cls.uuid_value(uid_str)] = child_type.replace(
-                        "s", ""
-                    ).lower()
-
-        project.close()
+                if isinstance(child_list, h5py.Group):
+                    for uid_str in child_list.keys():
+                        children[cls.uuid_value(uid_str)] = child_type.replace(
+                            "s", ""
+                        ).lower()
 
         return children
 
@@ -185,19 +182,17 @@ class H5Reader:
         v_delimiters: :obj:`numpy.ndarray` of v_delimiters
         z_delimiters: :obj:`numpy.ndarray` of z_delimiters
         """
-        project = h5py.File(h5file, "r")
-        name = list(project.keys())[0]
-        u_delimiters = np.r_[
-            project[name]["Objects"][cls.uuid_str(uid)]["U cell delimiters"]
-        ]
-        v_delimiters = np.r_[
-            project[name]["Objects"][cls.uuid_str(uid)]["V cell delimiters"]
-        ]
-        z_delimiters = np.r_[
-            project[name]["Objects"][cls.uuid_str(uid)]["Z cell delimiters"]
-        ]
-
-        project.close()
+        with h5py.File(h5file, "r") as project:
+            name = list(project.keys())[0]
+            u_delimiters = np.r_[
+                project[name]["Objects"][cls.uuid_str(uid)]["U cell delimiters"]
+            ]
+            v_delimiters = np.r_[
+                project[name]["Objects"][cls.uuid_str(uid)]["V cell delimiters"]
+            ]
+            z_delimiters = np.r_[
+                project[name]["Objects"][cls.uuid_str(uid)]["Z cell delimiters"]
+            ]
 
         return u_delimiters, v_delimiters, z_delimiters
 
@@ -212,13 +207,11 @@ class H5Reader:
 
         :return octree_cells: :obj:`numpy.ndarray` of :obj:`int`.
         """
-        project = h5py.File(h5file, "r")
-        name = list(project.keys())[0]
-        octree_cells = np.r_[
-            project[name]["Objects"][cls.uuid_str(uid)]["Octree Cells"]
-        ]
-
-        project.close()
+        with h5py.File(h5file, "r") as project:
+            name = list(project.keys())[0]
+            octree_cells = np.r_[
+                project[name]["Objects"][cls.uuid_str(uid)]["Octree Cells"]
+            ]
 
         return octree_cells
 
@@ -231,14 +224,12 @@ class H5Reader:
 
         :return attributes: :obj:`dict` of attributes.
         """
-        project = h5py.File(h5file, "r")
-        name = list(project.keys())[0]
-        attributes = {}
+        with h5py.File(h5file, "r") as project:
+            name = list(project.keys())[0]
+            attributes = {}
 
-        for key, value in project[name].attrs.items():
-            attributes[key] = value
-
-        project.close()
+            for key, value in project[name].attrs.items():
+                attributes[key] = value
 
         return attributes
 
@@ -263,16 +254,16 @@ class H5Reader:
                 "group_N": {"attribute": value, ...},
             }
         """
-        project = h5py.File(h5file, "r")
-        name = list(project.keys())[0]
-        pg_handle = project[name]["Objects"][cls.uuid_str(uid)]["PropertyGroups"]
+        with h5py.File(h5file, "r") as project:
+            name = list(project.keys())[0]
+            pg_handle = project[name]["Objects"][cls.uuid_str(uid)]["PropertyGroups"]
 
-        property_groups: Dict[str, Dict[str, str]] = {}
-        for pg_uid in pg_handle.keys():
+            property_groups: Dict[str, Dict[str, str]] = {}
+            for pg_uid in pg_handle.keys():
 
-            property_groups[pg_uid] = {}
-            for attr, value in pg_handle[pg_uid].attrs.items():
-                property_groups[pg_uid][attr] = value
+                property_groups[pg_uid] = {}
+                for attr, value in pg_handle[pg_uid].attrs.items():
+                    property_groups[pg_uid][attr] = value
 
         return property_groups
 
@@ -288,17 +279,19 @@ class H5Reader:
         :return uuids: [uuid1, uuid2, ...]
             List of uuids
         """
-        project = h5py.File(h5file, "r")
-        name = list(project.keys())[0]
+        with h5py.File(h5file, "r") as project:
+            name = list(project.keys())[0]
 
-        entity_type = entity_type.capitalize()
-        if entity_type in ["Group", "Object"]:
-            entity_type += "s"
+            entity_type = entity_type.capitalize()
+            if entity_type in ["Group", "Object"]:
+                entity_type += "s"
 
-        try:
-            return [cls.uuid_value(uid) for uid in project[name][entity_type].keys()]
-        except KeyError:
-            return []
+            try:
+                return [
+                    cls.uuid_value(uid) for uid in project[name][entity_type].keys()
+                ]
+            except KeyError:
+                return []
 
     @classmethod
     def fetch_value_map(cls, h5file: Optional[str], uid: uuid.UUID) -> Optional[dict]:
@@ -310,14 +303,12 @@ class H5Reader:
 
         :return value_map: :obj:`dict` of {:obj:`int`: :obj:`str`}
         """
-        project = h5py.File(h5file, "r")
-        name = list(project.keys())[0]
-        if "Data" in list(project[name]["Data"][cls.uuid_str(uid)].keys()):
-            values = np.r_[project[name]["Data"][cls.uuid_str(uid)]["Data"]]
-        else:
-            values = None
-
-        project.close()
+        with h5py.File(h5file, "r") as project:
+            name = list(project.keys())[0]
+            if "Data" in list(project[name]["Data"][cls.uuid_str(uid)].keys()):
+                values = np.r_[project[name]["Data"][cls.uuid_str(uid)]["Data"]]
+            else:
+                values = None
 
         return values
 
@@ -331,24 +322,22 @@ class H5Reader:
 
         :return values: :obj:`numpy.array` of :obj:`float`
         """
-        project = h5py.File(h5file, "r")
-        name = list(project.keys())[0]
+        with h5py.File(h5file, "r") as project:
+            name = list(project.keys())[0]
 
-        if "Data" in list(project[name]["Data"][cls.uuid_str(uid)].keys()):
-            values = np.r_[project[name]["Data"][cls.uuid_str(uid)]["Data"]]
-            if isinstance(values[0], (str, bytes)):
-                values = cls.str_from_utf8_bytes(values[0])
-            else:
-                if values.dtype in [float, "float64", "float32"]:
-                    ind = values == FloatData.ndv()
+            if "Data" in list(project[name]["Data"][cls.uuid_str(uid)].keys()):
+                values = np.r_[project[name]["Data"][cls.uuid_str(uid)]["Data"]]
+                if isinstance(values[0], (str, bytes)):
+                    values = cls.str_from_utf8_bytes(values[0])
                 else:
-                    ind = values == IntegerData.ndv()
-                    values = values.astype("float64")
-                values[ind] = np.nan
-        else:
-            values = None
-
-        project.close()
+                    if values.dtype in [float, "float64", "float32"]:
+                        ind = values == FloatData.ndv()
+                    else:
+                        ind = values == IntegerData.ndv()
+                        values = values.astype("float64")
+                    values[ind] = np.nan
+            else:
+                values = None
 
         return values
 
@@ -366,18 +355,16 @@ class H5Reader:
         :return surveys: :obj:`numpy.ndarray` of [x, y, z] coordinates
 
         """
-        project = h5py.File(h5file, "r")
-        root = list(project.keys())[0]
+        with h5py.File(h5file, "r") as project:
+            root = list(project.keys())[0]
 
-        try:
-            coordinates = np.asarray(
-                project[root]["Objects"][cls.uuid_str(uid)][cls.key_map[name]]
-            )
-            project.close()
-            return coordinates
-        except KeyError:
-            project.close()
-            return None
+            try:
+                coordinates = np.asarray(
+                    project[root]["Objects"][cls.uuid_str(uid)][cls.key_map[name]]
+                )
+                return coordinates
+            except KeyError:
+                return None
 
     @classmethod
     def fetch_trace_depth(cls, h5file: Optional[str], uid: uuid.UUID) -> np.ndarray:
@@ -390,11 +377,9 @@ class H5Reader:
         :return surveys: :obj:`numpy.ndarray` of [x, y, z] coordinates
 
         """
-        project = h5py.File(h5file, "r")
-        root = list(project.keys())[0]
-        trace_depth = project[root]["Objects"][cls.uuid_str(uid)]["TraceDepth"]
-
-        project.close()
+        with h5py.File(h5file, "r") as project:
+            root = list(project.keys())[0]
+            trace_depth = project[root]["Objects"][cls.uuid_str(uid)]["TraceDepth"]
 
         return trace_depth
 
