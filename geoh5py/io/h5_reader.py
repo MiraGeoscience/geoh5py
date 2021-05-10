@@ -72,7 +72,7 @@ class H5Reader:
             elif entity_type == "Root":
                 entity = project[name][entity_type]
             else:
-                # entity_type = entity_type.capitalize()
+
                 if entity_type in ["Group", "Object"]:
                     entity_type += "s"
                 entity = project[name][entity_type][cls.uuid_str(uid)]
