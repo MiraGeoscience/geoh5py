@@ -65,16 +65,14 @@ class H5Reader:
             attributes: Dict = {"entity": {}}
             type_attributes: Dict = {"entity_type": {}}
             property_groups: Dict = {}
-            entity_type = entity_type.capitalize()
+
+            entity_type = cls.format_type_string(entity_type)
             if "type" in entity_type:
                 entity_type = entity_type.replace("_", " ") + "s"
                 entity = project[name]["Types"][entity_type][cls.uuid_str(uid)]
             elif entity_type == "Root":
                 entity = project[name][entity_type]
             else:
-
-                if entity_type in ["Group", "Object"]:
-                    entity_type += "s"
                 entity = project[name][entity_type][cls.uuid_str(uid)]
 
             for key, value in entity.attrs.items():
@@ -149,9 +147,7 @@ class H5Reader:
         with h5py.File(h5file, "r") as project:
             name = list(project.keys())[0]
             children = {}
-            entity_type = entity_type.capitalize()
-            if entity_type in ["Group", "Object"]:
-                entity_type += "s"
+            entity_type = cls.format_type_string(entity_type)
             entity = project[name][entity_type][cls.uuid_str(uid)]
 
             for child_type, child_list in entity.items():
@@ -281,10 +277,7 @@ class H5Reader:
         """
         with h5py.File(h5file, "r") as project:
             name = list(project.keys())[0]
-
-            entity_type = entity_type.capitalize()
-            if entity_type in ["Group", "Object"]:
-                entity_type += "s"
+            entity_type = cls.format_type_string(entity_type)
 
             try:
                 return [
@@ -400,3 +393,11 @@ class H5Reader:
         if isinstance(value, bytes):
             value = value.decode("utf-8")
         return value
+
+    @staticmethod
+    def format_type_string(string):
+        string = string.capitalize()
+        if string in ["Group", "Object"]:
+            string += "s"
+
+        return string
