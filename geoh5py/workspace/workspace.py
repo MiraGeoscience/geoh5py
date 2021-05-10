@@ -407,7 +407,10 @@ class Workspace:
         Function to remove an entity and its children from the workspace
         """
         parent = entity.parent
-        self.workspace.remove_recursively(entity)
+
+        with h5py.File(entity.workspace.h5file, "r+") as h5file:
+            self.workspace.remove_recursively(entity, file=h5file)
+
         parent.children.remove(entity)
 
         del entity
@@ -431,12 +434,14 @@ class Workspace:
         for key in rem_list:
             del referents[key]
 
-    def remove_recursively(self, entity: Entity):
+    def remove_recursively(
+        self, entity: Entity, file: Optional[Union[str, h5py.File]] = None
+    ):
         """Delete an entity and its children from the workspace and geoh5 recursively"""
 
         parent = entity.parent
         for child in entity.children:
-            self.remove_recursively(child)
+            self.remove_recursively(child, file=file)
 
         entity.remove_children(entity.children)  # Remove link to children
 
@@ -448,7 +453,7 @@ class Workspace:
         elif isinstance(entity, ObjectBase):
             ref_type = "Objects"
 
-        H5Writer.remove_entity(self.h5file, entity.uid, ref_type, parent=parent)
+        H5Writer.remove_entity(file, entity.uid, ref_type, parent=parent)
 
     def deactivate(self):
         """Deactivate this workspace if it was the active one, else does nothing."""
