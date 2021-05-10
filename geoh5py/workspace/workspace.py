@@ -103,29 +103,7 @@ class Workspace:
             for key, attr in proj_attributes.items():
                 setattr(self, self._attribute_map[key], attr)
 
-            try:
-                self._root = self.load_entity(uuid.uuid4(), "root")
-
-                if self._root is not None:
-                    self._root.existing_h5_entity = True
-                    self._root.entity_type.existing_h5_entity = True
-                    self.fetch_children(self._root, recursively=True)
-
-            except KeyError:
-                self._root = self.create_entity(RootGroup, save_on_creation=False)
-
-                for entity_type in ["group", "object"]:
-                    uuids = H5Reader.fetch_uuids(self.h5file, entity_type)
-
-                    for uid in uuids:
-                        recovered_object = self.load_entity(uid, entity_type)
-
-                        if isinstance(recovered_object, Entity):
-                            self.fetch_children(recovered_object, recursively=True)
-                            getattr(recovered_object, "parent", None)
-
-                self.finalize()
-                print("Fetching workspace from flatten structure")
+            self.fetch_or_create_root()
 
         except FileNotFoundError:
             with h5py.File(self.h5file, "w") as new_file:
@@ -403,6 +381,30 @@ class Workspace:
     def data(self) -> List["data.Data"]:
         """Get all active Data entities registered in the workspace."""
         return self._all_data()
+
+    def fetch_or_create_root(self):
+        try:
+            self._root = self.load_entity(uuid.uuid4(), "root")
+
+            if self._root is not None:
+                self._root.existing_h5_entity = True
+                self._root.entity_type.existing_h5_entity = True
+                self.fetch_children(self._root, recursively=True)
+
+        except KeyError:
+            self._root = self.create_entity(RootGroup, save_on_creation=False)
+
+            for entity_type in ["group", "object"]:
+                uuids = H5Reader.fetch_uuids(self.h5file, entity_type)
+
+                for uid in uuids:
+                    recovered_object = self.load_entity(uid, entity_type)
+
+                    if isinstance(recovered_object, Entity):
+                        self.fetch_children(recovered_object, recursively=True)
+                        getattr(recovered_object, "parent", None)
+
+            self.finalize()
 
     def remove_entity(self, entity: Entity):
         """
