@@ -128,7 +128,9 @@ class Workspace:
                 print("Fetching workspace from flatten structure")
 
         except FileNotFoundError:
-            H5Writer.create_geoh5(self)
+            with h5py.File(self.h5file, "w") as new_file:
+                H5Writer.create_geoh5(self, file=new_file)
+
             self._root = self.create_entity(RootGroup)
             self.finalize()
 
@@ -817,7 +819,7 @@ class Workspace:
         return self._root
 
     @staticmethod
-    def save_entity(entity: Entity, close_file: bool = True, add_children: bool = True):
+    def save_entity(entity: Entity, add_children: bool = True):
         """
         Save or update an entity to geoh5.
 
@@ -825,7 +827,7 @@ class Workspace:
         :param close_file: Close the geoh5 database after writing is completed.
         :param add_children: Add children entities to geoh5.
         """
-        H5Writer.save_entity(entity, close_file=close_file, add_children=add_children)
+        H5Writer.save_entity(entity, add_children=add_children)
 
     @property
     def types(self) -> List["EntityType"]:
