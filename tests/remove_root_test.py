@@ -57,12 +57,11 @@ def test_remove_root():
         workspace.finalize()
 
         # Remove the root
-        project = File(h5file_path, "r+")
-        base = list(project.keys())[0]
-        del project[base]["Root"]
-        del project[base]["Groups"]
-        del project[base]["Types"]["Group types"]
-        project.close()
+        with File(h5file_path, "r+") as project:
+            base = list(project.keys())[0]
+            del project[base]["Root"]
+            del project[base]["Groups"]
+            del project[base]["Types"]["Group types"]
 
         # Read the data back in from a fresh workspace
         new_workspace = Workspace(h5file_path)
