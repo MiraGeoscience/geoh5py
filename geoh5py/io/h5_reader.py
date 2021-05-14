@@ -64,56 +64,53 @@ class H5Reader:
         type_attributes: :obj:`dict` of attributes for the :obj:`~geoh5py.shared.entity.EntityType`
         property_groups: :obj:`dict` of data :obj:`uuid.UUID`
         """
-        h5file = fetch_h5_handle(file)
-        name = list(h5file.keys())[0]
-        attributes: Dict = {"entity": {}}
-        type_attributes: Dict = {"entity_type": {}}
-        property_groups: Dict = {}
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file.keys())[0]
+            attributes: Dict = {"entity": {}}
+            type_attributes: Dict = {"entity_type": {}}
+            property_groups: Dict = {}
 
-        entity_type = cls.format_type_string(entity_type)
-        if "type" in entity_type:
-            entity_type = entity_type.replace("_", " ") + "s"
-            entity = h5file[name]["Types"][entity_type][cls.uuid_str(uid)]
-        elif entity_type == "Root":
-            entity = h5file[name][entity_type]
-        else:
-            entity = h5file[name][entity_type][cls.uuid_str(uid)]
+            entity_type = cls.format_type_string(entity_type)
+            if "type" in entity_type:
+                entity_type = entity_type.replace("_", " ") + "s"
+                entity = h5file[name]["Types"][entity_type][cls.uuid_str(uid)]
+            elif entity_type == "Root":
+                entity = h5file[name][entity_type]
+            else:
+                entity = h5file[name][entity_type][cls.uuid_str(uid)]
 
-        for key, value in entity.attrs.items():
-            attributes["entity"][key] = value
+            for key, value in entity.attrs.items():
+                attributes["entity"][key] = value
 
-        for key, value in entity["Type"].attrs.items():
-            type_attributes["entity_type"][key] = value
+            for key, value in entity["Type"].attrs.items():
+                type_attributes["entity_type"][key] = value
 
-        if "Color map" in entity["Type"].keys():
-            type_attributes["entity_type"]["color_map"] = {}
-            for key, value in entity["Type"]["Color map"].attrs.items():
-                type_attributes["entity_type"]["color_map"][key] = value
-            type_attributes["entity_type"]["color_map"]["values"] = entity["Type"][
-                "Color map"
-            ][:]
+            if "Color map" in entity["Type"].keys():
+                type_attributes["entity_type"]["color_map"] = {}
+                for key, value in entity["Type"]["Color map"].attrs.items():
+                    type_attributes["entity_type"]["color_map"][key] = value
+                type_attributes["entity_type"]["color_map"]["values"] = entity["Type"][
+                    "Color map"
+                ][:]
 
-        if "Value map" in entity["Type"].keys():
-            value_map = entity["Type"]["Value map"][:]
-            mapping = {}
-            for key, value in value_map.tolist():
-                value = cls.str_from_utf8_bytes(value)
+            if "Value map" in entity["Type"].keys():
+                value_map = entity["Type"]["Value map"][:]
+                mapping = {}
+                for key, value in value_map.tolist():
+                    value = cls.str_from_utf8_bytes(value)
 
-                mapping[key] = value
+                    mapping[key] = value
 
-            type_attributes["entity_type"]["value_map"] = mapping
+                type_attributes["entity_type"]["value_map"] = mapping
 
-        # Check if the entity has property_group
-        if "PropertyGroups" in entity.keys():
-            for pg_id in entity["PropertyGroups"].keys():
-                property_groups[pg_id] = {"uid": pg_id}
-                for key, value in entity["PropertyGroups"][pg_id].attrs.items():
-                    property_groups[pg_id][key] = value
+            # Check if the entity has property_group
+            if "PropertyGroups" in entity.keys():
+                for pg_id in entity["PropertyGroups"].keys():
+                    property_groups[pg_id] = {"uid": pg_id}
+                    for key, value in entity["PropertyGroups"][pg_id].attrs.items():
+                        property_groups[pg_id][key] = value
 
-        attributes["entity"]["existing_h5_entity"] = True
-
-        if isinstance(file, str):
-            h5file.close()
+            attributes["entity"]["existing_h5_entity"] = True
 
         return attributes, type_attributes, property_groups
 
@@ -127,17 +124,14 @@ class H5Reader:
 
         :return cells: :obj:`numpy.ndarray` of :obj:`int`.
         """
-        h5file = fetch_h5_handle(file)
-        name = list(h5file.keys())[0]
-        indices = None
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file.keys())[0]
+            indices = None
 
-        try:
-            indices = h5file[name]["Objects"][cls.uuid_str(uid)]["Cells"][:]
-        except KeyError:
-            pass
-
-        if isinstance(file, str):
-            h5file.close()
+            try:
+                indices = h5file[name]["Objects"][cls.uuid_str(uid)]["Cells"][:]
+            except KeyError:
+                pass
 
         return indices
 
@@ -158,24 +152,21 @@ class H5Reader:
         :return children: [{uuid: type}, ... ]
             List of dictionaries for the children uid and type
         """
-        h5file = fetch_h5_handle(file)
-        name = list(h5file.keys())[0]
-        children = {}
-        entity_type = cls.format_type_string(entity_type)
-        entity = h5file[name][entity_type][cls.uuid_str(uid)]
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file.keys())[0]
+            children = {}
+            entity_type = cls.format_type_string(entity_type)
+            entity = h5file[name][entity_type][cls.uuid_str(uid)]
 
-        for child_type, child_list in entity.items():
-            if child_type in ["Type", "PropertyGroups"]:
-                continue
+            for child_type, child_list in entity.items():
+                if child_type in ["Type", "PropertyGroups"]:
+                    continue
 
-            if isinstance(child_list, h5py.Group):
-                for uid_str in child_list.keys():
-                    children[cls.uuid_value(uid_str)] = child_type.replace(
-                        "s", ""
-                    ).lower()
-
-        if isinstance(file, str):
-            h5file.close()
+                if isinstance(child_list, h5py.Group):
+                    for uid_str in child_list.keys():
+                        children[cls.uuid_value(uid_str)] = child_type.replace(
+                            "s", ""
+                        ).lower()
 
         return children
 
@@ -198,32 +189,29 @@ class H5Reader:
         v_delimiters: :obj:`numpy.ndarray` of v_delimiters
         z_delimiters: :obj:`numpy.ndarray` of z_delimiters
         """
-        h5file = fetch_h5_handle(file)
-        name = list(h5file.keys())[0]
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file.keys())[0]
 
-        try:
-            u_delimiters = np.r_[
-                h5file[name]["Objects"][cls.uuid_str(uid)]["U cell delimiters"]
-            ]
-        except KeyError:
-            u_delimiters = None
+            try:
+                u_delimiters = np.r_[
+                    h5file[name]["Objects"][cls.uuid_str(uid)]["U cell delimiters"]
+                ]
+            except KeyError:
+                u_delimiters = None
 
-        try:
-            v_delimiters = np.r_[
-                h5file[name]["Objects"][cls.uuid_str(uid)]["V cell delimiters"]
-            ]
-        except KeyError:
-            v_delimiters = None
+            try:
+                v_delimiters = np.r_[
+                    h5file[name]["Objects"][cls.uuid_str(uid)]["V cell delimiters"]
+                ]
+            except KeyError:
+                v_delimiters = None
 
-        try:
-            z_delimiters = np.r_[
-                h5file[name]["Objects"][cls.uuid_str(uid)]["Z cell delimiters"]
-            ]
-        except KeyError:
-            z_delimiters = None
-
-        if isinstance(file, str):
-            h5file.close()
+            try:
+                z_delimiters = np.r_[
+                    h5file[name]["Objects"][cls.uuid_str(uid)]["Z cell delimiters"]
+                ]
+            except KeyError:
+                z_delimiters = None
 
         return u_delimiters, v_delimiters, z_delimiters
 
@@ -240,18 +228,15 @@ class H5Reader:
 
         :return octree_cells: :obj:`numpy.ndarray` of :obj:`int`.
         """
-        h5file = fetch_h5_handle(file)
-        name = list(h5file.keys())[0]
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file.keys())[0]
 
-        try:
-            octree_cells = np.r_[
-                h5file[name]["Objects"][cls.uuid_str(uid)]["Octree Cells"]
-            ]
-        except KeyError:
-            octree_cells = None
-
-        if isinstance(file, str):
-            h5file.close()
+            try:
+                octree_cells = np.r_[
+                    h5file[name]["Objects"][cls.uuid_str(uid)]["Octree Cells"]
+                ]
+            except KeyError:
+                octree_cells = None
 
         return octree_cells
 
@@ -264,15 +249,12 @@ class H5Reader:
 
         :return attributes: :obj:`dict` of attributes.
         """
-        h5file = fetch_h5_handle(file)
-        name = list(h5file.keys())[0]
-        attributes = {}
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file.keys())[0]
+            attributes = {}
 
-        for key, value in h5file[name].attrs.items():
-            attributes[key] = value
-
-        if isinstance(file, str):
-            h5file.close()
+            for key, value in h5file[name].attrs.items():
+                attributes[key] = value
 
         return attributes
 
@@ -297,22 +279,19 @@ class H5Reader:
                 "group_N": {"attribute": value, ...},
             }
         """
-        h5file = fetch_h5_handle(file)
-        name = list(h5file.keys())[0]
-        property_groups: Dict[str, Dict[str, str]] = {}
-        try:
-            pg_handle = h5file[name]["Objects"][cls.uuid_str(uid)]["PropertyGroups"]
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file.keys())[0]
+            property_groups: Dict[str, Dict[str, str]] = {}
+            try:
+                pg_handle = h5file[name]["Objects"][cls.uuid_str(uid)]["PropertyGroups"]
 
-            for pg_uid in pg_handle.keys():
+                for pg_uid in pg_handle.keys():
 
-                property_groups[pg_uid] = {}
-                for attr, value in pg_handle[pg_uid].attrs.items():
-                    property_groups[pg_uid][attr] = value
-        except KeyError:
-            pass
-
-        if isinstance(file, str):
-            h5file.close()
+                    property_groups[pg_uid] = {}
+                    for attr, value in pg_handle[pg_uid].attrs.items():
+                        property_groups[pg_uid][attr] = value
+            except KeyError:
+                pass
 
         return property_groups
 
@@ -328,16 +307,15 @@ class H5Reader:
         :return uuids: [uuid1, uuid2, ...]
             List of uuids
         """
-        h5file = fetch_h5_handle(file)
-        name = list(h5file.keys())[0]
-        entity_type = cls.format_type_string(entity_type)
-        try:
-            uuids = [cls.uuid_value(uid) for uid in h5file[name][entity_type].keys()]
-        except KeyError:
-            uuids = []
-
-        if isinstance(file, str):
-            h5file.close()
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file.keys())[0]
+            entity_type = cls.format_type_string(entity_type)
+            try:
+                uuids = [
+                    cls.uuid_value(uid) for uid in h5file[name][entity_type].keys()
+                ]
+            except KeyError:
+                uuids = []
 
         return uuids
 
@@ -353,15 +331,12 @@ class H5Reader:
 
         :return value_map: :obj:`dict` of {:obj:`int`: :obj:`str`}
         """
-        h5file = fetch_h5_handle(file)
-        name = list(h5file.keys())[0]
-        try:
-            values = np.r_[h5file[name]["Data"][cls.uuid_str(uid)]["Data"]]
-        except KeyError:
-            values = None
-
-        if isinstance(file, str):
-            h5file.close()
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file.keys())[0]
+            try:
+                values = np.r_[h5file[name]["Data"][cls.uuid_str(uid)]["Data"]]
+            except KeyError:
+                values = None
 
         return values
 
@@ -377,26 +352,23 @@ class H5Reader:
 
         :return values: :obj:`numpy.array` of :obj:`float`
         """
-        h5file = fetch_h5_handle(file)
-        name = list(h5file.keys())[0]
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file.keys())[0]
 
-        try:
-            values = np.r_[h5file[name]["Data"][cls.uuid_str(uid)]["Data"]]
-            if isinstance(values[0], (str, bytes)):
-                values = cls.str_from_utf8_bytes(values[0])
-            else:
-                if values.dtype in [float, "float64", "float32"]:
-                    ind = values == FloatData.ndv()
+            try:
+                values = np.r_[h5file[name]["Data"][cls.uuid_str(uid)]["Data"]]
+                if isinstance(values[0], (str, bytes)):
+                    values = cls.str_from_utf8_bytes(values[0])
                 else:
-                    ind = values == IntegerData.ndv()
-                    values = values.astype("float64")
-                values[ind] = np.nan
+                    if values.dtype in [float, "float64", "float32"]:
+                        ind = values == FloatData.ndv()
+                    else:
+                        ind = values == IntegerData.ndv()
+                        values = values.astype("float64")
+                    values[ind] = np.nan
 
-        except KeyError:
-            values = None
-
-        if isinstance(file, str):
-            h5file.close()
+            except KeyError:
+                values = None
 
         return values
 
@@ -414,18 +386,15 @@ class H5Reader:
         :return surveys: :obj:`numpy.ndarray` of [x, y, z] coordinates
 
         """
-        h5file = fetch_h5_handle(file)
-        root = list(h5file.keys())[0]
+        with fetch_h5_handle(file) as h5file:
+            root = list(h5file.keys())[0]
 
-        try:
-            coordinates = np.asarray(
-                h5file[root]["Objects"][cls.uuid_str(uid)][cls.key_map[name]]
-            )
-        except KeyError:
-            coordinates = None
-
-        if isinstance(file, str):
-            h5file.close()
+            try:
+                coordinates = np.asarray(
+                    h5file[root]["Objects"][cls.uuid_str(uid)][cls.key_map[name]]
+                )
+            except KeyError:
+                coordinates = None
 
         return coordinates
 
@@ -442,16 +411,13 @@ class H5Reader:
         :return surveys: :obj:`numpy.ndarray` of [x, y, z] coordinates
 
         """
-        h5file = fetch_h5_handle(file)
+        with fetch_h5_handle(file) as h5file:
 
-        try:
-            root = list(h5file.keys())[0]
-            trace_depth = h5file[root]["Objects"][cls.uuid_str(uid)]["TraceDepth"]
-        except KeyError:
-            trace_depth = None
-
-        if isinstance(file, str):
-            h5file.close()
+            try:
+                root = list(h5file.keys())[0]
+                trace_depth = h5file[root]["Objects"][cls.uuid_str(uid)]["TraceDepth"]
+            except KeyError:
+                trace_depth = None
 
         return trace_depth
 

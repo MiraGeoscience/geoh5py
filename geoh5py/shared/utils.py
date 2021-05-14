@@ -14,8 +14,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
-
 from abc import ABC
+from contextlib import contextmanager
 from typing import List, Optional, Union
 
 import h5py
@@ -36,7 +36,7 @@ def fetch_h5_handle(
     """
     if isinstance(file, h5py.File):
         try:
-            return file
+            yield file
         finally:
             pass
     else:

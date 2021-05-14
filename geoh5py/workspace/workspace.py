@@ -413,20 +413,18 @@ class Workspace:
         """
         Function to remove an entity and its children from the workspace
         """
-        h5file = self.validate_h5file(file)
-        parent = entity.parent
 
-        self.workspace.remove_recursively(entity, file=h5file)
+        with fetch_h5_handle(self.validate_file(file)) as h5file:
+            parent = entity.parent
 
-        parent.children.remove(entity)
+            self.workspace.remove_recursively(entity, file=h5file)
 
-        del entity
+            parent.children.remove(entity)
 
-        collect()
-        self.remove_none_referents(self._types, "Types")
+            del entity
 
-        if not isinstance(file, h5py.File):
-            h5file.close()
+            collect()
+            self.remove_none_referents(self._types, "Types")
 
     def remove_none_referents(
         self,
@@ -794,31 +792,29 @@ class Workspace:
 
         :return entity: Entity loaded from geoh5
         """
-        h5file = self.validate_h5file(file)
-        base_classes = {
-            "group": Group,
-            "object": ObjectBase,
-            "data": Data,
-            "root": RootGroup,
-        }
-        (
-            attributes,
-            type_attributes,
-            property_groups,
-        ) = H5Reader.fetch_attributes(h5file, uid, entity_type)
-        entity = self.create_entity(
-            base_classes[entity_type],
-            save_on_creation=False,
-            file=h5file,
-            **{**attributes, **type_attributes},
-        )
 
-        if isinstance(entity, ObjectBase) and len(property_groups) > 0:
-            for kwargs in property_groups.values():
-                entity.find_or_create_property_group(**kwargs)
+        with fetch_h5_handle(self.validate_file(file)) as h5file:
+            base_classes = {
+                "group": Group,
+                "object": ObjectBase,
+                "data": Data,
+                "root": RootGroup,
+            }
+            (
+                attributes,
+                type_attributes,
+                property_groups,
+            ) = H5Reader.fetch_attributes(h5file, uid, entity_type)
+            entity = self.create_entity(
+                base_classes[entity_type],
+                save_on_creation=False,
+                file=h5file,
+                **{**attributes, **type_attributes},
+            )
 
-        if not isinstance(file, h5py.File):
-            h5file.close()
+            if isinstance(entity, ObjectBase) and len(property_groups) > 0:
+                for kwargs in property_groups.values():
+                    entity.find_or_create_property_group(**kwargs)
 
         return entity
 
@@ -873,14 +869,14 @@ class Workspace:
         """Get all active entity types registered in the workspace."""
         return self._all_types()
 
-    def validate_h5file(self, file) -> h5py.File:
+    def validate_file(self, file) -> h5py.File:
         """
         Validate the h5file name
         """
         if file is None:
             file = self.h5file
 
-        return fetch_h5_handle(file)
+        return file
 
     @property
     def version(self) -> float:
@@ -904,11 +900,8 @@ class Workspace:
         """
         Run a H5Writer or H5Reader function with validation of target geoh5
         """
-        h5file = self.validate_h5file(file)
-        result = fun(h5file, *args, **kwargs)
-
-        if not isinstance(file, h5py.File):
-            h5file.close()
+        with fetch_h5_handle(self.validate_file(file)) as h5file:
+            result = fun(h5file, *args, **kwargs)
 
         return result
 
