@@ -127,17 +127,17 @@ class Workspace:
         # so that type check does not complain of possible returned None
         return cast(Workspace, active_one)
 
-    def _all_data(self) -> List["Entity"]:
+    def _all_data(self) -> List["data.Data"]:
         """Get all active Data entities registered in the workspace."""
         self.remove_none_referents(self._data, "Data")
         return [cast("data.Data", v()) for v in self._data.values()]
 
-    def _all_groups(self) -> List["Entity"]:
+    def _all_groups(self) -> List["groups.Group"]:
         """Get all active Group entities registered in the workspace."""
         self.remove_none_referents(self._groups, "Groups")
         return [cast("group.Group", v()) for v in self._groups.values()]
 
-    def _all_objects(self) -> List["Entity"]:
+    def _all_objects(self) -> List["objects.ObjectBase"]:
         """Get all active Object entities registered in the workspace."""
         self.remove_none_referents(self._objects, "Objects")
         return [cast("object_base.ObjectBase", v()) for v in self._objects.values()]
@@ -375,7 +375,7 @@ class Workspace:
         return None
 
     @property
-    def data(self) -> List["Entity"]:
+    def data(self) -> List["data.Data"]:
         """Get all active Data entities registered in the workspace."""
         return self._all_data()
 
@@ -639,7 +639,11 @@ class Workspace:
 
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         """
-        for entity in self.objects + self.groups + self.data:
+        for entity in (
+            cast(List["Entity"], self.objects)
+            + cast(List["Entity"], self.groups)
+            + cast(List["Entity"], self.data)
+        ):
             if len(entity.modified_attributes) > 0:
                 self.save_entity(entity, file=file)
 
@@ -720,7 +724,7 @@ class Workspace:
         return entity_list
 
     @property
-    def groups(self) -> List["Entity"]:
+    def groups(self) -> List["groups.Group"]:
         """Get all active Group entities registered in the workspace."""
         return self._all_groups()
 
@@ -826,7 +830,7 @@ class Workspace:
         return self._name
 
     @property
-    def objects(self) -> List["Entity"]:
+    def objects(self) -> List["objects.ObjectBase"]:
         """Get all active Object entities registered in the workspace."""
         return self._all_objects()
 
