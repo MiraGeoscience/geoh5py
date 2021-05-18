@@ -194,18 +194,28 @@ class Octree(ObjectBase):
 
     @octree_cells.setter
     def octree_cells(self, value):
+
         if value is not None:
-            value = np.vstack(value)
+            if isinstance(value, np.recarray):
+                dtype = np.dtype(
+                    [("I", "<i4"), ("J", "<i4"), ("K", "<i4"), ("NCells", "<i4")]
+                )
+                assert (
+                    value.dtype == dtype
+                ), f"Input of type {np.recarray} must be of {dtype}"
+                self._octree_cells = value
+            else:
+                value = np.vstack(value)
 
-            assert (
-                value.shape[1] == 4
-            ), "'octree_cells' requires an ndarray of shape (*, 4)"
-            self.modified_attributes = "octree_cells"
-            self._centroids = None
+                assert (
+                    value.shape[1] == 4
+                ), "'octree_cells' requires an ndarray of shape (*, 4)"
+                self.modified_attributes = "octree_cells"
+                self._centroids = None
 
-            self._octree_cells = np.core.records.fromarrays(
-                value.T, names="I, J, K, NCells", formats="<i4, <i4, <i4, <i4"
-            )
+                self._octree_cells = np.core.records.fromarrays(
+                    value.T, names="I, J, K, NCells", formats="<i4, <i4, <i4, <i4"
+                )
 
     @property
     def origin(self):

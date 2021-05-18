@@ -14,11 +14,37 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
-
 from abc import ABC
-from typing import List, Optional
+from contextlib import contextmanager
+from typing import List, Optional, Union
 
+import h5py
 import numpy as np
+
+
+@contextmanager
+def fetch_h5_handle(
+    file: Union[str, h5py.File],
+) -> h5py.File:
+    """
+    Open in read+ mode a geoh5 file from string.
+    If receiving a file instead of a string, merely return the given file.
+
+    :param file: Name or handle to a geoh5 file.
+
+    :return h5py.File: Handle to an opened h5py file.
+    """
+    if isinstance(file, h5py.File):
+        try:
+            yield file
+        finally:
+            pass
+    else:
+        h5file = h5py.File(file, "r+")
+        try:
+            yield h5file
+        finally:
+            h5file.close()
 
 
 def match_values(vec_a, vec_b, tolerance=1e-4):
@@ -92,7 +118,9 @@ def compare_entities(object_a, object_b, ignore: Optional[List] = None):
         if attr in ignore_list:
             continue
         if isinstance(getattr(object_a, attr[1:]), ABC):
-            compare_entities(getattr(object_a, attr[1:]), getattr(object_b, attr[1:]))
+            compare_entities(
+                getattr(object_a, attr[1:]), getattr(object_b, attr[1:]), ignore=ignore
+            )
         else:
             if isinstance(getattr(object_a, attr[1:]), np.ndarray):
                 np.testing.assert_array_equal(
