@@ -1,5 +1,5 @@
-GEOH5 File Format
-=================
+GEOH5 Format
+============
 
 .. figure:: ./images/logo.png
        :align: left
@@ -46,26 +46,28 @@ The following sections define the structure and components making up the GEOH5 f
    :maxdepth: 1
 
    hierarchy.rst
-   groups.rst
-   objects.rst
-   data.rst
-   types.rst
+
+
+Standards
+^^^^^^^^^
+
+General notes on formatting.
+
+    -  All text data and attributes are variable-length and use UTF-8 encoding
+    -  All numeric data uses INTEL PC native types
+    -  Boolean values are stored using char (0:false, 1:true)
+    -  Anything found in a geoh5 v1.0 file which is not mentioned in this document is optional information
 
 
 External Links
 ^^^^^^^^^^^^^^
 
--  The contents of an HDF5 file can be viewed using
-   `HDFView <https://support.hdfgroup.org/products/java/hdfview/>`__ .
--  Precompiled binaries for multiple platforms can be found
-   `here <https://www.hdfgroup.org/products/java/release/download.html>`__
+-  `HDFView <https://support.hdfgroup.org/products/java/hdfview/>`_.
+-  `Precompiled binaries for multiple platforms <https://www.hdfgroup.org/products/java/release/download.html>`_
 - Libraries for accessing HDF5 data
-   -  `C, C, .NET <https://www.hdfgroup.org/downloads/>`__
-   -  `Python <http://www.h5py.org/>`__
-   -  `Matlab <http://www.mathworks.com/help/matlab/hdf5-files.html>`__
-   -  etc
-
--  `Matlab <http://www.mathworks.com/help/matlab/hdf5-files.html>`__
+   -  `C, C, .NET <https://www.hdfgroup.org/downloads/>`_
+   -  `Python <http://www.h5py.org/>`_
+   -  `Matlab <http://www.mathworks.com/help/matlab/hdf5-files.html>`_
 
 Future development
 ^^^^^^^^^^^^^^^^^^
