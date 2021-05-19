@@ -2,7 +2,7 @@ h1. GEOH5 file format specification v1.0
 
 h2. Overview
 
-The Geoscience ANALYST file format is based entirely on free and open "HDF5 technology":https://www.hdfgroup.org/about/hdf_technologies.html for its many advantages (fast I/O, compression, possible merging of files, cross-platform, existing libraries in a variety of programming languages, etc). It aims to provide Geoscience ANALYST with a robust means of handling large quantities of diverse data. It builds on the generic qualities of the Geoscience ANALYST data model, and attempts to maintain a certain level of simplicity and consistency throughout.
+The Geoscience ANALYST file format is based entirely on free and open "HDF5 technology":https://www.hdfgroup.org/about/hdf_technologies.html for its many advantages (fast I/O, compression, possible merging of files, cross-platform, existence of libraries in a variety of programming languages, etc). It aims to provide Geoscience ANALYST with a robust means of handling large quantities of diverse data. It builds on the generic qualities of the Geoscience ANALYST data model, and attempts to maintain a certain level of simplicity and consistency throughout.
 
 Given that this specification is public, the file format could, with further investment and involvement, become a useful exchange format for the industry.
 
