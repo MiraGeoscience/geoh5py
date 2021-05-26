@@ -6,30 +6,22 @@ The bulk of the data is accessible both directly by ``UUID`` through the
 
 .. figure:: ./images/hierarchy.png
     :align: right
-    :width: 50%
+    :height: 200
 
     As seen in `HDFView <https://support.hdfgroup.org/products/java/hdfview/>`_
 
 
 -  **GEOSCIENCE (Workspace)**
+    -  **Data**: Flat container for all data entities
     -  **Groups**: Flat container for all group entities
     -  **Objects**: Flat container for all object entities
-    -  **Data**: Flat container for all data entities
     -  **Root**: Mandatory hard link to ``workspace`` group, top of group hierarchy.
     -  **Types**
+        - :ref:`Data Types <data_types>`: Flat container for all data types
         - :ref:`Group Types <group_types>`: Flat container for all group types
         - :ref:`Object Types <object_types>`: Flat container for all object types
-        - :ref:`Data Types <data_types>`: Flat container for all data types
 
-While all groups/objects/data are written into their respective base
-folder, each group/object also has links to its children, allowing
-traversal. There is no data duplication, merely multiple references (pointers) to
-the data storage on file.
-
-Types are shared (and thus generally written to file first). All
-groups/objects/data must include a hard link to their type.
-
-**Workspace Attributes**
+**Attributes**
 
 -  Version: (double) Version of specification used by this file
 -  Distance unit: (``string``) Distance unit of all data enclosed
@@ -37,8 +29,26 @@ groups/objects/data must include a hard link to their type.
 -  Contributors: (optional, 1D array ``string``) List of users who
     contributed to this workspace
 
+While all groups, objects and data entities are written into their respective base
+folder, they also hold links to their children entities to allow for
+traversals. There is no data duplication, merely multiple references (pointers) to
+the data storage on file.
+
+.. figure:: ./images/entity_links.png
+    :align: center
+    :height: 400
+
+Types are shared (and thus generally written to file first). All
+groups, objects and data must include a hard link to their type.
+
+
+
 Groups
 ******
+
+.. figure:: ./images/groups.png
+    :align: right
+    :width: 300
 
 Groups are used as container for Objects to organize the Workspace.
 See the :ref:`Group Types <group_types>` section for the list of supported groups.
@@ -68,6 +78,10 @@ See the :ref:`Group Types <group_types>` section for the list of supported group
 Objects
 *******
 
+.. figure:: ./images/objects.png
+    :align: right
+    :width: 300
+
 Objects are containers for ``Data`` with spatial information.
 Most (not all) object geometry is described in terms of vertices (3D
 locations) and cells (groupings of vertices such as triangles or
@@ -96,6 +110,10 @@ See the :ref:`Object Types <object_types>` section for the list of supported obj
 Data
 ****
 
+.. figure:: ./images/data.png
+    :align: right
+    :width: 300
+
 Container for data values of various types.
 Data are currently **always stored as a 1D array**, even in the case of
 single-value data with the ``Object`` association (in which case it is a
@@ -122,10 +140,15 @@ See the :ref:`Data Types <data_types>` section for the list of supported data ty
 Types
 *****
 
+.. figure:: ./images/types.png
+    :align: right
+    :width: 300
+
 While they are structured similarly, **each group, object or set of data
 has a type that defines how its HDF5 datasets should be interpreted**.
 This type is shared among any number of entities (groups/objects/data sets).
 
+.. _group_types:
 
 Group Types
 ===========
@@ -155,6 +178,8 @@ The following section describes the supported group types.
    integrator/groups
    integrator/themes
 
+
+.. _object_types:
 
 Object Types
 ============
@@ -197,7 +222,7 @@ dataset for each instance :
 -  Name: (``string``)
 -  ID: (``string``, ``UUID`` of this Data type)
 -  Primitive type: (``string``) : describing the kind of data contained in
-   the associated (see :ref:`Data <analyst_data>` section)
+   the associated (see :ref:`Data <core_data>` section)
 -  Description: (``string``, optional)
 -  Units: (``string``, optional)
 -  Color map: (1D compound array dataset - Value(double),

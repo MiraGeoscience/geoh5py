@@ -1,3 +1,6 @@
+
+.. _core_data:
+
 Float
 ^^^^^
 
