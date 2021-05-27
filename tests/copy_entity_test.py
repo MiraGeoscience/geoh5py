@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 from scipy import spatial
 
-from geoh5py.objects import Points, Surface
+from geoh5py.objects import Curve, Octree, Points, Surface
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -31,38 +31,63 @@ def test_copy_entity():
     # Generate a random cloud of points
     n_data = 12
     xyz = np.random.randn(n_data, 3)
-    values = np.random.randn(n_data)
+
+    # Create surface
+    surf_2d = spatial.Delaunay(xyz[:, :2])
+
+    objects = {
+        Points: {"name": "Something", "vertices": np.random.randn(n_data, 3)},
+        Surface: {
+            "name": "Surface",
+            "vertices": np.random.randn(n_data, 3),
+            "cells": getattr(surf_2d, "simplices"),
+        },
+        Curve: {
+            "name": "Curve",
+            "vertices": np.random.randn(n_data, 3),
+        },
+        Octree: {
+            "origin": [0, 0, 0],
+            "u_count": 32,
+            "v_count": 16,
+            "w_count": 8,
+            "u_cell_size": 1.0,
+            "v_cell_size": 1.0,
+            "w_cell_size": 2.0,
+            "rotation": 45,
+        },
+    }
 
     with tempfile.TemporaryDirectory() as tempdir:
         h5file_path = Path(tempdir) / r"testProject.geoh5"
 
         # Create a workspace
         workspace = Workspace(h5file_path)
-        points = Points.create(workspace, vertices=xyz)
-        data = points.add_data(
-            {"DataValues": {"association": "VERTEX", "values": values}}
-        )
+        # for obj in [
+        #     Points, Surface, BlockModel, Curve, Drillhole, Grid2D, Octree
+        # ]:
+        for obj, kwargs in objects.items():
+            entity = obj.create(workspace, **kwargs)
 
-        # Create surface
-        surf_2d = spatial.Delaunay(xyz[:, :2])
+            if getattr(entity, "vertices", None) is not None:
+                values = np.random.randn(entity.n_vertices)
+            else:
+                values = np.random.randn(entity.n_cells)
 
-        # Create a geoh5 surface
-        surface = Surface.create(
-            workspace, name="mySurf", vertices=xyz, cells=getattr(surf_2d, "simplices")
-        )
+            entity.add_data({"DataValues": {"values": values}})
 
-        workspace.finalize()
-
-        # Read the data back in from a fresh workspace
+        workspace = Workspace(h5file_path)
         new_workspace = Workspace(Path(tempdir) / r"testProject_2.geoh5")
+        for entity in workspace.objects:
+            entity.copy(parent=new_workspace)
 
-        points.copy(parent=new_workspace)
-        surface.copy(parent=new_workspace)
+        new_workspace = Workspace(Path(tempdir) / r"testProject_2.geoh5")
+        # workspace = Workspace(h5file_path)
+        for entity in workspace.objects:
 
-        rec_points = new_workspace.get_entity(points.name)[0]
-        rec_surface = new_workspace.get_entity(surface.name)[0]
-        rec_data = new_workspace.get_entity(data.name)[0]
+            # Read the data back in from a fresh workspace
+            rec_entity = new_workspace.get_entity(entity.uid)[0]
+            rec_data = new_workspace.get_entity(entity.children[0].uid)[0]
 
-        compare_entities(points, rec_points, ignore=["_parent"])
-        compare_entities(surface, rec_surface, ignore=["_parent"])
-        compare_entities(data, rec_data, ignore=["_parent"])
+            compare_entities(entity, rec_entity, ignore=["_parent"])
+            compare_entities(entity.children[0], rec_data, ignore=["_parent"])
