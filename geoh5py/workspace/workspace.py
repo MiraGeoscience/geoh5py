@@ -603,7 +603,7 @@ class Workspace:
         :param file: :obj:`h5py.File` or name of the target geoh5 file
 
         :return values: Array of [Depth, Dip, Azimuth] defining the drillhole
-        path
+            path.
         """
         return self._io_call(file, H5Reader.fetch_coordinates, uid, name)
 
