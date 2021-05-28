@@ -63,9 +63,6 @@ def test_copy_entity():
 
         # Create a workspace
         workspace = Workspace(h5file_path)
-        # for obj in [
-        #     Points, Surface, BlockModel, Curve, Drillhole, Grid2D, Octree
-        # ]:
         for obj, kwargs in objects.items():
             entity = obj.create(workspace, **kwargs)
 
