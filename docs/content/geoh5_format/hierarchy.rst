@@ -15,7 +15,7 @@ The bulk of the data is accessible both directly by ``UUID`` through the
     -  **Data**: Flat container for all data entities
     -  **Groups**: Flat container for all group entities
     -  **Objects**: Flat container for all object entities
-    -  **Root**: Mandatory hard link to ``workspace`` group, top of group hierarchy.
+    -  **Root**: Optional hard link to ``workspace`` group, top of group hierarchy.
     -  **Types**
         - :ref:`Data Types <data_types>`: Flat container for all data types
         - :ref:`Group Types <group_types>`: Flat container for all group types
@@ -69,6 +69,7 @@ See the :ref:`Group Types <group_types>` section for the list of supported group
    allow moving to another parent group
 -  Allow rename : (optional, char, 0 or (default) 1) user interface will
    allow renaming
+-  Metadata: (char, optional)
 
 .. note:: Though this file format technically allows objects/groups to appear
    within multiple groups simultaneously (overlapping lists), this is not
@@ -105,7 +106,7 @@ See the :ref:`Object Types <object_types>` section for the list of supported obj
    allow renaming
 -  Public : (optional, char, 0 or (default) 1) accessible in the object
    tree and other parts of the the user interface
-
+-  Metadata: (char, optional)
 
 Data
 ****
@@ -127,8 +128,9 @@ See the :ref:`Data Types <data_types>` section for the list of supported data ty
    itself.
 -  Name : (string)
 -  ID : (string, UUID of this entity)
--  Visible : (optional, char, 0 or (default) 1) will be visible in the
-   3D camera (checked in the object tree)
+-  Visible : (optional, char, 1 or (default) 0) will be visible in the
+   3D camera (checked in the object tree). Only one Data entity per parent Object
+   can be visible at a time.
 -  Allow delete : (optional, char, 0 or (default) 1) user interface will
    allow deletion
 -  Allow rename : (optional, char, 0 or (default) 1) user interface will
@@ -219,20 +221,26 @@ dataset for each instance :
 
 **Attributes**
 
--  Name: (``string``)
--  ID: (``string``, ``UUID`` of this Data type)
--  Primitive type: (``string``) : describing the kind of data contained in
-   the associated (see :ref:`Data <core_data>` section)
--  Description: (``string``, optional)
--  Units: (``string``, optional)
--  Color map: (1D compound array dataset - Value(double),
+-   Name: (``string``)
+-   ID: (``string``, ``UUID`` of this Data type)
+-   Primitive type: (``string``) : describing the kind of data contained in the associated (see :ref:`Data <core_data>` section)
+-   Description: (``string``, optional)
+-   Units: (``string``, optional)
+-   Color map: (1D compound array dataset - Value(double),
     Red(unsigned char), Green(unsigned char), Blue(unsigned
     char), Alpha(unsigned char) : Optional, records colors
     assigned to value ranges (where Value is the start of the
     range)
--  Value map: (1D compound array dataset - Key(unsigned int),
+-   Value map: (1D compound array dataset - Key(unsigned int),
     Value(``string``)) : Required only for reference data types (aka
     classifications)
+-   Transparent no data: (char, optional, 0(false) or 1(true), default 1) Whether or not absence of data/filtered data should be hidden in the viewport.
+-   Hidden: (char, optional, 0(false) or 1(true), default 0) Whether or not the data type should appear in the data type list.
+-   Scientific notation: (char, optional, 0(false), 1(true), left to stats by default) Whether or not the data values of this type should be displayed in scientific notation.
+-   Precision: (int, optional) The number of decimals (or significant digits in case of scientific notation) used when displayed data values of this type.
+-   Number of bins: (int, optional, default 50) Number of bins used when displaying histogram
+-   Duplicate type on copy: (char, optional, 0(false), 1(true), default 0) When enabled, a separate copy of this data type will be created and used when data of this type is copied.
+
 
 The following section describes the supported data types.
 

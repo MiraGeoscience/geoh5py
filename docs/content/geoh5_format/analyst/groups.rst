@@ -18,7 +18,8 @@ No Type (Root)
 ==============
 
 The ``Root`` group defines the tree structure used in Geoscience ANALYST
-describing the parent-child relationships of entities.
+describing the parent-child relationships of entities. If absent, any Groups/Objects/Data
+will be brought into Geoscience ANALYST under the workspace group, still respecting any defined hierarchy links.
 
 ``UUID : {dd99b610-be92-48c0-873c-5b5946ea2840}``
 

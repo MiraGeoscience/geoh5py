@@ -14,7 +14,7 @@ generic qualities of the `Geoscience ANALYST
 <http://www.mirageoscience.com/our-products/software-product/geoscience-analyst>`_
 data model, and attempts to maintain a certain level of simplicity and
 consistency throughout. It is based entirely on free and open `HDF5 technology
-<https://www.hdfgroup.org/about/hdf_technologies.html>`__.
+<https://portal.hdfgroup.org/display/support>`__.
 Given that this specification is public, the
 file format could, with further investment and involvement, become a useful
 exchange format for the broader geoscientific community.
@@ -35,7 +35,8 @@ Why GEOH5?
    understand (and generally be very tolerant with regards to missing
    information) when loading and saving geoh5 files. This will allow third
    parties to write to this format fairly easily, as well as include
-   additional information not included in this spec for their own purposes.
+   additional information not included in this spec for their own purposes. In the current implementation,
+   Geoscience ANALYST automatically removes unnecessary information on save.
 
 
 Definition
@@ -79,3 +80,4 @@ Future development
    better I/O performance.
 -  Investigate use of h5repack for delivering smaller files.
 -  Investigate use of h5copy to merge data between files.
+-  Concatenate drillhole data to reduce the total number of datasets in the file, in order to improve performance.
