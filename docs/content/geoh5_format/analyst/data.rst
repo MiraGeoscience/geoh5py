@@ -1,5 +1,5 @@
 
-.. _core_data:
+.. _primitive_type:
 
 Float
 ^^^^^

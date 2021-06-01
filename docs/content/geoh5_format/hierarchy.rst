@@ -11,23 +11,23 @@ The bulk of the data is accessible both directly by ``UUID`` through the
     As seen in `HDFView <https://support.hdfgroup.org/products/java/hdfview/>`_
 
 
--  **GEOSCIENCE (Workspace)**
-    -  **Data**: Flat container for all data entities
-    -  **Groups**: Flat container for all group entities
-    -  **Objects**: Flat container for all object entities
-    -  **Root**: Optional hard link to ``workspace`` group, top of group hierarchy.
-    -  **Types**
+- **GEOSCIENCE (Workspace)**
+    - **Data**: Flat container for all data entities
+    - **Groups**: Flat container for all group entities
+    - **Objects**: Flat container for all object entities
+    - **Root**: Optional hard link to ``workspace`` group, top of group hierarchy.
+    - **Types**
         - :ref:`Data Types <data_types>`: Flat container for all data types
         - :ref:`Group Types <group_types>`: Flat container for all group types
         - :ref:`Object Types <object_types>`: Flat container for all object types
 
 **Attributes**
 
--  Version: (double) Version of specification used by this file
--  Distance unit: (``string``) Distance unit of all data enclosed
-   (``metres``/``feet``)
--  Contributors: (optional, 1D array ``string``) List of users who
-    contributed to this workspace
+    - Version: (double) Version of specification used by this file
+    - Distance unit: (``str``) Distance unit of all data enclosed
+       (``metres``/``feet``)
+    - Contributors: (optional, 1D array ``str``) List of users who
+        contributed to this workspace
 
 While all groups, objects and data entities are written into their respective base
 folder, they also hold links to their children entities to allow for
@@ -55,21 +55,21 @@ See the :ref:`Group Types <group_types>` section for the list of supported group
 
 **Attributes**
 
--  Name : (string)
--  ID : (string, UUID of this entity)
--  Visible : (optional, char, 0 or (default) 1) will be visible in the
-   3D camera (checked in the object tree)
--  Public : (optional, char, 0 or (default) 1) accessible in the object
-   tree and other parts of the the user interface
--  Clipping IDs : (optional, 1D array UUID strings of clipping plane
-   objects)
--  Allow delete : (optional, char, 0 or (default) 1) user interface will
-   allow deletion
--  Allow move : (optional, char, 0 or (default) 1) user interface will
-   allow moving to another parent group
--  Allow rename : (optional, char, 0 or (default) 1) user interface will
-   allow renaming
--  Metadata: (char, optional)
+    - Name : (string)
+    - ID : (string, UUID of this entity)
+    - Visible : (optional, char, 0 or (default) 1) will be visible in the
+       3D camera (checked in the object tree)
+    - Public : (optional, char, 0 or (default) 1) accessible in the object
+       tree and other parts of the the user interface
+    - Clipping IDs : (optional, 1D array UUID strings of clipping plane
+       objects)
+    - Allow delete : (optional, char, 0 or (default) 1) user interface will
+       allow deletion
+    - Allow move : (optional, char, 0 or (default) 1) user interface will
+       allow moving to another parent group
+    - Allow rename : (optional, char, 0 or (default) 1) user interface will
+       allow renaming
+    - Metadata: (char, optional)
 
 .. note:: Though this file format technically allows objects/groups to appear
    within multiple groups simultaneously (overlapping lists), this is not
@@ -92,21 +92,21 @@ See the :ref:`Object Types <object_types>` section for the list of supported obj
 
 **Attributes**
 
--  Name : (string)
--  ID : (string, UUID of this entity)
--  Visible : (optional, char, 0 or (default) 1) will be visible in the
-   3D camera (checked in the object tree)
--  Clipping IDs : (optional, 1D array UUID strings of clipping plane
-   objects)
--  Allow delete : (optional, char, 0 or (default) 1) user interface will
-   allow deletion
--  Allow move : (optional, char, 0 or (default) 1) user interface will
-   allow moving to another parent group
--  Allow rename : (optional, char, 0 or (default) 1) user interface will
-   allow renaming
--  Public : (optional, char, 0 or (default) 1) accessible in the object
-   tree and other parts of the the user interface
--  Metadata: (char, optional)
+    - Name : (string)
+    - ID : (string, UUID of this entity)
+    - Visible : (optional, char, 0 or (default) 1) will be visible in the
+       3D camera (checked in the object tree)
+    - Clipping IDs : (optional, 1D array UUID strings of clipping plane
+       objects)
+    - Allow delete : (optional, char, 0 or (default) 1) user interface will
+       allow deletion
+    - Allow move : (optional, char, 0 or (default) 1) user interface will
+       allow moving to another parent group
+    - Allow rename : (optional, char, 0 or (default) 1) user interface will
+       allow renaming
+    - Public : (optional, char, 0 or (default) 1) accessible in the object
+       tree and other parts of the the user interface
+    - Metadata: (char, optional)
 
 Data
 ****
@@ -123,20 +123,20 @@ See the :ref:`Data Types <data_types>` section for the list of supported data ty
 
 **Attributes**
 
--  Association : (string) “Object”, “Cell” or “Vertex” - describes
-   whether the property is tied to cells, vertices, or the object/group
-   itself.
--  Name : (string)
--  ID : (string, UUID of this entity)
--  Visible : (optional, char, 1 or (default) 0) will be visible in the
-   3D camera (checked in the object tree). Only one Data entity per parent Object
-   can be visible at a time.
--  Allow delete : (optional, char, 0 or (default) 1) user interface will
-   allow deletion
--  Allow rename : (optional, char, 0 or (default) 1) user interface will
-   allow renaming
--  Public : (optional, char, 0 or (default) 1) accessible in the object
-   tree and other parts of the the user interface
+    - Association : (string) “Object”, “Cell” or “Vertex” - describes
+       whether the property is tied to cells, vertices, or the object/group
+       itself.
+    - Name : (string)
+    - ID : (string, UUID of this entity)
+    - Visible : (optional, char, 1 or (default) 0) will be visible in the
+       3D camera (checked in the object tree). Only one Data entity per parent Object
+       can be visible at a time.
+    - Allow delete : (optional, char, 0 or (default) 1) user interface will
+       allow deletion
+    - Allow rename : (optional, char, 0 or (default) 1) user interface will
+       allow renaming
+    - Public : (optional, char, 0 or (default) 1) accessible in the object
+       tree and other parts of the the user interface
 
 
 Types
@@ -144,7 +144,7 @@ Types
 
 .. figure:: ./images/types.png
     :align: right
-    :width: 300
+    :width: 150
 
 While they are structured similarly, **each group, object or set of data
 has a type that defines how its HDF5 datasets should be interpreted**.
@@ -161,14 +161,14 @@ functionality).
 
 **Attributes**
 
--  Name : (``string``)
--  ID : (``string``, ``UUID`` of this Group type, referring to the Group
-   implementation)
--  Description : (``string``, optional)
--  Allow move contents : (char, optional, 0(false) or 1(true), default
-   1)
--  Allow delete contents : (char, optional, 0(false) or 1(true), default
-   1)
+    - Name : (``str``)
+    - ID : (``str``, ``UUID`` of this Group type, referring to the Group
+       implementation)
+    - Description : (``str``, optional)
+    - Allow move contents : (char, optional, 0(false) or 1(true), default
+       1)
+    - Allow delete contents : (char, optional, 0(false) or 1(true), default
+       1)
 
 The following section describes the supported group types.
 
@@ -190,10 +190,10 @@ Containers of data sets with spatial information
 
 **Attributes**
 
--  Name : (``string``)
--  ID : (``string``, ``UUID`` of this Object type, referring to the Object
-   implementation)
--  Description : (``string``, optional)
+    - Name : (``str``)
+    - ID : (``str``, ``UUID`` of this Object type, referring to the Object
+       implementation)
+    - Description : (``str``, optional)
 
 The following section describes the supported object types.
 
@@ -214,32 +214,37 @@ object or group properties. Data of the same type can exist on any
 number of objects or groups of any type, and each instance can be
 associated with vertices, cells or the object/group itself. Some data
 type identifiers can also be reserved as a means of identifying a
-specific kind of data. Each of them must be of one of the following
-**primitive types**, which dictate the contents of the “Data” HDF5
-dataset for each instance :
+specific kind of data.
 
 
 **Attributes**
 
--   Name: (``string``)
--   ID: (``string``, ``UUID`` of this Data type)
--   Primitive type: (``string``) : describing the kind of data contained in the associated (see :ref:`Data <core_data>` section)
--   Description: (``string``, optional)
--   Units: (``string``, optional)
--   Color map: (1D compound array dataset - Value(double),
-    Red(unsigned char), Green(unsigned char), Blue(unsigned
-    char), Alpha(unsigned char) : Optional, records colors
-    assigned to value ranges (where Value is the start of the
-    range)
--   Value map: (1D compound array dataset - Key(unsigned int),
-    Value(``string``)) : Required only for reference data types (aka
-    classifications)
--   Transparent no data: (char, optional, 0(false) or 1(true), default 1) Whether or not absence of data/filtered data should be hidden in the viewport.
--   Hidden: (char, optional, 0(false) or 1(true), default 0) Whether or not the data type should appear in the data type list.
--   Scientific notation: (char, optional, 0(false), 1(true), left to stats by default) Whether or not the data values of this type should be displayed in scientific notation.
--   Precision: (int, optional) The number of decimals (or significant digits in case of scientific notation) used when displayed data values of this type.
--   Number of bins: (int, optional, default 50) Number of bins used when displaying histogram
--   Duplicate type on copy: (char, optional, 0(false), 1(true), default 0) When enabled, a separate copy of this data type will be created and used when data of this type is copied.
+    - Name: (``str``)
+    - ID: (``str``, ``UUID`` of this Data type)
+    - :ref:`Primitive type: <primitive_type>` (``str``): Dictate the contents of the “Data” HDF5
+          dataset for each instance the kind of data values stored. Must be one of:
+
+      .. toctree::
+         :maxdepth: 1
+
+         analyst/data
+
+    - Description: (``str``, optional)
+    - Units: (``str``, optional)
+    - Color map: (1D compound array dataset - Value(double),
+      Red(unsigned char), Green(unsigned char), Blue(unsigned
+      char), Alpha(unsigned char) : Optional, records colors
+      assigned to value ranges (where Value is the start of the
+      range)
+    - Value map: (1D compound array dataset - Key(unsigned int),
+      Value(``str``)) : Required only for reference data types (aka
+      classifications)
+    - Transparent no data: (char, optional, 0(false) or 1(true), default 1) Whether or not absence of data/filtered data should be hidden in the viewport.
+    - Hidden: (char, optional, 0(false) or 1(true), default 0) Whether or not the data type should appear in the data type list.
+    - Scientific notation: (char, optional, 0(false), 1(true), left to stats by default) Whether or not the data values of this type should be displayed in scientific notation.
+    - Precision: (int, optional) The number of decimals (or significant digits in case of scientific notation) used when displayed data values of this type.
+    - Number of bins: (int, optional, default 50) Number of bins used when displaying histogram
+    - Duplicate type on copy: (char, optional, 0(false), 1(true), default 0) When enabled, a separate copy of this data type will be created and used when data of this type is copied.
 
 
 The following section describes the supported data types.
@@ -247,5 +252,4 @@ The following section describes the supported data types.
 .. toctree::
    :maxdepth: 1
 
-   analyst/data
    integrator/data
