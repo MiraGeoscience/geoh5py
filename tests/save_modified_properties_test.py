@@ -17,15 +17,24 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import PropertyMock, patch
+from unittest.mock import patch
 
 import numpy as np
 
 from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
+# from geoh5py.io.h5_writer import H5Writer
 
-def test_save_modified_properties():
+
+@patch("geoh5py.io.h5_writer.H5Writer.write_data_values")
+@patch("geoh5py.io.h5_writer.H5Writer.write_coordinates")
+@patch("geoh5py.io.h5_writer.H5Writer.write_attributes")
+def test_save_modified_properties(
+    write_attributes,
+    write_coordinates,
+    write_data_values,
+):
     n_data = 12
     xyz = np.random.randn(n_data, 3)
 
@@ -34,24 +43,25 @@ def test_save_modified_properties():
 
         # Create a workspace
         workspace = Workspace(h5file_path)
+        points = Points.create(workspace)
+        workspace.finalize()
 
-        with patch(
-            "geoh5py.shared.Entity.allow_move", new_callable=PropertyMock
-        ) as allow_move:
-            allow_move.return_value = True
-            points = Points.create(workspace, vertices=xyz)
-            points.vertices = xyz * 2
+        assert write_attributes.called, f"{write_attributes} was not called."
+        assert (
+            not write_coordinates.called
+        ), f"{write_coordinates} should not have been called."
+        assert (
+            not write_data_values.called
+        ), f"{write_data_values} should not have been called."
 
-            workspace.finalize()
+        points.vertices = xyz
+        workspace.finalize()
 
-            assert (
-                len(allow_move.mock_calls) == 1
-            ), "Attributes re-written along with vertices."
+        assert write_coordinates.called, f"{write_coordinates} should have been called."
+        assert (
+            not write_data_values.called
+        ), f"{write_data_values} should not have been called."
 
-            points.allow_delete = False
+        points.add_data({"rando": {"values": np.ones(n_data)}})
 
-            workspace.finalize()
-
-            assert (
-                len(allow_move.mock_calls) == 2
-            ), "Not all attributes were re-written."
+        assert write_data_values.called, f"{write_data_values} should have been called."
