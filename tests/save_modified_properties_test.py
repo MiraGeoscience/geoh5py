@@ -24,8 +24,6 @@ import numpy as np
 from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
-# from geoh5py.io.h5_writer import H5Writer
-
 
 @patch("geoh5py.io.h5_writer.H5Writer.write_data_values")
 @patch("geoh5py.io.h5_writer.H5Writer.write_coordinates")
@@ -55,6 +53,10 @@ def test_save_modified_properties(
         ), f"{write_data_values} should not have been called."
 
         points.vertices = xyz
+        assert (
+            "vertices" in points.modified_attributes
+        ), "'vertices' should be in list of 'modified_attributes' "
+
         workspace.finalize()
 
         assert write_coordinates.called, f"{write_coordinates} should have been called."
@@ -65,3 +67,9 @@ def test_save_modified_properties(
         points.add_data({"rando": {"values": np.ones(n_data)}})
 
         assert write_data_values.called, f"{write_data_values} should have been called."
+
+        points.name = "hello_world"
+
+        assert (
+            "attributes" in points.modified_attributes
+        ), "'attributes' should be in list of 'modified_attributes' "
