@@ -15,6 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=R0902
+
 import uuid
 from typing import List, Optional, Text, Union
 
@@ -60,6 +62,8 @@ class Drillhole(Points):
         self._deviation_x = None
         self._deviation_y = None
         self._deviation_z = None
+
+        self._tolerance = 1e-2
 
         super().__init__(object_type, **kwargs)
 
@@ -250,6 +254,18 @@ class Drillhole(Points):
         self._locations = None
 
     @property
+    def tolerance(self):
+        """
+        Matching tolerance on depth for merging
+        """
+        return self._tolerance
+
+    @tolerance.setter
+    def tolerance(self, tol):
+        assert tol > 0, "Tolerance value should be >0"
+        self._tolerance = tol
+
+    @property
     def trace(self) -> Optional[np.ndarray]:
         """
         :obj:`numpy.array`: Drillhole trace defining the path in 3D
@@ -333,10 +349,11 @@ class Drillhole(Points):
 
             attr["name"] = name
 
-            tolerance = 1e-2
             if "tolerance" in list(attr.keys()):
                 assert attr["tolerance"] > 0, "Input depth 'tolerance' must be >0."
                 tolerance = attr["tolerance"]
+            else:
+                tolerance = self.tolerance
 
             if "depth" in list(attr.keys()):
                 attr["association"] = "VERTEX"
@@ -445,7 +462,6 @@ class Drillhole(Points):
             )
 
         if self._depth.values is None:  # First data appended
-
             self.add_vertices(self.desurvey(depth))
             depth = np.r_[np.ones(self.n_vertices - depth.shape[0]) * np.nan, depth]
             values = np.r_[

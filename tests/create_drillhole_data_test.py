@@ -46,6 +46,7 @@ def test_create_drillhole_data():
                 np.ones(n_data) * 45.0,
             ],
             name=well_name,
+            tolerance=1e-5,
         )
         value_map = {}
         for ref in range(8):
@@ -55,7 +56,7 @@ def test_create_drillhole_data():
 
         # Create random from-to
         from_to_a = np.sort(
-            np.random.uniform(low=0.0, high=max_depth, size=(50,))
+            np.random.uniform(low=0.05, high=max_depth, size=(50,))
         ).reshape((-1, 2))
         from_to_b = np.vstack([from_to_a[0, :], [30.1, 55.5], [56.5, 80.2]])
 
@@ -114,11 +115,21 @@ def test_create_drillhole_data():
         # Re-open the workspace and read data back in
         new_workspace = Workspace(h5file_path)
         # Check entities
-        compare_entities(well, new_workspace.get_entity(well_name)[0])
         compare_entities(
-            data_objects[0], new_workspace.get_entity("interval_values")[0]
+            well, new_workspace.get_entity(well_name)[0], ignore=["_tolerance"]
         )
         compare_entities(
-            data_objects[1], new_workspace.get_entity("int_interval_list")[0]
+            data_objects[0],
+            new_workspace.get_entity("interval_values")[0],
+            ignore=["_parent"],
         )
-        compare_entities(data_objects[2], new_workspace.get_entity("log_values")[0])
+        compare_entities(
+            data_objects[1],
+            new_workspace.get_entity("int_interval_list")[0],
+            ignore=["_parent"],
+        )
+        compare_entities(
+            data_objects[2],
+            new_workspace.get_entity("log_values")[0],
+            ignore=["_parent"],
+        )
