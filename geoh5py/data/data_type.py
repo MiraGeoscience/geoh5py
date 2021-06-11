@@ -121,10 +121,8 @@ class DataType(EntityType):
 
         if isinstance(value_map, dict):
             assert all(
-                [
-                    np.issubdtype(type(val), np.integer) and (val >= 0)
-                    for val in value_map.keys()
-                ]
+                np.issubdtype(type(val), np.integer) and (val >= 0)
+                for val in value_map.keys()
             ), f"Value_map keys must be of integer type >= 0. Input values {value_map.keys()}"
             value_map = ReferenceValueMap(value_map)
 

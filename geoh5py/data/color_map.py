@@ -60,7 +60,7 @@ class ColorMap:
 
         if isinstance(values.dtype, np.dtype):
             assert all(
-                [name in names for name in values.dtype.names]
+                name in names for name in values.dtype.names
             ), f"Input 'values' must contain fields with types {names}"
             self._values = np.asarray(values, dtype=list(zip(names, formats)))
 
