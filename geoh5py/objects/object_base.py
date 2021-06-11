@@ -52,7 +52,7 @@ class ObjectBase(Entity):
         self._comments = None
         # self._clipping_ids: List[uuid.UUID] = []
 
-        if not any([key for key in kwargs if key in ["name", "Name"]]):
+        if not any(key for key in kwargs if key in ["name", "Name"]):
             kwargs["name"] = type(self).__name__
 
         super().__init__(**kwargs)
@@ -278,7 +278,7 @@ class ObjectBase(Entity):
         :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
         if "name" in list(kwargs.keys()) and any(
-            [pg.name == kwargs["name"] for pg in self.property_groups]
+            pg.name == kwargs["name"] for pg in self.property_groups
         ):
             prop_group = [
                 pg for pg in self.property_groups if pg.name == kwargs["name"]
@@ -358,8 +358,8 @@ class ObjectBase(Entity):
         # Check for existing property_group
         for prop_group in prop_groups:
             if not any(
-                [pg.uid == prop_group.uid for pg in self.property_groups]
-            ) and not any([pg.name == prop_group.name for pg in self.property_groups]):
+                pg.uid == prop_group.uid for pg in self.property_groups
+            ) and not any(pg.name == prop_group.name for pg in self.property_groups):
                 prop_group.parent = self
 
                 self.modified_attributes = "property_groups"
