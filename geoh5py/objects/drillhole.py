@@ -211,7 +211,16 @@ class Drillhole(Points):
         :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the surveys
         """
         if (getattr(self, "_surveys", None) is None) and self.existing_h5_entity:
-            self._surveys = self.workspace.fetch_coordinates(self.uid, "surveys")
+            surveys = self.workspace.fetch_coordinates(self.uid, "surveys")
+            if len(surveys) == 1:
+                self.surveys = np.vstack(
+                    [
+                        np.c_[0, surveys["Azimuth"], surveys["Dip"]],
+                        surveys.view("<f4").reshape((-1, 3)),
+                    ]
+                )
+            else:
+                self._surveys = surveys
 
         if getattr(self, "_surveys", None) is not None:
             return self._surveys
@@ -224,6 +233,7 @@ class Drillhole(Points):
             value = np.vstack(value)
 
             assert value.shape[1] == 3, "'surveys' requires an ndarray of shape (*, 3)"
+
             self.modified_attributes = "surveys"
             self._surveys = np.asarray(
                 np.core.records.fromarrays(
@@ -423,22 +433,26 @@ class Drillhole(Points):
 
         input_values = np.r_[input_values]
 
-        if self._depth is None:  # First data appended
-            self.add_vertices(self.desurvey(depth))
-            depth = np.r_[np.ones(self.n_vertices - depth.shape[0]) * np.nan, depth]
-            values = np.r_[
-                np.ones(self.n_vertices - input_values.shape[0]) * np.nan, input_values
-            ]
+        if self._depth is None:
             self.workspace.create_entity(
                 Data,
                 entity={
                     "parent": self,
                     "association": "VERTEX",
                     "name": "DEPTH",
-                    "values": depth,
                 },
                 entity_type={"primitive_type": "FLOAT"},
             )
+
+        if self._depth.values is None:  # First data appended
+
+            self.add_vertices(self.desurvey(depth))
+            depth = np.r_[np.ones(self.n_vertices - depth.shape[0]) * np.nan, depth]
+            values = np.r_[
+                np.ones(self.n_vertices - input_values.shape[0]) * np.nan, input_values
+            ]
+            self._depth.values = depth
+
         else:
             depths, indices = merge_arrays(
                 self._depth.values, depth, return_mapping=True, tolerance=tolerance
