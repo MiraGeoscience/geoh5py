@@ -31,7 +31,7 @@ class Points(ObjectBase):
     __TYPE_UID = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._vertices: np.recarray = None
+        self._vertices: np.ndarray = None
 
         super().__init__(object_type, **kwargs)
 
@@ -42,7 +42,7 @@ class Points(ObjectBase):
         return cls.__TYPE_UID
 
     @property
-    def vertices(self) -> Optional[np.recarray]:
+    def vertices(self) -> Optional[np.ndarray]:
         """
         :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`
         """
@@ -60,7 +60,9 @@ class Points(ObjectBase):
         assert (
             xyz.shape[1] == 3
         ), f"Array of vertices must be of shape (*, 3). Array of shape {xyz.shape} provided."
-        self._vertices = np.core.records.fromarrays(
-            xyz.T.tolist(),
-            dtype=[("x", "<f8"), ("y", "<f8"), ("z", "<f8")],
+        self._vertices = np.asarray(
+            np.core.records.fromarrays(
+                xyz.T.tolist(),
+                dtype=[("x", "<f8"), ("y", "<f8"), ("z", "<f8")],
+            )
         )

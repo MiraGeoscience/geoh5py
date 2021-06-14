@@ -60,7 +60,7 @@ class ColorMap:
 
         if isinstance(values.dtype, np.dtype):
             assert all(
-                [name in names for name in values.dtype.names]
+                name in names for name in values.dtype.names
             ), f"Input 'values' must contain fields with types {names}"
             self._values = np.asarray(values, dtype=list(zip(names, formats)))
 
@@ -68,8 +68,8 @@ class ColorMap:
             assert (
                 values.shape[1] == 5
             ), "'values' must be a an array of shape (*, 5) for [value, r, g, b, a]"
-            self._values = np.core.records.fromarrays(
-                values.T, names=names, formats=formats
+            self._values = np.asarray(
+                np.core.records.fromarrays(values.T, names=names, formats=formats)
             )
 
     @property

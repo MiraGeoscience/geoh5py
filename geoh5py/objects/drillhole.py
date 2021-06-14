@@ -53,8 +53,8 @@ class Drillhole(Points):
         self._collar: Optional[np.ndarray] = None
         self._cost: Optional[float] = 0.0
         self._planning: Text = "Default"
-        self._surveys: np.recarray = None
-        self._trace: np.recarray = None
+        self._surveys: np.ndarray = None
+        self._trace: np.ndarray = None
         self._trace_depth: Optional[np.ndarray] = None
         self._locations = None
         self._deviation_x = None
@@ -225,8 +225,10 @@ class Drillhole(Points):
 
             assert value.shape[1] == 3, "'surveys' requires an ndarray of shape (*, 3)"
             self.modified_attributes = "surveys"
-            self._surveys = np.core.records.fromarrays(
-                value.T, names="Depth, Dip, Azimuth", formats="<f4, <f4, <f4"
+            self._surveys = np.asarray(
+                np.core.records.fromarrays(
+                    value.T, names="Depth, Dip, Azimuth", formats="<f4, <f4, <f4"
+                )
             )
 
             # Reset the trace

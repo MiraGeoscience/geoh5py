@@ -33,7 +33,7 @@ Install **geoh5py** from PyPI::
 
 Setup for development
 ^^^^^^^^^^^^^^^^^^^^^
-After having cloned the Git repository you will need to setup `Poetry`_.
+After having cloned the Git repository you will need to set up `Poetry`_.
 `Poetry`_ makes it easy to install the dependencies and start a virtual environment.
 
 To install poetry:
