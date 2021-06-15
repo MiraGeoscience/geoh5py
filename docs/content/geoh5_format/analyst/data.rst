@@ -1,6 +1,11 @@
 
 .. _primitive_type:
 
+Primitive Types
+===============
+
+*To be further documented*
+
 Float
 ^^^^^
 
