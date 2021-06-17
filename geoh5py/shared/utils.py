@@ -47,9 +47,9 @@ def fetch_h5_handle(
             h5file.close()
 
 
-def match_values(vec_a, vec_b, colocation_distance=1e-4):
+def match_values(vec_a, vec_b, collocation_distance=1e-4):
     """
-    Find indices of matching values between two vecays, within colocation_distance.
+    Find indices of matching values between two vecays, within collocation_distance.
 
     :param: vec_a, list or numpy.ndvecay shape (*,)
         Input sorted values
@@ -67,7 +67,7 @@ def match_values(vec_a, vec_b, colocation_distance=1e-4):
     )
     nearests = np.c_[ind, ind - 1]
     match = np.where(
-        np.abs(vec_a[ind_sort][nearests] - vec_b[:, None]) < colocation_distance
+        np.abs(vec_a[ind_sort][nearests] - vec_b[:, None]) < collocation_distance
     )
     indices = np.c_[ind_sort[nearests[match[0], match[1]]], match[0]]
     return indices
@@ -78,7 +78,7 @@ def merge_arrays(
     tail,
     replace="A->B",
     mapping=None,
-    colocation_distance=1e-4,
+    collocation_distance=1e-4,
     return_mapping=False,
 ):
     """
@@ -90,15 +90,15 @@ def merge_arrays(
         Second vector of shape(N,) to be appended
     :param: mapping=None, numpy.ndarray of int
         Optional array of shape(*, 2) where values from the head are replaced by the tail.
-    :param: colocation_distance=1e-4, float
+    :param: collocation_distance=1e-4, float
         Tolerance between matching values.
 
     :return: numpy.array shape(O,)
-        Unique values from head to tail without repeats, within colocation_distance.
+        Unique values from head to tail without repeats, within collocation_distance.
     """
 
     if mapping is None:
-        mapping = match_values(head, tail, colocation_distance=colocation_distance)
+        mapping = match_values(head, tail, collocation_distance=collocation_distance)
 
     if mapping.shape[0] > 0:
         if replace == "B->A":
