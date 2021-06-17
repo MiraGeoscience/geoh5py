@@ -46,7 +46,7 @@ def test_create_drillhole_data():
                 np.ones(n_data) * 45.0,
             ],
             name=well_name,
-            tolerance=1e-5,
+            default_colocation_distance=1e-5,
         )
         value_map = {}
         for ref in range(8):
@@ -116,7 +116,9 @@ def test_create_drillhole_data():
         new_workspace = Workspace(h5file_path)
         # Check entities
         compare_entities(
-            well, new_workspace.get_entity(well_name)[0], ignore=["_tolerance"]
+            well,
+            new_workspace.get_entity(well_name)[0],
+            ignore=["_default_colocation_distance"],
         )
         compare_entities(
             data_objects[0],

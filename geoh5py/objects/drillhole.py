@@ -63,7 +63,7 @@ class Drillhole(Points):
         self._deviation_y = None
         self._deviation_z = None
 
-        self._tolerance = 1e-2
+        self._default_colocation_distance = 1e-2
 
         super().__init__(object_type, **kwargs)
 
@@ -254,16 +254,16 @@ class Drillhole(Points):
         self._locations = None
 
     @property
-    def tolerance(self):
+    def default_colocation_distance(self):
         """
-        Matching tolerance on depth for merging
+        Minimum colocation distance for matching depth on merge
         """
-        return self._tolerance
+        return self._default_colocation_distance
 
-    @tolerance.setter
-    def tolerance(self, tol):
+    @default_colocation_distance.setter
+    def default_colocation_distance(self, tol):
         assert tol > 0, "Tolerance value should be >0"
-        self._tolerance = tol
+        self._default_colocation_distance = tol
 
     @property
     def trace(self) -> Optional[np.ndarray]:
@@ -349,22 +349,28 @@ class Drillhole(Points):
 
             attr["name"] = name
 
-            if "tolerance" in list(attr.keys()):
-                assert attr["tolerance"] > 0, "Input depth 'tolerance' must be >0."
-                tolerance = attr["tolerance"]
+            if "colocation_distance" in list(attr.keys()):
+                assert (
+                    attr["colocation_distance"] > 0
+                ), "Input depth 'colocation_distance' must be >0."
+                colocation_distance = attr["colocation_distance"]
             else:
-                tolerance = self.tolerance
+                colocation_distance = self.default_colocation_distance
 
             if "depth" in list(attr.keys()):
                 attr["association"] = "VERTEX"
                 attr["values"] = self.validate_log_data(
-                    attr["depth"], attr["values"], tolerance=tolerance
+                    attr["depth"],
+                    attr["values"],
+                    colocation_distance=colocation_distance,
                 )
                 del attr["depth"]
             elif "from-to" in list(attr.keys()):
                 attr["association"] = "CELL"
                 attr["values"] = self.validate_interval_data(
-                    attr["from-to"], attr["values"], tolerance=tolerance
+                    attr["from-to"],
+                    attr["values"],
+                    colocation_distance=colocation_distance,
                 )
                 del attr["from-to"]
             else:
@@ -438,7 +444,7 @@ class Drillhole(Points):
 
         return indices.astype("uint32")
 
-    def validate_log_data(self, depth, input_values, tolerance=1e-4):
+    def validate_log_data(self, depth, input_values, colocation_distance=1e-4):
         """
         Compare new and current depth values, append new vertices if necessary and return
         an augmented values vector that matches the vertices indexing.
@@ -471,7 +477,10 @@ class Drillhole(Points):
 
         else:
             depths, indices = merge_arrays(
-                self._depth.values, depth, return_mapping=True, tolerance=tolerance
+                self._depth.values,
+                depth,
+                return_mapping=True,
+                colocation_distance=colocation_distance,
             )
             values = merge_arrays(
                 np.ones(self.n_vertices) * np.nan,
@@ -485,7 +494,7 @@ class Drillhole(Points):
 
         return values
 
-    def validate_interval_data(self, from_to, input_values, tolerance=1e-4):
+    def validate_interval_data(self, from_to, input_values, colocation_distance=1e-4):
         """
         Compare new and current depth values, append new vertices if necessary and return
         an augmented values vector that matches the vertices indexing.
@@ -526,9 +535,13 @@ class Drillhole(Points):
             )
         else:
             from_ind = match_values(
-                self._from.values, from_to[:, 0], tolerance=tolerance
+                self._from.values,
+                from_to[:, 0],
+                colocation_distance=colocation_distance,
             )
-            to_ind = match_values(self._to.values, from_to[:, 1], tolerance=tolerance)
+            to_ind = match_values(
+                self._to.values, from_to[:, 1], colocation_distance=colocation_distance
+            )
 
             # Find matching cells
             in_match = np.ones((self._from.values.shape[0], 2)) * np.nan
