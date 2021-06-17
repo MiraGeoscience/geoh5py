@@ -31,6 +31,7 @@ def test_create_drillhole_data():
 
     well_name = "bullseye"
     n_data = 10
+    collocation = 1e-5
 
     with tempfile.TemporaryDirectory() as tempdir:
         h5file_path = Path(tempdir) / r"testCurve.geoh5"
@@ -46,7 +47,7 @@ def test_create_drillhole_data():
                 np.ones(n_data) * 45.0,
             ],
             name=well_name,
-            default_colocation_distance=1e-5,
+            default_collocation_distance=collocation,
         )
         value_map = {}
         for ref in range(8):
@@ -109,8 +110,9 @@ def test_create_drillhole_data():
         ]
         workspace.finalize()
 
+        new_count = from_to_a.size + 4 + n_data
         assert well.n_vertices == (
-            from_to_a.size + 4 + n_data
+            new_count
         ), "Error with new number of vertices on log data creation."
         # Re-open the workspace and read data back in
         new_workspace = Workspace(h5file_path)
@@ -118,7 +120,7 @@ def test_create_drillhole_data():
         compare_entities(
             well,
             new_workspace.get_entity(well_name)[0],
-            ignore=["_default_colocation_distance"],
+            ignore=["_default_collocation_distance"],
         )
         compare_entities(
             data_objects[0],
