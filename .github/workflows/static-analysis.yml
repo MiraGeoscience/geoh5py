@@ -5,10 +5,16 @@ on:
     branches:
       - development
       - main
+      - release/**
+      - feature/**
+      - hotfix/**
   push:
     branches:
       - development
       - main
+      - release/**
+      - feature/**
+      - hotfix/**
 
 jobs:
   pre-commit:
