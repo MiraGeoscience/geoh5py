@@ -15,6 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=R0902
+
 import uuid
 from typing import List, Optional, Text, Union
 
@@ -60,6 +62,8 @@ class Drillhole(Points):
         self._deviation_x = None
         self._deviation_y = None
         self._deviation_z = None
+
+        self._default_collocation_distance = 1e-2
 
         super().__init__(object_type, **kwargs)
 
@@ -211,7 +215,16 @@ class Drillhole(Points):
         :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the surveys
         """
         if (getattr(self, "_surveys", None) is None) and self.existing_h5_entity:
-            self._surveys = self.workspace.fetch_coordinates(self.uid, "surveys")
+            surveys = self.workspace.fetch_coordinates(self.uid, "surveys")
+            if len(surveys) == 1:
+                self.surveys = np.vstack(
+                    [
+                        np.c_[0, surveys["Azimuth"], surveys["Dip"]],
+                        surveys.view("<f4").reshape((-1, 3)),
+                    ]
+                )
+            else:
+                self._surveys = surveys
 
         if getattr(self, "_surveys", None) is not None:
             return self._surveys
@@ -224,6 +237,7 @@ class Drillhole(Points):
             value = np.vstack(value)
 
             assert value.shape[1] == 3, "'surveys' requires an ndarray of shape (*, 3)"
+
             self.modified_attributes = "surveys"
             self._surveys = np.asarray(
                 np.core.records.fromarrays(
@@ -238,6 +252,18 @@ class Drillhole(Points):
         self._deviation_y = None
         self._deviation_z = None
         self._locations = None
+
+    @property
+    def default_collocation_distance(self):
+        """
+        Minimum collocation distance for matching depth on merge
+        """
+        return self._default_collocation_distance
+
+    @default_collocation_distance.setter
+    def default_collocation_distance(self, tol):
+        assert tol > 0, "Tolerance value should be >0"
+        self._default_collocation_distance = tol
 
     @property
     def trace(self) -> Optional[np.ndarray]:
@@ -323,21 +349,28 @@ class Drillhole(Points):
 
             attr["name"] = name
 
-            tolerance = 1e-2
-            if "tolerance" in list(attr.keys()):
-                assert attr["tolerance"] > 0, "Input depth 'tolerance' must be >0."
-                tolerance = attr["tolerance"]
+            if "collocation_distance" in list(attr.keys()):
+                assert (
+                    attr["collocation_distance"] > 0
+                ), "Input depth 'collocation_distance' must be >0."
+                collocation_distance = attr["collocation_distance"]
+            else:
+                collocation_distance = self.default_collocation_distance
 
             if "depth" in list(attr.keys()):
                 attr["association"] = "VERTEX"
                 attr["values"] = self.validate_log_data(
-                    attr["depth"], attr["values"], tolerance=tolerance
+                    attr["depth"],
+                    attr["values"],
+                    collocation_distance=collocation_distance,
                 )
                 del attr["depth"]
             elif "from-to" in list(attr.keys()):
                 attr["association"] = "CELL"
                 attr["values"] = self.validate_interval_data(
-                    attr["from-to"], attr["values"], tolerance=tolerance
+                    attr["from-to"],
+                    attr["values"],
+                    collocation_distance=collocation_distance,
                 )
                 del attr["from-to"]
             else:
@@ -411,7 +444,7 @@ class Drillhole(Points):
 
         return indices.astype("uint32")
 
-    def validate_log_data(self, depth, input_values, tolerance=1e-4):
+    def validate_log_data(self, depth, input_values, collocation_distance=1e-4):
         """
         Compare new and current depth values, append new vertices if necessary and return
         an augmented values vector that matches the vertices indexing.
@@ -423,25 +456,31 @@ class Drillhole(Points):
 
         input_values = np.r_[input_values]
 
-        if self._depth is None:  # First data appended
-            self.add_vertices(self.desurvey(depth))
-            depth = np.r_[np.ones(self.n_vertices - depth.shape[0]) * np.nan, depth]
-            values = np.r_[
-                np.ones(self.n_vertices - input_values.shape[0]) * np.nan, input_values
-            ]
+        if self._depth is None:
             self.workspace.create_entity(
                 Data,
                 entity={
                     "parent": self,
                     "association": "VERTEX",
                     "name": "DEPTH",
-                    "values": depth,
                 },
                 entity_type={"primitive_type": "FLOAT"},
             )
+
+        if self._depth.values is None:  # First data appended
+            self.add_vertices(self.desurvey(depth))
+            depth = np.r_[np.ones(self.n_vertices - depth.shape[0]) * np.nan, depth]
+            values = np.r_[
+                np.ones(self.n_vertices - input_values.shape[0]) * np.nan, input_values
+            ]
+            self._depth.values = depth
+
         else:
             depths, indices = merge_arrays(
-                self._depth.values, depth, return_mapping=True, tolerance=tolerance
+                self._depth.values,
+                depth,
+                return_mapping=True,
+                collocation_distance=collocation_distance,
             )
             values = merge_arrays(
                 np.ones(self.n_vertices) * np.nan,
@@ -455,7 +494,7 @@ class Drillhole(Points):
 
         return values
 
-    def validate_interval_data(self, from_to, input_values, tolerance=1e-4):
+    def validate_interval_data(self, from_to, input_values, collocation_distance=1e-4):
         """
         Compare new and current depth values, append new vertices if necessary and return
         an augmented values vector that matches the vertices indexing.
@@ -496,9 +535,15 @@ class Drillhole(Points):
             )
         else:
             from_ind = match_values(
-                self._from.values, from_to[:, 0], tolerance=tolerance
+                self._from.values,
+                from_to[:, 0],
+                collocation_distance=collocation_distance,
             )
-            to_ind = match_values(self._to.values, from_to[:, 1], tolerance=tolerance)
+            to_ind = match_values(
+                self._to.values,
+                from_to[:, 1],
+                collocation_distance=collocation_distance,
+            )
 
             # Find matching cells
             in_match = np.ones((self._from.values.shape[0], 2)) * np.nan
