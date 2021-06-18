@@ -52,22 +52,22 @@ index (i,j,k) along axes U,V and Z of length nU, nV and nZ respectively,
 
 Datasets
 ^^^^^^^^
-- **U cell delimiters** : 1D array of ``double``
+:U cell delimiters: 1D array of ``double``
     Distances of cell edges from origin along the U axis (first value should be 0)
-- **V cell delimiters** : 1D array of ``double``
+:V cell delimiters: 1D array of ``double``
     Distances of cell edges from origin along the V axis (first value should be 0)
-- **Z cell delimiters** : 1D array of ``double``
+:Z cell delimiters: 1D array of ``double``
     Distances of cell edges from origin upwards along the vertical axis (first value should be 0)
 
 Attributes
 ^^^^^^^^^^
 
-- **Origin** : composite type
+:Origin: composite type
 
     [*X* ``double``, *Y* ``double``, *Z* ``double``]
 
     Origin point of grid
-- **Rotation** : ``double`` (default) 0
+:Rotation: ``double`` (default) 0
     Counterclockwise angle (degrees) of rotation around the vertical axis in degrees.
 
 2D Grid
@@ -91,22 +91,22 @@ index (i,j) within axes U and V containing nU and nV cells respectively,
 Attributes
 ^^^^^^^^^^
 
-- **Origin** : composite type
+:Origin: composite type
 
     [*X* ``double``, *Y* ``double``, *Z* ``double``]
 
     Origin point of the grid.
-- **U Size** : ``double``
+:U Size: ``double``
     Length of U axis
-- **U Count** : ``double``
+:U Count: ``double``
     Number of cells along U axis
-- **V Size** : ``double``
+:V Size: ``double``
     Length of V axis
-- **V Count** : ``double``
+:V Count: ``double``
     Number of cells along V axis
-- **Rotation** : ``double``
+:Rotation: ``double``
     (Optional) Counterclockwise angle (degrees) of rotation around the vertical axis at the Origin.
-- **Vertical** : ``char``, 0(false, default) or 1(true))
+:Vertical: ``char``, 0(false, default) or 1(true))
     (Optiona) If true, V axis is vertical (and rotation defined around the V axis)
 
 Drillhole
@@ -126,7 +126,7 @@ Drillhole
 Attributes
 ^^^^^^^^^^
 
-- **Collar** : composite type
+:Collar: composite type
 
     [*X* ``double``, *Y* ``double``, *Z* ``double``]
 
@@ -134,12 +134,12 @@ Attributes
 
 Datasets
 ^^^^^^^^
-- **Surveys** : 1D composite array
+:Surveys: 1D composite array
 
     [*Depth* ``double``, *Dip* ``double``, *Azimuth* ``double``]
 
     Survey locations
-- **Trace** : 1D composite array
+:Trace: 1D composite array
 
     [*X* ``double``, *Y* ``double``, *Z* ``double``]
 
@@ -154,7 +154,7 @@ Geoimage
 
 *To be further documented*
 
-- Vertices represent the four corners of the geolocated image. Note** :
+- Vertices represent the four corners of the geolocated image. Note:
    Should be arranged as a rectangle currently, since Geoscience ANALYST
    does not currently support skewed images.
 - No cell data.
@@ -175,12 +175,13 @@ Label
 Attributes
 ^^^^^^^^^^
 
-- **Target position** : composite type
+:Target position: composite type
 
     [*X* ``double``, *Y* ``double``, *Z* ``double``]
 
     The target location of the label
-- **Label position** : composite type
+
+:Label position: composite type
 
     [*X* ``double``, *Y* ``double``, *Z* ``double``]
     (Optional - Defaults to same as target position ) The location where the text of the label is displayed
