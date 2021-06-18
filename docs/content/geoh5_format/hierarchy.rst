@@ -48,8 +48,8 @@ Groups
     :align: right
     :width: 300
 
-Groups are simple container for other groups and objects. It
-is often used to assign special meanings to a collection of entities or to create specialized software
+Groups are simple container for other groups and objects. They are often used to assign
+special meanings to a collection of entities or to create specialized software
 functionality.
 See the :ref:`Group Types <group_types>` section for the list of supported group types.
 
@@ -126,7 +126,7 @@ Data
     :align: right
     :width: 300
 
-Container for data values of various types.
+Containers for data values of various types.
 Data are currently **always stored as a 1D array**, even in the case of
 single-value data with the ``Object`` association (in which case it is a
 1D array of length 1).

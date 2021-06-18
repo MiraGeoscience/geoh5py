@@ -44,11 +44,8 @@ index (i,j,k) along axes U,V and Z of length nU, nV and nZ respectively,
 
    cell index = k + i*nZ + j*nU*nZ
 
-- Without rotation angles, U points eastwards, V points northwards, and
-   Z points upwards.
-- Since their geometry is defined entirely by the additional data
-   described below, block models do not require a Vertices or Cells
-   dataset.
+Without rotation angles, U points eastwards, V points northwards, and Z points upwards.
+Since their geometry is defined entirely by the additional data described below, block models do not require a ``Vertices`` or ``Cells`` dataset.
 
 Datasets
 ^^^^^^^^
@@ -84,9 +81,8 @@ index (i,j) within axes U and V containing nU and nV cells respectively,
 
    cell index = i + j*nU
 
-- Without rotation angles, U points eastwards and V points northwards
-- Since their geometry is defined entirely by the additional data
-   described below, 2D grids do not require a Vertices or Cells dataset.
+Without rotation angles, U points eastwards and V points northwards. Since their geometry is defined entirely by the additional data
+described below, 2D grids do not require a Vertices or Cells dataset.
 
 Attributes
 ^^^^^^^^^^
@@ -116,12 +112,9 @@ Drillhole
 
 *To be further documented*
 
-- Vertices represent points along the drillhole path (support for data rather than the drillhole geometry itself) and must have a “Depth”
-    property value.
-- Cells contain two vertices and represent intervals along the
-    drillhole path (and are a support for interval data as well)
-- Cells may overlap with each other to accommodate the different
-    sampling intervals of various data.
+Vertices represent points along the drillhole path (support for data rather than the drillhole geometry itself) and must have a ``Depth`` property value.
+Cells contain two vertices and represent intervals along the drillhole path (and are a support for interval data as well).
+Cells may overlap with each other to accommodate the different sampling intervals of various data.
 
 Attributes
 ^^^^^^^^^^
@@ -154,12 +147,11 @@ Geoimage
 
 *To be further documented*
 
-- Vertices represent the four corners of the geolocated image. Note:
-   Should be arranged as a rectangle currently, since Geoscience ANALYST
+Vertices represent the four corners of the geolocated image. No cell data. An object-associated file-type data containing the image to display
+is expected to exist under this object.
+
+.. note:: Should be arranged as a rectangle currently, since Geoscience ANALYST
    does not currently support skewed images.
-- No cell data.
-- An object-associated file-type data containing the image to display
-   is expected to exist under this object.
 
 Label
 -----
@@ -170,7 +162,7 @@ Label
 
 *To be further documented*
 
-- Has no vertices nor cell data
+Has no vertices nor cell data
 
 Attributes
 ^^^^^^^^^^
