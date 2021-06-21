@@ -32,7 +32,7 @@ setup(
     license="LGPL-3.0-or-later",
     keywords="geology geophysics data interoperability",
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
         "Intended Audience :: Developers",
         "Natural Language :: English",
