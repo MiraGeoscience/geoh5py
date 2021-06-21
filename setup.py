@@ -19,9 +19,9 @@ if os.path.exists(readme_path):
 setup(
     long_description=README,
     name="geoh5py",
-    version="0.2.0-alpha",
     description="Python API for geoh5, an open file format for geoscientific data",
     python_requires="==3.*,>=3.7.0",
+    version="0.1.3",
     project_urls={
         "documentation": "https://geoh5py.readthedocs.io/en/latest/",
         "homepage": "https://mirageoscience.com",
