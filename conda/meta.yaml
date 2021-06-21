@@ -1,0 +1,54 @@
+{% set name = "geoh5py" %}
+{% set version = "0.1.2" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
+  sha256: 9616a2bf0ce8181d1a9a05b13f8c8c2c5a0fa6b3224429751417f49a178970f1
+
+build:
+  number: 0
+  entry_points:
+    - publish = devtools.publish:publish
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - h5py >=3.2.1,<4.0.0
+    - numpy !=1.19.4
+    - pip
+    - python {{ python }}
+  run:
+    - h5py >=3.2.1,<4.0.0
+    - numpy !=1.19.4
+    - python {{ python }}
+
+test:
+  imports:
+    - geoh5py
+    - geoh5py.data
+    - geoh5py.groups
+    - geoh5py.io
+    - geoh5py.objects
+    - geoh5py.shared
+    - geoh5py.workspace
+  commands:
+    - publish --help
+
+about:
+  home: "https://mirageoscience.com"
+  license: "GNU Lesser General Public v3 or later (LGPLv3+)"
+  license_family: LGPL
+  license_file:
+    - COPYING
+    - COPYING.LESSER
+  summary: "Python API for geoh5, an open file format for geoscientific data"
+  doc_url: "https://geoh5py.readthedocs.io/en/latest/"
+  dev_url: "https://github.com/MiraGeoscience/geoh5py"
+
+extra:
+  recipe-maintainers:
+    - domfournier
