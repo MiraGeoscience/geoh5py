@@ -84,7 +84,7 @@ def test_insert_drillhole_data():
         ), "Old values not re-sorted properly after insertion"
 
         insert_ind = np.where(~np.isnan(match_test.values))[0]
-        if insert[0] < insert[1]:
+        if insert[0] <= insert[1]:
             assert all(
                 ind in [indices[insert][0], indices[insert][1] + 1]
                 for ind in insert_ind
