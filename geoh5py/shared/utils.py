@@ -14,16 +14,42 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
-
 from abc import ABC
-from typing import List, Optional
+from contextlib import contextmanager
+from typing import List, Optional, Union
 
+import h5py
 import numpy as np
 
 
-def match_values(vec_a, vec_b, tolerance=1e-4):
+@contextmanager
+def fetch_h5_handle(
+    file: Union[str, h5py.File],
+) -> h5py.File:
     """
-    Find indices of matching values between two vecays, within tolerance.
+    Open in read+ mode a geoh5 file from string.
+    If receiving a file instead of a string, merely return the given file.
+
+    :param file: Name or handle to a geoh5 file.
+
+    :return h5py.File: Handle to an opened h5py file.
+    """
+    if isinstance(file, h5py.File):
+        try:
+            yield file
+        finally:
+            pass
+    else:
+        h5file = h5py.File(file, "r+")
+        try:
+            yield h5file
+        finally:
+            h5file.close()
+
+
+def match_values(vec_a, vec_b, collocation_distance=1e-4):
+    """
+    Find indices of matching values between two vecays, within collocation_distance.
 
     :param: vec_a, list or numpy.ndvecay shape (*,)
         Input sorted values
@@ -40,13 +66,20 @@ def match_values(vec_a, vec_b, tolerance=1e-4):
         np.searchsorted(vec_a[ind_sort], vec_b, side="right"), vec_a.shape[0] - 1
     )
     nearests = np.c_[ind, ind - 1]
-    match = np.where(np.abs(vec_a[ind_sort][nearests] - vec_b[:, None]) < tolerance)
+    match = np.where(
+        np.abs(vec_a[ind_sort][nearests] - vec_b[:, None]) < collocation_distance
+    )
     indices = np.c_[ind_sort[nearests[match[0], match[1]]], match[0]]
     return indices
 
 
 def merge_arrays(
-    head, tail, replace="A->B", mapping=None, tolerance=1e-4, return_mapping=False
+    head,
+    tail,
+    replace="A->B",
+    mapping=None,
+    collocation_distance=1e-4,
+    return_mapping=False,
 ):
     """
     Given two numpy.arrays of different length, find the matching values and append both arrays.
@@ -57,15 +90,15 @@ def merge_arrays(
         Second vector of shape(N,) to be appended
     :param: mapping=None, numpy.ndarray of int
         Optional array of shape(*, 2) where values from the head are replaced by the tail.
-    :param: tolerance=1e-4, float
+    :param: collocation_distance=1e-4, float
         Tolerance between matching values.
 
     :return: numpy.array shape(O,)
-        Unique values from head to tail without repeats, within tolerance.
+        Unique values from head to tail without repeats, within collocation_distance.
     """
 
     if mapping is None:
-        mapping = match_values(head, tail, tolerance=tolerance)
+        mapping = match_values(head, tail, collocation_distance=collocation_distance)
 
     if mapping.shape[0] > 0:
         if replace == "B->A":
@@ -92,7 +125,9 @@ def compare_entities(object_a, object_b, ignore: Optional[List] = None):
         if attr in ignore_list:
             continue
         if isinstance(getattr(object_a, attr[1:]), ABC):
-            compare_entities(getattr(object_a, attr[1:]), getattr(object_b, attr[1:]))
+            compare_entities(
+                getattr(object_a, attr[1:]), getattr(object_b, attr[1:]), ignore=ignore
+            )
         else:
             if isinstance(getattr(object_a, attr[1:]), np.ndarray):
                 np.testing.assert_array_equal(

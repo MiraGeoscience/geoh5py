@@ -2,10 +2,16 @@ name: pytest on Windows
 
 on:
   pull_request:
+    branches:
+      - develop
+      - main
+      - release/**
+      - feature/**
+      - hotfix/**
   push:
     branches:
-      - development
-      - master
+      - develop
+      - main
       - release/**
       - feature/**
       - hotfix/**

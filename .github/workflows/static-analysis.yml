@@ -3,12 +3,18 @@ name: static analysis
 on:
   pull_request:
     branches:
-      - development
-      - master
+      - develop
+      - main
+      - release/**
+      - feature/**
+      - hotfix/**
   push:
     branches:
-      - development
-      - master
+      - develop
+      - main
+      - release/**
+      - feature/**
+      - hotfix/**
 
 jobs:
   pre-commit:
