@@ -314,7 +314,7 @@ class H5Writer:
                 except AttributeError:
                     continue
 
-                if key == "ID":
+                if isinstance(value, uuid.UUID):
                     value = "{" + str(value) + "}"
 
                 if key == "PropertyGroups":
