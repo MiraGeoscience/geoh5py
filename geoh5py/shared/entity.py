@@ -109,7 +109,7 @@ class Entity(ABC):
         self.modified_attributes = "attributes"
 
     @property
-    def attribute_map(self):
+    def attribute_map(self) -> dict:
         """
         :obj:`dict` Correspondence map between property names used in geoh5py and
         geoh5.
