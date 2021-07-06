@@ -21,7 +21,7 @@ from ..curve import Curve
 from ..object_type import ObjectType
 
 
-class SurveyAirborneMagnetics(Curve):
+class AirborneMagnetics(Curve):
     """
     An airborne magnetic survey object.
 
