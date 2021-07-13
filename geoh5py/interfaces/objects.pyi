@@ -87,7 +87,7 @@ class ObjectsService:
     def find(
         self,
         query: ObjectQuery,
-    ) -> listist[Object]: ...
+    ) -> list[Object]: ...
     def set_allow_move(
         self,
         objects: List[shared.Uuid],
