@@ -17,6 +17,8 @@
 
 # pylint: disable=R0904
 
+from __future__ import annotations
+
 import json
 import uuid
 from typing import TYPE_CHECKING, Union

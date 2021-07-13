@@ -17,6 +17,8 @@
 
 # pylint: disable=R0902
 
+from __future__ import annotations
+
 import uuid
 from typing import List, Optional, Text, Union
 
