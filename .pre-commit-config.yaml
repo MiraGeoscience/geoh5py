@@ -34,7 +34,7 @@ repos:
     rev: v0.910
     hooks:
     -   id: mypy
-        args: ["--ignore-missing-imports", "--scripts-are-modules", "--show-error-context",
+        args: ["--install-types", "--non-interactive", "--ignore-missing-imports", "--scripts-are-modules", "--show-error-context",
                "--show-column-numbers"]
 -   repo: local
     hooks:
