@@ -126,7 +126,7 @@ class DataService:
         self,
         data: shared.Uuid,
         slab: DataSlab,
-    ) -> List[int]: ...
+    ) -> list[int]: ...
     def get_blob_element(
         self,
         data: shared.Uuid,
