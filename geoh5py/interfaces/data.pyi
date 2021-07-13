@@ -138,7 +138,7 @@ class DataService:
     def find_types(
         self,
         query: DataTypeQuery,
-    ) -> List[DataType]: ...
+    ) -> list[DataType]: ...
     def get_type(
         self,
         uid: shared.Uuid,
