@@ -2,23 +2,13 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import *
 
-
 from . import shared
-
-
-
 
 class FileIOException(Exception):
     message: Optional[str] = ""
 
 class FileFormatException(Exception):
     message: Optional[str] = ""
-
-
-
-
-
-
 
 @dataclass
 class Workspace:
@@ -28,48 +18,37 @@ class Workspace:
     date_created: Optional[shared.DateTime] = None
     date_modified: Optional[shared.DateTime] = None
 
-
-
-
 class WorkspaceService:
     def get_api_version(
         self,
-    ) -> shared.VersionString:
-        ...
+    ) -> shared.VersionString: ...
     def create_geoh5(
         self,
         file_path: str,
-    ) -> Workspace:
-        ...
+    ) -> Workspace: ...
     def open_geoh5(
         self,
         file_path: str,
-    ) -> Workspace:
-        ...
+    ) -> Workspace: ...
     def save(
         self,
         file_path: str,
         overwrite_file: bool,
-    ) -> Workspace:
-        ...
+    ) -> Workspace: ...
     def export_objects(
         self,
         objects_or_groups: List[shared.Uuid],
         file_path: str,
         overwrite_file: bool,
-    ) -> Workspace:
-        ...
+    ) -> Workspace: ...
     def export_all(
         self,
         file_path: str,
         overwrite_file: bool,
-    ) -> Workspace:
-        ...
+    ) -> Workspace: ...
     def close(
         self,
-    ) -> None:
-        ...
+    ) -> None: ...
     def get_contributors(
         self,
-    ) -> List[str]:
-        ...
+    ) -> List[str]: ...

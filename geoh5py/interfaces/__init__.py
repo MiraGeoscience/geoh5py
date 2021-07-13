@@ -15,6 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 try:
     import thriftpy2
 except (ModuleNotFoundError, ImportError):
@@ -22,10 +24,9 @@ except (ModuleNotFoundError, ImportError):
 else:
     from pathlib import Path
     from types import ModuleType
-    from typing import Dict
 
     _INTERFACES_PATH = Path("interfaces")
-    _INTERFACES: Dict[str, ModuleType] = {}
+    _INTERFACES: dict[str, ModuleType] = {}
 
     def __getattr__(name):
         try:

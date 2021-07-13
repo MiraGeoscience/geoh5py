@@ -2,25 +2,15 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import *
 
-
 from . import shared
-
-
-
 
 class InvalidGroupOperation(Exception):
     message: Optional[str] = ""
-
-
-
 
 class GroupClass(IntEnum):
     UNKNOWN = 0
     CONTAINER = 1
     DRILLHOLE = 2
-
-
-
 
 @dataclass
 class Group:
@@ -34,77 +24,61 @@ class GroupQuery:
     in_group: Optional[shared.Uuid] = None
     recursive: Optional[bool] = False
 
-
-
-
 class GroupsService:
     def get_root(
         self,
-    ) -> Group:
-        ...
+    ) -> Group: ...
     def get_type(
         self,
         group_class: int,
-    ) -> shared.Uuid:
-        ...
+    ) -> shared.Uuid: ...
     def get_class(
         self,
         type_uid: shared.Uuid,
-    ) -> int:
-        ...
+    ) -> int: ...
     def get_all(
         self,
-    ) -> List[Group]:
-        ...
+    ) -> list[Group]: ...
     def find(
         self,
         query: GroupQuery,
-    ) -> List[Group]:
-        ...
+    ) -> list[Group]: ...
     def set_allow_move(
         self,
         groups: List[shared.Uuid],
         allow: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def move_to_group(
         self,
         groups: List[shared.Uuid],
         destination_group: shared.Uuid,
-    ) -> None:
-        ...
+    ) -> None: ...
     def create(
         self,
         type_uid: shared.Uuid,
-    ) -> Group:
-        ...
+    ) -> Group: ...
     def set_public(
         self,
         entities: List[shared.Uuid],
         is_public: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def set_visible(
         self,
         entities: List[shared.Uuid],
         visible: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def set_allow_delete(
         self,
         entities: List[shared.Uuid],
         allow: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def set_allow_rename(
         self,
         entities: List[shared.Uuid],
         allow: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def rename(
         self,
         entities: shared.Uuid,
         new_name: str,
-    ) -> None:
-        ...
+    ) -> None: ...

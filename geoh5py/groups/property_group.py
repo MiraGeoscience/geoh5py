@@ -15,9 +15,10 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import uuid
 from abc import ABC
-from typing import List, Union
 
 from ..data import DataAssociationEnum
 from ..shared import Entity
@@ -42,7 +43,7 @@ class PropertyGroup(ABC):
         self._name = "prop_group"
         self._uid = uuid.uuid4()
         self._association: DataAssociationEnum = DataAssociationEnum.VERTEX
-        self._properties: List[uuid.UUID] = []
+        self._properties: list[uuid.UUID] = []
         self._property_group_type = "multi-element"
         self._parent = None
 
@@ -103,7 +104,7 @@ class PropertyGroup(ABC):
         self._parent = parent
 
     @property
-    def properties(self) -> List[uuid.UUID]:
+    def properties(self) -> list[uuid.UUID]:
         """
         List of unique identifiers for the :obj:`~geoh5py.data.data.Data`
         contained in the property group.
@@ -111,7 +112,7 @@ class PropertyGroup(ABC):
         return self._properties
 
     @properties.setter
-    def properties(self, uids: List[Union[str, uuid.UUID]]):
+    def properties(self, uids: list[str | uuid.UUID]):
 
         properties = []
         for uid in uids:
@@ -136,7 +137,7 @@ class PropertyGroup(ABC):
         return self._uid
 
     @uid.setter
-    def uid(self, uid: Union[str, uuid.UUID]):
+    def uid(self, uid: str | uuid.UUID):
         if isinstance(uid, str):
             uid = uuid.UUID(uid)
 

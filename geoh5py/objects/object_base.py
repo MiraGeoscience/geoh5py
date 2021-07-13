@@ -16,10 +16,12 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
+
 import uuid
 from abc import abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -47,7 +49,7 @@ class ObjectBase(Entity):
     def __init__(self, object_type: ObjectType, **kwargs):
         assert object_type is not None
         self._entity_type = object_type
-        self._property_groups: List[PropertyGroup] = []
+        self._property_groups: list[PropertyGroup] = []
         self._last_focus = "None"
         self._comments = None
         # self._clipping_ids: List[uuid.UUID] = []
@@ -88,9 +90,7 @@ class ObjectBase(Entity):
         else:
             self.comments.values = self.comments.values + [comment_dict]
 
-    def add_data(
-        self, data: dict, property_group: str = None
-    ) -> Union[Data, List[Data]]:
+    def add_data(self, data: dict, property_group: str = None) -> Data | list[Data]:
         """
         Create :obj:`~geoh5py.data.data.Data` from dictionary of name and arguments.
         The provided arguments can be any property of the target Data class.
@@ -149,7 +149,7 @@ class ObjectBase(Entity):
         return data_objects
 
     def add_data_to_group(
-        self, data: Union[List, Data, uuid.UUID, str], name: str
+        self, data: list | Data | uuid.UUID | str, name: str
     ) -> PropertyGroup:
         """
         Append data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
@@ -182,7 +182,7 @@ class ObjectBase(Entity):
         return prop_group
 
     def remove_data_from_group(
-        self, data: Union[List, Data, uuid.UUID, str], name: str = None
+        self, data: list | Data | uuid.UUID | str, name: str = None
     ):
         """
         Remove data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
@@ -256,7 +256,7 @@ class ObjectBase(Entity):
 
     @classmethod
     def find_or_create_type(
-        cls, workspace: "workspace.Workspace", **kwargs
+        cls, workspace: workspace.Workspace, **kwargs
     ) -> ObjectType:
         """
         Find or create a type instance for a given object class.
@@ -289,7 +289,7 @@ class ObjectBase(Entity):
 
         return prop_group
 
-    def get_data(self, name: str) -> List[Data]:
+    def get_data(self, name: str) -> list[Data]:
         """
         Get a child :obj:`~geoh5py.data.data.Data` by name.
 
@@ -305,7 +305,7 @@ class ObjectBase(Entity):
 
         return entity_list
 
-    def get_data_list(self) -> List[str]:
+    def get_data_list(self) -> list[str]:
         """
         Get a list of names of all children :obj:`~geoh5py.data.data.Data`.
 
@@ -329,7 +329,7 @@ class ObjectBase(Entity):
         self._last_focus = value
 
     @property
-    def n_cells(self) -> Optional[int]:
+    def n_cells(self) -> int | None:
         """
         :obj:`int`: Number of cells.
         """
@@ -338,7 +338,7 @@ class ObjectBase(Entity):
         return None
 
     @property
-    def n_vertices(self) -> Optional[int]:
+    def n_vertices(self) -> int | None:
         """
         :obj:`int`: Number of vertices.
         """
@@ -347,14 +347,14 @@ class ObjectBase(Entity):
         return None
 
     @property
-    def property_groups(self) -> List[PropertyGroup]:
+    def property_groups(self) -> list[PropertyGroup]:
         """
         :obj:`list` of :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         """
         return self._property_groups
 
     @property_groups.setter
-    def property_groups(self, prop_groups: List[PropertyGroup]):
+    def property_groups(self, prop_groups: list[PropertyGroup]):
         # Check for existing property_group
         for prop_group in prop_groups:
             if not any(

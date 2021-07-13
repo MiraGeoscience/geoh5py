@@ -17,8 +17,10 @@
 
 # pylint: skip-file
 
+from __future__ import annotations
+
 import uuid
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from .. import interfaces
 from ..workspace import Workspace
@@ -35,12 +37,12 @@ if TYPE_CHECKING:
 
 class DataHandler:
     @staticmethod
-    def get_all() -> List[i_Data]:
+    def get_all() -> list[i_Data]:
         Workspace.active().data
         # TODO
         return []
 
-    def find(self, query: i_DataQuery) -> List[i_Data]:
+    def find(self, query: i_DataQuery) -> list[i_Data]:
         # TODO
         pass
 
@@ -49,15 +51,15 @@ class DataHandler:
         # TODO
         return interfaces.data.Data()
 
-    def get_float_values(self, data: i_Uuid, slab: i_DataSlab) -> List[float]:
+    def get_float_values(self, data: i_Uuid, slab: i_DataSlab) -> list[float]:
         # TODO
         pass
 
-    def get_integer_values(self, data: i_Uuid, slab: i_DataSlab) -> List[int]:
+    def get_integer_values(self, data: i_Uuid, slab: i_DataSlab) -> list[int]:
         # TODO
         pass
 
-    def get_text_values(self, data: i_Uuid, slab: i_DataSlab) -> List[str]:
+    def get_text_values(self, data: i_Uuid, slab: i_DataSlab) -> list[str]:
         # TODO
         pass
 
@@ -67,11 +69,11 @@ class DataHandler:
         # TODO
         pass
 
-    def get_datetime_values(self, data: i_Uuid, slab: i_DataSlab) -> List[str]:
+    def get_datetime_values(self, data: i_Uuid, slab: i_DataSlab) -> list[str]:
         # TODO
         pass
 
-    def get_filename_values(self, data: i_Uuid, slab: i_DataSlab) -> List[str]:
+    def get_filename_values(self, data: i_Uuid, slab: i_DataSlab) -> list[str]:
         # TODO
         pass
 
@@ -79,7 +81,7 @@ class DataHandler:
         # TODO
         pass
 
-    def get_blob_values(self, data: i_Uuid, slab: i_DataSlab) -> List[int]:
+    def get_blob_values(self, data: i_Uuid, slab: i_DataSlab) -> list[int]:
         # TODO
         pass
 
@@ -89,11 +91,11 @@ class DataHandler:
 
     def get_all_types(
         self,
-    ) -> List[i_DataType]:
+    ) -> list[i_DataType]:
         # TODO
         pass
 
-    def find_types(self, query: i_DataTypeQuery) -> List[i_DataType]:
+    def find_types(self, query: i_DataTypeQuery) -> list[i_DataType]:
         # TODO
         pass
 
@@ -101,19 +103,19 @@ class DataHandler:
         # TODO
         pass
 
-    def set_public(self, entities: List[i_Uuid], is_public: bool) -> None:
+    def set_public(self, entities: list[i_Uuid], is_public: bool) -> None:
         # TODO
         pass
 
-    def set_visible(self, entities: List[i_Uuid], visible: bool) -> None:
+    def set_visible(self, entities: list[i_Uuid], visible: bool) -> None:
         # TODO
         pass
 
-    def set_allow_delete(self, entities: List[i_Uuid], allow: bool) -> None:
+    def set_allow_delete(self, entities: list[i_Uuid], allow: bool) -> None:
         # TODO
         pass
 
-    def set_allow_rename(self, entities: List[i_Uuid], allow: bool) -> None:
+    def set_allow_rename(self, entities: list[i_Uuid], allow: bool) -> None:
         # TODO
         pass
 

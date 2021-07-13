@@ -15,14 +15,15 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 from abc import ABC
-from typing import Dict
 
 
 class ReferenceValueMap(ABC):
     """Maps from reference index to reference value of ReferencedData."""
 
-    def __init__(self, color_map: Dict[int, str] = None):
+    def __init__(self, color_map: dict[int, str] = None):
         self._map = dict() if color_map is None else color_map
 
     def __getitem__(self, item: int) -> str:

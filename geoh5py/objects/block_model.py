@@ -15,8 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import uuid
-from typing import Optional, Tuple
 
 import numpy as np
 
@@ -98,7 +99,7 @@ class BlockModel(ObjectBase):
         return cls.__TYPE_UID
 
     @property
-    def n_cells(self) -> Optional[int]:
+    def n_cells(self) -> int | None:
         """
         :obj:`int`: Total number of cells
         """
@@ -149,7 +150,7 @@ class BlockModel(ObjectBase):
             self._rotation = value.astype(float)
 
     @property
-    def shape(self) -> Optional[Tuple]:
+    def shape(self) -> tuple | None:
         """
         :obj:`list` of :obj:`int`, len (3, ): Number of cells along the u, v and z-axis
         """
@@ -164,7 +165,7 @@ class BlockModel(ObjectBase):
         return None
 
     @property
-    def u_cell_delimiters(self) -> Optional[np.ndarray]:
+    def u_cell_delimiters(self) -> np.ndarray | None:
         """
         :obj:`numpy.array` of :obj:`float`:
         Nodal offsets along the u-axis relative to the origin.
@@ -189,7 +190,7 @@ class BlockModel(ObjectBase):
             self._u_cell_delimiters = value.astype(float)
 
     @property
-    def u_cells(self) -> Optional[np.ndarray]:
+    def u_cells(self) -> np.ndarray | None:
         """
         :obj:`numpy.array` of :obj:`float`,
         shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [0], ):
@@ -200,7 +201,7 @@ class BlockModel(ObjectBase):
         return None
 
     @property
-    def v_cell_delimiters(self) -> Optional[np.ndarray]:
+    def v_cell_delimiters(self) -> np.ndarray | None:
         """
         :obj:`numpy.array` of :obj:`float`:
         Nodal offsets along the v-axis relative to the origin.
@@ -225,7 +226,7 @@ class BlockModel(ObjectBase):
             self._v_cell_delimiters = value.astype(float)
 
     @property
-    def v_cells(self) -> Optional[np.ndarray]:
+    def v_cells(self) -> np.ndarray | None:
         """
         :obj:`numpy.array` of :obj:`float`,
         shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [1], ):
@@ -236,7 +237,7 @@ class BlockModel(ObjectBase):
         return None
 
     @property
-    def z_cell_delimiters(self) -> Optional[np.ndarray]:
+    def z_cell_delimiters(self) -> np.ndarray | None:
         """
         :obj:`numpy.array` of :obj:`float`:
         Nodal offsets along the z-axis relative to the origin (positive up).
@@ -261,7 +262,7 @@ class BlockModel(ObjectBase):
             self._z_cell_delimiters = value.astype(float)
 
     @property
-    def z_cells(self) -> Optional[np.ndarray]:
+    def z_cells(self) -> np.ndarray | None:
         """
         :obj:`numpy.array` of :obj:`float`,
         shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [2], ):

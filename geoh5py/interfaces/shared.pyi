@@ -2,11 +2,6 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import *
 
-
-
-
-
-
 class InvalidUid(Exception):
     message: Optional[str] = ""
 
@@ -15,12 +10,6 @@ class BadEntityType(Exception):
 
 class BadEntityName(Exception):
     message: Optional[str] = ""
-
-
-
-
-
-
 
 @dataclass
 class VersionString:
@@ -58,37 +47,29 @@ class Entity:
     allow_rename: Optional[bool] = True
     is_public: Optional[bool] = True
 
-
-
-
 class EntityService:
     def set_public(
         self,
         entities: List[Uuid],
         is_public: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def set_visible(
         self,
         entities: List[Uuid],
         visible: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def set_allow_delete(
         self,
         entities: List[Uuid],
         allow: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def set_allow_rename(
         self,
         entities: List[Uuid],
         allow: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def rename(
         self,
         entities: Uuid,
         new_name: str,
-    ) -> None:
-        ...
+    ) -> None: ...

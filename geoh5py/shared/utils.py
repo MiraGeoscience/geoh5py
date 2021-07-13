@@ -14,9 +14,11 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
+from __future__ import annotations
+
 from abc import ABC
 from contextlib import contextmanager
-from typing import List, Optional, Union
 
 import h5py
 import numpy as np
@@ -24,7 +26,7 @@ import numpy as np
 
 @contextmanager
 def fetch_h5_handle(
-    file: Union[str, h5py.File],
+    file: str | h5py.File,
 ) -> h5py.File:
     """
     Open in read+ mode a geoh5 file from string.
@@ -114,7 +116,7 @@ def merge_arrays(
     return np.r_[head, tail]
 
 
-def compare_entities(object_a, object_b, ignore: Optional[List] = None):
+def compare_entities(object_a, object_b, ignore: list | None = None):
 
     ignore_list = ["_workspace", "_children"]
     if ignore is not None:

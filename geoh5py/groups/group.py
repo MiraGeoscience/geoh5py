@@ -15,10 +15,12 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import uuid
 from abc import abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from ..data import CommentsData, Data
 from ..shared import Entity
@@ -29,7 +31,7 @@ if TYPE_CHECKING:
 
 
 class Group(Entity):
-    """ Base Group class """
+    """Base Group class"""
 
     def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
@@ -82,13 +84,11 @@ class Group(Entity):
         return self._entity_type
 
     @classmethod
-    def find_or_create_type(
-        cls, workspace: "workspace.Workspace", **kwargs
-    ) -> GroupType:
+    def find_or_create_type(cls, workspace: workspace.Workspace, **kwargs) -> GroupType:
 
         return GroupType.find_or_create(workspace, cls, **kwargs)
 
     @classmethod
     @abstractmethod
-    def default_type_uid(cls) -> Optional[uuid.UUID]:
+    def default_type_uid(cls) -> uuid.UUID | None:
         ...
