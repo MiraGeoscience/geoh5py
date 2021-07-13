@@ -48,8 +48,6 @@ repos:
     -   id: mypy
         args: ["--install-types", "--non-interactive", "--ignore-missing-imports", "--scripts-are-modules", "--show-error-context",
                "--show-column-numbers"]
-        types: [text]
-        types_or: [python, pyi]
 -   repo: local
     hooks:
     -   id: pylint
