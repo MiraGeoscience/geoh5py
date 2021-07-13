@@ -20,7 +20,6 @@
 from __future__ import annotations
 
 import uuid
-from typing import List, Optional, Text, Union
 
 import numpy as np
 
@@ -53,13 +52,13 @@ class Drillhole(Points):
 
     def __init__(self, object_type: ObjectType, **kwargs):
 
-        self._cells: Optional[np.ndarray] = None
-        self._collar: Optional[np.ndarray] = None
-        self._cost: Optional[float] = 0.0
-        self._planning: Text = "Default"
+        self._cells: np.ndarray | None = None
+        self._collar: np.ndarray | None = None
+        self._cost: float | None = 0.0
+        self._planning: str = "Default"
         self._surveys: np.ndarray = None
         self._trace: np.ndarray = None
-        self._trace_depth: Optional[np.ndarray] = None
+        self._trace_depth: np.ndarray | None = None
         self._locations = None
         self._deviation_x = None
         self._deviation_y = None
@@ -74,7 +73,7 @@ class Drillhole(Points):
         return cls.__TYPE_UID
 
     @property
-    def cells(self) -> Optional[np.ndarray]:
+    def cells(self) -> np.ndarray | None:
         r"""
         :obj:`numpy.ndarray` of :obj:`int`, shape (\*, 2):
         Array of indices defining segments connecting vertices.
@@ -268,7 +267,7 @@ class Drillhole(Points):
         self._default_collocation_distance = tol
 
     @property
-    def trace(self) -> Optional[np.ndarray]:
+    def trace(self) -> np.ndarray | None:
         """
         :obj:`numpy.array`: Drillhole trace defining the path in 3D
         """
@@ -281,7 +280,7 @@ class Drillhole(Points):
         return None
 
     @property
-    def trace_depth(self) -> Optional[np.ndarray]:
+    def trace_depth(self) -> np.ndarray | None:
         """
         :obj:`numpy.array`: Drillhole trace depth from top to bottom
         """
@@ -312,9 +311,7 @@ class Drillhole(Points):
             return data_obj[0]
         return None
 
-    def add_data(
-        self, data: dict, property_group: str = None
-    ) -> Union[Data, List[Data]]:
+    def add_data(self, data: dict, property_group: str = None) -> Data | list[Data]:
         """
         Create :obj:`~geoh5py.data.data.Data` specific to the drillhole object
         from dictionary of name and arguments. A keyword 'depth' or 'from-to'

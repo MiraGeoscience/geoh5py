@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import h5py
 import numpy as np
@@ -62,8 +62,8 @@ class H5Writer:
     @classmethod
     def create_geoh5(
         cls,
-        file: Union[str, h5py.File],
-        workspace: "workspace.Workspace",
+        file: str | h5py.File,
+        workspace: workspace.Workspace,
     ):
         """
         Add the geoh5 core structure.
@@ -104,7 +104,7 @@ class H5Writer:
 
     @staticmethod
     def remove_entity(
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         uid: uuid.UUID,
         ref_type: str,
         parent: Entity = None,
@@ -142,7 +142,7 @@ class H5Writer:
     @classmethod
     def fetch_handle(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         entity,
         return_parent: bool = False,
     ):
@@ -197,7 +197,7 @@ class H5Writer:
         return None
 
     @classmethod
-    def finalize(cls, file: Union[str, h5py.File], workspace: "workspace.Workspace"):
+    def finalize(cls, file: str | h5py.File, workspace: workspace.Workspace):
         """
         Add/replace the :obj:`~geoh5py.groups.root_group.RootGroup` in geoh5.
 
@@ -217,7 +217,7 @@ class H5Writer:
     @classmethod
     def save_entity(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         entity,
         add_children: bool = True,
     ):
@@ -245,7 +245,7 @@ class H5Writer:
     @classmethod
     def update_attributes(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         entity,
     ):
         """
@@ -296,7 +296,7 @@ class H5Writer:
     @classmethod
     def write_attributes(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         entity,
     ):
         """
@@ -339,7 +339,7 @@ class H5Writer:
     @classmethod
     def write_cell_delimiters(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         entity,
     ):
         """
@@ -375,7 +375,7 @@ class H5Writer:
     @classmethod
     def write_cells(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         entity,
     ):
         """
@@ -393,8 +393,8 @@ class H5Writer:
     @classmethod
     def write_color_map(
         cls,
-        file: Union[str, h5py.File],
-        entity_type: "shared.EntityType",
+        file: str | h5py.File,
+        entity_type: shared.EntityType,
     ):
         """
         Add :obj:`~geoh5py.data.color_map.ColorMap` to a
@@ -413,8 +413,8 @@ class H5Writer:
     @classmethod
     def write_value_map(
         cls,
-        file: Union[str, h5py.File],
-        entity_type: "shared.EntityType",
+        file: str | h5py.File,
+        entity_type: shared.EntityType,
     ):
         """
         Add :obj:`~geoh5py.data.reference_value_map.ReferenceValueMap` to a
@@ -438,7 +438,7 @@ class H5Writer:
     @classmethod
     def write_visible(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         entity,
     ):
         """
@@ -462,7 +462,7 @@ class H5Writer:
     @classmethod
     def write_coordinates(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         entity,
         attribute,
     ):
@@ -490,7 +490,7 @@ class H5Writer:
     @classmethod
     def write_data_values(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         entity,
         attribute,
     ):
@@ -539,7 +539,7 @@ class H5Writer:
     @classmethod
     def write_entity(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         entity,
     ):
         """
@@ -615,8 +615,8 @@ class H5Writer:
     @classmethod
     def write_entity_type(
         cls,
-        file: Union[str, h5py.File],
-        entity_type: "shared.EntityType",
+        file: str | h5py.File,
+        entity_type: shared.EntityType,
     ):
         """
         Add an :obj:`~geoh5py.shared.entity_type.EntityType` to geoh5.
@@ -674,7 +674,7 @@ class H5Writer:
     @classmethod
     def write_octree_cells(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         entity,
     ):
         """
@@ -693,7 +693,7 @@ class H5Writer:
     @classmethod
     def write_properties(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         entity: Entity,
     ):
         """
@@ -732,7 +732,7 @@ class H5Writer:
     @classmethod
     def write_property_groups(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         entity,
     ):
         """
@@ -788,7 +788,7 @@ class H5Writer:
     @classmethod
     def write_to_parent(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         entity: Entity,
         recursively=False,
     ):

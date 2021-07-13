@@ -19,7 +19,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from .. import interfaces
 
@@ -55,7 +55,7 @@ class WorkspaceHandler:
         pass
 
     def export_objects(
-        self, objects_or_groups: List[i_Uuid], file_path: str, overwrite_file: bool
+        self, objects_or_groups: list[i_Uuid], file_path: str, overwrite_file: bool
     ) -> i_Workspace:
         # TODO
         pass
@@ -68,6 +68,6 @@ class WorkspaceHandler:
 
     def get_contributors(
         self,
-    ) -> List[str]:
+    ) -> list[str]:
         # TODO
         pass

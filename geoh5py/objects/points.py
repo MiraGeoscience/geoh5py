@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 import uuid
-from typing import Optional
 
 import numpy as np
 
@@ -44,7 +43,7 @@ class Points(ObjectBase):
         return cls.__TYPE_UID
 
     @property
-    def vertices(self) -> Optional[np.ndarray]:
+    def vertices(self) -> np.ndarray | None:
         """
         :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`
         """

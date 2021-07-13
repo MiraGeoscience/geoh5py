@@ -17,8 +17,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 
 class DataUnit:
     """
@@ -32,7 +30,7 @@ class DataUnit:
         self._rep = unit_name
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         return self._rep
 
     def __str__(self):

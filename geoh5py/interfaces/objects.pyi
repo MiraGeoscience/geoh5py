@@ -2,17 +2,10 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import *
 
-
 from . import shared
-
-
-
 
 class InvalidObjectOperation(Exception):
     message: Optional[str] = ""
-
-
-
 
 class ObjectClass(IntEnum):
     UNKNOWN = 0
@@ -25,9 +18,6 @@ class ObjectClass(IntEnum):
     OCTREE = 7
     GEOIMAGE = 8
     LABEL = 9
-
-
-
 
 @dataclass
 class Object:
@@ -82,132 +72,106 @@ class GeometryTransformation:
     translation: Optional[shared.Coord3D] = None
     rotation_deg: Optional[float] = 0.0
 
-
-
-
 class ObjectsService:
     def get_type(
         self,
         object_class: int,
-    ) -> shared.Uuid:
-        ...
+    ) -> shared.Uuid: ...
     def get_class(
         self,
         type_uid: shared.Uuid,
-    ) -> int:
-        ...
+    ) -> int: ...
     def get_all(
         self,
-    ) -> List[Object]:
-        ...
+    ) -> List[Object]: ...
     def find(
         self,
         query: ObjectQuery,
-    ) -> List[Object]:
-        ...
+    ) -> List[Object]: ...
     def set_allow_move(
         self,
         objects: List[shared.Uuid],
         allow: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def move_to_group(
         self,
         objects: List[shared.Uuid],
         destination_group: shared.Uuid,
-    ) -> None:
-        ...
+    ) -> None: ...
     def get(
         self,
         uid: shared.Uuid,
-    ) -> Object:
-        ...
+    ) -> Object: ...
     def narrow_points(
         self,
         uid: shared.Uuid,
-    ) -> Points:
-        ...
+    ) -> Points: ...
     def narrow_curve(
         self,
         uid: shared.Uuid,
-    ) -> Curve:
-        ...
+    ) -> Curve: ...
     def narrow_surface(
         self,
         uid: shared.Uuid,
-    ) -> Surface:
-        ...
+    ) -> Surface: ...
     def narrow_grid2d(
         self,
         uid: shared.Uuid,
-    ) -> Grid2D:
-        ...
+    ) -> Grid2D: ...
     def narrow_drillhole(
         self,
         uid: shared.Uuid,
-    ) -> Drillhole:
-        ...
+    ) -> Drillhole: ...
     def narrow_blockmodel(
         self,
         uid: shared.Uuid,
-    ) -> BlockModel:
-        ...
+    ) -> BlockModel: ...
     def narrow_octree(
         self,
         uid: shared.Uuid,
-    ) -> Octree:
-        ...
+    ) -> Octree: ...
     def narrow_geoimage(
         self,
         uid: shared.Uuid,
-    ) -> GeoImage:
-        ...
+    ) -> GeoImage: ...
     def narrow_label(
         self,
         uid: shared.Uuid,
-    ) -> Label:
-        ...
+    ) -> Label: ...
     def create_any_object(
         self,
         type_id: shared.Uuid,
         name: str,
         parent_group: shared.Uuid,
         attributes: Dict[str, str],
-    ) -> Object:
-        ...
+    ) -> Object: ...
     def transform(
         self,
         objects: List[shared.Uuid],
         transformation: GeometryTransformation,
-    ) -> None:
-        ...
+    ) -> None: ...
     def set_public(
         self,
         entities: List[shared.Uuid],
         is_public: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def set_visible(
         self,
         entities: List[shared.Uuid],
         visible: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def set_allow_delete(
         self,
         entities: List[shared.Uuid],
         allow: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def set_allow_rename(
         self,
         entities: List[shared.Uuid],
         allow: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def rename(
         self,
         entities: shared.Uuid,
         new_name: str,
-    ) -> None:
-        ...
+    ) -> None: ...

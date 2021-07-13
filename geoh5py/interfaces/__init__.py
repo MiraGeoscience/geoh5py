@@ -24,10 +24,9 @@ except (ModuleNotFoundError, ImportError):
 else:
     from pathlib import Path
     from types import ModuleType
-    from typing import Dict
 
     _INTERFACES_PATH = Path("interfaces")
-    _INTERFACES: Dict[str, ModuleType] = {}
+    _INTERFACES: dict[str, ModuleType] = {}
 
     def __getattr__(name):
         try:

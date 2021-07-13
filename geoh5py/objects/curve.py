@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 import uuid
-from typing import List, Optional, Union
 
 import numpy as np
 
@@ -38,12 +37,12 @@ class Curve(Points):
 
     def __init__(self, object_type: ObjectType, **kwargs):
 
-        self._cells: Optional[np.ndarray] = None
-        self._parts: Optional[np.ndarray] = None
+        self._cells: np.ndarray | None = None
+        self._parts: np.ndarray | None = None
         super().__init__(object_type, **kwargs)
 
     @property
-    def cells(self) -> Optional[np.ndarray]:
+    def cells(self) -> np.ndarray | None:
         r"""
         :obj:`numpy.ndarray` of :obj:`int`, shape (\*, 2):
         Array of indices defining segments connecting vertices. Defined based on
@@ -109,7 +108,7 @@ class Curve(Points):
         return self._parts
 
     @parts.setter
-    def parts(self, indices: Union[List, np.ndarray]):
+    def parts(self, indices: list | np.ndarray):
         if self.vertices is not None:
             if isinstance(indices, list):
                 indices = np.asarray(indices, dtype="int32")

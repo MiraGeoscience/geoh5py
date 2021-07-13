@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 import uuid
-from typing import Optional
 
 import numpy as np
 
@@ -37,12 +36,12 @@ class Surface(Points):
 
     def __init__(self, object_type: ObjectType, **kwargs):
 
-        self._cells: Optional[np.ndarray] = None
+        self._cells: np.ndarray | None = None
 
         super().__init__(object_type, **kwargs)
 
     @property
-    def cells(self) -> Optional[np.ndarray]:
+    def cells(self) -> np.ndarray | None:
         """
         Array of vertices index forming triangles
         :return cells: :obj:`numpy.array` of :obj:`int`, shape ("*", 3)

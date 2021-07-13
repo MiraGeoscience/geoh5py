@@ -18,7 +18,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Optional, Type, Union
+from typing import TYPE_CHECKING
 
 from ..shared import Entity
 from .data_association_enum import DataAssociationEnum
@@ -41,7 +41,7 @@ class Data(Entity):
         assert data_type is not None
         assert data_type.primitive_type == self.primitive_type()
         self._entity_type = data_type
-        self._association: Optional[DataAssociationEnum] = None
+        self._association: DataAssociationEnum | None = None
         self._values = None
 
         if "association" in kwargs.keys():
@@ -55,7 +55,7 @@ class Data(Entity):
         data_type.workspace._register_data(self)
 
     @property
-    def n_values(self) -> Optional[int]:
+    def n_values(self) -> int | None:
         """
         :obj:`int`: Number of expected data values based on
         :obj:`~geoh5py.data.data.Data.association`
@@ -79,7 +79,7 @@ class Data(Entity):
         return self._values
 
     @property
-    def association(self) -> Optional[DataAssociationEnum]:
+    def association(self) -> DataAssociationEnum | None:
         """
         :obj:`~geoh5py.data.data_association_enum.DataAssociationEnum`:
         Relationship made between the
@@ -91,7 +91,7 @@ class Data(Entity):
         return self._association
 
     @association.setter
-    def association(self, value: Union[str, DataAssociationEnum]):
+    def association(self, value: str | DataAssociationEnum):
         if isinstance(value, str):
 
             assert value.upper() in list(
@@ -127,7 +127,7 @@ class Data(Entity):
 
     @classmethod
     def find_or_create_type(
-        cls: Type[Entity], workspace: "workspace.Workspace", **kwargs
+        cls: type[Entity], workspace: workspace.Workspace, **kwargs
     ) -> DataType:
         """
         Find or create a type for a given object class

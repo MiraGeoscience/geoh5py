@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 import uuid
-from typing import Optional, Tuple
 
 import numpy as np
 
@@ -160,7 +159,7 @@ class Octree(ObjectBase):
         return cls.__TYPE_UID
 
     @property
-    def n_cells(self) -> Optional[int]:
+    def n_cells(self) -> int | None:
         """
         :obj:`int`: Total number of cells in the mesh
         """
@@ -169,7 +168,7 @@ class Octree(ObjectBase):
         return None
 
     @property
-    def octree_cells(self) -> Optional[np.ndarray]:
+    def octree_cells(self) -> np.ndarray | None:
         """
         :obj:`numpy.ndarray` of :obj:`int`,
         shape (:obj:`~geoh5py.objects.octree.Octree.n_cells`, 4):
@@ -260,7 +259,7 @@ class Octree(ObjectBase):
             self._rotation = value.astype(float)
 
     @property
-    def shape(self) -> Optional[Tuple]:
+    def shape(self) -> tuple | None:
         """
         :obj:`list` of :obj:`int`, len (3, ): Number of cells along the u, v and w-axis.
         """
@@ -273,7 +272,7 @@ class Octree(ObjectBase):
         return None
 
     @property
-    def u_cell_size(self) -> Optional[float]:
+    def u_cell_size(self) -> float | None:
         """
         :obj:`float`: Base cell size along the u-axis.
         """
@@ -290,7 +289,7 @@ class Octree(ObjectBase):
             self._u_cell_size = value.astype(float)
 
     @property
-    def u_count(self) -> Optional[int]:
+    def u_count(self) -> int | None:
         """
         :obj:`int`: Number of cells along u-axis.
         """
@@ -307,7 +306,7 @@ class Octree(ObjectBase):
             self._u_count = int(value)
 
     @property
-    def v_cell_size(self) -> Optional[float]:
+    def v_cell_size(self) -> float | None:
         """
         :obj:`float`: Base cell size along the v-axis.
         """
@@ -324,7 +323,7 @@ class Octree(ObjectBase):
             self._v_cell_size = value.astype(float)
 
     @property
-    def v_count(self) -> Optional[int]:
+    def v_count(self) -> int | None:
         """
         :obj:`int`: Number of cells along v-axis.
         """
@@ -341,7 +340,7 @@ class Octree(ObjectBase):
             self._v_count = int(value)
 
     @property
-    def w_cell_size(self) -> Optional[float]:
+    def w_cell_size(self) -> float | None:
         """
         :obj:`float`: Base cell size along the w-axis.
         """
@@ -358,7 +357,7 @@ class Octree(ObjectBase):
             self._w_cell_size = value.astype(float)
 
     @property
-    def w_count(self) -> Optional[int]:
+    def w_count(self) -> int | None:
         """
         :obj:`int`: Number of cells along w-axis.
         """

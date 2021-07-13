@@ -2,20 +2,13 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import *
 
-
 from . import shared
-
-
-
 
 class InvalidDataOperation(Exception):
     message: Optional[str] = ""
 
 class BadPrimitiveType(Exception):
     message: Optional[str] = ""
-
-
-
 
 class DataAssociation(IntEnum):
     UNKNOWN = 0
@@ -33,9 +26,6 @@ class PrimitiveType(IntEnum):
     FILENAME = 5
     DATETIME = 6
     BLOB = 7
-
-
-
 
 @dataclass
 class Data:
@@ -85,119 +75,96 @@ class DataTypeQuery:
     primitive_type: Optional[int] = None
     units: Optional[DataUnit] = None
 
-
-
-
 class DataService:
     def get_all(
         self,
-    ) -> List[Data]:
-        ...
+    ) -> List[Data]: ...
     def find(
         self,
         query: DataQuery,
-    ) -> List[Data]:
-        ...
+    ) -> List[Data]: ...
     def get(
         self,
         uid: shared.Uuid,
-    ) -> Data:
-        ...
+    ) -> Data: ...
     def get_float_values(
         self,
         data: shared.Uuid,
         slab: DataSlab,
-    ) -> List[float]:
-        ...
+    ) -> List[float]: ...
     def get_integer_values(
         self,
         data: shared.Uuid,
         slab: DataSlab,
-    ) -> List[int]:
-        ...
+    ) -> List[int]: ...
     def get_text_values(
         self,
         data: shared.Uuid,
         slab: DataSlab,
-    ) -> List[str]:
-        ...
+    ) -> List[str]: ...
     def get_referenced_values(
         self,
         data: shared.Uuid,
         slab: DataSlab,
-    ) -> ReferencedValues:
-        ...
+    ) -> ReferencedValues: ...
     def get_datetime_values(
         self,
         data: shared.Uuid,
         slab: DataSlab,
-    ) -> List[str]:
-        ...
+    ) -> List[str]: ...
     def get_filename_values(
         self,
         data: shared.Uuid,
         slab: DataSlab,
-    ) -> List[str]:
-        ...
+    ) -> List[str]: ...
     def get_file_content(
         self,
         data: shared.Uuid,
         file_name: str,
-    ) -> str:
-        ...
+    ) -> str: ...
     def get_blob_values(
         self,
         data: shared.Uuid,
         slab: DataSlab,
-    ) -> List[int]:
-        ...
+    ) -> List[int]: ...
     def get_blob_element(
         self,
         data: shared.Uuid,
         index: int,
-    ) -> str:
-        ...
+    ) -> str: ...
     def get_all_types(
         self,
-    ) -> List[DataType]:
-        ...
+    ) -> List[DataType]: ...
     def find_types(
         self,
         query: DataTypeQuery,
-    ) -> List[DataType]:
-        ...
+    ) -> List[DataType]: ...
     def get_type(
         self,
         uid: shared.Uuid,
-    ) -> DataType:
-        ...
+    ) -> DataType: ...
     def set_public(
         self,
         entities: List[shared.Uuid],
         is_public: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def set_visible(
         self,
         entities: List[shared.Uuid],
         visible: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def set_allow_delete(
         self,
         entities: List[shared.Uuid],
         allow: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def set_allow_rename(
         self,
         entities: List[shared.Uuid],
         allow: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def rename(
         self,
         entities: shared.Uuid,
         new_name: str,
-    ) -> None:
-        ...
+    ) -> None: ...
