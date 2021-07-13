@@ -42,7 +42,7 @@ class GroupsService:
     def find(
         self,
         query: GroupQuery,
-    ) -> List[Group]: ...
+    ) -> list[Group]: ...
     def set_allow_move(
         self,
         groups: List[shared.Uuid],
