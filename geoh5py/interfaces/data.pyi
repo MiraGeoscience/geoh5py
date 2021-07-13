@@ -111,7 +111,7 @@ class DataService:
         self,
         data: shared.Uuid,
         slab: DataSlab,
-    ) -> List[str]: ...
+    ) -> list[str]: ...
     def get_filename_values(
         self,
         data: shared.Uuid,
