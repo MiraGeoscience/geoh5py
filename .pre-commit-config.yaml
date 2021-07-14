@@ -50,7 +50,8 @@ repos:
     rev: v0.910
     hooks:
     -   id: mypy
-        args: ["--install-types", "--non-interactive", "--ignore-missing-imports", "--scripts-are-modules", "--show-error-context",
+        additional_dependencies: [types-toml]
+        args: ["--ignore-missing-imports", "--scripts-are-modules", "--show-error-context",
                "--show-column-numbers"]
 -   repo: local
     hooks:
