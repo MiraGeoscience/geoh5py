@@ -3,6 +3,10 @@ default_language_version:
     python: python3.7
 exclude: docs/(conf.py|_ext/)
 fail_fast: false
+
+ci:
+    skip: [pylint]
+
 repos:
 -   repo: https://github.com/psf/black
     rev: 21.6b0
