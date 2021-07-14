@@ -51,8 +51,8 @@ repos:
     hooks:
     -   id: mypy
         additional_dependencies: [types-toml]
-        args: ["--ignore-missing-imports", "--scripts-are-modules", "--show-error-context",
-               "--show-column-numbers"]
+        args: [--ignore-missing-imports, --scripts-are-modules, --show-error-context,
+               --show-column-numbers]
 -   repo: local
     hooks:
     -   id: pylint
