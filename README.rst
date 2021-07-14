@@ -91,7 +91,7 @@ To build the api docs using autodocs
     :alt: Documentation Status
     :target: https://geoh5py.readthedocs.io/en/latest/?badge=latest
 
-.. |coverage| image:: https://codecov.io/gh/MiraGeoscience/geoh5py/branch/development/graph/badge.svg
+.. |coverage| image:: https://codecov.io/gh/MiraGeoscience/geoh5py/branch/develop/graph/badge.svg
     :alt: Test coverage
     :target: https://codecov.io/gh/MiraGeoscience/geoh5py
 
