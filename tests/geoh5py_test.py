@@ -17,7 +17,7 @@
 
 from pathlib import Path
 
-import toml  # type: ignore
+import toml
 
 import geoh5py
 
