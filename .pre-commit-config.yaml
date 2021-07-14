@@ -2,6 +2,7 @@
 default_language_version:
     python: python3.7
 exclude: docs/(conf.py|_ext/)
+default_stages: [commit,push]
 fail_fast: false
 
 ci:
