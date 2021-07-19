@@ -1,4 +1,4 @@
-|coverage| |docs| |style| |version| |status| |pyversions|
+|coverage| |precommit_ci| |docs| |style| |version| |status| |pyversions|
 
 
 geoh5py: Python API for geoh5, an open file format for geoscientific data
@@ -91,7 +91,7 @@ To build the api docs using autodocs
     :alt: Documentation Status
     :target: https://geoh5py.readthedocs.io/en/latest/?badge=latest
 
-.. |coverage| image:: https://codecov.io/gh/MiraGeoscience/geoh5py/branch/development/graph/badge.svg
+.. |coverage| image:: https://codecov.io/gh/MiraGeoscience/geoh5py/branch/develop/graph/badge.svg
     :alt: Test coverage
     :target: https://codecov.io/gh/MiraGeoscience/geoh5py
 
@@ -111,6 +111,9 @@ To build the api docs using autodocs
     :alt: Python versions
     :target: https://pypi.python.org/pypi/geoh5py/
 
+.. |precommit_ci| image:: https://results.pre-commit.ci/badge/github/MiraGeoscience/geoh5py/develop.svg
+   :target: https://results.pre-commit.ci/latest/github/MiraGeoscience/geoh5py/develop
+   :alt: pre-commit.ci status
 
 License
 ^^^^^^^

@@ -15,9 +15,11 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import uuid
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .. import shared
@@ -42,14 +44,14 @@ class Entity(ABC):
         self._uid: uuid.UUID = uuid.uuid4()
         self._name = "Entity"
         self._parent = None
-        self._children: List = []
+        self._children: list = []
         self._visible = True
         self._allow_delete = True
         self._allow_move = True
         self._allow_rename = True
         self._public = True
         self._existing_h5_entity = False
-        self._modified_attributes: List[str] = []
+        self._modified_attributes: list[str] = []
 
         if "parent" in kwargs.keys():
             setattr(self, "parent", kwargs["parent"])
@@ -63,7 +65,7 @@ class Entity(ABC):
                 continue
         self.modified_attributes = []
 
-    def add_children(self, children: List["shared.Entity"]):
+    def add_children(self, children: list[shared.Entity]):
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
@@ -173,7 +175,7 @@ class Entity(ABC):
 
     @property
     @abstractmethod
-    def entity_type(self) -> "shared.EntityType":
+    def entity_type(self) -> shared.EntityType:
         ...
 
     @property
@@ -207,7 +209,7 @@ class Entity(ABC):
         return self._modified_attributes
 
     @modified_attributes.setter
-    def modified_attributes(self, values: Union[List, str]):
+    def modified_attributes(self, values: list | str):
         if self.existing_h5_entity:
             if not isinstance(values, list):
                 values = [values]
@@ -237,7 +239,7 @@ class Entity(ABC):
         return self._parent
 
     @parent.setter
-    def parent(self, parent: Union["shared.Entity", uuid.UUID]):
+    def parent(self, parent: shared.Entity | uuid.UUID):
 
         if parent is not None:
             if isinstance(parent, uuid.UUID):
@@ -277,9 +279,7 @@ class Entity(ABC):
         self._public = value
         self.modified_attributes = "attributes"
 
-    def reference_to_uid(
-        self, value: Union["Entity", str, uuid.UUID]
-    ) -> List[uuid.UUID]:
+    def reference_to_uid(self, value: Entity | str | uuid.UUID) -> list[uuid.UUID]:
         """
         General entity reference translation.
 
@@ -300,7 +300,7 @@ class Entity(ABC):
             uid = [value]
         return uid
 
-    def remove_children(self, children: List["shared.Entity"]):
+    def remove_children(self, children: list[shared.Entity]):
         """
         Remove children from the list of children entities.
 
@@ -319,7 +319,7 @@ class Entity(ABC):
         return self._uid
 
     @uid.setter
-    def uid(self, uid: Union[str, uuid.UUID]):
+    def uid(self, uid: str | uuid.UUID):
         if isinstance(uid, str):
             uid = uuid.UUID(uid)
 

@@ -15,8 +15,11 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+
+from __future__ import annotations
+
 import uuid
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any
 
 import h5py
 import numpy as np
@@ -46,10 +49,10 @@ class H5Reader:
     @classmethod
     def fetch_attributes(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         uid: uuid.UUID,
         entity_type: str,
-    ) -> Tuple[dict, dict, dict]:
+    ) -> tuple[dict, dict, dict]:
         """
         Get attributes of an :obj:`~geoh5py.shared.entity.Entity`.
 
@@ -66,9 +69,9 @@ class H5Reader:
         """
         with fetch_h5_handle(file) as h5file:
             name = list(h5file.keys())[0]
-            attributes: Dict = {"entity": {}}
-            type_attributes: Dict = {"entity_type": {}}
-            property_groups: Dict = {}
+            attributes: dict = {"entity": {}}
+            type_attributes: dict = {"entity_type": {}}
+            property_groups: dict = {}
 
             entity_type = cls.format_type_string(entity_type)
             if "type" in entity_type:
@@ -115,7 +118,7 @@ class H5Reader:
         return attributes, type_attributes, property_groups
 
     @classmethod
-    def fetch_cells(cls, file: Union[str, h5py.File], uid: uuid.UUID) -> np.ndarray:
+    def fetch_cells(cls, file: str | h5py.File, uid: uuid.UUID) -> np.ndarray:
         """
         Get an object's :obj:`~geoh5py.objects.object_base.ObjectBase.cells`.
 
@@ -137,7 +140,7 @@ class H5Reader:
 
     @classmethod
     def fetch_children(
-        cls, file: Union[str, h5py.File], uid: uuid.UUID, entity_type: str
+        cls, file: str | h5py.File, uid: uuid.UUID, entity_type: str
     ) -> dict:
         """
         Get :obj:`~geoh5py.shared.entity.Entity.children` of an
@@ -173,9 +176,9 @@ class H5Reader:
     @classmethod
     def fetch_delimiters(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         uid: uuid.UUID,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Get the delimiters of a :obj:`~geoh5py.objects.block_model.BlockModel`.
 
@@ -216,9 +219,7 @@ class H5Reader:
         return u_delimiters, v_delimiters, z_delimiters
 
     @classmethod
-    def fetch_octree_cells(
-        cls, file: Union[str, h5py.File], uid: uuid.UUID
-    ) -> np.ndarray:
+    def fetch_octree_cells(cls, file: str | h5py.File, uid: uuid.UUID) -> np.ndarray:
         """
         Get :obj:`~geoh5py.objects.octree.Octree`
         :obj:`~geoh5py.objects.object_base.ObjectBase.cells`.
@@ -241,7 +242,7 @@ class H5Reader:
         return octree_cells
 
     @classmethod
-    def fetch_project_attributes(cls, file: Union[str, h5py.File]) -> Dict[Any, Any]:
+    def fetch_project_attributes(cls, file: str | h5py.File) -> dict[Any, Any]:
         """
         Get attributes of an :obj:`~geoh5py.shared.entity.Entity`.
 
@@ -260,8 +261,8 @@ class H5Reader:
 
     @classmethod
     def fetch_property_groups(
-        cls, file: Union[str, h5py.File], uid: uuid.UUID
-    ) -> Dict[str, Dict[str, str]]:
+        cls, file: str | h5py.File, uid: uuid.UUID
+    ) -> dict[str, dict[str, str]]:
         r"""
         Get the property groups.
 
@@ -281,7 +282,7 @@ class H5Reader:
         """
         with fetch_h5_handle(file) as h5file:
             name = list(h5file.keys())[0]
-            property_groups: Dict[str, Dict[str, str]] = {}
+            property_groups: dict[str, dict[str, str]] = {}
             try:
                 pg_handle = h5file[name]["Objects"][cls.uuid_str(uid)]["PropertyGroups"]
 
@@ -296,7 +297,7 @@ class H5Reader:
         return property_groups
 
     @classmethod
-    def fetch_uuids(cls, file: Union[str, h5py.File], entity_type: str) -> list:
+    def fetch_uuids(cls, file: str | h5py.File, entity_type: str) -> list:
         """
         Fetch all uuids of a given type from geoh5
 
@@ -320,9 +321,7 @@ class H5Reader:
         return uuids
 
     @classmethod
-    def fetch_value_map(
-        cls, file: Union[str, h5py.File], uid: uuid.UUID
-    ) -> Optional[dict]:
+    def fetch_value_map(cls, file: str | h5py.File, uid: uuid.UUID) -> dict | None:
         """
         Get data :obj:`~geoh5py.data.data.Data.value_map`
 
@@ -341,9 +340,7 @@ class H5Reader:
         return values
 
     @classmethod
-    def fetch_values(
-        cls, file: Union[str, h5py.File], uid: uuid.UUID
-    ) -> Optional[float]:
+    def fetch_values(cls, file: str | h5py.File, uid: uuid.UUID) -> float | None:
         """
         Get data :obj:`~geoh5py.data.data.Data.values`
 
@@ -374,7 +371,7 @@ class H5Reader:
 
     @classmethod
     def fetch_coordinates(
-        cls, file: Union[str, h5py.File], uid: uuid.UUID, name: str
+        cls, file: str | h5py.File, uid: uuid.UUID, name: str
     ) -> np.ndarray:
         """
         Get an object coordinates data.
@@ -399,9 +396,7 @@ class H5Reader:
         return coordinates
 
     @classmethod
-    def fetch_trace_depth(
-        cls, file: Union[str, h5py.File], uid: uuid.UUID
-    ) -> np.ndarray:
+    def fetch_trace_depth(cls, file: str | h5py.File, uid: uuid.UUID) -> np.ndarray:
         """
         Get an object :obj:`~geoh5py.objects.drillhole.Drillhole.trace_depth` data
 
@@ -434,7 +429,7 @@ class H5Reader:
         return "{" + str(value) + "}"
 
     @staticmethod
-    def str_from_utf8_bytes(value: Union[bytes, str]) -> str:
+    def str_from_utf8_bytes(value: bytes | str) -> str:
         if isinstance(value, bytes):
             value = value.decode("utf-8")
         return value
