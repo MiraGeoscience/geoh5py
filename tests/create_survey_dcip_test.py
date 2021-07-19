@@ -16,9 +16,9 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import numpy as np
-
-from geoh5py.objects import Curve
+# import numpy as np
+#
+# from geoh5py.objects import Curve
 from geoh5py.workspace import Workspace
 
 # from geoh5py.shared.utils import compare_entities
@@ -32,12 +32,13 @@ N_DATA = 12
 # with tempfile.TemporaryDirectory() as tempdir:
 
 # PATH = Path(tempdir) / r"testCurve.geoh5"
-PATH = r"testCurve.geoh5"
+PATH = r"C:\Users\dominiquef\Desktop\dcip_work.geoh5"
 
 # Create a workspace
 workspace = Workspace(PATH)
 
-curve = Curve.create(workspace, vertices=np.random.randn(N_DATA, 3), name=NAME)
+currents = workspace.get_entity("Generic - DC/IP (currents")[0]
+# curve = Curve.create(workspace, vertices=np.random.randn(N_DATA, 3), name=NAME)
 
 # Get and change the parts
 # parts = curve.parts

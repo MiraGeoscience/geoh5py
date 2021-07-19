@@ -319,7 +319,7 @@ class H5Writer:
                 if isinstance(value, uuid.UUID):
                     value = "{" + str(value) + "}"
 
-                if key == "PropertyGroups":
+                if key == "PropertyGroups" or (key == "Metadata" and value is None):
                     continue
 
                 if key in ["Association", "Primitive type"]:

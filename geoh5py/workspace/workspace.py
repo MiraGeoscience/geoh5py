@@ -538,6 +538,15 @@ class Workspace:
         """
         return self._io_call(file, H5Reader.fetch_delimiters, uid)
 
+    def fetch_metadata(self, uid: uuid.UUID, file: str | h5py.File | None = None):
+        """
+        Fetch the metadata of an entity from the source h5file.
+
+
+        :return:
+        """
+        return self._io_call(file, H5Reader.fetch_metadata, uid)
+
     def fetch_octree_cells(
         self, uid: uuid.UUID, file: str | h5py.File | None = None
     ) -> np.ndarray:

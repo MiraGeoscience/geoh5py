@@ -15,6 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=R0904
+
 from __future__ import annotations
 
 import uuid
@@ -37,6 +39,7 @@ class Entity(ABC):
         "ID": "uid",
         "Name": "name",
         "Public": "public",
+        "Metadata": "metadata",
     }
 
     def __init__(self, **kwargs):
@@ -51,6 +54,7 @@ class Entity(ABC):
         self._allow_rename = True
         self._public = True
         self._existing_h5_entity = False
+        self._metadata = None
         self._modified_attributes: list[str] = []
 
         if "parent" in kwargs.keys():
@@ -199,6 +203,24 @@ class Entity(ABC):
         # TODO: implement an actual fixup
         #  (possibly it has to be abstract with different implementations per Entity type)
         return name
+
+    @property
+    def metadata(self) -> str | dict | None:
+        """
+        Metadata attached to the entity.
+        """
+        if getattr(self, "_metadata", None) is None:
+            self._metadata = self.workspace.fetch_metadata(self.uid)
+
+        return self._metadata
+
+    @metadata.setter
+    def metadata(self, value: dict | str):
+        assert isinstance(
+            value, (dict, str)
+        ), f"Input metadata must be of type {dict} or {str}"
+        self._metadata = value
+        self.modified_attributes = "metadata"
 
     @property
     def modified_attributes(self):

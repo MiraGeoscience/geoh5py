@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from typing import Any
 
@@ -217,6 +218,28 @@ class H5Reader:
                 z_delimiters = None
 
         return u_delimiters, v_delimiters, z_delimiters
+
+    @classmethod
+    def fetch_metadata(cls, file: str | h5py.File, uid: uuid.UUID) -> str | dict | None:
+        """
+        Fetch the metadata of an entity.
+        """
+
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file.keys())[0]
+
+            try:
+                value = np.r_[h5file[name]["Objects"][cls.uuid_str(uid)]["Metadata"]]
+            except KeyError:
+                return None
+
+        if isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except ValueError:
+                pass
+
+        return value
 
     @classmethod
     def fetch_octree_cells(cls, file: str | h5py.File, uid: uuid.UUID) -> np.ndarray:

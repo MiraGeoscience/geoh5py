@@ -14,9 +14,11 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
-import uuid
-from typing import Dict, Optional, Union
+from __future__ import annotations
 
+import uuid
+
+from ...data import Data
 from ..curve import Curve
 from ..object_type import ObjectType
 
@@ -36,8 +38,44 @@ class PotentialElectrode(Curve):
         super().__init__(object_type, **kwargs)
 
     @property
-    def metadata(self):
+    def _ab_cell_id(self) -> Data:
+        """
+        Data object
+        """
+        ab_cell_id = self.get_data("A-B Cell ID")
+        assert any(ab_cell_id), "No 'A-B Cell ID' found on the object."
+
+        return ab_cell_id[0]
+
+    @property
+    def metadata(self) -> dict | None:
+        """
+        Metadata attached to the entity.
+        """
+        if getattr(self, "_metadata", None) is None:
+            self._metadata = self.workspace.fetch_metadata(self.uid)
+
         return self._metadata
+
+    @metadata.setter
+    def metadata(self, values: dict[str, uuid.UUID]):
+
+        assert (
+            len(values) == 2
+        ), f"Metadata must have two key-value pairs. {values} provided."
+
+        default_keys = ["Current Electrodes", "Potential Electrodes"]
+        assert (
+            values.keys() == default_keys
+        ), f"Input metadata must have for keys {default_keys}"
+
+        if not self.workspace.get_entity(values["Current Electrodes"]):
+            raise IndexError("Input Current Electrodes uuid not present in Workspace")
+
+        if not self.workspace.get_entity(values["Potential Electrodes"]):
+            raise IndexError("Input Current Electrodes uuid not present in Workspace")
+
+        self._metadata = values
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -47,7 +85,7 @@ class PotentialElectrode(Curve):
         return cls.__TYPE_UID
 
 
-class CurrentElectrode(Curve):
+class CurrentElectrode(PotentialElectrode):
     """
     Ground direct current electrode (transmitter).
 
@@ -58,18 +96,18 @@ class CurrentElectrode(Curve):
     __TYPE_UID = uuid.UUID("{9b08bb5a-300c-48fe-9007-d206f971ea92}")
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._current_line_id: Optional[uuid.UUID] = None
-        self._metadata: Optional[Dict[uuid.UUID, uuid.UUID]] = None
+        self._current_line_id: uuid.UUID | None
+        self._metadata: dict[uuid.UUID, uuid.UUID] | None
 
         super().__init__(object_type, **kwargs)
 
     @property
-    def potentials(self) -> Optional[PotentialElectrode]:
+    def potentials(self) -> PotentialElectrode | None:
         """
         The associated potentials (receivers)
         """
         assert self.metadata is not None, "No Current-Receiver metadata set."
-        potential = self.metadata[self.uid]
+        potential = self.metadata["Potential Electrodes"]
 
         try:
             return self.workspace.get_entity(potential)[0]
@@ -78,50 +116,19 @@ class CurrentElectrode(Curve):
             return None
 
     @potentials.setter
-    def potentials(self, value: Union[PotentialElectrode, uuid.UUID]):
+    def potentials(self, value: PotentialElectrode | uuid.UUID):
+        if isinstance(value, uuid.UUID):
+            value = self.workspace.get_entity(value)[0]
+
         assert isinstance(value, PotentialElectrode), (
             f"Provided potentials must be of type {PotentialElectrode}. "
             f"{value} provided."
         )
 
-        if isinstance(value, PotentialElectrode):
-            value = value.uid
+        metadata = {"Current Electrodes": self.uid, "Potential Electrodes": value}
 
-        self.metadata = {self.uid, value}
-
-    @property
-    def metadata(self):
-        return self._metadata
-
-    @metadata.setter
-    def metadata(self, values: Dict[uuid.UUID, uuid.UUID]):
-
-        assert (
-            len(values) == 2
-        ), f"Metadata must have two key-value pairs. {values} provided."
-
-        # try:
-        #     assert value["Current Electrodes"]
-        for key, value in values.items():
-            assert (
-                key in self.workspace.list_objects_name.keys()
-            ), "Provided source uuid not in workspace."
-            source = self.workspace.get_entity(key)[0]
-            assert isinstance(source, CurrentElectrode), (
-                f"Provided uuid for source must be of type {CurrentElectrode}. "
-                f"Object uuid of type {type(source)} provided"
-            )
-            assert (
-                value in self.workspace.list_objects_name.keys()
-            ), "Provided receiver uuid not in workspace."
-            receiver = self.workspace.get_entity(value)[0]
-            assert isinstance(receiver, PotentialElectrode), (
-                f"Provided uuid for receiver must be of type {PotentialElectrode}. "
-                f"Object uuid of type {type(receiver)} provided"
-            )
-
-        self._metadata = values
-        # self.receiver.metadata = dict
+        self.metadata = metadata
+        value.metadata = metadata
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
