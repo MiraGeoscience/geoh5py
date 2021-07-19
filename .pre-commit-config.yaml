@@ -9,7 +9,7 @@ ci:
 
 repos:
 -   repo: https://github.com/psf/black
-    rev: 21.6b0
+    rev: 21.7b0
     hooks:
     -   id: black
         types: [text]
@@ -20,8 +20,8 @@ repos:
     -   id: seed-isort-config
         types: [text]
         types_or: [python, pyi]
--   repo: https://github.com/pre-commit/mirrors-isort
-    rev: v5.9.2
+-   repo: https://github.com/PyCQA/isort
+    rev: 5.9.2
     hooks:
     -   id: isort
         additional_dependencies: [toml] # to read config from pyproject.toml
@@ -33,14 +33,14 @@ repos:
     -   id: autoflake
         types: [text]
         types_or: [python, pyi]
--   repo: https://gitlab.com/pycqa/flake8
+-   repo: https://github.com/PyCQA/flake8
     rev: 3.9.2
     hooks:
     -   id: flake8
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v2.21.0
+    rev: v2.21.2
     hooks:
     -   id: pyupgrade
         args: [--py37-plus]
