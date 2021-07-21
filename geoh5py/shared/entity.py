@@ -39,6 +39,7 @@ class Entity(ABC):
         "ID": "uid",
         "Name": "name",
         "Public": "public",
+        "Visible": "visible",
         "Metadata": "metadata",
     }
 

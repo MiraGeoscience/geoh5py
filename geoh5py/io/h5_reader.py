@@ -230,6 +230,7 @@ class H5Reader:
 
             try:
                 value = np.r_[h5file[name]["Objects"][cls.uuid_str(uid)]["Metadata"]]
+                value = cls.str_from_utf8_bytes(value[0])
             except KeyError:
                 return None
 
