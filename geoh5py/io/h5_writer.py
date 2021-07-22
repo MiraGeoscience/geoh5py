@@ -508,10 +508,10 @@ class H5Writer:
                 values = getattr(entity, attribute)
 
             # Adding an array of values
-            if isinstance(values, dict):
-
+            if isinstance(values, dict) or isinstance(entity, CommentsData):
+                values = values.copy()
                 if isinstance(entity, CommentsData):
-                    values = {"Comments": values.copy()}
+                    values = {"Comments": values}
 
                 for key, val in values.items():
                     if isinstance(val, uuid.UUID):
@@ -656,10 +656,8 @@ class H5Writer:
                 if any([entity_type.modified_attributes]):
                     cls.update_attributes(h5file, entity_type)
                     entity_type.modified_attributes = []
-                    entity_type.existing_h5_entity = False
 
-                else:
-                    entity_type.existing_h5_entity = True
+                entity_type.existing_h5_entity = True
 
                 return h5file[base]["Types"][entity_type_str][cls.uuid_str(uid)]
 
