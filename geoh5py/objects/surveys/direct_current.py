@@ -61,11 +61,8 @@ class PotentialElectrode(Curve):
 
         if isinstance(data, Data):
             assert isinstance(
-                data.entity_type, ReferencedData
+                data, ReferencedData
             ), f"ab_cell_id must be of type {ReferencedData}"
-            assert (
-                data.association.name == "CELL"
-            ), "ab_cell_id data must be of association type 'CELL'"
 
             self._ab_cell_id = data
 
@@ -156,7 +153,12 @@ class CurrentElectrode(PotentialElectrode):
 
         super().__init__(object_type, **kwargs)
 
-        self.validate_ab_cells()
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        """
+        :return: Default unique identifier
+        """
+        return cls.__TYPE_UID
 
     @property
     def potentials(self) -> PotentialElectrode | None:
@@ -193,30 +195,24 @@ class CurrentElectrode(PotentialElectrode):
         ):
             potentials.ab_cell_id.entity_type = self.ab_cell_id.entity_type
 
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
-
-    def validate_ab_cells(self):
+    def add_default_ab_cell_id(self):
         """
         Utility function to set ab_cell_id's based on curve cells.
         """
-        child = self.get_data("A-B Cell ID")
-        if not any(child):
-            data = np.arange(self.n_cells) + 1
-            value_map = {ii: str(ii) for ii in range(self.n_cells + 1)}
-            value_map[0] = "Unknown"
-            self._ab_cell_id = self.add_data(
-                {
-                    "A-B Cell ID": {
-                        "values": data,
-                        "association": "CELL",
-                        "entity_type": {"primitive_type": "REFERENCED"},
-                        "value_map": value_map,
-                    }
+        assert (
+            getattr(self, "cells", None) is not None
+        ), "Cells must be set before assigning default ab_cell_id"
+        data = np.arange(self.n_cells) + 1
+        value_map = {ii: str(ii) for ii in range(self.n_cells + 1)}
+        value_map[0] = "Unknown"
+        self._ab_cell_id = self.add_data(
+            {
+                "A-B Cell ID": {
+                    "values": data,
+                    "association": "CELL",
+                    "entity_type": {"primitive_type": "REFERENCED"},
+                    "value_map": value_map,
                 }
-            )
-            self._ab_cell_id.entity_type.name = "A-B"
+            }
+        )
+        self._ab_cell_id.entity_type.name = "A-B"
