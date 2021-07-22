@@ -40,7 +40,6 @@ class Entity(ABC):
         "Name": "name",
         "Public": "public",
         "Visible": "visible",
-        "Metadata": "metadata",
     }
 
     def __init__(self, **kwargs):

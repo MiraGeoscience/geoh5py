@@ -47,7 +47,7 @@ def test_survey_dcip():
         )
         currents.add_default_ab_cell_id()
         potentials = PotentialElectrode.create(
-            workspace, name=name + "_rx", vertices=vertices
+            workspace, current_electrodes=currents, name=name + "_rx", vertices=vertices
         )
         n_dipoles = 9
         dipoles = []
@@ -69,7 +69,7 @@ def test_survey_dcip():
 
         potentials.cells = np.vstack(dipoles)
         potentials.ab_cell_id = np.hstack(current_id)
-        currents.potentials = potentials
+
         workspace.finalize()
 
         # Re-open the workspace and read data back in

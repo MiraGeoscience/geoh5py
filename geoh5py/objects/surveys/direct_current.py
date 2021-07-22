@@ -73,18 +73,28 @@ class PotentialElectrode(Curve):
                 if isinstance(child, ReferencedData):
                     child.values = data
             else:
+                if (
+                    getattr(self, "current_electrodes", None) is not None
+                    and getattr(self.current_electrodes, "ab_cell_id", None) is not None
+                ):
+                    entity_type = self.current_electrodes.ab_cell_id.entity_type
+                else:
+                    entity_type = {"primitive_type": "REFERENCED"}
+
                 data = self.add_data(
                     {
                         "A-B Cell ID": {
                             "values": data,
                             "association": "CELL",
-                            "entity_type": {"primitive_type": "REFERENCED"},
+                            "entity_type": entity_type,
                         }
                     }
                 )
 
                 if isinstance(data, ReferencedData):
                     self._ab_cell_id = data
+
+        self.workspace.finalize()
 
     @property
     def ab_map(self) -> dict | None:
@@ -94,6 +104,49 @@ class PotentialElectrode(Curve):
         if isinstance(self.ab_cell_id, ReferencedData):
             return self.ab_cell_id.value_map
         return None
+
+    @property
+    def current_electrodes(self):
+        """
+        The associated current electrode object (sources).
+        """
+        assert self.metadata is not None, "No Current-Receiver metadata set."
+        currents = self.metadata["Current Electrodes"]
+
+        try:
+            return self.workspace.get_entity(currents)[0]
+        except IndexError:
+            print("Associated CurrentElectrode entity not found in Workspace.")
+            return None
+
+    @current_electrodes.setter
+    def current_electrodes(self, current_electrodes: CurrentElectrode):
+
+        assert isinstance(current_electrodes, CurrentElectrode), (
+            f"Provided current_electrodes must be of type {CurrentElectrode}. "
+            f"{type(current_electrodes)} provided."
+        )
+
+        metadata = {
+            "Current Electrodes": current_electrodes.uid,
+            "Potential Electrodes": self.uid,
+        }
+
+        self.metadata = metadata
+        current_electrodes.metadata = metadata
+
+        if isinstance(current_electrodes.ab_cell_id, ReferencedData) and isinstance(
+            self.ab_cell_id, ReferencedData
+        ):
+            self.ab_cell_id.entity_type = current_electrodes.ab_cell_id.entity_type
+            self.workspace.finalize()
+
+    @property
+    def potential_electrodes(self):
+        """
+        The associated potential_electrodes (receivers)
+        """
+        ...
 
     @property
     def metadata(self) -> dict | None:
@@ -161,9 +214,20 @@ class CurrentElectrode(PotentialElectrode):
         return cls.__TYPE_UID
 
     @property
-    def potentials(self) -> PotentialElectrode | None:
+    def current_electrodes(self):
         """
-        The associated potentials (receivers)
+        The associated current electrode object (sources).
+        """
+        ...
+
+    @current_electrodes.setter
+    def current_electrodes(self):
+        ...
+
+    @property
+    def potential_electrodes(self) -> PotentialElectrode | None:
+        """
+        The associated potential_electrodes (receivers)
         """
         assert self.metadata is not None, "No Current-Receiver metadata set."
         potential = self.metadata["Potential Electrodes"]
@@ -174,26 +238,26 @@ class CurrentElectrode(PotentialElectrode):
             print("Associated PotentialElectrode entity not found in Workspace.")
             return None
 
-    @potentials.setter
-    def potentials(self, potentials: PotentialElectrode):
+    @potential_electrodes.setter
+    def potential_electrodes(self, potential_electrodes: PotentialElectrode):
 
-        assert isinstance(potentials, PotentialElectrode), (
-            f"Provided potentials must be of type {PotentialElectrode}. "
-            f"{type(potentials)} provided."
+        assert isinstance(potential_electrodes, PotentialElectrode), (
+            f"Provided potential_electrodes must be of type {PotentialElectrode}. "
+            f"{type(potential_electrodes)} provided."
         )
 
         metadata = {
             "Current Electrodes": self.uid,
-            "Potential Electrodes": potentials.uid,
+            "Potential Electrodes": potential_electrodes.uid,
         }
 
         self.metadata = metadata
-        potentials.metadata = metadata
+        potential_electrodes.metadata = metadata
 
-        if isinstance(potentials.ab_cell_id, ReferencedData) and isinstance(
+        if isinstance(potential_electrodes.ab_cell_id, ReferencedData) and isinstance(
             self.ab_cell_id, ReferencedData
         ):
-            potentials.ab_cell_id.entity_type = self.ab_cell_id.entity_type
+            potential_electrodes.ab_cell_id.entity_type = self.ab_cell_id.entity_type
 
     def add_default_ab_cell_id(self):
         """
