@@ -54,7 +54,7 @@ def test_octree():
         workspace.finalize()
 
         # Read the mesh back in
-        workspace = Workspace(h5file_path)
-        rec_obj = workspace.get_entity(name)[0]
+        new_workspace = Workspace(h5file_path)
+        rec_obj = new_workspace.get_entity(name)[0]
 
         compare_entities(mesh, rec_obj)
