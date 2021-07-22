@@ -15,65 +15,68 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=R0914
 
-# import numpy as np
-#
-# from geoh5py.objects import Curve
+import tempfile
+from pathlib import Path
+
+import numpy as np
+
+from geoh5py.objects import CurrentElectrode, PotentialElectrode
+from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
-# from geoh5py.shared.utils import compare_entities
-# def test_survey_dcip():
 
-NAME = "TestCurve"
+def test_survey_dcip():
 
-# Generate survey lines
-N_DATA = 12
+    name = "TestCurrents"
+    n_data = 12
 
-# with tempfile.TemporaryDirectory() as tempdir:
+    with tempfile.TemporaryDirectory() as tempdir:
+        path = Path(tempdir) / r"testDC.geoh5"
 
-# PATH = Path(tempdir) / r"testCurve.geoh5"
-PATH = r"C:\Users\dominiquef\Desktop\dcip_work.geoh5"
+        # Create a workspace
+        workspace = Workspace(path)
 
-# Create a workspace
-workspace = Workspace(PATH)
+        # Create sources along line
+        x_loc, y_loc = np.meshgrid(np.arange(n_data), np.arange(-1, 3))
+        vertices = np.c_[x_loc.ravel(), y_loc.ravel(), np.zeros_like(x_loc).ravel()]
+        parts = np.kron(np.arange(4), np.ones(n_data)).astype("int")
+        currents = CurrentElectrode.create(
+            workspace, name=name, vertices=vertices, parts=parts
+        )
+        currents.add_default_ab_cell_id()
+        potentials = PotentialElectrode.create(
+            workspace, name=name + "_rx", vertices=vertices
+        )
+        n_dipoles = 9
+        dipoles = []
+        current_id = []
+        for val in currents.ab_cell_id.values:
+            cell_id = int(currents.ab_map[val]) - 1
 
-currents = workspace.get_entity("Generic - DC/IP (currents")[0]
-# curve = Curve.create(workspace, vertices=np.random.randn(N_DATA, 3), name=NAME)
+            for dipole in range(n_dipoles):
+                dipole_ids = (currents.cells[cell_id, :] + 2 + dipole).astype("uint32")
 
-# Get and change the parts
-# parts = curve.parts
-# parts[-3:] = 1
-# curve.parts = parts
-#
-# data_objects = curve.add_data(
-#     {
-#         "vertexValues": {"values": np.random.randn(curve.n_vertices)},
-#         "cellValues": {"values": np.random.randn(curve.n_cells)},
-#     }
-# )
-#
-# workspace.finalize()
-# # Re-open the workspace and read data back in
-# workspace = Workspace(PATH)
-#
-# obj_rec = workspace.get_entity(NAME)[0]
-# data_vert_rec = workspace.get_entity("vertexValues")[0]
-# data_cell_rec = workspace.get_entity("cellValues")[0]
-#
-# # Check entities
-# compare_entities(curve, obj_rec)
-# compare_entities(data_objects[0], data_vert_rec)
-# compare_entities(data_objects[1], data_cell_rec)
-#
-# # Modify and write
-# obj_rec.vertices = np.random.randn(N_DATA, 3)
-# data_vert_rec.values = np.random.randn(N_DATA)
-# workspace.finalize()
-#
-# # Read back and compare
-# workspace = Workspace(PATH)
-# obj = workspace.get_entity(NAME)[0]
-# data_vertex = workspace.get_entity("vertexValues")[0]
-#
-# compare_entities(obj_rec, obj)
-# compare_entities(data_vert_rec, data_vertex)
+                if (
+                    any(dipole_ids > (potentials.n_vertices - 1))
+                    or len(np.unique(parts[dipole_ids])) > 1
+                ):
+                    continue
+
+                dipoles += [dipole_ids]
+                current_id += [val]
+
+        potentials.cells = np.vstack(dipoles)
+        potentials.ab_cell_id = np.hstack(current_id)
+        currents.potentials = potentials
+        workspace.finalize()
+
+        # Re-open the workspace and read data back in
+        new_workspace = Workspace(path)
+
+        currents_rec = new_workspace.get_entity(name)[0]
+        potentials_rec = new_workspace.get_entity(name + "_rx")[0]
+        # Check entities
+        compare_entities(currents, currents_rec, ignore=["_potentials", "_parent"])
+        compare_entities(potentials, potentials_rec, ignore=["_parent"])

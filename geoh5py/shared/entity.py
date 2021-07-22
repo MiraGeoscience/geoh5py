@@ -216,10 +216,11 @@ class Entity(ABC):
         return self._metadata
 
     @metadata.setter
-    def metadata(self, value: dict | str):
-        assert isinstance(
-            value, (dict, str)
-        ), f"Input metadata must be of type {dict} or {str}"
+    def metadata(self, value: dict | str | None):
+        if value is not None:
+            assert isinstance(
+                value, (dict, str)
+            ), f"Input metadata must be of type {dict}, {str} or None"
         self._metadata = value
         self.modified_attributes = "metadata"
 
