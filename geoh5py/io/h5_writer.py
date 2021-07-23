@@ -590,9 +590,8 @@ class H5Writer:
 
                     cls.update_attributes(h5file, entity)
                     entity.modified_attributes = []
-                    entity.existing_h5_entity = True
-                else:
-                    entity.existing_h5_entity = True
+
+                entity.existing_h5_entity = True
 
                 return h5file[base][entity_type][cls.uuid_str(uid)]
 

@@ -69,8 +69,23 @@ def test_survey_dcip():
 
         potentials.cells = np.vstack(dipoles)
         potentials.ab_cell_id = np.hstack(current_id)
-
         workspace.finalize()
+
+        assert (
+            currents.potential_electrodes == potentials
+        ), "Error assigning the potentiel_electrodes."
+        assert (
+            potentials.current_electrodes == currents
+        ), "Error assigning the current_electrodes."
+
+        assert (
+            currents.metadata
+            == potentials.metadata
+            == {
+                "Current Electrodes": currents.uid,
+                "Potential Electrodes": potentials.uid,
+            }
+        ), "Error assigning metadata"
 
         # Re-open the workspace and read data back in
         new_workspace = Workspace(path)
