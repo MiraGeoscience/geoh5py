@@ -36,6 +36,7 @@ class Data(Entity):
 
     _attribute_map = Entity._attribute_map.copy()
     _attribute_map.update({"Association": "association"})
+    _visible = False
 
     def __init__(self, data_type: DataType, **kwargs):
         assert data_type is not None

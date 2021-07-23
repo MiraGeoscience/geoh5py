@@ -41,6 +41,7 @@ class Entity(ABC):
         "Public": "public",
         "Visible": "visible",
     }
+    _visible = True
 
     def __init__(self, **kwargs):
 
@@ -48,7 +49,6 @@ class Entity(ABC):
         self._name = "Entity"
         self._parent = None
         self._children: list = []
-        self._visible = True
         self._allow_delete = True
         self._allow_move = True
         self._allow_rename = True
