@@ -2,6 +2,7 @@
 default_language_version:
     python: python3
 exclude: docs/(conf.py|_ext/)
+default_stages: [commit,push]
 fail_fast: false
 
 ci:
@@ -51,14 +52,15 @@ repos:
     hooks:
     -   id: mypy
         additional_dependencies: [types-toml]
-        args: ["--ignore-missing-imports", "--scripts-are-modules", "--show-error-context",
-               "--show-column-numbers"]
+        args: [--ignore-missing-imports, --scripts-are-modules, --show-error-context,
+               --show-column-numbers]
 -   repo: local
     hooks:
     -   id: pylint
         name: pylint
         entry: poetry run pylint
         language: system
+        require_serial: true  # pylint does its own parallelism
         types: [text]
         types_or: [python, pyi]
         exclude: (devtools|docs)/
