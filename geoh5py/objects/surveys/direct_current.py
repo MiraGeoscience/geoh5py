@@ -56,14 +56,14 @@ class PotentialElectrode(Curve):
     @ab_cell_id.setter
     def ab_cell_id(self, data: Data | np.ndarray):
         if isinstance(data, Data):
-            assert isinstance(
-                data, ReferencedData
-            ), f"ab_cell_id must be of type {ReferencedData}"
-
+            if not isinstance(data, ReferencedData):
+                raise TypeError(f"ab_cell_id must be of type {ReferencedData}")
             self._ab_cell_id = data
 
         else:
-            assert data.dtype == "int32", "ab_cell_id must be of type 'int32'"
+            if not data.dtype == "int32":
+                raise TypeError("ab_cell_id must be of type 'int32'")
+
             if any(self.get_data("A-B Cell ID")):
                 child = self.get_data("A-B Cell ID")[0]
                 if isinstance(child, ReferencedData):
@@ -106,7 +106,8 @@ class PotentialElectrode(Curve):
         """
         The associated current electrode object (sources).
         """
-        assert self.metadata is not None, "No Current-Receiver metadata set."
+        if self.metadata is None:
+            raise AttributeError("No Current-Receiver metadata set.")
         currents = self.metadata["Current Electrodes"]
 
         try:
@@ -117,11 +118,11 @@ class PotentialElectrode(Curve):
 
     @current_electrodes.setter
     def current_electrodes(self, current_electrodes: CurrentElectrode):
-
-        assert isinstance(current_electrodes, CurrentElectrode), (
-            f"Provided current_electrodes must be of type {CurrentElectrode}. "
-            f"{type(current_electrodes)} provided."
-        )
+        if not isinstance(current_electrodes, CurrentElectrode):
+            raise TypeError(
+                f"Provided current_electrodes must be of type {CurrentElectrode}. "
+                f"{type(current_electrodes)} provided."
+            )
 
         metadata = {
             "Current Electrodes": current_electrodes.uid,
@@ -159,14 +160,15 @@ class PotentialElectrode(Curve):
 
     @metadata.setter
     def metadata(self, values: dict[str, uuid.UUID]):
-        assert (
-            len(values) == 2
-        ), f"Metadata must have two key-value pairs. {values} provided."
+        if not len(values) == 2:
+            raise ValueError(
+                f"Metadata must have two key-value pairs. {values} provided."
+            )
 
         default_keys = ["Current Electrodes", "Potential Electrodes"]
-        assert (
-            list(values.keys()) == default_keys
-        ), f"Input metadata must have for keys {default_keys}"
+
+        if list(values.keys()) != default_keys:
+            raise ValueError(f"Input metadata must have for keys {default_keys}")
 
         if not self.workspace.get_entity(values["Current Electrodes"]):
             raise IndexError("Input Current Electrodes uuid not present in Workspace")
@@ -213,7 +215,7 @@ class CurrentElectrode(PotentialElectrode):
         return self
 
     @current_electrodes.setter
-    def current_electrodes(self):
+    def current_electrodes(self, _):
         ...
 
     @property
@@ -221,7 +223,9 @@ class CurrentElectrode(PotentialElectrode):
         """
         The associated potential_electrodes (receivers)
         """
-        assert self.metadata is not None, "No Current-Receiver metadata set."
+        if self.metadata is None:
+            raise AttributeError("No Current-Receiver metadata set.")
+
         potential = self.metadata["Potential Electrodes"]
 
         try:
@@ -232,11 +236,11 @@ class CurrentElectrode(PotentialElectrode):
 
     @potential_electrodes.setter
     def potential_electrodes(self, potential_electrodes: PotentialElectrode):
-
-        assert isinstance(potential_electrodes, PotentialElectrode), (
-            f"Provided potential_electrodes must be of type {PotentialElectrode}. "
-            f"{type(potential_electrodes)} provided."
-        )
+        if not isinstance(potential_electrodes, PotentialElectrode):
+            raise TypeError(
+                f"Provided potential_electrodes must be of type {PotentialElectrode}. "
+                f"{type(potential_electrodes)} provided."
+            )
 
         metadata = {
             "Current Electrodes": self.uid,
@@ -255,9 +259,11 @@ class CurrentElectrode(PotentialElectrode):
         """
         Utility function to set ab_cell_id's based on curve cells.
         """
-        assert (
-            getattr(self, "cells", None) is not None
-        ), "Cells must be set before assigning default ab_cell_id"
+        if getattr(self, "cells", None) is None:
+            raise AttributeError(
+                "Cells must be set before assigning default ab_cell_id"
+            )
+
         data = np.arange(self.n_cells) + 1
         value_map = {ii: str(ii) for ii in range(self.n_cells + 1)}
         value_map[0] = "Unknown"
