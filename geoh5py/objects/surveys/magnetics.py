@@ -15,20 +15,30 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=unused-import
-# flake8: noqa
+import uuid
 
-from .block_model import BlockModel
-from .curve import Curve
-from .drillhole import Drillhole
-from .geo_image import GeoImage
-from .grid2d import Grid2D
-from .label import Label
-from .notype_object import NoTypeObject
-from .object_base import ObjectBase
-from .object_type import ObjectType
-from .octree import Octree
-from .points import Points
-from .surface import Surface
-from .surveys.direct_current import CurrentElectrode, PotentialElectrode
-from .surveys.magnetics import AirborneMagnetics
+from ..curve import Curve
+from ..object_type import ObjectType
+
+
+class AirborneMagnetics(Curve):
+    """
+    An airborne magnetic survey object.
+
+    .. warning:: Partially implemented.
+
+    """
+
+    __TYPE_UID = uuid.UUID(
+        fields=(0x4B99204C, 0xD133, 0x4579, 0xA9, 0x16, 0xA9C8B98CFCCB)
+    )
+
+    def __init__(self, object_type: ObjectType, **kwargs):
+        super().__init__(object_type, **kwargs)
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        """
+        :return: Default unique identifier
+        """
+        return cls.__TYPE_UID

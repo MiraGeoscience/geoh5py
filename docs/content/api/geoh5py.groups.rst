@@ -76,7 +76,6 @@ geoh5py.groups.root\_group module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

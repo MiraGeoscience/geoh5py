@@ -20,7 +20,6 @@ geoh5py.io.h5\_writer module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

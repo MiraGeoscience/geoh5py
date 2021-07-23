@@ -31,8 +31,6 @@ def test_create_grid_2d_data():
 
     # Generate a 2D array
     n_x, n_y = 10, 15
-    d_x, d_y = 20.0, 30.0
-    origin = [0, 0, 0]
     values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
 
     with tempfile.TemporaryDirectory() as tempdir:
@@ -43,9 +41,9 @@ def test_create_grid_2d_data():
 
         grid = Grid2D.create(
             workspace,
-            origin=origin,
-            u_cell_size=d_x,
-            v_cell_size=d_y,
+            origin=[0, 0, 0],
+            u_cell_size=20.0,
+            v_cell_size=30.0,
             u_count=n_x,
             v_count=n_y,
             name=name,
@@ -58,11 +56,11 @@ def test_create_grid_2d_data():
         workspace.finalize()
 
         # Read the data back in from a fresh workspace
-        workspace = Workspace(h5file_path)
+        new_workspace = Workspace(h5file_path)
 
-        rec_obj = workspace.get_entity(name)[0]
+        rec_obj = new_workspace.get_entity(name)[0]
 
-        rec_data = workspace.get_entity("DataValues")[0]
+        rec_data = new_workspace.get_entity("DataValues")[0]
 
         compare_entities(grid, rec_obj)
         compare_entities(data, rec_data)

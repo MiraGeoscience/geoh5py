@@ -31,6 +31,15 @@ class Curve(Points):
     connecting :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
     """
 
+    _attribute_map = Points._attribute_map.copy()
+    _attribute_map.update(
+        {
+            "Last focus": "last_focus",
+            "PropertyGroups": "property_groups",
+            "Current line property ID": "current_line_id",
+        }
+    )
+
     __TYPE_UID = uuid.UUID(
         fields=(0x6A057FDC, 0xB355, 0x11E3, 0x95, 0xBE, 0xFD84A7FFCB88)
     )
@@ -73,6 +82,28 @@ class Curve(Points):
         self.modified_attributes = "cells"
         self._cells = indices
         self._parts = None
+
+    @property
+    def current_line_id(self):
+
+        if getattr(self, "_current_line_id", None) is None:
+            self._current_line_id = uuid.uuid4()
+
+        return self._current_line_id
+
+    @current_line_id.setter
+    def current_line_id(self, value: uuid.UUID):
+
+        if isinstance(value, str):
+            value = uuid.UUID(value)
+
+        assert isinstance(value, uuid.UUID), (
+            f"Input current_line_id value should be of type {uuid.UUID}."
+            f" {type(value)} provided"
+        )
+
+        self._current_line_id = value
+        self.modified_attributes = "attributes"
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -134,26 +165,3 @@ class Curve(Points):
             return np.unique(self.parts).tolist()
 
         return None
-
-
-class SurveyAirborneMagnetics(Curve):
-    """
-    An airborne magnetic survey object.
-
-    .. warning:: Partially implemented.
-
-    """
-
-    __TYPE_UID = uuid.UUID(
-        fields=(0x4B99204C, 0xD133, 0x4579, 0xA9, 0x16, 0xA9C8B98CFCCB)
-    )
-
-    def __init__(self, object_type: ObjectType, **kwargs):
-        super().__init__(object_type, **kwargs)
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID

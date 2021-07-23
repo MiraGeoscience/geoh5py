@@ -78,7 +78,6 @@ def test_copy_entity():
         for entity in workspace.objects:
             entity.copy(parent=new_workspace)
 
-        new_workspace = Workspace(Path(tempdir) / r"testProject_2.geoh5")
         # workspace = Workspace(h5file_path)
         for entity in workspace.objects:
 

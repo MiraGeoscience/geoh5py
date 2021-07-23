@@ -12,7 +12,6 @@ geoh5py.workspace.workspace module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

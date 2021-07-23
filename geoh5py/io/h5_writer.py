@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING
 import h5py
 import numpy as np
 
-from ..data import CommentsData, Data, DataType, IntegerData, TextData
+from ..data import CommentsData, Data, DataType, IntegerData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import Entity, EntityType, fetch_h5_handle
@@ -52,6 +52,7 @@ class H5Writer:
         "octree_cells": "Octree Cells",
         "property_groups": "PropertyGroups",
         "color_map": "Color map",
+        "metadata": "Metadata",
     }
 
     @staticmethod
@@ -266,7 +267,7 @@ class H5Writer:
                 except KeyError:
                     pass
 
-                if attr in ["values", "trace_depth"]:
+                if attr in ["values", "trace_depth", "metadata"]:
                     cls.write_data_values(h5file, entity, attr)
                 elif attr == "cells":
                     cls.write_cells(h5file, entity)
@@ -316,10 +317,10 @@ class H5Writer:
                 except AttributeError:
                     continue
 
-                if key == "ID":
-                    value = "{" + str(value) + "}"
+                if isinstance(value, uuid.UUID):
+                    value = cls.uuid_str(value)
 
-                if key == "PropertyGroups":
+                if key == "PropertyGroups" or (key == "Metadata" and value is None):
                     continue
 
                 if key in ["Association", "Primitive type"]:
@@ -507,15 +508,22 @@ class H5Writer:
                 values = getattr(entity, attribute)
 
             # Adding an array of values
-            if isinstance(entity, CommentsData):
-                comments = {"Comments": values}
+            if isinstance(values, dict) or isinstance(entity, CommentsData):
+                values = values.copy()
+                if isinstance(entity, CommentsData):
+                    values = {"Comments": values}
+
+                for key, val in values.items():
+                    if isinstance(val, uuid.UUID):
+                        values[key] = cls.uuid_str(val)
+
                 entity_handle.create_dataset(
                     cls.key_map[attribute],
-                    data=json.dumps(comments, indent=4),
+                    data=json.dumps(values, indent=4),
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
                 )
-            elif isinstance(entity, TextData):
+            elif isinstance(values, str):
                 entity_handle.create_dataset(
                     cls.key_map[attribute],
                     data=values,
@@ -576,15 +584,14 @@ class H5Writer:
                         entity_handle = cls.fetch_handle(h5file, entity)
                         del entity_handle["Type"]
                         new_type = H5Writer.write_entity_type(
-                            entity.entity_type, h5file
+                            h5file, entity.entity_type
                         )
                         entity_handle["Type"] = new_type
 
                     cls.update_attributes(h5file, entity)
                     entity.modified_attributes = []
-                    entity.existing_h5_entity = True
-                else:
-                    entity.existing_h5_entity = True
+
+                entity.existing_h5_entity = True
 
                 return h5file[base][entity_type][cls.uuid_str(uid)]
 
@@ -648,10 +655,8 @@ class H5Writer:
                 if any([entity_type.modified_attributes]):
                     cls.update_attributes(h5file, entity_type)
                     entity_type.modified_attributes = []
-                    entity_type.existing_h5_entity = False
 
-                else:
-                    entity_type.existing_h5_entity = True
+                entity_type.existing_h5_entity = True
 
                 return h5file[base]["Types"][entity_type_str][cls.uuid_str(uid)]
 
@@ -704,7 +709,7 @@ class H5Writer:
         """
         with fetch_h5_handle(file) as h5file:
 
-            for attribute in ["values", "trace_depth"]:
+            for attribute in ["values", "trace_depth", "metadata"]:
                 if getattr(entity, attribute, None) is not None:
                     H5Writer.write_data_values(h5file, entity, attribute)
 
@@ -722,9 +727,6 @@ class H5Writer:
 
             if getattr(entity, "cells", None) is not None:
                 H5Writer.write_cells(h5file, entity)
-
-            if getattr(entity, "trace_depth", None) is not None:
-                H5Writer.write_data_values(h5file, entity, "trace_depth")
 
             if getattr(entity, "octree_cells", None) is not None:
                 H5Writer.write_octree_cells(h5file, entity)

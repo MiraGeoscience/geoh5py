@@ -52,6 +52,14 @@ geoh5py.shared.file\_name module
    :undoc-members:
    :show-inheritance:
 
+geoh5py.shared.utils module
+---------------------------
+
+.. automodule:: geoh5py.shared.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 geoh5py.shared.version\_number module
 -------------------------------------
 
@@ -83,7 +91,6 @@ geoh5py.shared.weakref\_utils module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

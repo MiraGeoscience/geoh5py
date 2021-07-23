@@ -57,11 +57,11 @@ def test_create_curve_data():
 
         workspace.finalize()
         # Re-open the workspace and read data back in
-        workspace = Workspace(h5file_path)
+        ws2 = Workspace(h5file_path)
 
-        obj_rec = workspace.get_entity(curve_name)[0]
-        data_vert_rec = workspace.get_entity("vertexValues")[0]
-        data_cell_rec = workspace.get_entity("cellValues")[0]
+        obj_rec = ws2.get_entity(curve_name)[0]
+        data_vert_rec = ws2.get_entity("vertexValues")[0]
+        data_cell_rec = ws2.get_entity("cellValues")[0]
 
         # Check entities
         compare_entities(curve, obj_rec)
@@ -71,12 +71,12 @@ def test_create_curve_data():
         # Modify and write
         obj_rec.vertices = np.random.randn(n_data, 3)
         data_vert_rec.values = np.random.randn(n_data)
-        workspace.finalize()
+        ws2.finalize()
 
         # Read back and compare
-        workspace = Workspace(h5file_path)
-        obj = workspace.get_entity(curve_name)[0]
-        data_vertex = workspace.get_entity("vertexValues")[0]
+        ws3 = Workspace(h5file_path)
+        obj = ws3.get_entity(curve_name)[0]
+        data_vertex = ws3.get_entity("vertexValues")[0]
 
         compare_entities(obj_rec, obj)
         compare_entities(data_vert_rec, data_vertex)
