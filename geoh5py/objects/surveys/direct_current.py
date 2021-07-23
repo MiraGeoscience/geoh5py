@@ -28,9 +28,6 @@ from ..object_type import ObjectType
 class PotentialElectrode(Curve):
     """
     Ground potential electrode (receiver).
-
-    .. warning:: Partially implemented.
-
     """
 
     __TYPE_UID = uuid.UUID("{275ecee9-9c24-4378-bf94-65f3c5fbe163}")
@@ -44,7 +41,7 @@ class PotentialElectrode(Curve):
     @property
     def ab_cell_id(self) -> ReferencedData | None:
         """
-        Data object
+        Reference data entity mapping cells to a unique current dipole.
         """
         if getattr(self, "_ab_cell_id", None) is None:
             child = self.get_data("A-B Cell ID")
@@ -58,7 +55,6 @@ class PotentialElectrode(Curve):
 
     @ab_cell_id.setter
     def ab_cell_id(self, data: Data | np.ndarray):
-
         if isinstance(data, Data):
             assert isinstance(
                 data, ReferencedData
@@ -163,7 +159,6 @@ class PotentialElectrode(Curve):
 
     @metadata.setter
     def metadata(self, values: dict[str, uuid.UUID]):
-
         assert (
             len(values) == 2
         ), f"Metadata must have two key-value pairs. {values} provided."
@@ -193,9 +188,6 @@ class PotentialElectrode(Curve):
 class CurrentElectrode(PotentialElectrode):
     """
     Ground direct current electrode (transmitter).
-
-    .. warning:: Partially implemented.
-
     """
 
     __TYPE_UID = uuid.UUID("{9b08bb5a-300c-48fe-9007-d206f971ea92}")
