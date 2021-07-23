@@ -142,7 +142,7 @@ class PotentialElectrode(Curve):
         """
         The associated potential_electrodes (receivers)
         """
-        ...
+        return self
 
     @property
     def metadata(self) -> dict | None:
@@ -210,7 +210,7 @@ class CurrentElectrode(PotentialElectrode):
         """
         The associated current electrode object (sources).
         """
-        ...
+        return self
 
     @current_electrodes.setter
     def current_electrodes(self):
