@@ -56,7 +56,7 @@ def test_survey_dcip():
             cell_id = int(currents.ab_map[val]) - 1
 
             for dipole in range(n_dipoles):
-                dipole_ids = (currents.cells[cell_id, :] + 2 + dipole).astype("uint32")
+                dipole_ids = currents.cells[cell_id, :] + 2 + dipole
 
                 if (
                     any(dipole_ids > (potentials.n_vertices - 1))
@@ -67,8 +67,8 @@ def test_survey_dcip():
                 dipoles += [dipole_ids]
                 current_id += [val]
 
-        potentials.cells = np.vstack(dipoles)
-        potentials.ab_cell_id = np.hstack(current_id)
+        potentials.cells = np.vstack(dipoles).astype("uint32")
+        potentials.ab_cell_id = np.hstack(current_id).astype("int32")
         workspace.finalize()
 
         assert (
