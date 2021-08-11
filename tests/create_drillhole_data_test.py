@@ -137,3 +137,33 @@ def test_create_drillhole_data():
             new_workspace.get_entity("log_values")[0],
             ignore=["_parent"],
         )
+
+
+def test_single_survey():
+    # Create a simple well
+    dist = np.random.rand(1) * 100
+    azm = np.random.randn(1) * 180
+    dip = np.random.randn(1) * 180
+
+    collar = np.r_[0.0, 10.0, 10]
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        h5file_path = Path(tempdir) / r"testCurve.geoh5"
+        workspace = Workspace(h5file_path)
+        well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, dip, azm])
+        depths = [1.0, 1000.0]
+        locations = well.desurvey(depths)
+        solution = (
+            collar[None, :]
+            + np.c_[
+                depths
+                * np.cos(np.deg2rad(450.0 - azm % 360.0))
+                * np.cos(np.deg2rad(dip)),
+                depths
+                * np.sin(np.deg2rad(450.0 - azm % 360.0))
+                * np.cos(np.deg2rad(dip)),
+                depths * np.sin(np.deg2rad(dip)),
+            ]
+        )
+
+        np.testing.assert_array_almost_equal(locations, solution, decimal=4)

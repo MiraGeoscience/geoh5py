@@ -40,7 +40,6 @@ class Drillhole(Points):
     __TYPE_UID = uuid.UUID(
         fields=(0x7CAEBF0E, 0xD16E, 0x11E3, 0xBC, 0x69, 0xE4632694AA37)
     )
-
     _attribute_map = Points._attribute_map.copy()
     _attribute_map.update(
         {
@@ -51,7 +50,6 @@ class Drillhole(Points):
     )
 
     def __init__(self, object_type: ObjectType, **kwargs):
-
         self._cells: np.ndarray | None = None
         self._collar: np.ndarray | None = None
         self._cost: float | None = 0.0
@@ -63,7 +61,6 @@ class Drillhole(Points):
         self._deviation_x = None
         self._deviation_y = None
         self._deviation_z = None
-
         self._default_collocation_distance = 1e-2
 
         super().__init__(object_type, **kwargs)
@@ -134,15 +131,15 @@ class Drillhole(Points):
         :obj:`numpy.ndarray`: Store the change in x-coordinates along the well path.
         """
         if getattr(self, "_deviation_x", None) is None and self.surveys is not None:
-            lengths = self.surveys["Depth"][1:] - self.surveys["Depth"][:-1]
-            dx_in = np.cos(
-                np.deg2rad(450.0 - self.surveys["Azimuth"][:-1] % 360.0)
-            ) * np.cos(np.deg2rad(self.surveys["Dip"][:-1]))
-            dx_out = np.cos(
-                np.deg2rad(450.0 - self.surveys["Azimuth"][1:] % 360.0)
-            ) * np.cos(np.deg2rad(self.surveys["Dip"][1:]))
-            ddx = (dx_out - dx_in) / lengths / 2.0
-            self._deviation_x = dx_in + lengths * ddx
+            lengths = self.surveys[1:, 0] - self.surveys[:-1, 0]
+            dl_in = np.cos(np.deg2rad(450.0 - self.surveys[:-1, 2] % 360.0)) * np.cos(
+                np.deg2rad(self.surveys[:-1, 1])
+            )
+            dl_out = np.cos(np.deg2rad(450.0 - self.surveys[1:, 2] % 360.0)) * np.cos(
+                np.deg2rad(self.surveys[1:, 1])
+            )
+            ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
+            self._deviation_x = dl_in + lengths * ddl / 2.0
 
         return self._deviation_x
 
@@ -152,15 +149,15 @@ class Drillhole(Points):
         :obj:`numpy.ndarray`: Store the change in y-coordinates along the well path.
         """
         if getattr(self, "_deviation_y", None) is None and self.surveys is not None:
-            lengths = self.surveys["Depth"][1:] - self.surveys["Depth"][:-1]
-            dy_in = np.sin(
-                np.deg2rad(450.0 - self.surveys["Azimuth"][:-1] % 360.0)
-            ) * np.cos(np.deg2rad(self.surveys["Dip"][:-1]))
-            dy_out = np.sin(
-                np.deg2rad(450.0 - self.surveys["Azimuth"][1:] % 360.0)
-            ) * np.cos(np.deg2rad(self.surveys["Dip"][1:]))
-            ddy = (dy_out - dy_in) / lengths / 2.0
-            self._deviation_y = dy_in + lengths * ddy
+            lengths = self.surveys[1:, 0] - self.surveys[:-1, 0]
+            dl_in = np.sin(np.deg2rad(450.0 - self.surveys[:-1, 2] % 360.0)) * np.cos(
+                np.deg2rad(self.surveys[:-1, 1])
+            )
+            dl_out = np.sin(np.deg2rad(450.0 - self.surveys[1:, 2] % 360.0)) * np.cos(
+                np.deg2rad(self.surveys[1:, 1])
+            )
+            ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
+            self._deviation_y = dl_in + lengths * ddl / 2.0
 
         return self._deviation_y
 
@@ -170,11 +167,11 @@ class Drillhole(Points):
         :obj:`numpy.ndarray`: Store the change in z-coordinates along the well path.
         """
         if getattr(self, "_deviation_z", None) is None and self.surveys is not None:
-            lengths = self.surveys["Depth"][1:] - self.surveys["Depth"][:-1]
-            dz_in = np.sin(np.deg2rad(self.surveys["Dip"][:-1]))
-            dz_out = np.sin(np.deg2rad(self.surveys["Dip"][1:]))
-            ddz = (dz_out - dz_in) / lengths / 2.0
-            self._deviation_z = dz_in + lengths * ddz
+            lengths = self.surveys[1:, 0] - self.surveys[:-1, 0]
+            dl_in = np.sin(np.deg2rad(self.surveys[:-1, 1]))
+            dl_out = np.sin(np.deg2rad(self.surveys[1:, 1]))
+            ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
+            self._deviation_z = dl_in + lengths * ddl / 2.0
 
         return self._deviation_z
 
@@ -188,7 +185,7 @@ class Drillhole(Points):
             and self.collar is not None
             and self.surveys is not None
         ):
-            lengths = self.surveys["Depth"][1:] - self.surveys["Depth"][:-1]
+            lengths = self.surveys[1:, 0] - self.surveys[:-1, 0]
             self._locations = np.c_[
                 self.collar["x"]
                 + np.cumsum(np.r_[0.0, lengths * self.deviation_x]).astype("float64"),
@@ -219,19 +216,16 @@ class Drillhole(Points):
         :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the surveys
         """
         if (getattr(self, "_surveys", None) is None) and self.existing_h5_entity:
-            surveys = self.workspace.fetch_coordinates(self.uid, "surveys")
-            if len(surveys) == 1:
-                self.surveys = np.vstack(
-                    [
-                        np.c_[0, surveys["Azimuth"], surveys["Dip"]],
-                        surveys.view("<f4").reshape((-1, 3)),
-                    ]
-                )
-            else:
-                self._surveys = surveys
+            self._surveys = self.workspace.fetch_coordinates(self.uid, "surveys")
 
         if getattr(self, "_surveys", None) is not None:
-            return self._surveys
+            surveys = self._surveys.view("<f4").reshape((-1, 3))
+
+            if surveys.shape[0] == 1:
+                surveys = np.repeat(surveys, 2, axis=0)
+                surveys[0, 0] = 0.0
+
+            return surveys.astype(float)
 
         return None
 
@@ -240,7 +234,8 @@ class Drillhole(Points):
         if value is not None:
             value = np.vstack(value)
 
-            assert value.shape[1] == 3, "'surveys' requires an ndarray of shape (*, 3)"
+            if value.shape[1] != 3:
+                raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
 
             self.modified_attributes = "surveys"
             self._surveys = np.asarray(
@@ -248,8 +243,6 @@ class Drillhole(Points):
                     value.T, names="Depth, Dip, Azimuth", formats="<f4, <f4, <f4"
                 )
             )
-
-            # Reset the trace
             self.modified_attributes = "trace"
             self._trace = None
         self._deviation_x = None
@@ -418,19 +411,18 @@ class Drillhole(Points):
             depths = np.asarray(depths)
 
         indices = np.minimum(
-            np.searchsorted(self.surveys["Depth"], depths, side="left") - 1,
+            np.searchsorted(self.surveys[:, 0], depths, side="left") - 1,
             self.surveys.shape[0] - 2,
         )
         locations = (
             self.locations[indices, :]
-            + (depths - self.surveys["Depth"][indices])[:, None]
+            + (depths - self.surveys[indices, 0])[:, None]
             * np.c_[
                 self.deviation_x[indices],
                 self.deviation_y[indices],
                 self.deviation_z[indices],
             ]
         )
-
         return locations
 
     def add_vertices(self, xyz):
