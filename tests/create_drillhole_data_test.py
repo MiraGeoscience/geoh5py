@@ -151,7 +151,7 @@ def test_single_survey():
         h5file_path = Path(tempdir) / r"testCurve.geoh5"
         workspace = Workspace(h5file_path)
         well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, dip, azm])
-        depths = [1.0, 1000.0]
+        depths = [0.0, 1.0, 1000.0]
         locations = well.desurvey(depths)
         solution = (
             collar[None, :]
