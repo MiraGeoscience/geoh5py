@@ -141,11 +141,11 @@ def test_create_drillhole_data():
 
 def test_single_survey():
     # Create a simple well
-    dist = np.random.rand(1) * 100
-    azm = np.random.randn(1) * 180
-    dip = np.random.randn(1) * 180
+    dist = np.random.rand(1) * 100.0
+    azm = np.random.randn(1) * 180.0
+    dip = np.random.randn(1) * 180.0
 
-    collar = np.r_[0.0, 10.0, 10]
+    collar = np.r_[0.0, 10.0, 10.0]
 
     with tempfile.TemporaryDirectory() as tempdir:
         h5file_path = Path(tempdir) / r"testCurve.geoh5"
@@ -166,4 +166,4 @@ def test_single_survey():
             ]
         )
 
-        np.testing.assert_array_almost_equal(locations, solution, decimal=4)
+        np.testing.assert_array_almost_equal(locations, solution, decimal=3)

@@ -187,12 +187,9 @@ class Drillhole(Points):
         ):
             lengths = self.surveys[1:, 0] - self.surveys[:-1, 0]
             self._locations = np.c_[
-                self.collar["x"]
-                + np.cumsum(np.r_[0.0, lengths * self.deviation_x]).astype("float64"),
-                self.collar["y"]
-                + np.cumsum(np.r_[0.0, lengths * self.deviation_y]).astype("float64"),
-                self.collar["z"]
-                + np.cumsum(np.r_[0.0, lengths * self.deviation_z]).astype("float64"),
+                self.collar["x"] + np.cumsum(np.r_[0.0, lengths * self.deviation_x]),
+                self.collar["y"] + np.cumsum(np.r_[0.0, lengths * self.deviation_y]),
+                self.collar["z"] + np.cumsum(np.r_[0.0, lengths * self.deviation_z]),
             ]
 
         return self._locations
