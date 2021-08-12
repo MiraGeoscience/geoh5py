@@ -218,9 +218,9 @@ class Drillhole(Points):
         if getattr(self, "_surveys", None) is not None:
             surveys = self._surveys.view("<f4").reshape((-1, 3))
 
-            if surveys.shape[0] == 1:
-                surveys = np.repeat(surveys, 2, axis=0)
-                surveys[0, 0] = 0.0
+            # Repeat first survey point at surface for de-survey interpolation
+            surveys = np.vstack([surveys[0, :], surveys])
+            surveys[0, 0] = 0.0
 
             return surveys.astype(float)
 
