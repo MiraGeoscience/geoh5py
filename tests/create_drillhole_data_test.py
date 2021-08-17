@@ -167,3 +167,33 @@ def test_single_survey():
         )
 
         np.testing.assert_array_almost_equal(locations, solution, decimal=3)
+
+
+def test_outside_survey():
+    # Create a simple well
+    dist = np.random.rand(2) * 100.0
+    azm = [np.random.randn(1) * 180.0] * 2
+    dip = [np.random.randn(1) * 180.0] * 2
+
+    collar = np.r_[0.0, 10.0, 10.0]
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        h5file_path = Path(tempdir) / r"testCurve.geoh5"
+        workspace = Workspace(h5file_path)
+        well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, dip, azm])
+        depths = [0.0, 1000.0]
+        locations = well.desurvey(depths)
+        solution = (
+            collar[None, :]
+            + np.c_[
+                depths
+                * np.cos(np.deg2rad(450.0 - azm[-1] % 360.0))
+                * np.cos(np.deg2rad(dip[-1])),
+                depths
+                * np.sin(np.deg2rad(450.0 - azm[-1] % 360.0))
+                * np.cos(np.deg2rad(dip[-1])),
+                depths * np.sin(np.deg2rad(dip[-1])),
+            ]
+        )
+
+        np.testing.assert_array_almost_equal(locations, solution, decimal=3)

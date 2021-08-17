@@ -407,17 +407,18 @@ class Drillhole(Points):
         if isinstance(depths, list):
             depths = np.asarray(depths)
 
-        indices = np.minimum(
+        ind_loc = np.maximum(
             np.searchsorted(self.surveys[:, 0], depths, side="left") - 1,
-            self.surveys.shape[0] - 2,
+            0,
         )
+        ind_dev = np.minimum(ind_loc, self.deviation_x.shape[0] - 1)
         locations = (
-            self.locations[indices, :]
-            + (depths - self.surveys[indices, 0])[:, None]
+            self.locations[ind_loc, :]
+            + (depths - self.surveys[ind_loc, 0])[:, None]
             * np.c_[
-                self.deviation_x[indices],
-                self.deviation_y[indices],
-                self.deviation_z[indices],
+                self.deviation_x[ind_dev],
+                self.deviation_y[ind_dev],
+                self.deviation_z[ind_dev],
             ]
         )
         return locations
