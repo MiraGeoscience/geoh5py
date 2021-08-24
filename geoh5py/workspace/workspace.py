@@ -166,7 +166,7 @@ class Workspace:
         :return: The Entity registered to the workspace.
         """
 
-        entity_kwargs: dict = {"entity": {}}
+        entity_kwargs: dict = {"entity": {"uid": None, "parent": None}}
         for key in entity.__dict__.keys():
             if key not in ["_uid", "_entity_type"]:
                 if key[0] == "_":
@@ -293,6 +293,9 @@ class Workspace:
         if "entity_type" in kwargs.keys():
             entity_type_kwargs = kwargs["entity_type"]
 
+        if entity_class is not RootGroup and "parent" not in entity_kwargs.keys():
+            entity_kwargs["parent"] = self.root
+
         if entity_class is Data:
             created_entity = self.create_data(
                 entity_class, entity_kwargs, entity_type_kwargs
@@ -396,6 +399,25 @@ class Workspace:
                         getattr(recovered_object, "parent", None)
 
             self.finalize(file=h5file)
+
+    def remove_children(
+        self, parent, children: list, file: str | h5py.File | None = None
+    ):
+        """
+        Remove a list of entities from a parent.
+        """
+        with fetch_h5_handle(self.validate_file(file)) as h5file:
+
+            for child in children:
+                if isinstance(child, Data):
+                    ref_type = "Data"
+                    parent.remove_data_from_group(child)
+                elif isinstance(child, Group):
+                    ref_type = "Groups"
+                elif isinstance(child, ObjectBase):
+                    ref_type = "Objects"
+
+                H5Writer.remove_child(h5file, child.uid, ref_type, parent)
 
     def remove_entity(self, entity: Entity, file: str | h5py.File | None = None):
         """
@@ -510,16 +532,15 @@ class Workspace:
             if self.get_entity(uid)[0] is not None:
                 recovered_object = self.get_entity(uid)[0]
             else:
-                recovered_object = self.load_entity(uid, child_type, file=file)
+                recovered_object = self.load_entity(
+                    uid, child_type, parent=entity, file=file
+                )
 
             if recovered_object is not None:
 
                 # Assumes the object was pulled from h5
                 recovered_object.existing_h5_entity = True
                 recovered_object.entity_type.existing_h5_entity = True
-
-                # Add parent-child relationship
-                recovered_object.parent = entity
 
                 if recursively:
                     self.fetch_children(recovered_object, recursively=True, file=file)
@@ -780,6 +801,7 @@ class Workspace:
         self,
         uid: uuid.UUID,
         entity_type: str,
+        parent: Entity = None,
         file: str | h5py.File | None = None,
     ) -> Entity | None:
         """
@@ -804,6 +826,10 @@ class Workspace:
                 type_attributes,
                 property_groups,
             ) = H5Reader.fetch_attributes(h5file, uid, entity_type)
+
+            if parent is not None:
+                attributes["entity"]["parent"] = parent
+
             entity = self.create_entity(
                 base_classes[entity_type],
                 save_on_creation=False,
