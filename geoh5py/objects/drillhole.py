@@ -341,7 +341,7 @@ class Drillhole(Points):
 
             attr["name"] = name
 
-            if "collocation_distance" in list(attr.keys()):
+            if "collocation_distance" in attr.keys():
                 assert (
                     attr["collocation_distance"] > 0
                 ), "Input depth 'collocation_distance' must be >0."
@@ -349,7 +349,7 @@ class Drillhole(Points):
             else:
                 collocation_distance = self.default_collocation_distance
 
-            if "depth" in list(attr.keys()):
+            if "depth" in attr.keys():
                 attr["association"] = "VERTEX"
                 attr["values"] = self.validate_log_data(
                     attr["depth"],
@@ -357,7 +357,7 @@ class Drillhole(Points):
                     collocation_distance=collocation_distance,
                 )
                 del attr["depth"]
-            elif "from-to" in list(attr.keys()):
+            elif "from-to" in attr.keys():
                 attr["association"] = "CELL"
                 attr["values"] = self.validate_interval_data(
                     attr["from-to"],

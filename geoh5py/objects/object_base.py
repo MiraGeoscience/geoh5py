@@ -118,16 +118,13 @@ class ObjectBase(Entity):
                 f"Given value to data {name} should of type {dict}. "
                 f"Type {type(attr)} given instead."
             )
-            assert "values" in list(
-                attr.keys()
+            assert (
+                "values" in attr.keys()
             ), f"Given attr for data {name} should include 'values'"
 
             attr["name"] = name
-
             self.validate_data_association(attr)
             entity_type = self.validate_data_type(attr)
-
-            # Re-order to set parent first
             kwargs = {"parent": self, "association": attr["association"]}
             for key, val in attr.items():
                 if key in ["parent", "association", "entity_type", "type"]:
@@ -142,6 +139,8 @@ class ObjectBase(Entity):
                 self.add_data_to_group(data_object, property_group)
 
             data_objects.append(data_object)
+
+        self.workspace.finalize()
 
         if len(data_objects) == 1:
             return data_object
@@ -277,7 +276,7 @@ class ObjectBase(Entity):
 
         :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        if "name" in list(kwargs.keys()) and any(
+        if "name" in kwargs.keys() and any(
             pg.name == kwargs["name"] for pg in self.property_groups
         ):
             prop_group = [
@@ -378,7 +377,7 @@ class ObjectBase(Entity):
         Get a dictionary of attributes and validate the data 'association' keyword.
         """
 
-        if "association" in list(attribute_dict.keys()):
+        if "association" in attribute_dict.keys():
             assert attribute_dict["association"] in [
                 enum.name for enum in DataAssociationEnum
             ], (
@@ -405,9 +404,9 @@ class ObjectBase(Entity):
         Get a dictionary of attributes and validate the type of data.
         """
 
-        if "entity_type" in list(attribute_dict.keys()):
+        if "entity_type" in attribute_dict.keys():
             entity_type = attribute_dict["entity_type"]
-        elif "type" in list(attribute_dict.keys()):
+        elif "type" in attribute_dict.keys():
             assert attribute_dict["type"].upper() in list(
                 PrimitiveTypeEnum.__members__.keys()
             ), f"Data 'type' should be one of {list(PrimitiveTypeEnum.__members__.keys())}"
