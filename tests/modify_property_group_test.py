@@ -64,13 +64,19 @@ def test_modify_property_group():
                 )
             ]
 
+        children_list = curve.get_data_list()
+        assert all(
+            f"Period{i + 1}" in children_list for i in range(4)
+        ), "Missing data children"
         # Property group object should have been created
         prop_group = curve.find_or_create_property_group(name="myGroup")
 
         # Remove on props from the list
-        curve.remove_data_from_group(props[-1], name="myGroup")
+        curve.remove_data_from_group(children_list[0], name="myGroup")
+        curve.remove_data_from_group(props[-2:], name="myGroup")
 
-        assert len(prop_group.properties) == 3, "Error removing a property_group"
+        assert len(prop_group.properties) == 1, "Error removing a property_group"
+
         workspace.finalize()
 
         # Re-open the workspace
