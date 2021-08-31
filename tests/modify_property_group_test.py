@@ -43,8 +43,7 @@ def test_modify_property_group():
 
     obj_name = "myCurve"
     # Generate a curve with multiple data
-    n_stn = 12
-    xyz = np.c_[np.linspace(0, 2 * np.pi, n_stn), np.zeros(n_stn), np.zeros(n_stn)]
+    xyz = np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)]
 
     with tempfile.TemporaryDirectory() as tempdir:
         h5file_path = Path(tempdir) / r"prop_group_test.geoh5"
@@ -85,5 +84,8 @@ def test_modify_property_group():
         # Read the property_group back in
         rec_curve = workspace.get_entity(obj_name)[0]
         rec_prop_group = rec_curve.find_or_create_property_group(name="myGroup")
-
         compare_objects(rec_prop_group, prop_group)
+
+        fetch_group = workspace.fetch_property_groups(rec_curve)
+        assert len(fetch_group) == 1, "Issues reading property groups from workspace"
+        compare_objects(fetch_group[0], prop_group)
