@@ -81,7 +81,16 @@ def test_survey_dcip():
             potentials.ab_cell_id = fake_ab
 
         potentials.ab_cell_id = np.hstack(current_id).astype("int32")
-        workspace.finalize()
+
+        # Change again only the values
+        ab_data = potentials.get_data("A-B Cell ID")[0]
+        new_values = ab_data.values
+        new_values[0] = 5
+        potentials.ab_cell_id = new_values
+
+        assert (
+            len(potentials.get_data("A-B Cell ID")) == 1
+        ), "Issue with new A-B Cell ID data created"
 
         fake_meta = {
             "Current Electrodes": uuid.uuid4(),
