@@ -109,10 +109,7 @@ class H5Reader:
 
             # Check if the entity has property_group
             if "PropertyGroups" in entity.keys():
-                for pg_id in entity["PropertyGroups"].keys():
-                    property_groups[pg_id] = {"uid": pg_id}
-                    for key, value in entity["PropertyGroups"][pg_id].attrs.items():
-                        property_groups[pg_id][key] = value
+                property_groups = cls.fetch_property_groups(file, uid)
 
             attributes["entity"]["existing_h5_entity"] = True
 
@@ -309,15 +306,12 @@ class H5Reader:
             property_groups: dict[str, dict[str, str]] = {}
             try:
                 pg_handle = h5file[name]["Objects"][cls.uuid_str(uid)]["PropertyGroups"]
-
                 for pg_uid in pg_handle.keys():
-
                     property_groups[pg_uid] = {}
                     for attr, value in pg_handle[pg_uid].attrs.items():
                         property_groups[pg_uid][attr] = value
             except KeyError:
                 pass
-
         return property_groups
 
     @classmethod
