@@ -582,16 +582,16 @@ class Workspace:
         return self._io_call(file, H5Reader.fetch_octree_cells, uid)
 
     def fetch_property_groups(
-        self, uid: uuid.UUID, file: str | h5py.File | None = None
+        self, entity: Entity, file: str | h5py.File | None = None
     ) -> list[PropertyGroup]:
         """
         Fetch all property_groups on an object from the source h5file
 
-        :param uid: Unique identifier of target object
+        :param entity: Target object
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         """
 
-        group_dict = self._io_call(file, H5Reader.fetch_property_groups, uid)
+        group_dict = self._io_call(file, H5Reader.fetch_property_groups, entity.uid)
 
         property_groups = []
         for pg_id, attrs in group_dict.items():
