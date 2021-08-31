@@ -18,6 +18,7 @@
 # pylint: disable=R0914
 
 import tempfile
+import uuid
 from pathlib import Path
 
 import numpy as np
@@ -73,16 +74,34 @@ def test_survey_dcip():
         fake_ab = potentials.add_data(
             {"fabe_ab": {"values": np.ones(potentials.n_cells)}}
         )
-        with pytest.raises(TypeError) as info:
+        with pytest.raises(TypeError):
             potentials.ab_cell_id = fake_ab.values
-        assert info.type == TypeError, "Code did not catch TypeError"
 
-        with pytest.raises(TypeError) as info:
+        with pytest.raises(TypeError):
             potentials.ab_cell_id = fake_ab
-        assert info.type == TypeError, "Code did not catch TypeError"
 
         potentials.ab_cell_id = np.hstack(current_id).astype("int32")
         workspace.finalize()
+
+        fake_meta = {
+            "Current Electrodes": uuid.uuid4(),
+            "Potential Electrodes": uuid.uuid4(),
+            "One too many key": uuid.uuid4(),
+        }
+        with pytest.raises(ValueError):
+            potentials.metadata = fake_meta
+
+        del fake_meta["One too many key"]
+
+        with pytest.raises(IndexError):
+            potentials.metadata = fake_meta
+
+        fake_meta["Current Electrodes"] = currents.uid
+
+        with pytest.raises(IndexError):
+            potentials.metadata = fake_meta
+
+        fake_meta["Potential Electrodes"] = potentials.uid
 
         potentials.current_electrodes = currents
         assert (
