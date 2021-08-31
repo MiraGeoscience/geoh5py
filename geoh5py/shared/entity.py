@@ -57,9 +57,6 @@ class Entity(ABC):
         self._metadata = None
         self._modified_attributes: list[str] = []
 
-        if "parent" in kwargs.keys():
-            setattr(self, "parent", kwargs["parent"])
-
         for attr, item in kwargs.items():
             try:
                 if attr in self._attribute_map.keys():
@@ -67,7 +64,6 @@ class Entity(ABC):
                 setattr(self, attr, item)
             except AttributeError:
                 continue
-        self.modified_attributes = []
 
     def add_children(self, children: list[shared.Entity]):
         """
@@ -168,13 +164,7 @@ class Entity(ABC):
         new_object = workspace.create_entity(
             cls, **{**entity_kwargs, **entity_type_kwargs}
         )
-
-        # Add to root if parent is not set
-        if new_object.parent is None:
-            new_object.parent = workspace.root
-
         workspace.finalize()
-
         return new_object
 
     @property
@@ -270,24 +260,13 @@ class Entity(ABC):
             else:
                 uid = parent.uid
 
-            # Remove as child of previous parent
-            if self.parent is not None:
-                self._parent.remove_children([self])
-
+            current_parent = self._parent
             self._parent = self.workspace.get_entity(uid)[0]
             self._parent.add_children([self])
 
-    @parent.getter
-    def parent(self):
-        """
-        Parental :obj:`~geoh5py.shared.entity.Entity` in the workspace tree. The
-        workspace :obj:`~geoh5py.groups.root_group.RootGroup` is used by default.
-        """
-        if self._parent is None:
-            self._parent = self.workspace.root
-            self._parent.add_children([self])
-
-        return self._parent
+            if current_parent is not None and current_parent != self._parent:
+                current_parent.remove_children([self])
+                self.workspace.save_entity(self)
 
     @property
     def public(self) -> bool:
@@ -336,6 +315,7 @@ class Entity(ABC):
             :func:`~geoh5py.shared.weakref_utils.remove_none_referents`.
         """
         self._children = [child for child in self._children if child not in children]
+        self.workspace.remove_children(self, children)
 
     @property
     def uid(self) -> uuid.UUID:

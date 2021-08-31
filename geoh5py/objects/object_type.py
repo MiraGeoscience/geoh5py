@@ -68,7 +68,7 @@ class ObjectType(EntityType):
         uid = uuid.uuid4()
         if getattr(entity_class, "default_type_uid", None) is not None:
             uid = entity_class.default_type_uid()
-            if "ID" in list(kwargs.keys()):
+            if "ID" in kwargs.keys():
                 kwargs["ID"] = uid
             else:
                 kwargs["uid"] = uid

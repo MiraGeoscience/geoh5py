@@ -104,6 +104,27 @@ class H5Writer:
         )
 
     @staticmethod
+    def remove_child(
+        file: str | h5py.File,
+        uid: uuid.UUID,
+        ref_type: str,
+        parent: Entity,
+    ):
+        """
+        Remove a child from a parent.
+
+        :param file: Name or handle to a geoh5 file
+        :param uid: uuid of the target :obj:`~geoh5py.shared.entity.Entity`
+        :param ref_type: Input type from: 'Types', 'Groups', 'Objects' or 'Data
+        :param parent: Remove entity from parent.
+        """
+        with fetch_h5_handle(file) as h5file:
+            uid_str = H5Writer.uuid_str(uid)
+            parent_handle = H5Writer.fetch_handle(h5file, parent)
+            if parent_handle is not None and uid_str in parent_handle[ref_type].keys():
+                del parent_handle[ref_type][uid_str]
+
+    @staticmethod
     def remove_entity(
         file: str | h5py.File,
         uid: uuid.UUID,
@@ -126,19 +147,14 @@ class H5Writer:
 
             if ref_type == "Types":
                 for e_type in ["Data types", "Group types", "Object types"]:
-                    if uid_str in list(base_type_handle[e_type].keys()):
+                    if uid_str in base_type_handle[e_type].keys():
                         del base_type_handle[e_type][uid_str]
             else:
-                if uid_str in list(base_type_handle.keys()):
+                if uid_str in base_type_handle.keys():
                     del base_type_handle[uid_str]
 
                 if parent is not None:
-                    parent_handle = H5Writer.fetch_handle(h5file, parent)
-
-                    if parent_handle is not None and uid_str in list(
-                        parent_handle[ref_type].keys()
-                    ):
-                        del parent_handle[ref_type][uid_str]
+                    H5Writer.remove_child(h5file, uid, ref_type, parent)
 
     @classmethod
     def fetch_handle(
@@ -188,7 +204,7 @@ class H5Writer:
                     break
 
             # Check if already in the project
-            if cls.uuid_str(uid) in list(base_handle.keys()):
+            if cls.uuid_str(uid) in base_handle.keys():
 
                 if return_parent:
                     return base_handle
@@ -239,7 +255,7 @@ class H5Writer:
                     H5Writer.write_entity(h5file, child)
                     H5Writer.write_to_parent(h5file, child, recursively=False)
 
-            H5Writer.write_to_parent(h5file, entity, recursively=True)
+            H5Writer.write_to_parent(h5file, entity)
 
         return new_entity
 
@@ -572,11 +588,11 @@ class H5Writer:
 
             uid = entity.uid
 
-            if entity_type not in list(h5file[base].keys()):
+            if entity_type not in h5file[base].keys():
                 h5file[base].create_group(entity_type)
 
             # Check if already in the project
-            if cls.uuid_str(uid) in list(h5file[base][entity_type].keys()):
+            if cls.uuid_str(uid) in h5file[base][entity_type].keys():
 
                 if any([entity.modified_attributes]):
 
@@ -647,10 +663,10 @@ class H5Writer:
                 return None
 
             # Check if already in the project
-            if entity_type_str not in list(h5file[base]["Types"].keys()):
+            if entity_type_str not in h5file[base]["Types"].keys():
                 h5file[base]["Types"].create_group(entity_type_str)
 
-            if cls.uuid_str(uid) in list(h5file[base]["Types"][entity_type_str].keys()):
+            if cls.uuid_str(uid) in h5file[base]["Types"][entity_type_str].keys():
 
                 if any([entity_type.modified_attributes]):
                     cls.update_attributes(h5file, entity_type)
@@ -825,7 +841,7 @@ class H5Writer:
                 parent_handle.create_group(entity_type)
 
             # Check if child uuid not already in h5
-            if cls.uuid_str(uid) not in list(parent_handle[entity_type].keys()):
+            if cls.uuid_str(uid) not in parent_handle[entity_type].keys():
                 parent_handle[entity_type][cls.uuid_str(uid)] = entity_handle
 
             if recursively:
