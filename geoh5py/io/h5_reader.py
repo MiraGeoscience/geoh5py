@@ -98,13 +98,7 @@ class H5Reader:
                 ][:]
 
             if "Value map" in entity["Type"].keys():
-                value_map = entity["Type"]["Value map"][:]
-                mapping = {}
-                for key, value in value_map.tolist():
-                    value = cls.str_from_utf8_bytes(value)
-
-                    mapping[key] = value
-
+                mapping = cls.fetch_value_map(file, uid)
                 type_attributes["entity_type"]["value_map"] = mapping
 
             # Check if the entity has property_group
@@ -339,7 +333,7 @@ class H5Reader:
         return uuids
 
     @classmethod
-    def fetch_value_map(cls, file: str | h5py.File, uid: uuid.UUID) -> dict | None:
+    def fetch_value_map(cls, file: str | h5py.File, uid: uuid.UUID) -> dict:
         """
         Get data :obj:`~geoh5py.data.data.Data.value_map`
 
@@ -351,11 +345,17 @@ class H5Reader:
         with fetch_h5_handle(file) as h5file:
             name = list(h5file.keys())[0]
             try:
-                values = np.r_[h5file[name]["Data"][cls.uuid_str(uid)]["Data"]]
-            except KeyError:
-                values = None
+                entity = h5file[name]["Data"][cls.uuid_str(uid)]
+                value_map = entity["Type"]["Value map"][:]
+                mapping = {}
+                for key, value in value_map.tolist():
+                    value = cls.str_from_utf8_bytes(value)
+                    mapping[key] = value
 
-        return values
+            except KeyError:
+                mapping = {}
+
+        return mapping
 
     @classmethod
     def fetch_values(cls, file: str | h5py.File, uid: uuid.UUID) -> float | None:
