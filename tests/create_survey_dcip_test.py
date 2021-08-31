@@ -21,6 +21,7 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from geoh5py.objects import CurrentElectrode, PotentialElectrode
 from geoh5py.shared.utils import compare_entities
@@ -47,7 +48,7 @@ def test_survey_dcip():
         )
         currents.add_default_ab_cell_id()
         potentials = PotentialElectrode.create(
-            workspace, current_electrodes=currents, name=name + "_rx", vertices=vertices
+            workspace, name=name + "_rx", vertices=vertices
         )
         n_dipoles = 9
         dipoles = []
@@ -68,9 +69,22 @@ def test_survey_dcip():
                 current_id += [val]
 
         potentials.cells = np.vstack(dipoles).astype("uint32")
+
+        fake_ab = potentials.add_data(
+            {"fabe_ab": {"values": np.ones(potentials.n_cells)}}
+        )
+        with pytest.raises(TypeError) as info:
+            potentials.ab_cell_id = fake_ab.values
+        assert info.type == TypeError, "Code did not catch TypeError"
+
+        with pytest.raises(TypeError) as info:
+            potentials.ab_cell_id = fake_ab
+        assert info.type == TypeError, "Code did not catch TypeError"
+
         potentials.ab_cell_id = np.hstack(current_id).astype("int32")
         workspace.finalize()
 
+        potentials.current_electrodes = currents
         assert (
             currents.potential_electrodes == potentials
         ), "Error assigning the potentiel_electrodes."
@@ -87,11 +101,44 @@ def test_survey_dcip():
             }
         ), "Error assigning metadata"
 
+        # Repeat the other way
+        with pytest.raises(TypeError) as info:
+            potentials.current_electrodes = None
+        assert info.type == TypeError, "Code did not catch TypeError"
+
+        with pytest.raises(TypeError) as info:
+            currents.potential_electrodes = None
+        assert info.type == TypeError, "Code did not catch TypeError"
+
+        setattr(potentials, "_current_electrodes", None)
+        setattr(currents, "_potential_electrodes", None)
+
+        currents.potential_electrodes = potentials
+        assert (
+            currents.potential_electrodes == potentials
+        ), "Error assigning the potentiel_electrodes."
+        assert (
+            potentials.current_electrodes == currents
+        ), "Error assigning the current_electrodes."
+
+        assert (
+            currents.metadata
+            == potentials.metadata
+            == {
+                "Current Electrodes": currents.uid,
+                "Potential Electrodes": potentials.uid,
+            }
+        ), "Error assigning metadata"
+        workspace.finalize()
         # Re-open the workspace and read data back in
         new_workspace = Workspace(path)
 
         currents_rec = new_workspace.get_entity(name)[0]
         potentials_rec = new_workspace.get_entity(name + "_rx")[0]
         # Check entities
-        compare_entities(currents, currents_rec, ignore=["_potentials", "_parent"])
-        compare_entities(potentials, potentials_rec, ignore=["_parent"])
+        compare_entities(
+            currents, currents_rec, ignore=["_potential_electrodes", "_parent"]
+        )
+        compare_entities(
+            potentials, potentials_rec, ignore=["_current_electrodes", "_parent"]
+        )
