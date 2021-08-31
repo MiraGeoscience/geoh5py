@@ -170,10 +170,10 @@ class PotentialElectrode(Curve):
         if list(values.keys()) != default_keys:
             raise ValueError(f"Input metadata must have for keys {default_keys}")
 
-        if not self.workspace.get_entity(values["Current Electrodes"]):
+        if self.workspace.get_entity(values["Current Electrodes"])[0] is None:
             raise IndexError("Input Current Electrodes uuid not present in Workspace")
 
-        if not self.workspace.get_entity(values["Potential Electrodes"]):
+        if self.workspace.get_entity(values["Potential Electrodes"])[0] is None:
             raise IndexError("Input Current Electrodes uuid not present in Workspace")
 
         self._metadata = values
