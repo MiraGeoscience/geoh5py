@@ -293,7 +293,9 @@ class Workspace:
         if "entity_type" in kwargs.keys():
             entity_type_kwargs = kwargs["entity_type"]
 
-        if entity_class is not RootGroup and "parent" not in entity_kwargs.keys():
+        if entity_class is not RootGroup and (
+            "parent" not in entity_kwargs.keys() or entity_kwargs["parent"] is None
+        ):
             entity_kwargs["parent"] = self.root
 
         if entity_class is Data:
