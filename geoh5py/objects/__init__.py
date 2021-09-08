@@ -19,7 +19,7 @@
 # flake8: noqa
 
 from .block_model import BlockModel
-from .curve import Curve, SurveyAirborneMagnetics
+from .curve import Curve
 from .drillhole import Drillhole
 from .geo_image import GeoImage
 from .grid2d import Grid2D
@@ -30,3 +30,5 @@ from .object_type import ObjectType
 from .octree import Octree
 from .points import Points
 from .surface import Surface
+from .surveys.direct_current import CurrentElectrode, PotentialElectrode
+from .surveys.magnetics import AirborneMagnetics

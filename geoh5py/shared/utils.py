@@ -14,9 +14,11 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
+from __future__ import annotations
+
 from abc import ABC
 from contextlib import contextmanager
-from typing import List, Optional, Union
 
 import h5py
 import numpy as np
@@ -24,7 +26,7 @@ import numpy as np
 
 @contextmanager
 def fetch_h5_handle(
-    file: Union[str, h5py.File],
+    file: str | h5py.File,
 ) -> h5py.File:
     """
     Open in read+ mode a geoh5 file from string.
@@ -49,15 +51,15 @@ def fetch_h5_handle(
 
 def match_values(vec_a, vec_b, collocation_distance=1e-4):
     """
-    Find indices of matching values between two vecays, within collocation_distance.
+    Find indices of matching values between two arrays, within collocation_distance.
 
-    :param: vec_a, list or numpy.ndvecay shape (*,)
+    :param: vec_a, list or numpy.ndarray
         Input sorted values
 
-    :param: vec_b, list or numpy.ndvecay shape (*,)
+    :param: vec_b, list or numpy.ndarray
         Query values
 
-    :return: indices, numpy.ndvecay shape(*, 2)
+    :return: indices, numpy.ndarray
         Pairs of indices for matching values between the two arrays such
         that vec_a[ind[:, 0]] == vec_b[ind[:, 1]].
     """
@@ -89,7 +91,7 @@ def merge_arrays(
     :param: tail, numpy.array of float
         Second vector of shape(N,) to be appended
     :param: mapping=None, numpy.ndarray of int
-        Optional array of shape(*, 2) where values from the head are replaced by the tail.
+        Optional array where values from the head are replaced by the tail.
     :param: collocation_distance=1e-4, float
         Tolerance between matching values.
 
@@ -114,7 +116,7 @@ def merge_arrays(
     return np.r_[head, tail]
 
 
-def compare_entities(object_a, object_b, ignore: Optional[List] = None):
+def compare_entities(object_a, object_b, ignore: list | None = None):
 
     ignore_list = ["_workspace", "_children"]
     if ignore is not None:

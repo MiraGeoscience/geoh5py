@@ -39,8 +39,8 @@ def test_user_comments():
         workspace.finalize()
 
         # Read the comments back in
-        workspace = Workspace(h5file_path)
-        object_base = workspace.get_entity("myObject")[0]
+        ws2 = Workspace(h5file_path)
+        object_base = ws2.get_entity("myObject")[0]
         assert (
             object_base.comments.values[0]["Author"] == author
         ), "Issue with 'Author of object comments"
@@ -49,19 +49,19 @@ def test_user_comments():
         ), "Issue with 'Text' of object comments"
 
         # Repeat with Group comments
-        group = ContainerGroup.create(workspace, name="myGroup")
+        group = ContainerGroup.create(ws2, name="myGroup")
         group_comment_1 = "group text comment"
         group_comment_2 = "my other comment"
         author = "Jane Doe"
         group.add_comment(group_comment_1)
         group.add_comment(group_comment_2)
-        workspace.finalize()
+        ws2.finalize()
 
-        workspace = Workspace(h5file_path)
-        group_in = workspace.get_entity("myGroup")[0]
+        ws3 = Workspace(h5file_path)
+        group_in = ws3.get_entity("myGroup")[0]
 
         assert group_in.comments.values[0]["Author"] == ",".join(
-            workspace.contributors
+            ws3.contributors
         ), "Issue with 'Author of object comments"
         assert (
             group_in.comments.values[0]["Text"] == group_comment_1

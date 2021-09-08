@@ -31,7 +31,7 @@ class ObjectType(EntityType):
     Object type class
     """
 
-    def __init__(self, workspace: "workspace.Workspace", **kwargs):
+    def __init__(self, workspace: workspace.Workspace, **kwargs):
         assert workspace is not None
         super().__init__(workspace, **kwargs)
 
@@ -42,7 +42,7 @@ class ObjectType(EntityType):
         return False
 
     @staticmethod
-    def create_custom(workspace: "workspace.Workspace") -> ObjectType:
+    def create_custom(workspace: workspace.Workspace) -> ObjectType:
         """Creates a new instance of ObjectType for an unlisted custom Object type with a
         new auto-generated UUID.
 
@@ -52,7 +52,7 @@ class ObjectType(EntityType):
 
     @classmethod
     def find_or_create(
-        cls, workspace: "workspace.Workspace", entity_class, **kwargs
+        cls, workspace: workspace.Workspace, entity_class, **kwargs
     ) -> ObjectType:
         """Find or creates an EntityType with given :obj:`uuid.UUID` that matches the given
         Group implementation class.
@@ -68,7 +68,7 @@ class ObjectType(EntityType):
         uid = uuid.uuid4()
         if getattr(entity_class, "default_type_uid", None) is not None:
             uid = entity_class.default_type_uid()
-            if "ID" in list(kwargs.keys()):
+            if "ID" in kwargs.keys():
                 kwargs["ID"] = uid
             else:
                 kwargs["uid"] = uid

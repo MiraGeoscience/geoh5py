@@ -61,9 +61,9 @@ def test_create_reference_data():
             }
         )
 
-        workspace = Workspace(h5file_path)
-        rec_obj = workspace.get_entity(name)[0]
-        rec_data = workspace.get_entity("DataValues")[0]
+        new_workspace = Workspace(h5file_path)
+        rec_obj = new_workspace.get_entity(name)[0]
+        rec_data = new_workspace.get_entity("DataValues")[0]
 
         compare_entities(points, rec_obj)
         compare_entities(data, rec_data)

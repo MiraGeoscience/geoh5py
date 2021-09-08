@@ -92,6 +92,14 @@ geoh5py.data.integer\_data module
    :undoc-members:
    :show-inheritance:
 
+geoh5py.data.numeric\_data module
+---------------------------------
+
+.. automodule:: geoh5py.data.numeric_data
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 geoh5py.data.primitive\_type\_enum module
 -----------------------------------------
 
@@ -131,7 +139,6 @@ geoh5py.data.unknown\_data module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

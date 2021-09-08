@@ -94,10 +94,10 @@ def test_create_block_model_data():
         )
 
         # Read the data back in from a fresh workspace
-        workspace = Workspace(h5file_path)
+        new_workspace = Workspace(h5file_path)
 
-        rec_obj = workspace.get_entity(name)[0]
-        rec_data = workspace.get_entity("DataValues")[0]
+        rec_obj = new_workspace.get_entity(name)[0]
+        rec_data = new_workspace.get_entity("DataValues")[0]
 
         compare_entities(grid, rec_obj)
         compare_entities(data, rec_data)

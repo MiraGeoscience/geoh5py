@@ -39,7 +39,7 @@ class GroupType(EntityType):
     _allow_move_content = True
     _allow_delete_content = True
 
-    def __init__(self, workspace: "workspace.Workspace", **kwargs):
+    def __init__(self, workspace: workspace.Workspace, **kwargs):
         assert workspace is not None
         super().__init__(workspace, **kwargs)
 
@@ -75,7 +75,7 @@ class GroupType(EntityType):
 
     @classmethod
     def find_or_create(
-        cls, workspace: "workspace.Workspace", entity_class, **kwargs
+        cls, workspace: workspace.Workspace, entity_class, **kwargs
     ) -> GroupType:
         """Find or creates an EntityType with given UUID that matches the given
         Group implementation class.
@@ -89,7 +89,7 @@ class GroupType(EntityType):
         if getattr(entity_class, "default_type_uid", None) is not None:
             uid = entity_class.default_type_uid()
 
-            if "ID" in list(kwargs.keys()):
+            if "ID" in kwargs.keys():
                 kwargs["ID"] = uid
             else:
                 kwargs["uid"] = uid
@@ -105,7 +105,7 @@ class GroupType(EntityType):
         return cls(workspace, **kwargs)
 
     @staticmethod
-    def create_custom(workspace: "workspace.Workspace", **kwargs) -> GroupType:
+    def create_custom(workspace: workspace.Workspace, **kwargs) -> GroupType:
         """Creates a new instance of GroupType for an unlisted custom Group type with a
         new auto-generated UUID.
         """

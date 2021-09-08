@@ -1,6 +1,14 @@
 geoh5py.objects package
 =======================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   geoh5py.objects.surveys
+
 Submodules
 ----------
 
@@ -11,7 +19,6 @@ geoh5py.objects.block\_model module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 geoh5py.objects.curve module
 ----------------------------
@@ -100,7 +107,6 @@ geoh5py.objects.surface module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

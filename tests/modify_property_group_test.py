@@ -43,8 +43,7 @@ def test_modify_property_group():
 
     obj_name = "myCurve"
     # Generate a curve with multiple data
-    n_stn = 12
-    xyz = np.c_[np.linspace(0, 2 * np.pi, n_stn), np.zeros(n_stn), np.zeros(n_stn)]
+    xyz = np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)]
 
     with tempfile.TemporaryDirectory() as tempdir:
         h5file_path = Path(tempdir) / r"prop_group_test.geoh5"
@@ -64,13 +63,19 @@ def test_modify_property_group():
                 )
             ]
 
+        children_list = curve.get_data_list()
+        assert all(
+            f"Period{i + 1}" in children_list for i in range(4)
+        ), "Missing data children"
         # Property group object should have been created
         prop_group = curve.find_or_create_property_group(name="myGroup")
 
         # Remove on props from the list
-        curve.remove_data_from_group(props[-1], name="myGroup")
+        curve.remove_data_from_group(children_list[0], name="myGroup")
+        curve.remove_data_from_group(props[-2:], name="myGroup")
 
-        assert len(prop_group.properties) == 3, "Error removing a property_group"
+        assert len(prop_group.properties) == 1, "Error removing a property_group"
+
         workspace.finalize()
 
         # Re-open the workspace
@@ -79,5 +84,8 @@ def test_modify_property_group():
         # Read the property_group back in
         rec_curve = workspace.get_entity(obj_name)[0]
         rec_prop_group = rec_curve.find_or_create_property_group(name="myGroup")
-
         compare_objects(rec_prop_group, prop_group)
+
+        fetch_group = workspace.fetch_property_groups(rec_curve)
+        assert len(fetch_group) == 1, "Issues reading property groups from workspace"
+        compare_objects(fetch_group[0], prop_group)

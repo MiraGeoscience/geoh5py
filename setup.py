@@ -19,9 +19,9 @@ if os.path.exists(readme_path):
 setup(
     long_description=README,
     name="geoh5py",
+    version="0.1.4",
     description="Python API for geoh5, an open file format for geoscientific data",
     python_requires="==3.*,>=3.7.0",
-    version="0.1.3",
     project_urls={
         "documentation": "https://geoh5py.readthedocs.io/en/latest/",
         "homepage": "https://mirageoscience.com",
@@ -51,6 +51,7 @@ setup(
         "geoh5py.interfaces",
         "geoh5py.io",
         "geoh5py.objects",
+        "geoh5py.objects.surveys",
         "geoh5py.shared",
         "geoh5py.workspace",
     ],
@@ -59,6 +60,7 @@ setup(
         "geoh5py.interfaces": ["*.pyi"],
         "geoh5py.io": ["*.orig"],
         "geoh5py.objects": ["*.orig"],
+        "geoh5py.workspace": ["*.orig"],
     },
     install_requires=["h5py==3.*,>=3.2.1", "numpy!=1.19.4"],
     dependency_links=[

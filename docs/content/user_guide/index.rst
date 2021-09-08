@@ -13,6 +13,7 @@ the creation of a Workspace_ to the creation and manipulation of Entities_
 
    workspace.ipynb
    entities.ipynb
+   surveys.ipynb
 
 .. _Workspace: workspace.ipynb
 .. _Entities: entities.ipynb

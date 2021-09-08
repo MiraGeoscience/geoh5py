@@ -21,7 +21,7 @@ from .group import Group, GroupType
 
 
 class DrillholeGroup(Group):
-    """ The type for the group containing drillholes."""
+    """The type for the group containing drillholes."""
 
     __TYPE_UID = uuid.UUID(
         fields=(0x825424FB, 0xC2C6, 0x4FEA, 0x9F, 0x2B, 0x6CD00023D393)

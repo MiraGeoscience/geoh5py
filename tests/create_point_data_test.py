@@ -60,11 +60,11 @@ def test_create_point_data():
         workspace.finalize()
 
         # Read the data back in from a fresh workspace
-        workspace = Workspace(h5file_path)
+        new_workspace = Workspace(h5file_path)
 
-        rec_obj = workspace.get_entity(name)[0]
-        rec_data = workspace.get_entity(new_name)[0]
-        rec_tag = workspace.get_entity("my_comment")[0]
+        rec_obj = new_workspace.get_entity(name)[0]
+        rec_data = new_workspace.get_entity(new_name)[0]
+        rec_tag = new_workspace.get_entity("my_comment")[0]
 
         compare_entities(points, rec_obj)
         compare_entities(data, rec_data)

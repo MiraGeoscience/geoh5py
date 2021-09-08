@@ -15,9 +15,13 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=R0904
+
+from __future__ import annotations
+
 import uuid
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .. import shared
@@ -35,24 +39,23 @@ class Entity(ABC):
         "ID": "uid",
         "Name": "name",
         "Public": "public",
+        "Visible": "visible",
     }
+    _visible = True
 
     def __init__(self, **kwargs):
 
         self._uid: uuid.UUID = uuid.uuid4()
         self._name = "Entity"
         self._parent = None
-        self._children: List = []
-        self._visible = True
+        self._children: list = []
         self._allow_delete = True
         self._allow_move = True
         self._allow_rename = True
         self._public = True
         self._existing_h5_entity = False
-        self._modified_attributes: List[str] = []
-
-        if "parent" in kwargs.keys():
-            setattr(self, "parent", kwargs["parent"])
+        self._metadata = None
+        self._modified_attributes: list[str] = []
 
         for attr, item in kwargs.items():
             try:
@@ -61,9 +64,8 @@ class Entity(ABC):
                 setattr(self, attr, item)
             except AttributeError:
                 continue
-        self.modified_attributes = []
 
-    def add_children(self, children: List["shared.Entity"]):
+    def add_children(self, children: list[shared.Entity]):
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
@@ -109,7 +111,7 @@ class Entity(ABC):
         self.modified_attributes = "attributes"
 
     @property
-    def attribute_map(self):
+    def attribute_map(self) -> dict:
         """
         :obj:`dict` Correspondence map between property names used in geoh5py and
         geoh5.
@@ -162,18 +164,12 @@ class Entity(ABC):
         new_object = workspace.create_entity(
             cls, **{**entity_kwargs, **entity_type_kwargs}
         )
-
-        # Add to root if parent is not set
-        if new_object.parent is None:
-            new_object.parent = workspace.root
-
         workspace.finalize()
-
         return new_object
 
     @property
     @abstractmethod
-    def entity_type(self) -> "shared.EntityType":
+    def entity_type(self) -> shared.EntityType:
         ...
 
     @property
@@ -199,6 +195,25 @@ class Entity(ABC):
         return name
 
     @property
+    def metadata(self) -> str | dict | None:
+        """
+        Metadata attached to the entity.
+        """
+        if getattr(self, "_metadata", None) is None:
+            self._metadata = self.workspace.fetch_metadata(self.uid)
+
+        return self._metadata
+
+    @metadata.setter
+    def metadata(self, value: dict | str | None):
+        if value is not None:
+            assert isinstance(
+                value, (dict, str)
+            ), f"Input metadata must be of type {dict}, {str} or None"
+        self._metadata = value
+        self.modified_attributes = "metadata"
+
+    @property
     def modified_attributes(self):
         """
         :obj:`list[str]` List of attributes to be updated in associated workspace
@@ -207,7 +222,7 @@ class Entity(ABC):
         return self._modified_attributes
 
     @modified_attributes.setter
-    def modified_attributes(self, values: Union[List, str]):
+    def modified_attributes(self, values: list | str):
         if self.existing_h5_entity:
             if not isinstance(values, list):
                 values = [values]
@@ -237,7 +252,7 @@ class Entity(ABC):
         return self._parent
 
     @parent.setter
-    def parent(self, parent: Union["shared.Entity", uuid.UUID]):
+    def parent(self, parent: shared.Entity | uuid.UUID):
 
         if parent is not None:
             if isinstance(parent, uuid.UUID):
@@ -245,24 +260,13 @@ class Entity(ABC):
             else:
                 uid = parent.uid
 
-            # Remove as child of previous parent
-            if self.parent is not None:
-                self._parent.remove_children([self])
-
+            current_parent = self._parent
             self._parent = self.workspace.get_entity(uid)[0]
             self._parent.add_children([self])
 
-    @parent.getter
-    def parent(self):
-        """
-        Parental :obj:`~geoh5py.shared.entity.Entity` in the workspace tree. The
-        workspace :obj:`~geoh5py.groups.root_group.RootGroup` is used by default.
-        """
-        if self._parent is None:
-            self._parent = self.workspace.root
-            self._parent.add_children([self])
-
-        return self._parent
+            if current_parent is not None and current_parent != self._parent:
+                current_parent.remove_children([self])
+                self.workspace.save_entity(self)
 
     @property
     def public(self) -> bool:
@@ -277,9 +281,7 @@ class Entity(ABC):
         self._public = value
         self.modified_attributes = "attributes"
 
-    def reference_to_uid(
-        self, value: Union["Entity", str, uuid.UUID]
-    ) -> List[uuid.UUID]:
+    def reference_to_uid(self, value: Entity | str | uuid.UUID) -> list[uuid.UUID]:
         """
         General entity reference translation.
 
@@ -300,7 +302,7 @@ class Entity(ABC):
             uid = [value]
         return uid
 
-    def remove_children(self, children: List["shared.Entity"]):
+    def remove_children(self, children: list[shared.Entity]):
         """
         Remove children from the list of children entities.
 
@@ -313,13 +315,14 @@ class Entity(ABC):
             :func:`~geoh5py.shared.weakref_utils.remove_none_referents`.
         """
         self._children = [child for child in self._children if child not in children]
+        self.workspace.remove_children(self, children)
 
     @property
     def uid(self) -> uuid.UUID:
         return self._uid
 
     @uid.setter
-    def uid(self, uid: Union[str, uuid.UUID]):
+    def uid(self, uid: str | uuid.UUID):
         if isinstance(uid, str):
             uid = uuid.UUID(uid)
 

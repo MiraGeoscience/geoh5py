@@ -15,8 +15,12 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+
+from __future__ import annotations
+
+import json
 import uuid
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any
 
 import h5py
 import numpy as np
@@ -46,10 +50,10 @@ class H5Reader:
     @classmethod
     def fetch_attributes(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         uid: uuid.UUID,
         entity_type: str,
-    ) -> Tuple[dict, dict, dict]:
+    ) -> tuple[dict, dict, dict]:
         """
         Get attributes of an :obj:`~geoh5py.shared.entity.Entity`.
 
@@ -66,9 +70,9 @@ class H5Reader:
         """
         with fetch_h5_handle(file) as h5file:
             name = list(h5file.keys())[0]
-            attributes: Dict = {"entity": {}}
-            type_attributes: Dict = {"entity_type": {}}
-            property_groups: Dict = {}
+            attributes: dict = {"entity": {}}
+            type_attributes: dict = {"entity_type": {}}
+            property_groups: dict = {}
 
             entity_type = cls.format_type_string(entity_type)
             if "type" in entity_type:
@@ -94,28 +98,19 @@ class H5Reader:
                 ][:]
 
             if "Value map" in entity["Type"].keys():
-                value_map = entity["Type"]["Value map"][:]
-                mapping = {}
-                for key, value in value_map.tolist():
-                    value = cls.str_from_utf8_bytes(value)
-
-                    mapping[key] = value
-
+                mapping = cls.fetch_value_map(file, uid)
                 type_attributes["entity_type"]["value_map"] = mapping
 
             # Check if the entity has property_group
             if "PropertyGroups" in entity.keys():
-                for pg_id in entity["PropertyGroups"].keys():
-                    property_groups[pg_id] = {"uid": pg_id}
-                    for key, value in entity["PropertyGroups"][pg_id].attrs.items():
-                        property_groups[pg_id][key] = value
+                property_groups = cls.fetch_property_groups(file, uid)
 
             attributes["entity"]["existing_h5_entity"] = True
 
         return attributes, type_attributes, property_groups
 
     @classmethod
-    def fetch_cells(cls, file: Union[str, h5py.File], uid: uuid.UUID) -> np.ndarray:
+    def fetch_cells(cls, file: str | h5py.File, uid: uuid.UUID) -> np.ndarray:
         """
         Get an object's :obj:`~geoh5py.objects.object_base.ObjectBase.cells`.
 
@@ -137,7 +132,7 @@ class H5Reader:
 
     @classmethod
     def fetch_children(
-        cls, file: Union[str, h5py.File], uid: uuid.UUID, entity_type: str
+        cls, file: str | h5py.File, uid: uuid.UUID, entity_type: str
     ) -> dict:
         """
         Get :obj:`~geoh5py.shared.entity.Entity.children` of an
@@ -173,9 +168,9 @@ class H5Reader:
     @classmethod
     def fetch_delimiters(
         cls,
-        file: Union[str, h5py.File],
+        file: str | h5py.File,
         uid: uuid.UUID,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Get the delimiters of a :obj:`~geoh5py.objects.block_model.BlockModel`.
 
@@ -216,9 +211,30 @@ class H5Reader:
         return u_delimiters, v_delimiters, z_delimiters
 
     @classmethod
-    def fetch_octree_cells(
-        cls, file: Union[str, h5py.File], uid: uuid.UUID
-    ) -> np.ndarray:
+    def fetch_metadata(cls, file: str | h5py.File, uid: uuid.UUID) -> str | dict | None:
+        """
+        Fetch the metadata of an entity.
+        """
+
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file.keys())[0]
+
+            try:
+                value = np.r_[h5file[name]["Objects"][cls.uuid_str(uid)]["Metadata"]]
+                value = cls.str_from_utf8_bytes(value[0])
+            except KeyError:
+                return None
+
+        if isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except ValueError:
+                pass
+
+        return value
+
+    @classmethod
+    def fetch_octree_cells(cls, file: str | h5py.File, uid: uuid.UUID) -> np.ndarray:
         """
         Get :obj:`~geoh5py.objects.octree.Octree`
         :obj:`~geoh5py.objects.object_base.ObjectBase.cells`.
@@ -241,7 +257,7 @@ class H5Reader:
         return octree_cells
 
     @classmethod
-    def fetch_project_attributes(cls, file: Union[str, h5py.File]) -> Dict[Any, Any]:
+    def fetch_project_attributes(cls, file: str | h5py.File) -> dict[Any, Any]:
         """
         Get attributes of an :obj:`~geoh5py.shared.entity.Entity`.
 
@@ -260,8 +276,8 @@ class H5Reader:
 
     @classmethod
     def fetch_property_groups(
-        cls, file: Union[str, h5py.File], uid: uuid.UUID
-    ) -> Dict[str, Dict[str, str]]:
+        cls, file: str | h5py.File, uid: uuid.UUID
+    ) -> dict[str, dict[str, str]]:
         r"""
         Get the property groups.
 
@@ -281,22 +297,19 @@ class H5Reader:
         """
         with fetch_h5_handle(file) as h5file:
             name = list(h5file.keys())[0]
-            property_groups: Dict[str, Dict[str, str]] = {}
+            property_groups: dict[str, dict[str, str]] = {}
             try:
                 pg_handle = h5file[name]["Objects"][cls.uuid_str(uid)]["PropertyGroups"]
-
                 for pg_uid in pg_handle.keys():
-
                     property_groups[pg_uid] = {}
                     for attr, value in pg_handle[pg_uid].attrs.items():
                         property_groups[pg_uid][attr] = value
             except KeyError:
                 pass
-
         return property_groups
 
     @classmethod
-    def fetch_uuids(cls, file: Union[str, h5py.File], entity_type: str) -> list:
+    def fetch_uuids(cls, file: str | h5py.File, entity_type: str) -> list:
         """
         Fetch all uuids of a given type from geoh5
 
@@ -320,9 +333,7 @@ class H5Reader:
         return uuids
 
     @classmethod
-    def fetch_value_map(
-        cls, file: Union[str, h5py.File], uid: uuid.UUID
-    ) -> Optional[dict]:
+    def fetch_value_map(cls, file: str | h5py.File, uid: uuid.UUID) -> dict:
         """
         Get data :obj:`~geoh5py.data.data.Data.value_map`
 
@@ -334,16 +345,20 @@ class H5Reader:
         with fetch_h5_handle(file) as h5file:
             name = list(h5file.keys())[0]
             try:
-                values = np.r_[h5file[name]["Data"][cls.uuid_str(uid)]["Data"]]
-            except KeyError:
-                values = None
+                entity = h5file[name]["Data"][cls.uuid_str(uid)]
+                value_map = entity["Type"]["Value map"][:]
+                mapping = {}
+                for key, value in value_map.tolist():
+                    value = cls.str_from_utf8_bytes(value)
+                    mapping[key] = value
 
-        return values
+            except KeyError:
+                mapping = {}
+
+        return mapping
 
     @classmethod
-    def fetch_values(
-        cls, file: Union[str, h5py.File], uid: uuid.UUID
-    ) -> Optional[float]:
+    def fetch_values(cls, file: str | h5py.File, uid: uuid.UUID) -> float | None:
         """
         Get data :obj:`~geoh5py.data.data.Data.values`
 
@@ -374,7 +389,7 @@ class H5Reader:
 
     @classmethod
     def fetch_coordinates(
-        cls, file: Union[str, h5py.File], uid: uuid.UUID, name: str
+        cls, file: str | h5py.File, uid: uuid.UUID, name: str
     ) -> np.ndarray:
         """
         Get an object coordinates data.
@@ -399,9 +414,7 @@ class H5Reader:
         return coordinates
 
     @classmethod
-    def fetch_trace_depth(
-        cls, file: Union[str, h5py.File], uid: uuid.UUID
-    ) -> np.ndarray:
+    def fetch_trace_depth(cls, file: str | h5py.File, uid: uuid.UUID) -> np.ndarray:
         """
         Get an object :obj:`~geoh5py.objects.drillhole.Drillhole.trace_depth` data
 
@@ -434,7 +447,7 @@ class H5Reader:
         return "{" + str(value) + "}"
 
     @staticmethod
-    def str_from_utf8_bytes(value: Union[bytes, str]) -> str:
+    def str_from_utf8_bytes(value: bytes | str) -> str:
         if isinstance(value, bytes):
             value = value.decode("utf-8")
         return value
