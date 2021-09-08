@@ -136,7 +136,7 @@ class PotentialElectrode(Curve):
             self.ab_cell_id, ReferencedData
         ):
             self.ab_cell_id.entity_type = current_electrodes.ab_cell_id.entity_type
-            self.workspace.finalize()
+        self.workspace.finalize()
 
     @property
     def potential_electrodes(self):
