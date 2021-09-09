@@ -1,4 +1,13 @@
+version: 2
+
+formats: all
+
 python:
-   setup_py_install: true
+  version: "3.7"
+  install:
+    - method: pip
+      path: .
+
 conda:
-    file: docs/environment.yml
+  environment: docs/environment.yml
+
