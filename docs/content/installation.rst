@@ -26,4 +26,4 @@ To work with **geoh5py** source code in development, install from GitHub::
 
     $ git clone --recursive https://github.com/MiraGeoscience/geoh5py.git
     $ cd geoh5py
-    $ pip install .
+    $ python setup.py install
