@@ -195,10 +195,12 @@ class Workspace:
 
         entity_kwargs["entity"]["parent"] = parent
 
+        entity_type = type(entity)
         if isinstance(entity, Data):
             entity_type = Data
-        else:
-            entity_type = type(entity)
+
+        if not copy_children and "property_groups" in entity_kwargs["entity"]:
+            del entity_kwargs["entity"]["property_groups"]
 
         new_object = parent.workspace.create_entity(
             entity_type, **{**entity_kwargs, **entity_type_kwargs}
