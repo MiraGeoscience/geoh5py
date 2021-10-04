@@ -116,7 +116,7 @@ def merge_arrays(
     return np.r_[head, tail]
 
 
-def compare_entities(object_a, object_b, ignore: list | None = None):
+def compare_entities(object_a, object_b, ignore: list | None = None, decimal: int = 6):
 
     ignore_list = ["_workspace", "_children"]
     if ignore is not None:
@@ -132,8 +132,10 @@ def compare_entities(object_a, object_b, ignore: list | None = None):
             )
         else:
             if isinstance(getattr(object_a, attr[1:]), np.ndarray):
-                np.testing.assert_array_equal(
-                    getattr(object_a, attr[1:]), getattr(object_b, attr[1:])
+                np.testing.assert_array_almost_equal(
+                    getattr(object_a, attr[1:]).tolist(),
+                    getattr(object_b, attr[1:]).tolist(),
+                    decimal=decimal,
                 )
             else:
                 assert np.all(
