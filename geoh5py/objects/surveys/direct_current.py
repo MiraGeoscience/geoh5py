@@ -117,6 +117,8 @@ class PotentialElectrode(Curve):
             self, parent, copy_children=copy_children, omit_list=omit_list
         )
         setattr(new_entity, "_ab_cell_id", None)
+        if new_entity.ab_cell_id is None and self.ab_cell_id is not None:
+            self.ab_cell_id.copy(parent=new_entity)
         new_currents = parent.workspace.copy_to_parent(
             self.current_electrodes,
             parent,
@@ -124,6 +126,11 @@ class PotentialElectrode(Curve):
             omit_list=omit_list,
         )
         setattr(new_currents, "_ab_cell_id", None)
+        if (
+            new_currents.ab_cell_id is None
+            and self.current_electrodes.ab_cell_id is not None
+        ):
+            self.current_electrodes.ab_cell_id.copy(parent=new_currents)
         new_entity.current_electrodes = new_currents
         parent.workspace.finalize()
 
@@ -253,6 +260,8 @@ class CurrentElectrode(PotentialElectrode):
             self, parent, copy_children=copy_children, omit_list=omit_list
         )
         setattr(new_entity, "_ab_cell_id", None)
+        if new_entity.ab_cell_id is None and self.ab_cell_id is not None:
+            self.ab_cell_id.copy(parent=new_entity)
         new_potentials = parent.workspace.copy_to_parent(
             self.potential_electrodes,
             parent,
@@ -260,6 +269,12 @@ class CurrentElectrode(PotentialElectrode):
             omit_list=omit_list,
         )
         setattr(new_potentials, "_ab_cell_id", None)
+        if (
+            new_potentials.ab_cell_id is None
+            and self.potential_electrodes is not None
+            and self.potential_electrodes.ab_cell_id is not None
+        ):
+            self.potential_electrodes.ab_cell_id.copy(parent=new_potentials)
         new_entity.potential_electrodes = new_potentials
         parent.workspace.finalize()
 
