@@ -80,7 +80,7 @@ class Curve(Points):
     def cells(self, indices):
         assert np.issubdtype(indices.dtype, np.integer), "Indices array must be of integer type"
         self.modified_attributes = "cells"
-        self._cells = indices.astype("int32")
+        self._cells = indices.astype(np.int32)
         self._parts = None
 
     @property
