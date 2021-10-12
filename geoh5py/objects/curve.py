@@ -78,12 +78,7 @@ class Curve(Points):
 
     @cells.setter
     def cells(self, indices):
-        assert indices.dtype in [
-            "int32",
-            "uint32",
-            "int64",
-            "uint64",
-        ], "Indices array must be of type 'uint32'"
+        assert np.issubdtype(indices.dtype, np.integer), "Indices array must be of integer type"
         self.modified_attributes = "cells"
         self._cells = indices.astype("int32")
         self._parts = None
