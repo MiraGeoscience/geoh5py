@@ -76,9 +76,27 @@ def test_copy_survey_dcip():
         workspace.finalize()
 
         # Copy the survey to a new workspace
-        path = Path(tempdir) / r"testDC_copy.geoh5"
+        path = Path(tempdir) / r"testDC_copy_current.geoh5"
         new_workspace = Workspace(path)
         currents.copy(parent=new_workspace)
+
+        # Re-open the workspace and read data back in
+        new_workspace = Workspace(path)
+        currents_rec = new_workspace.get_entity(name)[0]
+        potentials_rec = new_workspace.get_entity(name + "_rx")[0]
+
+        # Check entities
+        compare_entities(
+            currents, currents_rec, ignore=["_potential_electrodes", "_parent"]
+        )
+        compare_entities(
+            potentials, potentials_rec, ignore=["_current_electrodes", "_parent"]
+        )
+
+        # Repeat with potential entity
+        path = Path(tempdir) / r"testDC_copy_potential.geoh5"
+        new_workspace = Workspace(path)
+        potentials.copy(parent=new_workspace)
 
         # Re-open the workspace and read data back in
         new_workspace = Workspace(path)

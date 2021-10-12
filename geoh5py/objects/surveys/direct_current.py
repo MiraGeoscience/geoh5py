@@ -109,7 +109,6 @@ class PotentialElectrode(Curve):
 
         :return entity: Registered Entity to the workspace.
         """
-
         if parent is None:
             parent = self.parent
 
@@ -118,29 +117,14 @@ class PotentialElectrode(Curve):
             self, parent, copy_children=copy_children, omit_list=omit_list
         )
         setattr(new_entity, "_ab_cell_id", None)
-
-        if (
-            isinstance(new_entity, CurrentElectrode)
-            and getattr(self, "potential_electrodes", None) is not None
-        ):
-            new_potentials = parent.workspace.copy_to_parent(
-                self.potential_electrodes,
-                parent,
-                copy_children=copy_children,
-                omit_list=omit_list,
-            )
-            setattr(new_potentials, "_ab_cell_id", None)
-            new_entity.potential_electrodes = new_potentials
-        elif getattr(self, "current_electrodes", None) is not None:
-            new_currents = parent.workspace.copy_to_parent(
-                self.potential_electrodes,
-                parent,
-                copy_children=copy_children,
-                omit_list=omit_list,
-            )
-            setattr(new_currents, "_ab_cell_id", None)
-            new_entity.current_electrodes = new_currents
-
+        new_currents = parent.workspace.copy_to_parent(
+            self.current_electrodes,
+            parent,
+            copy_children=copy_children,
+            omit_list=omit_list,
+        )
+        setattr(new_currents, "_ab_cell_id", None)
+        new_entity.current_electrodes = new_currents
         parent.workspace.finalize()
 
         return new_entity
@@ -250,6 +234,36 @@ class CurrentElectrode(PotentialElectrode):
         :return: Default unique identifier
         """
         return cls.__TYPE_UID
+
+    def copy(self, parent=None, copy_children: bool = True):
+        """
+        Function to copy a survey to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: Create copies of all children entities along with it.
+
+        :return entity: Registered Entity to the workspace.
+        """
+        if parent is None:
+            parent = self.parent
+
+        omit_list = ["_metadata", "_potential_electrodes", "_current_electrodes"]
+        new_entity = parent.workspace.copy_to_parent(
+            self, parent, copy_children=copy_children, omit_list=omit_list
+        )
+        setattr(new_entity, "_ab_cell_id", None)
+        new_potentials = parent.workspace.copy_to_parent(
+            self.potential_electrodes,
+            parent,
+            copy_children=copy_children,
+            omit_list=omit_list,
+        )
+        setattr(new_potentials, "_ab_cell_id", None)
+        new_entity.potential_electrodes = new_potentials
+        parent.workspace.finalize()
+
+        return new_entity
 
     @property
     def current_electrodes(self):
