@@ -80,7 +80,7 @@ class PotentialElectrode(Curve):
                 data = self.add_data(
                     {
                         "A-B Cell ID": {
-                            "values": data.astype("int32"),
+                            "values": data.astype(np.int32),
                             "association": "CELL",
                             "entity_type": entity_type,
                         }
