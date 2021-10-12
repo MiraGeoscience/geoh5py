@@ -61,7 +61,7 @@ class PotentialElectrode(Curve):
             self._ab_cell_id = data
 
         else:
-            if not data.dtype == "int32":
+            if data.dtype != np.int32:
                 print("ab_cell_id values will be converted to type 'int32'")
 
             if any(self.get_data("A-B Cell ID")):
