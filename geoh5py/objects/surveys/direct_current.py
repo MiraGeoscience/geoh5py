@@ -67,7 +67,7 @@ class PotentialElectrode(Curve):
             if any(self.get_data("A-B Cell ID")):
                 child = self.get_data("A-B Cell ID")[0]
                 if isinstance(child, ReferencedData):
-                    child.values = data.astype("int32")
+                    child.values = data.astype(np.int32)
             else:
                 if (
                     getattr(self, "current_electrodes", None) is not None
