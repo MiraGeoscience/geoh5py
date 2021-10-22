@@ -53,7 +53,7 @@ class Grid2D(ObjectBase):
 
     def __init__(self, object_type: ObjectType, **kwargs):
 
-        self._origin = [0, 0, 0]
+        self._origin = np.array([0, 0, 0])
         self._u_cell_size = None
         self._v_cell_size = None
         self._u_count = None
@@ -61,14 +61,14 @@ class Grid2D(ObjectBase):
         self._rotation = 0.0
         self._vertical = False
         self._dip = 0.0
-        self._centroids = None
+        self._centroids: np.ndarray | None = None
 
         super().__init__(object_type, **kwargs)
 
         object_type.workspace._register_object(self)
 
     @property
-    def cell_center_u(self) -> np.ndarray:
+    def cell_center_u(self) -> np.ndarray | None:
         """
         :obj:`numpy.array` of :obj:`float`, shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, ):
         Cell center local coordinate along the u-axis.
@@ -81,7 +81,7 @@ class Grid2D(ObjectBase):
         return None
 
     @property
-    def cell_center_v(self) -> np.ndarray:
+    def cell_center_v(self) -> np.ndarray | None:
         """
         :obj:`numpy.array` of :obj:`float` shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, ):
         The cell center local coordinate along the v-axis.
@@ -94,7 +94,7 @@ class Grid2D(ObjectBase):
         return None
 
     @property
-    def centroids(self) -> np.ndarray:
+    def centroids(self) -> np.ndarray | None:
         """
         :obj:`numpy.array` of :obj:`float`,
         shape (:obj:`~geoh5py.objects.grid2d.Grid2D.n_cells`, 3):

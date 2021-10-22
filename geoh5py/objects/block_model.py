@@ -40,7 +40,7 @@ class BlockModel(ObjectBase):
     _attribute_map.update({"Origin": "origin", "Rotation": "rotation"})
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._origin = [0, 0, 0]
+        self._origin = np.array([0, 0, 0])
         self._rotation = 0
         self._u_cell_delimiters = None
         self._v_cell_delimiters = None
@@ -108,7 +108,7 @@ class BlockModel(ObjectBase):
         return None
 
     @property
-    def origin(self) -> np.array:
+    def origin(self) -> np.ndarray:
         """
         :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin.
         """

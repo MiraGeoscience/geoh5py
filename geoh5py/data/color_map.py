@@ -24,8 +24,7 @@ class ColorMap:
     _attribute_map = {"File name": "name"}
 
     def __init__(self, **kwargs):
-
-        self._values = dict()
+        self._values = np.empty((0, 5))
         self._name = "Unknown"
 
         for attr, item in kwargs.items():
@@ -59,8 +58,8 @@ class ColorMap:
         formats = ["<f8", "u1", "u1", "u1", "u1"]
 
         if isinstance(values.dtype, np.dtype):
-            assert all(
-                name in names for name in values.dtype.names
+            assert values.dtype.names is not None and all(
+                name in names for name in (values.dtype.names)
             ), f"Input 'values' must contain fields with types {names}"
             self._values = np.asarray(values, dtype=list(zip(names, formats)))
 
