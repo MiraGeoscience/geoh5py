@@ -54,6 +54,7 @@ repos:
         additional_dependencies: [types-toml]
         args: [--ignore-missing-imports, --scripts-are-modules, --show-error-context,
                --show-column-numbers]
+        exclude: geoh5py/interfaces/__init__\.py
 -   repo: local
     hooks:
     -   id: pylint
