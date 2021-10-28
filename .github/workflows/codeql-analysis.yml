@@ -11,11 +11,7 @@ on:
   pull_request:
     # The branches below must be a subset of the branches above
     branches:
-        - develop
         - main
-        - release/**
-        - feature/**
-        - hotfix/**
   schedule:
     - cron: '22 21 * * 2'
 
