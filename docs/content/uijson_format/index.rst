@@ -34,7 +34,7 @@ visible ``bool``
 optional ``bool``
     *true* or *false* on whether the parameter is optional. On output, check if *enabled* is set to true.
 enabled ``bool``
-    *true* or *false* if the parameter is enabled. Default is true. 
+    *true* or *false* if the parameter is enabled. Default is true.
 group ``str``
     Name of the group to which the parameter belongs.
 groupOptional ``bool``
@@ -81,7 +81,7 @@ Here are a few tips on creating good looking UIs:
 - Keep labels short and concise. Be consistent with capitalization and do not include the colons. Geoscience ANALYST will add colons and align them.
 - Tooltips are great
 - Utilize **optional** object members and dependencies. Objects without a valid value will invoke an error when exporting or running from Geoscience ANALYST. Truly optional objects, should be optional. If a single workspace object input is optional, use the :ref:`Object parameter <object_parameter>` rather than two parameters with a dependency.
-- Group related objects, but do not use a group if there are fewer than 3 objects. 
+- Group related objects, but do not use a group if there are fewer than 3 objects.
 - The **main** member is for general, required parameters. Do not include this member with every object, unless there are only a handful of objects. "Non-main" members are designated to a second page under *Optional parameters*.
 
 
