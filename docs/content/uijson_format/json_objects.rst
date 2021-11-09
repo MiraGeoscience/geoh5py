@@ -261,7 +261,7 @@ Use the **dependency** and **dependencyType** members to create dependencies. Th
    "dependency": "python_interest",
    "dependencyType": "enabled"
    }
-   {
+   }
 
 
 .. figure:: ./images/dependency_ex1.png
