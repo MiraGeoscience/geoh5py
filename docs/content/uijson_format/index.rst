@@ -5,7 +5,7 @@ About
 ^^^^^
 
 The **ui.json** format provides a User Interface (UI) between geoh5py and `Geoscience ANALYST Pro
-<http://www.mirageoscience.com/our-products/software-product/geoscience-analyst>`_. The file structure is built on an array of `JSON objects<https://JSON-schema.org/draft/2020-12/JSON-schema-core.html>`, each representing a parameter that is used in a python script. In general only a **label** and **value** member is required in each object, however as outlined below, there are many types of input and dependencies that can be drawn on thoughout the file. On output from Geoscience ANALYST, the value and whether the parameter is enabled will be updated or added to each JSON. Extra objects in the JSON are allowed and are ignored, but written out by Geoscience ANALYST. In general, objects will be put in order that they are set in the JSON. The exception is data parameters that depend on object parameters. Placing those parameters in the same group will ensure that they are close in the UI.
+<http://www.mirageoscience.com/our-products/software-product/geoscience-analyst>`_. The file structure is built on an array of `JSON objects<https://JSON-schema.org/draft/2020-12/JSON-schema-core.html>`_, each representing a parameter that is used in a python script. In general only a **label** and **value** member is required in each object, however as outlined below, there are many types of input and dependencies that can be drawn on thoughout the file. On output from Geoscience ANALYST, the value and whether the parameter is enabled will be updated or added to each JSON. Extra objects in the JSON are allowed and are ignored, but written out by Geoscience ANALYST. In general, objects will be put in order that they are set in the JSON. The exception is data parameters that depend on object parameters. Placing those parameters in the same group will ensure that they are close in the UI.
 
 
 Input Objects
@@ -90,6 +90,6 @@ Here are a few tips on creating good looking UIs:
 External Links
 ^^^^^^^^^^^^^^
 
-- `JSON Terminology <https://JSON-schema.org/draft-04/JSON-schema-core.html>`
-- `Universally Unique IDentifier (UUID) <https://en.wikipedia.org/wiki/Universally_unique_identifier>`
-- `C++ JSON Library <https://github.com/nlohmann/JSON>`
+- `JSON Terminology <https://JSON-schema.org/draft-04/JSON-schema-core.html>`_
+- `Universally Unique IDentifier (UUID) <https://en.wikipedia.org/wiki/Universally_unique_identifier>`_
+- `C++ JSON Library <https://github.com/nlohmann/JSON>`_

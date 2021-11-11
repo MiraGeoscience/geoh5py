@@ -104,7 +104,7 @@ For a drop-down selection, add a ``choiceList`` member with an array of strings 
 .. code-block:: json
 
    {
-   "favourites":
+   "favourites": 
    {
    "choiceList": ["Northwest Territories",
    "Yukon",
@@ -148,7 +148,7 @@ A file parameter comes with an icon to choose the file, with a ``str`` value. Ex
 Geoscience ANALYST Object parameter
 ===================================
 
-To choose an object from a dropdown menu, the `universally unique identifier (UUID) <https://en.wikipedia.org/wiki/Universally_unique_identifier>`  of the :ref:`Object Type <object_types>`: is required for the filtering of objects. This is given as a single or array of ``str`` in the member **meshType**. The icon to pick the object comes with this parameter. The value returned is the *UUID* of the Geoscience ANALYST object selected.
+To choose an object from a dropdown menu, the `universally unique identifier (UUID) <https://en.wikipedia.org/wiki/Universally_unique_identifier>`_  of the :ref:`Object Type <object_types>`: is required for the filtering of objects. This is given as a single or array of ``str`` in the member **meshType**. The icon to pick the object comes with this parameter. The value returned is the *UUID* of the Geoscience ANALYST object selected.
 
 .. code-block:: json
 
