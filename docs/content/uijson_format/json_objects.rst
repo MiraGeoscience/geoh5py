@@ -3,15 +3,17 @@
 Boolean parameter
 =================
 
-A parameter who has a ``bool`` value.
+A parameter named "input" that has a ``bool`` value.
 
 .. code-block:: json
 
    {
+   "input":{
    "main": true,
    "label": "Do you like Python?",
    "value": true,
    "tooltip": "Check if you like Python"
+   }
    }
 
 .. figure:: ./images/bool_param.png
@@ -23,16 +25,18 @@ A parameter who has a ``bool`` value.
 Integer parameter
 =================
 
-A parameter who has an ``int`` value. The optional paramaters ``min`` and ``max`` invoke a validator to insure the bound(s) are enforced.
+A parameter that has an ``int`` value. The optional parameters ``min`` and ``max`` invoke a validator to insure the bound(s) are enforced.
 
 .. code-block:: json
 
    {
+   "file_xp":{
    "main": true,
    "label": "Number of ui.json files have you created",
    "value": 1,
    "min": 0,
    "max": 100
+   }
    }
 
 .. figure:: ./images/int_param.png
@@ -42,12 +46,12 @@ A parameter who has an ``int`` value. The optional paramaters ``min`` and ``max`
 Float parameter
 ===============
 
-A parameter who has an ``float`` value. The optional paramaters are:
+A parameter that has a ``float`` value. The optional parameters are:
 
 min ``float``
-    Minimum value allowed for validator. The default is the minimum numeric limits of float.
+    Minimum value allowed for validator of the **value** member. The default is the minimum numeric limits of float.
 max ``float``
-    Maximum value allowed for validator. The default is the maximum numeric limits of float.
+    Maximum value allowed for validator of the **value** member. The default is the maximum numeric limits of float.
 lineEdit ``bool``
     Boolean whether to use a line edit (**true**) or a spin box (**false**). The default is true.
 precision ``int``
@@ -57,6 +61,7 @@ precision ``int``
 .. code-block:: json
 
    {
+   "avacado": {
    "main": true,
    "label": "Cost per avocado ($)",
    "value": 0.99,
@@ -64,6 +69,7 @@ precision ``int``
    "precision": 2,
    "lineEdit": false,
    "max": 2.79
+   }
    }
 
 .. figure:: ./images/float_param.png
@@ -78,9 +84,11 @@ For a simple string parameter, use an empty ``str`` value to have an empty strin
 .. code-block:: json
 
    {
+   "my_string": {
    "main": true,
    "label": "Name",
    "value": "Default answer"
+   }
    }
 
 .. figure:: ./images/str_param.png
@@ -91,10 +99,12 @@ For a simple string parameter, use an empty ``str`` value to have an empty strin
 Multi-choice string parameter
 -----------------------------
 
-For a drop-down of list of strings to choose, use a vector of ``str`` with the member ``choiceList``
+For a drop-down selection, add a ``choiceList`` member with an array of strings (``str``)
 
 .. code-block:: json
 
+   {
+   "favourites": 
    {
    "choiceList": ["Northwest Territories",
    "Yukon",
@@ -102,6 +112,7 @@ For a drop-down of list of strings to choose, use a vector of ``str`` with the m
    "main": true,
    "label": "Favourite Canadian territory",
    "value": "Yukon"
+   }
    }
 
 .. figure:: ./images/choice_list_param.png
@@ -112,16 +123,18 @@ For a drop-down of list of strings to choose, use a vector of ``str`` with the m
 File parameter
 ==============
 
-A file parameter comes with an icon to choose the file, with a ``str`` value. Extra members of the file object parameter are **fileDescription** and **fileType**. Both of these are ``str`` types and can be vectors, but must be of the same length
+A file parameter comes with an icon to choose the file, with a ``str`` value. Extra members of the file object parameter are **fileDescription** and **fileType**. Both of these are ``str`` types and can be arrays, but must be of the same length
 
 .. code-block:: json
 
    {
+   "model_file": {
    "fileDescription": ["Chargeability", "Conductivity"],
    "fileType": ["chg", "con"],
    "main": true,
    "label": "DC/IP model file",
    "value": ""
+   }
    }
 
 
@@ -132,19 +145,21 @@ A file parameter comes with an icon to choose the file, with a ``str`` value. Ex
 
 .. _object_parameter:
 
-Object parameter
-================
+Geoscience ANALYST Object parameter
+===================================
 
-To choose an object from a dropdown menu, the *UUID* of the :ref:`Object Type <object_types>`: is required for the filtering of objects. This is given as a single or vector of ``str`` in the member **meshType**. The icon to pick the object comes with this parameter. The value returned is the *UUID* of the object selected.
+To choose an object from a dropdown menu, the `universally unique identifier (UUID) <https://en.wikipedia.org/wiki/Universally_unique_identifier>`  of the :ref:`Object Type <object_types>`: is required for the filtering of objects. This is given as a single or array of ``str`` in the member **meshType**. The icon to pick the object comes with this parameter. The value returned is the *UUID* of the Geoscience ANALYST object selected.
 
 .. code-block:: json
 
    {
+   "interesting_object": {
    "meshType": ["{202C5DB1-A56D-4004-9CAD-BAAFD8899406}" ,
       "{6A057FDC-B355-11E3-95BE-FD84A7FFCB88}"],
    "main": true,
    "label": "Select Points or Curve",
    "value": ""
+   }
    }
 
 .. figure:: ./images/object_param.png
@@ -152,25 +167,25 @@ To choose an object from a dropdown menu, the *UUID* of the :ref:`Object Type <o
 
 .. _data_parameter:
 
-Data parameter
-==============
+Geoscience ANALYST Data parameter
+=================================
 
-Creating a parameter to choose an object's data requires extra members:
+Creating a parameter to choose a Geoscience ANALYST object's data requires extra members:
 
 dataType ``str``
    Describes the type of data to filter. One or more of these key words: ``Integer``, ``Float``, ``Text``, ``Referenced``, ``Vector``, ``DataTime``, ``Geometric``, ``Boolean``, or ``Text``
 association ``str``
-   Describes the geometry of the data. One or more of these key words: ``Vertex``, ``Cell``, or ``Face``
+   Describes the geometry of the data. One or more of these key words: ``Vertex``, ``Cell``, or ``Face``.
 parent ``str``
    Either a *UUID* of the parent or the name of the :ref:`Object parameter <object_parameter>` json object to allow the user to choose the mesh.
 isValue ``bool``
-   Describes whether to read the **value** (``float``) or **property** (``str``) member. If not given, the value member is an *UUID* and is considered a *drop-down data parameter*. If this member is given along with **property**, then an icon changing from float to drop-down list will appear. Geoscience ANALYST Pro will update this value depending on the style choice (``float`` or ``str``)
-property ``str``
+   Describes whether to read the **value** (``float``) or **property** (``str``) member. If not given, the value member is an *UUID* and is considered a *drop-down data parameter*. If this member is given along with **property**, then an icon is added to the UI element, which switches between te **value** (line edit) and **property** (drop-down) choices. This value is updated on export depending on the style choice (``float`` or ``str``)
+property ``str``.
    Data *UUID*  that is selected when **isValue** is present.  Geoscience ANALYST Pro will update this value on export.
 min ``float``
-    Optional minimum value allowed for the value. The default is the minimum numeric limits of float.
+    Optional minimum value allowed for validator of the **value** member. The default is the minimum numeric limits of float.
 max ``float``
-    Optional maximum value allowed for the value. The default is the maximum numeric limits of float.
+    Optional maximum value allowed for validator of the **value** member. The default is the maximum numeric limits of float.
 precision ``int``
     Optional number of decimal places for the value.
 
@@ -207,7 +222,7 @@ In this example, the object parameter *data_mesh* is also given for reference.
 
 Data or value parameter
 -----------------------
-In some cases, a simple float will do. The use of the member **isValue** and **property** together allows the choice within the UI. In this example, the **property** member will turned on to begin with. The **value** will default to 1.0 and show up when the icon is clicked. The **uncertainty channel** object depends on the **data_mesh** object. The combobox will filter data from the chosen object that is located on the vertices and is float (pi icon).
+In some cases, a parameter may take its data from a Geoscience ANALYST object or simply a ``float`` value. The use of the member **isValue** and **property** together allows for the UI to switch between these two cases. In this example, the **property** member will initially be active. The **value** will be set to 1.0 and show up when the icon is clicked. The **uncertainty channel** object depends on the **data_mesh** object. The drop-down selection will filter data from the chosen object that is located on the vertices and is float (second image below).
 
 
 .. code-block:: json
@@ -236,14 +251,13 @@ In some cases, a simple float will do. The use of the member **isValue** and **p
 
 
 .. figure:: ./images/data_value_param.png
-
+.. figure:: ./images/data_value_param2.png
 
 
 Dependencies on other parameters
 ================================
 
-Use the **dependency** and **dependencyType** members to create dependencies. The parameter driving the dependency should have the **optional** member or be a :ref:`Boolean parameter'<bool_param>`. Below are a couple of examples. The first requires the checkbox to be checked prior to the string parameter to be enabled. When the dependency is checked, the dependent parameter is *enabled*.
-
+Use the **dependency** and **dependencyType** members to create dependencies. The parameter driving the dependency should set **optional** to true or be a :ref:`Boolean parameter'<bool_param>`. Below are a couple of examples. The first initializes the *favourite_package* parameter as disabled until the *python_interest* parameter is checked. The second shows the opposite when the **enabled** member is set to true.
 
 .. code-block:: json
 
@@ -267,7 +281,7 @@ Use the **dependency** and **dependencyType** members to create dependencies. Th
 .. figure:: ./images/dependency_ex1.png
 
 
-The next example has a dependency on an optional parameter. The member *enabled* is set to false so that it is not automatically checked. This is a parameter that Geoscience ANALYST will update on export.
+The next example has a dependency on an optional parameter. The **enabled** member is set to false so that it is not automatically checked. The *city* and *territory* parameters will be enabled when the *territory* checkbox is checked.
 
 .. code-block:: json
 
