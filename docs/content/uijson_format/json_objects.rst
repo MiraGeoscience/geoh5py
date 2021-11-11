@@ -104,7 +104,7 @@ For a drop-down selection, add a ``choiceList`` member with an array of strings 
 .. code-block:: json
 
    {
-   "favourites": 
+   "favourites":
    {
    "choiceList": ["Northwest Territories",
    "Yukon",
