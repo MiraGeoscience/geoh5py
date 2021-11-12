@@ -177,7 +177,7 @@ dataType ``str``
 association ``str``
    Describes the geometry of the data. One or more of these key words: ``Vertex``, ``Cell``, or ``Face``.
 parent ``str``
-   Either a *UUID* of the parent or the name of the :ref:`Object parameter <object_parameter>` json object to allow the user to choose the mesh.
+   Either a *UUID* of the parent or the name of the :ref:`Object parameter <object_parameter>` JSON object to allow the user to choose the mesh.
 isValue ``bool``
    Describes whether to read the **value** (``float``) or **property** (``str``) member. If not given, the value member is an *UUID* and is considered a *drop-down data parameter*. If this member is given along with **property**, then an icon is added to the UI element, which switches between te **value** (line edit) and **property** (drop-down) choices. This value is updated on export depending on the style choice (``float`` or ``str``)
 property ``str``.
@@ -257,7 +257,7 @@ In some cases, a parameter may take its data from a Geoscience ANALYST object or
 Dependencies on other parameters
 ================================
 
-Use the **dependency** and **dependencyType** members to create dependencies. The parameter driving the dependency should set **optional** to true or be a :ref:`Boolean parameter <bool_param>`. Below are a couple of examples. The first initializes the *favourite_package* parameter as disabled until the *python_interest* parameter is checked. The second shows the opposite when the **enabled** member is set to true.
+Use the **dependency** and **dependencyType** members to create dependencies. The parameter driving the dependency should set **optional** to true or be a :ref:`Boolean parameter'<bool_param>`. Below are a couple of examples. The first initializes the *favourite_package* parameter as disabled until the *python_interest* parameter is checked. The second shows the opposite when the **enabled** member is set to true.
 
 .. code-block:: json
 

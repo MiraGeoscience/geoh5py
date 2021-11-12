@@ -21,12 +21,12 @@ title ``str``
 
 Object Members
 ^^^^^^^^^^^^^^
-Each JSON object with the following members become a parameter in the user interface. Each object must have the members **label** and **value**. Each member will contribute to the appearence and behaviour within Geoscience ANALYST. The possible members that can be given to all parameter objects are:
+Each JSON object with the following members become a parameter in the user interface. Each object must have the members ``label`` and ``value``. Each member will contribute to the appearence and behaviour within Geoscience ANALYST>. The possible members that can be given to all parameter objects are:
 
 label ``str``
     Required string describing parameter. A colon will automatically be added within Geoscience ANALYST, so this should be omitted.
 value ``str``, ``int``, ``bool`` , or ``float``
-    This required member takes a different form, including empty, depending on the :ref:`parameter type <json_param_examples>`. The value is updated when written from Geoscience ANALYST.
+    This require member takes a different form, including empty, depending on the :ref:`parameter type <json_param_examples>`. The value is updated when written from Geoscience ANALYST.
 main ``bool``
     If set to true, the parameter is shown in the first tab and will throw an error if not given and not optional. Optional parameters may be set to main. When main is not given or is false, the parameter will be under the *Optional Parameters* tab.
 tooltip ``str``
@@ -38,7 +38,7 @@ enabled ``bool``
 group ``str``
     Name of the group to which the parameter belongs. Adds a box and name around the parameters with the same case-sensitive group name.
 groupOptional ``bool``
-    If true, adds a checkbox in the top of the group box next to the name. The group parameters will be disabled if not checked. The initial state depends on the **groupDependency** and **groupDependencyType** members and the **enabled** member of the group's parameters.
+    If true, adds a checkbox in the top of the group box next to the name. The group parameters will be disabled if not checked. The initial statedpends on the **groupDependency** and **groupDependencyType** members and the **enabled** member of the group's parameters.
 dependency ``str``
     The name of the object of which this object is dependent upon. The dependency parameter should be optional or boolean parameter (i.e., has a checkbox).
 dependencyType ``str``
@@ -58,7 +58,7 @@ There are other JSON members that may be available or required based on the para
  .. toctree::
    :maxdepth: 1
 
-   JSON_objects.rst
+   json_objects.rst
 
 
 Exporting from Geoscience ANALYST
