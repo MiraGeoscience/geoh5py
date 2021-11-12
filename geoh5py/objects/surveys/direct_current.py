@@ -61,13 +61,13 @@ class PotentialElectrode(Curve):
             self._ab_cell_id = data
 
         else:
-            if not data.dtype == "int32":
-                raise TypeError("ab_cell_id must be of type 'int32'")
+            if data.dtype != np.int32:
+                print("ab_cell_id values will be converted to type 'int32'")
 
             if any(self.get_data("A-B Cell ID")):
                 child = self.get_data("A-B Cell ID")[0]
                 if isinstance(child, ReferencedData):
-                    child.values = data
+                    child.values = data.astype(np.int32)
             else:
                 if (
                     getattr(self, "current_electrodes", None) is not None
@@ -80,7 +80,7 @@ class PotentialElectrode(Curve):
                 data = self.add_data(
                     {
                         "A-B Cell ID": {
-                            "values": data,
+                            "values": data.astype(np.int32),
                             "association": "CELL",
                             "entity_type": entity_type,
                         }
@@ -90,8 +90,6 @@ class PotentialElectrode(Curve):
                 if isinstance(data, ReferencedData):
                     self._ab_cell_id = data
 
-        self.workspace.finalize()
-
     @property
     def ab_map(self) -> dict | None:
         """
@@ -100,6 +98,43 @@ class PotentialElectrode(Curve):
         if isinstance(self.ab_cell_id, ReferencedData):
             return self.ab_cell_id.value_map
         return None
+
+    def copy(self, parent=None, copy_children: bool = True):
+        """
+        Function to copy a survey to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: Create copies of all children entities along with it.
+
+        :return entity: Registered Entity to the workspace.
+        """
+        if parent is None:
+            parent = self.parent
+
+        omit_list = ["_metadata", "_potential_electrodes", "_current_electrodes"]
+        new_entity = parent.workspace.copy_to_parent(
+            self, parent, copy_children=copy_children, omit_list=omit_list
+        )
+        setattr(new_entity, "_ab_cell_id", None)
+        if new_entity.ab_cell_id is None and self.ab_cell_id is not None:
+            self.ab_cell_id.copy(parent=new_entity)
+        new_currents = parent.workspace.copy_to_parent(
+            self.current_electrodes,
+            parent,
+            copy_children=copy_children,
+            omit_list=omit_list,
+        )
+        setattr(new_currents, "_ab_cell_id", None)
+        if (
+            new_currents.ab_cell_id is None
+            and self.current_electrodes.ab_cell_id is not None
+        ):
+            self.current_electrodes.ab_cell_id.copy(parent=new_currents)
+        new_entity.current_electrodes = new_currents
+        parent.workspace.finalize()
+
+        return new_entity
 
     @property
     def current_electrodes(self):
@@ -153,7 +188,10 @@ class PotentialElectrode(Curve):
         if getattr(self, "_metadata", None) is None:
             metadata = self.workspace.fetch_metadata(self.uid)
             for key, value in metadata.items():
-                metadata[key] = uuid.UUID(value)
+                try:
+                    metadata[key] = uuid.UUID(value)
+                except ValueError:
+                    metadata[key] = value
 
             self._metadata = metadata
         return self._metadata
@@ -174,7 +212,7 @@ class PotentialElectrode(Curve):
             raise IndexError("Input Current Electrodes uuid not present in Workspace")
 
         if self.workspace.get_entity(values["Potential Electrodes"])[0] is None:
-            raise IndexError("Input Current Electrodes uuid not present in Workspace")
+            raise IndexError("Input Potential Electrodes uuid not present in Workspace")
 
         self._metadata = values
         self.modified_attributes = "metadata"
@@ -206,6 +244,44 @@ class CurrentElectrode(PotentialElectrode):
         :return: Default unique identifier
         """
         return cls.__TYPE_UID
+
+    def copy(self, parent=None, copy_children: bool = True):
+        """
+        Function to copy a survey to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: Create copies of all children entities along with it.
+
+        :return entity: Registered Entity to the workspace.
+        """
+        if parent is None:
+            parent = self.parent
+
+        omit_list = ["_metadata", "_potential_electrodes", "_current_electrodes"]
+        new_entity = parent.workspace.copy_to_parent(
+            self, parent, copy_children=copy_children, omit_list=omit_list
+        )
+        setattr(new_entity, "_ab_cell_id", None)
+        if new_entity.ab_cell_id is None and self.ab_cell_id is not None:
+            self.ab_cell_id.copy(parent=new_entity)
+        new_potentials = parent.workspace.copy_to_parent(
+            self.potential_electrodes,
+            parent,
+            copy_children=copy_children,
+            omit_list=omit_list,
+        )
+        setattr(new_potentials, "_ab_cell_id", None)
+        if (
+            new_potentials.ab_cell_id is None
+            and self.potential_electrodes is not None
+            and self.potential_electrodes.ab_cell_id is not None
+        ):
+            self.potential_electrodes.ab_cell_id.copy(parent=new_potentials)
+        new_entity.potential_electrodes = new_potentials
+        parent.workspace.finalize()
+
+        return new_entity
 
     @property
     def current_electrodes(self):

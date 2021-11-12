@@ -155,20 +155,23 @@ class Workspace:
     def contributors(self, value: list[str]):
         self._contributors = np.asarray(value, dtype=h5py.special_dtype(vlen=str))
 
-    def copy_to_parent(self, entity, parent, copy_children: bool = True):
+    def copy_to_parent(
+        self, entity, parent, copy_children: bool = True, omit_list: tuple = ()
+    ):
         """
         Copy an entity to a different parent with copies of children.
 
         :param entity: Entity to be copied.
         :param parent: Target parent to copy the entity under.
         :param copy_children: Copy all children of the entity.
+        :param omit_list: List of property names to omit on copy
 
         :return: The Entity registered to the workspace.
         """
 
         entity_kwargs: dict = {"entity": {"uid": None, "parent": None}}
         for key in entity.__dict__.keys():
-            if key not in ["_uid", "_entity_type"]:
+            if key not in ["_uid", "_entity_type"] + list(omit_list):
                 if key[0] == "_":
                     key = key[1:]
 
@@ -176,7 +179,7 @@ class Workspace:
 
         entity_type_kwargs: dict = {"entity_type": {}}
         for key in entity.entity_type.__dict__.keys():
-            if key not in ["_workspace"]:
+            if key not in ["_workspace"] + list(omit_list):
                 if key[0] == "_":
                     key = key[1:]
 
@@ -195,10 +198,12 @@ class Workspace:
 
         entity_kwargs["entity"]["parent"] = parent
 
+        entity_type = type(entity)
         if isinstance(entity, Data):
             entity_type = Data
-        else:
-            entity_type = type(entity)
+
+        if not copy_children and "property_groups" in entity_kwargs["entity"]:
+            del entity_kwargs["entity"]["property_groups"]
 
         new_object = parent.workspace.create_entity(
             entity_type, **{**entity_kwargs, **entity_type_kwargs}
