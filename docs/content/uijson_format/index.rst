@@ -26,7 +26,7 @@ Each JSON object with the following members become a parameter in the user inter
 label ``str``
     Required string describing parameter. A colon will automatically be added within Geoscience ANALYST, so this should be omitted.
 value ``str``, ``int``, ``bool`` , or ``float``
-    This require member takes a different form, including empty, depending on the :ref:`parameter type <json_param_examples>`. The value is updated when written from Geoscience ANALYST.
+    This required member takes a different form, including empty, depending on the :ref:`parameter type <json_param_examples>`. The value is updated when written from Geoscience ANALYST.
 main ``bool``
     If set to true, the parameter is shown in the first tab and will throw an error if not given and not optional. Optional parameters may be set to main. When main is not given or is false, the parameter will be under the *Optional Parameters* tab.
 tooltip ``str``
