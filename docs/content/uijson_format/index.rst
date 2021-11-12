@@ -21,7 +21,7 @@ title ``str``
 
 Object Members
 ^^^^^^^^^^^^^^
-Each JSON object with the following members become a parameter in the user interface. Each object must have the members ``label`` and ``value``. Each member will contribute to the appearence and behaviour within Geoscience ANALYST>. The possible members that can be given to all parameter objects are:
+Each JSON object with the following members become a parameter in the user interface. Each object must have the members **label** and **value**. Each member will contribute to the appearence and behaviour within Geoscience ANALYST. The possible members that can be given to all parameter objects are:
 
 label ``str``
     Required string describing parameter. A colon will automatically be added within Geoscience ANALYST, so this should be omitted.
