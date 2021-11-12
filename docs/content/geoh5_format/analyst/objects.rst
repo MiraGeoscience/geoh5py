@@ -1,3 +1,5 @@
+.. _analyst_objects:
+
 ANALYST Objects
 ===============
 
