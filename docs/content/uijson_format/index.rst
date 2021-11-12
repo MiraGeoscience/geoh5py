@@ -38,7 +38,7 @@ enabled ``bool``
 group ``str``
     Name of the group to which the parameter belongs. Adds a box and name around the parameters with the same case-sensitive group name.
 groupOptional ``bool``
-    If true, adds a checkbox in the top of the group box next to the name. The group parameters will be disabled if not checked. The initial statedpends on the **groupDependency** and **groupDependencyType** members and the **enabled** member of the group's parameters.
+    If true, adds a checkbox in the top of the group box next to the name. The group parameters will be disabled if not checked. The initial state depends on the **groupDependency** and **groupDependencyType** members and the **enabled** member of the group's parameters.
 dependency ``str``
     The name of the object of which this object is dependent upon. The dependency parameter should be optional or boolean parameter (i.e., has a checkbox).
 dependencyType ``str``
