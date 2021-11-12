@@ -173,7 +173,7 @@ Geoscience ANALYST Data parameter
 Creating a parameter to choose a Geoscience ANALYST object's data requires extra members:
 
 dataType ``str``
-   Describes the type of data to filter. One or more of these key words: ``Integer``, ``Float``, ``Text``, ``Referenced``, ``Vector``, ``DataTime``, ``Geometric``, ``Boolean``, or ``Text``
+   Describes the type of data to filter. One or more (as an array) of these key words: ``Integer``, ``Float``, ``Text``, ``Referenced``, ``Vector``, ``DataTime``, ``Geometric``, ``Boolean``, or ``Text``.
 association ``str``
    Describes the geometry of the data. One or more of these key words: ``Vertex``, ``Cell``, or ``Face``.
 parent ``str``
