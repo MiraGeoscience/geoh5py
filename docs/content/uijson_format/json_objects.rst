@@ -222,7 +222,7 @@ In this example, the object parameter *data_mesh* is also given for reference.
 
 Data or value parameter
 -----------------------
-In some cases, a parameter may take its data from a Geoscience ANALYST object or simply a ``float`` value. The use of the member **isValue** and **property** together allows for the UI to switch between these two cases. In this example, the **property** member will initially be active. The **value** will be set to 1.0 and show up when the icon is clicked. The **uncertainty channel** object depends on the **data_mesh** object. The drop-down selection will filter data from the chosen object that is located on the vertices and is float (second image below).
+In some cases, a parameter may take its data from a Geoscience ANALYST object or simply a ``float`` value. The use of the member **isValue** and **property** together allows for the UI to switch between these two cases. In this example, the **property** member will initially be active (top image). The **value** will be set to 1.0 and show up when the icon is clicked. The **uncertainty channel** object depends on the **data_mesh** object. The drop-down selection will filter data from the chosen object that is located on the vertices and is float. The **isValue** is set to false in this case (second image below).
 
 
 .. code-block:: json
@@ -232,7 +232,7 @@ In some cases, a parameter may take its data from a Geoscience ANALYST object or
    "main": true,
    "association": "Vertex",
    "dataType": "Float",
-   "isValue": false,
+   "isValue": true,
    "property": "",
    "min": 0.001,
    "label": "Uncertainty",
