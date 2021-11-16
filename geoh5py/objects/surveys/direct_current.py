@@ -59,7 +59,6 @@ class PotentialElectrode(Curve):
             if not isinstance(data, ReferencedData):
                 raise TypeError(f"ab_cell_id must be of type {ReferencedData}")
             self._ab_cell_id = data
-
         else:
             if data.dtype != np.int32:
                 print("ab_cell_id values will be converted to type 'int32'")
