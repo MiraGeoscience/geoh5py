@@ -22,7 +22,7 @@ repos:
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/PyCQA/isort
-    rev: 5.9.3
+    rev: 5.10.1
     hooks:
     -   id: isort
         additional_dependencies: [toml] # to read config from pyproject.toml
