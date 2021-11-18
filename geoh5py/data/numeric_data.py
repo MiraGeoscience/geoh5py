@@ -56,7 +56,9 @@ class NumericData(Data, ABC):
         Check for possible mismatch between the length of values
         stored and the expected number of cells or vertices.
         """
-        if self.n_values is not None and len(values) < self.n_values:
+        if self.n_values is not None and (
+            values is None or len(values) < self.n_values
+        ):
             full_vector = np.ones(self.n_values) * np.nan
             full_vector[: len(np.ravel(values))] = np.ravel(values)
 
