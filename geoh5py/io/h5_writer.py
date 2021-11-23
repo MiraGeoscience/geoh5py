@@ -559,6 +559,10 @@ class H5Writer:
                     compression="gzip",
                     compression_opts=9,
                 )
+                entity_type_handle = H5Writer.fetch_handle(h5file, entity.entity_type)
+                stats_cache = entity_type_handle.get("StatsCache")
+                if stats_cache is not None:
+                    del entity_type_handle["StatsCache"]
 
     @classmethod
     def write_entity(
