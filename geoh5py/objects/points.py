@@ -32,7 +32,7 @@ class Points(ObjectBase):
     __TYPE_UID = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._vertices: np.ndarray = None
+        self._vertices: np.ndarray | None = None
 
         super().__init__(object_type, **kwargs)
 
@@ -47,10 +47,10 @@ class Points(ObjectBase):
         """
         :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`
         """
-        if (getattr(self, "_vertices", None) is None) and self.existing_h5_entity:
+        if self._vertices is None and self.existing_h5_entity:
             self._vertices = self.workspace.fetch_coordinates(self.uid, "vertices")
 
-        if getattr(self, "_vertices", None) is not None:
+        if self._vertices is not None:
             return self._vertices.view("<f8").reshape((-1, 3))
 
         return None
