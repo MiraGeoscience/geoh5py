@@ -101,11 +101,11 @@ class ObjectBase(Entity):
 
             data = {
                 "data_A": {
-                    'values', [v_1, v_2, ...],
+                    'values': [v_1, v_2, ...],
                     'association': 'VERTEX'
                     },
                 "data_B": {
-                    'values', [v_1, v_2, ...],
+                    'values': [v_1, v_2, ...],
                     'association': 'CELLS'
                     },
             }
@@ -276,7 +276,7 @@ class ObjectBase(Entity):
 
         :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        if "name" in kwargs.keys() and any(
+        if "name" in kwargs and any(
             pg.name == kwargs["name"] for pg in self.property_groups
         ):
             prop_group = [
