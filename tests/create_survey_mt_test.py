@@ -50,6 +50,13 @@ def test_create_survey_mt():
         # Create the survey from vertices
         mt_survey = Magnetotellurics.create(workspace, vertices=vertices, name=name)
 
+        for key, value in {
+            "input_type": "Rx Only",
+            "survey_type": "Magnetotellurics",
+            "unit": "Hertz (Hz)",
+        }.items():
+            assert getattr(mt_survey, key) == value, f"Error setting defaults for {key}"
+
         with pytest.raises(TypeError):
             mt_survey.metadata = "Hello World"
 
@@ -58,6 +65,8 @@ def test_create_survey_mt():
 
         with pytest.raises(KeyError):
             mt_survey.metadata = {"EM Dataset": {}}
+
+        mt_survey.metadata = mt_survey.default_metadata
 
         with pytest.raises(TypeError):
             mt_survey.channels = 1.0

@@ -25,23 +25,23 @@ from ..object_type import ObjectType
 
 class Magnetotellurics(Points):
     """
-    A magnetotelluric survey object.
+    A magnetotellurics survey object.
     """
 
     __TYPE_UID = uuid.UUID("{b99bd6e5-4fe1-45a5-bd2f-75fc31f91b38}")
-    _input_type = "Rx Only"
-    _survey_type = "Magnetotellurics"
-    _unit = "Hertz (Hz)"
-    _default_metadata = {
+    __default_metadata = {
         "EM Dataset": {
             "Channels": [],
-            "Input type": _input_type,
+            "Input type": "Rx Only",
             "Property groups": [],
             "Receivers": "",
-            "Survey type": _survey_type,
-            "Unit": _unit,
+            "Survey type": "Magnetotellurics",
+            "Unit": "Hertz (Hz)",
         }
     }
+    _input_type = None
+    _survey_type = None
+    _unit = None
 
     def __init__(self, object_type: ObjectType, **kwargs):
         super().__init__(object_type, **kwargs)
@@ -72,8 +72,18 @@ class Magnetotellurics(Points):
         return cls.__TYPE_UID
 
     @property
+    def default_metadata(self) -> dict:
+        """
+        :return: Default unique identifier
+        """
+        return self.__default_metadata.copy()
+
+    @property
     def input_type(self):
         """Type of measurements"""
+        if getattr(self, "_input_type", None) is None:
+            self._input_type = self.metadata["EM Dataset"]["Input type"]
+
         return self._input_type
 
     @property
@@ -85,8 +95,8 @@ class Magnetotellurics(Points):
             metadata = self.workspace.fetch_metadata(self.uid)
 
             if metadata is None:
-                self._default_metadata["EM Dataset"]["Receivers"] = str(self.uid)
-                metadata = self._default_metadata
+                self.default_metadata["EM Dataset"]["Receivers"] = str(self.uid)
+                metadata = self.default_metadata
 
             self._metadata = metadata
         return self._metadata
@@ -100,7 +110,7 @@ class Magnetotellurics(Points):
         if "EM Dataset" not in values:
             raise KeyError("'EM Dataset' must be a 'metadata' key")
 
-        for key in self._default_metadata["EM Dataset"]:
+        for key in self.default_metadata["EM Dataset"]:
             if key not in values["EM Dataset"]:
                 raise KeyError(f"{key} argument missing from the input metadata.")
 
@@ -110,11 +120,17 @@ class Magnetotellurics(Points):
     @property
     def survey_type(self):
         """Type of EM survey"""
+        if getattr(self, "_survey_type", None) is None:
+            self._survey_type = self.metadata["EM Dataset"]["Survey type"]
+
         return self._survey_type
 
     @property
     def unit(self):
         """Data unit"""
+        if getattr(self, "_unit", None) is None:
+            self._unit = self.metadata["EM Dataset"]["Unit"]
+
         return self._unit
 
     def add_frequency_data(self, data: dict) -> Data | list[Data]:
@@ -209,8 +225,5 @@ class Magnetotellurics(Points):
                 self.modified_attributes = "metadata"
 
         self.workspace.finalize()
-
-        if len(data_objects) == 1:
-            return data_object
 
         return data_objects
