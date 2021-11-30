@@ -19,7 +19,6 @@ from __future__ import annotations
 import uuid
 
 from ...data import Data
-from ...groups import PropertyGroup
 from ..curve import Points
 from ..object_type import ObjectType
 
@@ -52,21 +51,15 @@ class Magnetotellurics(Points):
         """
         List of measured frequencies.
         """
-        if self.metadata is None:
-            raise AttributeError("No metadata set.")
-
         channels = self.metadata["EM Dataset"]["Channels"]
         return channels
 
     @channels.setter
     def channels(self, values: list):
         if not isinstance(values, list):
-            raise ValueError(
+            raise TypeError(
                 f"Channel values must be a list of {float}. {type(values)} provided"
             )
-
-        if self.metadata is None:
-            raise AttributeError("No metadata set.")
 
         self.metadata["EM Dataset"]["Channels"] = values
         self.modified_attributes = "metadata"
@@ -101,39 +94,17 @@ class Magnetotellurics(Points):
     @metadata.setter
     def metadata(self, values: dict):
 
-        if "EM Dataset" not in values.keys():
+        if not isinstance(values, dict):
+            raise TypeError("'metadata' must be of type 'dict'")
+
+        if "EM Dataset" not in values:
             raise KeyError("'EM Dataset' must be a 'metadata' key")
 
-        for key in self._default_metadata:
-            if key not in values:
+        for key in self._default_metadata["EM Dataset"]:
+            if key not in values["EM Dataset"]:
                 raise KeyError(f"{key} argument missing from the input metadata.")
 
         self._metadata = values
-        self.modified_attributes = "metadata"
-
-    @property
-    def property_groups(self) -> list[PropertyGroup]:
-        """
-        :obj:`list` of :obj:`~geoh5py.groups.property_group.PropertyGroup`.
-        """
-        return self._property_groups
-
-    @property_groups.setter
-    def property_groups(self, prop_groups: list[PropertyGroup]):
-        # Check for existing property_group
-        for prop_group in prop_groups:
-            if not any(
-                pg.uid == prop_group.uid for pg in self.property_groups
-            ) and not any(pg.name == prop_group.name for pg in self.property_groups):
-                prop_group.parent = self
-
-                self.modified_attributes = "property_groups"
-                self._property_groups = self.property_groups + [prop_group]
-
-        if self.property_groups is not None:
-            self.metadata["EM dataset"]["Property groups"] = [
-                pg.name for pg in self.property_groups
-            ]
         self.modified_attributes = "metadata"
 
     @property
@@ -183,9 +154,14 @@ class Magnetotellurics(Points):
         :return: List of new Data objects.
         """
         data_objects = []
-        if self.channels is None:
+        if self.channels is None or not self.channels:
             raise AttributeError(
                 "The 'channels' property defining frequencies must be set before adding data."
+            )
+
+        if not isinstance(data, dict):
+            raise TypeError(
+                "Input data must be nested dictionaries of component and frequency channels"
             )
 
         for name, component_block in data.items():
@@ -226,6 +202,11 @@ class Magnetotellurics(Points):
                 self.add_data_to_group(data_object, name)
 
                 data_objects.append(data_object)
+
+            prop_group = self.find_or_create_property_group(name=name)
+            if prop_group.name not in self.metadata["EM Dataset"]["Property groups"]:
+                self.metadata["EM Dataset"]["Property groups"].append(name)
+                self.modified_attributes = "metadata"
 
         self.workspace.finalize()
 
