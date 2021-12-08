@@ -31,6 +31,7 @@ h5py = "^3.2.1"
 lockfile = "^0.12.2"
 poetry-publish = {git = "https://github.com/MiraGeoscience/poetry-publish.git", rev = "pending_fixes"}
 pylint = "^2.3"
+pylint-exit = "^1.2.0"
 pytest = "^3.0"
 pytest-cov = "^2.7.1"
 scipy = "^1.4.1"
