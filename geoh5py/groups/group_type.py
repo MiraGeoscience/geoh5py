@@ -89,7 +89,7 @@ class GroupType(EntityType):
         if getattr(entity_class, "default_type_uid", None) is not None:
             uid = entity_class.default_type_uid()
 
-            if "ID" in kwargs.keys():
+            if "ID" in kwargs:
                 kwargs["ID"] = uid
             else:
                 kwargs["uid"] = uid
