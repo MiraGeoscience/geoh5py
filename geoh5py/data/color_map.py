@@ -29,7 +29,7 @@ class ColorMap:
 
         for attr, item in kwargs.items():
             try:
-                if attr in self._attribute_map.keys():
+                if attr in self._attribute_map:
                     attr = self._attribute_map[attr]
                 setattr(self, attr, item)
             except AttributeError:

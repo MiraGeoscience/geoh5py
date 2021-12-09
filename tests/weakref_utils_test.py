@@ -29,8 +29,7 @@ class AnyObject:
 
 
 def test_remove_none_referents():
-    some_dict = dict()
-    some_dict["gone"] = weakref.ref(AnyObject())
+    some_dict = {"gone": weakref.ref(AnyObject())}
     bound_object = AnyObject()
     some_dict["there"] = weakref.ref(bound_object)
 
@@ -42,8 +41,7 @@ def test_remove_none_referents():
 
 
 def test_get_clean_ref():
-    some_dict = dict()
-    some_dict["gone"] = weakref.ref(AnyObject())
+    some_dict = {"gone": weakref.ref(AnyObject())}
     bound_object = AnyObject()
     some_dict["there"] = weakref.ref(bound_object)
 
@@ -58,8 +56,7 @@ def test_get_clean_ref():
 
 
 def test_insert_once():
-    some_dict = dict()
-    some_dict["gone"] = weakref.ref(AnyObject())
+    some_dict = {"gone": weakref.ref(AnyObject())}
     bound_object = AnyObject()
     some_dict["there"] = weakref.ref(bound_object)
 
