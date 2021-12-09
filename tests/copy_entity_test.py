@@ -19,7 +19,6 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
-from scipy import spatial
 
 from geoh5py.objects import Curve, Octree, Points, Surface
 from geoh5py.shared.utils import compare_entities
@@ -33,14 +32,14 @@ def test_copy_entity():
     xyz = np.random.randn(n_data, 3)
 
     # Create surface
-    surf_2d = spatial.Delaunay(xyz[:, :2])
+    cells = np.unique(np.random.randint(0, xyz.shape[0] - 1, (xyz.shape[0], 3)), axis=1)
 
     objects = {
         Points: {"name": "Something", "vertices": np.random.randn(n_data, 3)},
         Surface: {
             "name": "Surface",
             "vertices": np.random.randn(n_data, 3),
-            "cells": getattr(surf_2d, "simplices"),
+            "cells": cells,
         },
         Curve: {
             "name": "Curve",

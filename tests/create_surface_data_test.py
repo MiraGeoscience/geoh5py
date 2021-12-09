@@ -19,7 +19,6 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
-from scipy import spatial
 
 from geoh5py.objects import Surface
 from geoh5py.shared.utils import compare_entities
@@ -38,9 +37,11 @@ def test_create_surface_data():
         x, y = x.ravel(), y.ravel()
         z = np.random.randn(x.shape[0])
 
-        del_surf = spatial.Delaunay(np.c_[x, y])
+        xyz = np.c_[x, y, z]
 
-        simplices = getattr(del_surf, "simplices")
+        simplices = np.unique(
+            np.random.randint(0, xyz.shape[0] - 1, (xyz.shape[0], 3)), axis=1
+        )
 
         # Create random data
         values = np.mean(
@@ -49,7 +50,7 @@ def test_create_surface_data():
 
         # Create a geoh5 surface
         surface = Surface.create(
-            workspace, name="mySurf", vertices=np.c_[x, y, z], cells=simplices
+            workspace, name="mySurf", vertices=xyz, cells=simplices
         )
 
         data = surface.add_data({"TMI": {"values": values}})
