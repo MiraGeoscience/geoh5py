@@ -112,7 +112,7 @@ class Magnetotellurics(Points):
 
         for key in self.default_metadata["EM Dataset"]:
             if key not in values["EM Dataset"]:
-                raise KeyError(f"{key} argument missing from the input metadata.")
+                raise KeyError(f"'{key}' argument missing from the input metadata.")
 
         self._metadata = values
         self.modified_attributes = "metadata"
@@ -133,14 +133,14 @@ class Magnetotellurics(Points):
 
         return self._unit
 
-    def add_frequency_data(self, data: dict) -> Data | list[Data]:
+    def add_component_data(self, data: dict) -> Data | list[Data]:
         """
         Adapted from :func:`~geoh5py.objects.object_base.ObjectBase.add_data` method.
 
-        Add data per component at every frequency defined in
+        Add data per component at every channel defined in
         :attr:`~geoh5py.objects.surveys.magnetotellurics.Magnetotellurics.channels`.
         Data properties such as 'values' and 'entity_type' must be provided as a
-        dictionary under each frequency such as:
+        dictionary under each channel (frequency) such as:
 
         .. code-block:: python
 
@@ -161,9 +161,9 @@ class Magnetotellurics(Points):
             }
 
         Data values association is always assumed to be 'VERTEX' and name set
-        by the component and frequency value.
+        by the component and channel value.
         A :obj:`geoh5py.groups.property_group.PropertyGroup` for the component gets created
-        by default to group all frequencies.
+        by default to group all channels.
 
         :param data: Dictionary of data to be added to the object
 
@@ -177,7 +177,7 @@ class Magnetotellurics(Points):
 
         if not isinstance(data, dict):
             raise TypeError(
-                "Input data must be nested dictionaries of component and frequency channels"
+                "Input data must be nested dictionaries of component and channels (frequencies)"
             )
 
         for name, component_block in data.items():
@@ -190,7 +190,7 @@ class Magnetotellurics(Points):
             if len(component_block) != len(self.channels):
                 raise ValueError(
                     f"Input component {name} should contain {len(self.channels)} "
-                    "frequency values, equal to the number of 'channels'."
+                    "channel values, equal to the number of 'channels' (frequencies)."
                     f"{len(component_block)} values provided."
                 )
             for channel in self.channels:

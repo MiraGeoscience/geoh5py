@@ -57,27 +57,32 @@ def test_create_survey_mt():
         }.items():
             assert getattr(mt_survey, key) == value, f"Error setting defaults for {key}"
 
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError) as excinfo:
             mt_survey.metadata = "Hello World"
+        assert "'metadata' must be of type 'dict'" in str(excinfo)
 
-        with pytest.raises(KeyError):
+        with pytest.raises(KeyError) as excinfo:
             mt_survey.metadata = {"Hello World": {}}
+        assert "'EM Dataset' must be a 'metadata' key" in str(excinfo)
 
-        with pytest.raises(KeyError):
+        with pytest.raises(KeyError) as excinfo:
             mt_survey.metadata = {"EM Dataset": {}}
+        assert "'Channels' argument missing from the input metadata." in str(excinfo)
 
         mt_survey.metadata = mt_survey.default_metadata
 
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError) as excinfo:
             mt_survey.channels = 1.0
+        assert "Channel values must be a list of" in str(excinfo)
 
-        with pytest.raises(AttributeError):
-            mt_survey.add_frequency_data(123.0)
-
+        with pytest.raises(AttributeError) as excinfo:
+            mt_survey.add_component_data(123.0)
+        assert "The 'channels' property defining" in str(excinfo)
         mt_survey.channels = [5.0, 10.0, 100.0]
 
-        with pytest.raises(TypeError):
-            mt_survey.add_frequency_data(123.0)
+        with pytest.raises(TypeError) as excinfo:
+            mt_survey.add_component_data(123.0)
+        assert "Input data must be nested dictionaries" in str(excinfo)
 
         # Create some simple data
         data = {}
@@ -92,27 +97,31 @@ def test_create_survey_mt():
                 comp_dict[freq] = {"values": values}
 
             if c_ind == 0:
-                with pytest.raises(TypeError):
-                    mt_survey.add_frequency_data({component: values})
+                with pytest.raises(TypeError) as excinfo:
+                    mt_survey.add_component_data({component: values})
+                assert "Given value to data" in str(excinfo)
 
-                with pytest.raises(ValueError):
-                    mt_survey.add_frequency_data(
+                with pytest.raises(ValueError) as excinfo:
+                    mt_survey.add_component_data(
                         {component: {ind: values for ind in range(2)}}
                     )
+                assert "Input component" in str(excinfo)
 
-                with pytest.raises(KeyError):
-                    mt_survey.add_frequency_data(
+                with pytest.raises(KeyError) as excinfo:
+                    mt_survey.add_component_data(
                         {component: {ind: values for ind in range(3)}}
                     )
+                assert "Channel 5.0 Hz is missing" in str(excinfo)
 
-                with pytest.raises(TypeError):
-                    mt_survey.add_frequency_data(
+                with pytest.raises(TypeError) as excinfo:
+                    mt_survey.add_component_data(
                         {component: {freq: values for freq in mt_survey.channels}}
                     )
+                assert "Given value to data 5.0" in str(excinfo)
 
             data[component] = comp_dict
 
-        mt_survey.add_frequency_data(data)
+        mt_survey.add_component_data(data)
 
         assert len(mt_survey.metadata["EM Dataset"]["Property groups"]) == len(
             mt_survey.property_groups
