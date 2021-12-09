@@ -57,15 +57,11 @@ class Surface(Points):
         if isinstance(indices, list):
             indices = np.vstack(indices)
 
-        assert indices.dtype in [
-            "int32",
-            "uint32",
-        ], "Indices array must be of type 'uint32'"
-
-        if indices.dtype == "int32":
-            indices.astype("uint32")
+        assert np.issubdtype(
+            indices.dtype, np.integer
+        ), "Indices array must be of integer type"
         self.modified_attributes = "cells"
-        self._cells = indices
+        self._cells = indices.astype(np.int32)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

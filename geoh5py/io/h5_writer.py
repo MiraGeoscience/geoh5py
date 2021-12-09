@@ -87,7 +87,7 @@ class H5Writer:
             types.create_group("Object types")
 
     @classmethod
-    def create_dataset(cls, entity_handle, dataset: np.array, label: str):
+    def create_dataset(cls, entity_handle, dataset: np.ndarray, label: str):
         """
         Create a dataset on geoh5.
 
@@ -448,7 +448,7 @@ class H5Writer:
             if reference_value_map is not None and reference_value_map.map is not None:
                 entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)
 
-                dtype = dict(names=names, formats=formats)
+                dtype = list(zip(names, formats))
                 array = np.array(list(reference_value_map.map.items()), dtype=dtype)
                 cls.create_dataset(entity_type_handle, array, "Value map")
 
@@ -559,6 +559,10 @@ class H5Writer:
                     compression="gzip",
                     compression_opts=9,
                 )
+                entity_type_handle = H5Writer.fetch_handle(h5file, entity.entity_type)
+                stats_cache = entity_type_handle.get("StatsCache")
+                if stats_cache is not None:
+                    del entity_type_handle["StatsCache"]
 
     @classmethod
     def write_entity(

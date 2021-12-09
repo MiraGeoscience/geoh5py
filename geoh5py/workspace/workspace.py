@@ -81,7 +81,7 @@ class Workspace:
 
         for attr, item in kwargs.items():
             try:
-                if attr in self._attribute_map.keys():
+                if attr in self._attribute_map:
                     attr = self._attribute_map[attr]
                 setattr(self, attr, item)
             except AttributeError:
@@ -290,16 +290,13 @@ class Workspace:
 
         :return entity: Newly created entity registered to the workspace
         """
-        entity_kwargs: dict = dict()
-        if "entity" in kwargs.keys():
-            entity_kwargs = kwargs["entity"]
-
-        entity_type_kwargs: dict = dict()
-        if "entity_type" in kwargs.keys():
-            entity_type_kwargs = kwargs["entity_type"]
+        entity_kwargs: dict = kwargs["entity"] if "entity" in kwargs else {}
+        entity_type_kwargs: dict = (
+            kwargs["entity_type"] if "entity_type" in kwargs else {}
+        )
 
         if entity_class is not RootGroup and (
-            "parent" not in entity_kwargs.keys() or entity_kwargs["parent"] is None
+            "parent" not in entity_kwargs or entity_kwargs["parent"] is None
         ):
             entity_kwargs["parent"] = self.root
 

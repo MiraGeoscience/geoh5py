@@ -54,8 +54,8 @@ class Drillhole(Points):
         self._collar: np.ndarray | None = None
         self._cost: float | None = 0.0
         self._planning: str = "Default"
-        self._surveys: np.ndarray = None
-        self._trace: np.ndarray = None
+        self._surveys: np.ndarray | None = None
+        self._trace: np.ndarray | None = None
         self._trace_depth: np.ndarray | None = None
         self._locations = None
         self._deviation_x = None
@@ -264,10 +264,10 @@ class Drillhole(Points):
         """
         :obj:`numpy.array`: Drillhole trace defining the path in 3D
         """
-        if (getattr(self, "_trace", None) is None) and self.existing_h5_entity:
+        if self._trace is None and self.existing_h5_entity:
             self._trace = self.workspace.fetch_coordinates(self.uid, "trace")
 
-        if getattr(self, "_trace", None) is not None:
+        if self._trace is not None:
             return self._trace.view("<f8").reshape((-1, 3))
 
         return None

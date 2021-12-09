@@ -118,10 +118,6 @@ class ObjectBase(Entity):
                 f"Given value to data {name} should of type {dict}. "
                 f"Type {type(attr)} given instead."
             )
-            assert (
-                "values" in attr.keys()
-            ), f"Given attr for data {name} should include 'values'"
-
             attr["name"] = name
             self.validate_data_association(attr)
             entity_type = self.validate_data_type(attr)
@@ -276,7 +272,7 @@ class ObjectBase(Entity):
 
         :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        if "name" in kwargs.keys() and any(
+        if "name" in kwargs and any(
             pg.name == kwargs["name"] for pg in self.property_groups
         ):
             prop_group = [
@@ -403,28 +399,30 @@ class ObjectBase(Entity):
         """
         Get a dictionary of attributes and validate the type of data.
         """
-
-        if "entity_type" in attribute_dict.keys():
-            entity_type = attribute_dict["entity_type"]
-        elif "type" in attribute_dict.keys():
-            assert attribute_dict["type"].upper() in list(
-                PrimitiveTypeEnum.__members__.keys()
-            ), f"Data 'type' should be one of {list(PrimitiveTypeEnum.__members__.keys())}"
-            entity_type = {"primitive_type": attribute_dict["type"].upper()}
-        else:
-            if isinstance(attribute_dict["values"], np.ndarray) and (
-                attribute_dict["values"].dtype in [np.float32, np.float64]
-            ):
-                entity_type = {"primitive_type": "FLOAT"}
-            elif isinstance(attribute_dict["values"], np.ndarray) and (
-                attribute_dict["values"].dtype in [np.uint32, np.int32]
-            ):
-                entity_type = {"primitive_type": "INTEGER"}
-            elif isinstance(attribute_dict["values"], str):
-                entity_type = {"primitive_type": "TEXT"}
+        entity_type = attribute_dict.get("entity_type")
+        if entity_type is None:
+            primitive_type = attribute_dict.get("type")
+            if primitive_type is not None:
+                assert primitive_type.upper() in list(
+                    PrimitiveTypeEnum.__members__.keys()
+                ), f"Data 'type' should be one of {list(PrimitiveTypeEnum.__members__.keys())}"
+                entity_type = {"primitive_type": primitive_type.upper()}
             else:
-                raise NotImplementedError(
-                    "Only add_data values of type FLOAT, INTEGER and TEXT have been implemented"
-                )
+                values = attribute_dict.get("values")
+                if values is None or (
+                    isinstance(values, np.ndarray)
+                    and (values.dtype in [np.float32, np.float64])
+                ):
+                    entity_type = {"primitive_type": "FLOAT"}
+                elif isinstance(values, np.ndarray) and (
+                    values.dtype in [np.uint32, np.int32]
+                ):
+                    entity_type = {"primitive_type": "INTEGER"}
+                elif isinstance(values, str):
+                    entity_type = {"primitive_type": "TEXT"}
+                else:
+                    raise NotImplementedError(
+                        "Only add_data values of type FLOAT, INTEGER and TEXT have been implemented"
+                    )
 
         return entity_type

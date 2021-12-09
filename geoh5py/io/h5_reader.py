@@ -110,7 +110,7 @@ class H5Reader:
         return attributes, type_attributes, property_groups
 
     @classmethod
-    def fetch_cells(cls, file: str | h5py.File, uid: uuid.UUID) -> np.ndarray:
+    def fetch_cells(cls, file: str | h5py.File, uid: uuid.UUID) -> np.ndarray | None:
         """
         Get an object's :obj:`~geoh5py.objects.object_base.ObjectBase.cells`.
 
@@ -390,7 +390,7 @@ class H5Reader:
     @classmethod
     def fetch_coordinates(
         cls, file: str | h5py.File, uid: uuid.UUID, name: str
-    ) -> np.ndarray:
+    ) -> np.ndarray | None:
         """
         Get an object coordinates data.
 
@@ -404,12 +404,13 @@ class H5Reader:
         with fetch_h5_handle(file) as h5file:
             root = list(h5file.keys())[0]
 
+            coordinates = None
             try:
                 coordinates = np.asarray(
                     h5file[root]["Objects"][cls.uuid_str(uid)][cls.key_map[name]]
                 )
             except KeyError:
-                coordinates = None
+                pass
 
         return coordinates
 

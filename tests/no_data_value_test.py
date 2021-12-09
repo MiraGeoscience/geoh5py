@@ -35,6 +35,8 @@ def test_no_data_values():
     int_values = np.random.randint(n_data, size=n_data).astype(float)
     int_values[2:5] = np.nan
 
+    all_nan = np.ones(n_data)
+
     with tempfile.TemporaryDirectory() as tempdir:
         h5file_path = Path(tempdir) / r"testProject.geoh5"
 
@@ -48,9 +50,11 @@ def test_no_data_values():
                     "values": int_values,
                     "type": "INTEGER",
                 },
+                "NoValues": {"association": "VERTEX"},
+                "AllNanValues": {"association": "VERTEX", "values": all_nan},
             }
         )
-
+        data_objs[-1].values = None  # Reset all values to nan
         workspace.finalize()
 
         # Read the data back in from a fresh workspace
@@ -59,6 +63,9 @@ def test_no_data_values():
         for data in data_objs:
             rec_data = new_workspace.get_entity(data.name)[0]
 
-            assert all(
-                np.isnan(rec_data.values) == np.isnan(data.values)
-            ), "Mismatch between input and recovered data values"
+            if data.values is None:
+                assert rec_data.values is None, "Data 'values' saved should None"
+            else:
+                assert all(
+                    np.isnan(rec_data.values) == np.isnan(data.values)
+                ), "Mismatch between input and recovered data values"
