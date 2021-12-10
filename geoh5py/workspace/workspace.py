@@ -293,7 +293,6 @@ class Workspace:
         entity_kwargs: dict = kwargs.get("entity", {})
         entity_type_kwargs: dict = kwargs.get("entity_type", {})
 
-
         if entity_class is not RootGroup and (
             "parent" not in entity_kwargs or entity_kwargs["parent"] is None
         ):
