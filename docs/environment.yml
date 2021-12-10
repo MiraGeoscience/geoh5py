@@ -8,6 +8,7 @@ dependencies:
   - matplotlib
   - scipy
   - h5py
+  - pip
   - ipykernel
   - pip:
     - sphinx

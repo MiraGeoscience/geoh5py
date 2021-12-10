@@ -170,7 +170,7 @@ class Workspace:
         """
 
         entity_kwargs: dict = {"entity": {"uid": None, "parent": None}}
-        for key in entity.__dict__.keys():
+        for key in entity.__dict__:
             if key not in ["_uid", "_entity_type"] + list(omit_list):
                 if key[0] == "_":
                     key = key[1:]
@@ -178,7 +178,7 @@ class Workspace:
                 entity_kwargs["entity"][key] = getattr(entity, key)
 
         entity_type_kwargs: dict = {"entity_type": {}}
-        for key in entity.entity_type.__dict__.keys():
+        for key in entity.entity_type.__dict__:
             if key not in ["_workspace"] + list(omit_list):
                 if key[0] == "_":
                     key = key[1:]
@@ -290,10 +290,9 @@ class Workspace:
 
         :return entity: Newly created entity registered to the workspace
         """
-        entity_kwargs: dict = kwargs["entity"] if "entity" in kwargs else {}
-        entity_type_kwargs: dict = (
-            kwargs["entity_type"] if "entity_type" in kwargs else {}
-        )
+        entity_kwargs: dict = kwargs.get("entity", {})
+        entity_type_kwargs: dict = kwargs.get("entity_type", {})
+
 
         if entity_class is not RootGroup and (
             "parent" not in entity_kwargs or entity_kwargs["parent"] is None
@@ -844,6 +843,7 @@ class Workspace:
             if isinstance(entity, ObjectBase) and len(property_groups) > 0:
                 for kwargs in property_groups.values():
                     entity.find_or_create_property_group(**kwargs)
+                    entity.modified_attributes = []
 
         return entity
 
