@@ -101,11 +101,11 @@ class ObjectBase(Entity):
 
             data = {
                 "data_A": {
-                    'values', [v_1, v_2, ...],
+                    'values': [v_1, v_2, ...],
                     'association': 'VERTEX'
                     },
                 "data_B": {
-                    'values', [v_1, v_2, ...],
+                    'values': [v_1, v_2, ...],
                     'association': 'CELLS'
                     },
             }

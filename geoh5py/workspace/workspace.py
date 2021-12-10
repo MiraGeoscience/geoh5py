@@ -81,7 +81,7 @@ class Workspace:
 
         for attr, item in kwargs.items():
             try:
-                if attr in self._attribute_map.keys():
+                if attr in self._attribute_map:
                     attr = self._attribute_map[attr]
                 setattr(self, attr, item)
             except AttributeError:
@@ -170,7 +170,7 @@ class Workspace:
         """
 
         entity_kwargs: dict = {"entity": {"uid": None, "parent": None}}
-        for key in entity.__dict__.keys():
+        for key in entity.__dict__:
             if key not in ["_uid", "_entity_type"] + list(omit_list):
                 if key[0] == "_":
                     key = key[1:]
@@ -178,7 +178,7 @@ class Workspace:
                 entity_kwargs["entity"][key] = getattr(entity, key)
 
         entity_type_kwargs: dict = {"entity_type": {}}
-        for key in entity.entity_type.__dict__.keys():
+        for key in entity.entity_type.__dict__:
             if key not in ["_workspace"] + list(omit_list):
                 if key[0] == "_":
                     key = key[1:]
@@ -290,16 +290,11 @@ class Workspace:
 
         :return entity: Newly created entity registered to the workspace
         """
-        entity_kwargs: dict = dict()
-        if "entity" in kwargs.keys():
-            entity_kwargs = kwargs["entity"]
-
-        entity_type_kwargs: dict = dict()
-        if "entity_type" in kwargs.keys():
-            entity_type_kwargs = kwargs["entity_type"]
+        entity_kwargs: dict = kwargs.get("entity", {})
+        entity_type_kwargs: dict = kwargs.get("entity_type", {})
 
         if entity_class is not RootGroup and (
-            "parent" not in entity_kwargs.keys() or entity_kwargs["parent"] is None
+            "parent" not in entity_kwargs or entity_kwargs["parent"] is None
         ):
             entity_kwargs["parent"] = self.root
 
@@ -847,6 +842,7 @@ class Workspace:
             if isinstance(entity, ObjectBase) and len(property_groups) > 0:
                 for kwargs in property_groups.values():
                     entity.find_or_create_property_group(**kwargs)
+                    entity.modified_attributes = []
 
         return entity
 
