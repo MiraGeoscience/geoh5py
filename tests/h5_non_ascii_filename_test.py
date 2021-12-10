@@ -49,9 +49,8 @@ def test_write_reread_non_ascii_filename():
         with h5py.File(file_path, "r") as h5_file:
             dataset = h5_file[dataset_name]
             assert dataset is not None
-
-            assert dataset.shape == dataset_shape
-            assert dataset.dtype == np.dtype("int32")
+            assert getattr(dataset, "shape") == dataset_shape
+            assert getattr(dataset, "dtype") == np.dtype("int32")
 
 
 @pytest.mark.xfail(
@@ -62,7 +61,7 @@ def test_write_reread_non_ascii_filename():
 def test_existing_non_ascii_filename():
     with tempfile.TemporaryDirectory() as tempdir:
         file_path = Path(tempdir) / NON_ASCII_FILENAME
-        with open(file_path, "w"):
+        with open(file_path, "w", encoding="utf-8"):
             pass
 
         assert file_path.exists()

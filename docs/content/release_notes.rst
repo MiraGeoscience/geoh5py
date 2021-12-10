@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Release 0.1.6 - 2021/12/10
+Release 0.1.6 - 2021/12/09
 --------------------------
 
 - Fix StatsCache on value changes.

@@ -28,7 +28,7 @@ class ReferencedData(IntegerData):
     def __init__(self, data_type: DataType, **kwargs):
         super().__init__(data_type, **kwargs)
 
-        if "value_map" in kwargs.keys():
+        if "value_map" in kwargs:
             self.entity_type.value_map = kwargs["value_map"]
 
     @classmethod
