@@ -32,3 +32,4 @@ from .points import Points
 from .surface import Surface
 from .surveys.direct_current import CurrentElectrode, PotentialElectrode
 from .surveys.magnetics import AirborneMagnetics
+from .surveys.magnetotellurics import Magnetotellurics

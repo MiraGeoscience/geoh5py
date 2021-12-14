@@ -59,7 +59,7 @@ class Entity(ABC):
 
         for attr, item in kwargs.items():
             try:
-                if attr in self._attribute_map.keys():
+                if attr in self._attribute_map:
                     attr = self._attribute_map[attr]
                 setattr(self, attr, item)
             except AttributeError:
@@ -155,11 +155,11 @@ class Entity(ABC):
 
         :return entity: Registered Entity to the workspace.
         """
-        if "entity_type_uid" in kwargs.keys():
-            entity_type_kwargs = {"entity_type": {"uid": kwargs["entity_type_uid"]}}
-        else:
-            entity_type_kwargs = {}
-
+        entity_type_kwargs = (
+            {"entity_type": {"uid": kwargs["entity_type_uid"]}}
+            if "entity_type_uid" in kwargs
+            else {}
+        )
         entity_kwargs = {"entity": kwargs}
         new_object = workspace.create_entity(
             cls, **{**entity_kwargs, **entity_type_kwargs}

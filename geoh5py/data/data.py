@@ -45,7 +45,7 @@ class Data(Entity):
         self._association: DataAssociationEnum | None = None
         self._values = None
 
-        if "association" in kwargs.keys():
+        if "association" in kwargs:
             setattr(self, "association", kwargs["association"])
 
         super().__init__(**kwargs)
