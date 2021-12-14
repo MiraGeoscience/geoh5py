@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Any
 from uuid import UUID
 
@@ -30,23 +30,6 @@ class BaseValidator(ABC):
             if hasattr(self, key):
                 setattr(self, key, value)
 
-    @staticmethod
-    def base_message(param: str, validate_type: str) -> str:
-        """Generate validation type error message."""
-        return f"Validation {validate_type} error for '{param}'."
-
-    def raise_message(
-        self, name: str, message: str, iterable_values: list[Any] = None
-    ) -> str:
-        """
-        Generate an error message from parameters.
-        """
-        return (
-            self.base_message(name, self.validation_type)
-            + message
-            + self._iterable_message(iterable_values)
-        )
-
     @property
     def workspace(self):
         """Target Workspace"""
@@ -58,47 +41,25 @@ class BaseValidator(ABC):
             raise TypeError(f"Input workspace must be of type {Workspace} or None")
         self._workspace = value
 
+    @abstractmethod
+    def validate(self, name: str, value: Any, valid: Any):
+        """
+        Custom validation function.
+        """
+
     @property
     def validation_type(self) -> str:
         """Validation type"""
         return self._validation_type
 
-    @staticmethod
-    def _isiterable(value: Any, checklen: bool = False) -> bool:
-        """
-        Checks if object is iterable.
-
-        Parameters
-        ----------
-        value : Object to check for iterableness.
-        checklen : Restrict objects with __iter__ method to len > 1.
-
-        Returns
-        -------
-        True if object has __iter__ attribute but is not string or dict type.
-        """
-        only_array_like = (not isinstance(value, str)) & (not isinstance(value, dict))
-        if (hasattr(value, "__iter__")) & only_array_like:
-            return not (checklen and (len(value) == 1))
-
-        return False
-
-    @classmethod
-    def _iterable_message(cls, valid_values: list[Any] | None) -> str:
-        """Append possibly iterable valid_values: "Must be (one of): {valid_values}."."""
-        if valid_values is None:
-            msg = ""
-        elif cls._isiterable(valid_values, checklen=True):
-            vstr = "'" + "', '".join(str(k) for k in valid_values) + "'"
-            msg = f" must be one of: {vstr}."
-        else:
-            msg = f" must be: '{valid_values[0]}'."
-
-        return msg
-
     def __call__(self, *args):
         if hasattr(self, "validate"):
             self.validate(*args)
+
+
+class RequiredValidationError(Exception):
+    def __init__(self, name):
+        super().__init__(f"Missing '{name}' from the list of required parameters.")
 
 
 class RequiredValidator(BaseValidator):
@@ -107,15 +68,24 @@ class RequiredValidator(BaseValidator):
     """
 
     _validation_type = "required"
+    _validation_error = ()
 
-    def validate(self, name: str, value: Any, is_required: bool) -> None:
+    def validate(self, name: str, value: Any, valid: bool) -> None:
         """
         :param name: Parameter identifier.
         :param value: Input parameter value.
-        :param is_required: Assert to be required
+        :param valid: Assert to be required
         """
-        if value is None and is_required:
-            raise ValueError(self.raise_message(name, "Missing required parameter."))
+        if value is None and valid:
+            raise RequiredValidationError(name)
+
+
+class ValueValidationError(Exception):
+    def __init__(self, name, value, valid):
+        super().__init__(
+            f"Value '{value}' provided for '{name}' is invalid."
+            + iterable_message(valid)
+        )
 
 
 class ValueValidator(BaseValidator):
@@ -125,18 +95,22 @@ class ValueValidator(BaseValidator):
 
     _validation_type = "values"
 
-    def validate(self, name: str, value: Any, valid_values: list[float | str]) -> None:
+    def validate(self, name: str, value: Any, valid: list[float | str]) -> None:
         """
         :param name: Parameter identifier.
         :param value: Input parameter value.
-        :param valid_values: List of accepted values
+        :param valid: List of accepted values
         """
-        if value not in valid_values:
-            raise ValueError(
-                self.raise_message(
-                    name, f". Value {value}", iterable_values=valid_values
-                )
-            )
+        if value not in valid:
+            raise ValueValidationError(name, value, valid)
+
+
+class TypeValidationError(Exception):
+    def __init__(self, name, value, valid):
+        super().__init__(
+            f"Type '{value}' provided for '{name}' is invalid. "
+            + iterable_message(valid)
+        )
 
 
 class TypeValidator(BaseValidator):
@@ -146,23 +120,27 @@ class TypeValidator(BaseValidator):
 
     _validation_type = "types"
 
-    def validate(self, name: str, value: Any, valid_types: list[type]) -> None:
+    def validate(self, name: str, value: Any, valid: list[type]) -> None:
         """
         :param name: Parameter identifier.
         :param value: Input parameter value.
-        :param valid_types: List of accepted value types
+        :param valid: List of accepted value types
         """
-        isiter = self._isiterable(value)
+        isiter = iterable(value)
         value = np.array(value).flatten().tolist()[0] if isiter else value
-        if type(value) not in valid_types:
-            valid_names = [t.__name__ for t in valid_types]
+        if type(value) not in valid:
+            valid_names = [t.__name__ for t in valid]
             type_name = type(value).__name__
 
-            raise TypeError(
-                self.raise_message(
-                    name, f". Type for {type_name}", iterable_values=valid_names
-                )
-            )
+            raise TypeValidationError(name, type_name, valid_names)
+
+
+class ShapeValidationError(Exception):
+    def __init__(self, name, value, valid):
+        super().__init__(
+            f"Shape of '{value}' provided for '{name}' is invalid. "
+            + iterable_message(valid)
+        )
 
 
 class ShapeValidator(BaseValidator):
@@ -170,19 +148,30 @@ class ShapeValidator(BaseValidator):
 
     _validation_type = "shape"
 
-    def validate(self, name: str, value: Any, valid_shape: list[tuple[int]]) -> None:
+    def validate(self, name: str, value: Any, valid: list[tuple[int]]) -> None:
         """
         :param name: Parameter identifier.
         :param value: Input parameter value.
-        :param valid_shape: Expected value shape
+        :param valid: Expected value shape
         """
         pshape = np.array(value).shape
-        if pshape != valid_shape:
-            raise ValueError(
-                self.raise_message(
-                    name, f". Shape of {pshape}", iterable_values=valid_shape
-                )
-            )
+        if pshape != valid:
+            raise ShapeValidationError(name, pshape, valid)
+
+
+class UUIDValidationError(Exception):
+    def __init__(self, name, value, valid):
+        super().__init__(
+            f"UUID '{value}' provided for '{name}' is invalid. "
+            + iterable_message(valid)
+        )
+
+
+class UUIDStringValidationError(Exception):
+    def __init__(self, name, value):
+        super().__init__(
+            f"Parameter '{name}' with value '{value}' is not a valid uuid string."
+        )
 
 
 class UUIDValidator(BaseValidator):
@@ -190,26 +179,27 @@ class UUIDValidator(BaseValidator):
 
     _validation_type = "uuid"
 
-    def validate(self, name: str, value: Any, valid_uuid: list) -> None:
+    def validate(self, name: str, value: Any, valid: list) -> None:
         """
         :param name: Parameter identifier.
         :param value: Input parameter value.
-        :param valid_uuid: (optional) List of accepted uuid
+        :param valid: (optional) List of accepted uuid
         """
         if not isinstance(value, UUID):
             try:
                 value = UUID(value)
-            except ValueError as exception:
-                raise ValueError(
-                    self.raise_message(
-                        name, f". {value} is not a uuid.UUID or valid uuid string."
-                    )
-                ) from exception
+            except UUIDStringValidationError as exception:
+                raise UUIDStringValidationError(name, value) from exception
 
-        if any(valid_uuid) and value not in valid_uuid:
-            raise ValueError(
-                self.raise_message(value, f". {value} is not part of expected uuids.")
-            )
+        if any(valid) and value not in valid:
+            raise UUIDValidationError(name, value, valid)
+
+
+class PropertyGroupValidationError(Exception):
+    def __init__(self, name, value, parent):
+        super().__init__(
+            f"Property group '{name}' with value '{value}' must exist for {parent}."
+        )
 
 
 class PropertyGroupValidator(BaseValidator):
@@ -217,15 +207,11 @@ class PropertyGroupValidator(BaseValidator):
 
     _validation_type = "property_group"
 
-    def validate(self, param: str, value: UUID, parent: UUID = None) -> None:
-        if parent is not None:
-            parent_obj = self.workspace.get_entity(parent)[0]
-            if value not in [pg.uid for pg in parent_obj.property_groups]:
-                raise ValueError(
-                    self.raise_message(
-                        param, f". Property Group {value} must exist for {parent}"
-                    )
-                )
+    def validate(self, name: str, value: UUID, valid: UUID | None) -> None:
+        if valid is not None:
+            valid_entity = self.workspace.get_entity(valid)[0]
+            if value not in [pg.uid for pg in valid_entity.property_groups]:
+                raise PropertyGroupValidationError(name, value, valid)
 
 
 class InputValidators:
@@ -314,9 +300,7 @@ class InputValidators:
         for key, validations in self.validations.items():
             if key not in data.keys():
                 if "required" in validations and not self.ignore_requirements:
-                    raise KeyError(
-                        f"Required parameter '{key}' is missing from the input data."
-                    )
+                    raise RequiredValidationError(key)
 
                 continue
 
@@ -387,3 +371,36 @@ class InputFreeformValidator(InputValidators):
     @property
     def free_params_keys(self) -> list | tuple:
         return self._free_params_keys
+
+
+def iterable(value: Any, checklen: bool = False) -> bool:
+    """
+    Checks if object is iterable.
+
+    Parameters
+    ----------
+    value : Object to check for iterableness.
+    checklen : Restrict objects with __iter__ method to len > 1.
+
+    Returns
+    -------
+    True if object has __iter__ attribute but is not string or dict type.
+    """
+    only_array_like = (not isinstance(value, str)) & (not isinstance(value, dict))
+    if (hasattr(value, "__iter__")) & only_array_like:
+        return not (checklen and (len(value) == 1))
+
+    return False
+
+
+def iterable_message(valid: list[Any] | None) -> str:
+    """Append possibly iterable valid: "Must be (one of): {valid}."."""
+    if valid is None:
+        msg = ""
+    elif iterable(valid, checklen=True):
+        vstr = "'" + "', '".join(str(k) for k in valid) + "'"
+        msg = f" Must be one of: {vstr}."
+    else:
+        msg = f" Must be: '{valid[0]}'."
+
+    return msg
