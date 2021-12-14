@@ -15,6 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+
 from uuid import UUID
 
 from ..workspace import Workspace
@@ -29,7 +30,6 @@ defaults = {
     "workspace": "",
     "monitoring_directory": "",
 }
-
 default_ui_json = {
     "title": "Custom UI",
     "geoh5": None,
@@ -47,7 +47,15 @@ default_ui_json = {
 }
 ui_validations = {
     "association": {"types": [str, [str]], "values": ["Vertex", "Cell"]},
-    "dataGroupType": {"types": [str], "values": ["Multi-element"]},
+    "dataGroupType": {
+        "types": [str],
+        "values": [
+            "Multi-element",
+            "3D vector",
+            "Dip direction & dip",
+            "Strike & dip",
+        ],
+    },
     "dataType": {"types": [str], "values": ["Float", "Text", "Integer"]},
     "dependency": {"types": [str]},
     "dependencyType": {"types": [str], "values": ["enabled", "disabled"]},

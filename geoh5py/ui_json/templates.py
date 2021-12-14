@@ -1,0 +1,263 @@
+#  Copyright (c) 2021 Mira Geoscience Ltd.
+#
+#  This file is part of geoh5py.
+#
+#  geoh5py is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU Lesser General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  geoh5py is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
+# pylint: disable=R0913
+
+from typing import Tuple, Union
+from uuid import UUID
+
+from ..shared import Entity
+
+
+def bool_parameter(
+    main: bool = True, label: str = "Logical data", value: bool = False
+) -> dict:
+    """
+    Checkbox for true/false choice.
+
+    :param main: Show ui in main.
+    :param label: Label identifier.
+    :param value: Input value.
+
+    :returns: Ui_json compliant dictionary.
+    """
+    return {
+        "main": main,
+        "label": label,
+        "value": value,
+    }
+
+
+def integer_parameter(
+    main: bool = True,
+    label: str = "Integer data",
+    value: int = 1,
+    vmin: int = 0,
+    vmax: int = 100,
+) -> dict:
+    """
+    Input box for integer value.
+
+    :param main: Show ui in main.
+    :param label: Label identifier.
+    :param value: Input value.
+    :param vmin: Minimum value allowed.
+    :param vmax: Maximum value allowed.
+
+
+    :returns: Ui_json compliant dictionary.
+    """
+    return {"main": main, "label": label, "value": value, "min": vmin, "max": vmax}
+
+
+def float_parameter(
+    main: bool = True,
+    label: str = "Float data",
+    value: float = 1.0,
+    vmin: float = 0.0,
+    vmax: float = 100.0,
+    precision: int = 2,
+    line_edit: bool = True,
+) -> dict:
+    """
+    Input box for float value.
+
+    :param main: Show ui in main.
+    :param label: Label identifier.
+    :param value: Input value.
+    :param vmin: Minimum value allowed.
+    :param vmax: Maximum value allowed.
+    :param line_edit: Allow line edit or spin box
+
+    :returns: Ui_json compliant dictionary.
+    """
+    return {
+        "main": main,
+        "label": label,
+        "value": value,
+        "min": vmin,
+        "precision": precision,
+        "lineEdit": line_edit,
+        "max": vmax,
+    }
+
+
+def string_parameter(
+    main: bool = True, label: str = "String data", value: str = ""
+) -> dict:
+    """
+    Input box for string value.
+
+    :param main: Show ui in main.
+    :param label: Label identifier.
+    :param value: Input string value.
+
+    :returns: Ui_json compliant dictionary.
+    """
+    return {"main": main, "label": label, "value": value}
+
+
+def choice_string_parameter(
+    main: bool = True,
+    label: str = "String data",
+    choice_list: Tuple = ("Options A", "Option B"),
+    value: str = "Option A",
+) -> dict:
+    """
+    Dropdown menu of string choices.
+
+    :param main: Show ui in main.
+    :param label: Label identifier.
+    :param value: Input value.
+    :param choice_list: List of options.
+
+    :returns: Ui_json compliant dictionary.
+    """
+    return {"main": main, "label": label, "value": value, "choiceList": choice_list}
+
+
+def file_parameter(
+    main: bool = True,
+    label: str = "File choices",
+    file_description: Tuple = (),
+    file_type: Tuple = (),
+    value: str = "",
+) -> dict:
+    """
+    File loader for specific extensions.
+
+    :param main: Show ui in main.
+    :param label: Label identifier.
+    :param value: Input value.
+    :param file_description: Title used to describe each type.
+    :param file_type: Extension of files to display.
+
+    :returns: Ui_json compliant dictionary.
+    """
+    return {
+        "fileDescription": file_description,
+        "fileType": file_type,
+        "main": main,
+        "label": label,
+        "value": value,
+    }
+
+
+def object_parameter(
+    main: bool = True,
+    label: str = "Object",
+    mesh_type: Tuple = (),
+    value: str = None,
+) -> dict:
+    """
+    Dropdown menu of objects of specific types.
+
+    :param main: Show ui in main.
+    :param label: Label identifier.
+    :param value: Input value.
+    :param mesh_type: Type of selectable objects.
+
+    :returns: Ui_json compliant dictionary.
+    """
+    return {"main": main, "label": label, "value": value, "meshType": mesh_type}
+
+
+def data_parameter(
+    main: bool = True,
+    label: str = "Data channel",
+    association: str = "Vertex",
+    data_type: str = "Float",
+    data_group_type: str = None,
+    parent: str = "",
+    value: str = "",
+) -> dict:
+    """
+    Dropdown menu of data from parental object.
+
+    :param main: Show ui in main.
+    :param label: Label identifier.
+    :param value: Input value.
+    :param association: Data association type from 'Vertex' or 'Cell'.
+    :param data_type: Type of data selectable from 'Float', 'Integer' or 'Reference'.
+    :param data_group_type: [Optional] Select from property_groups of type.
+        '3D vector',
+        'Dip direction & dip',
+        'Strike & dip',
+        or 'Multi-element'.
+    :param parent: Parameter name corresponding to the parent object.
+
+    :returns: Ui_json compliant dictionary.
+    """
+    params = {
+        "main": main,
+        "association": association,
+        "dataType": data_type,
+        "label": label,
+        "parent": parent,
+        "value": value,
+    }
+
+    if data_group_type is not None and data_group_type in [
+        "3D vector",
+        "Dip direction & dip",
+        "Strike & dip",
+        "Multi-element",
+    ]:
+        params["dataGroupType"] = data_group_type
+    return params
+
+
+def data_value_parameter(
+    main: bool = True,
+    label: str = "Data channel",
+    association: str = "Vertex",
+    data_type: str = "Float",
+    parent: str = "",
+    value: float = 0.0,
+    is_value: bool = True,
+    data: Union[UUID, Entity] = None,
+) -> dict:
+    """
+    Dropdown of data or input box.
+
+    :param main: Show ui in main.
+    :param label: Label identifier.
+    :param value: Input value.
+    :param association: Data association type from 'Vertex' or 'Cell'.
+    :param data_type: Type of data selectable from 'Float', 'Integer' or 'Reference'.
+    :param data_group_type: [Optional] Select from property_groups of type.
+        '3D vector',
+        'Dip direction & dip',
+        'Strike & dip',
+        or 'Multi-element'.
+    :param parent: Parameter name corresponding to the parent object.
+    :param is_value: Display the input box or dropdown menu.
+    :param data: Data entity selected in the dropdown menu if 'is_value=False'.
+
+    :returns: Ui_json compliant dictionary.
+    """
+    return {
+        "main": main,
+        "association": association,
+        "dataType": data_type,
+        "label": label,
+        "parent": parent,
+        "value": value,
+        "isValue": is_value,
+        "property": data,
+        "min": value,
+    }
