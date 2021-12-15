@@ -161,7 +161,7 @@ class UUIDValidator(BaseValidator):
         if not isinstance(value, UUID):
             try:
                 value = UUID(value)
-            except UUIDStringValidationError as exception:
+            except ValueError as exception:
                 raise UUIDStringValidationError(name, value) from exception
 
         if any(valid) and value not in valid:

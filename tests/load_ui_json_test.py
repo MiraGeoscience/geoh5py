@@ -14,7 +14,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
-
+import uuid
 from copy import deepcopy
 from os import path
 
@@ -29,6 +29,8 @@ from geoh5py.ui_json.exceptions import (
     JSONParameterValidationError,
     RequiredValidationError,
     TypeValidationError,
+    UUIDStringValidationError,
+    UUIDValidationError,
 )
 from geoh5py.ui_json.input_file import InputFile
 from geoh5py.workspace import Workspace
@@ -75,7 +77,31 @@ def test_load_ui_json(tmp_path):
         in str(error)
     )
 
-    # input_data["data"] = tmp.data_value_parameter()
+    ui_json["object"]["value"] = str(points.uid)
+    # with pytest.raises(JSONParameterValidationError) as error:
+    in_file = InputFile(ui_json=ui_json)
+
+    assert in_file.data["object"] == points.uid, "Promotion of uuid from string failed"
+
+    # Test for value fail
+    ui_json["data"] = tmp.data_parameter()
+    ui_json["data"]["parent"] = points.uid
+    ui_json["data"]["value"] = "goat"
+    in_file = InputFile(ui_json=ui_json, validations={"data": {"uuid": []}})
+
+    with pytest.raises(UUIDStringValidationError) as error:
+        data = in_file.data
+
+    assert "Parameter 'data' with value 'goat' is not a valid uuid string" in str(error)
+
+    ui_json["data"]["value"] = uuid.uuid4()
+    in_file = InputFile(ui_json=ui_json, validations={"data": {"uuid": [uuid.uuid4()]}})
+
+    with pytest.raises(UUIDValidationError) as error:
+        data = in_file.data
+
+    assert "provided for 'data' is invalid.  Must be" in str(error)
+
     # input_data["data_group"] = tmp.data_parameter()
     # input_data["logical"] = tmp.bool_parameter()
     # input_data["choices"] = tmp.choice_string_parameter()

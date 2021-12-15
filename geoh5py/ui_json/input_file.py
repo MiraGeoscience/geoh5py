@@ -47,6 +47,9 @@ class InputFile:
 
     """
 
+    _ui_validators = None
+    _validators = None
+
     def __init__(
         self,
         data: dict[str, Any] = None,
@@ -57,7 +60,6 @@ class InputFile:
     ):
         self.workpath: str | None = None
         self.validations = validations
-        self.ui_validations = ui_validations
         self.ui_json = ui_json
         self.data = data
         self.workspace = workspace
@@ -142,28 +144,16 @@ class InputFile:
     @property
     def validations(self):
         if getattr(self, "_validations", None) is None:
-            self._validations = default_validations
+            self._validations = deepcopy(default_validations)
 
         return self._validations
 
     @validations.setter
     def validations(self, valid_dict: dict | None):
-        if valid_dict is not None:
-            self._validators = InputValidators(valid_dict)
+        if isinstance(valid_dict, dict):
+            valid_dict.update(deepcopy(default_validations))
+
         self._validations = valid_dict
-
-    @property
-    def ui_validations(self):
-        if getattr(self, "_ui_validations", None) is None:
-            self._ui_validations = ui_validations
-
-        return self._ui_validations
-
-    @ui_validations.setter
-    def ui_validations(self, valid_dict: dict | None):
-        if valid_dict is not None:
-            self._ui_validators = InputValidators(valid_dict)
-        self._ui_validations = valid_dict
 
     @property
     def validators(self):
@@ -175,7 +165,7 @@ class InputFile:
     @property
     def ui_validators(self):
         if getattr(self, "_ui_validators", None) is None:
-            self._ui_validators = InputValidators(self.ui_validations)
+            self._ui_validators = InputValidators(ui_validations)
 
         return self._ui_validators
 
@@ -336,6 +326,8 @@ class InputFile:
                     self.ui_validators(value)
                 except Exception as error:
                     raise JSONParameterValidationError(key, error.args[0]) from error
+
+                value = self._numify(value)
 
             mappers = (
                 [str2none, str2inf, str2uuid]

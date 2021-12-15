@@ -229,7 +229,7 @@ def data_value_parameter(
     parent: str = "",
     value: float = 0.0,
     is_value: bool = True,
-    data: Union[UUID, Entity] = None,
+    prop: Union[UUID, Entity] = None,
 ) -> dict:
     """
     Dropdown of data or input box.
@@ -246,7 +246,7 @@ def data_value_parameter(
         or 'Multi-element'.
     :param parent: Parameter name corresponding to the parent object.
     :param is_value: Display the input box or dropdown menu.
-    :param data: Data entity selected in the dropdown menu if 'is_value=False'.
+    :param prop: Data entity selected in the dropdown menu if 'is_value=False'.
 
     :returns: Ui_json compliant dictionary.
     """
@@ -258,6 +258,6 @@ def data_value_parameter(
         "parent": parent,
         "value": value,
         "isValue": is_value,
-        "property": data,
+        "property": prop,
         "min": value,
     }

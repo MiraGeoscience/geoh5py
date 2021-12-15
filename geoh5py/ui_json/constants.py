@@ -64,9 +64,12 @@ ui_validations = {
     "label": {"types": [str], "required": True},
     "main": {"types": [bool]},
     "meshType": {"types": [[str, UUID]]},
-    "parent": {"types": [str]},
+    "parent": {"types": [str, UUID]},
     "property": {"types": [str, UUID]},
-    "value": {"types": [str, float, int, bool, type(None), Entity], "required": True},
+    "value": {
+        "types": [str, float, int, bool, type(None), Entity, UUID],
+        "required": True,
+    },
     "tooltip": {"types": [str]},
 }
 validations = {
@@ -88,6 +91,6 @@ validations = {
         "types": [bool],
     },
     "workspace": {
-        "types": [str, Workspace],
+        "types": [str, Workspace, type(None)],
     },
 }
