@@ -18,6 +18,7 @@
 
 from uuid import UUID
 
+from ..shared import Entity
 from ..workspace import Workspace
 
 defaults = {
@@ -33,7 +34,7 @@ defaults = {
 default_ui_json = {
     "title": "Custom UI",
     "geoh5": None,
-    "run_command": "",
+    "run_command": None,
     "run_command_boolean": {
         "value": False,
         "label": "Run python module ",
@@ -41,7 +42,7 @@ default_ui_json = {
         "main": True,
     },
     "monitoring_directory": None,
-    "conda_environment": "",
+    "conda_environment": None,
     "conda_environment_boolean": False,
     "workspace": None,
 }
@@ -65,23 +66,23 @@ ui_validations = {
     "meshType": {"types": [[str, UUID]]},
     "parent": {"types": [str]},
     "property": {"types": [str, UUID]},
-    "value": {"types": [str, float, int, bool], "required": True},
+    "value": {"types": [str, float, int, bool, type(None), Entity], "required": True},
     "tooltip": {"types": [str]},
 }
 validations = {
     "title": {"types": [str], "required": True},
     "conda_environment": {
-        "types": [str],
+        "types": [str, type(None)],
     },
     "conda_environment_boolean": {
         "types": [bool],
     },
-    "geoh5": {"types": [str, Workspace], "required": True},
+    "geoh5": {"types": [str, Workspace, type(None)], "required": True},
     "monitoring_directory": {
-        "types": [str],
+        "types": [str, type(None)],
     },
     "run_command": {
-        "types": [str],
+        "types": [str, type(None)],
     },
     "run_command_boolean": {
         "types": [bool],

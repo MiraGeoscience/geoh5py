@@ -25,8 +25,12 @@ import geoh5py.ui_json.templates as tmp
 from geoh5py.groups import ContainerGroup
 from geoh5py.objects import Points
 from geoh5py.ui_json.constants import default_ui_json
+from geoh5py.ui_json.exceptions import (
+    JSONParameterValidationError,
+    RequiredValidationError,
+    TypeValidationError,
+)
 from geoh5py.ui_json.input_file import InputFile
-from geoh5py.ui_json.validators import RequiredValidationError, TypeValidationError
 from geoh5py.workspace import Workspace
 
 
@@ -43,37 +47,38 @@ def test_load_ui_json(tmp_path):
     )
     points.add_data_to_group(data, name="My group")
 
-    input_data = {"geoh5": None}
+    ui_json = {}
+    in_file = InputFile(ui_json=ui_json)
 
-    ui_json = deepcopy(default_ui_json)
     with pytest.raises(RequiredValidationError) as error:
-        InputFile(ui_json=ui_json, data=input_data)
+        data = in_file.data
 
     assert "Missing 'title'" in str(error)
 
-    input_data["title"] = "My title"
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = 123
 
+    in_file = InputFile(ui_json=ui_json)
     with pytest.raises(TypeValidationError) as error:
-        InputFile(ui_json=ui_json, data=input_data)
+        data = in_file.data
 
-    assert "Type 'NoneType' provided for 'geoh5' is invalid" in str(error)
-    # print(input_file)
+    assert "Type 'int' provided for 'geoh5' is invalid" in str(error)
 
-    input_data["geoh5"] = workspace
-    input_data["object"] = tmp.object_parameter()
-    input_data["data"] = tmp.data_value_parameter()
-    input_data["data_group"] = tmp.data_parameter()
-    input_data["logical"] = tmp.bool_parameter()
-    input_data["choices"] = tmp.choice_string_parameter()
-    input_data["file"] = tmp.file_parameter()
-    input_data["float"] = tmp.float_parameter()
-    input_data["integer"] = tmp.integer_parameter()
-    input_data["string"] = tmp.string_parameter()
-
-    input_data["string"]["new_input"] = []
-
-    ui_json.update(input_data)
-    with pytest.raises(TypeValidationError) as error:
+    ui_json["geoh5"] = workspace
+    ui_json["object"] = tmp.object_parameter()
+    del ui_json["object"]["value"]
+    with pytest.raises(JSONParameterValidationError) as error:
         InputFile(ui_json=ui_json)
 
-    print(error)
+    assert (
+        "Malformed ui.json dictionary for parameter 'object'. Missing 'value'"
+        in str(error)
+    )
+
+    # input_data["data"] = tmp.data_value_parameter()
+    # input_data["data_group"] = tmp.data_parameter()
+    # input_data["logical"] = tmp.bool_parameter()
+    # input_data["choices"] = tmp.choice_string_parameter()
+    # input_data["file"] = tmp.file_parameter()
+    # input_data["float"] = tmp.float_parameter()
+    # input_data["integer"] = tmp.integer_parameter()

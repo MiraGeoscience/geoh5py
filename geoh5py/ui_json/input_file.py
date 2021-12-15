@@ -21,6 +21,7 @@ from geoh5py.workspace import Workspace
 
 from .constants import ui_validations
 from .constants import validations as default_validations
+from .exceptions import JSONParameterValidationError
 from .validators import InputValidators
 
 
@@ -73,6 +74,12 @@ class InputFile:
 
     @property
     def data(self):
+        if (
+            getattr(self, "_data", None) is None
+            and getattr(self, "_ui_json", None) is not None
+        ):
+            self.data = self.flatten(self.ui_json)
+
         return self._data
 
     @data.setter
@@ -325,7 +332,10 @@ class InputFile:
         """
         for key, value in var.items():
             if isinstance(value, dict):
-                self.ui_validators(value)
+                try:
+                    self.ui_validators(value)
+                except Exception as error:
+                    raise JSONParameterValidationError(key, error.args[0]) from error
 
             mappers = (
                 [str2none, str2inf, str2uuid]

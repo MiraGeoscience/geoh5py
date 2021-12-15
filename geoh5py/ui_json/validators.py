@@ -13,6 +13,16 @@ from uuid import UUID
 
 import numpy as np
 
+from geoh5py.shared.utils import iterable
+from geoh5py.ui_json.exceptions import (
+    PropertyGroupValidationError,
+    RequiredValidationError,
+    ShapeValidationError,
+    TypeValidationError,
+    UUIDStringValidationError,
+    UUIDValidationError,
+    ValueValidationError,
+)
 from geoh5py.workspace import Workspace
 
 
@@ -58,11 +68,6 @@ class BaseValidator(ABC):
             self.validate(*args)
 
 
-class RequiredValidationError(Exception):
-    def __init__(self, name):
-        super().__init__(f"Missing '{name}' from the list of required parameters.")
-
-
 class RequiredValidator(BaseValidator):
     """
     Validate that required keys are present in parameter.
@@ -80,14 +85,6 @@ class RequiredValidator(BaseValidator):
     @property
     def validation_type(self):
         return "required"
-
-
-class ValueValidationError(Exception):
-    def __init__(self, name, value, valid):
-        super().__init__(
-            f"Value '{value}' provided for '{name}' is invalid."
-            + iterable_message(valid)
-        )
 
 
 class ValueValidator(BaseValidator):
@@ -109,14 +106,6 @@ class ValueValidator(BaseValidator):
         return "values"
 
 
-class TypeValidationError(Exception):
-    def __init__(self, name, value, valid):
-        super().__init__(
-            f"Type '{value}' provided for '{name}' is invalid. "
-            + iterable_message(valid)
-        )
-
-
 class TypeValidator(BaseValidator):
     """
     Validate the value type from a list of valid types.
@@ -128,25 +117,18 @@ class TypeValidator(BaseValidator):
         :param value: Input parameter value.
         :param valid: List of accepted value types
         """
-        isiter = iterable(value)
-        value = np.array(value).flatten().tolist()[0] if isiter else value
-        if type(value) not in valid:
-            valid_names = [t.__name__ for t in valid]
-            type_name = type(value).__name__
+        if not iterable(value):
+            value = (value,)
+        for val in value:
+            if type(val) not in valid:
+                valid_names = [t.__name__ for t in valid if hasattr(t, "__name__")]
+                type_name = type(val).__name__
 
-            raise TypeValidationError(name, type_name, valid_names)
+                raise TypeValidationError(name, type_name, valid_names)
 
     @property
     def validation_type(self):
         return "types"
-
-
-class ShapeValidationError(Exception):
-    def __init__(self, name, value, valid):
-        super().__init__(
-            f"Shape of '{value}' provided for '{name}' is invalid. "
-            + iterable_message(valid)
-        )
 
 
 class ShapeValidator(BaseValidator):
@@ -165,21 +147,6 @@ class ShapeValidator(BaseValidator):
     @property
     def validation_type(self):
         return "shape"
-
-
-class UUIDValidationError(Exception):
-    def __init__(self, name, value, valid):
-        super().__init__(
-            f"UUID '{value}' provided for '{name}' is invalid. "
-            + iterable_message(valid)
-        )
-
-
-class UUIDStringValidationError(Exception):
-    def __init__(self, name, value):
-        super().__init__(
-            f"Parameter '{name}' with value '{value}' is not a valid uuid string."
-        )
 
 
 class UUIDValidator(BaseValidator):
@@ -203,13 +170,6 @@ class UUIDValidator(BaseValidator):
     @property
     def validation_type(self):
         return "shape"
-
-
-class PropertyGroupValidationError(Exception):
-    def __init__(self, name, value, parent):
-        super().__init__(
-            f"Property group '{name}' with value '{value}' must exist for {parent}."
-        )
 
 
 class PropertyGroupValidator(BaseValidator):
@@ -383,36 +343,3 @@ class InputFreeformValidator(InputValidators):
     @property
     def free_params_keys(self) -> list | tuple:
         return self._free_params_keys
-
-
-def iterable(value: Any, checklen: bool = False) -> bool:
-    """
-    Checks if object is iterable.
-
-    Parameters
-    ----------
-    value : Object to check for iterableness.
-    checklen : Restrict objects with __iter__ method to len > 1.
-
-    Returns
-    -------
-    True if object has __iter__ attribute but is not string or dict type.
-    """
-    only_array_like = (not isinstance(value, str)) & (not isinstance(value, dict))
-    if (hasattr(value, "__iter__")) & only_array_like:
-        return not (checklen and (len(value) == 1))
-
-    return False
-
-
-def iterable_message(valid: list[Any] | None) -> str:
-    """Append possibly iterable valid: "Must be (one of): {valid}."."""
-    if valid is None:
-        msg = ""
-    elif iterable(valid, checklen=True):
-        vstr = "'" + "', '".join(str(k) for k in valid) + "'"
-        msg = f" Must be one of: {vstr}."
-    else:
-        msg = f" Must be: '{valid[0]}'."
-
-    return msg
