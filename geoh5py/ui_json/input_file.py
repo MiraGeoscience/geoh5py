@@ -17,12 +17,12 @@ from uuid import UUID
 import numpy as np
 
 from geoh5py.groups import ContainerGroup
+from geoh5py.shared.exceptions import JSONParameterValidationError
 from geoh5py.workspace import Workspace
 
 from .constants import ui_validations
 from .constants import validations as default_validations
-from .exceptions import JSONParameterValidationError
-from .validators import InputValidators
+from .validation import InputValidation
 
 
 class InputFile:
@@ -158,14 +158,14 @@ class InputFile:
     @property
     def validators(self):
         if getattr(self, "_validators", None) is None:
-            self._validators = InputValidators(self.validations)
+            self._validators = InputValidation(self.validations)
 
         return self._validators
 
     @property
     def ui_validators(self):
         if getattr(self, "_ui_validators", None) is None:
-            self._ui_validators = InputValidators(ui_validations)
+            self._ui_validators = InputValidation(ui_validations)
 
         return self._ui_validators
 
@@ -190,6 +190,23 @@ class InputFile:
     @workpath.setter
     def workpath(self, path):
         self._workpath = path
+
+    @property
+    def workspace(self):
+        return self._workspace
+
+    @workspace.setter
+    def workspace(self, workspace: Workspace | None):
+
+        if workspace is not None and not isinstance(workspace, Workspace):
+            raise ValueError(
+                "Input 'workspace' must be a valid :obj:`geoh5py.workspace.Workspace`"
+            )
+
+        self._workspace = workspace
+
+        if self._validators is not None:
+            self._validators.workspace = workspace
 
     def write_ui_json(
         self,

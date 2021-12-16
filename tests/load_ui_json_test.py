@@ -24,14 +24,14 @@ import pytest
 import geoh5py.ui_json.templates as tmp
 from geoh5py.groups import ContainerGroup
 from geoh5py.objects import Points
-from geoh5py.ui_json.constants import default_ui_json
-from geoh5py.ui_json.exceptions import (
+from geoh5py.shared.exceptions import (
     JSONParameterValidationError,
     RequiredValidationError,
     TypeValidationError,
     UUIDStringValidationError,
     UUIDValidationError,
 )
+from geoh5py.ui_json.constants import default_ui_json
 from geoh5py.ui_json.input_file import InputFile
 from geoh5py.workspace import Workspace
 
@@ -90,17 +90,22 @@ def test_load_ui_json(tmp_path):
     in_file = InputFile(ui_json=ui_json, validations={"data": {"uuid": []}})
 
     with pytest.raises(UUIDStringValidationError) as error:
-        data = in_file.data
+        print(in_file.data)
 
     assert "Parameter 'data' with value 'goat' is not a valid uuid string" in str(error)
 
     ui_json["data"]["value"] = uuid.uuid4()
-    in_file = InputFile(ui_json=ui_json, validations={"data": {"uuid": [uuid.uuid4()]}})
+    in_file = InputFile(ui_json=ui_json, validations={"data": {"uuid": workspace}})
 
     with pytest.raises(UUIDValidationError) as error:
-        data = in_file.data
+        print(in_file.data)
 
-    assert "provided for 'data' is invalid.  Must be" in str(error)
+    assert "provided for 'data' is invalid. Not in the list" in str(error)
+
+    # ui_json["data"]["data_group_type"] = "Multi-element"
+    # in_file = InputFile(ui_json=ui_json, validations={"data": {"property_group": points}})
+    #
+    # print(in_file.data)
 
     # input_data["data_group"] = tmp.data_parameter()
     # input_data["logical"] = tmp.bool_parameter()
