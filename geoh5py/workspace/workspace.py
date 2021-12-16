@@ -530,6 +530,7 @@ class Workspace:
             file, H5Reader.fetch_children, entity.uid, entity_type
         )
 
+        family_tree = []
         for uid, child_type in children_list.items():
             if self.get_entity(uid)[0] is not None:
                 recovered_object = self.get_entity(uid)[0]
@@ -543,9 +544,16 @@ class Workspace:
                 # Assumes the object was pulled from h5
                 recovered_object.existing_h5_entity = True
                 recovered_object.entity_type.existing_h5_entity = True
+                family_tree.append(recovered_object)
 
                 if recursively:
-                    self.fetch_children(recovered_object, recursively=True, file=file)
+                    family_tree.append(
+                        self.fetch_children(
+                            recovered_object, recursively=True, file=file
+                        )
+                    )
+
+        return family_tree
 
     def fetch_delimiters(
         self, uid: uuid.UUID, file: str | h5py.File | None = None

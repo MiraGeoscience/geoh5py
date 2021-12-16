@@ -82,7 +82,7 @@ class UUIDValidationError(Exception):
     def __init__(self, name, value, valid):
         super().__init__(
             f"UUID '{value}' provided for '{name}' is invalid. "
-            f"Not in the list of children of {valid.name}: {valid.uid}"
+            f"Not in the list of children of {type(valid)}: {valid.name} "
         )
 
 
