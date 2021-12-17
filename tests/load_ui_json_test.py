@@ -49,14 +49,16 @@ def test_load_ui_json(tmp_path):
     )
     points.add_data_to_group(data, name="My group")
 
+    # Test missing required ui_json parameter
     ui_json = {}
     in_file = InputFile(ui_json=ui_json)
 
     with pytest.raises(RequiredValidationError) as error:
-        data = in_file.data
+        print(in_file.data)
 
     assert "Missing 'title'" in str(error)
 
+    # Test wrong type for core geoh5 parameter
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = 123
 
@@ -67,6 +69,8 @@ def test_load_ui_json(tmp_path):
     assert "Type 'int' provided for 'geoh5' is invalid" in str(error)
 
     ui_json["geoh5"] = workspace
+
+    # Test missing required field from ui_json
     ui_json["object"] = tmp.object_parameter()
     del ui_json["object"]["value"]
     with pytest.raises(JSONParameterValidationError) as error:
@@ -77,23 +81,26 @@ def test_load_ui_json(tmp_path):
         in str(error)
     )
 
+    # Test promotion on ui_json setter
     ui_json["object"]["value"] = str(points.uid)
+    ui_json["object"]["meshType"] = str(points.entity_type.uid)
     # with pytest.raises(JSONParameterValidationError) as error:
     in_file = InputFile(ui_json=ui_json)
 
     assert in_file.data["object"] == points.uid, "Promotion of uuid from string failed"
 
-    # Test for value fail
+    # Test for invalid uuid string
     ui_json["data"] = tmp.data_parameter()
     ui_json["data"]["parent"] = points.uid
     ui_json["data"]["value"] = "goat"
-    in_file = InputFile(ui_json=ui_json, validations={"data": {"uuid": []}})
+    in_file = InputFile(ui_json=ui_json, validations={"data": {"uuid": workspace}})
 
     with pytest.raises(UUIDStringValidationError) as error:
         print(in_file.data)
 
     assert "Parameter 'data' with value 'goat' is not a valid uuid string" in str(error)
 
+    # Test valid uuid in workspace
     ui_json["data"]["value"] = uuid.uuid4()
     in_file = InputFile(ui_json=ui_json, validations={"data": {"uuid": workspace}})
 
@@ -101,6 +108,40 @@ def test_load_ui_json(tmp_path):
         print(in_file.data)
 
     assert "provided for 'data' is invalid. Not in the list" in str(error)
+
+    ui_json["data"]["value"] = data[0].uid
+
+    # Test bool_parameter
+    ui_json["logic"] = tmp.bool_parameter()
+    ui_json["logic"]["value"] = 123
+    in_file = InputFile(
+        ui_json=ui_json,
+        validations={"data": {"uuid": workspace}, "logic": {"types": [bool]}},
+    )
+
+    with pytest.raises(TypeValidationError) as error:
+        print(in_file.data)
+
+    assert "Type 'int' provided for 'logic' is invalid.  Must be: 'bool'" in str(error)
+
+    ui_json["logic"]["value"] = True
+
+    # Test
+    in_file = InputFile(
+        ui_json=ui_json,
+        validations={"data": {"uuid": workspace}, "logic": {"types": [bool]}},
+    )
+
+    out_file = in_file.write_ui_json()
+
+    # Load the input back in
+    reload_input = InputFile.read_ui_json(out_file)
+
+    for key, value in in_file.data.items():
+        if key == "geoh5":
+            continue
+        if reload_input.data[key] != value:
+            raise ValueError(f"Input data {key} differs from the output.")
 
     # ui_json["data"]["data_group_type"] = "Multi-element"
     # in_file = InputFile(ui_json=ui_json, validations={"data": {"property_group": points}})

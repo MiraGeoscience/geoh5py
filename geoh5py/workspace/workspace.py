@@ -544,13 +544,11 @@ class Workspace:
                 # Assumes the object was pulled from h5
                 recovered_object.existing_h5_entity = True
                 recovered_object.entity_type.existing_h5_entity = True
-                family_tree.append(recovered_object)
+                family_tree += [recovered_object]
 
                 if recursively:
-                    family_tree.append(
-                        self.fetch_children(
-                            recovered_object, recursively=True, file=file
-                        )
+                    family_tree += self.fetch_children(
+                        recovered_object, recursively=True, file=file
                     )
 
         return family_tree

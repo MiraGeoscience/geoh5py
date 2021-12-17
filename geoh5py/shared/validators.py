@@ -182,9 +182,9 @@ class UUIDValidator(BaseValidator):
 
         if valid is not None:
             if isinstance(valid, Workspace) and valid.root is not None:
-                children_list = valid.fetch_children(valid.root)
+                children_list = valid.fetch_children(valid.root, recursively=True)
             elif isinstance(valid, Entity):
-                children_list = valid.workspace.fetch_children(valid)
+                children_list = valid.workspace.fetch_children(valid, recursively=True)
             else:
                 raise ValueError(
                     "Type of input `valid` parameter must be one of Entity or Workspace"

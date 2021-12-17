@@ -53,7 +53,6 @@ class InputFile:
     def __init__(
         self,
         data: dict[str, Any] = None,
-        filepath: str | None = None,
         ui_json: dict[str, Any] = None,
         validations: dict = None,
         workspace: Workspace = None,
@@ -63,16 +62,6 @@ class InputFile:
         self.ui_json = ui_json
         self.data = data
         self.workspace = workspace
-        self.filepath = filepath
-        self._initialize()
-
-    def _initialize(self):
-        """Default construction behaviour."""
-
-        if self.filepath is not None:
-            with open(self.filepath, encoding="utf-8") as file:
-                data = json.load(file)
-                self.load(data)
 
     @property
     def data(self):
@@ -91,6 +80,7 @@ class InputFile:
                 raise ValueError("Input 'data' must be of type dict or None.")
 
             self.validators(value)
+            self.workspace = value["geoh5"]
 
         self._data = value
 
@@ -104,16 +94,24 @@ class InputFile:
             if not isinstance(value, dict):
                 raise ValueError("Input 'ui_json' must be of type dict or None.")
 
-            self._ui_json = self._numify(value)
+            self._ui_json = self._promote(self._numify(value))
         else:
             self._ui_json = None
 
-    @classmethod
-    def from_dict(cls, input_dict: dict[str, Any]):
-        ifile = cls()
-        ifile.load(input_dict)
-        ifile.workpath = os.path.abspath(".")
-        return ifile
+    @staticmethod
+    def read_ui_json(json_file: str):
+        """
+        Read and create an InputFile from *.ui.json
+        """
+        input_file = InputFile()
+
+        if "ui.json" not in json_file:
+            raise ValueError("Input file should have the extension *.ui.json")
+
+        with open(json_file, encoding="utf-8") as file:
+            input_file.load(json.load(file))
+
+        return input_file
 
     def load(self, input_dict: dict[str, Any]):
         """Load data from dictionary and validate."""
@@ -210,67 +208,56 @@ class InputFile:
 
     def write_ui_json(
         self,
-        default: bool = False,
         name: str = None,
-        workspace: Workspace = None,
         none_map: dict[str, Any] = None,
-    ) -> None:
+        path: str = None,
+    ) -> str:
         """
         Writes a ui.json formatted file from InputFile data
-        Parameters
-        ----------
-        ui_dict :
-            Dictionary in ui.json format, including defaults.
-        default :
-            Write default values. Ignoring contents of self.data.
-        name: optional
-            Name of the file
-        workspace : optional
-            Provide a geoh5 path to simulate auto-generated field in Geoscience ANALYST.
-        none_map : optional
-            Map parameter None values to non-null numeric types.  The parameters in the
+        :param name: Name of the file
+        :param none_map : Map parameter None values to non-null numeric types.
+            The parameters in the
             dictionary will also be map optional and disabled, ensuring that if not
             updated by the user they would read back as None.
+        :param path: Directory to write the ui.json to.
         """
-        out = deepcopy(self.ui_json)
-
-        if workspace is not None:
-            out["geoh5"] = workspace
-
-        if not default and self.data is not None:
+        if self.ui_json is not None and self.data is not None:
             for key, value in self.data.items():
                 msg = f"Overriding param: {key} 'None' value to zero since 'dataType' is 'Float'."
-                if isinstance(out[key], dict):
+                if isinstance(self.ui_json[key], dict):
                     field = "value"
-                    if "isValue" in out[key]:
-                        if not out[key]["isValue"]:
+                    if "isValue" in self.ui_json[key]:
+                        if not self.ui_json[key]["isValue"]:
                             field = "property"
                         elif (
-                            ("dataType" in out[key])
-                            and (out[key]["dataType"] == "Float")
+                            ("dataType" in self.ui_json[key])
+                            and (self.ui_json[key]["dataType"] == "Float")
                             and (value is None)
                         ):
                             value = 0.0
                             warnings.warn(msg)
 
-                    out[key][field] = value
+                    self.ui_json[key][field] = value
                     if value is not None:
-                        out[key]["enabled"] = True
+                        self.ui_json[key]["enabled"] = True
                 else:
-                    out[key] = value
+                    self.ui_json[key] = value
 
-        out_file = self.filepath
-        if name is not None:
-            if ".ui.json" not in name:
-                name += ".ui.json"
+        if path is None:
+            path = os.path.dirname(self.workspace.h5file)
 
-            if self.workpath is not None:
-                out_file = os.path.join(self.workpath, name)
-            else:
-                out_file = os.path.abspath(name)
+        if name is None:
+            name = self.ui_json["title"]
 
-        with open(out_file, "w", encoding="utf-8") as file:
-            json.dump(self._stringify(self._demote(out), none_map), file, indent=4)
+        if ".ui.json" not in name:
+            name += ".ui.json"
+
+        with open(os.path.join(path, name), "w", encoding="utf-8") as file:
+            json.dump(
+                self._stringify(self._demote(self.ui_json), none_map), file, indent=4
+            )
+
+        return os.path.join(path, name)
 
     def _stringify(
         self, var: dict[str, Any], none_map: dict[str, Any] = None
@@ -359,7 +346,22 @@ class InputFile:
         """Converts promoted parameter values to their string representations."""
         mappers = [uuid2str, workspace2path, containergroup2name]
         for key, value in var.items():
-            var[key] = self._dict_mapper(value, mappers)
+
+            if isinstance(value, dict):
+                var[key] = self._demote(value)
+            else:
+                var[key] = self._dict_mapper(value, mappers)
+
+        return var
+
+    def _promote(self, var: dict[str, Any]) -> dict[str, Any]:
+        mappers = [path2workspace]
+        for key, value in var.items():
+
+            if isinstance(value, dict):
+                var[key] = self._promote(value)
+            else:
+                var[key] = self._dict_mapper(value, mappers)
 
         return var
 
@@ -571,16 +573,21 @@ def str2uuid(value):
     return value
 
 
-#
-# def uuid2str(value):
-#     if isinstance(value, UUID):
-#         return f"{{{str(value)}}}"
-#     return value
+def uuid2entity(value):
+    if isinstance(value, UUID):
+        return f"{{{str(value)}}}"
+    return value
 
 
 def workspace2path(value):
     if isinstance(value, Workspace):
         return value.h5file
+    return value
+
+
+def path2workspace(value):
+    if isinstance(value, str) and ".geoh5" in value:
+        return Workspace(value)
     return value
 
 
