@@ -349,6 +349,8 @@ class InputFile:
 
             if isinstance(value, dict):
                 var[key] = self._demote(value)
+            elif isinstance(value, list):
+                var[key] = [self._dict_mapper(val, mappers) for val in value]
             else:
                 var[key] = self._dict_mapper(value, mappers)
 

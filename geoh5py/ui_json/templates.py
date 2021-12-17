@@ -17,10 +17,18 @@
 
 # pylint: disable=R0913
 
+import inspect
 from typing import Tuple, Union
 from uuid import UUID
 
+from .. import objects
 from ..shared import Entity
+
+known_types = [
+    member.default_type_uid()
+    for _, member in inspect.getmembers(objects)
+    if hasattr(member, "default_type_uid") and member.default_type_uid() is not None
+]
 
 
 def bool_parameter(
@@ -160,7 +168,7 @@ def file_parameter(
 def object_parameter(
     main: bool = True,
     label: str = "Object",
-    mesh_type: Tuple = (),
+    mesh_type: tuple = tuple(known_types),
     value: str = None,
 ) -> dict:
     """

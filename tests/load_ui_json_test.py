@@ -83,7 +83,7 @@ def test_load_ui_json(tmp_path):
 
     # Test promotion on ui_json setter
     ui_json["object"]["value"] = str(points.uid)
-    ui_json["object"]["meshType"] = str(points.entity_type.uid)
+    ui_json["object"]["meshType"] = [points.entity_type.uid]
     # with pytest.raises(JSONParameterValidationError) as error:
     in_file = InputFile(ui_json=ui_json)
 

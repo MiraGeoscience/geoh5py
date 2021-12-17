@@ -63,7 +63,7 @@ ui_validations = {
     "group": {"types": [str]},
     "label": {"types": [str], "required": True},
     "main": {"types": [bool]},
-    "meshType": {"types": [[str, UUID]]},
+    "meshType": {"types": [str, UUID]},
     "parent": {"types": [str, UUID]},
     "property": {"types": [str, UUID]},
     "value": {
