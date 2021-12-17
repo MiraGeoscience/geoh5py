@@ -31,20 +31,18 @@ class InputFile:
 
     Attributes
     ----------
-    filepath : Path to input file.
     data : Input file content parsed to flat dictionary of key:value.
     ui_json: User interface serializable as ui.json format
+    workspace: Target :obj:`geoh5py.workspace.Workspace`
+    validations: Dictionary of validations for parameters in the input file
 
     Methods
     -------
-    default()
-        Defaults values in 'data' attribute to those stored in default_ui 'default' fields.
     write_ui_json()
         Writes a ui.json formatted file from 'data' attribute contents.
     read_ui_json()
         Reads a ui.json formatted file into 'data' attribute dictionary.  Optionally filters
         ui.json fields other than 'value'.
-
     """
 
     _ui_validators = None
@@ -57,7 +55,6 @@ class InputFile:
         validations: dict = None,
         workspace: Workspace = None,
     ):
-        self.workpath: str | None = None
         self.validations = validations
         self.ui_json = ui_json
         self.data = data
@@ -85,12 +82,16 @@ class InputFile:
         self._data = value
 
     @property
-    def ui_json(self):
+    def ui_json(self) -> dict | None:
+        """
+        Dictionary representing the ui.json file with promoted values.
+        """
         return self._ui_json
 
     @ui_json.setter
     def ui_json(self, value: dict[str, Any]):
         if value is not None:
+
             if not isinstance(value, dict):
                 raise ValueError("Input 'ui_json' must be of type dict or None.")
 
@@ -117,27 +118,6 @@ class InputFile:
         """Load data from dictionary and validate."""
         self.ui_json = input_dict
         self.data = InputFile.flatten(input_dict)
-
-    @property
-    def filepath(self):
-        if getattr(self, "_filepath", None) is None:
-
-            if getattr(self, "workpath", None) is not None:
-                self._filepath = os.path.join(self.workpath, "default.ui.json")
-
-        return self._filepath
-
-    @filepath.setter
-    def filepath(self, path: str | None):
-        if path is None:
-            self._filepath = path
-            self._workpath = None
-            return
-        if ".".join(path.split(".")[-2:]) != "ui.json":
-            raise OSError("Input file must have 'ui.json' extension.")
-
-        self._filepath = path
-        self._workpath = None
 
     @property
     def validations(self):
@@ -168,28 +148,6 @@ class InputFile:
         return self._ui_validators
 
     @property
-    def workpath(self):
-        if getattr(self, "_workpath", None) is None:
-            path = None
-            if getattr(self, "_filepath", None) is not None:
-                path = self.filepath
-            elif getattr(self, "workspace", None) is not None:
-                if isinstance(self.workspace, str):
-                    path = self.workspace
-                else:
-                    path = self.workspace.h5file
-
-            if path is not None:
-                self._workpath: str = (
-                    os.path.dirname(os.path.abspath(path)) + os.path.sep
-                )
-        return self._workpath
-
-    @workpath.setter
-    def workpath(self, path):
-        self._workpath = path
-
-    @property
     def workspace(self):
         return self._workspace
 
@@ -211,7 +169,7 @@ class InputFile:
         name: str = None,
         none_map: dict[str, Any] = None,
         path: str = None,
-    ) -> str:
+    ) -> str | None:
         """
         Writes a ui.json formatted file from InputFile data
         :param name: Name of the file
@@ -221,27 +179,32 @@ class InputFile:
             updated by the user they would read back as None.
         :param path: Directory to write the ui.json to.
         """
-        if self.ui_json is not None and self.data is not None:
-            for key, value in self.data.items():
-                msg = f"Overriding param: {key} 'None' value to zero since 'dataType' is 'Float'."
-                if isinstance(self.ui_json[key], dict):
-                    field = "value"
-                    if "isValue" in self.ui_json[key]:
-                        if not self.ui_json[key]["isValue"]:
-                            field = "property"
-                        elif (
-                            ("dataType" in self.ui_json[key])
-                            and (self.ui_json[key]["dataType"] == "Float")
-                            and (value is None)
-                        ):
-                            value = 0.0
-                            warnings.warn(msg)
+        if self.ui_json is None or self.data is None:
+            print(
+                "The input file requires 'ui_json' and 'data' to be set before writing out."
+            )
+            return None
 
-                    self.ui_json[key][field] = value
-                    if value is not None:
-                        self.ui_json[key]["enabled"] = True
-                else:
-                    self.ui_json[key] = value
+        for key, value in self.data.items():
+            msg = f"Overriding param: {key} 'None' value to zero since 'dataType' is 'Float'."
+            if isinstance(self.ui_json[key], dict):
+                field = "value"
+                if "isValue" in self.ui_json[key]:
+                    if not self.ui_json[key]["isValue"]:
+                        field = "property"
+                    elif (
+                        ("dataType" in self.ui_json[key])
+                        and (self.ui_json[key]["dataType"] == "Float")
+                        and (value is None)
+                    ):
+                        value = 0.0
+                        warnings.warn(msg)
+
+                self.ui_json[key][field] = value
+                if value is not None:
+                    self.ui_json[key]["enabled"] = True
+            else:
+                self.ui_json[key] = value
 
         if path is None:
             path = os.path.dirname(self.workspace.h5file)
