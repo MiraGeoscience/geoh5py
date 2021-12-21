@@ -23,13 +23,14 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, List, cast
 from uuid import UUID
 
 import numpy as np
 
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
+    AssociationValidationError,
     PropertyGroupValidationError,
     RequiredValidationError,
     ShapeValidationError,
@@ -73,6 +74,33 @@ class BaseValidator(ABC):
     def __call__(self, *args):
         if hasattr(self, "validate"):
             self.validate(*args)
+
+
+class AssociationValidator(BaseValidator):
+    """Validate the shape of provided value."""
+
+    @classmethod
+    def validate(cls, name: str, value: Any, valid: Entity | Workspace) -> None:
+        """
+        :param name: Parameter identifier.
+        :param value: Input parameter value.
+        :param valid: Expected value shape
+        """
+        if isinstance(valid, Workspace):
+            children = (
+                cast(List["Entity"], valid.groups)
+                + cast(List["Entity"], valid.objects)
+                + cast(List["Entity"], valid.data)
+            )
+        else:
+            children = valid.children
+
+        if value not in children:
+            raise AssociationValidationError(name, value, valid)
+
+    @property
+    def validation_type(self):
+        return "association"
 
 
 class RequiredValidator(BaseValidator):
@@ -132,7 +160,7 @@ class TypeValidator(BaseValidator):
         for val in value:
             if isinstance(valid, type):
                 valid = [valid]
-            if type(val) not in valid:
+            if not isinstance(val, tuple(valid)):
                 valid_names = [t.__name__ for t in valid if hasattr(t, "__name__")]
                 type_name = type(val).__name__
 

@@ -17,16 +17,17 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any
 
 from geoh5py.shared.exceptions import RequiredValidationError
 from geoh5py.shared.validators import (
+    AssociationValidator,
     BaseValidator,
     PropertyGroupValidator,
     RequiredValidator,
     ShapeValidator,
     TypeValidator,
-    UUIDValidator,
     ValueValidator,
 )
 from geoh5py.workspace import Workspace
@@ -50,7 +51,7 @@ class InputValidation:
 
     def __init__(
         self,
-        validations: dict[str, Any],
+        validations: dict[str, Any] | None,
         workspace: Workspace = None,
         ignore_requirements: bool = False,
     ):
@@ -86,10 +87,10 @@ class InputValidation:
                     self._validators[key] = ShapeValidator()
                 elif key == "types":
                     self._validators[key] = TypeValidator()
-                elif key == "uuid":
-                    self._validators[key] = UUIDValidator()
                 elif key == "values":
                     self._validators[key] = ValueValidator()
+                elif key == "association":
+                    self._validators[key] = AssociationValidator()
                 else:
                     raise ValueError(f"No validator implemented for argument '{key}'.")
         elif val is None:
@@ -102,17 +103,21 @@ class InputValidation:
 
         self._validations = val
 
-    def validate(self, name: str, value: Any):
+    def validate(self, name: str, value: Any, validations: dict[str, Any] = None):
         """
         Run validations on a given key and value.
 
         :param name: Parameter identifier.
         :param value: Input parameter value.
+        :param validations: [Optional] Validations provided on runtime
         """
-        if name not in self.validations:
-            raise KeyError(f"{name} is missing from the known validations.")
+        if validations is None:
+            if name not in self.validations:
+                raise KeyError(f"{name} is missing from the known validations.")
 
-        for val, args in self.validations[name].items():
+            validations = self.validations[name]
+
+        for val, args in validations.items():
 
             if val == "required" and self.ignore_requirements:
                 continue
@@ -125,14 +130,19 @@ class InputValidation:
 
         :param data: Input data with known validations.
         """
-        for key, validations in self.validations.items():
-            if key not in data.keys():
+        for name, validations in self.validations.items():
+            if name not in data.keys():
                 if "required" in validations and not self.ignore_requirements:
-                    raise RequiredValidationError(key)
+                    raise RequiredValidationError(name)
 
                 continue
 
-            self.validate(key, data[key])
+            if "association" in validations and validations["association"] in data:
+                temp_validate = deepcopy(validations)
+                temp_validate["association"] = data[validations["association"]]
+                self.validate(name, data[name], temp_validate)
+            else:
+                self.validate(name, data[name])
 
     def __call__(self, data, *args):
         if isinstance(data, dict):

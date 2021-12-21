@@ -33,6 +33,15 @@
 from geoh5py.shared.utils import iterable_message
 
 
+class AssociationValidationError(Exception):
+    """Error on association between child and parent entity validation."""
+
+    def __init__(self, name, value, parent):
+        super().__init__(
+            f"Property '{name}' of type '{value}' must be a child entity of parent {parent}"
+        )
+
+
 class JSONParameterValidationError(Exception):
     """Error on uuid validation."""
 

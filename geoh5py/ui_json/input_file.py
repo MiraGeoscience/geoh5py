@@ -11,13 +11,15 @@ import json
 import os
 import warnings
 from copy import deepcopy
-from typing import Any, Callable
+from typing import Any, Callable, cast
 from uuid import UUID
 
 import numpy as np
 
 from geoh5py.groups import ContainerGroup
+from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import JSONParameterValidationError
+from geoh5py.shared.validators import UUIDValidator
 from geoh5py.workspace import Workspace
 
 from .constants import ui_validations
@@ -47,6 +49,7 @@ class InputFile:
 
     _ui_validators = None
     _validators = None
+    uuid_validator = UUIDValidator()
 
     def __init__(
         self,
@@ -76,8 +79,13 @@ class InputFile:
             if not isinstance(value, dict):
                 raise ValueError("Input 'data' must be of type dict or None.")
 
-            self.validators(value)
-            self.workspace = value["geoh5"]
+            if "geoh5" in value:
+                self.workspace = value["geoh5"]
+
+            value = self._promote(value)
+
+            if self.validators is not None:
+                self.validators.validate_data(value)
 
         self._data = value
 
@@ -95,9 +103,14 @@ class InputFile:
             if not isinstance(value, dict):
                 raise ValueError("Input 'ui_json' must be of type dict or None.")
 
-            self._ui_json = self._promote(self._numify(value))
+            self._ui_json = self._numify(value)
+            self.validations = {
+                **self.validations,
+                **self.get_ui_validations(self._ui_json),
+            }
         else:
             self._ui_json = None
+            self._validators = None
 
     @staticmethod
     def read_ui_json(json_file: str):
@@ -128,8 +141,11 @@ class InputFile:
 
     @validations.setter
     def validations(self, valid_dict: dict | None):
-        if isinstance(valid_dict, dict):
-            valid_dict.update(deepcopy(default_validations))
+        if not isinstance(valid_dict, (dict, type(None))):
+            raise TypeError(
+                "Input validations must be of type 'dict' or None. "
+                f"Value type {type(valid_dict)} provided"
+            )
 
         self._validations = valid_dict
 
@@ -153,7 +169,6 @@ class InputFile:
 
     @workspace.setter
     def workspace(self, workspace: Workspace | None):
-
         if workspace is not None and not isinstance(workspace, Workspace):
             raise ValueError(
                 "Input 'workspace' must be a valid :obj:`geoh5py.workspace.Workspace`"
@@ -161,8 +176,8 @@ class InputFile:
 
         self._workspace = workspace
 
-        if self._validators is not None:
-            self._validators.workspace = workspace
+        if self.validators is not None:
+            self.validators.workspace = workspace
 
     def write_ui_json(
         self,
@@ -297,9 +312,9 @@ class InputFile:
                 value = self._numify(value)
 
             mappers = (
-                [str2none, str2inf, str2uuid]
+                [str2none, str2inf, str2uuid, path2workspace]
                 if key == "ignore_values"
-                else [str2list, str2none, str2inf, str2uuid]
+                else [str2list, str2none, str2inf, str2uuid, path2workspace]
             )
             var[key] = self._dict_mapper(value, mappers)
 
@@ -307,7 +322,7 @@ class InputFile:
 
     def _demote(self, var: dict[str, Any]) -> dict[str, str]:
         """Converts promoted parameter values to their string representations."""
-        mappers = [uuid2str, workspace2path, containergroup2name]
+        mappers = [entity2uuid, uuid2str, workspace2path, containergroup2name]
         for key, value in var.items():
 
             if isinstance(value, dict):
@@ -320,18 +335,18 @@ class InputFile:
         return var
 
     def _promote(self, var: dict[str, Any]) -> dict[str, Any]:
-        mappers = [path2workspace]
         for key, value in var.items():
 
             if isinstance(value, dict):
                 var[key] = self._promote(value)
-            else:
-                var[key] = self._dict_mapper(value, mappers)
+            elif isinstance(value, UUID):
+                self.uuid_validator(key, value, self.workspace)
+                var[key] = uuid2entity(value, self.workspace)
 
         return var
 
     @staticmethod
-    def _dict_mapper(val, string_funcs: list[Callable]) -> dict:
+    def _dict_mapper(val, string_funcs: list[Callable], *args) -> dict:
         """
         Recurses through nested dictionary and applies mapping funcs to all values
 
@@ -343,7 +358,10 @@ class InputFile:
             Function to apply to values within dictionary.
         """
         for fun in string_funcs:
-            val = fun(val)
+            if args is None:
+                val = fun(val)
+            else:
+                val = fun(val, *args)
         return val
 
     # @staticmethod
@@ -372,6 +390,42 @@ class InputFile:
     #             continue
     #
     #     #     return associations
+
+    @staticmethod
+    def get_ui_validations(ui_json: dict[str, Any]):
+        validations = {}
+        for key, item in ui_json.items():
+            if not isinstance(item, dict):
+                continue
+
+            if "isValue" in item:
+                validations[key] = {
+                    "types": [UUID, int, float, Entity],
+                    "association": item["parent"],
+                }
+            elif "choiceList" in item:
+                validations[key] = {"types": [str], "values": item["choiceList"]}
+            elif "fileType" in item:
+                validations[key] = {
+                    "types": [str],
+                }
+            elif "meshType" in item:
+                validations[key] = {"types": [UUID, Entity], "association": "geoh5"}
+            elif "parent" in item:
+                validations[key] = {
+                    "types": [UUID, Entity],
+                    "association": item["parent"],
+                }
+            elif "value" in item:
+                if item["value"] is None:
+                    check_type = str
+                else:
+                    check_type = cast(Any, type(item["value"]))
+                validations[key] = {
+                    "types": [check_type],
+                }
+
+        return validations
 
     @staticmethod
     def flatten(var: dict[str, Any]) -> dict[str, Any]:
@@ -484,6 +538,12 @@ def is_uuid(value):
 #     return "value"
 
 
+def entity2uuid(value):
+    if isinstance(value, Entity):
+        return value.uid
+    return value
+
+
 def list2str(value):
     if isinstance(value, list):  # & (key not in exclude):
         return str(value)[1:-1]
@@ -538,9 +598,9 @@ def str2uuid(value):
     return value
 
 
-def uuid2entity(value):
+def uuid2entity(value, workspace):
     if isinstance(value, UUID):
-        return f"{{{str(value)}}}"
+        return workspace.get_entity(value)[0]
     return value
 
 
