@@ -26,6 +26,7 @@ from geoh5py.groups import ContainerGroup
 from geoh5py.objects import Points
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
+    AssociationValidationError,
     JSONParameterValidationError,
     RequiredValidationError,
     TypeValidationError,
@@ -49,6 +50,9 @@ def test_load_ui_json(tmp_path):
         }
     )
     points.add_data_to_group(data, name="My group")
+
+    points_b = points.copy(copy_children=True)
+
     workspace.finalize()
     # Test missing required ui_json parameter
     ui_json = {}
@@ -118,9 +122,16 @@ def test_load_ui_json(tmp_path):
 
     assert "provided for 'data' is invalid. Not in the list" in str(error)
 
-    ui_json["data"]["value"] = data[0].uid
+    ui_json["data"]["value"] = points_b.children[0].uid
+    in_file = InputFile(ui_json=ui_json)
+
+    with pytest.raises(AssociationValidationError) as error:
+        print(in_file.data)
+
+    assert "must be a child entity of parent" in str(error)
 
     # Test bool_parameter
+    ui_json["data"]["value"] = data[0].uid
     ui_json["logic"] = tmp.bool_parameter()
     ui_json["logic"]["value"] = True
     in_file = InputFile(ui_json=ui_json)
