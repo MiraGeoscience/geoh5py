@@ -364,33 +364,6 @@ class InputFile:
                 val = fun(val, *args)
         return val
 
-    # @staticmethod
-    # def get_associations(var: dict[str, Any]) -> dict:
-    #     """
-    #     Get parent/child associations for ui.json fields.
-    #
-    #     :param var: Dictionary containing ui.json keys/values/fields.
-    #     """
-    #     associations = {}
-    #     for key, value in var.items():
-    #         if isinstance(value, dict):
-    #             field = InputFile.field(value)
-    #             if "parent" in value.keys() and value["parent"] is not None:
-    #                 try:
-    #                     associations[key] = value["parent"]
-    #                     try:
-    #                         child_key = UUID(value[field])
-    #                     except (ValueError, TypeError):
-    #                         child_key = value[field]
-    #                     parent_uuid = UUID(var[value["parent"]]["value"])
-    #                     associations[child_key] = parent_uuid
-    #                 except (ValueError, TypeError):
-    #                     continue
-    #         else:
-    #             continue
-    #
-    #     #     return associations
-
     @staticmethod
     def get_ui_validations(ui_json: dict[str, Any]):
         validations = {}
