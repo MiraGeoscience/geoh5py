@@ -550,6 +550,8 @@ class Workspace:
                     family_tree += self.fetch_children(
                         recovered_object, recursively=True, file=file
                     )
+                    if hasattr(recovered_object, "property_groups"):
+                        family_tree += getattr(recovered_object, "property_groups")
 
         return family_tree
 
