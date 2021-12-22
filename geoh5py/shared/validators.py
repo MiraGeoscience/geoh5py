@@ -23,11 +23,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, List, cast
+from typing import Any
 from uuid import UUID
 
 import numpy as np
 
+from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
@@ -80,27 +81,36 @@ class AssociationValidator(BaseValidator):
     """Validate the shape of provided value."""
 
     @classmethod
-    def validate(cls, name: str, value: Any, valid: Entity | Workspace) -> None:
+    def validate(cls, name: str, value: Entity, valid: Entity | Workspace) -> None:
         """
         :param name: Parameter identifier.
         :param value: Input parameter value.
         :param valid: Expected value shape
         """
         if isinstance(valid, Workspace):
-            children = (
-                cast(List["Entity"], valid.groups)
-                + cast(List["Entity"], valid.objects)
-                + cast(List["Entity"], valid.data)
-            )
+            children = valid.fetch_children(valid.root, recursively=True)
         else:
-            children = valid.children
+            children = valid.workspace.fetch_children(valid, recursively=True)
 
-        if value not in children:
+        if value.uid not in [child.uid for child in children]:
             raise AssociationValidationError(name, value, valid)
 
     @property
     def validation_type(self):
         return "association"
+
+
+class PropertyGroupValidator(BaseValidator):
+    """Validate property_group from parent entity."""
+
+    @classmethod
+    def validate(cls, name: str, value: PropertyGroup, valid: str) -> None:
+        if value.property_group_type != valid:
+            raise PropertyGroupValidationError(name, value, valid)
+
+    @property
+    def validation_type(self):
+        return "property_group"
 
 
 class RequiredValidator(BaseValidator):
@@ -123,24 +133,23 @@ class RequiredValidator(BaseValidator):
         return "required"
 
 
-class ValueValidator(BaseValidator):
-    """
-    Validator that ensures that values are valid entries.
-    """
+class ShapeValidator(BaseValidator):
+    """Validate the shape of provided value."""
 
     @classmethod
-    def validate(cls, name: str, value: Any, valid: list[float | str]) -> None:
+    def validate(cls, name: str, value: Any, valid: list[tuple[int]]) -> None:
         """
         :param name: Parameter identifier.
         :param value: Input parameter value.
-        :param valid: List of accepted values
+        :param valid: Expected value shape
         """
-        if value not in valid:
-            raise ValueValidationError(name, value, valid)
+        pshape = np.array(value).shape
+        if pshape != valid:
+            raise ShapeValidationError(name, pshape, valid)
 
     @property
     def validation_type(self):
-        return "values"
+        return "shape"
 
 
 class TypeValidator(BaseValidator):
@@ -169,25 +178,6 @@ class TypeValidator(BaseValidator):
     @property
     def validation_type(self):
         return "types"
-
-
-class ShapeValidator(BaseValidator):
-    """Validate the shape of provided value."""
-
-    @classmethod
-    def validate(cls, name: str, value: Any, valid: list[tuple[int]]) -> None:
-        """
-        :param name: Parameter identifier.
-        :param value: Input parameter value.
-        :param valid: Expected value shape
-        """
-        pshape = np.array(value).shape
-        if pshape != valid:
-            raise ShapeValidationError(name, pshape, valid)
-
-    @property
-    def validation_type(self):
-        return "shape"
 
 
 class UUIDValidator(BaseValidator):
@@ -226,19 +216,21 @@ class UUIDValidator(BaseValidator):
         return "shape"
 
 
-class PropertyGroupValidator(BaseValidator):
-    """Validate property_group from parent entity."""
+class ValueValidator(BaseValidator):
+    """
+    Validator that ensures that values are valid entries.
+    """
 
     @classmethod
-    def validate(cls, name: str, value: UUID, valid: Entity) -> None:
-        if valid is not None:
-
-            UUIDValidator.validate(name, value, valid)
-            valid_entity = valid.workspace.get_entity(valid)[0]
-
-            if value not in [pg.uid for pg in valid_entity.property_groups]:
-                raise PropertyGroupValidationError(name, value, valid)
+    def validate(cls, name: str, value: Any, valid: list[float | str]) -> None:
+        """
+        :param name: Parameter identifier.
+        :param value: Input parameter value.
+        :param valid: List of accepted values
+        """
+        if value not in valid:
+            raise ValueValidationError(name, value, valid)
 
     @property
     def validation_type(self):
-        return "property_group"
+        return "values"

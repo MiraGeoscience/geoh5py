@@ -54,9 +54,10 @@ class JSONParameterValidationError(Exception):
 class PropertyGroupValidationError(Exception):
     """Error on property group validation."""
 
-    def __init__(self, name, value, parent):
+    def __init__(self, name, value, valid):
         super().__init__(
-            f"Property group '{name}' with value '{value}' must exist for {parent}."
+            f"Property group for '{name}' must be of type '{valid}'. "
+            f"Provided '{value.name}' of type '{value.property_group_type}'"
         )
 
 

@@ -16,7 +16,8 @@ from uuid import UUID
 
 import numpy as np
 
-from geoh5py.groups import ContainerGroup
+from geoh5py.groups import ContainerGroup, PropertyGroup
+from geoh5py.io.utils import entity2uuid, str2uuid, uuid2entity, uuid2str
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import JSONParameterValidationError
 from geoh5py.shared.validators import UUIDValidator
@@ -243,17 +244,10 @@ class InputFile:
         """
         Convert inf, none, and list types to strings within a dictionary
 
-        Parameters
-        ----------
+        :param var: Dictionary containing ui.json keys, values, fields
 
-        d :
-            dictionary containing ui.json keys, values, fields
-
-        Returns
-        -------
-        Dictionary with inf, none and list types converted to string representations friendly for
-        json format.
-
+        :return: Dictionary with inf, none and list types converted to string
+            representations in json format.
         """
         for key, value in var.items():
             # Handle special cases of None values
@@ -322,7 +316,7 @@ class InputFile:
 
     def _demote(self, var: dict[str, Any]) -> dict[str, str]:
         """Converts promoted parameter values to their string representations."""
-        mappers = [entity2uuid, uuid2str, workspace2path, containergroup2name]
+        mappers = [entity2uuid, uuid2str, workspace2path, container_group2name]
         for key, value in var.items():
 
             if isinstance(value, dict):
@@ -389,6 +383,9 @@ class InputFile:
                     "types": [UUID, Entity],
                     "association": item["parent"],
                 }
+                if "dataGroupType" in item:
+                    validations[key]["property_group_type"] = item["dataGroupType"]
+                    validations[key]["types"] = [UUID, PropertyGroup]
             elif "value" in item:
                 if item["value"] is None:
                     check_type = str
@@ -494,38 +491,9 @@ def is_uijson(var):
     return uijson
 
 
-def is_uuid(value):
-    try:
-        UUID(str(value))
-        return True
-    except ValueError:
-        return False
-
-
-# def field(var: dict[str, Any]) -> str:
-#     """Returns field in ui_json block that contains data ('value' or 'property')."""
-#
-#     if "isValue" in var.keys():
-#         return "value" if var["isValue"] else "property"
-#
-#     return "value"
-
-
-def entity2uuid(value):
-    if isinstance(value, Entity):
-        return value.uid
-    return value
-
-
 def list2str(value):
     if isinstance(value, list):  # & (key not in exclude):
         return str(value)[1:-1]
-    return value
-
-
-def uuid2str(value):
-    if isinstance(value, UUID):
-        return str(value)
     return value
 
 
@@ -565,18 +533,6 @@ def str2inf(value):
     return value
 
 
-def str2uuid(value):
-    if is_uuid(value):
-        return UUID(str(value))
-    return value
-
-
-def uuid2entity(value, workspace):
-    if isinstance(value, UUID):
-        return workspace.get_entity(value)[0]
-    return value
-
-
 def workspace2path(value):
     if isinstance(value, Workspace):
         return value.h5file
@@ -589,7 +545,7 @@ def path2workspace(value):
     return value
 
 
-def containergroup2name(value):
+def container_group2name(value):
     if isinstance(value, ContainerGroup):
         return value.name
     return value

@@ -508,10 +508,10 @@ class Workspace:
 
     def fetch_children(
         self,
-        entity: Entity,
+        entity: Entity | None,
         recursively: bool = False,
         file: str | h5py.File | None = None,
-    ):
+    ) -> list:
         """
         Recover and register children entities from the h5file
 
@@ -519,6 +519,9 @@ class Workspace:
         :param recursively: Recover all children down the project tree
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         """
+        if entity is None:
+            return []
+
         if isinstance(entity, Group):
             entity_type = "group"
         elif isinstance(entity, ObjectBase):
@@ -552,6 +555,9 @@ class Workspace:
                     )
                     if hasattr(recovered_object, "property_groups"):
                         family_tree += getattr(recovered_object, "property_groups")
+
+        if hasattr(entity, "property_groups"):
+            family_tree += getattr(entity, "property_groups")
 
         return family_tree
 

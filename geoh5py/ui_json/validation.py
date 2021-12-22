@@ -79,7 +79,7 @@ class InputValidation:
         if isinstance(val, dict):
             validator_list = list({key for item in val.values() for key in item})
             for key in validator_list:
-                if key == "property_group":
+                if key == "property_group_type":
                     self._validators[key] = PropertyGroupValidator()
                 elif key == "required":
                     self._validators[key] = RequiredValidator()

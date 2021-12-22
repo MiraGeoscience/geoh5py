@@ -44,7 +44,7 @@ class PropertyGroup(ABC):
         self._uid = uuid.uuid4()
         self._association: DataAssociationEnum = DataAssociationEnum.VERTEX
         self._properties: list[uuid.UUID] = []
-        self._property_group_type = "multi-element"
+        self._property_group_type = "Multi-element"
         self._parent = None
 
         for attr, item in kwargs.items():
