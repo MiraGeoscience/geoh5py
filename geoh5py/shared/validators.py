@@ -143,7 +143,7 @@ class ShapeValidator(BaseValidator):
         :param value: Input parameter value.
         :param valid: Expected value shape
         """
-        pshape = np.array(value).shape
+        pshape = len(np.array(value))
         if pshape != valid:
             raise ShapeValidationError(name, pshape, valid)
 
@@ -164,11 +164,12 @@ class TypeValidator(BaseValidator):
         :param value: Input parameter value.
         :param valid: List of accepted value types
         """
-        if not iterable(value):
+        if isinstance(valid, type):
+            valid = [valid]
+
+        if not iterable(value) or list in valid:
             value = (value,)
         for val in value:
-            if isinstance(valid, type):
-                valid = [valid]
             if not isinstance(val, tuple(valid)):
                 valid_names = [t.__name__ for t in valid if hasattr(t, "__name__")]
                 type_name = type(val).__name__

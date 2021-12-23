@@ -71,8 +71,8 @@ class ShapeValidationError(Exception):
 
     def __init__(self, name, value, valid):
         super().__init__(
-            f"Shape of '{value}' provided for '{name}' is invalid. "
-            + iterable_message(valid)
+            f"Parameter '{name}': 'value' with shape '{value}' was provided. "
+            f"Expected len({valid},)."
         )
 
 

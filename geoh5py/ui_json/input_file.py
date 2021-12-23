@@ -105,13 +105,14 @@ class InputFile:
                 raise ValueError("Input 'ui_json' must be of type dict or None.")
 
             self._ui_json = self._numify(value)
-            self.validations = {
-                **self.validations,
-                **self.get_ui_validations(self._ui_json),
-            }
+            base_ui_validations = self.get_ui_validations(self._ui_json)
+            for key, validations in base_ui_validations.items():
+                if key in self.validations:
+                    validations = {**validations, **self.validations[key]}
+                self._validations[key] = validations
         else:
             self._ui_json = None
-            self._validators = None
+        self._validators = None
 
     @staticmethod
     def read_ui_json(json_file: str):
@@ -147,6 +148,9 @@ class InputFile:
                 "Input validations must be of type 'dict' or None. "
                 f"Value type {type(valid_dict)} provided"
             )
+
+        if valid_dict is not None:
+            valid_dict = {**valid_dict, **deepcopy(default_validations)}
 
         self._validations = valid_dict
 

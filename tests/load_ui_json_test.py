@@ -29,7 +29,9 @@ from geoh5py.shared.exceptions import (
     JSONParameterValidationError,
     PropertyGroupValidationError,
     RequiredValidationError,
+    ShapeValidationError,
     TypeValidationError,
+    UUIDStringValidationError,
     UUIDValidationError,
 )
 from geoh5py.shared.utils import compare_entities
@@ -197,6 +199,33 @@ def test_bool_parameter():
 
     assert "Type 'int' provided for 'logic' is invalid.  Must be: 'bool'" in str(error)
 
+
+def test_uuid_string_parameter():
+    ui_json = deepcopy(default_ui_json)
+    in_file = InputFile(ui_json=ui_json)
+
+    with pytest.raises(UUIDStringValidationError) as error:
+        in_file.uuid_validator("object", "hello world")
+
+    assert (
+        "Parameter 'object' with value 'hello world' is not a valid uuid string."
+        in str(error)
+    )
+
+
+def test_shape_parameter():
+    ui_json = deepcopy(default_ui_json)
+    ui_json["data"] = templates.string_parameter()
+    ui_json["data"]["value"] = "2,5,6,7"
+    in_file = InputFile(ui_json=ui_json, validations={"data": {"shape": 3}})
+
+    with pytest.raises(ShapeValidationError) as error:
+        print(in_file.data)
+
+    assert (
+        "Parameter 'data': 'value' with shape '4' was provided. Expected len(3,)."
+        in str(error)
+    )
     # ui_json["data"]["data_group_type"] = "Multi-element"
     # in_file = InputFile(ui_json=ui_json, validations={"data": {"property_group": points}})
     #
