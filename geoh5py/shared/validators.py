@@ -58,7 +58,8 @@ class BaseValidator(ABC):
                 setattr(self, key, value)
 
     @classmethod
-    def validate(cls, name: str, value: Any, valid: Any):
+    @abstractmethod
+    def validate(cls, name, value, valid):
         """
         Custom validation function.
         """
