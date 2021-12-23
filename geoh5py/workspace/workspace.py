@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import inspect
 import uuid
+import warnings
 import weakref
 from contextlib import contextmanager
 from gc import collect
@@ -80,12 +81,17 @@ class Workspace:
         self._h5file = h5file
 
         for attr, item in kwargs.items():
-            try:
-                if attr in self._attribute_map:
-                    attr = self._attribute_map[attr]
+            if attr in self._attribute_map:
+                attr = self._attribute_map[attr]
+
+            if getattr(self, attr, None) is None:
+                warnings.warn(
+                    f"Argument {attr} with value {item} is not a valid attribute of workspace. "
+                    f"Argument ignored.",
+                    UserWarning,
+                )
+            else:
                 setattr(self, attr, item)
-            except AttributeError:
-                continue
 
         with h5py.File(self.h5file, "a") as file:
             try:

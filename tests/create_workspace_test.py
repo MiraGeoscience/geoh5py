@@ -17,26 +17,35 @@
 
 from os import path
 
+import pytest
+
 from geoh5py.workspace import Workspace
 
 
 def test_workspace_from_kwargs(tmp_path):
 
     attr = {
-        "contributors": "TARS",
+        "Contributors": "TARS",
         "version": 999.1,
         "ga_version": "2",
         "distance_unit": "feet",
+        "hello": "world",
     }
 
-    workspace = Workspace(path.join(tmp_path, "test.geoh5"), **attr)
+    with pytest.warns(UserWarning) as warning:
+        workspace = Workspace(path.join(tmp_path, "test.geoh5"), **attr)
 
+    assert (
+        "UserWarning('Argument hello with value world is not a valid attribute"
+        in str(warning[0])
+    )
     workspace.finalize()
 
     workspace = Workspace(
         path.join(tmp_path, "test.geoh5"),
     )
     for key, value in attr.items():
-        assert (
-            getattr(workspace, key) == value
-        ), f"Error changing value for attribute {key}."
+        if getattr(workspace, key, None) is not None:
+            assert (
+                getattr(workspace, key.lower()) == value
+            ), f"Error changing value for attribute {key}."
