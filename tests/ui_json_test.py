@@ -41,30 +41,36 @@ from geoh5py.ui_json.input_file import InputFile
 from geoh5py.workspace import Workspace
 
 
-def test_load_ui_json(tmp_path):
-    xyz = np.random.randn(12, 3)
-    workspace = Workspace(path.join(tmp_path, "..", "testPoints.geoh5"))
-    group = ContainerGroup.create(workspace)
-    points = Points.create(workspace, vertices=xyz, parent=group, name="Points_A")
-    data = points.add_data(
-        {
-            "values A": {"values": np.random.randn(12)},
-            "values B": {"values": np.random.randn(12)},
-        }
-    )
-    points.add_data_to_group(data, name="My group")
+def get_workspace(directory):
+    workspace = Workspace(path.join(directory, "..", "testPoints.geoh5"))
+    if len(workspace.objects) == 0:
+        xyz = np.random.randn(12, 3)
+        group = ContainerGroup.create(workspace)
+        points = Points.create(workspace, vertices=xyz, parent=group, name="Points_A")
+        data = points.add_data(
+            {
+                "values A": {"values": np.random.randn(12)},
+                "values B": {"values": np.random.randn(12)},
+            }
+        )
+        points.add_data_to_group(data, name="My group")
 
-    points_b = points.copy(copy_children=True)
-    points_b.name = "Points_B"
-    points_b.add_data_to_group(points_b.children, name="My group2")
+        points_b = points.copy(copy_children=True)
+        points_b.name = "Points_B"
+        points_b.add_data_to_group(points_b.children, name="My group2")
 
-    workspace.finalize()
+        workspace.finalize()
+
+    return workspace
+
+
+def test_load_ui_json():
     # Test missing required ui_json parameter
     ui_json = {}
     in_file = InputFile(ui_json=ui_json)
 
     with pytest.raises(RequiredValidationError) as error:
-        print(in_file.data)
+        getattr(in_file, "data")
 
     assert "Missing 'title'" in str(error)
 
@@ -74,7 +80,7 @@ def test_load_ui_json(tmp_path):
 
     in_file = InputFile(ui_json=ui_json)
     with pytest.raises(ValueError) as error:
-        data = in_file.data
+        getattr(in_file, "data")
 
     assert (
         "Input 'workspace' must be a valid :obj:`geoh5py.workspace.Workspace`"
@@ -82,8 +88,48 @@ def test_load_ui_json(tmp_path):
     )
 
 
+def test_bool_parameter():
+    ui_json = deepcopy(default_ui_json)
+    ui_json["logic"] = templates.bool_parameter()
+    ui_json["logic"]["value"] = True
+    in_file = InputFile(ui_json=ui_json)
+
+    with pytest.raises(TypeValidationError) as error:
+        in_file.validators.validate("logic", 1234)
+
+    assert "Type 'int' provided for 'logic' is invalid.  Must be: 'bool'" in str(error)
+
+
+def test_uuid_string_parameter():
+    ui_json = deepcopy(default_ui_json)
+    in_file = InputFile(ui_json=ui_json)
+
+    with pytest.raises(UUIDStringValidationError) as error:
+        in_file.uuid_validator("object", "hello world")
+
+    assert (
+        "Parameter 'object' with value 'hello world' is not a valid uuid string."
+        in str(error)
+    )
+
+
+def test_shape_parameter():
+    ui_json = deepcopy(default_ui_json)
+    ui_json["data"] = templates.string_parameter()
+    ui_json["data"]["value"] = "2,5,6,7"
+    in_file = InputFile(ui_json=ui_json, validations={"data": {"shape": 3}})
+
+    with pytest.raises(ShapeValidationError) as error:
+        getattr(in_file, "data")
+
+    assert (
+        "Parameter 'data': 'value' with shape '4' was provided. Expected len(3,)."
+        in str(error)
+    )
+
+
 def test_object_data_selection(tmp_path):
-    workspace = Workspace(path.join(tmp_path, "..", "testPoints.geoh5"))
+    workspace = get_workspace(tmp_path)
     points = workspace.get_entity("Points_A")[0]
     points_b = workspace.get_entity("Points_B")[0]
 
@@ -119,7 +165,7 @@ def test_object_data_selection(tmp_path):
     in_file = InputFile(ui_json=ui_json)
 
     with pytest.raises(TypeValidationError) as error:
-        print(in_file.data)
+        getattr(in_file, "data")
 
     assert (
         "Type 'str' provided for 'data' is invalid.  Must be one of: 'UUID', 'Entity'."
@@ -131,7 +177,7 @@ def test_object_data_selection(tmp_path):
     in_file = InputFile(ui_json=ui_json)
 
     with pytest.raises(UUIDValidationError) as error:
-        print(in_file.data)
+        getattr(in_file, "data")
 
     assert "provided for 'data' is invalid. Not in the list" in str(error)
 
@@ -140,7 +186,7 @@ def test_object_data_selection(tmp_path):
     in_file = InputFile(ui_json=ui_json)
 
     with pytest.raises(AssociationValidationError) as error:
-        print(in_file.data)
+        getattr(in_file, "data")
 
     assert "must be a child entity of parent" in str(error)
 
@@ -161,7 +207,7 @@ def test_object_data_selection(tmp_path):
     in_file = InputFile(ui_json=ui_json)
 
     with pytest.raises(PropertyGroupValidationError) as error:
-        print(in_file.data)
+        getattr(in_file, "data")
 
     assert (
         "Property group for 'data' must be of type '3D vector'. "
@@ -187,49 +233,10 @@ def test_object_data_selection(tmp_path):
         elif reload_input.data[key] != value:
             raise ValueError(f"Input '{key}' differs from the output.")
 
-
-def test_bool_parameter():
-    ui_json = deepcopy(default_ui_json)
-    ui_json["logic"] = templates.bool_parameter()
-    ui_json["logic"]["value"] = True
-    in_file = InputFile(ui_json=ui_json)
-
-    with pytest.raises(TypeValidationError) as error:
-        in_file.validators.validate("logic", 1234)
-
-    assert "Type 'int' provided for 'logic' is invalid.  Must be: 'bool'" in str(error)
-
-
-def test_uuid_string_parameter():
-    ui_json = deepcopy(default_ui_json)
-    in_file = InputFile(ui_json=ui_json)
-
-    with pytest.raises(UUIDStringValidationError) as error:
-        in_file.uuid_validator("object", "hello world")
-
-    assert (
-        "Parameter 'object' with value 'hello world' is not a valid uuid string."
-        in str(error)
-    )
-
-
-def test_shape_parameter():
-    ui_json = deepcopy(default_ui_json)
-    ui_json["data"] = templates.string_parameter()
-    ui_json["data"]["value"] = "2,5,6,7"
-    in_file = InputFile(ui_json=ui_json, validations={"data": {"shape": 3}})
-
-    with pytest.raises(ShapeValidationError) as error:
-        print(in_file.data)
-
-    assert (
-        "Parameter 'data': 'value' with shape '4' was provided. Expected len(3,)."
-        in str(error)
-    )
     # ui_json["data"]["data_group_type"] = "Multi-element"
     # in_file = InputFile(ui_json=ui_json, validations={"data": {"property_group": points}})
     #
-    # print(in_file.data)
+    # getattr(in_file, "data")
 
     # input_data["data_group"] = templates.data_parameter()
     # input_data["logical"] = templates.bool_parameter()
