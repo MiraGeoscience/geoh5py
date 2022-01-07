@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -403,9 +403,9 @@ class ObjectBase(Entity):
         if entity_type is None:
             primitive_type = attribute_dict.get("type")
             if primitive_type is not None:
-                assert primitive_type.upper() in list(
-                    PrimitiveTypeEnum.__members__.keys()
-                ), f"Data 'type' should be one of {list(PrimitiveTypeEnum.__members__.keys())}"
+                assert (
+                    primitive_type.upper() in PrimitiveTypeEnum.__members__
+                ), f"Data 'type' should be one of {PrimitiveTypeEnum.__members__}"
                 entity_type = {"primitive_type": primitive_type.upper()}
             else:
                 values = attribute_dict.get("values")

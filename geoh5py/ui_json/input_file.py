@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoapps.
 #
@@ -259,7 +259,7 @@ class InputFile:
             if isinstance(value, dict) and value["value"] is None:
                 if none_map is not None and key in none_map:
                     value["value"] = none_map[key]
-                    if "group" in value.keys():
+                    if "group" in value:
                         if InputFile.group_optional(var, value["group"]):
                             value["enabled"] = False
                         else:
@@ -268,9 +268,9 @@ class InputFile:
                     else:
                         value["optional"] = True
                         value["enabled"] = False
-                elif "meshType" in value.keys():
+                elif "meshType" in value:
                     value["value"] = ""
-                elif "isValue" in value.keys() and value["isValue"]:
+                elif "isValue" in value and value["isValue"]:
                     value["isValue"] = False
                     value["property"] = ""
                     value["value"] = 0.0

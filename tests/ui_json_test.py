@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -64,8 +64,13 @@ def get_workspace(directory):
     return workspace
 
 
-def test_load_ui_json():
+def test_input_file_json():
     # Test missing required ui_json parameter
+    with pytest.raises(ValueError) as error:
+        InputFile(ui_json=123)
+
+    assert "Input 'ui_json' must be of type dict or None" in str(error)
+
     ui_json = {}
     in_file = InputFile(ui_json=ui_json)
 
@@ -158,6 +163,11 @@ def test_object_data_selection(tmp_path):
         in_file.data["object"] == points
     ), "Promotion of entity from uuid string failed."
 
+    with pytest.raises(ValueError) as error:
+        in_file.data = 123
+
+    assert "Input 'data' must be of type dict or None." in str(error)
+
     # Test for invalid uuid string
     ui_json["data"] = templates.data_parameter()
     ui_json["data"]["parent"] = "object"
@@ -217,8 +227,7 @@ def test_object_data_selection(tmp_path):
 
     # Test
     in_file = InputFile(ui_json=ui_json)
-
-    out_file = in_file.write_ui_json()
+    out_file = in_file.write_ui_json(name="test", path=tmp_path)
 
     # Load the input back in
     reload_input = InputFile.read_ui_json(out_file)
