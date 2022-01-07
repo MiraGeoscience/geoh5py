@@ -133,6 +133,17 @@ class Magnetotellurics(Points):
 
         return self._unit
 
+    @unit.setter
+    def unit(self, value: str):
+        units = [
+            "Hertz (Hz)",
+            "KiloHertz (kHz)",
+            "MegaHertz (MHz)",
+            "Gigahertz (GHz)",
+        ]
+        assert value in units, f"Input 'unit' must be one of {units}"
+        self.metadata["EM Dataset"]["Unit"] = value
+
     def add_component_data(self, data: dict) -> Data | list[Data]:
         """
         Adapted from :func:`~geoh5py.objects.object_base.ObjectBase.add_data` method.
