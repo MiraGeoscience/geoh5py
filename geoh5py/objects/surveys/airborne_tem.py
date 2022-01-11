@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import uuid
 
+import numpy as np
+
 from ..curve import Curve
 from ..object_type import ObjectType
 
@@ -29,9 +31,9 @@ class Receivers(Curve):
     """
 
     __TYPE_UID = uuid.UUID("{19730589-fd28-4649-9de0-ad47249d9aba}")
-
+    __META_KEY = "EM Dataset"
     __default_metadata = {
-        "EM Dataset": {
+        __META_KEY: {
             "Channels": [],
             "Input type": "Rx",
             "Property groups": [],
@@ -41,13 +43,37 @@ class Receivers(Curve):
             "Unit": "Milliseconds (ms)",
         }
     }
-    _input_type = None
-    _survey_type = None
-    _unit = None
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(
+        self,
+        object_type: ObjectType,
+        **kwargs,
+    ):
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(
+            object_type,
+            **kwargs,
+        )
+
+    @property
+    def channels(self):
+        """
+        List of measured time channels.
+        """
+        channels = self.metadata["EM Dataset"]["Channels"]
+        return channels
+
+    @channels.setter
+    def channels(self, values: list):
+        if not isinstance(values, list) and np.all(
+            [isinstance(x, float) for x in values]
+        ):
+            raise TypeError(
+                f"Channel values must be a list of {float}. {type(values)} provided"
+            )
+
+        self.metadata["EM Dataset"]["Channels"] = values
+        self.modified_attributes = "metadata"
 
     def copy(self, parent=None, copy_children: bool = True):
         """
@@ -92,18 +118,35 @@ class Receivers(Curve):
         return self.__default_metadata.copy()
 
     @property
+    def inline_offset(self):
+        """Inline offset between receiver and transmitter"""
+        if "Inline offset value" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"]["Inline offset value"]
+        if "Inline offset property" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"]["Inline offset property"]
+        return None
+
+    @inline_offset.setter
+    def inline_offset(self, value: bool):
+        if not isinstance(value, bool):
+            raise TypeError("Input 'inline_offset' must be one of type 'bool'")
+        self.metadata["EM Dataset"]["Angles relative to bearing"] = value
+        self.modified_attributes = "metadata"
+
+    @property
     def input_type(self):
         """Data input_type"""
-        if getattr(self, "_input_type", None) is None:
-            self._input_type = self.metadata["EM Dataset"]["Input type"]
+        if "Input type" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"]["Input type"]
 
-        return self._input_type
+        return None
 
     @input_type.setter
     def input_type(self, value: str):
         input_types = ["Rx", "Tx", "Tx and Rx"]
         assert value in input_types, f"Input 'input_type' must be one of {input_types}"
         self.metadata["EM Dataset"]["Input type"] = value
+        self.modified_attributes = "metadata"
 
     @property
     def metadata(self) -> dict:
@@ -170,13 +213,47 @@ class Receivers(Curve):
         return self
 
     @property
+    def relative_to_bearing(self):
+        """Data relative_to_bearing"""
+        if "Angles relative to bearing" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"]["Angles relative to bearing"]
+
+        return None
+
+    @relative_to_bearing.setter
+    def relative_to_bearing(self, value: bool):
+        if not isinstance(value, bool):
+            raise TypeError("Input 'relative_to_bearing' must be one of type 'bool'")
+        self.metadata["EM Dataset"]["Angles relative to bearing"] = value
+        self.modified_attributes = "metadata"
+
+    @property
+    def timing_mark(self):
+        if (
+            "Waveform" in self.metadata["EM Dataset"]
+            and "Timing mark" in self.metadata["EM Dataset"]["Waveform"]
+        ):
+            timing_mark = self.metadata["EM Dataset"]["Waveform"]["Timing mark"]
+            return timing_mark
+
+        return None
+
+    @timing_mark.setter
+    def timing_mark(self, timing_mark: float):
+        if not isinstance(timing_mark, float):
+            raise ValueError("Input timing_mark must be a float.")
+
+        self.metadata["EM Dataset"]["Waveform"]["Timing mark"] = timing_mark
+        self.modified_attributes = "metadata"
+
+    @property
     def transmitters(self):
         """
         The associated current electrode object (sources).
         """
         if self.metadata is None:
             raise AttributeError("No Current-Receiver metadata set.")
-        currents = self.metadata["Transmitters"]
+        currents = self.metadata["EM Dataset"]["Transmitters"]
 
         try:
             return self.workspace.get_entity(currents)[0]
@@ -191,27 +268,63 @@ class Receivers(Curve):
                 f"Provided transmitters must be of type {Transmitters}. "
                 f"{type(transmitters)} provided."
             )
-        self.metadata["Transmitters"] = transmitters.uid
-        self.workspace.finalize()
+        self.metadata["EM Dataset"]["Transmitters"] = transmitters.uid
+        self.modified_attributes = "metadata"
 
     @property
     def unit(self):
         """Data unit"""
-        if getattr(self, "_unit", None) is None:
-            self._unit = self.metadata["EM Dataset"]["Unit"]
+        if "Unit" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"]["Unit"]
 
-        return self._unit
+        return None
 
     @unit.setter
     def unit(self, value: str):
         units = [
-            "Seconds (s)",
-            "Milliseconds (ms)",
-            "Microseconds (us)",
-            "Nanoseconds (ns)",
+            "s",
+            "ms",
+            "us",
+            "ns",
         ]
         assert value in units, f"Input 'unit' must be one of {units}"
         self.metadata["EM Dataset"]["Unit"] = value
+        self.modified_attributes = "metadata"
+
+    @property
+    def waveform(self):
+        if (
+            "Waveform" in self.metadata["EM Dataset"]
+            and "Discretization" in self.metadata["EM Dataset"]["Waveform"]
+        ):
+            waveform = np.vstack(
+                [
+                    [row["time"], row["current"]]
+                    for row in self.metadata["EM Dataset"]["Waveform"]["Discretization"]
+                ]
+            )
+            return waveform
+        return None
+
+    @waveform.setter
+    def waveform(self, waveform: np.ndarray | None):
+
+        if waveform is None:
+            if "Waveform" in self.metadata["EM Dataset"]:
+                del self.metadata["EM Dataset"]["Waveform"]
+
+        elif isinstance(waveform, np.ndarray):
+            if waveform.ndim != 2 or waveform.shape[1] != 2:
+                raise ValueError(
+                    "Input waveform must be a numpy.ndarray of shape (*, 2)."
+                )
+
+            self.metadata["EM Dataset"]["Waveform"]["Discretization"] = {
+                {"time": row[0], "current": row[1]} for row in waveform
+            }
+        else:
+            raise ValueError("Input waveform must be a numpy.ndarray or None.")
+        self.modified_attributes = "metadata"
 
 
 class Transmitters(Receivers):
@@ -282,7 +395,7 @@ class Transmitters(Receivers):
         if self.metadata is None:
             raise AttributeError("No Current-Receiver metadata set.")
 
-        receivers = self.metadata["Receivers"]
+        receivers = self.metadata["EM Dataset"]["Receivers"]
 
         try:
             return self.workspace.get_entity(receivers)[0]
@@ -298,4 +411,5 @@ class Transmitters(Receivers):
                 f"{type(receivers)} provided."
             )
 
-        self.metadata["Receivers"] = receivers.uid
+        self.metadata["EM Dataset"]["Receivers"] = receivers.uid
+        self.modified_attributes = "metadata"
