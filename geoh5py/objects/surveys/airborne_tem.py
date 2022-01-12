@@ -70,11 +70,11 @@ class AirborneTEMReceivers(Curve):
         if isinstance(values, np.ndarray):
             values = values.tolist()
 
-        if not isinstance(values, list) and np.all(
+        if not isinstance(values, list) or not np.all(
             [isinstance(x, float) for x in values]
         ):
             raise TypeError(
-                f"Channel values must be a list of {float}. {type(values)} provided"
+                f"Values provided as 'channels' must be a list of {float}. {type(values)} provided"
             )
 
         self.edit_metadata("Channels", values)
@@ -166,8 +166,17 @@ class AirborneTEMReceivers(Curve):
                     else "Transmitters"
                 )
                 metadata["EM Dataset"][element] = self.uid
+                self.metadata = metadata
+            else:
+                for key in ["Receivers", "Transmitters"]:
+                    try:
+                        metadata["EM Dataset"][key] = uuid.UUID(
+                            metadata["EM Dataset"][key]
+                        )
+                    except ValueError:
+                        continue
+                self._metadata = metadata
 
-            self._metadata = metadata
         return self._metadata
 
     @metadata.setter
@@ -207,9 +216,12 @@ class AirborneTEMReceivers(Curve):
             if key not in values["EM Dataset"]:
                 raise KeyError(f"'{key}' argument missing from the input metadata.")
 
-        for key in values["EM Dataset"]:
+        for key, value in values["EM Dataset"].items():
             if key not in known_keys:
                 raise ValueError(f"Input metadata {key} is not a known key.")
+
+            if key in ["Receivers", "Transmitters"] and isinstance(value, str):
+                values["EM Dataset"][key] = uuid.UUID(value)
 
         self._metadata = values
         self.modified_attributes = "metadata"
@@ -366,7 +378,7 @@ class AirborneTEMReceivers(Curve):
                 },
             )
         else:
-            raise ValueError("Input waveform must be a numpy.ndarray or None.")
+            raise TypeError("Input waveform must be a numpy.ndarray or None.")
 
 
 class AirborneTEMTransmitters(AirborneTEMReceivers):
