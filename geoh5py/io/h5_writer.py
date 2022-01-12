@@ -21,7 +21,8 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import TYPE_CHECKING
+from copy import deepcopy
+from typing import TYPE_CHECKING, Any
 
 import h5py
 import numpy as np
@@ -306,9 +307,11 @@ class H5Writer:
         return uuid.UUID(value)
 
     @staticmethod
-    def uuid_str(value: uuid.UUID) -> str:
+    def uuid_str(value: uuid.UUID) -> str | Any:
         """Convert :obj:`uuid.UUID` to string used in geoh5."""
-        return "{" + str(value) + "}"
+        if isinstance(value, uuid.UUID):
+            return "{" + str(value) + "}"
+        return value
 
     @classmethod
     def write_attributes(
@@ -333,8 +336,7 @@ class H5Writer:
                 except AttributeError:
                     continue
 
-                if isinstance(value, uuid.UUID):
-                    value = cls.uuid_str(value)
+                value = cls.uuid_str(value)
 
                 if key == "PropertyGroups" or (key == "Metadata" and value is None):
                     continue
@@ -525,12 +527,15 @@ class H5Writer:
 
             # Adding an array of values
             if isinstance(values, dict) or isinstance(entity, CommentsData):
-                values = values.copy()
+                values = deepcopy(values)
                 if isinstance(entity, CommentsData):
                     values = {"Comments": values}
 
                 for key, val in values.items():
-                    if isinstance(val, uuid.UUID):
+                    if isinstance(val, dict):
+                        for sub_key, sub_val in val.items():
+                            values[key][sub_key] = cls.uuid_str(sub_val)
+                    else:
                         values[key] = cls.uuid_str(val)
 
                 entity_handle.create_dataset(
@@ -547,7 +552,7 @@ class H5Writer:
                     shape=(1,),
                 )
             else:
-                out_values = values.copy()
+                out_values = deepcopy(values)
                 if isinstance(entity, IntegerData):
                     out_values = np.round(out_values).astype("int32")
                 else:

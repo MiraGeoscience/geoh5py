@@ -25,7 +25,7 @@ from ..curve import Curve
 from ..object_type import ObjectType
 
 
-class Receivers(Curve):
+class AirborneTEMReceivers(Curve):
     """
     Airborne time-domain electromagnetic receivers class.
     """
@@ -43,6 +43,7 @@ class Receivers(Curve):
             "Unit": "Milliseconds (ms)",
         }
     }
+    _transmitters = None
 
     def __init__(
         self,
@@ -64,7 +65,11 @@ class Receivers(Curve):
         return channels
 
     @channels.setter
-    def channels(self, values: list):
+    def channels(self, values: list | np.ndarray):
+
+        if isinstance(values, np.ndarray):
+            values = values.tolist()
+
         if not isinstance(values, list) and np.all(
             [isinstance(x, float) for x in values]
         ):
@@ -72,8 +77,7 @@ class Receivers(Curve):
                 f"Channel values must be a list of {float}. {type(values)} provided"
             )
 
-        self.metadata["EM Dataset"]["Channels"] = values
-        self.modified_attributes = "metadata"
+        self.edit_metadata("Channels", values)
 
     def copy(self, parent=None, copy_children: bool = True):
         """
@@ -130,8 +134,7 @@ class Receivers(Curve):
     def inline_offset(self, value: bool):
         if not isinstance(value, bool):
             raise TypeError("Input 'inline_offset' must be one of type 'bool'")
-        self.metadata["EM Dataset"]["Angles relative to bearing"] = value
-        self.modified_attributes = "metadata"
+        self.edit_metadata("Angles relative to bearing", value)
 
     @property
     def input_type(self):
@@ -145,8 +148,7 @@ class Receivers(Curve):
     def input_type(self, value: str):
         input_types = ["Rx", "Tx", "Tx and Rx"]
         assert value in input_types, f"Input 'input_type' must be one of {input_types}"
-        self.metadata["EM Dataset"]["Input type"] = value
-        self.modified_attributes = "metadata"
+        self.edit_metadata("Input type", value)
 
     @property
     def metadata(self) -> dict:
@@ -158,7 +160,12 @@ class Receivers(Curve):
 
             if metadata is None:
                 metadata = self.default_metadata
-                metadata["EM Dataset"]["Receivers"] = str(self.uid)
+                element = (
+                    "Receivers"
+                    if "Receivers" in type(self).__name__
+                    else "Transmitters"
+                )
+                metadata["EM Dataset"][element] = self.uid
 
             self._metadata = metadata
         return self._metadata
@@ -166,18 +173,9 @@ class Receivers(Curve):
     @metadata.setter
     def metadata(self, values: dict):
 
-        if not isinstance(values, dict):
-            raise TypeError("'metadata' must be of type 'dict'")
-
-        if "EM Dataset" not in values:
-            raise KeyError("'EM Dataset' must be a 'metadata' key")
-
-        for key in self.default_metadata["EM Dataset"]:
-            if key not in values["EM Dataset"]:
-                raise KeyError(f"'{key}' argument missing from the input metadata.")
-
         known_keys = [
             "Angles relative to bearing",
+            "Channels",
             "Inline offset value",
             "Inline offset property",
             "Input type",
@@ -194,9 +192,20 @@ class Receivers(Curve):
             "Unit",
             "Vertical offset value",
             "Vertical offset property",
+            "Waveform",
             "Yaw value",
             "Yaw property",
         ]
+
+        if not isinstance(values, dict):
+            raise TypeError("'metadata' must be of type 'dict'")
+
+        if "EM Dataset" not in values:
+            values = {"EM Dataset": values}
+
+        for key in self.default_metadata["EM Dataset"]:
+            if key not in values["EM Dataset"]:
+                raise KeyError(f"'{key}' argument missing from the input metadata.")
 
         for key in values["EM Dataset"]:
             if key not in known_keys:
@@ -224,8 +233,35 @@ class Receivers(Curve):
     def relative_to_bearing(self, value: bool):
         if not isinstance(value, bool):
             raise TypeError("Input 'relative_to_bearing' must be one of type 'bool'")
-        self.metadata["EM Dataset"]["Angles relative to bearing"] = value
-        self.modified_attributes = "metadata"
+        self.edit_metadata("Angles relative to bearing", value)
+
+    def edit_metadata(self, key, value):
+        """
+        Set metadata and update both receivers and transmitters.
+        """
+        if key == "Waveform":
+            if not isinstance(value, dict):
+                raise ValueError(
+                    "Input 'Waveform' parameters must be provided as a dictionary"
+                )
+
+            if "Waveform" not in self.metadata["EM Dataset"]:
+                self.metadata["EM Dataset"]["Waveform"] = {}
+
+            for wave_key, wave_val in value.items():
+                if wave_key not in ["Discretization", "Timing mark"]:
+                    raise KeyError(
+                        f"Provided key '{wave_key}' is not a valid property of 'Waveform'."
+                    )
+                self.metadata["EM Dataset"][key][wave_key] = wave_val
+        else:
+            self.metadata["EM Dataset"][key] = value
+
+        if self.receivers is not None:
+            self.receivers.metadata = self.metadata
+
+        if self.transmitters is not None:
+            self.transmitters.metadata = self.metadata
 
     @property
     def timing_mark(self):
@@ -243,33 +279,36 @@ class Receivers(Curve):
         if not isinstance(timing_mark, float):
             raise ValueError("Input timing_mark must be a float.")
 
-        self.metadata["EM Dataset"]["Waveform"]["Timing mark"] = timing_mark
-        self.modified_attributes = "metadata"
+        self.edit_metadata("Waveform", {"Timing mark": timing_mark})
 
     @property
     def transmitters(self):
         """
         The associated current electrode object (sources).
         """
-        if self.metadata is None:
-            raise AttributeError("No Current-Receiver metadata set.")
-        currents = self.metadata["EM Dataset"]["Transmitters"]
+        if getattr(self, "_transmitters", None) is None:
+            if self.metadata is not None:
+                tx_uid = self.metadata["EM Dataset"]["Transmitters"]
 
-        try:
-            return self.workspace.get_entity(currents)[0]
-        except IndexError:
-            print("Associated Transmitters entity not found in Workspace.")
-            return None
+                try:
+                    self.transmitters = self.workspace.get_entity(tx_uid)[0]
+                except IndexError:
+                    print(
+                        "Associated 'AirborneTEMTransmitters' entity not found in Workspace."
+                    )
+                    return None
+
+        return self._transmitters
 
     @transmitters.setter
-    def transmitters(self, transmitters: Transmitters):
-        if not isinstance(transmitters, Transmitters):
+    def transmitters(self, transmitters: AirborneTEMTransmitters):
+        if not isinstance(transmitters, AirborneTEMTransmitters):
             raise TypeError(
-                f"Provided transmitters must be of type {Transmitters}. "
+                f"Provided transmitters must be of type {AirborneTEMTransmitters}. "
                 f"{type(transmitters)} provided."
             )
-        self.metadata["EM Dataset"]["Transmitters"] = transmitters.uid
-        self.modified_attributes = "metadata"
+        self._transmitters = transmitters
+        self.edit_metadata("Transmitters", transmitters.uid)
 
     @property
     def unit(self):
@@ -282,14 +321,14 @@ class Receivers(Curve):
     @unit.setter
     def unit(self, value: str):
         units = [
-            "s",
-            "ms",
-            "us",
-            "ns",
+            "Seconds (s)",
+            "Milliseconds (ms)",
+            "Microseconds (us)",
+            "Nanoseconds (ns)",
         ]
-        assert value in units, f"Input 'unit' must be one of {units}"
-        self.metadata["EM Dataset"]["Unit"] = value
-        self.modified_attributes = "metadata"
+        if value not in units:
+            raise ValueError(f"Input 'unit' must be one of {units}")
+        self.edit_metadata("Unit", value)
 
     @property
     def waveform(self):
@@ -309,9 +348,8 @@ class Receivers(Curve):
     @waveform.setter
     def waveform(self, waveform: np.ndarray | None):
 
-        if waveform is None:
-            if "Waveform" in self.metadata["EM Dataset"]:
-                del self.metadata["EM Dataset"]["Waveform"]
+        if waveform is None and "Waveform" in self.metadata["EM Dataset"]:
+            del self.metadata["EM Dataset"]["Waveform"]
 
         elif isinstance(waveform, np.ndarray):
             if waveform.ndim != 2 or waveform.shape[1] != 2:
@@ -319,20 +357,25 @@ class Receivers(Curve):
                     "Input waveform must be a numpy.ndarray of shape (*, 2)."
                 )
 
-            self.metadata["EM Dataset"]["Waveform"]["Discretization"] = {
-                {"time": row[0], "current": row[1]} for row in waveform
-            }
+            self.edit_metadata(
+                "Waveform",
+                {
+                    "Discretization": [
+                        {"current": row[1], "time": row[0]} for row in waveform
+                    ]
+                },
+            )
         else:
             raise ValueError("Input waveform must be a numpy.ndarray or None.")
-        self.modified_attributes = "metadata"
 
 
-class Transmitters(Receivers):
+class AirborneTEMTransmitters(AirborneTEMReceivers):
     """
     Airborne time-domain electromagnetic transmitters class.
     """
 
     __TYPE_UID = uuid.UUID("{58c4849f-41e2-4e09-b69b-01cf4286cded}")
+    _receivers = None
 
     def __init__(self, object_type: ObjectType, **kwargs):
         self._current_line_id: uuid.UUID | None
@@ -388,7 +431,7 @@ class Transmitters(Receivers):
         ...
 
     @property
-    def receivers(self) -> Receivers | None:
+    def receivers(self) -> AirborneTEMReceivers | None:
         """
         The associated receivers (receivers)
         """
@@ -400,16 +443,16 @@ class Transmitters(Receivers):
         try:
             return self.workspace.get_entity(receivers)[0]
         except IndexError:
-            print("Associated Receivers entity not found in Workspace.")
+            print("Associated AirborneTEMReceivers entity not found in Workspace.")
             return None
 
     @receivers.setter
-    def receivers(self, receivers: Receivers):
-        if not isinstance(receivers, Receivers):
+    def receivers(self, receivers: AirborneTEMReceivers):
+        if not isinstance(receivers, AirborneTEMReceivers):
             raise TypeError(
-                f"Provided receivers must be of type {Receivers}. "
+                f"Provided receivers must be of type {AirborneTEMReceivers}. "
                 f"{type(receivers)} provided."
             )
 
-        self.metadata["EM Dataset"]["Receivers"] = receivers.uid
-        self.modified_attributes = "metadata"
+        self._receivers = receivers
+        self.edit_metadata("Receivers", receivers.uid)
