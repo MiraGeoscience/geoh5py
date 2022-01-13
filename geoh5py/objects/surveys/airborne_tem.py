@@ -25,12 +25,7 @@ from ..curve import Curve
 from ..object_type import ObjectType
 
 
-class AirborneTEMReceivers(Curve):
-    """
-    Airborne time-domain electromagnetic receivers class.
-    """
-
-    __TYPE_UID = uuid.UUID("{19730589-fd28-4649-9de0-ad47249d9aba}")
+class BaseAirborneTEM(Curve):
     __META_KEY = "EM Dataset"
     __default_metadata = {
         __META_KEY: {
@@ -43,7 +38,6 @@ class AirborneTEMReceivers(Curve):
             "Unit": "Milliseconds (ms)",
         }
     }
-    _transmitters = None
 
     def __init__(
         self,
@@ -96,23 +90,27 @@ class AirborneTEMReceivers(Curve):
         new_entity = parent.workspace.copy_to_parent(
             self, parent, copy_children=copy_children, omit_list=omit_list
         )
-        new_transmitters = parent.workspace.copy_to_parent(
-            self.transmitters,
-            parent,
-            copy_children=copy_children,
-            omit_list=omit_list,
-        )
-        new_entity.transmitters = new_transmitters
+
+        if "Receivers" in type(self).__name__:
+            new_transmitters = parent.workspace.copy_to_parent(
+                self.transmitters,
+                parent,
+                copy_children=copy_children,
+                omit_list=omit_list,
+            )
+            new_entity.transmitters = new_transmitters
+        else:
+            new_transmitters = parent.workspace.copy_to_parent(
+                self.transmitters,
+                parent,
+                copy_children=copy_children,
+                omit_list=omit_list,
+            )
+            new_entity.transmitters = new_transmitters
+
         parent.workspace.finalize()
 
         return new_entity
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     @property
     def default_metadata(self) -> dict:
@@ -181,7 +179,6 @@ class AirborneTEMReceivers(Curve):
 
     @metadata.setter
     def metadata(self, values: dict):
-
         known_keys = [
             "Angles relative to bearing",
             "Channels",
@@ -229,9 +226,9 @@ class AirborneTEMReceivers(Curve):
     @property
     def receivers(self):
         """
-        The associated tem receivers
+        The associated TEM receivers
         """
-        return self
+        ...
 
     @property
     def relative_to_bearing(self):
@@ -295,32 +292,7 @@ class AirborneTEMReceivers(Curve):
 
     @property
     def transmitters(self):
-        """
-        The associated current electrode object (sources).
-        """
-        if getattr(self, "_transmitters", None) is None:
-            if self.metadata is not None:
-                tx_uid = self.metadata["EM Dataset"]["Transmitters"]
-
-                try:
-                    self.transmitters = self.workspace.get_entity(tx_uid)[0]
-                except IndexError:
-                    print(
-                        "Associated 'AirborneTEMTransmitters' entity not found in Workspace."
-                    )
-                    return None
-
-        return self._transmitters
-
-    @transmitters.setter
-    def transmitters(self, transmitters: AirborneTEMTransmitters):
-        if not isinstance(transmitters, AirborneTEMTransmitters):
-            raise TypeError(
-                f"Provided transmitters must be of type {AirborneTEMTransmitters}. "
-                f"{type(transmitters)} provided."
-            )
-        self._transmitters = transmitters
-        self.edit_metadata("Transmitters", transmitters.uid)
+        ...
 
     @property
     def unit(self):
@@ -381,18 +353,15 @@ class AirborneTEMReceivers(Curve):
             raise TypeError("Input waveform must be a numpy.ndarray or None.")
 
 
-class AirborneTEMTransmitters(AirborneTEMReceivers):
+class AirborneTEMReceivers(BaseAirborneTEM):
     """
-    Airborne time-domain electromagnetic transmitters class.
+    Airborne time-domain electromagnetic receivers class.
     """
 
-    __TYPE_UID = uuid.UUID("{58c4849f-41e2-4e09-b69b-01cf4286cded}")
-    _receivers = None
+    __TYPE_UID = uuid.UUID("{19730589-fd28-4649-9de0-ad47249d9aba}")
+    _transmitters = None
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._current_line_id: uuid.UUID | None
-        self._metadata: dict[uuid.UUID, uuid.UUID] | None
-
         super().__init__(object_type, **kwargs)
 
     @classmethod
@@ -402,34 +371,60 @@ class AirborneTEMTransmitters(AirborneTEMReceivers):
         """
         return cls.__TYPE_UID
 
-    def copy(self, parent=None, copy_children: bool = True):
+    @property
+    def receivers(self):
         """
-        Function to copy a survey to a different parent entity.
-
-        :param parent: Target parent to copy the entity under. Copied to current
-            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: Create copies of all children entities along with it.
-
-        :return entity: Registered Entity to the workspace.
+        The associated TEM receivers
         """
-        if parent is None:
-            parent = self.parent
+        return self
 
-        omit_list = ["_metadata", "_receivers", "_transmitters"]
-        new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children, omit_list=omit_list
-        )
+    @property
+    def transmitters(self):
+        """
+        The associated current electrode object (sources).
+        """
+        if getattr(self, "_transmitters", None) is None:
+            if self.metadata is not None:
+                tx_uid = self.metadata["EM Dataset"]["Transmitters"]
 
-        new_receivers = parent.workspace.copy_to_parent(
-            self.receivers,
-            parent,
-            copy_children=copy_children,
-            omit_list=omit_list,
-        )
-        new_entity.receivers = new_receivers
-        parent.workspace.finalize()
+                try:
+                    self.transmitters = self.workspace.get_entity(tx_uid)[0]
+                except IndexError:
+                    print(
+                        "Associated 'AirborneTEMTransmitters' entity not found in Workspace."
+                    )
+                    return None
 
-        return new_entity
+        return self._transmitters
+
+    @transmitters.setter
+    def transmitters(self, transmitters: AirborneTEMTransmitters):
+        if not isinstance(transmitters, AirborneTEMTransmitters):
+            raise TypeError(
+                f"Provided transmitters must be of type {AirborneTEMTransmitters}. "
+                f"{type(transmitters)} provided."
+            )
+        self._transmitters = transmitters
+        self.edit_metadata("Transmitters", transmitters.uid)
+
+
+class AirborneTEMTransmitters(BaseAirborneTEM):
+    """
+    Airborne time-domain electromagnetic transmitters class.
+    """
+
+    __TYPE_UID = uuid.UUID("{58c4849f-41e2-4e09-b69b-01cf4286cded}")
+    _receivers = None
+
+    def __init__(self, object_type: ObjectType, **kwargs):
+        super().__init__(object_type, **kwargs)
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        """
+        :return: Default unique identifier
+        """
+        return cls.__TYPE_UID
 
     @property
     def transmitters(self):
@@ -437,10 +432,6 @@ class AirborneTEMTransmitters(AirborneTEMReceivers):
         The associated current electrode object (sources).
         """
         return self
-
-    @transmitters.setter
-    def transmitters(self, _):
-        ...
 
     @property
     def receivers(self) -> AirborneTEMReceivers | None:

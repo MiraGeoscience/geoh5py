@@ -30,7 +30,7 @@ def test_create_survey_tem():
 
     name = "Survey"
     with tempfile.TemporaryDirectory() as tempdir:
-        path = Path(tempdir) / r"testDC.geoh5"
+        path = Path(tempdir) / r"testATEM.geoh5"
 
         # Create a workspace
         workspace = Workspace(path)
@@ -40,9 +40,15 @@ def test_create_survey_tem():
         receivers = AirborneTEMReceivers.create(
             workspace, vertices=vertices, name=name + "_rx"
         )
+        assert isinstance(
+            receivers, AirborneTEMReceivers
+        ), "Entity type AirborneTEMReceivers failed to create."
         transmitters = AirborneTEMTransmitters.create(
             workspace, vertices=vertices, name=name + "_tx"
         )
+        assert isinstance(
+            transmitters, AirborneTEMTransmitters
+        ), "Entity type AirborneTEMTransmitters failed to create."
 
         with pytest.raises(TypeError) as error:
             receivers.transmitters = "123"
