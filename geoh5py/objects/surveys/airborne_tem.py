@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import Any
 
 import numpy as np
 
@@ -36,6 +37,10 @@ class BaseAirborneTEM(Curve):
             "Survey type": "Airborne TEM",
             "Transmitters": None,
             "Unit": "Milliseconds (ms)",
+            "Yaw value": 0,
+            "Pitch value": 0,
+            "Roll value": 0,
+            "Loop radius": 1,
         }
     }
 
@@ -60,7 +65,6 @@ class BaseAirborneTEM(Curve):
 
     @channels.setter
     def channels(self, values: list | np.ndarray):
-
         if isinstance(values, np.ndarray):
             values = values.tolist()
 
@@ -71,7 +75,7 @@ class BaseAirborneTEM(Curve):
                 f"Values provided as 'channels' must be a list of {float}. {type(values)} provided"
             )
 
-        self.edit_metadata("Channels", values)
+        self.edit_metadata({"Channels": values})
 
     def copy(self, parent=None, copy_children: bool = True):
         """
@@ -115,9 +119,53 @@ class BaseAirborneTEM(Curve):
     @property
     def default_metadata(self) -> dict:
         """
-        :return: Default unique identifier
+        :return: Default dictionary of metadata for AirborneTEM entities.
         """
         return self.__default_metadata.copy()
+
+    def edit_metadata(self, entries: dict[str, Any]):
+        """
+        Utility function to edit or add metadata fields and trigger an update
+        on the receiver and transmitter entities.
+
+        :param entries: Metadata key: value pairs.
+        """
+        for key, value in entries.items():
+            if key in ["Discretization", "Timing mark", "Waveform"]:
+                if "Waveform" not in self.metadata["EM Dataset"]:
+                    self.metadata["EM Dataset"]["Waveform"] = {}
+
+                wave_key = key.replace("Waveform", "Discretization")
+                self.metadata["EM Dataset"]["Waveform"][wave_key] = value
+
+            elif key == "Property groups":
+                if not isinstance(value, list):
+                    value = [value]
+
+                for val in value:
+                    if not isinstance(
+                        val, str
+                    ) or not self.find_or_create_property_group(name=val):
+                        raise ValueError(f"No property_group with name '{val}' found.")
+
+                    prop_group = self.find_or_create_property_group(name=val)
+
+                    if len(prop_group.properties) != len(self.channels):
+                        raise ValueError(
+                            f"Number of properties in group '{prop_group.name}' "
+                            + "differ from the number of 'channels'."
+                        )
+
+                self.metadata["EM Dataset"][key] = value
+
+            else:
+                self.metadata["EM Dataset"][key] = value
+
+        if self.receivers is not None:
+            self.receivers.metadata = self.metadata
+
+        if self.transmitters is not None:
+            self.transmitters.metadata = self.metadata
 
     @property
     def inline_offset(self):
@@ -129,10 +177,15 @@ class BaseAirborneTEM(Curve):
         return None
 
     @inline_offset.setter
-    def inline_offset(self, value: bool):
-        if not isinstance(value, bool):
-            raise TypeError("Input 'inline_offset' must be one of type 'bool'")
-        self.edit_metadata("Angles relative to bearing", value)
+    def inline_offset(self, value: float | uuid.UUID):
+        if isinstance(value, float):
+            self.edit_metadata({"Inline offset value": value})
+        elif isinstance(value, uuid.UUID):
+            self.edit_metadata({"Inline offset property": value})
+        else:
+            raise TypeError(
+                "Input 'inline_offset' must be one of type float or uuid.UUID"
+            )
 
     @property
     def input_type(self):
@@ -146,7 +199,7 @@ class BaseAirborneTEM(Curve):
     def input_type(self, value: str):
         input_types = ["Rx", "Tx", "Tx and Rx"]
         assert value in input_types, f"Input 'input_type' must be one of {input_types}"
-        self.edit_metadata("Input type", value)
+        self.edit_metadata({"Input type": value})
 
     @property
     def metadata(self) -> dict:
@@ -179,30 +232,6 @@ class BaseAirborneTEM(Curve):
 
     @metadata.setter
     def metadata(self, values: dict):
-        known_keys = [
-            "Angles relative to bearing",
-            "Channels",
-            "Inline offset value",
-            "Inline offset property",
-            "Input type",
-            "Loop radius",
-            "Pitch value",
-            "Pitch property",
-            "Property groups",
-            "Receivers",
-            "Roll value",
-            "Roll property",
-            "Survey type",
-            "Table values",
-            "Transmitters",
-            "Unit",
-            "Vertical offset value",
-            "Vertical offset property",
-            "Waveform",
-            "Yaw value",
-            "Yaw property",
-        ]
-
         if not isinstance(values, dict):
             raise TypeError("'metadata' must be of type 'dict'")
 
@@ -214,14 +243,29 @@ class BaseAirborneTEM(Curve):
                 raise KeyError(f"'{key}' argument missing from the input metadata.")
 
         for key, value in values["EM Dataset"].items():
-            if key not in known_keys:
-                raise ValueError(f"Input metadata {key} is not a known key.")
-
             if key in ["Receivers", "Transmitters"] and isinstance(value, str):
                 values["EM Dataset"][key] = uuid.UUID(value)
 
         self._metadata = values
         self.modified_attributes = "metadata"
+
+    @property
+    def pitch(self) -> float | uuid.UUID | None:
+        """Pitch angle(s) of the transmitter coil"""
+        if "Pitch value" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"]["Pitch value"]
+        if "Pitch property" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"]["Pitch property"]
+        return None
+
+    @pitch.setter
+    def pitch(self, value: float | uuid.UUID):
+        if isinstance(value, float):
+            self.edit_metadata({"Pitch value": value})
+        elif isinstance(value, uuid.UUID):
+            self.edit_metadata({"Pitch property": value})
+        else:
+            raise TypeError("Input 'pitch' must be one of type float or uuid.UUID")
 
     @property
     def receivers(self):
@@ -242,35 +286,25 @@ class BaseAirborneTEM(Curve):
     def relative_to_bearing(self, value: bool):
         if not isinstance(value, bool):
             raise TypeError("Input 'relative_to_bearing' must be one of type 'bool'")
-        self.edit_metadata("Angles relative to bearing", value)
+        self.edit_metadata({"Angles relative to bearing": value})
 
-    def edit_metadata(self, key, value):
-        """
-        Set metadata and update both receivers and transmitters.
-        """
-        if key == "Waveform":
-            if not isinstance(value, dict):
-                raise ValueError(
-                    "Input 'Waveform' parameters must be provided as a dictionary"
-                )
+    @property
+    def roll(self) -> float | uuid.UUID | None:
+        """Roll angle(s) of the transmitter coil"""
+        if "Roll value" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"]["Roll value"]
+        if "Roll property" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"]["Roll property"]
+        return None
 
-            if "Waveform" not in self.metadata["EM Dataset"]:
-                self.metadata["EM Dataset"]["Waveform"] = {}
-
-            for wave_key, wave_val in value.items():
-                if wave_key not in ["Discretization", "Timing mark"]:
-                    raise KeyError(
-                        f"Provided key '{wave_key}' is not a valid property of 'Waveform'."
-                    )
-                self.metadata["EM Dataset"][key][wave_key] = wave_val
+    @roll.setter
+    def roll(self, value: float | uuid.UUID):
+        if isinstance(value, float):
+            self.edit_metadata({"Roll value": value})
+        elif isinstance(value, uuid.UUID):
+            self.edit_metadata({"Roll property": value})
         else:
-            self.metadata["EM Dataset"][key] = value
-
-        if self.receivers is not None:
-            self.receivers.metadata = self.metadata
-
-        if self.transmitters is not None:
-            self.transmitters.metadata = self.metadata
+            raise TypeError("Input 'roll' must be one of type float or uuid.UUID")
 
     @property
     def timing_mark(self):
@@ -288,7 +322,7 @@ class BaseAirborneTEM(Curve):
         if not isinstance(timing_mark, float):
             raise ValueError("Input timing_mark must be a float.")
 
-        self.edit_metadata("Waveform", {"Timing mark": timing_mark})
+        self.edit_metadata({"Timing mark": timing_mark})
 
     @property
     def transmitters(self):
@@ -312,7 +346,7 @@ class BaseAirborneTEM(Curve):
         ]
         if value not in units:
             raise ValueError(f"Input 'unit' must be one of {units}")
-        self.edit_metadata("Unit", value)
+        self.edit_metadata({"Unit": value})
 
     @property
     def waveform(self):
@@ -342,15 +376,28 @@ class BaseAirborneTEM(Curve):
                 )
 
             self.edit_metadata(
-                "Waveform",
-                {
-                    "Discretization": [
-                        {"current": row[1], "time": row[0]} for row in waveform
-                    ]
-                },
+                {"Waveform": [{"current": row[1], "time": row[0]} for row in waveform]},
             )
         else:
             raise TypeError("Input waveform must be a numpy.ndarray or None.")
+
+    @property
+    def yaw(self) -> float | uuid.UUID | None:
+        """Yaw angle(s) of the transmitter coil"""
+        if "Yaw value" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"]["Yaw value"]
+        if "Yaw property" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"]["Yaw property"]
+        return None
+
+    @yaw.setter
+    def yaw(self, value: float | uuid.UUID):
+        if isinstance(value, float):
+            self.edit_metadata({"Yaw value": value})
+        elif isinstance(value, uuid.UUID):
+            self.edit_metadata({"Yaw property": value})
+        else:
+            raise TypeError("Input 'yaw' must be one of type float or uuid.UUID")
 
 
 class AirborneTEMReceivers(BaseAirborneTEM):
@@ -405,7 +452,7 @@ class AirborneTEMReceivers(BaseAirborneTEM):
                 f"{type(transmitters)} provided."
             )
         self._transmitters = transmitters
-        self.edit_metadata("Transmitters", transmitters.uid)
+        self.edit_metadata({"Transmitters": transmitters.uid})
 
 
 class AirborneTEMTransmitters(BaseAirborneTEM):
@@ -458,4 +505,4 @@ class AirborneTEMTransmitters(BaseAirborneTEM):
             )
 
         self._receivers = receivers
-        self.edit_metadata("Receivers", receivers.uid)
+        self.edit_metadata({"Receivers": receivers.uid})
