@@ -220,18 +220,26 @@ class H5Reader:
             name = list(h5file.keys())[0]
 
             try:
-                value = np.r_[h5file[name]["Objects"][cls.uuid_str(uid)]["Metadata"]]
-                value = cls.str_from_utf8_bytes(value[0])
+                metadata = np.r_[h5file[name]["Objects"][cls.uuid_str(uid)]["Metadata"]]
+                metadata = cls.str_from_utf8_bytes(metadata[0])
             except KeyError:
                 return None
 
-        if isinstance(value, str):
+        if isinstance(metadata, str):
             try:
-                value = json.loads(value)
+                metadata = json.loads(metadata)
             except ValueError:
                 pass
 
-        return value
+        if isinstance(metadata, dict):
+            for key, val in metadata.items():
+                if isinstance(val, dict):
+                    for sub_key, sub_val in val.items():
+                        metadata[key][sub_key] = cls.uuid_value(sub_val)
+                else:
+                    metadata[key] = cls.uuid_value(val)
+
+        return metadata
 
     @classmethod
     def fetch_octree_cells(cls, file: str | h5py.File, uid: uuid.UUID) -> np.ndarray:
@@ -440,8 +448,13 @@ class H5Reader:
         return bool(value)
 
     @staticmethod
-    def uuid_value(value: str) -> uuid.UUID:
-        return uuid.UUID(value)
+    def uuid_value(value) -> uuid.UUID | Any:
+        if isinstance(value, str):
+            try:
+                value = uuid.UUID(value)
+            except ValueError:
+                pass
+        return value
 
     @staticmethod
     def uuid_str(value: uuid.UUID) -> str:

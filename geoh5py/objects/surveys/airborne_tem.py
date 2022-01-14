@@ -158,6 +158,10 @@ class BaseAirborneTEM(Curve):
 
                 self.metadata["EM Dataset"][key] = value
 
+            elif value is None:
+                if key in self.metadata["EM Dataset"]:
+                    del self.metadata["EM Dataset"][key]
+
             else:
                 self.metadata["EM Dataset"][key] = value
 
@@ -179,9 +183,13 @@ class BaseAirborneTEM(Curve):
     @inline_offset.setter
     def inline_offset(self, value: float | uuid.UUID):
         if isinstance(value, float):
-            self.edit_metadata({"Inline offset value": value})
+            self.edit_metadata(
+                {"Inline offset value": value, "Inline offset property": None}
+            )
         elif isinstance(value, uuid.UUID):
-            self.edit_metadata({"Inline offset property": value})
+            self.edit_metadata(
+                {"Inline offset value": None, "Inline offset property": value}
+            )
         else:
             raise TypeError(
                 "Input 'inline_offset' must be one of type float or uuid.UUID"
@@ -219,13 +227,6 @@ class BaseAirborneTEM(Curve):
                 metadata["EM Dataset"][element] = self.uid
                 self.metadata = metadata
             else:
-                for key in ["Receivers", "Transmitters"]:
-                    try:
-                        metadata["EM Dataset"][key] = uuid.UUID(
-                            metadata["EM Dataset"][key]
-                        )
-                    except ValueError:
-                        continue
                 self._metadata = metadata
 
         return self._metadata
@@ -261,9 +262,9 @@ class BaseAirborneTEM(Curve):
     @pitch.setter
     def pitch(self, value: float | uuid.UUID):
         if isinstance(value, float):
-            self.edit_metadata({"Pitch value": value})
+            self.edit_metadata({"Pitch value": value, "Pitch property": None})
         elif isinstance(value, uuid.UUID):
-            self.edit_metadata({"Pitch property": value})
+            self.edit_metadata({"Pitch value": None, "Pitch property": value})
         else:
             raise TypeError("Input 'pitch' must be one of type float or uuid.UUID")
 
@@ -300,9 +301,9 @@ class BaseAirborneTEM(Curve):
     @roll.setter
     def roll(self, value: float | uuid.UUID):
         if isinstance(value, float):
-            self.edit_metadata({"Roll value": value})
+            self.edit_metadata({"Roll value": value, "Roll property": None})
         elif isinstance(value, uuid.UUID):
-            self.edit_metadata({"Roll property": value})
+            self.edit_metadata({"Roll value": None, "Roll property": value})
         else:
             raise TypeError("Input 'roll' must be one of type float or uuid.UUID")
 
@@ -393,9 +394,9 @@ class BaseAirborneTEM(Curve):
     @yaw.setter
     def yaw(self, value: float | uuid.UUID):
         if isinstance(value, float):
-            self.edit_metadata({"Yaw value": value})
+            self.edit_metadata({"Yaw value": value, "Yaw property": None})
         elif isinstance(value, uuid.UUID):
-            self.edit_metadata({"Yaw property": value})
+            self.edit_metadata({"Yaw value": None, "Yaw property": value})
         else:
             raise TypeError("Input 'yaw' must be one of type float or uuid.UUID")
 

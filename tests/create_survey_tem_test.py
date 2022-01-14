@@ -16,6 +16,7 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import tempfile
+import uuid
 from pathlib import Path
 
 import numpy as np
@@ -103,6 +104,29 @@ def test_create_survey_tem():
         assert (
             receivers.metadata == transmitters.metadata
         ), "Error synchronizing the transmitters and receivers metadata."
+
+        for key in ["pitch", "roll", "yaw"]:
+            with pytest.raises(TypeError) as error:
+                setattr(receivers, key, "abc")
+
+            assert f"Input '{key}' must be one of type float or uuid.UUID" in str(
+                error
+            ), f"Missed raising error on type of '{key}'."
+
+            setattr(receivers, key, uuid.uuid4())
+            assert (
+                f"{key.capitalize()} property" in receivers.metadata["EM Dataset"]
+            ), f"Wrong metadata label set on '{key}' for input uuid."
+            assert (
+                f"{key.capitalize()} value" not in receivers.metadata["EM Dataset"]
+            ), f"Failed in removing '{key}' value from metadata."
+            setattr(receivers, key, 3.0)
+            assert (
+                f"{key.capitalize()} value" in receivers.metadata["EM Dataset"]
+            ), f"Wrong metadata label set on '{key}' for input uuid."
+            assert (
+                f"{key.capitalize()} property" not in receivers.metadata["EM Dataset"]
+            ), f"Failed in removing '{key}' property from metadata."
 
         workspace.finalize()
 

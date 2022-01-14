@@ -95,7 +95,7 @@ class Magnetotellurics(Points):
             metadata = self.workspace.fetch_metadata(self.uid)
 
             if metadata is None:
-                self.default_metadata["EM Dataset"]["Receivers"] = str(self.uid)
+                self.default_metadata["EM Dataset"]["Receivers"] = self.uid
                 metadata = self.default_metadata
 
             self._metadata = metadata
