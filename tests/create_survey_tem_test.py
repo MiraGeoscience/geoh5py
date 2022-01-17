@@ -66,7 +66,14 @@ def test_create_survey_tem():
             error
         ), "Missed raising error on 'channels' change."
 
-        receivers.channels = np.logspace(-3, -2, 10)
+        channels = np.logspace(-3, -2, 10)
+        receivers.channels = channels
+
+        assert np.all(
+            receivers.channels
+            == receivers.metadata["EM Dataset"]["Channels"]
+            == channels
+        ), "Channels values did not get set properly."
 
         with pytest.raises(ValueError) as error:
             receivers.unit = "hello world"
@@ -139,3 +146,23 @@ def test_create_survey_tem():
             transmitters, transmitters_rec, ignore=["_receivers", "_parent"]
         )
         compare_entities(receivers, receivers_rec, ignore=["_transmitters", "_parent"])
+
+        # Test copying receiver over through the receivers
+        # Create a workspace
+        new_workspace = Workspace(Path(tempdir) / r"testATEM_copy.geoh5")
+        receivers_rec = receivers.copy(new_workspace)
+        compare_entities(receivers, receivers_rec, ignore=["_transmitters", "_parent"])
+        compare_entities(
+            transmitters, receivers_rec.transmitters, ignore=["_receivers", "_parent"]
+        )
+
+        # Test copying receiver over through the transmitters
+        # Create a workspace
+        new_workspace = Workspace(Path(tempdir) / r"testATEM_copy2.geoh5")
+        transmitters_rec = transmitters.copy(new_workspace)
+        compare_entities(
+            receivers, transmitters_rec.receivers, ignore=["_transmitters", "_parent"]
+        )
+        compare_entities(
+            transmitters, transmitters_rec, ignore=["_receivers", "_parent"]
+        )

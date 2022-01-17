@@ -14,21 +14,36 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+#
+#  This file is part of geoh5py.
+#
+#  geoh5py is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU Lesser General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  geoh5py is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 
 import uuid
-from typing import Any
 
 import numpy as np
 
-from ..curve import Curve
-from ..object_type import ObjectType
+from geoh5py.objects.object_type import ObjectType
+
+from .base import BaseEMSurvey
 
 
-class BaseAirborneTEM(Curve):
+class BaseAirborneTEM(BaseEMSurvey):
     __META_KEY = "EM Dataset"
-    __default_metadata = {
+    __METADATA = {
         __META_KEY: {
             "Channels": [],
             "Input type": "Rx",
@@ -43,6 +58,13 @@ class BaseAirborneTEM(Curve):
             "Loop radius": 1,
         }
     }
+    __UNITS = [
+        "Seconds (s)",
+        "Milliseconds (ms)",
+        "Microseconds (us)",
+        "Nanoseconds (ns)",
+    ]
+    __INPUT_TYPE = ["Rx", "Tx", "Tx and Rx"]
 
     def __init__(
         self,
@@ -54,28 +76,6 @@ class BaseAirborneTEM(Curve):
             object_type,
             **kwargs,
         )
-
-    @property
-    def channels(self):
-        """
-        List of measured time channels referenced to the :attr:`timing_mark`.
-        """
-        channels = self.metadata["EM Dataset"]["Channels"]
-        return channels
-
-    @channels.setter
-    def channels(self, values: list | np.ndarray):
-        if isinstance(values, np.ndarray):
-            values = values.tolist()
-
-        if not isinstance(values, list) or not np.all(
-            [isinstance(x, float) for x in values]
-        ):
-            raise TypeError(
-                f"Values provided as 'channels' must be a list of {float}. {type(values)} provided"
-            )
-
-        self.edit_metadata({"Channels": values})
 
     def copy(self, parent=None, copy_children: bool = True):
         """
@@ -104,72 +104,36 @@ class BaseAirborneTEM(Curve):
             )
             new_entity.transmitters = new_transmitters
         else:
-            new_transmitters = parent.workspace.copy_to_parent(
-                self.transmitters,
+            new_receivers = parent.workspace.copy_to_parent(
+                self.receivers,
                 parent,
                 copy_children=copy_children,
                 omit_list=omit_list,
             )
-            new_entity.transmitters = new_transmitters
+            new_entity.receivers = new_receivers
 
         parent.workspace.finalize()
 
         return new_entity
 
     @property
+    def default_input_types(self) -> list[str]:
+        """Input types. Must be one of 'Rx', 'Tx', 'Tx and Rx'."""
+        return self.__INPUT_TYPE
+
+    @property
     def default_metadata(self) -> dict:
         """
         Default dictionary of metadata for AirborneTEM entities.
         """
-        return self.__default_metadata.copy()
+        return self.__METADATA.copy()
 
-    def edit_metadata(self, entries: dict[str, Any]):
+    @property
+    def default_units(self) -> list[str]:
+        """Accepted time units. Must be one of "Seconds (s)",
+        "Milliseconds (ms)", "Microseconds (us)" or "Nanoseconds (ns)"
         """
-        Utility function to edit or add metadata fields and trigger an update
-        on the receiver and transmitter entities.
-
-        :param entries: Metadata key value pairs.
-        """
-        for key, value in entries.items():
-            if key in ["Discretization", "Timing mark", "Waveform"]:
-                if "Waveform" not in self.metadata["EM Dataset"]:
-                    self.metadata["EM Dataset"]["Waveform"] = {}
-
-                wave_key = key.replace("Waveform", "Discretization")
-                self.metadata["EM Dataset"]["Waveform"][wave_key] = value
-
-            elif key == "Property groups":
-                if not isinstance(value, list):
-                    value = [value]
-
-                for val in value:
-                    if not isinstance(
-                        val, str
-                    ) or not self.find_or_create_property_group(name=val):
-                        raise ValueError(f"No property_group with name '{val}' found.")
-
-                    prop_group = self.find_or_create_property_group(name=val)
-
-                    if len(prop_group.properties) != len(self.channels):
-                        raise ValueError(
-                            f"Number of properties in group '{prop_group.name}' "
-                            + "differ from the number of 'channels'."
-                        )
-
-                self.metadata["EM Dataset"][key] = value
-
-            elif value is None:
-                if key in self.metadata["EM Dataset"]:
-                    del self.metadata["EM Dataset"][key]
-
-            else:
-                self.metadata["EM Dataset"][key] = value
-
-        if self.receivers is not None:
-            self.receivers.metadata = self.metadata
-
-        if self.transmitters is not None:
-            self.transmitters.metadata = self.metadata
+        return self.__UNITS
 
     @property
     def inline_offset(self):
@@ -194,20 +158,6 @@ class BaseAirborneTEM(Curve):
             raise TypeError(
                 "Input 'inline_offset' must be one of type float or uuid.UUID"
             )
-
-    @property
-    def input_type(self):
-        """Data input type. Must be one of 'Rx', 'Tx' or 'Tx and Rx'"""
-        if "Input type" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Input type"]
-
-        return None
-
-    @input_type.setter
-    def input_type(self, value: str):
-        input_types = ["Rx", "Tx", "Tx and Rx"]
-        assert value in input_types, f"Input 'input_type' must be one of {input_types}"
-        self.edit_metadata({"Input type": value})
 
     @property
     def metadata(self) -> dict:
@@ -265,13 +215,6 @@ class BaseAirborneTEM(Curve):
             self.edit_metadata({"Pitch value": None, "Pitch property": value})
         else:
             raise TypeError("Input 'pitch' must be one of type float or uuid.UUID")
-
-    @property
-    def receivers(self):
-        """
-        The associated TEM receivers. Implemented on the child class.
-        """
-        ...
 
     @property
     def relative_to_bearing(self):
@@ -334,29 +277,6 @@ class BaseAirborneTEM(Curve):
         The associated TEM transmitters (sources). Implemented on the child class.
         """
         ...
-
-    @property
-    def unit(self) -> float | None:
-        """
-        Time units. Must be one of 'Seconds (s)', 'Milliseconds (ms)',
-        'Microseconds (us)' or 'Nanoseconds (ns)'.
-        """
-        if "Unit" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Unit"]
-
-        return None
-
-    @unit.setter
-    def unit(self, value: str):
-        units = [
-            "Seconds (s)",
-            "Milliseconds (ms)",
-            "Microseconds (us)",
-            "Nanoseconds (ns)",
-        ]
-        if value not in units:
-            raise ValueError(f"Input 'unit' must be one of {units}")
-        self.edit_metadata({"Unit": value})
 
     @property
     def waveform(self) -> np.ndarray | None:

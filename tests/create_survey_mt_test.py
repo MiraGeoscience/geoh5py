@@ -51,7 +51,7 @@ def test_create_survey_mt():
         mt_survey = Magnetotellurics.create(workspace, vertices=vertices, name=name)
 
         for key, value in {
-            "input_type": "Rx Only",
+            "input_type": "Rx only",
             "survey_type": "Magnetotellurics",
             "unit": "Hertz (Hz)",
         }.items():
@@ -73,7 +73,7 @@ def test_create_survey_mt():
 
         with pytest.raises(TypeError) as excinfo:
             mt_survey.channels = 1.0
-        assert "Channel values must be a list of" in str(excinfo)
+        assert "Values provided as 'channels' must be a list" in str(excinfo)
 
         with pytest.raises(AttributeError) as excinfo:
             mt_survey.add_component_data(123.0)
@@ -111,7 +111,7 @@ def test_create_survey_mt():
                     mt_survey.add_component_data(
                         {component: {ind: values for ind in range(3)}}
                     )
-                assert "Channel 5.0 Hz is missing" in str(excinfo)
+                assert "Channel 5.0 is missing" in str(excinfo)
 
                 with pytest.raises(TypeError) as excinfo:
                     mt_survey.add_component_data(
@@ -132,7 +132,10 @@ def test_create_survey_mt():
         # Re-open the workspace and read data back in
         new_workspace = Workspace(path)
         mt_survey_rec = new_workspace.get_entity(name)[0]
-
+        diffs = []
+        for key, value in mt_survey_rec.metadata["EM Dataset"].items():
+            if mt_survey.metadata["EM Dataset"][key] != value:
+                diffs.append(key)
         # Check entities
         compare_entities(
             mt_survey, mt_survey_rec, ignore=["_parent", "_property_groups"]
