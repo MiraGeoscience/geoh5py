@@ -58,7 +58,7 @@ class BaseAirborneTEM(Curve):
     @property
     def channels(self):
         """
-        List of measured time channels.
+        List of measured time channels referenced to the :attr:`timing_mark`.
         """
         channels = self.metadata["EM Dataset"]["Channels"]
         return channels
@@ -119,7 +119,7 @@ class BaseAirborneTEM(Curve):
     @property
     def default_metadata(self) -> dict:
         """
-        :return: Default dictionary of metadata for AirborneTEM entities.
+        Default dictionary of metadata for AirborneTEM entities.
         """
         return self.__default_metadata.copy()
 
@@ -128,7 +128,7 @@ class BaseAirborneTEM(Curve):
         Utility function to edit or add metadata fields and trigger an update
         on the receiver and transmitter entities.
 
-        :param entries: Metadata key: value pairs.
+        :param entries: Metadata key value pairs.
         """
         for key, value in entries.items():
             if key in ["Discretization", "Timing mark", "Waveform"]:
@@ -173,7 +173,7 @@ class BaseAirborneTEM(Curve):
 
     @property
     def inline_offset(self):
-        """Inline offset between receiver and transmitter"""
+        """Inline offset between receiver and transmitter."""
         if "Inline offset value" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Inline offset value"]
         if "Inline offset property" in self.metadata["EM Dataset"]:
@@ -197,7 +197,7 @@ class BaseAirborneTEM(Curve):
 
     @property
     def input_type(self):
-        """Data input_type"""
+        """Data input type. Must be one of 'Rx', 'Tx' or 'Tx and Rx'"""
         if "Input type" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Input type"]
 
@@ -211,9 +211,7 @@ class BaseAirborneTEM(Curve):
 
     @property
     def metadata(self) -> dict:
-        """
-        Metadata attached to the entity.
-        """
+        """Metadata attached to the entity."""
         if getattr(self, "_metadata", None) is None:
             metadata = self.workspace.fetch_metadata(self.uid)
 
@@ -271,7 +269,7 @@ class BaseAirborneTEM(Curve):
     @property
     def receivers(self):
         """
-        The associated TEM receivers
+        The associated TEM receivers. Implemented on the child class.
         """
         ...
 
@@ -291,7 +289,7 @@ class BaseAirborneTEM(Curve):
 
     @property
     def roll(self) -> float | uuid.UUID | None:
-        """Roll angle(s) of the transmitter coil"""
+        """Roll angle(s) of the transmitter coil."""
         if "Roll value" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Roll value"]
         if "Roll property" in self.metadata["EM Dataset"]:
@@ -308,7 +306,12 @@ class BaseAirborneTEM(Curve):
             raise TypeError("Input 'roll' must be one of type float or uuid.UUID")
 
     @property
-    def timing_mark(self):
+    def timing_mark(self) -> float | None:
+        """
+        Timing mark from the beginning of the discrete :attr:`waveform`.
+        Generally used as the reference (time=0.0) for the provided
+        (-) on-time an (+) off-time :attr:`channels`.
+        """
         if (
             "Waveform" in self.metadata["EM Dataset"]
             and "Timing mark" in self.metadata["EM Dataset"]["Waveform"]
@@ -327,11 +330,17 @@ class BaseAirborneTEM(Curve):
 
     @property
     def transmitters(self):
+        """
+        The associated TEM transmitters (sources). Implemented on the child class.
+        """
         ...
 
     @property
-    def unit(self):
-        """Data unit"""
+    def unit(self) -> float | None:
+        """
+        Time units. Must be one of 'Seconds (s)', 'Milliseconds (ms)',
+        'Microseconds (us)' or 'Nanoseconds (ns)'.
+        """
         if "Unit" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Unit"]
 
@@ -350,7 +359,18 @@ class BaseAirborneTEM(Curve):
         self.edit_metadata({"Unit": value})
 
     @property
-    def waveform(self):
+    def waveform(self) -> np.ndarray | None:
+        """
+        :obj:`numpy.array` of :obj:`float`, shape(*, 2): Discrete waveform of the TEM source.
+
+        .. code-block:: python
+
+            waveform = [
+                [time_1, current_1],
+                [time_2, current_2],
+                ...
+            ]
+        """
         if (
             "Waveform" in self.metadata["EM Dataset"]
             and "Discretization" in self.metadata["EM Dataset"]["Waveform"]
@@ -384,7 +404,9 @@ class BaseAirborneTEM(Curve):
 
     @property
     def yaw(self) -> float | uuid.UUID | None:
-        """Yaw angle(s) of the transmitter coil"""
+        """
+        Yaw angle(s) of the transmitter coil.
+        """
         if "Yaw value" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Yaw value"]
         if "Yaw property" in self.metadata["EM Dataset"]:
@@ -420,16 +442,16 @@ class AirborneTEMReceivers(BaseAirborneTEM):
         return cls.__TYPE_UID
 
     @property
-    def receivers(self):
+    def receivers(self) -> AirborneTEMReceivers:
         """
-        The associated TEM receivers
+        The associated TEM receivers.
         """
         return self
 
     @property
-    def transmitters(self):
+    def transmitters(self) -> AirborneTEMTransmitters | None:
         """
-        The associated current electrode object (sources).
+        The associated TEM transmitters (sources).
         """
         if getattr(self, "_transmitters", None) is None:
             if self.metadata is not None:
@@ -475,7 +497,7 @@ class AirborneTEMTransmitters(BaseAirborneTEM):
         return cls.__TYPE_UID
 
     @property
-    def transmitters(self):
+    def transmitters(self) -> AirborneTEMTransmitters:
         """
         The associated current electrode object (sources).
         """
@@ -484,7 +506,7 @@ class AirborneTEMTransmitters(BaseAirborneTEM):
     @property
     def receivers(self) -> AirborneTEMReceivers | None:
         """
-        The associated receivers (receivers)
+        The associated TEM receivers.
         """
         if self.metadata is None:
             raise AttributeError("No Current-Receiver metadata set.")
