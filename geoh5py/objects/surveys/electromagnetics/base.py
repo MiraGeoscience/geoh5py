@@ -170,13 +170,18 @@ class BaseEMSurvey(Curve):
         self.edit_metadata({"Channels": values})
 
     @property
+    def default_input_types(self) -> list[str]:
+        """Accepted input types. Implemented on the child class."""
+        ...
+
+    @property
     def default_metadata(self):
         """Default metadata structure. Implemented on the child class."""
         ...
 
-    @property
-    def default_input_types(self) -> list[str]:
-        """Accepted input types. Implemented on the child class."""
+    @classmethod
+    def default_type_uid(cls):
+        """Default unique identifier. Implemented on the child class."""
         ...
 
     @property
