@@ -77,7 +77,10 @@ def test_create_survey_mt():
 
         with pytest.raises(AttributeError) as excinfo:
             mt_survey.add_component_data(123.0)
-        assert "The 'channels' property defining" in str(excinfo)
+        assert (
+            "The 'channels' attribute of an EMSurvey class must be set before "
+            "the 'add_component_data' method can be used."
+        ) in str(excinfo)
         mt_survey.channels = [5.0, 10.0, 100.0]
 
         with pytest.raises(TypeError) as excinfo:
@@ -91,34 +94,28 @@ def test_create_survey_mt():
             ["Zxx (real)", "Zxx (imaginary)", "Zxy (real)", "Zyy (real)"]
         ):
             comp_dict = {}
-
             for f_ind, freq in enumerate(mt_survey.channels):
                 values = (c_ind + 1.0) * np.sin(f_ind * np.pi * d_vec)
-                comp_dict[freq] = {"values": values}
+                comp_dict[f"{component}_{freq}"] = {"values": values}
 
             if c_ind == 0:
-                with pytest.raises(TypeError) as excinfo:
-                    mt_survey.add_component_data({component: values})
-                assert "Given value to data" in str(excinfo)
-
                 with pytest.raises(ValueError) as excinfo:
-                    mt_survey.add_component_data(
-                        {component: {ind: values for ind in range(2)}}
-                    )
-                assert "Input component" in str(excinfo)
-
-                with pytest.raises(KeyError) as excinfo:
-                    mt_survey.add_component_data(
-                        {component: {ind: values for ind in range(3)}}
-                    )
-                assert "Channel 5.0 is missing" in str(excinfo)
+                    mt_survey.add_component_data({component: values})
+                assert (
+                    "List of values provided for component 'Zxx (real)' "
+                    "must be a list of "
+                ) in str(excinfo)
 
                 with pytest.raises(TypeError) as excinfo:
                     mt_survey.add_component_data(
-                        {component: {freq: values for freq in mt_survey.channels}}
+                        {component: {ind: values for ind in mt_survey.channels}}
                     )
-                assert "Given value to data 5.0" in str(excinfo)
+                assert (
+                    "Given value to data 5.0 should of type "
+                    "<class 'dict'> or attributes"
+                ) in str(excinfo)
 
+            # Give well-formed dictionary
             data[component] = comp_dict
 
         mt_survey.add_component_data(data)

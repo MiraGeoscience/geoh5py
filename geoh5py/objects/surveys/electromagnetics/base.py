@@ -21,7 +21,7 @@ from typing import Any
 
 import numpy as np
 
-from geoh5py.data import Data
+from geoh5py.data import FloatData
 from geoh5py.groups import PropertyGroup
 from geoh5py.objects import Curve
 from geoh5py.objects.object_type import ObjectType
@@ -35,32 +35,34 @@ class BaseEMSurvey(Curve):
     def __init__(self, object_type: ObjectType, **kwargs):
         super().__init__(object_type, **kwargs)
 
-    def add_component_data(self, data: dict) -> Data | list[Data]:
+    def add_component_data(self, data: dict) -> list[PropertyGroup]:
         """
-        Add data per component at every channel as defined in
-        :attr:`~geoh5py.objects.surveys.electromagnetics.BaseEMSurvey.channels`.
+        Add lists of data components to an EM survey. The name of each component is
+        appended to the metadata 'Property groups'.
 
-        Data channels must be provided for every frequencies | times
-        as data entities or as dictionaries of arguments following the same
-        convention as the :func:`~geoh5py.objects.object_base.ObjectBase.add_data`
-        method.
+        Data channels must be provided for every frequency or time
+        in order specified by
+        :attr:`~geoh5py.objects.surveys.electromagnetics.BaseEMSurvey.channels`.
+        The data channels can be supplied as either a list of
+        :obj:`geoh5py.data.float_data.FloatData` entities or :obj:`uuid.UUID`
 
         .. code-block:: python
 
             data = {
-                "Zxx (real)": {
-                    freq_1: data_entity_1,
-                    freq_2: data_entity_2,
-                    },
-                ...,
+                "Component A": [
+                    data_entity_1,
+                    data_entity_2,
+                ],
+                "Component B": [...],
             },
 
-        or similarly
+        or a nested dictionary of arguments defining new Data entities as defined by the
+        :func:`~geoh5py.objects.object_base.ObjectBase.add_data` method.
 
         .. code-block:: python
 
             data = {
-                "dBzdt": {
+                "Component A": {
                     time_1: {
                         'values': [v_11, v_12, ...],
                         "entity_type": entity_type_A,
@@ -69,83 +71,78 @@ class BaseEMSurvey(Curve):
                     time_2: {...},
                     ...,
                 },
+                "Component B": {...},
             }
 
-        Data values association is always assumed to be 'VERTEX' and name set
-        by the component and channel value.
+        :param data: Dictionary of data components to be added to the survey.
 
-        A :obj:`geoh5py.groups.property_group.PropertyGroup` for the component gets created
-        by default to group all channels.
-
-        :param data: Dictionary of data to be added to the object
-
-        :return: List of new Data objects.
+        :return: List of property groups for all components added.
         """
-        data_objects = []
+        prop_groups = []
         if self.channels is None or not self.channels:
             raise AttributeError(
-                "The 'channels' property defining frequencies must be set before adding data."
+                "The 'channels' attribute of an EMSurvey class must be set before the "
+                "'add_component_data' method can be used."
             )
 
         if not isinstance(data, dict):
             raise TypeError(
-                "Input data must be nested dictionaries of component and channels "
-                + "(frequencies or times)"
+                "Input data must be nested dictionaries of components and channels."
             )
 
         for name, component_block in data.items():
-            if isinstance(component_block, PropertyGroup):
-                self.edit_metadata({"Property groups": component_block})
-                continue
-
-            if not isinstance(component_block, dict):
-                raise TypeError(
-                    f"Given value to data {name} should of type {dict} or {PropertyGroup}. "
-                    f"Type {type(component_block)} given instead."
+            if name in [pg.name for pg in self.property_groups]:
+                raise ValueError(
+                    f"PropertyGroup named '{name}' already exists on the survey entity. "
+                    f"Consider using the 'edit_metadata' method with "
+                    "'Property groups' argument instead."
                 )
 
             if len(component_block) != len(self.channels):
                 raise ValueError(
-                    f"Input component {name} should contain {len(self.channels)} "
-                    "channel values, equal to the number of 'channels' (frequencies)."
-                    f"{len(component_block)} values provided."
+                    f"List of values provided for component '{name}' must be a list "
+                    f"of {FloatData} or {dict} of len({len(self.channels)}) "
+                    f"corresponding to the 'channels' attribute. "
+                    f"{type(component_block)} of len({len(component_block)}) "
+                    f"provided instead."
                 )
-            for channel in self.channels:
-                if channel not in component_block:
-                    raise KeyError(
-                        f"Channel {channel} is missing from the component {name}."
-                    )
 
-                if isinstance(component_block[channel], dict):
-                    component_block[channel]["name"] = name + f" {channel: .3e}"
-                    entity_type = self.validate_data_type(component_block[channel])
-                    kwargs = {"parent": self, "association": "VERTEX"}
-                    for key, val in component_block[channel].items():
-                        if key in ["parent", "association", "entity_type", "type"]:
-                            continue
-                        kwargs[key] = val
+            if isinstance(component_block, list):
 
-                    data_object = self.workspace.create_entity(
-                        Data, entity=kwargs, entity_type=entity_type
-                    )
-                    self.add_data_to_group(data_object, name)
+                assert np.all(
+                    [
+                        isinstance(entry, FloatData) and entry.parent == self
+                        for entry in component_block
+                    ]
+                ), (
+                    f"The list of data provided for component '{name}' "
+                    f"must all be {FloatData} belonging to the target survey."
+                )
 
-                    data_objects.append(data_object)
-                elif isinstance(component_block[channel], Data):
-                    self.add_data_to_group(component_block[channel], name)
-                    data_objects.append(component_block[channel])
-                else:
-                    raise TypeError(
-                        f"Given value to data {channel} should of type {dict} or {Data}. "
-                        f"Type {type(component_block[channel])} given instead."
-                    )
+                data_list = component_block
 
-            prop_group = self.find_or_create_property_group(name=name)
+            elif isinstance(component_block, dict):
+                data_list = []
+                for channel, attr in component_block.items():
+                    if not isinstance(attr, dict):
+                        raise TypeError(
+                            f"Given value to data {channel} should of type {dict} or attributes. "
+                            f"Type {type(attr)} given instead."
+                        )
+                    data_list.append(self.add_data({channel: attr}))
+            else:
+                raise TypeError(
+                    f"Given value for the component '{name}' should of type "
+                    f"{dict} or {PropertyGroup}. "
+                    f"Type {type(component_block)} given instead."
+                )
+
+            prop_group = self.add_data_to_group(data_list, name)
             self.edit_metadata({"Property groups": prop_group})
-
+            prop_groups.append(prop_group)
         self.workspace.finalize()
 
-        return data_objects
+        return prop_groups
 
     @property
     def channels(self):
@@ -205,7 +202,7 @@ class BaseEMSurvey(Curve):
                 self.metadata["EM Dataset"]["Waveform"][wave_key] = value
 
             elif key == "Property groups":
-                self.edit_property_groups(value)
+                self._edit_validate_property_groups(value)
 
             elif value is None:
                 if key in self.metadata["EM Dataset"]:
@@ -220,7 +217,7 @@ class BaseEMSurvey(Curve):
         if getattr(self, "transmitters", None) is not None:
             self.transmitters.metadata = self.metadata
 
-    def edit_property_groups(self, value: str | PropertyGroup | list):
+    def _edit_validate_property_groups(self, value: str | PropertyGroup | list):
         """
         Add or append property groups to the metadata.
 
@@ -241,8 +238,8 @@ class BaseEMSurvey(Curve):
                 prop_group = self.find_or_create_property_group(name=val)
             else:
                 raise TypeError(
-                    "Property group must be a list of existing PropertyGroups "
-                    + "or known property_group names."
+                    "Property group must be a list of existing PropertyGroup "
+                    + "or PropertyGroup names."
                 )
 
             if len(prop_group.properties) != len(self.channels):

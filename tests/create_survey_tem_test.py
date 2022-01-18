@@ -37,7 +37,6 @@ def test_create_survey_tem():
         workspace = Workspace(path)
         xlocs = np.linspace(-1000, 1000, 10)
         vertices = np.c_[xlocs, np.random.randn(xlocs.shape[0], 2)]
-        # obj = workspace.get_entity("MA1_MW_ShC_Bz_20191127_rot330_zone_e receivers")[0]
         receivers = AirborneTEMReceivers.create(
             workspace, vertices=vertices, name=name + "_rx"
         )
@@ -74,6 +73,15 @@ def test_create_survey_tem():
             == receivers.metadata["EM Dataset"]["Channels"]
             == channels
         ), "Channels values did not get set properly."
+
+        # Add data as a list of FloatData
+        data = receivers.add_data(
+            {
+                f"Channel_{ii}": {"values": np.random.randn(receivers.n_vertices)}
+                for ii in receivers.channels
+            }
+        )
+        receivers.add_component_data({"time_data": data})
 
         with pytest.raises(ValueError) as error:
             receivers.unit = "hello world"
@@ -145,7 +153,11 @@ def test_create_survey_tem():
         compare_entities(
             transmitters, transmitters_rec, ignore=["_receivers", "_parent"]
         )
-        compare_entities(receivers, receivers_rec, ignore=["_transmitters", "_parent"])
+        compare_entities(
+            receivers,
+            receivers_rec,
+            ignore=["_transmitters", "_parent", "_property_groups"],
+        )
 
         # Test copying receiver over through the receivers
         # Create a workspace
@@ -153,7 +165,9 @@ def test_create_survey_tem():
         receivers_rec = receivers.copy(new_workspace)
         compare_entities(receivers, receivers_rec, ignore=["_transmitters", "_parent"])
         compare_entities(
-            transmitters, receivers_rec.transmitters, ignore=["_receivers", "_parent"]
+            transmitters,
+            receivers_rec.transmitters,
+            ignore=["_receivers", "_parent", "_property_groups"],
         )
 
         # Test copying receiver over through the transmitters
@@ -164,5 +178,7 @@ def test_create_survey_tem():
             receivers, transmitters_rec.receivers, ignore=["_transmitters", "_parent"]
         )
         compare_entities(
-            transmitters, transmitters_rec, ignore=["_receivers", "_parent"]
+            transmitters,
+            transmitters_rec,
+            ignore=["_receivers", "_parent", "_property_groups"],
         )
