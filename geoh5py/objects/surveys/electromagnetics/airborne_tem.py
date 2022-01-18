@@ -42,9 +42,8 @@ from .base import BaseEMSurvey
 
 
 class BaseAirborneTEM(BaseEMSurvey):
-    __META_KEY = "EM Dataset"
     __METADATA = {
-        __META_KEY: {
+        "EM Dataset": {
             "Channels": [],
             "Input type": "Rx",
             "Property groups": [],
@@ -126,7 +125,7 @@ class BaseAirborneTEM(BaseEMSurvey):
         """
         Default dictionary of metadata for AirborneTEM entities.
         """
-        return self.__METADATA.copy()
+        return self.__METADATA
 
     @property
     def default_units(self) -> list[str]:

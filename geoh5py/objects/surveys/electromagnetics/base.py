@@ -32,6 +32,10 @@ class BaseEMSurvey(Curve):
     A base electromagnetics survey object.
     """
 
+    __METADATA: dict = {"EM Dataset": {}}
+    __INPUT_TYPE = None
+    __UNITS = None
+
     def __init__(self, object_type: ObjectType, **kwargs):
         super().__init__(object_type, **kwargs)
 
@@ -98,30 +102,32 @@ class BaseEMSurvey(Curve):
                     "'Property groups' argument instead."
                 )
 
+            if not isinstance(component_block, (dict, list)) or (
+                isinstance(component_block, list)
+                and not all(isinstance(entry, FloatData) for entry in component_block)
+            ):
+                raise TypeError(
+                    f"List of values provided for component '{name}' must be a list "
+                    f"of {FloatData} or {dict} of attributes. "
+                    f"Values of type {type(component_block)} provided."
+                )
+
             if len(component_block) != len(self.channels):
                 raise ValueError(
-                    f"List of values provided for component '{name}' must be a list "
-                    f"of {FloatData} or {dict} of len({len(self.channels)}) "
-                    f"corresponding to the 'channels' attribute. "
-                    f"{type(component_block)} of len({len(component_block)}) "
-                    f"provided instead."
+                    f"The number of channel values provided must be of len({len(self.channels)}) "
+                    "corresponding to the 'channels' attribute. "
+                    f"Value of {type(component_block)} and len({len(component_block)}) provided."
                 )
 
             if isinstance(component_block, list):
-
-                assert np.all(
-                    [
-                        isinstance(entry, FloatData) and entry.parent == self
-                        for entry in component_block
-                    ]
-                ), (
-                    f"The list of data provided for component '{name}' "
-                    f"must all be {FloatData} belonging to the target survey."
+                assert np.all([entry.parent == self for entry in component_block]), (
+                    f"The list of values provided for the component '{name}' "
+                    f"must contain {FloatData} belonging to the target survey."
                 )
 
                 data_list = component_block
 
-            elif isinstance(component_block, dict):
+            else:
                 data_list = []
                 for channel, attr in component_block.items():
                     if not isinstance(attr, dict):
@@ -130,12 +136,6 @@ class BaseEMSurvey(Curve):
                             f"Type {type(attr)} given instead."
                         )
                     data_list.append(self.add_data({channel: attr}))
-            else:
-                raise TypeError(
-                    f"Given value for the component '{name}' should of type "
-                    f"{dict} or {PropertyGroup}. "
-                    f"Type {type(component_block)} given instead."
-                )
 
             prop_group = self.add_data_to_group(data_list, name)
             self.edit_metadata({"Property groups": prop_group})
@@ -167,14 +167,14 @@ class BaseEMSurvey(Curve):
         self.edit_metadata({"Channels": values})
 
     @property
-    def default_input_types(self) -> list[str]:
-        """Accepted input types. Implemented on the child class."""
-        ...
+    def default_input_types(self) -> list[str] | None:
+        """Input types. Must be one of 'Rx', 'Tx', 'Tx and Rx'."""
+        return self.__INPUT_TYPE
 
     @property
     def default_metadata(self):
         """Default metadata structure. Implemented on the child class."""
-        ...
+        return self.__METADATA
 
     @classmethod
     def default_type_uid(cls):
@@ -182,9 +182,11 @@ class BaseEMSurvey(Curve):
         ...
 
     @property
-    def default_units(self) -> list[str]:
-        """Accepted channel units. Implemented on the child class."""
-        ...
+    def default_units(self) -> list[str] | None:
+        """Accepted time units. Must be one of "Seconds (s)",
+        "Milliseconds (ms)", "Microseconds (us)" or "Nanoseconds (ns)"
+        """
+        return self.__UNITS
 
     def edit_metadata(self, entries: dict[str, Any]):
         """
@@ -261,15 +263,22 @@ class BaseEMSurvey(Curve):
 
     @input_type.setter
     def input_type(self, value: str):
-        assert (
-            value in self.default_input_types
-        ), f"Input 'input_type' must be one of {self.default_input_types}"
-        self.edit_metadata({"Input type": value})
+        if self.default_input_types is not None:
+            assert (
+                value in self.default_input_types
+            ), f"Input 'input_type' must be one of {self.default_input_types}"
+            self.edit_metadata({"Input type": value})
 
     @property
     def metadata(self) -> dict:
         """Metadata attached to the entity. Must be implemented by the child class."""
-        ...
+        if getattr(self, "_metadata", None) is None:
+            metadata = self.workspace.fetch_metadata(self.uid)
+
+            if metadata is None:
+                self._metadata = self.default_metadata
+
+        return self._metadata
 
     @metadata.setter
     def metadata(self, values: dict):
@@ -312,6 +321,7 @@ class BaseEMSurvey(Curve):
 
     @unit.setter
     def unit(self, value: str):
-        if value not in self.default_units:
-            raise ValueError(f"Input 'unit' must be one of {self.default_units}")
-        self.edit_metadata({"Unit": value})
+        if self.default_units is not None:
+            if value not in self.default_units:
+                raise ValueError(f"Input 'unit' must be one of {self.default_units}")
+            self.edit_metadata({"Unit": value})

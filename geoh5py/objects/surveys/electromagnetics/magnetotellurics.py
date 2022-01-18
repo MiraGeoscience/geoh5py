@@ -75,7 +75,7 @@ class Magnetotellurics(BaseEMSurvey):
         """
         :return: Default unique identifier
         """
-        return self.__METADATA.copy()
+        return self.__METADATA
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

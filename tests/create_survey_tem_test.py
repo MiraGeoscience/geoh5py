@@ -15,6 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=R0915
+
 import tempfile
 import uuid
 from pathlib import Path
@@ -81,7 +83,33 @@ def test_create_survey_tem():
                 for ii in receivers.channels
             }
         )
+
+        with pytest.raises(ValueError) as error:
+            receivers.add_component_data({"time_data": data[1:]})
+
+        assert "The number of channel values provided" in str(
+            error
+        ), "Failed to check length of input"
+
         receivers.add_component_data({"time_data": data})
+
+        with pytest.raises(ValueError) as error:
+            receivers.add_component_data({"time_data": data})
+
+        assert (
+            "PropertyGroup named 'time_data' already exists on the survey entity."
+        ) in str(
+            error
+        ), "Failed to protect against creation of PropertyGroup with same name."
+
+        with pytest.raises(TypeError) as error:
+            receivers.add_component_data(
+                {"new_times": [["abc"]] * len(receivers.channels)}
+            )
+
+        assert (
+            "List of values provided for component 'new_times' must be a list of "
+        ) in str(error), "Failed to protect against TypeError on add_component_data"
 
         with pytest.raises(ValueError) as error:
             receivers.unit = "hello world"

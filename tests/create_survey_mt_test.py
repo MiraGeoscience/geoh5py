@@ -99,7 +99,7 @@ def test_create_survey_mt():
                 comp_dict[f"{component}_{freq}"] = {"values": values}
 
             if c_ind == 0:
-                with pytest.raises(ValueError) as excinfo:
+                with pytest.raises(TypeError) as excinfo:
                     mt_survey.add_component_data({component: values})
                 assert (
                     "List of values provided for component 'Zxx (real)' "
