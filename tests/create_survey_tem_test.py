@@ -55,10 +55,19 @@ def test_create_survey_tem(tmp_path):
     ), "Missed raising error on 'transmitter' change."
     receivers.transmitters = transmitters
 
+    with pytest.raises(TypeError) as error:
+        receivers.loop_radius = "123"
+
+    assert "Input 'loop_radius' must be of type 'float'" in str(
+        error
+    ), "Failed TypeError on loop_radius."
+
+    receivers.loop_radius = 123.0
+
     angles = receivers.add_data(
         {"angles": {"values": np.random.randn(receivers.n_vertices)}}
     )
-    for key in ["pitch", "roll", "yaw"]:
+    for key in ["pitch", "roll", "yaw", "inline_offset"]:
         with pytest.raises(TypeError) as error:
             setattr(receivers, key, "abc")
 
@@ -68,24 +77,28 @@ def test_create_survey_tem(tmp_path):
 
         setattr(receivers, key, angles.uid)
         assert (
-            f"{key.capitalize()} property" in receivers.metadata["EM Dataset"]
+            f"{key.capitalize().replace('_', ' ')} property"
+            in receivers.metadata["EM Dataset"]
         ), f"Wrong metadata label set on '{key}' for input uuid."
 
         assert (
             getattr(receivers, key) == angles.uid
         ), f"Wrong metadata assignment on {key} property."
         assert (
-            f"{key.capitalize()} value" not in receivers.metadata["EM Dataset"]
+            f"{key.capitalize().replace('_', ' ')} value"
+            not in receivers.metadata["EM Dataset"]
         ), f"Failed in removing '{key}' value from metadata."
         setattr(receivers, key, 3.0)
         assert (
-            f"{key.capitalize()} value" in receivers.metadata["EM Dataset"]
+            f"{key.capitalize().replace('_', ' ')} value"
+            in receivers.metadata["EM Dataset"]
         ), f"Wrong metadata label set on '{key}' for input uuid."
         assert (
             getattr(receivers, key) == 3.0
         ), f"Wrong metadata assignment on {key} value."
         assert (
-            f"{key.capitalize()} property" not in receivers.metadata["EM Dataset"]
+            f"{key.capitalize().replace('_', ' ')} property"
+            not in receivers.metadata["EM Dataset"]
         ), f"Failed in removing '{key}' property from metadata."
 
     assert (

@@ -159,6 +159,20 @@ class BaseAirborneTEM(BaseEMSurvey):
             )
 
     @property
+    def loop_radius(self):
+        """Transmitter loop radius"""
+        if "Loop radius" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"]["Loop radius"]
+
+        return None
+
+    @loop_radius.setter
+    def loop_radius(self, value: float):
+        if not isinstance(value, float):
+            raise TypeError("Input 'loop_radius' must be of type 'float'")
+        self.edit_metadata({"Loop radius": value})
+
+    @property
     def metadata(self) -> dict:
         """Metadata attached to the entity."""
         if getattr(self, "_metadata", None) is None:
