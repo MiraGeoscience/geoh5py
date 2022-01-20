@@ -95,3 +95,10 @@ class MTReceivers(BaseEMSurvey):
     def receivers(self):
         """MT receivers"""
         return self
+
+    @receivers.setter
+    def receivers(self, value: BaseEMSurvey):
+        raise UserWarning(
+            f"Attribute 'receivers' of the class {type(self)} must reference to self. "
+            f"Re-assignment to {value} ignored."
+        )

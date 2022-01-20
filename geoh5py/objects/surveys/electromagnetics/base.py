@@ -36,8 +36,11 @@ class BaseEMSurvey(Curve):
     __METADATA: dict = {"EM Dataset": {}}
     __INPUT_TYPE = None
     __UNITS = None
+    _receivers: BaseEMSurvey | None = None
+    _transmitters: BaseEMSurvey | None = None
 
     def __init__(self, object_type: ObjectType, **kwargs):
+
         super().__init__(object_type, **kwargs)
 
     def add_component_data(self, data: dict) -> list[PropertyGroup]:
@@ -183,6 +186,20 @@ class BaseEMSurvey(Curve):
         ...
 
     @property
+    def default_transmitter_type(self) -> type:
+        """
+        :return: Transmitters implemented on the child class.
+        """
+        return type(None)
+
+    @property
+    def default_receiver_type(self) -> type:
+        """
+        :return: Receivers implemented on the child class.
+        """
+        return type(None)
+
+    @property
     def default_units(self) -> list[str] | None:
         """Accepted time units. Must be one of "Seconds (s)",
         "Milliseconds (ms)", "Microseconds (us)" or "Nanoseconds (ns)"
@@ -215,10 +232,10 @@ class BaseEMSurvey(Curve):
                 self.metadata["EM Dataset"][key] = value
 
         if getattr(self, "receivers", None) is not None:
-            self.receivers.metadata = self.metadata
+            getattr(self, "_receivers", None).metadata = self.metadata
 
         if getattr(self, "transmitters", None) is not None:
-            self.transmitters.metadata = self.metadata
+            getattr(self, "_transmitters", None).metadata = self.metadata
 
     def _edit_validate_property_groups(self, value: str | PropertyGroup | list):
         """
@@ -307,11 +324,34 @@ class BaseEMSurvey(Curve):
         self.modified_attributes = "metadata"
 
     @property
-    def receivers(self):
+    def receivers(self) -> BaseEMSurvey | None:
         """
-        The associated EM receivers. Implemented on the child class.
+        The associated TEM receivers.
         """
-        ...
+        if getattr(self, "_receivers", None) is None:
+            if self.metadata is not None and "Receivers" in self.metadata["EM Dataset"]:
+                rx_uid = self.metadata["EM Dataset"]["Receivers"]
+
+                try:
+                    self._receivers = self.workspace.get_entity(rx_uid)[0]
+                except IndexError:
+                    print("Associated Receivers entity not found in Workspace.")
+                    return None
+
+        return self._receivers
+
+    @receivers.setter
+    def receivers(self, receivers: BaseEMSurvey):
+        if isinstance(self.default_receiver_type, type(None)):
+            raise NotImplementedError(f"EM class {self} does not contain receivers.")
+
+        if not isinstance(receivers, self.default_receiver_type):
+            raise TypeError(
+                f"Provided receivers must be of type {self.default_receiver_type}. "
+                f"{type(receivers)} provided."
+            )
+        self._receivers = receivers
+        self.edit_metadata({"Receivers": receivers.uid})
 
     @property
     def survey_type(self):
@@ -322,11 +362,37 @@ class BaseEMSurvey(Curve):
         return None
 
     @property
-    def transmitters(self):
+    def transmitters(self) -> BaseEMSurvey | None:
         """
-        The associated EM transmitters. Implemented on the child class.
+        The associated TEM transmitters (sources).
         """
-        ...
+        if getattr(self, "_transmitters", None) is None:
+            if (
+                self.metadata is not None
+                and "Transmitters" in self.metadata["EM Dataset"]
+            ):
+                tx_uid = self.metadata["EM Dataset"]["Transmitters"]
+
+                try:
+                    self._transmitters = self.workspace.get_entity(tx_uid)[0]
+                except IndexError:
+                    print("Associated transmitters entity not found in Workspace.")
+                    return None
+
+        return self._transmitters
+
+    @transmitters.setter
+    def transmitters(self, transmitters: BaseEMSurvey):
+        if isinstance(self.default_transmitter_type, type(None)):
+            raise NotImplementedError(f"EM class {self} does not contain transmitters.")
+
+        if not isinstance(transmitters, self.default_transmitter_type):
+            raise TypeError(
+                f"Provided transmitters must be of type {self.default_transmitter_type}. "
+                f"{type(transmitters)} provided."
+            )
+        self._transmitters = transmitters
+        self.edit_metadata({"Transmitters": transmitters.uid})
 
     @property
     def unit(self) -> float | None:

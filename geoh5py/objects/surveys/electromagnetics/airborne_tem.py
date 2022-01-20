@@ -246,13 +246,6 @@ class BaseAirborneTEM(BaseEMSurvey):
         self.edit_metadata({"Timing mark": timing_mark})
 
     @property
-    def transmitters(self):
-        """
-        The associated TEM transmitters (sources). Implemented on the child class.
-        """
-        ...
-
-    @property
     def waveform(self) -> np.ndarray | None:
         """
         :obj:`numpy.array` of :obj:`float`, shape(*, 2): Discrete waveform of the TEM source.
@@ -336,40 +329,25 @@ class AirborneTEMReceivers(BaseAirborneTEM):
         return cls.__TYPE_UID
 
     @property
+    def default_transmitter_type(self):
+        """
+        :return: Transmitter class
+        """
+        return AirborneTEMTransmitters
+
+    @property
     def receivers(self) -> AirborneTEMReceivers:
         """
         The associated TEM receivers.
         """
         return self
 
-    @property
-    def transmitters(self) -> AirborneTEMTransmitters | None:
-        """
-        The associated TEM transmitters (sources).
-        """
-        if getattr(self, "_transmitters", None) is None:
-            if self.metadata is not None:
-                tx_uid = self.metadata["EM Dataset"]["Transmitters"]
-
-                try:
-                    self.transmitters = self.workspace.get_entity(tx_uid)[0]
-                except IndexError:
-                    print(
-                        "Associated 'AirborneTEMTransmitters' entity not found in Workspace."
-                    )
-                    return None
-
-        return self._transmitters
-
-    @transmitters.setter
-    def transmitters(self, transmitters: AirborneTEMTransmitters):
-        if not isinstance(transmitters, AirborneTEMTransmitters):
-            raise TypeError(
-                f"Provided transmitters must be of type {AirborneTEMTransmitters}. "
-                f"{type(transmitters)} provided."
-            )
-        self._transmitters = transmitters
-        self.edit_metadata({"Transmitters": transmitters.uid})
+    @receivers.setter
+    def receivers(self, value: BaseEMSurvey):
+        raise UserWarning(
+            f"Attribute 'receivers' of the class {type(self)} must reference to self. "
+            f"Re-assignment to {value} ignored."
+        )
 
 
 class AirborneTEMTransmitters(BaseAirborneTEM):
@@ -391,35 +369,22 @@ class AirborneTEMTransmitters(BaseAirborneTEM):
         return cls.__TYPE_UID
 
     @property
+    def default_receiver_type(self):
+        """
+        :return: Transmitter class
+        """
+        return AirborneTEMReceivers
+
+    @property
     def transmitters(self) -> AirborneTEMTransmitters:
         """
         The associated current electrode object (sources).
         """
         return self
 
-    @property
-    def receivers(self) -> AirborneTEMReceivers | None:
-        """
-        The associated TEM receivers.
-        """
-        if self.metadata is None:
-            raise AttributeError("No Current-Receiver metadata set.")
-
-        receivers = self.metadata["EM Dataset"]["Receivers"]
-
-        try:
-            return self.workspace.get_entity(receivers)[0]
-        except IndexError:
-            print("Associated AirborneTEMReceivers entity not found in Workspace.")
-            return None
-
-    @receivers.setter
-    def receivers(self, receivers: AirborneTEMReceivers):
-        if not isinstance(receivers, AirborneTEMReceivers):
-            raise TypeError(
-                f"Provided receivers must be of type {AirborneTEMReceivers}. "
-                f"{type(receivers)} provided."
-            )
-
-        self._receivers = receivers
-        self.edit_metadata({"Receivers": receivers.uid})
+    @transmitters.setter
+    def transmitters(self, value: BaseEMSurvey):
+        raise UserWarning(
+            f"Attribute 'transmitters' of the class {type(self)} must reference to self. "
+            f"Re-assignment to {value} ignored."
+        )
