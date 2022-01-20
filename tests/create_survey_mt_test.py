@@ -65,6 +65,15 @@ def test_create_survey_mt():
         }.items():
             assert getattr(mt_survey, key) == value, f"Error setting defaults for {key}"
 
+        with pytest.raises(ValueError) as excinfo:
+            mt_survey.input_type = "XYZ"
+
+        assert "Input 'input_type' must be one of" in str(
+            excinfo
+        ), "Failed to raise ValueError on input_type."
+
+        mt_survey.input_type = "Rx only"
+
         with pytest.raises(TypeError) as excinfo:
             mt_survey.metadata = "Hello World"
         assert "'metadata' must be of type 'dict'" in str(excinfo)
