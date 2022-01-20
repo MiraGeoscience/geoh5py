@@ -237,39 +237,39 @@ class BaseEMSurvey(Curve):
         if getattr(self, "transmitters", None) is not None:
             getattr(self, "transmitters").metadata = self.metadata
 
-    def _edit_validate_property_groups(self, value: str | PropertyGroup | list):
+    def _edit_validate_property_groups(
+        self, values: PropertyGroup | list[PropertyGroup] | None
+    ):
         """
         Add or append property groups to the metadata.
 
         :param value:
         """
-        if value is None:
+        if not isinstance(values, (PropertyGroup, type(None))):
+            raise TypeError(
+                "Input value for 'Property groups' must be a PropertyGroup, "
+                "list of PropertyGroup or None."
+            )
+
+        if values is None:
             self.metadata["EM Dataset"]["Property groups"] = []
+            return
 
-        if not isinstance(value, list):
-            value = [value]
+        if not isinstance(values, list):
+            values = [values]
 
-        for val in value:
-            if isinstance(val, PropertyGroup):
-                prop_group = val
-            elif isinstance(val, str) and val in [
-                pg.name for pg in self.property_groups
-            ]:
-                prop_group = self.find_or_create_property_group(name=val)
-            else:
-                raise TypeError(
-                    "Property group must be a list of existing PropertyGroup "
-                    + "or PropertyGroup names."
-                )
+        for value in values:
+            if value not in self.property_groups:
+                raise ValueError("Property group must be an existing PropertyGroup.")
 
-            if len(prop_group.properties) != len(self.channels):
+            if len(value.properties) != len(self.channels):
                 raise ValueError(
-                    f"Number of properties in group '{prop_group.name}' "
+                    f"Number of properties in group '{value.name}' "
                     + "differ from the number of 'channels'."
                 )
 
-            if prop_group.name not in self.metadata["EM Dataset"]["Property groups"]:
-                self.metadata["EM Dataset"]["Property groups"].append(prop_group.name)
+            if value.name not in self.metadata["EM Dataset"]["Property groups"]:
+                self.metadata["EM Dataset"]["Property groups"].append(value.name)
 
     @property
     def input_type(self):

@@ -222,7 +222,11 @@ def test_survey_tem_data(tmp_path):
         error
     ), "Failed to check length of input"
 
-    receivers.add_component_data({"time_data": data})
+    prop_group = receivers.add_component_data({"time_data": data})[0]
+
+    assert (
+        prop_group.name in receivers.metadata["EM Dataset"]["Property groups"]
+    ), "Failed to add the property group to metadata from 'add_component_data' method."
 
     with pytest.raises(ValueError) as error:
         receivers.add_component_data({"time_data": data})
@@ -232,6 +236,29 @@ def test_survey_tem_data(tmp_path):
     ) in str(
         error
     ), "Failed to protect against creation of PropertyGroup with same name."
+
+    # Create another property group and assign by name
+    prop_group = receivers.add_data_to_group(data, "NewGroup")
+
+    receivers.edit_metadata({"Property groups": prop_group})
+
+    assert (
+        prop_group.name in receivers.metadata["EM Dataset"]["Property groups"]
+        and len(receivers.metadata["EM Dataset"]["Property groups"]) == 2
+    ), "Failed to add the property group to list of metadata."
+
+    receivers.edit_metadata({"Property groups": None})
+
+    assert (
+        len(receivers.metadata["EM Dataset"]["Property groups"]) == 0
+    ), "Failed to remove property groups from the metadata."
+
+    with pytest.raises(TypeError) as error:
+        receivers.edit_metadata({"Property groups": 1234})
+
+    assert "Input value for 'Property groups' must be a PropertyGroup" in str(
+        error
+    ), "Failed to detect property group type error."
 
     with pytest.raises(TypeError) as error:
         receivers.add_component_data({"new_times": [["abc"]] * len(receivers.channels)})
