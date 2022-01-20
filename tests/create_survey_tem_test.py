@@ -53,6 +53,23 @@ def test_create_survey_tem(tmp_path):
     assert f" must be of type {AirborneTEMTransmitters}" in str(
         error
     ), "Missed raising error on 'transmitter' change."
+
+    with pytest.raises(UserWarning) as error:
+        receivers.receivers = transmitters
+
+    assert (
+        "Attribute 'receivers' of the class 'AirborneTEMReceivers' must reference to self."
+        in str(error)
+    ), "Missed raising UserWarning on setting 'receivers' on self."
+
+    with pytest.raises(UserWarning) as error:
+        transmitters.transmitters = receivers
+
+    assert (
+        "Attribute 'transmitters' of the class 'AirborneTEMTransmitters' must reference to self."
+        in str(error)
+    ), "Missed raising UserWarning on setting 'transmitters' on self."
+
     receivers.transmitters = transmitters
 
     with pytest.raises(TypeError) as error:
@@ -125,22 +142,28 @@ def test_create_survey_tem(tmp_path):
     receivers_rec = new_workspace.get_entity(name + "_rx")[0]
 
     # Check entities
-    compare_entities(transmitters, transmitters_rec, ignore=["_receivers", "_parent"])
+    compare_entities(
+        transmitters,
+        transmitters_rec,
+        ignore=["_receivers", "_transmitters", "_parent"],
+    )
     compare_entities(
         receivers,
         receivers_rec,
-        ignore=["_transmitters", "_parent", "_property_groups"],
+        ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
     )
 
     # Test copying receiver over through the receivers
     # Create a workspace
     new_workspace = Workspace(Path(tmp_path) / r"testATEM_copy.geoh5")
     receivers_rec = receivers.copy(new_workspace)
-    compare_entities(receivers, receivers_rec, ignore=["_transmitters", "_parent"])
+    compare_entities(
+        receivers, receivers_rec, ignore=["_receivers", "_transmitters", "_parent"]
+    )
     compare_entities(
         transmitters,
         receivers_rec.transmitters,
-        ignore=["_receivers", "_parent", "_property_groups"],
+        ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
     )
 
     # Test copying receiver over through the transmitters
@@ -148,12 +171,14 @@ def test_create_survey_tem(tmp_path):
     new_workspace = Workspace(Path(tmp_path) / r"testATEM_copy2.geoh5")
     transmitters_rec = transmitters.copy(new_workspace)
     compare_entities(
-        receivers, transmitters_rec.receivers, ignore=["_transmitters", "_parent"]
+        receivers,
+        transmitters_rec.receivers,
+        ignore=["_receivers", "_transmitters", "_parent"],
     )
     compare_entities(
         transmitters,
         transmitters_rec,
-        ignore=["_receivers", "_parent", "_property_groups"],
+        ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
     )
 
 

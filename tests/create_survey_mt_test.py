@@ -50,6 +50,14 @@ def test_create_survey_mt():
         # Create the survey from vertices
         mt_survey = MTReceivers.create(workspace, vertices=vertices, name=name)
 
+        with pytest.raises(UserWarning) as error:
+            mt_survey.receivers = "123"
+
+        assert (
+            "Attribute 'receivers' of the class 'MTReceivers' must reference to self."
+            in str(error)
+        ), "Missed raising UserWarning on setting 'receivers' on self."
+
         for key, value in {
             "input_type": "Rx only",
             "survey_type": "Magnetotellurics",
@@ -131,5 +139,7 @@ def test_create_survey_mt():
                 diffs.append(key)
         # Check entities
         compare_entities(
-            mt_survey, mt_survey_rec, ignore=["_parent", "_property_groups"]
+            mt_survey,
+            mt_survey_rec,
+            ignore=["_receivers", "_parent", "_property_groups"],
         )

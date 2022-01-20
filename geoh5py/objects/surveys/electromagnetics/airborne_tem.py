@@ -316,10 +316,10 @@ class AirborneTEMReceivers(BaseAirborneTEM):
     """
 
     __TYPE_UID = uuid.UUID("{19730589-fd28-4649-9de0-ad47249d9aba}")
-    _transmitters = None
 
     def __init__(self, object_type: ObjectType, **kwargs):
         super().__init__(object_type, **kwargs)
+        self._receivers = self
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -345,7 +345,7 @@ class AirborneTEMReceivers(BaseAirborneTEM):
     @receivers.setter
     def receivers(self, value: BaseEMSurvey):
         raise UserWarning(
-            f"Attribute 'receivers' of the class {type(self)} must reference to self. "
+            "Attribute 'receivers' of the class 'AirborneTEMReceivers' must reference to self. "
             f"Re-assignment to {value} ignored."
         )
 
@@ -356,10 +356,10 @@ class AirborneTEMTransmitters(BaseAirborneTEM):
     """
 
     __TYPE_UID = uuid.UUID("{58c4849f-41e2-4e09-b69b-01cf4286cded}")
-    _receivers = None
 
     def __init__(self, object_type: ObjectType, **kwargs):
         super().__init__(object_type, **kwargs)
+        self._transmitters = self
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -385,6 +385,6 @@ class AirborneTEMTransmitters(BaseAirborneTEM):
     @transmitters.setter
     def transmitters(self, value: BaseEMSurvey):
         raise UserWarning(
-            f"Attribute 'transmitters' of the class {type(self)} must reference to self. "
-            f"Re-assignment to {value} ignored."
+            "Attribute 'transmitters' of the class 'AirborneTEMTransmitters' "
+            f"must reference to self. Re-assignment to {value} ignored."
         )

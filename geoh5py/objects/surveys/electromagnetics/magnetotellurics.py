@@ -64,6 +64,7 @@ class MTReceivers(BaseEMSurvey):
 
     def __init__(self, object_type: ObjectType, **kwargs):
         super().__init__(object_type, **kwargs)
+        self._receivers = self
 
     @property
     def default_input_types(self) -> list[str]:
@@ -99,6 +100,6 @@ class MTReceivers(BaseEMSurvey):
     @receivers.setter
     def receivers(self, value: BaseEMSurvey):
         raise UserWarning(
-            f"Attribute 'receivers' of the class {type(self)} must reference to self. "
+            "Attribute 'receivers' of the class 'MTReceivers' must reference to self. "
             f"Re-assignment to {value} ignored."
         )
