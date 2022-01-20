@@ -232,10 +232,10 @@ class BaseEMSurvey(Curve):
                 self.metadata["EM Dataset"][key] = value
 
         if getattr(self, "receivers", None) is not None:
-            getattr(self, "_receivers", None).metadata = self.metadata
+            getattr(self, "_receivers").metadata = self.metadata
 
         if getattr(self, "transmitters", None) is not None:
-            getattr(self, "_transmitters", None).metadata = self.metadata
+            getattr(self, "_transmitters").metadata = self.metadata
 
     def _edit_validate_property_groups(self, value: str | PropertyGroup | list):
         """
