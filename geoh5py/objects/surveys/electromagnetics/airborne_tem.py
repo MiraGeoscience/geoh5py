@@ -319,7 +319,6 @@ class AirborneTEMReceivers(BaseAirborneTEM):
 
     def __init__(self, object_type: ObjectType, **kwargs):
         super().__init__(object_type, **kwargs)
-        self._receivers = self
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -359,7 +358,6 @@ class AirborneTEMTransmitters(BaseAirborneTEM):
 
     def __init__(self, object_type: ObjectType, **kwargs):
         super().__init__(object_type, **kwargs)
-        self._transmitters = self
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

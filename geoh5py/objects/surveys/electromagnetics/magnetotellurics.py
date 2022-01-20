@@ -64,7 +64,6 @@ class MTReceivers(BaseEMSurvey):
 
     def __init__(self, object_type: ObjectType, **kwargs):
         super().__init__(object_type, **kwargs)
-        self._receivers = self
 
     @property
     def default_input_types(self) -> list[str]:
