@@ -173,45 +173,6 @@ class BaseAirborneTEM(BaseEMSurvey):
         self.edit_metadata({"Loop radius": value})
 
     @property
-    def metadata(self) -> dict:
-        """Metadata attached to the entity."""
-        if getattr(self, "_metadata", None) is None:
-            metadata = self.workspace.fetch_metadata(self.uid)
-
-            if metadata is None:
-                metadata = self.default_metadata
-                element = (
-                    "Receivers"
-                    if "Receivers" in type(self).__name__
-                    else "Transmitters"
-                )
-                metadata["EM Dataset"][element] = self.uid
-                self.metadata = metadata
-            else:
-                self._metadata = metadata
-
-        return self._metadata
-
-    @metadata.setter
-    def metadata(self, values: dict):
-        if not isinstance(values, dict):
-            raise TypeError("'metadata' must be of type 'dict'")
-
-        if "EM Dataset" not in values:
-            values = {"EM Dataset": values}
-
-        for key in self.default_metadata["EM Dataset"]:
-            if key not in values["EM Dataset"]:
-                raise KeyError(f"'{key}' argument missing from the input metadata.")
-
-        for key, value in values["EM Dataset"].items():
-            if key in ["Receivers", "Transmitters"] and isinstance(value, str):
-                values["EM Dataset"][key] = uuid.UUID(value)
-
-        self._metadata = values
-        self.modified_attributes = "metadata"
-
-    @property
     def pitch(self) -> float | uuid.UUID | None:
         """Pitch angle(s) of the transmitter coil"""
         if "Pitch value" in self.metadata["EM Dataset"]:

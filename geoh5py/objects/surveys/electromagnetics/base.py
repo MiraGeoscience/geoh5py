@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 import numpy as np
@@ -271,21 +272,39 @@ class BaseEMSurvey(Curve):
 
     @property
     def metadata(self) -> dict:
-        """Metadata attached to the entity. Must be implemented by the child class."""
+        """Metadata attached to the entity."""
         if getattr(self, "_metadata", None) is None:
             metadata = self.workspace.fetch_metadata(self.uid)
 
             if metadata is None:
-                self._metadata = self.default_metadata
+                metadata = self.default_metadata
+                for name in ["Receivers", "Transmitters"]:
+                    if name in type(self).__name__:
+                        metadata["EM Dataset"][name] = self.uid
+                self.metadata = metadata
+            else:
+                self._metadata = metadata
 
         return self._metadata
 
     @metadata.setter
     def metadata(self, values: dict):
-        raise NotImplementedError(
-            f"Setter of 'metadata' for {values} must be "
-            "implemented on the child class."
-        )
+        if not isinstance(values, dict):
+            raise TypeError("'metadata' must be of type 'dict'")
+
+        if "EM Dataset" not in values:
+            values = {"EM Dataset": values}
+
+        for key in self.default_metadata["EM Dataset"]:
+            if key not in values["EM Dataset"]:
+                raise KeyError(f"'{key}' argument missing from the input metadata.")
+
+        for key, value in values["EM Dataset"].items():
+            if key in ["Receivers", "Transmitters"] and isinstance(value, str):
+                values["EM Dataset"][key] = uuid.UUID(value)
+
+        self._metadata = values
+        self.modified_attributes = "metadata"
 
     @property
     def receivers(self):

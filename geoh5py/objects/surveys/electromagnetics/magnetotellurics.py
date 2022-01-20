@@ -38,7 +38,7 @@ from geoh5py.objects.object_type import ObjectType
 from .base import BaseEMSurvey
 
 
-class Magnetotellurics(BaseEMSurvey):
+class MTReceivers(BaseEMSurvey):
     """
     A magnetotellurics survey object.
     """
@@ -90,37 +90,6 @@ class Magnetotellurics(BaseEMSurvey):
         "Milliseconds (ms)", "Microseconds (us)" or "Nanoseconds (ns)"
         """
         return self.__UNITS
-
-    @property
-    def metadata(self) -> dict:
-        """
-        Metadata attached to the entity.
-        """
-        if getattr(self, "_metadata", None) is None:
-            metadata = self.workspace.fetch_metadata(self.uid)
-
-            if metadata is None:
-                self.default_metadata["EM Dataset"]["Receivers"] = self.uid
-                metadata = self.default_metadata
-
-            self._metadata = metadata
-        return self._metadata
-
-    @metadata.setter
-    def metadata(self, values: dict):
-
-        if not isinstance(values, dict):
-            raise TypeError("'metadata' must be of type 'dict'")
-
-        if "EM Dataset" not in values:
-            raise KeyError("'EM Dataset' must be a 'metadata' key")
-
-        for key in self.default_metadata["EM Dataset"]:
-            if key not in values["EM Dataset"]:
-                raise KeyError(f"'{key}' argument missing from the input metadata.")
-
-        self._metadata = values
-        self.modified_attributes = "metadata"
 
     @property
     def receivers(self):

@@ -23,7 +23,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from geoh5py.objects import Magnetotellurics
+from geoh5py.objects import MTReceivers
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -48,7 +48,7 @@ def test_create_survey_mt():
         vertices = np.c_[x_loc.ravel(), y_loc.ravel(), np.zeros_like(x_loc).ravel()]
 
         # Create the survey from vertices
-        mt_survey = Magnetotellurics.create(workspace, vertices=vertices, name=name)
+        mt_survey = MTReceivers.create(workspace, vertices=vertices, name=name)
 
         for key, value in {
             "input_type": "Rx only",
@@ -60,10 +60,6 @@ def test_create_survey_mt():
         with pytest.raises(TypeError) as excinfo:
             mt_survey.metadata = "Hello World"
         assert "'metadata' must be of type 'dict'" in str(excinfo)
-
-        with pytest.raises(KeyError) as excinfo:
-            mt_survey.metadata = {"Hello World": {}}
-        assert "'EM Dataset' must be a 'metadata' key" in str(excinfo)
 
         with pytest.raises(KeyError) as excinfo:
             mt_survey.metadata = {"EM Dataset": {}}
