@@ -345,8 +345,8 @@ class BaseEMSurvey(Curve):
 
     @receivers.setter
     def receivers(self, receivers: BaseEMSurvey):
-        if isinstance(self.default_receiver_type, type(None)):
-            raise NotImplementedError(f"EM class {self} does not contain receivers.")
+        if isinstance(None, self.default_receiver_type):
+            raise NotImplementedError(f"EM class {self} does not have receivers.")
 
         if not isinstance(receivers, self.default_receiver_type):
             raise TypeError(
@@ -386,8 +386,8 @@ class BaseEMSurvey(Curve):
 
     @transmitters.setter
     def transmitters(self, transmitters: BaseEMSurvey):
-        if isinstance(self.default_transmitter_type, type(None)):
-            raise NotImplementedError(f"EM class {self} does not contain transmitters.")
+        if isinstance(None, self.default_transmitter_type):
+            raise NotImplementedError(f"EM class {self} does not have transmitters.")
 
         if not isinstance(transmitters, self.default_transmitter_type):
             raise TypeError(

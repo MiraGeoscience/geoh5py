@@ -23,7 +23,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from geoh5py.objects import MTReceivers
+from geoh5py.objects import AirborneTEMTransmitters, MTReceivers
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -136,6 +136,13 @@ def test_create_survey_mt():
         assert len(mt_survey.metadata["EM Dataset"]["Property groups"]) == len(
             mt_survey.property_groups
         ), "Metadata 'Property groups' malformed"
+
+        with pytest.raises(NotImplementedError) as excinfo:
+            mt_survey.transmitters = AirborneTEMTransmitters
+
+        assert "does not have transmitters." in str(
+            excinfo
+        ), "Failed to raise NotImplementedError."
 
         workspace.finalize()
 
