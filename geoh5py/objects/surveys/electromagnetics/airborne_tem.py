@@ -139,7 +139,7 @@ class BaseAirborneTEM(BaseEMSurvey):
     @property
     def relative_to_bearing(self):
         """Data relative_to_bearing"""
-        if "Angles relative to bearing" in self.metadata["EM Dataset"]:
+        return self.metadata["EM Dataset"].get("Angles relative to bearing", None)
             return self.metadata["EM Dataset"]["Angles relative to bearing"]
 
         return None
