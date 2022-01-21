@@ -364,7 +364,7 @@ class BaseEMSurvey(Curve):
         self.edit_metadata({"Receivers": receivers.uid})
 
     @property
-    def survey_type(self):
+    def survey_type(self) -> str | None:
         """Data input type. Must be one of 'Rx', 'Tx' or 'Tx and Rx'"""
         if "Survey type" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Survey type"]
