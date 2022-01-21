@@ -61,45 +61,6 @@ class BaseAirborneTEM(BaseEMSurvey):
             **kwargs,
         )
 
-    def copy(self, parent=None, copy_children: bool = True):
-        """
-        Function to copy a survey to a different parent entity.
-
-        :param parent: Target parent to copy the entity under. Copied to current
-            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: Create copies of all children entities along with it.
-
-        :return entity: Registered Entity to the workspace.
-        """
-        if parent is None:
-            parent = self.parent
-
-        omit_list = ["_metadata", "_receivers", "_transmitters"]
-        new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children, omit_list=omit_list
-        )
-
-        if "Receivers" in type(self).__name__:
-            new_transmitters = parent.workspace.copy_to_parent(
-                self.transmitters,
-                parent,
-                copy_children=copy_children,
-                omit_list=omit_list,
-            )
-            new_entity.transmitters = new_transmitters
-        else:
-            new_receivers = parent.workspace.copy_to_parent(
-                self.receivers,
-                parent,
-                copy_children=copy_children,
-                omit_list=omit_list,
-            )
-            new_entity.receivers = new_receivers
-
-        parent.workspace.finalize()
-
-        return new_entity
-
     @property
     def default_input_types(self) -> list[str]:
         """Input types. Must be one of 'Rx', 'Tx', 'Tx and Rx'."""
@@ -146,10 +107,7 @@ class BaseAirborneTEM(BaseEMSurvey):
     @property
     def loop_radius(self):
         """Transmitter loop radius"""
-        if "Loop radius" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Loop radius"]
-
-        return None
+        return self.metadata["EM Dataset"].get("Loop radius", None)
 
     @loop_radius.setter
     def loop_radius(self, value: float):
@@ -178,10 +136,7 @@ class BaseAirborneTEM(BaseEMSurvey):
     @property
     def relative_to_bearing(self):
         """Data relative_to_bearing"""
-        if "Angles relative to bearing" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Angles relative to bearing"]
-
-        return None
+        return self.metadata["EM Dataset"].get("Angles relative to bearing", None)
 
     @relative_to_bearing.setter
     def relative_to_bearing(self, value: bool):
@@ -305,6 +260,34 @@ class AirborneTEMReceivers(BaseAirborneTEM):
     def __init__(self, object_type: ObjectType, **kwargs):
         super().__init__(object_type, **kwargs)
 
+    def copy(self, parent=None, copy_children: bool = True) -> AirborneTEMReceivers:
+        """
+        Function to copy a AirborneTEMReceivers to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: Create copies of AirborneTEMReceivers along with it.
+
+        :return entity: Registered AirborneTEMReceivers to the workspace.
+        """
+        if parent is None:
+            parent = self.parent
+
+        omit_list = ["_metadata", "_receivers", "_transmitters"]
+        new_entity = parent.workspace.copy_to_parent(
+            self, parent, copy_children=copy_children, omit_list=omit_list
+        )
+        new_transmitters = parent.workspace.copy_to_parent(
+            self.transmitters,
+            parent,
+            copy_children=copy_children,
+            omit_list=omit_list,
+        )
+        new_entity.transmitters = new_transmitters
+        parent.workspace.finalize()
+
+        return new_entity
+
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         """
@@ -343,6 +326,34 @@ class AirborneTEMTransmitters(BaseAirborneTEM):
 
     def __init__(self, object_type: ObjectType, **kwargs):
         super().__init__(object_type, **kwargs)
+
+    def copy(self, parent=None, copy_children: bool = True) -> AirborneTEMTransmitters:
+        """
+        Function to copy a AirborneTEMTransmitters to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: Create copies of AirborneTEMReceivers along with it.
+
+        :return entity: Registered AirborneTEMTransmitters to the workspace.
+        """
+        if parent is None:
+            parent = self.parent
+
+        omit_list = ["_metadata", "_receivers", "_transmitters"]
+        new_entity = parent.workspace.copy_to_parent(
+            self, parent, copy_children=copy_children, omit_list=omit_list
+        )
+        new_receivers = parent.workspace.copy_to_parent(
+            self.receivers,
+            parent,
+            copy_children=copy_children,
+            omit_list=omit_list,
+        )
+        new_entity.receivers = new_receivers
+        parent.workspace.finalize()
+
+        return new_entity
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

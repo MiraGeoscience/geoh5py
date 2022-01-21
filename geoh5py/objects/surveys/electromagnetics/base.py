@@ -281,14 +281,15 @@ class BaseEMSurvey(Curve):
 
     @input_type.setter
     def input_type(self, value: str):
-        if self.default_input_types is not None:
+        if self.default_input_types is None:
+            return
 
-            if value not in self.default_input_types:
-                raise ValueError(
-                    "Input 'input_type' must be one of "
-                    f"{self.default_input_types}. {value} provided."
-                )
-            self.edit_metadata({"Input type": value})
+        if value not in self.default_input_types:
+            raise ValueError(
+                "Input 'input_type' must be one of "
+                f"{self.default_input_types}. {value} provided."
+            )
+        self.edit_metadata({"Input type": value})
 
     @property
     def metadata(self) -> dict:
@@ -315,9 +316,15 @@ class BaseEMSurvey(Curve):
         if "EM Dataset" not in values:
             values = {"EM Dataset": values}
 
+        missing_keys = []
         for key in self.default_metadata["EM Dataset"]:
             if key not in values["EM Dataset"]:
-                raise KeyError(f"'{key}' argument missing from the input metadata.")
+                missing_keys += [key]
+
+        if missing_keys:
+            raise KeyError(
+                f"'{missing_keys}' argument(s) missing from the input metadata."
+            )
 
         for key, value in values["EM Dataset"].items():
             if key in ["Receivers", "Transmitters"] and isinstance(value, str):
@@ -346,7 +353,7 @@ class BaseEMSurvey(Curve):
     @receivers.setter
     def receivers(self, receivers: BaseEMSurvey):
         if isinstance(None, self.default_receiver_type):
-            raise NotImplementedError(f"EM class {self} does not have receivers.")
+            raise AttributeError(f"EM class {self} does not have receivers.")
 
         if not isinstance(receivers, self.default_receiver_type):
             raise TypeError(
@@ -357,7 +364,7 @@ class BaseEMSurvey(Curve):
         self.edit_metadata({"Receivers": receivers.uid})
 
     @property
-    def survey_type(self):
+    def survey_type(self) -> str | None:
         """Data input type. Must be one of 'Rx', 'Tx' or 'Tx and Rx'"""
         if "Survey type" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Survey type"]
@@ -387,7 +394,7 @@ class BaseEMSurvey(Curve):
     @transmitters.setter
     def transmitters(self, transmitters: BaseEMSurvey):
         if isinstance(None, self.default_transmitter_type):
-            raise NotImplementedError(f"EM class {self} does not have transmitters.")
+            raise AttributeError(f"EM class {self} does not have transmitters.")
 
         if not isinstance(transmitters, self.default_transmitter_type):
             raise TypeError(

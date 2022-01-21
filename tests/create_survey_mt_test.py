@@ -80,7 +80,9 @@ def test_create_survey_mt():
 
         with pytest.raises(KeyError) as excinfo:
             mt_survey.metadata = {"EM Dataset": {}}
-        assert "'Channels' argument missing from the input metadata." in str(excinfo)
+        assert f"{list(mt_survey.default_metadata['EM Dataset'].keys())}" in str(
+            excinfo
+        )
 
         mt_survey.metadata = mt_survey.default_metadata
 
@@ -137,12 +139,12 @@ def test_create_survey_mt():
             mt_survey.property_groups
         ), "Metadata 'Property groups' malformed"
 
-        with pytest.raises(NotImplementedError) as excinfo:
+        with pytest.raises(AttributeError) as excinfo:
             mt_survey.transmitters = AirborneTEMTransmitters
 
         assert "does not have transmitters." in str(
             excinfo
-        ), "Failed to raise NotImplementedError."
+        ), "Failed to raise AttributeError."
 
         workspace.finalize()
 
