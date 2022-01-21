@@ -107,10 +107,7 @@ class BaseAirborneTEM(BaseEMSurvey):
     @property
     def loop_radius(self):
         """Transmitter loop radius"""
-        if "Loop radius" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Loop radius"]
-
-        return None
+        return self.metadata["EM Dataset"].get("Loop radius", None)
 
     @loop_radius.setter
     def loop_radius(self, value: float):
@@ -140,9 +137,6 @@ class BaseAirborneTEM(BaseEMSurvey):
     def relative_to_bearing(self):
         """Data relative_to_bearing"""
         return self.metadata["EM Dataset"].get("Angles relative to bearing", None)
-            return self.metadata["EM Dataset"]["Angles relative to bearing"]
-
-        return None
 
     @relative_to_bearing.setter
     def relative_to_bearing(self, value: bool):
