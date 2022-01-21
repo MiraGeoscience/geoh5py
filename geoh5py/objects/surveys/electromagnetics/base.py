@@ -281,14 +281,15 @@ class BaseEMSurvey(Curve):
 
     @input_type.setter
     def input_type(self, value: str):
-        if self.default_input_types is not None:
+        if self.default_input_types is None:
+            return
 
-            if value not in self.default_input_types:
-                raise ValueError(
-                    "Input 'input_type' must be one of "
-                    f"{self.default_input_types}. {value} provided."
-                )
-            self.edit_metadata({"Input type": value})
+        if value not in self.default_input_types:
+            raise ValueError(
+                "Input 'input_type' must be one of "
+                f"{self.default_input_types}. {value} provided."
+            )
+        self.edit_metadata({"Input type": value})
 
     @property
     def metadata(self) -> dict:
