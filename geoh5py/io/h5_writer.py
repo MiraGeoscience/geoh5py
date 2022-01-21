@@ -307,7 +307,7 @@ class H5Writer:
         return uuid.UUID(value)
 
     @staticmethod
-    def uuid_str(value: uuid.UUID) -> str | Any:
+    def uuid_str(value: uuid.UUID | Any) -> str | Any:
         """Convert :obj:`uuid.UUID` to string used in geoh5."""
         if isinstance(value, uuid.UUID):
             return "{" + str(value) + "}"
