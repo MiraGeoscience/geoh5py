@@ -61,7 +61,7 @@ class BaseAirborneTEM(BaseEMSurvey):
             **kwargs,
         )
 
-    def copy(self, parent=None, copy_children: bool = True):
+    def copy(self, parent=None, copy_children: bool = True) -> BaseEMSurvey:
         """
         Function to copy a survey to a different parent entity.
 
