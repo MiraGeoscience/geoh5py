@@ -80,7 +80,9 @@ def test_create_survey_mt():
 
         with pytest.raises(KeyError) as excinfo:
             mt_survey.metadata = {"EM Dataset": {}}
-        assert "'Channels' argument missing from the input metadata." in str(excinfo)
+        assert f"{list(mt_survey.default_metadata['EM Dataset'].keys())}" in str(
+            excinfo
+        )
 
         mt_survey.metadata = mt_survey.default_metadata
 

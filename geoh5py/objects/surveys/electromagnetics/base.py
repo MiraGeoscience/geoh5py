@@ -316,9 +316,15 @@ class BaseEMSurvey(Curve):
         if "EM Dataset" not in values:
             values = {"EM Dataset": values}
 
+        missing_keys = []
         for key in self.default_metadata["EM Dataset"]:
             if key not in values["EM Dataset"]:
-                raise KeyError(f"'{key}' argument missing from the input metadata.")
+                missing_keys += [key]
+
+        if missing_keys:
+            raise KeyError(
+                f"'{missing_keys}' argument(s) missing from the input metadata."
+            )
 
         for key, value in values["EM Dataset"].items():
             if key in ["Receivers", "Transmitters"] and isinstance(value, str):
