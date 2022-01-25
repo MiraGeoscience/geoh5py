@@ -84,7 +84,14 @@ def test_create_survey_tem(tmp_path):
     angles = receivers.add_data(
         {"angles": {"values": np.random.randn(receivers.n_vertices)}}
     )
-    for key in ["pitch", "roll", "yaw", "inline_offset"]:
+    for key in [
+        "pitch",
+        "roll",
+        "yaw",
+        "inline_offset",
+        "crossline_offset",
+        "vertical_offset",
+    ]:
         with pytest.raises(TypeError) as error:
             setattr(receivers, key, "abc")
 
