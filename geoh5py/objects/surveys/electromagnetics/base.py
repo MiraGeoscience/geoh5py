@@ -189,7 +189,7 @@ class BaseEMSurvey(Curve):
         return self.__METADATA
 
     @classmethod
-    def default_type_uid(cls):
+    def default_type_uid(cls) -> uuid.UUID:
         """Default unique identifier. Implemented on the child class."""
         ...
 
@@ -271,7 +271,7 @@ class BaseEMSurvey(Curve):
                 self.metadata["EM Dataset"]["Property groups"].append(value.name)
 
     @property
-    def input_type(self):
+    def input_type(self) -> str | None:
         """Data input type. Must be one of 'Rx', 'Tx' or 'Tx and Rx'"""
         if "Input type" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Input type"]
