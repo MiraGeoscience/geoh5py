@@ -144,7 +144,7 @@ class BaseAirborneTEM(BaseEMSurvey):
 
     @property
     def pitch(self) -> float | uuid.UUID | None:
-        """Pitch angle(s) of the transmitter coil"""
+        """Numeric value or property UUID for the pitch angle(s)  of the transmitter coil."""
         if "Pitch value" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Pitch value"]
         if "Pitch property" in self.metadata["EM Dataset"]:
