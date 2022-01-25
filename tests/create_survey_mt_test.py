@@ -91,15 +91,15 @@ def test_create_survey_mt():
         assert "Values provided as 'channels' must be a list" in str(excinfo)
 
         with pytest.raises(AttributeError) as excinfo:
-            mt_survey.add_component_data(123.0)
+            mt_survey.add_components_data(123.0)
         assert (
             "The 'channels' attribute of an EMSurvey class must be set before "
-            "the 'add_component_data' method can be used."
+            "the 'add_components_data' method can be used."
         ) in str(excinfo)
         mt_survey.channels = [5.0, 10.0, 100.0]
 
         with pytest.raises(TypeError) as excinfo:
-            mt_survey.add_component_data(123.0)
+            mt_survey.add_components_data(123.0)
         assert "Input data must be nested dictionaries" in str(excinfo)
 
         # Create some simple data
@@ -115,14 +115,14 @@ def test_create_survey_mt():
 
             if c_ind == 0:
                 with pytest.raises(TypeError) as excinfo:
-                    mt_survey.add_component_data({component: values})
+                    mt_survey.add_components_data({component: values})
                 assert (
                     "List of values provided for component 'Zxx (real)' "
                     "must be a list of "
                 ) in str(excinfo)
 
                 with pytest.raises(TypeError) as excinfo:
-                    mt_survey.add_component_data(
+                    mt_survey.add_components_data(
                         {component: {ind: values for ind in mt_survey.channels}}
                     )
                 assert (
@@ -133,7 +133,7 @@ def test_create_survey_mt():
             # Give well-formed dictionary
             data[component] = comp_dict
 
-        mt_survey.add_component_data(data)
+        mt_survey.add_components_data(data)
 
         assert len(mt_survey.metadata["EM Dataset"]["Property groups"]) == len(
             mt_survey.property_groups

@@ -43,7 +43,7 @@ class BaseEMSurvey(Curve):
 
         super().__init__(object_type, **kwargs)
 
-    def add_component_data(self, data: dict) -> list[PropertyGroup]:
+    def add_components_data(self, data: dict) -> list[PropertyGroup]:
         """
         Add lists of data components to an EM survey. The name of each component is
         appended to the metadata 'Property groups'.
@@ -90,7 +90,7 @@ class BaseEMSurvey(Curve):
         if self.channels is None or not self.channels:
             raise AttributeError(
                 "The 'channels' attribute of an EMSurvey class must be set before the "
-                "'add_component_data' method can be used."
+                "'add_components_data' method can be used."
             )
 
         if not isinstance(data, dict):
@@ -98,55 +98,63 @@ class BaseEMSurvey(Curve):
                 "Input data must be nested dictionaries of components and channels."
             )
 
-        for name, component_block in data.items():
-            if name in [pg.name for pg in self.property_groups]:
-                raise ValueError(
-                    f"PropertyGroup named '{name}' already exists on the survey entity. "
-                    f"Consider using the 'edit_metadata' method with "
-                    "'Property groups' argument instead."
-                )
-
-            if not isinstance(component_block, (dict, list)) or (
-                isinstance(component_block, list)
-                and not all(isinstance(entry, FloatData) for entry in component_block)
-            ):
-                raise TypeError(
-                    f"List of values provided for component '{name}' must be a list "
-                    f"of {FloatData} or {dict} of attributes. "
-                    f"Values of type {type(component_block)} provided."
-                )
-
-            if len(component_block) != len(self.channels):
-                raise ValueError(
-                    f"The number of channel values provided must be of len({len(self.channels)}) "
-                    "corresponding to the 'channels' attribute. "
-                    f"Value of {type(component_block)} and len({len(component_block)}) provided."
-                )
-
-            if isinstance(component_block, list):
-                assert np.all([entry.parent == self for entry in component_block]), (
-                    f"The list of values provided for the component '{name}' "
-                    f"must contain {FloatData} belonging to the target survey."
-                )
-
-                data_list = component_block
-
-            else:
-                data_list = []
-                for channel, attr in component_block.items():
-                    if not isinstance(attr, dict):
-                        raise TypeError(
-                            f"Given value to data {channel} should of type {dict} or attributes. "
-                            f"Type {type(attr)} given instead."
-                        )
-                    data_list.append(self.add_data({channel: attr}))
-
-            prop_group = self.add_data_to_group(data_list, name)
-            self.edit_metadata({"Property groups": prop_group})
+        for name, data_block in data.items():
+            prop_group = self.add_validate_component_data(name, data_block)
             prop_groups.append(prop_group)
         self.workspace.finalize()
 
         return prop_groups
+
+    def add_validate_component_data(self, name: str, data_block: list | dict):
+        """
+        Append a property group to the entity and its metadata after validations.
+        """
+        if name in [pg.name for pg in self.property_groups]:
+            raise ValueError(
+                f"PropertyGroup named '{name}' already exists on the survey entity. "
+                f"Consider using the 'edit_metadata' method with "
+                "'Property groups' argument instead."
+            )
+
+        if not isinstance(data_block, (dict, list)) or (
+            isinstance(data_block, list)
+            and not all(isinstance(entry, FloatData) for entry in data_block)
+        ):
+            raise TypeError(
+                f"List of values provided for component '{name}' must be a list "
+                f"of {FloatData} or {dict} of attributes. "
+                f"Values of type {type(data_block)} provided."
+            )
+
+        if len(data_block) != len(self.channels):
+            raise ValueError(
+                f"The number of channel values provided must be of len({len(self.channels)}) "
+                "corresponding to the 'channels' attribute. "
+                f"Value of {type(data_block)} and len({len(data_block)}) provided."
+            )
+
+        if isinstance(data_block, list):
+            assert np.all([entry.parent == self for entry in data_block]), (
+                f"The list of values provided for the component '{name}' "
+                f"must contain {FloatData} belonging to the target survey."
+            )
+
+            data_list = data_block
+
+        else:
+            data_list = []
+            for channel, attr in data_block.items():
+                if not isinstance(attr, dict):
+                    raise TypeError(
+                        f"Given value to data {channel} should of type {dict} or attributes. "
+                        f"Type {type(attr)} given instead."
+                    )
+                data_list.append(self.add_data({channel: attr}))
+
+        prop_group = self.add_data_to_group(data_list, name)
+        self.edit_metadata({"Property groups": prop_group})
+
+        return prop_group
 
     @property
     def channels(self):

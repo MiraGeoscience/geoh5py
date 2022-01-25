@@ -223,20 +223,20 @@ def test_survey_tem_data(tmp_path):
     )
 
     with pytest.raises(ValueError) as error:
-        receivers.add_component_data({"time_data": data[1:]})
+        receivers.add_components_data({"time_data": data[1:]})
 
     assert "The number of channel values provided" in str(
         error
     ), "Failed to check length of input"
 
-    prop_group = receivers.add_component_data({"time_data": data})[0]
+    prop_group = receivers.add_components_data({"time_data": data})[0]
 
     assert (
         prop_group.name in receivers.metadata["EM Dataset"]["Property groups"]
-    ), "Failed to add the property group to metadata from 'add_component_data' method."
+    ), "Failed to add the property group to metadata from 'add_components_data' method."
 
     with pytest.raises(ValueError) as error:
-        receivers.add_component_data({"time_data": data})
+        receivers.add_components_data({"time_data": data})
 
     assert (
         "PropertyGroup named 'time_data' already exists on the survey entity."
@@ -268,11 +268,13 @@ def test_survey_tem_data(tmp_path):
     ), "Failed to detect property group type error."
 
     with pytest.raises(TypeError) as error:
-        receivers.add_component_data({"new_times": [["abc"]] * len(receivers.channels)})
+        receivers.add_components_data(
+            {"new_times": [["abc"]] * len(receivers.channels)}
+        )
 
     assert (
         "List of values provided for component 'new_times' must be a list of "
-    ) in str(error), "Failed to protect against TypeError on add_component_data"
+    ) in str(error), "Failed to protect against TypeError on add_components_data"
 
     with pytest.raises(ValueError) as error:
         receivers.unit = "hello world"

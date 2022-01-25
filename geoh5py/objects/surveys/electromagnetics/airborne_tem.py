@@ -36,13 +36,6 @@ class BaseAirborneTEM(BaseEMSurvey):
             "Survey type": "Airborne TEM",
             "Transmitters": None,
             "Unit": "Milliseconds (ms)",
-            "Yaw value": 0,
-            "Pitch value": 0,
-            "Roll value": 0,
-            "Inline offset value": 0,
-            "Crossline offset value": 0,
-            "Vertical offset value": 0,
-            "Loop radius": 1,
         }
     }
     __MAP = {
