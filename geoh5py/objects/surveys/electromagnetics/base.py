@@ -209,9 +209,7 @@ class BaseEMSurvey(Curve):
 
     @property
     def default_units(self) -> list[str] | None:
-        """Accepted time units. Must be one of "Seconds (s)",
-        "Milliseconds (ms)", "Microseconds (us)" or "Nanoseconds (ns)"
-        """
+        """Accepted sampling units."""
         return self.__UNITS
 
     def edit_metadata(self, entries: dict[str, Any]):
@@ -222,14 +220,7 @@ class BaseEMSurvey(Curve):
         :param entries: Metadata key value pairs.
         """
         for key, value in entries.items():
-            if key in ["Discretization", "Timing mark", "Waveform"]:
-                if "Waveform" not in self.metadata["EM Dataset"]:
-                    self.metadata["EM Dataset"]["Waveform"] = {}
-
-                wave_key = key.replace("Waveform", "Discretization")
-                self.metadata["EM Dataset"]["Waveform"][wave_key] = value
-
-            elif key == "Property groups":
+            if key == "Property groups":
                 self._edit_validate_property_groups(value)
 
             elif value is None:

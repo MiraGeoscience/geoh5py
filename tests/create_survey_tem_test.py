@@ -95,7 +95,7 @@ def test_create_survey_tem(tmp_path):
         with pytest.raises(TypeError) as error:
             setattr(receivers, key, "abc")
 
-        assert f"Input '{key}' must be one of type float or uuid.UUID" in str(
+        assert f"Input '{key}' must be one of type float, uuid.UUID or None" in str(
             error
         ), f"Missed raising error on type of '{key}'."
 
@@ -305,7 +305,7 @@ def test_survey_tem_data(tmp_path):
     with pytest.raises(ValueError) as error:
         receivers.timing_mark = "abc"
 
-    assert "Input timing_mark must be a float." in str(
+    assert "Input timing_mark must be a float or None." in str(
         error
     ), "Missed raising error on type of 'timing_mark'."
     receivers.timing_mark = 10 ** -3.1
@@ -316,6 +316,12 @@ def test_survey_tem_data(tmp_path):
     assert (
         receivers.metadata == transmitters.metadata
     ), "Error synchronizing the transmitters and receivers metadata."
+
+    receivers.timing_mark = None
+
+    assert (
+        "Timing mark" not in receivers.metadata["EM Dataset"]["Waveform"]
+    ), "Error removing the timing mark."
 
     workspace.finalize()
     new_workspace = Workspace(path)

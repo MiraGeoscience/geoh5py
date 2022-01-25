@@ -103,7 +103,7 @@ class BaseAirborneTEM(BaseEMSurvey):
         return self.fetch_metadata("crossline_offset")
 
     @crossline_offset.setter
-    def crossline_offset(self, value: float | uuid.UUID):
+    def crossline_offset(self, value: float | uuid.UUID | None):
         self.set_metadata("crossline_offset", value)
 
     @property
@@ -123,8 +123,8 @@ class BaseAirborneTEM(BaseEMSurvey):
         return self.metadata["EM Dataset"].get("Loop radius", None)
 
     @loop_radius.setter
-    def loop_radius(self, value: float):
-        if not isinstance(value, float):
+    def loop_radius(self, value: float | None):
+        if not isinstance(value, (float, type(None))):
             raise TypeError("Input 'loop_radius' must be of type 'float'")
         self.edit_metadata({"Loop radius": value})
 
@@ -136,7 +136,7 @@ class BaseAirborneTEM(BaseEMSurvey):
         return self.fetch_metadata("pitch")
 
     @pitch.setter
-    def pitch(self, value: float | uuid.UUID):
+    def pitch(self, value: float | uuid.UUID | None):
         self.set_metadata("pitch", value)
 
     @property
@@ -145,8 +145,8 @@ class BaseAirborneTEM(BaseEMSurvey):
         return self.metadata["EM Dataset"].get("Angles relative to bearing", None)
 
     @relative_to_bearing.setter
-    def relative_to_bearing(self, value: bool):
-        if not isinstance(value, bool):
+    def relative_to_bearing(self, value: bool | None):
+        if not isinstance(value, (bool, type(None))):
             raise TypeError("Input 'relative_to_bearing' must be one of type 'bool'")
         self.edit_metadata({"Angles relative to bearing": value})
 
@@ -158,7 +158,7 @@ class BaseAirborneTEM(BaseEMSurvey):
         return self.fetch_metadata("roll")
 
     @roll.setter
-    def roll(self, value: float | uuid.UUID):
+    def roll(self, value: float | uuid.UUID | None):
         self.set_metadata("roll", value)
 
     def set_metadata(self, key, value):
@@ -167,8 +167,12 @@ class BaseAirborneTEM(BaseEMSurvey):
             self.edit_metadata({field + " value": value, field + " property": None})
         elif isinstance(value, uuid.UUID):
             self.edit_metadata({field + " value": None, field + " property": value})
+        elif value is None:
+            self.edit_metadata({field + " value": None, field + " property": None})
         else:
-            raise TypeError(f"Input '{key}' must be one of type float or uuid.UUID")
+            raise TypeError(
+                f"Input '{key}' must be one of type float, uuid.UUID or None"
+            )
 
     @property
     def timing_mark(self) -> float | None:
@@ -187,11 +191,21 @@ class BaseAirborneTEM(BaseEMSurvey):
         return None
 
     @timing_mark.setter
-    def timing_mark(self, timing_mark: float):
-        if not isinstance(timing_mark, float):
-            raise ValueError("Input timing_mark must be a float.")
+    def timing_mark(self, timing_mark: float | None):
+        if not isinstance(timing_mark, (float, type(None))):
+            raise ValueError("Input timing_mark must be a float or None.")
 
-        self.edit_metadata({"Timing mark": timing_mark})
+        if self.waveform is not None:
+            value = self.metadata["EM Dataset"]["Waveform"]
+        else:
+            value = {}
+
+        if timing_mark is None and "Timing mark" in value:
+            del value["Timing mark"]
+        else:
+            value["Timing mark"] = timing_mark
+
+        self.edit_metadata({"Waveform": value})
 
     @property
     def vertical_offset(self) -> float | uuid.UUID | None:
@@ -201,7 +215,7 @@ class BaseAirborneTEM(BaseEMSurvey):
         return self.fetch_metadata("vertical_offset")
 
     @vertical_offset.setter
-    def vertical_offset(self, value: float | uuid.UUID):
+    def vertical_offset(self, value: float | uuid.UUID | None):
         self.set_metadata("vertical_offset", value)
 
     @property
@@ -232,21 +246,28 @@ class BaseAirborneTEM(BaseEMSurvey):
 
     @waveform.setter
     def waveform(self, waveform: np.ndarray | None):
+        if not isinstance(waveform, (np.ndarray, type(None))):
+            raise TypeError("Input waveform must be a numpy.ndarray or None.")
 
-        if waveform is None and "Waveform" in self.metadata["EM Dataset"]:
-            del self.metadata["EM Dataset"]["Waveform"]
-
-        elif isinstance(waveform, np.ndarray):
+        if isinstance(waveform, np.ndarray):
             if waveform.ndim != 2 or waveform.shape[1] != 2:
                 raise ValueError(
                     "Input waveform must be a numpy.ndarray of shape (*, 2)."
                 )
 
-            self.edit_metadata(
-                {"Waveform": [{"current": row[1], "time": row[0]} for row in waveform]},
-            )
+            if self.timing_mark is not None:
+                value = self.metadata["EM Dataset"]["Waveform"]
+            else:
+                value = {}
+
+            value["Discretization"] = [
+                {"current": row[1], "time": row[0]} for row in waveform
+            ]
+
         else:
-            raise TypeError("Input waveform must be a numpy.ndarray or None.")
+            value = waveform
+
+        self.edit_metadata({"Waveform": value})
 
     @property
     def yaw(self) -> float | uuid.UUID | None:
