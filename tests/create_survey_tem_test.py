@@ -84,11 +84,18 @@ def test_create_survey_tem(tmp_path):
     angles = receivers.add_data(
         {"angles": {"values": np.random.randn(receivers.n_vertices)}}
     )
-    for key in ["pitch", "roll", "yaw", "inline_offset"]:
+    for key in [
+        "pitch",
+        "roll",
+        "yaw",
+        "inline_offset",
+        "crossline_offset",
+        "vertical_offset",
+    ]:
         with pytest.raises(TypeError) as error:
             setattr(receivers, key, "abc")
 
-        assert f"Input '{key}' must be one of type float or uuid.UUID" in str(
+        assert f"Input '{key}' must be one of type float, uuid.UUID or None" in str(
             error
         ), f"Missed raising error on type of '{key}'."
 
@@ -216,20 +223,20 @@ def test_survey_tem_data(tmp_path):
     )
 
     with pytest.raises(ValueError) as error:
-        receivers.add_component_data({"time_data": data[1:]})
+        receivers.add_components_data({"time_data": data[1:]})
 
     assert "The number of channel values provided" in str(
         error
     ), "Failed to check length of input"
 
-    prop_group = receivers.add_component_data({"time_data": data})[0]
+    prop_group = receivers.add_components_data({"time_data": data})[0]
 
     assert (
         prop_group.name in receivers.metadata["EM Dataset"]["Property groups"]
-    ), "Failed to add the property group to metadata from 'add_component_data' method."
+    ), "Failed to add the property group to metadata from 'add_components_data' method."
 
     with pytest.raises(ValueError) as error:
-        receivers.add_component_data({"time_data": data})
+        receivers.add_components_data({"time_data": data})
 
     assert (
         "PropertyGroup named 'time_data' already exists on the survey entity."
@@ -261,11 +268,13 @@ def test_survey_tem_data(tmp_path):
     ), "Failed to detect property group type error."
 
     with pytest.raises(TypeError) as error:
-        receivers.add_component_data({"new_times": [["abc"]] * len(receivers.channels)})
+        receivers.add_components_data(
+            {"new_times": [["abc"]] * len(receivers.channels)}
+        )
 
     assert (
         "List of values provided for component 'new_times' must be a list of "
-    ) in str(error), "Failed to protect against TypeError on add_component_data"
+    ) in str(error), "Failed to protect against TypeError on add_components_data"
 
     with pytest.raises(ValueError) as error:
         receivers.unit = "hello world"
@@ -296,7 +305,7 @@ def test_survey_tem_data(tmp_path):
     with pytest.raises(ValueError) as error:
         receivers.timing_mark = "abc"
 
-    assert "Input timing_mark must be a float." in str(
+    assert "Input timing_mark must be a float or None." in str(
         error
     ), "Missed raising error on type of 'timing_mark'."
     receivers.timing_mark = 10 ** -3.1
@@ -307,6 +316,12 @@ def test_survey_tem_data(tmp_path):
     assert (
         receivers.metadata == transmitters.metadata
     ), "Error synchronizing the transmitters and receivers metadata."
+
+    receivers.timing_mark = None
+
+    assert (
+        "Timing mark" not in receivers.metadata["EM Dataset"]["Waveform"]
+    ), "Error removing the timing mark."
 
     workspace.finalize()
     new_workspace = Workspace(path)

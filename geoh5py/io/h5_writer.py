@@ -120,7 +120,7 @@ class H5Writer:
         :param parent: Remove entity from parent.
         """
         with fetch_h5_handle(file) as h5file:
-            uid_str = H5Writer.uuid_str(uid)
+            uid_str = H5Writer.as_str_if_uuid(uid)
             parent_handle = H5Writer.fetch_handle(h5file, parent)
             if parent_handle is not None and uid_str in parent_handle[ref_type].keys():
                 del parent_handle[ref_type][uid_str]
@@ -144,7 +144,7 @@ class H5Writer:
         with fetch_h5_handle(file) as h5file:
             base = list(h5file.keys())[0]
             base_type_handle = h5file[base][ref_type]
-            uid_str = H5Writer.uuid_str(uid)
+            uid_str = H5Writer.as_str_if_uuid(uid)
 
             if ref_type == "Types":
                 for e_type in ["Data types", "Group types", "Object types"]:
@@ -205,12 +205,12 @@ class H5Writer:
                     break
 
             # Check if already in the project
-            if cls.uuid_str(uid) in base_handle.keys():
+            if cls.as_str_if_uuid(uid) in base_handle.keys():
 
                 if return_parent:
                     return base_handle
 
-                return base_handle[cls.uuid_str(uid)]
+                return base_handle[cls.as_str_if_uuid(uid)]
 
         return None
 
@@ -307,7 +307,7 @@ class H5Writer:
         return uuid.UUID(value)
 
     @staticmethod
-    def uuid_str(value: uuid.UUID | Any) -> str | Any:
+    def as_str_if_uuid(value: uuid.UUID | Any) -> str | Any:
         """Convert :obj:`uuid.UUID` to string used in geoh5."""
         if isinstance(value, uuid.UUID):
             return "{" + str(value) + "}"
@@ -336,7 +336,7 @@ class H5Writer:
                 except AttributeError:
                     continue
 
-                value = cls.uuid_str(value)
+                value = cls.as_str_if_uuid(value)
 
                 if key == "PropertyGroups" or (key == "Metadata" and value is None):
                     continue
@@ -534,9 +534,9 @@ class H5Writer:
                 for key, val in values.items():
                     if isinstance(val, dict):
                         for sub_key, sub_val in val.items():
-                            values[key][sub_key] = cls.uuid_str(sub_val)
+                            values[key][sub_key] = cls.as_str_if_uuid(sub_val)
                     else:
-                        values[key] = cls.uuid_str(val)
+                        values[key] = cls.as_str_if_uuid(val)
 
                 entity_handle.create_dataset(
                     cls.key_map[attribute],
@@ -601,7 +601,7 @@ class H5Writer:
                 h5file[base].create_group(entity_type)
 
             # Check if already in the project
-            if cls.uuid_str(uid) in h5file[base][entity_type].keys():
+            if cls.as_str_if_uuid(uid) in h5file[base][entity_type].keys():
 
                 if any([entity.modified_attributes]):
 
@@ -618,9 +618,11 @@ class H5Writer:
 
                 entity.existing_h5_entity = True
 
-                return h5file[base][entity_type][cls.uuid_str(uid)]
+                return h5file[base][entity_type][cls.as_str_if_uuid(uid)]
 
-            entity_handle = h5file[base][entity_type].create_group(cls.uuid_str(uid))
+            entity_handle = h5file[base][entity_type].create_group(
+                cls.as_str_if_uuid(uid)
+            )
 
             if entity_type == "Groups":
                 entity_handle.create_group("Data")
@@ -675,7 +677,7 @@ class H5Writer:
             if entity_type_str not in h5file[base]["Types"].keys():
                 h5file[base]["Types"].create_group(entity_type_str)
 
-            if cls.uuid_str(uid) in h5file[base]["Types"][entity_type_str].keys():
+            if cls.as_str_if_uuid(uid) in h5file[base]["Types"][entity_type_str].keys():
 
                 if any([entity_type.modified_attributes]):
                     cls.update_attributes(h5file, entity_type)
@@ -683,10 +685,10 @@ class H5Writer:
 
                 entity_type.existing_h5_entity = True
 
-                return h5file[base]["Types"][entity_type_str][cls.uuid_str(uid)]
+                return h5file[base]["Types"][entity_type_str][cls.as_str_if_uuid(uid)]
 
             new_type = h5file[base]["Types"][entity_type_str].create_group(
-                cls.uuid_str(uid)
+                cls.as_str_if_uuid(uid)
             )
             H5Writer.write_attributes(h5file, entity_type)
 
@@ -784,7 +786,7 @@ class H5Writer:
                 entity_handle.create_group("PropertyGroups")
                 for p_g in entity.property_groups:
 
-                    uid = cls.uuid_str(p_g.uid)
+                    uid = cls.as_str_if_uuid(p_g.uid)
                     if uid in entity_handle["PropertyGroups"].keys():
                         del entity_handle["PropertyGroups"][uid]
 
@@ -803,10 +805,12 @@ class H5Writer:
                             value = value.name.capitalize()
 
                         elif key == "Properties":
-                            value = np.asarray([cls.uuid_str(val) for val in value])
+                            value = np.asarray(
+                                [cls.as_str_if_uuid(val) for val in value]
+                            )
 
                         elif key == "ID":
-                            value = cls.uuid_str(value)
+                            value = cls.as_str_if_uuid(value)
 
                         group_handle.attrs.create(
                             key, value, dtype=h5py.special_dtype(vlen=str)
@@ -850,8 +854,8 @@ class H5Writer:
                 parent_handle.create_group(entity_type)
 
             # Check if child uuid not already in h5
-            if cls.uuid_str(uid) not in parent_handle[entity_type].keys():
-                parent_handle[entity_type][cls.uuid_str(uid)] = entity_handle
+            if cls.as_str_if_uuid(uid) not in parent_handle[entity_type].keys():
+                parent_handle[entity_type][cls.as_str_if_uuid(uid)] = entity_handle
 
             if recursively:
                 H5Writer.write_to_parent(h5file, entity.parent, recursively=True)
