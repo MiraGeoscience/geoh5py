@@ -45,6 +45,14 @@ class BaseAirborneTEM(BaseEMSurvey):
             "Loop radius": 1,
         }
     }
+    __MAP = {
+        "crossline_offset": "Crossline offset",
+        "inline_offset": "Inline offset",
+        "pitch": "Pitch",
+        "roll": "Roll",
+        "vertical_offset": "Vertical offset",
+        "yaw": "Yaw",
+    }
     __UNITS = [
         "Seconds (s)",
         "Milliseconds (ms)",
@@ -83,57 +91,38 @@ class BaseAirborneTEM(BaseEMSurvey):
         """
         return self.__UNITS
 
+    def fetch_metadata(self, key: str) -> float | uuid.UUID | None:
+        """
+        Fetch entry from the metadata.
+        """
+        field = self.__MAP[key]
+        if field + " value" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"][field + " value"]
+        if field + " property" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"][field + " property"]
+        return None
+
     @property
     def crossline_offset(self) -> float | uuid.UUID | None:
         """
         Numeric value or property UUID for the crossline offset between receiver and transmitter.
         """
-        if "Crossline offset value" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Crossline offset value"]
-        if "Crossline offset property" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Crossline offset property"]
-        return None
+        return self.fetch_metadata("crossline_offset")
 
     @crossline_offset.setter
     def crossline_offset(self, value: float | uuid.UUID):
-        if isinstance(value, float):
-            self.edit_metadata(
-                {"Crossline offset value": value, "Crossline offset property": None}
-            )
-        elif isinstance(value, uuid.UUID):
-            self.edit_metadata(
-                {"Crossline offset value": None, "Crossline offset property": value}
-            )
-        else:
-            raise TypeError(
-                "Input 'crossline_offset' must be one of type float or uuid.UUID"
-            )
+        self.set_metadata("crossline_offset", value)
 
     @property
     def inline_offset(self) -> float | uuid.UUID | None:
         """
         Numeric value or property UUID for the inline offset between receiver and transmitter.
         """
-        if "Inline offset value" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Inline offset value"]
-        if "Inline offset property" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Inline offset property"]
-        return None
+        return self.fetch_metadata("inline_offset")
 
     @inline_offset.setter
     def inline_offset(self, value: float | uuid.UUID):
-        if isinstance(value, float):
-            self.edit_metadata(
-                {"Inline offset value": value, "Inline offset property": None}
-            )
-        elif isinstance(value, uuid.UUID):
-            self.edit_metadata(
-                {"Inline offset value": None, "Inline offset property": value}
-            )
-        else:
-            raise TypeError(
-                "Input 'inline_offset' must be one of type float or uuid.UUID"
-            )
+        self.set_metadata("inline_offset", value)
 
     @property
     def loop_radius(self) -> float | None:
@@ -149,22 +138,13 @@ class BaseAirborneTEM(BaseEMSurvey):
     @property
     def pitch(self) -> float | uuid.UUID | None:
         """
-        Numeric value or property UUID for the pitch angle(s) of the transmitter coil.
+        Numeric value or property UUID for the pitch angle of the transmitter loop.
         """
-        if "Pitch value" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Pitch value"]
-        if "Pitch property" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Pitch property"]
-        return None
+        return self.fetch_metadata("pitch")
 
     @pitch.setter
     def pitch(self, value: float | uuid.UUID):
-        if isinstance(value, float):
-            self.edit_metadata({"Pitch value": value, "Pitch property": None})
-        elif isinstance(value, uuid.UUID):
-            self.edit_metadata({"Pitch value": None, "Pitch property": value})
-        else:
-            raise TypeError("Input 'pitch' must be one of type float or uuid.UUID")
+        self.set_metadata("pitch", value)
 
     @property
     def relative_to_bearing(self) -> bool | None:
@@ -180,22 +160,22 @@ class BaseAirborneTEM(BaseEMSurvey):
     @property
     def roll(self) -> float | uuid.UUID | None:
         """
-        Numeric value or property UUID for the roll angle(s) of the transmitter coil.
+        Numeric value or property UUID for the roll angle of the transmitter loop.
         """
-        if "Roll value" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Roll value"]
-        if "Roll property" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Roll property"]
-        return None
+        return self.fetch_metadata("roll")
 
     @roll.setter
     def roll(self, value: float | uuid.UUID):
+        self.set_metadata("roll", value)
+
+    def set_metadata(self, key, value):
+        field = self.__MAP[key]
         if isinstance(value, float):
-            self.edit_metadata({"Roll value": value, "Roll property": None})
+            self.edit_metadata({field + " value": value, field + " property": None})
         elif isinstance(value, uuid.UUID):
-            self.edit_metadata({"Roll value": None, "Roll property": value})
+            self.edit_metadata({field + " value": None, field + " property": value})
         else:
-            raise TypeError("Input 'roll' must be one of type float or uuid.UUID")
+            raise TypeError(f"Input '{key}' must be one of type float or uuid.UUID")
 
     @property
     def timing_mark(self) -> float | None:
@@ -225,26 +205,11 @@ class BaseAirborneTEM(BaseEMSurvey):
         """
         Numeric value or property UUID for the vertical offset between receiver and transmitter.
         """
-        if "Vertical offset value" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Vertical offset value"]
-        if "Vertical offset property" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Vertical offset property"]
-        return None
+        return self.fetch_metadata("vertical_offset")
 
     @vertical_offset.setter
     def vertical_offset(self, value: float | uuid.UUID):
-        if isinstance(value, float):
-            self.edit_metadata(
-                {"Vertical offset value": value, "Vertical offset property": None}
-            )
-        elif isinstance(value, uuid.UUID):
-            self.edit_metadata(
-                {"Vertical offset value": None, "Vertical offset property": value}
-            )
-        else:
-            raise TypeError(
-                "Input 'vertical_offset' must be one of type float or uuid.UUID"
-            )
+        self.set_metadata("vertical_offset", value)
 
     @property
     def waveform(self) -> np.ndarray | None:
@@ -293,22 +258,13 @@ class BaseAirborneTEM(BaseEMSurvey):
     @property
     def yaw(self) -> float | uuid.UUID | None:
         """
-        Numeric value or property UUID for the yaw angle(s) of the transmitter coil.
+        Numeric value or property UUID for the yaw angle of the transmitter loop.
         """
-        if "Yaw value" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Yaw value"]
-        if "Yaw property" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Yaw property"]
-        return None
+        return self.fetch_metadata("yaw")
 
     @yaw.setter
     def yaw(self, value: float | uuid.UUID):
-        if isinstance(value, float):
-            self.edit_metadata({"Yaw value": value, "Yaw property": None})
-        elif isinstance(value, uuid.UUID):
-            self.edit_metadata({"Yaw value": None, "Yaw property": value})
-        else:
-            raise TypeError("Input 'yaw' must be one of type float or uuid.UUID")
+        self.set_metadata("yaw", value)
 
 
 class AirborneTEMReceivers(BaseAirborneTEM):
