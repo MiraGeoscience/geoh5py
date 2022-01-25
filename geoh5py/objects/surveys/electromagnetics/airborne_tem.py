@@ -85,7 +85,9 @@ class BaseAirborneTEM(BaseEMSurvey):
 
     @property
     def crossline_offset(self) -> float | uuid.UUID | None:
-        """Crossline offset between receiver and transmitter."""
+        """
+        Numeric value or property UUID for the crossline offset between receiver and transmitter.
+        """
         if "Crossline offset value" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Crossline offset value"]
         if "Crossline offset property" in self.metadata["EM Dataset"]:
@@ -109,7 +111,9 @@ class BaseAirborneTEM(BaseEMSurvey):
 
     @property
     def inline_offset(self) -> float | uuid.UUID | None:
-        """Inline offset between receiver and transmitter."""
+        """
+        Numeric value or property UUID for the inline offset between receiver and transmitter.
+        """
         if "Inline offset value" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Inline offset value"]
         if "Inline offset property" in self.metadata["EM Dataset"]:
@@ -144,7 +148,9 @@ class BaseAirborneTEM(BaseEMSurvey):
 
     @property
     def pitch(self) -> float | uuid.UUID | None:
-        """Numeric value or property UUID for the pitch angle(s)  of the transmitter coil."""
+        """
+        Numeric value or property UUID for the pitch angle(s) of the transmitter coil.
+        """
         if "Pitch value" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Pitch value"]
         if "Pitch property" in self.metadata["EM Dataset"]:
@@ -173,7 +179,9 @@ class BaseAirborneTEM(BaseEMSurvey):
 
     @property
     def roll(self) -> float | uuid.UUID | None:
-        """Roll angle(s) of the transmitter coil."""
+        """
+        Numeric value or property UUID for the roll angle(s) of the transmitter coil.
+        """
         if "Roll value" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Roll value"]
         if "Roll property" in self.metadata["EM Dataset"]:
@@ -214,7 +222,9 @@ class BaseAirborneTEM(BaseEMSurvey):
 
     @property
     def vertical_offset(self) -> float | uuid.UUID | None:
-        """Vertical offset between receiver and transmitter."""
+        """
+        Numeric value or property UUID for the vertical offset between receiver and transmitter.
+        """
         if "Vertical offset value" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Vertical offset value"]
         if "Vertical offset property" in self.metadata["EM Dataset"]:
@@ -283,7 +293,7 @@ class BaseAirborneTEM(BaseEMSurvey):
     @property
     def yaw(self) -> float | uuid.UUID | None:
         """
-        Yaw angle(s) of the transmitter coil.
+        Numeric value or property UUID for the yaw angle(s) of the transmitter coil.
         """
         if "Yaw value" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Yaw value"]
