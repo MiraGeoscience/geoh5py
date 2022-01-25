@@ -39,6 +39,9 @@ class BaseAirborneTEM(BaseEMSurvey):
             "Yaw value": 0,
             "Pitch value": 0,
             "Roll value": 0,
+            "Inline offset value": 0,
+            "Crossline offset value": 0,
+            "Vertical offset value": 0,
             "Loop radius": 1,
         }
     }
@@ -79,6 +82,30 @@ class BaseAirborneTEM(BaseEMSurvey):
         "Milliseconds (ms)", "Microseconds (us)" or "Nanoseconds (ns)"
         """
         return self.__UNITS
+
+    @property
+    def crossline_offset(self):
+        """Crossline offset between receiver and transmitter."""
+        if "Crossline offset value" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"]["Crossline offset value"]
+        if "Crossline offset property" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"]["Crossline offset property"]
+        return None
+
+    @crossline_offset.setter
+    def crossline_offset(self, value: float | uuid.UUID):
+        if isinstance(value, float):
+            self.edit_metadata(
+                {"Crossline offset value": value, "Crossline offset property": None}
+            )
+        elif isinstance(value, uuid.UUID):
+            self.edit_metadata(
+                {"Crossline offset value": None, "Crossline offset property": value}
+            )
+        else:
+            raise TypeError(
+                "Input 'crossline_offset' must be one of type float or uuid.UUID"
+            )
 
     @property
     def inline_offset(self):
@@ -184,6 +211,30 @@ class BaseAirborneTEM(BaseEMSurvey):
             raise ValueError("Input timing_mark must be a float.")
 
         self.edit_metadata({"Timing mark": timing_mark})
+
+    @property
+    def vertical_offset(self):
+        """Vertical offset between receiver and transmitter."""
+        if "Vertical offset value" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"]["Vertical offset value"]
+        if "Vertical offset property" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"]["Vertical offset property"]
+        return None
+
+    @vertical_offset.setter
+    def vertical_offset(self, value: float | uuid.UUID):
+        if isinstance(value, float):
+            self.edit_metadata(
+                {"Vertical offset value": value, "Vertical offset property": None}
+            )
+        elif isinstance(value, uuid.UUID):
+            self.edit_metadata(
+                {"Vertical offset value": None, "Vertical offset property": value}
+            )
+        else:
+            raise TypeError(
+                "Input 'vertical_offset' must be one of type float or uuid.UUID"
+            )
 
     @property
     def waveform(self) -> np.ndarray | None:
