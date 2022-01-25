@@ -84,7 +84,7 @@ class BaseAirborneTEM(BaseEMSurvey):
         return self.__UNITS
 
     @property
-    def crossline_offset(self):
+    def crossline_offset(self) -> float | uuid.UUID | None:
         """Crossline offset between receiver and transmitter."""
         if "Crossline offset value" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Crossline offset value"]
@@ -108,7 +108,7 @@ class BaseAirborneTEM(BaseEMSurvey):
             )
 
     @property
-    def inline_offset(self):
+    def inline_offset(self) -> float | uuid.UUID | None:
         """Inline offset between receiver and transmitter."""
         if "Inline offset value" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Inline offset value"]
@@ -132,7 +132,7 @@ class BaseAirborneTEM(BaseEMSurvey):
             )
 
     @property
-    def loop_radius(self):
+    def loop_radius(self) -> float | None:
         """Transmitter loop radius"""
         return self.metadata["EM Dataset"].get("Loop radius", None)
 
@@ -161,7 +161,7 @@ class BaseAirborneTEM(BaseEMSurvey):
             raise TypeError("Input 'pitch' must be one of type float or uuid.UUID")
 
     @property
-    def relative_to_bearing(self):
+    def relative_to_bearing(self) -> bool | None:
         """Data relative_to_bearing"""
         return self.metadata["EM Dataset"].get("Angles relative to bearing", None)
 
@@ -213,7 +213,7 @@ class BaseAirborneTEM(BaseEMSurvey):
         self.edit_metadata({"Timing mark": timing_mark})
 
     @property
-    def vertical_offset(self):
+    def vertical_offset(self) -> float | uuid.UUID | None:
         """Vertical offset between receiver and transmitter."""
         if "Vertical offset value" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"]["Vertical offset value"]
