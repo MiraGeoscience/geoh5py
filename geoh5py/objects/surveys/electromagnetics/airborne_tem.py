@@ -161,7 +161,7 @@ class BaseAirborneTEM(BaseEMSurvey):
     def roll(self, value: float | uuid.UUID | None):
         self.set_metadata("roll", value)
 
-    def set_metadata(self, key, value):
+    def set_metadata(self, key: str, value: float | uuid.UUID | None):
         field = self.__MAP[key]
         if isinstance(value, float):
             self.edit_metadata({field + " value": value, field + " property": None})
