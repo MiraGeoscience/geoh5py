@@ -179,6 +179,22 @@ class BaseEMSurvey(Curve):
         self.edit_metadata({"Channels": values})
 
     @property
+    def components(self) -> dict | None:
+        """
+        Rapid access to the list of data entities for all components.
+        """
+        if "Property groups" in self.metadata["EM Dataset"]:
+            components = {}
+            for name in self.metadata["EM Dataset"]["Property groups"]:
+                prop_group = self.find_or_create_property_group(name=name)
+                components[name] = [
+                    self.workspace.get_entity(uid)[0] for uid in prop_group.properties
+                ]
+            return components
+
+        return None
+
+    @property
     def default_input_types(self) -> list[str] | None:
         """Input types. Must be one of 'Rx', 'Tx', 'Tx and Rx'."""
         return self.__INPUT_TYPE

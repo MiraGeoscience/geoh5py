@@ -235,6 +235,10 @@ def test_survey_tem_data(tmp_path):
         prop_group.name in receivers.metadata["EM Dataset"]["Property groups"]
     ), "Failed to add the property group to metadata from 'add_components_data' method."
 
+    assert receivers.components == {
+        "time_data": data
+    }, "Property 'components' not accessing metadata."
+
     with pytest.raises(ValueError) as error:
         receivers.add_components_data({"time_data": data})
 
