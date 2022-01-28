@@ -342,7 +342,7 @@ class AirborneTEMReceivers(BaseAirborneTEM):
 
     @receivers.setter
     def receivers(self, value: BaseEMSurvey):
-        raise UserWarning(
+        raise AttributeError(
             "Attribute 'receivers' of the class 'AirborneTEMReceivers' must reference to self. "
             f"Re-assignment to {value} ignored."
         )
@@ -409,7 +409,7 @@ class AirborneTEMTransmitters(BaseAirborneTEM):
 
     @transmitters.setter
     def transmitters(self, value: BaseEMSurvey):
-        raise UserWarning(
+        raise AttributeError(
             "Attribute 'transmitters' of the class 'AirborneTEMTransmitters' "
             f"must reference to self. Re-assignment to {value} ignored."
         )
