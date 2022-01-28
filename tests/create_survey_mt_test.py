@@ -50,13 +50,13 @@ def test_create_survey_mt():
         # Create the survey from vertices
         mt_survey = MTReceivers.create(workspace, vertices=vertices, name=name)
 
-        with pytest.raises(UserWarning) as error:
+        with pytest.raises(AttributeError) as error:
             mt_survey.receivers = "123"
 
         assert (
             "Attribute 'receivers' of the class 'MTReceivers' must reference to self."
             in str(error)
-        ), "Missed raising UserWarning on setting 'receivers' on self."
+        ), "Missed raising AttributeError on setting 'receivers' on self."
 
         for key, value in {
             "input_type": "Rx only",

@@ -84,7 +84,7 @@ class MTReceivers(BaseEMSurvey):
 
     @receivers.setter
     def receivers(self, value: BaseEMSurvey):
-        raise UserWarning(
+        raise AttributeError(
             "Attribute 'receivers' of the class 'MTReceivers' must reference to self. "
             f"Re-assignment to {value} ignored."
         )
