@@ -3,44 +3,56 @@
 ANALYST Objects
 ===============
 
-*To be further documented*
+Entities with geometrical information (vertices, cells, origin, etc) and container of data.
+
 
 Points
 ------
 
 **UUID : {202C5DB1-A56D-4004-9CAD-BAAFD8899406}**
 
-*To be further documented*
+Object defined by 3D point locations (vertices).
 
-Object defined by vertices only - no cell data.
+Datasets
+^^^^^^^^
+:Vertices: 1D composite array
+
+    [*x* ``double``, *y* ``double``, *z* ``double``]
+
+
 
 Curve
 -----
 
 **UUID : {6A057FDC-B355-11E3-95BE-FD84A7FFCB88}**
 
-*To be further documented*
+Polyline object defined by a series of line segments (cells) connecting vertices.
+Data can be associated to either the vertices or cells.
 
-Each cell contains two vertex indices, representing a segment.
+Datasets
+^^^^^^^^
+:Cells: 2D array of ``int32``, shape(N, 2)
+    Array defining the connection (line segment) between pairs of vertices.
 
 Surface
 -------
 
 **UUID : {F26FEBA3-ADED-494B-B9E9-B2BBCBE298E1}**
 
-*To be further documented*
+Triangulated mesh object defined by cells (triangles) and vertices.
 
-Each cell contains three vertex indices, representing a triangle.
+Datasets
+^^^^^^^^
+:Cells: 2D array of ``int32``, shape(N, 3)
+    Array defining the connection between triplets of vertices, representing triangles.
 
 Block model
 -----------
 
 **UUID : {B020A277-90E2-4CD7-84D6-612EE3F25051}**
 
-*To be further documented*
-
-Each cell represents a point of a 3D rectilinear grid. For a 3D cell
-index (i,j,k) along axes U,V and Z of length nU, nV and nZ respectively,
+Rectilinear 3D grid of cells defined along three orthogonal axes (U,V and Z)
+of length nU, nV and nZ respectively. The 1D cell index corresponds to
 
 ::
 
@@ -74,10 +86,8 @@ Attributes
 
 **UUID : {48f5054a-1c5c-4ca4-9048-80f36dc60a06}**
 
-*To be further documented*
-
-Each cell represents a point in a regular 2D grid. For a 2D cell
-index (i,j) within axes U and V containing nU and nV cells respectively,
+Rectilinear 2D grid of cells defined along two orthogonal axes (U and V) of length nU and nV.
+The 1D cell index corresponds to
 
 ::
 
