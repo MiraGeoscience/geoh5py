@@ -54,21 +54,21 @@ def test_create_survey_tem(tmp_path):
         error
     ), "Missed raising error on 'transmitter' change."
 
-    with pytest.raises(UserWarning) as error:
+    with pytest.raises(AttributeError) as error:
         receivers.receivers = transmitters
 
     assert (
         "Attribute 'receivers' of the class 'AirborneTEMReceivers' must reference to self."
         in str(error)
-    ), "Missed raising UserWarning on setting 'receivers' on self."
+    ), "Missed raising AttributeError on setting 'receivers' on self."
 
-    with pytest.raises(UserWarning) as error:
+    with pytest.raises(AttributeError) as error:
         transmitters.transmitters = receivers
 
     assert (
         "Attribute 'transmitters' of the class 'AirborneTEMTransmitters' must reference to self."
         in str(error)
-    ), "Missed raising UserWarning on setting 'transmitters' on self."
+    ), "Missed raising AttributeError on setting 'transmitters' on self."
 
     receivers.transmitters = transmitters
 
