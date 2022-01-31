@@ -3,7 +3,7 @@
 ANALYST Objects
 ===============
 
-Entities with geometrical information (vertices, cells, origin, etc) and container of data.
+Entities with spatial information used to store data.
 
 
 Points
@@ -11,7 +11,7 @@ Points
 
 **UUID : {202C5DB1-A56D-4004-9CAD-BAAFD8899406}**
 
-Object defined by 3D point locations (vertices).
+Object defined by vertices with fixed coordinates in a 3-D (x, y and z) Cartesian system.
 
 Datasets
 ^^^^^^^^
@@ -20,18 +20,26 @@ Datasets
     [*x* ``double``, *y* ``double``, *z* ``double``]
 
 
+.. _geoh5_curve:
 
 Curve
 -----
 
 **UUID : {6A057FDC-B355-11E3-95BE-FD84A7FFCB88}**
 
-Polyline object defined by a series of line segments (cells) connecting vertices.
+Polyline object defined by a series of line segments (cells) that connect vertices.
 Data can be associated to either the vertices or cells.
+
+Attributes
+^^^^^^^^^^
+
+:Current line property ID: ``str``, *UUID*
+    Unique identifier of a reference data for naming of curve parts.
+
 
 Datasets
 ^^^^^^^^
-:Cells: 2D array of ``int32``, shape(N, 2)
+:Cells: Array of ``int32``, shape(N, 2)
     Array defining the connection (line segment) between pairs of vertices.
 
 Surface
@@ -43,16 +51,18 @@ Triangulated mesh object defined by cells (triangles) and vertices.
 
 Datasets
 ^^^^^^^^
-:Cells: 2D array of ``int32``, shape(N, 3)
+:Cells: Array of ``int32``, shape(N, 3)
     Array defining the connection between triplets of vertices, representing triangles.
+
 
 Block model
 -----------
 
 **UUID : {B020A277-90E2-4CD7-84D6-612EE3F25051}**
 
-Rectilinear 3D grid of cells defined along three orthogonal axes (U,V and Z)
-of length nU, nV and nZ respectively. The 1D cell index corresponds to
+Rectilinear grid of cells defined along three orthogonal axes (U,V and Z)
+of length nU, nV and nZ respectively. The conversion between the 3-D coordinate of a cell
+to its 1-D index can be calculated from
 
 ::
 
@@ -86,8 +96,8 @@ Attributes
 
 **UUID : {48f5054a-1c5c-4ca4-9048-80f36dc60a06}**
 
-Rectilinear 2D grid of cells defined along two orthogonal axes (U and V) of length nU and nV.
-The 1D cell index corresponds to
+Rectilinear grid of cells defined along two orthogonal axes (U and V) of length nU and nV.
+The conversion between the 2D coordinate of a cell to its 1D index can be calculated from
 
 ::
 
@@ -122,8 +132,7 @@ Drillhole
 
 **UUID : {7CAEBF0E-D16E-11E3-BC69-E4632694AA37}**
 
-*To be further documented*
-
+Object representing boreholes defined by a collar location and survey parameters.
 Vertices represent points along the drillhole path (support for data rather than the drillhole geometry itself) and must have a ``Depth`` property value.
 Cells contain two vertices and represent intervals along the drillhole path (and are a support for interval data as well).
 Cells may overlap with each other to accommodate the different sampling intervals of various data.
@@ -290,25 +299,87 @@ Airborne EM
 
 *To be further documented*
 
+.. _geoh5_atem_rx:
 
 Airborne TEM Rx
 ---------------
 
 **UUID : {19730589-fd28-4649-9de0-ad47249d9aba}**
 
-*Not yet geoh5py implemented*
+:ref:`Curve <geoh5_curve>` entity representing an array of time-domain electromagnetic receiver dipoles.
 
-*To be further documented*
+Attributes
+^^^^^^^^^^
 
+:Target position: composite type
+
+Datasets
+^^^^^^^^
+
+:Metadata: json formatted ``string``
+    Dictionary of survey parameters shared with the :ref:`Transmitters <geoh5_atem_tx>`. The following items are core parameters store under the
+    "EM Dataset" key.
+
+    - "Channels": ``list`` of ``double``
+        Time channels at which data are recorder.
+    - "Input type": ``string``
+        Type of survey from "Rx", "Tx" or "Tx and Rx"
+    - "Loop radius": ``double``
+        Transmitter loop radius.
+    - "Property groups": ``list`` of ``uuid``
+        Reference to property groups containing data at every channel.
+    - "Receivers": ``uuid``
+        Unique identifier referencing to itself.
+    - "Survey type": ``string``
+        Defaults to "Airborne TEM".
+    - "Transmitters": ``uuid``
+        Unique identifier referencing to the linked transmitters entity.
+    - "Unit": ``string``
+        Sampling units, must be one of "Seconds (s)", "Milliseconds (ms)",
+        "Microseconds (us)" or "Nanoseconds (ns)".
+    - "Crossline offset property" ``uuid`` OR  "Crossline offset value" ``double``:
+        Offline offset between the receivers and transmitters,
+        either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
+    - "Inline offset property" ``uuid`` OR  "Crossline offset value" ``double``:
+        Inline offset between the receivers and transmitters,
+        either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
+    - "Inline offset property" ``uuid`` OR  "Crossline offset value" ``double``:
+        Vertical offset between the receivers and transmitters,
+        either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
+    - "Yaw property" ``uuid`` OR  "Yaw value" ``double``:
+        Rotation (angle) of the transmitter loop as measured on the UV-plane (+ clockwise),
+        either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
+    - "Pitch property" ``uuid`` OR  "Pitch value" ``double``:
+        Tilt angle of the transmitter loop as measured on the VW-plane (+ nose up),
+        either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
+    - "Roll property" ``uuid`` OR  "Roll value" ``double``:
+        Banking angle of the transmitter loop as measured on the UW-plane (+ right-wing down),
+        either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
+    - "Waveform" ``dict``:
+        - "Discretization" array of ``double``, shape(N, 2):
+            Array of times and normalized currents (Amp) describing the source impulse
+            over a discrete interval (e.g. [[t_1, c_1], [t_2, c_2], ..., [t_N, c_N]])
+        - "Timing mark" ``double``:
+            Reference timing mark measured from the beginning of the "Discretization".
+            Generally used as the reference (t_i=0.0) for the provided data channels:
+            (-) on-time an (+) off-time.
+
+.. _geoh5_atem_tx:
 
 Airborne TEM Tx
 ---------------
 
 **UUID : {58c4849f-41e2-4e09-b69b-01cf4286cded}**
 
-*Not yet geoh5py implemented*
+:ref:`Curve <geoh5_curve>` entity representing an array of time-domain electromagnetic transmitter loops.
 
-*To be further documented*
+Datasets
+^^^^^^^^
+
+:Metadata: json formatted ``string``
+    See definition from the :ref:`Airborne TEM Rx <geoh5_atem_rx>` object. The "Transmitters" ``uuid`` value
+    should point to itself, while the "Receivers" ``uuid`` refers the linked
+    :ref:`Airborne TEM Rx <geoh5_atem_rx>` object.
 
 
 Airborne FEM Rx
