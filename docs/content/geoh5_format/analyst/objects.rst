@@ -5,13 +5,14 @@ ANALYST Objects
 
 Entities with spatial information used to store data.
 
+.. _geoh5_points:
 
 Points
 ------
 
 **UUID : {202C5DB1-A56D-4004-9CAD-BAAFD8899406}**
 
-Object defined by vertices with fixed coordinates in a 3-D (x, y and z) Cartesian system.
+3-D scatter points object defined by vertices with fixed coordinates in Cartesian system (x, y and z).
 
 Datasets
 ^^^^^^^^
@@ -27,19 +28,22 @@ Curve
 
 **UUID : {6A057FDC-B355-11E3-95BE-FD84A7FFCB88}**
 
-Polyline object defined by a series of line segments (cells) that connect vertices.
+Polyline object defined by a series of line segments (cells) connecting vertices.
 Data can be associated to either the vertices or cells.
 
 Attributes
 ^^^^^^^^^^
 
 :Current line property ID: ``str``, *UUID*
+
     Unique identifier of a reference data for naming of curve parts.
 
 
 Datasets
 ^^^^^^^^
+
 :Cells: Array of ``int32``, shape(N, 2)
+
     Array defining the connection (line segment) between pairs of vertices.
 
 Surface
@@ -51,7 +55,9 @@ Triangulated mesh object defined by cells (triangles) and vertices.
 
 Datasets
 ^^^^^^^^
+
 :Cells: Array of ``int32``, shape(N, 3)
+
     Array defining the connection between triplets of vertices, representing triangles.
 
 
@@ -61,8 +67,8 @@ Block model
 **UUID : {B020A277-90E2-4CD7-84D6-612EE3F25051}**
 
 Rectilinear grid of cells defined along three orthogonal axes (U,V and Z)
-of length nU, nV and nZ respectively. The conversion between the 3-D coordinate of a cell
-to its 1-D index can be calculated from
+of length nU, nV and nZ respectively. The conversion between the array coordinates of a cell
+to a 1-D vector index can be calculated from
 
 ::
 
@@ -73,11 +79,14 @@ Since their geometry is defined entirely by the additional data described below,
 
 Datasets
 ^^^^^^^^
-:U cell delimiters: 1D array of ``double``
+:U cell delimiters: array of ``double``, shape(nU,)
+
     Distances of cell edges from origin along the U axis (first value should be 0)
-:V cell delimiters: 1D array of ``double``
+:V cell delimiters: array of ``double``, shape(nV,)
+
     Distances of cell edges from origin along the V axis (first value should be 0)
-:Z cell delimiters: 1D array of ``double``
+:Z cell delimiters: array of ``double``, shape(nZ,)
+
     Distances of cell edges from origin upwards along the vertical axis (first value should be 0)
 
 Attributes
@@ -97,7 +106,7 @@ Attributes
 **UUID : {48f5054a-1c5c-4ca4-9048-80f36dc60a06}**
 
 Rectilinear grid of cells defined along two orthogonal axes (U and V) of length nU and nV.
-The conversion between the 2D coordinate of a cell to its 1D index can be calculated from
+The conversion between the grid coordinates of a cell to its 1-D vector index can be calculated from
 
 ::
 
@@ -140,7 +149,7 @@ Cells may overlap with each other to accommodate the different sampling interval
 Attributes
 ^^^^^^^^^^
 
-:Collar: composite type
+:Collar: composite type, shape(3,)
 
     [*X* ``double``, *Y* ``double``, *Z* ``double``]
 
@@ -148,7 +157,7 @@ Attributes
 
 Datasets
 ^^^^^^^^
-:Surveys: 1D composite array
+:Surveys: composite array, shape(3,)
 
     [*Depth* ``double``, *Dip* ``double``, *Azimuth* ``double``]
 
@@ -188,13 +197,13 @@ Has no vertices nor cell data
 Attributes
 ^^^^^^^^^^
 
-:Target position: composite type
+:Target position: composite type, shape(3,)
 
     [*X* ``double``, *Y* ``double``, *Z* ``double``]
 
     The target location of the label
 
-:Label position: composite type
+:Label position: composite type, shape(3,)
 
     [*X* ``double``, *Y* ``double``, *Z* ``double``]
     (Optional - Defaults to same as target position ) The location where the text of the label is displayed
@@ -245,9 +254,47 @@ Octree
 
 **UUID : {4ea87376-3ece-438b-bf12-3479733ded46}**
 
-*Not yet geoh5py implemented*
+Semi-structured grid that stores cells in a tree structure with eight octants.
 
-*To be further documented*
+Datasets
+^^^^^^^^
+
+:Octree Cells: composite type, shape(N, 4)
+
+    [*I* ``integer``, *J* ``integer``, *K* ``integer``, *NCells* ``integer``]
+
+    Array defining the position (I, J, K) and size (NCells) of every cell within
+    the base octree grid.
+
+Attributes
+^^^^^^^^^^
+
+:NU: ``integer``
+    Number of base cells along the U-axis.
+
+:NV: ``integer``
+    Number of base cells along the V-axis.
+
+:NW: ``integer``
+    Number of base cells along the W-axis.
+
+:Origin: composite type, shape(3,)
+
+    [*X* ``double``, *Y* ``double``, *Z* ``double``]
+
+    Origin point of the grid.
+
+:Rotation: ``double`` (default) 0
+    Counterclockwise angle (degrees) of rotation around the vertical axis in degrees.
+
+:U Cell Size: ``double``
+    Base cell dimension along the U-axis.
+
+:V Cell Size: ``double``
+    Base cell dimension along the V-axis.
+
+:W Cell Size: ``double``
+    Base cell dimension along the W-axis.
 
 
 Text Object
@@ -260,24 +307,63 @@ Text Object
 *To be further documented*
 
 
+.. _geoh5_potential_electrode:
+
 Potential Electrode
 -------------------
 
 **UUID : {275ecee9-9c24-4378-bf94-65f3c5fbe163}**
 
-*Not yet geoh5py implemented*
+:ref:`Curve <geoh5_curve>` object representing the receiver electrodes of a direct-current resistivity survey.
 
-*To be further documented*
+Datasets
+^^^^^^^^
 
+:Metadata: json formatted ``string``
+
+    Dictionary defining the link between the source and receiver objects.
+
+    - "Current Electrodes" ``uuid``: Identifier for the linked :ref:`Current Electrode <geoh5_current_electrode>`
+
+    - "Potential Electrodes" ``uuid``: Identifier for the linked :ref:`Potential Electrode <geoh5_potential_electrode>`
+
+
+Requirements
+^^^^^^^^^^^^
+
+:A-B Cell ID: Data entity
+
+    Reference data named "A-B Cell ID" with ``association=CELL`` expected.
+    The values define the source dipole (cell) from the :ref:`Current Electrode <geoh5_current_electrode>`
+    to every potential measurement.
+
+
+.. _geoh5_current_electrode:
 
 Current Electrode
 -----------------
 
 **UUID : {9b08bb5a-300c-48fe-9007-d206f971ea92}**
 
-*Not yet geoh5py implemented*
+:ref:`Curve <geoh5_curve>` object representing the transmitter electrodes of a direct-current resistivity survey.
 
-*To be further documented*
+Datasets
+^^^^^^^^
+
+:Metadata: json formatted ``string``
+
+    Dictionary defining the link between the source and receiver objects. Same definition as
+    the :ref:`Potential Electrode <geoh5_potential_electrode>` object.
+
+
+Requirements
+^^^^^^^^^^^^
+
+:A-B Cell ID: Data entity
+
+    Reference data named "A-B Cell ID" with ``association=CELL`` defining
+    a unique identifier to every unique dipole sources. For "pole" sources, the ``cell``
+    attribute references twice to the same vertex.
 
 
 VP Model
@@ -306,7 +392,7 @@ Airborne TEM Rx
 
 **UUID : {19730589-fd28-4649-9de0-ad47249d9aba}**
 
-:ref:`Curve <geoh5_curve>` entity representing an array of time-domain electromagnetic receiver dipoles.
+:ref:`Curve <geoh5_curve>` object representing an array of time-domain electromagnetic receiver dipoles.
 
 Attributes
 ^^^^^^^^^^
@@ -317,8 +403,9 @@ Datasets
 ^^^^^^^^
 
 :Metadata: json formatted ``string``
-    Dictionary of survey parameters shared with the :ref:`Transmitters <geoh5_atem_tx>`. The following items are core parameters store under the
-    "EM Dataset" key.
+
+    Dictionary of survey parameters shared with the :ref:`Transmitters <geoh5_atem_tx>`. The following items are core
+    parameters stored under the "EM Dataset" key.
 
     - "Channels": ``list`` of ``double``
         Time channels at which data are recorder.
@@ -371,12 +458,13 @@ Airborne TEM Tx
 
 **UUID : {58c4849f-41e2-4e09-b69b-01cf4286cded}**
 
-:ref:`Curve <geoh5_curve>` entity representing an array of time-domain electromagnetic transmitter loops.
+:ref:`Curve <geoh5_curve>` object representing an array of time-domain electromagnetic transmitter loops.
 
 Datasets
 ^^^^^^^^
 
 :Metadata: json formatted ``string``
+
     See definition from the :ref:`Airborne TEM Rx <geoh5_atem_rx>` object. The "Transmitters" ``uuid`` value
     should point to itself, while the "Receivers" ``uuid`` refers the linked
     :ref:`Airborne TEM Rx <geoh5_atem_rx>` object.
@@ -527,9 +615,26 @@ Magnetotellurics
 
 **UUID : {b99bd6e5-4fe1-45a5-bd2f-75fc31f91b38}**
 
-*Not yet geoh5py implemented*
+:ref:`Points <geoh5_points>` object representing a magnetotelluric survey.
 
-*To be further documented*
+:Metadata: json formatted ``string``
+
+    Dictionary of survey parameters. The following items are core parameters storedd under the
+    "EM Dataset" key.
+
+    - "Channels": ``list`` of ``double``
+        Frequency channels at which data are recorder.
+    - "Input type": ``string``
+        Static field set to "Rx only"
+    - "Property groups": ``list`` of ``uuid``
+        Reference to property groups containing data at every channel.
+    - "Receivers": ``uuid``
+        Reference to itself.
+    - "Survey type": ``string``
+        Static field set to "Magnetotellurics"
+    - "Unit": ``string``
+        Sampling units, must be one of "Hertz (Hz)", "KiloHertz (kHz)", "MegaHertz (MHz)" or
+        "Gigahertz (GHz)".
 
 
 ZTEM Rx
