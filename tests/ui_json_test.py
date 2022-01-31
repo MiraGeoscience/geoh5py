@@ -237,7 +237,7 @@ def test_object_data_selection(tmp_path):
 
     in_file = InputFile(ui_json=ui_json)
 
-    out_file = in_file.write_ui_json(name="test", path=tmp_path)
+    out_file = in_file.write_ui_json()
 
     with pytest.raises(ValueError) as error:
         InputFile.read_ui_json("somefile.json")
