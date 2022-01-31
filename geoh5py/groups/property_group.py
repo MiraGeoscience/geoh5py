@@ -63,16 +63,16 @@ class PropertyGroup(ABC):
         return self._association
 
     @association.setter
-    def association(self, value):
-        if self._association is None:
+    def association(self, value: str | DataAssociationEnum):
+        if isinstance(value, str):
+            value = getattr(DataAssociationEnum, value.upper())
 
-            if isinstance(value, str):
-                value = getattr(DataAssociationEnum, value.upper())
+        if not isinstance(value, DataAssociationEnum):
+            raise TypeError(
+                f"Association must be 'VERTEX', 'CELL' or class of type {DataAssociationEnum}"
+            )
 
-            assert isinstance(
-                value, DataAssociationEnum
-            ), f"Association must be of type {DataAssociationEnum}"
-            self._association = value
+        self._association = value
 
     @property
     def attribute_map(self) -> dict:

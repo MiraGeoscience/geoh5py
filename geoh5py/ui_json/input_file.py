@@ -17,7 +17,7 @@ from uuid import UUID
 import numpy as np
 
 from geoh5py.groups import ContainerGroup, PropertyGroup
-from geoh5py.io.utils import entity2uuid, str2uuid, uuid2entity, uuid2str
+from geoh5py.io.utils import as_str_if_uuid, entity2uuid, str2uuid, uuid2entity
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import JSONParameterValidationError
 from geoh5py.shared.validators import UUIDValidator
@@ -277,9 +277,9 @@ class InputFile:
 
             exclude = ["choiceList", "meshType", "dataType", "association"]
             mappers = (
-                [list2str, inf2str, uuid2str, none2str]
+                [list2str, inf2str, as_str_if_uuid, none2str]
                 if key not in exclude
-                else [inf2str, uuid2str, none2str]
+                else [inf2str, as_str_if_uuid, none2str]
             )
             var[key] = self._dict_mapper(value, mappers)
 
@@ -320,7 +320,7 @@ class InputFile:
 
     def _demote(self, var: dict[str, Any]) -> dict[str, str]:
         """Converts promoted parameter values to their string representations."""
-        mappers = [entity2uuid, uuid2str, workspace2path, container_group2name]
+        mappers = [entity2uuid, as_str_if_uuid, workspace2path, container_group2name]
         for key, value in var.items():
 
             if isinstance(value, dict):
