@@ -226,11 +226,31 @@ def test_object_data_selection(tmp_path):
     ui_json["data"]["dataGroupType"] = "Multi-element"
 
     # Test
+    in_file = InputFile()
+    with pytest.raises(AttributeError) as error:
+        in_file.write_ui_json(name="test", path=tmp_path)
+
+    assert (
+        "The input file requires 'ui_json' and 'data' to be set before writing out."
+        in str(error)
+    )
+
     in_file = InputFile(ui_json=ui_json)
+
     out_file = in_file.write_ui_json(name="test", path=tmp_path)
+
+    with pytest.raises(ValueError) as error:
+        InputFile.read_ui_json("somefile.json")
+
+    assert "Input file should have the extension *.ui.json" in str(error)
 
     # Load the input back in
     reload_input = InputFile.read_ui_json(out_file)
+
+    with pytest.raises(TypeError) as error:
+        reload_input.validations = "abc"
+
+    assert "Input validations must be of type 'dict' or None." in str(error)
 
     for key, value in in_file.data.items():
         if key == "geoh5":

@@ -200,10 +200,9 @@ class InputFile:
         :param path: Directory to write the ui.json to.
         """
         if self.ui_json is None or self.data is None:
-            print(
+            raise AttributeError(
                 "The input file requires 'ui_json' and 'data' to be set before writing out."
             )
-            return None
 
         for key, value in self.data.items():
             msg = f"Overriding param: {key} 'None' value to zero since 'dataType' is 'Float'."
