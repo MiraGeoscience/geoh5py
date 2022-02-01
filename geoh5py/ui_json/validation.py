@@ -53,11 +53,13 @@ class InputValidation:
         self,
         validations: dict[str, Any] | None,
         workspace: Workspace = None,
+        ignore: bool = False,
         ignore_requirements: bool = False,
     ):
         self._validators: dict[str, BaseValidator] = {}
         self.workspace: Workspace | None = workspace
         self.validations = validations
+        self.ignore: bool = ignore
         self.ignore_requirements: bool = ignore_requirements
 
     @property
@@ -119,7 +121,7 @@ class InputValidation:
 
         for val, args in validations.items():
 
-            if val == "required" and self.ignore_requirements:
+            if (val == "required" and self.ignore_requirements) or self.ignore:
                 continue
 
             self._validators[val](name, value, args)

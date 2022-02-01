@@ -57,8 +57,10 @@ class InputFile:
         data: dict[str, Any] = None,
         ui_json: dict[str, Any] = None,
         validations: dict = None,
+        validation_options: dict = None,
         workspace: Workspace = None,
     ):
+        self._validation_options = validation_options
         self.validations = validations
         self.ui_json = ui_json
         self.data = data
@@ -135,6 +137,13 @@ class InputFile:
         self.data = InputFile.flatten(input_dict)
 
     @property
+    def validation_options(self):
+        """Pass validation options to the validators."""
+        if self._validation_options is None:
+            return {}
+        return self._validation_options
+
+    @property
     def validations(self):
         if getattr(self, "_validations", None) is None:
             self._validations = deepcopy(default_validations)
@@ -157,14 +166,18 @@ class InputFile:
     @property
     def validators(self):
         if getattr(self, "_validators", None) is None:
-            self._validators = InputValidation(self.validations)
+            self._validators = InputValidation(
+                self.validations, **self.validation_options
+            )
 
         return self._validators
 
     @property
     def ui_validators(self):
         if getattr(self, "_ui_validators", None) is None:
-            self._ui_validators = InputValidation(ui_validations)
+            self._ui_validators = InputValidation(
+                ui_validations, **self.validation_options
+            )
 
         return self._ui_validators
 
@@ -324,7 +337,7 @@ class InputFile:
 
             if isinstance(value, dict):
                 var[key] = self._demote(value)
-            elif isinstance(value, list):
+            elif isinstance(value, (list, tuple)):
                 var[key] = [self._dict_mapper(val, mappers) for val in value]
             else:
                 var[key] = self._dict_mapper(value, mappers)
@@ -332,6 +345,7 @@ class InputFile:
         return var
 
     def _promote(self, var: dict[str, Any]) -> dict[str, Any]:
+        """Convert uuids to entities from the workspace."""
         for key, value in var.items():
 
             if isinstance(value, dict):

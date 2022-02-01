@@ -262,14 +262,62 @@ def test_object_data_selection(tmp_path):
         elif reload_input.data[key] != value:
             raise ValueError(f"Input '{key}' differs from the output.")
 
-    # ui_json["data"]["data_group_type"] = "Multi-element"
-    # in_file = InputFile(ui_json=ui_json, validations={"data": {"property_group": points}})
-    #
-    # getattr(in_file, "data")
 
+def test_integer_parameter(tmp_path):
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["integer"] = templates.integer_parameter()
+    in_file = InputFile(ui_json=ui_json)
+    data = in_file.data
+    data["integer"] = None
+
+    with pytest.raises(TypeValidationError) as error:
+        in_file.data = data
+
+    assert "Must be: 'int'" in str(
+        error
+    ), "Failed to raise value error on IntegerParameter"
+
+    data["integer"] = 123
+    in_file.data = data
+
+    out_file = in_file.write_ui_json()
+    reload_input = InputFile.read_ui_json(out_file)
+
+    assert (
+        reload_input.data["integer"] == 123
+    ), "IntegerParameter did not properly save to file."
+
+
+def test_data_value_parameter(tmp_path):
+    workspace = get_workspace(tmp_path)
+    # points_b = workspace.get_entity("Points_B")[0]
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["object"] = templates.object_parameter()  # value=points_b.uid)
+    ui_json["data"] = templates.data_value_parameter(parent="object")
+
+    in_file = InputFile(ui_json=ui_json, validation_options={"ignore": True})
+    in_file.write_ui_json()
+
+
+def test_data_parameter(tmp_path):
+    workspace = get_workspace(tmp_path)
+    points_b = workspace.get_entity("Points_B")[0]
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["object"] = templates.object_parameter(value=points_b.uid)
+    ui_json["data"] = templates.data_parameter(data_group_type="Multi-element")
+
+    # in_file = InputFile(ui_json=ui_json)
+    # data = in_file.data
+    # data["data"] = points_b.children[0].uid
+    #
+    # in_file.data = data
     # input_data["data_group"] = templates.data_parameter()
     # input_data["logical"] = templates.bool_parameter()
     # input_data["choices"] = templates.choice_string_parameter()
     # input_data["file"] = templates.file_parameter()
     # input_data["float"] = templates.float_parameter()
-    # input_data["integer"] = templates.integer_parameter()
