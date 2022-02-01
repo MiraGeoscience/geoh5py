@@ -60,19 +60,21 @@ ui_validations = {
     "dataType": {"types": [str], "values": ["Float", "Text", "Integer"]},
     "dependency": {"types": [str]},
     "dependencyType": {"types": [str], "values": ["enabled", "disabled"]},
+    "enabled": {"types": [bool]},
     "group": {"types": [str]},
     "label": {"types": [str], "required": True},
     "main": {"types": [bool]},
     "meshType": {"types": [str, UUID]},
+    "optional": {"types": [bool]},
     "parent": {"types": [str, UUID]},
-    "property": {"types": [str, UUID]},
+    "property": {"types": [str, UUID, type(None)]},
     "value": {
         "types": [str, float, int, bool, type(None), Entity, UUID],
         "required": True,
     },
     "tooltip": {"types": [str]},
 }
-validations = {
+base_validations = {
     "title": {"types": [str], "required": True},
     "conda_environment": {
         "types": [str, type(None)],

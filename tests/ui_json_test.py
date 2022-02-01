@@ -298,8 +298,11 @@ def test_data_value_parameter(tmp_path):
     ui_json["object"] = templates.object_parameter()  # value=points_b.uid)
     ui_json["data"] = templates.data_value_parameter(parent="object")
 
-    in_file = InputFile(ui_json=ui_json, validation_options={"ignore": True})
-    in_file.write_ui_json()
+    in_file = InputFile(ui_json=ui_json)
+    out_file = in_file.write_ui_json()
+    reload_input = InputFile.read_ui_json(out_file)
+
+    assert reload_input.data["object"] is None, "Object not reloaded as None"
 
 
 def test_data_parameter(tmp_path):

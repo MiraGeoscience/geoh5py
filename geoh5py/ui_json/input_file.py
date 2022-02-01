@@ -23,8 +23,7 @@ from geoh5py.shared.exceptions import JSONParameterValidationError
 from geoh5py.shared.validators import UUIDValidator
 from geoh5py.workspace import Workspace
 
-from .constants import ui_validations
-from .constants import validations as default_validations
+from .constants import base_validations, ui_validations
 from .validation import InputValidation
 
 
@@ -107,8 +106,8 @@ class InputFile:
                 raise ValueError("Input 'ui_json' must be of type dict or None.")
 
             self._ui_json = self._numify(value)
-            base_ui_validations = self.get_ui_validations(self._ui_json)
-            for key, validations in base_ui_validations.items():
+            default_validations = self.get_default_validations(self._ui_json)
+            for key, validations in default_validations.items():
                 if key in self.validations:
                     validations = {**validations, **self.validations[key]}
                 self._validations[key] = validations
@@ -146,7 +145,7 @@ class InputFile:
     @property
     def validations(self):
         if getattr(self, "_validations", None) is None:
-            self._validations = deepcopy(default_validations)
+            self._validations = deepcopy(base_validations)
 
         return self._validations
 
@@ -159,7 +158,7 @@ class InputFile:
             )
 
         if valid_dict is not None:
-            valid_dict = {**valid_dict, **deepcopy(default_validations)}
+            valid_dict = {**valid_dict, **deepcopy(base_validations)}
 
         self._validations = valid_dict
 
@@ -176,7 +175,7 @@ class InputFile:
     def ui_validators(self):
         if getattr(self, "_ui_validators", None) is None:
             self._ui_validators = InputValidation(
-                ui_validations, **self.validation_options
+                ui_validations, ignore_list=("value",), **self.validation_options
             )
 
         return self._ui_validators
@@ -267,6 +266,13 @@ class InputFile:
         """
         for key, value in var.items():
             # Handle special cases of None values
+
+            if (
+                isinstance(value, dict)
+                and "property" in value
+                and value["property"] is None
+            ):
+                value["property"] = ""
 
             if isinstance(value, dict) and value["value"] is None:
                 if none_map is not None and key in none_map:
@@ -376,7 +382,7 @@ class InputFile:
         return val
 
     @staticmethod
-    def get_ui_validations(ui_json: dict[str, Any]):
+    def get_default_validations(ui_json: dict[str, Any]):
         validations = {}
         for key, item in ui_json.items():
             if not isinstance(item, dict):
@@ -384,7 +390,7 @@ class InputFile:
 
             if "isValue" in item:
                 validations[key] = {
-                    "types": [UUID, int, float, Entity],
+                    "types": [UUID, int, float, Entity, type(None)],
                     "association": item["parent"],
                 }
             elif "choiceList" in item:
@@ -394,15 +400,18 @@ class InputFile:
                     "types": [str],
                 }
             elif "meshType" in item:
-                validations[key] = {"types": [UUID, Entity], "association": "geoh5"}
+                validations[key] = {
+                    "types": [UUID, Entity, type(None)],
+                    "association": "geoh5",
+                }
             elif "parent" in item:
                 validations[key] = {
-                    "types": [UUID, Entity],
+                    "types": [UUID, Entity, type(None)],
                     "association": item["parent"],
                 }
                 if "dataGroupType" in item:
                     validations[key]["property_group_type"] = item["dataGroupType"]
-                    validations[key]["types"] = [UUID, PropertyGroup]
+                    validations[key]["types"] = [UUID, PropertyGroup, type(None)]
             elif "value" in item:
                 if item["value"] is None:
                     check_type = str

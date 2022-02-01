@@ -88,6 +88,9 @@ class AssociationValidator(BaseValidator):
         :param value: Input parameter value.
         :param valid: Expected value shape
         """
+        if not isinstance(value, Entity):
+            return
+
         if isinstance(valid, Workspace):
             children = valid.fetch_children(valid.root, recursively=True)
         else:
