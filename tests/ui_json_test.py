@@ -178,7 +178,7 @@ def test_object_data_selection(tmp_path):
         getattr(in_file, "data")
 
     assert (
-        "Type 'str' provided for 'data' is invalid.  Must be one of: 'UUID', 'Entity'."
+        "Type 'str' provided for 'data' is invalid.  Must be one of: 'UUID', 'Entity', 'NoneType'."
         in str(error)
     )
 
