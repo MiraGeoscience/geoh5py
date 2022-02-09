@@ -71,7 +71,7 @@ class BaseValidator(ABC):
     @property
     @abstractmethod
     def validation_type(self):
-        ...
+        """Validation type identifier."""
 
     def __call__(self, *args):
         if hasattr(self, "validate"):
