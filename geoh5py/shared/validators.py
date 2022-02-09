@@ -218,7 +218,7 @@ class UUIDValidator(BaseValidator):
 
     @property
     def validation_type(self):
-        return "shape"
+        return "uuid"
 
 
 class ValueValidator(BaseValidator):
