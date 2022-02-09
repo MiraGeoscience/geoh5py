@@ -34,6 +34,7 @@ from geoh5py.shared.exceptions import (
     UUIDStringValidationError,
     UUIDValidationError,
 )
+from geoh5py.shared.utils import compare_entities
 from geoh5py.shared.validators import (
     AssociationValidator,
     PropertyGroupValidator,
@@ -43,11 +44,11 @@ from geoh5py.shared.validators import (
     UUIDValidator,
     ValueValidator,
 )
-from geoh5py.shared.utils import compare_entities
 from geoh5py.ui_json import templates
 from geoh5py.ui_json.constants import default_ui_json
 from geoh5py.ui_json.input_file import InputFile
 from geoh5py.workspace import Workspace
+
 
 def test_validation_types():
     validation_types = [
