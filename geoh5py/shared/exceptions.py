@@ -29,6 +29,7 @@ from abc import ABC, abstractmethod
 from geoh5py.shared.utils import iterable_message
 from geoh5py.workspace import Workspace
 
+
 class BaseValidationError(ABC):
     """Base class for custom exceptions."""
 
@@ -96,8 +97,7 @@ class ShapeValidationError(BaseValidationError, Exception):
     @staticmethod
     def message(name, value, valid):
         return (
-            f"Parameter '{name}' with shape {value} was provided. "
-            f"Expected {valid}."
+            f"Parameter '{name}' with shape {value} was provided. " f"Expected {valid}."
         )
 
 
@@ -110,9 +110,8 @@ class TypeValidationError(BaseValidationError, Exception):
 
     @staticmethod
     def message(name, value, valid):
-        return (
-            f"Type '{value}' provided for '{name}' is invalid. "
-            + iterable_message(valid)
+        return f"Type '{value}' provided for '{name}' is invalid. " + iterable_message(
+            valid
         )
 
 
@@ -139,9 +138,7 @@ class UUIDStringValidationError(BaseValidationError, Exception):
 
     @staticmethod
     def message(name, value):
-        return(
-            f"Parameter '{name}' with value '{value}' is not a valid uuid string."
-        )
+        return f"Parameter '{name}' with value '{value}' is not a valid uuid string."
 
 
 class ValueValidationError(BaseValidationError, Exception):
@@ -153,7 +150,6 @@ class ValueValidationError(BaseValidationError, Exception):
 
     @staticmethod
     def message(name, value, valid):
-        return (
-            f"Value '{value}' provided for '{name}' is invalid."
-            + iterable_message(valid)
+        return f"Value '{value}' provided for '{name}' is invalid." + iterable_message(
+            valid
         )

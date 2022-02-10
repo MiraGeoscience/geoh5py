@@ -14,7 +14,6 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
-import uuid
 from copy import deepcopy
 from os import path
 from uuid import uuid4
@@ -76,6 +75,7 @@ def test_validation_types():
     for i, err in enumerate(errs):
         assert err.validation_type == validation_types[i]
 
+
 def test_association_validator(tmp_path):
 
     ws = Workspace(path.join(tmp_path, "test.geoh5"))
@@ -92,19 +92,27 @@ def test_association_validator(tmp_path):
     # Test valid points object
     with pytest.raises(AssociationValidationError) as excinfo:
         validator("test", points, points2)
-    assert AssociationValidationError.message("test", points, points2) == str(excinfo.value)
+    assert AssociationValidationError.message("test", points, points2) == str(
+        excinfo.value
+    )
+
 
 def test_property_group_validator(tmp_path):
 
     ws = Workspace(path.join(tmp_path, "test.geoh5"))
-    points = Points.create(ws, vertices=np.array([[1, 2, 3], [4, 5, 6]]), name="test_points")
+    points = Points.create(
+        ws, vertices=np.array([[1, 2, 3], [4, 5, 6]]), name="test_points"
+    )
     test_data = points.add_data({"points_data": {"values": np.array([1, 2])}})
     pg = points.add_data_to_group(test_data, "test_group")
     validator = PropertyGroupValidator()
 
     with pytest.raises(PropertyGroupValidationError) as excinfo:
         validator("test", pg, "not_test_group")
-    assert PropertyGroupValidationError.message("test", pg, "not_test_group") == str(excinfo.value)
+    assert PropertyGroupValidationError.message("test", pg, "not_test_group") == str(
+        excinfo.value
+    )
+
 
 def test_required_validator(tmp_path):
 
@@ -113,12 +121,14 @@ def test_required_validator(tmp_path):
         validator("test", None, True)
     assert RequiredValidationError.message("test") == str(excinfo.value)
 
+
 def test_shape_validator(tmp_path):
 
     validator = ShapeValidator()
     with pytest.raises(ShapeValidationError) as excinfo:
         validator("test", [[1, 2, 3], [4, 5, 6]], (3, 2))
     assert ShapeValidationError.message("test", (2, 3), (3, 2)) == str(excinfo.value)
+
 
 def test_type_validator(tmp_path):
 
@@ -127,27 +137,38 @@ def test_type_validator(tmp_path):
     # Test non-iterable value, single valid
     with pytest.raises(TypeValidationError) as excinfo:
         validator("test", 3, type({}))
-    assert TypeValidationError.message("test", type(3).__name__, [type({}).__name__]) == str(excinfo.value)
+    assert TypeValidationError.message(
+        "test", int.__name__, [type({}).__name__]
+    ) == str(excinfo.value)
 
     # Test non-iterable value, more than one valid
     with pytest.raises(TypeValidationError) as excinfo:
-        validator("test", 3, [type(''), type({})])
-    assert TypeValidationError.message("test", type(3).__name__, [type('').__name__, type({}).__name__]) == str(excinfo.value)
+        validator("test", 3, [str, type({})])
+    assert TypeValidationError.message(
+        "test", int.__name__, [str.__name__, type({}).__name__]
+    ) == str(excinfo.value)
 
     # Test iterable value single valid both invalid
     with pytest.raises(TypeValidationError) as excinfo:
         validator("test", [3, 2], type({}))
-    assert TypeValidationError.message("test", type(3).__name__, [type({}).__name__]) == str(excinfo.value)
+    assert TypeValidationError.message(
+        "test", int.__name__, [type({}).__name__]
+    ) == str(excinfo.value)
 
     # Test iterable value single valid one valid, one invalid
     with pytest.raises(TypeValidationError) as excinfo:
-        validator("test", [3, 'a'], type(3))
-    assert TypeValidationError.message("test", type('a').__name__, [type(3).__name__]) == str(excinfo.value)
+        validator("test", [3, "a"], int)
+    assert TypeValidationError.message(
+        "test", str.__name__, [int.__name__]
+    ) == str(excinfo.value)
+
 
 def test_uuid_validator(tmp_path):
 
     ws = Workspace(path.join(tmp_path, "test.geoh5"))
-    points = Points.create(ws, vertices=np.array([[1, 2, 3], [4, 5, 6]]), name="test_points")
+    points = Points.create(
+        ws, vertices=np.array([[1, 2, 3], [4, 5, 6]]), name="test_points"
+    )
     test_data = points.add_data({"points_data": {"values": np.array([1, 2])}})
     bogus_uuid = uuid4()
     validator = UUIDValidator()
@@ -166,15 +187,19 @@ def test_uuid_validator(tmp_path):
 
     # Test bad uid string
     with pytest.raises(UUIDStringValidationError) as excinfo:
-        validator("test", 'sdr')
-    assert UUIDStringValidationError.message("test", 'sdr') == str(excinfo.value)
+        validator("test", "sdr")
+    assert UUIDStringValidationError.message("test", "sdr") == str(excinfo.value)
+
 
 def test_value_validator(tmp_path):
 
     validator = ValueValidator()
     with pytest.raises(ValueValidationError) as excinfo:
         validator("test", "blah", ["nope", "not here"])
-    assert ValueValidationError.message("test", "blah", ["nope", "not here"]) == str(excinfo.value)
+    assert ValueValidationError.message("test", "blah", ["nope", "not here"]) == str(
+        excinfo.value
+    )
+
 
 def get_workspace(directory):
     workspace = Workspace(path.join(directory, "..", "testPoints.geoh5"))
@@ -247,7 +272,10 @@ def test_uuid_string_parameter():
     with pytest.raises(UUIDStringValidationError) as excinfo:
         in_file.uuid_validator("object", "hello world")
 
-    assert UUIDStringValidationError.message("object", "hello world") == str(excinfo.value)
+    assert UUIDStringValidationError.message("object", "hello world") == str(
+        excinfo.value
+    )
+
 
 def test_shape_parameter():
     ui_json = deepcopy(default_ui_json)
@@ -258,6 +286,7 @@ def test_shape_parameter():
         getattr(in_file, "data")
 
     assert ShapeValidationError.message("data", (4,), (3,)) == str(excinfo.value)
+
 
 def test_object_data_selection(tmp_path):
 
@@ -274,7 +303,9 @@ def test_object_data_selection(tmp_path):
     del ui_json["object"]["value"]
     with pytest.raises(JSONParameterValidationError) as excinfo:
         InputFile(ui_json=ui_json)
-    assert JSONParameterValidationError.message("object", RequiredValidationError.message("value")) == str(excinfo.value)
+    assert JSONParameterValidationError.message(
+        "object", RequiredValidationError.message("value")
+    ) == str(excinfo.value)
 
     # Test promotion on ui_json setter
     ui_json["object"]["value"] = str(points.uid)
@@ -298,8 +329,9 @@ def test_object_data_selection(tmp_path):
 
     with pytest.raises(TypeValidationError) as excinfo:
         getattr(in_file, "data")
-    assert TypeValidationError.message("data", "str", ["UUID", "Entity", "NoneType"]) == str(excinfo.value)
-
+    assert TypeValidationError.message(
+        "data", "str", ["UUID", "Entity", "NoneType"]
+    ) == str(excinfo.value)
 
     # Test valid uuid in workspace
     bogus_uuid = uuid4()
@@ -308,7 +340,9 @@ def test_object_data_selection(tmp_path):
 
     with pytest.raises(UUIDValidationError) as excinfo:
         getattr(in_file, "data")
-    assert UUIDValidationError.message("data", bogus_uuid, workspace) == str(excinfo.value)
+    assert UUIDValidationError.message("data", bogus_uuid, workspace) == str(
+        excinfo.value
+    )
 
     # Test data with wrong parent
     ui_json["data"]["value"] = points_b.children[0].uid
@@ -316,8 +350,9 @@ def test_object_data_selection(tmp_path):
 
     with pytest.raises(AssociationValidationError) as excinfo:
         getattr(in_file, "data")
-    assert AssociationValidationError.message("data", points_b.children[0], points) == str(excinfo.value)
-
+    assert AssociationValidationError.message(
+        "data", points_b.children[0], points
+    ) == str(excinfo.value)
 
     # Test property group with wrong type
     ui_json["data"]["value"] = points.property_groups[0].uid
@@ -327,9 +362,10 @@ def test_object_data_selection(tmp_path):
         InputFile(ui_json=ui_json)
 
     assert JSONParameterValidationError.message(
-        "data", ValueValidationError.message(
+        "data",
+        ValueValidationError.message(
             "dataGroupType", "ABC", ui_validations["dataGroupType"]["values"]
-        )
+        ),
     ) == str(excinfo.value)
 
     ui_json["data"]["dataGroupType"] = "3D vector"
@@ -338,7 +374,9 @@ def test_object_data_selection(tmp_path):
 
     with pytest.raises(PropertyGroupValidationError) as excinfo:
         getattr(in_file, "data")
-    assert PropertyGroupValidationError.message("data", points.property_groups[0], "3D vector") == str(excinfo.value)
+    assert PropertyGroupValidationError.message(
+        "data", points.property_groups[0], "3D vector"
+    ) == str(excinfo.value)
 
     ui_json["data"]["dataGroupType"] = "Multi-element"
 
@@ -391,7 +429,9 @@ def test_integer_parameter(tmp_path):
 
     with pytest.raises(TypeValidationError) as excinfo:
         in_file.data = data
-    assert TypeValidationError.message("integer", "NoneType", ["int"]) == str(excinfo.value)
+    assert TypeValidationError.message("integer", "NoneType", ["int"]) == str(
+        excinfo.value
+    )
 
     data["integer"] = 123
     in_file.data = data
