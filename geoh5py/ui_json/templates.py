@@ -105,7 +105,7 @@ def float_parameter(
 
 
 def string_parameter(
-    main: bool = True, label: str = "String data", value: str = ""
+    main: bool = True, label: str = "String data", value: str = "data"
 ) -> dict:
     """
     Input box for string value.
@@ -122,7 +122,7 @@ def string_parameter(
 def choice_string_parameter(
     main: bool = True,
     label: str = "String data",
-    choice_list: Tuple = ("Options A", "Option B"),
+    choice_list: Tuple = ("Option A", "Option B"),
     value: str = "Option A",
 ) -> dict:
     """

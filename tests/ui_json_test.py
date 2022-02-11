@@ -190,6 +190,11 @@ def test_uuid_validator(tmp_path):
         validator("test", "sdr")
     assert UUIDStringValidationError.message("test", "sdr") == str(excinfo.value)
 
+    # Test bad valid type
+    with pytest.raises(ValueError) as excinfo:
+        validator("test", bogus_uuid, [])
+    assert str(excinfo.value) == "Type of input `valid` parameter must be one of Entity or Workspace"
+
 
 def test_value_validator(tmp_path):
 
@@ -202,6 +207,7 @@ def test_value_validator(tmp_path):
 
 
 def get_workspace(directory):
+
     workspace = Workspace(path.join(directory, "..", "testPoints.geoh5"))
     if len(workspace.objects) == 0:
         xyz = np.random.randn(12, 3)
@@ -225,6 +231,7 @@ def get_workspace(directory):
 
 
 def test_input_file_json():
+
     # Test missing required ui_json parameter
     with pytest.raises(ValueError) as excinfo:
         InputFile(ui_json=123)
@@ -254,6 +261,7 @@ def test_input_file_json():
 
 
 def test_bool_parameter():
+
     ui_json = deepcopy(default_ui_json)
     ui_json["logic"] = templates.bool_parameter()
     ui_json["logic"]["value"] = True
@@ -263,6 +271,113 @@ def test_bool_parameter():
         in_file.validators.validate("logic", 1234)
 
     assert TypeValidationError.message("logic", "int", ["bool"]) == str(excinfo.value)
+
+
+def test_integer_parameter(tmp_path):
+
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["integer"] = templates.integer_parameter()
+    in_file = InputFile(ui_json=ui_json)
+    data = in_file.data
+    data["integer"] = None
+
+    with pytest.raises(TypeValidationError) as excinfo:
+        in_file.data = data
+    assert TypeValidationError.message("integer", "NoneType", ["int"]) == str(
+        excinfo.value
+    )
+
+    data["integer"] = 123
+    in_file.data = data
+
+    out_file = in_file.write_ui_json()
+    reload_input = InputFile.read_ui_json(out_file)
+
+    assert (
+        reload_input.data["integer"] == 123
+    ), "IntegerParameter did not properly save to file."
+
+
+def test_float_parameter(tmp_path):
+
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["float_parameter"] = templates.float_parameter()
+    in_file = InputFile(ui_json=ui_json)
+    data = in_file.data
+    data["float_parameter"] = None
+
+    with pytest.raises(TypeValidationError) as excinfo:
+        in_file.data = data
+    assert TypeValidationError.message("float_parameter", "NoneType", ["float"]) == str(
+        excinfo.value
+    )
+
+    data["float_parameter"] = 123.0
+    in_file.data = data
+
+    out_file = in_file.write_ui_json()
+    reload_input = InputFile.read_ui_json(out_file)
+
+    assert (
+        reload_input.data["float_parameter"] == 123.0
+    ), "IntegerParameter did not properly save to file."
+
+
+def test_string_parameter(tmp_path):
+
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["string_parameter"] = templates.string_parameter()
+    in_file = InputFile(ui_json=ui_json)
+    data = in_file.data
+    data["string_parameter"] = None
+
+    with pytest.raises(TypeValidationError) as excinfo:
+        in_file.data = data
+    assert TypeValidationError.message("string_parameter", "NoneType", ["str"]) == str(
+        excinfo.value
+    )
+
+    data["string_parameter"] = "goodtogo"
+    in_file.data = data
+
+    out_file = in_file.write_ui_json()
+    reload_input = InputFile.read_ui_json(out_file)
+
+    assert (
+        reload_input.data["string_parameter"] == "goodtogo"
+    ), "IntegerParameter did not properly save to file."
+
+def test_choice_string_parameter(tmp_path):
+
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["choice_string_parameter"] = templates.choice_string_parameter()
+    in_file = InputFile(ui_json=ui_json)
+    data = in_file.data
+    data["choice_string_parameter"] = "Option C"
+
+    with pytest.raises(ValueValidationError) as excinfo:
+        in_file.data = data
+    assert ValueValidationError.message("choice_string_parameter", "Option C", ["Option A", "Option B"]) == str(
+        excinfo.value
+    )
+
+    data["choice_string_parameter"] = "Option A"
+    in_file.data = data
+
+    out_file = in_file.write_ui_json()
+    reload_input = InputFile.read_ui_json(out_file)
+
+    assert (
+        reload_input.data["choice_string_parameter"] == "Option A"
+    ), "IntegerParameter did not properly save to file."
 
 
 def test_uuid_string_parameter():
@@ -417,31 +532,6 @@ def test_object_data_selection(tmp_path):
         elif reload_input.data[key] != value:
             raise ValueError(f"Input '{key}' differs from the output.")
 
-
-def test_integer_parameter(tmp_path):
-    workspace = get_workspace(tmp_path)
-    ui_json = deepcopy(default_ui_json)
-    ui_json["geoh5"] = workspace
-    ui_json["integer"] = templates.integer_parameter()
-    in_file = InputFile(ui_json=ui_json)
-    data = in_file.data
-    data["integer"] = None
-
-    with pytest.raises(TypeValidationError) as excinfo:
-        in_file.data = data
-    assert TypeValidationError.message("integer", "NoneType", ["int"]) == str(
-        excinfo.value
-    )
-
-    data["integer"] = 123
-    in_file.data = data
-
-    out_file = in_file.write_ui_json()
-    reload_input = InputFile.read_ui_json(out_file)
-
-    assert (
-        reload_input.data["integer"] == 123
-    ), "IntegerParameter did not properly save to file."
 
 
 def test_data_value_parameter(tmp_path):
