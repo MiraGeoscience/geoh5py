@@ -158,9 +158,9 @@ def test_type_validator(tmp_path):
     # Test iterable value single valid one valid, one invalid
     with pytest.raises(TypeValidationError) as excinfo:
         validator("test", [3, "a"], int)
-    assert TypeValidationError.message(
-        "test", str.__name__, [int.__name__]
-    ) == str(excinfo.value)
+    assert TypeValidationError.message("test", str.__name__, [int.__name__]) == str(
+        excinfo.value
+    )
 
 
 def test_uuid_validator(tmp_path):
@@ -193,7 +193,10 @@ def test_uuid_validator(tmp_path):
     # Test bad valid type
     with pytest.raises(ValueError) as excinfo:
         validator("test", bogus_uuid, [])
-    assert str(excinfo.value) == "Type of input `valid` parameter must be one of Entity or Workspace"
+    assert (
+        str(excinfo.value)
+        == "Type of input `valid` parameter must be one of Entity or Workspace"
+    )
 
 
 def test_value_validator(tmp_path):
@@ -353,6 +356,7 @@ def test_string_parameter(tmp_path):
         reload_input.data["string_parameter"] == "goodtogo"
     ), "IntegerParameter did not properly save to file."
 
+
 def test_choice_string_parameter(tmp_path):
 
     workspace = get_workspace(tmp_path)
@@ -365,9 +369,9 @@ def test_choice_string_parameter(tmp_path):
 
     with pytest.raises(ValueValidationError) as excinfo:
         in_file.data = data
-    assert ValueValidationError.message("choice_string_parameter", "Option C", ["Option A", "Option B"]) == str(
-        excinfo.value
-    )
+    assert ValueValidationError.message(
+        "choice_string_parameter", "Option C", ["Option A", "Option B"]
+    ) == str(excinfo.value)
 
     data["choice_string_parameter"] = "Option A"
     in_file.data = data
@@ -531,7 +535,6 @@ def test_object_data_selection(tmp_path):
             )
         elif reload_input.data[key] != value:
             raise ValueError(f"Input '{key}' differs from the output.")
-
 
 
 def test_data_value_parameter(tmp_path):
