@@ -568,3 +568,13 @@ def test_data_parameter(tmp_path):
     # input_data["choices"] = templates.choice_string_parameter()
     # input_data["file"] = templates.file_parameter()
     # input_data["float"] = templates.float_parameter()
+
+def test_collect():
+    d_u_j = deepcopy(default_ui_json)
+    d_u_j["string_parameter"] = templates.string_parameter(optional="enabled")
+    d_u_j["float_parameter"] = templates.float_parameter(optional="disabled")
+    d_u_j["integer_parameter"] = templates.integer_parameter(optional="enabled")
+    enabled_params = InputFile.collect(d_u_j, "enabled", value=True)
+    assert all(["enabled" in v for v in enabled_params.values()])
+    assert all([v["enabled"] for v in enabled_params.values()])
+

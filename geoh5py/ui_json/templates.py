@@ -18,7 +18,7 @@
 # pylint: disable=R0913
 
 import inspect
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 from uuid import UUID
 
 from .. import objects
@@ -30,6 +30,23 @@ known_types = [
     if hasattr(member, "default_type_uid") and member.default_type_uid() is not None
 ]
 
+
+def optional_parameter(state: str) -> dict[str, bool]:
+    """
+    Returns dictionary to make existing ui optional via .update() method.
+
+    :param state: Initial state of optional parameter. Can be 'enabled' or 'disabled'.
+    """
+
+    d = {"optional": True}
+    if state == "enabled":
+        d["enabled"] = True
+    elif state == "disabled":
+        d["enabled"] = False
+    else:
+        raise ValueError("Unrecognized state option. Must be either 'enabled' or 'disabled'.")
+
+    return d
 
 def bool_parameter(
     main: bool = True, label: str = "Logical data", value: bool = False
@@ -56,6 +73,7 @@ def integer_parameter(
     value: int = 1,
     vmin: int = 0,
     vmax: int = 100,
+    optional: Optional[str] = None,
 ) -> dict:
     """
     Input box for integer value.
@@ -65,11 +83,16 @@ def integer_parameter(
     :param value: Input value.
     :param vmin: Minimum value allowed.
     :param vmax: Maximum value allowed.
+    :param optional: Make optional if not None. Initial state provided by not None
+        value.  Can be either 'enabled' or 'disabled'.
 
 
     :returns: Ui_json compliant dictionary.
     """
-    return {"main": main, "label": label, "value": value, "min": vmin, "max": vmax}
+    ui = {"main": main, "label": label, "value": value, "min": vmin, "max": vmax}
+    if optional is not None:
+        ui.update(optional_parameter(optional))
+    return ui
 
 
 def float_parameter(
@@ -80,6 +103,7 @@ def float_parameter(
     vmax: float = 100.0,
     precision: int = 2,
     line_edit: bool = True,
+    optional: Optional[str] = None,
 ) -> dict:
     """
     Input box for float value.
@@ -90,10 +114,12 @@ def float_parameter(
     :param vmin: Minimum value allowed.
     :param vmax: Maximum value allowed.
     :param line_edit: Allow line edit or spin box
+    :param optional: Make optional if not None. Initial state provided by not None
+        value.  Can be either 'enabled' or 'disabled'.
 
     :returns: Ui_json compliant dictionary.
     """
-    return {
+    ui = {
         "main": main,
         "label": label,
         "value": value,
@@ -103,9 +129,16 @@ def float_parameter(
         "max": vmax,
     }
 
+    if optional is not None:
+        ui.update(optional_parameter(optional))
+    return ui
+
 
 def string_parameter(
-    main: bool = True, label: str = "String data", value: str = "data"
+    main: bool = True,
+    label: str = "String data",
+    value: str = "data",
+    optional: Optional[str] = None
 ) -> dict:
     """
     Input box for string value.
@@ -113,10 +146,16 @@ def string_parameter(
     :param main: Show ui in main.
     :param label: Label identifier.
     :param value: Input string value.
+    :param optional: Make optional if not None. Initial state provided by not None
+        value.  Can be either 'enabled' or 'disabled'.
 
     :returns: Ui_json compliant dictionary.
     """
-    return {"main": main, "label": label, "value": value}
+    ui = {"main": main, "label": label, "value": value}
+
+    if optional is not None:
+        ui.update(optional_parameter(optional))
+    return ui
 
 
 def choice_string_parameter(
@@ -124,6 +163,7 @@ def choice_string_parameter(
     label: str = "String data",
     choice_list: Tuple = ("Option A", "Option B"),
     value: str = "Option A",
+    optional: Optional[str] = None
 ) -> dict:
     """
     Dropdown menu of string choices.
@@ -132,10 +172,16 @@ def choice_string_parameter(
     :param label: Label identifier.
     :param value: Input value.
     :param choice_list: List of options.
+    :param optional: Make optional if not None. Initial state provided by not None
+        value.  Can be either 'enabled' or 'disabled'.
 
     :returns: Ui_json compliant dictionary.
     """
-    return {"main": main, "label": label, "value": value, "choiceList": choice_list}
+    ui = {"main": main, "label": label, "value": value, "choiceList": choice_list}
+
+    if optional is not None:
+        ui.update(optional_parameter(optional))
+    return ui
 
 
 def file_parameter(
@@ -144,6 +190,7 @@ def file_parameter(
     file_description: Tuple = (),
     file_type: Tuple = (),
     value: str = "",
+    optional: Optional[str] = None
 ) -> dict:
     """
     File loader for specific extensions.
@@ -153,10 +200,12 @@ def file_parameter(
     :param value: Input value.
     :param file_description: Title used to describe each type.
     :param file_type: Extension of files to display.
+    :param optional: Make optional if not None. Initial state provided by not None
+        value.  Can be either 'enabled' or 'disabled'.
 
     :returns: Ui_json compliant dictionary.
     """
-    return {
+    ui = {
         "fileDescription": file_description,
         "fileType": file_type,
         "main": main,
@@ -164,12 +213,17 @@ def file_parameter(
         "value": value,
     }
 
+    if optional is not None:
+        ui.update(optional_parameter(optional))
+    return ui
+
 
 def object_parameter(
     main: bool = True,
     label: str = "Object",
     mesh_type: tuple = tuple(known_types),
     value: str = None,
+    optional: Optional[str] = None
 ) -> dict:
     """
     Dropdown menu of objects of specific types.
@@ -178,11 +232,16 @@ def object_parameter(
     :param label: Label identifier.
     :param value: Input value.
     :param mesh_type: Type of selectable objects.
+    :param optional: Make optional if not None. Initial state provided by not None
+        value.  Can be either 'enabled' or 'disabled'.
 
     :returns: Ui_json compliant dictionary.
     """
-    return {"main": main, "label": label, "value": value, "meshType": mesh_type}
+    ui = {"main": main, "label": label, "value": value, "meshType": mesh_type}
 
+    if optional is not None:
+        ui.update(optional_parameter(optional))
+    return ui
 
 def data_parameter(
     main: bool = True,
@@ -192,6 +251,7 @@ def data_parameter(
     data_group_type: str = None,
     parent: str = "",
     value: str = "",
+    optional: Optional[str] = None
 ) -> dict:
     """
     Dropdown menu of data from parental object.
@@ -207,10 +267,12 @@ def data_parameter(
         'Strike & dip',
         or 'Multi-element'.
     :param parent: Parameter name corresponding to the parent object.
+    :param optional: Make optional if not None. Initial state provided by not None
+        value.  Can be either 'enabled' or 'disabled'.
 
     :returns: Ui_json compliant dictionary.
     """
-    params = {
+    ui = {
         "main": main,
         "association": association,
         "dataType": data_type,
@@ -225,8 +287,13 @@ def data_parameter(
         "Strike & dip",
         "Multi-element",
     ]:
-        params["dataGroupType"] = data_group_type
-    return params
+        ui["dataGroupType"] = data_group_type
+
+
+    if optional is not None:
+        ui.update(optional_parameter(optional))
+
+    return ui
 
 
 def data_value_parameter(
@@ -238,6 +305,7 @@ def data_value_parameter(
     value: float = 0.0,
     is_value: bool = True,
     prop: Union[UUID, Entity] = None,
+    optional: Optional[str] = None
 ) -> dict:
     """
     Dropdown of data or input box.
@@ -255,10 +323,12 @@ def data_value_parameter(
     :param parent: Parameter name corresponding to the parent object.
     :param is_value: Display the input box or dropdown menu.
     :param prop: Data entity selected in the dropdown menu if 'is_value=False'.
+    :param optional: Make optional if not None. Initial state provided by not None
+        value.  Can be either 'enabled' or 'disabled'.
 
     :returns: Ui_json compliant dictionary.
     """
-    return {
+    ui = {
         "main": main,
         "association": association,
         "dataType": data_type,
@@ -269,3 +339,7 @@ def data_value_parameter(
         "property": prop,
         "min": value,
     }
+
+    if optional is not None:
+        ui.update(optional_parameter(optional))
+    return ui
