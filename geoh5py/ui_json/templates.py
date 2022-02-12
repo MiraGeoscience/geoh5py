@@ -18,7 +18,7 @@
 # pylint: disable=R0913
 
 import inspect
-from typing import Tuple, Union, Optional
+from typing import Optional, Tuple, Union
 from uuid import UUID
 
 from .. import objects
@@ -44,9 +44,12 @@ def optional_parameter(state: str) -> dict[str, bool]:
     elif state == "disabled":
         d["enabled"] = False
     else:
-        raise ValueError("Unrecognized state option. Must be either 'enabled' or 'disabled'.")
+        raise ValueError(
+            "Unrecognized state option. Must be either 'enabled' or 'disabled'."
+        )
 
     return d
+
 
 def bool_parameter(
     main: bool = True, label: str = "Logical data", value: bool = False
@@ -138,7 +141,7 @@ def string_parameter(
     main: bool = True,
     label: str = "String data",
     value: str = "data",
-    optional: Optional[str] = None
+    optional: Optional[str] = None,
 ) -> dict:
     """
     Input box for string value.
@@ -163,7 +166,7 @@ def choice_string_parameter(
     label: str = "String data",
     choice_list: Tuple = ("Option A", "Option B"),
     value: str = "Option A",
-    optional: Optional[str] = None
+    optional: Optional[str] = None,
 ) -> dict:
     """
     Dropdown menu of string choices.
@@ -190,7 +193,7 @@ def file_parameter(
     file_description: Tuple = (),
     file_type: Tuple = (),
     value: str = "",
-    optional: Optional[str] = None
+    optional: Optional[str] = None,
 ) -> dict:
     """
     File loader for specific extensions.
@@ -223,7 +226,7 @@ def object_parameter(
     label: str = "Object",
     mesh_type: tuple = tuple(known_types),
     value: str = None,
-    optional: Optional[str] = None
+    optional: Optional[str] = None,
 ) -> dict:
     """
     Dropdown menu of objects of specific types.
@@ -243,6 +246,7 @@ def object_parameter(
         ui.update(optional_parameter(optional))
     return ui
 
+
 def data_parameter(
     main: bool = True,
     label: str = "Data channel",
@@ -251,7 +255,7 @@ def data_parameter(
     data_group_type: str = None,
     parent: str = "",
     value: str = "",
-    optional: Optional[str] = None
+    optional: Optional[str] = None,
 ) -> dict:
     """
     Dropdown menu of data from parental object.
@@ -289,7 +293,6 @@ def data_parameter(
     ]:
         ui["dataGroupType"] = data_group_type
 
-
     if optional is not None:
         ui.update(optional_parameter(optional))
 
@@ -305,7 +308,7 @@ def data_value_parameter(
     value: float = 0.0,
     is_value: bool = True,
     prop: Union[UUID, Entity] = None,
-    optional: Optional[str] = None
+    optional: Optional[str] = None,
 ) -> dict:
     """
     Dropdown of data or input box.
