@@ -20,7 +20,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import Optional, Tuple, Union
+from typing import Union
 from uuid import UUID
 
 from .. import objects
@@ -309,7 +309,7 @@ def data_value_parameter(
     parent: str = "",
     value: float = 0.0,
     is_value: bool = True,
-    prop: Union[UUID, Entity, type(None)] = None,
+    prop: UUID | Entity | type(None) = None,
     optional: str | None = None,
 ) -> dict:
     """
