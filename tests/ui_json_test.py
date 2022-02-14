@@ -591,7 +591,6 @@ def test_data_value_parameter(tmp_path):
     assert reload_input.data["object"] is None, "Object not reloaded as None"
     assert reload_input.data["data"] == 0.0
 
-
     workspace = get_workspace(tmp_path)
     points_a = workspace.get_entity("Points_A")[0]
     data_b = workspace.get_entity("values A")[0]
