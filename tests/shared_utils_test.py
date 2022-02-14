@@ -17,16 +17,16 @@
 
 from geoh5py.shared.utils import iterable, iterable_message
 
+
 def test_iterable():
     assert iterable([1, 2, 4])
     assert not iterable(2)
-    assert not iterable({'a': 1, 'b': 2})
+    assert not iterable({"a": 1, "b": 2})
     assert not iterable("lskdjfs")
     assert not iterable([1], checklen=True)
+
 
 def test_iterable_message():
     assert iterable_message(None) == ""
     assert "Must be one of:" in iterable_message([1, 2, 3])
     assert "Must be:" in iterable_message([1])
-
-
