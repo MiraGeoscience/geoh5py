@@ -141,13 +141,13 @@ class ShapeValidator(BaseValidator):
     """Validate the shape of provided value."""
 
     @classmethod
-    def validate(cls, name: str, value: Any, valid: list[tuple[int]]) -> None:
+    def validate(cls, name: str, value: Any, valid: tuple[int]) -> None:
         """
         :param name: Parameter identifier.
         :param value: Input parameter value.
         :param valid: Expected value shape
         """
-        pshape = len(np.array(value))
+        pshape = np.array(value).shape
         if pshape != valid:
             raise ShapeValidationError(name, pshape, valid)
 
