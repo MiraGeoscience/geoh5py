@@ -201,7 +201,7 @@ class UUIDValidator(BaseValidator):
             try:
                 value = UUID(value)
             except ValueError as exception:
-                raise UUIDStringValidationError(name, value) from exception
+                raise UUIDStringValidationError(name, str(value)) from exception
 
         if valid is not None:
             if isinstance(valid, Workspace) and valid.root is not None:

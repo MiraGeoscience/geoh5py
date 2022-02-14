@@ -169,7 +169,6 @@ def test_uuid_validator(tmp_path):
     points = Points.create(
         ws, vertices=np.array([[1, 2, 3], [4, 5, 6]]), name="test_points"
     )
-    test_data = points.add_data({"points_data": {"values": np.array([1, 2])}})
     bogus_uuid = uuid4()
     validator = UUIDValidator()
 

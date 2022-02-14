@@ -104,7 +104,7 @@ class ShapeValidationError(BaseValidationError, Exception):
 class TypeValidationError(BaseValidationError, Exception):
     """Error on type validation."""
 
-    def __init__(self, name: str, value: type, valid: type):
+    def __init__(self, name: str, value: str, valid: str | list[str]):
 
         super().__init__(TypeValidationError.message(name, value, valid))
 
