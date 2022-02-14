@@ -18,7 +18,7 @@
 # pylint: disable=R0913
 
 import inspect
-from typing import Optional, Dict, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 from uuid import UUID
 
 from .. import objects
