@@ -572,7 +572,7 @@ def test_object_data_selection(tmp_path):
             raise ValueError(f"Input '{key}' differs from the output.")
 
 
-def test_data_value_parameter(tmp_path):
+def test_data_value_parameter_a(tmp_path):
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -590,6 +590,8 @@ def test_data_value_parameter(tmp_path):
 
     assert reload_input.data["object"] is None, "Object not reloaded as None"
     assert reload_input.data["data"] == 0.0
+
+def test_data_value_parameter_b(tmp_path):
 
     workspace = get_workspace(tmp_path)
     points_a = workspace.get_entity("Points_A")[0]
