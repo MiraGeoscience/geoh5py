@@ -270,6 +270,7 @@ def test_optional_parameter():
     assert test["optional"]
     assert not test["enabled"]
 
+
 def test_bool_parameter():
 
     ui_json = deepcopy(default_ui_json)
@@ -313,6 +314,7 @@ def test_integer_parameter(tmp_path):
     assert test["optional"]
     assert test["enabled"]
 
+
 def test_float_parameter(tmp_path):
 
     workspace = get_workspace(tmp_path)
@@ -342,6 +344,7 @@ def test_float_parameter(tmp_path):
     test = templates.float_parameter(optional="enabled")
     assert test["optional"]
     assert test["enabled"]
+
 
 def test_string_parameter(tmp_path):
 
@@ -373,6 +376,7 @@ def test_string_parameter(tmp_path):
     assert test["optional"]
     assert test["enabled"]
 
+
 def test_choice_string_parameter(tmp_path):
 
     workspace = get_workspace(tmp_path)
@@ -403,10 +407,12 @@ def test_choice_string_parameter(tmp_path):
     assert test["optional"]
     assert test["enabled"]
 
+
 def test_file_parameter():
     test = templates.file_parameter(optional="enabled")
     assert test["optional"]
     assert test["enabled"]
+
 
 def test_uuid_string_parameter():
     ui_json = deepcopy(default_ui_json)
@@ -418,6 +424,7 @@ def test_uuid_string_parameter():
     assert UUIDStringValidationError.message("object", "hello world") == str(
         excinfo.value
     )
+
 
 def test_shape_parameter():
     ui_json = deepcopy(default_ui_json)
@@ -571,7 +578,9 @@ def test_data_value_parameter(tmp_path):
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
     ui_json["object"] = templates.object_parameter()  # value=points_b.uid)
-    ui_json["data"] = templates.data_value_parameter(parent="object", optional="enabled")
+    ui_json["data"] = templates.data_value_parameter(
+        parent="object", optional="enabled"
+    )
 
     assert ui_json["data"]["optional"]
     assert ui_json["data"]["enabled"]
