@@ -17,8 +17,10 @@
 
 # pylint: disable=R0913
 
+from __future__ import annotations
+
 import inspect
-from typing import Optional, Tuple, Dict, Union
+from typing import Optional, Tuple, Union
 from uuid import UUID
 
 from .. import objects
@@ -31,7 +33,7 @@ known_types = [
 ]
 
 
-def optional_parameter(state: str) -> Dict[str, bool]:
+def optional_parameter(state: str) -> dict[str, bool]:
     """
     Returns dictionary to make existing ui optional via .update() method.
 
