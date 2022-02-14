@@ -309,7 +309,7 @@ def data_value_parameter(
     parent: str = "",
     value: float = 0.0,
     is_value: bool = True,
-    prop: Union[UUID, Entity] = None,
+    prop: Union[UUID, Entity, type(None)] = None,
     optional: Optional[str] = None,
 ) -> dict:
     """
