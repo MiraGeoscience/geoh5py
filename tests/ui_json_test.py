@@ -103,7 +103,7 @@ def test_property_group_validator(tmp_path):
     points = Points.create(
         ws, vertices=np.array([[1, 2, 3], [4, 5, 6]]), name="test_points"
     )
-    test_data = points.add_data({"points_data": {"values": np.array([1., 2.])}})
+    test_data = points.add_data({"points_data": {"values": np.array([1.0, 2.0])}})
     pg = points.add_data_to_group(test_data, "test_group")
     validator = PropertyGroupValidator()
 
