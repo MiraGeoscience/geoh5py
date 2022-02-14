@@ -91,7 +91,7 @@ class RequiredValidationError(BaseValidationError, Exception):
 class ShapeValidationError(BaseValidationError, Exception):
     """Error on shape validation."""
 
-    def __init__(self, name: str, value: tuple(int), valid: tuple(int)):
+    def __init__(self, name: str, value: tuple[int], valid: tuple[int]):
         super().__init__(ShapeValidationError.message(name, value, valid))
 
     @staticmethod
