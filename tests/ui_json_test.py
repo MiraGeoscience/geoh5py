@@ -567,10 +567,9 @@ def test_object_data_selection(tmp_path):
 
 def test_data_value_parameter(tmp_path):
     workspace = get_workspace(tmp_path)
-    # points_b = workspace.get_entity("Points_B")[0]
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
-    ui_json["object"] = templates.object_parameter()  # value=points_b.uid)
+    ui_json["object"] = templates.object_parameter()
     ui_json["data"] = templates.data_value_parameter(parent="object", optional="enabled")
 
     assert ui_json["data"]["optional"]
@@ -581,6 +580,26 @@ def test_data_value_parameter(tmp_path):
     reload_input = InputFile.read_ui_json(out_file)
 
     assert reload_input.data["object"] is None, "Object not reloaded as None"
+    assert reload_input.data["data"] == 0.0
+
+    points_a = workspace.get_entity("Points_A")[0]
+    data_b = workspace.get_entity("values A")[0]
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["object"] = templates.object_parameter(value=points_a.uid)
+    ui_json["data"] = templates.data_value_parameter(
+        parent="object", is_value=False, prop=data_b.uid, optional="enabled"
+    )
+
+    assert ui_json["data"]["optional"]
+    assert ui_json["data"]["enabled"]
+
+    in_file = InputFile(ui_json=ui_json)
+    out_file = in_file.write_ui_json()
+    reload_input = InputFile.read_ui_json(out_file)
+
+    assert reload_input.data["object"].uid == points_a.uid
+    assert reload_input.data["data"].uid == data_b.uid
 
 
 def test_data_parameter(tmp_path):
@@ -603,6 +622,41 @@ def test_data_parameter(tmp_path):
     # input_data["file"] = templates.file_parameter()
     # input_data["float"] = templates.float_parameter()
 
+def test_stringify(tmp_path):
+
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace.h5file
+    ui_json["test"] = templates.integer_parameter(value=None)
+    in_file = InputFile(ui_json=ui_json, validations={"test": {"types": [int, type(None)]}})
+    strdict = in_file._stringify(in_file.ui_json, none_map={"test": 4})
+    assert strdict["test"]["value"] == 4
+    assert strdict["test"]["optional"]
+    assert not strdict["test"]["enabled"]
+
+    ui_json["test_group"] = templates.string_parameter(optional="enabled")
+    ui_json["test_group"]["group"] = "test_group"
+    ui_json["test_group"]["groupOptional"] = True
+    ui_json["test"] = templates.integer_parameter(value=None)
+    ui_json["test"]["group"] = "test_group"
+
+    in_file = InputFile(ui_json=ui_json, validations={"test": {"types": [int, type(None)]}})
+    strdict = in_file._stringify(in_file.ui_json, none_map={"test": 4})
+    assert strdict["test"]["value"] == 4
+    assert not strdict["test"]["enabled"]
+    assert "optional" not in strdict["test"]
+
+    ui_json["test_group"] = templates.string_parameter(optional="enabled")
+    ui_json["test_group"]["group"] = "test_group"
+    ui_json["test_group"]["groupOptional"] = False
+    ui_json["test"] = templates.integer_parameter(value=None)
+    ui_json["test"]["group"] = "test_group"
+
+    in_file = InputFile(ui_json=ui_json, validations={"test": {"types": [int, type(None)]}})
+    strdict = in_file._stringify(in_file.ui_json, none_map={"test": 4})
+    assert strdict["test"]["value"] == 4
+    assert strdict["test"]["optional"]
+    assert not strdict["test"]["enabled"]
 
 def test_collect():
     d_u_j = deepcopy(default_ui_json)
