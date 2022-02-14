@@ -178,7 +178,7 @@ def test_uuid_validator(tmp_path):
     assert UUIDValidationError.message("test", bogus_uuid, ws) == str(excinfo.value)
     assert "test.geoh5" in str(excinfo.value)
 
-    # Test non-existant uuid in points object
+    # Test non-existent uuid in points object
     with pytest.raises(UUIDValidationError) as excinfo:
         validator("test", bogus_uuid, points)
     assert UUIDValidationError.message("test", bogus_uuid, points) == str(excinfo.value)
