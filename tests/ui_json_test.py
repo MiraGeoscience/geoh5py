@@ -262,6 +262,14 @@ def test_input_file_json():
     )
 
 
+def test_optional_parameter():
+    test = templates.optional_parameter("enabled")
+    assert test["optional"]
+    assert test["enabled"]
+    test = templates.optional_parameter("disabled")
+    assert test["optional"]
+    assert not test["enabled"]
+
 def test_bool_parameter():
 
     ui_json = deepcopy(default_ui_json)
@@ -301,6 +309,9 @@ def test_integer_parameter(tmp_path):
         reload_input.data["integer"] == 123
     ), "IntegerParameter did not properly save to file."
 
+    test = templates.integer_parameter(optional="enabled")
+    assert test["optional"]
+    assert test["enabled"]
 
 def test_float_parameter(tmp_path):
 
@@ -328,6 +339,9 @@ def test_float_parameter(tmp_path):
         reload_input.data["float_parameter"] == 123.0
     ), "IntegerParameter did not properly save to file."
 
+    test = templates.float_parameter(optional="enabled")
+    assert test["optional"]
+    assert test["enabled"]
 
 def test_string_parameter(tmp_path):
 
@@ -355,6 +369,9 @@ def test_string_parameter(tmp_path):
         reload_input.data["string_parameter"] == "goodtogo"
     ), "IntegerParameter did not properly save to file."
 
+    test = templates.string_parameter(optional="enabled")
+    assert test["optional"]
+    assert test["enabled"]
 
 def test_choice_string_parameter(tmp_path):
 
@@ -382,6 +399,14 @@ def test_choice_string_parameter(tmp_path):
         reload_input.data["choice_string_parameter"] == "Option A"
     ), "IntegerParameter did not properly save to file."
 
+    test = templates.choice_string_parameter(optional="enabled")
+    assert test["optional"]
+    assert test["enabled"]
+
+def test_file_parameter():
+    test = templates.file_parameter(optional="enabled")
+    assert test["optional"]
+    assert test["enabled"]
 
 def test_uuid_string_parameter():
     ui_json = deepcopy(default_ui_json)
@@ -393,7 +418,6 @@ def test_uuid_string_parameter():
     assert UUIDStringValidationError.message("object", "hello world") == str(
         excinfo.value
     )
-
 
 def test_shape_parameter():
     ui_json = deepcopy(default_ui_json)
@@ -413,8 +437,10 @@ def test_object_data_selection(tmp_path):
     points_b = workspace.get_entity("Points_B")[0]
 
     ui_json = deepcopy(default_ui_json)
-    ui_json["object"] = templates.object_parameter()
+    ui_json["object"] = templates.object_parameter(optional="enabled")
     ui_json["geoh5"] = workspace
+    assert ui_json["object"]["optional"]
+    assert ui_json["object"]["enabled"]
 
     # Test missing required field from ui_json
 
@@ -440,10 +466,13 @@ def test_object_data_selection(tmp_path):
     assert "Input 'data' must be of type dict or None." in str(excinfo)
 
     # Test for invalid uuid string
-    ui_json["data"] = templates.data_parameter()
+    ui_json["data"] = templates.data_parameter(optional="enabled")
     ui_json["data"]["parent"] = "object"
     ui_json["data"]["value"] = "Hello World"
     in_file = InputFile(ui_json=ui_json)
+
+    assert ui_json["data"]["optional"]
+    assert ui_json["data"]["enabled"]
 
     with pytest.raises(TypeValidationError) as excinfo:
         getattr(in_file, "data")
@@ -542,7 +571,10 @@ def test_data_value_parameter(tmp_path):
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
     ui_json["object"] = templates.object_parameter()  # value=points_b.uid)
-    ui_json["data"] = templates.data_value_parameter(parent="object")
+    ui_json["data"] = templates.data_value_parameter(parent="object", optional="enabled")
+
+    assert ui_json["data"]["optional"]
+    assert ui_json["data"]["enabled"]
 
     in_file = InputFile(ui_json=ui_json)
     out_file = in_file.write_ui_json()
