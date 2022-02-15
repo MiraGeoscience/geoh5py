@@ -37,6 +37,7 @@ from geoh5py.shared.exceptions import (
 )
 from geoh5py.shared.utils import compare_entities
 from geoh5py.shared.validators import (
+    BaseValidator,
     AssociationValidator,
     PropertyGroupValidator,
     RequiredValidator,
@@ -45,7 +46,7 @@ from geoh5py.shared.validators import (
     UUIDValidator,
     ValueValidator,
 )
-from geoh5py.ui_json import templates
+from geoh5py.ui_json import templates, InputValidation
 from geoh5py.ui_json.constants import default_ui_json, ui_validations
 from geoh5py.ui_json.input_file import InputFile
 from geoh5py.workspace import Workspace
@@ -54,7 +55,7 @@ from geoh5py.workspace import Workspace
 def test_validation_types():
     validation_types = [
         "association",
-        "property_group",
+        "property_group_type",
         "required",
         "shape",
         "types",
@@ -73,7 +74,7 @@ def test_validation_types():
     ]
 
     for i, err in enumerate(errs):
-        assert err.validation_type == validation_types[i]
+        assert err.validator_type == validation_types[i]
 
 
 def test_association_validator(tmp_path):
@@ -684,3 +685,20 @@ def test_collect():
     enabled_params = InputFile.collect(d_u_j, "enabled", value=True)
     assert all(["enabled" in v for v in enabled_params.values()])
     assert all([v["enabled"] for v in enabled_params.values()])
+
+def test_unique_validations():
+    result = InputValidation._unique_validators({
+        "param1": {"types": [str], "values": ["test2"]},
+        "param2": {"types": [float]}
+    })
+    assert all([k in result for k in ["types", "values"]])
+    assert all([k in ["types", "values"] for k in result])
+
+def test_required_validators():
+    result = InputValidation._required_validators({
+        "param1": {"types": [str], "values": ["test2"]},
+        "param2": {"types": [float]}
+    })
+    assert all([k in result.keys() for k in ["types", "values"]])
+    assert all([k in ["types", "values"] for k in result.keys()])
+    assert all([k == v.validator_type for k, v in result.items()])

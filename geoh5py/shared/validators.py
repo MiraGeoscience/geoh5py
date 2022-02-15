@@ -71,9 +71,9 @@ class BaseValidator(ABC):
     @property
     @classmethod
     @abstractmethod
-    def validation_type(self):
+    def validator_type(self):
         """Validation type identifier."""
-        raise NotImplementedError("Must implement the validation_type property.")
+        raise NotImplementedError("Must implement the validator_type property.")
 
     def __call__(self, *args):
         if hasattr(self, "validate"):
@@ -83,7 +83,7 @@ class BaseValidator(ABC):
 class AssociationValidator(BaseValidator):
     """Validate the shape of provided value."""
 
-    validation_type = "association"
+    validator_type = "association"
 
     @classmethod
     def validate(cls, name: str, value: Entity, valid: Entity | Workspace) -> None:
@@ -107,7 +107,7 @@ class AssociationValidator(BaseValidator):
 class PropertyGroupValidator(BaseValidator):
     """Validate property_group from parent entity."""
 
-    validation_type = "property_group"
+    validator_type = "property_group_type"
 
     @classmethod
     def validate(cls, name: str, value: PropertyGroup, valid: str) -> None:
@@ -121,7 +121,7 @@ class RequiredValidator(BaseValidator):
     Validate that required keys are present in parameter.
     """
 
-    validation_type = "required"
+    validator_type = "required"
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: bool) -> None:
@@ -137,7 +137,7 @@ class RequiredValidator(BaseValidator):
 class ShapeValidator(BaseValidator):
     """Validate the shape of provided value."""
 
-    validation_type = "shape"
+    validator_type = "shape"
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: tuple[int]) -> None:
@@ -157,7 +157,7 @@ class TypeValidator(BaseValidator):
     Validate the value type from a list of valid types.
     """
 
-    validation_type = "types"
+    validator_type = "types"
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: list[type] | type) -> None:
@@ -182,7 +182,7 @@ class TypeValidator(BaseValidator):
 class UUIDValidator(BaseValidator):
     """Validate a uuui.UUID value or uuid string."""
 
-    validation_type = "uuid"
+    validator_type = "uuid"
 
     @classmethod
     def validate(
@@ -219,7 +219,7 @@ class ValueValidator(BaseValidator):
     Validator that ensures that values are valid entries.
     """
 
-    validation_type = "values"
+    validator_type = "values"
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: list[float | str]) -> None:
