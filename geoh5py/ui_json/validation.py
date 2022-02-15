@@ -51,14 +51,15 @@ class InputValidation:
 
     def __init__(
         self,
-        validations: dict[str, Any] | None,
+        validators: dict[str, BaseValidator] = None,
+        validations: dict[str, Any] | None = None,
         ignore_list: tuple = (),
         ignore_requirements: bool = False,
         workspace: Workspace = None,
     ):
-        self._validators: dict[str, BaseValidator] = {}
+        self.validators: dict[str, BaseValidator] = validators
         self.workspace: Workspace | None = workspace
-        self.validations = validations
+        self.validations: dict[str, Any] | None = validations
         self.ignore_list: tuple = ignore_list
         self.ignore_requirements: bool = ignore_requirements
 
@@ -73,30 +74,36 @@ class InputValidation:
         self._workspace = value
 
     @property
+    def validators(self):
+        return self._validators
+
+    @validators.setter
+    def validators(self, val):
+        if val is None:
+            self._validators = {}
+        else:
+            self._validators = val
+
+
+    @property
     def validations(self):
         return self._validations
 
     @validations.setter
     def validations(self, val):
+
         if isinstance(val, dict):
-            validator_list = list({key for item in val.values() for key in item})
-            for key in validator_list:
-                if key == "property_group_type":
-                    self._validators[key] = PropertyGroupValidator()
-                elif key == "required":
-                    self._validators[key] = RequiredValidator()
-                elif key == "shape":
-                    self._validators[key] = ShapeValidator()
-                elif key == "types":
-                    self._validators[key] = TypeValidator()
-                elif key == "values":
-                    self._validators[key] = ValueValidator()
-                elif key == "association":
-                    self._validators[key] = AssociationValidator()
-                else:
+            required_validators = list({key for item in val.values() for key in item})
+            all_validators = {k.validator_type: k for k in BaseValidator.__subclasses__()}
+            all_validators.update(self.validators)
+            for key in required_validators:
+                try:
+                    self.validators[key] = all_validators[key]()
+                except IndexError:
                     raise ValueError(f"No validator implemented for argument '{key}'.")
+
         elif val is None:
-            self._validators = None
+            self.validators = None
         else:
             raise ValueError(
                 "Input 'validations' must be of of type 'dict' or None. "
@@ -126,7 +133,7 @@ class InputValidation:
             ) or name in self.ignore_list:
                 continue
 
-            self._validators[val](name, value, args)
+            self.validators[val](name, value, args)
 
     def validate_data(self, data: dict[str, Any]) -> None:
         """

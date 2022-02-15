@@ -69,9 +69,11 @@ class BaseValidator(ABC):
         )
 
     @property
+    @classmethod
     @abstractmethod
     def validation_type(self):
         """Validation type identifier."""
+        raise NotImplementedError("Must implement the validation_type property.")
 
     def __call__(self, *args):
         if hasattr(self, "validate"):
@@ -80,6 +82,8 @@ class BaseValidator(ABC):
 
 class AssociationValidator(BaseValidator):
     """Validate the shape of provided value."""
+
+    validation_type = "association"
 
     @classmethod
     def validate(cls, name: str, value: Entity, valid: Entity | Workspace) -> None:
@@ -99,28 +103,25 @@ class AssociationValidator(BaseValidator):
         if value.uid not in [child.uid for child in children]:
             raise AssociationValidationError(name, value, valid)
 
-    @property
-    def validation_type(self):
-        return "association"
-
 
 class PropertyGroupValidator(BaseValidator):
     """Validate property_group from parent entity."""
+
+    validation_type = "property_group"
 
     @classmethod
     def validate(cls, name: str, value: PropertyGroup, valid: str) -> None:
         if value.property_group_type != valid:
             raise PropertyGroupValidationError(name, value, valid)
 
-    @property
-    def validation_type(self):
-        return "property_group"
 
 
 class RequiredValidator(BaseValidator):
     """
     Validate that required keys are present in parameter.
     """
+
+    validation_type = "required"
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: bool) -> None:
@@ -132,13 +133,11 @@ class RequiredValidator(BaseValidator):
         if value is None and valid:
             raise RequiredValidationError(name)
 
-    @property
-    def validation_type(self):
-        return "required"
-
 
 class ShapeValidator(BaseValidator):
     """Validate the shape of provided value."""
+
+    validation_type = "shape"
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: tuple[int]) -> None:
@@ -151,15 +150,14 @@ class ShapeValidator(BaseValidator):
         if pshape != valid:
             raise ShapeValidationError(name, pshape, valid)
 
-    @property
-    def validation_type(self):
-        return "shape"
 
 
 class TypeValidator(BaseValidator):
     """
     Validate the value type from a list of valid types.
     """
+
+    validation_type = "types"
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: list[type] | type) -> None:
@@ -180,13 +178,11 @@ class TypeValidator(BaseValidator):
 
                 raise TypeValidationError(name, type_name, valid_names)
 
-    @property
-    def validation_type(self):
-        return "types"
-
 
 class UUIDValidator(BaseValidator):
     """Validate a uuui.UUID value or uuid string."""
+
+    validation_type = "uuid"
 
     @classmethod
     def validate(
@@ -216,15 +212,14 @@ class UUIDValidator(BaseValidator):
             if value not in [child.uid for child in children_list]:
                 raise UUIDValidationError(name, value, valid)
 
-    @property
-    def validation_type(self):
-        return "uuid"
 
 
 class ValueValidator(BaseValidator):
     """
     Validator that ensures that values are valid entries.
     """
+
+    validation_type = "values"
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: list[float | str]) -> None:
@@ -235,7 +230,3 @@ class ValueValidator(BaseValidator):
         """
         if value not in valid:
             raise ValueValidationError(name, value, valid)
-
-    @property
-    def validation_type(self):
-        return "values"
