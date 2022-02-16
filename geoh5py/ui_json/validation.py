@@ -112,13 +112,13 @@ class InputValidation:
     @staticmethod
     def _required_validators(validations: dict[str, Any]):
         unique_validators = InputValidation._unique_validators(validations)
-        all_validators = {k.validator_type: k for k in BaseValidator.__subclasses__()}
+        all_validators = {k.validator_type: k() for k in BaseValidator.__subclasses__()}
         val = {}
         for k in unique_validators:
             if k not in all_validators:
                 raise ValueError(f"No validator implemented for argument '{k}'.")
             else:
-                val[k] = all_validators[k]()
+                val[k] = all_validators[k]
         return val
 
     @staticmethod
