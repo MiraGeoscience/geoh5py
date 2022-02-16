@@ -22,15 +22,7 @@ from typing import Any, cast
 from uuid import UUID
 
 from geoh5py.shared.exceptions import RequiredValidationError
-from geoh5py.shared.validators import (
-    AssociationValidator,
-    BaseValidator,
-    PropertyGroupValidator,
-    RequiredValidator,
-    ShapeValidator,
-    TypeValidator,
-    ValueValidator,
-)
+from geoh5py.shared.validators import BaseValidator, TypeValidator
 from geoh5py.workspace import Workspace
 from geoh5py.shared import Entity
 from geoh5py.groups import PropertyGroup

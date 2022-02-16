@@ -11,14 +11,13 @@ import json
 import os
 import warnings
 from copy import deepcopy
-from typing import Any, Callable, cast
+from typing import Any, Callable
 from uuid import UUID
 
 import numpy as np
 
-from geoh5py.groups import ContainerGroup, PropertyGroup
+from geoh5py.groups import ContainerGroup
 from geoh5py.io.utils import as_str_if_uuid, entity2uuid, str2uuid, uuid2entity
-from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
 from geoh5py.shared.validators import UUIDValidator
 from geoh5py.workspace import Workspace
