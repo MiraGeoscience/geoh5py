@@ -19,7 +19,7 @@ import numpy as np
 from geoh5py.groups import ContainerGroup, PropertyGroup
 from geoh5py.io.utils import as_str_if_uuid, entity2uuid, str2uuid, uuid2entity
 from geoh5py.shared import Entity
-from geoh5py.shared.exceptions import JSONParameterValidationError
+from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
 from geoh5py.shared.validators import UUIDValidator
 from geoh5py.workspace import Workspace
 
@@ -322,7 +322,7 @@ class InputFile:
             if isinstance(value, dict):
                 try:
                     self.ui_validators(value)
-                except Exception as error:
+                except tuple(BaseValidationError.__subclasses__()) as error:
                     raise JSONParameterValidationError(key, error.args[0]) from error
 
                 value = self._numify(value)
