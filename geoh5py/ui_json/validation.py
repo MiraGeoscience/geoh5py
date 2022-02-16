@@ -21,6 +21,8 @@ from copy import deepcopy
 from typing import Any, cast
 from uuid import UUID
 
+from geoh5py.groups import PropertyGroup
+from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import RequiredValidationError
 from geoh5py.shared.validators import (
     AssociationValidator,
@@ -32,8 +34,6 @@ from geoh5py.shared.validators import (
     ValueValidator,
 )
 from geoh5py.workspace import Workspace
-from geoh5py.shared import Entity
-from geoh5py.groups import PropertyGroup
 
 
 class InputValidation:
@@ -59,7 +59,7 @@ class InputValidation:
         ignore_list: tuple = (),
         ignore_requirements: bool = False,
         workspace: Workspace = None,
-        ui_json: dict[str, Any] = None
+        ui_json: dict[str, Any] = None,
     ):
         self.validations: dict[str, Any] | None = validations
         self.ui_json: dict[str, Any] = ui_json
@@ -67,7 +67,6 @@ class InputValidation:
         self.workspace: Workspace | None = workspace
         self.ignore_list: tuple = ignore_list
         self.ignore_requirements: bool = ignore_requirements
-
 
     @property
     def ui_json(self):
@@ -112,7 +111,6 @@ class InputValidation:
         if value is not None:
             TypeValidator.validate("workspace", value, Workspace)
         self._workspace = value
-
 
     @staticmethod
     def _unique_validators(validations: dict[str, Any]) -> list[str]:
