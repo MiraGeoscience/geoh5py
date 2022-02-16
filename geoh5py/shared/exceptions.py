@@ -43,7 +43,7 @@ class BaseValidationError(ABC):
         )
 
 
-class AssociationValidationError(BaseValidationError, Exception):
+class AssociationValidationError(BaseValidationError, BaseException):
     """Error on association between child and parent entity validation."""
 
     def __init__(self, name: str, value: Entity, parent: Entity | Workspace):
@@ -54,7 +54,7 @@ class AssociationValidationError(BaseValidationError, Exception):
         return f"Property '{name}' of type '{value}' must be a child entity of parent {parent}"
 
 
-class JSONParameterValidationError(BaseValidationError, Exception):
+class JSONParameterValidationError(BaseValidationError, BaseException):
     """Error on uuid validation."""
 
     def __init__(self, name: str, err: str):
@@ -65,7 +65,7 @@ class JSONParameterValidationError(BaseValidationError, Exception):
         return f"Malformed ui.json dictionary for parameter '{name}'. {err}"
 
 
-class PropertyGroupValidationError(BaseValidationError, Exception):
+class PropertyGroupValidationError(BaseValidationError, BaseException):
     """Error on property group validation."""
 
     def __init__(self, name: str, value: PropertyGroup, valid: str):
@@ -79,7 +79,7 @@ class PropertyGroupValidationError(BaseValidationError, Exception):
         )
 
 
-class RequiredValidationError(BaseValidationError, Exception):
+class RequiredValidationError(BaseValidationError, BaseException):
     def __init__(self, name: str):
         super().__init__(RequiredValidationError.message(name))
 
@@ -88,7 +88,7 @@ class RequiredValidationError(BaseValidationError, Exception):
         return f"Missing required parameter: '{name}'."
 
 
-class ShapeValidationError(BaseValidationError, Exception):
+class ShapeValidationError(BaseValidationError, BaseException):
     """Error on shape validation."""
 
     def __init__(self, name: str, value: tuple[int], valid: tuple[int]):
@@ -101,7 +101,7 @@ class ShapeValidationError(BaseValidationError, Exception):
         )
 
 
-class TypeValidationError(BaseValidationError, Exception):
+class TypeValidationError(BaseValidationError, BaseException):
     """Error on type validation."""
 
     def __init__(self, name: str, value: str, valid: str | list[str]):
@@ -115,7 +115,7 @@ class TypeValidationError(BaseValidationError, Exception):
         )
 
 
-class UUIDValidationError(BaseValidationError, Exception):
+class UUIDValidationError(BaseValidationError, BaseException):
     """Error on uuid validation."""
 
     def __init__(self, name: str, value: str | UUID, valid: Entity | Workspace):
@@ -130,7 +130,7 @@ class UUIDValidationError(BaseValidationError, Exception):
         )
 
 
-class UUIDStringValidationError(BaseValidationError, Exception):
+class UUIDStringValidationError(BaseValidationError, BaseException):
     """Error on uuid string validation."""
 
     def __init__(self, name: str, value: str):
@@ -141,7 +141,7 @@ class UUIDStringValidationError(BaseValidationError, Exception):
         return f"Parameter '{name}' with value '{value}' is not a valid uuid string."
 
 
-class ValueValidationError(BaseValidationError, Exception):
+class ValueValidationError(BaseValidationError, BaseException):
     """Error on value validation."""
 
     def __init__(self, name: str, value: Any, valid: list[Any]):
