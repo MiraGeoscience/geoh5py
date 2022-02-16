@@ -62,24 +62,15 @@ class InputValidation:
         **validation_options,
     ):
         self.validations: dict[str, Any] | None = validations
-        self.ui_json: dict[str, Any] = ui_json
         self.validators: dict[str, BaseValidator] = validators
         self.workspace: Workspace | None = workspace
         self.ignore_list: tuple = validation_options.get("ignore_list", ())
         self.ignore_requirements: bool = validation_options.get(
             "ignore_requirements", False
         )
-
-    @property
-    def ui_json(self):
-        raise AttributeError("'ui_json' argument not stored in class instances.")
-
-    @ui_json.setter
-    def ui_json(self, val):
-        if val is None:
-            self._inferred_validations = {}
-        else:
-            self._inferred_validations = self.infer_validations(val)
+        self._inferred_validations = (
+            {} if ui_json is None else self.infer_validations(ui_json)
+        )
 
     @property
     def validations(self):
