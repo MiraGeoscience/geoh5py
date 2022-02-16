@@ -115,7 +115,6 @@ class PropertyGroupValidator(BaseValidator):
             raise PropertyGroupValidationError(name, value, valid)
 
 
-
 class RequiredValidator(BaseValidator):
     """
     Validate that required keys are present in parameter.
@@ -149,7 +148,6 @@ class ShapeValidator(BaseValidator):
         pshape = np.array(value).shape
         if pshape != valid:
             raise ShapeValidationError(name, pshape, valid)
-
 
 
 class TypeValidator(BaseValidator):
@@ -211,7 +209,6 @@ class UUIDValidator(BaseValidator):
 
             if value not in [child.uid for child in children_list]:
                 raise UUIDValidationError(name, value, valid)
-
 
 
 class ValueValidator(BaseValidator):

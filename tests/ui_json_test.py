@@ -38,6 +38,7 @@ from geoh5py.shared.exceptions import (
 from geoh5py.shared.utils import compare_entities
 from geoh5py.shared.validators import (
     AssociationValidator,
+    BaseValidator,
     PropertyGroupValidator,
     RequiredValidator,
     ShapeValidator,
@@ -45,7 +46,7 @@ from geoh5py.shared.validators import (
     UUIDValidator,
     ValueValidator,
 )
-from geoh5py.ui_json import templates, InputValidation
+from geoh5py.ui_json import InputValidation, templates
 from geoh5py.ui_json.constants import default_ui_json, ui_validations
 from geoh5py.ui_json.input_file import InputFile
 from geoh5py.workspace import Workspace
@@ -685,19 +686,19 @@ def test_collect():
     assert all(["enabled" in v for v in enabled_params.values()])
     assert all([v["enabled"] for v in enabled_params.values()])
 
+
 def test_unique_validations():
-    result = InputValidation._unique_validators({
-        "param1": {"types": [str], "values": ["test2"]},
-        "param2": {"types": [float]}
-    })
+    result = InputValidation._unique_validators(
+        {"param1": {"types": [str], "values": ["test2"]}, "param2": {"types": [float]}}
+    )
     assert all([k in result for k in ["types", "values"]])
     assert all([k in ["types", "values"] for k in result])
 
+
 def test_required_validators():
-    result = InputValidation._required_validators({
-        "param1": {"types": [str], "values": ["test2"]},
-        "param2": {"types": [float]}
-    })
+    result = InputValidation._required_validators(
+        {"param1": {"types": [str], "values": ["test2"]}, "param2": {"types": [float]}}
+    )
     assert all([k in result.keys() for k in ["types", "values"]])
     assert all([k in ["types", "values"] for k in result.keys()])
     assert all([k == v.validator_type for k, v in result.items()])

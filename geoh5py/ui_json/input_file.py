@@ -165,7 +165,9 @@ class InputFile:
     def validators(self):
         if getattr(self, "_validators", None) is None:
             self._validators = InputValidation(
-                ui_json=self.ui_json, validations=self.validations, **self.validation_options
+                ui_json=self.ui_json,
+                validations=self.validations,
+                **self.validation_options,
             )
 
         return self._validators
@@ -174,7 +176,9 @@ class InputFile:
     def ui_validators(self):
         if getattr(self, "_ui_validators", None) is None:
             self._ui_validators = InputValidation(
-                validations=ui_validations, ignore_list=("value",), **self.validation_options
+                validations=ui_validations,
+                ignore_list=("value",),
+                **self.validation_options,
             )
 
         return self._ui_validators
@@ -379,8 +383,6 @@ class InputFile:
             else:
                 val = fun(val, *args)
         return val
-
-
 
     @staticmethod
     def flatten(var: dict[str, Any]) -> dict[str, Any]:
