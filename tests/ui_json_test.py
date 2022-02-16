@@ -38,7 +38,6 @@ from geoh5py.shared.exceptions import (
 from geoh5py.shared.utils import compare_entities
 from geoh5py.shared.validators import (
     AssociationValidator,
-    BaseValidator,
     PropertyGroupValidator,
     RequiredValidator,
     ShapeValidator,
