@@ -94,7 +94,7 @@ class InputValidation:
         return self._validators
 
     @validators.setter
-    def validators(self, val):
+    def validators(self, val: dict[str, BaseValidator]):
         val = {} if val is None else val
 
         if self.validations is not None:
