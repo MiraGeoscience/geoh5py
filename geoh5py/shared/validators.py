@@ -44,18 +44,10 @@ from geoh5py.shared.utils import iterable
 from geoh5py.workspace import Workspace
 
 
-class BaseValidator(ABC):
+class AbstractValidator(ABC):
     """
-    Base class for validators
+    Abstract base class for validators
     """
-
-    def __init__(self, **kwargs):
-
-        self._validation_type = ""
-
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
 
     @classmethod
     @abstractmethod
@@ -71,9 +63,18 @@ class BaseValidator(ABC):
     @property
     @classmethod
     @abstractmethod
-    def validator_type(self):
+    def validator_type(cls):
         """Validation type identifier."""
         raise NotImplementedError("Must implement the validator_type property.")
+
+
+class BaseValidator(AbstractValidator):
+    """Concrete base class for validators."""
+
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
 
     def __call__(self, *args):
         if hasattr(self, "validate"):
@@ -84,6 +85,9 @@ class AssociationValidator(BaseValidator):
     """Validate the shape of provided value."""
 
     validator_type = "association"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     @classmethod
     def validate(cls, name: str, value: Entity, valid: Entity | Workspace) -> None:
@@ -109,6 +113,9 @@ class PropertyGroupValidator(BaseValidator):
 
     validator_type = "property_group_type"
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     @classmethod
     def validate(cls, name: str, value: PropertyGroup, valid: str) -> None:
         if value.property_group_type != valid:
@@ -121,6 +128,9 @@ class RequiredValidator(BaseValidator):
     """
 
     validator_type = "required"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: bool) -> None:
@@ -137,6 +147,9 @@ class ShapeValidator(BaseValidator):
     """Validate the shape of provided value."""
 
     validator_type = "shape"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: tuple[int]) -> None:
@@ -156,6 +169,9 @@ class TypeValidator(BaseValidator):
     """
 
     validator_type = "types"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: list[type] | type) -> None:
@@ -181,6 +197,9 @@ class UUIDValidator(BaseValidator):
     """Validate a uuui.UUID value or uuid string."""
 
     validator_type = "uuid"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     @classmethod
     def validate(
@@ -217,6 +236,9 @@ class ValueValidator(BaseValidator):
     """
 
     validator_type = "values"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: list[float | str]) -> None:

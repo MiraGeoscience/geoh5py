@@ -17,44 +17,134 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from geoh5py.shared import Entity
-    from geoh5py.groups import PropertyGroup
-    from uuid import UUID
-
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any
 
 from geoh5py.shared.utils import iterable_message
 from geoh5py.workspace import Workspace
 
+if TYPE_CHECKING:
+    from uuid import UUID
 
-class BaseValidationError(ABC):
+    from geoh5py.groups import PropertyGroup
+    from geoh5py.shared import Entity
+
+
+class BaseValidationError(ABC, Exception):
     """Base class for custom exceptions."""
 
     @staticmethod
     @abstractmethod
-    def message(name):
+    def message(name, value, validation):
         """Builds custom error message."""
-        raise NotImplementedError(
-            "The 'error_message' method must be implemented by the sub-class. "
-            f"Must contain a 'name' {name} argument."
+        raise NotImplementedError()
+
+
+class AssociationValidationError(BaseValidationError):
+    """Error on association between child and parent entity validation."""
+
+    def __init__(self, name: str, value: Entity, validation: Entity | Workspace):
+        super().__init__(AssociationValidationError.message(name, value, validation))
+
+    @staticmethod
+    def message(name, value, validation):
+        return f"Property '{name}' of type '{value}' must be a child entity of parent {validation}"
+
+
+class PropertyGroupValidationError(BaseValidationError):
+    """Error on property group validation."""
+
+    def __init__(self, name: str, value: PropertyGroup, validation: str):
+        super().__init__(PropertyGroupValidationError.message(name, value, validation))
+
+    @staticmethod
+    def message(name, value, validation):
+        return (
+            f"Property group for '{name}' must be of type '{validation}'. "
+            f"Provided '{value.name}' of type '{value.property_group_type}'"
         )
 
 
-class AssociationValidationError(BaseValidationError, Exception):
-    """Error on association between child and parent entity validation."""
-
-    def __init__(self, name: str, value: Entity, parent: Entity | Workspace):
-        super().__init__(AssociationValidationError.message(name, value, parent))
+class RequiredValidationError(BaseValidationError):
+    def __init__(self, name: str):
+        super().__init__(RequiredValidationError.message(name, None, None))
 
     @staticmethod
-    def message(name, value, parent):
-        return f"Property '{name}' of type '{value}' must be a child entity of parent {parent}"
+    def message(name, value, validation):
+        return f"Missing required parameter: '{name}'."
 
 
-class JSONParameterValidationError(BaseValidationError, Exception):
+class ShapeValidationError(BaseValidationError):
+    """Error on shape validation."""
+
+    def __init__(self, name: str, value: tuple[int], validation: tuple[int]):
+        super().__init__(ShapeValidationError.message(name, value, validation))
+
+    @staticmethod
+    def message(name, value, validation):
+        return (
+            f"Parameter '{name}' with shape {value} was provided. "
+            f"Expected {validation}."
+        )
+
+
+class TypeValidationError(BaseValidationError):
+    """Error on type validation."""
+
+    def __init__(self, name: str, value: str, validation: str | list[str]):
+
+        super().__init__(TypeValidationError.message(name, value, validation))
+
+    @staticmethod
+    def message(name, value, validation):
+        return f"Type '{value}' provided for '{name}' is invalid. " + iterable_message(
+            validation
+        )
+
+
+class UUIDValidationError(BaseValidationError):
+    """Error on uuid validation."""
+
+    def __init__(self, name: str, value: str | UUID, validation: Entity | Workspace):
+        super().__init__(UUIDValidationError.message(name, value, validation))
+
+    @staticmethod
+    def message(name, value, validation):
+        valid_name = (
+            validation.h5file if isinstance(validation, Workspace) else validation.name
+        )
+        return (
+            f"UUID '{value}' provided for '{name}' is invalid. "
+            f"Not in the list of children of {type(validation).__name__}: {valid_name} "
+        )
+
+
+class UUIDStringValidationError(BaseValidationError):
+    """Error on uuid string validation."""
+
+    def __init__(self, name: str, value: str):
+        super().__init__(UUIDStringValidationError.message(name, value, None))
+
+    @staticmethod
+    def message(name, value, validation):
+        return f"Parameter '{name}' with value '{value}' is not a valid uuid string."
+
+
+class ValueValidationError(BaseValidationError):
+    """Error on value validation."""
+
+    def __init__(self, name: str, value: Any, validation: list[Any]):
+
+        super().__init__(ValueValidationError.message(name, value, validation))
+
+    @staticmethod
+    def message(name, value, validation):
+        return f"Value '{value}' provided for '{name}' is invalid." + iterable_message(
+            validation
+        )
+
+
+class JSONParameterValidationError(Exception):
     """Error on uuid validation."""
 
     def __init__(self, name: str, err: str):
@@ -63,93 +153,3 @@ class JSONParameterValidationError(BaseValidationError, Exception):
     @staticmethod
     def message(name, err):
         return f"Malformed ui.json dictionary for parameter '{name}'. {err}"
-
-
-class PropertyGroupValidationError(BaseValidationError, Exception):
-    """Error on property group validation."""
-
-    def __init__(self, name: str, value: PropertyGroup, valid: str):
-        super().__init__(PropertyGroupValidationError.message(name, value, valid))
-
-    @staticmethod
-    def message(name, value, valid):
-        return (
-            f"Property group for '{name}' must be of type '{valid}'. "
-            f"Provided '{value.name}' of type '{value.property_group_type}'"
-        )
-
-
-class RequiredValidationError(BaseValidationError, Exception):
-    def __init__(self, name: str):
-        super().__init__(RequiredValidationError.message(name))
-
-    @staticmethod
-    def message(name):
-        return f"Missing required parameter: '{name}'."
-
-
-class ShapeValidationError(BaseValidationError, Exception):
-    """Error on shape validation."""
-
-    def __init__(self, name: str, value: tuple[int], valid: tuple[int]):
-        super().__init__(ShapeValidationError.message(name, value, valid))
-
-    @staticmethod
-    def message(name, value, valid):
-        return (
-            f"Parameter '{name}' with shape {value} was provided. " f"Expected {valid}."
-        )
-
-
-class TypeValidationError(BaseValidationError, Exception):
-    """Error on type validation."""
-
-    def __init__(self, name: str, value: str, valid: str | list[str]):
-
-        super().__init__(TypeValidationError.message(name, value, valid))
-
-    @staticmethod
-    def message(name, value, valid):
-        return f"Type '{value}' provided for '{name}' is invalid. " + iterable_message(
-            valid
-        )
-
-
-class UUIDValidationError(BaseValidationError, Exception):
-    """Error on uuid validation."""
-
-    def __init__(self, name: str, value: str | UUID, valid: Entity | Workspace):
-        super().__init__(UUIDValidationError.message(name, value, valid))
-
-    @staticmethod
-    def message(name, value, valid):
-        valid_name = valid.h5file if isinstance(valid, Workspace) else valid.name
-        return (
-            f"UUID '{value}' provided for '{name}' is invalid. "
-            f"Not in the list of children of {type(valid).__name__}: {valid_name} "
-        )
-
-
-class UUIDStringValidationError(BaseValidationError, Exception):
-    """Error on uuid string validation."""
-
-    def __init__(self, name: str, value: str):
-        super().__init__(UUIDStringValidationError.message(name, value))
-
-    @staticmethod
-    def message(name, value):
-        return f"Parameter '{name}' with value '{value}' is not a valid uuid string."
-
-
-class ValueValidationError(BaseValidationError, Exception):
-    """Error on value validation."""
-
-    def __init__(self, name: str, value: Any, valid: list[Any]):
-
-        super().__init__(ValueValidationError.message(name, value, valid))
-
-    @staticmethod
-    def message(name, value, valid):
-        return f"Value '{value}' provided for '{name}' is invalid." + iterable_message(
-            valid
-        )

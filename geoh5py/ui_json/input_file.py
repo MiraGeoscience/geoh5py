@@ -175,10 +175,10 @@ class InputFile:
     @property
     def ui_validators(self):
         if getattr(self, "_ui_validators", None) is None:
+
             self._ui_validators = InputValidation(
                 validations=ui_validations,
-                ignore_list=("value",),
-                **self.validation_options,
+                **{"ignore_list": ("value",)},
             )
 
         return self._ui_validators

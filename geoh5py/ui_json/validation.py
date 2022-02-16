@@ -24,7 +24,16 @@ from uuid import UUID
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import RequiredValidationError
-from geoh5py.shared.validators import BaseValidator, TypeValidator
+from geoh5py.shared.validators import (
+    AssociationValidator,
+    BaseValidator,
+    PropertyGroupValidator,
+    RequiredValidator,
+    ShapeValidator,
+    TypeValidator,
+    UUIDValidator,
+    ValueValidator,
+)
 from geoh5py.workspace import Workspace
 
 
@@ -48,21 +57,22 @@ class InputValidation:
         self,
         validators: dict[str, BaseValidator] = None,
         validations: dict[str, Any] | None = None,
-        ignore_list: tuple = (),
-        ignore_requirements: bool = False,
         workspace: Workspace = None,
         ui_json: dict[str, Any] = None,
+        **validation_options,
     ):
         self.validations: dict[str, Any] | None = validations
         self.ui_json: dict[str, Any] = ui_json
         self.validators: dict[str, BaseValidator] = validators
         self.workspace: Workspace | None = workspace
-        self.ignore_list: tuple = ignore_list
-        self.ignore_requirements: bool = ignore_requirements
+        self.ignore_list: tuple = validation_options.get("ignore_list", ())
+        self.ignore_requirements: bool = validation_options.get(
+            "ignore_requirements", False
+        )
 
     @property
     def ui_json(self):
-        return self._ui_json
+        raise AttributeError("'ui_json' argument not stored in class instances.")
 
     @ui_json.setter
     def ui_json(self, val):
@@ -70,7 +80,6 @@ class InputValidation:
             self._inferred_validations = {}
         else:
             self._inferred_validations = self.infer_validations(val)
-        self._ui_json = val
 
     @property
     def validations(self):
@@ -86,13 +95,13 @@ class InputValidation:
 
     @validators.setter
     def validators(self, val):
-        v = {} if val is None else val
+        val = {} if val is None else val
 
         if self.validations is not None:
             required_validators = InputValidation._required_validators(self.validations)
-            v = dict(required_validators, **v)
+            val = dict(required_validators, **val)
 
-        self._validators = v
+        self._validators = val
 
     @property
     def workspace(self):
@@ -112,13 +121,21 @@ class InputValidation:
     @staticmethod
     def _required_validators(validations):
         unique_validators = InputValidation._unique_validators(validations)
-        all_validators = {k.validator_type: k() for k in BaseValidator.__subclasses__()}
+        tmp = [
+            AssociationValidator,
+            PropertyGroupValidator,
+            RequiredValidator,
+            ShapeValidator,
+            TypeValidator,
+            UUIDValidator,
+            ValueValidator,
+        ]
+        all_validators = {k.validator_type: k() for k in tmp}
         val = {}
         for k in unique_validators:
             if k not in all_validators:
                 raise ValueError(f"No validator implemented for argument '{k}'.")
-            else:
-                val[k] = all_validators[k]
+            val[k] = all_validators[k]
         return val
 
     @staticmethod
