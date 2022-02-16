@@ -110,7 +110,7 @@ class InputValidation:
         return list({key for item in validations.values() for key in item})
 
     @staticmethod
-    def _required_validators(validations: dict[str, Any]) -> dict[str, Any]:
+    def _required_validators(validations):
         unique_validators = InputValidation._unique_validators(validations)
         all_validators = {k.validator_type: k for k in BaseValidator.__subclasses__()}
         val = {}
