@@ -312,10 +312,10 @@ def test_survey_tem_data(tmp_path):
     assert "Input timing_mark must be a float or None." in str(
         error
     ), "Missed raising error on type of 'timing_mark'."
-    receivers.timing_mark = 10 ** -3.1
+    receivers.timing_mark = 10**-3.1
 
     assert (
-        getattr(receivers, "timing_mark") == 10 ** -3.1
+        getattr(receivers, "timing_mark") == 10**-3.1
     ), "Failed in setting 'timing_mark'."
     assert (
         receivers.metadata == transmitters.metadata

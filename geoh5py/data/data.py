@@ -95,15 +95,16 @@ class Data(Entity):
     def association(self, value: str | DataAssociationEnum):
         if isinstance(value, str):
 
-            assert (
-                value.upper() in DataAssociationEnum.__members__
-            ), f"Association flag should be one of {DataAssociationEnum.__members__}"
+            if value.upper() not in DataAssociationEnum.__members__:
+                raise ValueError(
+                    f"Association flag should be one of {DataAssociationEnum.__members__}"
+                )
 
             self._association = getattr(DataAssociationEnum, value.upper())
         else:
-            assert isinstance(
-                value, DataAssociationEnum
-            ), f"Association must be of type {DataAssociationEnum}"
+            if not isinstance(value, DataAssociationEnum):
+                raise TypeError(f"Association must be of type {DataAssociationEnum}")
+
             self._association = value
 
     @property
