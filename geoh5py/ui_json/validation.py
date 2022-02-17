@@ -77,7 +77,10 @@ class InputValidation:
 
     @validators.setter
     def validators(self, val: dict[str, BaseValidator]):
-        val = {} if val is None else val
+        if val is None:
+            val = {}
+        elif not all(isinstance(v, BaseValidator) for v in val.values()):
+            raise TypeError("Validators should be subclass of BaseValidator.")
 
         if self.validations is not None:
             required_validators = InputValidation._required_validators(self.validations)
