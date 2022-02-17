@@ -21,16 +21,6 @@ from uuid import UUID
 from ..shared import Entity
 from ..workspace import Workspace
 
-defaults = {
-    "title": "Custom UI",
-    "geoh5": "",
-    "run_command": "",
-    "run_command_boolean": False,
-    "conda_environment": "",
-    "conda_environment_boolean": False,
-    "workspace": "",
-    "monitoring_directory": "",
-}
 default_ui_json = {
     "title": "Custom UI",
     "geoh5": None,
