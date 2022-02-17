@@ -18,18 +18,13 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any
+from typing import Any, cast
+from uuid import UUID
 
+from geoh5py.groups import PropertyGroup
+from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import RequiredValidationError
-from geoh5py.shared.validators import (
-    AssociationValidator,
-    BaseValidator,
-    PropertyGroupValidator,
-    RequiredValidator,
-    ShapeValidator,
-    TypeValidator,
-    ValueValidator,
-)
+from geoh5py.shared.validators import BaseValidator, TypeValidator
 from geoh5py.workspace import Workspace
 
 
@@ -51,16 +46,47 @@ class InputValidation:
 
     def __init__(
         self,
-        validations: dict[str, Any] | None,
-        ignore_list: tuple = (),
-        ignore_requirements: bool = False,
+        validators: dict[str, BaseValidator] = None,
+        validations: dict[str, Any] | None = None,
         workspace: Workspace = None,
+        ui_json: dict[str, Any] = None,
+        **validation_options,
     ):
-        self._validators: dict[str, BaseValidator] = {}
+        self._inferred_validations = (
+            {} if ui_json is None else self.infer_validations(ui_json)
+        )
+        self.validations: dict[str, Any] | None = validations
+        self.validators: dict[str, BaseValidator] = validators
         self.workspace: Workspace | None = workspace
-        self.validations = validations
-        self.ignore_list: tuple = ignore_list
-        self.ignore_requirements: bool = ignore_requirements
+        self.ignore_list: tuple = validation_options.get("ignore_list", ())
+        self.ignore_requirements: bool = validation_options.get(
+            "ignore_requirements", False
+        )
+
+    @property
+    def validations(self):
+        return dict(self._inferred_validations, **self._validations)
+
+    @validations.setter
+    def validations(self, val: dict[str, Any]):
+        self._validations = val
+
+    @property
+    def validators(self):
+        return self._validators
+
+    @validators.setter
+    def validators(self, val: dict[str, BaseValidator]):
+        if val is None:
+            val = {}
+        elif not all(isinstance(v, BaseValidator) for v in val.values()):
+            raise TypeError("Validators should be subclass of BaseValidator.")
+
+        if self.validations is not None:
+            required_validators = InputValidation._required_validators(self.validations)
+            val = dict(required_validators, **val)
+
+        self._validators = val
 
     @property
     def workspace(self):
@@ -72,38 +98,63 @@ class InputValidation:
             TypeValidator.validate("workspace", value, Workspace)
         self._workspace = value
 
-    @property
-    def validations(self):
-        return self._validations
+    @staticmethod
+    def _unique_validators(validations: dict[str, Any]) -> list[str]:
+        """Return names of validators required by a validations dictionary."""
+        return list({key for item in validations.values() for key in item})
 
-    @validations.setter
-    def validations(self, val):
-        if isinstance(val, dict):
-            validator_list = list({key for item in val.values() for key in item})
-            for key in validator_list:
-                if key == "property_group_type":
-                    self._validators[key] = PropertyGroupValidator()
-                elif key == "required":
-                    self._validators[key] = RequiredValidator()
-                elif key == "shape":
-                    self._validators[key] = ShapeValidator()
-                elif key == "types":
-                    self._validators[key] = TypeValidator()
-                elif key == "values":
-                    self._validators[key] = ValueValidator()
-                elif key == "association":
-                    self._validators[key] = AssociationValidator()
+    @staticmethod
+    def _required_validators(validations):
+        unique_validators = InputValidation._unique_validators(validations)
+        all_validators = {k.validator_type: k() for k in BaseValidator.__subclasses__()}
+        val = {}
+        for k in unique_validators:
+            if k not in all_validators:
+                raise ValueError(f"No validator implemented for argument '{k}'.")
+            val[k] = all_validators[k]
+        return val
+
+    @staticmethod
+    def infer_validations(ui_json: dict[str, Any]):
+        validations = {}
+        for key, item in ui_json.items():
+            if not isinstance(item, dict):
+                continue
+
+            if "isValue" in item:
+                validations[key] = {
+                    "types": [UUID, int, float, Entity, type(None)],
+                    "association": item["parent"],
+                }
+            elif "choiceList" in item:
+                validations[key] = {"types": [str], "values": item["choiceList"]}
+            elif "fileType" in item:
+                validations[key] = {
+                    "types": [str],
+                }
+            elif "meshType" in item:
+                validations[key] = {
+                    "types": [UUID, Entity, type(None)],
+                    "association": "geoh5",
+                }
+            elif "parent" in item:
+                validations[key] = {
+                    "types": [UUID, Entity, type(None)],
+                    "association": item["parent"],
+                }
+                if "dataGroupType" in item:
+                    validations[key]["property_group_type"] = item["dataGroupType"]
+                    validations[key]["types"] = [UUID, PropertyGroup, type(None)]
+            elif "value" in item:
+                if item["value"] is None:
+                    check_type = str
                 else:
-                    raise ValueError(f"No validator implemented for argument '{key}'.")
-        elif val is None:
-            self._validators = None
-        else:
-            raise ValueError(
-                "Input 'validations' must be of of type 'dict' or None. "
-                f"Argument of type {type(val)} provided"
-            )
+                    check_type = cast(Any, type(item["value"]))
+                validations[key] = {
+                    "types": [check_type],
+                }
 
-        self._validations = val
+        return validations
 
     def validate(self, name: str, value: Any, validations: dict[str, Any] = None):
         """
@@ -126,7 +177,7 @@ class InputValidation:
             ) or name in self.ignore_list:
                 continue
 
-            self._validators[val](name, value, args)
+            self.validators[val](name, value, args)
 
     def validate_data(self, data: dict[str, Any]) -> None:
         """

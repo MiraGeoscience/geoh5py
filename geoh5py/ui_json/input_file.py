@@ -11,15 +11,14 @@ import json
 import os
 import warnings
 from copy import deepcopy
-from typing import Any, Callable, cast
+from typing import Any, Callable
 from uuid import UUID
 
 import numpy as np
 
-from geoh5py.groups import ContainerGroup, PropertyGroup
+from geoh5py.groups import ContainerGroup
 from geoh5py.io.utils import as_str_if_uuid, entity2uuid, str2uuid, uuid2entity
-from geoh5py.shared import Entity
-from geoh5py.shared.exceptions import JSONParameterValidationError
+from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
 from geoh5py.shared.validators import UUIDValidator
 from geoh5py.workspace import Workspace
 
@@ -106,7 +105,7 @@ class InputFile:
                 raise ValueError("Input 'ui_json' must be of type dict or None.")
 
             self._ui_json = self._numify(value)
-            default_validations = self.get_default_validations(self._ui_json)
+            default_validations = InputValidation.infer_validations(self._ui_json)
             for key, validations in default_validations.items():
                 if key in self.validations:
                     validations = {**validations, **self.validations[key]}
@@ -166,7 +165,9 @@ class InputFile:
     def validators(self):
         if getattr(self, "_validators", None) is None:
             self._validators = InputValidation(
-                self.validations, **self.validation_options
+                ui_json=self.ui_json,
+                validations=self.validations,
+                **self.validation_options,
             )
 
         return self._validators
@@ -174,8 +175,10 @@ class InputFile:
     @property
     def ui_validators(self):
         if getattr(self, "_ui_validators", None) is None:
+
             self._ui_validators = InputValidation(
-                ui_validations, ignore_list=("value",), **self.validation_options
+                validations=ui_validations,
+                **{"ignore_list": ("value",)},
             )
 
         return self._ui_validators
@@ -322,7 +325,7 @@ class InputFile:
             if isinstance(value, dict):
                 try:
                     self.ui_validators(value)
-                except Exception as error:
+                except tuple(BaseValidationError.__subclasses__()) as error:
                     raise JSONParameterValidationError(key, error.args[0]) from error
 
                 value = self._numify(value)
@@ -380,48 +383,6 @@ class InputFile:
             else:
                 val = fun(val, *args)
         return val
-
-    @staticmethod
-    def get_default_validations(ui_json: dict[str, Any]):
-        validations = {}
-        for key, item in ui_json.items():
-            if not isinstance(item, dict):
-                continue
-
-            if "isValue" in item:
-                validations[key] = {
-                    "types": [UUID, int, float, Entity, type(None)],
-                    "association": item["parent"],
-                }
-            elif "choiceList" in item:
-                validations[key] = {"types": [str], "values": item["choiceList"]}
-            elif "fileType" in item:
-                validations[key] = {
-                    "types": [str],
-                }
-            elif "meshType" in item:
-                validations[key] = {
-                    "types": [UUID, Entity, type(None)],
-                    "association": "geoh5",
-                }
-            elif "parent" in item:
-                validations[key] = {
-                    "types": [UUID, Entity, type(None)],
-                    "association": item["parent"],
-                }
-                if "dataGroupType" in item:
-                    validations[key]["property_group_type"] = item["dataGroupType"]
-                    validations[key]["types"] = [UUID, PropertyGroup, type(None)]
-            elif "value" in item:
-                if item["value"] is None:
-                    check_type = str
-                else:
-                    check_type = cast(Any, type(item["value"]))
-                validations[key] = {
-                    "types": [check_type],
-                }
-
-        return validations
 
     @staticmethod
     def flatten(var: dict[str, Any]) -> dict[str, Any]:
