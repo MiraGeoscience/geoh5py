@@ -43,11 +43,25 @@ from geoh5py.shared.exceptions import (
 from geoh5py.shared.utils import iterable
 from geoh5py.workspace import Workspace
 
+#
+# class AbstractValidator(ABC):
+#     """
+#     Abstract base class for validators
+#     """
+#
+#
 
-class AbstractValidator(ABC):
-    """
-    Abstract base class for validators
-    """
+
+class BaseValidator(ABC):
+    """Concrete base class for validators."""
+
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
+    def __call__(self, *args):
+        self.validate(*args)
 
     @classmethod
     @abstractmethod
@@ -66,19 +80,6 @@ class AbstractValidator(ABC):
     def validator_type(cls):
         """Validation type identifier."""
         raise NotImplementedError("Must implement the validator_type property.")
-
-
-class BaseValidator(AbstractValidator):
-    """Concrete base class for validators."""
-
-    def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-
-    def __call__(self, *args):
-        if hasattr(self, "validate"):
-            self.validate(*args)
 
 
 class AssociationValidator(BaseValidator):
