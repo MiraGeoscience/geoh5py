@@ -21,6 +21,8 @@ from copy import deepcopy
 from typing import Any, cast
 from uuid import UUID
 
+import numpy as np
+
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import RequiredValidationError
@@ -52,10 +54,10 @@ class InputValidation:
         ui_json: dict[str, Any] = None,
         **validation_options,
     ):
-        self._inferred_validations = (
+        self.validations: dict[str, Any] | None = (
             {} if ui_json is None else self.infer_validations(ui_json)
         )
-        self.validations: dict[str, Any] | None = validations
+        self._merge_validations(validations)
         self.validators: dict[str, BaseValidator] = validators
         self.workspace: Workspace | None = workspace
         self.ignore_list: tuple = validation_options.get("ignore_list", ())
@@ -63,9 +65,29 @@ class InputValidation:
             "ignore_requirements", False
         )
 
+    def _merge_validations(self, validations):
+        # pylint: disable=too-many-nested-blocks
+        for param, valid in validations.items():
+            if param in self.validations:
+                for key, val in valid.items():
+                    if key in self.validations[param]:
+                        if isinstance(self.validations[param][key], list):
+                            if isinstance(val, list):
+                                self.validations[param][key] = np.unique(
+                                    self.validations[param][key] + val
+                                ).tolist()
+                            else:
+                                self.validations[param][key].append(val)
+                        else:
+                            self.validations[param][key] = val
+                    else:
+                        self.validations[param] = val
+            else:
+                self.validations[param] = valid
+
     @property
     def validations(self):
-        return dict(self._inferred_validations, **self._validations)
+        return self._validations
 
     @validations.setter
     def validations(self, val: dict[str, Any]):
