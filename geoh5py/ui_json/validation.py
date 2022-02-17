@@ -123,7 +123,7 @@ class InputValidation:
 
             if "isValue" in item:
                 validations[key] = {
-                    "types": [UUID, int, float, Entity, type(None)],
+                    "types": [UUID, int, float, Entity],
                     "association": item["parent"],
                 }
             elif "choiceList" in item:
@@ -134,25 +134,31 @@ class InputValidation:
                 }
             elif "meshType" in item:
                 validations[key] = {
-                    "types": [UUID, Entity, type(None)],
+                    "types": [UUID, Entity],
                     "association": "geoh5",
                 }
             elif "parent" in item:
                 validations[key] = {
-                    "types": [UUID, Entity, type(None)],
+                    "types": [UUID, Entity],
                     "association": item["parent"],
                 }
                 if "dataGroupType" in item:
                     validations[key]["property_group_type"] = item["dataGroupType"]
-                    validations[key]["types"] = [UUID, PropertyGroup, type(None)]
+                    validations[key]["types"] = [UUID, PropertyGroup]
             elif "value" in item:
                 if item["value"] is None:
                     check_type = str
                 else:
                     check_type = cast(Any, type(item["value"]))
+
                 validations[key] = {
                     "types": [check_type],
                 }
+
+            if (("optional" in item) or ("enabled" in item)) and "types" in validations[
+                key
+            ]:
+                validations[key]["types"] += [type(None)]
 
         return validations
 

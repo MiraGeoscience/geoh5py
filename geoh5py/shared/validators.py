@@ -240,5 +240,9 @@ class ValueValidator(BaseValidator):
         :param value: Input parameter value.
         :param valid: List of accepted values
         """
-        if value not in valid:
-            raise ValueValidationError(name, value, valid)
+        if not isinstance(value, (list, tuple)):
+            value = [value]
+
+        for val in value:
+            if val is not None and val not in valid:
+                raise ValueValidationError(name, val, valid)
