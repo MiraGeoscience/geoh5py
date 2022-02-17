@@ -61,15 +61,15 @@ class InputValidation:
         ui_json: dict[str, Any] = None,
         **validation_options,
     ):
+        self._inferred_validations = (
+            {} if ui_json is None else self.infer_validations(ui_json)
+        )
         self.validations: dict[str, Any] | None = validations
         self.validators: dict[str, BaseValidator] = validators
         self.workspace: Workspace | None = workspace
         self.ignore_list: tuple = validation_options.get("ignore_list", ())
         self.ignore_requirements: bool = validation_options.get(
             "ignore_requirements", False
-        )
-        self._inferred_validations = (
-            {} if ui_json is None else self.infer_validations(ui_json)
         )
 
     @property

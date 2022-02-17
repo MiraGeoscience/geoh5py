@@ -441,19 +441,13 @@ def test_shape_parameter():
     assert ShapeValidationError.message("data", (4,), (3,)) == str(excinfo.value)
 
 
-def test_object_data_selection(tmp_path):
-    # pylint: disable=too-many-statements
+def test_missing_required_field(tmp_path):
     workspace = get_workspace(tmp_path)
-    points = workspace.get_entity("Points_A")[0]
-    points_b = workspace.get_entity("Points_B")[0]
-
     ui_json = deepcopy(default_ui_json)
     ui_json["object"] = templates.object_parameter(optional="enabled")
-    ui_json["geoh5"] = workspace
     assert ui_json["object"]["optional"]
     assert ui_json["object"]["enabled"]
-
-    # Test missing required field from ui_json
+    ui_json["geoh5"] = workspace
 
     del ui_json["object"]["value"]
     with pytest.raises(JSONParameterValidationError) as excinfo:
@@ -462,7 +456,14 @@ def test_object_data_selection(tmp_path):
         "object", RequiredValidationError.message("value", None, None)
     ) == str(excinfo.value)
 
-    # Test promotion on ui_json setter
+
+def test_object_promotion(tmp_path):
+    workspace = get_workspace(tmp_path)
+    points = workspace.get_entity("Points_A")[0]
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["object"] = templates.object_parameter()
+    ui_json["geoh5"] = workspace
     ui_json["object"]["value"] = str(points.uid)
     ui_json["object"]["meshType"] = [points.entity_type.uid]
 
@@ -476,14 +477,15 @@ def test_object_data_selection(tmp_path):
         in_file.data = 123
     assert "Input 'data' must be of type dict or None." in str(excinfo)
 
-    # Test for invalid uuid string
-    ui_json["data"] = templates.data_parameter(optional="enabled")
+
+def test_invalid_uuid_string(tmp_path):
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["data"] = templates.data_parameter()
     ui_json["data"]["parent"] = "object"
     ui_json["data"]["value"] = "Hello World"
     in_file = InputFile(ui_json=ui_json)
-
-    assert ui_json["data"]["optional"]
-    assert ui_json["data"]["enabled"]
 
     with pytest.raises(TypeValidationError) as excinfo:
         getattr(in_file, "data")
@@ -491,7 +493,13 @@ def test_object_data_selection(tmp_path):
         "data", "str", ["UUID", "Entity", "NoneType"]
     ) == str(excinfo.value)
 
-    # Test valid uuid in workspace
+
+def test_valid_uuid_in_workspace(tmp_path):
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["data"] = templates.data_parameter()
+    ui_json["data"]["parent"] = "object"
     bogus_uuid = uuid4()
     ui_json["data"]["value"] = bogus_uuid
     in_file = InputFile(ui_json=ui_json)
@@ -502,7 +510,19 @@ def test_object_data_selection(tmp_path):
         excinfo.value
     )
 
-    # Test data with wrong parent
+
+def test_data_with_wrong_parent(tmp_path):
+    workspace = get_workspace(tmp_path)
+    points = workspace.get_entity("Points_A")[0]
+    points_b = workspace.get_entity("Points_B")[0]
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["object"] = templates.object_parameter()
+    ui_json["object"]["value"] = str(points.uid)
+    ui_json["object"]["meshType"] = [points.entity_type.uid]
+    ui_json["data"] = templates.data_parameter()
+    ui_json["data"]["parent"] = "object"
     ui_json["data"]["value"] = points_b.children[0].uid
     in_file = InputFile(ui_json=ui_json)
 
@@ -512,7 +532,16 @@ def test_object_data_selection(tmp_path):
         "data", points_b.children[0], points
     ) == str(excinfo.value)
 
-    # Test property group with wrong type
+
+def test_property_group_with_wrong_type(tmp_path):
+    workspace = get_workspace(tmp_path)
+    points = workspace.get_entity("Points_A")[0]
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["object"] = templates.object_parameter(optional="enabled")
+    ui_json["object"]["value"] = str(points.uid)
+    ui_json["geoh5"] = workspace
+    ui_json["data"] = templates.data_parameter()
     ui_json["data"]["value"] = points.property_groups[0].uid
     ui_json["data"]["dataGroupType"] = "ABC"
 
@@ -527,7 +556,6 @@ def test_object_data_selection(tmp_path):
     ) == str(excinfo.value)
 
     ui_json["data"]["dataGroupType"] = "3D vector"
-
     in_file = InputFile(ui_json=ui_json)
 
     with pytest.raises(PropertyGroupValidationError) as excinfo:
@@ -536,9 +564,11 @@ def test_object_data_selection(tmp_path):
         "data", points.property_groups[0], "3D vector"
     ) == str(excinfo.value)
 
-    ui_json["data"]["dataGroupType"] = "Multi-element"
 
-    # Test
+def test_input_file(tmp_path):
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
     in_file = InputFile()
     with pytest.raises(AttributeError) as excinfo:
         in_file.write_ui_json(name="test", path=tmp_path)
@@ -549,7 +579,6 @@ def test_object_data_selection(tmp_path):
     )
 
     in_file = InputFile(ui_json=ui_json)
-
     out_file = in_file.write_ui_json()
 
     with pytest.raises(ValueError) as error:
@@ -625,17 +654,6 @@ def test_data_parameter(tmp_path):
     ui_json["geoh5"] = workspace
     ui_json["object"] = templates.object_parameter(value=points_b.uid)
     ui_json["data"] = templates.data_parameter(data_group_type="Multi-element")
-
-    # in_file = InputFile(ui_json=ui_json)
-    # data = in_file.data
-    # data["data"] = points_b.children[0].uid
-    #
-    # in_file.data = data
-    # input_data["data_group"] = templates.data_parameter()
-    # input_data["logical"] = templates.bool_parameter()
-    # input_data["choices"] = templates.choice_string_parameter()
-    # input_data["file"] = templates.file_parameter()
-    # input_data["float"] = templates.float_parameter()
 
 
 def test_stringify(tmp_path):
