@@ -158,6 +158,10 @@ class ShapeValidator(BaseValidator):
         :param value: Input parameter value.
         :param valid: Expected value shape
         """
+
+        if value is None:
+            return
+
         pshape = np.array(value).shape
         if pshape != valid:
             raise ShapeValidationError(name, pshape, valid)
@@ -180,6 +184,9 @@ class TypeValidator(BaseValidator):
         :param value: Input parameter value.
         :param valid: List of accepted value types
         """
+        if value is None:
+            return
+
         if isinstance(valid, type):
             valid = [valid]
 
@@ -210,6 +217,10 @@ class UUIDValidator(BaseValidator):
         :param value: Input parameter uuid.
         :param valid: [Optional] Validate uuid from parental entity or known uuids
         """
+
+        if value is None:
+            return
+
         if not isinstance(value, UUID):
             try:
                 value = UUID(value)
@@ -247,5 +258,8 @@ class ValueValidator(BaseValidator):
         :param value: Input parameter value.
         :param valid: List of accepted values
         """
+        if value is None:
+            return
+
         if value not in valid:
             raise ValueValidationError(name, value, valid)
