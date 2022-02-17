@@ -252,6 +252,8 @@ class BaseEMSurvey(Curve):
         if getattr(self, "transmitters", None) is not None:
             getattr(self, "transmitters").metadata = self.metadata
 
+        self.workspace.finalize()
+
     def _edit_validate_property_groups(
         self, values: PropertyGroup | list[PropertyGroup] | None
     ):

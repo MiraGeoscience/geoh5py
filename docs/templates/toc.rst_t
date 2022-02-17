@@ -3,6 +3,6 @@
 .. toctree::
    :maxdepth: {{ maxdepth }}
 
-{%- for docname in docnames %}
-{{ docname }}
+{% for docname in docnames %}
+   {{ docname }}
 {%- endfor %}
