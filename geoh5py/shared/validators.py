@@ -43,14 +43,6 @@ from geoh5py.shared.exceptions import (
 from geoh5py.shared.utils import iterable
 from geoh5py.workspace import Workspace
 
-#
-# class AbstractValidator(ABC):
-#     """
-#     Abstract base class for validators
-#     """
-#
-#
-
 
 class BaseValidator(ABC):
     """Concrete base class for validators."""
