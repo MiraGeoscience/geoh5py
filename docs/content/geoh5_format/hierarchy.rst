@@ -51,12 +51,6 @@ Groups
 Groups are simple container for other groups and objects. They are often used to assign
 special meanings to a collection of entities or to create specialized software
 functionality.
-See the :ref:`Group Types <group_types>` section for the list of supported group types.
-
-.. note:: Though this file format technically allows objects/groups to appear
-   within multiple groups simultaneously (overlapping lists), this is not
-   currently supported by Geoscience ANALYST.
-
 
 Attributes
 ----------
@@ -79,8 +73,19 @@ Attributes
 :Metadata: (``int``, optional)
     (Optional) Any additional text attached to the group.
 
+The following section describes the supported group types.
 
+.. toctree::
+   :maxdepth: 1
 
+   analyst/groups
+   giftools/groups
+   integrator/groups
+   integrator/themes
+
+.. note:: Though this file format technically allows objects/groups to appear
+   within multiple groups simultaneously (overlapping lists), this is not
+   currently supported by ``Geoscience ANALYST``.
 
 Objects
 =======
@@ -93,8 +98,7 @@ Objects are containers for ``Data`` with spatial information.
 Most (not all) object geometry is described in terms of vertices (3D
 locations) and cells (groupings of vertices such as triangles or
 segments). The exact requirements and interpretation depends on the
-type. Additional information may also be stored for some specific types.
-See the :ref:`Object Types <object_types>` section for the list of supported objects.
+type.
 
 
 Attributes
@@ -118,6 +122,14 @@ Attributes
     (Optional) User interface allows renaming.
 :Metadata: (``int``, optional)
     (Optional) Any additional text attached to the group.
+
+The following section describes the supported object types and their specific attributes.
+
+.. toctree::
+   :maxdepth: 1
+
+   analyst/objects
+   integrator/objects
 
 Data
 ====
@@ -171,16 +183,6 @@ This type is shared among any number of entities (groups/objects/data sets).
 Group Types
 -----------
 
-The following section describes the supported group types.
-
-.. toctree::
-   :maxdepth: 1
-
-   analyst/groups
-   giftools/groups
-   integrator/groups
-   integrator/themes
-
 Attributes
 ^^^^^^^^^^
 
@@ -203,13 +205,6 @@ Object Types
 ------------
 
 Objects are containers for data values with spatial information.
-The following section describes the supported object types.
-
-.. toctree::
-   :maxdepth: 1
-
-   analyst/objects
-   integrator/objects
 
 Attributes
 ^^^^^^^^^^

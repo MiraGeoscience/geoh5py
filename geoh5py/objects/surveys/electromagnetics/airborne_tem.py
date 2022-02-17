@@ -221,7 +221,8 @@ class BaseAirborneTEM(BaseEMSurvey):
     @property
     def waveform(self) -> np.ndarray | None:
         """
-        :obj:`numpy.array` of :obj:`float`, shape(*, 2): Discrete waveform of the TEM source.
+        Discrete waveform of the TEM source provided as
+        :obj:`numpy.array` of type :obj:`float`, shape(n, 2)
 
         .. code-block:: python
 
@@ -230,6 +231,7 @@ class BaseAirborneTEM(BaseEMSurvey):
                 [time_2, current_2],
                 ...
             ]
+
         """
         if (
             "Waveform" in self.metadata["EM Dataset"]

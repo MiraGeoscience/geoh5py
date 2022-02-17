@@ -104,7 +104,7 @@ class BlockModel(ObjectBase):
         :obj:`int`: Total number of cells
         """
         if self.shape is not None:
-            return np.prod(self.shape)
+            return int(np.prod(self.shape))
         return None
 
     @property
