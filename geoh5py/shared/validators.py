@@ -82,7 +82,7 @@ class BaseValidator(AbstractValidator):
 
 
 class AssociationValidator(BaseValidator):
-    """Validate the shape of provided value."""
+    """Validate the association between data and parent object."""
 
     validator_type = "association"
 
