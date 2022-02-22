@@ -23,7 +23,6 @@ from uuid import UUID
 
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
-from geoh5py.shared.exceptions import RequiredValidationError
 from geoh5py.shared.validators import BaseValidator, TypeValidator
 from geoh5py.workspace import Workspace
 
@@ -197,11 +196,6 @@ class InputValidation:
         :param data: Input data with known validations.
         """
         for name, validations in self.validations.items():
-            if name not in data.keys():
-                if "required" in validations and not self.ignore_requirements:
-                    raise RequiredValidationError(name)
-
-                continue
 
             if "association" in validations and validations["association"] in data:
                 temp_validate = deepcopy(validations)
