@@ -83,18 +83,20 @@ class AssociationValidator(BaseValidator):
         super().__init__(**kwargs)
 
     @classmethod
-    def validate(cls, name: str, value: Entity, valid: Entity | Workspace) -> None:
+    def validate(
+        cls, name: str, value: Entity | None, valid: Entity | Workspace
+    ) -> None:
         """
         :param name: Parameter identifier.
         :param value: Input parameter value.
         :param valid: Expected value shape
         """
-        if not isinstance(value, Entity):
+        if value is None or valid is None:
             return
 
         if isinstance(valid, Workspace):
             children = valid.fetch_children(valid.root, recursively=True)
-        else:
+        elif isinstance(valid, Entity):
             children = valid.workspace.fetch_children(valid, recursively=True)
 
         if value.uid not in [child.uid for child in children]:
@@ -151,6 +153,9 @@ class ShapeValidator(BaseValidator):
         :param value: Input parameter value.
         :param valid: Expected value shape
         """
+        if value is None:
+            return
+
         pshape = np.array(value).shape
         if pshape != valid:
             raise ShapeValidationError(name, pshape, valid)
@@ -173,11 +178,15 @@ class TypeValidator(BaseValidator):
         :param value: Input parameter value.
         :param valid: List of accepted value types
         """
+        if value is None:
+            return
+
         if isinstance(valid, type):
             valid = [valid]
 
         if not iterable(value) or list in valid:
             value = (value,)
+
         for val in value:
             if not isinstance(val, tuple(valid)):
                 valid_names = [t.__name__ for t in valid if hasattr(t, "__name__")]
@@ -203,6 +212,9 @@ class UUIDValidator(BaseValidator):
         :param value: Input parameter uuid.
         :param valid: [Optional] Validate uuid from parental entity or known uuids
         """
+        if value is None:
+            return
+
         if not isinstance(value, UUID):
             try:
                 value = UUID(value)
@@ -240,6 +252,9 @@ class ValueValidator(BaseValidator):
         :param value: Input parameter value.
         :param valid: List of accepted values
         """
+        if value is None:
+            return
+
         if not isinstance(value, (list, tuple)):
             value = [value]
 
