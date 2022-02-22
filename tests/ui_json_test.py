@@ -482,7 +482,7 @@ def test_invalid_uuid_string(tmp_path):
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
-    ui_json["data"] = templates.data_parameter()
+    ui_json["data"] = templates.data_parameter(optional="enabled")
     ui_json["data"]["parent"] = "object"
     ui_json["data"]["value"] = "Hello World"
     in_file = InputFile(ui_json=ui_json)
@@ -609,7 +609,7 @@ def test_data_value_parameter_a(tmp_path):
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
-    ui_json["object"] = templates.object_parameter()
+    ui_json["object"] = templates.object_parameter(optional="enabled")
     ui_json["data"] = templates.data_value_parameter(
         parent="object", optional="enabled"
     )
@@ -723,6 +723,6 @@ def test_required_validators():
     result = InputValidation._required_validators(
         {"param1": {"types": [str], "values": ["test2"]}, "param2": {"types": [float]}}
     )
-    assert all(k in result.keys() for k in ["types", "values"])
+    assert all(k in result for k in ["types", "values"])
     assert all(k in ["types", "values"] for k in result)
     assert all(k == v.validator_type for k, v in result.items())
