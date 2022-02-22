@@ -52,7 +52,7 @@ class InputValidation:
         **validation_options,
     ):
         self.validations = {} if ui_json is None else self.infer_validations(ui_json)
-        self.validations.update(validations)
+        self.validations = self._merge_validations(validations)
         self.validators: dict[str, BaseValidator] = validators
         self.workspace: Workspace | None = workspace
         self.ignore_list: tuple = validation_options.get("ignore_list", ())
@@ -164,7 +164,13 @@ class InputValidation:
 
     def _merge_validations(self, validations):
         """Overwrite self.validations with new definitions."""
-        self.validations.update(validations)
+        out = deepcopy(self.validations)
+        for key, val in validations.items():
+            if key not in out:
+                out[key] = val
+            else:
+                out[key].update(val)
+        return out
 
     def validate(self, name: str, value: Any, validations: dict[str, Any] = None):
         """
