@@ -64,6 +64,21 @@ class InputFile:
         self.data = data
         self.workspace = workspace
 
+    @staticmethod
+    def read_ui_json(json_file: str):
+        """
+        Read and create an InputFile from *.ui.json
+        """
+        input_file = InputFile()
+
+        if "ui.json" not in json_file:
+            raise ValueError("Input file should have the extension *.ui.json")
+
+        with open(json_file, encoding="utf-8") as file:
+            input_file.load(json.load(file))
+
+        return input_file
+
     @property
     def data(self):
         if (
@@ -113,21 +128,6 @@ class InputFile:
         else:
             self._ui_json = None
         self._validators = None
-
-    @staticmethod
-    def read_ui_json(json_file: str):
-        """
-        Read and create an InputFile from *.ui.json
-        """
-        input_file = InputFile()
-
-        if "ui.json" not in json_file:
-            raise ValueError("Input file should have the extension *.ui.json")
-
-        with open(json_file, encoding="utf-8") as file:
-            input_file.load(json.load(file))
-
-        return input_file
 
     def load(self, input_dict: dict[str, Any]):
         """Load data from dictionary and validate."""

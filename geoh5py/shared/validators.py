@@ -44,10 +44,16 @@ from geoh5py.shared.utils import iterable
 from geoh5py.workspace import Workspace
 
 
-class AbstractValidator(ABC):
-    """
-    Abstract base class for validators
-    """
+class BaseValidator(ABC):
+    """Concrete base class for validators."""
+
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
+    def __call__(self, *args):
+        self.validate(*args)
 
     @classmethod
     @abstractmethod
@@ -66,19 +72,6 @@ class AbstractValidator(ABC):
     def validator_type(cls):
         """Validation type identifier."""
         raise NotImplementedError("Must implement the validator_type property.")
-
-
-class BaseValidator(AbstractValidator):
-    """Concrete base class for validators."""
-
-    def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-
-    def __call__(self, *args):
-        if hasattr(self, "validate"):
-            self.validate(*args)
 
 
 class AssociationValidator(BaseValidator):
@@ -158,10 +151,6 @@ class ShapeValidator(BaseValidator):
         :param value: Input parameter value.
         :param valid: Expected value shape
         """
-
-        if value is None:
-            return
-
         pshape = np.array(value).shape
         if pshape != valid:
             raise ShapeValidationError(name, pshape, valid)
@@ -184,9 +173,6 @@ class TypeValidator(BaseValidator):
         :param value: Input parameter value.
         :param valid: List of accepted value types
         """
-        if value is None:
-            return
-
         if isinstance(valid, type):
             valid = [valid]
 
@@ -217,10 +203,6 @@ class UUIDValidator(BaseValidator):
         :param value: Input parameter uuid.
         :param valid: [Optional] Validate uuid from parental entity or known uuids
         """
-
-        if value is None:
-            return
-
         if not isinstance(value, UUID):
             try:
                 value = UUID(value)
@@ -258,8 +240,9 @@ class ValueValidator(BaseValidator):
         :param value: Input parameter value.
         :param valid: List of accepted values
         """
-        if value is None:
-            return
+        if not isinstance(value, (list, tuple)):
+            value = [value]
 
-        if value not in valid:
-            raise ValueValidationError(name, value, valid)
+        for val in value:
+            if val is not None and val not in valid:
+                raise ValueValidationError(name, val, valid)
