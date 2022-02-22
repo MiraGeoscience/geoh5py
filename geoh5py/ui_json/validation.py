@@ -21,8 +21,6 @@ from copy import deepcopy
 from typing import Any, cast
 from uuid import UUID
 
-import numpy as np
-
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import RequiredValidationError
@@ -54,36 +52,14 @@ class InputValidation:
         ui_json: dict[str, Any] = None,
         **validation_options,
     ):
-        self.validations: dict[str, Any] | None = (
-            {} if ui_json is None else self.infer_validations(ui_json)
-        )
-        self._merge_validations(validations)
+        self.validations = {} if ui_json is None else self.infer_validations(ui_json)
+        self.validations = self._merge_validations(validations)
         self.validators: dict[str, BaseValidator] = validators
         self.workspace: Workspace | None = workspace
         self.ignore_list: tuple = validation_options.get("ignore_list", ())
         self.ignore_requirements: bool = validation_options.get(
             "ignore_requirements", False
         )
-
-    def _merge_validations(self, validations):
-        # pylint: disable=too-many-nested-blocks
-        for param, valid in validations.items():
-            if param in self.validations:
-                for key, val in valid.items():
-                    if key in self.validations[param]:
-                        if isinstance(self.validations[param][key], list):
-                            if isinstance(val, list):
-                                self.validations[param][key] = np.unique(
-                                    self.validations[param][key] + val
-                                ).tolist()
-                            else:
-                                self.validations[param][key].append(val)
-                        else:
-                            self.validations[param][key] = val
-                    else:
-                        self.validations[param] = val
-            else:
-                self.validations[param] = valid
 
     @property
     def validations(self):
@@ -127,6 +103,7 @@ class InputValidation:
 
     @staticmethod
     def _required_validators(validations):
+        """Returns dictionary of validators required by validations."""
         unique_validators = InputValidation._unique_validators(validations)
         all_validators = {k.validator_type: k() for k in BaseValidator.__subclasses__()}
         val = {}
@@ -138,6 +115,8 @@ class InputValidation:
 
     @staticmethod
     def infer_validations(ui_json: dict[str, Any]):
+        """Infer necessary validations from ui json structure."""
+
         validations = {}
         for key, item in ui_json.items():
             if not isinstance(item, dict):
@@ -183,6 +162,10 @@ class InputValidation:
                 validations[key]["types"] += [type(None)]
 
         return validations
+
+    def _merge_validations(self, validations):
+        """Overwrite self.validations with new definitions."""
+        return dict(self.validations, **validations)
 
     def validate(self, name: str, value: Any, validations: dict[str, Any] = None):
         """
