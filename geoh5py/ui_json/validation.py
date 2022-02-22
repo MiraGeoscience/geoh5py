@@ -158,10 +158,7 @@ class InputValidation:
             if (("optional" in item) or ("enabled" in item)) and "types" in validations[
                 key
             ]:
-                if isinstance(validations[key], list):
-                    validations[key]["types"].append(type(None))
-                else:
-                    validations[key]["types"] = type(None)
+                validations[key]["types"] += [type(None)]
 
         return validations
 
