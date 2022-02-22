@@ -124,7 +124,7 @@ class InputValidation:
             if "isValue" in item:
                 validations[key] = {
                     "types": [UUID, int, float, Entity],
-                    "association": item["parent"],
+                    "association": None if item["isValue"] else item["parent"],
                 }
             elif "choiceList" in item:
                 validations[key] = {"types": [str], "values": item["choiceList"]}
@@ -158,7 +158,10 @@ class InputValidation:
             if (("optional" in item) or ("enabled" in item)) and "types" in validations[
                 key
             ]:
-                validations[key]["types"] += [type(None)]
+                if isinstance(validations[key], list):
+                    validations[key]["types"].append(type(None))
+                else:
+                    validations[key]["types"] = type(None)
 
         return validations
 
@@ -202,6 +205,7 @@ class InputValidation:
         :param data: Input data with known validations.
         """
         for name, validations in self.validations.items():
+            print(name, validations)
 
             if "association" in validations and validations["association"] in data:
                 temp_validate = deepcopy(validations)
