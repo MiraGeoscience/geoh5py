@@ -98,6 +98,10 @@ def test_association_validator(tmp_path):
         excinfo.value
     )
 
+    # No validation error for none value or valid
+    validator("test", None, points)
+    validator("test", points, None)
+
 
 def test_property_group_validator(tmp_path):
 
@@ -131,6 +135,9 @@ def test_shape_validator():
         validator("test", [[1, 2, 3], [4, 5, 6]], (3, 2))
     assert ShapeValidationError.message("test", (2, 3), (3, 2)) == str(excinfo.value)
 
+    # No validation error for None
+    validator("test", None, (3, 2))
+
 
 def test_type_validator():
 
@@ -163,6 +170,9 @@ def test_type_validator():
     assert TypeValidationError.message("test", str.__name__, [int.__name__]) == str(
         excinfo.value
     )
+
+    # No validation error for none
+    validator("test", None, int)
 
 
 def test_uuid_validator(tmp_path):
@@ -201,6 +211,9 @@ def test_uuid_validator(tmp_path):
         == "Type of input `valid` parameter must be one of Entity or Workspace"
     )
 
+    # No validation error for None
+    validator("test", None, [])
+
 
 def test_value_validator():
 
@@ -210,6 +223,9 @@ def test_value_validator():
     assert ValueValidationError.message("test", "blah", ["nope", "not here"]) == str(
         excinfo.value
     )
+
+    # No validation error for None
+    validator("test", None, ["these", "don't", "matter"])
 
 
 def get_workspace(directory):
@@ -296,11 +312,11 @@ def test_integer_parameter(tmp_path):
     ui_json["integer"] = templates.integer_parameter()
     in_file = InputFile(ui_json=ui_json)
     data = in_file.data
-    data["integer"] = None
+    data["integer"] = 4.0
 
     with pytest.raises(TypeValidationError) as excinfo:
         in_file.data = data
-    assert TypeValidationError.message("integer", "NoneType", ["int"]) == str(
+    assert TypeValidationError.message("integer", "float", ["int"]) == str(
         excinfo.value
     )
 
@@ -327,11 +343,11 @@ def test_float_parameter(tmp_path):
     ui_json["float_parameter"] = templates.float_parameter()
     in_file = InputFile(ui_json=ui_json)
     data = in_file.data
-    data["float_parameter"] = None
+    data["float_parameter"] = 4
 
     with pytest.raises(TypeValidationError) as excinfo:
         in_file.data = data
-    assert TypeValidationError.message("float_parameter", "NoneType", ["float"]) == str(
+    assert TypeValidationError.message("float_parameter", "int", ["float"]) == str(
         excinfo.value
     )
 
@@ -358,11 +374,11 @@ def test_string_parameter(tmp_path):
     ui_json["string_parameter"] = templates.string_parameter()
     in_file = InputFile(ui_json=ui_json)
     data = in_file.data
-    data["string_parameter"] = None
+    data["string_parameter"] = 4
 
     with pytest.raises(TypeValidationError) as excinfo:
         in_file.data = data
-    assert TypeValidationError.message("string_parameter", "NoneType", ["str"]) == str(
+    assert TypeValidationError.message("string_parameter", "int", ["str"]) == str(
         excinfo.value
     )
 
