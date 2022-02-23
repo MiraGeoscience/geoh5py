@@ -403,18 +403,6 @@ def test_file_parameter():
     assert test["enabled"]
 
 
-def test_uuid_string_parameter():
-    ui_json = deepcopy(default_ui_json)
-    in_file = InputFile(ui_json=ui_json)
-
-    with pytest.raises(UUIDValidationError) as excinfo:
-        in_file.association_validator("object", "hello world")
-
-    assert UUIDValidationError.message("object", "hello world", None) == str(
-        excinfo.value
-    )
-
-
 def test_shape_parameter():
     ui_json = deepcopy(default_ui_json)
     ui_json["data"] = templates.string_parameter(value="2,5,6,7")

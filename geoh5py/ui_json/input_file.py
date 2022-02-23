@@ -178,7 +178,6 @@ class InputFile:
 
             self._ui_validators = InputValidation(
                 validations=ui_validations,
-                **{"ignore_list": ("value",)},
             )
 
         return self._ui_validators
