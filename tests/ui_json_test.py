@@ -31,7 +31,6 @@ from geoh5py.shared.exceptions import (
     RequiredValidationError,
     ShapeValidationError,
     TypeValidationError,
-    UUIDStringValidationError,
     UUIDValidationError,
     ValueValidationError,
 )
@@ -171,45 +170,15 @@ def test_type_validator():
         excinfo.value
     )
 
-    # No validation error for none
-    validator("test", None, int)
 
+def test_uuid_validator():
 
-def test_uuid_validator(tmp_path):
-
-    workspace = Workspace(path.join(tmp_path, "test.geoh5"))
-    points = Points.create(
-        workspace, vertices=np.array([[1, 2, 3], [4, 5, 6]]), name="test_points"
-    )
-    bogus_uuid = uuid4()
     validator = UUIDValidator()
 
-    # Test non-existent uuid in workspace
-    with pytest.raises(UUIDValidationError) as excinfo:
-        validator("test", bogus_uuid, workspace)
-    assert UUIDValidationError.message("test", bogus_uuid, workspace) == str(
-        excinfo.value
-    )
-    assert "test.geoh5" in str(excinfo.value)
-
-    # Test non-existent uuid in points object
-    with pytest.raises(UUIDValidationError) as excinfo:
-        validator("test", bogus_uuid, points)
-    assert UUIDValidationError.message("test", bogus_uuid, points) == str(excinfo.value)
-    assert "test_points" in str(excinfo.value)
-
     # Test bad uid string
-    with pytest.raises(UUIDStringValidationError) as excinfo:
+    with pytest.raises(UUIDValidationError) as excinfo:
         validator("test", "sdr")
-    assert UUIDStringValidationError.message("test", "sdr", None) == str(excinfo.value)
-
-    # Test bad valid type
-    with pytest.raises(ValueError) as excinfo:
-        validator("test", bogus_uuid, [])
-    assert (
-        str(excinfo.value)
-        == "Type of input `valid` parameter must be one of Entity or Workspace"
-    )
+    assert UUIDValidationError.message("test", "sdr", None) == str(excinfo.value)
 
     # No validation error for None
     validator("test", None, [])
@@ -438,10 +407,10 @@ def test_uuid_string_parameter():
     ui_json = deepcopy(default_ui_json)
     in_file = InputFile(ui_json=ui_json)
 
-    with pytest.raises(UUIDStringValidationError) as excinfo:
-        in_file.uuid_validator("object", "hello world")
+    with pytest.raises(UUIDValidationError) as excinfo:
+        in_file.association_validator("object", "hello world")
 
-    assert UUIDStringValidationError.message("object", "hello world", None) == str(
+    assert UUIDValidationError.message("object", "hello world", None) == str(
         excinfo.value
     )
 

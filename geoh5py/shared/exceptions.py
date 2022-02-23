@@ -24,8 +24,6 @@ from geoh5py.shared.utils import iterable_message
 from geoh5py.workspace import Workspace
 
 if TYPE_CHECKING:
-    from uuid import UUID
-
     from geoh5py.groups import PropertyGroup
     from geoh5py.shared import Entity
 
@@ -67,10 +65,10 @@ class PropertyGroupValidationError(BaseValidationError):
 
 class RequiredValidationError(BaseValidationError):
     def __init__(self, name: str):
-        super().__init__(RequiredValidationError.message(name, None, None))
+        super().__init__(RequiredValidationError.message(name))
 
     @staticmethod
-    def message(name, value, validation):
+    def message(name, value=None, validation=None):
         return f"Missing required parameter: '{name}'."
 
 
@@ -103,30 +101,13 @@ class TypeValidationError(BaseValidationError):
 
 
 class UUIDValidationError(BaseValidationError):
-    """Error on uuid validation."""
-
-    def __init__(self, name: str, value: str | UUID, validation: Entity | Workspace):
-        super().__init__(UUIDValidationError.message(name, value, validation))
-
-    @staticmethod
-    def message(name, value, validation):
-        valid_name = (
-            validation.h5file if isinstance(validation, Workspace) else validation.name
-        )
-        return (
-            f"UUID '{value}' provided for '{name}' is invalid. "
-            f"Not in the list of children of {type(validation).__name__}: {valid_name} "
-        )
-
-
-class UUIDStringValidationError(BaseValidationError):
     """Error on uuid string validation."""
 
     def __init__(self, name: str, value: str):
-        super().__init__(UUIDStringValidationError.message(name, value, None))
+        super().__init__(UUIDValidationError.message(name, value))
 
     @staticmethod
-    def message(name, value, validation):
+    def message(name, value, validation=None):
         return f"Parameter '{name}' with value '{value}' is not a valid uuid string."
 
 

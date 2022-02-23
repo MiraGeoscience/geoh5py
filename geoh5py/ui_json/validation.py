@@ -123,9 +123,12 @@ class InputValidation:
 
             if "isValue" in item:
                 validations[key] = {
-                    "types": [UUID, int, float, Entity],
+                    "types": [str, UUID, int, float, Entity],
                     "association": None if item["isValue"] else item["parent"],
                 }
+                if not item["isValue"]:
+                    validations[key]["uuid"] = None
+
             elif "choiceList" in item:
                 validations[key] = {"types": [str], "values": item["choiceList"]}
             elif "fileType" in item:
@@ -134,17 +137,19 @@ class InputValidation:
                 }
             elif "meshType" in item:
                 validations[key] = {
-                    "types": [UUID, Entity],
+                    "types": [str, UUID, Entity],
                     "association": "geoh5",
+                    "uuid": None,
                 }
             elif "parent" in item:
                 validations[key] = {
-                    "types": [UUID, Entity],
+                    "types": [str, UUID, Entity],
                     "association": item["parent"],
+                    "uuid": None,
                 }
                 if "dataGroupType" in item:
                     validations[key]["property_group_type"] = item["dataGroupType"]
-                    validations[key]["types"] = [UUID, PropertyGroup]
+                    validations[key]["types"] = [str, UUID, PropertyGroup]
             elif "value" in item:
                 if item["value"] is None:
                     check_type = str
@@ -202,14 +207,13 @@ class InputValidation:
         :param data: Input data with known validations.
         """
         for name, validations in self.validations.items():
-            print(name, validations)
 
             if "association" in validations and validations["association"] in data:
                 temp_validate = deepcopy(validations)
                 temp_validate["association"] = data[validations["association"]]
                 self.validate(name, data[name], temp_validate)
             else:
-                self.validate(name, data[name])
+                self.validate(name, data.get(name, None))
 
     def __call__(self, data, *args):
         if isinstance(data, dict):
