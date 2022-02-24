@@ -71,3 +71,21 @@ def test_empty_workspace(tmp_path):
         assert (
             "Types" in file["GEOSCIENCE"]
         ), "Failed to regenerate the geoh5 structure."
+
+
+def test_missing_type(tmp_path):
+    Workspace(
+        path.join(tmp_path, "test.geoh5"),
+    )
+    with File(path.join(tmp_path, "test.geoh5"), "r+") as file:
+        for group in file["GEOSCIENCE"]["Groups"].values():
+            del group["Type"]
+
+    Workspace(
+        path.join(tmp_path, "test.geoh5"),
+    )
+
+    with File(path.join(tmp_path, "test.geoh5"), "r+") as file:
+        assert all(
+            "Type" in group for group in file["GEOSCIENCE"]["Groups"].values()
+        ), "Failed to regenerate the Type in geoh5 structure."
