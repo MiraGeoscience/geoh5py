@@ -178,8 +178,6 @@ class TypeValidator(BaseValidator):
         :param value: Input parameter value.
         :param valid: List of accepted value types
         """
-        if value is None:
-            return
 
         if isinstance(valid, type):
             valid = [valid]

@@ -171,9 +171,6 @@ def test_type_validator():
         excinfo.value
     )
 
-    # No validation error for none
-    validator("test", None, int)
-
 
 def test_uuid_validator(tmp_path):
 
