@@ -18,7 +18,8 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any
+from typing import Any, cast
+from uuid import UUID
 
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
@@ -116,12 +117,11 @@ class InputValidation:
     def infer_validations(ui_json: dict[str, Any]):
         """Infer necessary validations from ui json structure."""
 
-        validations = {}
+        validations: dict[str, dict] = {}
         for key, item in ui_json.items():
             if not isinstance(item, dict):
                 continue
-            validations[key] = {}
-            validations[key]["types"]: list = []
+
             if "isValue" in item:
                 validations[key] = {
                     "types": [str, UUID, int, float, Entity],
@@ -164,7 +164,7 @@ class InputValidation:
             if (("optional" in item) or ("enabled" in item)) and (
                 "types" in validations[key]
             ):
-                validations[key]["types"].append(type(None))
+                validations[key]["types"] += [type(None)]
 
         return validations
 
