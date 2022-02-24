@@ -121,7 +121,6 @@ class InputValidation:
         for key, item in ui_json.items():
             if not isinstance(item, dict):
                 continue
-            validations[key] = {}
             if "isValue" in item:
                 validations[key] = {
                     "types": [str, UUID, int, float, Entity],
