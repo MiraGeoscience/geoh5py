@@ -177,7 +177,7 @@ class InputFile:
         if getattr(self, "_ui_validators", None) is None:
 
             self._ui_validators = InputValidation(
-                validations=ui_validations,
+                validations=ui_validations, **{"ignore_list": ("value",)}
             )
 
         return self._ui_validators
