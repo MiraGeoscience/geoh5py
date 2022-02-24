@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
 from geoh5py.shared.utils import iterable_message
 from geoh5py.workspace import Workspace
@@ -41,12 +42,15 @@ class BaseValidationError(ABC, Exception):
 class AssociationValidationError(BaseValidationError):
     """Error on association between child and parent entity validation."""
 
-    def __init__(self, name: str, value: Entity, validation: Entity | Workspace):
+    def __init__(self, name: str, value: Entity | UUID, validation: Entity | Workspace):
         super().__init__(AssociationValidationError.message(name, value, validation))
 
     @staticmethod
     def message(name, value, validation):
-        return f"Property '{name}' of type '{value}' must be a child entity of parent {validation}"
+        return (
+            f"Property '{name}' with value: '{value}' must be "
+            f"a child entity of parent {validation}"
+        )
 
 
 class PropertyGroupValidationError(BaseValidationError):

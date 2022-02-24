@@ -457,13 +457,13 @@ def test_invalid_uuid_string(tmp_path):
     ui_json["geoh5"] = workspace
     ui_json["data"] = templates.data_parameter(optional="enabled")
     ui_json["data"]["parent"] = "object"
-    ui_json["data"]["value"] = "Hello World"
+    ui_json["data"]["value"] = 4
     in_file = InputFile(ui_json=ui_json)
 
     with pytest.raises(TypeValidationError) as excinfo:
         getattr(in_file, "data")
     assert TypeValidationError.message(
-        "data", "str", ["UUID", "Entity", "NoneType"]
+        "data", "int", ["str", "UUID", "Entity", "NoneType"]
     ) == str(excinfo.value)
 
 
@@ -477,9 +477,9 @@ def test_valid_uuid_in_workspace(tmp_path):
     ui_json["data"]["value"] = bogus_uuid
     in_file = InputFile(ui_json=ui_json)
 
-    with pytest.raises(UUIDValidationError) as excinfo:
+    with pytest.raises(AssociationValidationError) as excinfo:
         getattr(in_file, "data")
-    assert UUIDValidationError.message("data", bogus_uuid, workspace) == str(
+    assert AssociationValidationError.message("data", bogus_uuid, workspace) == str(
         excinfo.value
     )
 
@@ -529,6 +529,7 @@ def test_property_group_with_wrong_type(tmp_path):
     ) == str(excinfo.value)
 
     ui_json["data"]["dataGroupType"] = "3D vector"
+    ui_json["data"]["value"] = points.property_groups[0]
     in_file = InputFile(ui_json=ui_json)
 
     with pytest.raises(PropertyGroupValidationError) as excinfo:

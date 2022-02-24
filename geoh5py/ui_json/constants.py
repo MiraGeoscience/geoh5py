@@ -18,6 +18,7 @@
 
 from uuid import UUID
 
+from ..groups import PropertyGroup
 from ..shared import Entity
 from ..workspace import Workspace
 
@@ -60,7 +61,7 @@ ui_validations = {
     "property": {"types": [str, UUID, type(None)]},
     "value": {
         "required": True,
-        "types": [str, float, int, bool, type(None), Entity, UUID],
+        "types": [str, float, int, bool, type(None), Entity, UUID, PropertyGroup],
     },
     "tooltip": {"types": [str, type(None)]},
 }
