@@ -87,6 +87,9 @@ class H5Reader:
             for key, value in entity.attrs.items():
                 attributes["entity"][key] = value
 
+            if "Type" not in entity:
+                entity.create_group("Type")
+
             for key, value in entity["Type"].attrs.items():
                 type_attributes["entity_type"][key] = value
 
