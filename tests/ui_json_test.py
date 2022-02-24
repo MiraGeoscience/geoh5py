@@ -637,18 +637,14 @@ def test_data_value_parameter_a(tmp_path):
     assert reload_input.data["object"] is None, "Object not reloaded as None"
     assert reload_input.data["data"] == 0.0
 
-
-@pytest.mark.skip(reason="Failing on github for unknown reason")
-def test_data_value_parameter_b(tmp_path):
-
     workspace = get_workspace(tmp_path)
     points_a = workspace.get_entity("Points_A")[0]
-    data_b = workspace.get_entity("values B")[0]
+    data_a = workspace.get_entity("values A")[0]
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
     ui_json["object"] = templates.object_parameter(value=points_a.uid)
     ui_json["data"] = templates.data_value_parameter(
-        parent="object", is_value=False, prop=data_b.uid
+        parent="object", is_value=False, prop=data_a.uid
     )
 
     in_file = InputFile(ui_json=ui_json)
@@ -656,7 +652,7 @@ def test_data_value_parameter_b(tmp_path):
     reload_input = InputFile.read_ui_json(out_file)
 
     assert reload_input.data["object"].uid == points_a.uid
-    assert reload_input.data["data"].uid == data_b.uid
+    assert reload_input.data["data"].uid == data_a.uid
 
 
 def test_data_parameter(tmp_path):
