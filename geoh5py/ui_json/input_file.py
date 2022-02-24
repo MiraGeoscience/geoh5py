@@ -376,6 +376,10 @@ class InputFile:
         string_funcs:
             Function to apply to values within dictionary.
         """
+        if isinstance(val, dict):
+            for key, values in val.items():
+                val[key] = InputFile._dict_mapper(values, string_funcs)
+
         for fun in string_funcs:
             if args is None:
                 val = fun(val)

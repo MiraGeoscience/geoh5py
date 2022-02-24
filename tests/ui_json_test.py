@@ -579,6 +579,21 @@ def test_input_file(tmp_path):
             raise ValueError(f"Input '{key}' differs from the output.")
 
 
+def test_write_ui_json(tmp_path):
+    # Make sure that none2str is applied in dict_mapper
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["test"] = templates.float_parameter(optional="disabled")
+    in_file = InputFile(ui_json=ui_json)
+    in_file.write_ui_json(name="test_write.ui.json", path=tmp_path)
+    with open(path.join(tmp_path, "test_write.ui.json")) as file:
+        content = file.read()
+        ind = content.find("value")
+        ind = content.find("value", ind + 1)
+        assert content[ind + 8 : ind + 12] != "null"
+
+
 def test_data_value_parameter_a(tmp_path):
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
