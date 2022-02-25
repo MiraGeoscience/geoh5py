@@ -229,7 +229,7 @@ def test_input_file_json():
 
     assert "Input 'ui_json' must be of type dict or None" in str(excinfo)
 
-    ui_json = {}
+    ui_json = {"test": 4}
     in_file = InputFile(ui_json=ui_json)
 
     with pytest.raises(RequiredValidationError) as excinfo:
@@ -403,9 +403,12 @@ def test_file_parameter():
     assert test["enabled"]
 
 
-def test_shape_parameter():
+def test_shape_parameter(tmp_path):
+
+    workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["data"] = templates.string_parameter(value="2,5,6,7")
+    ui_json["geoh5"] = workspace
     in_file = InputFile(ui_json=ui_json, validations={"data": {"shape": (3,)}})
 
     with pytest.raises(ShapeValidationError) as excinfo:
@@ -415,6 +418,7 @@ def test_shape_parameter():
 
 
 def test_missing_required_field(tmp_path):
+
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["object"] = templates.object_parameter(optional="enabled")
