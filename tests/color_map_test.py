@@ -15,17 +15,17 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
+from os import path
 
 import numpy as np
+import pytest
 
 from geoh5py.objects import Grid2D
-from geoh5py.shared.utils import compare_entities
+from geoh5py.shared.validators import ShapeValidationError
 from geoh5py.workspace import Workspace
 
 
-def test_create_color_map():
+def test_create_color_map(tmp_path):
 
     name = "Grid2D_Colormap"
 
@@ -33,44 +33,84 @@ def test_create_color_map():
     n_x, n_y = 10, 15
     values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"test_color_map.geoh5"
+    h5file_path = path.join(tmp_path, r"test_color_map.geoh5")
 
-        # Create a workspace
-        workspace = Workspace(h5file_path)
+    # Create a workspace
+    workspace = Workspace(h5file_path)
 
-        grid = Grid2D.create(
-            workspace,
-            origin=[0, 0, 0],
-            u_cell_size=20.0,
-            v_cell_size=30.0,
-            u_count=n_x,
-            v_count=n_y,
-            name=name,
-            allow_move=False,
+    grid = Grid2D.create(
+        workspace,
+        origin=[0, 0, 0],
+        u_cell_size=20.0,
+        v_cell_size=30.0,
+        u_count=n_x,
+        v_count=n_y,
+        name=name,
+        allow_move=False,
+    )
+
+    data = grid.add_data({"DataValues": {"values": values}})
+
+    n_c = 10
+    rgba = np.vstack(
+        [
+            np.linspace(values.min(), values.max(), n_c),  # Values
+            np.linspace(0, 255, n_c),  # Red
+            np.linspace(255, 0, n_c),  # Green
+            np.linspace(125, 15, n_c),  # Blue,
+            np.ones(n_c) * 255,  # Alpha,
+        ]
+    )
+
+    with pytest.raises(TypeError) as error:
+        data.entity_type.color_map = 1234
+
+    assert "Input value for 'color_map' must be of type" in str(
+        error
+    ), "Failed raising error on un-supported color map input"
+
+    with pytest.raises(ShapeValidationError) as error:
+        data.entity_type.color_map = rgba
+
+    assert ShapeValidationError.message("values", "(5, 10)", "(*, 5)") == str(
+        error.value
+    )
+
+    data.entity_type.color_map = rgba.T
+
+    with pytest.raises(TypeError) as error:
+        data.entity_type.color_map.values = "abc"
+
+    assert f"Input 'values' of ColorMap must be of type {np.ndarray}." in str(
+        error
+    ), "Failed raising error on wrong type color map values."
+
+    with pytest.raises(ValueError) as error:
+        data.entity_type.color_map.values = np.core.records.fromarrays(
+            rgba.T, names=("a", "b", "c", "d", "f")
         )
 
-        data = grid.add_data({"DataValues": {"values": values}})
+    assert "Input 'values' must contain fields with types" in str(
+        error
+    ), "Failed to raise error for color_map recarray with wrong names."
 
-        n_c = 10
-        rgba = np.vstack(
-            [
-                np.linspace(values.min(), values.max(), n_c),  # Values
-                np.linspace(0, 255, n_c),  # Red
-                np.linspace(255, 0, n_c),  # Green
-                np.linspace(125, 15, n_c),  # Blue,
-                np.ones(n_c) * 255,  # Alpha,
-            ]
-        )
-        data.entity_type.color_map.values = rgba
-        workspace.finalize()
+    # Read the data back in from a fresh workspace
+    new_workspace = Workspace(h5file_path)
+    rec_data = new_workspace.get_entity("DataValues")[0]
 
-        # Read the data back in from a fresh workspace
-        new_workspace = Workspace(h5file_path)
+    assert np.all(
+        getattr(rec_data.entity_type.color_map, key)
+        == getattr(data.entity_type.color_map, key)
+        for key in ["name", "values"]
+    ), "Issue updating the ColorMap."
 
-        rec_obj = new_workspace.get_entity(name)[0]
+    new_workspace = Workspace(path.join(tmp_path, r"test_color_map_copy.geoh5"))
+    data.copy(parent=new_workspace)
 
-        rec_data = new_workspace.get_entity("DataValues")[0]
+    rec_data = new_workspace.get_entity("DataValues")[0]
 
-        compare_entities(grid, rec_obj)
-        compare_entities(data, rec_data)
+    assert np.all(
+        getattr(rec_data.entity_type.color_map, key)
+        == getattr(data.entity_type.color_map, key)
+        for key in ["name", "values"]
+    ), "Issue copying the ColorMap."

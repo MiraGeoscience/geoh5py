@@ -311,7 +311,6 @@ class H5Writer:
         """
         with fetch_h5_handle(file) as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
-            str_type = h5py.special_dtype(vlen=str)
 
             for key, attr in entity.attribute_map.items():
 
@@ -331,9 +330,9 @@ class H5Writer:
                 if isinstance(value, (np.int8, bool)):
                     entity_handle.attrs.create(key, int(value), dtype="int8")
                 elif isinstance(value, str):
-                    entity_handle.attrs.create(key, value, dtype=str_type)
+                    entity_handle.attrs.create(key, value, dtype=cls.str_type)
                 elif value is None:
-                    entity_handle.attrs.create(key, "None", dtype=str_type)
+                    entity_handle.attrs.create(key, "None", dtype=cls.str_type)
                 else:
                     entity_handle.attrs.create(
                         key, value, dtype=np.asarray(value).dtype
@@ -411,7 +410,14 @@ class H5Writer:
 
             if color_map is not None and color_map.values is not None:
                 entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)
-                cls.create_dataset(entity_type_handle, color_map.values, "Color map")
+                cls.create_dataset(
+                    entity_type_handle,
+                    getattr(color_map, "_values"),
+                    "Color map",
+                )
+                entity_type_handle["Color map"].attrs.create(
+                    "File name", color_map.name, dtype=cls.str_type
+                )
 
     @classmethod
     def write_value_map(
@@ -569,7 +575,7 @@ class H5Writer:
         :return entity: Pointer to the written entity. Active link if "close_file" is False.
         """
         with fetch_h5_handle(file) as h5file:
-            cls.str_type = h5py.special_dtype(vlen=str)
+
             base = list(h5file.keys())[0]
 
             if isinstance(entity, Data):

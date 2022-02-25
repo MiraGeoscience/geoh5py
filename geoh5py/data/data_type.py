@@ -88,10 +88,23 @@ class DataType(EntityType):
         return self._color_map
 
     @color_map.setter
-    def color_map(self, color_map: dict):
-        assert "values" in color_map.keys(), "'color_map' must contain 'values'"
-        self._color_map = ColorMap(**color_map)
+    def color_map(self, color_map: ColorMap | dict | np.ndarray):
+
+        if isinstance(color_map, dict):
+            color_map = ColorMap(**color_map)
+
+        elif isinstance(color_map, np.ndarray):
+            color_map = ColorMap(values=color_map)
+
+        elif not isinstance(color_map, ColorMap):
+            raise TypeError(
+                f"Input value for 'color_map' must be of type {ColorMap} or dict with 'values'."
+            )
+
+        color_map.parent = self
+        self._color_map = color_map
         self.modified_attributes = "color_map"
+        self.workspace.finalize()
 
     @property
     def value_map(self) -> ReferenceValueMap | None:

@@ -21,13 +21,13 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 from geoh5py.shared.utils import iterable_message
-from geoh5py.workspace import Workspace
 
 if TYPE_CHECKING:
     from uuid import UUID
 
     from geoh5py.groups import PropertyGroup
     from geoh5py.shared import Entity
+    from geoh5py.workspace import Workspace
 
 
 class BaseValidationError(ABC, Exception):
@@ -77,7 +77,7 @@ class RequiredValidationError(BaseValidationError):
 class ShapeValidationError(BaseValidationError):
     """Error on shape validation."""
 
-    def __init__(self, name: str, value: tuple[int], validation: tuple[int]):
+    def __init__(self, name: str, value: tuple[int], validation: tuple[int] | str):
         super().__init__(ShapeValidationError.message(name, value, validation))
 
     @staticmethod
@@ -111,7 +111,9 @@ class UUIDValidationError(BaseValidationError):
     @staticmethod
     def message(name, value, validation):
         valid_name = (
-            validation.h5file if isinstance(validation, Workspace) else validation.name
+            validation.h5file
+            if getattr(validation, "h5file", None) is not None
+            else validation.name
         )
         return (
             f"UUID '{value}' provided for '{name}' is invalid. "
