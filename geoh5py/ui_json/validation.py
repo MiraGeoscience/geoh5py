@@ -170,12 +170,14 @@ class InputValidation:
 
     def _merge_validations(self, validations):
         """Overwrite self.validations with new definitions."""
+
         out = deepcopy(self.validations)
-        for key, val in validations.items():
-            if key not in out:
-                out[key] = val
-            else:
-                out[key].update(val)
+        if validations is not None:
+            for key, val in validations.items():
+                if key not in out:
+                    out[key] = val
+                else:
+                    out[key].update(val)
         return out
 
     def validate(self, name: str, value: Any, validations: dict[str, Any] = None):
