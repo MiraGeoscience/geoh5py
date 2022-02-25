@@ -14,6 +14,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+import json
 from copy import deepcopy
 from os import path
 from uuid import uuid4
@@ -591,11 +592,9 @@ def test_write_ui_json(tmp_path):
     ui_json["test"] = templates.float_parameter(optional="disabled")
     in_file = InputFile(ui_json=ui_json)
     in_file.write_ui_json(name="test_write.ui.json", path=tmp_path)
-    with open(path.join(tmp_path, "test_write.ui.json")) as file:
-        content = file.read()
-        ind = content.find("value")
-        ind = content.find("value", ind + 1)
-        assert content[ind + 8 : ind + 12] != "null"
+    with open(path.join(tmp_path, "test_write.ui.json"), encoding="utf-8") as file:
+        ui_json = json.load(file)
+        assert ui_json["test"]["value"] == ""
 
 
 def test_data_value_parameter_a(tmp_path):
