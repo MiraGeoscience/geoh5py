@@ -18,7 +18,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, Optional, cast
+from typing import Any, cast
 from uuid import UUID
 
 from geoh5py.groups import PropertyGroup
