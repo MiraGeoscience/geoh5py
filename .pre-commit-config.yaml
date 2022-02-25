@@ -10,7 +10,7 @@ ci:
 
 repos:
 -   repo: https://github.com/psf/black
-    rev: 21.10b0
+    rev: 22.1.0
     hooks:
     -   id: black
         types: [text]
@@ -41,14 +41,14 @@ repos:
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v2.29.0
+    rev: v2.31.0
     hooks:
     -   id: pyupgrade
         args: [--py37-plus]
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.910-1
+    rev: v0.931
     hooks:
     -   id: mypy
         additional_dependencies: [types-toml]
@@ -80,7 +80,7 @@ repos:
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.0.1
+    rev: v4.1.0
     hooks:
     -   id: trailing-whitespace
         exclude: \.mdj$
@@ -102,6 +102,7 @@ repos:
         entry: rstcheck
         files: '.rst'
         language: python
+        exclude: (docs/templates)
         additional_dependencies: [rstcheck, sphinx]
 -   repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.9.0

@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -104,7 +104,7 @@ class BlockModel(ObjectBase):
         :obj:`int`: Total number of cells
         """
         if self.shape is not None:
-            return np.prod(self.shape)
+            return int(np.prod(self.shape))
         return None
 
     @property

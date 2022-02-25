@@ -1,5 +1,5 @@
-User Guide
-==========
+Tutorials
+=========
 
 This section provides information on how to use the **geoh5py** package, from
 the creation of a Workspace_ to the creation and manipulation of Entities_
@@ -13,7 +13,7 @@ the creation of a Workspace_ to the creation and manipulation of Entities_
 
    workspace.ipynb
    entities.ipynb
-   surveys.ipynb
+   surveys
 
 .. _Workspace: workspace.ipynb
 .. _Entities: entities.ipynb

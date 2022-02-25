@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import inspect
 import uuid
+import warnings
 import weakref
 from contextlib import contextmanager
 from gc import collect
@@ -80,12 +81,17 @@ class Workspace:
         self._h5file = h5file
 
         for attr, item in kwargs.items():
-            try:
-                if attr in self._attribute_map:
-                    attr = self._attribute_map[attr]
+            if attr in self._attribute_map:
+                attr = self._attribute_map[attr]
+
+            if getattr(self, attr, None) is None:
+                warnings.warn(
+                    f"Argument {attr} with value {item} is not a valid attribute of workspace. "
+                    f"Argument ignored.",
+                    UserWarning,
+                )
+            else:
                 setattr(self, attr, item)
-            except AttributeError:
-                continue
 
         with h5py.File(self.h5file, "a") as file:
             try:
@@ -170,7 +176,7 @@ class Workspace:
         """
 
         entity_kwargs: dict = {"entity": {"uid": None, "parent": None}}
-        for key in entity.__dict__.keys():
+        for key in entity.__dict__:
             if key not in ["_uid", "_entity_type"] + list(omit_list):
                 if key[0] == "_":
                     key = key[1:]
@@ -178,7 +184,7 @@ class Workspace:
                 entity_kwargs["entity"][key] = getattr(entity, key)
 
         entity_type_kwargs: dict = {"entity_type": {}}
-        for key in entity.entity_type.__dict__.keys():
+        for key in entity.entity_type.__dict__:
             if key not in ["_workspace"] + list(omit_list):
                 if key[0] == "_":
                     key = key[1:]
@@ -290,10 +296,8 @@ class Workspace:
 
         :return entity: Newly created entity registered to the workspace
         """
-        entity_kwargs: dict = kwargs["entity"] if "entity" in kwargs else {}
-        entity_type_kwargs: dict = (
-            kwargs["entity_type"] if "entity_type" in kwargs else {}
-        )
+        entity_kwargs: dict = kwargs.get("entity", {})
+        entity_type_kwargs: dict = kwargs.get("entity_type", {})
 
         if entity_class is not RootGroup and (
             "parent" not in entity_kwargs or entity_kwargs["parent"] is None
@@ -510,10 +514,10 @@ class Workspace:
 
     def fetch_children(
         self,
-        entity: Entity,
+        entity: Entity | None,
         recursively: bool = False,
         file: str | h5py.File | None = None,
-    ):
+    ) -> list:
         """
         Recover and register children entities from the h5file
 
@@ -521,6 +525,9 @@ class Workspace:
         :param recursively: Recover all children down the project tree
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         """
+        if entity is None:
+            return []
+
         if isinstance(entity, Group):
             entity_type = "group"
         elif isinstance(entity, ObjectBase):
@@ -532,6 +539,7 @@ class Workspace:
             file, H5Reader.fetch_children, entity.uid, entity_type
         )
 
+        family_tree = []
         for uid, child_type in children_list.items():
             if self.get_entity(uid)[0] is not None:
                 recovered_object = self.get_entity(uid)[0]
@@ -545,9 +553,19 @@ class Workspace:
                 # Assumes the object was pulled from h5
                 recovered_object.existing_h5_entity = True
                 recovered_object.entity_type.existing_h5_entity = True
+                family_tree += [recovered_object]
 
                 if recursively:
-                    self.fetch_children(recovered_object, recursively=True, file=file)
+                    family_tree += self.fetch_children(
+                        recovered_object, recursively=True, file=file
+                    )
+                    if hasattr(recovered_object, "property_groups"):
+                        family_tree += getattr(recovered_object, "property_groups")
+
+        if hasattr(entity, "property_groups"):
+            family_tree += getattr(entity, "property_groups")
+
+        return family_tree
 
     def fetch_delimiters(
         self, uid: uuid.UUID, file: str | h5py.File | None = None
@@ -844,6 +862,7 @@ class Workspace:
             if isinstance(entity, ObjectBase) and len(property_groups) > 0:
                 for kwargs in property_groups.values():
                     entity.find_or_create_property_group(**kwargs)
+                    entity.modified_attributes = []
 
         return entity
 

@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -101,11 +101,11 @@ class ObjectBase(Entity):
 
             data = {
                 "data_A": {
-                    'values', [v_1, v_2, ...],
+                    'values': [v_1, v_2, ...],
                     'association': 'VERTEX'
                     },
                 "data_B": {
-                    'values', [v_1, v_2, ...],
+                    'values': [v_1, v_2, ...],
                     'association': 'CELLS'
                     },
             }
@@ -158,7 +158,6 @@ class ObjectBase(Entity):
 
         :return: The target property group.
         """
-        prop_group = self.find_or_create_property_group(name=name)
         if isinstance(data, list):
             uids = []
             for datum in data:
@@ -166,6 +165,9 @@ class ObjectBase(Entity):
         else:
             uids = self.reference_to_uid(data)
 
+        prop_group = self.find_or_create_property_group(
+            name=name, association=self.workspace.get_entity(uids[0])[0].association
+        )
         for uid in uids:
             assert uid in [
                 child.uid for child in self.children
@@ -403,9 +405,9 @@ class ObjectBase(Entity):
         if entity_type is None:
             primitive_type = attribute_dict.get("type")
             if primitive_type is not None:
-                assert primitive_type.upper() in list(
-                    PrimitiveTypeEnum.__members__.keys()
-                ), f"Data 'type' should be one of {list(PrimitiveTypeEnum.__members__.keys())}"
+                assert (
+                    primitive_type.upper() in PrimitiveTypeEnum.__members__
+                ), f"Data 'type' should be one of {PrimitiveTypeEnum.__members__}"
                 entity_type = {"primitive_type": primitive_type.upper()}
             else:
                 values = attribute_dict.get("values")

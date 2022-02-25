@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -76,6 +76,16 @@ def test_modify_property_group():
 
         assert len(prop_group.properties) == 1, "Error removing a property_group"
 
+        # Add a CELL property group
+        curve.add_data(
+            {"Cell_values": {"values": np.ones(curve.n_cells), "association": "CELL"}},
+            property_group="cell_group",
+        )
+
+        assert (
+            curve.find_or_create_property_group(name="cell_group").association.name
+            == "CELL"
+        ), "Failed to create a CELL property_group"
         workspace.finalize()
 
         # Re-open the workspace
@@ -87,5 +97,12 @@ def test_modify_property_group():
         compare_objects(rec_prop_group, prop_group)
 
         fetch_group = workspace.fetch_property_groups(rec_curve)
-        assert len(fetch_group) == 1, "Issues reading property groups from workspace"
-        compare_objects(fetch_group[0], prop_group)
+        assert len(fetch_group) == 2, "Issues reading property groups from workspace"
+        compare_objects(
+            rec_curve.find_or_create_property_group(name="myGroup"), prop_group
+        )
+
+        assert (
+            rec_curve.find_or_create_property_group(name="cell_group").association.name
+            == "CELL"
+        ), "Failed to recover a CELL property_group"

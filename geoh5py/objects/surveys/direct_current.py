@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -186,12 +186,6 @@ class PotentialElectrode(Curve):
         """
         if getattr(self, "_metadata", None) is None:
             metadata = self.workspace.fetch_metadata(self.uid)
-            for key, value in metadata.items():
-                try:
-                    metadata[key] = uuid.UUID(value)
-                except ValueError:
-                    metadata[key] = value
-
             self._metadata = metadata
         return self._metadata
 

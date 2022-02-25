@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -95,15 +95,16 @@ class Data(Entity):
     def association(self, value: str | DataAssociationEnum):
         if isinstance(value, str):
 
-            assert value.upper() in list(
-                DataAssociationEnum.__members__.keys()
-            ), f"Association flag should be one of {list(DataAssociationEnum.__members__.keys())}"
+            if value.upper() not in DataAssociationEnum.__members__:
+                raise ValueError(
+                    f"Association flag should be one of {DataAssociationEnum.__members__}"
+                )
 
             self._association = getattr(DataAssociationEnum, value.upper())
         else:
-            assert isinstance(
-                value, DataAssociationEnum
-            ), f"Association must be of type {DataAssociationEnum}"
+            if not isinstance(value, DataAssociationEnum):
+                raise TypeError(f"Association must be of type {DataAssociationEnum}")
+
             self._association = value
 
     @property
