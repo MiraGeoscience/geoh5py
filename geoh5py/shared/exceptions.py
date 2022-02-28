@@ -42,7 +42,12 @@ class BaseValidationError(ABC, Exception):
 class AssociationValidationError(BaseValidationError):
     """Error on association between child and parent entity validation."""
 
-    def __init__(self, name: str, value: Entity | UUID, validation: Entity | Workspace):
+    def __init__(
+        self,
+        name: str,
+        value: Entity | PropertyGroup | UUID,
+        validation: Entity | Workspace,
+    ):
         super().__init__(AssociationValidationError.message(name, value, validation))
 
     @staticmethod
