@@ -155,9 +155,7 @@ class InputValidation:
                     "types": [check_type],
                 }
 
-            if (("optional" in item) or ("enabled" in item)) and "types" in validations[
-                key
-            ]:
+            if item.get("optional") and "types" in validations[key]:
                 validations[key]["types"] += [type(None)]
 
         return validations
