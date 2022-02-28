@@ -229,7 +229,7 @@ def test_input_file_json():
 
     assert "Input 'ui_json' must be of type dict or None" in str(excinfo)
 
-    ui_json = {}
+    ui_json = {"test": 4}
     in_file = InputFile(ui_json=ui_json)
 
     with pytest.raises(RequiredValidationError) as excinfo:
@@ -403,9 +403,12 @@ def test_file_parameter():
     assert test["enabled"]
 
 
-def test_shape_parameter():
+def test_shape_parameter(tmp_path):
+
+    workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["data"] = templates.string_parameter(value="2,5,6,7")
+    ui_json["geoh5"] = workspace
     in_file = InputFile(ui_json=ui_json, validations={"data": {"shape": (3,)}})
 
     with pytest.raises(ShapeValidationError) as excinfo:
@@ -415,6 +418,7 @@ def test_shape_parameter():
 
 
 def test_missing_required_field(tmp_path):
+
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["object"] = templates.object_parameter(optional="enabled")
@@ -604,12 +608,12 @@ def test_data_value_parameter_b(tmp_path):
 
     workspace = get_workspace(tmp_path)
     points_a = workspace.get_entity("Points_A")[0]
-    data_a = workspace.get_entity("values A")[0]
+    data_b = workspace.get_entity("values B")[0]
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
     ui_json["object"] = templates.object_parameter(value=points_a.uid)
     ui_json["data"] = templates.data_value_parameter(
-        parent="object", is_value=False, prop=data_a.uid
+        parent="object", is_value=False, prop=data_b.uid
     )
 
     in_file = InputFile(ui_json=ui_json)
@@ -617,7 +621,7 @@ def test_data_value_parameter_b(tmp_path):
     reload_input = InputFile.read_ui_json(out_file)
 
     assert reload_input.data["object"].uid == points_a.uid
-    assert reload_input.data["data"].uid == data_a.uid
+    assert reload_input.data["data"].uid == data_b.uid
 
 
 def test_data_parameter(tmp_path):

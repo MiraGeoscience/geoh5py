@@ -38,9 +38,8 @@ default_ui_json = {
     "workspace": None,
 }
 ui_validations = {
-    "association": {"types": [str, type(None)], "values": ["Vertex", "Cell"]},
+    "association": {"values": ["Vertex", "Cell"]},
     "dataGroupType": {
-        "types": [str, type(None)],
         "values": [
             "Multi-element",
             "3D vector",
@@ -48,9 +47,9 @@ ui_validations = {
             "Strike & dip",
         ],
     },
-    "dataType": {"types": [str, type(None)], "values": ["Float", "Text", "Integer"]},
+    "dataType": {"values": ["Float", "Text", "Integer"]},
     "dependency": {"types": [str, type(None)]},
-    "dependencyType": {"types": [str, type(None)], "values": ["enabled", "disabled"]},
+    "dependencyType": {"values": ["enabled", "disabled"]},
     "enabled": {"types": [bool, type(None)]},
     "group": {"types": [str, type(None)]},
     "label": {"required": True, "types": [str]},
