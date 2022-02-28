@@ -98,7 +98,8 @@ class DataType(EntityType):
 
         elif not isinstance(color_map, ColorMap):
             raise TypeError(
-                f"Input value for 'color_map' must be of type {ColorMap} or dict with 'values'."
+                f"Input value for 'color_map' must be of type {ColorMap},"
+                f"numpy.ndarray or dict with 'values'."
             )
 
         color_map.parent = self
