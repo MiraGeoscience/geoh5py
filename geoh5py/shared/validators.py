@@ -36,7 +36,6 @@ from geoh5py.shared.exceptions import (
     RequiredValidationError,
     ShapeValidationError,
     TypeValidationError,
-    UUIDStringValidationError,
     UUIDValidationError,
     ValueValidationError,
 )
@@ -84,22 +83,36 @@ class AssociationValidator(BaseValidator):
 
     @classmethod
     def validate(
-        cls, name: str, value: Entity | None, valid: Entity | Workspace
+        cls,
+        name: str,
+        value: Entity | PropertyGroup | UUID | None,
+        valid: Entity | Workspace,
     ) -> None:
         """
         :param name: Parameter identifier.
         :param value: Input parameter value.
         :param valid: Expected value shape
         """
-        if value is None or getattr(value, "uid", None) is None or valid is None:
+        if valid is None:
+            return
+
+        if isinstance(value, UUID):
+            uid = value
+        elif isinstance(value, (Entity, PropertyGroup)):
+            uid = value.uid
+        else:
             return
 
         if isinstance(valid, Workspace):
-            children = valid.fetch_children(valid.root, recursively=True)
+            # TODO add a generic method to workspace to get all uuid
+            children = valid.get_entity(uid)
+            if None in children:
+                children = valid.fetch_children(valid.root, recursively=True)
+
         elif isinstance(valid, Entity):
             children = valid.workspace.fetch_children(valid, recursively=True)
 
-        if value.uid not in [child.uid for child in children]:
+        if uid not in [getattr(child, "uid", None) for child in children]:
             raise AssociationValidationError(name, value, valid)
 
 
@@ -202,35 +215,18 @@ class UUIDValidator(BaseValidator):
         super().__init__(**kwargs)
 
     @classmethod
-    def validate(
-        cls, name: str, value: UUID | str, valid: None | Entity | Workspace = None
-    ) -> None:
+    def validate(cls, name: str, value: Any, valid: None = None) -> None:
         """
         :param name: Parameter identifier.
         :param value: Input parameter uuid.
         :param valid: [Optional] Validate uuid from parental entity or known uuids
         """
-        if value is None:
-            return
 
-        if not isinstance(value, UUID):
+        if isinstance(value, str):
             try:
                 value = UUID(value)
             except ValueError as exception:
-                raise UUIDStringValidationError(name, str(value)) from exception
-
-        if valid is not None:
-            if isinstance(valid, Workspace) and valid.root is not None:
-                children_list = valid.fetch_children(valid.root, recursively=True)
-            elif isinstance(valid, Entity):
-                children_list = valid.workspace.fetch_children(valid, recursively=True)
-            else:
-                raise ValueError(
-                    "Type of input `valid` parameter must be one of Entity or Workspace"
-                )
-
-            if value not in [child.uid for child in children_list]:
-                raise UUIDValidationError(name, value, valid)
+                raise UUIDValidationError(name, str(value)) from exception
 
 
 class ValueValidator(BaseValidator):

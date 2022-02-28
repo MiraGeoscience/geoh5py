@@ -19,7 +19,7 @@ import numpy as np
 from geoh5py.groups import ContainerGroup
 from geoh5py.io.utils import as_str_if_uuid, entity2uuid, str2uuid, uuid2entity
 from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
-from geoh5py.shared.validators import UUIDValidator
+from geoh5py.shared.validators import AssociationValidator
 from geoh5py.workspace import Workspace
 
 from .constants import base_validations, ui_validations
@@ -48,7 +48,7 @@ class InputFile:
 
     _ui_validators = None
     _validators = None
-    uuid_validator = UUIDValidator()
+    association_validator = AssociationValidator()
 
     def __init__(
         self,
@@ -177,8 +177,7 @@ class InputFile:
         if getattr(self, "_ui_validators", None) is None:
 
             self._ui_validators = InputValidation(
-                validations=ui_validations,
-                **{"ignore_list": ("value",)},
+                validations=ui_validations, **{"ignore_list": ("value",)}
             )
 
         return self._ui_validators
@@ -360,7 +359,7 @@ class InputFile:
             if isinstance(value, dict):
                 var[key] = self._promote(value)
             elif isinstance(value, UUID):
-                self.uuid_validator(key, value, self.workspace)
+                self.association_validator(key, value, self.workspace)
                 var[key] = uuid2entity(value, self.workspace)
 
         return var

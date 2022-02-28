@@ -49,13 +49,10 @@ class InputValidation:
         validators: dict[str, BaseValidator] = None,
         validations: dict[str, Any] | None = None,
         workspace: Workspace = None,
-        ui_json: dict[str, Any] = None,
+        ui_json: dict[str, Any] | None = None,
         **validation_options,
     ):
-        self._inferred_validations = (
-            {} if ui_json is None else self.infer_validations(ui_json)
-        )
-        self.validations: dict[str, Any] | None = validations
+        self.validations = self.infer_validations(ui_json, validations=validations)
         self.validators: dict[str, BaseValidator] = validators
         self.workspace: Workspace | None = workspace
         self.ignore_list: tuple = validation_options.get("ignore_list", ())
@@ -65,7 +62,7 @@ class InputValidation:
 
     @property
     def validations(self):
-        return dict(self._inferred_validations, **self._validations)
+        return self._validations
 
     @validations.setter
     def validations(self, val: dict[str, Any]):
@@ -105,6 +102,7 @@ class InputValidation:
 
     @staticmethod
     def _required_validators(validations):
+        """Returns dictionary of validators required by validations."""
         unique_validators = InputValidation._unique_validators(validations)
         all_validators = {k.validator_type: k() for k in BaseValidator.__subclasses__()}
         val = {}
@@ -115,17 +113,26 @@ class InputValidation:
         return val
 
     @staticmethod
-    def infer_validations(ui_json: dict[str, Any]):
-        validations = {}
+    def _validations_from_uijson(ui_json: dict[str, Any]) -> dict[str, dict]:
+        """Determine base set of validations from ui.json structure."""
+
+        validations: dict[str, dict] = {}
         for key, item in ui_json.items():
             if not isinstance(item, dict):
+                check_type = cast(Any, type(item))
+                validations[key] = {
+                    "types": [check_type],
+                }
                 continue
 
             if "isValue" in item:
                 validations[key] = {
-                    "types": [UUID, int, float, Entity],
-                    "association": item["parent"],
+                    "types": [str, UUID, int, float, Entity],
                 }
+                if not item["isValue"]:
+                    validations[key]["association"] = item["parent"]
+                    validations[key]["uuid"] = None
+
             elif "choiceList" in item:
                 validations[key] = {"types": [str], "values": item["choiceList"]}
             elif "fileType" in item:
@@ -134,17 +141,19 @@ class InputValidation:
                 }
             elif "meshType" in item:
                 validations[key] = {
-                    "types": [UUID, Entity],
+                    "types": [str, UUID, Entity],
                     "association": "geoh5",
+                    "uuid": None,
                 }
             elif "parent" in item:
                 validations[key] = {
-                    "types": [UUID, Entity],
+                    "types": [str, UUID, Entity],
                     "association": item["parent"],
+                    "uuid": None,
                 }
                 if "dataGroupType" in item:
                     validations[key]["property_group_type"] = item["dataGroupType"]
-                    validations[key]["types"] = [UUID, PropertyGroup]
+                    validations[key]["types"] = [str, UUID, PropertyGroup]
             elif "value" in item:
                 if item["value"] is None:
                     check_type = str
@@ -156,9 +165,42 @@ class InputValidation:
                 }
 
             if item.get("optional") and "types" in validations[key]:
+
                 validations[key]["types"] += [type(None)]
 
         return validations
+
+    @staticmethod
+    def infer_validations(
+        ui_json: dict[str, Any] | None, validations: dict[str, dict] | None = None
+    ) -> dict:
+        """Infer necessary validations from ui json structure."""
+
+        inferred_validations = (
+            {} if ui_json is None else InputValidation._validations_from_uijson(ui_json)
+        )
+
+        if validations is not None:
+            inferred_validations = InputValidation._merge_validations(
+                inferred_validations, validations
+            )
+
+        return inferred_validations
+
+    @staticmethod
+    def _merge_validations(
+        validations_a: dict[str, dict], validations_b: dict[str, dict]
+    ):
+        """Overwrite self.validations with new definitions."""
+
+        out = deepcopy(validations_a)
+        if validations_b is not None:
+            for key, val in validations_b.items():
+                if key not in out:
+                    out[key] = val
+                else:
+                    out[key].update(val)
+        return out
 
     def validate(self, name: str, value: Any, validations: dict[str, Any] = None):
         """
@@ -190,6 +232,7 @@ class InputValidation:
         :param data: Input data with known validations.
         """
         for name, validations in self.validations.items():
+
             if name not in data.keys():
                 if "required" in validations and not self.ignore_requirements:
                     raise RequiredValidationError(name)
@@ -201,7 +244,7 @@ class InputValidation:
                 temp_validate["association"] = data[validations["association"]]
                 self.validate(name, data[name], temp_validate)
             else:
-                self.validate(name, data[name])
+                self.validate(name, data.get(name, None))
 
     def __call__(self, data, *args):
         if isinstance(data, dict):
