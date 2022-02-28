@@ -90,7 +90,7 @@ class AssociationValidator(BaseValidator):
         :param value: Input parameter value.
         :param valid: Expected value shape
         """
-        if value is None or valid is None:
+        if value is None or getattr(value, "uid", None) is None or valid is None:
             return
 
         uid = value.uid if isinstance(value, Entity) else value
