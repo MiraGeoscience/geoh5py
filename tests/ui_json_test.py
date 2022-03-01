@@ -48,6 +48,7 @@ from geoh5py.shared.validators import (
 from geoh5py.ui_json import InputValidation, templates
 from geoh5py.ui_json.constants import default_ui_json, ui_validations
 from geoh5py.ui_json.input_file import InputFile
+from geoh5py.ui_json.utils import collect
 from geoh5py.workspace import Workspace
 
 
@@ -592,6 +593,7 @@ def test_write_ui_json(tmp_path):
     ui_json["test"] = templates.float_parameter(optional="disabled")
     in_file = InputFile(ui_json=ui_json)
     in_file.write_ui_json(name="test_write.ui.json", path=tmp_path)
+    print(in_file.data)
     with open(path.join(tmp_path, "test_write.ui.json"), encoding="utf-8") as file:
         ui_json = json.load(file)
         assert ui_json["test"]["value"] == ""
@@ -657,10 +659,21 @@ def test_stringify(tmp_path):
     in_file = InputFile(
         ui_json=ui_json, validations={"test": {"types": [int, type(None)]}}
     )
-    strdict = in_file._stringify(in_file.ui_json, none_map={"test": 4})
-    assert strdict["test"]["value"] == 4
-    assert strdict["test"]["optional"]
-    assert not strdict["test"]["enabled"]
+
+    with pytest.raises(ValueError) as excinfo:
+        in_file.update_ui_values({"test": None}, none_map={"test": 4})
+
+    assert "The following parameters are not optional." in str(
+        excinfo
+    ), "Failed to raise error on None with not optional."
+
+    in_file.ui_json["test"]["optional"] = True
+    in_file.ui_json["test"]["enabled"] = True
+
+    in_file.update_ui_values({"test": None}, none_map={"test": 4})
+
+    assert in_file.ui_json["test"]["value"] == 4
+    assert not in_file.ui_json["test"]["enabled"]
 
     ui_json["test_group"] = templates.string_parameter(optional="enabled")
     ui_json["test_group"]["group"] = "test_group"
@@ -668,13 +681,12 @@ def test_stringify(tmp_path):
     ui_json["test"] = templates.integer_parameter(value=None)
     ui_json["test"]["group"] = "test_group"
 
-    in_file = InputFile(
-        ui_json=ui_json, validations={"test": {"types": [int, type(None)]}}
-    )
-    strdict = in_file._stringify(in_file.ui_json, none_map={"test": 4})
-    assert strdict["test"]["value"] == 4
-    assert not strdict["test"]["enabled"]
-    assert "optional" not in strdict["test"]
+    in_file = InputFile(ui_json=ui_json, validations={"test": {"types": [int]}})
+    in_file.update_ui_values({"test": None}, none_map={"test": 4})
+    assert in_file.ui_json["test"]["value"] == 4
+    assert not in_file.ui_json["test"]["enabled"]
+    assert not in_file.ui_json["test_group"]["enabled"]
+    assert "optional" not in in_file.ui_json["test"]
 
     ui_json["test_group"] = templates.string_parameter(optional="enabled")
     ui_json["test_group"]["group"] = "test_group"
@@ -685,10 +697,9 @@ def test_stringify(tmp_path):
     in_file = InputFile(
         ui_json=ui_json, validations={"test": {"types": [int, type(None)]}}
     )
-    strdict = in_file._stringify(in_file.ui_json, none_map={"test": 4})
-    assert strdict["test"]["value"] == 4
-    assert strdict["test"]["optional"]
-    assert not strdict["test"]["enabled"]
+    in_file.update_ui_values({"test": 2}, none_map={"test": 4})
+    assert in_file.ui_json["test"]["value"] == 2
+    assert in_file.ui_json["test"]["enabled"]
 
 
 def test_collect():
@@ -696,7 +707,7 @@ def test_collect():
     d_u_j["string_parameter"] = templates.string_parameter(optional="enabled")
     d_u_j["float_parameter"] = templates.float_parameter(optional="disabled")
     d_u_j["integer_parameter"] = templates.integer_parameter(optional="enabled")
-    enabled_params = InputFile.collect(d_u_j, "enabled", value=True)
+    enabled_params = collect(d_u_j, "enabled", value=True)
     assert all("enabled" in v for v in enabled_params.values())
     assert all(v["enabled"] for v in enabled_params.values())
 

@@ -84,7 +84,9 @@ def collect(var: dict[str, Any], field: str, value: Any = None) -> dict[str, Any
     return data
 
 
-def group_optional(var: dict[str, Any], name: str | dict) -> bool:
+def group_optional(
+    var: dict[str, Any], name: str | dict, return_lead: bool = False
+) -> bool | str:
     """Returns groupOptional bool for group name."""
     if isinstance(name, dict):
         if "group" in name:
@@ -94,17 +96,11 @@ def group_optional(var: dict[str, Any], name: str | dict) -> bool:
 
     group = collect(var, "group", name)
     param = collect(group, "groupOptional", True)
+    if return_lead and any(param):
+        return list(param.keys())[0]
     return any(param)
 
 
-# def group_enabled(var: dict[str, Any], name: str) -> bool:
-#     """Returns enabled status of member of group containing groupOptional:True field."""
-#     group = collect(var, "group", name)
-#     if group_optional(group, name, True):
-#         param = collect(group, "groupOptional")
-#         return list(param.values())[0]["enabled"]
-#
-#     return True
 def optional_type(ui_json: dict, name: str):
     """
     Check if a ui.json parameter is optional or groupOptional
@@ -120,7 +116,7 @@ def optional_type(ui_json: dict, name: str):
 
 def set_enabled(ui_json: dict, name: str, value: bool):
     """
-    Set enabled for optional or groupOptional ui.json parameter.
+    Set enabled status for an optional or groupOptional parameter.
 
     :param ui_json: UI.json dictionary
     :param name: Name of the parameter to check optional on.
@@ -132,16 +128,15 @@ def set_enabled(ui_json: dict, name: str, value: bool):
         )
 
     ui_json[name]["enabled"] = value
+    optional_group = group_optional(ui_json, ui_json[name], return_lead=True)
 
-    # Check groupOptional
-    if group_optional(ui_json, ui_json[name]):
-        group = collect(ui_json, "group", ui_json[name]["group"])
-        if ui_json[list(group.keys())[0]]["enabled"] and not value:
+    if optional_group:
+        if ui_json[optional_group]["enabled"] and not value:
             warnings.warn(
                 f"The ui.json group {ui_json[name]['group']} was disabled "
                 f"due to parameter '{name}'."
             )
-        ui_json[list(group.keys())[0]]["enabled"] = value
+        ui_json[optional_group]["enabled"] = value
 
 
 def truth(var: dict[str, Any], name: str, field: str) -> bool:

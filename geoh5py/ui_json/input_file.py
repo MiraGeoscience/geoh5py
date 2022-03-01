@@ -156,8 +156,7 @@ class InputFile:
 
         return self._ui_validators
 
-    @staticmethod
-    def update_ui_values(ui_json: dict, data: dict, none_map: dict | None = None):
+    def update_ui_values(self, data: dict, none_map=None):
         """
         Update the ui.json values and enabled status from input data.
 
@@ -166,29 +165,38 @@ class InputFile:
         :param none_map : Map parameter 'None' values to non-null numeric types.
             The parameters in the dictionary are mapped to optional and disabled.
         """
+        if self.ui_json is None:
+            raise UserWarning("InputFile requires a 'ui_json' to be defined.")
+
+        if none_map is None:
+            none_map = {}
+
         error_list = []
         for key, value in data.items():
+            if isinstance(self.ui_json[key], dict):
+                if value is None:
+                    if not optional_type(self.ui_json, key):
+                        error_list.append(key)
+                        continue
 
-            if none_map is not None and key in none_map:
-                value = none_map[key]
-
-            if isinstance(ui_json[key], dict):
-                if not optional_type(ui_json, key) and value is None:
-                    error_list.append(key)
+                    value = none_map.get(key, None)
+                    enabled = False
                 else:
-                    set_enabled(ui_json, key, value is not None)
-                    field = "value"
-                    if "isValue" in ui_json[key]:
-                        if isinstance(value, (Entity, UUID)):
-                            ui_json[key]["isValue"] = False
-                            field = "property"
-                        else:
-                            ui_json[key]["isValue"] = True
+                    enabled = True
 
-                    ui_json[key][field] = value
+                set_enabled(self.ui_json, key, enabled)
+                field = "value"
+                if "isValue" in self.ui_json[key]:
+                    if isinstance(value, (Entity, UUID)):
+                        self.ui_json[key]["isValue"] = False
+                        field = "property"
+                    else:
+                        self.ui_json[key]["isValue"] = True
+
+                self.ui_json[key][field] = value
 
             else:
-                ui_json[key] = value
+                self.ui_json[key] = value
 
         if any(error_list):
             raise ValueError(
@@ -267,7 +275,7 @@ class InputFile:
                 "The input file requires 'ui_json' and 'data' to be set before writing out."
             )
 
-        self.update_ui_values(self.ui_json, self.data, none_map=none_map)
+        self.update_ui_values(self.data, none_map=none_map)
 
         if path is None:
             path = os.path.dirname(self.workspace.h5file)
