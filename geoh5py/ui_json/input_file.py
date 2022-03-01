@@ -100,7 +100,9 @@ class InputFile:
 
             value = self._promote(value)
 
-            if self.validators is not None:
+            if self.validators is not None and not self.validation_options.get(
+                "disabled", True
+            ):
                 self.validators.validate_data(value)
 
         self._data = value
@@ -425,7 +427,7 @@ class InputFile:
         """Returns groupOptional bool for group name."""
         group = InputFile.group(var, name)
         param = InputFile.collect(group, "groupOptional")
-        return list(param.values())[0]["groupOptional"] if param is not None else False
+        return list(param.values())[0]["groupOptional"] if param else False
 
     @staticmethod
     def group_enabled(var: dict[str, Any], name: str) -> bool:
