@@ -11,18 +11,29 @@ import json
 import os
 import warnings
 from copy import deepcopy
-from typing import Any, Callable
+from typing import Any
 from uuid import UUID
 
-import numpy as np
-
-from geoh5py.groups import ContainerGroup
 from geoh5py.io.utils import as_str_if_uuid, entity2uuid, str2uuid, uuid2entity
 from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
 from geoh5py.shared.validators import AssociationValidator
 from geoh5py.workspace import Workspace
 
 from .constants import base_validations, ui_validations
+from .utils import (
+    container_group2name,
+    dict_mapper,
+    flatten,
+    group_optional,
+    inf2str,
+    list2str,
+    none2str,
+    path2workspace,
+    str2inf,
+    str2list,
+    str2none,
+    workspace2path,
+)
 from .validation import InputValidation
 
 
@@ -85,7 +96,7 @@ class InputFile:
             getattr(self, "_data", None) is None
             and getattr(self, "_ui_json", None) is not None
         ):
-            self.data = self.flatten(self.ui_json)
+            self.data = flatten(self.ui_json)
 
         return self._data
 
@@ -132,7 +143,7 @@ class InputFile:
     def load(self, input_dict: dict[str, Any]):
         """Load data from dictionary and validate."""
         self.ui_json = input_dict
-        self.data = InputFile.flatten(input_dict)
+        self.data = flatten(input_dict)
 
     @property
     def validation_options(self):
@@ -255,8 +266,9 @@ class InputFile:
 
         return os.path.join(path, name)
 
+    @staticmethod
     def _stringify(
-        self, var: dict[str, Any], none_map: dict[str, Any] = None
+        var: dict[str, Any], none_map: dict[str, Any] = None
     ) -> dict[str, Any]:
         """
         Convert inf, none, and list types to strings within a dictionary
@@ -276,7 +288,7 @@ class InputFile:
                 if none_map is not None and key in none_map:
                     value["value"] = none_map[key]
                     if "group" in value:
-                        if InputFile.group_optional(var, value["group"]):
+                        if group_optional(var, value["group"]):
                             value["enabled"] = False
                         else:
                             value["optional"] = True
@@ -297,7 +309,7 @@ class InputFile:
                 if key not in exclude
                 else [inf2str, as_str_if_uuid, none2str]
             )
-            var[key] = self._dict_mapper(
+            var[key] = dict_mapper(
                 value, mappers, omit={ex: [list2str] for ex in exclude}
             )
 
@@ -332,7 +344,7 @@ class InputFile:
                 if key == "ignore_values"
                 else [str2list, str2none, str2inf, str2uuid, path2workspace]
             )
-            var[key] = self._dict_mapper(value, mappers)
+            var[key] = dict_mapper(value, mappers)
 
         return var
 
@@ -344,9 +356,9 @@ class InputFile:
             if isinstance(value, dict):
                 var[key] = self._demote(value)
             elif isinstance(value, (list, tuple)):
-                var[key] = [self._dict_mapper(val, mappers) for val in value]
+                var[key] = [dict_mapper(val, mappers) for val in value]
             else:
-                var[key] = self._dict_mapper(value, mappers)
+                var[key] = dict_mapper(value, mappers)
 
         return var
 
@@ -361,184 +373,3 @@ class InputFile:
                 var[key] = uuid2entity(value, self.workspace)
 
         return var
-
-    @staticmethod
-    def _dict_mapper(val, string_funcs: list[Callable], *args, omit=None) -> dict:
-        """
-        Recurses through nested dictionary and applies mapping funcs to all values
-
-        Parameters
-        ----------
-        val :
-            Dictionary val (could be another dictionary).
-        string_funcs:
-            Function to apply to values within dictionary.
-        """
-        if omit is None:
-            omit = {}
-        if isinstance(val, dict):
-            for key, values in val.items():
-                val[key] = InputFile._dict_mapper(
-                    values,
-                    [fun for fun in string_funcs if fun not in omit.get(key, [])],
-                )
-
-        for fun in string_funcs:
-            if args is None:
-                val = fun(val)
-            else:
-                val = fun(val, *args)
-        return val
-
-    @staticmethod
-    def flatten(var: dict[str, Any]) -> dict[str, Any]:
-        """Flattens ui.json format to simple key/value pair."""
-        data: dict = {}
-        for key, value in var.items():
-            if isinstance(value, dict):
-                if is_uijson({key: value}):
-                    field = "value" if truth(var, key, "isValue") else "property"
-                    if not truth(var, key, "enabled"):
-                        data[key] = None
-                    else:
-                        data[key] = value[field]
-            else:
-                data[key] = value
-
-        return data
-
-    @staticmethod
-    def collect(var: dict[str, Any], field: str, value: Any = None) -> dict[str, Any]:
-        """Collects ui parameters with common field and optional value."""
-        data = {}
-        for key, values in var.items():
-            if isinstance(values, dict) and field in values:
-                # TODO Check with Ben if value is None makes sense
-                if value is None or values[field] == value:
-                    data[key] = values
-        return data
-
-    @staticmethod
-    def group(var: dict[str, Any], name: str) -> dict[str, Any]:
-        """Retrieves ui elements with common group name."""
-        return InputFile.collect(var, "group", name)
-
-    @staticmethod
-    def group_optional(var: dict[str, Any], name: str) -> bool:
-        """Returns groupOptional bool for group name."""
-        group = InputFile.group(var, name)
-        param = InputFile.collect(group, "groupOptional")
-        return list(param.values())[0]["groupOptional"] if param is not None else False
-
-    @staticmethod
-    def group_enabled(var: dict[str, Any], name: str) -> bool:
-        """Returns enabled status of member of group containing groupOptional:True field."""
-        group = InputFile.group(var, name)
-        if InputFile.group_optional(group, name):
-            param = InputFile.collect(group, "groupOptional")
-            return list(param.values())[0]["enabled"]
-
-        return True
-
-
-def truth(var: dict[str, Any], name: str, field: str) -> bool:
-    default_states = {
-        "enabled": True,
-        "optional": False,
-        "groupOptional": False,
-        "main": False,
-        "isValue": True,
-    }
-    if field in var[name]:
-        return var[name][field]
-
-    if field in default_states:
-        return default_states[field]
-
-    raise ValueError(
-        f"Field: {field} was not provided in ui.json and does not have a default state."
-    )
-
-
-def is_uijson(var):
-    uijson_keys = [
-        "title",
-        "monitoring_directory",
-        "run_command",
-        "conda_environment",
-        "geoh5",
-        "workspace_geoh5",
-    ]
-    uijson = True
-    if len(var.keys()) > 1:
-        for k in uijson_keys:
-            if k not in var.keys():
-                uijson = False
-
-    for value in var.values():
-        if isinstance(value, dict):
-            for name in ["label", "value"]:
-                if name not in value.keys():
-                    uijson = False
-
-    return uijson
-
-
-def list2str(value):
-    if isinstance(value, list):  # & (key not in exclude):
-        return str(value)[1:-1]
-    return value
-
-
-def none2str(value):
-    if value is None:
-        return ""
-    return value
-
-
-def inf2str(value):  # map np.inf to "inf"
-    if not isinstance(value, (int, float)):
-        return value
-    return str(value) if not np.isfinite(value) else value
-
-
-def str2list(value):  # map "[...]" to [...]
-    if isinstance(value, str):
-        if value in ["inf", "-inf", ""]:
-            return value
-        try:
-            return [float(n) for n in value.split(",") if n != ""]
-        except ValueError:
-            return value
-
-    return value
-
-
-def str2none(value):
-    if value == "":
-        return None
-    return value
-
-
-def str2inf(value):
-    if value in ["inf", "-inf"]:
-        return float(value)
-    return value
-
-
-def workspace2path(value):
-    if isinstance(value, Workspace):
-        return value.h5file
-    return value
-
-
-def path2workspace(value):
-    if isinstance(value, str) and ".geoh5" in value:
-        return Workspace(value)
-    return value
-
-
-def container_group2name(value):
-    if isinstance(value, ContainerGroup):
-        return value.name
-    return value
