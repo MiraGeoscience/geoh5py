@@ -192,7 +192,6 @@ class InputValidation:
         validations_a: dict[str, dict], validations_b: dict[str, dict]
     ):
         """Overwrite self.validations with new definitions."""
-
         out = deepcopy(validations_a)
         if validations_b is not None:
             for key, val in validations_b.items():
