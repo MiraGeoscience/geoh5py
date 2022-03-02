@@ -57,31 +57,40 @@ def dict_mapper(
     return val
 
 
-def flatten(var: dict[str, Any]) -> dict[str, Any]:
+def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
     """Flattens ui.json format to simple key/value pair."""
-    data: dict = {}
-    for key, value in var.items():
+    data: dict[str, Any] = {}
+    for name, value in ui_json.items():
         if isinstance(value, dict):
-            if is_uijson({key: value}):
-                field = "value" if truth(var, key, "isValue") else "property"
-                if not truth(var, key, "enabled"):
-                    data[key] = None
+            if is_uijson({name: value}):
+                field = "value" if truth(ui_json, name, "isValue") else "property"
+                if not truth(ui_json, name, "enabled"):
+                    data[name] = None
                 else:
-                    data[key] = value[field]
+                    data[name] = value[field]
         else:
-            data[key] = value
+            data[name] = value
 
     return data
 
 
-def collect(var: dict[str, Any], field: str, value: Any = None) -> dict[str, Any]:
+def collect(ui_json: dict[str, dict], member: str, value: Any = None) -> dict[str, Any]:
     """Collects ui parameters with common field and optional value."""
-    data = {}
-    for key, values in var.items():
-        if isinstance(values, dict) and field in values:
-            if values[field] == value:
-                data[key] = values
-    return data
+
+    parameters = {}
+    for name, form in ui_json.items():
+        if is_form(form) and member in form:
+            if value is None or form[member] == value:
+                parameters[name] = form
+
+    return parameters
+
+
+def group_optional(var: dict[str, Any], group_name: str):
+    """Returns groupOptional bool for group name."""
+    group = collect(var, "group", group_name)
+    param = collect(group, "groupOptional")
+    return list(param.values())[0]["groupOptional"] if param else False
 
 
 def group_optional(
@@ -180,6 +189,16 @@ def is_uijson(var):
                     uijson = False
 
     return uijson
+
+
+def is_form(var: Any) -> bool:
+    """Return true if dictionary 'var' contains both 'label' and 'value' members."""
+    is_a_form = False
+    if isinstance(var, dict):
+        if all(k in var.keys() for k in ["label", "value"]):
+            is_a_form = True
+
+    return is_a_form
 
 
 def list2str(value):
