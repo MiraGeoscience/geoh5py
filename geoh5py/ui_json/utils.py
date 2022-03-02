@@ -85,42 +85,33 @@ def collect(ui_json: dict[str, dict], member: str, value: Any = None) -> dict[st
 
     return parameters
 
+def find_all(ui_json: dict[str, dict], member: str, value: Any = None) -> list[str]:
+    """Returns names of all collected paramters."""
+    parameters = collect(ui_json, member, value)
+    return list(parameters.keys())
 
-def group_optional(var: dict[str, Any], group_name: str):
+def group_optional(ui_json: dict[str, dict], group_name: str):
     """Returns groupOptional bool for group name."""
-    group = collect(var, "group", group_name)
-    param = collect(group, "groupOptional")
-    return list(param.values())[0]["groupOptional"] if param else False
+    group = collect(ui_json, "group", group_name)
+    parameters = find_all(group, "groupOptional")
+    form = group[parameters[0]]
+    return form["groupOptional"] if parameters else False
 
 
-def group_optional(
-    var: dict[str, Any], name: str | dict, return_lead: bool = False
-) -> bool | str:
-    """Returns groupOptional bool for group name."""
-    if isinstance(name, dict):
-        if "group" in name:
-            name = name["group"]
-        else:
-            return False
-
-    group = collect(var, "group", name)
-    param = collect(group, "groupOptional", True)
-    if return_lead and any(param):
-        return list(param.keys())[0]
-    return any(param)
-
-
-def optional_type(ui_json: dict, name: str):
+def optional_type(ui_json: dict[str, dict], name: str):
     """
     Check if a ui.json parameter is optional or groupOptional
 
     :param ui_json: UI.json dictionary
     :param name: Name of parameter to check type.
     """
-    if ui_json[name].get("optional") or group_optional(ui_json, ui_json[name]):
-        return True
+    is_optional = False
+    if is_form(ui_json[name]):
+        is_optional |= ui_json[name].get("optional", False)
+        if "group" in ui_json[name]:
+            is_optional |= group_optional(ui_json, ui_json[name]["group"])
 
-    return False
+    return is_optional
 
 
 def set_enabled(ui_json: dict, name: str, value: bool):

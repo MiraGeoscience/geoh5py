@@ -55,9 +55,10 @@ def test_collect():
 
 def group_optional():
     d_u_j = deepcopy(default_ui_json)
-    d_u_j["string_parameter"] = templates.string_parameter(optional="enabled")
-    d_u_j["float_parameter"] = templates.float_parameter(optional="disabled")
-    d_u_j["integer_parameter"] = templates.integer_parameter(optional="enabled")
+    d_u_j["string_parameter"] = templates.string_parameter(optional="enabled", group="test", groupOptional=True)
+    d_u_j["float_parameter"] = templates.float_parameter(optional="enabled", group="test")
+    d_u_j["integer_parameter"] = templates.integer_parameter(optional="enabled", group="test")
+    assert group_optional(d_u_j, "test")
 
 
 def optional_type():
