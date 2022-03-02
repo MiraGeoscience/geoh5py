@@ -51,11 +51,15 @@ class InputValidation:
         validations: dict[str, Any] | None = None,
         workspace: Workspace = None,
         ui_json: dict[str, Any] | None = None,
-        **validation_options,
+        validation_options: dict[str, Any] | None = None,
     ):
         self.validations = self.infer_validations(ui_json, validations=validations)
         self.validators: dict[str, BaseValidator] = validators
         self.workspace: Workspace | None = workspace
+
+        if validation_options is None:
+            validation_options = {}
+
         self.ignore_list: tuple = validation_options.get("ignore_list", ())
         self.ignore_requirements: bool = validation_options.get(
             "ignore_requirements", False
