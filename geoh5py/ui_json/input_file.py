@@ -19,7 +19,7 @@ import numpy as np
 from geoh5py.groups import ContainerGroup
 from geoh5py.io.utils import as_str_if_uuid, entity2uuid, str2uuid, uuid2entity
 from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
-from geoh5py.shared.validators import UUIDValidator
+from geoh5py.shared.validators import AssociationValidator
 from geoh5py.workspace import Workspace
 
 from .constants import base_validations, ui_validations
@@ -48,7 +48,7 @@ class InputFile:
 
     _ui_validators = None
     _validators = None
-    uuid_validator = UUIDValidator()
+    association_validator = AssociationValidator()
 
     def __init__(
         self,
@@ -177,8 +177,7 @@ class InputFile:
         if getattr(self, "_ui_validators", None) is None:
 
             self._ui_validators = InputValidation(
-                validations=ui_validations,
-                **{"ignore_list": ("value",)},
+                validations=ui_validations, **{"ignore_list": ("value",)}
             )
 
         return self._ui_validators
@@ -270,11 +269,7 @@ class InputFile:
         for key, value in var.items():
             # Handle special cases of None values
 
-            if (
-                isinstance(value, dict)
-                and "property" in value
-                and value["property"] is None
-            ):
+            if isinstance(value, dict) and value.get("property", False) is None:
                 value["property"] = ""
 
             if isinstance(value, dict) and value["value"] is None:
@@ -302,7 +297,9 @@ class InputFile:
                 if key not in exclude
                 else [inf2str, as_str_if_uuid, none2str]
             )
-            var[key] = self._dict_mapper(value, mappers)
+            var[key] = self._dict_mapper(
+                value, mappers, omit={ex: [list2str] for ex in exclude}
+            )
 
         return var
 
@@ -360,13 +357,13 @@ class InputFile:
             if isinstance(value, dict):
                 var[key] = self._promote(value)
             elif isinstance(value, UUID):
-                self.uuid_validator(key, value, self.workspace)
+                self.association_validator(key, value, self.workspace)
                 var[key] = uuid2entity(value, self.workspace)
 
         return var
 
     @staticmethod
-    def _dict_mapper(val, string_funcs: list[Callable], *args) -> dict:
+    def _dict_mapper(val, string_funcs: list[Callable], *args, omit=None) -> dict:
         """
         Recurses through nested dictionary and applies mapping funcs to all values
 
@@ -377,6 +374,15 @@ class InputFile:
         string_funcs:
             Function to apply to values within dictionary.
         """
+        if omit is None:
+            omit = {}
+        if isinstance(val, dict):
+            for key, values in val.items():
+                val[key] = InputFile._dict_mapper(
+                    values,
+                    [fun for fun in string_funcs if fun not in omit.get(key, [])],
+                )
+
         for fun in string_funcs:
             if args is None:
                 val = fun(val)

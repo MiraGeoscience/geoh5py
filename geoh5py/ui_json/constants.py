@@ -18,6 +18,7 @@
 
 from uuid import UUID
 
+from ..groups import PropertyGroup
 from ..shared import Entity
 from ..workspace import Workspace
 
@@ -37,9 +38,8 @@ default_ui_json = {
     "workspace": None,
 }
 ui_validations = {
-    "association": {"types": [str, [str]], "values": ["Vertex", "Cell"]},
+    "association": {"values": ["Vertex", "Cell"]},
     "dataGroupType": {
-        "types": [str],
         "values": [
             "Multi-element",
             "3D vector",
@@ -47,32 +47,32 @@ ui_validations = {
             "Strike & dip",
         ],
     },
-    "dataType": {"types": [str], "values": ["Float", "Text", "Integer"]},
-    "dependency": {"types": [str]},
-    "dependencyType": {"types": [str], "values": ["enabled", "disabled"]},
-    "enabled": {"types": [bool]},
-    "group": {"types": [str]},
-    "label": {"types": [str], "required": True},
-    "main": {"types": [bool]},
-    "meshType": {"types": [str, UUID]},
-    "optional": {"types": [bool]},
-    "parent": {"types": [str, UUID]},
+    "dataType": {"values": ["Float", "Text", "Integer"]},
+    "dependency": {"types": [str, type(None)]},
+    "dependencyType": {"values": ["enabled", "disabled"]},
+    "enabled": {"types": [bool, type(None)]},
+    "group": {"types": [str, type(None)]},
+    "label": {"required": True, "types": [str]},
+    "main": {"types": [bool, type(None)]},
+    "meshType": {"types": [str, UUID, type(None)]},
+    "optional": {"types": [bool, type(None)]},
+    "parent": {"types": [str, UUID, type(None)]},
     "property": {"types": [str, UUID, type(None)]},
     "value": {
-        "types": [str, float, int, bool, type(None), Entity, UUID],
         "required": True,
+        "types": [str, float, int, bool, type(None), Entity, UUID, PropertyGroup],
     },
-    "tooltip": {"types": [str]},
+    "tooltip": {"types": [str, type(None)]},
 }
 base_validations = {
-    "title": {"types": [str], "required": True},
+    "title": {"required": True, "types": [str]},
     "conda_environment": {
         "types": [str, type(None)],
     },
     "conda_environment_boolean": {
         "types": [bool],
     },
-    "geoh5": {"types": [str, Workspace, type(None)], "required": True},
+    "geoh5": {"required": True, "types": [str, Workspace, type(None)]},
     "monitoring_directory": {
         "types": [str, type(None)],
     },

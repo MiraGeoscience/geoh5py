@@ -57,6 +57,7 @@ def uuid2entity(value, workspace):
 def str2uuid(value):
     """Convert string to UUID"""
     if is_uuid(value):
+        # TODO insert validation
         return UUID(str(value))
     return value
 

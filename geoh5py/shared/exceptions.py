@@ -19,12 +19,11 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
 from geoh5py.shared.utils import iterable_message
 
 if TYPE_CHECKING:
-    from uuid import UUID
-
     from geoh5py.groups import PropertyGroup
     from geoh5py.shared import Entity
     from geoh5py.workspace import Workspace
@@ -43,12 +42,20 @@ class BaseValidationError(ABC, Exception):
 class AssociationValidationError(BaseValidationError):
     """Error on association between child and parent entity validation."""
 
-    def __init__(self, name: str, value: Entity, validation: Entity | Workspace):
+    def __init__(
+        self,
+        name: str,
+        value: Entity | PropertyGroup | UUID,
+        validation: Entity | Workspace,
+    ):
         super().__init__(AssociationValidationError.message(name, value, validation))
 
     @staticmethod
     def message(name, value, validation):
-        return f"Property '{name}' of type '{value}' must be a child entity of parent {validation}"
+        return (
+            f"Property '{name}' with value: '{value}' must be "
+            f"a child entity of parent {validation}"
+        )
 
 
 class PropertyGroupValidationError(BaseValidationError):
@@ -67,10 +74,10 @@ class PropertyGroupValidationError(BaseValidationError):
 
 class RequiredValidationError(BaseValidationError):
     def __init__(self, name: str):
-        super().__init__(RequiredValidationError.message(name, None, None))
+        super().__init__(RequiredValidationError.message(name))
 
     @staticmethod
-    def message(name, value, validation):
+    def message(name, value=None, validation=None):
         return f"Missing required parameter: '{name}'."
 
 
@@ -103,32 +110,13 @@ class TypeValidationError(BaseValidationError):
 
 
 class UUIDValidationError(BaseValidationError):
-    """Error on uuid validation."""
-
-    def __init__(self, name: str, value: str | UUID, validation: Entity | Workspace):
-        super().__init__(UUIDValidationError.message(name, value, validation))
-
-    @staticmethod
-    def message(name, value, validation):
-        valid_name = (
-            validation.h5file
-            if getattr(validation, "h5file", None) is not None
-            else validation.name
-        )
-        return (
-            f"UUID '{value}' provided for '{name}' is invalid. "
-            f"Not in the list of children of {type(validation).__name__}: {valid_name} "
-        )
-
-
-class UUIDStringValidationError(BaseValidationError):
     """Error on uuid string validation."""
 
     def __init__(self, name: str, value: str):
-        super().__init__(UUIDStringValidationError.message(name, value, None))
+        super().__init__(UUIDValidationError.message(name, value))
 
     @staticmethod
-    def message(name, value, validation):
+    def message(name, value, validation=None):
         return f"Parameter '{name}' with value '{value}' is not a valid uuid string."
 
 
