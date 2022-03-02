@@ -655,6 +655,9 @@ class H5Writer:
             else:
                 return None
 
+            if "Types" not in h5file[base]:
+                h5file[base].create_group("Types")
+
             # Check if already in the project
             if entity_type_str not in h5file[base]["Types"].keys():
                 h5file[base]["Types"].create_group(entity_type_str)
