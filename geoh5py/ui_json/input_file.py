@@ -9,20 +9,32 @@ from __future__ import annotations
 
 import json
 import os
-import warnings
 from copy import deepcopy
-from typing import Any, Callable
+from typing import Any
 from uuid import UUID
 
-import numpy as np
-
-from geoh5py.groups import ContainerGroup
 from geoh5py.io.utils import as_str_if_uuid, entity2uuid, str2uuid, uuid2entity
+from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
 from geoh5py.shared.validators import AssociationValidator
 from geoh5py.workspace import Workspace
 
 from .constants import base_validations, ui_validations
+from .utils import (
+    container_group2name,
+    dict_mapper,
+    flatten,
+    inf2str,
+    list2str,
+    none2str,
+    optional_type,
+    path2workspace,
+    set_enabled,
+    str2inf,
+    str2list,
+    str2none,
+    workspace2path,
+)
 from .validation import InputValidation
 
 
@@ -46,7 +58,10 @@ class InputFile:
         ui.json fields other than 'value'.
     """
 
-    _ui_validators = None
+    _ui_validators: InputValidation = InputValidation(
+        validations=ui_validations,
+        validation_options={"ignore_list": ("value",)},
+    )
     _validators = None
     association_validator = AssociationValidator()
 
@@ -64,28 +79,13 @@ class InputFile:
         self.data = data
         self.workspace = workspace
 
-    @staticmethod
-    def read_ui_json(json_file: str):
-        """
-        Read and create an InputFile from *.ui.json
-        """
-        input_file = InputFile()
-
-        if "ui.json" not in json_file:
-            raise ValueError("Input file should have the extension *.ui.json")
-
-        with open(json_file, encoding="utf-8") as file:
-            input_file.load(json.load(file))
-
-        return input_file
-
     @property
     def data(self):
         if (
             getattr(self, "_data", None) is None
             and getattr(self, "_ui_json", None) is not None
         ):
-            self.data = self.flatten(self.ui_json)
+            self.data = flatten(self.ui_json)
 
         return self._data
 
@@ -101,11 +101,31 @@ class InputFile:
             value = self._promote(value)
 
             if self.validators is not None and not self.validation_options.get(
-                "disabled", True
+                "disabled", False
             ):
                 self.validators.validate_data(value)
 
         self._data = value
+
+    def load(self, input_dict: dict[str, Any]):
+        """Load data from dictionary and validate."""
+        self.ui_json = input_dict
+        self.data = flatten(input_dict)
+
+    @staticmethod
+    def read_ui_json(json_file: str):
+        """
+        Read and create an InputFile from *.ui.json
+        """
+        input_file = InputFile()
+
+        if "ui.json" not in json_file:
+            raise ValueError("Input file should have the extension *.ui.json")
+
+        with open(json_file, encoding="utf-8") as file:
+            input_file.load(json.load(file))
+
+        return input_file
 
     @property
     def ui_json(self) -> dict | None:
@@ -131,10 +151,57 @@ class InputFile:
             self._ui_json = None
         self._validators = None
 
-    def load(self, input_dict: dict[str, Any]):
-        """Load data from dictionary and validate."""
-        self.ui_json = input_dict
-        self.data = InputFile.flatten(input_dict)
+    @classmethod
+    def ui_validation(cls, ui_json: dict[str, Any]):
+        """Validation of the ui_json forms"""
+        cls._ui_validators(ui_json)
+
+    def update_ui_values(self, data: dict, none_map=None):
+        """
+        Update the ui.json values and enabled status from input data.
+
+        :param ui_json: A ui.json formatted dictionary.
+        :param data: Key and value pairs expected by the ui_json.
+        :param none_map : Map parameter 'None' values to non-null numeric types.
+            The parameters in the dictionary are mapped to optional and disabled.
+        """
+        if self.ui_json is None:
+            raise UserWarning("InputFile requires a 'ui_json' to be defined.")
+
+        if none_map is None:
+            none_map = {}
+
+        error_list = []
+        for key, value in data.items():
+            if isinstance(self.ui_json[key], dict):
+                if value is None:
+                    if not optional_type(self.ui_json, key):
+                        error_list.append(key)
+                        continue
+
+                    value = none_map.get(key, None)
+                    enabled = False
+                else:
+                    enabled = True
+
+                set_enabled(self.ui_json, key, enabled)
+                field = "value"
+                if "isValue" in self.ui_json[key]:
+                    if isinstance(value, (Entity, UUID)):
+                        self.ui_json[key]["isValue"] = False
+                        field = "property"
+                    else:
+                        self.ui_json[key]["isValue"] = True
+
+                self.ui_json[key][field] = value
+
+            else:
+                self.ui_json[key] = value
+
+        if any(error_list):
+            raise ValueError(
+                f"The following parameters are not optional. Assign value for: {error_list}"
+            )
 
     @property
     def validation_options(self):
@@ -169,20 +236,10 @@ class InputFile:
             self._validators = InputValidation(
                 ui_json=self.ui_json,
                 validations=self.validations,
-                **self.validation_options,
+                validation_options=self.validation_options,
             )
 
         return self._validators
-
-    @property
-    def ui_validators(self):
-        if getattr(self, "_ui_validators", None) is None:
-
-            self._ui_validators = InputValidation(
-                validations=ui_validations, **{"ignore_list": ("value",)}
-            )
-
-        return self._ui_validators
 
     @property
     def workspace(self):
@@ -207,12 +264,10 @@ class InputFile:
         path: str = None,
     ) -> str | None:
         """
-        Writes a ui.json formatted file from InputFile data
+        Writes a formatted ui.json file from InputFile data
+
         :param name: Name of the file
         :param none_map : Map parameter None values to non-null numeric types.
-            The parameters in the
-            dictionary will also be map optional and disabled, ensuring that if not
-            updated by the user they would read back as None.
         :param path: Directory to write the ui.json to.
         """
         if self.ui_json is None or self.data is None:
@@ -220,26 +275,7 @@ class InputFile:
                 "The input file requires 'ui_json' and 'data' to be set before writing out."
             )
 
-        for key, value in self.data.items():
-            msg = f"Overriding param: {key} 'None' value to zero since 'dataType' is 'Float'."
-            if isinstance(self.ui_json[key], dict):
-                field = "value"
-                if "isValue" in self.ui_json[key]:
-                    if not self.ui_json[key]["isValue"]:
-                        field = "property"
-                    elif (
-                        ("dataType" in self.ui_json[key])
-                        and (self.ui_json[key]["dataType"] == "Float")
-                        and (value is None)
-                    ):
-                        value = 0.0
-                        warnings.warn(msg)
-
-                self.ui_json[key][field] = value
-                if value is not None:
-                    self.ui_json[key]["enabled"] = True
-            else:
-                self.ui_json[key] = value
+        self.update_ui_values(self.data, none_map=none_map)
 
         if path is None:
             path = os.path.dirname(self.workspace.h5file)
@@ -251,15 +287,12 @@ class InputFile:
             name += ".ui.json"
 
         with open(os.path.join(path, name), "w", encoding="utf-8") as file:
-            json.dump(
-                self._stringify(self._demote(self.ui_json), none_map), file, indent=4
-            )
+            json.dump(self._stringify(self._demote(self.ui_json)), file, indent=4)
 
         return os.path.join(path, name)
 
-    def _stringify(
-        self, var: dict[str, Any], none_map: dict[str, Any] = None
-    ) -> dict[str, Any]:
+    @staticmethod
+    def _stringify(var: dict[str, Any]) -> dict[str, Any]:
         """
         Convert inf, none, and list types to strings within a dictionary
 
@@ -269,43 +302,20 @@ class InputFile:
             representations in json format.
         """
         for key, value in var.items():
-            # Handle special cases of None values
-
-            if isinstance(value, dict) and value.get("property", False) is None:
-                value["property"] = ""
-
-            if isinstance(value, dict) and value["value"] is None:
-                if none_map is not None and key in none_map:
-                    value["value"] = none_map[key]
-                    if "group" in value:
-                        if InputFile.group_optional(var, value["group"]):
-                            value["enabled"] = False
-                        else:
-                            value["optional"] = True
-                            value["enabled"] = False
-                    else:
-                        value["optional"] = True
-                        value["enabled"] = False
-                elif "meshType" in value:
-                    value["value"] = ""
-                elif "isValue" in value and value["isValue"]:
-                    value["isValue"] = False
-                    value["property"] = ""
-                    value["value"] = 0.0
-
             exclude = ["choiceList", "meshType", "dataType", "association"]
             mappers = (
                 [list2str, inf2str, as_str_if_uuid, none2str]
                 if key not in exclude
                 else [inf2str, as_str_if_uuid, none2str]
             )
-            var[key] = self._dict_mapper(
+            var[key] = dict_mapper(
                 value, mappers, omit={ex: [list2str] for ex in exclude}
             )
 
         return var
 
-    def _numify(self, var: dict[str, Any]) -> dict[str, Any]:
+    @classmethod
+    def _numify(cls, var: dict[str, Any]) -> dict[str, Any]:
         """
         Convert inf, none and list strings to numerical types within a dictionary
 
@@ -323,18 +333,18 @@ class InputFile:
         for key, value in var.items():
             if isinstance(value, dict):
                 try:
-                    self.ui_validators(value)
+                    cls.ui_validation(value)
                 except tuple(BaseValidationError.__subclasses__()) as error:
                     raise JSONParameterValidationError(key, error.args[0]) from error
 
-                value = self._numify(value)
+                value = cls._numify(value)
 
             mappers = (
                 [str2none, str2inf, str2uuid, path2workspace]
                 if key == "ignore_values"
                 else [str2list, str2none, str2inf, str2uuid, path2workspace]
             )
-            var[key] = self._dict_mapper(value, mappers)
+            var[key] = dict_mapper(value, mappers)
 
         return var
 
@@ -346,9 +356,9 @@ class InputFile:
             if isinstance(value, dict):
                 var[key] = self._demote(value)
             elif isinstance(value, (list, tuple)):
-                var[key] = [self._dict_mapper(val, mappers) for val in value]
+                var[key] = [dict_mapper(val, mappers) for val in value]
             else:
-                var[key] = self._dict_mapper(value, mappers)
+                var[key] = dict_mapper(value, mappers)
 
         return var
 
@@ -363,184 +373,3 @@ class InputFile:
                 var[key] = uuid2entity(value, self.workspace)
 
         return var
-
-    @staticmethod
-    def _dict_mapper(val, string_funcs: list[Callable], *args, omit=None) -> dict:
-        """
-        Recurses through nested dictionary and applies mapping funcs to all values
-
-        Parameters
-        ----------
-        val :
-            Dictionary val (could be another dictionary).
-        string_funcs:
-            Function to apply to values within dictionary.
-        """
-        if omit is None:
-            omit = {}
-        if isinstance(val, dict):
-            for key, values in val.items():
-                val[key] = InputFile._dict_mapper(
-                    values,
-                    [fun for fun in string_funcs if fun not in omit.get(key, [])],
-                )
-
-        for fun in string_funcs:
-            if args is None:
-                val = fun(val)
-            else:
-                val = fun(val, *args)
-        return val
-
-    @staticmethod
-    def flatten(var: dict[str, Any]) -> dict[str, Any]:
-        """Flattens ui.json format to simple key/value pair."""
-        data: dict = {}
-        for key, value in var.items():
-            if isinstance(value, dict):
-                if is_uijson({key: value}):
-                    field = "value" if truth(var, key, "isValue") else "property"
-                    if not truth(var, key, "enabled"):
-                        data[key] = None
-                    else:
-                        data[key] = value[field]
-            else:
-                data[key] = value
-
-        return data
-
-    @staticmethod
-    def collect(var: dict[str, Any], field: str, value: Any = None) -> dict[str, Any]:
-        """Collects ui parameters with common field and optional value."""
-        data = {}
-        for key, values in var.items():
-            if isinstance(values, dict) and field in values:
-                # TODO Check with Ben if value is None makes sense
-                if value is None or values[field] == value:
-                    data[key] = values
-        return data
-
-    @staticmethod
-    def group(var: dict[str, Any], name: str) -> dict[str, Any]:
-        """Retrieves ui elements with common group name."""
-        return InputFile.collect(var, "group", name)
-
-    @staticmethod
-    def group_optional(var: dict[str, Any], name: str) -> bool:
-        """Returns groupOptional bool for group name."""
-        group = InputFile.group(var, name)
-        param = InputFile.collect(group, "groupOptional")
-        return list(param.values())[0]["groupOptional"] if param else False
-
-    @staticmethod
-    def group_enabled(var: dict[str, Any], name: str) -> bool:
-        """Returns enabled status of member of group containing groupOptional:True field."""
-        group = InputFile.group(var, name)
-        if InputFile.group_optional(group, name):
-            param = InputFile.collect(group, "groupOptional")
-            return list(param.values())[0]["enabled"]
-
-        return True
-
-
-def truth(var: dict[str, Any], name: str, field: str) -> bool:
-    default_states = {
-        "enabled": True,
-        "optional": False,
-        "groupOptional": False,
-        "main": False,
-        "isValue": True,
-    }
-    if field in var[name]:
-        return var[name][field]
-
-    if field in default_states:
-        return default_states[field]
-
-    raise ValueError(
-        f"Field: {field} was not provided in ui.json and does not have a default state."
-    )
-
-
-def is_uijson(var):
-    uijson_keys = [
-        "title",
-        "monitoring_directory",
-        "run_command",
-        "conda_environment",
-        "geoh5",
-        "workspace_geoh5",
-    ]
-    uijson = True
-    if len(var.keys()) > 1:
-        for k in uijson_keys:
-            if k not in var.keys():
-                uijson = False
-
-    for value in var.values():
-        if isinstance(value, dict):
-            for name in ["label", "value"]:
-                if name not in value.keys():
-                    uijson = False
-
-    return uijson
-
-
-def list2str(value):
-    if isinstance(value, list):  # & (key not in exclude):
-        return str(value)[1:-1]
-    return value
-
-
-def none2str(value):
-    if value is None:
-        return ""
-    return value
-
-
-def inf2str(value):  # map np.inf to "inf"
-    if not isinstance(value, (int, float)):
-        return value
-    return str(value) if not np.isfinite(value) else value
-
-
-def str2list(value):  # map "[...]" to [...]
-    if isinstance(value, str):
-        if value in ["inf", "-inf", ""]:
-            return value
-        try:
-            return [float(n) for n in value.split(",") if n != ""]
-        except ValueError:
-            return value
-
-    return value
-
-
-def str2none(value):
-    if value == "":
-        return None
-    return value
-
-
-def str2inf(value):
-    if value in ["inf", "-inf"]:
-        return float(value)
-    return value
-
-
-def workspace2path(value):
-    if isinstance(value, Workspace):
-        return value.h5file
-    return value
-
-
-def path2workspace(value):
-    if isinstance(value, str) and ".geoh5" in value:
-        return Workspace(value)
-    return value
-
-
-def container_group2name(value):
-    if isinstance(value, ContainerGroup):
-        return value.name
-    return value
