@@ -58,7 +58,10 @@ class InputFile:
         ui.json fields other than 'value'.
     """
 
-    _ui_validators = None
+    _ui_validators: InputValidation = InputValidation(
+        validations=ui_validations,
+        validation_options={"ignore_list": ("value",)},
+    )
     _validators = None
     association_validator = AssociationValidator()
 
@@ -146,15 +149,10 @@ class InputFile:
             self._ui_json = None
         self._validators = None
 
-    @property
-    def ui_validators(self):
-        if getattr(self, "_ui_validators", None) is None:
-
-            self._ui_validators = InputValidation(
-                validations=ui_validations, **{"ignore_list": ("value",)}
-            )
-
-        return self._ui_validators
+    @classmethod
+    def ui_validation(cls, ui_json: dict[str, Any]):
+        """Validation of the ui_json forms"""
+        cls._ui_validators(ui_json)
 
     def update_ui_values(self, data: dict, none_map=None):
         """
@@ -236,7 +234,7 @@ class InputFile:
             self._validators = InputValidation(
                 ui_json=self.ui_json,
                 validations=self.validations,
-                **self.validation_options,
+                validation_options=self.validation_options,
             )
 
         return self._validators
@@ -314,7 +312,8 @@ class InputFile:
 
         return var
 
-    def _numify(self, var: dict[str, Any]) -> dict[str, Any]:
+    @classmethod
+    def _numify(cls, var: dict[str, Any]) -> dict[str, Any]:
         """
         Convert inf, none and list strings to numerical types within a dictionary
 
@@ -332,11 +331,11 @@ class InputFile:
         for key, value in var.items():
             if isinstance(value, dict):
                 try:
-                    self.ui_validators(value)
+                    cls.ui_validation(value)
                 except tuple(BaseValidationError.__subclasses__()) as error:
                     raise JSONParameterValidationError(key, error.args[0]) from error
 
-                value = self._numify(value)
+                value = cls._numify(value)
 
             mappers = (
                 [str2none, str2inf, str2uuid, path2workspace]
