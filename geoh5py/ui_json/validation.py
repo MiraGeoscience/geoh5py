@@ -133,9 +133,8 @@ class InputValidation:
                 validations[key] = {
                     "types": [str, UUID, int, float, Entity],
                 }
-                if not item["isValue"]:
-                    validations[key]["association"] = item["parent"]
-                    validations[key]["uuid"] = None
+                validations[key]["association"] = item["parent"]
+                validations[key]["uuid"] = None
 
             elif "choiceList" in item:
                 validations[key] = {"types": [str], "values": item["choiceList"]}

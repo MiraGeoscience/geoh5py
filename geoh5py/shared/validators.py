@@ -96,6 +96,13 @@ class AssociationValidator(BaseValidator):
         if valid is None:
             return
 
+        if not isinstance(valid, (Entity, Workspace)):
+            raise ValueError(
+                "'AssociationValidator.validate' requires a 'valid'"
+                " input of type 'Entity', 'Workspace' or None. "
+                f"Provided '{valid}' or type {type(valid)} for parameter '{name}'"
+            )
+
         if isinstance(value, UUID):
             uid = value
         elif isinstance(value, (Entity, PropertyGroup)):
