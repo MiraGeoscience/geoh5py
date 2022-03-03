@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-import warnings
 from typing import Any, Callable
 
 import numpy as np
@@ -62,7 +61,7 @@ def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
     data: dict[str, Any] = {}
     for name, value in ui_json.items():
         if isinstance(value, dict):
-            if is_uijson({name: value}):
+            if is_form(value):
                 field = "value" if truth(ui_json, name, "isValue") else "property"
                 if not truth(ui_json, name, "enabled"):
                     data[name] = None
@@ -87,7 +86,7 @@ def collect(ui_json: dict[str, dict], member: str, value: Any = None) -> dict[st
 
 
 def find_all(ui_json: dict[str, dict], member: str, value: Any = None) -> list[str]:
-    """Returns names of all collected paramters."""
+    """Returns names of all collected parameters."""
     parameters = collect(ui_json, member, value)
     return list(parameters.keys())
 
@@ -133,19 +132,18 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
     :param parameter: Name of the parameter to check optional on.
     :param value: Set enable True or False.
     """
-
     ui_json[parameter]["enabled"] = value
-    if "group" in ui_json[parameter]:
-        group = collect(ui_json, "group", ui_json[parameter]["group"])
+    is_group_optional = False
+    group_name = ui_json[parameter].get("group", False)
+    if group_name:
+        group = collect(ui_json, "group", group_name)
         parameters = find_all(group, "groupOptional")
+        if parameters:
+            is_group_optional = True
+            for form in group.values():
+                form["enabled"] = value
 
-    if parameters:
-        if group[parameters[0]]["enabled"] and value is False:
-            warnings.warn(
-                f"The ui.json group {ui_json[parameter]['group']} was disabled "
-                f"due to parameter '{parameter}'."
-            )
-        ui_json[parameters[0]]["enabled"] = value
+    return is_group_optional
 
 
 def truth(var: dict[str, Any], name: str, field: str) -> bool:
@@ -167,31 +165,26 @@ def truth(var: dict[str, Any], name: str, field: str) -> bool:
     )
 
 
-def is_uijson(var):
-    uijson_keys = [
+def is_uijson(ui_json: dict[str, dict]):
+
+    required_parameters = [
         "title",
         "monitoring_directory",
         "run_command",
         "conda_environment",
         "geoh5",
-        "workspace_geoh5",
+        "workspace",
     ]
-    uijson = True
-    if len(var.keys()) > 1:
-        for k in uijson_keys:
-            if k not in var.keys():
-                uijson = False
 
-    for value in var.values():
-        if isinstance(value, dict):
-            for name in ["label", "value"]:
-                if name not in value.keys():
-                    uijson = False
+    is_a_uijson = True
+    for k in required_parameters:
+        if k not in ui_json.keys():
+            is_a_uijson = False
 
-    return uijson
+    return is_a_uijson
 
 
-def is_form(var: Any) -> bool:
+def is_form(var) -> bool:
     """Return true if dictionary 'var' contains both 'label' and 'value' members."""
     is_a_form = False
     if isinstance(var, dict):
