@@ -58,6 +58,8 @@ class InputFile:
         ui.json fields other than 'value'.
     """
 
+    _path: str | None = None
+    _name: str | None = None
     _ui_validators: InputValidation = InputValidation(
         validations=ui_validations,
         validation_options={"ignore_list": ("value",)},
@@ -107,10 +109,51 @@ class InputFile:
 
         self._data = value
 
+    @property
+    def name(self) -> str | None:
+        """
+        Name of ui.json file.
+        """
+        if getattr(self, "_name", None) is None and self.ui_json is not None:
+            self.name = self.ui_json["title"]
+
+        return self._name
+
+    @name.setter
+    def name(self, name: str):
+        if ".ui.json" not in name:
+            name += ".ui.json"
+
+        self._name = name
+
     def load(self, input_dict: dict[str, Any]):
         """Load data from dictionary and validate."""
         self.ui_json = input_dict
         self.data = flatten(input_dict)
+
+    @property
+    def path(self) -> str | None:
+        """
+        Directory for the input/output ui.json file.
+        """
+        if getattr(self, "_path", None) is None and self.workspace is not None:
+            self.path = os.path.dirname(self.workspace.h5file)
+
+        return self._path
+
+    @path.setter
+    def path(self, path: str):
+        if not os.path.isdir(path):
+            raise ValueError(f"The path specified {path} does not exist.")
+
+        self._path = path
+
+    @property
+    def path_name(self) -> str | None:
+        if self.path is not None and self.name is not None:
+            return os.path.join(self.path, self.name)
+
+        return None
 
     @staticmethod
     def read_ui_json(json_file: str):
@@ -262,7 +305,7 @@ class InputFile:
         name: str = None,
         none_map: dict[str, Any] = None,
         path: str = None,
-    ) -> str | None:
+    ):
         """
         Writes a formatted ui.json file from InputFile data
 
@@ -270,26 +313,29 @@ class InputFile:
         :param none_map : Map parameter None values to non-null numeric types.
         :param path: Directory to write the ui.json to.
         """
-        if self.ui_json is None or self.data is None:
+        if name is not None:
+            self.name = name
+
+        if path is not None:
+            self.path = path
+
+        if self.path_name is None:
+            raise AttributeError(
+                "The input file requires 'path' and 'name' to be set before writing out."
+            )
+
+        if self.ui_json is None:
             raise AttributeError(
                 "The input file requires 'ui_json' and 'data' to be set before writing out."
             )
 
-        self.update_ui_values(self.data, none_map=none_map)
+        if self.data is not None:
+            self.update_ui_values(self.data, none_map=none_map)
 
-        if path is None:
-            path = os.path.dirname(self.workspace.h5file)
-
-        if name is None:
-            name = self.ui_json["title"]
-
-        if ".ui.json" not in name:
-            name += ".ui.json"
-
-        with open(os.path.join(path, name), "w", encoding="utf-8") as file:
+        with open(self.path_name, "w", encoding="utf-8") as file:
             json.dump(self._stringify(self._demote(self.ui_json)), file, indent=4)
 
-        return os.path.join(path, name)
+        return self.path_name
 
     @staticmethod
     def _stringify(var: dict[str, Any]) -> dict[str, Any]:
