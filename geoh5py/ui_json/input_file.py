@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import warnings
 from copy import deepcopy
 from typing import Any
 from uuid import UUID
@@ -203,7 +204,6 @@ class InputFile:
         """
         Update the ui.json values and enabled status from input data.
 
-        :param ui_json: A ui.json formatted dictionary.
         :param data: Key and value pairs expected by the ui_json.
         :param none_map : Map parameter 'None' values to non-null numeric types.
             The parameters in the dictionary are mapped to optional and disabled.
@@ -227,7 +227,13 @@ class InputFile:
                 else:
                     enabled = True
 
-                set_enabled(self.ui_json, key, enabled)
+                was_group = set_enabled(self.ui_json, key, enabled)
+                if was_group:
+                    warnings.warn(
+                        f"Setting all member of group: {self.ui_json[key]['group']} "
+                        f"to enabled: {enabled}."
+                    )
+
                 field = "value"
                 if "isValue" in self.ui_json[key]:
                     if isinstance(value, (Entity, UUID)):
