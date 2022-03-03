@@ -103,7 +103,7 @@ def optional_type(ui_json: dict[str, dict], parameter: str):
     Check if a ui.json parameter is optional or groupOptional
 
     :param ui_json: UI.json dictionary
-    :param name: Name of parameter to check type.
+    :param parameter: Name of parameter to check type.
     """
     is_optional = False
     if is_form(ui_json[parameter]):
@@ -129,8 +129,8 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
     Set enabled status for an optional or groupOptional parameter.
 
     :param ui_json: UI.json dictionary
-    :param parameter: Name of the parameter to check optional on.
-    :param value: Set enable True or False.
+    :param parameter: Parameter name.
+    :param value: Boolean value set to parameter's enabled member.
     """
     ui_json[parameter]["enabled"] = value
     is_group_optional = False
@@ -146,7 +146,8 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
     return is_group_optional
 
 
-def truth(var: dict[str, Any], name: str, field: str) -> bool:
+def truth(ui_json: dict[str, dict], name: str, member: str) -> bool:
+    """Return parameter's 'member' value with default value for non-existent members."""
     default_states = {
         "enabled": True,
         "optional": False,
@@ -154,19 +155,19 @@ def truth(var: dict[str, Any], name: str, field: str) -> bool:
         "main": False,
         "isValue": True,
     }
-    if field in var[name]:
-        return var[name][field]
+    if member in ui_json[name]:
+        return ui_json[name][member]
 
-    if field in default_states:
-        return default_states[field]
+    if member in default_states:
+        return default_states[member]
 
     raise ValueError(
-        f"Field: {field} was not provided in ui.json and does not have a default state."
+        f"Field: {member} was not provided in ui.json and does not have a default state."
     )
 
 
 def is_uijson(ui_json: dict[str, dict]):
-
+    """Returns True if dictionary contains all the required parameters."""
     required_parameters = [
         "title",
         "monitoring_directory",
