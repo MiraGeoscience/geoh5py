@@ -158,7 +158,6 @@ class InputFile:
         """
         Update the ui.json values and enabled status from input data.
 
-        :param ui_json: A ui.json formatted dictionary.
         :param data: Key and value pairs expected by the ui_json.
         :param none_map : Map parameter 'None' values to non-null numeric types.
             The parameters in the dictionary are mapped to optional and disabled.
@@ -182,7 +181,7 @@ class InputFile:
                 else:
                     enabled = True
 
-                set_enabled(self.ui_json, key, enabled)
+                set_enabled(self.ui_json, key, enabled)  # TODO method to disable
                 field = "value"
                 if "isValue" in self.ui_json[key]:
                     if isinstance(value, (Entity, UUID)):

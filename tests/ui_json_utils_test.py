@@ -21,6 +21,7 @@ from geoh5py.ui_json import templates
 from geoh5py.ui_json.constants import default_ui_json
 from geoh5py.ui_json.utils import (
     collect,
+    group_enabled,
     group_optional,
     is_form,
     is_uijson,
@@ -46,36 +47,98 @@ def test_collect():
     enabled_params = collect(d_u_j, "enabled", value=True)
     assert len(enabled_params) == 2
     assert all(
-        [k in enabled_params.keys() for k in ["string_parameter", "integer_parameter"]]
+        k in enabled_params.keys() for k in ["string_parameter", "integer_parameter"]
     )
     tooltip_params = collect(d_u_j, "tooltip")
     assert len(tooltip_params) == 1
     assert "run_command_boolean" in tooltip_params.keys()
 
 
-def group_optional():
-    d_u_j = deepcopy(default_ui_json)
-    d_u_j["string_parameter"] = templates.string_parameter(optional="enabled", group="test", groupOptional=True)
-    d_u_j["float_parameter"] = templates.float_parameter(optional="enabled", group="test")
-    d_u_j["integer_parameter"] = templates.integer_parameter(optional="enabled", group="test")
-    assert group_optional(d_u_j, "test")
+def test_group_optional():
+    ui_json = deepcopy(default_ui_json)
+    ui_json["string_parameter"] = templates.string_parameter(optional="enabled")
+    ui_json["string_parameter"]["group"] = "test"
+    ui_json["string_parameter"]["groupOptional"] = True
+    ui_json["float_parameter"] = templates.float_parameter(optional="enabled")
+    ui_json["float_parameter"]["group"] = "test"
+    ui_json["integer_parameter"] = templates.integer_parameter(optional="enabled")
+    ui_json["integer_parameter"]["group"] = "test"
+    assert group_optional(ui_json, "test")
+    ui_json["string_parameter"].pop("groupOptional")
+    assert not group_optional(ui_json, "test")
+    ui_json["string_parameter"]["groupOptional"] = False
+    assert not group_optional(ui_json, "test")
 
 
-def optional_type():
+def test_optional_type():
+    ui_json = deepcopy(default_ui_json)
+    ui_json["string_parameter"] = templates.string_parameter()
+    ui_json["string_parameter"]["group"] = "test"
+    ui_json["string_parameter"]["groupOptional"] = True
+    ui_json["float_parameter"] = templates.float_parameter()
+    ui_json["float_parameter"]["group"] = "test"
+    ui_json["integer_parameter"] = templates.integer_parameter()
+    ui_json["integer_parameter"]["group"] = "test"
+    ui_json["other_float_parameter"] = templates.float_parameter(optional="enabled")
+    assert optional_type(ui_json, "integer_parameter")
+    ui_json["string_parameter"]["groupOptional"] = False
+    assert not optional_type(ui_json, "float_parameter")
+    assert optional_type(ui_json, "other_float_parameter")
+
+
+def test_group_enabled():
+    ui_json = deepcopy(default_ui_json)
+    ui_json["string_parameter"] = templates.string_parameter()
+    ui_json["string_parameter"]["group"] = "test"
+    ui_json["string_parameter"]["groupOptional"] = True
+    ui_json["string_parameter"]["enabled"] = True
+    ui_json["float_parameter"] = templates.float_parameter()
+    ui_json["float_parameter"]["group"] = "test"
+    ui_json["integer_parameter"] = templates.integer_parameter()
+    ui_json["integer_parameter"]["group"] = "test"
+    assert group_enabled(collect(ui_json, "group", "test"))
+    ui_json["string_parameter"]["enabled"] = False
+    assert not group_enabled(collect(ui_json, "group", "test"))
+
+
+def test_set_enabled():
+    ui_json = deepcopy(default_ui_json)
+    ui_json["string_parameter"] = templates.string_parameter()
+    ui_json["string_parameter"]["group"] = "test"
+    ui_json["string_parameter"]["groupOptional"] = True
+    ui_json["string_parameter"]["enabled"] = True
+    ui_json["float_parameter"] = templates.float_parameter()
+    ui_json["float_parameter"]["group"] = "test"
+    ui_json["integer_parameter"] = templates.integer_parameter()
+    ui_json["integer_parameter"]["group"] = "test"
+
+    # set_enabled[""]
+
+    # If parameter is in group and groupOptional: True then disable
+    # the parameter containing the groupOptional member.
+    set_enabled(ui_json, "float_parameter", False)
+    assert not ui_json["string_parameter"]["enabled"]
+    assert ui_json["float_parameter"]["enabled"]
+    set_enabled(ui_json, "float_parameter", True)
+    assert ui_json["float_parameter"]["enabled"]
+    ui_json["string_parameter"].pop("groupOptional")
+
+    # Remove the groupOptional member and check that set_enabled
+    # Affects the enabled status of the calling parameter
+    set_enabled(ui_json, "float_parameter", False)
+    assert not ui_json["float_parameter"]["enabled"]
+    assert ui_json["string_parameter"]["enabled"]
+    set_enabled(ui_json, "float_parameter", True)
+    assert ui_json["float_parameter"]["enabled"]
+
+
+def test_truth():
     pass
 
 
-def set_enabled():
+def test_is_uijson():
     pass
 
 
-def truth():
-    pass
-
-
-def is_uijson():
-    pass
-
-
-def is_form_test():
+def test_is_form_test():
     pass

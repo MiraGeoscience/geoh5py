@@ -85,20 +85,21 @@ def collect(ui_json: dict[str, dict], member: str, value: Any = None) -> dict[st
 
     return parameters
 
+
 def find_all(ui_json: dict[str, dict], member: str, value: Any = None) -> list[str]:
     """Returns names of all collected paramters."""
     parameters = collect(ui_json, member, value)
     return list(parameters.keys())
 
+
 def group_optional(ui_json: dict[str, dict], group_name: str):
     """Returns groupOptional bool for group name."""
     group = collect(ui_json, "group", group_name)
     parameters = find_all(group, "groupOptional")
-    form = group[parameters[0]]
-    return form["groupOptional"] if parameters else False
+    return group[parameters[0]]["groupOptional"] if parameters else False
 
 
-def optional_type(ui_json: dict[str, dict], name: str):
+def optional_type(ui_json: dict[str, dict], parameter: str):
     """
     Check if a ui.json parameter is optional or groupOptional
 
@@ -106,37 +107,45 @@ def optional_type(ui_json: dict[str, dict], name: str):
     :param name: Name of parameter to check type.
     """
     is_optional = False
-    if is_form(ui_json[name]):
-        is_optional |= ui_json[name].get("optional", False)
-        if "group" in ui_json[name]:
-            is_optional |= group_optional(ui_json, ui_json[name]["group"])
+    if is_form(ui_json[parameter]):
+        is_optional |= ui_json[parameter].get("optional", False)
+        if "group" in ui_json[parameter]:
+            is_optional |= group_optional(ui_json, ui_json[parameter]["group"])
 
     return is_optional
 
 
-def set_enabled(ui_json: dict, name: str, value: bool):
+def group_enabled(group: dict[str, dict]) -> bool:
+    """Return true if groupOptional and enabled are both true."""
+    parameters = find_all(group, "groupOptional")
+    if not parameters:
+        raise ValueError(
+            "Provided group does not contain a parameter with groupOptional member."
+        )
+    return group[parameters[0]].get("enabled", True)
+
+
+def set_enabled(ui_json: dict, parameter: str, value: bool):
     """
     Set enabled status for an optional or groupOptional parameter.
 
     :param ui_json: UI.json dictionary
-    :param name: Name of the parameter to check optional on.
+    :param parameter: Name of the parameter to check optional on.
     :param value: Set enable True or False.
     """
-    if not optional_type(ui_json, name) and not value:
-        raise UserWarning(
-            f"Parameter '{name}' is not optional or groupOptional. A value is required."
-        )
 
-    ui_json[name]["enabled"] = value
-    optional_group = group_optional(ui_json, ui_json[name], return_lead=True)
+    ui_json[parameter]["enabled"] = value
+    if "group" in ui_json[parameter]:
+        group = collect(ui_json, "group", ui_json[parameter]["group"])
+        parameters = find_all(group, "groupOptional")
 
-    if optional_group:
-        if ui_json[optional_group]["enabled"] and not value:
+    if parameters:
+        if group[parameters[0]]["enabled"] and value is False:
             warnings.warn(
-                f"The ui.json group {ui_json[name]['group']} was disabled "
-                f"due to parameter '{name}'."
+                f"The ui.json group {ui_json[parameter]['group']} was disabled "
+                f"due to parameter '{parameter}'."
             )
-        ui_json[optional_group]["enabled"] = value
+        ui_json[parameters[0]]["enabled"] = value
 
 
 def truth(var: dict[str, Any], name: str, field: str) -> bool:
