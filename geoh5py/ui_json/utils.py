@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-import warnings
 from typing import Any, Callable
 
 import numpy as np
@@ -57,89 +56,98 @@ def dict_mapper(
     return val
 
 
-def flatten(var: dict[str, Any]) -> dict[str, Any]:
+def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
     """Flattens ui.json format to simple key/value pair."""
-    data: dict = {}
-    for key, value in var.items():
+    data: dict[str, Any] = {}
+    for name, value in ui_json.items():
         if isinstance(value, dict):
-            if is_uijson({key: value}):
-                field = "value" if truth(var, key, "isValue") else "property"
-                if not truth(var, key, "enabled"):
-                    data[key] = None
+            if is_form(value):
+                field = "value" if truth(ui_json, name, "isValue") else "property"
+                if not truth(ui_json, name, "enabled"):
+                    data[name] = None
                 else:
-                    data[key] = value[field]
+                    data[name] = value[field]
         else:
-            data[key] = value
+            data[name] = value
 
     return data
 
 
-def collect(var: dict[str, Any], field: str, value: Any = None) -> dict[str, Any]:
+def collect(ui_json: dict[str, dict], member: str, value: Any = None) -> dict[str, Any]:
     """Collects ui parameters with common field and optional value."""
-    data = {}
-    for key, values in var.items():
-        if isinstance(values, dict) and field in values:
-            if values[field] == value:
-                data[key] = values
-    return data
+
+    parameters = {}
+    for name, form in ui_json.items():
+        if is_form(form) and member in form:
+            if value is None or form[member] == value:
+                parameters[name] = form
+
+    return parameters
 
 
-def group_optional(
-    var: dict[str, Any], name: str | dict, return_lead: bool = False
-) -> bool | str:
+def find_all(ui_json: dict[str, dict], member: str, value: Any = None) -> list[str]:
+    """Returns names of all collected parameters."""
+    parameters = collect(ui_json, member, value)
+    return list(parameters.keys())
+
+
+def group_optional(ui_json: dict[str, dict], group_name: str):
     """Returns groupOptional bool for group name."""
-    if isinstance(name, dict):
-        if "group" in name:
-            name = name["group"]
-        else:
-            return False
-
-    group = collect(var, "group", name)
-    param = collect(group, "groupOptional", True)
-    if return_lead and any(param):
-        return list(param.keys())[0]
-    return any(param)
+    group = collect(ui_json, "group", group_name)
+    parameters = find_all(group, "groupOptional")
+    return group[parameters[0]]["groupOptional"] if parameters else False
 
 
-def optional_type(ui_json: dict, name: str):
+def optional_type(ui_json: dict[str, dict], parameter: str):
     """
     Check if a ui.json parameter is optional or groupOptional
 
     :param ui_json: UI.json dictionary
-    :param name: Name of parameter to check type.
+    :param parameter: Name of parameter to check type.
     """
-    if ui_json[name].get("optional") or group_optional(ui_json, ui_json[name]):
-        return True
+    is_optional = False
+    if is_form(ui_json[parameter]):
+        is_optional |= ui_json[parameter].get("optional", False)
+        if "group" in ui_json[parameter]:
+            is_optional |= group_optional(ui_json, ui_json[parameter]["group"])
 
-    return False
+    return is_optional
 
 
-def set_enabled(ui_json: dict, name: str, value: bool):
+def group_enabled(group: dict[str, dict]) -> bool:
+    """Return true if groupOptional and enabled are both true."""
+    parameters = find_all(group, "groupOptional")
+    if not parameters:
+        raise ValueError(
+            "Provided group does not contain a parameter with groupOptional member."
+        )
+    return group[parameters[0]].get("enabled", True)
+
+
+def set_enabled(ui_json: dict, parameter: str, value: bool):
     """
     Set enabled status for an optional or groupOptional parameter.
 
     :param ui_json: UI.json dictionary
-    :param name: Name of the parameter to check optional on.
-    :param value: Set enable True or False.
+    :param parameter: Parameter name.
+    :param value: Boolean value set to parameter's enabled member.
     """
-    if not optional_type(ui_json, name) and not value:
-        raise UserWarning(
-            f"Parameter '{name}' is not optional or groupOptional. A value is required."
-        )
+    ui_json[parameter]["enabled"] = value
+    is_group_optional = False
+    group_name = ui_json[parameter].get("group", False)
+    if group_name:
+        group = collect(ui_json, "group", group_name)
+        parameters = find_all(group, "groupOptional")
+        if parameters:
+            is_group_optional = True
+            for form in group.values():
+                form["enabled"] = value
 
-    ui_json[name]["enabled"] = value
-    optional_group = group_optional(ui_json, ui_json[name], return_lead=True)
-
-    if optional_group:
-        if ui_json[optional_group]["enabled"] and not value:
-            warnings.warn(
-                f"The ui.json group {ui_json[name]['group']} was disabled "
-                f"due to parameter '{name}'."
-            )
-        ui_json[optional_group]["enabled"] = value
+    return is_group_optional
 
 
-def truth(var: dict[str, Any], name: str, field: str) -> bool:
+def truth(ui_json: dict[str, dict], name: str, member: str) -> bool:
+    """Return parameter's 'member' value with default value for non-existent members."""
     default_states = {
         "enabled": True,
         "optional": False,
@@ -147,39 +155,44 @@ def truth(var: dict[str, Any], name: str, field: str) -> bool:
         "main": False,
         "isValue": True,
     }
-    if field in var[name]:
-        return var[name][field]
+    if member in ui_json[name]:
+        return ui_json[name][member]
 
-    if field in default_states:
-        return default_states[field]
+    if member in default_states:
+        return default_states[member]
 
     raise ValueError(
-        f"Field: {field} was not provided in ui.json and does not have a default state."
+        f"Field: {member} was not provided in ui.json and does not have a default state."
     )
 
 
-def is_uijson(var):
-    uijson_keys = [
+def is_uijson(ui_json: dict[str, dict]):
+    """Returns True if dictionary contains all the required parameters."""
+    required_parameters = [
         "title",
         "monitoring_directory",
         "run_command",
         "conda_environment",
         "geoh5",
-        "workspace_geoh5",
+        "workspace",
     ]
-    uijson = True
-    if len(var.keys()) > 1:
-        for k in uijson_keys:
-            if k not in var.keys():
-                uijson = False
 
-    for value in var.values():
-        if isinstance(value, dict):
-            for name in ["label", "value"]:
-                if name not in value.keys():
-                    uijson = False
+    is_a_uijson = True
+    for k in required_parameters:
+        if k not in ui_json.keys():
+            is_a_uijson = False
 
-    return uijson
+    return is_a_uijson
+
+
+def is_form(var) -> bool:
+    """Return true if dictionary 'var' contains both 'label' and 'value' members."""
+    is_a_form = False
+    if isinstance(var, dict):
+        if all(k in var.keys() for k in ["label", "value"]):
+            is_a_form = True
+
+    return is_a_form
 
 
 def list2str(value):
