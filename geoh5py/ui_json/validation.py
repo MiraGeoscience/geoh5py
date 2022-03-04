@@ -195,7 +195,7 @@ class InputValidation:
     def _merge_validations(
         validations_a: dict[str, dict], validations_b: dict[str, dict]
     ):
-        """Overwrite self.validations with new definitions."""
+        """Merge validations_b into validations_a."""
         out = deepcopy(validations_a)
         if validations_b is not None:
             for key, val in validations_b.items():

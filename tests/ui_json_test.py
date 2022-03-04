@@ -547,11 +547,11 @@ def test_stringify(tmp_path):
 
 
 def test_collect():
-    d_u_j = deepcopy(default_ui_json)
-    d_u_j["string_parameter"] = templates.string_parameter(optional="enabled")
-    d_u_j["float_parameter"] = templates.float_parameter(optional="disabled")
-    d_u_j["integer_parameter"] = templates.integer_parameter(optional="enabled")
-    enabled_params = collect(d_u_j, "enabled", value=True)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["string_parameter"] = templates.string_parameter(optional="enabled")
+    ui_json["float_parameter"] = templates.float_parameter(optional="disabled")
+    ui_json["integer_parameter"] = templates.integer_parameter(optional="enabled")
+    enabled_params = collect(ui_json, "enabled", value=True)
     assert all("enabled" in v for v in enabled_params.values())
     assert all(v["enabled"] for v in enabled_params.values())
 
@@ -573,3 +573,25 @@ def test_required_validators():
     assert all(k in result for k in ["types", "values"])
     assert all(k in ["types", "values"] for k in result)
     assert all(k == v.validator_type for k, v in result.items())
+
+
+def test_merge_validations():
+    # pylint: disable=protected-access
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["string_parameter"] = templates.string_parameter(optional="enabled")
+    ui_json["float_parameter"] = templates.float_parameter(optional="disabled")
+    ui_json["integer_parameter"] = templates.integer_parameter()
+    validations = InputValidation._validations_from_uijson(ui_json)
+    validations = InputValidation._merge_validations(
+        validations, {"integer_parameter": {"types": [type(None)]}}
+    )
+    # If validation exists it is overwritten
+    assert len(validations["integer_parameter"]["types"]) == 1
+    assert type(None) in validations["integer_parameter"]["types"]
+
+    # If validation doesn't exist it is added
+    validations = InputValidation._merge_validations(
+        validations, {"integer_parameter": {"shape": (3, 2)}}
+    )
+    assert all(k in validations["integer_parameter"] for k in ["types", "shape"])
