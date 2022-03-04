@@ -162,6 +162,9 @@ class InputFile:
         :param data: Key and value pairs expected by the ui_json.
         :param none_map : Map parameter 'None' values to non-null numeric types.
             The parameters in the dictionary are mapped to optional and disabled.
+
+        :raises ValueError : If attempting to set None value to non-optional
+            parameter.
         """
         if self.ui_json is None:
             raise UserWarning("InputFile requires a 'ui_json' to be defined.")
@@ -189,15 +192,15 @@ class InputFile:
                         f"to enabled: {enabled}."
                     )
 
-                field = "value"
+                member = "value"
                 if "isValue" in self.ui_json[key]:
                     if isinstance(value, (Entity, UUID)):
                         self.ui_json[key]["isValue"] = False
-                        field = "property"
+                        member = "property"
                     else:
                         self.ui_json[key]["isValue"] = True
 
-                self.ui_json[key][field] = value
+                self.ui_json[key][member] = value
 
             else:
                 self.ui_json[key] = value
