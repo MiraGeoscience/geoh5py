@@ -14,6 +14,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
 import json
 from copy import deepcopy
 from os import path
@@ -32,171 +33,14 @@ from geoh5py.shared.exceptions import (
     RequiredValidationError,
     ShapeValidationError,
     TypeValidationError,
-    UUIDValidationError,
     ValueValidationError,
 )
 from geoh5py.shared.utils import compare_entities
-from geoh5py.shared.validators import (
-    AssociationValidator,
-    PropertyGroupValidator,
-    RequiredValidator,
-    ShapeValidator,
-    TypeValidator,
-    UUIDValidator,
-    ValueValidator,
-)
 from geoh5py.ui_json import InputValidation, templates
 from geoh5py.ui_json.constants import default_ui_json, ui_validations
 from geoh5py.ui_json.input_file import InputFile
 from geoh5py.ui_json.utils import collect
 from geoh5py.workspace import Workspace
-
-
-def test_validation_types():
-    validation_types = [
-        "association",
-        "property_group_type",
-        "required",
-        "shape",
-        "types",
-        "uuid",
-        "values",
-    ]
-
-    errs = [
-        AssociationValidator(),
-        PropertyGroupValidator(),
-        RequiredValidator(),
-        ShapeValidator(),
-        TypeValidator(),
-        UUIDValidator(),
-        ValueValidator(),
-    ]
-
-    for i, err in enumerate(errs):
-        assert err.validator_type == validation_types[i]
-
-
-def test_association_validator(tmp_path):
-
-    workspace = Workspace(path.join(tmp_path, "test.geoh5"))
-    workspace2 = Workspace(path.join(tmp_path, "test2.geoh5"))
-    points = Points.create(workspace, vertices=np.array([[1, 2, 3], [4, 5, 6]]))
-    points2 = Points.create(workspace2, vertices=np.array([[1, 2, 3], [4, 5, 6]]))
-    validator = AssociationValidator()
-
-    # Test valid workspace
-    with pytest.raises(AssociationValidationError) as excinfo:
-        validator("test", points, workspace2)
-    assert AssociationValidationError.message("test", points, workspace2) == str(
-        excinfo.value
-    )
-
-    # Test valid points object
-    with pytest.raises(AssociationValidationError) as excinfo:
-        validator("test", points, points2)
-    assert AssociationValidationError.message("test", points, points2) == str(
-        excinfo.value
-    )
-
-    # No validation error for none value or valid
-    validator("test", None, points)
-    validator("test", points, None)
-
-
-def test_property_group_validator(tmp_path):
-
-    workspace = Workspace(path.join(tmp_path, "test.geoh5"))
-    points = Points.create(
-        workspace, vertices=np.array([[1, 2, 3], [4, 5, 6]]), name="test_points"
-    )
-    test_data = points.add_data({"points_data": {"values": np.array([1.0, 2.0])}})
-    property_group = points.add_data_to_group(test_data, "test_group")
-    validator = PropertyGroupValidator()
-
-    with pytest.raises(PropertyGroupValidationError) as excinfo:
-        validator("test", property_group, "not_test_group")
-    assert PropertyGroupValidationError.message(
-        "test", property_group, "not_test_group"
-    ) == str(excinfo.value)
-
-
-def test_required_validator():
-
-    validator = RequiredValidator()
-    with pytest.raises(RequiredValidationError) as excinfo:
-        validator("test", None, True)
-    assert RequiredValidationError.message("test", None, None) == str(excinfo.value)
-
-
-def test_shape_validator():
-
-    validator = ShapeValidator()
-    with pytest.raises(ShapeValidationError) as excinfo:
-        validator("test", [[1, 2, 3], [4, 5, 6]], (3, 2))
-    assert ShapeValidationError.message("test", (2, 3), (3, 2)) == str(excinfo.value)
-
-    # No validation error for None
-    validator("test", None, (3, 2))
-
-
-def test_type_validator():
-
-    validator = TypeValidator()
-
-    # Test non-iterable value, single valid
-    with pytest.raises(TypeValidationError) as excinfo:
-        validator("test", 3, type({}))
-    assert TypeValidationError.message(
-        "test", int.__name__, [type({}).__name__]
-    ) == str(excinfo.value)
-
-    # Test non-iterable value, more than one valid
-    with pytest.raises(TypeValidationError) as excinfo:
-        validator("test", 3, [str, type({})])
-    assert TypeValidationError.message(
-        "test", int.__name__, [str.__name__, type({}).__name__]
-    ) == str(excinfo.value)
-
-    # Test iterable value single valid both invalid
-    with pytest.raises(TypeValidationError) as excinfo:
-        validator("test", [3, 2], type({}))
-    assert TypeValidationError.message(
-        "test", int.__name__, [type({}).__name__]
-    ) == str(excinfo.value)
-
-    # Test iterable value single valid one valid, one invalid
-    with pytest.raises(TypeValidationError) as excinfo:
-        validator("test", [3, "a"], int)
-    assert TypeValidationError.message("test", str.__name__, [int.__name__]) == str(
-        excinfo.value
-    )
-
-
-def test_uuid_validator():
-
-    validator = UUIDValidator()
-
-    # Test bad uid string
-    with pytest.raises(UUIDValidationError) as excinfo:
-        validator("test", "sdr")
-    assert UUIDValidationError.message("test", "sdr", None) == str(excinfo.value)
-
-    # No validation error for None
-    validator("test", None, [])
-
-
-def test_value_validator():
-
-    validator = ValueValidator()
-    with pytest.raises(ValueValidationError) as excinfo:
-        validator("test", "blah", ["nope", "not here"])
-    assert ValueValidationError.message("test", "blah", ["nope", "not here"]) == str(
-        excinfo.value
-    )
-
-    # No validation error for None
-    validator("test", None, ["these", "don't", "matter"])
 
 
 def get_workspace(directory):
