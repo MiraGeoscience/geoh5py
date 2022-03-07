@@ -39,6 +39,23 @@ class BaseValidationError(ABC, Exception):
         raise NotImplementedError()
 
 
+class AggregateValidationError(BaseValidationError):
+    def __init__(
+        self,
+        name: str,
+        value: list[Exception],
+        validation: None,
+    ):
+        super().__init__(AggregateValidationError.message(name, value, validation))
+
+    @staticmethod
+    def message(name, value, validation):
+        msg = f"\n\nValidation of {name} collected {len(value)} errors:\n"
+        for i, err in enumerate(value):
+            msg += f"\t{i}. {str(err)}\n"
+        return msg
+
+
 class AssociationValidationError(BaseValidationError):
     """Error on association between child and parent entity validation."""
 

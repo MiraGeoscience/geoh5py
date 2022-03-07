@@ -68,15 +68,15 @@ class BaseValidator(ABC):
     @property
     @classmethod
     @abstractmethod
-    def validator_type(cls):
+    def type(cls):
         """Validation type identifier."""
-        raise NotImplementedError("Must implement the validator_type property.")
+        raise NotImplementedError("Must implement the type property.")
 
 
 class AssociationValidator(BaseValidator):
     """Validate the association between data and parent object."""
 
-    validator_type = "association"
+    type = "association"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -126,7 +126,7 @@ class AssociationValidator(BaseValidator):
 class PropertyGroupValidator(BaseValidator):
     """Validate property_group from parent entity."""
 
-    validator_type = "property_group_type"
+    type = "property_group_type"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -142,7 +142,7 @@ class RequiredValidator(BaseValidator):
     Validate that required keys are present in parameter.
     """
 
-    validator_type = "required"
+    type = "required"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -161,7 +161,7 @@ class RequiredValidator(BaseValidator):
 class ShapeValidator(BaseValidator):
     """Validate the shape of provided value."""
 
-    validator_type = "shape"
+    type = "shape"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -186,7 +186,7 @@ class TypeValidator(BaseValidator):
     Validate the value type from a list of valid types.
     """
 
-    validator_type = "types"
+    type = "types"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -216,7 +216,7 @@ class TypeValidator(BaseValidator):
 class UUIDValidator(BaseValidator):
     """Validate a uuui.UUID value or uuid string."""
 
-    validator_type = "uuid"
+    type = "uuid"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -241,7 +241,7 @@ class ValueValidator(BaseValidator):
     Validator that ensures that values are valid entries.
     """
 
-    validator_type = "values"
+    type = "values"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

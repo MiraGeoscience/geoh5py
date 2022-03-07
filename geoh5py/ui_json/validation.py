@@ -23,10 +23,46 @@ from uuid import UUID
 
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
-from geoh5py.shared.exceptions import RequiredValidationError
+from geoh5py.shared.exceptions import (
+    AggregateValidationError,
+    BaseValidationError,
+    RequiredValidationError,
+)
 from geoh5py.shared.validators import BaseValidator, TypeValidator
 from geoh5py.ui_json.utils import group_optional
 from geoh5py.workspace import Workspace
+
+
+class Validations:
+    def __init__(self, validations):
+        self.validators: list[BaseValidator] = []
+        self.validations: dict[str, Any] = validations
+
+    @property
+    def validations(self):
+        return self._validations
+
+    @validations.setter
+    def validations(self, val):
+        for key in val:
+            self.validators += [
+                k() for k in BaseValidator.__subclasses__() if k.type == key
+            ]
+        self._validations = val
+
+    def validate(self, name, value):
+
+        error_list = []
+        for validator in self.validators:
+            try:
+                validator.validate(name, value, self.validations[validator.type])
+            except BaseValidationError as err:
+                error_list.append(err)
+
+        if error_list:
+            if len(error_list) > 1:
+                raise AggregateValidationError(name, error_list, None)
+            raise error_list.pop()
 
 
 class InputValidation:
@@ -109,7 +145,7 @@ class InputValidation:
     def _required_validators(validations):
         """Returns dictionary of validators required by validations."""
         unique_validators = InputValidation._unique_validators(validations)
-        all_validators = {k.validator_type: k() for k in BaseValidator.__subclasses__()}
+        all_validators = {k.type: k() for k in BaseValidator.__subclasses__()}
         val = {}
         for k in unique_validators:
             if k not in all_validators:
