@@ -28,6 +28,7 @@ from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
     JSONParameterValidationError,
+    OptionalValidationError,
     PropertyGroupValidationError,
     RequiredValidationError,
     ShapeValidationError,
@@ -38,6 +39,7 @@ from geoh5py.shared.exceptions import (
 from geoh5py.shared.utils import compare_entities
 from geoh5py.shared.validators import (
     AssociationValidator,
+    OptionalValidator,
     PropertyGroupValidator,
     RequiredValidator,
     ShapeValidator,
@@ -54,6 +56,7 @@ from geoh5py.workspace import Workspace
 
 def test_validation_types():
     validation_types = [
+        "optional",
         "association",
         "property_group_type",
         "required",
@@ -64,6 +67,7 @@ def test_validation_types():
     ]
 
     errs = [
+        OptionalValidator(),
         AssociationValidator(),
         PropertyGroupValidator(),
         RequiredValidator(),
@@ -75,6 +79,13 @@ def test_validation_types():
 
     for i, err in enumerate(errs):
         assert err.validator_type == validation_types[i]
+
+
+def test_optional_validator():
+    validator = OptionalValidator()
+    with pytest.raises(OptionalValidationError) as excinfo:
+        validator("test", None, False)
+    assert OptionalValidationError.message("test", None, None) == str(excinfo.value)
 
 
 def test_association_validator(tmp_path):
@@ -659,13 +670,6 @@ def test_stringify(tmp_path):
     in_file = InputFile(
         ui_json=ui_json, validations={"test": {"types": [int, type(None)]}}
     )
-
-    with pytest.raises(ValueError) as excinfo:
-        in_file.update_ui_values({"test": None}, none_map={"test": 4})
-
-    assert "The following parameters are not optional." in str(
-        excinfo
-    ), "Failed to raise error on None with not optional."
 
     in_file.ui_json["test"]["optional"] = True
     in_file.ui_json["test"]["enabled"] = True
