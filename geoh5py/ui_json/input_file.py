@@ -28,7 +28,6 @@ from .utils import (
     inf2str,
     list2str,
     none2str,
-    optional_type,
     path2workspace,
     set_enabled,
     str2inf,
@@ -217,14 +216,9 @@ class InputFile:
         if none_map is None:
             none_map = {}
 
-        error_list = []
         for key, value in data.items():
             if isinstance(self.ui_json[key], dict):
                 if value is None:
-                    if not optional_type(self.ui_json, key):
-                        error_list.append(key)
-                        continue
-
                     value = none_map.get(key, None)
                     enabled = False
                 else:
@@ -249,11 +243,6 @@ class InputFile:
 
             else:
                 self.ui_json[key] = value
-
-        if any(error_list):
-            raise ValueError(
-                f"The following parameters are not optional. Assign value for: {error_list}"
-            )
 
     @property
     def validation_options(self):

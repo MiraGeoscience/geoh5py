@@ -22,11 +22,11 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from geoh5py.shared.utils import iterable_message
-from geoh5py.workspace import Workspace
 
 if TYPE_CHECKING:
     from geoh5py.groups import PropertyGroup
     from geoh5py.shared import Entity
+    from geoh5py.workspace import Workspace
 
 
 class BaseValidationError(ABC, Exception):
@@ -37,6 +37,22 @@ class BaseValidationError(ABC, Exception):
     def message(name, value, validation):
         """Builds custom error message."""
         raise NotImplementedError()
+
+
+class OptionalValidationError(BaseValidationError):
+    """Error if None value provided to non-optional parameter."""
+
+    def __init__(
+        self,
+        name: str,
+        value: Any | None,
+        validation: bool,
+    ):
+        super().__init__(OptionalValidationError.message(name, value, validation))
+
+    @staticmethod
+    def message(name, value, validation):
+        return f"Cannot set a None value to non-optional parameter: {name}."
 
 
 class AssociationValidationError(BaseValidationError):
@@ -84,7 +100,7 @@ class RequiredValidationError(BaseValidationError):
 class ShapeValidationError(BaseValidationError):
     """Error on shape validation."""
 
-    def __init__(self, name: str, value: tuple[int], validation: tuple[int]):
+    def __init__(self, name: str, value: tuple[int], validation: tuple[int] | str):
         super().__init__(ShapeValidationError.message(name, value, validation))
 
     @staticmethod

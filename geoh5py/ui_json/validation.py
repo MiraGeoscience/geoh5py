@@ -25,7 +25,7 @@ from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import RequiredValidationError
 from geoh5py.shared.validators import BaseValidator, TypeValidator
-from geoh5py.ui_json.utils import group_optional
+from geoh5py.ui_json.utils import group_optional, optional_type
 from geoh5py.workspace import Workspace
 
 
@@ -137,7 +137,10 @@ class InputValidation:
                 validations[key]["uuid"] = None
 
             elif "choiceList" in item:
-                validations[key] = {"types": [str], "values": item["choiceList"]}
+                validations[key] = {
+                    "types": [str],
+                    "values": item["choiceList"],
+                }
             elif "fileType" in item:
                 validations[key] = {
                     "types": [str],
@@ -166,6 +169,8 @@ class InputValidation:
                 validations[key] = {
                     "types": [check_type],
                 }
+
+            validations[key].update({"optional": [optional_type(ui_json, key)]})
 
             if (
                 item.get("optional") or group_optional(ui_json, item.get("group", ""))

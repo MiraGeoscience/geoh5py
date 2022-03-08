@@ -14,18 +14,29 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
+
+from geoh5py.shared.exceptions import ShapeValidationError
+
+if TYPE_CHECKING:
+    from .data_type import DataType
 
 
 class ColorMap:
     """Records colors assigned to value ranges (where Value is the start of the range)."""
 
     _attribute_map = {"File name": "name"}
+    _names = ["Value", "Red", "Green", "Blue", "Alpha"]
+    _formats = ["<f8", "u1", "u1", "u1", "u1"]
 
     def __init__(self, **kwargs):
         self._values = np.empty((0, 5))
-        self._name = "Unknown"
+        self._name = "geoh5py_custom.TBL"
+        self._parent = None
 
         for attr, item in kwargs.items():
             try:
@@ -36,7 +47,7 @@ class ColorMap:
                 continue
 
     @property
-    def values(self) -> np.ndarray:
+    def values(self) -> np.ndarray | None:
         """
         :obj:`numpy.array`: Colormap defined by values and corresponding RGBA:
 
@@ -50,26 +61,38 @@ class ColorMap:
         where V (Values) are sorted floats defining the position of each RGBA.
         R (Red), G (Green), B (Blue) and A (Alpha) are integer values between [0, 255].
         """
-        return self._values
+        if self._values is None:
+            return self._values
+        return np.vstack([self._values[name] for name in self._names])
 
     @values.setter
     def values(self, values: np.ndarray):
-        names = ["Value", "Red", "Green", "Blue", "Alpha"]
-        formats = ["<f8", "u1", "u1", "u1", "u1"]
 
-        if isinstance(values.dtype, np.dtype):
-            assert values.dtype.names is not None and all(
-                name in names for name in (values.dtype.names)
-            ), f"Input 'values' must contain fields with types {names}"
-            self._values = np.asarray(values, dtype=list(zip(names, formats)))
+        if not isinstance(values, np.ndarray):
+            raise TypeError(f"Input 'values' of ColorMap must be of type {np.ndarray}.")
+
+        if np.issubdtype(values.dtype.base, np.number):
+            if values.shape[1] != 5:
+                raise ShapeValidationError("values", values.shape, "(*, 5)")
+
+            self._values = np.core.records.fromarrays(
+                values.T, names=self._names, formats=self._formats
+            )
 
         else:
-            assert (
-                values.shape[1] == 5
-            ), "'values' must be a an array of shape (*, 5) for [value, r, g, b, a]"
+            if values.dtype.names is None or not all(
+                name in self._names for name in values.dtype.names
+            ):
+                raise ValueError(
+                    f"Input 'values' must contain fields with types {self._names}"
+                )
+
             self._values = np.asarray(
-                np.core.records.fromarrays(values.T, names=names, formats=formats)
+                values, dtype=list(zip(self._names, self._formats))
             )
+
+        if self.parent is not None:
+            self.parent.modified_attributes = "color_map"
 
     @property
     def name(self) -> str:
@@ -81,6 +104,18 @@ class ColorMap:
     @name.setter
     def name(self, value: str):
         self._name = value
+
+        if self.parent is not None:
+            self.parent.modified_attributes = "color_map"
+
+    @property
+    def parent(self):
+        """Parent data type"""
+        return self._parent
+
+    @parent.setter
+    def parent(self, data_type: DataType):
+        self._parent = data_type
 
     def __len__(self):
         return len(self._values)
