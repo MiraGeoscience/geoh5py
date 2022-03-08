@@ -140,10 +140,12 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
         parameters = find_all(group, "groupOptional")
         if parameters:
             is_group_optional = True
+            enabled_change = False
             for form in group.values():
+                enabled_change |= form["enabled"] != value
                 form["enabled"] = value
 
-    return is_group_optional
+    return is_group_optional and enabled_change
 
 
 def truth(ui_json: dict[str, dict], name: str, member: str) -> bool:

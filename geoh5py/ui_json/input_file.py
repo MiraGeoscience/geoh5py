@@ -230,8 +230,8 @@ class InputFile:
                 else:
                     enabled = True
 
-                was_group = set_enabled(self.ui_json, key, enabled)
-                if was_group:
+                was_group_enabled = set_enabled(self.ui_json, key, enabled)
+                if was_group_enabled:
                     warnings.warn(
                         f"Setting all member of group: {self.ui_json[key]['group']} "
                         f"to enabled: {enabled}."
