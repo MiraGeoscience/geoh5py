@@ -32,6 +32,7 @@ from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
+    OptionalValidationError,
     PropertyGroupValidationError,
     RequiredValidationError,
     ShapeValidationError,
@@ -71,6 +72,30 @@ class BaseValidator(ABC):
     def validator_type(cls):
         """Validation type identifier."""
         raise NotImplementedError("Must implement the validator_type property.")
+
+
+class OptionalValidator(BaseValidator):
+    """Validate that forms contain optional parameter if None value is given."""
+
+    validator_type = "optional"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    @classmethod
+    def validate(
+        cls,
+        name: str,
+        value: Any | None,
+        valid: bool,
+    ) -> None:
+        """
+        :param name: Parameter identifier.
+        :param value: Input parameter value.
+        :param valid: True if optional keyword in form for parameter.
+        """
+        if value is None and not valid:
+            raise OptionalValidationError(name, value, valid)
 
 
 class AssociationValidator(BaseValidator):

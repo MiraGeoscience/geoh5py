@@ -25,7 +25,7 @@ from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import RequiredValidationError
 from geoh5py.shared.validators import BaseValidator, TypeValidator
-from geoh5py.ui_json.utils import group_optional
+from geoh5py.ui_json.utils import group_optional, optional_type
 from geoh5py.workspace import Workspace
 
 
@@ -132,25 +132,33 @@ class InputValidation:
             if "isValue" in item:
                 validations[key] = {
                     "types": [str, UUID, int, float, Entity],
+                    "optional": [optional_type(ui_json, key)],
                 }
                 validations[key]["association"] = item["parent"]
                 validations[key]["uuid"] = None
 
             elif "choiceList" in item:
-                validations[key] = {"types": [str], "values": item["choiceList"]}
+                validations[key] = {
+                    "types": [str],
+                    "values": item["choiceList"],
+                    "optional": [optional_type(ui_json, key)],
+                }
             elif "fileType" in item:
                 validations[key] = {
                     "types": [str],
+                    "optional": [optional_type(ui_json, key)],
                 }
             elif "meshType" in item:
                 validations[key] = {
                     "types": [str, UUID, Entity],
+                    "optional": [optional_type(ui_json, key)],
                     "association": "geoh5",
                     "uuid": None,
                 }
             elif "parent" in item:
                 validations[key] = {
                     "types": [str, UUID, Entity],
+                    "optional": [optional_type(ui_json, key)],
                     "association": item["parent"],
                     "uuid": None,
                 }
@@ -165,6 +173,7 @@ class InputValidation:
 
                 validations[key] = {
                     "types": [check_type],
+                    "optional": [optional_type(ui_json, key)],
                 }
 
             if (
