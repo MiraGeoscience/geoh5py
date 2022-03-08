@@ -20,9 +20,11 @@
 from __future__ import annotations
 
 import inspect
+import warnings
 from typing import Any
 from uuid import UUID
 
+from geoh5py.ui_json.exceptions import UIJsonFormatError
 from geoh5py.ui_json.validation import Validations
 
 from .. import objects
@@ -34,15 +36,134 @@ known_types = [
     if hasattr(member, "default_type_uid") and member.default_type_uid() is not None
 ]
 
+extra_validations = {
+    "min": {"types": [int, float, type(None)]},
+    "max": {"types": [int, float, type(None)]},
+    "choiceList": {"types": [list, type(None)]},
+    "meshType": {"types": [str, type(None)], "uuid": None},
+    "dataType": {
+        "values": [
+            "Integer",
+            "Float",
+            "Text",
+            "Referenced",
+            "Filename",
+            "Blob",
+            "Vector",
+            "DateTime",
+            "Geometric",
+            "Boolean",
+        ]
+    },
+    "association": {"values": ["Vertex", "Cell", "Face"]},
+    "parent": {"types": [str, type(None)]},
+    "isValue": {"types": [bool, type(None)]},
+    "property": {"types": [str, type(None)], "uuid": None},
+    "dataGroupType": {
+        "values": ["Multi-element", "3D vector", "Dip direction & dip", "Strike & dip"]
+    },
+    "filetype": {"types": [str, type(None)]},
+    "fileDescription": {"types": [str, type(None)]},
+    "fileMulti": {"types": [bool, type(None)]},
+}
+
 
 class BaseParameter:
     def __init__(self, name, value, validations):
         self.name: str = name
         self.value: Any = value
-        self.validations: Validations = validations
+        self.validations: dict[str, dict] | Validations = validations
+
+    @property
+    def validations(self):
+        return self._validations
+
+    @validations.setter
+    def validations(self, val):
+        if isinstance(val, Validations):
+            self._validations = val
+        else:
+            self._validations = Validations(val)
 
     def validate(self):
         self.validations.validate(self.name, self.value)
+
+
+class FormParameter:
+
+    form_validations = {
+        "label": {"required": True, "types": [str]},
+        "value": {"required": True},
+        "optional": {"types": [bool, type(None)]},
+        "enabled": {"types": [bool, type(None)]},
+        "main": {"types": [str, type(None)]},
+        "group": {"types": [str, type(None)]},
+        "groupOptional": {"types": [bool, type(None)]},
+        "dependency": {"types": [str, type(None)]},
+        "dependencyType": {"values": ["enabled", "disabled", "show", "hide"]},
+        "groupDependency": {"types": [str, type(None)]},
+        "groupDependencyType": {"values": ["enabled", "disabled", "show", "hide"]},
+    }
+
+    valid_members = list(form_validations.keys())
+
+    def __init__(self, name, form, validations):
+
+        self.name: str = name
+        self.validations: dict[str, dict] | Validations = validations
+        self.form: dict[str, Any] = form
+
+    @property
+    def form(self):
+        self.validate()
+        form_assembly = {}
+        for k in self.valid_members:
+            member = getattr(self, k)
+            if member.value is not None:
+                form_assembly[k] = member.value
+
+        return form_assembly
+
+    @form.setter
+    def form(self, val):
+
+        if not all(k in val for k in ["label", "value"]):
+            raise UIJsonFormatError(
+                "Forms must contain both 'label' and 'value' members."
+            )
+
+        for member in self.valid_members:
+            value = val.get(member, None)
+            if member == "value":
+                setattr(self, member, BaseParameter(member, value, self.validations))
+            elif member in self.valid_members:
+                setattr(
+                    self,
+                    member,
+                    BaseParameter(member, value, self.form_validations[member]),
+                )
+            else:
+                warnings.warn(
+                    f"Ignoring invalid form member {member}.  "
+                    f"Valid members are: {self.valid_members}"
+                )
+
+        self.validate()
+
+    def validate(self):
+        for member in self.valid_members:
+            if member != "value":
+                getattr(self, member).validate()
+
+
+class StringParameter(FormParameter):
+    def __init__(self, name, label, value, validations, form=None):
+        super().__init__(name, label, value, validations, form=form)
+
+
+class UIJson:
+    def __init__(self, parameters):
+        self.parameters = parameters
 
 
 def optional_parameter(state: str) -> dict[str, bool]:

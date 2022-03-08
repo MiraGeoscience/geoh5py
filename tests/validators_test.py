@@ -44,12 +44,6 @@ from geoh5py.ui_json.validation import Validations
 from geoh5py.workspace import Workspace
 
 
-def test_base_parameter():
-    param = BaseParameter("param", "nogood", Validations({"types": [int, float]}))
-    with pytest.raises(TypeValidationError):
-        param.validate()
-
-
 def test_validations():
     validations = Validations(
         {
