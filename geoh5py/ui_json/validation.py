@@ -132,7 +132,6 @@ class InputValidation:
             if "isValue" in item:
                 validations[key] = {
                     "types": [str, UUID, int, float, Entity],
-                    "optional": [optional_type(ui_json, key)],
                 }
                 if not item["isValue"]:
                     validations[key]["association"] = item["parent"]
@@ -142,24 +141,20 @@ class InputValidation:
                 validations[key] = {
                     "types": [str],
                     "values": item["choiceList"],
-                    "optional": [optional_type(ui_json, key)],
                 }
             elif "fileType" in item:
                 validations[key] = {
                     "types": [str],
-                    "optional": [optional_type(ui_json, key)],
                 }
             elif "meshType" in item:
                 validations[key] = {
                     "types": [str, UUID, Entity],
-                    "optional": [optional_type(ui_json, key)],
                     "association": "geoh5",
                     "uuid": None,
                 }
             elif "parent" in item:
                 validations[key] = {
                     "types": [str, UUID, Entity],
-                    "optional": [optional_type(ui_json, key)],
                     "association": item["parent"],
                     "uuid": None,
                 }
@@ -174,8 +169,9 @@ class InputValidation:
 
                 validations[key] = {
                     "types": [check_type],
-                    "optional": [optional_type(ui_json, key)],
                 }
+
+            validations[key].update({"optional": [optional_type(ui_json, key)]})
 
             if (
                 item.get("optional") or group_optional(ui_json, item.get("group", ""))
