@@ -25,6 +25,7 @@ from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import RequiredValidationError
 from geoh5py.shared.validators import BaseValidator, TypeValidator
+from geoh5py.ui_json.utils import group_optional, optional_type
 from geoh5py.workspace import Workspace
 
 
@@ -50,11 +51,15 @@ class InputValidation:
         validations: dict[str, Any] | None = None,
         workspace: Workspace = None,
         ui_json: dict[str, Any] | None = None,
-        **validation_options,
+        validation_options: dict[str, Any] | None = None,
     ):
         self.validations = self.infer_validations(ui_json, validations=validations)
         self.validators: dict[str, BaseValidator] = validators
         self.workspace: Workspace | None = workspace
+
+        if validation_options is None:
+            validation_options = {}
+
         self.ignore_list: tuple = validation_options.get("ignore_list", ())
         self.ignore_requirements: bool = validation_options.get(
             "ignore_requirements", False
@@ -115,7 +120,6 @@ class InputValidation:
     @staticmethod
     def _validations_from_uijson(ui_json: dict[str, Any]) -> dict[str, dict]:
         """Determine base set of validations from ui.json structure."""
-
         validations: dict[str, dict] = {}
         for key, item in ui_json.items():
             if not isinstance(item, dict):
@@ -134,7 +138,10 @@ class InputValidation:
                     validations[key]["uuid"] = None
 
             elif "choiceList" in item:
-                validations[key] = {"types": [str], "values": item["choiceList"]}
+                validations[key] = {
+                    "types": [str],
+                    "values": item["choiceList"],
+                }
             elif "fileType" in item:
                 validations[key] = {
                     "types": [str],
@@ -164,8 +171,11 @@ class InputValidation:
                     "types": [check_type],
                 }
 
-            if item.get("optional") and "types" in validations[key]:
+            validations[key].update({"optional": [optional_type(ui_json, key)]})
 
+            if (
+                item.get("optional") or group_optional(ui_json, item.get("group", ""))
+            ) and "types" in validations[key]:
                 validations[key]["types"] += [type(None)]
 
         return validations

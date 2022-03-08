@@ -39,6 +39,22 @@ class BaseValidationError(ABC, Exception):
         raise NotImplementedError()
 
 
+class OptionalValidationError(BaseValidationError):
+    """Error if None value provided to non-optional parameter."""
+
+    def __init__(
+        self,
+        name: str,
+        value: Any | None,
+        validation: bool,
+    ):
+        super().__init__(OptionalValidationError.message(name, value, validation))
+
+    @staticmethod
+    def message(name, value, validation):
+        return f"Cannot set a None value to non-optional parameter: {name}."
+
+
 class AssociationValidationError(BaseValidationError):
     """Error on association between child and parent entity validation."""
 
