@@ -503,13 +503,6 @@ def test_stringify(tmp_path):
         ui_json=ui_json, validations={"test": {"types": [int, type(None)]}}
     )
 
-    with pytest.raises(ValueError) as excinfo:
-        in_file.update_ui_values({"test": None}, none_map={"test": 4})
-
-    assert "The following parameters are not optional." in str(
-        excinfo
-    ), "Failed to raise error on None with not optional."
-
     in_file.ui_json["test"]["optional"] = True
     in_file.ui_json["test"]["enabled"] = True
 
