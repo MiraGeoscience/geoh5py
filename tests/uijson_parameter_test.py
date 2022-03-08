@@ -19,58 +19,73 @@ import pytest
 
 from geoh5py.shared.exceptions import TypeValidationError
 from geoh5py.ui_json.exceptions import UIJsonFormatError
-from geoh5py.ui_json.templates import BaseParameter, FormParameter, StringParameter
+from geoh5py.ui_json.templates import (
+    BaseParameter, BaseFormParameter, StringFormParameter, FloatFormParameter, UIJson
+)
 from geoh5py.ui_json.validation import Validations
 
 
 def test_base_parameter():
-    param = BaseParameter("param", "nogood", Validations({"types": [int, float]}))
+    param = BaseParameter("param", "nogood", {"types": [int, float]})
     with pytest.raises(TypeValidationError):
         param.validate()
 
 
 def test_form_parameter():
     # Properly create a form parameter.
-    param = FormParameter(
+    param = BaseFormParameter(
         "param",
         {"label": "my param", "value": "goodvalue"},
-        Validations({"types": [str]}),
+        {"types": [str]},
     )
     # Confirm that validations of the value member are postponed.
-    param = FormParameter(
+    param = BaseFormParameter(
         "param",
         {"label": "my param", "value": "badvalue"},
-        Validations({"types": [int]}),
+        {"types": [int]},
     )
     # Catch invalid form member.
     with pytest.raises(TypeValidationError):
-        param = FormParameter(
+        param = BaseFormParameter(
             "param",
             {"label": "my param", "value": "goodvalue", "optional": "whoops"},
-            Validations({"types": [str]}),
+            {"types": [str]},
         )
     # Catch incomplete form.
     with pytest.raises(UIJsonFormatError):
-        param = FormParameter(
-            "param", {"value": "goodvalue"}, Validations({"types": [str]})
+        param = BaseFormParameter(
+            "param", {"value": "goodvalue"}, {"types": [str]}
         )
 
-    # with pytest.raises(AggregateValidationError):
-    #     param.label.value = None
-    #     param.validate()
-    # with pytest.raises(TypeValidationError):
-    #     param.label.value = "nogood param"
-    #     param.enabled.value = "notabool"
-    #     param.validate()
-    #
-    # param = FormParameter(
-    #     "param",
-    #     "good param",
-    #     "good",
-    #     {"types": [str]},
-    #     form={"label": "good param", "value": "good", "optional": True, "enabled": False}
-    # )
-    # assert True
+def test_float_form_parameter():
+    # FloatFormParameter should add the "types": [float] validations
+    # and min/max form_validations by default.
+    param = FloatFormParameter(
+        "param", {"label": "my param", "value": 1}, {"required": True}
+    )
+    assert all(k in param.validations for k in ["types", "required"])
+    assert all(k in param.form_validations for k in ["min", "max"])
+
+def test_uijson_identify():
+    assert UIJson.identify({"min": 2}) == FloatFormParameter
+
+def test_uijson():
+    parameters = {
+        "param_1": BaseFormParameter(
+            "param_1",
+            {"label": "first parameter", "value": "toocool"},
+            {"types": [str]},
+        ),
+        "param_2": BaseFormParameter(
+            "param_2",
+            {"label": "second parameter", "value": 2},
+            {"types": [int]}
+        ),
+        "param_3": BaseParameter("param_3", 2, {"types": [int]})
+    }
+    ui_json = UIJson(parameters)
+    ui_json.validate()
+
 
 
 def test_string_parameter():

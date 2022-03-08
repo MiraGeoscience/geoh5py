@@ -89,7 +89,7 @@ class BaseParameter:
         self.validations.validate(self.name, self.value)
 
 
-class FormParameter:
+class BaseFormParameter:
 
     form_validations = {
         "label": {"required": True, "types": [str]},
@@ -104,7 +104,6 @@ class FormParameter:
         "groupDependency": {"types": [str, type(None)]},
         "groupDependencyType": {"values": ["enabled", "disabled", "show", "hide"]},
     }
-
     valid_members = list(form_validations.keys())
 
     def __init__(self, name, form, validations):
@@ -156,14 +155,74 @@ class FormParameter:
                 getattr(self, member).validate()
 
 
-class StringParameter(FormParameter):
-    def __init__(self, name, label, value, validations, form=None):
-        super().__init__(name, label, value, validations, form=form)
+class StringFormParameter(BaseFormParameter):
+
+    base_validations = {"types": [str]}
+
+    def __init__(self, name, form, validations):
+        super().__init__(name, form, dict(self.base_validations, **validations))
+
+
+class FloatFormParameter(BaseFormParameter):
+
+    base_validations = {"types": [float]}
+    float_form_validations = {
+            "min": {"types": [float, type(None)]},
+            "max": {"types": [float, type(None)]},
+        }
+    form_validations = dict(
+        BaseFormParameter.form_validations,
+        **float_form_validations
+    )
+    valid_members = list(form_validations.keys())
+
+    def __init__(self, name, form, validations):
+        super().__init__(name, form, dict(self.base_validations, **validations))
+
 
 
 class UIJson:
     def __init__(self, parameters):
-        self.parameters = parameters
+        self.parameters: dict[str, BaseParameter | BaseFormParameter | dict[str, Any]] = parameters
+
+    @property
+    def parameters(self):
+        return self._parameters
+
+    @parameters.setter
+    def parameters(self, val):
+        for parameter, value in val.items():
+            if isinstance(value, (BaseParameter, BaseFormParameter)):
+                continue
+            elif isinstance(value, dict):
+                parameter_class = UIJson.identify(value)
+                val[parameter] = parameter_class(parameter, value, {})
+            else:
+                val[parameter] = BaseParameter(parameter, value, {})
+
+        self._parameters = val
+
+    def validate(self):
+        for parameter in self.parameters.values():
+            if isinstance(parameter, BaseParameter):
+                parameter.validate()
+            else:
+                parameter.value.validate()
+
+    @staticmethod
+    def identify(parameter):
+        # TODO - complete this
+        candidates = BaseFormParameter.__subclasses__()
+        base_members = set(BaseFormParameter.valid_members)
+        for candidate in candidates:
+            identifier_members = set(candidate.valid_members).difference(base_members)
+            if any(set(parameter.keys()).intersection(identifier_members)):
+                return candidate
+
+        return BaseFormParameter # if no matches
+
+
+
 
 
 def optional_parameter(state: str) -> dict[str, bool]:
