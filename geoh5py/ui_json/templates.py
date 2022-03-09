@@ -134,25 +134,17 @@ class FormParameter:
     @form.setter
     def form(self, val):
 
-        if not all(k in val for k in ["label", "value"]):
-            raise UIJsonFormatError(
-                "Forms must contain both 'label' and 'value' members."
-            )
-
+        if "isValue" in self.valid_members:
+            self.value = val["value"] if val["isValue"] else val["property"]
         for member in self.valid_members:
-            value = val.get(member, None)
-            if member == "value":
-                self.value = value
-            elif member in self.valid_members:
+            if member in ["value", "property"]:
+                continue
+            else:
+                value = val.get(member, None)
                 setattr(
                     self,
                     member,
                     Parameter(member, value, self.form_validations[member]),
-                )
-            else:
-                warnings.warn(
-                    f"Ignoring invalid form member {member}.  "
-                    f"Valid members are: {self.valid_members}"
                 )
 
         self.validate()
@@ -242,6 +234,81 @@ class FileParameter(FormParameter):
 
     def __init__(self, name, form, validations):
         super().__init__(name, form, dict(self.base_validations, **validations))
+
+class ObjectParameter(FormParameter):
+
+    base_validations = {"types": [str, UUID]}
+    object_validations = {
+        "meshType": {
+            "values": [
+                "{202C5DB1-A56D-4004-9CAD-BAAFD8899406}",
+                "{6A057FDC-B355-11E3-95BE-FD84A7FFCB88}",
+                "{F26FEBA3-ADED-494B-B9E9-B2BBCBE298E1}",
+                "{48F5054A-1C5C-4CA4-9048-80F36DC60A06}",
+                "{b020a277-90e2-4cd7-84d6-612ee3f25051}",
+                "{4ea87376-3ece-438b-bf12-3479733ded46}",
+            ]
+        }
+    }
+    form_validations = dict(FormParameter.form_validations, **object_validations)
+    valid_members = list(form_validations.keys())
+
+    def __init__(self, name, form, validations):
+        super().__init__(name, form, dict(self.base_validations, **validations))
+
+class DataParameter(FormParameter):
+
+    base_validations = {"types": [str, UUID]}
+    data_validations = {
+        "parent": {"types": [str]},
+        "association": {"values": ["Vertex", "Cell"]},
+        "dataType": {"values": ["Float", "Integer", "Reference"]},
+        "dataGroupType": {
+            "values": [
+                "3D vector",
+                "Dip direction & dip",
+                "Strike & dip",
+                "Multi-element",
+            ]
+        }
+    }
+    form_validations = dict(FormParameter.form_validations, **data_validations)
+    valid_members = list(form_validations.keys())
+
+    def __init__(self, name, form, validations):
+        super().__init__(name, form, dict(self.base_validations, **validations))
+
+class DataValueParameter(FormParameter):
+
+    base_validations = {"types": [int, float]}
+    data_value_validations = {
+        "parent": {"types": [str]},
+        "association": {"values": ["Vertex", "Cell"]},
+        "dataType": {"values": ["Float", "Integer", "Reference"]},
+        "isValue": {"types": [bool]},
+        "property": {"types": [str, UUID, type(None)]}
+    }
+    form_validations = dict(FormParameter.form_validations, **data_value_validations)
+    valid_members = list(form_validations.keys())
+
+    def __init__(self, name, form, validations):
+        super().__init__(name, form, dict(self.base_validations, **validations))
+
+    @property
+    def value(self):
+        if self.form["isValue"]:
+            return self._value.value
+        else:
+            return self.property.value
+
+    @value.setter
+    def value(self, val):
+        if isinstance(val, (int, float)):
+            self._value = Parameter("value", val, self.validations)
+            self.isValue = Parameter("isValue", True, self.form_validations["isValue"])
+        else:
+            self.property = Parameter("property", val, self.form_validations["property"])
+            self.isValue = Parameter("isValue", False, self.form_validations["isValue"])
 
 
 class UIJson:

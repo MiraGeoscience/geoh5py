@@ -20,16 +20,17 @@ import pytest
 from geoh5py.shared.exceptions import TypeValidationError
 from geoh5py.ui_json.exceptions import UIJsonFormatError
 from geoh5py.ui_json.templates import (
-    FloatParameter,
-    FormParameter,
     Parameter,
+    FormParameter,
     StringParameter,
+    FloatParameter,
+    DataValueParameter,
     UIJson,
 )
 from geoh5py.ui_json.validation import Validations
 
 
-def test_base_parameter():
+def test_parameter():
     param = Parameter("param", "nogood", {"types": [int, float]})
     with pytest.raises(TypeValidationError):
         param.validate()
@@ -60,7 +61,7 @@ def test_form_parameter():
         param = FormParameter("param", {"value": "goodvalue"}, {"types": [str]})
 
 
-def test_float_form_parameter():
+def test_float_parameter():
     # FloatFormParameter should add the "types": [float] validations
     # and min/max form_validations by default.
     param = FloatParameter(
@@ -68,6 +69,24 @@ def test_float_form_parameter():
     )
     assert all(k in param.validations for k in ["types", "required"])
     assert all(k in param.form_validations for k in ["min", "max"])
+
+def test_data_value_parameter():
+    param = DataValueParameter(
+        "param",
+        {
+            "association": "Vertex",
+            "dataType": "Float",
+            "isValue": True,
+            "property": None,
+            "parent": "other_param",
+            "label": "my param",
+            "value": 1.0,
+        },
+        {}
+    )
+    assert param.value == 1.0
+    param.isValue.value = False
+    assert param.value is None
 
 
 def test_uijson_identify():
