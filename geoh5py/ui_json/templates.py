@@ -124,21 +124,26 @@ class FormParameter:
     def form(self):
         self.validate()
         form_assembly = {}
-        for k in self.valid_members:
-            member = getattr(self, k)
-            if member.value is not None:
-                form_assembly[k] = member.value
+        for name in self.valid_members:
+            if name == "value":
+                member = self._value.value
+            else:
+                member = getattr(self, name).value
+
+            is_required = self.form_validations[name].get("required", False)
+            if member is None and not is_required:
+                continue
+
+            form_assembly[name] = member
 
         return form_assembly
 
     @form.setter
     def form(self, val):
 
-        if "isValue" in self.valid_members:
-            self.value = val["value"] if val["isValue"] else val["property"]
         for member in self.valid_members:
-            if member in ["value", "property"]:
-                continue
+            if member == "value":
+                self._value = Parameter("value", val["value"], self.validations)
             else:
                 value = val.get(member, None)
                 setattr(
@@ -204,7 +209,7 @@ class FloatParameter(FormParameter):
 class ChoiceStringParameter(FormParameter):
 
     base_validations = {"types": [str]}
-    choice_string_validations = {"choiceList": {"types": [list]}}
+    choice_string_validations = {"choiceList": {"required": True, "types": [list]}}
     form_validations = dict(FormParameter.form_validations, **choice_string_validations)
     valid_members = list(form_validations.keys())
 
@@ -225,8 +230,8 @@ class FileParameter(FormParameter):
 
     base_validations = {"types": [str]}
     file_validations = {
-        "fileDescription": {"types": [str, tuple, list]},
-        "fileType": {"types": [str, tuple, list]},
+        "fileDescription": {"required": True, "types": [str, tuple, list]},
+        "fileType": {"required": True, "types": [str, tuple, list]},
         "fileMulti": {"types": [bool]},
     }
     form_validations = dict(FormParameter.form_validations, **file_validations)
@@ -240,6 +245,7 @@ class ObjectParameter(FormParameter):
     base_validations = {"types": [str, UUID]}
     object_validations = {
         "meshType": {
+            "required": True,
             "values": [
                 "{202C5DB1-A56D-4004-9CAD-BAAFD8899406}",
                 "{6A057FDC-B355-11E3-95BE-FD84A7FFCB88}",
@@ -260,9 +266,9 @@ class DataParameter(FormParameter):
 
     base_validations = {"types": [str, UUID]}
     data_validations = {
-        "parent": {"types": [str]},
-        "association": {"values": ["Vertex", "Cell"]},
-        "dataType": {"values": ["Float", "Integer", "Reference"]},
+        "parent": {"required": True, "types": [str]},
+        "association": {"required": True, "values": ["Vertex", "Cell"]},
+        "dataType": {"required": True, "values": ["Float", "Integer", "Reference"]},
         "dataGroupType": {
             "values": [
                 "3D vector",
@@ -282,11 +288,11 @@ class DataValueParameter(FormParameter):
 
     base_validations = {"types": [int, float]}
     data_value_validations = {
-        "parent": {"types": [str]},
-        "association": {"values": ["Vertex", "Cell"]},
-        "dataType": {"values": ["Float", "Integer", "Reference"]},
-        "isValue": {"types": [bool]},
-        "property": {"types": [str, UUID, type(None)]}
+        "parent": {"required": True, "types": [str]},
+        "association": {"required": True, "values": ["Vertex", "Cell"]},
+        "dataType": {"required": True, "values": ["Float", "Integer", "Reference"]},
+        "isValue": {"required": True, "types": [bool]},
+        "property": {"required": True, "types": [str, UUID, type(None)]}
     }
     form_validations = dict(FormParameter.form_validations, **data_value_validations)
     valid_members = list(form_validations.keys())
@@ -296,20 +302,24 @@ class DataValueParameter(FormParameter):
 
     @property
     def value(self):
-        if self.form["isValue"]:
-            return self._value.value
-        else:
-            return self.property.value
+        val = self.property.value
+        if self.isValue.value:
+            val = self._value.value
+        return val
 
     @value.setter
     def value(self, val):
         if isinstance(val, (int, float)):
+            self.property = Parameter("property", val, self.validations)
+            self.isValue = Parameter("isValue", False, self.form_validations["isValue"])
+        else:
             self._value = Parameter("value", val, self.validations)
             self.isValue = Parameter("isValue", True, self.form_validations["isValue"])
-        else:
-            self.property = Parameter("property", val, self.form_validations["property"])
-            self.isValue = Parameter("isValue", False, self.form_validations["isValue"])
 
+    def validate(self):
+        for member in self.valid_members:
+            if member not in ["value", "property"]:
+                getattr(self, member).validate()
 
 class UIJson:
     def __init__(self, parameters):
