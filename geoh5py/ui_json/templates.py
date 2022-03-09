@@ -120,7 +120,6 @@ class FormParameter:
     def value(self, val):
         self._value = Parameter("value", val, self.validations)
 
-
     @property
     def form(self):
         self.validate()
@@ -171,6 +170,7 @@ class StringParameter(FormParameter):
     def __init__(self, name, form, validations):
         super().__init__(name, form, dict(self.base_validations, **validations))
 
+
 class BoolParameter(FormParameter):
 
     base_validations = {"types": [bool]}
@@ -178,50 +178,42 @@ class BoolParameter(FormParameter):
     def __init__(self, name, form, validations):
         super().__init__(name, form, dict(self.base_validations, **validations))
 
+
 class IntegerParameter(FormParameter):
 
     base_validations = {"types": [int]}
     integer_form_validations = {
-            "min": {"types": [float, type(None)]},
-            "max": {"types": [float, type(None)]},
-        }
-    form_validations = dict(
-        FormParameter.form_validations,
-        **integer_form_validations
-    )
+        "min": {"types": [float, type(None)]},
+        "max": {"types": [float, type(None)]},
+    }
+    form_validations = dict(FormParameter.form_validations, **integer_form_validations)
     valid_members = list(form_validations.keys())
 
     def __init__(self, name, form, validations):
         super().__init__(name, form, dict(self.base_validations, **validations))
+
 
 class FloatParameter(FormParameter):
 
     base_validations = {"types": [float]}
     float_validations = {
-            "min": {"types": [float, type(None)]},
-            "max": {"types": [float, type(None)]},
-            "precision": {"types": [int, type(None)]},
-            "lineEdit": {"types": [bool, type(None)]}
-        }
-    form_validations = dict(
-        FormParameter.form_validations,
-        **float_validations
-    )
+        "min": {"types": [float, type(None)]},
+        "max": {"types": [float, type(None)]},
+        "precision": {"types": [int, type(None)]},
+        "lineEdit": {"types": [bool, type(None)]},
+    }
+    form_validations = dict(FormParameter.form_validations, **float_validations)
     valid_members = list(form_validations.keys())
 
     def __init__(self, name, form, validations):
         super().__init__(name, form, dict(self.base_validations, **validations))
 
+
 class ChoiceStringParameter(FormParameter):
 
     base_validations = {"types": [str]}
-    choice_string_validations = {
-        "choiceList": {"types": [list]}
-        }
-    form_validations = dict(
-        FormParameter.form_validations,
-        **choice_string_validations
-    )
+    choice_string_validations = {"choiceList": {"types": [list]}}
+    form_validations = dict(FormParameter.form_validations, **choice_string_validations)
     valid_members = list(form_validations.keys())
 
     def __init__(self, name, form, validations):
@@ -244,20 +236,19 @@ class FileParameter(FormParameter):
         "fileDescription": {"types": [str, tuple, list]},
         "fileType": {"types": [str, tuple, list]},
         "fileMulti": {"types": [bool]},
-        }
-    form_validations = dict(
-        FormParameter.form_validations,
-        **file_validations
-    )
+    }
+    form_validations = dict(FormParameter.form_validations, **file_validations)
     valid_members = list(form_validations.keys())
 
     def __init__(self, name, form, validations):
         super().__init__(name, form, dict(self.base_validations, **validations))
-        
+
 
 class UIJson:
     def __init__(self, parameters):
-        self.parameters: dict[str, Parameter | FormParameter | dict[str, Any]] = parameters
+        self.parameters: dict[
+            str, Parameter | FormParameter | dict[str, Any]
+        ] = parameters
 
     @property
     def parameters(self):
@@ -296,11 +287,8 @@ class UIJson:
             identifier_members = set(candidate.valid_members).difference(base_members)
             if any(set(parameter.keys()).intersection(identifier_members)):
                 return candidate
-            
-        return FormParameter # if no matches
 
-
-
+        return FormParameter  # if no matches
 
 
 def optional_parameter(state: str) -> dict[str, bool]:

@@ -20,7 +20,11 @@ import pytest
 from geoh5py.shared.exceptions import TypeValidationError
 from geoh5py.ui_json.exceptions import UIJsonFormatError
 from geoh5py.ui_json.templates import (
-    Parameter, FormParameter, StringParameter, FloatParameter, UIJson
+    FloatParameter,
+    FormParameter,
+    Parameter,
+    StringParameter,
+    UIJson,
 )
 from geoh5py.ui_json.validation import Validations
 
@@ -53,9 +57,8 @@ def test_form_parameter():
         )
     # Catch incomplete form.
     with pytest.raises(UIJsonFormatError):
-        param = FormParameter(
-            "param", {"value": "goodvalue"}, {"types": [str]}
-        )
+        param = FormParameter("param", {"value": "goodvalue"}, {"types": [str]})
+
 
 def test_float_form_parameter():
     # FloatFormParameter should add the "types": [float] validations
@@ -66,8 +69,10 @@ def test_float_form_parameter():
     assert all(k in param.validations for k in ["types", "required"])
     assert all(k in param.form_validations for k in ["min", "max"])
 
+
 def test_uijson_identify():
     assert UIJson.identify({"min": 2}) == FloatParameter
+
 
 def test_uijson():
     parameters = {
@@ -77,18 +82,14 @@ def test_uijson():
             {"types": [str]},
         ),
         "param_2": FormParameter(
-            "param_2",
-            {"label": "second parameter", "value": 2},
-            {"types": [int]}
+            "param_2", {"label": "second parameter", "value": 2}, {"types": [int]}
         ),
-        "param_3": Parameter("param_3", 2, {"types": [int]})
+        "param_3": Parameter("param_3", 2, {"types": [int]}),
     }
     ui_json = UIJson(parameters)
     ui_json.validate()
     values = ui_json.values
     assert all()
-
-
 
 
 def test_string_parameter():
