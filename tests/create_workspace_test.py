@@ -18,6 +18,7 @@
 from os import path
 
 import pytest
+from h5py import File
 
 from geoh5py.workspace import Workspace
 
@@ -49,3 +50,42 @@ def test_workspace_from_kwargs(tmp_path):
             assert (
                 getattr(workspace, key.lower()) == value
             ), f"Error changing value for attribute {key}."
+
+
+def test_empty_workspace(tmp_path):
+    Workspace(
+        path.join(tmp_path, "test.geoh5"),
+    )
+    with File(path.join(tmp_path, "test.geoh5"), "r+") as file:
+        del file["GEOSCIENCE"]["Groups"]
+        del file["GEOSCIENCE"]["Data"]
+        del file["GEOSCIENCE"]["Objects"]
+        del file["GEOSCIENCE"]["Root"]
+        del file["GEOSCIENCE"]["Types"]
+
+    Workspace(
+        path.join(tmp_path, "test.geoh5"),
+    )
+
+    with File(path.join(tmp_path, "test.geoh5"), "r+") as file:
+        assert (
+            "Types" in file["GEOSCIENCE"]
+        ), "Failed to regenerate the geoh5 structure."
+
+
+def test_missing_type(tmp_path):
+    Workspace(
+        path.join(tmp_path, "test.geoh5"),
+    )
+    with File(path.join(tmp_path, "test.geoh5"), "r+") as file:
+        for group in file["GEOSCIENCE"]["Groups"].values():
+            del group["Type"]
+
+    Workspace(
+        path.join(tmp_path, "test.geoh5"),
+    )
+
+    with File(path.join(tmp_path, "test.geoh5"), "r+") as file:
+        assert all(
+            "Type" in group for group in file["GEOSCIENCE"]["Groups"].values()
+        ), "Failed to regenerate the Type in geoh5 structure."
