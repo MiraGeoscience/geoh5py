@@ -68,7 +68,7 @@ extra_validations = {
 }
 
 
-class BaseParameter:
+class Parameter:
     def __init__(self, name, value, validations):
         self.name: str = name
         self.value: Any = value
@@ -89,7 +89,7 @@ class BaseParameter:
         self.validations.validate(self.name, self.value)
 
 
-class BaseFormParameter:
+class FormParameter:
 
     form_validations = {
         "label": {"required": True, "types": [str]},
@@ -113,6 +113,15 @@ class BaseFormParameter:
         self.form: dict[str, Any] = form
 
     @property
+    def value(self):
+        return self._value.value
+
+    @value.setter
+    def value(self, val):
+        self._value = Parameter("value", val, self.validations)
+
+
+    @property
     def form(self):
         self.validate()
         form_assembly = {}
@@ -134,12 +143,12 @@ class BaseFormParameter:
         for member in self.valid_members:
             value = val.get(member, None)
             if member == "value":
-                setattr(self, member, BaseParameter(member, value, self.validations))
+                self.value = value
             elif member in self.valid_members:
                 setattr(
                     self,
                     member,
-                    BaseParameter(member, value, self.form_validations[member]),
+                    Parameter(member, value, self.form_validations[member]),
                 )
             else:
                 warnings.warn(
@@ -155,35 +164,100 @@ class BaseFormParameter:
                 getattr(self, member).validate()
 
 
-class StringFormParameter(BaseFormParameter):
+class StringParameter(FormParameter):
 
     base_validations = {"types": [str]}
 
     def __init__(self, name, form, validations):
         super().__init__(name, form, dict(self.base_validations, **validations))
 
+class BoolParameter(FormParameter):
 
-class FloatFormParameter(BaseFormParameter):
+    base_validations = {"types": [bool]}
 
-    base_validations = {"types": [float]}
-    float_form_validations = {
+    def __init__(self, name, form, validations):
+        super().__init__(name, form, dict(self.base_validations, **validations))
+
+class IntegerParameter(FormParameter):
+
+    base_validations = {"types": [int]}
+    integer_form_validations = {
             "min": {"types": [float, type(None)]},
             "max": {"types": [float, type(None)]},
         }
     form_validations = dict(
-        BaseFormParameter.form_validations,
-        **float_form_validations
+        FormParameter.form_validations,
+        **integer_form_validations
     )
     valid_members = list(form_validations.keys())
 
     def __init__(self, name, form, validations):
         super().__init__(name, form, dict(self.base_validations, **validations))
 
+class FloatParameter(FormParameter):
 
+    base_validations = {"types": [float]}
+    float_validations = {
+            "min": {"types": [float, type(None)]},
+            "max": {"types": [float, type(None)]},
+            "precision": {"types": [int, type(None)]},
+            "lineEdit": {"types": [bool, type(None)]}
+        }
+    form_validations = dict(
+        FormParameter.form_validations,
+        **float_validations
+    )
+    valid_members = list(form_validations.keys())
+
+    def __init__(self, name, form, validations):
+        super().__init__(name, form, dict(self.base_validations, **validations))
+
+class ChoiceStringParameter(FormParameter):
+
+    base_validations = {"types": [str]}
+    choice_string_validations = {
+        "choiceList": {"types": [list]}
+        }
+    form_validations = dict(
+        FormParameter.form_validations,
+        **choice_string_validations
+    )
+    valid_members = list(form_validations.keys())
+
+    def __init__(self, name, form, validations):
+        super().__init__(name, form, dict(self.base_validations, **validations))
+
+    @property
+    def choiceList(self):
+        return self._choiceList
+
+    @choiceList.setter
+    def choiceList(self, val):
+        self.validations.update({"values": val})
+        self._choiceList = val
+
+
+class FileParameter(FormParameter):
+
+    base_validations = {"types": [str]}
+    file_validations = {
+        "fileDescription": {"types": [str, tuple, list]},
+        "fileType": {"types": [str, tuple, list]},
+        "fileMulti": {"types": [bool]},
+        }
+    form_validations = dict(
+        FormParameter.form_validations,
+        **file_validations
+    )
+    valid_members = list(form_validations.keys())
+
+    def __init__(self, name, form, validations):
+        super().__init__(name, form, dict(self.base_validations, **validations))
+        
 
 class UIJson:
     def __init__(self, parameters):
-        self.parameters: dict[str, BaseParameter | BaseFormParameter | dict[str, Any]] = parameters
+        self.parameters: dict[str, Parameter | FormParameter | dict[str, Any]] = parameters
 
     @property
     def parameters(self):
@@ -191,20 +265,24 @@ class UIJson:
 
     @parameters.setter
     def parameters(self, val):
-        for parameter, value in val.items():
-            if isinstance(value, (BaseParameter, BaseFormParameter)):
+        for name, value in val.items():
+            if isinstance(value, (Parameter, FormParameter)):
                 continue
             elif isinstance(value, dict):
                 parameter_class = UIJson.identify(value)
-                val[parameter] = parameter_class(parameter, value, {})
+                val[name] = parameter_class(name, value, {})
             else:
-                val[parameter] = BaseParameter(parameter, value, {})
+                val[name] = Parameter(name, value, {})
 
         self._parameters = val
 
+    @property
+    def values(self):
+        return [p.value for p in self.parameters.values()]
+
     def validate(self):
         for parameter in self.parameters.values():
-            if isinstance(parameter, BaseParameter):
+            if isinstance(parameter, Parameter):
                 parameter.validate()
             else:
                 parameter.value.validate()
@@ -212,14 +290,14 @@ class UIJson:
     @staticmethod
     def identify(parameter):
         # TODO - complete this
-        candidates = BaseFormParameter.__subclasses__()
-        base_members = set(BaseFormParameter.valid_members)
+        candidates = FormParameter.__subclasses__()
+        base_members = set(FormParameter.valid_members)
         for candidate in candidates:
             identifier_members = set(candidate.valid_members).difference(base_members)
             if any(set(parameter.keys()).intersection(identifier_members)):
                 return candidate
-
-        return BaseFormParameter # if no matches
+            
+        return FormParameter # if no matches
 
 
 

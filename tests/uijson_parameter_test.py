@@ -20,71 +20,74 @@ import pytest
 from geoh5py.shared.exceptions import TypeValidationError
 from geoh5py.ui_json.exceptions import UIJsonFormatError
 from geoh5py.ui_json.templates import (
-    BaseParameter, BaseFormParameter, StringFormParameter, FloatFormParameter, UIJson
+    Parameter, FormParameter, StringParameter, FloatParameter, UIJson
 )
 from geoh5py.ui_json.validation import Validations
 
 
 def test_base_parameter():
-    param = BaseParameter("param", "nogood", {"types": [int, float]})
+    param = Parameter("param", "nogood", {"types": [int, float]})
     with pytest.raises(TypeValidationError):
         param.validate()
 
 
 def test_form_parameter():
     # Properly create a form parameter.
-    param = BaseFormParameter(
+    param = FormParameter(
         "param",
         {"label": "my param", "value": "goodvalue"},
         {"types": [str]},
     )
     # Confirm that validations of the value member are postponed.
-    param = BaseFormParameter(
+    param = FormParameter(
         "param",
         {"label": "my param", "value": "badvalue"},
         {"types": [int]},
     )
     # Catch invalid form member.
     with pytest.raises(TypeValidationError):
-        param = BaseFormParameter(
+        param = FormParameter(
             "param",
             {"label": "my param", "value": "goodvalue", "optional": "whoops"},
             {"types": [str]},
         )
     # Catch incomplete form.
     with pytest.raises(UIJsonFormatError):
-        param = BaseFormParameter(
+        param = FormParameter(
             "param", {"value": "goodvalue"}, {"types": [str]}
         )
 
 def test_float_form_parameter():
     # FloatFormParameter should add the "types": [float] validations
     # and min/max form_validations by default.
-    param = FloatFormParameter(
+    param = FloatParameter(
         "param", {"label": "my param", "value": 1}, {"required": True}
     )
     assert all(k in param.validations for k in ["types", "required"])
     assert all(k in param.form_validations for k in ["min", "max"])
 
 def test_uijson_identify():
-    assert UIJson.identify({"min": 2}) == FloatFormParameter
+    assert UIJson.identify({"min": 2}) == FloatParameter
 
 def test_uijson():
     parameters = {
-        "param_1": BaseFormParameter(
+        "param_1": FormParameter(
             "param_1",
             {"label": "first parameter", "value": "toocool"},
             {"types": [str]},
         ),
-        "param_2": BaseFormParameter(
+        "param_2": FormParameter(
             "param_2",
             {"label": "second parameter", "value": 2},
             {"types": [int]}
         ),
-        "param_3": BaseParameter("param_3", 2, {"types": [int]})
+        "param_3": Parameter("param_3", 2, {"types": [int]})
     }
     ui_json = UIJson(parameters)
     ui_json.validate()
+    values = ui_json.values
+    assert all()
+
 
 
 
