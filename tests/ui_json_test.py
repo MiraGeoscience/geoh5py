@@ -117,6 +117,15 @@ def test_input_file_name_path(tmp_path):
         test.path = "im/a/fake/path"
     assert "'im/a/fake/path'" in str(excinfo.value)  # raises if not a dir
 
+    # test path_name method
+    assert test.path_name == path.join(tmp_path, "Jarrod.ui.json")
+    test = InputFile()
+    assert test.path_name is None
+
+    with pytest.raises(AttributeError) as excinfo:
+        test.write_ui_json()
+    assert "requires 'path' and 'name'" in str(excinfo.value)
+
 
 def test_optional_parameter():
     test = templates.optional_parameter("enabled")
@@ -132,7 +141,7 @@ def test_bool_parameter():
     ui_json = deepcopy(default_ui_json)
     ui_json["logic"] = templates.bool_parameter()
     ui_json["logic"]["value"] = True
-    in_file = InputFile(ui_json=ui_json)
+    in_file = InputFile(ui_json=ui_json, validation_options={"disabled": False})
 
     with pytest.raises(TypeValidationError) as excinfo:
         in_file.validators.validate("logic", 1234)
@@ -596,10 +605,19 @@ def test_merge_validations():
     ui_json["string_parameter"] = templates.string_parameter(optional="enabled")
     ui_json["float_parameter"] = templates.float_parameter(optional="disabled")
     ui_json["integer_parameter"] = templates.integer_parameter()
+    ui_json["data_value_parameter"] = {
+        "isValue": True,
+        "parent": "Dwayne",
+    }
     validations = InputValidation._validations_from_uijson(ui_json)
     validations = InputValidation._merge_validations(
         validations, {"integer_parameter": {"types": [type(None)]}}
     )
+
+    # Test handling of isValue
+    assert validations["data_value_parameter"]["association"] == "Dwayne"
+    assert validations["data_value_parameter"]["uuid"] is None
+
     # If validation exists it is overwritten
     assert len(validations["integer_parameter"]["types"]) == 1
     assert type(None) in validations["integer_parameter"]["types"]

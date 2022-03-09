@@ -89,6 +89,11 @@ def test_association_validator(tmp_path):
         excinfo.value
     )
 
+    # Test for wrong valid type
+    with pytest.raises(ValueError) as excinfo:
+        validator("test", points, "nogood")
+    assert "Provided 'nogood' " in str(excinfo.value)
+
     # No validation error for none value or valid
     validator("test", None, points)
     validator("test", points, None)
