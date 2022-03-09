@@ -144,7 +144,7 @@ class InputFile:
     @path.setter
     def path(self, path: str):
         if not os.path.isdir(path):
-            raise ValueError(f"The path specified {path} does not exist.")
+            raise ValueError(f"The specified path: '{path}' does not exist.")
 
         self._path = path
 

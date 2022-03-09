@@ -96,6 +96,28 @@ def test_input_file_json():
     )
 
 
+def test_input_file_name_path(tmp_path):
+    # pylint: disable=protected-access
+
+    # Test handling of name attribute
+    test = InputFile()
+    test.name = "test.ui.json"
+    assert test.name == "test.ui.json"  # usual behaviour
+    test._name = None
+    test.ui_json = {"title": "Jarrod"}
+    assert test.name == "Jarrod.ui.json"  # ui.json extension added
+
+    # Test handling of path attribute
+    test.workspace = Workspace(path.join(tmp_path, "test.geoh5"))
+    assert test.path == str(tmp_path)  # pulled from workspace.h5file
+    test.path = tmp_path
+    assert test.path == tmp_path  # usual behaviour
+
+    with pytest.raises(ValueError) as excinfo:
+        test.path = "im/a/fake/path"
+    assert "'im/a/fake/path'" in str(excinfo.value)  # raises if not a dir
+
+
 def test_optional_parameter():
     test = templates.optional_parameter("enabled")
     assert test["optional"]
