@@ -17,5 +17,5 @@
 
 
 class UIJsonFormatError(Exception):
-    def __init__(self, msg):
-        super().__init__(f"Invalid UIJson format. {msg}")
+    def __init__(self, name, msg):
+        super().__init__(f"Invalid UIJson format for parameter '{name}'. {msg}")
