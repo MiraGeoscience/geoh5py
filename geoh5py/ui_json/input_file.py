@@ -97,6 +97,15 @@ class InputFile:
             if not isinstance(value, dict):
                 raise ValueError("Input 'data' must be of type dict or None.")
 
+            if self._ui_json is None:
+                raise AttributeError("'ui_json' must be set before setting data.")
+
+            if len(value) != len(self._ui_json):
+                raise ValueError(
+                    "The number of input values for 'data' must "
+                    "equal the number of parameters in 'ui_json'."
+                )
+
             if "geoh5" in value:
                 self.workspace = value["geoh5"]
 
@@ -156,11 +165,11 @@ class InputFile:
         return None
 
     @staticmethod
-    def read_ui_json(json_file: str):
+    def read_ui_json(json_file: str, **kwargs):
         """
         Read and create an InputFile from *.ui.json
         """
-        input_file = InputFile()
+        input_file = InputFile(**kwargs)
 
         if "ui.json" not in json_file:
             raise ValueError("Input file should have the extension *.ui.json")

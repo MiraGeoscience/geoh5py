@@ -170,7 +170,7 @@ class InputValidation:
                     "types": [check_type],
                 }
 
-            validations[key].update({"optional": [optional_type(ui_json, key)]})
+            validations[key].update({"optional": optional_type(ui_json, key)})
 
             if (
                 item.get("optional") or group_optional(ui_json, item.get("group", ""))
@@ -224,14 +224,15 @@ class InputValidation:
 
             validations = self.validations[name]
 
-        for val, args in validations.items():
-
+        for val in ["required", "optional", "uuid", "association", "types", "values"]:
             if (
-                val == "required" and self.ignore_requirements
-            ) or name in self.ignore_list:
+                val not in validations
+                or (val == "required" and self.ignore_requirements)
+                or name in self.ignore_list
+            ):
                 continue
 
-            self.validators[val](name, value, args)
+            self.validators[val](name, value, validations[val])
 
     def validate_data(self, data: dict[str, Any]) -> None:
         """
