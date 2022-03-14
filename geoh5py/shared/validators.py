@@ -206,7 +206,7 @@ class TypeValidator(BaseValidator):
             value = (value,)
 
         for val in value:
-            if not isinstance(val, tuple(valid)):
+            if not any([t == type(val) for t in valid]):
                 valid_names = [t.__name__ for t in valid if hasattr(t, "__name__")]
                 type_name = type(val).__name__
 

@@ -17,8 +17,11 @@
 
 import pytest
 
-from geoh5py.shared.exceptions import AggregateValidationError, TypeValidationError
-from geoh5py.ui_json.exceptions import UIJsonFormatError
+from geoh5py.shared.exceptions import (
+    AggregateValidationError,
+    TypeValidationError,
+    UIJsonFormatError,
+)
 from geoh5py.ui_json.templates import (
     BoolParameter,
     ChoiceStringParameter,
@@ -42,37 +45,30 @@ def test_parameter():
         param.validate()
 
 
-def test_form_parameter():
+def test_form_parameter_validate():
 
-    # Properly create a form parameter.
     param = FormParameter(
         "param",
-        {"label": "my param", "value": "goodvalue"},
+        {"label": "my param", "value": 1, "optional": "whoops"},
         {"types": [str]},
     )
-    param.validate()
-    # Confirm that validations of the value member are postponed.
-    param = FormParameter(
-        "param",
-        {"label": "my param", "value": "badvalue"},
-        {"types": [int]},
-    )
-    param.validate()
-    # Catch invalid form member.
+    # Test form validations
     with pytest.raises(UIJsonFormatError) as excinfo:
-        param = FormParameter(
-            "param",
-            {"label": "my param", "value": "goodvalue", "optional": "whoops"},
-            {"types": [str]},
-        )
         param.validate()
     assert all(n in str(excinfo.value) for n in ["'param'", "'str'", "'optional'"])
 
-    # Catch incomplete form.
-    with pytest.raises(UIJsonFormatError) as excinfo:
-        param = FormParameter("param", {"value": "goodvalue"}, {"types": [str]})
-        param.validate()
-    assert all(v in str(excinfo.value) for v in ["Missing required", "Type 'NoneType'"])
+    # Test value validation
+    with pytest.raises(TypeValidationError) as excinfo:
+        param.validate(level="value")
+    assert all(n in str(excinfo.value) for n in ["'int'", "'value'", "'str'"])
+
+    # Aggregate form and value validations
+    with pytest.raises(AggregateValidationError) as excinfo:
+        param.validate(level="all")
+    assert all(
+        n in str(excinfo.value)
+        for n in ["'param'", "2 error", "0. Type 'int'", "1. Invalid UIJson"]
+    )
 
 
 def test_string_parameter():
@@ -81,6 +77,12 @@ def test_string_parameter():
         {"label": "inversion type", "value": "gravity"},
         {"required": True, "types": [str], "values": ["gravity"]},
     )
+    assert True
+
+
+def test_something():
+    test = Parameter("me", 2, {})
+    test.__str__()
     assert True
 
 

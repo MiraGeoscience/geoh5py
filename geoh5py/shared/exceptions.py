@@ -39,6 +39,22 @@ class BaseValidationError(ABC, Exception):
         raise NotImplementedError()
 
 
+class JSONParameterValidationError(Exception):
+    """Error on uuid validation."""
+
+    def __init__(self, name: str, err: str):
+        super().__init__(JSONParameterValidationError.message(name, err))
+
+    @staticmethod
+    def message(name, err):
+        return f"Malformed ui.json dictionary for parameter '{name}'. {err}"
+
+
+class UIJsonFormatError(BaseValidationError):
+    def __init__(self, name, msg):
+        super().__init__(f"Invalid UIJson format for parameter '{name}'. {msg}")
+
+
 class AggregateValidationError(BaseValidationError):
     def __init__(
         self,
@@ -50,7 +66,7 @@ class AggregateValidationError(BaseValidationError):
 
     @staticmethod
     def message(name, value, validation):
-        msg = f"\n\nValidation of {name} collected {len(value)} errors:\n"
+        msg = f"\n\nValidation of '{name}' collected {len(value)} errors:\n"
         for i, err in enumerate(value):
             msg += f"\t{i}. {str(err)}\n"
         return msg

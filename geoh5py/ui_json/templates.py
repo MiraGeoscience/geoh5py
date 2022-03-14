@@ -23,8 +23,11 @@ import inspect
 from typing import Any
 from uuid import UUID
 
-from geoh5py.shared.exceptions import BaseValidationError
-from geoh5py.ui_json.exceptions import UIJsonFormatError
+from geoh5py.shared.exceptions import (
+    AggregateValidationError,
+    BaseValidationError,
+    UIJsonFormatError,
+)
 from geoh5py.ui_json.validation import Validations
 
 from .. import objects
@@ -88,6 +91,12 @@ class Parameter:
     def validate(self):
         self.validations.validate(self.name, self.value)
 
+    def __str__(self):
+        return f"{type(self)} : '{self.name}' -> {self.value}"
+
+    def __repr__(self):
+        return self.__str__()
+
 
 class FormParameter:
 
@@ -103,6 +112,7 @@ class FormParameter:
         "dependencyType": {"values": ["enabled", "disabled", "show", "hide"]},
         "groupDependency": {"types": [str, type(None)]},
         "groupDependencyType": {"values": ["enabled", "disabled", "show", "hide"]},
+        "tooltip": {"types": [str, type(None)]},
     }
     valid_members = list(form_validations.keys())
     identifier_members = []
@@ -155,18 +165,47 @@ class FormParameter:
                     Parameter(member, value, self.form_validations[member]),
                 )
 
-    def validate(self):
-        for member in self.valid_members:
-            if member != "value":
+    def _validate_value(self):
+        self._value.validate()
+
+    def _validate_form(self):
+        for member in [k for k in self.valid_members if k != "value"]:
+            try:
+                getattr(self, member).validate()
+            except BaseValidationError as err:
+                raise UIJsonFormatError(self.name, str(err))
+
+    def validate(self, level="form"):
+
+        if level == "form":
+            self._validate_form()
+        elif level == "value":
+            self._validate_value()
+        elif level == "all":
+            error_list = []
+            for validate_method in ["_validate_value", "_validate_form"]:
                 try:
-                    getattr(self, member).validate()
+                    getattr(self, validate_method)()
                 except BaseValidationError as err:
-                    raise UIJsonFormatError(self.name, str(err))
+                    error_list.append(err)
+
+            if len(error_list) > 1:
+                raise AggregateValidationError(self.name, error_list, None)
+        else:
+            raise ValueError(
+                "Argument 'level' must be one of: 'all', 'form', or 'value'."
+            )
 
     @classmethod
     def is_form(cls, form):
         id_members = cls.identifier_members
         return any(k in form for k in id_members)
+
+    def __str__(self):
+        return f"{type(self)} : '{self.name}' -> {self.value}"
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class StringParameter(FormParameter):
@@ -189,8 +228,8 @@ class IntegerParameter(FormParameter):
 
     base_validations = {"types": [int]}
     integer_form_validations = {
-        "min": {"types": [float, type(None)]},
-        "max": {"types": [float, type(None)]},
+        "min": {"types": [int, type(None)]},
+        "max": {"types": [int, type(None)]},
     }
     form_validations = dict(FormParameter.form_validations, **integer_form_validations)
     valid_members = list(form_validations.keys())
@@ -280,7 +319,7 @@ class ObjectParameter(FormParameter):
 
 class DataParameter(FormParameter):
 
-    base_validations = {"types": [str, UUID]}
+    base_validations = {"types": [str, UUID, type(None)]}
     data_validations = {
         "parent": {"required": True, "types": [str]},
         "association": {"required": True, "values": ["Vertex", "Cell"]},
@@ -335,13 +374,18 @@ class DataValueParameter(FormParameter):
             self._value = Parameter("value", val, self.validations)
             self.isValue = Parameter("isValue", True, self.form_validations["isValue"])
 
-    def validate(self):
-        for member in self.valid_members:
-            if member not in ["value", "property"]:
-                try:
-                    getattr(self, member).validate()
-                except BaseValidationError as err:
-                    pass
+    def _validate_value(self):
+        if self.isValue:
+            self._value.validate()
+        else:
+            self.property.validate()
+
+    def _validate_form(self):
+        for member in [k for k in self.valid_members if k not in ["value", "property"]]:
+            try:
+                getattr(self, member).validate()
+            except BaseValidationError as err:
+                raise UIJsonFormatError(self.name, str(err))
 
 
 class UIJson:
@@ -373,12 +417,18 @@ class UIJson:
     def values(self):
         return {k: p.value for k, p in self.parameters.items()}
 
-    def validate(self):
+    def validate(self, level="form"):
+        error_list = []
         for parameter in self.parameters.values():
-            if isinstance(parameter, Parameter):
-                parameter.validate()
-            else:
-                parameter.value.validate()
+            kwargs = {} if isinstance(parameter, Parameter) else {"level": level}
+            try:
+                parameter.validate(**kwargs)
+            except BaseValidationError as err:
+                error_list.append(err)
+
+        if len(error_list) == 1:
+            raise error_list.pop()
+        raise AggregateValidationError("test", error_list, None)
 
     @staticmethod
     def _parameter_class(parameter):
@@ -392,12 +442,18 @@ class UIJson:
     def _possible_parameter_classes(parameter):
         filtered_candidates = []
         candidates = FormParameter.__subclasses__()
+        basic_candidates = [
+            StringParameter,
+            IntegerParameter,
+            FloatParameter,
+            BoolParameter,
+        ]
         base_members = FormParameter.valid_members
         for candidate in candidates:
             possible_members = set(candidate.valid_members).difference(base_members)
             if any(k in possible_members for k in parameter):
                 filtered_candidates.append(candidate)
-        return filtered_candidates if filtered_candidates else candidates
+        return filtered_candidates if filtered_candidates else basic_candidates
 
     @staticmethod
     def identify(parameter):
@@ -412,7 +468,7 @@ class UIJson:
                 for candidate in possibilities:
                     try:
                         obj = candidate("test", parameter, {})
-                        obj._value.validate()
+                        obj.validate("value")
                         winner = candidate
                     except BaseValidationError:
                         pass
