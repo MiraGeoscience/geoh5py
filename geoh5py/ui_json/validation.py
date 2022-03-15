@@ -224,7 +224,16 @@ class InputValidation:
 
             validations = self.validations[name]
 
-        for val in ["required", "optional", "uuid", "association", "types", "values"]:
+        for val in [
+            "required",
+            "optional",
+            "uuid",
+            "types",
+            "association",
+            "property_group_type",
+            "values",
+            "shape",
+        ]:
             if (
                 val not in validations
                 or (val == "required" and self.ignore_requirements)
