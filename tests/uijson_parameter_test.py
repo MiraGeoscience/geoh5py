@@ -43,10 +43,11 @@ def test_parameter():
     param = Parameter("param", "nogood", {"types": [int, float]})
     with pytest.raises(TypeValidationError):
         param.validate()
-    param = Parameter("param", "nogood", {"values": ["onlythis"], "types": [int, float]})
+    param = Parameter(
+        "param", "nogood", {"values": ["onlythis"], "types": [int, float]}
+    )
     with pytest.raises(AggregateValidationError):
         param.validate()
-
 
 
 def test_form_parameter_validate():
