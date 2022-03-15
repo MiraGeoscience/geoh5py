@@ -60,12 +60,11 @@ class AggregateValidationError(BaseValidationError):
         self,
         name: str,
         value: list[Exception],
-        validation: None,
     ):
-        super().__init__(AggregateValidationError.message(name, value, validation))
+        super().__init__(AggregateValidationError.message(name, value))
 
     @staticmethod
-    def message(name, value, validation):
+    def message(name, value, validation=None):
         msg = f"\n\nValidation of '{name}' collected {len(value)} errors:\n"
         for i, err in enumerate(value):
             msg += f"\t{i}. {str(err)}\n"

@@ -61,7 +61,7 @@ class Validations:
 
         if error_list:
             if len(error_list) > 1:
-                raise AggregateValidationError(name, error_list, None)
+                raise AggregateValidationError(name, error_list)
             raise error_list.pop()
 
 

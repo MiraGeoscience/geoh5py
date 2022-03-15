@@ -190,7 +190,7 @@ class FormParameter:
                     error_list.append(err)
 
             if len(error_list) > 1:
-                raise AggregateValidationError(self.name, error_list, None)
+                raise AggregateValidationError(self.name, error_list)
         else:
             raise ValueError(
                 "Argument 'level' must be one of: 'all', 'form', or 'value'."
@@ -428,7 +428,7 @@ class UIJson:
 
         if len(error_list) == 1:
             raise error_list.pop()
-        raise AggregateValidationError("test", error_list, None)
+        raise AggregateValidationError("test", error_list)
 
     @staticmethod
     def _parameter_class(parameter):
