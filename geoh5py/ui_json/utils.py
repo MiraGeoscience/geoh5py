@@ -142,9 +142,7 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
             is_group_optional = True
             enabled_change = False
             for form in group.values():
-                enabled_change |= (
-                    form["enabled"] if "enabled" in form else True
-                ) != value
+                enabled_change |= form.get("enabled", True) != value
                 form["enabled"] = value
 
     return is_group_optional and enabled_change
