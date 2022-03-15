@@ -514,7 +514,7 @@ def test_data_value_parameter_b(tmp_path):
 
     workspace = get_workspace(tmp_path)
     points_a = workspace.get_entity("Points_A")[0]
-    data_b = workspace.get_entity("values B")[0]
+    data_b = points_a.children[0]
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
     ui_json["object"] = templates.object_parameter(value=points_a.uid)
