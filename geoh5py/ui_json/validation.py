@@ -24,7 +24,17 @@ from uuid import UUID
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import RequiredValidationError
-from geoh5py.shared.validators import BaseValidator, TypeValidator
+from geoh5py.shared.validators import (
+    AssociationValidator,
+    BaseValidator,
+    OptionalValidator,
+    PropertyGroupValidator,
+    RequiredValidator,
+    ShapeValidator,
+    TypeValidator,
+    UUIDValidator,
+    ValueValidator,
+)
 from geoh5py.ui_json.utils import group_optional, optional_type
 from geoh5py.workspace import Workspace
 
@@ -224,16 +234,17 @@ class InputValidation:
 
             validations = self.validations[name]
 
-        for val in [
-            "required",
-            "optional",
-            "uuid",
-            "types",
-            "association",
-            "property_group_type",
-            "values",
-            "shape",
+        for validator in [
+            RequiredValidator,
+            OptionalValidator,
+            UUIDValidator,
+            TypeValidator,
+            AssociationValidator,
+            PropertyGroupValidator,
+            ValueValidator,
+            ShapeValidator,
         ]:
+            val = str(validator.validator_type)
             if (
                 val not in validations
                 or (val == "required" and self.ignore_requirements)
