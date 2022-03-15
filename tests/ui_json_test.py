@@ -74,6 +74,16 @@ def test_input_file_json():
 
     assert "Input 'ui_json' must be of type dict or None" in str(excinfo)
 
+    with pytest.raises(AttributeError) as excinfo:
+        InputFile().data = {"abc": 123}
+
+    assert "'ui_json' must be set before setting data." in str(excinfo)
+
+    with pytest.raises(UserWarning) as excinfo:
+        InputFile().update_ui_values({"abc": 123})
+
+    assert "InputFile requires a 'ui_json' to be defined." in str(excinfo)
+
     ui_json = {"test": 4}
     in_file = InputFile(ui_json=ui_json)
 
@@ -164,6 +174,12 @@ def test_integer_parameter(tmp_path):
     assert TypeValidationError.message("integer", "float", ["int"]) == str(
         excinfo.value
     )
+
+    data.pop("integer")
+    with pytest.raises(ValueError) as excinfo:
+        in_file.data = data
+
+    assert "The number of input values" in str(excinfo.value)  # raises if not a dir
 
     data["integer"] = 123
     in_file.data = data
@@ -493,7 +509,7 @@ def test_data_value_parameter_a(tmp_path):
     assert reload_input.data["data"] == 0.0
 
 
-@pytest.mark.skip(reason="Failing on github for unknown reason")
+# @pytest.mark.skip(reason="Failing on github for unknown reason")
 def test_data_value_parameter_b(tmp_path):
 
     workspace = get_workspace(tmp_path)
@@ -507,11 +523,18 @@ def test_data_value_parameter_b(tmp_path):
     )
 
     in_file = InputFile(ui_json=ui_json)
-    out_file = in_file.write_ui_json()
+    out_file = in_file.write_ui_json(name="test.ui.json", path=tmp_path)
     reload_input = InputFile.read_ui_json(out_file)
 
     assert reload_input.data["object"].uid == points_a.uid
     assert reload_input.data["data"].uid == data_b.uid
+
+    # Change data to float and re-write
+    reload_input.data["data"] = 123.0
+    reload_input.write_ui_json(name="test.ui.json", path=tmp_path)
+    reload_input = InputFile.read_ui_json(out_file)
+    assert reload_input.data["data"] == 123.0
+    assert reload_input.ui_json["data"]["isValue"]
 
 
 def test_data_parameter(tmp_path):
