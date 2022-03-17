@@ -17,11 +17,15 @@
 
 from __future__ import annotations
 
+from os import mkdir, path
+from shutil import move
+from time import time
 from typing import Any, Callable
 
 import numpy as np
 
 from geoh5py.groups import ContainerGroup
+from geoh5py.objects import ObjectBase
 from geoh5py.workspace import Workspace
 
 
@@ -132,7 +136,9 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
     :param parameter: Parameter name.
     :param value: Boolean value set to parameter's enabled member.
     """
-    ui_json[parameter]["enabled"] = value
+    if ui_json[parameter].get("optional", False):
+        ui_json[parameter]["enabled"] = value
+
     is_group_optional = False
     group_name = ui_json[parameter].get("group", False)
     if group_name:
@@ -255,3 +261,23 @@ def container_group2name(value):
     if isinstance(value, ContainerGroup):
         return value.name
     return value
+
+
+def monitored_update(monitoring_path, entity: ObjectBase, copy_children=True):
+    """
+    Create a temporary geoh5 file in the monitoring folder and export entity for update.
+
+    :param monitoring_path: Monitoring directory
+    :param entity: Entity to be updated
+    """
+    working_path = path.join(monitoring_path, ".working")
+    if not path.exists(working_path):
+        mkdir(working_path)
+
+    temp_geoh5 = f"temp{time():.3f}.geoh5"
+    temp_workspace = Workspace(path.join(working_path, temp_geoh5))
+    entity.copy(parent=temp_workspace, copy_children=copy_children)
+    move(
+        path.join(working_path, temp_geoh5),
+        path.join(monitoring_path, temp_geoh5),
+    )
