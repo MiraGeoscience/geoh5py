@@ -248,6 +248,9 @@ class InputFile:
                     else:
                         self.ui_json[key]["isValue"] = True
 
+                if (value is None) and (not self.ui_json[key].get("enabled", False)):
+                    continue
+
                 self.ui_json[key][member] = value
 
             else:
