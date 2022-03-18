@@ -20,64 +20,30 @@ from pathlib import Path
 
 import numpy as np
 
-from geoh5py.objects import Curve, Octree, Points, Surface
+from geoh5py.groups import ContainerGroup
+from geoh5py.objects import Points
 from geoh5py.shared.utils import compare_entities
+from geoh5py.ui_json.utils import monitored_directory_copy
 from geoh5py.workspace import Workspace
 
 
-def test_copy_entity():
-
-    # Generate a random cloud of points
-    n_data = 12
-    xyz = np.random.randn(n_data, 3)
-
-    # Create surface
-    cells = np.unique(np.random.randint(0, xyz.shape[0] - 1, (xyz.shape[0], 3)), axis=1)
-
-    objects = {
-        Points: {"name": "Something", "vertices": np.random.randn(n_data, 3)},
-        Surface: {
-            "name": "Surface",
-            "vertices": np.random.randn(n_data, 3),
-            "cells": cells,
-        },
-        Curve: {
-            "name": "Curve",
-            "vertices": np.random.randn(n_data, 3),
-        },
-        Octree: {
-            "origin": [0, 0, 0],
-            "u_count": 32,
-            "v_count": 16,
-            "w_count": 8,
-            "u_cell_size": 1.0,
-            "v_cell_size": 1.0,
-            "w_cell_size": 2.0,
-            "rotation": 45,
-        },
-    }
+def test_monitored_directory_copy():
+    xyz = np.random.randn(12, 3)
+    values = np.random.randn(12)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testProject.geoh5"
-
-        # Create a workspace
+        h5file_path = Path(tempdir) / r"testPoints.geoh5"
         workspace = Workspace(h5file_path)
-        for obj, kwargs in objects.items():
-            entity = obj.create(workspace, **kwargs)
+        group = ContainerGroup.create(workspace, name="groupee")
+        points = Points.create(workspace, parent=group, vertices=xyz, allow_move=False)
+        points.add_data({"DataValues": {"association": "VERTEX", "values": values}})
+        new_file = monitored_directory_copy(tempdir, points)
+        new_workspace = Workspace(new_file)
 
-            if getattr(entity, "vertices", None) is not None:
-                values = np.random.randn(entity.n_vertices)
-            else:
-                values = np.random.randn(entity.n_cells)
+        assert (
+            len(new_workspace.get_entity("groupee")) == 0
+        ), "Parental group should not have been copied."
 
-            entity.add_data({"DataValues": {"values": values}})
-
-        workspace = Workspace(h5file_path)
-        new_workspace = Workspace(Path(tempdir) / r"testProject_2.geoh5")
-        for entity in workspace.objects:
-            entity.copy(parent=new_workspace)
-
-        # workspace = Workspace(h5file_path)
         for entity in workspace.objects:
 
             # Read the data back in from a fresh workspace
@@ -86,3 +52,8 @@ def test_copy_entity():
 
             compare_entities(entity, rec_entity, ignore=["_parent"])
             compare_entities(entity.children[0], rec_data, ignore=["_parent"])
+
+        new_file = monitored_directory_copy(tempdir, points, copy_children=False)
+        new_workspace = Workspace(new_file)
+
+        assert len(new_workspace.data) == 0, "Child data should not have been copied."

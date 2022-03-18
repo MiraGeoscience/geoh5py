@@ -271,14 +271,17 @@ def container_group2name(value):
     return value
 
 
-def monitored_update(monitoring_path, entity: ObjectBase, copy_children=True):
+def monitored_directory_copy(
+    directory: str, entity: ObjectBase, copy_children: bool = True
+):
     """
-    Create a temporary geoh5 file in the monitoring folder and export entity for update.
+    Create a temporary *.geoh5 file in the monitoring folder and export entity for update.
 
-    :param monitoring_path: Monitoring directory
+    :param directory: Monitoring directory
     :param entity: Entity to be updated
+    :param copy_children: Option to copy children entities.
     """
-    working_path = path.join(monitoring_path, ".working")
+    working_path = path.join(directory, ".working")
     if not path.exists(working_path):
         mkdir(working_path)
 
@@ -287,5 +290,7 @@ def monitored_update(monitoring_path, entity: ObjectBase, copy_children=True):
     entity.copy(parent=temp_workspace, copy_children=copy_children)
     move(
         path.join(working_path, temp_geoh5),
-        path.join(monitoring_path, temp_geoh5),
+        path.join(directory, temp_geoh5),
     )
+
+    return path.join(directory, temp_geoh5)
