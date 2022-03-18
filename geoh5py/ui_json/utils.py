@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import warnings
 from os import mkdir, path
 from shutil import move
 from time import time
@@ -150,6 +151,13 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
             for form in group.values():
                 enabled_change |= form.get("enabled", True) != value
                 form["enabled"] = value
+
+    if (not value) and not (
+        ui_json[parameter].get("optional", False) or is_group_optional
+    ):
+        warnings.warn(
+            f"Non-option parameter '{parameter}' cannot be set to 'enabled' False "
+        )
 
     return is_group_optional and enabled_change
 

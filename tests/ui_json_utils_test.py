@@ -17,6 +17,8 @@
 
 from copy import deepcopy
 
+import pytest
+
 from geoh5py.ui_json import templates
 from geoh5py.ui_json.constants import default_ui_json
 from geoh5py.ui_json.utils import (
@@ -69,12 +71,10 @@ def test_collect():
     ui_json["integer_parameter"] = templates.integer_parameter(optional="enabled")
     enabled_params = collect(ui_json, "enabled", value=True)
     assert len(enabled_params) == 2
-    assert all(
-        k in enabled_params.keys() for k in ["string_parameter", "integer_parameter"]
-    )
+    assert all(k in enabled_params for k in ["string_parameter", "integer_parameter"])
     tooltip_params = collect(ui_json, "tooltip")
     assert len(tooltip_params) == 1
-    assert "run_command_boolean" in tooltip_params.keys()
+    assert "run_command_boolean" in tooltip_params
 
 
 def test_group_optional():
@@ -151,6 +151,14 @@ def test_set_enabled():
     # Remove the groupOptional member and check that set_enabled
     # Affects the enabled status of the calling parameter
     ui_json["string_parameter"].pop("groupOptional")
+    with pytest.warns(UserWarning) as warn:
+        set_enabled(ui_json, "float_parameter", False)
+
+    assert (
+        "Non-option parameter 'float_parameter' cannot be set to 'enabled' " "False "
+    ) in str(warn[0])
+
+    ui_json["float_parameter"]["optional"] = True
     is_group_optional = set_enabled(ui_json, "float_parameter", False)
     assert not ui_json["float_parameter"]["enabled"]
     assert ui_json["string_parameter"]["enabled"]
