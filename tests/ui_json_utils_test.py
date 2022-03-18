@@ -69,12 +69,10 @@ def test_collect():
     ui_json["integer_parameter"] = templates.integer_parameter(optional="enabled")
     enabled_params = collect(ui_json, "enabled", value=True)
     assert len(enabled_params) == 2
-    assert all(
-        k in enabled_params.keys() for k in ["string_parameter", "integer_parameter"]
-    )
+    assert all(k in enabled_params for k in ["string_parameter", "integer_parameter"])
     tooltip_params = collect(ui_json, "tooltip")
     assert len(tooltip_params) == 1
-    assert "run_command_boolean" in tooltip_params.keys()
+    assert "run_command_boolean" in tooltip_params
 
 
 def test_group_optional():
@@ -152,7 +150,7 @@ def test_set_enabled():
     # Affects the enabled status of the calling parameter
     ui_json["string_parameter"].pop("groupOptional")
     is_group_optional = set_enabled(ui_json, "float_parameter", False)
-    assert not ui_json["float_parameter"]["enabled"]
+    assert ui_json["float_parameter"]["enabled"]
     assert ui_json["string_parameter"]["enabled"]
     assert ui_json["integer_parameter"]["enabled"]
     assert not is_group_optional

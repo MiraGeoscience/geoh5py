@@ -486,7 +486,7 @@ def test_write_ui_json(tmp_path):
     print(in_file.data)
     with open(path.join(tmp_path, "test_write.ui.json"), encoding="utf-8") as file:
         ui_json = json.load(file)
-        assert ui_json["test"]["value"] == ""
+        assert ui_json["test"]["value"] == 1.0
 
 
 def test_data_value_parameter_a(tmp_path):
