@@ -17,6 +17,8 @@
 
 from copy import deepcopy
 
+import pytest
+
 from geoh5py.ui_json import templates
 from geoh5py.ui_json.constants import default_ui_json
 from geoh5py.ui_json.utils import (
@@ -149,8 +151,16 @@ def test_set_enabled():
     # Remove the groupOptional member and check that set_enabled
     # Affects the enabled status of the calling parameter
     ui_json["string_parameter"].pop("groupOptional")
+    with pytest.warns(UserWarning) as warn:
+        set_enabled(ui_json, "float_parameter", False)
+
+    assert (
+        "Non-option parameter 'float_parameter' cannot be set to 'enabled' " "False "
+    ) in str(warn[0])
+
+    ui_json["float_parameter"]["optional"] = True
     is_group_optional = set_enabled(ui_json, "float_parameter", False)
-    assert ui_json["float_parameter"]["enabled"]
+    assert not ui_json["float_parameter"]["enabled"]
     assert ui_json["string_parameter"]["enabled"]
     assert ui_json["integer_parameter"]["enabled"]
     assert not is_group_optional
