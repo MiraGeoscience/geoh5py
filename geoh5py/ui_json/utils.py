@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import Any, Callable
 
 import numpy as np
@@ -132,7 +133,9 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
     :param parameter: Parameter name.
     :param value: Boolean value set to parameter's enabled member.
     """
-    ui_json[parameter]["enabled"] = value
+    if ui_json[parameter].get("optional", False):
+        ui_json[parameter]["enabled"] = value
+
     is_group_optional = False
     group_name = ui_json[parameter].get("group", False)
     if group_name:
@@ -140,10 +143,19 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
         parameters = find_all(group, "groupOptional")
         if parameters:
             is_group_optional = True
+            enabled_change = False
             for form in group.values():
+                enabled_change |= form.get("enabled", True) != value
                 form["enabled"] = value
 
-    return is_group_optional
+    if (not value) and not (
+        ui_json[parameter].get("optional", False) or is_group_optional
+    ):
+        warnings.warn(
+            f"Non-option parameter '{parameter}' cannot be set to 'enabled' False "
+        )
+
+    return is_group_optional and enabled_change
 
 
 def truth(ui_json: dict[str, dict], name: str, member: str) -> bool:

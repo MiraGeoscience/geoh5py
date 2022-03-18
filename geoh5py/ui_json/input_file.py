@@ -97,6 +97,15 @@ class InputFile:
             if not isinstance(value, dict):
                 raise ValueError("Input 'data' must be of type dict or None.")
 
+            if self._ui_json is None:
+                raise AttributeError("'ui_json' must be set before setting data.")
+
+            if len(value) != len(self._ui_json):
+                raise ValueError(
+                    "The number of input values for 'data' must "
+                    "equal the number of parameters in 'ui_json'."
+                )
+
             if "geoh5" in value:
                 self.workspace = value["geoh5"]
 
@@ -156,11 +165,11 @@ class InputFile:
         return None
 
     @staticmethod
-    def read_ui_json(json_file: str):
+    def read_ui_json(json_file: str, **kwargs):
         """
         Read and create an InputFile from *.ui.json
         """
-        input_file = InputFile()
+        input_file = InputFile(**kwargs)
 
         if "ui.json" not in json_file:
             raise ValueError("Input file should have the extension *.ui.json")
@@ -184,7 +193,7 @@ class InputFile:
             if not isinstance(value, dict):
                 raise ValueError("Input 'ui_json' must be of type dict or None.")
 
-            self._ui_json = self._numify(value)
+            self._ui_json = self.numify(value)
             default_validations = InputValidation.infer_validations(self._ui_json)
             for key, validations in default_validations.items():
                 if key in self.validations:
@@ -224,8 +233,8 @@ class InputFile:
                 else:
                     enabled = True
 
-                was_group = set_enabled(self.ui_json, key, enabled)
-                if was_group:
+                was_group_enabled = set_enabled(self.ui_json, key, enabled)
+                if was_group_enabled:
                     warnings.warn(
                         f"Setting all member of group: {self.ui_json[key]['group']} "
                         f"to enabled: {enabled}."
@@ -238,6 +247,9 @@ class InputFile:
                         member = "property"
                     else:
                         self.ui_json[key]["isValue"] = True
+
+                if (value is None) and (not self.ui_json[key].get("enabled", False)):
+                    continue
 
                 self.ui_json[key][member] = value
 
@@ -359,14 +371,14 @@ class InputFile:
         return var
 
     @classmethod
-    def _numify(cls, var: dict[str, Any]) -> dict[str, Any]:
+    def numify(cls, ui_json: dict[str, Any]) -> dict[str, Any]:
         """
         Convert inf, none and list strings to numerical types within a dictionary
 
         Parameters
         ----------
 
-        var :
+        ui_json :
             dictionary containing ui.json keys, values, fields
 
         Returns
@@ -374,23 +386,26 @@ class InputFile:
         Dictionary with inf, none and list string representations converted numerical types.
 
         """
-        for key, value in var.items():
+        if not isinstance(ui_json, dict):
+            raise ValueError("Input value for 'numify' must be a ui_json dictionary.")
+
+        for key, value in ui_json.items():
             if isinstance(value, dict):
                 try:
                     cls.ui_validation(value)
                 except tuple(BaseValidationError.__subclasses__()) as error:
                     raise JSONParameterValidationError(key, error.args[0]) from error
 
-                value = cls._numify(value)
+                value = cls.numify(value)
 
             mappers = (
                 [str2none, str2inf, str2uuid, path2workspace]
                 if key == "ignore_values"
                 else [str2list, str2none, str2inf, str2uuid, path2workspace]
             )
-            var[key] = dict_mapper(value, mappers)
+            ui_json[key] = dict_mapper(value, mappers)
 
-        return var
+        return ui_json
 
     def _demote(self, var: dict[str, Any]) -> dict[str, str]:
         """Converts promoted parameter values to their string representations."""

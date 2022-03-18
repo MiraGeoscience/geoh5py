@@ -24,7 +24,17 @@ from uuid import UUID
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import RequiredValidationError
-from geoh5py.shared.validators import BaseValidator, TypeValidator
+from geoh5py.shared.validators import (
+    AssociationValidator,
+    BaseValidator,
+    OptionalValidator,
+    PropertyGroupValidator,
+    RequiredValidator,
+    ShapeValidator,
+    TypeValidator,
+    UUIDValidator,
+    ValueValidator,
+)
 from geoh5py.ui_json.utils import group_optional, optional_type
 from geoh5py.workspace import Workspace
 
@@ -170,7 +180,7 @@ class InputValidation:
                     "types": [check_type],
                 }
 
-            validations[key].update({"optional": [optional_type(ui_json, key)]})
+            validations[key].update({"optional": optional_type(ui_json, key)})
 
             if (
                 item.get("optional") or group_optional(ui_json, item.get("group", ""))
@@ -224,14 +234,25 @@ class InputValidation:
 
             validations = self.validations[name]
 
-        for val, args in validations.items():
-
+        for validator in [
+            RequiredValidator,
+            OptionalValidator,
+            UUIDValidator,
+            TypeValidator,
+            AssociationValidator,
+            PropertyGroupValidator,
+            ValueValidator,
+            ShapeValidator,
+        ]:
+            val = str(validator.validator_type)
             if (
-                val == "required" and self.ignore_requirements
-            ) or name in self.ignore_list:
+                val not in validations
+                or (val == "required" and self.ignore_requirements)
+                or name in self.ignore_list
+            ):
                 continue
 
-            self.validators[val](name, value, args)
+            self.validators[val](name, value, validations[val])
 
     def validate_data(self, data: dict[str, Any]) -> None:
         """
