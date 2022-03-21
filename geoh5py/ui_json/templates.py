@@ -39,37 +39,6 @@ known_types = [
     if hasattr(member, "default_type_uid") and member.default_type_uid() is not None
 ]
 
-extra_validations = {
-    "min": {"types": [int, float, type(None)]},
-    "max": {"types": [int, float, type(None)]},
-    "choiceList": {"types": [list, type(None)]},
-    "meshType": {"types": [str, type(None)], "uuid": None},
-    "dataType": {
-        "values": [
-            "Integer",
-            "Float",
-            "Text",
-            "Referenced",
-            "Filename",
-            "Blob",
-            "Vector",
-            "DateTime",
-            "Geometric",
-            "Boolean",
-        ]
-    },
-    "association": {"values": ["Vertex", "Cell", "Face"]},
-    "parent": {"types": [str, type(None)]},
-    "isValue": {"types": [bool, type(None)]},
-    "property": {"types": [str, type(None)], "uuid": None},
-    "dataGroupType": {
-        "values": ["Multi-element", "3D vector", "Dip direction & dip", "Strike & dip"]
-    },
-    "filetype": {"types": [str, type(None)]},
-    "fileDescription": {"types": [str, type(None)]},
-    "fileMulti": {"types": [bool, type(None)]},
-}
-
 
 class Parameter:
     def __init__(self, name, value, validations):
@@ -92,10 +61,7 @@ class Parameter:
         self.validations.validate(self.name, self.value)
 
     def __str__(self):
-        return f"{type(self)} : '{self.name}' -> {self.value}"
-
-    def __repr__(self):
-        return self.__str__()
+        return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
 
 
 class FormParameter:
@@ -139,7 +105,7 @@ class FormParameter:
             if name == "value":
                 member = self._value.value
             else:
-                member = getattr(self, name).value
+                member = getattr(self, f"_{name}").value
 
             is_required = self.form_validations[name].get("required", False)
             if member is None and not is_required:
@@ -161,7 +127,7 @@ class FormParameter:
                 value = val.get(member, None)
                 setattr(
                     self,
-                    member,
+                    f"_{member}",
                     Parameter(member, value, self.form_validations[member]),
                 )
 
@@ -202,10 +168,7 @@ class FormParameter:
         return any(k in form for k in id_members)
 
     def __str__(self):
-        return f"{type(self)} : '{self.name}' -> {self.value}"
-
-    def __repr__(self):
-        return self.__str__()
+        return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
 
 
 class StringParameter(FormParameter):
