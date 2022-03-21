@@ -380,6 +380,16 @@ class UIJson:
     def values(self):
         return {k: p.value for k, p in self.parameters.items()}
 
+    @property
+    def forms(self):
+        val = {}
+        for name, parameter in self.parameters.items():
+            if isinstance(parameter, Parameter):
+                val[name] = parameter.value
+            else:
+                val[name] = parameter.form
+        return val
+
     def validate(self, level="form"):
         error_list = []
         for parameter in self.parameters.values():
