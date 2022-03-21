@@ -105,7 +105,7 @@ class FormParameter:
             if name == "value":
                 member = self._value.value
             else:
-                member = getattr(self, f"_{name}").value
+                member = getattr(self, name).value
 
             is_required = self.form_validations[name].get("required", False)
             if member is None and not is_required:
@@ -127,7 +127,7 @@ class FormParameter:
                 value = val.get(member, None)
                 setattr(
                     self,
-                    f"_{member}",
+                    member,
                     Parameter(member, value, self.form_validations[member]),
                 )
 
