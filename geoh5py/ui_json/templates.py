@@ -97,7 +97,6 @@ class FormParameter:
     def value(self, val):
         self._value = Parameter("value", val, self.validations)
 
-
     @property
     def form(self):
 
@@ -353,15 +352,12 @@ class DataValueParameter(FormParameter):
 
 
 class UIJson:
-
-
     def __init__(self, parameters, validations=None):
 
         self.validations = {} if validations is None else validations
         self.parameters: dict[
             str, Parameter | FormParameter | dict[str, Any]
         ] = parameters
-
 
     @property
     def parameters(self):
@@ -379,7 +375,6 @@ class UIJson:
                 val[name] = Parameter(name, value, self.validations.get(name, {}))
 
         self._parameters = val
-
 
     @property
     def values(self):
