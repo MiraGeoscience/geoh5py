@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,8 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import uuid
-from typing import Optional, Tuple
 
 import numpy as np
 
@@ -60,9 +61,6 @@ class Octree(ObjectBase):
         self._octree_cells = None
         self._centroids = None
         super().__init__(object_type, **kwargs)
-
-        if object_type.name == "None":
-            self.entity_type.name = "Octree"
 
         object_type.workspace._register_object(self)
 
@@ -161,7 +159,7 @@ class Octree(ObjectBase):
         return cls.__TYPE_UID
 
     @property
-    def n_cells(self) -> Optional[int]:
+    def n_cells(self) -> int | None:
         """
         :obj:`int`: Total number of cells in the mesh
         """
@@ -170,7 +168,7 @@ class Octree(ObjectBase):
         return None
 
     @property
-    def octree_cells(self) -> Optional[np.ndarray]:
+    def octree_cells(self) -> np.ndarray | None:
         """
         :obj:`numpy.ndarray` of :obj:`int`,
         shape (:obj:`~geoh5py.objects.octree.Octree.n_cells`, 4):
@@ -197,18 +195,28 @@ class Octree(ObjectBase):
 
     @octree_cells.setter
     def octree_cells(self, value):
+
         if value is not None:
-            value = np.vstack(value)
+            dtypes = [("I", "<i4"), ("J", "<i4"), ("K", "<i4"), ("NCells", "<i4")]
+            if len(value.dtype) > 1:
+                dtype = np.dtype(dtypes)
+                assert (
+                    value.dtype == dtype
+                ), f"Input of type {np.ndarray} must be of {dtype}"
+                self._octree_cells = value
+            else:
+                value = np.vstack(value)
+                assert (
+                    value.shape[1] == 4
+                ), "'octree_cells' requires an ndarray of shape (*, 4)"
+                self.modified_attributes = "octree_cells"
+                self._centroids = None
 
-            assert (
-                value.shape[1] == 4
-            ), "'octree_cells' requires an ndarray of shape (*, 4)"
-            self.modified_attributes = "octree_cells"
-            self._centroids = None
-
-            self._octree_cells = np.core.records.fromarrays(
-                value.T, names="I, J, K, NCells", formats="<i4, <i4, <i4, <i4"
-            )
+                self._octree_cells = np.asarray(
+                    np.core.records.fromarrays(
+                        value.T, names="I, J, K, NCells", formats="<i4, <i4, <i4, <i4"
+                    )
+                )
 
     @property
     def origin(self):
@@ -251,7 +259,7 @@ class Octree(ObjectBase):
             self._rotation = value.astype(float)
 
     @property
-    def shape(self) -> Optional[Tuple]:
+    def shape(self) -> tuple | None:
         """
         :obj:`list` of :obj:`int`, len (3, ): Number of cells along the u, v and w-axis.
         """
@@ -264,7 +272,7 @@ class Octree(ObjectBase):
         return None
 
     @property
-    def u_cell_size(self) -> Optional[float]:
+    def u_cell_size(self) -> float | None:
         """
         :obj:`float`: Base cell size along the u-axis.
         """
@@ -281,7 +289,7 @@ class Octree(ObjectBase):
             self._u_cell_size = value.astype(float)
 
     @property
-    def u_count(self) -> Optional[int]:
+    def u_count(self) -> int | None:
         """
         :obj:`int`: Number of cells along u-axis.
         """
@@ -298,7 +306,7 @@ class Octree(ObjectBase):
             self._u_count = int(value)
 
     @property
-    def v_cell_size(self) -> Optional[float]:
+    def v_cell_size(self) -> float | None:
         """
         :obj:`float`: Base cell size along the v-axis.
         """
@@ -315,7 +323,7 @@ class Octree(ObjectBase):
             self._v_cell_size = value.astype(float)
 
     @property
-    def v_count(self) -> Optional[int]:
+    def v_count(self) -> int | None:
         """
         :obj:`int`: Number of cells along v-axis.
         """
@@ -332,7 +340,7 @@ class Octree(ObjectBase):
             self._v_count = int(value)
 
     @property
-    def w_cell_size(self) -> Optional[float]:
+    def w_cell_size(self) -> float | None:
         """
         :obj:`float`: Base cell size along the w-axis.
         """
@@ -349,7 +357,7 @@ class Octree(ObjectBase):
             self._w_cell_size = value.astype(float)
 
     @property
-    def w_count(self) -> Optional[int]:
+    def w_count(self) -> int | None:
         """
         :obj:`int`: Number of cells along w-axis.
         """

@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,8 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import uuid
-from typing import Optional, Tuple
 
 import numpy as np
 
@@ -52,7 +53,7 @@ class Grid2D(ObjectBase):
 
     def __init__(self, object_type: ObjectType, **kwargs):
 
-        self._origin = [0, 0, 0]
+        self._origin = np.array([0, 0, 0])
         self._u_cell_size = None
         self._v_cell_size = None
         self._u_count = None
@@ -60,17 +61,14 @@ class Grid2D(ObjectBase):
         self._rotation = 0.0
         self._vertical = False
         self._dip = 0.0
-        self._centroids = None
+        self._centroids: np.ndarray | None = None
 
         super().__init__(object_type, **kwargs)
-
-        if object_type.name == "None":
-            self.entity_type.name = "Grid"
 
         object_type.workspace._register_object(self)
 
     @property
-    def cell_center_u(self) -> np.ndarray:
+    def cell_center_u(self) -> np.ndarray | None:
         """
         :obj:`numpy.array` of :obj:`float`, shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, ):
         Cell center local coordinate along the u-axis.
@@ -83,7 +81,7 @@ class Grid2D(ObjectBase):
         return None
 
     @property
-    def cell_center_v(self) -> np.ndarray:
+    def cell_center_v(self) -> np.ndarray | None:
         """
         :obj:`numpy.array` of :obj:`float` shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, ):
         The cell center local coordinate along the v-axis.
@@ -96,7 +94,7 @@ class Grid2D(ObjectBase):
         return None
 
     @property
-    def centroids(self) -> np.ndarray:
+    def centroids(self) -> np.ndarray | None:
         """
         :obj:`numpy.array` of :obj:`float`,
         shape (:obj:`~geoh5py.objects.grid2d.Grid2D.n_cells`, 3):
@@ -163,7 +161,7 @@ class Grid2D(ObjectBase):
             self._dip = value
 
     @property
-    def n_cells(self) -> Optional[int]:
+    def n_cells(self) -> int | None:
         """
         :obj:`int`: Total number of cells.
         """
@@ -213,7 +211,7 @@ class Grid2D(ObjectBase):
             self._rotation = value.astype(float)
 
     @property
-    def shape(self) -> Optional[Tuple]:
+    def shape(self) -> tuple | None:
         """
         :obj:`list` of :obj:`int`, len (2, ): Number of cells along the u and v-axis.
         """
@@ -222,7 +220,7 @@ class Grid2D(ObjectBase):
         return None
 
     @property
-    def u_cell_size(self) -> Optional[float]:
+    def u_cell_size(self) -> float | None:
         """
         :obj:`float`: Cell size along the u-axis.
         """
@@ -240,7 +238,7 @@ class Grid2D(ObjectBase):
             self._u_cell_size = value.astype(float)
 
     @property
-    def u_count(self) -> Optional[int]:
+    def u_count(self) -> int | None:
         """
         :obj:`int`: Number of cells along u-axis
         """
@@ -257,7 +255,7 @@ class Grid2D(ObjectBase):
             self._u_count = int(value)
 
     @property
-    def v_cell_size(self) -> Optional[float]:
+    def v_cell_size(self) -> float | None:
         """
         :obj:`float`: Cell size along the v-axis
         """
@@ -274,7 +272,7 @@ class Grid2D(ObjectBase):
             self._v_cell_size = value.astype(float)
 
     @property
-    def v_count(self) -> Optional[int]:
+    def v_count(self) -> int | None:
         """
         :obj:`int`: Number of cells along v-axis
         """
@@ -291,7 +289,7 @@ class Grid2D(ObjectBase):
             self._v_count = int(value)
 
     @property
-    def vertical(self) -> Optional[bool]:
+    def vertical(self) -> bool | None:
         """
         :obj:`bool`: Set the grid to be vertical.
         """

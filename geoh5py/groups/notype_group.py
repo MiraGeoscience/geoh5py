@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -21,7 +21,7 @@ from .group import Group, GroupType
 
 
 class NoTypeGroup(Group):
-    """ A group with no type."""
+    """A group with no type."""
 
     __TYPE_UID = uuid.UUID(
         fields=(0xDD99B610, 0xBE92, 0x48C0, 0x87, 0x3C, 0x5B5946EA2840)
@@ -33,6 +33,9 @@ class NoTypeGroup(Group):
     def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
+
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = "NoType Group"
 
         group_type.workspace._register_group(self)
 

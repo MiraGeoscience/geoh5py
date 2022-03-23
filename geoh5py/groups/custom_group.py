@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,8 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import uuid
-from typing import Optional
 
 from .group import Group, GroupType
 
@@ -31,9 +32,12 @@ class CustomGroup(Group):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
 
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = "Custom Group"
+
         group_type.workspace._register_group(self)
 
     @classmethod
-    def default_type_uid(cls) -> Optional[uuid.UUID]:
+    def default_type_uid(cls) -> uuid.UUID | None:
         raise RuntimeError(f"No predefined static type UUID for {cls}.")
         # return None

@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -28,6 +28,7 @@ from .filename_data import FilenameData
 from .float_data import FloatData
 from .geometric_data_constants import GeometricDataConstants
 from .integer_data import IntegerData
+from .numeric_data import NumericData
 from .primitive_type_enum import PrimitiveTypeEnum
 from .reference_value_map import ReferenceValueMap
 from .referenced_data import ReferencedData

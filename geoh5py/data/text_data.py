@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,8 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import json
-from typing import List, Optional
 
 from .data import Data
 from .primitive_type_enum import PrimitiveTypeEnum
@@ -28,7 +29,7 @@ class TextData(Data):
         return PrimitiveTypeEnum.TEXT
 
     @property
-    def values(self) -> Optional[str]:
+    def values(self) -> str | None:
         """
         :obj:`str` Text value.
         """
@@ -67,7 +68,7 @@ class CommentsData(Data):
         return PrimitiveTypeEnum.TEXT
 
     @property
-    def values(self) -> Optional[List[dict]]:
+    def values(self) -> list[dict] | None:
         """
         :obj:`list` List of comments
         """
@@ -75,7 +76,7 @@ class CommentsData(Data):
             comment_str = self.workspace.fetch_values(self.uid)
 
             if comment_str is not None:
-                self._values = json.loads(comment_str[0])["Comments"]
+                self._values = json.loads(comment_str)["Comments"]
 
         return self._values
 

@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -17,10 +17,8 @@
 
 # pylint: disable=unused-import
 # flake8: noqa
-
 from .block_model import BlockModel
-from .cell import Cell
-from .curve import Curve, SurveyAirborneMagnetics
+from .curve import Curve
 from .drillhole import Drillhole
 from .geo_image import GeoImage
 from .grid2d import Grid2D
@@ -31,4 +29,11 @@ from .object_type import ObjectType
 from .octree import Octree
 from .points import Points
 from .surface import Surface
-from .survey_location import SurveyLocation
+from .surveys.direct_current import CurrentElectrode, PotentialElectrode
+from .surveys.electromagnetics.airborne_tem import (
+    AirborneTEMReceivers,
+    AirborneTEMTransmitters,
+)
+from .surveys.electromagnetics.base import BaseEMSurvey
+from .surveys.electromagnetics.magnetotellurics import MTReceivers
+from .surveys.magnetics import AirborneMagnetics

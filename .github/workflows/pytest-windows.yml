@@ -2,17 +2,23 @@ name: pytest on Windows
 
 on:
   pull_request:
+    branches:
+      - develop
+      - main
+      - release/**
+      - feature/**
+      - hotfix/**
   push:
     branches:
-      - development
-      - master
+      - develop
+      - main
       - release/**
       - feature/**
       - hotfix/**
 
 jobs:
   pytest:
-    name: pytest
+    name: pytest (Windows)
     strategy:
       fail-fast: false
       matrix:
@@ -51,8 +57,7 @@ jobs:
     - name: pytest
       run: poetry run pytest --cov-report=xml --cov=geoh5py --cov-branch --cov-fail-under=80
     - name: Codecov
-      if: github.repository == 'mirageosience/geoh5py' && success() && matrix.python_ver == '3.7'
+      if: ${{ success() && matrix.python_ver == '3.7' }}
       uses: codecov/codecov-action@v1
       with:
         name: GitHub
-        token: ${{secrets.CODECOV_UPLOAD_TOKEN}}

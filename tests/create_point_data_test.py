@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -20,59 +20,53 @@ from pathlib import Path
 
 import numpy as np
 
+from geoh5py.io import H5Writer
 from geoh5py.objects import Points
-from geoh5py.shared import Entity, EntityType
+from geoh5py.shared import fetch_h5_handle
+from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
 def test_create_point_data():
 
-    name = "MyTestPointset"
     new_name = "TestName"
 
     # Generate a random cloud of points
-    n_data = 12
-    xyz = np.random.randn(n_data, 3)
-    values = np.random.randn(n_data)
+    xyz = np.random.randn(12, 3)
+    values = np.random.randn(12)
 
     with tempfile.TemporaryDirectory() as tempdir:
         h5file_path = Path(tempdir) / r"testPoints.geoh5"
-
-        # Create a workspace
         workspace = Workspace(h5file_path)
-
-        points = Points.create(workspace, vertices=xyz, name=name, allow_move=False)
-
+        points = Points.create(workspace, vertices=xyz, allow_move=False)
         data = points.add_data(
             {"DataValues": {"association": "VERTEX", "values": values}}
         )
-
+        tag = points.add_data(
+            {"my_comment": {"association": "OBJECT", "values": "hello_world"}}
+        )
         # Change some data attributes for testing
         data.allow_delete = False
         data.allow_move = True
         data.allow_rename = False
         data.name = new_name
-
+        # Fake ANALYST creating a StatsCache
+        with fetch_h5_handle(h5file_path) as h5file:
+            etype_handle = H5Writer.fetch_handle(h5file, data.entity_type)
+            etype_handle.create_group("StatsCache")
+        # Trigger replace of values
+        data.values = values * 2.0
         workspace.finalize()
-
         # Read the data back in from a fresh workspace
-        workspace = Workspace(h5file_path)
-
-        rec_obj = workspace.get_entity(name)[0]
-        rec_data = workspace.get_entity(new_name)[0]
-
-        def compare_objects(object_a, object_b):
-            for attr in object_a.__dict__.keys():
-                if attr in ["_workspace", "_children"]:
-                    continue
-                if isinstance(getattr(object_a, attr[1:]), (Entity, EntityType)):
-                    compare_objects(
-                        getattr(object_a, attr[1:]), getattr(object_b, attr[1:])
-                    )
-                else:
-                    assert np.all(
-                        getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
-                    ), f"Output attribute {attr[1:]} for {object_a} do not match input {object_b}"
-
-        compare_objects(points, rec_obj)
-        compare_objects(data, rec_data)
+        new_workspace = Workspace(h5file_path)
+        rec_obj = new_workspace.get_entity("Points")[0]
+        rec_data = new_workspace.get_entity(new_name)[0]
+        rec_tag = new_workspace.get_entity("my_comment")[0]
+        compare_entities(points, rec_obj)
+        compare_entities(data, rec_data)
+        compare_entities(tag, rec_tag)
+        with fetch_h5_handle(h5file_path) as h5file:
+            etype_handle = H5Writer.fetch_handle(h5file, rec_data.entity_type)
+            assert (
+                etype_handle.get("StatsCache") is None
+            ), "StatsCache was not properly deleted on update of values"

@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -21,7 +21,7 @@ from .group import Group, GroupType
 
 
 class DrillholeGroup(Group):
-    """ The type for the group containing drillholes."""
+    """The type for the group containing drillholes."""
 
     __TYPE_UID = uuid.UUID(
         fields=(0x825424FB, 0xC2C6, 0x4FEA, 0x9F, 0x2B, 0x6CD00023D393)
@@ -32,6 +32,9 @@ class DrillholeGroup(Group):
     def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
+
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = "Drillholes Group"
 
         group_type.workspace._register_group(self)
 

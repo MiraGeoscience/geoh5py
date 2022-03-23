@@ -1,124 +1,108 @@
-geoh5py.objects package
-=======================
+geoh5py.objects
+===============
 
-Submodules
-----------
+.. toctree::
+   :maxdepth: 4
 
-geoh5py.objects.block\_model module
------------------------------------
+   geoh5py.objects.surveys
+
+
+geoh5py.objects.block\_model
+----------------------------
 
 .. automodule:: geoh5py.objects.block_model
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.objects.cell module
----------------------------
-
-.. automodule:: geoh5py.objects.cell
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-geoh5py.objects.curve module
-----------------------------
+geoh5py.objects.curve
+---------------------
 
 .. automodule:: geoh5py.objects.curve
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.objects.drillhole module
---------------------------------
+geoh5py.objects.drillhole
+-------------------------
 
 .. automodule:: geoh5py.objects.drillhole
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.objects.geo\_image module
----------------------------------
+geoh5py.objects.geo\_image
+--------------------------
 
 .. automodule:: geoh5py.objects.geo_image
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.objects.grid2d module
------------------------------
+geoh5py.objects.grid2d
+----------------------
 
 .. automodule:: geoh5py.objects.grid2d
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.objects.label module
-----------------------------
+geoh5py.objects.label
+---------------------
 
 .. automodule:: geoh5py.objects.label
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.objects.notype\_object module
--------------------------------------
+geoh5py.objects.notype\_object
+------------------------------
 
 .. automodule:: geoh5py.objects.notype_object
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.objects.object\_base module
------------------------------------
+geoh5py.objects.object\_base
+----------------------------
 
 .. automodule:: geoh5py.objects.object_base
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.objects.object\_type module
------------------------------------
+geoh5py.objects.object\_type
+----------------------------
 
 .. automodule:: geoh5py.objects.object_type
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.objects.octree module
------------------------------
+geoh5py.objects.octree
+----------------------
 
 .. automodule:: geoh5py.objects.octree
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.objects.points module
------------------------------
+geoh5py.objects.points
+----------------------
 
 .. automodule:: geoh5py.objects.points
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.objects.surface module
-------------------------------
+geoh5py.objects.surface
+-----------------------
 
 .. automodule:: geoh5py.objects.surface
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.objects.survey\_location module
----------------------------------------
-
-.. automodule:: geoh5py.objects.survey_location
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Module contents
----------------
 
 .. automodule:: geoh5py.objects
    :members:

@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -21,7 +21,7 @@ from .group import Group, GroupType
 
 
 class ContainerGroup(Group):
-    """ The type for the basic Container group."""
+    """The type for the basic Container group."""
 
     __TYPE_UID = uuid.UUID(
         fields=(0x61FBB4E8, 0xA480, 0x11E3, 0x8D, 0x5A, 0x2776BDF4F982)
@@ -33,6 +33,9 @@ class ContainerGroup(Group):
     def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
+
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = "Container Group"
 
         group_type.workspace._register_group(self)
 

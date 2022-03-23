@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,8 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import uuid
-from typing import List, Optional, Union
 
 import numpy as np
 
@@ -30,21 +31,27 @@ class Curve(Points):
     connecting :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
     """
 
+    _attribute_map = Points._attribute_map.copy()
+    _attribute_map.update(
+        {
+            "Last focus": "last_focus",
+            "PropertyGroups": "property_groups",
+            "Current line property ID": "current_line_id",
+        }
+    )
+
     __TYPE_UID = uuid.UUID(
         fields=(0x6A057FDC, 0xB355, 0x11E3, 0x95, 0xBE, 0xFD84A7FFCB88)
     )
 
     def __init__(self, object_type: ObjectType, **kwargs):
 
-        self._cells: Optional[np.ndarray] = None
-        self._parts: Optional[np.ndarray] = None
+        self._cells: np.ndarray | None = None
+        self._parts: np.ndarray | None = None
         super().__init__(object_type, **kwargs)
 
-        if object_type.name == "None":
-            self.entity_type.name = "Curve"
-
     @property
-    def cells(self) -> Optional[np.ndarray]:
+    def cells(self) -> np.ndarray | None:
         r"""
         :obj:`numpy.ndarray` of :obj:`int`, shape (\*, 2):
         Array of indices defining segments connecting vertices. Defined based on
@@ -71,10 +78,34 @@ class Curve(Points):
 
     @cells.setter
     def cells(self, indices):
-        assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
+        assert np.issubdtype(
+            indices.dtype, np.integer
+        ), "Indices array must be of integer type"
         self.modified_attributes = "cells"
-        self._cells = indices
+        self._cells = indices.astype(np.int32)
         self._parts = None
+
+    @property
+    def current_line_id(self):
+
+        if getattr(self, "_current_line_id", None) is None:
+            self._current_line_id = uuid.uuid4()
+
+        return self._current_line_id
+
+    @current_line_id.setter
+    def current_line_id(self, value: uuid.UUID):
+
+        if isinstance(value, str):
+            value = uuid.UUID(value)
+
+        assert isinstance(value, uuid.UUID), (
+            f"Input current_line_id value should be of type {uuid.UUID}."
+            f" {type(value)} provided"
+        )
+
+        self._current_line_id = value
+        self.modified_attributes = "attributes"
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -110,7 +141,7 @@ class Curve(Points):
         return self._parts
 
     @parts.setter
-    def parts(self, indices: Union[List, np.ndarray]):
+    def parts(self, indices: list | np.ndarray):
         if self.vertices is not None:
             if isinstance(indices, list):
                 indices = np.asarray(indices, dtype="int32")
@@ -136,26 +167,3 @@ class Curve(Points):
             return np.unique(self.parts).tolist()
 
         return None
-
-
-class SurveyAirborneMagnetics(Curve):
-    """
-    An airborne magnetic survey object.
-
-    .. warning:: Partially implemented.
-
-    """
-
-    __TYPE_UID = uuid.UUID(
-        fields=(0x4B99204C, 0xD133, 0x4579, 0xA9, 0x16, 0xA9C8B98CFCCB)
-    )
-
-    def __init__(self, object_type: ObjectType, **kwargs):
-        super().__init__(object_type, **kwargs)
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID

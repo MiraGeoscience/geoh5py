@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,7 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Optional
+from __future__ import annotations
 
 
 class DataUnit:
@@ -30,7 +30,7 @@ class DataUnit:
         self._rep = unit_name
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         return self._rep
 
     def __str__(self):

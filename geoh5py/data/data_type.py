@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,7 +18,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Dict, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
@@ -49,16 +49,16 @@ class DataType(EntityType):
         }
     )
 
-    _primitive_type: Optional[PrimitiveTypeEnum] = None
-    _value_map: Optional[ReferenceValueMap] = None
-    _color_map: Optional[ColorMap] = None
-    _units: Optional[str] = None
+    _primitive_type: PrimitiveTypeEnum | None = None
+    _value_map: ReferenceValueMap | None = None
+    _color_map: ColorMap | None = None
+    _units: str | None = None
     _number_of_bins: int = 50
     _transparent_no_data = True
     _mapping: str = "equal_area"
     _hidden: bool = False
 
-    def __init__(self, workspace: "workspace.Workspace", **kwargs):
+    def __init__(self, workspace: workspace.Workspace, **kwargs):
         assert workspace is not None
         super().__init__(workspace, **kwargs)
 
@@ -69,7 +69,7 @@ class DataType(EntityType):
         return False
 
     @property
-    def color_map(self) -> Optional[ColorMap]:
+    def color_map(self) -> ColorMap | None:
         r"""
         :obj:`~geoh5py.data.color_map.ColorMap`: Colormap used for plotting
 
@@ -88,13 +88,27 @@ class DataType(EntityType):
         return self._color_map
 
     @color_map.setter
-    def color_map(self, color_map: Dict):
-        assert "values" in list(color_map.keys()), "'color_map' must contain 'values'"
-        self._color_map = ColorMap(**color_map)
+    def color_map(self, color_map: ColorMap | dict | np.ndarray):
+
+        if isinstance(color_map, dict):
+            color_map = ColorMap(**color_map)
+
+        elif isinstance(color_map, np.ndarray):
+            color_map = ColorMap(values=color_map)
+
+        elif not isinstance(color_map, ColorMap):
+            raise TypeError(
+                f"Input value for 'color_map' must be of type {ColorMap},"
+                f"numpy.ndarray or dict with 'values'."
+            )
+
+        color_map.parent = self
+        self._color_map = color_map
         self.modified_attributes = "color_map"
+        self.workspace.finalize()
 
     @property
-    def value_map(self) -> Optional[ReferenceValueMap]:
+    def value_map(self) -> ReferenceValueMap | None:
         r"""
         :obj:`~geoh5py.data.reference_value_map.ReferenceValueMap`:
         Reference value map for :obj:`~geoh5py.data.reference_data.ReferenceData`
@@ -114,17 +128,15 @@ class DataType(EntityType):
         return self._value_map
 
     @value_map.setter
-    def value_map(self, value_map: Union[Dict, ReferenceValueMap]):
+    def value_map(self, value_map: dict | ReferenceValueMap):
         assert isinstance(
             value_map, (dict, ReferenceValueMap)
         ), f"'value_map' must be a {dict} or {ReferenceValueMap}"
 
         if isinstance(value_map, dict):
             assert all(
-                [
-                    np.issubdtype(type(val), np.integer) and (val >= 0)
-                    for val in value_map.keys()
-                ]
+                np.issubdtype(type(val), np.integer) and (val >= 0)
+                for val in value_map.keys()
             ), f"Value_map keys must be of integer type >= 0. Input values {value_map.keys()}"
             value_map = ReferenceValueMap(value_map)
 
@@ -132,7 +144,7 @@ class DataType(EntityType):
         self.modified_attributes = "Value map"
 
     @property
-    def units(self) -> Optional[str]:
+    def units(self) -> str | None:
         """
         :obj:`str`: Data units
         """
@@ -144,7 +156,7 @@ class DataType(EntityType):
         self.modified_attributes = "attributes"
 
     @property
-    def number_of_bins(self) -> Optional[int]:
+    def number_of_bins(self) -> int | None:
         """
         :obj:`int`: Number of bins used by the histogram [50]
         """
@@ -197,7 +209,7 @@ class DataType(EntityType):
         self.modified_attributes = "attributes"
 
     @property
-    def primitive_type(self) -> Optional[PrimitiveTypeEnum]:
+    def primitive_type(self) -> PrimitiveTypeEnum | None:
         """
         :obj:`~geoh5py.data.primitive_type_enum.PrimitiveTypeEnum`
         """
@@ -215,7 +227,7 @@ class DataType(EntityType):
 
     @classmethod
     def create(
-        cls, workspace: "workspace.Workspace", data_class: Type["data.Data"]
+        cls, workspace: workspace.Workspace, data_class: type[data.Data]
     ) -> DataType:
         """Creates a new instance of :obj:`~geoh5py.data.data_type.DataType` with
         corresponding :obj:`~geoh5py.data.primitive_type_enum.PrimitiveTypeEnum`.
@@ -229,7 +241,7 @@ class DataType(EntityType):
         return cls(workspace, uid=uid, primitive_type=primitive_type)
 
     @classmethod
-    def find_or_create(cls, workspace: "workspace.Workspace", **kwargs) -> DataType:
+    def find_or_create(cls, workspace: workspace.Workspace, **kwargs) -> DataType:
         """Find or creates an EntityType with given UUID that matches the given
         Group implementation class.
 
@@ -254,7 +266,7 @@ class DataType(EntityType):
 
     @classmethod
     def _for_geometric_data(
-        cls, workspace: "workspace.Workspace", uid: uuid.UUID
+        cls, workspace: workspace.Workspace, uid: uuid.UUID
     ) -> DataType:
         geom_primitive_type = GeometricDataConstants.primitive_type()
         data_type = cast(DataType, workspace.find_type(uid, DataType))
@@ -264,19 +276,19 @@ class DataType(EntityType):
         return cls(workspace, uid=uid, primitive_type=geom_primitive_type)
 
     @classmethod
-    def for_x_data(cls, workspace: "workspace.Workspace") -> DataType:
+    def for_x_data(cls, workspace: workspace.Workspace) -> DataType:
         return cls._for_geometric_data(
             workspace, GeometricDataConstants.x_datatype_uid()
         )
 
     @classmethod
-    def for_y_data(cls, workspace: "workspace.Workspace") -> DataType:
+    def for_y_data(cls, workspace: workspace.Workspace) -> DataType:
         return cls._for_geometric_data(
             workspace, GeometricDataConstants.y_datatype_uid()
         )
 
     @classmethod
-    def for_z_data(cls, workspace: "workspace.Workspace") -> DataType:
+    def for_z_data(cls, workspace: workspace.Workspace) -> DataType:
         return cls._for_geometric_data(
             workspace, GeometricDataConstants.z_datatype_uid()
         )

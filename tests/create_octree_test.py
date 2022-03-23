@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,9 +18,8 @@
 import tempfile
 from pathlib import Path
 
-import numpy as np
-
 from geoh5py.objects import Octree
+from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
@@ -55,16 +54,7 @@ def test_octree():
         workspace.finalize()
 
         # Read the mesh back in
-        workspace = Workspace(h5file_path)
-        mesh2 = workspace.get_entity(name)[0]
+        new_workspace = Workspace(h5file_path)
+        rec_obj = new_workspace.get_entity(name)[0]
 
-        assert all(
-            mesh2.octree_cells == mesh.octree_cells
-        ), "Mesh output differs from mesh input"
-        assert all(
-            np.r_[mesh2.origin] == np.r_[mesh.origin]
-        ), "Mesh output differs from mesh input"
-
-        assert all(
-            np.r_[mesh2.rotation] == np.r_[mesh.rotation]
-        ), "Mesh output differs from mesh input"
+        compare_entities(mesh, rec_obj)

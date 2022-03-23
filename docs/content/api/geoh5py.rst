@@ -1,7 +1,8 @@
-API
-===
+API Reference
+=============
 
 .. toctree::
+   :maxdepth: 4
 
    geoh5py.data
    geoh5py.groups
@@ -9,3 +10,9 @@ API
    geoh5py.objects
    geoh5py.shared
    geoh5py.workspace
+
+
+.. automodule:: geoh5py
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -17,7 +17,9 @@
 
 # pylint: skip-file
 
-from typing import TYPE_CHECKING, List, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from .. import interfaces
 from ..workspace import Workspace
@@ -30,7 +32,7 @@ if TYPE_CHECKING:
 
 class GroupsHandler:
     @staticmethod
-    def get_root() -> Optional[i_Group]:
+    def get_root() -> i_Group | None:
         root = Workspace.active().root
 
         if root is not None:
@@ -58,20 +60,20 @@ class GroupsHandler:
         pass
 
     @staticmethod
-    def get_all() -> List[i_Group]:
-        Workspace.active().all_groups()
+    def get_all() -> list[i_Group]:
+        Workspace.active().groups
         # TODO
         return []
 
-    def find(self, query: i_GroupQuery) -> List[i_Group]:
+    def find(self, query: i_GroupQuery) -> list[i_Group]:
         # TODO
         pass
 
-    def set_allow_move(self, groups: List[i_Uuid], allow: bool) -> None:
+    def set_allow_move(self, groups: list[i_Uuid], allow: bool) -> None:
         # TODO
         pass
 
-    def move_to_group(self, groups: List[i_Uuid], destination_group: i_Uuid) -> None:
+    def move_to_group(self, groups: list[i_Uuid], destination_group: i_Uuid) -> None:
         # TODO
         pass
 
@@ -79,19 +81,19 @@ class GroupsHandler:
         # TODO
         pass
 
-    def set_public(self, entities: List[i_Uuid], is_public: bool) -> None:
+    def set_public(self, entities: list[i_Uuid], is_public: bool) -> None:
         # TODO
         pass
 
-    def set_visible(self, entities: List[i_Uuid], visible: bool) -> None:
+    def set_visible(self, entities: list[i_Uuid], visible: bool) -> None:
         # TODO
         pass
 
-    def set_allow_delete(self, entities: List[i_Uuid], allow: bool) -> None:
+    def set_allow_delete(self, entities: list[i_Uuid], allow: bool) -> None:
         # TODO
         pass
 
-    def set_allow_rename(self, entities: List[i_Uuid], allow: bool) -> None:
+    def set_allow_rename(self, entities: list[i_Uuid], allow: bool) -> None:
         # TODO
         pass
 

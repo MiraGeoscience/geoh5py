@@ -1,21 +1,35 @@
+#  Copyright (c) 2022 Mira Geoscience Ltd.
+#
+#  This file is part of geoh5py.
+#
+#  geoh5py is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU Lesser General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  geoh5py is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
+# pylint: disable=unused-argument,no-self-use,no-name-in-module
+# flake8: noqa
+
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import *
-
 
 from . import shared
 
-
-
-
 class InvalidDataOperation(Exception):
-    message: Optional[str] = ""
+    message: str | None = ""
 
 class BadPrimitiveType(Exception):
-    message: Optional[str] = ""
-
-
-
+    message: str | None = ""
 
 class DataAssociation(IntEnum):
     UNKNOWN = 0
@@ -34,170 +48,144 @@ class PrimitiveType(IntEnum):
     DATETIME = 6
     BLOB = 7
 
-
-
-
 @dataclass
 class Data:
-    entity_: Optional[shared.Entity] = None
-    association: Optional[int] = None
+    entity_: shared.Entity | None = None
+    association: int | None = None
 
 @dataclass
 class DataUnit:
-    unit: Optional[str] = ""
+    unit: str | None = ""
 
 @dataclass
 class DataType:
-    uid: Optional[shared.Uuid] = None
-    name: Optional[str] = None
-    description: Optional[str] = ""
-    units: Optional[DataUnit] = None
-    primitive_type: Optional[int] = None
+    uid: shared.Uuid | None = None
+    name: str | None = None
+    description: str | None = ""
+    units: DataUnit | None = None
+    primitive_type: int | None = None
 
 @dataclass
 class DataSlab:
-    start: Optional[int] = 0
-    stride: Optional[int] = 1
-    count: Optional[int] = 0
-    block: Optional[int] = 1
+    start: int | None = 0
+    stride: int | None = 1
+    count: int | None = 0
+    block: int | None = 1
 
 @dataclass
 class ReferencedDataEntry:
-    key: Optional[int] = None
-    value: Optional[str] = None
+    key: int | None = None
+    value: str | None = None
 
 @dataclass
 class ReferencedValues:
-    indices: Optional[List[int]] = None
-    entries: Optional[List[ReferencedDataEntry]] = None
+    indices: list[int] | None = None
+    entries: list[ReferencedDataEntry] | None = None
 
 @dataclass
 class DataQuery:
-    name: Optional[str] = None
-    object_or_group: Optional[shared.Uuid] = None
-    data_type: Optional[shared.Uuid] = None
-    primitive_type: Optional[int] = None
-    association: Optional[int] = None
+    name: str | None = None
+    object_or_group: shared.Uuid | None = None
+    data_type: shared.Uuid | None = None
+    primitive_type: int | None = None
+    association: int | None = None
 
 @dataclass
 class DataTypeQuery:
-    name: Optional[str] = None
-    primitive_type: Optional[int] = None
-    units: Optional[DataUnit] = None
-
-
-
+    name: str | None = None
+    primitive_type: int | None = None
+    units: DataUnit | None = None
 
 class DataService:
     def get_all(
         self,
-    ) -> List[Data]:
-        ...
+    ) -> list[Data]: ...
     def find(
         self,
         query: DataQuery,
-    ) -> List[Data]:
-        ...
+    ) -> list[Data]: ...
     def get(
         self,
         uid: shared.Uuid,
-    ) -> Data:
-        ...
+    ) -> Data: ...
     def get_float_values(
         self,
         data: shared.Uuid,
         slab: DataSlab,
-    ) -> List[float]:
-        ...
+    ) -> list[float]: ...
     def get_integer_values(
         self,
         data: shared.Uuid,
         slab: DataSlab,
-    ) -> List[int]:
-        ...
+    ) -> list[int]: ...
     def get_text_values(
         self,
         data: shared.Uuid,
         slab: DataSlab,
-    ) -> List[str]:
-        ...
+    ) -> list[str]: ...
     def get_referenced_values(
         self,
         data: shared.Uuid,
         slab: DataSlab,
-    ) -> ReferencedValues:
-        ...
+    ) -> ReferencedValues: ...
     def get_datetime_values(
         self,
         data: shared.Uuid,
         slab: DataSlab,
-    ) -> List[str]:
-        ...
+    ) -> list[str]: ...
     def get_filename_values(
         self,
         data: shared.Uuid,
         slab: DataSlab,
-    ) -> List[str]:
-        ...
+    ) -> list[str]: ...
     def get_file_content(
         self,
         data: shared.Uuid,
         file_name: str,
-    ) -> str:
-        ...
+    ) -> str: ...
     def get_blob_values(
         self,
         data: shared.Uuid,
         slab: DataSlab,
-    ) -> List[int]:
-        ...
+    ) -> list[int]: ...
     def get_blob_element(
         self,
         data: shared.Uuid,
         index: int,
-    ) -> str:
-        ...
+    ) -> str: ...
     def get_all_types(
         self,
-    ) -> List[DataType]:
-        ...
+    ) -> list[DataType]: ...
     def find_types(
         self,
         query: DataTypeQuery,
-    ) -> List[DataType]:
-        ...
+    ) -> list[DataType]: ...
     def get_type(
         self,
         uid: shared.Uuid,
-    ) -> DataType:
-        ...
+    ) -> DataType: ...
     def set_public(
         self,
-        entities: List[shared.Uuid],
+        entities: list[shared.Uuid],
         is_public: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def set_visible(
         self,
-        entities: List[shared.Uuid],
+        entities: list[shared.Uuid],
         visible: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def set_allow_delete(
         self,
-        entities: List[shared.Uuid],
+        entities: list[shared.Uuid],
         allow: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def set_allow_rename(
         self,
-        entities: List[shared.Uuid],
+        entities: list[shared.Uuid],
         allow: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
     def rename(
         self,
         entities: shared.Uuid,
         new_name: str,
-    ) -> None:
-        ...
+    ) -> None: ...

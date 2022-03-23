@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,8 +15,10 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Optional, Type, Union
+from typing import TYPE_CHECKING
 
 from ..shared import Entity
 from .data_association_enum import DataAssociationEnum
@@ -34,31 +36,27 @@ class Data(Entity):
 
     _attribute_map = Entity._attribute_map.copy()
     _attribute_map.update({"Association": "association"})
+    _visible = False
 
     def __init__(self, data_type: DataType, **kwargs):
         assert data_type is not None
         assert data_type.primitive_type == self.primitive_type()
-        self._no_data_value = 1.17549435e-38
         self._entity_type = data_type
-        self._association: Optional[DataAssociationEnum] = None
+        self._association: DataAssociationEnum | None = None
         self._values = None
 
-        if "association" in kwargs.keys():
+        if "association" in kwargs:
             setattr(self, "association", kwargs["association"])
 
         super().__init__(**kwargs)
 
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = self.name
+
         data_type.workspace._register_data(self)
 
     @property
-    def no_data_value(self) -> float:
-        """
-        :obj:`float`: Default no-data-value
-        """
-        return self._no_data_value
-
-    @property
-    def n_values(self) -> Optional[int]:
+    def n_values(self) -> int | None:
         """
         :obj:`int`: Number of expected data values based on
         :obj:`~geoh5py.data.data.Data.association`
@@ -82,7 +80,7 @@ class Data(Entity):
         return self._values
 
     @property
-    def association(self) -> Optional[DataAssociationEnum]:
+    def association(self) -> DataAssociationEnum | None:
         """
         :obj:`~geoh5py.data.data_association_enum.DataAssociationEnum`:
         Relationship made between the
@@ -94,18 +92,19 @@ class Data(Entity):
         return self._association
 
     @association.setter
-    def association(self, value: Union[str, DataAssociationEnum]):
+    def association(self, value: str | DataAssociationEnum):
         if isinstance(value, str):
 
-            assert value.upper() in list(
-                DataAssociationEnum.__members__.keys()
-            ), f"Association flag should be one of {list(DataAssociationEnum.__members__.keys())}"
+            if value.upper() not in DataAssociationEnum.__members__:
+                raise ValueError(
+                    f"Association flag should be one of {DataAssociationEnum.__members__}"
+                )
 
             self._association = getattr(DataAssociationEnum, value.upper())
         else:
-            assert isinstance(
-                value, DataAssociationEnum
-            ), f"Association must be of type {DataAssociationEnum}"
+            if not isinstance(value, DataAssociationEnum):
+                raise TypeError(f"Association must be of type {DataAssociationEnum}")
+
             self._association = value
 
     @property
@@ -130,7 +129,7 @@ class Data(Entity):
 
     @classmethod
     def find_or_create_type(
-        cls: Type[Entity], workspace: "workspace.Workspace", **kwargs
+        cls: type[Entity], workspace: workspace.Workspace, **kwargs
     ) -> DataType:
         """
         Find or create a type for a given object class

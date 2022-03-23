@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,14 +15,16 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import uuid
-from typing import List, Union
+from abc import ABC
 
 from ..data import DataAssociationEnum
 from ..shared import Entity
 
 
-class PropertyGroup:
+class PropertyGroup(ABC):
     """
     Property group listing data children of an object.
     This group is not registered to the workspace and only visible to the parent object.
@@ -41,28 +43,36 @@ class PropertyGroup:
         self._name = "prop_group"
         self._uid = uuid.uuid4()
         self._association: DataAssociationEnum = DataAssociationEnum.VERTEX
-        self._properties: List[uuid.UUID] = []
-        self._property_group_type = "multi-element"
+        self._properties: list[uuid.UUID] = []
+        self._property_group_type = "Multi-element"
         self._parent = None
 
         for attr, item in kwargs.items():
             try:
-                if attr in self._attribute_map.keys():
+                if attr in self._attribute_map:
                     attr = self._attribute_map[attr]
                 setattr(self, attr, item)
             except AttributeError:
                 continue
 
     @property
-    def parent(self) -> Entity:
+    def association(self) -> DataAssociationEnum:
         """
-        The parent :obj:`~geoh5py.objects.object_base.ObjectBase`
+        :obj:`~geoh5py.data.data_association_enum.DataAssociationEnum` Data association
         """
-        return self._parent
+        return self._association
 
-    @parent.setter
-    def parent(self, parent: Entity):
-        self._parent = parent
+    @association.setter
+    def association(self, value: str | DataAssociationEnum):
+        if isinstance(value, str):
+            value = getattr(DataAssociationEnum, value.upper())
+
+        if not isinstance(value, DataAssociationEnum):
+            raise TypeError(
+                f"Association must be 'VERTEX', 'CELL' or class of type {DataAssociationEnum}"
+            )
+
+        self._association = value
 
     @property
     def attribute_map(self) -> dict:
@@ -70,19 +80,6 @@ class PropertyGroup:
         :obj:`dict` Attribute names mapping between geoh5 and geoh5py
         """
         return self._attribute_map
-
-    @property
-    def uid(self) -> uuid.UUID:
-        """
-        :obj:`uuid.UUID` Unique identifier
-        """
-        return self._uid
-
-    @uid.setter
-    def uid(self, uid: Union[str, uuid.UUID]):
-        if isinstance(uid, str):
-            uid = uuid.UUID(uid)
-        self._uid = uid
 
     @property
     def name(self) -> str:
@@ -96,26 +93,18 @@ class PropertyGroup:
         self._name = new_name
 
     @property
-    def association(self) -> DataAssociationEnum:
+    def parent(self) -> Entity:
         """
-        :obj:`~geoh5py.data.data_association_enum.DataAssociationEnum` Data association
+        The parent :obj:`~geoh5py.objects.object_base.ObjectBase`
         """
-        return self._association
+        return self._parent
 
-    @association.setter
-    def association(self, value):
-        if self._association is None:
-
-            if isinstance(value, str):
-                value = getattr(DataAssociationEnum, value.upper())
-
-            assert isinstance(
-                value, DataAssociationEnum
-            ), f"Association must be of type {DataAssociationEnum}"
-            self._association = value
+    @parent.setter
+    def parent(self, parent: Entity):
+        self._parent = parent
 
     @property
-    def properties(self) -> List[uuid.UUID]:
+    def properties(self) -> list[uuid.UUID]:
         """
         List of unique identifiers for the :obj:`~geoh5py.data.data.Data`
         contained in the property group.
@@ -123,14 +112,14 @@ class PropertyGroup:
         return self._properties
 
     @properties.setter
-    def properties(self, uids: List[Union[str, uuid.UUID]]):
+    def properties(self, uids: list[str | uuid.UUID]):
 
         properties = []
         for uid in uids:
             if isinstance(uid, str):
                 uid = uuid.UUID(uid)
             properties.append(uid)
-        self._properties += properties
+        self._properties = properties
 
     @property
     def property_group_type(self) -> str:
@@ -139,3 +128,20 @@ class PropertyGroup:
     @property_group_type.setter
     def property_group_type(self, group_type: str):
         self._property_group_type = group_type
+
+    @property
+    def uid(self) -> uuid.UUID:
+        """
+        :obj:`uuid.UUID` Unique identifier
+        """
+        return self._uid
+
+    @uid.setter
+    def uid(self, uid: str | uuid.UUID):
+        if isinstance(uid, str):
+            uid = uuid.UUID(uid)
+
+        assert isinstance(
+            uid, uuid.UUID
+        ), f"Could not convert input uid {uid} to type uuid.UUID"
+        self._uid = uid

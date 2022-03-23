@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -23,12 +23,12 @@ from datetime import date
 
 if __name__ == "__main__":
     current_year = date.today().year
-    copyright_re = re.compile(fr"\bcopyright \(c\) \b{current_year}\b", re.IGNORECASE)
+    copyright_re = re.compile(rf"\bcopyright \(c\) \b{current_year}\b", re.IGNORECASE)
     files = sys.argv[1:]
     max_lines = 10
     report_files = []
     for f in files:
-        with open(f, mode="r", encoding="utf-8") as file:
+        with open(f, encoding="utf-8") as file:
             count = 0
             has_dated_copyright = False
             for line in file:

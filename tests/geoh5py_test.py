@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -24,7 +24,10 @@ import geoh5py
 
 def get_version():
     path = Path(__file__).resolve().parents[1] / "pyproject.toml"
-    pyproject = toml.loads(open(str(path)).read())
+
+    with open(str(path), encoding="utf-8") as file:
+        pyproject = toml.loads(file.read())
+
     return pyproject["tool"]["poetry"]["version"]
 
 

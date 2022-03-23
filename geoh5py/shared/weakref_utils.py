@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,14 +18,14 @@
 from __future__ import annotations
 
 import weakref
-from typing import Dict, Optional, TypeVar
+from typing import TypeVar
 from weakref import ReferenceType
 
 K = TypeVar("K")  # pylint: disable=invalid-name
 T = TypeVar("T")  # pylint: disable=invalid-name
 
 
-def remove_none_referents(some_dict: Dict[K, ReferenceType]):
+def remove_none_referents(some_dict: dict[K, ReferenceType]):
     """
     Removes any key from the given ``some_dict`` where the value is a reference to a deleted value
     (that is where referent of the ``weakref`` value is None).
@@ -37,7 +37,7 @@ def remove_none_referents(some_dict: Dict[K, ReferenceType]):
         del some_dict[key]
 
 
-def get_clean_ref(some_dict: Dict[K, ReferenceType[T]], key: K) -> Optional[T]:
+def get_clean_ref(some_dict: dict[K, ReferenceType[T]], key: K) -> T | None:
     """
     Gets the referent value for the given ``key`` in a ``some_dict`` of ``weakref`` values.
     In case ``key`` points to a reference to a deleted value, remove that key from ``some_dict``
@@ -57,7 +57,7 @@ def get_clean_ref(some_dict: Dict[K, ReferenceType[T]], key: K) -> Optional[T]:
     return ref()
 
 
-def insert_once(some_dict: Dict[K, ReferenceType], key: K, value):
+def insert_once(some_dict: dict[K, ReferenceType], key: K, value):
     """
     Check if the reference to an Entity with uuid is already in use.
 

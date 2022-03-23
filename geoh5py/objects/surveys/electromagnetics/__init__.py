@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -14,17 +14,3 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
-
-
-class SurveyLocation:
-    """
-    Survey location object.
-
-    .. warning:: Not yet implemented.
-
-    """
-
-    def __init__(self):
-        self.depth = None
-        self.dip = None
-        self.azimuth = None

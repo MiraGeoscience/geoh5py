@@ -1,4 +1,4 @@
-|coverage| |docs| |style| |version| |status| |pyversions|
+|coverage| |precommit_ci| |docs| |style| |version| |status| |pyversions|
 
 
 geoh5py: Python API for geoh5, an open file format for geoscientific data
@@ -33,7 +33,7 @@ Install **geoh5py** from PyPI::
 
 Setup for development
 ^^^^^^^^^^^^^^^^^^^^^
-After having cloned the Git repository you will need to setup `Poetry`_.
+After having cloned the Git repository you will need to set up `Poetry`_.
 `Poetry`_ makes it easy to install the dependencies and start a virtual environment.
 
 To install poetry:
@@ -91,7 +91,7 @@ To build the api docs using autodocs
     :alt: Documentation Status
     :target: https://geoh5py.readthedocs.io/en/latest/?badge=latest
 
-.. |coverage| image:: https://codecov.io/gh/MiraGeoscience/geoh5py/branch/development/graph/badge.svg
+.. |coverage| image:: https://codecov.io/gh/MiraGeoscience/geoh5py/branch/develop/graph/badge.svg
     :alt: Test coverage
     :target: https://codecov.io/gh/MiraGeoscience/geoh5py
 
@@ -111,6 +111,9 @@ To build the api docs using autodocs
     :alt: Python versions
     :target: https://pypi.python.org/pypi/geoh5py/
 
+.. |precommit_ci| image:: https://results.pre-commit.ci/badge/github/MiraGeoscience/geoh5py/develop.svg
+   :target: https://results.pre-commit.ci/latest/github/MiraGeoscience/geoh5py/develop
+   :alt: pre-commit.ci status
 
 License
 ^^^^^^^
@@ -128,6 +131,17 @@ You should have received a copy of the GNU Lesser General Public License
 along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
+Third Party Software
+^^^^^^^^^^^^^^^^^^^^
+The geoh5 Software may provide links to third party libraries or code (collectively “Third Party Software”)
+to implement various functions. Third Party Software does not comprise part of the Software.
+The use of Third Party Software is governed by the terms of such software license(s).
+Third Party Software notices and/or additional terms and conditions are located in the
+`THIRD_PARTY_SOFTWARE.rst`_ file.
+
+.. _THIRD_PARTY_SOFTWARE.rst: THIRD_PARTY_SOFTWARE.rst
+
+
 Copyright
 ^^^^^^^^^
-Copyright (c) 2021 Mira Geoscience Ltd.
+Copyright (c) 2022 Mira Geoscience Ltd.

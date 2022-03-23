@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,8 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import uuid
-from typing import Optional
 
 import numpy as np
 
@@ -35,15 +36,12 @@ class Surface(Points):
 
     def __init__(self, object_type: ObjectType, **kwargs):
 
-        self._cells: Optional[np.ndarray] = None
+        self._cells: np.ndarray | None = None
 
         super().__init__(object_type, **kwargs)
 
-        if object_type.name == "None":
-            self.entity_type.name = "Surface"
-
     @property
-    def cells(self) -> Optional[np.ndarray]:
+    def cells(self) -> np.ndarray | None:
         """
         Array of vertices index forming triangles
         :return cells: :obj:`numpy.array` of :obj:`int`, shape ("*", 3)
@@ -59,15 +57,11 @@ class Surface(Points):
         if isinstance(indices, list):
             indices = np.vstack(indices)
 
-        assert indices.dtype in [
-            "int32",
-            "uint32",
-        ], "Indices array must be of type 'uint32'"
-
-        if indices.dtype == "int32":
-            indices.astype("uint32")
+        assert np.issubdtype(
+            indices.dtype, np.integer
+        ), "Indices array must be of integer type"
         self.modified_attributes = "cells"
-        self._cells = indices
+        self._cells = indices.astype(np.int32)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

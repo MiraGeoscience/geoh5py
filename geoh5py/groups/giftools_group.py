@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -21,7 +21,7 @@ from .group import Group, GroupType
 
 
 class GiftoolsGroup(Group):
-    """ The type for a GIFtools group."""
+    """The type for a GIFtools group."""
 
     __TYPE_UID = uuid.UUID(
         fields=(0x585B3218, 0xC24B, 0x41FE, 0xAD, 0x1F, 0x24D5E6E8348A)
@@ -33,6 +33,9 @@ class GiftoolsGroup(Group):
     def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
+
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = "GIFtools Group"
 
         group_type.workspace._register_group(self)
 
