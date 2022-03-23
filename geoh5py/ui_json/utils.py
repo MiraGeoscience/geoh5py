@@ -18,43 +18,12 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Callable
+from typing import Any
 
 import numpy as np
 
 from geoh5py.groups import ContainerGroup
 from geoh5py.workspace import Workspace
-
-
-def dict_mapper(
-    val, string_funcs: list[Callable], *args, omit: dict | None = None
-) -> dict:
-    """
-    Recurses through nested dictionary and applies mapping funcs to all values
-
-    Parameters
-    ----------
-    val :
-        Dictionary val (could be another dictionary).
-    string_funcs:
-        Function to apply to values within dictionary.
-    omit: Dictionary of functions to omit.
-    """
-    if omit is None:
-        omit = {}
-    if isinstance(val, dict):
-        for key, values in val.items():
-            val[key] = dict_mapper(
-                values,
-                [fun for fun in string_funcs if fun not in omit.get(key, [])],
-            )
-
-    for fun in string_funcs:
-        if args is None:
-            val = fun(val)
-        else:
-            val = fun(val, *args)
-    return val
 
 
 def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:

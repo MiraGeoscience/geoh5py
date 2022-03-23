@@ -34,8 +34,7 @@ from ..data import CommentsData, Data, DataType, FilenameData, IntegerData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import Entity, EntityType, fetch_h5_handle
-from ..ui_json.utils import dict_mapper
-from .utils import as_str_if_uuid
+from .utils import as_str_if_uuid, dict_mapper
 
 if TYPE_CHECKING:
     from .. import shared, workspace

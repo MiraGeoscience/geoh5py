@@ -17,7 +17,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable
 from uuid import UUID
 
 import numpy as np
@@ -79,3 +79,34 @@ def str_from_utf8_bytes(value: bytes | str) -> str:
     if isinstance(value, bytes):
         value = value.decode("utf-8")
     return value
+
+
+def dict_mapper(
+    val, string_funcs: list[Callable], *args, omit: dict | None = None
+) -> dict:
+    """
+    Recurses through nested dictionary and applies mapping funcs to all values
+
+    Parameters
+    ----------
+    val :
+        Dictionary val (could be another dictionary).
+    string_funcs:
+        Function to apply to values within dictionary.
+    omit: Dictionary of functions to omit.
+    """
+    if omit is None:
+        omit = {}
+    if isinstance(val, dict):
+        for key, values in val.items():
+            val[key] = dict_mapper(
+                values,
+                [fun for fun in string_funcs if fun not in omit.get(key, [])],
+            )
+
+    for fun in string_funcs:
+        if args is None:
+            val = fun(val)
+        else:
+            val = fun(val, *args)
+    return val
