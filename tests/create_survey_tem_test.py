@@ -332,3 +332,9 @@ def test_survey_tem_data(tmp_path):
 
     receivers_rec = new_workspace.get_entity(name + "_rx")[0]
     np.testing.assert_almost_equal(receivers_rec.waveform, waveform)
+
+    new_workspace = Workspace(Path(tmp_path) / r"testATEM_copy2.geoh5")
+    receivers_rec = receivers.copy(new_workspace)
+    compare_entities(
+        receivers, receivers_rec, ignore=["_receivers", "_transmitters", "_parent"]
+    )
