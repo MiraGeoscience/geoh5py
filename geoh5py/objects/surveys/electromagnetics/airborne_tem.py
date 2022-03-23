@@ -317,6 +317,7 @@ class AirborneTEMReceivers(BaseAirborneTEM):
             omit_list=omit_list,
         )
         new_entity.transmitters = new_transmitters
+        new_entity.metadata = self.metadata
         parent.workspace.finalize()
 
         return new_entity
