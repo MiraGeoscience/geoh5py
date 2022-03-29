@@ -14,13 +14,18 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
 
+import os
 import uuid
-from typing import List, Optional, Union
+from io import BytesIO
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import numpy as np
+from PIL import Image
 
-from ..data import Data
+from ..data import Data, FilenameData
 from .object_base import ObjectBase, ObjectType
 
 
@@ -37,7 +42,6 @@ class GeoImage(ObjectBase):
     )
 
     def __init__(self, object_type: ObjectType, **kwargs):
-
         self._vertices = None
         self._cells = None
 
@@ -48,7 +52,7 @@ class GeoImage(ObjectBase):
         object_type.workspace._register_object(self)
 
     @property
-    def cells(self) -> Optional[np.ndarray]:
+    def cells(self) -> np.ndarray | None:
         r"""
         :obj:`numpy.ndarray` of :obj:`int`, shape (\*, 2):
         Array of indices defining segments connecting vertices. Defined based on
@@ -70,18 +74,28 @@ class GeoImage(ObjectBase):
         self._cells = indices
 
     @property
-    def vertices(self) -> Optional[np.ndarray]:
+    def vertices(self) -> np.ndarray | None:
         """
         :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`:
         Defines the four corners of the geo_image
         """
         if (getattr(self, "_vertices", None) is None) and self.existing_h5_entity:
-            self._vertices = self.workspace.fetch_vertices(self.uid)
+            self._vertices = self.workspace.fetch_coordinates(self.uid, "vertices")
+
+        if self._vertices is not None:
+            return self._vertices.view("<f8").reshape((-1, 3)).astype(float)
 
         return self._vertices
 
     @vertices.setter
     def vertices(self, xyz: np.ndarray):
+        if not isinstance(xyz, np.ndarray) or xyz.shape != (4, 3):
+            raise ValueError("Input 'vertices' must be a numpy array of shape (4, 3)")
+
+        xyz = np.asarray(
+            np.core.records.fromarrays(xyz.T, names="x, y, z", formats="<f8, <f8, <f8")
+        )
+
         self.modified_attributes = "vertices"
         self._vertices = xyz
 
@@ -89,9 +103,28 @@ class GeoImage(ObjectBase):
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
 
-    def add_data(
-        self, data: dict, property_group: str = None
-    ) -> Union[Data, List[Data]]:
+    @property
+    def image_data(self):
+        """
+        Get the FilenameData entity holding the image.
+        """
+        for child in self.children:
+            if isinstance(child, FilenameData) and child.name == "GeoImageMesh_Image":
+                return child
+        return None
+
+    @property
+    def image(self):
+        """
+        Get the image as a :obj:`PIL.Image` object.
+        """
+        if self.image_data is not None:
+            return Image.open(BytesIO(self.image_data.values))
+
+        return None
+
+    @image.setter
+    def image(self, image: str | np.ndarray | BytesIO | Image.Image):
         """
         Create a :obj:`~geoh5py.data.filename_data.FilenameData`
         from dictionary of name and arguments.
@@ -99,33 +132,107 @@ class GeoImage(ObjectBase):
 
         :return: List of new Data objects.
         """
-        data_objects = []
-        for name, attr in data.items():
-            assert isinstance(attr, dict), (
-                f"Given value to data {name} should of type {dict}. "
-                f"Type {type(attr)} given instead."
+        if isinstance(image, np.ndarray):
+            value = image.astype(float)
+            value -= value.min()
+            value *= 255.0 / value.max()
+            value = value.astype("uint8")
+            image = Image.fromarray(value)
+        elif isinstance(image, str):
+            if not os.path.exists(image):
+                raise ValueError(f"Input image file {image} does not exist.")
+            image = Image.open(image)
+        elif isinstance(image, bytes):
+            image = Image.open(BytesIO(image))
+        elif not isinstance(image, Image.Image):
+            raise UserWarning(
+                "Input 'value' for the 'image' property must be "
+                "a numpy.ndarray of values, bytes, PIL.Image or path to existing image."
             )
-            assert "values" in list(
-                attr.keys()
-            ), f"Given attr for data {name} should include 'values'"
 
-            attr["name"] = "GeoImageMesh_Image"
-            attr["association"] = "OBJECT"
+        with TemporaryDirectory() as tempdir:
+            ext = getattr(image, "format")
+            tempfile = (
+                Path(tempdir) / f"image.{ext.lower() if ext is not None else 'tiff'}"
+            )
+            image.save(tempfile)
+
+            with open(tempfile, "rb") as raw_binary:
+                values = raw_binary.read()
+
+        if self.image is None:
+            attributes = {
+                "name": "GeoImageMesh_Image",
+                "file_name": self.name,
+                "association": "OBJECT",
+                "parent": self,
+                "values": values,
+            }
             entity_type = {"name": "GeoImageMesh_Image", "primitive_type": "FILENAME"}
 
-            # Re-order to set parent first
-            kwargs = {"parent": self, "association": attr["association"]}
-            for key, val in attr.items():
-                if key in ["parent", "association", "entity_type"]:
-                    continue
-                kwargs[key] = val
-
-            data_object = self.workspace.create_entity(
-                Data, entity=kwargs, entity_type=entity_type
+            self.workspace.create_entity(
+                Data, entity=attributes, entity_type=entity_type
             )
-            data_objects.append(data_object)
+        else:
+            self.image.values = values
 
-        if len(data_objects) == 1:
-            return data_object
+    def georeference(self, pixels: np.ndarray | list, locations: np.ndarray | list):
+        """
+        Georeference the image vertices (corners) based on input pixels and
+        corresponding world coordinates.
 
-        return data_objects
+        :param pixels: Array of integers representing the pixels used as reference points.
+        :param locations: Array of floats for the corresponding world coordinates
+            for each input pixel.
+
+        :return vertices: Corners (vertices) in world coordinates.
+        """
+
+        pixels = np.asarray(pixels)
+        locations = np.asarray(locations)
+        if self.shape is None:
+            raise AttributeError("An 'image' must be set before georeferencing.")
+
+        if pixels.shape[0] < 3:
+            raise ValueError(
+                "At least 3 reference points are needed for georeferencing of an image."
+            )
+
+        if pixels.shape[0] != locations.shape[0]:
+            raise ValueError(
+                f"Mismatch between the number of reference 'pixels' with shape {pixels.shape}"
+                f" and number of 'locations' with shape {locations.shape}."
+            )
+        param_x, _, _, _ = np.linalg.lstsq(
+            np.c_[np.ones(3), pixels], locations[:, 0], rcond=None
+        )
+        param_y, _, _, _ = np.linalg.lstsq(
+            np.c_[np.ones(3), pixels], locations[:, 1], rcond=None
+        )
+        param_z, _, _, _ = np.linalg.lstsq(
+            np.c_[np.ones(3), pixels], locations[:, 2], rcond=None
+        )
+
+        corners = np.vstack(
+            [
+                [0, self.shape[0]],
+                [self.shape[1], self.shape[0]],
+                [self.shape[1], 0],
+                [0, 0],
+            ]
+        )
+
+        self.vertices = np.c_[
+            param_x[0] + np.dot(corners, param_x[1:]),
+            param_y[0] + np.dot(corners, param_y[1:]),
+            param_z[0] + np.dot(corners, param_z[1:]),
+        ]
+
+    @property
+    def shape(self):
+        """
+        Image size
+        """
+        if self.image is not None:
+            return self.image.size
+        return None

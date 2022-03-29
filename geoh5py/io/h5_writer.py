@@ -22,13 +22,10 @@ from __future__ import annotations
 import json
 import uuid
 from copy import deepcopy
-from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 import h5py
 import numpy as np
-from PIL import Image  # pylint: disable=import-error
 
 from ..data import CommentsData, Data, DataType, FilenameData, IntegerData
 from ..groups import Group, GroupType, RootGroup
@@ -540,19 +537,11 @@ class H5Writer:
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
                 )
-                with TemporaryDirectory() as tempdir:
-                    tempfile = Path(tempdir) / r"image.tiff"
-                    new_image = Image.fromarray(values)
-                    new_image.save(tempfile)
-
-                    with open(tempfile, "rb") as raw_binary:
-                        values = raw_binary.read()
-
-                    entity_handle.create_dataset(
-                        entity.file_name,
-                        data=np.asarray(np.void(values[:])),
-                        shape=(1,),
-                    )
+                entity_handle.create_dataset(
+                    entity.file_name,
+                    data=np.asarray(np.void(values[:])),
+                    shape=(1,),
+                )
 
             elif isinstance(values, str):
                 entity_handle.create_dataset(

@@ -17,16 +17,13 @@
 
 from typing import Optional
 
-from numpy import array
-from PIL.Image import Image  # pylint: disable=import-error
-
 from .data import Data, PrimitiveTypeEnum
 from .data_type import DataType
 
 
 class FilenameData(Data):
 
-    _file_object = None
+    _file_name = None
     _name = "GeoImageMesh_Image"
 
     def __init__(self, data_type: DataType, **kwargs):
@@ -43,11 +40,10 @@ class FilenameData(Data):
         :obj:`str` Text value.
         """
         if getattr(self, "_file_name", None) is None:
-
             if self.existing_h5_entity:
-                self._file_name = self.workspace.fetch_values(self.uid)[0]
+                self._file_name = self.workspace.fetch_values(self.uid)
             else:
-                self._file_name = self.parent.name + ".tiff"
+                self._file_name = self.parent.name
 
         return self._file_name
 
@@ -57,35 +53,25 @@ class FilenameData(Data):
         self._file_name = value
 
     @property
-    def file_object(self):
+    def values(self) -> Optional[bytes]:
+        """
+        Binary :obj:`str` value representation of a file.
+        """
         if (
             self.file_name is not None
             and self.existing_h5_entity
             and getattr(self, "_file_object", None) is None
         ):
-            self._file_object = self.workspace.fetch_file_object(
-                self.uid, self.file_name
-            )
-        return self._file_object
-
-    @property
-    def values(self) -> Optional[str]:
-        """
-        :obj:`str` Text value.
-        """
-        if getattr(self, "_values", None) is None:
-            if isinstance(self.file_object, Image):
-                self._values = array(self._file_object)
+            self._values = self.workspace.fetch_file_object(self.uid, self.file_name)
 
         return self._values
 
     @values.setter
     def values(self, values):
+        if not isinstance(values, bytes):
+            raise ValueError("Input 'values' for FilenameData must be of type 'bytes'.")
         self.modified_attributes = "values"
-
-        values -= values.min()
-        values *= 255 / values.max()
-        self._values = values.astype("uint8")
+        self._values = values
 
     def __call__(self):
         return self._file_name

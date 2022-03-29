@@ -671,7 +671,7 @@ class Workspace:
         """
         return self._io_call(file, H5Reader.fetch_values, uid)
 
-    def fetch_file_object(self, uid: uuid.UUID, file_name: str) -> float | None:
+    def fetch_file_object(self, uid: uuid.UUID, file_name: str) -> bytes | None:
         """
         Fetch an image from file name.
 
