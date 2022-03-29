@@ -18,6 +18,7 @@
 from os import path
 
 import numpy as np
+import pytest
 
 from geoh5py.objects import GeoImage
 from geoh5py.shared.utils import compare_entities
@@ -42,9 +43,61 @@ def test_create_copy_geoimage(tmp_path):
     ]
 
     geoimage = GeoImage.create(workspace, name="MyGeoImage")
+
+    with pytest.raises(AttributeError) as excinfo:
+        geoimage.georeference(pixels[0, :], points)
+
+    assert "An 'image' must be set be" in str(excinfo)
+
+    with pytest.raises(ValueError) as excinfo:
+        geoimage.image = np.random.randn(12)
+
+    assert (
+        "Input 'value' for the 'image' property must be a 2D or 3D numpy.ndarray"
+        in str(excinfo)
+    )
+
+    with pytest.raises(ValueError) as excinfo:
+        geoimage.image = np.random.randn(12, 12, 4)
+
+    assert (
+        "Shape of the 'image' must be a 2D or a 3D array with shape(*,*, 3) "
+        "representing 'RGB' values." in str(excinfo)
+    )
+
     geoimage.image = values
+
+    with pytest.raises(ValueError) as excinfo:
+        geoimage.georeference(pixels[0, :], points)
+
+    assert (
+        "Input reference points must be a 2D array of shape(*, 2) with at least 3 control points."
+        in str(excinfo.value)
+    )
+
+    with pytest.raises(ValueError) as excinfo:
+        geoimage.georeference(pixels, points[0, :])
+
+    assert "Input 'locations' must be a 2D array of shape(*, 3)" in str(excinfo.value)
+
     geoimage.georeference(pixels, points)
     workspace.finalize()
+
+    geoimage.image.save(path.join(tmp_path, "test.tiff"))
+
+    # Re-load as
+    geoimage_file = GeoImage.create(workspace, name="MyGeoImage")
+
+    with pytest.raises(ValueError) as excinfo:
+        geoimage_file.image = path.join(tmp_path, "abc.tiff")
+
+    assert "does not exist" in str(excinfo.value)
+
+    geoimage_file.image = path.join(tmp_path, "test.tiff")
+
+    assert (
+        geoimage_file.image == geoimage.image
+    ), "Error writing and re-loading the image file."
 
     np.testing.assert_almost_equal(
         geoimage.vertices[:, 0].max(),

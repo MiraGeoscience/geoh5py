@@ -132,7 +132,13 @@ class GeoImage(ObjectBase):
 
         :return: List of new Data objects.
         """
-        if isinstance(image, np.ndarray):
+        if isinstance(image, np.ndarray) and image.ndim in [2, 3]:
+            if image.ndim == 3 and image.shape[2] != 3:
+                raise ValueError(
+                    "Shape of the 'image' must be a 2D or "
+                    "a 3D array with shape(*,*, 3) representing 'RGB' values."
+                )
+
             value = image.astype(float)
             value -= value.min()
             value *= 255.0 / value.max()
@@ -145,9 +151,9 @@ class GeoImage(ObjectBase):
         elif isinstance(image, bytes):
             image = Image.open(BytesIO(image))
         elif not isinstance(image, Image.Image):
-            raise UserWarning(
+            raise ValueError(
                 "Input 'value' for the 'image' property must be "
-                "a numpy.ndarray of values, bytes, PIL.Image or path to existing image."
+                "a 2D or 3D numpy.ndarray, bytes, PIL.Image or a path to an existing image."
             )
 
         with TemporaryDirectory() as tempdir:
@@ -176,41 +182,46 @@ class GeoImage(ObjectBase):
         else:
             self.image.values = values
 
-    def georeference(self, pixels: np.ndarray | list, locations: np.ndarray | list):
+    def georeference(self, reference: np.ndarray | list, locations: np.ndarray | list):
         """
-        Georeference the image vertices (corners) based on input pixels and
+        Georeference the image vertices (corners) based on input reference and
         corresponding world coordinates.
 
-        :param pixels: Array of integers representing the pixels used as reference points.
+        :param reference: Array of integers representing the reference used as reference points.
         :param locations: Array of floats for the corresponding world coordinates
             for each input pixel.
 
         :return vertices: Corners (vertices) in world coordinates.
         """
 
-        pixels = np.asarray(pixels)
+        reference = np.asarray(reference)
         locations = np.asarray(locations)
         if self.shape is None:
             raise AttributeError("An 'image' must be set before georeferencing.")
 
-        if pixels.shape[0] < 3:
+        if reference.ndim != 2 or reference.shape[0] < 3 or reference.shape[1] != 2:
             raise ValueError(
-                "At least 3 reference points are needed for georeferencing of an image."
+                "Input reference points must be a 2D array of shape(*, 2) "
+                "with at least 3 control points."
             )
 
-        if pixels.shape[0] != locations.shape[0]:
+        if (
+            locations.ndim != 2
+            or reference.shape[0] != locations.shape[0]
+            or locations.shape[1] != 3
+        ):
             raise ValueError(
-                f"Mismatch between the number of reference 'pixels' with shape {pixels.shape}"
-                f" and number of 'locations' with shape {locations.shape}."
+                "Input 'locations' must be a 2D array of shape(*, 3) "
+                "with the same number of rows as the control points."
             )
         param_x, _, _, _ = np.linalg.lstsq(
-            np.c_[np.ones(3), pixels], locations[:, 0], rcond=None
+            np.c_[np.ones(3), reference], locations[:, 0], rcond=None
         )
         param_y, _, _, _ = np.linalg.lstsq(
-            np.c_[np.ones(3), pixels], locations[:, 1], rcond=None
+            np.c_[np.ones(3), reference], locations[:, 1], rcond=None
         )
         param_z, _, _, _ = np.linalg.lstsq(
-            np.c_[np.ones(3), pixels], locations[:, 2], rcond=None
+            np.c_[np.ones(3), reference], locations[:, 2], rcond=None
         )
 
         corners = np.vstack(
