@@ -49,19 +49,20 @@ def test_add_file(tmp_path):
 
         assert file_data.file_name == file_name, "File_name not properly set."
         # Rename the file locally and write back out
-        file_data.file_name = "numpy_array.dat"
-        file_data.save(tmp_path)
+        new_path = os.path.join(tmp_path, "temp")
+        file_data.save(path=new_path, name="numpy_array.dat")
         assert os.path.exists(
-            os.path.join(tmp_path, file_data.file_name)
-        ), f"Input path '{os.path.join(tmp_path, file_data.file_name)}' does not exist."
+            os.path.join(new_path, "numpy_array.dat")
+        ), f"Input path '{os.path.join(new_path, 'numpy_array.dat')}' does not exist."
         workspace.finalize()
-        new_xyz = np.loadtxt(os.path.join(tmp_path, "numpy_array.dat"))
-        xyz_bytes = np.loadtxt(BytesIO(file_data.values))
-        np.testing.assert_array_equal(
-            new_xyz, xyz_bytes, err_msg="Loaded and stored bytes array not the same"
-        )
-        obj.copy(parent=workspace_copy)
 
+        np.testing.assert_array_equal(
+            np.loadtxt(os.path.join(new_path, "numpy_array.dat")),
+            np.loadtxt(BytesIO(file_data.values)),
+            err_msg="Loaded and stored bytes array not the same",
+        )
+
+        obj.copy(parent=workspace_copy)
         workspace_copy = Workspace(os.path.join(tmp_path, "testProject_B.geoh5"))
         copied_obj = workspace_copy.get_entity(obj.uid)[0]
         rec_data = copied_obj.get_entity("numpy_array.txt")[0]
