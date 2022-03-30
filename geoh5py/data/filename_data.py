@@ -14,8 +14,9 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import os
-from typing import Optional
 
 from .data import Data, PrimitiveTypeEnum
 from .data_type import DataType
@@ -23,26 +24,28 @@ from .data_type import DataType
 
 class FilenameData(Data):
 
+    _file_name = None
     _name = "GeoImageMesh_Image"
 
     def __init__(self, data_type: DataType, **kwargs):
         super().__init__(data_type, **kwargs)
         self._public = False
 
-        if self.existing_h5_entity:
-            self._file_name = self.workspace.fetch_values(self.uid)
-        else:
-            self._file_name = self.parent.name
-
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.FILENAME
 
     @property
-    def file_name(self) -> str:
+    def file_name(self) -> str | None:
         """
         :obj:`str` Text value.
         """
+        if getattr(self, "_file_name", None) is None:
+            if self.existing_h5_entity:
+                self._file_name = self.workspace.fetch_values(self.uid)
+            else:
+                self._file_name = self.parent.name
+
         return self._file_name
 
     @file_name.setter
@@ -59,12 +62,14 @@ class FilenameData(Data):
         if not os.path.exists(path):
             raise ValueError(f"Input path '{path}' does not exist.")
 
-        if self.values is not None:
-            with open(os.path.join(path, self.file_name), "wb") as raw_binary:
+        if self.values is not None and self.file_name is not None:
+            with open(
+                os.path.join(path, getattr(self, "file_name")), "wb"
+            ) as raw_binary:
                 raw_binary.write(getattr(self, "values"))
 
     @property
-    def values(self) -> Optional[bytes]:
+    def values(self) -> bytes | None:
         """
         Binary :obj:`str` value representation of a file.
         """
