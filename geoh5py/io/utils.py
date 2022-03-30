@@ -105,8 +105,5 @@ def dict_mapper(
             )
 
     for fun in string_funcs:
-        if args is None:
-            val = fun(val)
-        else:
-            val = fun(val, *args)
+        val = fun(val, *args)
     return val
