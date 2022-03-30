@@ -53,19 +53,21 @@ class FilenameData(Data):
         self.modified_attributes = "values"
         self._file_name = value
 
-    def save(self, path: str):
+    def save(self, path: str = "./", name=None):
         """
         Save the file to disk.
 
         :param path: Directory to save the file to.
+        :param name: Name given to the file.
         """
         if not os.path.exists(path):
-            raise ValueError(f"Input path '{path}' does not exist.")
+            os.mkdir(path)
 
-        if self.values is not None and self.file_name is not None:
-            with open(
-                os.path.join(path, getattr(self, "file_name")), "wb"
-            ) as raw_binary:
+        if name is None:
+            name = getattr(self, "file_name")
+
+        if self.values is not None and name is not None:
+            with open(os.path.join(path, name), "wb") as raw_binary:
                 raw_binary.write(getattr(self, "values"))
 
     @property
