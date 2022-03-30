@@ -225,18 +225,6 @@ class Workspace:
 
         return new_object
 
-    @classmethod
-    def create(cls, entity: Entity, **kwargs) -> Entity:
-        """
-        Create and register a new Entity.
-
-        :param entity: Entity to be created
-        :param kwargs: List of attributes to set on new entity
-
-        :return entity: The new entity
-        """
-        return entity.create(cls, **kwargs)
-
     def create_data(
         self,
         entity_class,
