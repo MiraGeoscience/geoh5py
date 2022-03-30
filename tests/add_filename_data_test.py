@@ -48,6 +48,7 @@ def test_add_file(tmp_path):
             continue
 
         assert file_data.file_name == file_name, "File_name not properly set."
+        assert file_data.n_values == 1, "Object association should have 1 value."
         # Rename the file locally and write back out
         new_path = os.path.join(tmp_path, "temp")
         file_data.save(path=new_path, name="numpy_array.dat")
