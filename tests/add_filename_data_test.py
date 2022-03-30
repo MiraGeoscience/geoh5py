@@ -55,9 +55,9 @@ def test_add_file(tmp_path):
             os.path.join(new_path, "numpy_array.dat")
         ), f"Input path '{os.path.join(new_path, 'numpy_array.dat')}' does not exist."
         workspace.finalize()
-
+        file_data.save(path=new_path)
         np.testing.assert_array_equal(
-            np.loadtxt(os.path.join(new_path, "numpy_array.dat")),
+            np.loadtxt(os.path.join(new_path, "numpy_array.txt")),
             np.loadtxt(BytesIO(file_data.values)),
             err_msg="Loaded and stored bytes array not the same",
         )
