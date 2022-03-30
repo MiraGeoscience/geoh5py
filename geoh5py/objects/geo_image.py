@@ -19,13 +19,12 @@ from __future__ import annotations
 import os
 import uuid
 from io import BytesIO
-from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import numpy as np
 from PIL import Image
 
-from ..data import Data, FilenameData
+from ..data import FilenameData
 from .object_base import ObjectBase, ObjectType
 
 
@@ -180,29 +179,17 @@ class GeoImage(ObjectBase):
 
         with TemporaryDirectory() as tempdir:
             ext = getattr(image, "format")
-            tempfile = (
-                Path(tempdir) / f"image.{ext.lower() if ext is not None else 'tiff'}"
+            temp_file = os.path.join(
+                tempdir, f"image.{ext.lower() if ext is not None else 'tiff'}"
             )
-            image.save(tempfile)
+            image.save(temp_file)
 
-            with open(tempfile, "rb") as raw_binary:
-                values = raw_binary.read()
+            if self.image_data is not None:
+                self.workspace.remove_entity(self.image_data)
 
-        if self.image is None:
-            attributes = {
-                "name": "GeoImageMesh_Image",
-                "file_name": self.name,
-                "association": "OBJECT",
-                "parent": self,
-                "values": values,
-            }
-            entity_type = {"name": "GeoImageMesh_Image", "primitive_type": "FILENAME"}
-
-            self.workspace.create_entity(
-                Data, entity=attributes, entity_type=entity_type
-            )
-        else:
-            self.image_data.values = values
+            image = self.add_file(temp_file)
+            image.name = "GeoImageMesh_Image"
+            image.entity_type.name = "GeoImageMesh_Image"
 
         self.vertices = self.default_vertices
 

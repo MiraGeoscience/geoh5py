@@ -304,10 +304,8 @@ class Workspace:
         ):
             entity_kwargs["parent"] = self.root
 
-        if entity_class is Data:
-            created_entity = self.create_data(
-                entity_class, entity_kwargs, entity_type_kwargs
-            )
+        if entity_class is Data or entity_class is None:
+            created_entity = self.create_data(Data, entity_kwargs, entity_type_kwargs)
         elif entity_class is RootGroup:
             created_entity = RootGroup(
                 RootGroup.find_or_create_type(self, **entity_type_kwargs),

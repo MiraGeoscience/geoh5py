@@ -139,3 +139,9 @@ class Data(Entity):
         :return: A new or existing object type
         """
         return DataType.find_or_create(workspace, **kwargs)
+
+    def add_file(self, file: str):
+        """
+        Alias not implemented from base Entity class.
+        """
+        raise NotImplementedError("Data entity cannot contain files.")
