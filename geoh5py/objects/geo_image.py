@@ -63,7 +63,7 @@ class GeoImage(ObjectBase):
             if self.existing_h5_entity:
                 self._cells = self.workspace.fetch_cells(self.uid)
             else:
-                self._cells = np.c_[[0, 1, 2, 0], [0, 2, 3, 0]].T.astype("uint32")
+                self.cells = np.c_[[0, 1, 2, 0], [0, 2, 3, 0]].T.astype("uint32")
 
         return self._cells
 
@@ -72,6 +72,23 @@ class GeoImage(ObjectBase):
         assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
         self.modified_attributes = "cells"
         self._cells = indices
+        self.workspace.finalize()
+
+    @property
+    def default_vertices(self):
+        """
+        Assign the default vertices based on image pixel count
+        """
+        if self.image is not None:
+            return np.asarray(
+                [
+                    [0, self.image.size[1], 0],
+                    [self.image.size[0], self.image.size[1], 0],
+                    [self.image.size[0], 0, 0],
+                    [0, 0, 0],
+                ]
+            )
+        return None
 
     @property
     def vertices(self) -> np.ndarray | None:
@@ -82,22 +99,28 @@ class GeoImage(ObjectBase):
         if (getattr(self, "_vertices", None) is None) and self.existing_h5_entity:
             self._vertices = self.workspace.fetch_coordinates(self.uid, "vertices")
 
+        if self._vertices is None and self.image is not None:
+            self.vertices = self.default_vertices
+
         if self._vertices is not None:
             return self._vertices.view("<f8").reshape((-1, 3)).astype(float)
 
         return self._vertices
 
     @vertices.setter
-    def vertices(self, xyz: np.ndarray):
+    def vertices(self, xyz: np.ndarray | list):
+        if isinstance(xyz, list):
+            xyz = np.asarray(xyz)
+
         if not isinstance(xyz, np.ndarray) or xyz.shape != (4, 3):
             raise ValueError("Input 'vertices' must be a numpy array of shape (4, 3)")
 
         xyz = np.asarray(
             np.core.records.fromarrays(xyz.T, names="x, y, z", formats="<f8, <f8, <f8")
         )
-
         self.modified_attributes = "vertices"
         self._vertices = xyz
+        self.workspace.finalize()
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -138,7 +161,6 @@ class GeoImage(ObjectBase):
                     "Shape of the 'image' must be a 2D or "
                     "a 3D array with shape(*,*, 3) representing 'RGB' values."
                 )
-
             value = image.astype(float)
             value -= value.min()
             value *= 255.0 / value.max()
@@ -180,7 +202,9 @@ class GeoImage(ObjectBase):
                 Data, entity=attributes, entity_type=entity_type
             )
         else:
-            self.image.values = values
+            self.image_data.values = values
+
+        self.vertices = self.default_vertices
 
     def georeference(self, reference: np.ndarray | list, locations: np.ndarray | list):
         """
@@ -196,7 +220,7 @@ class GeoImage(ObjectBase):
 
         reference = np.asarray(reference)
         locations = np.asarray(locations)
-        if self.shape is None:
+        if self.image is None:
             raise AttributeError("An 'image' must be set before georeferencing.")
 
         if reference.ndim != 2 or reference.shape[0] < 3 or reference.shape[1] != 2:
@@ -224,26 +248,10 @@ class GeoImage(ObjectBase):
             np.c_[np.ones(3), reference], locations[:, 2], rcond=None
         )
 
-        corners = np.vstack(
-            [
-                [0, self.shape[0]],
-                [self.shape[1], self.shape[0]],
-                [self.shape[1], 0],
-                [0, 0],
-            ]
-        )
+        corners = self.default_vertices[:, :2]
 
         self.vertices = np.c_[
             param_x[0] + np.dot(corners, param_x[1:]),
             param_y[0] + np.dot(corners, param_y[1:]),
             param_z[0] + np.dot(corners, param_z[1:]),
         ]
-
-    @property
-    def shape(self):
-        """
-        Image size
-        """
-        if self.image is not None:
-            return self.image.size
-        return None

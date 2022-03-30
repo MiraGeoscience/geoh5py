@@ -537,6 +537,10 @@ class H5Writer:
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
                 )
+
+                if entity.file_name in entity_handle:
+                    del entity_handle[entity.file_name]
+
                 entity_handle.create_dataset(
                     entity.file_name,
                     data=np.asarray(np.void(values[:])),

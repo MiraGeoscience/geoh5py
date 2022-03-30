@@ -27,21 +27,17 @@ from geoh5py.workspace import Workspace
 
 def test_create_copy_geoimage(tmp_path):
 
-    workspace = Workspace(path.join(tmp_path, "geo_image_test2.geoh5"))
-
-    values = np.random.randint(0, 255, (128, 64, 3))
-
-    points = np.r_[
-        np.c_[5.0, 5.0, 0],
-        np.c_[5.0, 10.0, 3],
-        np.c_[10.0, 10.0, 3],
-    ]
+    workspace = Workspace(path.join(tmp_path, "geo_image_test.geoh5"))
     pixels = np.r_[
         np.c_[32, 0],
         np.c_[32, 64],
         np.c_[64, 64],
     ]
-
+    points = np.r_[
+        np.c_[5.0, 5.0, 0],
+        np.c_[5.0, 10.0, 3],
+        np.c_[10.0, 10.0, 3],
+    ]
     geoimage = GeoImage.create(workspace, name="MyGeoImage")
 
     with pytest.raises(AttributeError) as excinfo:
@@ -65,7 +61,7 @@ def test_create_copy_geoimage(tmp_path):
         "representing 'RGB' values." in str(excinfo)
     )
 
-    geoimage.image = values
+    geoimage.image = np.random.randint(0, 255, (128, 128))
 
     with pytest.raises(ValueError) as excinfo:
         geoimage.georeference(pixels[0, :], points)
@@ -80,12 +76,43 @@ def test_create_copy_geoimage(tmp_path):
 
     assert "Input 'locations' must be a 2D array of shape(*, 3)" in str(excinfo.value)
 
+    geoimage.image = np.random.randint(0, 255, (128, 64, 3))
     geoimage.georeference(pixels, points)
-    workspace.finalize()
+    np.testing.assert_almost_equal(
+        geoimage.vertices[:, 0].max(),
+        10,
+        err_msg="Issue geo-referencing the max x-coordinates.",
+    )
+    np.testing.assert_almost_equal(
+        geoimage.vertices[:, 0].min(),
+        0,
+        err_msg="Issue geo-referencing the min x-coordinates.",
+    )
 
+    np.testing.assert_almost_equal(
+        geoimage.vertices[:, 1].max(),
+        15,
+        err_msg="Issue geo-referencing the max y-coordinates.",
+    )
+    np.testing.assert_almost_equal(
+        geoimage.vertices[:, 1].min(),
+        5,
+        err_msg="Issue geo-referencing the min y-coordinates.",
+    )
+
+    np.testing.assert_almost_equal(
+        geoimage.vertices[:, 2].max(),
+        6,
+        err_msg="Issue geo-referencing the max z-coordinates.",
+    )
+    np.testing.assert_almost_equal(
+        geoimage.vertices[:, 2].min(),
+        0,
+        err_msg="Issue geo-referencing the min z-coordinates.",
+    )
+
+    # Re-load from file
     geoimage.image.save(path.join(tmp_path, "test.tiff"))
-
-    # Re-load as
     geoimage_file = GeoImage.create(workspace, name="MyGeoImage")
 
     with pytest.raises(ValueError) as excinfo:
@@ -99,43 +126,9 @@ def test_create_copy_geoimage(tmp_path):
         geoimage_file.image == geoimage.image
     ), "Error writing and re-loading the image file."
 
-    np.testing.assert_almost_equal(
-        geoimage.vertices[:, 0].max(),
-        20,
-        err_msg="Issue geo-referencing the max x-coordinates.",
-    )
-    np.testing.assert_almost_equal(
-        geoimage.vertices[:, 0].min(),
-        0,
-        err_msg="Issue geo-referencing the min x-coordinates.",
-    )
-
-    np.testing.assert_almost_equal(
-        geoimage.vertices[:, 1].max(),
-        10,
-        err_msg="Issue geo-referencing the max y-coordinates.",
-    )
-    np.testing.assert_almost_equal(
-        geoimage.vertices[:, 1].min(),
-        5,
-        err_msg="Issue geo-referencing the min y-coordinates.",
-    )
-
-    np.testing.assert_almost_equal(
-        geoimage.vertices[:, 2].max(),
-        3,
-        err_msg="Issue geo-referencing the max z-coordinates.",
-    )
-    np.testing.assert_almost_equal(
-        geoimage.vertices[:, 2].min(),
-        0,
-        err_msg="Issue geo-referencing the min z-coordinates.",
-    )
-
     new_workspace = Workspace(path.join(tmp_path, "geo_image_test2.geoh5"))
     geoimage.copy(parent=new_workspace)
     rec_image = new_workspace.get_entity("MyGeoImage")[0]
-
     compare_entities(geoimage, rec_image, ignore=["_parent", "_image"])
 
     assert rec_image.image == geoimage.image, "Error copying the bytes image data."
