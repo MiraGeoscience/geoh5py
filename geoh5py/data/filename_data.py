@@ -41,10 +41,7 @@ class FilenameData(Data):
         :obj:`str` Text value.
         """
         if getattr(self, "_file_name", None) is None:
-            if self.existing_h5_entity:
-                self._file_name = self.workspace.fetch_values(self.uid)
-            else:
-                self._file_name = self.parent.name
+            self._file_name = self.workspace.fetch_values(self.uid)
 
         return self._file_name
 
@@ -90,9 +87,6 @@ class FilenameData(Data):
             raise ValueError("Input 'values' for FilenameData must be of type 'bytes'.")
         self.modified_attributes = "values"
         self._values = values
-
-    def __call__(self):
-        return self._file_name
 
     # TODO: implement specialization to access values.
     # Stored as a 1D array of 32-bit unsigned integer type (native).
