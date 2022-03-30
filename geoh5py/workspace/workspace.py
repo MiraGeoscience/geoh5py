@@ -193,9 +193,12 @@ class Workspace:
                     entity.entity_type, key
                 )
 
-        if parent is None:
-            parent = entity.parent
-        elif isinstance(parent, Workspace):
+        if not isinstance(parent, (ObjectBase, Group, Workspace)):
+            raise ValueError(
+                "Input 'parent' should be of type (ObjectBase, Group, Workspace)"
+            )
+
+        if isinstance(parent, Workspace):
             parent = parent.root
 
         # Assign the same uid if possible
@@ -218,7 +221,7 @@ class Workspace:
         if copy_children:
             for child in entity.children:
                 new_object.add_children(
-                    [self.copy_to_parent(child, parent=new_object, copy_children=True)]
+                    [self.copy_to_parent(child, new_object, copy_children=True)]
                 )
 
         new_object.workspace.finalize()
