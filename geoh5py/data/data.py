@@ -18,15 +18,11 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING
 
 from ..shared import Entity
 from .data_association_enum import DataAssociationEnum
 from .data_type import DataType
 from .primitive_type_enum import PrimitiveTypeEnum
-
-if TYPE_CHECKING:
-    from .. import workspace
 
 
 class Data(Entity):
@@ -100,12 +96,12 @@ class Data(Entity):
                     f"Association flag should be one of {DataAssociationEnum.__members__}"
                 )
 
-            self._association = getattr(DataAssociationEnum, value.upper())
-        else:
-            if not isinstance(value, DataAssociationEnum):
-                raise TypeError(f"Association must be of type {DataAssociationEnum}")
+            value = getattr(DataAssociationEnum, value.upper())
 
-            self._association = value
+        if not isinstance(value, DataAssociationEnum):
+            raise TypeError(f"Association must be of type {DataAssociationEnum}")
+
+        self._association = value
 
     @property
     def entity_type(self) -> DataType:
@@ -120,25 +116,11 @@ class Data(Entity):
         self._entity_type = data_type
 
         self.modified_attributes = "entity_type"
-        return self._entity_type
 
     @classmethod
     @abstractmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         ...
-
-    @classmethod
-    def find_or_create_type(
-        cls: type[Entity], workspace: workspace.Workspace, **kwargs
-    ) -> DataType:
-        """
-        Find or create a type for a given object class
-
-        :param Current workspace: Workspace
-
-        :return: A new or existing object type
-        """
-        return DataType.find_or_create(workspace, **kwargs)
 
     def add_file(self, file: str):
         """

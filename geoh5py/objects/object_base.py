@@ -26,7 +26,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..data import CommentsData, Data
-from ..data.data_association_enum import DataAssociationEnum
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
@@ -374,27 +373,21 @@ class ObjectBase(Entity):
         """
         Get a dictionary of attributes and validate the data 'association' keyword.
         """
+        if attribute_dict.get("association") is not None:
+            return
 
-        if "association" in attribute_dict.keys():
-            assert attribute_dict["association"] in [
-                enum.name for enum in DataAssociationEnum
-            ], (
-                "Data 'association' must be one of "
-                + f"{[enum.name for enum in DataAssociationEnum]}. "
-                + f"{attribute_dict['association']} provided."
-            )
+        if (
+            getattr(self, "n_cells", None) is not None
+            and attribute_dict["values"].ravel().shape[0] == self.n_cells
+        ):
+            attribute_dict["association"] = "CELL"
+        elif (
+            getattr(self, "n_vertices", None) is not None
+            and attribute_dict["values"].ravel().shape[0] == self.n_vertices
+        ):
+            attribute_dict["association"] = "VERTEX"
         else:
             attribute_dict["association"] = "OBJECT"
-            if (
-                getattr(self, "n_cells", None) is not None
-                and attribute_dict["values"].ravel().shape[0] == self.n_cells
-            ):
-                attribute_dict["association"] = "CELL"
-            elif (
-                getattr(self, "n_vertices", None) is not None
-                and attribute_dict["values"].ravel().shape[0] == self.n_vertices
-            ):
-                attribute_dict["association"] = "VERTEX"
 
     @staticmethod
     def validate_data_type(attribute_dict):
