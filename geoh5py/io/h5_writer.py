@@ -512,8 +512,10 @@ class H5Writer:
         """
         with fetch_h5_handle(file) as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
-            if getattr(entity, attribute, None) is not None:
-                values = getattr(entity, attribute)
+            if getattr(entity, attribute, None) is None:
+                return
+
+            values = getattr(entity, attribute)
 
             # Adding an array of values
             if isinstance(values, dict) or isinstance(entity, CommentsData):

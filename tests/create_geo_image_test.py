@@ -79,37 +79,20 @@ def test_create_copy_geoimage(tmp_path):
     geoimage.image = np.random.randint(0, 255, (128, 64, 3))
     geoimage.georeference(pixels, points)
     np.testing.assert_almost_equal(
-        geoimage.vertices[:, 0].max(),
-        10,
-        err_msg="Issue geo-referencing the max x-coordinates.",
-    )
-    np.testing.assert_almost_equal(
-        geoimage.vertices[:, 0].min(),
-        0,
-        err_msg="Issue geo-referencing the min x-coordinates.",
+        geoimage.vertices,
+        np.asarray([[0, 15, 6], [10, 15, 6], [10, 5, 0], [0, 5, 0]]),
+        err_msg="Issue geo-referencing the coordinates.",
     )
 
-    np.testing.assert_almost_equal(
-        geoimage.vertices[:, 1].max(),
-        15,
-        err_msg="Issue geo-referencing the max y-coordinates.",
-    )
-    np.testing.assert_almost_equal(
-        geoimage.vertices[:, 1].min(),
-        5,
-        err_msg="Issue geo-referencing the min y-coordinates.",
-    )
+    geoimage_copy = GeoImage.create(workspace, name="MyGeoImageTwin")
+    geoimage.image_data.copy(parent=geoimage_copy)
 
-    np.testing.assert_almost_equal(
-        geoimage.vertices[:, 2].max(),
-        6,
-        err_msg="Issue geo-referencing the max z-coordinates.",
-    )
-    np.testing.assert_almost_equal(
-        geoimage.vertices[:, 2].min(),
-        0,
-        err_msg="Issue geo-referencing the min z-coordinates.",
-    )
+    np.testing.assert_almost_equal(geoimage_copy.vertices, geoimage.default_vertices)
+
+    # Setting image from byte
+    geoimage_copy = GeoImage.create(workspace, name="MyGeoImageTwin")
+    geoimage_copy.image = geoimage.image_data.values
+    assert geoimage_copy.image == geoimage.image, "Error setting image from bytes."
 
     # Re-load from file
     geoimage.image.save(path.join(tmp_path, "test.tiff"))
@@ -128,6 +111,8 @@ def test_create_copy_geoimage(tmp_path):
 
     new_workspace = Workspace(path.join(tmp_path, "geo_image_test2.geoh5"))
     geoimage.copy(parent=new_workspace)
+
+    new_workspace = Workspace(path.join(tmp_path, "geo_image_test2.geoh5"))
     rec_image = new_workspace.get_entity("MyGeoImage")[0]
     compare_entities(geoimage, rec_image, ignore=["_parent", "_image"])
 

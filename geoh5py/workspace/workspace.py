@@ -177,7 +177,9 @@ class Workspace:
 
         entity_kwargs: dict = {"entity": {"uid": None, "parent": None}}
         for key in entity.__dict__:
-            if key not in ["_uid", "_entity_type"] + list(omit_list):
+            if key not in ["_uid", "_entity_type", "_modified_attributes"] + list(
+                omit_list
+            ):
                 if key[0] == "_":
                     key = key[1:]
 

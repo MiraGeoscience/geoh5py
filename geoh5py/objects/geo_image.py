@@ -89,38 +89,6 @@ class GeoImage(ObjectBase):
             )
         return None
 
-    @property
-    def vertices(self) -> np.ndarray | None:
-        """
-        :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`:
-        Defines the four corners of the geo_image
-        """
-        if (getattr(self, "_vertices", None) is None) and self.existing_h5_entity:
-            self._vertices = self.workspace.fetch_coordinates(self.uid, "vertices")
-
-        if self._vertices is None and self.image is not None:
-            self.vertices = self.default_vertices
-
-        if self._vertices is not None:
-            return self._vertices.view("<f8").reshape((-1, 3)).astype(float)
-
-        return self._vertices
-
-    @vertices.setter
-    def vertices(self, xyz: np.ndarray | list):
-        if isinstance(xyz, list):
-            xyz = np.asarray(xyz)
-
-        if not isinstance(xyz, np.ndarray) or xyz.shape != (4, 3):
-            raise ValueError("Input 'vertices' must be a numpy array of shape (4, 3)")
-
-        xyz = np.asarray(
-            np.core.records.fromarrays(xyz.T, names="x, y, z", formats="<f8, <f8, <f8")
-        )
-        self.modified_attributes = "vertices"
-        self._vertices = xyz
-        self.workspace.finalize()
-
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
@@ -242,3 +210,35 @@ class GeoImage(ObjectBase):
             param_y[0] + np.dot(corners, param_y[1:]),
             param_z[0] + np.dot(corners, param_z[1:]),
         ]
+
+    @property
+    def vertices(self) -> np.ndarray | None:
+        """
+        :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`:
+        Defines the four corners of the geo_image
+        """
+        if (getattr(self, "_vertices", None) is None) and self.existing_h5_entity:
+            self._vertices = self.workspace.fetch_coordinates(self.uid, "vertices")
+
+        if self._vertices is None and self.image is not None:
+            self.vertices = self.default_vertices
+
+        if self._vertices is not None:
+            return self._vertices.view("<f8").reshape((-1, 3)).astype(float)
+
+        return self._vertices
+
+    @vertices.setter
+    def vertices(self, xyz: np.ndarray | list):
+        if isinstance(xyz, list):
+            xyz = np.asarray(xyz)
+
+        if not isinstance(xyz, np.ndarray) or xyz.shape != (4, 3):
+            raise ValueError("Input 'vertices' must be a numpy array of shape (4, 3)")
+
+        xyz = np.asarray(
+            np.core.records.fromarrays(xyz.T, names="x, y, z", formats="<f8, <f8, <f8")
+        )
+        self.modified_attributes = "vertices"
+        self._vertices = xyz
+        self.workspace.finalize()
