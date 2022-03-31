@@ -193,14 +193,15 @@ class GeoImage(ObjectBase):
                 "Input 'locations' must be a 2D array of shape(*, 3) "
                 "with the same number of rows as the control points."
             )
+        constant = np.ones(reference.shape[0])
         param_x, _, _, _ = np.linalg.lstsq(
-            np.c_[np.ones(3), reference], locations[:, 0], rcond=None
+            np.c_[constant, reference], locations[:, 0], rcond=None
         )
         param_y, _, _, _ = np.linalg.lstsq(
-            np.c_[np.ones(3), reference], locations[:, 1], rcond=None
+            np.c_[constant, reference], locations[:, 1], rcond=None
         )
         param_z, _, _, _ = np.linalg.lstsq(
-            np.c_[np.ones(3), reference], locations[:, 2], rcond=None
+            np.c_[constant, reference], locations[:, 2], rcond=None
         )
 
         corners = self.default_vertices[:, :2]
