@@ -19,11 +19,11 @@ from copy import deepcopy
 
 import pytest
 
+from geoh5py.io.utils import dict_mapper
 from geoh5py.ui_json import templates
 from geoh5py.ui_json.constants import default_ui_json
 from geoh5py.ui_json.utils import (
     collect,
-    dict_mapper,
     flatten,
     group_enabled,
     group_optional,

@@ -373,6 +373,32 @@ class H5Reader:
         return mapping
 
     @classmethod
+    def fetch_file_object(
+        cls, file: str | h5py.File, uid: uuid.UUID, file_name: str
+    ) -> bytes | None:
+        """
+        Load data associated with an image file
+
+        :param file: Name of the target geoh5 file
+        :param uid: Unique identifier of the target entity
+        :param file_name: Name of the file stored as bytes data.
+
+        :return values: Data file stored as bytes
+        """
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file.keys())[0]
+
+            try:
+                bytes_value = h5file[name]["Data"][as_str_if_uuid(uid)][file_name][
+                    ()
+                ].tobytes()
+
+            except KeyError:
+                bytes_value = None
+
+        return bytes_value
+
+    @classmethod
     def fetch_values(cls, file: str | h5py.File, uid: uuid.UUID) -> float | None:
         """
         Get data :obj:`~geoh5py.data.data.Data.values`
@@ -414,7 +440,6 @@ class H5Reader:
         :param name: Type of coordinates 'vertices', 'trace' or 'surveys'
 
         :return surveys: :obj:`numpy.ndarray` of [x, y, z] coordinates
-
         """
         with fetch_h5_handle(file) as h5file:
             root = list(h5file.keys())[0]
@@ -438,7 +463,6 @@ class H5Reader:
         :param uid: Unique identifier of the target object
 
         :return surveys: :obj:`numpy.ndarray` of [x, y, z] coordinates
-
         """
         with fetch_h5_handle(file) as h5file:
 
