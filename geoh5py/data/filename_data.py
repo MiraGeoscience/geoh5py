@@ -61,9 +61,9 @@ class FilenameData(Data):
             os.mkdir(path)
 
         if name is None:
-            name = getattr(self, "file_name")
+            name = getattr(self, "file_name", "image.tiff")
 
-        if self.values is not None and name is not None:
+        if self.values is not None:
             with open(os.path.join(path, name), "wb") as raw_binary:
                 raw_binary.write(getattr(self, "values"))
 
