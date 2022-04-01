@@ -155,6 +155,18 @@ class PropertyGroupValidator(BaseValidator):
             raise PropertyGroupValidationError(name, value, valid)
 
 
+class AtLeastOneValidator(BaseValidator):
+
+    validator_type = "oneof"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    @classmethod
+    def validate(cls, name, value, valid):
+        pass
+
+
 class RequiredValidator(BaseValidator):
     """
     Validate that required keys are present in parameter.

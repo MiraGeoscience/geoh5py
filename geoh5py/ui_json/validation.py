@@ -23,7 +23,7 @@ from uuid import UUID
 
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
-from geoh5py.shared.exceptions import RequiredValidationError
+from geoh5py.shared.exceptions import AtLeastOneValidationError, RequiredValidationError
 from geoh5py.shared.validators import BaseValidator, TypeValidator
 from geoh5py.ui_json.utils import group_optional, optional_type
 from geoh5py.workspace import Workspace
@@ -244,20 +244,31 @@ class InputValidation:
 
         :param data: Input data with known validations.
         """
-        for name, validations in self.validations.items():
 
-            if name not in data.keys():
+        oneof_validations = {}
+        for param, validations in self.validations.items():
+
+            if param not in data.keys():
                 if "required" in validations and not self.ignore_requirements:
-                    raise RequiredValidationError(name)
+                    raise RequiredValidationError(param)
 
                 continue
+
+            if "oneof" in validations:
+                oneof_validations.get(validations["oneof"], {}).update(
+                    {param: False if data[param] is None else True}
+                )
 
             if "association" in validations and validations["association"] in data:
                 temp_validate = deepcopy(validations)
                 temp_validate["association"] = data[validations["association"]]
-                self.validate(name, data[name], temp_validate)
+                self.validate(param, data[param], temp_validate)
             else:
-                self.validate(name, data.get(name, None))
+                self.validate(param, data.get(param, None))
+
+        for name, val in oneof_validations:
+            if not any(v for v in val.values()):
+                raise AtLeastOneValidationError(name, list(val.keys()))
 
     def __call__(self, data, *args):
         if isinstance(data, dict):

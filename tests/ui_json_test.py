@@ -27,6 +27,7 @@ from geoh5py.objects import Points
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
+    AtLeastOneValidationError,
     JSONParameterValidationError,
     OptionalValidationError,
     PropertyGroupValidationError,
@@ -208,6 +209,23 @@ def test_value_validator():
 
     # No validation error for None
     validator("test", None, ["these", "don't", "matter"])
+
+
+def test_validate_data(tmp_path):
+    ui_json = {
+        "title": "test",
+        "geoh5": path.join(tmp_path, "test.geoh5"),
+        "param_1": {"label": "param_1", "value": None},
+        "param_2": {"label": "param_2", "value": None},
+    }
+    validations = {
+        "param_1": {"oneof": "the sad little parameters", "types": [str, type(None)]},
+        "param_2": {"oneof": "the sad little parameters", "types": [str, type(None)]},
+    }
+    ifile = InputFile(ui_json=ui_json, validations=validations)
+    with pytest.raises(AtLeastOneValidationError) as excinfo:
+        ifile.validators.validate_data(ifile.data)
+    assert "sad little" in str(excinfo.value)
 
 
 def get_workspace(directory):
