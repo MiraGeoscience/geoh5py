@@ -245,7 +245,7 @@ class InputValidation:
         :param data: Input data with known validations.
         """
 
-        oneof_validations = {}
+        one_of_validations: dict[str, Any] = {}
         for param, validations in self.validations.items():
 
             if param not in data.keys():
@@ -254,10 +254,13 @@ class InputValidation:
 
                 continue
 
-            if "oneof" in validations:
-                oneof_validations.get(validations["oneof"], {}).update(
-                    {param: False if data[param] is None else True}
-                )
+            if "one_of" in validations:
+                one_of_group = validations["one_of"]
+                val = {param: data[param] is not None}
+                if one_of_group in one_of_validations:
+                    one_of_validations[one_of_group].update(val)
+                else:
+                    one_of_validations[one_of_group] = val
 
             if "association" in validations and validations["association"] in data:
                 temp_validate = deepcopy(validations)
@@ -266,7 +269,7 @@ class InputValidation:
             else:
                 self.validate(param, data.get(param, None))
 
-        for name, val in oneof_validations:
+        for name, val in one_of_validations.items():
             if not any(v for v in val.values()):
                 raise AtLeastOneValidationError(name, list(val.keys()))
 

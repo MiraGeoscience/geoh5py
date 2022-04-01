@@ -157,7 +157,7 @@ class PropertyGroupValidator(BaseValidator):
 
 class AtLeastOneValidator(BaseValidator):
 
-    validator_type = "oneof"
+    validator_type = "one_of"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
