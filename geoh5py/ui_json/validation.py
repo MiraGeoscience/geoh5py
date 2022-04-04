@@ -23,7 +23,7 @@ from uuid import UUID
 
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
-from geoh5py.shared.exceptions import AtLeastOneValidationError, RequiredValidationError
+from geoh5py.shared.exceptions import RequiredValidationError
 from geoh5py.shared.validators import BaseValidator, TypeValidator
 from geoh5py.ui_json.utils import group_optional, optional_type
 from geoh5py.workspace import Workspace
@@ -261,8 +261,7 @@ class InputValidation:
                     one_of_validations[one_of_group].update(val)
                 else:
                     one_of_validations[one_of_group] = val
-
-            if "association" in validations and validations["association"] in data:
+            elif "association" in validations and validations["association"] in data:
                 temp_validate = deepcopy(validations)
                 temp_validate["association"] = data[validations["association"]]
                 self.validate(param, data[param], temp_validate)
@@ -270,8 +269,7 @@ class InputValidation:
                 self.validate(param, data.get(param, None))
 
         for name, val in one_of_validations.items():
-            if not any(v for v in val.values()):
-                raise AtLeastOneValidationError(name, list(val.keys()))
+            self.validate(name, val, {"one_of": None})
 
     def __call__(self, data, *args):
         if isinstance(data, dict):

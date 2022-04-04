@@ -32,6 +32,7 @@ from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
+    AtLeastOneValidationError,
     OptionalValidationError,
     PropertyGroupValidationError,
     RequiredValidationError,
@@ -164,7 +165,8 @@ class AtLeastOneValidator(BaseValidator):
 
     @classmethod
     def validate(cls, name, value, valid):
-        pass
+        if not any(v for v in value.values()):
+            raise AtLeastOneValidationError(name, value)
 
 
 class RequiredValidator(BaseValidator):
