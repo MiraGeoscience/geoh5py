@@ -39,6 +39,8 @@ class H5Reader:
     key_map = {
         "values": "Data",
         "cells": "Cells",
+        "layers": "Layers",
+        "prisms": "Prisms",
         "surveys": "Surveys",
         "trace": "Trace",
         "trace_depth": "TraceDepth",

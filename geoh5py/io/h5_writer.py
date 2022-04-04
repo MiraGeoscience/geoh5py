@@ -47,6 +47,8 @@ class H5Writer:
     key_map = {
         "values": "Data",
         "cells": "Cells",
+        "layers": "Layers",
+        "prisms": "Prisms",
         "surveys": "Surveys",
         "trace": "Trace",
         "trace_depth": "TraceDepth",
@@ -284,7 +286,7 @@ class H5Writer:
                     cls.write_data_values(h5file, entity, attr)
                 elif attr == "cells":
                     cls.write_cells(h5file, entity)
-                elif attr in ["surveys", "trace", "vertices"]:
+                elif attr in ["layers", "prisms", "surveys", "trace", "vertices"]:
                     cls.write_coordinates(h5file, entity, attr)
                 elif attr == "octree_cells":
                     cls.write_octree_cells(h5file, entity)
@@ -751,7 +753,7 @@ class H5Writer:
             ):
                 H5Writer.write_property_groups(h5file, entity)
 
-            for attribute in ["surveys", "trace", "vertices"]:
+            for attribute in ["layers", "prisms", "surveys", "trace", "vertices"]:
                 if getattr(entity, attribute, None) is not None:
                     H5Writer.write_coordinates(h5file, entity, attribute)
 
