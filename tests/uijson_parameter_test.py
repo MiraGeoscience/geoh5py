@@ -50,6 +50,16 @@ def test_parameter():
         param.validate()
 
 
+def test_validation_update():
+    param = Parameter("param", "test", {"types": [str], "values": ["test", "me"]})
+    param.validations = dict(param.validations, **{"values": ["you"], "required": True})
+    assert len(param.validations) == 3
+    assert len(param._validations.validators) == 3
+    assert param.validations["values"] == ["you"]
+    assert param.validations["required"]
+    assert param.validations["types"] == [str]
+
+
 def test_form_parameter_validate():
 
     param = FormParameter(

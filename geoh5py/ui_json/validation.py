@@ -45,10 +45,15 @@ class Validations:
     @validations.setter
     def validations(self, val):
         for key in val:
-            self.validators += [
-                k() for k in BaseValidator.__subclasses__() if k.type == key
-            ]
+            for validator in BaseValidator.__subclasses__():
+                if validator.type == key:
+                    if validator not in self.validators:
+                        self.validators.append(validator)
+                    break
         self._validations = val
+
+    def update(self, val):
+        self.validations.update(val)
 
     def validate(self, name, value):
 

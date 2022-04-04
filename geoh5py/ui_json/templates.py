@@ -48,17 +48,19 @@ class Parameter:
 
     @property
     def validations(self):
-        return self._validations
+        return self._validations.validations
 
     @validations.setter
     def validations(self, val):
-        if isinstance(val, Validations):
-            self._validations = val
+        if hasattr(self, "_validations"):
+            self._validations.validations = dict(self.validations, **val)
         else:
-            self._validations = Validations(val)
+            self._validations = (
+                val if isinstance(val, Validations) else Validations(val)
+            )
 
     def validate(self):
-        self.validations.validate(self.name, self.value)
+        self._validations.validate(self.name, self.value)
 
     def __str__(self):
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
