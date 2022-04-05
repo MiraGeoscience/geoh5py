@@ -143,7 +143,7 @@ class BaseTipper(BaseEMSurvey):
 
     @property
     def default_input_types(self) -> list[str]:
-        """Input types. Must be 'Rx only'"""
+        """Input types. Must be 'Rx and base stations'"""
         return self.__INPUT_TYPE
 
     @property

@@ -26,15 +26,9 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_survey_tipper(tmp_path):
-    # workspace = Workspace("ztem.geoh5")
-    # survey = workspace.get_entity(
-    #     "Inv_North_ref2em2_bound1e7_scottMeshTopo_everyIter_60pct rx"
-    # )[0]
-    # print(tmp_path, survey)
-    # name = "Survey"
+
     path = os.path.join(tmp_path, r"../testTipper.geoh5")
-    #
-    # # Create a workspace
+
     workspace = Workspace(path)
     xlocs = np.linspace(-1000, 1000, 10)
     vertices = np.c_[xlocs, np.random.randn(xlocs.shape[0], 2)]
@@ -77,6 +71,8 @@ def test_create_survey_tipper(tmp_path):
     base_stations_rec = new_workspace.get_entity("TipperBaseStations")[0]
     receivers_rec = new_workspace.get_entity("TipperReceivers")[0]
 
+    assert receivers_rec.default_input_types == ["Rx and base stations"]
+
     # Check entities
     compare_entities(
         base_stations,
@@ -91,8 +87,11 @@ def test_create_survey_tipper(tmp_path):
 
     # Test copying receiver over through the receivers
     # Create a workspace
+
+    receivers.copy(Workspace(os.path.join(tmp_path, r"testATEM_copy.geoh5")))
+
     new_workspace = Workspace(os.path.join(tmp_path, r"testATEM_copy.geoh5"))
-    receivers_rec = receivers.copy(new_workspace)
+    receivers_rec = new_workspace.get_entity("TipperReceivers")[0]
     compare_entities(
         receivers, receivers_rec, ignore=["_receivers", "_base_stations", "_parent"]
     )
