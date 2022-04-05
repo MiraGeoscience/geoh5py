@@ -30,12 +30,13 @@ class MTReceivers(BaseEMSurvey):
     """
 
     __TYPE_UID = uuid.UUID("{b99bd6e5-4fe1-45a5-bd2f-75fc31f91b38}")
+    __TYPE = "Receivers"
     __METADATA = {
         "EM Dataset": {
             "Channels": [],
             "Input type": "Rx only",
             "Property groups": [],
-            "Receivers": "",
+            "Receivers": None,
             "Survey type": "Magnetotellurics",
             "Unit": "Hertz (Hz)",
         }
@@ -78,13 +79,6 @@ class MTReceivers(BaseEMSurvey):
         return self.__UNITS
 
     @property
-    def receivers(self):
-        """MT receivers"""
-        return self
-
-    @receivers.setter
-    def receivers(self, value: BaseEMSurvey):
-        raise AttributeError(
-            "Attribute 'receivers' of the class 'MTReceivers' must reference to self. "
-            f"Re-assignment to {value} ignored."
-        )
+    def type(self):
+        """Survey element type"""
+        return self.__TYPE

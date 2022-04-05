@@ -35,6 +35,7 @@ class BaseEMSurvey(Curve):
 
     __METADATA: dict = {"EM Dataset": {}}
     __INPUT_TYPE = None
+    __TYPE = None
     __UNITS = None
     _receivers: BaseEMSurvey | None = None
     _transmitters: BaseEMSurvey | None = None
@@ -316,9 +317,8 @@ class BaseEMSurvey(Curve):
 
             if metadata is None:
                 metadata = self.default_metadata
-                for name in ["Receivers", "Transmitters"]:
-                    if name in type(self).__name__:
-                        metadata["EM Dataset"][name] = self.uid
+                if self.type is not None:
+                    metadata["EM Dataset"][self.type] = self.uid
                 self.metadata = metadata
             else:
                 self._metadata = metadata
@@ -344,8 +344,11 @@ class BaseEMSurvey(Curve):
             )
 
         for key, value in values["EM Dataset"].items():
-            if key in ["Receivers", "Transmitters"] and isinstance(value, str):
-                values["EM Dataset"][key] = uuid.UUID(value)
+            if isinstance(value, str):
+                try:
+                    values["EM Dataset"][key] = uuid.UUID(value)
+                except ValueError:
+                    continue
 
         self._metadata = values
         self.modified_attributes = "metadata"
@@ -370,7 +373,9 @@ class BaseEMSurvey(Curve):
     @receivers.setter
     def receivers(self, receivers: BaseEMSurvey):
         if isinstance(None, self.default_receiver_type):
-            raise AttributeError(f"EM class {self} does not have receivers.")
+            raise AttributeError(
+                f"The 'receivers' attribute cannot be set on class {type(self)}."
+            )
 
         if not isinstance(receivers, self.default_receiver_type):
             raise TypeError(
@@ -411,7 +416,9 @@ class BaseEMSurvey(Curve):
     @transmitters.setter
     def transmitters(self, transmitters: BaseEMSurvey):
         if isinstance(None, self.default_transmitter_type):
-            raise AttributeError(f"EM class {self} does not have transmitters.")
+            raise AttributeError(
+                f"The 'transmitters' attribute cannot be set on class {type(self)}."
+            )
 
         if not isinstance(transmitters, self.default_transmitter_type):
             raise TypeError(
@@ -420,6 +427,11 @@ class BaseEMSurvey(Curve):
             )
         self._transmitters = transmitters
         self.edit_metadata({"Transmitters": transmitters.uid})
+
+    @property
+    def type(self):
+        """Survey element type"""
+        return self.__TYPE
 
     @property
     def unit(self) -> float | None:

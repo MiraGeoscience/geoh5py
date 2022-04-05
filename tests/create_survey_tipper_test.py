@@ -47,7 +47,7 @@ def test_create_survey_tipper(tmp_path):
         base_stations, TipperBaseStations
     ), "Entity type TipperBaseStations failed to create."
 
-    with pytest.raises(TypeError) as error:
+    with pytest.raises(AttributeError) as error:
         receivers.base_stations = "123"
 
     assert f"{TipperBaseStations}" in str(
@@ -58,16 +58,15 @@ def test_create_survey_tipper(tmp_path):
         receivers.receivers = base_stations
 
     assert (
-        "Attribute 'receivers' of the class 'TipperReceivers' must reference to self."
+        f"The 'receivers' attribute cannot be set on class {type(receivers)}."
         in str(error)
-    ), "Missed raising AttributeError on setting 'receivers' on self."
+    ), ("Missed raising AttributeError on setting 'receivers' on self.")
 
     with pytest.raises(AttributeError) as error:
         base_stations.base_stations = receivers
 
-    assert (
-        "Attribute 'base_stations' of the class 'TipperBaseStations' must reference to self."
-        in str(error)
+    assert f"{TipperBaseStations}" in str(
+        error
     ), "Missed raising AttributeError on setting 'base_stations' on self."
 
     receivers.base_stations = base_stations
@@ -89,34 +88,34 @@ def test_create_survey_tipper(tmp_path):
         receivers_rec,
         ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
     )
-    #
-    # # Test copying receiver over through the receivers
-    # # Create a workspace
-    # new_workspace = Workspace(Path(tmp_path) / r"testATEM_copy.geoh5")
-    # receivers_rec = receivers.copy(new_workspace)
-    # compare_entities(
-    #     receivers, receivers_rec, ignore=["_receivers", "_base_stations", "_parent"]
-    # )
-    # compare_entities(
-    #     base_stations,
-    #     receivers_rec.base_stations,
-    #     ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
-    # )
-    #
-    # # Test copying receiver over through the base_stations
-    # # Create a workspace
-    # new_workspace = Workspace(Path(tmp_path) / r"testATEM_copy2.geoh5")
-    # base_stations_rec = base_stations.copy(new_workspace)
-    # compare_entities(
-    #     receivers,
-    #     base_stations_rec.receivers,
-    #     ignore=["_receivers", "_base_stations", "_parent"],
-    # )
-    # compare_entities(
-    #     base_stations,
-    #     base_stations_rec,
-    #     ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
-    # )
+
+    # Test copying receiver over through the receivers
+    # Create a workspace
+    new_workspace = Workspace(os.path.join(tmp_path, r"testATEM_copy.geoh5"))
+    receivers_rec = receivers.copy(new_workspace)
+    compare_entities(
+        receivers, receivers_rec, ignore=["_receivers", "_base_stations", "_parent"]
+    )
+    compare_entities(
+        base_stations,
+        receivers_rec.base_stations,
+        ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
+    )
+
+    # Test copying receiver over through the base_stations
+    # Create a workspace
+    new_workspace = Workspace(os.path.join(tmp_path, r"testATEM_copy2.geoh5"))
+    base_stations_rec = base_stations.copy(new_workspace)
+    compare_entities(
+        receivers,
+        base_stations_rec.receivers,
+        ignore=["_receivers", "_base_stations", "_parent"],
+    )
+    compare_entities(
+        base_stations,
+        base_stations_rec,
+        ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
+    )
 
 
 def test_survey_tipper_data(tmp_path):

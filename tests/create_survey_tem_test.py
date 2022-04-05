@@ -57,16 +57,15 @@ def test_create_survey_tem(tmp_path):
     with pytest.raises(AttributeError) as error:
         receivers.receivers = transmitters
 
-    assert (
-        "Attribute 'receivers' of the class 'AirborneTEMReceivers' must reference to self."
-        in str(error)
+    assert f"The 'receivers' attribute cannot be set on class {type(receivers)}" in str(
+        error
     ), "Missed raising AttributeError on setting 'receivers' on self."
 
     with pytest.raises(AttributeError) as error:
         transmitters.transmitters = receivers
 
     assert (
-        "Attribute 'transmitters' of the class 'AirborneTEMTransmitters' must reference to self."
+        f"The 'transmitters' attribute cannot be set on class {type(transmitters)}"
         in str(error)
     ), "Missed raising AttributeError on setting 'transmitters' on self."
 
