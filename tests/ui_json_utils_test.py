@@ -17,11 +17,13 @@
 
 from copy import deepcopy
 
+import pytest
+
+from geoh5py.io.utils import dict_mapper
 from geoh5py.ui_json import templates
 from geoh5py.ui_json.constants import default_ui_json
 from geoh5py.ui_json.utils import (
     collect,
-    dict_mapper,
     flatten,
     group_enabled,
     group_optional,
@@ -63,18 +65,16 @@ def test_flatten():
 
 
 def test_collect():
-    d_u_j = deepcopy(default_ui_json)
-    d_u_j["string_parameter"] = templates.string_parameter(optional="enabled")
-    d_u_j["float_parameter"] = templates.float_parameter(optional="disabled")
-    d_u_j["integer_parameter"] = templates.integer_parameter(optional="enabled")
-    enabled_params = collect(d_u_j, "enabled", value=True)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["string_parameter"] = templates.string_parameter(optional="enabled")
+    ui_json["float_parameter"] = templates.float_parameter(optional="disabled")
+    ui_json["integer_parameter"] = templates.integer_parameter(optional="enabled")
+    enabled_params = collect(ui_json, "enabled", value=True)
     assert len(enabled_params) == 2
-    assert all(
-        k in enabled_params.keys() for k in ["string_parameter", "integer_parameter"]
-    )
-    tooltip_params = collect(d_u_j, "tooltip")
+    assert all(k in enabled_params for k in ["string_parameter", "integer_parameter"])
+    tooltip_params = collect(ui_json, "tooltip")
     assert len(tooltip_params) == 1
-    assert "run_command_boolean" in tooltip_params.keys()
+    assert "run_command_boolean" in tooltip_params
 
 
 def test_group_optional():
@@ -151,6 +151,14 @@ def test_set_enabled():
     # Remove the groupOptional member and check that set_enabled
     # Affects the enabled status of the calling parameter
     ui_json["string_parameter"].pop("groupOptional")
+    with pytest.warns(UserWarning) as warn:
+        set_enabled(ui_json, "float_parameter", False)
+
+    assert (
+        "Non-option parameter 'float_parameter' cannot be set to 'enabled' " "False "
+    ) in str(warn[0])
+
+    ui_json["float_parameter"]["optional"] = True
     is_group_optional = set_enabled(ui_json, "float_parameter", False)
     assert not ui_json["float_parameter"]["enabled"]
     assert ui_json["string_parameter"]["enabled"]

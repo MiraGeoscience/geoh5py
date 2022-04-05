@@ -14,7 +14,13 @@ from copy import deepcopy
 from typing import Any
 from uuid import UUID
 
-from geoh5py.io.utils import as_str_if_uuid, entity2uuid, str2uuid, uuid2entity
+from geoh5py.io.utils import (
+    as_str_if_uuid,
+    dict_mapper,
+    entity2uuid,
+    str2uuid,
+    uuid2entity,
+)
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
 from geoh5py.shared.validators import AssociationValidator
@@ -23,7 +29,6 @@ from geoh5py.workspace import Workspace
 from .constants import base_validations, ui_validations
 from .utils import (
     container_group2name,
-    dict_mapper,
     flatten,
     inf2str,
     list2str,
@@ -58,6 +63,8 @@ class InputFile:
         ui.json fields other than 'value'.
     """
 
+    _path: str | None = None
+    _name: str | None = None
     _ui_validators: InputValidation = InputValidation(
         validations=ui_validations,
         validation_options={"ignore_list": ("value",)},
@@ -95,27 +102,79 @@ class InputFile:
             if not isinstance(value, dict):
                 raise ValueError("Input 'data' must be of type dict or None.")
 
+            if self._ui_json is None:
+                raise AttributeError("'ui_json' must be set before setting data.")
+
+            if len(value) != len(self._ui_json):
+                raise ValueError(
+                    "The number of input values for 'data' must "
+                    "equal the number of parameters in 'ui_json'."
+                )
+
             if "geoh5" in value:
                 self.workspace = value["geoh5"]
 
             value = self._promote(value)
 
-            if self.validators is not None:
+            if self.validators is not None and not self.validation_options.get(
+                "disabled", False
+            ):
                 self.validators.validate_data(value)
 
         self._data = value
+
+    @property
+    def name(self) -> str | None:
+        """
+        Name of ui.json file.
+        """
+        if getattr(self, "_name", None) is None and self.ui_json is not None:
+            self.name = self.ui_json["title"]
+
+        return self._name
+
+    @name.setter
+    def name(self, name: str):
+        if ".ui.json" not in name:
+            name += ".ui.json"
+
+        self._name = name
 
     def load(self, input_dict: dict[str, Any]):
         """Load data from dictionary and validate."""
         self.ui_json = input_dict
         self.data = flatten(input_dict)
 
+    @property
+    def path(self) -> str | None:
+        """
+        Directory for the input/output ui.json file.
+        """
+        if getattr(self, "_path", None) is None and self.workspace is not None:
+            self.path = os.path.dirname(self.workspace.h5file)
+
+        return self._path
+
+    @path.setter
+    def path(self, path: str):
+        if not os.path.isdir(path):
+            raise ValueError(f"The specified path: '{path}' does not exist.")
+
+        self._path = path
+
+    @property
+    def path_name(self) -> str | None:
+        if self.path is not None and self.name is not None:
+            return os.path.join(self.path, self.name)
+
+        return None
+
     @staticmethod
-    def read_ui_json(json_file: str):
+    def read_ui_json(json_file: str, **kwargs):
         """
         Read and create an InputFile from *.ui.json
         """
-        input_file = InputFile()
+        input_file = InputFile(**kwargs)
 
         if "ui.json" not in json_file:
             raise ValueError("Input file should have the extension *.ui.json")
@@ -139,7 +198,7 @@ class InputFile:
             if not isinstance(value, dict):
                 raise ValueError("Input 'ui_json' must be of type dict or None.")
 
-            self._ui_json = self._numify(value)
+            self._ui_json = self.numify(value)
             default_validations = InputValidation.infer_validations(self._ui_json)
             for key, validations in default_validations.items():
                 if key in self.validations:
@@ -179,8 +238,8 @@ class InputFile:
                 else:
                     enabled = True
 
-                was_group = set_enabled(self.ui_json, key, enabled)
-                if was_group:
+                was_group_enabled = set_enabled(self.ui_json, key, enabled)
+                if was_group_enabled:
                     warnings.warn(
                         f"Setting all member of group: {self.ui_json[key]['group']} "
                         f"to enabled: {enabled}."
@@ -193,6 +252,9 @@ class InputFile:
                         member = "property"
                     else:
                         self.ui_json[key]["isValue"] = True
+
+                if (value is None) and (not self.ui_json[key].get("enabled", False)):
+                    continue
 
                 self.ui_json[key][member] = value
 
@@ -258,7 +320,7 @@ class InputFile:
         name: str = None,
         none_map: dict[str, Any] = None,
         path: str = None,
-    ) -> str | None:
+    ):
         """
         Writes a formatted ui.json file from InputFile data
 
@@ -266,26 +328,29 @@ class InputFile:
         :param none_map : Map parameter None values to non-null numeric types.
         :param path: Directory to write the ui.json to.
         """
-        if self.ui_json is None or self.data is None:
+        if name is not None:
+            self.name = name
+
+        if path is not None:
+            self.path = path
+
+        if self.path_name is None:
+            raise AttributeError(
+                "The input file requires 'path' and 'name' to be set before writing out."
+            )
+
+        if self.ui_json is None:
             raise AttributeError(
                 "The input file requires 'ui_json' and 'data' to be set before writing out."
             )
 
-        self.update_ui_values(self.data, none_map=none_map)
+        if self.data is not None:
+            self.update_ui_values(self.data, none_map=none_map)
 
-        if path is None:
-            path = os.path.dirname(self.workspace.h5file)
-
-        if name is None:
-            name = self.ui_json["title"]
-
-        if ".ui.json" not in name:
-            name += ".ui.json"
-
-        with open(os.path.join(path, name), "w", encoding="utf-8") as file:
+        with open(self.path_name, "w", encoding="utf-8") as file:
             json.dump(self._stringify(self._demote(self.ui_json)), file, indent=4)
 
-        return os.path.join(path, name)
+        return self.path_name
 
     @staticmethod
     def _stringify(var: dict[str, Any]) -> dict[str, Any]:
@@ -311,14 +376,14 @@ class InputFile:
         return var
 
     @classmethod
-    def _numify(cls, var: dict[str, Any]) -> dict[str, Any]:
+    def numify(cls, ui_json: dict[str, Any]) -> dict[str, Any]:
         """
         Convert inf, none and list strings to numerical types within a dictionary
 
         Parameters
         ----------
 
-        var :
+        ui_json :
             dictionary containing ui.json keys, values, fields
 
         Returns
@@ -326,23 +391,26 @@ class InputFile:
         Dictionary with inf, none and list string representations converted numerical types.
 
         """
-        for key, value in var.items():
+        if not isinstance(ui_json, dict):
+            raise ValueError("Input value for 'numify' must be a ui_json dictionary.")
+
+        for key, value in ui_json.items():
             if isinstance(value, dict):
                 try:
                     cls.ui_validation(value)
                 except tuple(BaseValidationError.__subclasses__()) as error:
                     raise JSONParameterValidationError(key, error.args[0]) from error
 
-                value = cls._numify(value)
+                value = cls.numify(value)
 
             mappers = (
                 [str2none, str2inf, str2uuid, path2workspace]
                 if key == "ignore_values"
                 else [str2list, str2none, str2inf, str2uuid, path2workspace]
             )
-            var[key] = dict_mapper(value, mappers)
+            ui_json[key] = dict_mapper(value, mappers)
 
-        return var
+        return ui_json
 
     def _demote(self, var: dict[str, Any]) -> dict[str, str]:
         """Converts promoted parameter values to their string representations."""

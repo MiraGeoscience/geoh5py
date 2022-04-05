@@ -24,8 +24,10 @@ exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
 
 [tool.poetry.dependencies]
 numpy = "!=1.19.4"
+Pillow = "^8.0.1"
 python = "^3.7"
 h5py = "^3.2.1"
+
 
 [tool.poetry.dev-dependencies]
 lockfile = "^0.12.2"
@@ -57,7 +59,7 @@ use_parentheses = true
 line_length = 88
 # auto-updated by seed-isort-config
 
-known_third_party = ["Add2Build", "StringIO", "autodoc", "edit_on_github", "environmentSetup", "h5py", "numpy", "poetry_publish", "pytest", "toml", "urllib2"]
+known_third_party = ["Add2Build", "PIL", "StringIO", "autodoc", "edit_on_github", "environmentSetup", "h5py", "numpy", "poetry_publish", "pytest", "toml", "urllib2"]
 
 
 [tool.black]

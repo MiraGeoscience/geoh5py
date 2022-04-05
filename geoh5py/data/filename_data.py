@@ -14,14 +14,79 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
+import os
 
 from .data import Data, PrimitiveTypeEnum
+from .data_type import DataType
 
 
 class FilenameData(Data):
+
+    _file_name = None
+    _name = "GeoImageMesh_Image"
+
+    def __init__(self, data_type: DataType, **kwargs):
+        super().__init__(data_type, **kwargs)
+        self._public = False
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.FILENAME
+
+    @property
+    def file_name(self) -> str | None:
+        """
+        :obj:`str` Text value.
+        """
+        if getattr(self, "_file_name", None) is None:
+            self._file_name = self.workspace.fetch_values(self.uid)
+
+        return self._file_name
+
+    @file_name.setter
+    def file_name(self, value):
+        self.modified_attributes = "values"
+        self._file_name = value
+
+    def save(self, path: str = "./", name=None):
+        """
+        Save the file to disk.
+
+        :param path: Directory to save the file to.
+        :param name: Name given to the file.
+        """
+        if not os.path.exists(path):
+            os.mkdir(path)
+
+        if name is None:
+            name = getattr(self, "file_name", "image.tiff")
+
+        if self.values is not None:
+            with open(os.path.join(path, name), "wb") as raw_binary:
+                raw_binary.write(getattr(self, "values"))
+
+    @property
+    def values(self) -> bytes | None:
+        """
+        Binary :obj:`str` value representation of a file.
+        """
+        if (
+            self.file_name is not None
+            and self.existing_h5_entity
+            and getattr(self, "_values", None) is None
+        ):
+            self._values = self.workspace.fetch_file_object(self.uid, self.file_name)
+
+        return self._values
+
+    @values.setter
+    def values(self, values):
+        if not isinstance(values, bytes):
+            raise ValueError("Input 'values' for FilenameData must be of type 'bytes'.")
+        self.modified_attributes = "values"
+        self._values = values
 
     # TODO: implement specialization to access values.
     # Stored as a 1D array of 32-bit unsigned integer type (native).

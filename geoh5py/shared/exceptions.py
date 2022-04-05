@@ -22,11 +22,11 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from geoh5py.shared.utils import iterable_message
-from geoh5py.workspace import Workspace
 
 if TYPE_CHECKING:
     from geoh5py.groups import PropertyGroup
     from geoh5py.shared import Entity
+    from geoh5py.workspace import Workspace
 
 
 class BaseValidationError(ABC, Exception):
@@ -110,7 +110,7 @@ class RequiredValidationError(BaseValidationError):
 class ShapeValidationError(BaseValidationError):
     """Error on shape validation."""
 
-    def __init__(self, name: str, value: tuple[int], validation: tuple[int]):
+    def __init__(self, name: str, value: tuple[int], validation: tuple[int] | str):
         super().__init__(ShapeValidationError.message(name, value, validation))
 
     @staticmethod

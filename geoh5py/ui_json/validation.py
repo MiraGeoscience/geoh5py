@@ -24,7 +24,18 @@ from uuid import UUID
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import RequiredValidationError
-from geoh5py.shared.validators import BaseValidator, TypeValidator
+from geoh5py.shared.validators import (
+    AssociationValidator,
+    AtLeastOneValidator,
+    BaseValidator,
+    OptionalValidator,
+    PropertyGroupValidator,
+    RequiredValidator,
+    ShapeValidator,
+    TypeValidator,
+    UUIDValidator,
+    ValueValidator,
+)
 from geoh5py.ui_json.utils import group_optional, optional_type
 from geoh5py.workspace import Workspace
 
@@ -132,34 +143,28 @@ class InputValidation:
             if "isValue" in item:
                 validations[key] = {
                     "types": [str, UUID, int, float, Entity],
-                    "optional": [optional_type(ui_json, key)],
                 }
-                if not item["isValue"]:
-                    validations[key]["association"] = item["parent"]
-                    validations[key]["uuid"] = None
+                validations[key]["association"] = item["parent"]
+                validations[key]["uuid"] = None
 
             elif "choiceList" in item:
                 validations[key] = {
                     "types": [str],
                     "values": item["choiceList"],
-                    "optional": [optional_type(ui_json, key)],
                 }
             elif "fileType" in item:
                 validations[key] = {
                     "types": [str],
-                    "optional": [optional_type(ui_json, key)],
                 }
             elif "meshType" in item:
                 validations[key] = {
                     "types": [str, UUID, Entity],
-                    "optional": [optional_type(ui_json, key)],
                     "association": "geoh5",
                     "uuid": None,
                 }
             elif "parent" in item:
                 validations[key] = {
                     "types": [str, UUID, Entity],
-                    "optional": [optional_type(ui_json, key)],
                     "association": item["parent"],
                     "uuid": None,
                 }
@@ -174,8 +179,9 @@ class InputValidation:
 
                 validations[key] = {
                     "types": [check_type],
-                    "optional": [optional_type(ui_json, key)],
                 }
+
+            validations[key].update({"optional": optional_type(ui_json, key)})
 
             if (
                 item.get("optional") or group_optional(ui_json, item.get("group", ""))
@@ -205,7 +211,7 @@ class InputValidation:
     def _merge_validations(
         validations_a: dict[str, dict], validations_b: dict[str, dict]
     ):
-        """Overwrite self.validations with new definitions."""
+        """Merge validations_b into validations_a."""
         out = deepcopy(validations_a)
         if validations_b is not None:
             for key, val in validations_b.items():
@@ -229,14 +235,26 @@ class InputValidation:
 
             validations = self.validations[name]
 
-        for val, args in validations.items():
-
+        for validator in [
+            RequiredValidator,
+            AtLeastOneValidator,
+            OptionalValidator,
+            UUIDValidator,
+            TypeValidator,
+            AssociationValidator,
+            PropertyGroupValidator,
+            ValueValidator,
+            ShapeValidator,
+        ]:
+            val = str(validator.validator_type)
             if (
-                val == "required" and self.ignore_requirements
-            ) or name in self.ignore_list:
+                val not in validations
+                or (val == "required" and self.ignore_requirements)
+                or name in self.ignore_list
+            ):
                 continue
 
-            self.validators[val](name, value, args)
+            self.validators[val](name, value, validations[val])
 
     def validate_data(self, data: dict[str, Any]) -> None:
         """

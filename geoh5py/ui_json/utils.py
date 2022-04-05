@@ -17,43 +17,17 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable
+import warnings
+from os import mkdir, path
+from shutil import move
+from time import time
+from typing import Any
 
 import numpy as np
 
 from geoh5py.groups import ContainerGroup
+from geoh5py.objects import ObjectBase
 from geoh5py.workspace import Workspace
-
-
-def dict_mapper(
-    val, string_funcs: list[Callable], *args, omit: dict | None = None
-) -> dict:
-    """
-    Recurses through nested dictionary and applies mapping funcs to all values
-
-    Parameters
-    ----------
-    val :
-        Dictionary val (could be another dictionary).
-    string_funcs:
-        Function to apply to values within dictionary.
-    omit: Dictionary of functions to omit.
-    """
-    if omit is None:
-        omit = {}
-    if isinstance(val, dict):
-        for key, values in val.items():
-            val[key] = dict_mapper(
-                values,
-                [fun for fun in string_funcs if fun not in omit.get(key, [])],
-            )
-
-    for fun in string_funcs:
-        if args is None:
-            val = fun(val)
-        else:
-            val = fun(val, *args)
-    return val
 
 
 def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
@@ -132,7 +106,9 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
     :param parameter: Parameter name.
     :param value: Boolean value set to parameter's enabled member.
     """
-    ui_json[parameter]["enabled"] = value
+    if ui_json[parameter].get("optional", False):
+        ui_json[parameter]["enabled"] = value
+
     is_group_optional = False
     group_name = ui_json[parameter].get("group", False)
     if group_name:
@@ -140,10 +116,19 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
         parameters = find_all(group, "groupOptional")
         if parameters:
             is_group_optional = True
+            enabled_change = False
             for form in group.values():
+                enabled_change |= form.get("enabled", True) != value
                 form["enabled"] = value
 
-    return is_group_optional
+    if (not value) and not (
+        ui_json[parameter].get("optional", False) or is_group_optional
+    ):
+        warnings.warn(
+            f"Non-option parameter '{parameter}' cannot be set to 'enabled' False "
+        )
+
+    return is_group_optional and enabled_change
 
 
 def truth(ui_json: dict[str, dict], name: str, member: str) -> bool:
@@ -253,3 +238,28 @@ def container_group2name(value):
     if isinstance(value, ContainerGroup):
         return value.name
     return value
+
+
+def monitored_directory_copy(
+    directory: str, entity: ObjectBase, copy_children: bool = True
+):
+    """
+    Create a temporary *.geoh5 file in the monitoring folder and export entity for update.
+
+    :param directory: Monitoring directory
+    :param entity: Entity to be updated
+    :param copy_children: Option to copy children entities.
+    """
+    working_path = path.join(directory, ".working")
+    if not path.exists(working_path):
+        mkdir(working_path)
+
+    temp_geoh5 = f"temp{time():.3f}.geoh5"
+    temp_workspace = Workspace(path.join(working_path, temp_geoh5))
+    entity.copy(parent=temp_workspace, copy_children=copy_children)
+    move(
+        path.join(working_path, temp_geoh5),
+        path.join(directory, temp_geoh5),
+    )
+
+    return path.join(directory, temp_geoh5)

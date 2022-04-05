@@ -12,7 +12,8 @@ the creation of a Workspace_ to the creation and manipulation of Entities_
    :maxdepth: 2
 
    workspace.ipynb
-   entities.ipynb
+   core_entities.ipynb
+   data.ipynb
    surveys
 
 .. _Workspace: workspace.ipynb

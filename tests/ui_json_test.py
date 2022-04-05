@@ -27,205 +27,19 @@ from geoh5py.objects import Points
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
-    AtLeastOneValidationError,
     JSONParameterValidationError,
-    OptionalValidationError,
     PropertyGroupValidationError,
     RequiredValidationError,
     ShapeValidationError,
     TypeValidationError,
-    UUIDValidationError,
     ValueValidationError,
 )
 from geoh5py.shared.utils import compare_entities
-from geoh5py.shared.validators import (
-    AssociationValidator,
-    OptionalValidator,
-    PropertyGroupValidator,
-    RequiredValidator,
-    ShapeValidator,
-    TypeValidator,
-    UUIDValidator,
-    ValueValidator,
-)
 from geoh5py.ui_json import InputValidation, templates
 from geoh5py.ui_json.constants import default_ui_json, ui_validations
 from geoh5py.ui_json.input_file import InputFile
 from geoh5py.ui_json.utils import collect
 from geoh5py.workspace import Workspace
-
-
-def test_validation_types():
-    validation_types = [
-        "optional",
-        "association",
-        "property_group_type",
-        "required",
-        "shape",
-        "types",
-        "uuid",
-        "values",
-    ]
-
-    errs = [
-        OptionalValidator(),
-        AssociationValidator(),
-        PropertyGroupValidator(),
-        RequiredValidator(),
-        ShapeValidator(),
-        TypeValidator(),
-        UUIDValidator(),
-        ValueValidator(),
-    ]
-
-    for i, err in enumerate(errs):
-        assert err.validator_type == validation_types[i]
-
-
-def test_optional_validator():
-    validator = OptionalValidator()
-    with pytest.raises(OptionalValidationError) as excinfo:
-        validator("test", None, False)
-    assert OptionalValidationError.message("test", None, None) == str(excinfo.value)
-
-
-def test_association_validator(tmp_path):
-
-    workspace = Workspace(path.join(tmp_path, "test.geoh5"))
-    workspace2 = Workspace(path.join(tmp_path, "test2.geoh5"))
-    points = Points.create(workspace, vertices=np.array([[1, 2, 3], [4, 5, 6]]))
-    points2 = Points.create(workspace2, vertices=np.array([[1, 2, 3], [4, 5, 6]]))
-    validator = AssociationValidator()
-
-    # Test valid workspace
-    with pytest.raises(AssociationValidationError) as excinfo:
-        validator("test", points, workspace2)
-    assert AssociationValidationError.message("test", points, workspace2) == str(
-        excinfo.value
-    )
-
-    # Test valid points object
-    with pytest.raises(AssociationValidationError) as excinfo:
-        validator("test", points, points2)
-    assert AssociationValidationError.message("test", points, points2) == str(
-        excinfo.value
-    )
-
-    # No validation error for none value or valid
-    validator("test", None, points)
-    validator("test", points, None)
-
-
-def test_property_group_validator(tmp_path):
-
-    workspace = Workspace(path.join(tmp_path, "test.geoh5"))
-    points = Points.create(
-        workspace, vertices=np.array([[1, 2, 3], [4, 5, 6]]), name="test_points"
-    )
-    test_data = points.add_data({"points_data": {"values": np.array([1.0, 2.0])}})
-    property_group = points.add_data_to_group(test_data, "test_group")
-    validator = PropertyGroupValidator()
-
-    with pytest.raises(PropertyGroupValidationError) as excinfo:
-        validator("test", property_group, "not_test_group")
-    assert PropertyGroupValidationError.message(
-        "test", property_group, "not_test_group"
-    ) == str(excinfo.value)
-
-
-def test_required_validator():
-
-    validator = RequiredValidator()
-    with pytest.raises(RequiredValidationError) as excinfo:
-        validator("test", None, True)
-    assert RequiredValidationError.message("test", None, None) == str(excinfo.value)
-
-
-def test_shape_validator():
-
-    validator = ShapeValidator()
-    with pytest.raises(ShapeValidationError) as excinfo:
-        validator("test", [[1, 2, 3], [4, 5, 6]], (3, 2))
-    assert ShapeValidationError.message("test", (2, 3), (3, 2)) == str(excinfo.value)
-
-    # No validation error for None
-    validator("test", None, (3, 2))
-
-
-def test_type_validator():
-
-    validator = TypeValidator()
-
-    # Test non-iterable value, single valid
-    with pytest.raises(TypeValidationError) as excinfo:
-        validator("test", 3, type({}))
-    assert TypeValidationError.message(
-        "test", int.__name__, [type({}).__name__]
-    ) == str(excinfo.value)
-
-    # Test non-iterable value, more than one valid
-    with pytest.raises(TypeValidationError) as excinfo:
-        validator("test", 3, [str, type({})])
-    assert TypeValidationError.message(
-        "test", int.__name__, [str.__name__, type({}).__name__]
-    ) == str(excinfo.value)
-
-    # Test iterable value single valid both invalid
-    with pytest.raises(TypeValidationError) as excinfo:
-        validator("test", [3, 2], type({}))
-    assert TypeValidationError.message(
-        "test", int.__name__, [type({}).__name__]
-    ) == str(excinfo.value)
-
-    # Test iterable value single valid one valid, one invalid
-    with pytest.raises(TypeValidationError) as excinfo:
-        validator("test", [3, "a"], int)
-    assert TypeValidationError.message("test", str.__name__, [int.__name__]) == str(
-        excinfo.value
-    )
-
-
-def test_uuid_validator():
-
-    validator = UUIDValidator()
-
-    # Test bad uid string
-    with pytest.raises(UUIDValidationError) as excinfo:
-        validator("test", "sdr")
-    assert UUIDValidationError.message("test", "sdr", None) == str(excinfo.value)
-
-    # No validation error for None
-    validator("test", None, [])
-
-
-def test_value_validator():
-
-    validator = ValueValidator()
-    with pytest.raises(ValueValidationError) as excinfo:
-        validator("test", "blah", ["nope", "not here"])
-    assert ValueValidationError.message("test", "blah", ["nope", "not here"]) == str(
-        excinfo.value
-    )
-
-    # No validation error for None
-    validator("test", None, ["these", "don't", "matter"])
-
-
-def test_validate_data(tmp_path):
-    ui_json = {
-        "title": "test",
-        "geoh5": path.join(tmp_path, "test.geoh5"),
-        "param_1": {"label": "param_1", "value": None},
-        "param_2": {"label": "param_2", "value": None},
-    }
-    validations = {
-        "param_1": {"one_of": "sad little parameter", "types": [str, type(None)]},
-        "param_2": {"one_of": "sad little parameter", "types": [str, type(None)]},
-    }
-    ifile = InputFile(ui_json=ui_json, validations=validations)
-    with pytest.raises(AtLeastOneValidationError) as excinfo:
-        ifile.validators.validate_data(ifile.data)
-    assert "at least one sad little parameter" in str(excinfo.value)
 
 
 def get_workspace(directory):
@@ -260,6 +74,16 @@ def test_input_file_json():
 
     assert "Input 'ui_json' must be of type dict or None" in str(excinfo)
 
+    with pytest.raises(AttributeError) as excinfo:
+        InputFile().data = {"abc": 123}
+
+    assert "'ui_json' must be set before setting data." in str(excinfo)
+
+    with pytest.raises(UserWarning) as excinfo:
+        InputFile().update_ui_values({"abc": 123})
+
+    assert "InputFile requires a 'ui_json' to be defined." in str(excinfo)
+
     ui_json = {"test": 4}
     in_file = InputFile(ui_json=ui_json)
 
@@ -282,6 +106,37 @@ def test_input_file_json():
     )
 
 
+def test_input_file_name_path(tmp_path):
+    # pylint: disable=protected-access
+
+    # Test handling of name attribute
+    test = InputFile()
+    test.name = "test.ui.json"
+    assert test.name == "test.ui.json"  # usual behaviour
+    test._name = None
+    test.ui_json = {"title": "Jarrod"}
+    assert test.name == "Jarrod.ui.json"  # ui.json extension added
+
+    # Test handling of path attribute
+    test.workspace = Workspace(path.join(tmp_path, "test.geoh5"))
+    assert test.path == str(tmp_path)  # pulled from workspace.h5file
+    test.path = tmp_path
+    assert test.path == tmp_path  # usual behaviour
+
+    with pytest.raises(ValueError) as excinfo:
+        test.path = "im/a/fake/path"
+    assert "'im/a/fake/path'" in str(excinfo.value)  # raises if not a dir
+
+    # test path_name method
+    assert test.path_name == path.join(tmp_path, "Jarrod.ui.json")
+    test = InputFile()
+    assert test.path_name is None
+
+    with pytest.raises(AttributeError) as excinfo:
+        test.write_ui_json()
+    assert "requires 'path' and 'name'" in str(excinfo.value)
+
+
 def test_optional_parameter():
     test = templates.optional_parameter("enabled")
     assert test["optional"]
@@ -296,7 +151,7 @@ def test_bool_parameter():
     ui_json = deepcopy(default_ui_json)
     ui_json["logic"] = templates.bool_parameter()
     ui_json["logic"]["value"] = True
-    in_file = InputFile(ui_json=ui_json)
+    in_file = InputFile(ui_json=ui_json, validation_options={"disabled": False})
 
     with pytest.raises(TypeValidationError) as excinfo:
         in_file.validators.validate("logic", 1234)
@@ -319,6 +174,12 @@ def test_integer_parameter(tmp_path):
     assert TypeValidationError.message("integer", "float", ["int"]) == str(
         excinfo.value
     )
+
+    data.pop("integer")
+    with pytest.raises(ValueError) as excinfo:
+        in_file.data = data
+
+    assert "The number of input values" in str(excinfo.value)  # raises if not a dir
 
     data["integer"] = 123
     in_file.data = data
@@ -588,7 +449,7 @@ def test_input_file(tmp_path):
     )
 
     in_file = InputFile(ui_json=ui_json)
-    out_file = in_file.write_ui_json()
+    out_file = in_file.write_ui_json(path=tmp_path)
 
     with pytest.raises(ValueError) as error:
         InputFile.read_ui_json("somefile.json")
@@ -622,10 +483,9 @@ def test_write_ui_json(tmp_path):
     ui_json["test"] = templates.float_parameter(optional="disabled")
     in_file = InputFile(ui_json=ui_json)
     in_file.write_ui_json(name="test_write.ui.json", path=tmp_path)
-    print(in_file.data)
     with open(path.join(tmp_path, "test_write.ui.json"), encoding="utf-8") as file:
         ui_json = json.load(file)
-        assert ui_json["test"]["value"] == ""
+        assert ui_json["test"]["value"] == 1.0
 
 
 def test_data_value_parameter_a(tmp_path):
@@ -641,19 +501,19 @@ def test_data_value_parameter_a(tmp_path):
     assert ui_json["data"]["enabled"]
 
     in_file = InputFile(ui_json=ui_json)
-    out_file = in_file.write_ui_json()
+    out_file = in_file.write_ui_json(path=tmp_path, name="ABC")
     reload_input = InputFile.read_ui_json(out_file)
 
     assert reload_input.data["object"] is None, "Object not reloaded as None"
     assert reload_input.data["data"] == 0.0
 
 
-@pytest.mark.skip(reason="Failing on github for unknown reason")
+# @pytest.mark.skip(reason="Failing on github for unknown reason")
 def test_data_value_parameter_b(tmp_path):
 
     workspace = get_workspace(tmp_path)
     points_a = workspace.get_entity("Points_A")[0]
-    data_b = workspace.get_entity("values B")[0]
+    data_b = points_a.children[0]
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
     ui_json["object"] = templates.object_parameter(value=points_a.uid)
@@ -662,11 +522,18 @@ def test_data_value_parameter_b(tmp_path):
     )
 
     in_file = InputFile(ui_json=ui_json)
-    out_file = in_file.write_ui_json()
+    out_file = in_file.write_ui_json(name="test.ui.json", path=tmp_path)
     reload_input = InputFile.read_ui_json(out_file)
 
     assert reload_input.data["object"].uid == points_a.uid
     assert reload_input.data["data"].uid == data_b.uid
+
+    # Change data to float and re-write
+    reload_input.data["data"] = 123.0
+    reload_input.write_ui_json(name="test.ui.json", path=tmp_path)
+    reload_input = InputFile.read_ui_json(out_file)
+    assert reload_input.data["data"] == 123.0
+    assert reload_input.ui_json["data"]["isValue"]
 
 
 def test_data_parameter(tmp_path):
@@ -704,7 +571,11 @@ def test_stringify(tmp_path):
     ui_json["test"]["group"] = "test_group"
 
     in_file = InputFile(ui_json=ui_json, validations={"test": {"types": [int]}})
-    in_file.update_ui_values({"test": None}, none_map={"test": 4})
+
+    with pytest.warns(UserWarning) as warn:
+        in_file.update_ui_values({"test": None}, none_map={"test": 4})
+
+    assert "Setting all member of group: test_group to enabled" in str(warn[0])
     assert in_file.ui_json["test"]["value"] == 4
     assert not in_file.ui_json["test"]["enabled"]
     assert not in_file.ui_json["test_group"]["enabled"]
@@ -725,11 +596,11 @@ def test_stringify(tmp_path):
 
 
 def test_collect():
-    d_u_j = deepcopy(default_ui_json)
-    d_u_j["string_parameter"] = templates.string_parameter(optional="enabled")
-    d_u_j["float_parameter"] = templates.float_parameter(optional="disabled")
-    d_u_j["integer_parameter"] = templates.integer_parameter(optional="enabled")
-    enabled_params = collect(d_u_j, "enabled", value=True)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["string_parameter"] = templates.string_parameter(optional="enabled")
+    ui_json["float_parameter"] = templates.float_parameter(optional="disabled")
+    ui_json["integer_parameter"] = templates.integer_parameter(optional="enabled")
+    enabled_params = collect(ui_json, "enabled", value=True)
     assert all("enabled" in v for v in enabled_params.values())
     assert all(v["enabled"] for v in enabled_params.values())
 
@@ -751,3 +622,34 @@ def test_required_validators():
     assert all(k in result for k in ["types", "values"])
     assert all(k in ["types", "values"] for k in result)
     assert all(k == v.validator_type for k, v in result.items())
+
+
+def test_merge_validations():
+    # pylint: disable=protected-access
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["string_parameter"] = templates.string_parameter(optional="enabled")
+    ui_json["float_parameter"] = templates.float_parameter(optional="disabled")
+    ui_json["integer_parameter"] = templates.integer_parameter()
+    ui_json["data_value_parameter"] = {
+        "isValue": True,
+        "parent": "Dwayne",
+    }
+    validations = InputValidation._validations_from_uijson(ui_json)
+    validations = InputValidation._merge_validations(
+        validations, {"integer_parameter": {"types": [type(None)]}}
+    )
+
+    # Test handling of isValue
+    assert validations["data_value_parameter"]["association"] == "Dwayne"
+    assert validations["data_value_parameter"]["uuid"] is None
+
+    # If validation exists it is overwritten
+    assert len(validations["integer_parameter"]["types"]) == 1
+    assert type(None) in validations["integer_parameter"]["types"]
+
+    # If validation doesn't exist it is added
+    validations = InputValidation._merge_validations(
+        validations, {"integer_parameter": {"shape": (3, 2)}}
+    )
+    assert all(k in validations["integer_parameter"] for k in ["types", "shape"])

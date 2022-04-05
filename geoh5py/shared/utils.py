@@ -137,6 +137,7 @@ def compare_entities(object_a, object_b, ignore: list | None = None, decimal: in
                     getattr(object_a, attr[1:]).tolist(),
                     getattr(object_b, attr[1:]).tolist(),
                     decimal=decimal,
+                    err_msg=f"Error comparing attribute '{attr}'.",
                 )
             else:
                 assert np.all(
