@@ -79,7 +79,6 @@ def test_create_survey_tem(tmp_path):
     ), "Failed TypeError on loop_radius."
 
     receivers.loop_radius = 123.0
-
     angles = receivers.add_data(
         {"angles": {"values": np.random.randn(receivers.n_vertices)}}
     )
@@ -111,6 +110,9 @@ def test_create_survey_tem(tmp_path):
             f"{key.capitalize().replace('_', ' ')} value"
             not in receivers.metadata["EM Dataset"]
         ), f"Failed in removing '{key}' value from metadata."
+
+        setattr(receivers, key, None)
+        assert getattr(receivers, key) is None
         setattr(receivers, key, 3.0)
         assert (
             f"{key.capitalize().replace('_', ' ')} value"
@@ -325,6 +327,12 @@ def test_survey_tem_data(tmp_path):
     assert (
         "Timing mark" not in receivers.metadata["EM Dataset"]["Waveform"]
     ), "Error removing the timing mark."
+
+    # Repeat with timing mark first.
+    receivers.waveform = None
+    assert "Waveform" not in receivers.metadata["EM Dataset"]
+    receivers.timing_mark = 10**-3.1
+    receivers.waveform = waveform
 
     workspace.finalize()
     new_workspace = Workspace(path)
