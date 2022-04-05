@@ -15,180 +15,107 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 
-# import numpy as np
-# import pytest
-#
-# from geoh5py.objects import AirborneTEMReceivers, AirborneTEMTransmitters
-# from geoh5py.shared.utils import compare_entities
+import numpy as np
+import pytest
+
+from geoh5py.objects import TipperBaseStations, TipperReceivers
+from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
 def test_create_survey_tipper(tmp_path):
-    workspace = Workspace("ztem.geoh5")
-    survey = workspace.get_entity(
-        "Inv_North_ref2em2_bound1e7_scottMeshTopo_everyIter_60pct rx"
-    )[0]
-    print(tmp_path, survey)
+    # workspace = Workspace("ztem.geoh5")
+    # survey = workspace.get_entity(
+    #     "Inv_North_ref2em2_bound1e7_scottMeshTopo_everyIter_60pct rx"
+    # )[0]
+    # print(tmp_path, survey)
     # name = "Survey"
-    # path = Path(tmp_path) / r"../testATEM.geoh5"
+    path = os.path.join(tmp_path, r"../testTipper.geoh5")
     #
     # # Create a workspace
-    # workspace = Workspace(path)
-    # xlocs = np.linspace(-1000, 1000, 10)
-    # vertices = np.c_[xlocs, np.random.randn(xlocs.shape[0], 2)]
-    # receivers = AirborneTEMReceivers.create(
-    #     workspace, vertices=vertices, name=name + "_rx"
-    # )
-    # assert isinstance(
-    #     receivers, AirborneTEMReceivers
-    # ), "Entity type AirborneTEMReceivers failed to create."
-    # transmitters = AirborneTEMTransmitters.create(
-    #     workspace, vertices=vertices, name=name + "_tx"
-    # )
-    # assert isinstance(
-    #     transmitters, AirborneTEMTransmitters
-    # ), "Entity type AirborneTEMTransmitters failed to create."
-    #
-    # with pytest.raises(TypeError) as error:
-    #     receivers.transmitters = "123"
-    #
-    # assert f" must be of type {AirborneTEMTransmitters}" in str(
-    #     error
-    # ), "Missed raising error on 'transmitter' change."
-    #
-    # with pytest.raises(AttributeError) as error:
-    #     receivers.receivers = transmitters
-    #
-    # assert (
-    #     "Attribute 'receivers' of the class 'AirborneTEMReceivers' must reference to self."
-    #     in str(error)
-    # ), "Missed raising AttributeError on setting 'receivers' on self."
-    #
-    # with pytest.raises(AttributeError) as error:
-    #     transmitters.transmitters = receivers
-    #
-    # assert (
-    #     "Attribute 'transmitters' of the class 'AirborneTEMTransmitters' must reference to self."
-    #     in str(error)
-    # ), "Missed raising AttributeError on setting 'transmitters' on self."
-    #
-    # receivers.transmitters = transmitters
-    #
-    # with pytest.raises(TypeError) as error:
-    #     receivers.loop_radius = "123"
-    #
-    # assert "Input 'loop_radius' must be of type 'float'" in str(
-    #     error
-    # ), "Failed TypeError on loop_radius."
-    #
-    # receivers.loop_radius = 123.0
-    #
-    # angles = receivers.add_data(
-    #     {"angles": {"values": np.random.randn(receivers.n_vertices)}}
-    # )
-    # for key in [
-    #     "pitch",
-    #     "roll",
-    #     "yaw",
-    #     "inline_offset",
-    #     "crossline_offset",
-    #     "vertical_offset",
-    # ]:
-    #     with pytest.raises(TypeError) as error:
-    #         setattr(receivers, key, "abc")
-    #
-    #     assert f"Input '{key}' must be one of type float, uuid.UUID or None" in str(
-    #         error
-    #     ), f"Missed raising error on type of '{key}'."
-    #
-    #     setattr(receivers, key, angles.uid)
-    #     assert (
-    #         f"{key.capitalize().replace('_', ' ')} property"
-    #         in receivers.metadata["EM Dataset"]
-    #     ), f"Wrong metadata label set on '{key}' for input uuid."
-    #
-    #     assert (
-    #         getattr(receivers, key) == angles.uid
-    #     ), f"Wrong metadata assignment on {key} property."
-    #     assert (
-    #         f"{key.capitalize().replace('_', ' ')} value"
-    #         not in receivers.metadata["EM Dataset"]
-    #     ), f"Failed in removing '{key}' value from metadata."
-    #     setattr(receivers, key, 3.0)
-    #     assert (
-    #         f"{key.capitalize().replace('_', ' ')} value"
-    #         in receivers.metadata["EM Dataset"]
-    #     ), f"Wrong metadata label set on '{key}' for input uuid."
-    #     assert (
-    #         getattr(receivers, key) == 3.0
-    #     ), f"Wrong metadata assignment on {key} value."
-    #     assert (
-    #         f"{key.capitalize().replace('_', ' ')} property"
-    #         not in receivers.metadata["EM Dataset"]
-    #     ), f"Failed in removing '{key}' property from metadata."
-    #
-    # assert (
-    #     getattr(receivers, "relative_to_bearing", None) is None
-    # ), "Default 'relative_to_bearing' should be None."
-    #
-    # with pytest.raises(TypeError) as error:
-    #     receivers.relative_to_bearing = "nan"
-    #
-    # assert "Input 'relative_to_bearing' must be one of type 'bool'" in str(
-    #     error
-    # ), "Failed TypeError."
-    #
-    # receivers.relative_to_bearing = True
-    #
-    # assert getattr(
-    #     receivers, "relative_to_bearing", None
-    # ), "Failed setting 'relative_to_bearing' to True."
-    #
-    # workspace.finalize()
-    #
-    # new_workspace = Workspace(path)
-    # transmitters_rec = new_workspace.get_entity(name + "_tx")[0]
-    # receivers_rec = new_workspace.get_entity(name + "_rx")[0]
-    #
-    # # Check entities
-    # compare_entities(
-    #     transmitters,
-    #     transmitters_rec,
-    #     ignore=["_receivers", "_transmitters", "_parent"],
-    # )
-    # compare_entities(
-    #     receivers,
-    #     receivers_rec,
-    #     ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
-    # )
+    workspace = Workspace(path)
+    xlocs = np.linspace(-1000, 1000, 10)
+    vertices = np.c_[xlocs, np.random.randn(xlocs.shape[0], 2)]
+    receivers = TipperReceivers.create(workspace, vertices=vertices)
+    assert isinstance(
+        receivers, TipperReceivers
+    ), "Entity type TipperReceivers failed to create."
+    base_stations = TipperBaseStations.create(workspace, vertices=vertices)
+    assert isinstance(
+        base_stations, TipperBaseStations
+    ), "Entity type TipperBaseStations failed to create."
+
+    with pytest.raises(TypeError) as error:
+        receivers.base_stations = "123"
+
+    assert f"{TipperBaseStations}" in str(
+        error
+    ), "Missed raising error on 'base stations' change."
+
+    with pytest.raises(AttributeError) as error:
+        receivers.receivers = base_stations
+
+    assert (
+        "Attribute 'receivers' of the class 'TipperReceivers' must reference to self."
+        in str(error)
+    ), "Missed raising AttributeError on setting 'receivers' on self."
+
+    with pytest.raises(AttributeError) as error:
+        base_stations.base_stations = receivers
+
+    assert (
+        "Attribute 'base_stations' of the class 'TipperBaseStations' must reference to self."
+        in str(error)
+    ), "Missed raising AttributeError on setting 'base_stations' on self."
+
+    receivers.base_stations = base_stations
+
+    workspace.finalize()
+
+    new_workspace = Workspace(path)
+    base_stations_rec = new_workspace.get_entity("TipperBaseStations")[0]
+    receivers_rec = new_workspace.get_entity("TipperReceivers")[0]
+
+    # Check entities
+    compare_entities(
+        base_stations,
+        base_stations_rec,
+        ignore=["_receivers", "_base_stations", "_parent"],
+    )
+    compare_entities(
+        receivers,
+        receivers_rec,
+        ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
+    )
     #
     # # Test copying receiver over through the receivers
     # # Create a workspace
     # new_workspace = Workspace(Path(tmp_path) / r"testATEM_copy.geoh5")
     # receivers_rec = receivers.copy(new_workspace)
     # compare_entities(
-    #     receivers, receivers_rec, ignore=["_receivers", "_transmitters", "_parent"]
+    #     receivers, receivers_rec, ignore=["_receivers", "_base_stations", "_parent"]
     # )
     # compare_entities(
-    #     transmitters,
-    #     receivers_rec.transmitters,
-    #     ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
+    #     base_stations,
+    #     receivers_rec.base_stations,
+    #     ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
     # )
     #
-    # # Test copying receiver over through the transmitters
+    # # Test copying receiver over through the base_stations
     # # Create a workspace
     # new_workspace = Workspace(Path(tmp_path) / r"testATEM_copy2.geoh5")
-    # transmitters_rec = transmitters.copy(new_workspace)
+    # base_stations_rec = base_stations.copy(new_workspace)
     # compare_entities(
     #     receivers,
-    #     transmitters_rec.receivers,
-    #     ignore=["_receivers", "_transmitters", "_parent"],
+    #     base_stations_rec.receivers,
+    #     ignore=["_receivers", "_base_stations", "_parent"],
     # )
     # compare_entities(
-    #     transmitters,
-    #     transmitters_rec,
-    #     ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
+    #     base_stations,
+    #     base_stations_rec,
+    #     ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
     # )
 
 
@@ -200,7 +127,7 @@ def test_survey_tipper_data(tmp_path):
     # # Create a workspace
     # workspace = Workspace(path)
     # receivers = workspace.get_entity(name + "_rx")[0]
-    # transmitters = receivers.transmitters
+    # base_stations = receivers.base_stations
     #
     # # Add channels
     # with pytest.raises(TypeError) as error:
@@ -321,8 +248,8 @@ def test_survey_tipper_data(tmp_path):
     #     getattr(receivers, "timing_mark") == 10**-3.1
     # ), "Failed in setting 'timing_mark'."
     # assert (
-    #     receivers.metadata == transmitters.metadata
-    # ), "Error synchronizing the transmitters and receivers metadata."
+    #     receivers.metadata == base_stations.metadata
+    # ), "Error synchronizing the base_stations and receivers metadata."
     #
     # receivers.timing_mark = None
     #
@@ -339,5 +266,5 @@ def test_survey_tipper_data(tmp_path):
     # new_workspace = Workspace(Path(tmp_path) / r"testATEM_copy2.geoh5")
     # receivers_rec = receivers.copy(new_workspace)
     # compare_entities(
-    #     receivers, receivers_rec, ignore=["_receivers", "_transmitters", "_parent"]
+    #     receivers, receivers_rec, ignore=["_receivers", "_base_stations", "_parent"]
     # )

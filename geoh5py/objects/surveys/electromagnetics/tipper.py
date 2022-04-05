@@ -51,7 +51,7 @@ class TipperReceivers(BaseEMSurvey):
 
     def __init__(self, object_type: ObjectType, **kwargs):
         self._base_stations: TipperBaseStations | None = None
-        self._name = "Tipper rx"
+
         super().__init__(object_type, **kwargs)
 
     @property
@@ -111,13 +111,13 @@ class TipperReceivers(BaseEMSurvey):
 
     @property
     def receivers(self):
-        """MT receivers"""
+        """Tipper receivers"""
         return self
 
     @receivers.setter
     def receivers(self, value: BaseEMSurvey):
         raise AttributeError(
-            "Attribute 'receivers' of the class 'MTReceivers' must reference to self. "
+            "Attribute 'receivers' of the class 'TipperReceivers' must reference to self. "
             f"Re-assignment to {value} ignored."
         )
 
@@ -158,7 +158,7 @@ class TipperBaseStations(BaseEMSurvey):
     __TYPE_UID = uuid.UUID("{f495cd13-f09b-4a97-9212-2ea392aeb375}")
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._name = "Tipper base stations"
+
         super().__init__(object_type, **kwargs)
 
     @classmethod
@@ -174,6 +174,18 @@ class TipperBaseStations(BaseEMSurvey):
         :return: Transmitter class
         """
         return TipperReceivers
+
+    @property
+    def base_stations(self):
+        """Tipper base stations"""
+        return self
+
+    @base_stations.setter
+    def base_stations(self, value: BaseEMSurvey):
+        raise AttributeError(
+            f"Attribute 'base_stations' of the class {type(self)} must reference to self. "
+            f"Re-assignment to {value} ignored."
+        )
 
     def copy(self, parent=None, copy_children: bool = True) -> TipperBaseStations:
         """
