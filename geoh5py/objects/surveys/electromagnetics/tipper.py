@@ -104,6 +104,7 @@ class TipperReceivers(BaseEMSurvey):
             omit_list=omit_list,
         )
         new_entity.base_stations = new_base_stations
+        new_entity.metadata = self.metadata
         parent.workspace.finalize()
 
         return new_entity

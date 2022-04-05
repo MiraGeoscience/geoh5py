@@ -24,7 +24,7 @@
 from geoh5py.workspace import Workspace
 
 
-def test_create_survey_ztem(tmp_path):
+def test_create_survey_tipper(tmp_path):
     workspace = Workspace("ztem.geoh5")
     survey = workspace.get_entity(
         "Inv_North_ref2em2_bound1e7_scottMeshTopo_everyIter_60pct rx"
@@ -192,7 +192,7 @@ def test_create_survey_ztem(tmp_path):
     # )
 
 
-def test_survey_tem_data(tmp_path):
+def test_survey_tipper_data(tmp_path):
     print(tmp_path)
     # name = "Survey"
     # path = Path(tmp_path) / r"../testATEM.geoh5"
