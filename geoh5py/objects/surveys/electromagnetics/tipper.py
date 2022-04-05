@@ -51,7 +51,7 @@ class TipperReceivers(BaseEMSurvey):
 
     def __init__(self, object_type: ObjectType, **kwargs):
         self._base_stations: TipperBaseStations | None = None
-
+        self._name = "Tipper rx"
         super().__init__(object_type, **kwargs)
 
     @property
@@ -142,7 +142,7 @@ class TipperReceivers(BaseEMSurvey):
     @base_stations.setter
     def base_stations(self, base: TipperBaseStations):
         if not isinstance(base, (TipperBaseStations, type(None))):
-            raise ValueError(
+            raise TypeError(
                 f"Input `base_stations` must be of type '{TipperBaseStations}' or None"
             )
 
@@ -158,7 +158,15 @@ class TipperBaseStations(BaseEMSurvey):
     __TYPE_UID = uuid.UUID("{f495cd13-f09b-4a97-9212-2ea392aeb375}")
 
     def __init__(self, object_type: ObjectType, **kwargs):
+        self._name = "Tipper base stations"
         super().__init__(object_type, **kwargs)
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        """
+        :return: Default unique identifier
+        """
+        return cls.__TYPE_UID
 
     @property
     def default_receiver_type(self):
