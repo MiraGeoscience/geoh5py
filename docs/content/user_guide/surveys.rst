@@ -13,3 +13,4 @@ This section provides information on how to create geophysical surveys programma
    airborne_tem.ipynb
    direct_current.ipynb
    magnetotelluric.ipynb
+   tipper.ipynb
