@@ -31,16 +31,6 @@ class MTReceivers(BaseEMSurvey):
 
     __TYPE_UID = uuid.UUID("{b99bd6e5-4fe1-45a5-bd2f-75fc31f91b38}")
     __TYPE = "Receivers"
-    __METADATA = {
-        "EM Dataset": {
-            "Channels": [],
-            "Input type": "Rx only",
-            "Property groups": [],
-            "Receivers": None,
-            "Survey type": "Magnetotellurics",
-            "Unit": "Hertz (Hz)",
-        }
-    }
     __UNITS = [
         "Hertz (Hz)",
         "KiloHertz (kHz)",
@@ -62,7 +52,16 @@ class MTReceivers(BaseEMSurvey):
         """
         :return: Default unique identifier
         """
-        return self.__METADATA
+        return {
+            "EM Dataset": {
+                "Channels": [],
+                "Input type": "Rx only",
+                "Property groups": [],
+                "Receivers": None,
+                "Survey type": "Magnetotellurics",
+                "Unit": "Hertz (Hz)",
+            }
+        }
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

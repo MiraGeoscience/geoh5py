@@ -33,7 +33,6 @@ class BaseEMSurvey(Curve):
     A base electromagnetics survey object.
     """
 
-    __METADATA: dict = {"EM Dataset": {}}
     __INPUT_TYPE = None
     __TYPE = None
     __UNITS = None
@@ -195,6 +194,45 @@ class BaseEMSurvey(Curve):
 
         return None
 
+    def copy(self, parent=None, copy_children: bool = True) -> BaseEMSurvey:
+        """
+        Function to copy a AirborneTEMReceivers to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: Create copies of AirborneTEMReceivers along with it.
+
+        :return entity: Registered AirborneTEMReceivers to the workspace.
+        """
+        if parent is None:
+            parent = self.parent
+
+        omit_list = ["_metadata", "_receivers", "_transmitters"]
+        metadata = self.metadata.copy()
+        new_entity = parent.workspace.copy_to_parent(
+            self, parent, copy_children=copy_children, omit_list=omit_list
+        )
+        metadata["EM Dataset"][new_entity.type] = new_entity.uid
+        for associate in ["transmitters", "receivers", "base_stations"]:
+            if (
+                getattr(self, associate, None) is not None
+                and getattr(self, associate) != self
+            ):
+                complement = parent.workspace.copy_to_parent(
+                    getattr(self, associate),
+                    parent,
+                    copy_children=copy_children,
+                    omit_list=omit_list,
+                )
+                setattr(new_entity, associate, complement)
+                metadata["EM Dataset"][complement.type] = complement.uid
+                complement.metadata = self.metadata
+
+        new_entity.metadata = metadata
+        parent.workspace.finalize()
+
+        return new_entity
+
     @property
     def default_input_types(self) -> list[str] | None:
         """Input types. Must be one of 'Rx', 'Tx', 'Tx and Rx'."""
@@ -203,7 +241,7 @@ class BaseEMSurvey(Curve):
     @property
     def default_metadata(self):
         """Default metadata structure. Implemented on the child class."""
-        return self.__METADATA
+        return {"EM Dataset": {}}
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -252,6 +290,9 @@ class BaseEMSurvey(Curve):
 
         if getattr(self, "transmitters", None) is not None:
             getattr(self, "transmitters").metadata = self.metadata
+
+        if getattr(self, "base_stations", None) is not None:
+            getattr(self, "base_stations").metadata = self.metadata
 
         self.workspace.finalize()
 

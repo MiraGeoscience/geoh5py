@@ -27,17 +27,6 @@ from .base import BaseEMSurvey
 
 
 class BaseAirborneTEM(BaseEMSurvey):
-    __METADATA = {
-        "EM Dataset": {
-            "Channels": [],
-            "Input type": "Rx",
-            "Property groups": [],
-            "Receivers": None,
-            "Survey type": "Airborne TEM",
-            "Transmitters": None,
-            "Unit": "Milliseconds (ms)",
-        }
-    }
     __MAP = {
         "crossline_offset": "Crossline offset",
         "inline_offset": "Inline offset",
@@ -75,7 +64,17 @@ class BaseAirborneTEM(BaseEMSurvey):
         """
         Default dictionary of metadata for AirborneTEM entities.
         """
-        return self.__METADATA
+        return {
+            "EM Dataset": {
+                "Channels": [],
+                "Input type": "Rx",
+                "Property groups": [],
+                "Receivers": None,
+                "Survey type": "Airborne TEM",
+                "Transmitters": None,
+                "Unit": "Milliseconds (ms)",
+            }
+        }
 
     @property
     def default_units(self) -> list[str]:
@@ -94,47 +93,6 @@ class BaseAirborneTEM(BaseEMSurvey):
         if field + " property" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"][field + " property"]
         return None
-
-    def copy(
-        self, parent=None, copy_children: bool = True
-    ) -> AirborneTEMReceivers | AirborneTEMTransmitters:
-        """
-        Function to copy a AirborneTEMReceivers to a different parent entity.
-
-        :param parent: Target parent to copy the entity under. Copied to current
-            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: Create copies of AirborneTEMReceivers along with it.
-
-        :return entity: Registered AirborneTEMReceivers to the workspace.
-        """
-        if parent is None:
-            parent = self.parent
-
-        omit_list = ["_metadata", "_receivers", "_transmitters"]
-        new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children, omit_list=omit_list
-        )
-        if isinstance(new_entity, AirborneTEMReceivers):
-            new_transmitters = parent.workspace.copy_to_parent(
-                self.transmitters,
-                parent,
-                copy_children=copy_children,
-                omit_list=omit_list,
-            )
-            new_entity.transmitters = new_transmitters
-        else:
-            new_receivers = parent.workspace.copy_to_parent(
-                self.receivers,
-                parent,
-                copy_children=copy_children,
-                omit_list=omit_list,
-            )
-            new_entity.receivers = new_receivers
-
-        new_entity.metadata = self.metadata
-        parent.workspace.finalize()
-
-        return new_entity
 
     @property
     def crossline_offset(self) -> float | uuid.UUID | None:
