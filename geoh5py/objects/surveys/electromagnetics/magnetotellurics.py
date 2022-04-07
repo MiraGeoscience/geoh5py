@@ -19,12 +19,13 @@ from __future__ import annotations
 
 import uuid
 
+from geoh5py.objects import Points
 from geoh5py.objects.object_type import ObjectType
 
 from .base import BaseEMSurvey
 
 
-class MTReceivers(BaseEMSurvey):
+class MTReceivers(BaseEMSurvey, Points):
     """
     A magnetotellurics survey object.
     """

@@ -20,6 +20,7 @@ from __future__ import annotations
 import uuid
 import warnings
 
+from geoh5py.objects import Curve, Points
 from geoh5py.objects.object_type import ObjectType
 
 from .base import BaseEMSurvey
@@ -125,7 +126,7 @@ class BaseTipper(BaseEMSurvey):
         return self.__UNITS
 
 
-class TipperReceivers(BaseTipper):
+class TipperReceivers(BaseTipper, Curve):
     """
     A z-tipper EM survey object.
     """
@@ -151,7 +152,7 @@ class TipperReceivers(BaseTipper):
         return self.__TYPE
 
 
-class TipperBaseStations(BaseTipper):
+class TipperBaseStations(BaseTipper, Points):
     """
     A z-tipper EM survey object.
     """

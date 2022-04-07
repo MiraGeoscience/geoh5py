@@ -24,11 +24,11 @@ import numpy as np
 
 from geoh5py.data import FloatData
 from geoh5py.groups import PropertyGroup
-from geoh5py.objects import Curve
+from geoh5py.objects import ObjectBase
 from geoh5py.objects.object_type import ObjectType
 
 
-class BaseEMSurvey(Curve):
+class BaseEMSurvey(ObjectBase):
     """
     A base electromagnetics survey object.
     """

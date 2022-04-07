@@ -89,8 +89,8 @@ def test_create_survey_tipper(tmp_path):
     receivers.base_stations = base_stations
 
     new_workspace = Workspace(path)
-    base_stations_rec = new_workspace.get_entity("TipperBaseStations")[0]
-    receivers_rec = new_workspace.get_entity("TipperReceivers")[0]
+    base_stations_rec = new_workspace.get_entity(base_stations.uid)[0]
+    receivers_rec = new_workspace.get_entity(receivers.uid)[0]
 
     assert receivers_rec.default_input_types == ["Rx and base stations"]
 

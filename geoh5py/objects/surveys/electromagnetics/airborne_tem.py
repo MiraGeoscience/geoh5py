@@ -21,12 +21,13 @@ import uuid
 
 import numpy as np
 
+from geoh5py.objects import Curve
 from geoh5py.objects.object_type import ObjectType
 
 from .base import BaseEMSurvey
 
 
-class BaseAirborneTEM(BaseEMSurvey):
+class BaseAirborneTEM(BaseEMSurvey, Curve):
     __MAP = {
         "crossline_offset": "Crossline offset",
         "inline_offset": "Inline offset",
