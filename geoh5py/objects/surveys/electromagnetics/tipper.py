@@ -52,48 +52,6 @@ class BaseTipper(BaseEMSurvey):
             **kwargs,
         )
 
-    # def copy(
-    #     self, parent=None, copy_children: bool = True
-    # ) -> TipperBaseStations | TipperReceivers:
-    #     """
-    #     Function to copy a TipperReceivers or TipperBaseStations to a different parent entity.
-    #
-    #     :param parent: Target parent to copy the entity under. Copied to current
-    #         :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-    #     :param copy_children: Create copies of AirborneTEMReceivers
-    #         or TipperBaseStations along with the copy.
-    #
-    #     :return entity: Registered BaseTipper to the workspace.
-    #     """
-    #     if parent is None:
-    #         parent = self.parent
-    #
-    #     omit_list = ["_metadata", "_receivers", "_base_stations"]
-    #     new_entity = parent.workspace.copy_to_parent(
-    #         self, parent, copy_children=copy_children, omit_list=omit_list
-    #     )
-    #     if isinstance(new_entity, TipperReceivers):
-    #         new_base_stations = parent.workspace.copy_to_parent(
-    #             self.base_stations,
-    #             parent,
-    #             copy_children=copy_children,
-    #             omit_list=omit_list,
-    #         )
-    #         new_entity.base_stations = new_base_stations
-    #     else:
-    #         new_receivers = parent.workspace.copy_to_parent(
-    #             self.receivers,
-    #             parent,
-    #             copy_children=copy_children,
-    #             omit_list=omit_list,
-    #         )
-    #         new_entity.receivers = new_receivers
-    #
-    #     new_entity.metadata = self.metadata
-    #     parent.workspace.finalize()
-    #
-    #     return new_entity
-
     @property
     def base_stations(self) -> TipperBaseStations | None:
         """The base station entity"""
