@@ -26,6 +26,14 @@ geoh5py.objects.surveys.electromagnetics.magnetotellurics
    :undoc-members:
    :show-inheritance:
 
+geoh5py.objects.surveys.electromagnetics.tipper
+-----------------------------------------------
+
+.. automodule:: geoh5py.objects.surveys.electromagnetics.tipper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 .. automodule:: geoh5py.objects.surveys.electromagnetics
    :members:

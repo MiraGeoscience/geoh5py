@@ -85,7 +85,7 @@ To build the api docs using autodocs
 
 .. code-block:: bash
 
-  sphinx-apidoc -o source/ ../geoh5py
+  sphinx-apidoc -o source/ ../geoh5py -t docs/templates
 
 .. |docs| image:: https://readthedocs.org/projects/geoh5py/badge/
     :alt: Documentation Status
