@@ -18,7 +18,7 @@
 import tempfile
 from pathlib import Path
 
-from geoh5py.objects import BaseEMSurvey
+from geoh5py.objects.surveys.electromagnetics.base import BaseEMSurvey
 from geoh5py.workspace import Workspace
 
 
