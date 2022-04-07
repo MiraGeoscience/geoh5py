@@ -168,7 +168,7 @@ class TipperBaseStations(BaseTipper):
     @property
     def default_receiver_type(self):
         """
-        :return: Transmitter class
+        :return: Receiver class
         """
         return TipperReceivers
 
