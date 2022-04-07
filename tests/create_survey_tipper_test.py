@@ -79,6 +79,13 @@ def test_create_survey_tipper(tmp_path):
 
     assert base_stations.base_stations == base_stations
 
+    base_stations_test = TipperBaseStations.create(workspace, vertices=vertices[1:, :])
+
+    with pytest.raises(AttributeError) as error:
+        receivers.base_stations = base_stations_test
+
+    assert "The input 'base_stations' should have n_vertices" in str(error)
+
     receivers.base_stations = base_stations
 
     new_workspace = Workspace(path)
