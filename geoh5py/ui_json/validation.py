@@ -26,6 +26,7 @@ from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import RequiredValidationError
 from geoh5py.shared.validators import (
     AssociationValidator,
+    AtLeastOneValidator,
     BaseValidator,
     OptionalValidator,
     PropertyGroupValidator,
@@ -236,6 +237,7 @@ class InputValidation:
 
         for validator in [
             RequiredValidator,
+            AtLeastOneValidator,
             OptionalValidator,
             UUIDValidator,
             TypeValidator,
@@ -260,20 +262,33 @@ class InputValidation:
 
         :param data: Input data with known validations.
         """
-        for name, validations in self.validations.items():
 
-            if name not in data.keys():
+        one_of_validations: dict[str, Any] = {}
+        local_validations = self.validations.copy()
+        for param, validations in local_validations.items():
+
+            if param not in data.keys():
                 if "required" in validations and not self.ignore_requirements:
-                    raise RequiredValidationError(name)
+                    raise RequiredValidationError(param)
 
                 continue
 
+            if "one_of" in validations:
+                one_of_group = validations.pop("one_of")
+                val = {param: data[param] is not None}
+                if one_of_group in one_of_validations:
+                    one_of_validations[one_of_group].update(val)
+                else:
+                    one_of_validations[one_of_group] = val
+
             if "association" in validations and validations["association"] in data:
-                temp_validate = deepcopy(validations)
-                temp_validate["association"] = data[validations["association"]]
-                self.validate(name, data[name], temp_validate)
+                validations["association"] = data[validations["association"]]
+                self.validate(param, data[param], validations)
             else:
-                self.validate(name, data.get(name, None))
+                self.validate(param, data.get(param, None), validations)
+
+        for name, val in one_of_validations.items():
+            self.validate(name, val, {"one_of": None})
 
     def __call__(self, data, *args):
         if isinstance(data, dict):
