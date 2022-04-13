@@ -264,7 +264,8 @@ class InputValidation:
         """
 
         one_of_validations: dict[str, Any] = {}
-        for param, validations in self.validations.items():
+        local_validations = self.validations.copy()
+        for param, validations in local_validations.items():
 
             if param not in data.keys():
                 if "required" in validations and not self.ignore_requirements:
@@ -273,18 +274,18 @@ class InputValidation:
                 continue
 
             if "one_of" in validations:
-                one_of_group = validations["one_of"]
+                one_of_group = validations.pop("one_of")
                 val = {param: data[param] is not None}
                 if one_of_group in one_of_validations:
                     one_of_validations[one_of_group].update(val)
                 else:
                     one_of_validations[one_of_group] = val
-            elif "association" in validations and validations["association"] in data:
-                temp_validate = deepcopy(validations)
-                temp_validate["association"] = data[validations["association"]]
-                self.validate(param, data[param], temp_validate)
+
+            if "association" in validations and validations["association"] in data:
+                validations["association"] = data[validations["association"]]
+                self.validate(param, data[param], validations)
             else:
-                self.validate(param, data.get(param, None))
+                self.validate(param, data.get(param, None), validations)
 
         for name, val in one_of_validations.items():
             self.validate(name, val, {"one_of": None})
