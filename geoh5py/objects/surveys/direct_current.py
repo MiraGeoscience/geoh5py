@@ -186,12 +186,6 @@ class PotentialElectrode(Curve):
         """
         if getattr(self, "_metadata", None) is None:
             metadata = self.workspace.fetch_metadata(self.uid)
-            for key, value in metadata.items():
-                try:
-                    metadata[key] = uuid.UUID(value)
-                except ValueError:
-                    metadata[key] = value
-
             self._metadata = metadata
         return self._metadata
 

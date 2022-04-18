@@ -1,147 +1,143 @@
-geoh5py.data package
-====================
+geoh5py.data
+============
 
-Submodules
-----------
 
-geoh5py.data.blob\_data module
-------------------------------
+geoh5py.data.blob\_data
+-----------------------
 
 .. automodule:: geoh5py.data.blob_data
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.color\_map module
-------------------------------
+geoh5py.data.color\_map
+-----------------------
 
 .. automodule:: geoh5py.data.color_map
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.data module
-------------------------
+geoh5py.data.data
+-----------------
 
 .. automodule:: geoh5py.data.data
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.data\_association\_enum module
--------------------------------------------
+geoh5py.data.data\_association\_enum
+------------------------------------
 
 .. automodule:: geoh5py.data.data_association_enum
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.data\_type module
-------------------------------
+geoh5py.data.data\_type
+-----------------------
 
 .. automodule:: geoh5py.data.data_type
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.data\_unit module
-------------------------------
+geoh5py.data.data\_unit
+-----------------------
 
 .. automodule:: geoh5py.data.data_unit
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.datetime\_data module
-----------------------------------
+geoh5py.data.datetime\_data
+---------------------------
 
 .. automodule:: geoh5py.data.datetime_data
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.filename\_data module
-----------------------------------
+geoh5py.data.filename\_data
+---------------------------
 
 .. automodule:: geoh5py.data.filename_data
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.float\_data module
--------------------------------
+geoh5py.data.float\_data
+------------------------
 
 .. automodule:: geoh5py.data.float_data
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.geometric\_data\_constants module
-----------------------------------------------
+geoh5py.data.geometric\_data\_constants
+---------------------------------------
 
 .. automodule:: geoh5py.data.geometric_data_constants
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.integer\_data module
----------------------------------
+geoh5py.data.integer\_data
+--------------------------
 
 .. automodule:: geoh5py.data.integer_data
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.numeric\_data module
----------------------------------
+geoh5py.data.numeric\_data
+--------------------------
 
 .. automodule:: geoh5py.data.numeric_data
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.primitive\_type\_enum module
------------------------------------------
+geoh5py.data.primitive\_type\_enum
+----------------------------------
 
 .. automodule:: geoh5py.data.primitive_type_enum
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.reference\_value\_map module
------------------------------------------
+geoh5py.data.reference\_value\_map
+----------------------------------
 
 .. automodule:: geoh5py.data.reference_value_map
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.referenced\_data module
-------------------------------------
+geoh5py.data.referenced\_data
+-----------------------------
 
 .. automodule:: geoh5py.data.referenced_data
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.text\_data module
-------------------------------
+geoh5py.data.text\_data
+-----------------------
 
 .. automodule:: geoh5py.data.text_data
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.unknown\_data module
----------------------------------
+geoh5py.data.unknown\_data
+--------------------------
 
 .. automodule:: geoh5py.data.unknown_data
    :members:
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
 
 .. automodule:: geoh5py.data
    :members:

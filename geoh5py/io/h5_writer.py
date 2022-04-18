@@ -21,15 +21,17 @@ from __future__ import annotations
 
 import json
 import uuid
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 import h5py
 import numpy as np
 
-from ..data import CommentsData, Data, DataType, IntegerData
+from ..data import CommentsData, Data, DataType, FilenameData, IntegerData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import Entity, EntityType, fetch_h5_handle
+from .utils import as_str_if_uuid, dict_mapper
 
 if TYPE_CHECKING:
     from .. import shared, workspace
@@ -54,11 +56,6 @@ class H5Writer:
         "color_map": "Color map",
         "metadata": "Metadata",
     }
-
-    @staticmethod
-    def bool_value(value: np.int8) -> bool:
-        """Convert integer to bool."""
-        return bool(value)
 
     @classmethod
     def create_geoh5(
@@ -119,7 +116,7 @@ class H5Writer:
         :param parent: Remove entity from parent.
         """
         with fetch_h5_handle(file) as h5file:
-            uid_str = H5Writer.uuid_str(uid)
+            uid_str = as_str_if_uuid(uid)
             parent_handle = H5Writer.fetch_handle(h5file, parent)
             if parent_handle is not None and uid_str in parent_handle[ref_type].keys():
                 del parent_handle[ref_type][uid_str]
@@ -143,7 +140,7 @@ class H5Writer:
         with fetch_h5_handle(file) as h5file:
             base = list(h5file.keys())[0]
             base_type_handle = h5file[base][ref_type]
-            uid_str = H5Writer.uuid_str(uid)
+            uid_str = as_str_if_uuid(uid)
 
             if ref_type == "Types":
                 for e_type in ["Data types", "Group types", "Object types"]:
@@ -204,12 +201,12 @@ class H5Writer:
                     break
 
             # Check if already in the project
-            if cls.uuid_str(uid) in base_handle.keys():
+            if as_str_if_uuid(uid) in base_handle.keys():
 
                 if return_parent:
                     return base_handle
 
-                return base_handle[cls.uuid_str(uid)]
+                return base_handle[as_str_if_uuid(uid)]
 
         return None
 
@@ -300,16 +297,6 @@ class H5Writer:
                 else:
                     cls.write_attributes(h5file, entity)
 
-    @staticmethod
-    def uuid_value(value: str) -> uuid.UUID:
-        """Convert string to :obj:`uuid.UUID`."""
-        return uuid.UUID(value)
-
-    @staticmethod
-    def uuid_str(value: uuid.UUID) -> str:
-        """Convert :obj:`uuid.UUID` to string used in geoh5."""
-        return "{" + str(value) + "}"
-
     @classmethod
     def write_attributes(
         cls,
@@ -324,7 +311,6 @@ class H5Writer:
         """
         with fetch_h5_handle(file) as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
-            str_type = h5py.special_dtype(vlen=str)
 
             for key, attr in entity.attribute_map.items():
 
@@ -333,8 +319,7 @@ class H5Writer:
                 except AttributeError:
                     continue
 
-                if isinstance(value, uuid.UUID):
-                    value = cls.uuid_str(value)
+                value = as_str_if_uuid(value)
 
                 if key == "PropertyGroups" or (key == "Metadata" and value is None):
                     continue
@@ -345,9 +330,9 @@ class H5Writer:
                 if isinstance(value, (np.int8, bool)):
                     entity_handle.attrs.create(key, int(value), dtype="int8")
                 elif isinstance(value, str):
-                    entity_handle.attrs.create(key, value, dtype=str_type)
+                    entity_handle.attrs.create(key, value, dtype=cls.str_type)
                 elif value is None:
-                    entity_handle.attrs.create(key, "None", dtype=str_type)
+                    entity_handle.attrs.create(key, "None", dtype=cls.str_type)
                 else:
                     entity_handle.attrs.create(
                         key, value, dtype=np.asarray(value).dtype
@@ -425,7 +410,14 @@ class H5Writer:
 
             if color_map is not None and color_map.values is not None:
                 entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)
-                cls.create_dataset(entity_type_handle, color_map.values, "Color map")
+                cls.create_dataset(
+                    entity_type_handle,
+                    getattr(color_map, "_values"),
+                    "Color map",
+                )
+                entity_type_handle["Color map"].attrs.create(
+                    "File name", color_map.name, dtype=cls.str_type
+                )
 
     @classmethod
     def write_value_map(
@@ -520,18 +512,18 @@ class H5Writer:
         """
         with fetch_h5_handle(file) as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
-            if getattr(entity, attribute, None) is not None:
-                values = getattr(entity, attribute)
+            if getattr(entity, attribute, None) is None:
+                return
+
+            values = getattr(entity, attribute)
 
             # Adding an array of values
             if isinstance(values, dict) or isinstance(entity, CommentsData):
-                values = values.copy()
+                values = deepcopy(values)
                 if isinstance(entity, CommentsData):
                     values = {"Comments": values}
 
-                for key, val in values.items():
-                    if isinstance(val, uuid.UUID):
-                        values[key] = cls.uuid_str(val)
+                values = dict_mapper(values, [as_str_if_uuid])
 
                 entity_handle.create_dataset(
                     cls.key_map[attribute],
@@ -539,6 +531,24 @@ class H5Writer:
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
                 )
+
+            elif isinstance(entity, FilenameData):
+                entity_handle.create_dataset(
+                    "Data",
+                    data=entity.file_name,
+                    dtype=h5py.special_dtype(vlen=str),
+                    shape=(1,),
+                )
+
+                if entity.file_name in entity_handle:
+                    del entity_handle[entity.file_name]
+
+                entity_handle.create_dataset(
+                    entity.file_name,
+                    data=np.asarray(np.void(values[:])),
+                    shape=(1,),
+                )
+
             elif isinstance(values, str):
                 entity_handle.create_dataset(
                     cls.key_map[attribute],
@@ -547,7 +557,7 @@ class H5Writer:
                     shape=(1,),
                 )
             else:
-                out_values = values.copy()
+                out_values = deepcopy(values)
                 if isinstance(entity, IntegerData):
                     out_values = np.round(out_values).astype("int32")
                 else:
@@ -580,7 +590,7 @@ class H5Writer:
         :return entity: Pointer to the written entity. Active link if "close_file" is False.
         """
         with fetch_h5_handle(file) as h5file:
-            cls.str_type = h5py.special_dtype(vlen=str)
+
             base = list(h5file.keys())[0]
 
             if isinstance(entity, Data):
@@ -596,7 +606,7 @@ class H5Writer:
                 h5file[base].create_group(entity_type)
 
             # Check if already in the project
-            if cls.uuid_str(uid) in h5file[base][entity_type].keys():
+            if as_str_if_uuid(uid) in h5file[base][entity_type].keys():
 
                 if any([entity.modified_attributes]):
 
@@ -613,9 +623,9 @@ class H5Writer:
 
                 entity.existing_h5_entity = True
 
-                return h5file[base][entity_type][cls.uuid_str(uid)]
+                return h5file[base][entity_type][as_str_if_uuid(uid)]
 
-            entity_handle = h5file[base][entity_type].create_group(cls.uuid_str(uid))
+            entity_handle = h5file[base][entity_type].create_group(as_str_if_uuid(uid))
 
             if entity_type == "Groups":
                 entity_handle.create_group("Data")
@@ -666,11 +676,14 @@ class H5Writer:
             else:
                 return None
 
+            if "Types" not in h5file[base]:
+                h5file[base].create_group("Types")
+
             # Check if already in the project
             if entity_type_str not in h5file[base]["Types"].keys():
                 h5file[base]["Types"].create_group(entity_type_str)
 
-            if cls.uuid_str(uid) in h5file[base]["Types"][entity_type_str].keys():
+            if as_str_if_uuid(uid) in h5file[base]["Types"][entity_type_str].keys():
 
                 if any([entity_type.modified_attributes]):
                     cls.update_attributes(h5file, entity_type)
@@ -678,10 +691,10 @@ class H5Writer:
 
                 entity_type.existing_h5_entity = True
 
-                return h5file[base]["Types"][entity_type_str][cls.uuid_str(uid)]
+                return h5file[base]["Types"][entity_type_str][as_str_if_uuid(uid)]
 
             new_type = h5file[base]["Types"][entity_type_str].create_group(
-                cls.uuid_str(uid)
+                as_str_if_uuid(uid)
             )
             H5Writer.write_attributes(h5file, entity_type)
 
@@ -779,7 +792,7 @@ class H5Writer:
                 entity_handle.create_group("PropertyGroups")
                 for p_g in entity.property_groups:
 
-                    uid = cls.uuid_str(p_g.uid)
+                    uid = as_str_if_uuid(p_g.uid)
                     if uid in entity_handle["PropertyGroups"].keys():
                         del entity_handle["PropertyGroups"][uid]
 
@@ -798,10 +811,10 @@ class H5Writer:
                             value = value.name.capitalize()
 
                         elif key == "Properties":
-                            value = np.asarray([cls.uuid_str(val) for val in value])
+                            value = np.asarray([as_str_if_uuid(val) for val in value])
 
                         elif key == "ID":
-                            value = cls.uuid_str(value)
+                            value = as_str_if_uuid(value)
 
                         group_handle.attrs.create(
                             key, value, dtype=h5py.special_dtype(vlen=str)
@@ -845,8 +858,8 @@ class H5Writer:
                 parent_handle.create_group(entity_type)
 
             # Check if child uuid not already in h5
-            if cls.uuid_str(uid) not in parent_handle[entity_type].keys():
-                parent_handle[entity_type][cls.uuid_str(uid)] = entity_handle
+            if as_str_if_uuid(uid) not in parent_handle[entity_type].keys():
+                parent_handle[entity_type][as_str_if_uuid(uid)] = entity_handle
 
             if recursively:
                 H5Writer.write_to_parent(h5file, entity.parent, recursively=True)

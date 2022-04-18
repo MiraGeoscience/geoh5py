@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Release 0.2.0 - 2022/04/18
+--------------------------
+
+- Add MT, tipper and airborne time-domain survey objects.
+- Add ui.json read/write with validations
+- Bug fixes and documentation.
+
+
 Release 0.1.6 - 2021/12/09
 --------------------------
 

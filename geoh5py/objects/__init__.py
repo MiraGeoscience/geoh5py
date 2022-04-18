@@ -17,7 +17,6 @@
 
 # pylint: disable=unused-import
 # flake8: noqa
-
 from .block_model import BlockModel
 from .curve import Curve
 from .drillhole import Drillhole
@@ -31,5 +30,10 @@ from .octree import Octree
 from .points import Points
 from .surface import Surface
 from .surveys.direct_current import CurrentElectrode, PotentialElectrode
+from .surveys.electromagnetics.airborne_tem import (
+    AirborneTEMReceivers,
+    AirborneTEMTransmitters,
+)
+from .surveys.electromagnetics.magnetotellurics import MTReceivers
+from .surveys.electromagnetics.tipper import TipperBaseStations, TipperReceivers
 from .surveys.magnetics import AirborneMagnetics
-from .surveys.magnetotellurics import Magnetotellurics
