@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import os
 import uuid
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
@@ -73,6 +74,34 @@ class Entity(ABC):
         for child in children:
             if child not in self._children:
                 self._children.append(child)
+
+    def add_file(self, file: str):
+        """
+        Add a file to the object or group stored as bytes on a FilenameData
+
+        :param file: File name with path to import.
+        """
+        if not os.path.exists(file):
+            raise ValueError(f"Input file '{file}' does not exist.")
+
+        with open(file, "rb") as raw_binary:
+            blob = raw_binary.read()
+
+        _, name = os.path.split(file)
+        attributes = {
+            "name": name,
+            "file_name": name,
+            "association": "OBJECT",
+            "parent": self,
+            "values": blob,
+        }
+        entity_type = {"name": "UserFiles", "primitive_type": "FILENAME"}
+
+        file_data = self.workspace.create_entity(
+            None, entity=attributes, entity_type=entity_type
+        )
+
+        return file_data
 
     @property
     def allow_delete(self) -> bool:
@@ -193,6 +222,34 @@ class Entity(ABC):
         # TODO: implement an actual fixup
         #  (possibly it has to be abstract with different implementations per Entity type)
         return name
+
+    def get_entity(self, name: str | uuid.UUID) -> list[Entity]:
+        """
+        Get a child :obj:`~geoh5py.data.data.Data` by name.
+
+        :param name: Name of the target child data
+        :param entity_type: Sub-select entities based on type.
+        :return: A list of children Data objects
+        """
+
+        if isinstance(name, uuid.UUID):
+            entity_list = [child for child in self.children if child.uid == name]
+        else:
+            entity_list = [child for child in self.children if child.name == name]
+
+        return entity_list
+
+    def get_entity_list(self, entity_type=ABC) -> list[str]:
+        """
+        Get a list of names of all children :obj:`~geoh5py.data.data.Data`.
+
+        :param entity_type: Option to sub-select based on type.
+        :return: List of names of data associated with the object.
+        """
+        name_list = [
+            child.name for child in self.children if isinstance(child, entity_type)
+        ]
+        return sorted(name_list)
 
     @property
     def metadata(self) -> str | dict | None:

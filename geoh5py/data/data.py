@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,15 +18,11 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING
 
 from ..shared import Entity
 from .data_association_enum import DataAssociationEnum
 from .data_type import DataType
 from .primitive_type_enum import PrimitiveTypeEnum
-
-if TYPE_CHECKING:
-    from .. import workspace
 
 
 class Data(Entity):
@@ -95,16 +91,17 @@ class Data(Entity):
     def association(self, value: str | DataAssociationEnum):
         if isinstance(value, str):
 
-            assert value.upper() in list(
-                DataAssociationEnum.__members__.keys()
-            ), f"Association flag should be one of {list(DataAssociationEnum.__members__.keys())}"
+            if value.upper() not in DataAssociationEnum.__members__:
+                raise ValueError(
+                    f"Association flag should be one of {DataAssociationEnum.__members__}"
+                )
 
-            self._association = getattr(DataAssociationEnum, value.upper())
-        else:
-            assert isinstance(
-                value, DataAssociationEnum
-            ), f"Association must be of type {DataAssociationEnum}"
-            self._association = value
+            value = getattr(DataAssociationEnum, value.upper())
+
+        if not isinstance(value, DataAssociationEnum):
+            raise TypeError(f"Association must be of type {DataAssociationEnum}")
+
+        self._association = value
 
     @property
     def entity_type(self) -> DataType:
@@ -119,22 +116,14 @@ class Data(Entity):
         self._entity_type = data_type
 
         self.modified_attributes = "entity_type"
-        return self._entity_type
 
     @classmethod
     @abstractmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         ...
 
-    @classmethod
-    def find_or_create_type(
-        cls: type[Entity], workspace: workspace.Workspace, **kwargs
-    ) -> DataType:
+    def add_file(self, file: str):
         """
-        Find or create a type for a given object class
-
-        :param Current workspace: Workspace
-
-        :return: A new or existing object type
+        Alias not implemented from base Entity class.
         """
-        return DataType.find_or_create(workspace, **kwargs)
+        raise NotImplementedError("Data entity cannot contain files.")

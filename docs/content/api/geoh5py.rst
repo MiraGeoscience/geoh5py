@@ -1,8 +1,5 @@
-geoh5py package
-===============
-
-Subpackages
------------
+API Reference
+=============
 
 .. toctree::
    :maxdepth: 4
@@ -14,8 +11,6 @@ Subpackages
    geoh5py.shared
    geoh5py.workspace
 
-Module contents
----------------
 
 .. automodule:: geoh5py
    :members:

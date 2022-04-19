@@ -85,7 +85,7 @@ To build the api docs using autodocs
 
 .. code-block:: bash
 
-  sphinx-apidoc -o source/ ../geoh5py
+  sphinx-apidoc -o source/ ../geoh5py -t docs/templates
 
 .. |docs| image:: https://readthedocs.org/projects/geoh5py/badge/
     :alt: Documentation Status
@@ -144,4 +144,4 @@ Third Party Software notices and/or additional terms and conditions are located 
 
 Copyright
 ^^^^^^^^^
-Copyright (c) 2021 Mira Geoscience Ltd.
+Copyright (c) 2022 Mira Geoscience Ltd.

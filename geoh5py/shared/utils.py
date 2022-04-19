@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from abc import ABC
 from contextlib import contextmanager
+from typing import Any
 
 import h5py
 import numpy as np
@@ -136,8 +137,42 @@ def compare_entities(object_a, object_b, ignore: list | None = None, decimal: in
                     getattr(object_a, attr[1:]).tolist(),
                     getattr(object_b, attr[1:]).tolist(),
                     decimal=decimal,
+                    err_msg=f"Error comparing attribute '{attr}'.",
                 )
             else:
                 assert np.all(
                     getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
                 ), f"Output attribute '{attr[1:]}' for {object_a} do not match input {object_b}"
+
+
+def iterable(value: Any, checklen: bool = False) -> bool:
+    """
+    Checks if object is iterable.
+
+    Parameters
+    ----------
+    value : Object to check for iterableness.
+    checklen : Restrict objects with __iter__ method to len > 1.
+
+    Returns
+    -------
+    True if object has __iter__ attribute but is not string or dict type.
+    """
+    only_array_like = (not isinstance(value, str)) & (not isinstance(value, dict))
+    if (hasattr(value, "__iter__")) & only_array_like:
+        return not (checklen and (len(value) == 1))
+
+    return False
+
+
+def iterable_message(valid: list[Any] | None) -> str:
+    """Append possibly iterable valid: "Must be (one of): {valid}."."""
+    if valid is None:
+        msg = ""
+    elif iterable(valid, checklen=True):
+        vstr = "'" + "', '".join(str(k) for k in valid) + "'"
+        msg = f" Must be one of: {vstr}."
+    else:
+        msg = f" Must be: '{valid[0]}'."
+
+    return msg

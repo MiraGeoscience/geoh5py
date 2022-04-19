@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -28,6 +28,7 @@ import numpy as np
 from ..data.float_data import FloatData
 from ..data.integer_data import IntegerData
 from ..shared import fetch_h5_handle
+from .utils import as_str_if_uuid, str2uuid, str_from_utf8_bytes
 
 
 class H5Reader:
@@ -77,14 +78,17 @@ class H5Reader:
             entity_type = cls.format_type_string(entity_type)
             if "type" in entity_type:
                 entity_type = entity_type.replace("_", " ") + "s"
-                entity = h5file[name]["Types"][entity_type][cls.uuid_str(uid)]
+                entity = h5file[name]["Types"][entity_type][as_str_if_uuid(uid)]
             elif entity_type == "Root":
                 entity = h5file[name][entity_type]
             else:
-                entity = h5file[name][entity_type][cls.uuid_str(uid)]
+                entity = h5file[name][entity_type][as_str_if_uuid(uid)]
 
             for key, value in entity.attrs.items():
                 attributes["entity"][key] = value
+
+            if "Type" not in entity:
+                entity.create_group("Type")
 
             for key, value in entity["Type"].attrs.items():
                 type_attributes["entity_type"][key] = value
@@ -124,7 +128,7 @@ class H5Reader:
             indices = None
 
             try:
-                indices = h5file[name]["Objects"][cls.uuid_str(uid)]["Cells"][:]
+                indices = h5file[name]["Objects"][as_str_if_uuid(uid)]["Cells"][:]
             except KeyError:
                 pass
 
@@ -151,7 +155,7 @@ class H5Reader:
             name = list(h5file.keys())[0]
             children = {}
             entity_type = cls.format_type_string(entity_type)
-            entity = h5file[name][entity_type][cls.uuid_str(uid)]
+            entity = h5file[name][entity_type][as_str_if_uuid(uid)]
 
             for child_type, child_list in entity.items():
                 if child_type in ["Type", "PropertyGroups"]:
@@ -159,7 +163,7 @@ class H5Reader:
 
                 if isinstance(child_list, h5py.Group):
                     for uid_str in child_list.keys():
-                        children[cls.uuid_value(uid_str)] = child_type.replace(
+                        children[str2uuid(uid_str)] = child_type.replace(
                             "s", ""
                         ).lower()
 
@@ -189,21 +193,21 @@ class H5Reader:
 
             try:
                 u_delimiters = np.r_[
-                    h5file[name]["Objects"][cls.uuid_str(uid)]["U cell delimiters"]
+                    h5file[name]["Objects"][as_str_if_uuid(uid)]["U cell delimiters"]
                 ]
             except KeyError:
                 u_delimiters = None
 
             try:
                 v_delimiters = np.r_[
-                    h5file[name]["Objects"][cls.uuid_str(uid)]["V cell delimiters"]
+                    h5file[name]["Objects"][as_str_if_uuid(uid)]["V cell delimiters"]
                 ]
             except KeyError:
                 v_delimiters = None
 
             try:
                 z_delimiters = np.r_[
-                    h5file[name]["Objects"][cls.uuid_str(uid)]["Z cell delimiters"]
+                    h5file[name]["Objects"][as_str_if_uuid(uid)]["Z cell delimiters"]
                 ]
             except KeyError:
                 z_delimiters = None
@@ -220,18 +224,29 @@ class H5Reader:
             name = list(h5file.keys())[0]
 
             try:
-                value = np.r_[h5file[name]["Objects"][cls.uuid_str(uid)]["Metadata"]]
-                value = cls.str_from_utf8_bytes(value[0])
+                metadata = np.r_[
+                    h5file[name]["Objects"][as_str_if_uuid(uid)]["Metadata"]
+                ]
+                metadata = str_from_utf8_bytes(metadata[0])
+
             except KeyError:
                 return None
 
-        if isinstance(value, str):
+        if isinstance(metadata, str):
             try:
-                value = json.loads(value)
+                metadata = json.loads(metadata)
             except ValueError:
                 pass
 
-        return value
+        if isinstance(metadata, dict):
+            for key, val in metadata.items():
+                if isinstance(val, dict):
+                    for sub_key, sub_val in val.items():
+                        metadata[key][sub_key] = str2uuid(sub_val)
+                else:
+                    metadata[key] = str2uuid(val)
+
+        return metadata
 
     @classmethod
     def fetch_octree_cells(cls, file: str | h5py.File, uid: uuid.UUID) -> np.ndarray:
@@ -249,7 +264,7 @@ class H5Reader:
 
             try:
                 octree_cells = np.r_[
-                    h5file[name]["Objects"][cls.uuid_str(uid)]["Octree Cells"]
+                    h5file[name]["Objects"][as_str_if_uuid(uid)]["Octree Cells"]
                 ]
             except KeyError:
                 octree_cells = None
@@ -299,7 +314,9 @@ class H5Reader:
             name = list(h5file.keys())[0]
             property_groups: dict[str, dict[str, str]] = {}
             try:
-                pg_handle = h5file[name]["Objects"][cls.uuid_str(uid)]["PropertyGroups"]
+                pg_handle = h5file[name]["Objects"][as_str_if_uuid(uid)][
+                    "PropertyGroups"
+                ]
                 for pg_uid in pg_handle.keys():
                     property_groups[pg_uid] = {}
                     for attr, value in pg_handle[pg_uid].attrs.items():
@@ -324,9 +341,7 @@ class H5Reader:
             name = list(h5file.keys())[0]
             entity_type = cls.format_type_string(entity_type)
             try:
-                uuids = [
-                    cls.uuid_value(uid) for uid in h5file[name][entity_type].keys()
-                ]
+                uuids = [str2uuid(uid) for uid in h5file[name][entity_type].keys()]
             except KeyError:
                 uuids = []
 
@@ -345,17 +360,43 @@ class H5Reader:
         with fetch_h5_handle(file) as h5file:
             name = list(h5file.keys())[0]
             try:
-                entity = h5file[name]["Data"][cls.uuid_str(uid)]
+                entity = h5file[name]["Data"][as_str_if_uuid(uid)]
                 value_map = entity["Type"]["Value map"][:]
                 mapping = {}
                 for key, value in value_map.tolist():
-                    value = cls.str_from_utf8_bytes(value)
+                    value = str_from_utf8_bytes(value)
                     mapping[key] = value
 
             except KeyError:
                 mapping = {}
 
         return mapping
+
+    @classmethod
+    def fetch_file_object(
+        cls, file: str | h5py.File, uid: uuid.UUID, file_name: str
+    ) -> bytes | None:
+        """
+        Load data associated with an image file
+
+        :param file: Name of the target geoh5 file
+        :param uid: Unique identifier of the target entity
+        :param file_name: Name of the file stored as bytes data.
+
+        :return values: Data file stored as bytes
+        """
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file.keys())[0]
+
+            try:
+                bytes_value = h5file[name]["Data"][as_str_if_uuid(uid)][file_name][
+                    ()
+                ].tobytes()
+
+            except KeyError:
+                bytes_value = None
+
+        return bytes_value
 
     @classmethod
     def fetch_values(cls, file: str | h5py.File, uid: uuid.UUID) -> float | None:
@@ -371,9 +412,9 @@ class H5Reader:
             name = list(h5file.keys())[0]
 
             try:
-                values = np.r_[h5file[name]["Data"][cls.uuid_str(uid)]["Data"]]
+                values = np.r_[h5file[name]["Data"][as_str_if_uuid(uid)]["Data"]]
                 if isinstance(values[0], (str, bytes)):
-                    values = cls.str_from_utf8_bytes(values[0])
+                    values = str_from_utf8_bytes(values[0])
                 else:
                     if values.dtype in [float, "float64", "float32"]:
                         ind = values == FloatData.ndv()
@@ -399,7 +440,6 @@ class H5Reader:
         :param name: Type of coordinates 'vertices', 'trace' or 'surveys'
 
         :return surveys: :obj:`numpy.ndarray` of [x, y, z] coordinates
-
         """
         with fetch_h5_handle(file) as h5file:
             root = list(h5file.keys())[0]
@@ -407,7 +447,7 @@ class H5Reader:
             coordinates = None
             try:
                 coordinates = np.asarray(
-                    h5file[root]["Objects"][cls.uuid_str(uid)][cls.key_map[name]]
+                    h5file[root]["Objects"][as_str_if_uuid(uid)][cls.key_map[name]]
                 )
             except KeyError:
                 pass
@@ -423,35 +463,16 @@ class H5Reader:
         :param uid: Unique identifier of the target object
 
         :return surveys: :obj:`numpy.ndarray` of [x, y, z] coordinates
-
         """
         with fetch_h5_handle(file) as h5file:
 
             try:
                 root = list(h5file.keys())[0]
-                trace_depth = h5file[root]["Objects"][cls.uuid_str(uid)]["TraceDepth"]
+                trace_depth = h5file[root]["Objects"][as_str_if_uuid(uid)]["TraceDepth"]
             except KeyError:
                 trace_depth = None
 
         return trace_depth
-
-    @staticmethod
-    def bool_value(value: np.int8) -> bool:
-        return bool(value)
-
-    @staticmethod
-    def uuid_value(value: str) -> uuid.UUID:
-        return uuid.UUID(value)
-
-    @staticmethod
-    def uuid_str(value: uuid.UUID) -> str:
-        return "{" + str(value) + "}"
-
-    @staticmethod
-    def str_from_utf8_bytes(value: bytes | str) -> str:
-        if isinstance(value, bytes):
-            value = value.decode("utf-8")
-        return value
 
     @staticmethod
     def format_type_string(string):

@@ -1,4 +1,4 @@
-#  Copyright (c) 2021 Mira Geoscience Ltd.
+#  Copyright (c) 2022 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -26,7 +26,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..data import CommentsData, Data
-from ..data.data_association_enum import DataAssociationEnum
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
@@ -101,11 +100,11 @@ class ObjectBase(Entity):
 
             data = {
                 "data_A": {
-                    'values', [v_1, v_2, ...],
+                    'values': [v_1, v_2, ...],
                     'association': 'VERTEX'
                     },
                 "data_B": {
-                    'values', [v_1, v_2, ...],
+                    'values': [v_1, v_2, ...],
                     'association': 'CELLS'
                     },
             }
@@ -158,7 +157,6 @@ class ObjectBase(Entity):
 
         :return: The target property group.
         """
-        prop_group = self.find_or_create_property_group(name=name)
         if isinstance(data, list):
             uids = []
             for datum in data:
@@ -166,6 +164,9 @@ class ObjectBase(Entity):
         else:
             uids = self.reference_to_uid(data)
 
+        prop_group = self.find_or_create_property_group(
+            name=name, association=self.workspace.get_entity(uids[0])[0].association
+        )
         for uid in uids:
             assert uid in [
                 child.uid for child in self.children
@@ -372,27 +373,21 @@ class ObjectBase(Entity):
         """
         Get a dictionary of attributes and validate the data 'association' keyword.
         """
+        if attribute_dict.get("association") is not None:
+            return
 
-        if "association" in attribute_dict.keys():
-            assert attribute_dict["association"] in [
-                enum.name for enum in DataAssociationEnum
-            ], (
-                "Data 'association' must be one of "
-                + f"{[enum.name for enum in DataAssociationEnum]}. "
-                + f"{attribute_dict['association']} provided."
-            )
+        if (
+            getattr(self, "n_cells", None) is not None
+            and attribute_dict["values"].ravel().shape[0] == self.n_cells
+        ):
+            attribute_dict["association"] = "CELL"
+        elif (
+            getattr(self, "n_vertices", None) is not None
+            and attribute_dict["values"].ravel().shape[0] == self.n_vertices
+        ):
+            attribute_dict["association"] = "VERTEX"
         else:
             attribute_dict["association"] = "OBJECT"
-            if (
-                getattr(self, "n_cells", None) is not None
-                and attribute_dict["values"].ravel().shape[0] == self.n_cells
-            ):
-                attribute_dict["association"] = "CELL"
-            elif (
-                getattr(self, "n_vertices", None) is not None
-                and attribute_dict["values"].ravel().shape[0] == self.n_vertices
-            ):
-                attribute_dict["association"] = "VERTEX"
 
     @staticmethod
     def validate_data_type(attribute_dict):
@@ -403,9 +398,9 @@ class ObjectBase(Entity):
         if entity_type is None:
             primitive_type = attribute_dict.get("type")
             if primitive_type is not None:
-                assert primitive_type.upper() in list(
-                    PrimitiveTypeEnum.__members__.keys()
-                ), f"Data 'type' should be one of {list(PrimitiveTypeEnum.__members__.keys())}"
+                assert (
+                    primitive_type.upper() in PrimitiveTypeEnum.__members__
+                ), f"Data 'type' should be one of {PrimitiveTypeEnum.__members__}"
                 entity_type = {"primitive_type": primitive_type.upper()}
             else:
                 values = attribute_dict.get("values")

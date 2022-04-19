@@ -1,27 +1,28 @@
-geoh5py.objects.surveys package
-===============================
+geoh5py.objects.surveys
+=======================
 
-Submodules
-----------
+.. toctree::
+   :maxdepth: 4
 
-geoh5py.objects.surveys.direct\_current module
-----------------------------------------------
+   geoh5py.objects.surveys.electromagnetics
+
+
+geoh5py.objects.surveys.direct\_current
+---------------------------------------
 
 .. automodule:: geoh5py.objects.surveys.direct_current
    :members:
    :undoc-members:
    :show-inheritance:
 
-geoh5py.objects.surveys.magnetics module
-----------------------------------------
+geoh5py.objects.surveys.magnetics
+---------------------------------
 
 .. automodule:: geoh5py.objects.surveys.magnetics
    :members:
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
 
 .. automodule:: geoh5py.objects.surveys
    :members:
