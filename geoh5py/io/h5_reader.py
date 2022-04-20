@@ -215,9 +215,15 @@ class H5Reader:
         return u_delimiters, v_delimiters, z_delimiters
 
     @classmethod
-    def fetch_metadata(cls, file: str | h5py.File, uid: uuid.UUID) -> str | dict | None:
+    def fetch_metadata(
+        cls,
+        file: str | h5py.File,
+        uid: uuid.UUID,
+        entity_type: str = "Objects",
+        argument: str = "Metadata",
+    ) -> str | dict | None:
         """
-        Fetch the metadata of an entity.
+        Fetch text of dictionary type attributes of an entity.
         """
 
         with fetch_h5_handle(file) as h5file:
@@ -225,7 +231,7 @@ class H5Reader:
 
             try:
                 metadata = np.r_[
-                    h5file[name]["Objects"][as_str_if_uuid(uid)]["Metadata"]
+                    h5file[name][entity_type][as_str_if_uuid(uid)][argument]
                 ]
                 metadata = str_from_utf8_bytes(metadata[0])
 
