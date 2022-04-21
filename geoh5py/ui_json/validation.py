@@ -180,6 +180,8 @@ class InputValidation:
                 validations[key] = {
                     "types": [check_type],
                 }
+                if check_type is UUID:
+                    validations[key]["types"].append(Entity)
 
             validations[key].update({"optional": optional_type(ui_json, key)})
 
