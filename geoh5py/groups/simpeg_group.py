@@ -51,13 +51,16 @@ class SimPEGGroup(Group):
         if getattr(self, "_options", None) is None:
             self._options = self.workspace.fetch_metadata(self.uid, argument="options")
 
+        if self._options is None:
+            self._options = {}
+
         return self._options
 
     @options.setter
     def options(self, value: dict | None):
         if value is not None:
             assert isinstance(
-                value, (dict)
+                value, dict
             ), f"Input 'options' must be of type {dict} or None"
 
         self._options = value

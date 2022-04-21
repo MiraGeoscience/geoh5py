@@ -19,6 +19,7 @@ import os
 
 from geoh5py.groups import ContainerGroup, SimPEGGroup
 from geoh5py.shared.utils import compare_entities
+from geoh5py.ui_json import constants, templates
 from geoh5py.workspace import Workspace
 
 
@@ -42,12 +43,18 @@ def test_simpeg_group(tmp_path):
 
     h5file_path = os.path.join(tmp_path, "testGroup.geoh5")
 
-    # Create a workspace
+    # Create a workspace with group
     workspace = Workspace(h5file_path)
     group = SimPEGGroup.create(workspace)
-    group.options = {"run_command": "abc"}
+    group.options = constants.default_ui_json
+    group.options["something"] = templates.float_parameter()
     workspace.finalize()
 
-    # Read the group back in
-    rec_obj = workspace.get_entity(group.uid)[0]
-    compare_entities(group, rec_obj)
+    # Copy
+    new_workspace = Workspace(os.path.join(tmp_path, "testGroup2.geoh5"))
+    group.copy(parent=new_workspace)
+
+    # Read back in and compare
+    new_workspace = Workspace(os.path.join(tmp_path, "testGroup2.geoh5"))
+    rec_obj = new_workspace.get_entity(group.uid)[0]
+    compare_entities(group, rec_obj, ignore=["_parent"])
