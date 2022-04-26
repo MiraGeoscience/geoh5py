@@ -34,6 +34,7 @@ class DrapeModel(ObjectBase):
     def __init__(self, object_type: ObjectType, **kwargs):
         self._layers: np.ndarray | None = None
         self._prisms: np.ndarray | None = None
+        self._centroids: np.ndarray | None = None
 
         super().__init__(object_type, **kwargs)
 
@@ -42,6 +43,51 @@ class DrapeModel(ObjectBase):
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
+
+    @property
+    def centroids(self):
+        """
+        :obj:`numpy.array` of :obj:`float`,
+        shape (:obj:`~geoh5py.objects.drape_model.Drapemodel.n_cells`, 3):
+        Cell center locations in world coordinates.
+
+        .. code-block:: python
+
+            centroids = [
+                [x_1, y_1, z_1],
+                ...,
+                [x_N, y_N, z_N]
+            ]
+        """
+        if getattr(self, "_centroids", None) is None:
+            if self.layers is None:
+                raise AttributeError(
+                    "Attribute 'layers' must be defined before accessing 'centroids'."
+                )
+
+            if self.prisms is None:
+                raise AttributeError(
+                    "Attribute 'prisms' must be defined before accessing 'centroids'."
+                )
+
+            self._centroids = np.vstack(
+                [
+                    np.ones((int(val), 3)) * self.prisms[ii, :3]
+                    for ii, val in enumerate(self.prisms[:, 4])
+                ]
+            )
+            tops = np.hstack(
+                [
+                    np.r_[
+                        cells[2],
+                        self.layers[int(cells[3]) : int(cells[3] + cells[4] - 1), 2],
+                    ]
+                    for cells in self.prisms.tolist()
+                ]
+            )
+            self._centroids[:, 2] = (tops + self.layers[:, 2]) / 2.0
+
+        return self._centroids
 
     @property
     def layers(self) -> np.ndarray | None:
@@ -70,6 +116,12 @@ class DrapeModel(ObjectBase):
         )
 
     @property
+    def n_cells(self):
+        if self.prisms is not None:
+            return self.prisms.shape[0]
+        return None
+
+    @property
     def prisms(self) -> np.ndarray | None:
         """
         :obj:`~geoh5py.objects.object_base.ObjectBase.prisms`
@@ -86,16 +138,20 @@ class DrapeModel(ObjectBase):
     def prisms(self, xyz: np.ndarray):
         self.modified_attributes = "prisms"
         assert (
-            xyz.shape[1] == 3
-        ), f"Array of prisms must be of shape (*, 3). Array of shape {xyz.shape} provided."
+            xyz.shape[1] == 5
+        ), f"Array of prisms must be of shape (*, 5). Array of shape {xyz.shape} provided."
         self._prisms = np.asarray(
             np.core.records.fromarrays(
                 xyz.T.tolist(),
                 dtype={
-                    "names": ["Top elevation", "First layer", "Layer count"],
-                    "formats": ["<f8", "<i4", "<i4"],
-                    "offsets": [0, 24, 28],
-                    "itemsize": 32,
+                    "names": [
+                        "Top easting",
+                        "Top northing",
+                        "Top elevation",
+                        "First layer",
+                        "Layer count",
+                    ],
+                    "formats": ["<f8", "<f8", "<f8", "<i4", "<i4"],
                 },
             )
         )

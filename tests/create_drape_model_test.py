@@ -15,23 +15,39 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 
-# import numpy as np
+import numpy as np
+
 #
-# from geoh5py.objects import Grid2D
-# from geoh5py.shared.utils import compare_entities
-# from geoh5py.workspace import Workspace
+from geoh5py.objects import DrapeModel
+from geoh5py.workspace import Workspace
 
 
-def test_create_drape_model():
-    pass
-    # name = "MyDrapeModel"
-    # h5file_path = os.path.join(
-    #     r"C:\Users\dominiquef\Documents\GIT\mira\geoh5py\tests", "A LINE.geoh5"
-    # )
-    # workspace = Workspace(h5file_path)
+def test_create_drape_model(tmp_path):
+    # pass
+    h5file_path = os.path.join(tmp_path, "drapedmodel.geoh5")
+    workspace = Workspace(h5file_path)
     #
-    # drape_model = workspace.get_entity("A LINE02__")[0]
+    # drape_model = workspace.get_entity("draped_models_line_id_1")[0]
+    n_col, n_row = 64, 32
+    j, i = np.meshgrid(np.arange(n_row), np.arange(n_col))
+    bottom = -np.sin(j / n_col * np.pi) * np.abs(np.cos(4 * i / n_col * np.pi)) - 0.1
+
+    x = np.sin(2 * np.arange(n_col) / n_col * np.pi)
+    y = np.cos(2 * np.arange(n_col) / n_col * np.pi)
+    top = bottom.flatten()[::n_row] + 0.1
+    layers = np.tile(n_row, n_col)
+    drape = DrapeModel.create(
+        workspace,
+        prisms=np.c_[x, y, top, np.arange(0, i.flatten().shape[0], n_row), layers],
+        layers=np.c_[i.flatten(), j.flatten(), bottom.flatten()],
+    )
+    drape.add_data(
+        {"indices": {"values": (i * n_row + j).flatten(), "association": "CELL"}}
+    )
+
+    # print(drape_model.centroids)
     # new_workspace = Workspace("tester.geoh5")
     # drape_model.copy(parent=new_workspace)
     #
