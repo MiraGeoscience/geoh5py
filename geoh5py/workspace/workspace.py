@@ -572,14 +572,24 @@ class Workspace:
         """
         return self._io_call(file, H5Reader.fetch_delimiters, uid)
 
-    def fetch_metadata(self, uid: uuid.UUID, file: str | h5py.File | None = None):
+    def fetch_metadata(
+        self, uid: uuid.UUID, file: str | h5py.File | None = None, argument="Metadata"
+    ):
         """
         Fetch the metadata of an entity from the source h5file.
 
 
         :return:
         """
-        return self._io_call(file, H5Reader.fetch_metadata, uid)
+        return self._io_call(
+            file,
+            H5Reader.fetch_metadata,
+            uid,
+            argument=argument,
+            entity_type="Groups"
+            if isinstance(self.get_entity(uid)[0], Group)
+            else "Objects",
+        )
 
     def fetch_octree_cells(
         self, uid: uuid.UUID, file: str | h5py.File | None = None

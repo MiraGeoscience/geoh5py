@@ -35,6 +35,6 @@ from .surveys.electromagnetics.airborne_tem import (
     AirborneTEMReceivers,
     AirborneTEMTransmitters,
 )
-from .surveys.electromagnetics.base import BaseEMSurvey
 from .surveys.electromagnetics.magnetotellurics import MTReceivers
+from .surveys.electromagnetics.tipper import TipperBaseStations, TipperReceivers
 from .surveys.magnetics import AirborneMagnetics

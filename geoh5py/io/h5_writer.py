@@ -57,6 +57,7 @@ class H5Writer:
         "property_groups": "PropertyGroups",
         "color_map": "Color map",
         "metadata": "Metadata",
+        "options": "options",
     }
 
     @classmethod
@@ -282,7 +283,7 @@ class H5Writer:
                 except KeyError:
                     pass
 
-                if attr in ["values", "trace_depth", "metadata"]:
+                if attr in ["values", "trace_depth", "metadata", "options"]:
                     cls.write_data_values(h5file, entity, attr)
                 elif attr == "cells":
                     cls.write_cells(h5file, entity)
@@ -744,7 +745,7 @@ class H5Writer:
         """
         with fetch_h5_handle(file) as h5file:
 
-            for attribute in ["values", "trace_depth", "metadata"]:
+            for attribute in ["values", "trace_depth", "metadata", "options"]:
                 if getattr(entity, attribute, None) is not None:
                     H5Writer.write_data_values(h5file, entity, attribute)
 

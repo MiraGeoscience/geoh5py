@@ -88,6 +88,16 @@ class PropertyGroupValidationError(BaseValidationError):
         )
 
 
+class AtLeastOneValidationError(BaseValidationError):
+    def __init__(self, name: str, value: list[str]):
+        super().__init__(AtLeastOneValidationError.message(name, value))
+
+    @staticmethod
+    def message(name, value, validation=None):
+        opts = "'" + "', '".join(str(k) for k in value) + "'"
+        return f"Must provide at least one {name}.  Options are: {opts}"
+
+
 class RequiredValidationError(BaseValidationError):
     def __init__(self, name: str):
         super().__init__(RequiredValidationError.message(name))

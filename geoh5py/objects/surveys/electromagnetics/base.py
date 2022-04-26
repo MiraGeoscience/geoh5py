@@ -24,17 +24,17 @@ import numpy as np
 
 from geoh5py.data import FloatData
 from geoh5py.groups import PropertyGroup
-from geoh5py.objects import Curve
+from geoh5py.objects import ObjectBase
 from geoh5py.objects.object_type import ObjectType
 
 
-class BaseEMSurvey(Curve):
+class BaseEMSurvey(ObjectBase):
     """
     A base electromagnetics survey object.
     """
 
-    __METADATA: dict = {"EM Dataset": {}}
     __INPUT_TYPE = None
+    __TYPE = None
     __UNITS = None
     _receivers: BaseEMSurvey | None = None
     _transmitters: BaseEMSurvey | None = None
@@ -194,6 +194,45 @@ class BaseEMSurvey(Curve):
 
         return None
 
+    def copy(self, parent=None, copy_children: bool = True) -> BaseEMSurvey:
+        """
+        Function to copy a AirborneTEMReceivers to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: Create copies of AirborneTEMReceivers along with it.
+
+        :return entity: Registered AirborneTEMReceivers to the workspace.
+        """
+        if parent is None:
+            parent = self.parent
+
+        omit_list = ["_metadata", "_receivers", "_transmitters"]
+        metadata = self.metadata.copy()
+        new_entity = parent.workspace.copy_to_parent(
+            self, parent, copy_children=copy_children, omit_list=omit_list
+        )
+        metadata["EM Dataset"][new_entity.type] = new_entity.uid
+        for associate in ["transmitters", "receivers", "base_stations"]:
+            if (
+                getattr(self, associate, None) is not None
+                and getattr(self, associate) != self
+            ):
+                complement = parent.workspace.copy_to_parent(
+                    getattr(self, associate),
+                    parent,
+                    copy_children=copy_children,
+                    omit_list=omit_list,
+                )
+                setattr(new_entity, associate, complement)
+                metadata["EM Dataset"][complement.type] = complement.uid
+                complement.metadata = self.metadata
+
+        new_entity.metadata = metadata
+        parent.workspace.finalize()
+
+        return new_entity
+
     @property
     def default_input_types(self) -> list[str] | None:
         """Input types. Must be one of 'Rx', 'Tx', 'Tx and Rx'."""
@@ -202,7 +241,7 @@ class BaseEMSurvey(Curve):
     @property
     def default_metadata(self):
         """Default metadata structure. Implemented on the child class."""
-        return self.__METADATA
+        return {"EM Dataset": {}}
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -252,6 +291,10 @@ class BaseEMSurvey(Curve):
         if getattr(self, "transmitters", None) is not None:
             getattr(self, "transmitters").metadata = self.metadata
 
+        if getattr(self, "base_stations", None) is not None:
+            getattr(self, "base_stations").metadata = self.metadata
+
+        self.modified_attributes = "metadata"
         self.workspace.finalize()
 
     def _edit_validate_property_groups(
@@ -316,9 +359,8 @@ class BaseEMSurvey(Curve):
 
             if metadata is None:
                 metadata = self.default_metadata
-                for name in ["Receivers", "Transmitters"]:
-                    if name in type(self).__name__:
-                        metadata["EM Dataset"][name] = self.uid
+                if self.type is not None:
+                    metadata["EM Dataset"][self.type] = self.uid
                 self.metadata = metadata
             else:
                 self._metadata = metadata
@@ -344,8 +386,11 @@ class BaseEMSurvey(Curve):
             )
 
         for key, value in values["EM Dataset"].items():
-            if key in ["Receivers", "Transmitters"] and isinstance(value, str):
-                values["EM Dataset"][key] = uuid.UUID(value)
+            if isinstance(value, str):
+                try:
+                    values["EM Dataset"][key] = uuid.UUID(value)
+                except ValueError:
+                    continue
 
         self._metadata = values
         self.modified_attributes = "metadata"
@@ -370,7 +415,9 @@ class BaseEMSurvey(Curve):
     @receivers.setter
     def receivers(self, receivers: BaseEMSurvey):
         if isinstance(None, self.default_receiver_type):
-            raise AttributeError(f"EM class {self} does not have receivers.")
+            raise AttributeError(
+                f"The 'receivers' attribute cannot be set on class {type(self)}."
+            )
 
         if not isinstance(receivers, self.default_receiver_type):
             raise TypeError(
@@ -411,7 +458,9 @@ class BaseEMSurvey(Curve):
     @transmitters.setter
     def transmitters(self, transmitters: BaseEMSurvey):
         if isinstance(None, self.default_transmitter_type):
-            raise AttributeError(f"EM class {self} does not have transmitters.")
+            raise AttributeError(
+                f"The 'transmitters' attribute cannot be set on class {type(self)}."
+            )
 
         if not isinstance(transmitters, self.default_transmitter_type):
             raise TypeError(
@@ -420,6 +469,11 @@ class BaseEMSurvey(Curve):
             )
         self._transmitters = transmitters
         self.edit_metadata({"Transmitters": transmitters.uid})
+
+    @property
+    def type(self):
+        """Survey element type"""
+        return self.__TYPE
 
     @property
     def unit(self) -> float | None:

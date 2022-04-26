@@ -39,17 +39,17 @@ def optional_parameter(state: str) -> dict[str, bool]:
     :param state: Initial state of optional parameter. Can be 'enabled' or 'disabled'.
     """
 
-    d = {"optional": True}
+    form_opt = {"optional": True}
     if state == "enabled":
-        d["enabled"] = True
+        form_opt["enabled"] = True
     elif state == "disabled":
-        d["enabled"] = False
+        form_opt["enabled"] = False
     else:
         raise ValueError(
             "Unrecognized state option. Must be either 'enabled' or 'disabled'."
         )
 
-    return d
+    return form_opt
 
 
 def bool_parameter(
@@ -93,10 +93,10 @@ def integer_parameter(
 
     :returns: Ui_json compliant dictionary.
     """
-    ui = {"main": main, "label": label, "value": value, "min": vmin, "max": vmax}
+    form = {"main": main, "label": label, "value": value, "min": vmin, "max": vmax}
     if optional is not None:
-        ui.update(optional_parameter(optional))
-    return ui
+        form.update(optional_parameter(optional))
+    return form
 
 
 def float_parameter(
@@ -112,7 +112,7 @@ def float_parameter(
     """
     Input box for float value.
 
-    :param main: Show ui in main.
+    :param main: Show form in main.
     :param label: Label identifier.
     :param value: Input value.
     :param vmin: Minimum value allowed.
@@ -123,7 +123,7 @@ def float_parameter(
 
     :returns: Ui_json compliant dictionary.
     """
-    ui = {
+    form = {
         "main": main,
         "label": label,
         "value": value,
@@ -134,8 +134,8 @@ def float_parameter(
     }
 
     if optional is not None:
-        ui.update(optional_parameter(optional))
-    return ui
+        form.update(optional_parameter(optional))
+    return form
 
 
 def string_parameter(
@@ -147,7 +147,7 @@ def string_parameter(
     """
     Input box for string value.
 
-    :param main: Show ui in main.
+    :param main: Show form in main.
     :param label: Label identifier.
     :param value: Input string value.
     :param optional: Make optional if not None. Initial state provided by not None
@@ -155,11 +155,11 @@ def string_parameter(
 
     :returns: Ui_json compliant dictionary.
     """
-    ui = {"main": main, "label": label, "value": value}
+    form = {"main": main, "label": label, "value": value}
 
     if optional is not None:
-        ui.update(optional_parameter(optional))
-    return ui
+        form.update(optional_parameter(optional))
+    return form
 
 
 def choice_string_parameter(
@@ -172,7 +172,7 @@ def choice_string_parameter(
     """
     Dropdown menu of string choices.
 
-    :param main: Show ui in main.
+    :param main: Show form in main.
     :param label: Label identifier.
     :param value: Input value.
     :param choice_list: List of options.
@@ -181,11 +181,11 @@ def choice_string_parameter(
 
     :returns: Ui_json compliant dictionary.
     """
-    ui = {"main": main, "label": label, "value": value, "choiceList": choice_list}
+    form = {"main": main, "label": label, "value": value, "choiceList": choice_list}
 
     if optional is not None:
-        ui.update(optional_parameter(optional))
-    return ui
+        form.update(optional_parameter(optional))
+    return form
 
 
 def file_parameter(
@@ -199,7 +199,7 @@ def file_parameter(
     """
     File loader for specific extensions.
 
-    :param main: Show ui in main.
+    :param main: Show form in main.
     :param label: Label identifier.
     :param value: Input value.
     :param file_description: Title used to describe each type.
@@ -209,7 +209,7 @@ def file_parameter(
 
     :returns: Ui_json compliant dictionary.
     """
-    ui = {
+    form = {
         "fileDescription": file_description,
         "fileType": file_type,
         "main": main,
@@ -218,8 +218,8 @@ def file_parameter(
     }
 
     if optional is not None:
-        ui.update(optional_parameter(optional))
-    return ui
+        form.update(optional_parameter(optional))
+    return form
 
 
 def object_parameter(
@@ -232,7 +232,7 @@ def object_parameter(
     """
     Dropdown menu of objects of specific types.
 
-    :param main: Show ui in main.
+    :param main: Show form in main.
     :param label: Label identifier.
     :param value: Input value.
     :param mesh_type: Type of selectable objects.
@@ -241,11 +241,11 @@ def object_parameter(
 
     :returns: Ui_json compliant dictionary.
     """
-    ui = {"main": main, "label": label, "value": value, "meshType": mesh_type}
+    form = {"main": main, "label": label, "value": value, "meshType": mesh_type}
 
     if optional is not None:
-        ui.update(optional_parameter(optional))
-    return ui
+        form.update(optional_parameter(optional))
+    return form
 
 
 def data_parameter(
@@ -261,7 +261,7 @@ def data_parameter(
     """
     Dropdown menu of data from parental object.
 
-    :param main: Show ui in main.
+    :param main: Show form in main.
     :param label: Label identifier.
     :param value: Input value.
     :param association: Data association type from 'Vertex' or 'Cell'.
@@ -277,7 +277,7 @@ def data_parameter(
 
     :returns: Ui_json compliant dictionary.
     """
-    ui = {
+    form = {
         "main": main,
         "association": association,
         "dataType": data_type,
@@ -292,12 +292,12 @@ def data_parameter(
         "Strike & dip",
         "Multi-element",
     ]:
-        ui["dataGroupType"] = data_group_type
+        form["dataGroupType"] = data_group_type
 
     if optional is not None:
-        ui.update(optional_parameter(optional))
+        form.update(optional_parameter(optional))
 
-    return ui
+    return form
 
 
 def data_value_parameter(
@@ -314,7 +314,7 @@ def data_value_parameter(
     """
     Dropdown of data or input box.
 
-    :param main: Show ui in main.
+    :param main: Show form in main.
     :param label: Label identifier.
     :param value: Input value.
     :param association: Data association type from 'Vertex' or 'Cell'.
@@ -332,7 +332,7 @@ def data_value_parameter(
 
     :returns: Ui_json compliant dictionary.
     """
-    ui = {
+    form = {
         "main": main,
         "association": association,
         "dataType": data_type,
@@ -345,5 +345,5 @@ def data_value_parameter(
     }
 
     if optional is not None:
-        ui.update(optional_parameter(optional))
-    return ui
+        form.update(optional_parameter(optional))
+    return form

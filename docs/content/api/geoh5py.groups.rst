@@ -74,6 +74,14 @@ geoh5py.groups.root\_group
    :undoc-members:
    :show-inheritance:
 
+geoh5py.groups.simpeg\_group
+----------------------------
+
+.. automodule:: geoh5py.groups.simpeg_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 .. automodule:: geoh5py.groups
    :members:

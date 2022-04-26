@@ -19,27 +19,19 @@ from __future__ import annotations
 
 import uuid
 
+from geoh5py.objects import Points
 from geoh5py.objects.object_type import ObjectType
 
 from .base import BaseEMSurvey
 
 
-class MTReceivers(BaseEMSurvey):
+class MTReceivers(BaseEMSurvey, Points):
     """
     A magnetotellurics survey object.
     """
 
     __TYPE_UID = uuid.UUID("{b99bd6e5-4fe1-45a5-bd2f-75fc31f91b38}")
-    __METADATA = {
-        "EM Dataset": {
-            "Channels": [],
-            "Input type": "Rx only",
-            "Property groups": [],
-            "Receivers": "",
-            "Survey type": "Magnetotellurics",
-            "Unit": "Hertz (Hz)",
-        }
-    }
+    __TYPE = "Receivers"
     __UNITS = [
         "Hertz (Hz)",
         "KiloHertz (kHz)",
@@ -61,7 +53,16 @@ class MTReceivers(BaseEMSurvey):
         """
         :return: Default unique identifier
         """
-        return self.__METADATA
+        return {
+            "EM Dataset": {
+                "Channels": [],
+                "Input type": "Rx only",
+                "Property groups": [],
+                "Receivers": None,
+                "Survey type": "Magnetotellurics",
+                "Unit": "Hertz (Hz)",
+            }
+        }
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -78,13 +79,6 @@ class MTReceivers(BaseEMSurvey):
         return self.__UNITS
 
     @property
-    def receivers(self):
-        """MT receivers"""
-        return self
-
-    @receivers.setter
-    def receivers(self, value: BaseEMSurvey):
-        raise AttributeError(
-            "Attribute 'receivers' of the class 'MTReceivers' must reference to self. "
-            f"Re-assignment to {value} ignored."
-        )
+    def type(self):
+        """Survey element type"""
+        return self.__TYPE

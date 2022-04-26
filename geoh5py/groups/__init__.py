@@ -27,3 +27,4 @@ from .group_type import GroupType
 from .notype_group import NoTypeGroup
 from .property_group import PropertyGroup
 from .root_group import RootGroup
+from .simpeg_group import SimPEGGroup

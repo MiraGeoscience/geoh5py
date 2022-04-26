@@ -21,23 +21,13 @@ import uuid
 
 import numpy as np
 
+from geoh5py.objects import Curve
 from geoh5py.objects.object_type import ObjectType
 
 from .base import BaseEMSurvey
 
 
-class BaseAirborneTEM(BaseEMSurvey):
-    __METADATA = {
-        "EM Dataset": {
-            "Channels": [],
-            "Input type": "Rx",
-            "Property groups": [],
-            "Receivers": None,
-            "Survey type": "Airborne TEM",
-            "Transmitters": None,
-            "Unit": "Milliseconds (ms)",
-        }
-    }
+class BaseAirborneTEM(BaseEMSurvey, Curve):
     __MAP = {
         "crossline_offset": "Crossline offset",
         "inline_offset": "Inline offset",
@@ -75,7 +65,17 @@ class BaseAirborneTEM(BaseEMSurvey):
         """
         Default dictionary of metadata for AirborneTEM entities.
         """
-        return self.__METADATA
+        return {
+            "EM Dataset": {
+                "Channels": [],
+                "Input type": "Rx",
+                "Property groups": [],
+                "Receivers": None,
+                "Survey type": "Airborne TEM",
+                "Transmitters": None,
+                "Unit": "Milliseconds (ms)",
+            }
+        }
 
     @property
     def default_units(self) -> list[str]:
@@ -289,38 +289,10 @@ class AirborneTEMReceivers(BaseAirborneTEM):
     """
 
     __TYPE_UID = uuid.UUID("{19730589-fd28-4649-9de0-ad47249d9aba}")
+    __TYPE = "Receivers"
 
     def __init__(self, object_type: ObjectType, **kwargs):
         super().__init__(object_type, **kwargs)
-
-    def copy(self, parent=None, copy_children: bool = True) -> AirborneTEMReceivers:
-        """
-        Function to copy a AirborneTEMReceivers to a different parent entity.
-
-        :param parent: Target parent to copy the entity under. Copied to current
-            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: Create copies of AirborneTEMReceivers along with it.
-
-        :return entity: Registered AirborneTEMReceivers to the workspace.
-        """
-        if parent is None:
-            parent = self.parent
-
-        omit_list = ["_metadata", "_receivers", "_transmitters"]
-        new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children, omit_list=omit_list
-        )
-        new_transmitters = parent.workspace.copy_to_parent(
-            self.transmitters,
-            parent,
-            copy_children=copy_children,
-            omit_list=omit_list,
-        )
-        new_entity.transmitters = new_transmitters
-        new_entity.metadata = self.metadata
-        parent.workspace.finalize()
-
-        return new_entity
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -337,18 +309,9 @@ class AirborneTEMReceivers(BaseAirborneTEM):
         return AirborneTEMTransmitters
 
     @property
-    def receivers(self) -> AirborneTEMReceivers:
-        """
-        The associated TEM receivers.
-        """
-        return self
-
-    @receivers.setter
-    def receivers(self, value: BaseEMSurvey):
-        raise AttributeError(
-            "Attribute 'receivers' of the class 'AirborneTEMReceivers' must reference to self. "
-            f"Re-assignment to {value} ignored."
-        )
+    def type(self):
+        """Survey element type"""
+        return self.__TYPE
 
 
 class AirborneTEMTransmitters(BaseAirborneTEM):
@@ -357,37 +320,10 @@ class AirborneTEMTransmitters(BaseAirborneTEM):
     """
 
     __TYPE_UID = uuid.UUID("{58c4849f-41e2-4e09-b69b-01cf4286cded}")
+    __TYPE = "Transmitters"
 
     def __init__(self, object_type: ObjectType, **kwargs):
         super().__init__(object_type, **kwargs)
-
-    def copy(self, parent=None, copy_children: bool = True) -> AirborneTEMTransmitters:
-        """
-        Function to copy a AirborneTEMTransmitters to a different parent entity.
-
-        :param parent: Target parent to copy the entity under. Copied to current
-            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: Create copies of AirborneTEMReceivers along with it.
-
-        :return entity: Registered AirborneTEMTransmitters to the workspace.
-        """
-        if parent is None:
-            parent = self.parent
-
-        omit_list = ["_metadata", "_receivers", "_transmitters"]
-        new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children, omit_list=omit_list
-        )
-        new_receivers = parent.workspace.copy_to_parent(
-            self.receivers,
-            parent,
-            copy_children=copy_children,
-            omit_list=omit_list,
-        )
-        new_entity.receivers = new_receivers
-        parent.workspace.finalize()
-
-        return new_entity
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -404,15 +340,6 @@ class AirborneTEMTransmitters(BaseAirborneTEM):
         return AirborneTEMReceivers
 
     @property
-    def transmitters(self) -> AirborneTEMTransmitters:
-        """
-        The associated current electrode object (sources).
-        """
-        return self
-
-    @transmitters.setter
-    def transmitters(self, value: BaseEMSurvey):
-        raise AttributeError(
-            "Attribute 'transmitters' of the class 'AirborneTEMTransmitters' "
-            f"must reference to self. Re-assignment to {value} ignored."
-        )
+    def type(self):
+        """Survey element type"""
+        return self.__TYPE

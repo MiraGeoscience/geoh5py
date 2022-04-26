@@ -54,7 +54,7 @@ def test_create_survey_mt():
             mt_survey.receivers = "123"
 
         assert (
-            "Attribute 'receivers' of the class 'MTReceivers' must reference to self."
+            f"The 'receivers' attribute cannot be set on class {type(mt_survey)}."
             in str(error)
         ), "Missed raising AttributeError on setting 'receivers' on self."
 
@@ -142,8 +142,9 @@ def test_create_survey_mt():
         with pytest.raises(AttributeError) as excinfo:
             mt_survey.transmitters = AirborneTEMTransmitters
 
-        assert "does not have transmitters." in str(
-            excinfo
+        assert (
+            f"The 'transmitters' attribute cannot be set on class {type(mt_survey)}."
+            in str(excinfo)
         ), "Failed to raise AttributeError."
 
         workspace.finalize()

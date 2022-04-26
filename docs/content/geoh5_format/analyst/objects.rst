@@ -619,7 +619,7 @@ Magnetotellurics
 
 :Metadata: json formatted ``string``
 
-    Dictionary of survey parameters. The following items are core parameters storedd under the
+    Dictionary of survey parameters. The following items are core parameters stored under the
     "EM Dataset" key.
 
     - "Channels": ``list`` of ``double``
@@ -636,22 +636,47 @@ Magnetotellurics
         Sampling units, must be one of "Hertz (Hz)", "KiloHertz (kHz)", "MegaHertz (MHz)" or
         "Gigahertz (GHz)".
 
+.. _geoh5_tipper_receivers:
 
-ZTEM Rx
--------
+Tipper Rx
+---------
 
 **UUID : {0b639533-f35b-44d8-92a8-f70ecff3fd26}**
 
-*Not yet geoh5py implemented*
+:ref:`Curve <geoh5_curve>` object representing a tipper survey.
 
-*To be further documented*
+:Metadata: json formatted ``string``
 
+    Dictionary of survey parameters. The following items are core parameters stored under the
+    "EM Dataset" key.
 
-ZTEM Base Stations
-------------------
+    - "Channels": ``list`` of ``double``
+        Frequency channels at which data are recorder.
+    - "Input type": ``string``
+        Static field set to "Rx and base stations"
+    - "Property groups": ``list`` of ``uuid``
+        Reference to property groups containing data at every channel.
+    - "Receivers": ``uuid``
+        Reference to itself.
+    - "Base stations: ``uuid``
+        Reference to :ref:`Tipper Base stations <geoh5_tipper_base_stations>`
+    - "Survey type": ``string``
+        Static field set to "Magnetotellurics"
+    - "Unit": ``string``
+        Sampling units, must be one of "Hertz (Hz)", "KiloHertz (kHz)", "MegaHertz (MHz)" or
+        "Gigahertz (GHz)".
+
+.. _geoh5_tipper_base_stations:
+
+Tipper Base stations
+--------------------
 
 **UUID : {f495cd13-f09b-4a97-9212-2ea392aeb375}**
 
-*Not yet geoh5py implemented*
+:ref:`Points <geoh5_points>` object representing a tipper survey.
 
-*To be further documented*
+:Metadata: json formatted ``string``
+
+    See definition from the :ref:`Tipper Rx <geoh5_tipper_receivers>` object. The "Base stations" ``uuid`` value
+    should point to itself, while the "Receivers" ``uuid`` refers the linked
+    :ref:`Tipper Rx <geoh5_tipper_receivers>` object.
