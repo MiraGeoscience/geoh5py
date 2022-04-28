@@ -73,7 +73,7 @@ class H5Writer:
 
         :return h5file: Pointer to a geoh5 file.
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
             project = h5file.create_group(workspace.name)
             cls.write_attributes(h5file, workspace)
             project.create_group("Data")
@@ -116,7 +116,7 @@ class H5Writer:
         :param ref_type: Input type from: 'Types', 'Groups', 'Objects' or 'Data
         :param parent: Remove entity from parent.
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
             uid_str = as_str_if_uuid(uid)
             parent_handle = H5Writer.fetch_handle(h5file, parent)
             if parent_handle is not None and uid_str in parent_handle[ref_type].keys():
@@ -138,7 +138,7 @@ class H5Writer:
         :param parent: Remove entity from parent.
 
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
             base = list(h5file.keys())[0]
             base_type_handle = h5file[base][ref_type]
             uid_str = as_str_if_uuid(uid)
@@ -170,7 +170,7 @@ class H5Writer:
 
         :return entity_handle: HDF5 pointer to an existing entity, parent or None if not found.
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
             base = list(h5file.keys())[0]
             base_handle = h5file[base]
 
@@ -219,7 +219,7 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file
         :param workspace: Workspace object defining the project structure.
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
             root_handle = cls.save_entity(h5file, workspace.root)
 
             if "Root" in h5file[workspace.name].keys():
@@ -244,7 +244,7 @@ class H5Writer:
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
         :param add_children: Add :obj:`~geoh5py.shared.entity.Entity.children`.
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
             new_entity = H5Writer.write_entity(h5file, entity)
 
             if add_children:
@@ -269,7 +269,7 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
 
             for attr in entity.modified_attributes:
@@ -310,7 +310,7 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file.
         :param entity: Entity with attributes to be added to the geoh5 file.
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
 
             for key, attr in entity.attribute_map.items():
@@ -351,7 +351,7 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file
         :param entity: Target entity
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
 
             if hasattr(entity, "u_cell_delimiters") and (
@@ -387,7 +387,7 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file
         :param entity: Target entity
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
 
             if hasattr(entity, "cells") and (entity.cells is not None):
                 entity_handle = H5Writer.fetch_handle(h5file, entity)
@@ -406,7 +406,7 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file
         :param entity_type: Target entity_type with color_map
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
             color_map = getattr(entity_type, "color_map", None)
 
             if color_map is not None and color_map.values is not None:
@@ -433,7 +433,7 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file
         :param entity_type: Target entity_type with value_map
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
             reference_value_map = getattr(entity_type, "value_map", None)
             names = ["Key", "Value"]
             formats = ["<u4", h5py.special_dtype(vlen=str)]
@@ -457,7 +457,7 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file
         :param entity: Target entity
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
             dtype = np.dtype(
                 [("ViewID", h5py.special_dtype(vlen=str)), ("Visible", "int8")]
@@ -483,7 +483,7 @@ class H5Writer:
         :param entity: Target entity.
         :param attribute: Name of the attribute to be written to geoh5
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
 
             if getattr(entity, attribute, None) is not None:
@@ -511,7 +511,7 @@ class H5Writer:
         :param entity: Target entity.
         :param attribute: Name of the attribute to be written to geoh5
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
             if getattr(entity, attribute, None) is None:
                 return
@@ -590,7 +590,7 @@ class H5Writer:
 
         :return entity: Pointer to the written entity. Active link if "close_file" is False.
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
 
             base = list(h5file.keys())[0]
 
@@ -664,7 +664,7 @@ class H5Writer:
 
         :return type: Pointer to :obj:`~geoh5py.shared.entity_type.EntityType` in geoh5.
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
             base = list(h5file.keys())[0]
             uid = entity_type.uid
 
@@ -723,7 +723,7 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file.
         :param entity: Target entity_type with color_map.
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
 
             if hasattr(entity, "octree_cells") and (entity.octree_cells is not None):
                 entity_handle = H5Writer.fetch_handle(h5file, entity)
@@ -741,7 +741,7 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
 
             for attribute in ["values", "trace_depth", "metadata", "options"]:
                 if getattr(entity, attribute, None) is not None:
@@ -778,7 +778,7 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
 
             if hasattr(entity, "property_groups") and isinstance(
                 entity.property_groups, list
@@ -836,7 +836,7 @@ class H5Writer:
         :param recursively: Add parents recursively until reaching the
             :obj:`~geoh5py.groups.root_group.RootGroup`.
         """
-        with fetch_h5_handle(file) as h5file:
+        with fetch_h5_handle(file, mode="r+") as h5file:
 
             if isinstance(entity, RootGroup):
                 return

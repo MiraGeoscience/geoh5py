@@ -72,7 +72,7 @@ class Workspace:
         self._root: Entity | None = None
         self._distance_unit = "meter"
         self._ga_version = "1"
-        self._version = 1.0
+        self._version = 2.0
         self._name = "GEOSCIENCE"
         self._types: dict[uuid.UUID, ReferenceType[EntityType]] = {}
         self._groups: dict[uuid.UUID, ReferenceType[group.Group]] = {}
@@ -93,17 +93,18 @@ class Workspace:
             else:
                 setattr(self, attr, item)
 
-        with h5py.File(self.h5file, "a") as file:
-            try:
-                proj_attributes = self._io_call(file, H5Reader.fetch_project_attributes)
+        # with h5py.File(self.h5file, "a") as file:
+        try:
+            proj_attributes = self._io_call(
+                self.h5file, H5Reader.fetch_project_attributes
+            )
 
-                for key, attr in proj_attributes.items():
-                    setattr(self, self._attribute_map[key], attr)
+            for key, attr in proj_attributes.items():
+                setattr(self, self._attribute_map[key], attr)
 
-            except IndexError:
-                self._io_call(file, H5Writer.create_geoh5, self)
-
-            self.fetch_or_create_root(file)
+        except IndexError:
+            self._io_call(self.h5file, H5Writer.create_geoh5, self, mode="r+")
+            self.fetch_or_create_root(self.h5file)
 
     def activate(self):
         """Makes this workspace the active one.
@@ -955,11 +956,11 @@ class Workspace:
         """
         return self
 
-    def _io_call(self, file, fun, *args, **kwargs):
+    def _io_call(self, file, fun, *args, mode="r", **kwargs):
         """
         Run a H5Writer or H5Reader function with validation of target geoh5
         """
-        with fetch_h5_handle(self.validate_file(file)) as h5file:
+        with fetch_h5_handle(self.validate_file(file), mode=mode) as h5file:
             result = fun(h5file, *args, **kwargs)
 
         return result

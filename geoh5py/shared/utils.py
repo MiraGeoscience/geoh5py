@@ -26,14 +26,13 @@ import numpy as np
 
 
 @contextmanager
-def fetch_h5_handle(
-    file: str | h5py.File,
-) -> h5py.File:
+def fetch_h5_handle(file: str | h5py.File, mode: str = "r") -> h5py.File:
     """
     Open in read+ mode a geoh5 file from string.
     If receiving a file instead of a string, merely return the given file.
 
     :param file: Name or handle to a geoh5 file.
+    :param mode: Set the h5 read/write mode
 
     :return h5py.File: Handle to an opened h5py file.
     """
@@ -43,7 +42,7 @@ def fetch_h5_handle(
         finally:
             pass
     else:
-        h5file = h5py.File(file, "r+")
+        h5file = h5py.File(file, mode=mode)
         try:
             yield h5file
         finally:
