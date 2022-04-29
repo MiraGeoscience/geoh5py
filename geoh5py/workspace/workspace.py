@@ -93,7 +93,6 @@ class Workspace:
             else:
                 setattr(self, attr, item)
 
-        # with h5py.File(self.h5file, "a") as file:
         try:
             proj_attributes = self._io_call(
                 self.h5file, H5Reader.fetch_project_attributes
@@ -102,9 +101,10 @@ class Workspace:
             for key, attr in proj_attributes.items():
                 setattr(self, self._attribute_map[key], attr)
 
-        except IndexError:
-            self._io_call(self.h5file, H5Writer.create_geoh5, self, mode="r+")
-            self.fetch_or_create_root(self.h5file)
+        except FileNotFoundError:
+            self._io_call(self.h5file, H5Writer.create_geoh5, self, mode="a")
+
+        self.fetch_or_create_root(self.h5file)
 
     def activate(self):
         """Makes this workspace the active one.
@@ -372,7 +372,7 @@ class Workspace:
         """Get all active Data entities registered in the workspace."""
         return self._all_data()
 
-    def fetch_or_create_root(self, h5file: h5py.File):
+    def fetch_or_create_root(self, h5file: str | h5py.File):
         try:
             self._root = self.load_entity(uuid.uuid4(), "root", file=h5file)
 
@@ -406,7 +406,7 @@ class Workspace:
         """
         Remove a list of entities from a parent.
         """
-        with fetch_h5_handle(self.validate_file(file)) as h5file:
+        with fetch_h5_handle(self.validate_file(file), mode="r+") as h5file:
 
             for child in children:
                 if isinstance(child, Data):
@@ -423,8 +423,7 @@ class Workspace:
         """
         Function to remove an entity and its children from the workspace
         """
-
-        with fetch_h5_handle(self.validate_file(file)) as h5file:
+        with fetch_h5_handle(self.validate_file(file), mode="r+") as h5file:
             parent = entity.parent
 
             self.workspace.remove_recursively(entity, file=h5file)
@@ -451,7 +450,7 @@ class Workspace:
 
             if value() is None:
                 rem_list += [key]
-                self._io_call(file, H5Writer.remove_entity, key, rtype)
+                self._io_call(file, H5Writer.remove_entity, key, rtype, mode="r+")
 
         for key in rem_list:
             del referents[key]
@@ -473,7 +472,9 @@ class Workspace:
         elif isinstance(entity, ObjectBase):
             ref_type = "Objects"
 
-        self._io_call(file, H5Writer.remove_entity, entity.uid, ref_type, parent=parent)
+        self._io_call(
+            file, H5Writer.remove_entity, entity.uid, ref_type, parent=parent, mode="r+"
+        )
 
     def deactivate(self):
         """Deactivate this workspace if it was the active one, else does nothing."""
@@ -699,9 +700,9 @@ class Workspace:
 
         for entity_type in self.types:
             if len(entity_type.modified_attributes) > 0:
-                self._io_call(file, H5Writer.write_entity_type, entity_type)
+                self._io_call(file, H5Writer.write_entity_type, entity_type, mode="r+")
 
-        self._io_call(file, H5Writer.finalize, self)
+        self._io_call(file, H5Writer.finalize, self, mode="r+")
 
     def find_data(self, data_uid: uuid.UUID) -> Entity | None:
         """
@@ -922,7 +923,9 @@ class Workspace:
         :param add_children: Add children entities to geoh5.
         :param file: :obj:`h5py.File` or name of the target geoh5
         """
-        self._io_call(file, H5Writer.save_entity, entity, add_children=add_children)
+        self._io_call(
+            file, H5Writer.save_entity, entity, add_children=add_children, mode="r+"
+        )
 
     @property
     def types(self) -> list[EntityType]:

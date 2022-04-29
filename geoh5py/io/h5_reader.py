@@ -87,23 +87,21 @@ class H5Reader:
             for key, value in entity.attrs.items():
                 attributes["entity"][key] = value
 
-            if "Type" not in entity:
-                entity.create_group("Type")
+            if "Type" in entity:
+                for key, value in entity["Type"].attrs.items():
+                    type_attributes["entity_type"][key] = value
 
-            for key, value in entity["Type"].attrs.items():
-                type_attributes["entity_type"][key] = value
+                if "Color map" in entity["Type"].keys():
+                    type_attributes["entity_type"]["color_map"] = {}
+                    for key, value in entity["Type"]["Color map"].attrs.items():
+                        type_attributes["entity_type"]["color_map"][key] = value
+                    type_attributes["entity_type"]["color_map"]["values"] = entity[
+                        "Type"
+                    ]["Color map"][:]
 
-            if "Color map" in entity["Type"].keys():
-                type_attributes["entity_type"]["color_map"] = {}
-                for key, value in entity["Type"]["Color map"].attrs.items():
-                    type_attributes["entity_type"]["color_map"][key] = value
-                type_attributes["entity_type"]["color_map"]["values"] = entity["Type"][
-                    "Color map"
-                ][:]
-
-            if "Value map" in entity["Type"].keys():
-                mapping = cls.fetch_value_map(file, uid)
-                type_attributes["entity_type"]["value_map"] = mapping
+                if "Value map" in entity["Type"].keys():
+                    mapping = cls.fetch_value_map(file, uid)
+                    type_attributes["entity_type"]["value_map"] = mapping
 
             # Check if the entity has property_group
             if "PropertyGroups" in entity.keys():

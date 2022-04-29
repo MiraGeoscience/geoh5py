@@ -42,7 +42,7 @@ def fetch_h5_handle(file: str | h5py.File, mode: str = "r") -> h5py.File:
         finally:
             pass
     else:
-        h5file = h5py.File(file, mode=mode)
+        h5file = h5py.File(file, mode)
         try:
             yield h5file
         finally:
