@@ -56,7 +56,7 @@ def test_create_point_data(tmp_path):
     data.allow_rename = False
     data.name = new_name
     # Fake ANALYST creating a StatsCache
-    with fetch_h5_handle(h5file_path) as h5file:
+    with fetch_h5_handle(h5file_path, mode="r+") as h5file:
         etype_handle = H5Writer.fetch_handle(h5file, data.entity_type)
         etype_handle.create_group("StatsCache")
     # Trigger replace of values

@@ -105,7 +105,6 @@ class DataType(EntityType):
         color_map.parent = self
         self._color_map = color_map
         self.modified_attributes = "color_map"
-        self.workspace.finalize()
 
     @property
     def value_map(self) -> ReferenceValueMap | None:
