@@ -52,7 +52,7 @@ def fetch_h5_handle(file: str | h5py.File | Path, mode: str = "r") -> h5py.File:
         try:
             if (mode in ["r+", "a"]) and path.exists(str(file) + ".lock"):
                 warnings.warn(
-                    f"Detected a '*.lock' file associated with {h5file}. "
+                    f"'*.lock' file detected for {h5file}. "
                     f"Beware that writing to an active session of ANALYST might cause conflicts. "
                     f"Consider closing your ANALYST session."
                 )
