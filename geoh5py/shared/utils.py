@@ -17,8 +17,11 @@
 
 from __future__ import annotations
 
+import warnings
 from abc import ABC
 from contextlib import contextmanager
+from os import path
+from pathlib import Path
 from typing import Any
 
 import h5py
@@ -26,7 +29,7 @@ import numpy as np
 
 
 @contextmanager
-def fetch_h5_handle(file: str | h5py.File, mode: str = "r") -> h5py.File:
+def fetch_h5_handle(file: str | h5py.File | Path, mode: str = "r") -> h5py.File:
     """
     Open in read+ mode a geoh5 file from string.
     If receiving a file instead of a string, merely return the given file.
@@ -42,8 +45,17 @@ def fetch_h5_handle(file: str | h5py.File, mode: str = "r") -> h5py.File:
         finally:
             pass
     else:
+        if not str(file).endswith("geoh5"):
+            raise ValueError("Input h5 file must have a 'geoh5' extension.")
+
         h5file = h5py.File(file, mode)
         try:
+            if (mode in ["r+", "a"]) and path.exists(str(file) + ".lock"):
+                warnings.warn(
+                    f"Detected a '*.lock' file associated with {h5file}. "
+                    f"Beware that writing to an active session of ANALYST might cause conflicts. "
+                    f"Consider closing your ANALYST session."
+                )
             yield h5file
         finally:
             h5file.close()
