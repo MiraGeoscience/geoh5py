@@ -21,6 +21,7 @@ import numpy as np
 import pytest
 
 from geoh5py.objects import Grid2D
+from geoh5py.shared.utils import compare_entities
 from geoh5py.shared.validators import ShapeValidationError
 from geoh5py.workspace import Workspace
 
@@ -78,6 +79,7 @@ def test_create_color_map(tmp_path):
 
     data.entity_type.color_map = rgba.T
 
+    workspace.finalize()
     with pytest.raises(TypeError) as error:
         data.entity_type.color_map.values = "abc"
 
@@ -97,12 +99,9 @@ def test_create_color_map(tmp_path):
     # Read the data back in from a fresh workspace
     new_workspace = Workspace(h5file_path)
     rec_data = new_workspace.get_entity("DataValues")[0]
-
-    assert np.all(
-        getattr(rec_data.entity_type.color_map, key)
-        == getattr(data.entity_type.color_map, key)
-        for key in ["name", "values"]
-    ), "Issue updating the ColorMap."
+    compare_entities(
+        rec_data.entity_type.color_map, data.entity_type.color_map, ignore=["_parent"]
+    )
 
     new_workspace = Workspace(path.join(tmp_path, r"test_color_map_copy.geoh5"))
     data.copy(parent=new_workspace)

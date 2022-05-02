@@ -407,7 +407,6 @@ class Workspace:
         Remove a list of entities from a parent.
         """
         with fetch_h5_handle(self.validate_file(file), mode="r+") as h5file:
-
             for child in children:
                 if isinstance(child, Data):
                     ref_type = "Data"
@@ -444,37 +443,42 @@ class Workspace:
         """
         Search and remove deleted entities
         """
+        with fetch_h5_handle(self.validate_file(file), mode="r+") as h5file:
+            rem_list: list = []
+            for key, value in referents.items():
 
-        rem_list: list = []
-        for key, value in referents.items():
+                if value() is None:
+                    rem_list += [key]
+                    self._io_call(h5file, H5Writer.remove_entity, key, rtype)
 
-            if value() is None:
-                rem_list += [key]
-                self._io_call(file, H5Writer.remove_entity, key, rtype, mode="r+")
-
-        for key in rem_list:
-            del referents[key]
+            for key in rem_list:
+                del referents[key]
 
     def remove_recursively(self, entity: Entity, file: str | h5py.File | None = None):
         """Delete an entity and its children from the workspace and geoh5 recursively"""
+        with fetch_h5_handle(self.validate_file(file), mode="r+") as h5file:
+            parent = entity.parent
+            for child in entity.children:
+                self.remove_recursively(child, file=h5file)
 
-        parent = entity.parent
-        for child in entity.children:
-            self.remove_recursively(child, file=file)
+            entity.remove_children(entity.children)  # Remove link to children
 
-        entity.remove_children(entity.children)  # Remove link to children
+            if isinstance(entity, Data):
+                ref_type = "Data"
+                parent.remove_data_from_group(entity)
+            elif isinstance(entity, Group):
+                ref_type = "Groups"
+            elif isinstance(entity, ObjectBase):
+                ref_type = "Objects"
 
-        if isinstance(entity, Data):
-            ref_type = "Data"
-            parent.remove_data_from_group(entity)
-        elif isinstance(entity, Group):
-            ref_type = "Groups"
-        elif isinstance(entity, ObjectBase):
-            ref_type = "Objects"
-
-        self._io_call(
-            file, H5Writer.remove_entity, entity.uid, ref_type, parent=parent, mode="r+"
-        )
+            self._io_call(
+                h5file,
+                H5Writer.remove_entity,
+                entity.uid,
+                ref_type,
+                parent=parent,
+                mode="r+",
+            )
 
     def deactivate(self):
         """Deactivate this workspace if it was the active one, else does nothing."""
@@ -518,45 +522,46 @@ class Workspace:
         :param recursively: Recover all children down the project tree
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         """
-        if entity is None:
-            return []
+        with fetch_h5_handle(self.validate_file(file)) as h5file:
+            if entity is None:
+                return []
 
-        if isinstance(entity, Group):
-            entity_type = "group"
-        elif isinstance(entity, ObjectBase):
-            entity_type = "object"
-        else:
-            entity_type = "data"
-
-        children_list = self._io_call(
-            file, H5Reader.fetch_children, entity.uid, entity_type
-        )
-
-        family_tree = []
-        for uid, child_type in children_list.items():
-            if self.get_entity(uid)[0] is not None:
-                recovered_object = self.get_entity(uid)[0]
+            if isinstance(entity, Group):
+                entity_type = "group"
+            elif isinstance(entity, ObjectBase):
+                entity_type = "object"
             else:
-                recovered_object = self.load_entity(
-                    uid, child_type, parent=entity, file=file
-                )
+                entity_type = "data"
 
-            if recovered_object is not None:
+            children_list = self._io_call(
+                h5file, H5Reader.fetch_children, entity.uid, entity_type
+            )
 
-                # Assumes the object was pulled from h5
-                recovered_object.existing_h5_entity = True
-                recovered_object.entity_type.existing_h5_entity = True
-                family_tree += [recovered_object]
-
-                if recursively:
-                    family_tree += self.fetch_children(
-                        recovered_object, recursively=True, file=file
+            family_tree = []
+            for uid, child_type in children_list.items():
+                if self.get_entity(uid)[0] is not None:
+                    recovered_object = self.get_entity(uid)[0]
+                else:
+                    recovered_object = self.load_entity(
+                        uid, child_type, parent=entity, file=h5file
                     )
-                    if hasattr(recovered_object, "property_groups"):
-                        family_tree += getattr(recovered_object, "property_groups")
 
-        if hasattr(entity, "property_groups"):
-            family_tree += getattr(entity, "property_groups")
+                if recovered_object is not None:
+
+                    # Assumes the object was pulled from h5
+                    recovered_object.existing_h5_entity = True
+                    recovered_object.entity_type.existing_h5_entity = True
+                    family_tree += [recovered_object]
+
+                    if recursively:
+                        family_tree += self.fetch_children(
+                            recovered_object, recursively=True, file=h5file
+                        )
+                        if hasattr(recovered_object, "property_groups"):
+                            family_tree += getattr(recovered_object, "property_groups")
+
+            if hasattr(entity, "property_groups"):
+                family_tree += getattr(entity, "property_groups")
 
         return family_tree
 
@@ -684,25 +689,26 @@ class Workspace:
         """
         return H5Reader.fetch_file_object(self.h5file, uid, file_name)
 
-    def finalize(self, file: str | h5py.File | None = None):
+    def finalize(self, file: h5py.File | None = None):
         """
         Finalize the h5file by checking for updated entities and re-building the Root
 
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         """
-        for entity in (
-            cast(List["Entity"], self.objects)
-            + cast(List["Entity"], self.groups)
-            + cast(List["Entity"], self.data)
-        ):
-            if len(entity.modified_attributes) > 0:
-                self.save_entity(entity, file=file)
+        with fetch_h5_handle(self.validate_file(file), mode="r+") as h5file:
+            for entity in (
+                cast(List["Entity"], self.objects)
+                + cast(List["Entity"], self.groups)
+                + cast(List["Entity"], self.data)
+            ):
+                if len(entity.modified_attributes) > 0:
+                    self.save_entity(entity, file=h5file)
 
-        for entity_type in self.types:
-            if len(entity_type.modified_attributes) > 0:
-                self._io_call(file, H5Writer.write_entity_type, entity_type, mode="r+")
+            for entity_type in self.types:
+                if len(entity_type.modified_attributes) > 0:
+                    self._io_call(h5file, H5Writer.write_entity_type, entity_type)
 
-        self._io_call(file, H5Writer.finalize, self, mode="r+")
+            self._io_call(h5file, H5Writer.finalize, self)
 
     def find_data(self, data_uid: uuid.UUID) -> Entity | None:
         """
@@ -848,7 +854,6 @@ class Workspace:
 
         :return entity: Entity loaded from geoh5
         """
-
         with fetch_h5_handle(self.validate_file(file)) as h5file:
             base_classes = {
                 "group": Group,
