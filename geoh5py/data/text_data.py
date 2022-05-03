@@ -40,8 +40,8 @@ class TextData(Data):
 
     @values.setter
     def values(self, values):
-        self.modified_attributes = "values"
         self._values = values
+        self.workspace.update_attribute(self, "values")
 
     def __call__(self):
         return self.values
@@ -82,7 +82,7 @@ class CommentsData(Data):
 
     @values.setter
     def values(self, values):
-        self.modified_attributes = "values"
+        self.workspace.update_attribute(self, "values")
 
         if values is not None:
             for value in values:

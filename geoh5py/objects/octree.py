@@ -209,14 +209,13 @@ class Octree(ObjectBase):
                 assert (
                     value.shape[1] == 4
                 ), "'octree_cells' requires an ndarray of shape (*, 4)"
-                self.modified_attributes = "octree_cells"
                 self._centroids = None
-
                 self._octree_cells = np.asarray(
                     np.core.records.fromarrays(
                         value.T, names="I, J, K, NCells", formats="<i4, <i4, <i4, <i4"
                     )
                 )
+                self.workspace.update_attribute(self, "octree_cells")
 
     @property
     def origin(self):
@@ -233,7 +232,7 @@ class Octree(ObjectBase):
 
             assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
 
-            self.modified_attributes = "attributes"
+            self.workspace.update_attribute(self, "attributes")
             self._centroids = None
 
             value = np.asarray(
@@ -253,10 +252,9 @@ class Octree(ObjectBase):
         if value is not None:
             value = np.r_[value]
             assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
-            self.modified_attributes = "attributes"
             self._centroids = None
-
             self._rotation = value.astype(float)
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def shape(self) -> tuple | None:
@@ -283,7 +281,7 @@ class Octree(ObjectBase):
         if value is not None:
             value = np.r_[value]
             assert len(value) == 1, "u_cell_size must be type(float) of shape (1,)"
-            self.modified_attributes = "attributes"
+            self.workspace.update_attribute(self, "attributes")
             self._centroids = None
 
             self._u_cell_size = value.astype(float)
@@ -300,10 +298,9 @@ class Octree(ObjectBase):
         if value is not None:
             value = np.r_[value]
             assert len(value) == 1, "u_count must be type(int) of shape (1,)"
-            self.modified_attributes = "attributes"
             self._centroids = None
-
             self._u_count = int(value)
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def v_cell_size(self) -> float | None:
@@ -317,7 +314,7 @@ class Octree(ObjectBase):
         if value is not None:
             value = np.r_[value]
             assert len(value) == 1, "v_cell_size must be type(float) of shape (1,)"
-            self.modified_attributes = "attributes"
+            self.workspace.update_attribute(self, "attributes")
             self._centroids = None
 
             self._v_cell_size = value.astype(float)
@@ -334,10 +331,9 @@ class Octree(ObjectBase):
         if value is not None:
             value = np.r_[value]
             assert len(value) == 1, "v_count must be type(int) of shape (1,)"
-            self.modified_attributes = "attributes"
             self._centroids = None
-
             self._v_count = int(value)
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def w_cell_size(self) -> float | None:
@@ -351,7 +347,7 @@ class Octree(ObjectBase):
         if value is not None:
             value = np.r_[value]
             assert len(value) == 1, "w_cell_size must be type(float) of shape (1,)"
-            self.modified_attributes = "attributes"
+            self.workspace.update_attribute(self, "attributes")
             self._centroids = None
 
             self._w_cell_size = value.astype(float)
@@ -368,7 +364,6 @@ class Octree(ObjectBase):
         if value is not None:
             value = np.r_[value]
             assert len(value) == 1, "w_count must be type(int) of shape (1,)"
-            self.modified_attributes = "attributes"
             self._centroids = None
-
             self._w_count = int(value)
+            self.workspace.update_attribute(self, "attributes")

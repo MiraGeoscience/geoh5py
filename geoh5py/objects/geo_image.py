@@ -69,9 +69,8 @@ class GeoImage(ObjectBase):
     @cells.setter
     def cells(self, indices):
         assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
-        self.modified_attributes = "cells"
         self._cells = indices
-        self.workspace.finalize()
+        self.workspace.update_attribute(self, "cells")
 
     @property
     def default_vertices(self):
@@ -240,6 +239,6 @@ class GeoImage(ObjectBase):
         xyz = np.asarray(
             np.core.records.fromarrays(xyz.T, names="x, y, z", formats="<f8, <f8, <f8")
         )
-        self.modified_attributes = "vertices"
+        self.workspace.update_attribute(self, "vertices")
         self._vertices = xyz
         self.workspace.finalize()

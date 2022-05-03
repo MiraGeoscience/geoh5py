@@ -84,8 +84,8 @@ class Drillhole(Points):
     @cells.setter
     def cells(self, indices):
         assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
-        self.modified_attributes = "cells"
         self._cells = indices
+        self.workspace.update_attribute(self, "cells")
 
     @property
     def collar(self):
@@ -102,7 +102,7 @@ class Drillhole(Points):
 
             assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
 
-            self.modified_attributes = "attributes"
+            self.workspace.update_attribute(self, "attributes")
             value = np.asarray(
                 tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
             )
@@ -110,8 +110,8 @@ class Drillhole(Points):
         self._locations = None
 
         if self.trace is not None:
-            self.modified_attributes = "trace"
             self._trace = None
+            self.workspace.update_attribute(self, "trace")
 
     @property
     def cost(self):
@@ -234,14 +234,15 @@ class Drillhole(Points):
             if value.shape[1] != 3:
                 raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
 
-            self.modified_attributes = "surveys"
+            self.workspace.update_attribute(self, "surveys")
             self._surveys = np.asarray(
                 np.core.records.fromarrays(
                     value.T, names="Depth, Dip, Azimuth", formats="<f4, <f4, <f4"
                 )
             )
-            self.modified_attributes = "trace"
             self._trace = None
+            self.workspace.update_attribute(self, "trace")
+
         self._deviation_x = None
         self._deviation_y = None
         self._deviation_z = None

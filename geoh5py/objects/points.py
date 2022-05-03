@@ -57,7 +57,6 @@ class Points(ObjectBase):
 
     @vertices.setter
     def vertices(self, xyz: np.ndarray):
-        self.modified_attributes = "vertices"
         assert (
             xyz.shape[1] == 3
         ), f"Array of vertices must be of shape (*, 3). Array of shape {xyz.shape} provided."
@@ -67,3 +66,4 @@ class Points(ObjectBase):
                 dtype=[("x", "<f8"), ("y", "<f8"), ("z", "<f8")],
             )
         )
+        self.workspace.update_attribute(self, "vertices")

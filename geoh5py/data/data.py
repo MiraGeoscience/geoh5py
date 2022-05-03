@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import uuid
 from abc import abstractmethod
 
 from ..shared import Entity
@@ -34,15 +35,19 @@ class Data(Entity):
     _attribute_map.update({"Association": "association"})
     _visible = False
 
-    def __init__(self, data_type: DataType, **kwargs):
+    def __init__(
+        self,
+        data_type: DataType,
+        uid: uuid.UUID = uuid.uuid4(),
+        association: str | DataAssociationEnum | None = None,
+        **kwargs,
+    ):
         assert data_type is not None
         assert data_type.primitive_type == self.primitive_type()
+        self.uid = uid
         self._entity_type = data_type
-        self._association: DataAssociationEnum | None = None
+        self.association = association
         self._values = None
-
-        if "association" in kwargs:
-            setattr(self, "association", kwargs["association"])
 
         super().__init__(**kwargs)
 

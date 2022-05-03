@@ -44,9 +44,9 @@ class Entity(ABC):
     }
     _visible = True
 
-    def __init__(self, **kwargs):
+    def __init__(self, uid: uuid.UUID | None = None, **kwargs):
 
-        self._uid: uuid.UUID = uuid.uuid4()
+        self._uid: uuid.UUID = uid if isinstance(uid, uuid.UUID) else uuid.uuid4()
         self._name = "Entity"
         self._parent = None
         self._children: list = []
@@ -56,7 +56,6 @@ class Entity(ABC):
         self._public = True
         self._existing_h5_entity = False
         self._metadata = None
-        self._modified_attributes: list[str] = []
 
         for attr, item in kwargs.items():
             try:
@@ -113,7 +112,7 @@ class Entity(ABC):
     @allow_delete.setter
     def allow_delete(self, value: bool):
         self._allow_delete = value
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def allow_move(self) -> bool:
@@ -125,7 +124,7 @@ class Entity(ABC):
     @allow_move.setter
     def allow_move(self, value: bool):
         self._allow_move = value
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def allow_rename(self) -> bool:
@@ -137,7 +136,7 @@ class Entity(ABC):
     @allow_rename.setter
     def allow_rename(self, value: bool):
         self._allow_rename = value
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def attribute_map(self) -> dict:
@@ -268,29 +267,7 @@ class Entity(ABC):
                 value, (dict, str)
             ), f"Input metadata must be of type {dict}, {str} or None"
         self._metadata = value
-        self.modified_attributes = "metadata"
-
-    @property
-    def modified_attributes(self):
-        """
-        :obj:`list[str]` List of attributes to be updated in associated workspace
-        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
-        """
-        return self._modified_attributes
-
-    @modified_attributes.setter
-    def modified_attributes(self, values: list | str):
-        if self.existing_h5_entity:
-            if not isinstance(values, list):
-                values = [values]
-
-            # Check if re-setting the list or appending
-            if len(values) == 0:
-                self._modified_attributes = []
-            else:
-                for value in values:
-                    if value not in self._modified_attributes:
-                        self._modified_attributes.append(value)
+        self.workspace.update_attribute(self, "metadata")
 
     @property
     def name(self) -> str:
@@ -302,7 +279,7 @@ class Entity(ABC):
     @name.setter
     def name(self, new_name: str):
         self._name = self.fix_up_name(new_name)
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def parent(self):
@@ -336,7 +313,7 @@ class Entity(ABC):
     @public.setter
     def public(self, value: bool):
         self._public = value
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     def reference_to_uid(self, value: Entity | str | uuid.UUID) -> list[uuid.UUID]:
         """
@@ -406,7 +383,7 @@ class Entity(ABC):
     @visible.setter
     def visible(self, value: bool):
         self._visible = value
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def workspace(self):

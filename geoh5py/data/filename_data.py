@@ -47,8 +47,8 @@ class FilenameData(Data):
 
     @file_name.setter
     def file_name(self, value):
-        self.modified_attributes = "values"
         self._file_name = value
+        self.workspace.update_attribute(self, "values")
 
     def save(self, path: str = "./", name=None):
         """
@@ -85,7 +85,7 @@ class FilenameData(Data):
     def values(self, values):
         if not isinstance(values, bytes):
             raise ValueError("Input 'values' for FilenameData must be of type 'bytes'.")
-        self.modified_attributes = "values"
+        self.workspace.update_attribute(self, "values")
         self._values = values
 
     # TODO: implement specialization to access values.

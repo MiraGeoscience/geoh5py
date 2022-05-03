@@ -294,8 +294,7 @@ class BaseEMSurvey(ObjectBase):
         if getattr(self, "base_stations", None) is not None:
             getattr(self, "base_stations").metadata = self.metadata
 
-        self.modified_attributes = "metadata"
-        self.workspace.finalize()
+        self.workspace.update_attribute(self, "metadata")
 
     def _edit_validate_property_groups(
         self, values: PropertyGroup | list[PropertyGroup] | None
@@ -393,7 +392,7 @@ class BaseEMSurvey(ObjectBase):
                     continue
 
         self._metadata = values
-        self.modified_attributes = "metadata"
+        self.workspace.update_attribute(self, "metadata")
 
     @property
     def receivers(self) -> BaseEMSurvey | None:

@@ -25,7 +25,7 @@ import warnings
 import weakref
 from contextlib import contextmanager
 from gc import collect
-from typing import TYPE_CHECKING, ClassVar, List, cast
+from typing import TYPE_CHECKING, ClassVar, cast
 from weakref import ReferenceType
 
 import h5py
@@ -178,9 +178,7 @@ class Workspace:
 
         entity_kwargs: dict = {"entity": {"uid": None, "parent": None}}
         for key in entity.__dict__:
-            if key not in ["_uid", "_entity_type", "_modified_attributes"] + list(
-                omit_list
-            ):
+            if key not in ["_uid", "_entity_type"] + list(omit_list):
                 if key[0] == "_":
                     key = key[1:]
 
@@ -696,17 +694,17 @@ class Workspace:
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         """
         with fetch_h5_handle(self.validate_file(file), mode="r+") as h5file:
-            for entity in (
-                cast(List["Entity"], self.objects)
-                + cast(List["Entity"], self.groups)
-                + cast(List["Entity"], self.data)
-            ):
-                if len(entity.modified_attributes) > 0:
-                    self.save_entity(entity, file=h5file)
+            # for entity in (
+            #     cast(List["Entity"], self.objects)
+            #     + cast(List["Entity"], self.groups)
+            #     + cast(List["Entity"], self.data)
+            # ):
+            #     if len(entity.modified_attributes) > 0:
+            #         self.save_entity(entity, file=h5file)
 
-            for entity_type in self.types:
-                if len(entity_type.modified_attributes) > 0:
-                    self._io_call(h5file, H5Writer.write_entity_type, entity_type)
+            # for entity_type in self.types:
+            #     if len(entity_type.modified_attributes) > 0:
+            #         self._io_call(h5file, H5Writer.write_entity_type, entity_type)
 
             self._io_call(h5file, H5Writer.finalize, self)
 
@@ -880,7 +878,6 @@ class Workspace:
             if isinstance(entity, ObjectBase) and len(property_groups) > 0:
                 for kwargs in property_groups.values():
                     entity.find_or_create_property_group(**kwargs)
-                    entity.modified_attributes = []
 
         return entity
 
@@ -936,6 +933,21 @@ class Workspace:
     def types(self) -> list[EntityType]:
         """Get all active entity types registered in the workspace."""
         return self._all_types()
+
+    def update_attribute(
+        self,
+        entity: Entity | EntityType,
+        attribute: str,
+        file: str | h5py.File | None = None,
+    ):
+        """
+        Save or update an entity to geoh5.
+
+        :param entity: Entity to be written to geoh5.
+        :param attribute: Name of the attribute to get updated to geoh5.
+        :param file: :obj:`h5py.File` or name of the target geoh5
+        """
+        self._io_call(file, H5Writer.update_attributes, entity, attribute, mode="r+")
 
     def validate_file(self, file) -> h5py.File:
         """

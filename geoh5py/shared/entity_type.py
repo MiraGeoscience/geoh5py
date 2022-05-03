@@ -41,7 +41,6 @@ class EntityType(ABC):
         self._name: str | None = "Entity"
         self._description: str | None = None
         self._existing_h5_entity = False
-        self._modified_attributes: list[str] = []
 
         for attr, item in kwargs.items():
             try:
@@ -66,7 +65,7 @@ class EntityType(ABC):
     @description.setter
     def description(self, description: str):
         self._description = description
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @description.getter
     def description(self):
@@ -101,28 +100,6 @@ class EntityType(ABC):
         """
         return cast(TEntityType, workspace.find_type(type_uid, cls))
 
-    @property
-    def modified_attributes(self):
-        """
-        :obj:`list[str]` List of attributes to be updated in associated workspace
-        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
-        """
-        return self._modified_attributes
-
-    @modified_attributes.setter
-    def modified_attributes(self, values: list | str):
-        if self.existing_h5_entity:
-            if not isinstance(values, list):
-                values = [values]
-
-            # Check if re-setting the list or appending
-            if len(values) == 0:
-                self._modified_attributes = []
-            else:
-                for value in values:
-                    if value not in self._modified_attributes:
-                        self._modified_attributes.append(value)
-
     @staticmethod
     @abstractmethod
     def _is_abstract() -> bool:
@@ -136,7 +113,7 @@ class EntityType(ABC):
     @name.setter
     def name(self, name: str):
         self._name = name
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def uid(self) -> uuid.UUID:
@@ -150,9 +127,9 @@ class EntityType(ABC):
     def uid(self, uid: str | uuid.UUID):
         if isinstance(uid, str):
             uid = uuid.UUID(uid)
-        self.modified_attributes = "attributes"
 
         self._uid = uid
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def workspace(self) -> ws.Workspace:

@@ -104,7 +104,7 @@ class DataType(EntityType):
 
         color_map.parent = self
         self._color_map = color_map
-        self.modified_attributes = "color_map"
+        self.workspace.update_attribute(self, "color_map")
 
     @property
     def value_map(self) -> ReferenceValueMap | None:
@@ -140,7 +140,7 @@ class DataType(EntityType):
             value_map = ReferenceValueMap(value_map)
 
         self._value_map = value_map
-        self.modified_attributes = "Value map"
+        self.workspace.update_attribute(self, "Value map")
 
     @property
     def units(self) -> str | None:
@@ -152,7 +152,7 @@ class DataType(EntityType):
     @units.setter
     def units(self, unit: str):
         self._units = unit
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def number_of_bins(self) -> int | None:
@@ -164,7 +164,7 @@ class DataType(EntityType):
     @number_of_bins.setter
     def number_of_bins(self, n_bins: int):
         self._number_of_bins = n_bins
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def transparent_no_data(self) -> bool:
@@ -176,7 +176,7 @@ class DataType(EntityType):
     @transparent_no_data.setter
     def transparent_no_data(self, value: bool):
         self._transparent_no_data = value
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def hidden(self) -> bool:
@@ -188,7 +188,7 @@ class DataType(EntityType):
     @hidden.setter
     def hidden(self, value: bool):
         self._hidden = value
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def mapping(self) -> str:
@@ -205,7 +205,7 @@ class DataType(EntityType):
             value in mappings
         ), f"Mapping {value} was provided but should be one of {mappings}"
         self._mapping = value
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def primitive_type(self) -> PrimitiveTypeEnum | None:

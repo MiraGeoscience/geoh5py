@@ -48,8 +48,8 @@ class NumericData(Data, ABC):
 
     @values.setter
     def values(self, values):
-        self.modified_attributes = "values"
         self._values = self.check_vector_length(values)
+        self.workspace.update_attribute(self, "values")
 
     def check_vector_length(self, values) -> np.ndarray:
         """

@@ -60,8 +60,8 @@ class Surface(Points):
         assert np.issubdtype(
             indices.dtype, np.integer
         ), "Indices array must be of integer type"
-        self.modified_attributes = "cells"
         self._cells = indices.astype(np.int32)
+        self.workspace.update_attribute(self, "cells")
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

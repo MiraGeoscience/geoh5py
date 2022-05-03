@@ -258,45 +258,44 @@ class H5Writer:
         return new_entity
 
     @classmethod
-    def update_attributes(
-        cls,
-        file: str | h5py.File,
-        entity,
-    ):
+    def update_attributes(cls, file: str | h5py.File, entity, attribute: str):
         """
         Update the attributes of an :obj:`~geoh5py.shared.entity.Entity`.
 
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
+        :param attribute: Name of the attribute to get updated.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
 
-            for attr in entity.modified_attributes:
+            if entity_handle is None:
+                return
 
-                try:
-                    del entity_handle[cls.key_map[attr]]
-                    if getattr(entity, attr, None) is None:
-                        continue
-                except KeyError:
-                    pass
+            try:
+                del entity_handle[cls.key_map[attribute]]
+            except KeyError:
+                pass
 
-                if attr in ["values", "trace_depth", "metadata", "options"]:
-                    cls.write_data_values(h5file, entity, attr)
-                elif attr == "cells":
-                    cls.write_cells(h5file, entity)
-                elif attr in ["surveys", "trace", "vertices"]:
-                    cls.write_coordinates(h5file, entity, attr)
-                elif attr == "octree_cells":
-                    cls.write_octree_cells(h5file, entity)
-                elif attr == "property_groups":
-                    cls.write_property_groups(h5file, entity)
-                elif attr == "cell_delimiters":
-                    cls.write_cell_delimiters(h5file, entity)
-                elif attr == "color_map":
-                    cls.write_color_map(h5file, entity)
-                else:
-                    cls.write_attributes(h5file, entity)
+            if getattr(entity, attribute, None) is None:
+                return
+
+            if attribute in ["values", "trace_depth", "metadata", "options"]:
+                cls.write_data_values(h5file, entity, attribute)
+            elif attribute == "cells":
+                cls.write_cells(h5file, entity)
+            elif attribute in ["surveys", "trace", "vertices"]:
+                cls.write_coordinates(h5file, entity, attribute)
+            elif attribute == "octree_cells":
+                cls.write_octree_cells(h5file, entity)
+            elif attribute == "property_groups":
+                cls.write_property_groups(h5file, entity)
+            elif attribute == "cell_delimiters":
+                cls.write_cell_delimiters(h5file, entity)
+            elif attribute == "color_map":
+                cls.write_color_map(h5file, entity)
+            else:
+                cls.write_attributes(h5file, entity)
 
     @classmethod
     def write_attributes(
@@ -609,18 +608,18 @@ class H5Writer:
             # Check if already in the project
             if as_str_if_uuid(uid) in h5file[base][entity_type].keys():
 
-                if any([entity.modified_attributes]):
-
-                    if "entity_type" in entity.modified_attributes:
-                        entity_handle = cls.fetch_handle(h5file, entity)
-                        del entity_handle["Type"]
-                        new_type = H5Writer.write_entity_type(
-                            h5file, entity.entity_type
-                        )
-                        entity_handle["Type"] = new_type
-
-                    cls.update_attributes(h5file, entity)
-                    entity.modified_attributes = []
+                # if any([entity.modified_attributes]):
+                #
+                #     if "entity_type" in entity.modified_attributes:
+                #         entity_handle = cls.fetch_handle(h5file, entity)
+                #         del entity_handle["Type"]
+                #         new_type = H5Writer.write_entity_type(
+                #             h5file, entity.entity_type
+                #         )
+                #         entity_handle["Type"] = new_type
+                #
+                # cls.update_attributes(h5file, entity)
+                # entity.modified_attributes = []
 
                 entity.existing_h5_entity = True
 
@@ -640,7 +639,6 @@ class H5Writer:
             # Add the type and return a pointer
             new_type = H5Writer.write_entity_type(h5file, entity.entity_type)
             entity_handle["Type"] = new_type
-            entity.entity_type.modified_attributes = []
             entity.entity_type.existing_h5_entity = True
 
             cls.write_properties(h5file, entity)
@@ -686,9 +684,9 @@ class H5Writer:
 
             if as_str_if_uuid(uid) in h5file[base]["Types"][entity_type_str].keys():
 
-                if any([entity_type.modified_attributes]):
-                    cls.update_attributes(h5file, entity_type)
-                    entity_type.modified_attributes = []
+                # if any([entity_type.modified_attributes]):
+                #     cls.update_attributes(h5file, entity_type)
+                #     entity_type.modified_attributes = []
 
                 entity_type.existing_h5_entity = True
 
@@ -705,7 +703,6 @@ class H5Writer:
             if hasattr(entity_type, "value_map"):
                 H5Writer.write_value_map(h5file, entity_type)
 
-            entity_type.modified_attributes = False
             entity_type.existing_h5_entity = True
 
         return new_type

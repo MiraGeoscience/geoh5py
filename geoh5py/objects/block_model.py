@@ -124,7 +124,7 @@ class BlockModel(ObjectBase):
                 len(value) == 3
             ), "Origin must be a list or numpy array of shape (3, )"
 
-            self.modified_attributes = "attributes"
+            self.workspace.update_attribute(self, "attributes")
             self._centroids = None
 
             value = np.asarray(
@@ -144,10 +144,9 @@ class BlockModel(ObjectBase):
         if value is not None:
             value = np.r_[value]
             assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
-            self.modified_attributes = "attributes"
             self._centroids = None
-
             self._rotation = value.astype(float)
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def shape(self) -> tuple | None:
@@ -184,7 +183,7 @@ class BlockModel(ObjectBase):
     def u_cell_delimiters(self, value):
         if value is not None:
             value = np.r_[value]
-            self.modified_attributes = "cell_delimiters"
+            self.workspace.update_attribute(self, "cell_delimiters")
             self._centroids = None
 
             self._u_cell_delimiters = value.astype(float)
@@ -220,10 +219,9 @@ class BlockModel(ObjectBase):
     def v_cell_delimiters(self, value):
         if value is not None:
             value = np.r_[value]
-            self.modified_attributes = "cell_delimiters"
             self._centroids = None
-
             self._v_cell_delimiters = value.astype(float)
+            self.workspace.update_attribute(self, "cell_delimiters")
 
     @property
     def v_cells(self) -> np.ndarray | None:
@@ -256,10 +254,9 @@ class BlockModel(ObjectBase):
     def z_cell_delimiters(self, value):
         if value is not None:
             value = np.r_[value]
-            self.modified_attributes = "cell_delimiters"
             self._centroids = None
-
             self._z_cell_delimiters = value.astype(float)
+            self.workspace.update_attribute(self, "cell_delimiters")
 
     @property
     def z_cells(self) -> np.ndarray | None:

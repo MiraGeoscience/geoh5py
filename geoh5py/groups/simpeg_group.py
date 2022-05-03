@@ -64,4 +64,4 @@ class SimPEGGroup(Group):
             ), f"Input 'options' must be of type {dict} or None"
 
         self._options = value
-        self.modified_attributes = "options"
+        self.workspace.update_attribute(self, "options")

@@ -208,7 +208,7 @@ class PotentialElectrode(Curve):
             raise IndexError("Input Potential Electrodes uuid not present in Workspace")
 
         self._metadata = values
-        self.modified_attributes = "metadata"
+        self.workspace.update_attribute(self, "metadata")
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
