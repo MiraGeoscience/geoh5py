@@ -963,9 +963,7 @@ class Workspace:
         :param file: :obj:`h5py.File` or name of the target geoh5
         """
         if entity.on_file:
-            self._io_call(
-                file, H5Writer.update_attributes, entity, attribute, mode="r+"
-            )
+            self._io_call(file, H5Writer.update_field, entity, attribute, mode="r+")
 
     def validate_file(self, file) -> h5py.File | str | Path:
         """

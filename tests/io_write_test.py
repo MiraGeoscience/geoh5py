@@ -16,9 +16,9 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from time import time
 
 import numpy as np
+from h5py import File
 
 from geoh5py.objects import Points
 from geoh5py.shared import fetch_h5_handle
@@ -26,23 +26,21 @@ from geoh5py.workspace import Workspace
 
 
 def test_scope_write(tmp_path):
-    ctime = time()
-    w_s = Workspace(os.path.join(tmp_path, "test.geoh5"))
-    xyz = np.array([[1, 2, 3], [4, 5, 6]])
-    for _ in range(10):
-        Points.create(w_s, vertices=xyz)
-
-    runtime_1 = time() - ctime
-
-    ctime = time()
     with fetch_h5_handle(os.path.join(tmp_path, "test2.geoh5"), mode="a") as h5file:
         w_s = Workspace(h5file)
         xyz = np.array([[1, 2, 3], [4, 5, 6]])
         for _ in range(10):
             Points.create(w_s, vertices=xyz)
 
-    runtime_2 = time() - ctime
-
-    assert runtime_2 < runtime_1, "Scope method should be faster."
-
     Points.create(w_s, vertices=xyz)
+
+
+def test_fetch_handle(tmp_path):
+    h5file_path = os.path.join(tmp_path, "test2.geoh5")
+    w_s = Workspace(h5file_path)
+    with File(h5file_path, "r+") as project:
+        base = list(project.keys())[0]
+        del project[base]["Objects"]
+        del project[base]["Types"]
+
+    Points.create(w_s)

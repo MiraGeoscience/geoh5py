@@ -91,6 +91,14 @@ class BlockModel(ObjectBase):
 
         return self._centroids
 
+    @property
+    def cell_delimiters(self):
+        return [
+            self._u_cell_delimiters,
+            self._v_cell_delimiters,
+            self._z_cell_delimiters,
+        ]
+
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         """

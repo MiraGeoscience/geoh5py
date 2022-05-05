@@ -258,7 +258,7 @@ class H5Writer:
         return new_entity
 
     @classmethod
-    def update_attributes(cls, file: str | h5py.File, entity, attribute: str):
+    def update_field(cls, file: str | h5py.File, entity, attribute: str):
         """
         Update the attributes of an :obj:`~geoh5py.shared.entity.Entity`.
 
@@ -611,39 +611,17 @@ class H5Writer:
 
             # Check if already in the project
             if as_str_if_uuid(uid) in h5file[base][entity_type].keys():
-
-                # if any([entity.modified_attributes]):
-                #
-                #     if "entity_type" in entity.modified_attributes:
-                #         entity_handle = cls.fetch_handle(h5file, entity)
-                #         del entity_handle["Type"]
-                #         new_type = H5Writer.write_entity_type(
-                #             h5file, entity.entity_type
-                #         )
-                #         entity_handle["Type"] = new_type
-                #
-                # cls.update_attributes(h5file, entity)
-                # entity.modified_attributes = []
-
                 entity.on_file = True
 
                 return h5file[base][entity_type][as_str_if_uuid(uid)]
 
             entity_handle = h5file[base][entity_type].create_group(as_str_if_uuid(uid))
 
-            if entity_type == "Groups":
-                entity_handle.create_group("Data")
-                entity_handle.create_group("Groups")
-                entity_handle.create_group("Objects")
-            elif entity_type == "Objects":
-                entity_handle.create_group("Data")
-
-            H5Writer.write_attributes(h5file, entity)
-
-            # Add the type and return a pointer
+            # Add the type
             new_type = H5Writer.write_entity_type(h5file, entity.entity_type)
             entity_handle["Type"] = new_type
             entity.entity_type.on_file = True
+
             cls.write_properties(h5file, entity)
             entity.on_file = True
 
@@ -684,11 +662,6 @@ class H5Writer:
                 h5file[base]["Types"].create_group(entity_type_str)
 
             if as_str_if_uuid(uid) in h5file[base]["Types"][entity_type_str].keys():
-
-                # if any([entity_type.modified_attributes]):
-                #     cls.update_attributes(h5file, entity_type)
-                #     entity_type.modified_attributes = []
-
                 entity_type.on_file = True
 
                 return h5file[base]["Types"][entity_type_str][as_str_if_uuid(uid)]
@@ -740,28 +713,23 @@ class H5Writer:
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
+            H5Writer.update_field(h5file, entity, "attributes")
 
-            for attribute in ["values", "trace_depth", "metadata", "options"]:
+            for attribute in [
+                "values",
+                "trace_depth",
+                "metadata",
+                "options",
+                "property_groups",
+                "cell_delimiters",
+                "cells",
+                "octree_cells",
+                "surveys",
+                "trace",
+                "vertices",
+            ]:
                 if getattr(entity, attribute, None) is not None:
-                    H5Writer.write_data_values(h5file, entity, attribute)
-
-            if isinstance(entity, ObjectBase) and isinstance(
-                entity.property_groups, list
-            ):
-                H5Writer.write_property_groups(h5file, entity)
-
-            for attribute in ["surveys", "trace", "vertices"]:
-                if getattr(entity, attribute, None) is not None:
-                    H5Writer.write_coordinates(h5file, entity, attribute)
-
-            if getattr(entity, "u_cell_delimiters", None) is not None:
-                H5Writer.write_cell_delimiters(h5file, entity)
-
-            if getattr(entity, "cells", None) is not None:
-                H5Writer.write_cells(h5file, entity)
-
-            if getattr(entity, "octree_cells", None) is not None:
-                H5Writer.write_octree_cells(h5file, entity)
+                    H5Writer.update_field(h5file, entity, attribute)
 
     @classmethod
     def write_property_groups(
