@@ -86,7 +86,6 @@ def test_modify_property_group():
             curve.find_or_create_property_group(name="cell_group").association.name
             == "CELL"
         ), "Failed to create a CELL property_group"
-        workspace.finalize()
 
         # Re-open the workspace
         workspace = Workspace(h5file_path)

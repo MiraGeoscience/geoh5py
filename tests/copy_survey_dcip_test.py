@@ -73,7 +73,6 @@ def test_copy_survey_dcip():
         )
         potentials.ab_cell_id = np.hstack(current_id).astype("int32")
         currents.potential_electrodes = potentials
-        workspace.finalize()
 
         # Copy the survey to a new workspace
         path = Path(tempdir) / r"testDC_copy_current.geoh5"

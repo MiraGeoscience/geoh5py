@@ -391,7 +391,7 @@ class Drillhole(Points):
 
         # Check the depths and re-sort data if necessary
         self.sort_depths()
-        self.workspace.finalize()
+
         if len(data_objects) == 1:
             return data_object
 
@@ -483,7 +483,6 @@ class Drillhole(Points):
             )
             self.add_vertices(self.desurvey(np.delete(depth, indices[:, 1])))
             self._depth.values = depths
-            self.workspace.finalize()
 
         return values
 
@@ -606,5 +605,3 @@ class Drillhole(Points):
                 if self.cells is not None:
                     key_map = np.argsort(sort_ind)[self.cells.flatten()]
                     self.cells = key_map.reshape((-1, 2)).astype("uint32")
-
-        self.workspace.finalize()

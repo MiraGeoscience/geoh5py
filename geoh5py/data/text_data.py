@@ -96,6 +96,7 @@ class CommentsData(Data):
                 )
 
         self._values = values
+        self.workspace.update_attribute(self, "values")
 
     def __call__(self):
         return self.values

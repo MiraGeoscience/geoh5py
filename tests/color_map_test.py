@@ -79,7 +79,6 @@ def test_create_color_map(tmp_path):
 
     data.entity_type.color_map = rgba.T
 
-    workspace.finalize()
     with pytest.raises(TypeError) as error:
         data.entity_type.color_map.values = "abc"
 

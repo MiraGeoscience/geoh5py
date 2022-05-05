@@ -239,6 +239,5 @@ class GeoImage(ObjectBase):
         xyz = np.asarray(
             np.core.records.fromarrays(xyz.T, names="x, y, z", formats="<f8, <f8, <f8")
         )
-        self.workspace.update_attribute(self, "vertices")
         self._vertices = xyz
-        self.workspace.finalize()
+        self.workspace.update_attribute(self, "vertices")

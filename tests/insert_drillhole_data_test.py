@@ -56,8 +56,6 @@ def test_insert_drillhole_data():
             }
         )
 
-        workspace.finalize()
-
         # Add more data with single match
         old_depths = well.get_data("DEPTH")[0].values
         indices = np.where(~np.isnan(old_depths))[0]

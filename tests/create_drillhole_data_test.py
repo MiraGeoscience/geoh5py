@@ -108,7 +108,6 @@ def test_create_drillhole_data():
                 }
             )
         ]
-        workspace.finalize()
 
         new_count = from_to_a.size + 4 + n_data
         assert well.n_vertices == (

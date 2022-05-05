@@ -55,7 +55,6 @@ def test_create_curve_data():
             }
         )
 
-        workspace.finalize()
         # Re-open the workspace and read data back in
         ws2 = Workspace(h5file_path)
 

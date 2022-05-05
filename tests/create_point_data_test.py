@@ -61,7 +61,7 @@ def test_create_point_data(tmp_path):
         etype_handle.create_group("StatsCache")
     # Trigger replace of values
     data.values = values * 2.0
-    workspace.finalize()
+
     # Read the data back in from a fresh workspace
     new_workspace = Workspace(h5file_path)
     rec_obj = new_workspace.get_entity("Points")[0]

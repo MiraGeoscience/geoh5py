@@ -251,7 +251,7 @@ class Entity(ABC):
         return sorted(name_list)
 
     @property
-    def metadata(self) -> str | dict | None:
+    def metadata(self):
         """
         Metadata attached to the entity.
         """
@@ -261,7 +261,7 @@ class Entity(ABC):
         return self._metadata
 
     @metadata.setter
-    def metadata(self, value: dict | str | None):
+    def metadata(self, value):
         if value is not None:
             assert isinstance(
                 value, (dict, str)
@@ -296,7 +296,9 @@ class Entity(ABC):
 
             current_parent = self._parent
             self._parent = self.workspace.get_entity(uid)[0]
-            self._parent.add_children([self])
+
+            if self._parent is not None:
+                self._parent.add_children([self])
 
             if current_parent is not None and current_parent != self._parent:
                 current_parent.remove_children([self])

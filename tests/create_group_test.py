@@ -32,7 +32,6 @@ def test_create_group(tmp_path):
     workspace = Workspace(h5file_path)
     group = ContainerGroup.create(workspace, name=group_name)
     workspace.save_entity(group)
-    workspace.finalize()
 
     # Read the group back in
     rec_obj = workspace.get_entity(group_name)[0]
@@ -48,7 +47,6 @@ def test_simpeg_group(tmp_path):
     group = SimPEGGroup.create(workspace)
     group.options = constants.default_ui_json
     group.options["something"] = templates.float_parameter()
-    workspace.finalize()
 
     # Copy
     new_workspace = Workspace(os.path.join(tmp_path, "testGroup2.geoh5"))

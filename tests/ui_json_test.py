@@ -61,8 +61,6 @@ def get_workspace(directory):
         points_b.name = "Points_B"
         points_b.add_data_to_group(points_b.children, name="My group2")
 
-        workspace.finalize()
-
     return workspace
 
 

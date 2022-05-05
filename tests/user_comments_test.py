@@ -36,8 +36,6 @@ def test_user_comments():
         author = "John Doe"
         object_base.add_comment(object_comment, author=author)
 
-        workspace.finalize()
-
         # Read the comments back in
         ws2 = Workspace(h5file_path)
         object_base = ws2.get_entity("myObject")[0]
@@ -52,10 +50,9 @@ def test_user_comments():
         group = ContainerGroup.create(ws2, name="myGroup")
         group_comment_1 = "group text comment"
         group_comment_2 = "my other comment"
-        author = "Jane Doe"
+
         group.add_comment(group_comment_1)
         group.add_comment(group_comment_2)
-        ws2.finalize()
 
         ws3 = Workspace(h5file_path)
         group_in = ws3.get_entity("myGroup")[0]

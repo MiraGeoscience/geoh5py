@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-import uuid
 from abc import abstractmethod
 
 from ..shared import Entity
@@ -38,15 +37,13 @@ class Data(Entity):
     def __init__(
         self,
         data_type: DataType,
-        uid: uuid.UUID = uuid.uuid4(),
-        association: str | DataAssociationEnum | None = None,
         **kwargs,
     ):
+        self._association = None
+        self._existing_h5_entity = False
         assert data_type is not None
         assert data_type.primitive_type == self.primitive_type()
-        self.uid = uid
-        self._entity_type = data_type
-        self.association = association
+        self.entity_type = data_type
         self._values = None
 
         super().__init__(**kwargs)
@@ -119,8 +116,7 @@ class Data(Entity):
     def entity_type(self, data_type: DataType):
 
         self._entity_type = data_type
-
-        self.modified_attributes = "entity_type"
+        self.workspace.update_attribute(self, "entity_type")
 
     @classmethod
     @abstractmethod

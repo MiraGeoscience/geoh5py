@@ -54,8 +54,6 @@ def test_remove_root():
         group_name = "SomeGroup"
         data_group = points.add_data_to_group(data, group_name)
 
-        workspace.finalize()
-
         # Remove the root
         with File(h5file_path, "r+") as project:
             base = list(project.keys())[0]

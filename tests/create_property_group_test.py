@@ -51,7 +51,6 @@ def test_create_property_group():
         assert (
             workspace.find_data(single_data_group.properties[0]).name == f"Period{1}"
         ), "Failed at creating a property group by data name"
-        workspace.finalize()
 
         # Re-open the workspace
         workspace = Workspace(h5file_path)

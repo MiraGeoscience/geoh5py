@@ -147,8 +147,6 @@ def test_create_survey_mt():
             in str(excinfo)
         ), "Failed to raise AttributeError."
 
-        workspace.finalize()
-
         # Re-open the workspace and read data back in
         new_workspace = Workspace(path)
         mt_survey_rec = new_workspace.get_entity(name)[0]

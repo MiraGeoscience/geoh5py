@@ -51,7 +51,6 @@ def test_octree():
 
         # Refine
         workspace.save_entity(mesh)
-        workspace.finalize()
 
         # Read the mesh back in
         new_workspace = Workspace(h5file_path)

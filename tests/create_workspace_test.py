@@ -40,7 +40,6 @@ def test_workspace_from_kwargs(tmp_path):
         "UserWarning('Argument hello with value world is not a valid attribute"
         in str(warning[0])
     )
-    workspace.finalize()
 
     workspace = Workspace(
         path.join(tmp_path, "test.geoh5"),

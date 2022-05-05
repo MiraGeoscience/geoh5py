@@ -40,7 +40,6 @@ class BaseEMSurvey(ObjectBase):
     _transmitters: BaseEMSurvey | None = None
 
     def __init__(self, object_type: ObjectType, **kwargs):
-
         super().__init__(object_type, **kwargs)
 
     def add_components_data(self, data: dict) -> list[PropertyGroup]:
@@ -101,7 +100,6 @@ class BaseEMSurvey(ObjectBase):
         for name, data_block in data.items():
             prop_group = self.add_validate_component_data(name, data_block)
             prop_groups.append(prop_group)
-        self.workspace.finalize()
 
         return prop_groups
 
@@ -351,7 +349,7 @@ class BaseEMSurvey(ObjectBase):
         self.edit_metadata({"Input type": value})
 
     @property
-    def metadata(self) -> dict:
+    def metadata(self):
         """Metadata attached to the entity."""
         if getattr(self, "_metadata", None) is None:
             metadata = self.workspace.fetch_metadata(self.uid)
@@ -367,7 +365,7 @@ class BaseEMSurvey(ObjectBase):
         return self._metadata
 
     @metadata.setter
-    def metadata(self, values: dict):
+    def metadata(self, values):
         if not isinstance(values, dict):
             raise TypeError("'metadata' must be of type 'dict'")
 

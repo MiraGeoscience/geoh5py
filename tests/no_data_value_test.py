@@ -55,7 +55,6 @@ def test_no_data_values():
             }
         )
         data_objs[-1].values = None  # Reset all values to nan
-        workspace.finalize()
 
         # Read the data back in from a fresh workspace
         new_workspace = Workspace(h5file_path)

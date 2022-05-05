@@ -277,7 +277,7 @@ class H5Writer:
             except KeyError:
                 pass
 
-            if getattr(entity, attribute, None) is None:
+            if attribute != "attributes" and getattr(entity, attribute, None) is None:
                 return
 
             if attribute in ["values", "trace_depth", "metadata", "options"]:
@@ -294,6 +294,10 @@ class H5Writer:
                 cls.write_cell_delimiters(h5file, entity)
             elif attribute == "color_map":
                 cls.write_color_map(h5file, entity)
+            elif attribute == "entity_type":
+                del entity_handle["Type"]
+                new_type = H5Writer.write_entity_type(h5file, entity.entity_type)
+                entity_handle["Type"] = new_type
             else:
                 cls.write_attributes(h5file, entity)
 
@@ -640,10 +644,7 @@ class H5Writer:
             new_type = H5Writer.write_entity_type(h5file, entity.entity_type)
             entity_handle["Type"] = new_type
             entity.entity_type.existing_h5_entity = True
-
             cls.write_properties(h5file, entity)
-
-            entity.modified_attributes = []
             entity.existing_h5_entity = True
 
         return entity_handle

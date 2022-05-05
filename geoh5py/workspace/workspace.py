@@ -694,18 +694,6 @@ class Workspace:
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         """
         with fetch_h5_handle(self.validate_file(file), mode="r+") as h5file:
-            # for entity in (
-            #     cast(List["Entity"], self.objects)
-            #     + cast(List["Entity"], self.groups)
-            #     + cast(List["Entity"], self.data)
-            # ):
-            #     if len(entity.modified_attributes) > 0:
-            #         self.save_entity(entity, file=h5file)
-
-            # for entity_type in self.types:
-            #     if len(entity_type.modified_attributes) > 0:
-            #         self._io_call(h5file, H5Writer.write_entity_type, entity_type)
-
             self._io_call(h5file, H5Writer.finalize, self)
 
     def find_data(self, data_uid: uuid.UUID) -> Entity | None:
@@ -947,7 +935,10 @@ class Workspace:
         :param attribute: Name of the attribute to get updated to geoh5.
         :param file: :obj:`h5py.File` or name of the target geoh5
         """
-        self._io_call(file, H5Writer.update_attributes, entity, attribute, mode="r+")
+        if entity.existing_h5_entity:
+            self._io_call(
+                file, H5Writer.update_attributes, entity, attribute, mode="r+"
+            )
 
     def validate_file(self, file) -> h5py.File:
         """

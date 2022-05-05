@@ -33,11 +33,11 @@ class EntityType(ABC):
 
     _attribute_map = {"Description": "description", "ID": "uid", "Name": "name"}
 
-    def __init__(self, workspace: ws.Workspace, **kwargs):
+    def __init__(self, workspace: ws.Workspace, uid: uuid.UUID | None = None, **kwargs):
         assert workspace is not None
         self._workspace = weakref.ref(workspace)
 
-        self._uid: uuid.UUID = uuid.uuid4()
+        self._uid: uuid.UUID = uid if isinstance(uid, uuid.UUID) else uuid.uuid4()
         self._name: str | None = "Entity"
         self._description: str | None = None
         self._existing_h5_entity = False

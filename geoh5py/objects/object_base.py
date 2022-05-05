@@ -135,8 +135,6 @@ class ObjectBase(Entity):
 
             data_objects.append(data_object)
 
-        self.workspace.finalize()
-
         if len(data_objects) == 1:
             return data_object
 
@@ -173,7 +171,8 @@ class ObjectBase(Entity):
             ], f"Given data with uuid {uid} does not match any known children"
             if uid not in prop_group.properties:
                 prop_group.properties.append(uid)
-                self.workspace.update_attribute(self, "property_groups")
+
+        self.workspace.update_attribute(self, "property_groups")
 
         return prop_group
 
@@ -212,7 +211,8 @@ class ObjectBase(Entity):
                 for uid in uids:
                     if uid in prop_group.properties:
                         prop_group.properties.remove(uid)
-                        self.workspace.update_attribute(self, "property_groups")
+
+            self.workspace.update_attribute(self, "property_groups")
 
     @property
     def cells(self):
@@ -281,7 +281,7 @@ class ObjectBase(Entity):
             ][0]
         else:
             prop_group = PropertyGroup(**kwargs)
-            self.property_groups = [prop_group]
+            self._property_groups += [prop_group]
 
         return prop_group
 
@@ -358,7 +358,7 @@ class ObjectBase(Entity):
             ) and not any(pg.name == prop_group.name for pg in self.property_groups):
                 prop_group.parent = self
                 self._property_groups = self.property_groups + [prop_group]
-                self.workspace.update_attribute(self, "property_groups")
+        self.workspace.update_attribute(self, "property_groups")
 
     @property
     def vertices(self):

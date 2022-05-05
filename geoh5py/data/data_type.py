@@ -261,6 +261,7 @@ class DataType(EntityType):
         if entity_type is not None:
             return entity_type
 
+        kwargs["uid"] = uid
         return cls(workspace, **kwargs)
 
     @classmethod
