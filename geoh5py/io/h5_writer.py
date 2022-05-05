@@ -53,6 +53,7 @@ class H5Writer:
         "vertices": "Vertices",
         "octree_cells": "Octree Cells",
         "property_groups": "PropertyGroups",
+        "cell_delimiters": "...",
         "color_map": "Color map",
         "metadata": "Metadata",
         "options": "options",
@@ -715,19 +716,7 @@ class H5Writer:
         with fetch_h5_handle(file, mode="r+") as h5file:
             H5Writer.update_field(h5file, entity, "attributes")
 
-            for attribute in [
-                "values",
-                "trace_depth",
-                "metadata",
-                "options",
-                "property_groups",
-                "cell_delimiters",
-                "cells",
-                "octree_cells",
-                "surveys",
-                "trace",
-                "vertices",
-            ]:
+            for attribute in cls.key_map:
                 if getattr(entity, attribute, None) is not None:
                     H5Writer.update_field(h5file, entity, attribute)
 
