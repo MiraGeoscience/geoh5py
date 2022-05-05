@@ -364,17 +364,6 @@ class Entity(ABC):
 
         self._uid = uid
 
-    @uid.getter
-    def uid(self):
-        """
-        :obj:`uuid.UUID` The unique identifier of an entity, either as stored
-        in geoh5 or generated in :func:`~uuid.UUID.uuid4` format.
-        """
-        if self._uid is None:
-            self._uid = uuid.uuid4()
-
-        return self._uid
-
     @property
     def visible(self) -> bool:
         """
