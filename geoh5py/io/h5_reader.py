@@ -285,10 +285,13 @@ class H5Reader:
         :return attributes: :obj:`dict` of attributes.
         """
         with fetch_h5_handle(file) as h5file:
-            name = list(h5file.keys())[0]
+            name = list(h5file.keys())
+            if len(name) != 1:
+                raise FileNotFoundError
+
             attributes = {}
 
-            for key, value in h5file[name].attrs.items():
+            for key, value in h5file[name[0]].attrs.items():
                 attributes[key] = value
 
         return attributes
