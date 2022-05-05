@@ -33,7 +33,7 @@ class TextData(Data):
         """
         :obj:`str` Text value.
         """
-        if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
+        if (getattr(self, "_values", None) is None) and self.on_file:
             self._values = self.workspace.fetch_values(self.uid)
 
         return self._values
@@ -72,7 +72,7 @@ class CommentsData(Data):
         """
         :obj:`list` List of comments
         """
-        if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
+        if (getattr(self, "_values", None) is None) and self.on_file:
             comment_str = self.workspace.fetch_values(self.uid)
 
             if comment_str is not None:

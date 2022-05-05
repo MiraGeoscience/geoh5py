@@ -40,7 +40,7 @@ class Data(Entity):
         **kwargs,
     ):
         self._association = None
-        self._existing_h5_entity = False
+        self._on_file = False
         assert data_type is not None
         assert data_type.primitive_type == self.primitive_type()
         self.entity_type = data_type

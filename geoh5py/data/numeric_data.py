@@ -38,7 +38,7 @@ class NumericData(Data, ABC):
         """
         :return: values: An array of float values
         """
-        if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
+        if (getattr(self, "_values", None) is None) and self.on_file:
             self._values = self.workspace.fetch_values(self.uid)
 
         if self._values is not None:

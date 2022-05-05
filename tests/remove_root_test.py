@@ -71,9 +71,7 @@ def test_remove_root():
         compare_entities(
             points,
             rec_points,
-            ignore=["_parent", "_existing_h5_entity", "_property_groups"],
+            ignore=["_parent", "_on_file", "_property_groups"],
         )
-        compare_entities(data[0], rec_data, ignore=["_parent", "_existing_h5_entity"])
-        compare_entities(
-            data_group, rec_group, ignore=["_parent", "_existing_h5_entity"]
-        )
+        compare_entities(data[0], rec_data, ignore=["_parent", "_on_file"])
+        compare_entities(data_group, rec_group, ignore=["_parent", "_on_file"])

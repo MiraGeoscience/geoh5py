@@ -76,7 +76,7 @@ class Drillhole(Points):
         Array of indices defining segments connecting vertices.
         """
         if getattr(self, "_cells", None) is None:
-            if self.existing_h5_entity:
+            if self.on_file:
                 self._cells = self.workspace.fetch_cells(self.uid)
 
         return self._cells
@@ -212,7 +212,7 @@ class Drillhole(Points):
         """
         :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the surveys
         """
-        if (getattr(self, "_surveys", None) is None) and self.existing_h5_entity:
+        if (getattr(self, "_surveys", None) is None) and self.on_file:
             self._surveys = self.workspace.fetch_coordinates(self.uid, "surveys")
 
         if getattr(self, "_surveys", None) is not None:
@@ -265,7 +265,7 @@ class Drillhole(Points):
         """
         :obj:`numpy.array`: Drillhole trace defining the path in 3D
         """
-        if self._trace is None and self.existing_h5_entity:
+        if self._trace is None and self.on_file:
             self._trace = self.workspace.fetch_coordinates(self.uid, "trace")
 
         if self._trace is not None:

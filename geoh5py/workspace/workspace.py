@@ -178,7 +178,7 @@ class Workspace:
 
         entity_kwargs: dict = {"entity": {"uid": None, "parent": None}}
         for key in entity.__dict__:
-            if key not in ["_uid", "_entity_type"] + list(omit_list):
+            if key not in ["_uid", "_entity_type", "_on_file"] + list(omit_list):
                 if key[0] == "_":
                     key = key[1:]
 
@@ -186,7 +186,7 @@ class Workspace:
 
         entity_type_kwargs: dict = {"entity_type": {}}
         for key in entity.entity_type.__dict__:
-            if key not in ["_workspace"] + list(omit_list):
+            if key not in ["_workspace", "_on_file"] + list(omit_list):
                 if key[0] == "_":
                     key = key[1:]
 
@@ -375,8 +375,8 @@ class Workspace:
             self._root = self.load_entity(uuid.uuid4(), "root", file=h5file)
 
             if self._root is not None:
-                self._root.existing_h5_entity = True
-                self._root.entity_type.existing_h5_entity = True
+                self._root.on_file = True
+                self._root.entity_type.on_file = True
                 self.fetch_children(self._root, recursively=True, file=h5file)
 
         except KeyError:
@@ -547,8 +547,8 @@ class Workspace:
                 if recovered_object is not None:
 
                     # Assumes the object was pulled from h5
-                    recovered_object.existing_h5_entity = True
-                    recovered_object.entity_type.existing_h5_entity = True
+                    recovered_object.on_file = True
+                    recovered_object.entity_type.on_file = True
                     family_tree += [recovered_object]
 
                     if recursively:
@@ -935,7 +935,7 @@ class Workspace:
         :param attribute: Name of the attribute to get updated to geoh5.
         :param file: :obj:`h5py.File` or name of the target geoh5
         """
-        if entity.existing_h5_entity:
+        if entity.on_file:
             self._io_call(
                 file, H5Writer.update_attributes, entity, attribute, mode="r+"
             )

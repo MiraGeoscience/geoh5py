@@ -625,7 +625,7 @@ class H5Writer:
                 # cls.update_attributes(h5file, entity)
                 # entity.modified_attributes = []
 
-                entity.existing_h5_entity = True
+                entity.on_file = True
 
                 return h5file[base][entity_type][as_str_if_uuid(uid)]
 
@@ -643,9 +643,9 @@ class H5Writer:
             # Add the type and return a pointer
             new_type = H5Writer.write_entity_type(h5file, entity.entity_type)
             entity_handle["Type"] = new_type
-            entity.entity_type.existing_h5_entity = True
+            entity.entity_type.on_file = True
             cls.write_properties(h5file, entity)
-            entity.existing_h5_entity = True
+            entity.on_file = True
 
         return entity_handle
 
@@ -689,7 +689,7 @@ class H5Writer:
                 #     cls.update_attributes(h5file, entity_type)
                 #     entity_type.modified_attributes = []
 
-                entity_type.existing_h5_entity = True
+                entity_type.on_file = True
 
                 return h5file[base]["Types"][entity_type_str][as_str_if_uuid(uid)]
 
@@ -704,7 +704,7 @@ class H5Writer:
             if hasattr(entity_type, "value_map"):
                 H5Writer.write_value_map(h5file, entity_type)
 
-            entity_type.existing_h5_entity = True
+            entity_type.on_file = True
 
         return new_type
 

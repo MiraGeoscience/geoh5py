@@ -107,7 +107,7 @@ class H5Reader:
             if "PropertyGroups" in entity.keys():
                 property_groups = cls.fetch_property_groups(file, uid)
 
-            attributes["entity"]["existing_h5_entity"] = True
+            attributes["entity"]["on_file"] = True
 
         return attributes, type_attributes, property_groups
 

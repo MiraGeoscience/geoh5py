@@ -65,7 +65,7 @@ class Curve(Points):
                     cells.append(np.c_[ind[:-1], ind[1:]])
                 self._cells = np.vstack(cells)
 
-            elif self.existing_h5_entity:
+            elif self.on_file:
                 self._cells = self.workspace.fetch_cells(self.uid)
             else:
                 if self.vertices is not None:

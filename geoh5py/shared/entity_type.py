@@ -40,7 +40,7 @@ class EntityType(ABC):
         self._uid: uuid.UUID = uid if isinstance(uid, uuid.UUID) else uuid.uuid4()
         self._name: str | None = "Entity"
         self._description: str | None = None
-        self._existing_h5_entity = False
+        self._on_file = False
 
         for attr, item in kwargs.items():
             try:
@@ -78,16 +78,16 @@ class EntityType(ABC):
         return self._description
 
     @property
-    def existing_h5_entity(self) -> bool:
+    def on_file(self) -> bool:
         """
         :obj:`bool` Entity already present in
         :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
         """
-        return self._existing_h5_entity
+        return self._on_file
 
-    @existing_h5_entity.setter
-    def existing_h5_entity(self, value: bool):
-        self._existing_h5_entity = value
+    @on_file.setter
+    def on_file(self, value: bool):
+        self._on_file = value
 
     @classmethod
     def find(

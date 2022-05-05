@@ -54,7 +54,7 @@ class Entity(ABC):
         self._allow_move = True
         self._allow_rename = True
         self._public = True
-        self._existing_h5_entity = False
+        self._on_file = False
         self._metadata = None
 
         for attr, item in kwargs.items():
@@ -201,16 +201,16 @@ class Entity(ABC):
         ...
 
     @property
-    def existing_h5_entity(self) -> bool:
+    def on_file(self) -> bool:
         """
         :obj:`bool` Entity already present in
         :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
         """
-        return self._existing_h5_entity
+        return self._on_file
 
-    @existing_h5_entity.setter
-    def existing_h5_entity(self, value: bool):
-        self._existing_h5_entity = value
+    @on_file.setter
+    def on_file(self, value: bool):
+        self._on_file = value
 
     @classmethod
     def fix_up_name(cls, name: str) -> str:

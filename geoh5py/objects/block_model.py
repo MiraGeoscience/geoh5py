@@ -169,9 +169,7 @@ class BlockModel(ObjectBase):
         :obj:`numpy.array` of :obj:`float`:
         Nodal offsets along the u-axis relative to the origin.
         """
-        if (
-            getattr(self, "_u_cell_delimiters", None) is None
-        ) and self.existing_h5_entity:
+        if (getattr(self, "_u_cell_delimiters", None) is None) and self.on_file:
             delimiters = self.workspace.fetch_delimiters(self.uid)
             self._u_cell_delimiters = delimiters[0]
             self._v_cell_delimiters = delimiters[1]
@@ -205,9 +203,7 @@ class BlockModel(ObjectBase):
         :obj:`numpy.array` of :obj:`float`:
         Nodal offsets along the v-axis relative to the origin.
         """
-        if (
-            getattr(self, "_v_cell_delimiters", None) is None
-        ) and self.existing_h5_entity:
+        if (getattr(self, "_v_cell_delimiters", None) is None) and self.on_file:
             delimiters = self.workspace.fetch_delimiters(self.uid)
             self._u_cell_delimiters = delimiters[0]
             self._v_cell_delimiters = delimiters[1]
@@ -240,9 +236,7 @@ class BlockModel(ObjectBase):
         :obj:`numpy.array` of :obj:`float`:
         Nodal offsets along the z-axis relative to the origin (positive up).
         """
-        if (
-            getattr(self, "_z_cell_delimiters", None) is None
-        ) and self.existing_h5_entity:
+        if (getattr(self, "_z_cell_delimiters", None) is None) and self.on_file:
             delimiters = self.workspace.fetch_delimiters(self.uid)
             self._u_cell_delimiters = delimiters[0]
             self._v_cell_delimiters = delimiters[1]

@@ -184,7 +184,7 @@ class Octree(ObjectBase):
             ]
         """
         if getattr(self, "_octree_cells", None) is None:
-            if self.existing_h5_entity:
+            if self.on_file:
                 octree_cells = self.workspace.fetch_octree_cells(self.uid)
                 self._octree_cells = octree_cells
 

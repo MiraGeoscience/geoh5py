@@ -74,7 +74,7 @@ class FilenameData(Data):
         """
         if (
             self.file_name is not None
-            and self.existing_h5_entity
+            and self.on_file
             and getattr(self, "_values", None) is None
         ):
             self._values = self.workspace.fetch_file_object(self.uid, self.file_name)

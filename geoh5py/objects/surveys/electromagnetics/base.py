@@ -227,7 +227,6 @@ class BaseEMSurvey(ObjectBase):
                 complement.metadata = self.metadata
 
         new_entity.metadata = metadata
-        parent.workspace.finalize()
 
         return new_entity
 

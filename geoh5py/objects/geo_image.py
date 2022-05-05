@@ -59,7 +59,7 @@ class GeoImage(ObjectBase):
         """
         if getattr(self, "_cells", None) is None:
 
-            if self.existing_h5_entity:
+            if self.on_file:
                 self._cells = self.workspace.fetch_cells(self.uid)
             else:
                 self.cells = np.c_[[0, 1, 2, 0], [0, 2, 3, 0]].T.astype("uint32")
@@ -217,7 +217,7 @@ class GeoImage(ObjectBase):
         :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`:
         Defines the four corners of the geo_image
         """
-        if (getattr(self, "_vertices", None) is None) and self.existing_h5_entity:
+        if (getattr(self, "_vertices", None) is None) and self.on_file:
             self._vertices = self.workspace.fetch_coordinates(self.uid, "vertices")
 
         if self._vertices is None and self.image is not None:

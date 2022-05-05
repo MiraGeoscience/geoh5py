@@ -47,7 +47,7 @@ class Surface(Points):
         :return cells: :obj:`numpy.array` of :obj:`int`, shape ("*", 3)
         """
         if getattr(self, "_cells", None) is None:
-            if self.existing_h5_entity:
+            if self.on_file:
                 self._cells = self.workspace.fetch_cells(self.uid)
 
         return self._cells
