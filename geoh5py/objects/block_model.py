@@ -178,10 +178,9 @@ class BlockModel(ObjectBase):
         Nodal offsets along the u-axis relative to the origin.
         """
         if (getattr(self, "_u_cell_delimiters", None) is None) and self.on_file:
-            delimiters = self.workspace.fetch_delimiters(self.uid)
-            self._u_cell_delimiters = delimiters[0]
-            self._v_cell_delimiters = delimiters[1]
-            self._z_cell_delimiters = delimiters[2]
+            self._u_cell_delimiters = self.workspace.fetch_cells(
+                self.uid, "u_cell_delimiters"
+            )
 
         return self._u_cell_delimiters
 
@@ -212,10 +211,9 @@ class BlockModel(ObjectBase):
         Nodal offsets along the v-axis relative to the origin.
         """
         if (getattr(self, "_v_cell_delimiters", None) is None) and self.on_file:
-            delimiters = self.workspace.fetch_delimiters(self.uid)
-            self._u_cell_delimiters = delimiters[0]
-            self._v_cell_delimiters = delimiters[1]
-            self._z_cell_delimiters = delimiters[2]
+            self._v_cell_delimiters = self.workspace.fetch_cells(
+                self.uid, "v_cell_delimiters"
+            )
 
         return self._v_cell_delimiters
 
@@ -245,10 +243,9 @@ class BlockModel(ObjectBase):
         Nodal offsets along the z-axis relative to the origin (positive up).
         """
         if (getattr(self, "_z_cell_delimiters", None) is None) and self.on_file:
-            delimiters = self.workspace.fetch_delimiters(self.uid)
-            self._u_cell_delimiters = delimiters[0]
-            self._v_cell_delimiters = delimiters[1]
-            self._z_cell_delimiters = delimiters[2]
+            self._z_cell_delimiters = self.workspace.fetch_cells(
+                self.uid, "z_cell_delimiters"
+            )
 
         return self._z_cell_delimiters
 

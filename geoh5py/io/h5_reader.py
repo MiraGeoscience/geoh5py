@@ -46,6 +46,9 @@ class H5Reader:
         "octree_cells": "Octree Cells",
         "property_groups": "PropertyGroups",
         "color_map": "Color map",
+        "u_cell_delimiters": "U cell delimiters",
+        "v_cell_delimiters": "V cell delimiters",
+        "z_cell_delimiters": "Z cell delimiters",
     }
 
     @classmethod
@@ -112,12 +115,16 @@ class H5Reader:
         return attributes, type_attributes, property_groups
 
     @classmethod
-    def fetch_cells(cls, file: str | h5py.File, uid: uuid.UUID) -> np.ndarray | None:
+    def fetch_array_attribute(
+        cls, file: str | h5py.File, uid: uuid.UUID, key: str
+    ) -> np.ndarray | None:
         """
-        Get an object's :obj:`~geoh5py.objects.object_base.ObjectBase.cells`.
+        Get an entity attribute stores as array such as
+        :obj:`~geoh5py.objects.object_base.ObjectBase.cells`.
 
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         :param uid: Unique identifier of the target object.
+        :param key: Field attribute name
 
         :return cells: :obj:`numpy.ndarray` of :obj:`int`.
         """
@@ -126,7 +133,9 @@ class H5Reader:
             indices = None
 
             try:
-                indices = h5file[name]["Objects"][as_str_if_uuid(uid)]["Cells"][:]
+                indices = h5file[name]["Objects"][as_str_if_uuid(uid)][
+                    cls.key_map[key]
+                ][:]
             except KeyError:
                 pass
 
@@ -172,45 +181,28 @@ class H5Reader:
         cls,
         file: str | h5py.File,
         uid: uuid.UUID,
+        axis: str,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Get the delimiters of a :obj:`~geoh5py.objects.block_model.BlockModel`.
 
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         :param uid: Unique identifier of the target entity.
+        :param axis:
 
-
-        Returns
-        -------
-        u_delimiters: :obj:`numpy.ndarray` of u_delimiters
-        v_delimiters: :obj:`numpy.ndarray` of v_delimiters
-        z_delimiters: :obj:`numpy.ndarray` of z_delimiters
+        :param axis: :obj:`numpy.ndarray` for u, v or z_delimiters
         """
         with fetch_h5_handle(file) as h5file:
             name = list(h5file.keys())[0]
 
             try:
-                u_delimiters = np.r_[
-                    h5file[name]["Objects"][as_str_if_uuid(uid)]["U cell delimiters"]
+                delimiters = np.r_[
+                    h5file[name]["Objects"][as_str_if_uuid(uid)][cls.key_map[axis]]
                 ]
             except KeyError:
-                u_delimiters = None
+                delimiters = None
 
-            try:
-                v_delimiters = np.r_[
-                    h5file[name]["Objects"][as_str_if_uuid(uid)]["V cell delimiters"]
-                ]
-            except KeyError:
-                v_delimiters = None
-
-            try:
-                z_delimiters = np.r_[
-                    h5file[name]["Objects"][as_str_if_uuid(uid)]["Z cell delimiters"]
-                ]
-            except KeyError:
-                z_delimiters = None
-
-        return u_delimiters, v_delimiters, z_delimiters
+        return delimiters
 
     @classmethod
     def fetch_metadata(

@@ -487,17 +487,18 @@ class Workspace:
         self._distance_unit = value
 
     def fetch_cells(
-        self, uid: uuid.UUID, file: str | h5py.File | None = None
+        self, uid: uuid.UUID, key: str = "cells", file: str | h5py.File | None = None
     ) -> np.ndarray:
         """
         Fetch the cells of an object from the source geoh5.
 
         :param uid: Unique identifier of target entity.
         :param file: :obj:`h5py.File` or name of the target geoh5 file
+        :param key: Field array name
 
         :return: Cell object with vertices index.
         """
-        return self._io_call(file, H5Reader.fetch_cells, uid)
+        return self._io_call(file, H5Reader.fetch_array_attribute, uid, key)
 
     def fetch_children(
         self,
@@ -555,20 +556,6 @@ class Workspace:
 
         return family_tree
 
-    def fetch_delimiters(
-        self, uid: uuid.UUID, file: str | h5py.File | None = None
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """
-        Fetch the delimiter attributes from the source geoh5.
-
-        :param uid: Unique identifier of target data object.
-        :param file: :obj:`h5py.File` or name of the target geoh5 file
-
-        :return: Arrays of delimiters along the u, v, and w axis
-                 (u_delimiters, v_delimiters, z_delimiters).
-        """
-        return self._io_call(file, H5Reader.fetch_delimiters, uid)
-
     def fetch_metadata(
         self, uid: uuid.UUID, file: str | h5py.File | None = None, argument="Metadata"
     ):
@@ -587,19 +574,6 @@ class Workspace:
             if isinstance(self.get_entity(uid)[0], Group)
             else "Objects",
         )
-
-    def fetch_octree_cells(
-        self, uid: uuid.UUID, file: str | h5py.File | None = None
-    ) -> np.ndarray:
-        """
-        Fetch the octree cells ordering from the source geoh5
-
-        :param uid: Unique identifier of target entity
-        :param file: :obj:`h5py.File` or name of the target geoh5 file
-
-        :return values: Array of [i, j, k, dimension] defining the octree mesh
-        """
-        return self._io_call(file, H5Reader.fetch_octree_cells, uid)
 
     def fetch_property_groups(
         self, entity: Entity, file: str | h5py.File | None = None
