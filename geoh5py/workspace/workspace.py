@@ -486,17 +486,17 @@ class Workspace:
     def distance_unit(self, value: str):
         self._distance_unit = value
 
-    def fetch_cells(
+    def fetch_array_attribute(
         self, uid: uuid.UUID, key: str = "cells", file: str | h5py.File | None = None
     ) -> np.ndarray:
         """
-        Fetch the cells of an object from the source geoh5.
+        Fetch attribute stored as structured array from the source geoh5.
 
         :param uid: Unique identifier of target entity.
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         :param key: Field array name
 
-        :return: Cell object with vertices index.
+        :return: Structured array.
         """
         return self._io_call(file, H5Reader.fetch_array_attribute, uid, key)
 
@@ -602,33 +602,6 @@ class Workspace:
             property_groups.append(group)
 
         return property_groups
-
-    def fetch_coordinates(
-        self, uid: uuid.UUID, name: str, file: str | h5py.File | None = None
-    ) -> np.ndarray:
-        """
-        Fetch the survey values of drillhole objects
-
-        :param uid: Unique identifier of target entity
-        :param file: :obj:`h5py.File` or name of the target geoh5 file
-
-        :return values: Array of [Depth, Dip, Azimuth] defining the drillhole
-            path.
-        """
-        return self._io_call(file, H5Reader.fetch_coordinates, uid, name)
-
-    def fetch_trace_depth(
-        self, uid: uuid.UUID, file: str | h5py.File | None = None
-    ) -> np.ndarray:
-        """
-        Fetch the trace depth information of a drillhole objects
-
-        :param uid: Unique identifier of target entity
-        :param file: :obj:`h5py.File` or name of the target geoh5 file
-
-        :return: Array of trace depth values.
-        """
-        return self._io_call(file, H5Reader.fetch_trace_depth, uid)
 
     def fetch_values(
         self, uid: uuid.UUID, file: str | h5py.File | None = None

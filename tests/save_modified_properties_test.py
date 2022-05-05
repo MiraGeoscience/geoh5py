@@ -25,10 +25,10 @@ from geoh5py.workspace import Workspace
 
 
 @patch("geoh5py.io.h5_writer.H5Writer.write_data_values")
-@patch("geoh5py.io.h5_writer.H5Writer.write_coordinates")
+@patch("geoh5py.io.h5_writer.H5Writer.write_array_attribute")
 @patch("geoh5py.io.h5_writer.H5Writer.write_attributes")
 def test_save_modified_properties(
-    write_attributes, write_coordinates, write_data_values, tmp_path
+    write_attributes, write_array_attribute, write_data_values, tmp_path
 ):
     n_data = 12
     xyz = np.random.randn(n_data, 3)
@@ -41,15 +41,17 @@ def test_save_modified_properties(
 
     assert write_attributes.called, f"{write_attributes} was not called."
     assert (
-        not write_coordinates.called
-    ), f"{write_coordinates} should not have been called."
+        not write_array_attribute.called
+    ), f"{write_array_attribute} should not have been called."
     assert (
         not write_data_values.called
     ), f"{write_data_values} should not have been called."
 
     points.vertices = xyz
 
-    assert write_coordinates.called, f"{write_coordinates} should have been called."
+    assert (
+        write_array_attribute.called
+    ), f"{write_array_attribute} should have been called."
     assert (
         not write_data_values.called
     ), f"{write_data_values} should not have been called."

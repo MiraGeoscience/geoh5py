@@ -25,6 +25,23 @@ import numpy as np
 from ..groups import PropertyGroup
 from ..shared import Entity
 
+key_map = {
+    "values": "Data",
+    "cells": "Cells",
+    "surveys": "Surveys",
+    "trace": "Trace",
+    "trace_depth": "TraceDepth",
+    "vertices": "Vertices",
+    "octree_cells": "Octree Cells",
+    "property_groups": "PropertyGroups",
+    "u_cell_delimiters": "U cell delimiters",
+    "v_cell_delimiters": "V cell delimiters",
+    "z_cell_delimiters": "Z cell delimiters",
+    "color_map": "Color map",
+    "metadata": "Metadata",
+    "options": "options",
+}
+
 
 def is_uuid(value: str):
     """Check if a string is UUID compliant."""

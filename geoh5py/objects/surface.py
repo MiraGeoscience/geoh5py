@@ -48,7 +48,7 @@ class Surface(Points):
         """
         if getattr(self, "_cells", None) is None:
             if self.on_file:
-                self._cells = self.workspace.fetch_cells(self.uid)
+                self._cells = self.workspace.fetch_array_attribute(self.uid)
 
         return self._cells
 

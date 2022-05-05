@@ -60,7 +60,7 @@ class GeoImage(ObjectBase):
         if getattr(self, "_cells", None) is None:
 
             if self.on_file:
-                self._cells = self.workspace.fetch_cells(self.uid)
+                self._cells = self.workspace.fetch_array_attribute(self.uid)
             else:
                 self.cells = np.c_[[0, 1, 2, 0], [0, 2, 3, 0]].T.astype("uint32")
 
@@ -218,7 +218,7 @@ class GeoImage(ObjectBase):
         Defines the four corners of the geo_image
         """
         if (getattr(self, "_vertices", None) is None) and self.on_file:
-            self._vertices = self.workspace.fetch_coordinates(self.uid, "vertices")
+            self._vertices = self.workspace.fetch_array_attribute(self.uid, "vertices")
 
         if self._vertices is None and self.image is not None:
             self.vertices = self.default_vertices

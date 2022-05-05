@@ -178,7 +178,7 @@ class BlockModel(ObjectBase):
         Nodal offsets along the u-axis relative to the origin.
         """
         if (getattr(self, "_u_cell_delimiters", None) is None) and self.on_file:
-            self._u_cell_delimiters = self.workspace.fetch_cells(
+            self._u_cell_delimiters = self.workspace.fetch_array_attribute(
                 self.uid, "u_cell_delimiters"
             )
 
@@ -188,7 +188,7 @@ class BlockModel(ObjectBase):
     def u_cell_delimiters(self, value):
         if value is not None:
             value = np.r_[value]
-            self.workspace.update_attribute(self, "cell_delimiters")
+            self.workspace.update_attribute(self, "u_cell_delimiters")
             self._centroids = None
 
             self._u_cell_delimiters = value.astype(float)
@@ -211,7 +211,7 @@ class BlockModel(ObjectBase):
         Nodal offsets along the v-axis relative to the origin.
         """
         if (getattr(self, "_v_cell_delimiters", None) is None) and self.on_file:
-            self._v_cell_delimiters = self.workspace.fetch_cells(
+            self._v_cell_delimiters = self.workspace.fetch_array_attribute(
                 self.uid, "v_cell_delimiters"
             )
 
@@ -223,7 +223,7 @@ class BlockModel(ObjectBase):
             value = np.r_[value]
             self._centroids = None
             self._v_cell_delimiters = value.astype(float)
-            self.workspace.update_attribute(self, "cell_delimiters")
+            self.workspace.update_attribute(self, "v_cell_delimiters")
 
     @property
     def v_cells(self) -> np.ndarray | None:
@@ -243,7 +243,7 @@ class BlockModel(ObjectBase):
         Nodal offsets along the z-axis relative to the origin (positive up).
         """
         if (getattr(self, "_z_cell_delimiters", None) is None) and self.on_file:
-            self._z_cell_delimiters = self.workspace.fetch_cells(
+            self._z_cell_delimiters = self.workspace.fetch_array_attribute(
                 self.uid, "z_cell_delimiters"
             )
 
@@ -255,7 +255,7 @@ class BlockModel(ObjectBase):
             value = np.r_[value]
             self._centroids = None
             self._z_cell_delimiters = value.astype(float)
-            self.workspace.update_attribute(self, "cell_delimiters")
+            self.workspace.update_attribute(self, "z_cell_delimiters")
 
     @property
     def z_cells(self) -> np.ndarray | None:

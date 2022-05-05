@@ -28,28 +28,13 @@ import numpy as np
 from ..data.float_data import FloatData
 from ..data.integer_data import IntegerData
 from ..shared import fetch_h5_handle
-from .utils import as_str_if_uuid, str2uuid, str_from_utf8_bytes
+from .utils import as_str_if_uuid, key_map, str2uuid, str_from_utf8_bytes
 
 
 class H5Reader:
     """
     Class to read information from a geoh5 file.
     """
-
-    key_map = {
-        "values": "Data",
-        "cells": "Cells",
-        "surveys": "Surveys",
-        "trace": "Trace",
-        "trace_depth": "TraceDepth",
-        "vertices": "Vertices",
-        "octree_cells": "Octree Cells",
-        "property_groups": "PropertyGroups",
-        "color_map": "Color map",
-        "u_cell_delimiters": "U cell delimiters",
-        "v_cell_delimiters": "V cell delimiters",
-        "z_cell_delimiters": "Z cell delimiters",
-    }
 
     @classmethod
     def fetch_attributes(
@@ -133,9 +118,7 @@ class H5Reader:
             indices = None
 
             try:
-                indices = h5file[name]["Objects"][as_str_if_uuid(uid)][
-                    cls.key_map[key]
-                ][:]
+                indices = h5file[name]["Objects"][as_str_if_uuid(uid)][key_map[key]][:]
             except KeyError:
                 pass
 
@@ -177,34 +160,6 @@ class H5Reader:
         return children
 
     @classmethod
-    def fetch_delimiters(
-        cls,
-        file: str | h5py.File,
-        uid: uuid.UUID,
-        axis: str,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """
-        Get the delimiters of a :obj:`~geoh5py.objects.block_model.BlockModel`.
-
-        :param file: :obj:`h5py.File` or name of the target geoh5 file
-        :param uid: Unique identifier of the target entity.
-        :param axis:
-
-        :param axis: :obj:`numpy.ndarray` for u, v or z_delimiters
-        """
-        with fetch_h5_handle(file) as h5file:
-            name = list(h5file.keys())[0]
-
-            try:
-                delimiters = np.r_[
-                    h5file[name]["Objects"][as_str_if_uuid(uid)][cls.key_map[axis]]
-                ]
-            except KeyError:
-                delimiters = None
-
-        return delimiters
-
-    @classmethod
     def fetch_metadata(
         cls,
         file: str | h5py.File,
@@ -243,29 +198,6 @@ class H5Reader:
                     metadata[key] = str2uuid(val)
 
         return metadata
-
-    @classmethod
-    def fetch_octree_cells(cls, file: str | h5py.File, uid: uuid.UUID) -> np.ndarray:
-        """
-        Get :obj:`~geoh5py.objects.octree.Octree`
-        :obj:`~geoh5py.objects.object_base.ObjectBase.cells`.
-
-        :param file: :obj:`h5py.File` or name of the target geoh5 file
-        :param uid: Unique identifier of the target entity.
-
-        :return octree_cells: :obj:`numpy.ndarray` of :obj:`int`.
-        """
-        with fetch_h5_handle(file) as h5file:
-            name = list(h5file.keys())[0]
-
-            try:
-                octree_cells = np.r_[
-                    h5file[name]["Objects"][as_str_if_uuid(uid)]["Octree Cells"]
-                ]
-            except KeyError:
-                octree_cells = None
-
-        return octree_cells
 
     @classmethod
     def fetch_project_attributes(cls, file: str | h5py.File) -> dict[Any, Any]:
@@ -426,52 +358,6 @@ class H5Reader:
                 values = None
 
         return values
-
-    @classmethod
-    def fetch_coordinates(
-        cls, file: str | h5py.File, uid: uuid.UUID, name: str
-    ) -> np.ndarray | None:
-        """
-        Get an object coordinates data.
-
-        :param file: :obj:`h5py.File` or name of the target geoh5 file
-        :param uid: Unique identifier of the target object
-        :param name: Type of coordinates 'vertices', 'trace' or 'surveys'
-
-        :return surveys: :obj:`numpy.ndarray` of [x, y, z] coordinates
-        """
-        with fetch_h5_handle(file) as h5file:
-            root = list(h5file.keys())[0]
-
-            coordinates = None
-            try:
-                coordinates = np.asarray(
-                    h5file[root]["Objects"][as_str_if_uuid(uid)][cls.key_map[name]]
-                )
-            except KeyError:
-                pass
-
-        return coordinates
-
-    @classmethod
-    def fetch_trace_depth(cls, file: str | h5py.File, uid: uuid.UUID) -> np.ndarray:
-        """
-        Get an object :obj:`~geoh5py.objects.drillhole.Drillhole.trace_depth` data
-
-        :param file: :obj:`h5py.File` or name of the target geoh5 file
-        :param uid: Unique identifier of the target object
-
-        :return surveys: :obj:`numpy.ndarray` of [x, y, z] coordinates
-        """
-        with fetch_h5_handle(file) as h5file:
-
-            try:
-                root = list(h5file.keys())[0]
-                trace_depth = h5file[root]["Objects"][as_str_if_uuid(uid)]["TraceDepth"]
-            except KeyError:
-                trace_depth = None
-
-        return trace_depth
 
     @staticmethod
     def format_type_string(string):

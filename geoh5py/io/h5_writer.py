@@ -31,7 +31,7 @@ from ..data import CommentsData, Data, DataType, FilenameData, IntegerData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import Entity, EntityType, fetch_h5_handle
-from .utils import as_str_if_uuid, dict_mapper
+from .utils import as_str_if_uuid, dict_mapper, key_map
 
 if TYPE_CHECKING:
     from .. import shared, workspace
@@ -43,21 +43,6 @@ class H5Writer:
     """
 
     str_type = h5py.special_dtype(vlen=str)
-
-    key_map = {
-        "values": "Data",
-        "cells": "Cells",
-        "surveys": "Surveys",
-        "trace": "Trace",
-        "trace_depth": "TraceDepth",
-        "vertices": "Vertices",
-        "octree_cells": "Octree Cells",
-        "property_groups": "PropertyGroups",
-        "cell_delimiters": "...",
-        "color_map": "Color map",
-        "metadata": "Metadata",
-        "options": "options",
-    }
 
     @classmethod
     def create_geoh5(
@@ -274,7 +259,7 @@ class H5Writer:
                 return
 
             try:
-                del entity_handle[cls.key_map[attribute]]
+                del entity_handle[key_map[attribute]]
             except KeyError:
                 pass
 
@@ -283,16 +268,19 @@ class H5Writer:
 
             if attribute in ["values", "trace_depth", "metadata", "options"]:
                 cls.write_data_values(h5file, entity, attribute)
-            elif attribute == "cells":
-                cls.write_cells(h5file, entity)
-            elif attribute in ["surveys", "trace", "vertices"]:
-                cls.write_coordinates(h5file, entity, attribute)
-            elif attribute == "octree_cells":
-                cls.write_octree_cells(h5file, entity)
+            elif attribute in [
+                "cells",
+                "surveys",
+                "trace",
+                "vertices",
+                "octree_cells",
+                "u_cell_delimiters",
+                "v_cell_delimiters",
+                "z_cell_delimiters",
+            ]:
+                cls.write_array_attribute(h5file, entity, attribute)
             elif attribute == "property_groups":
                 cls.write_property_groups(h5file, entity)
-            elif attribute == "cell_delimiters":
-                cls.write_cell_delimiters(h5file, entity)
             elif attribute == "color_map":
                 cls.write_color_map(h5file, entity)
             elif attribute == "entity_type":
@@ -342,60 +330,6 @@ class H5Writer:
                     entity_handle.attrs.create(
                         key, value, dtype=np.asarray(value).dtype
                     )
-
-    @classmethod
-    def write_cell_delimiters(
-        cls,
-        file: str | h5py.File,
-        entity,
-    ):
-        """
-        Add cell delimiters (u, v, z)  to a :obj:`~geoh5py.objects.block_model.BlockModel`.
-
-        :param file: Name or handle to a geoh5 file
-        :param entity: Target entity
-        """
-        with fetch_h5_handle(file, mode="r+") as h5file:
-            entity_handle = H5Writer.fetch_handle(h5file, entity)
-
-            if hasattr(entity, "u_cell_delimiters") and (
-                entity.u_cell_delimiters is not None
-            ):
-                cls.create_dataset(
-                    entity_handle, entity.u_cell_delimiters, "U cell delimiters"
-                )
-
-            if hasattr(entity, "v_cell_delimiters") and (
-                entity.v_cell_delimiters is not None
-            ):
-                cls.create_dataset(
-                    entity_handle, entity.v_cell_delimiters, "V cell delimiters"
-                )
-
-            if hasattr(entity, "z_cell_delimiters") and (
-                entity.z_cell_delimiters is not None
-            ):
-                cls.create_dataset(
-                    entity_handle, entity.z_cell_delimiters, "Z cell delimiters"
-                )
-
-    @classmethod
-    def write_cells(
-        cls,
-        file: str | h5py.File,
-        entity,
-    ):
-        """
-        Add :obj:`~geoh5py.objects.object_base.ObjectBase.cells`.
-
-        :param file: Name or handle to a geoh5 file
-        :param entity: Target entity
-        """
-        with fetch_h5_handle(file, mode="r+") as h5file:
-
-            if hasattr(entity, "cells") and (entity.cells is not None):
-                entity_handle = H5Writer.fetch_handle(h5file, entity)
-                cls.create_dataset(entity_handle, entity.cells, "Cells")
 
     @classmethod
     def write_color_map(
@@ -474,7 +408,7 @@ class H5Writer:
                 visible["Visible"] = 1
 
     @classmethod
-    def write_coordinates(
+    def write_array_attribute(
         cls,
         file: str | h5py.File,
         entity,
@@ -492,7 +426,7 @@ class H5Writer:
 
             if getattr(entity, attribute, None) is not None:
                 entity_handle.create_dataset(
-                    cls.key_map[attribute],
+                    key_map[attribute],
                     data=getattr(entity, "_" + attribute),
                     compression="gzip",
                     compression_opts=9,
@@ -531,7 +465,7 @@ class H5Writer:
                 values = dict_mapper(values, [as_str_if_uuid])
 
                 entity_handle.create_dataset(
-                    cls.key_map[attribute],
+                    key_map[attribute],
                     data=json.dumps(values, indent=4),
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
@@ -556,7 +490,7 @@ class H5Writer:
 
             elif isinstance(values, str):
                 entity_handle.create_dataset(
-                    cls.key_map[attribute],
+                    key_map[attribute],
                     data=values,
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
@@ -569,7 +503,7 @@ class H5Writer:
                     out_values[np.isnan(out_values)] = entity.ndv()
 
                 entity_handle.create_dataset(
-                    cls.key_map[attribute],
+                    key_map[attribute],
                     data=out_values,
                     compression="gzip",
                     compression_opts=9,
@@ -683,25 +617,6 @@ class H5Writer:
         return new_type
 
     @classmethod
-    def write_octree_cells(
-        cls,
-        file: str | h5py.File,
-        entity,
-    ):
-        """
-        Add :obj:`~geoh5py.object.object_base.ObjectBase.cells` of an
-        :obj:`~geoh5py.object.octree.Octree` object to geoh5.
-
-        :param file: Name or handle to a geoh5 file.
-        :param entity: Target entity_type with color_map.
-        """
-        with fetch_h5_handle(file, mode="r+") as h5file:
-
-            if hasattr(entity, "octree_cells") and (entity.octree_cells is not None):
-                entity_handle = H5Writer.fetch_handle(h5file, entity)
-                cls.create_dataset(entity_handle, entity.octree_cells, "Octree Cells")
-
-    @classmethod
     def write_properties(
         cls,
         file: str | h5py.File,
@@ -716,7 +631,7 @@ class H5Writer:
         with fetch_h5_handle(file, mode="r+") as h5file:
             H5Writer.update_field(h5file, entity, "attributes")
 
-            for attribute in cls.key_map:
+            for attribute in key_map:
                 if getattr(entity, attribute, None) is not None:
                     H5Writer.update_field(h5file, entity, attribute)
 

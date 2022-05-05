@@ -48,7 +48,7 @@ class Points(ObjectBase):
         :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`
         """
         if self._vertices is None and self.on_file:
-            self._vertices = self.workspace.fetch_coordinates(self.uid, "vertices")
+            self._vertices = self.workspace.fetch_array_attribute(self.uid, "vertices")
 
         if self._vertices is not None:
             return self._vertices.view("<f8").reshape((-1, 3))
