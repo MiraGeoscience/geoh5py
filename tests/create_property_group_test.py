@@ -52,6 +52,13 @@ def test_create_property_group():
             workspace.find_data(single_data_group.properties[0]).name == f"Period{1}"
         ), "Failed at creating a property group by data name"
 
+        # Create a new group by data uid
+        single_data_group = curve.add_data_to_group(props[1].uid, "Singleton")
+
+        assert (
+            workspace.find_data(single_data_group.properties[0]).name == f"Period{1}"
+        ), "Failed at creating a property group by data name"
+
         # Re-open the workspace
         workspace = Workspace(h5file_path)
         rec_object = workspace.get_entity(curve.uid)[0]
