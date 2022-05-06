@@ -192,7 +192,6 @@ class Entity(ABC):
         new_object = workspace.create_entity(
             cls, **{**entity_kwargs, **entity_type_kwargs}
         )
-        workspace.finalize()
         return new_object
 
     @property

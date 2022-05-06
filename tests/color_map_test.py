@@ -38,7 +38,6 @@ def test_create_color_map(tmp_path):
 
     # Create a workspace
     workspace = Workspace(h5file_path)
-
     grid = Grid2D.create(
         workspace,
         origin=[0, 0, 0],
@@ -94,6 +93,7 @@ def test_create_color_map(tmp_path):
     assert "Input 'values' must contain fields with types" in str(
         error
     ), "Failed to raise error for color_map recarray with wrong names."
+    workspace.close()
 
     # Read the data back in from a fresh workspace
     new_workspace = Workspace(h5file_path)
@@ -103,6 +103,8 @@ def test_create_color_map(tmp_path):
     )
 
     new_workspace = Workspace(path.join(tmp_path, r"test_color_map_copy.geoh5"))
+
+    workspace.open(mode="r")
     data.copy(parent=new_workspace)
 
     rec_data = new_workspace.get_entity("DataValues")[0]

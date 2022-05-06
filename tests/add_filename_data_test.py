@@ -64,7 +64,9 @@ def test_add_file(tmp_path):
         )
 
         obj.copy(parent=workspace_copy)
-        workspace_copy = Workspace(os.path.join(tmp_path, "testProject_B.geoh5"))
+        workspace_copy.finalize()
+
+        workspace_copy.open()
         copied_obj = workspace_copy.get_entity(obj.uid)[0]
         rec_data = copied_obj.get_entity("numpy_array.txt")[0]
         compare_entities(file_data, rec_data, ignore=["_parent"])

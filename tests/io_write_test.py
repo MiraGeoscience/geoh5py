@@ -17,22 +17,10 @@
 
 import os
 
-import numpy as np
 from h5py import File
 
 from geoh5py.objects import Points
-from geoh5py.shared import fetch_h5_handle
 from geoh5py.workspace import Workspace
-
-
-def test_scope_write(tmp_path):
-    with fetch_h5_handle(os.path.join(tmp_path, "test2.geoh5"), mode="a") as h5file:
-        w_s = Workspace(h5file)
-        xyz = np.array([[1, 2, 3], [4, 5, 6]])
-        for _ in range(10):
-            Points.create(w_s, vertices=xyz)
-
-    Points.create(w_s, vertices=xyz)
 
 
 def test_fetch_handle(tmp_path):

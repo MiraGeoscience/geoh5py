@@ -66,12 +66,13 @@ class Workspace:
         "Version": "version",
     }
 
-    def __init__(self, h5file: str | Path = "Analyst.geoh5", **kwargs):
+    def __init__(self, h5file: str | Path = "Analyst.geoh5", mode="a", **kwargs):
 
         self._contributors = np.asarray(
             ["UserName"], dtype=h5py.special_dtype(vlen=str)
         )
         self._root: Entity | None = None
+        self._mode = mode
         self._distance_unit = "meter"
         self._ga_version = "1"
         self._version = 2.0
@@ -81,7 +82,7 @@ class Workspace:
         self._objects: dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
         self._data: dict[uuid.UUID, ReferenceType[data.Data]] = {}
         self._geoh5: h5py.File | None = None
-        self._h5file: str | Path
+        self.h5file: str | Path = h5file
 
         for attr, item in kwargs.items():
             if attr in self._attribute_map:
@@ -96,7 +97,7 @@ class Workspace:
             else:
                 setattr(self, attr, item)
 
-        self.h5file = h5file
+        self.open()
 
     def activate(self):
         """Makes this workspace the active one.
@@ -142,6 +143,19 @@ class Workspace:
         Mapping between names used in the geoh5 database.
         """
         return self._attribute_map
+
+    def close(self):
+        """
+        Rebuild the Root and close the file.
+        """
+        if self.geoh5.mode in ["r+", "a"]:
+            self._io_call(self.geoh5, H5Writer.finalize, self)
+
+        self._types = {}
+        self._groups = {}
+        self._objects = {}
+        self._data = {}
+        self.geoh5.close()
 
     @property
     def contributors(self) -> np.ndarray:
@@ -216,8 +230,6 @@ class Workspace:
                 new_object.add_children(
                     [self.copy_to_parent(child, new_object, copy_children=True)]
                 )
-
-        new_object.workspace.finalize()
 
         return new_object
 
@@ -362,33 +374,33 @@ class Workspace:
         """Get all active Data entities registered in the workspace."""
         return self._all_data()
 
-    def fetch_or_create_root(self, geoh5: str | h5py.File):
+    def fetch_or_create_root(self):
         try:
-            self._root = self.load_entity(uuid.uuid4(), "root", file=geoh5)
+            self._root = self.load_entity(uuid.uuid4(), "root", file=self.geoh5)
 
             if self._root is not None:
                 self._root.on_file = True
                 self._root.entity_type.on_file = True
-                self.fetch_children(self._root, recursively=True, file=geoh5)
+                self.fetch_children(self._root, recursively=True, file=self.geoh5)
 
         except KeyError:
             self._root = self.create_entity(
-                RootGroup, save_on_creation=False, file=geoh5
+                RootGroup, save_on_creation=False, file=self.geoh5
             )
 
             for entity_type in ["group", "object"]:
-                uuids = self._io_call(geoh5, H5Reader.fetch_uuids, entity_type)
+                uuids = self._io_call(self.geoh5, H5Reader.fetch_uuids, entity_type)
 
                 for uid in uuids:
-                    recovered_object = self.load_entity(uid, entity_type, file=geoh5)
+                    recovered_object = self.load_entity(
+                        uid, entity_type, file=self.geoh5
+                    )
 
                     if isinstance(recovered_object, Entity):
                         self.fetch_children(
-                            recovered_object, recursively=True, file=geoh5
+                            recovered_object, recursively=True, file=self.geoh5
                         )
                         getattr(recovered_object, "parent", None)
-
-            self.finalize(file=geoh5)
 
     def remove_children(
         self, parent, children: list, file: str | h5py.File | None = None
@@ -626,14 +638,18 @@ class Workspace:
         """
         return H5Reader.fetch_file_object(self.geoh5, uid, file_name)
 
-    def finalize(self, file: h5py.File | None = None):
+    def finalize(self):
         """
-        Finalize the geoh5 by checking for updated entities and re-building the Root
+        Deprecate method finalize
 
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         """
-        with fetch_h5_handle(self.validate_file(file), mode="r+") as geoh5:
-            self._io_call(geoh5, H5Writer.finalize, self)
+        warnings.warn(
+            "The method 'finalize' is will be deprecated in future versions in"
+            " favor of `workspace.close()`. "
+            "Please update your code to suppress this warning."
+        )
+        self.close()
 
     def find_data(self, data_uid: uuid.UUID) -> Entity | None:
         """
@@ -711,14 +727,14 @@ class Workspace:
         return self._all_groups()
 
     @property
-    def geoh5(self) -> h5py.File | str | Path:
+    def geoh5(self) -> h5py.File:
         """
         Instance of h5py.File.
         """
-        if self._geoh5 is not None and self._geoh5.__bool__():
-            return self._geoh5
+        if self._geoh5 is None:
+            self.open()
 
-        return self.h5file
+        return self._geoh5
 
     @property
     def h5file(self) -> str | Path:
@@ -728,29 +744,18 @@ class Workspace:
         return self._h5file
 
     @h5file.setter
-    def h5file(self, file: str | h5py.File | Path):
+    def h5file(self, file: str | Path):
 
-        if not isinstance(file, (str, h5py.File, Path)):
+        if not isinstance(file, (str, Path)):
             raise ValueError(
-                "The 'geoh5' attribute must be of type str, h5py.File or pathlib.Path. "
+                "The 'h5file' attribute must be a str or pathlib.Path to the target geoh5 file. "
                 f"Provided {file} of type({type(file)})"
             )
 
+        if not str(file).endswith("geoh5"):
+            raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
+
         self._h5file = file
-        if isinstance(file, h5py.File):
-            self._geoh5 = file
-            self._h5file = file.filename
-
-        try:
-            proj_attributes = self._io_call(file, H5Reader.fetch_project_attributes)
-
-            for key, attr in proj_attributes.items():
-                setattr(self, self._attribute_map[key], attr)
-
-        except FileNotFoundError:
-            self._io_call(file, H5Writer.create_geoh5, self, mode="a")
-
-        self.fetch_or_create_root(file)
 
     @property
     def list_data_name(self) -> dict[uuid.UUID, str]:
@@ -855,6 +860,25 @@ class Workspace:
         """Get all active Object entities registered in the workspace."""
         return self._all_objects()
 
+    def open(self, mode: str | None = None):
+        if mode is None:
+            mode = self._mode
+
+        self._geoh5 = h5py.File(self._h5file, mode)
+
+        try:
+            proj_attributes = self._io_call(
+                self._geoh5, H5Reader.fetch_project_attributes
+            )
+
+            for key, attr in proj_attributes.items():
+                setattr(self, self._attribute_map[key], attr)
+
+        except FileNotFoundError:
+            self._io_call(self._geoh5, H5Writer.create_geoh5, self)
+
+        self.fetch_or_create_root()
+
     def _register_type(self, entity_type: EntityType):
         weakref_utils.insert_once(self._types, entity_type.uid, entity_type)
 
@@ -917,6 +941,12 @@ class Workspace:
         Validate the geoh5 name
         """
         if file is None:
+            if not self.geoh5.__bool__():
+                raise UserWarning(
+                    "Attempting to access a closed geoh5 file. "
+                    "Consider re-opening with workspace.open()"
+                )
+
             file = self.geoh5
 
         return file
@@ -947,6 +977,12 @@ class Workspace:
             result = fun(geoh5, *args, **kwargs)
 
         return result
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
 
 @contextmanager

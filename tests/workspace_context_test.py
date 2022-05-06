@@ -15,23 +15,31 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
+from os import path
 
 import pytest
 
+from geoh5py.objects import Points
 from geoh5py.workspace import Workspace, active_workspace
 
 
-def test_workspace_context():
+def test_workspace_context(tmp_path):
     # TODO: no file on disk should be required for this test
     #       as workspace does not have to be saved
-    with tempfile.TemporaryDirectory() as tempdir:
-        with active_workspace(Workspace(Path(tempdir) / "w1.geoh5")) as ws1:
-            assert Workspace.active() == ws1
-            with active_workspace(Workspace(Path(tempdir) / "w2.geoh5")) as ws2:
-                assert Workspace.active() == ws2
-            assert Workspace.active() == ws1
-        with pytest.raises(RuntimeError) as error:
-            Workspace.active()
-        assert "no active workspace" in str(error.value).lower()
+    with active_workspace(Workspace(path.join(tmp_path, "w1.geoh5"))) as ws1:
+        assert Workspace.active() == ws1
+        with active_workspace(Workspace(path.join(tmp_path, "w2.geoh5"))) as ws2:
+            assert Workspace.active() == ws2
+        assert Workspace.active() == ws1
+    with pytest.raises(RuntimeError) as error:
+        Workspace.active()
+    assert "no active workspace" in str(error.value).lower()
+
+
+def test_write_context(tmp_path):
+    with Workspace(path.join(tmp_path, "test2.geoh5"), mode="a") as w_s:
+        Points.create(w_s)
+
+    # Re-open in stanalone readonly
+    w_s = Workspace(path.join(tmp_path, "test2.geoh5"))
+    assert len(w_s.objects) == 1, "Issue creating an object with context manager."
