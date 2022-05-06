@@ -864,7 +864,11 @@ class Workspace:
         if mode is None:
             mode = self._mode
 
-        self._geoh5 = h5py.File(self._h5file, mode)
+        try:
+            self._geoh5 = h5py.File(self._h5file, mode)
+        except OSError:
+            mode = "r"
+            self._geoh5 = h5py.File(self._h5file, mode)
 
         try:
             proj_attributes = self._io_call(
