@@ -17,8 +17,7 @@
 
 # pylint: disable=R0914
 
-import tempfile
-from pathlib import Path
+from os import path
 
 import numpy as np
 import pytest
@@ -28,17 +27,13 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_survey_mt():
+def test_create_survey_mt(tmp_path):
 
     name = "TestMT"
     n_data = 12
+    h5file_path = path.join(tmp_path, "testMT.geoh5")
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        path = Path(tempdir) / r"testMT.geoh5"
-
-        # Create a workspace
-        workspace = Workspace(path)
-
+    with Workspace(h5file_path) as workspace:
         # Create sources along line
         x_loc, y_loc = np.meshgrid(np.arange(n_data), np.arange(-1, 3))
         vertices = np.c_[x_loc.ravel(), y_loc.ravel(), np.zeros_like(x_loc).ravel()]
@@ -148,7 +143,7 @@ def test_create_survey_mt():
         ), "Failed to raise AttributeError."
 
         # Re-open the workspace and read data back in
-        new_workspace = Workspace(path)
+        new_workspace = Workspace(h5file_path)
         mt_survey_rec = new_workspace.get_entity(name)[0]
         diffs = []
         for key, value in mt_survey_rec.metadata["EM Dataset"].items():

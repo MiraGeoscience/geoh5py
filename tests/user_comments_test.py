@@ -15,22 +15,17 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
+from os import path
 
 from geoh5py.groups import ContainerGroup
 from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
-def test_user_comments():
+def test_user_comments(tmp_path):
+    h5file_path = path.join(tmp_path, "group_object_comment.geoh5")
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"group_object_comment.geoh5"
-
-        # Create a workspace
-        workspace = Workspace(h5file_path)
-
+    with Workspace(h5file_path) as workspace:
         object_base = Points.create(workspace, name="myObject")
         object_comment = "object text comment"
         author = "John Doe"

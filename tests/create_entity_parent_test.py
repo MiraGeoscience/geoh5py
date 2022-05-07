@@ -15,19 +15,17 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
+from os import path
 
 from geoh5py.groups import ContainerGroup
 from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
-def test_create_point_data():
+def test_create_point_data(tmp_path):
+    h5file_path = path.join(tmp_path, "test.geoh5")
+    with Workspace(h5file_path) as workspace:
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"test.geoh5"
-        workspace = Workspace(h5file_path)
         group = ContainerGroup.create(workspace, parent=None)
         assert (
             group.parent == workspace.root

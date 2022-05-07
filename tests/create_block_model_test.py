@@ -15,8 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
+from os import path
 
 import numpy as np
 
@@ -25,10 +24,10 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_block_model_data():
+def test_create_block_model_data(tmp_path):
 
     name = "MyTestBlockModel"
-
+    h5file_path = path.join(tmp_path, "block_model.geoh5")
     # Generate a 3D array
     n_x, n_y, n_z = 8, 9, 10
 
@@ -63,12 +62,7 @@ def test_create_block_model_data():
         ),
     ]
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"block_model.geoh5"
-
-        # Create a workspace
-        workspace = Workspace(h5file_path)
-
+    with Workspace(h5file_path) as workspace:
         grid = BlockModel.create(
             workspace,
             origin=[0, 0, 0],

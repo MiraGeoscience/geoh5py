@@ -15,9 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
 from abc import ABC
-from pathlib import Path
+from os import path
 
 import numpy as np
 
@@ -25,7 +24,7 @@ from geoh5py.objects import Curve
 from geoh5py.workspace import Workspace
 
 
-def test_modify_property_group():
+def test_modify_property_group(tmp_path):
     def compare_objects(object_a, object_b, ignore=None):
         if ignore is None:
             ignore = ["_workspace", "_children", "_parent"]
@@ -44,13 +43,8 @@ def test_modify_property_group():
     obj_name = "myCurve"
     # Generate a curve with multiple data
     xyz = np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)]
-
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"prop_group_test.geoh5"
-
-        # Create a workspace
-        workspace = Workspace(h5file_path)
-
+    h5file_path = path.join(tmp_path, "prop_group_test.geoh5")
+    with Workspace(h5file_path) as workspace:
         curve = Curve.create(workspace, vertices=xyz, name=obj_name)
 
         # Add data

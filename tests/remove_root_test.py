@@ -15,8 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
+from os import path
 
 import numpy as np
 from h5py import File
@@ -26,17 +25,14 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_remove_root():
+def test_remove_root(tmp_path):
 
     # Generate a random cloud of points
     n_data = 12
     xyz = np.random.randn(n_data, 3)
+    h5file_path = path.join(tmp_path, "testProject.geoh5")
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testProject.geoh5"
-
-        # Create a workspace
-        workspace = Workspace(h5file_path)
+    with Workspace(h5file_path) as workspace:
         points = Points.create(workspace, vertices=xyz)
         data = points.add_data(
             {

@@ -149,7 +149,9 @@ class Workspace:
         Rebuild the Root and close the file.
         """
         if self.geoh5.mode in ["r+", "a"]:
-            self._io_call(self.geoh5, H5Writer.finalize, self)
+            self._io_call(
+                self.geoh5, H5Writer.save_entity, self.root, add_children=False
+            )
 
         self._types = {}
         self._groups = {}

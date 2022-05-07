@@ -17,8 +17,7 @@
 
 import random
 import string
-import tempfile
-from pathlib import Path
+from os import path
 
 import numpy as np
 
@@ -27,10 +26,10 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_reference_data():
+def test_create_reference_data(tmp_path):
 
     name = "MyTestPointset"
-
+    h5file_path = path.join(tmp_path, "testPoints.geoh5")
     # Generate a random cloud of points with reference values
     n_data = 12
     values = np.random.randint(1, high=8, size=n_data)
@@ -41,12 +40,7 @@ def test_create_reference_data():
             random.choice(string.ascii_lowercase) for i in range(8)
         )
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testPoints.geoh5"
-
-        # Create a workspace
-        workspace = Workspace(h5file_path)
-
+    with Workspace(h5file_path) as workspace:
         points = Points.create(
             workspace, vertices=np.random.randn(n_data, 3), name=name, allow_move=False
         )

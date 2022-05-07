@@ -17,8 +17,7 @@
 
 import random
 import string
-import tempfile
-from pathlib import Path
+from os import path
 
 import numpy as np
 
@@ -27,16 +26,14 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_drillhole_data():
-
+def test_create_drillhole_data(tmp_path):
+    h5file_path = path.join(tmp_path, "testCurve.geoh5")
     well_name = "bullseye"
     n_data = 10
     collocation = 1e-5
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testCurve.geoh5"
+    with Workspace(h5file_path) as workspace:
         # Create a workspace
-        workspace = Workspace(h5file_path)
         max_depth = 100
         well = Drillhole.create(
             workspace,
@@ -138,17 +135,15 @@ def test_create_drillhole_data():
         )
 
 
-def test_single_survey():
+def test_single_survey(tmp_path):
     # Create a simple well
     dist = np.random.rand(1) * 100.0
     azm = np.random.randn(1) * 180.0
     dip = np.random.randn(1) * 180.0
 
     collar = np.r_[0.0, 10.0, 10.0]
-
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testCurve.geoh5"
-        workspace = Workspace(h5file_path)
+    h5file_path = path.join(tmp_path, "testCurve.geoh5")
+    with Workspace(h5file_path) as workspace:
         well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, dip, azm])
         depths = [0.0, 1.0, 1000.0]
         locations = well.desurvey(depths)
@@ -168,17 +163,15 @@ def test_single_survey():
         np.testing.assert_array_almost_equal(locations, solution, decimal=3)
 
 
-def test_outside_survey():
+def test_outside_survey(tmp_path):
     # Create a simple well
     dist = np.random.rand(2) * 100.0
     azm = [np.random.randn(1) * 180.0] * 2
     dip = [np.random.randn(1) * 180.0] * 2
 
     collar = np.r_[0.0, 10.0, 10.0]
-
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testCurve.geoh5"
-        workspace = Workspace(h5file_path)
+    h5file_path = path.join(tmp_path, "testCurve.geoh5")
+    with Workspace(h5file_path) as workspace:
         well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, dip, azm])
         depths = [0.0, 1000.0]
         locations = well.desurvey(depths)

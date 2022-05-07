@@ -15,8 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
+from os import path
 
 import numpy as np
 
@@ -25,15 +24,14 @@ from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
-def test_set_parent():
+def test_set_parent(tmp_path):
 
     # Generate a random cloud of points
     xyz = np.random.randn(2, 3)
     name = "test_points"
+    h5file_path = path.join(tmp_path, "testProject.geoh5")
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testProject.geoh5"
-        workspace = Workspace(h5file_path)
+    with Workspace(h5file_path) as workspace:
         group_a = ContainerGroup.create(workspace)
         entity = Points.create(workspace, vertices=xyz, name=name, parent=group_a)
         entity.add_data({"random": {"values": np.random.randn(xyz.shape[0])}})

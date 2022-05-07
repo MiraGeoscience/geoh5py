@@ -15,8 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
+from os import path
 
 import numpy as np
 
@@ -25,13 +24,10 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_surface_data():
+def test_create_surface_data(tmp_path):
+    h5file_path = path.join(tmp_path, "testSurface.geoh5")
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testSurface.geoh5"
-
-        workspace = Workspace(h5file_path)
-
+    with Workspace(h5file_path) as workspace:
         # Create a grid of points and triangulate
         x, y = np.meshgrid(np.arange(10), np.arange(10))
         x, y = x.ravel(), y.ravel()

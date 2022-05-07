@@ -24,6 +24,7 @@ from geoh5py.workspace import Workspace
 
 
 def test_workspace_from_kwargs(tmp_path):
+    h5file_tmp = path.join(tmp_path, "test.geoh5")
 
     attr = {
         "Contributors": "TARS",
@@ -34,30 +35,31 @@ def test_workspace_from_kwargs(tmp_path):
     }
 
     with pytest.warns(UserWarning) as warning:
-        workspace = Workspace(path.join(tmp_path, "test.geoh5"), **attr)
+        workspace = Workspace(h5file_tmp, **attr)
 
     assert (
         "UserWarning('Argument hello with value world is not a valid attribute"
         in str(warning[0])
     )
+    workspace.close()
 
-    workspace = Workspace(
-        path.join(tmp_path, "test.geoh5"),
-    )
+    workspace = Workspace(h5file_tmp)
     for key, value in attr.items():
         if getattr(workspace, key, None) is not None:
             assert (
                 getattr(workspace, key.lower()) == value
             ), f"Error changing value for attribute {key}."
+    workspace.close()
 
     # Add .lock to simulate ANALYST session
     with open(workspace.h5file + ".lock", "a", encoding="utf-8") as lock_file:
         lock_file.write("Hello World")
 
+    workspace = Workspace(h5file_tmp)
     workspace.version = 2.0
 
     with pytest.warns(UserWarning) as warning:
-        workspace.finalize()
+        workspace.close()
 
     assert "*.lock" in str(warning[0])
 
@@ -65,7 +67,8 @@ def test_workspace_from_kwargs(tmp_path):
 def test_empty_workspace(tmp_path):
     Workspace(
         path.join(tmp_path, "test.geoh5"),
-    )
+    ).close()
+
     with File(path.join(tmp_path, "test.geoh5"), "r+") as file:
         del file["GEOSCIENCE"]["Groups"]
         del file["GEOSCIENCE"]["Data"]
@@ -75,7 +78,7 @@ def test_empty_workspace(tmp_path):
 
     Workspace(
         path.join(tmp_path, "test.geoh5"),
-    )
+    ).close()
 
     with File(path.join(tmp_path, "test.geoh5"), "r+") as file:
         assert (
@@ -86,14 +89,14 @@ def test_empty_workspace(tmp_path):
 def test_missing_type(tmp_path):
     Workspace(
         path.join(tmp_path, "test.geoh5"),
-    )
+    ).close()
     with File(path.join(tmp_path, "test.geoh5"), "r+") as file:
         for group in file["GEOSCIENCE"]["Groups"].values():
             del group["Type"]
 
     Workspace(
         path.join(tmp_path, "test.geoh5"),
-    )
+    ).close()
 
 
 def test_bad_extension(tmp_path):
@@ -102,4 +105,4 @@ def test_bad_extension(tmp_path):
             path.join(tmp_path, "test.h5"),
         )
 
-    assert "Input h5 file must have a 'geoh5' extension." in str(error)
+    assert "Input 'h5file' file must have a 'geoh5' extension." in str(error)

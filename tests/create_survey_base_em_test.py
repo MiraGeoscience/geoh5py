@@ -15,20 +15,16 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
+from os import path
 
 from geoh5py.objects.surveys.electromagnetics.base import BaseEMSurvey
 from geoh5py.workspace import Workspace
 
 
-def test_create_survey_tem():
+def test_create_survey_tem(tmp_path):
+    h5file_path = path.join(tmp_path, "testATEM.geoh5")
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        path = Path(tempdir) / r"testATEM.geoh5"
-
-        # Create a workspace
-        workspace = Workspace(path)
+    with Workspace(h5file_path) as workspace:
         survey = BaseEMSurvey(workspace)
 
         for attr in [
