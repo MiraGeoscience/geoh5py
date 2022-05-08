@@ -18,7 +18,8 @@
 from __future__ import annotations
 
 import warnings
-from os import path
+from os import mkdir, path
+from shutil import move
 from time import time
 from typing import Any
 
@@ -249,9 +250,19 @@ def monitored_directory_copy(
     :param entity: Entity to be updated
     :param copy_children: Option to copy children entities.
     """
+    working_path = path.join(directory, ".working")
+
+    if not path.exists(working_path):
+        mkdir(working_path)
+
     temp_geoh5 = f"temp{time():.3f}.geoh5"
 
-    with Workspace(path.join(directory, temp_geoh5)) as temp_workspace:
-        entity.copy(parent=temp_workspace, copy_children=copy_children)
+    with Workspace(path.join(working_path, temp_geoh5)) as w_s:
+        entity.copy(parent=w_s, copy_children=copy_children)
 
-    return temp_workspace.h5file
+    move(
+        path.join(working_path, temp_geoh5),
+        path.join(directory, temp_geoh5),
+    )
+
+    return path.join(directory, temp_geoh5)
