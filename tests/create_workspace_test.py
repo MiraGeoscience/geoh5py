@@ -28,8 +28,6 @@ def test_workspace_from_kwargs(tmp_path):
 
     attr = {
         "Contributors": "TARS",
-        "version": 999.1,
-        "ga_version": "2",
         "distance_unit": "feet",
         "hello": "world",
     }
@@ -49,19 +47,8 @@ def test_workspace_from_kwargs(tmp_path):
             assert (
                 getattr(workspace, key.lower()) == value
             ), f"Error changing value for attribute {key}."
+
     workspace.close()
-
-    # Add .lock to simulate ANALYST session
-    with open(workspace.h5file + ".lock", "a", encoding="utf-8") as lock_file:
-        lock_file.write("Hello World")
-
-    workspace = Workspace(h5file_tmp)
-    workspace.version = 2.0
-
-    with pytest.warns(UserWarning) as warning:
-        workspace.close()
-
-    assert "*.lock" in str(warning[0])
 
 
 def test_empty_workspace(tmp_path):
