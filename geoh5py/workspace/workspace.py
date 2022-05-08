@@ -926,8 +926,9 @@ class Workspace:
         if mode in ["r+", "a"] and self.geoh5.mode == "r":
             raise UserWarning(
                 f"Error performing {fun}. "
-                "Attempting to write on a geoh5 file with Read Only access. "
-                "Consider closing and re-opening the Workspace."
+                "Attempting to write to a geoh5 file in read-only mode. "
+                "Consider closing the workspace (Geoscience ANALYST) and "
+                "re-opening in mode='r+'."
             )
         return fun(self.geoh5, *args, **kwargs)
 

@@ -15,6 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+
 from os import path
 
 import pytest
@@ -43,3 +44,19 @@ def test_write_context(tmp_path):
     # Re-open in stanalone readonly
     w_s = Workspace(path.join(tmp_path, "test2.geoh5"))
     assert len(w_s.objects) == 1, "Issue creating an object with context manager."
+
+
+def test_read_only(tmp_path):
+    with pytest.raises(FileNotFoundError) as error:
+        with Workspace(path.join(tmp_path, "test.geoh5"), mode="r") as w_s:
+            Points.create(w_s)
+
+    assert "Unable to open file" in str(error)
+
+    Workspace(path.join(tmp_path, "test.geoh5"), mode="a").close()
+
+    with pytest.raises(UserWarning) as error:
+        with Workspace(path.join(tmp_path, "test.geoh5"), mode="r") as w_s:
+            Points.create(w_s)
+
+    assert "Attempting to write to a geoh5 file in read-only mode. " in str(error)
