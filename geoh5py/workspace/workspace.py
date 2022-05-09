@@ -148,11 +148,10 @@ class Workspace:
         """
         Close the file and clear properties for future open.
         """
-        # TODO May not be required anymore. Delete this after testing.
-        # if self.geoh5.mode in ["r+", "a"]:
-        #     self._io_call(
-        #         H5Writer.save_entity, self.root, add_children=False, mode="r+"
-        #     )
+        if self.geoh5.mode in ["r+", "a"]:
+            self._io_call(
+                H5Writer.save_entity, self.root, add_children=False, mode="r+"
+            )
         self.geoh5.close()
         self._data = {}
         self._geoh5 = None
