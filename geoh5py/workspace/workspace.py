@@ -146,12 +146,13 @@ class Workspace:
 
     def close(self):
         """
-        Rebuild the Root and close the file.
+        Close the file and clear properties for future open.
         """
-        if self.geoh5.mode in ["r+", "a"]:
-            self._io_call(
-                H5Writer.save_entity, self.root, add_children=False, mode="r+"
-            )
+        # TODO May not be required anymore. Delete this after testing.
+        # if self.geoh5.mode in ["r+", "a"]:
+        #     self._io_call(
+        #         H5Writer.save_entity, self.root, add_children=False, mode="r+"
+        #     )
         self.geoh5.close()
         self._data = {}
         self._geoh5 = None

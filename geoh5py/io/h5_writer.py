@@ -197,24 +197,6 @@ class H5Writer:
 
         return None
 
-    # @classmethod
-    # def finalize(cls, file: str | h5py.File, workspace: workspace.Workspace):
-    #     """
-    #     Add/replace the :obj:`~geoh5py.groups.root_group.RootGroup` in geoh5.
-    #
-    #     :param file: Name or handle to a geoh5 file
-    #     :param workspace: Workspace object defining the project structure.
-    #     """
-    #     with fetch_h5_handle(file, mode="r+") as h5file:
-    #         root_handle = cls.save_entity(h5file, workspace.root)
-    #
-    #         if "Root" in h5file[workspace.name].keys():
-    #             del h5file[workspace.name]["Root"]
-    #         else:
-    #             h5file[workspace.name].create_group = "Root"
-    #
-    #         h5file[workspace.name]["Root"] = root_handle
-
     @classmethod
     def save_entity(
         cls,
