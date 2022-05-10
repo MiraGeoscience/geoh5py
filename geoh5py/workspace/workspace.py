@@ -615,7 +615,7 @@ class Workspace:
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         """
         warnings.warn(
-            "The method 'finalize' is will be deprecated in future versions in"
+            "The 'finalize' method will be deprecated in future versions of geoh5py in"
             " favor of `workspace.close()`. "
             "Please update your code to suppress this warning."
         )
