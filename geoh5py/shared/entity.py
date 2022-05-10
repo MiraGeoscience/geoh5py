@@ -48,7 +48,7 @@ class Entity(ABC):
 
         self._uid: uuid.UUID = uid if isinstance(uid, uuid.UUID) else uuid.uuid4()
         self._name = "Entity"
-        self._parent = None
+        self._parent: Entity | None = None
         self._children: list = []
         self._allow_delete = True
         self._allow_move = True
@@ -285,19 +285,13 @@ class Entity(ABC):
         return self._parent
 
     @parent.setter
-    def parent(self, parent: shared.Entity | uuid.UUID):
+    def parent(self, parent: shared.Entity):
+
+        current_parent = self._parent
 
         if parent is not None:
-            if isinstance(parent, uuid.UUID):
-                uid = parent
-            else:
-                uid = parent.uid
-
-            current_parent = self._parent
-            self._parent = self.workspace.get_entity(uid)[0]
-
-            if self._parent is not None:
-                self._parent.add_children([self])
+            self._parent = parent
+            self._parent.add_children([self])
 
             if current_parent is not None and current_parent != self._parent:
                 current_parent.remove_children([self])
