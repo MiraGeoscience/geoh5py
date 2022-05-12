@@ -24,7 +24,7 @@ import inspect
 import uuid
 import warnings
 import weakref
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, contextmanager
 from gc import collect
 from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, cast
@@ -47,7 +47,7 @@ if TYPE_CHECKING:
     from ..shared import EntityType
 
 
-class Workspace:
+class Workspace(AbstractContextManager):
     """
     The Workspace class manages all Entities created or imported from the *geoh5* structure.
 
@@ -931,9 +931,6 @@ class Workspace:
                 "re-opening in mode='r+'."
             )
         return fun(self.geoh5, *args, **kwargs)
-
-    def __enter__(self):
-        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
