@@ -37,7 +37,8 @@ class EntityType(ABC):
         assert workspace is not None
         self._workspace = weakref.ref(workspace)
 
-        self._uid: uuid.UUID = uid if isinstance(uid, uuid.UUID) else uuid.uuid4()
+        assert uid is None or isinstance(uid, uuid.UUID)
+        self._uid: uuid.UUID = uid if uid is not None else uuid.uuid4()
         self._name: str | None = "Entity"
         self._description: str | None = None
         self._on_file = False
