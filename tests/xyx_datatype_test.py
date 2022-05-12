@@ -15,14 +15,13 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from os import path
 
 from geoh5py.data import DataType, GeometricDataConstants
 from geoh5py.workspace import Workspace
 
 
 def test_xyz_dataype(tmp_path):
-    h5file_path = path.join(tmp_path, f"{__name__}.geoh5")
+    h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace(h5file_path) as workspace:
         x_datatype = DataType.for_x_data(workspace)
         assert x_datatype.uid == GeometricDataConstants.x_datatype_uid()

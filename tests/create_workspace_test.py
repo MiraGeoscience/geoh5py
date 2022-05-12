@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from os import path
 
 import pytest
 from h5py import File
@@ -24,7 +23,7 @@ from geoh5py.workspace import Workspace
 
 
 def test_workspace_from_kwargs(tmp_path):
-    h5file_tmp = path.join(tmp_path, "test.geoh5")
+    h5file_tmp = tmp_path / r"test.geoh5"
 
     attr = {
         "Contributors": "TARS",
@@ -53,10 +52,10 @@ def test_workspace_from_kwargs(tmp_path):
 
 def test_empty_workspace(tmp_path):
     Workspace(
-        path.join(tmp_path, "test.geoh5"),
+        tmp_path / r"test.geoh5",
     ).close()
 
-    with File(path.join(tmp_path, "test.geoh5"), "r+") as file:
+    with File(tmp_path / r"test.geoh5", "r+") as file:
         del file["GEOSCIENCE"]["Groups"]
         del file["GEOSCIENCE"]["Data"]
         del file["GEOSCIENCE"]["Objects"]
@@ -64,10 +63,10 @@ def test_empty_workspace(tmp_path):
         del file["GEOSCIENCE"]["Types"]
 
     Workspace(
-        path.join(tmp_path, "test.geoh5"),
+        tmp_path / r"test.geoh5",
     ).close()
 
-    with File(path.join(tmp_path, "test.geoh5"), "r+") as file:
+    with File(tmp_path / r"test.geoh5", "r+") as file:
         assert (
             "Types" in file["GEOSCIENCE"]
         ), "Failed to regenerate the geoh5 structure."
@@ -75,21 +74,21 @@ def test_empty_workspace(tmp_path):
 
 def test_missing_type(tmp_path):
     Workspace(
-        path.join(tmp_path, "test.geoh5"),
+        tmp_path / r"test.geoh5",
     ).close()
-    with File(path.join(tmp_path, "test.geoh5"), "r+") as file:
+    with File(tmp_path / r"test.geoh5", "r+") as file:
         for group in file["GEOSCIENCE"]["Groups"].values():
             del group["Type"]
 
     Workspace(
-        path.join(tmp_path, "test.geoh5"),
+        tmp_path / r"test.geoh5",
     ).close()
 
 
 def test_bad_extension(tmp_path):
     with pytest.raises(ValueError) as error:
         Workspace(
-            path.join(tmp_path, "test.h5"),
+            tmp_path / r"test.h5",
         )
 
     assert "Input 'h5file' file must have a 'geoh5' extension." in str(error)

@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 
 from h5py import File
 
@@ -24,7 +23,7 @@ from geoh5py.workspace import Workspace
 
 
 def test_fetch_handle(tmp_path):
-    h5file_path = os.path.join(tmp_path, "test2.geoh5")
+    h5file_path = tmp_path / r"test2.geoh5"
     w_s = Workspace(h5file_path)
     with File(h5file_path, "r+") as project:
         base = list(project.keys())[0]

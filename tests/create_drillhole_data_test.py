@@ -17,7 +17,6 @@
 
 import random
 import string
-from os import path
 
 import numpy as np
 
@@ -27,7 +26,7 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_drillhole_data(tmp_path):
-    h5file_path = path.join(tmp_path, "testCurve.geoh5")
+    h5file_path = tmp_path / r"testCurve.geoh5"
     well_name = "bullseye"
     n_data = 10
     collocation = 1e-5
@@ -142,7 +141,7 @@ def test_single_survey(tmp_path):
     dip = np.random.randn(1) * 180.0
 
     collar = np.r_[0.0, 10.0, 10.0]
-    h5file_path = path.join(tmp_path, "testCurve.geoh5")
+    h5file_path = tmp_path / r"testCurve.geoh5"
     with Workspace(h5file_path) as workspace:
         well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, dip, azm])
         depths = [0.0, 1.0, 1000.0]
@@ -170,7 +169,7 @@ def test_outside_survey(tmp_path):
     dip = [np.random.randn(1) * 180.0] * 2
 
     collar = np.r_[0.0, 10.0, 10.0]
-    h5file_path = path.join(tmp_path, "testCurve.geoh5")
+    h5file_path = tmp_path / r"testCurve.geoh5"
     with Workspace(h5file_path) as workspace:
         well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, dip, azm])
         depths = [0.0, 1000.0]

@@ -37,7 +37,7 @@ def test_write_reread_non_ascii_filename(tmp_path):
     dataset_name = "mydataset"
     dataset_shape = (100,)
 
-    file_path = path.join(tmp_path, NON_ASCII_FILENAME)
+    file_path = tmp_path / NON_ASCII_FILENAME
     # create a new file
     with h5py.File(file_path, "w") as h5_file:
         dataset = h5_file.create_dataset(dataset_name, dataset_shape, dtype="i")
@@ -58,7 +58,7 @@ def test_write_reread_non_ascii_filename(tmp_path):
 )
 def test_existing_non_ascii_filename(tmp_path):
 
-    file_path = path.join(tmp_path, NON_ASCII_FILENAME)
+    file_path = tmp_path / NON_ASCII_FILENAME
     with open(file_path, "w", encoding="utf-8"):
         pass
 

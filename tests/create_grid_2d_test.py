@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from os import path
 
 import numpy as np
 
@@ -31,7 +30,7 @@ def test_create_grid_2d_data(tmp_path):
     # Generate a 2D array
     n_x, n_y = 10, 15
     values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
-    h5file_path = path.join(tmp_path, r"test2Grid.geoh5")
+    h5file_path = tmp_path / r"test2Grid.geoh5"
 
     # Create a workspace
     workspace = Workspace(h5file_path)

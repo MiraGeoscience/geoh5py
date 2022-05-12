@@ -16,7 +16,6 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 from gc import collect
-from os import path
 
 import numpy as np
 
@@ -26,7 +25,7 @@ from geoh5py.workspace import Workspace
 
 
 def test_delete_entities(tmp_path):
-    h5file_path = path.join(tmp_path, "testPoints.geoh5")
+    h5file_path = tmp_path / r"testPoints.geoh5"
     xyz = np.random.randn(12, 3)
     values = np.random.randn(12)
 

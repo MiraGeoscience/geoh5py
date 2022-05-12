@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from os import path
 
 import numpy as np
 
@@ -24,7 +23,7 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_property_group(tmp_path):
-    h5file_path = path.join(tmp_path, "prop_group_test.geoh5")
+    h5file_path = tmp_path / r"prop_group_test.geoh5"
 
     with Workspace(h5file_path) as workspace:
         curve = Curve.create(

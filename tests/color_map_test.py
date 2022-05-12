@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from os import path
 
 import numpy as np
 import pytest
@@ -34,7 +33,7 @@ def test_create_color_map(tmp_path):
     n_x, n_y = 10, 15
     values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
 
-    h5file_path = path.join(tmp_path, r"test_color_map.geoh5")
+    h5file_path = tmp_path / r"test_color_map.geoh5"
 
     # Create a workspace
     workspace = Workspace(h5file_path)
@@ -102,7 +101,7 @@ def test_create_color_map(tmp_path):
         rec_data.entity_type.color_map, data.entity_type.color_map, ignore=["_parent"]
     )
 
-    new_workspace = Workspace(path.join(tmp_path, r"test_color_map_copy.geoh5"))
+    new_workspace = Workspace(tmp_path / r"test_color_map_copy.geoh5")
 
     workspace.open(mode="r")
     data.copy(parent=new_workspace)

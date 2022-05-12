@@ -16,7 +16,6 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import inspect
-from os import path
 
 import pytest
 
@@ -34,7 +33,7 @@ def all_data_types():
 
 @pytest.mark.parametrize("data_class", all_data_types())
 def test_data_instantiation(data_class, tmp_path):
-    h5file_path = path.join(tmp_path, f"{__name__}.geoh5")
+    h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace(h5file_path) as workspace:
         data_type = DataType.create(workspace, data_class)
         assert data_type.uid is not None

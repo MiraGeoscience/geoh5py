@@ -16,7 +16,6 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import ABC
-from os import path
 
 import numpy as np
 
@@ -43,7 +42,7 @@ def test_modify_property_group(tmp_path):
     obj_name = "myCurve"
     # Generate a curve with multiple data
     xyz = np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)]
-    h5file_path = path.join(tmp_path, "prop_group_test.geoh5")
+    h5file_path = tmp_path / r"prop_group_test.geoh5"
     with Workspace(h5file_path) as workspace:
         curve = Curve.create(workspace, vertices=xyz, name=obj_name)
 

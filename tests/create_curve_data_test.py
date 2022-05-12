@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from os import path
 
 import numpy as np
 
@@ -27,7 +26,7 @@ from geoh5py.workspace import Workspace
 def test_create_curve_data(tmp_path):
 
     curve_name = "TestCurve"
-    h5file_path = path.join(tmp_path, "testCurve.geoh5")
+    h5file_path = tmp_path / r"testCurve.geoh5"
     # Generate a random cloud of points
     n_data = 12
 

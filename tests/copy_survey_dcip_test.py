@@ -17,7 +17,6 @@
 
 # pylint: disable=R0914
 
-import os
 
 import numpy as np
 
@@ -29,7 +28,7 @@ from geoh5py.workspace import Workspace
 def test_copy_survey_dcip(tmp_path):
     name = "TestCurrents"
     n_data = 12
-    path = os.path.join(tmp_path, r"testDC.geoh5")
+    path = tmp_path / r"testDC.geoh5"
 
     # Create a workspace
     with Workspace(path) as workspace:
@@ -70,7 +69,7 @@ def test_copy_survey_dcip(tmp_path):
         currents.potential_electrodes = potentials
 
         # Copy the survey to a new workspace
-        path = os.path.join(tmp_path, r"testDC_copy_current.geoh5")
+        path = tmp_path / r"testDC_copy_current.geoh5"
         new_workspace = Workspace(path)
         currents.copy(parent=new_workspace)
         new_workspace.close()
@@ -90,7 +89,7 @@ def test_copy_survey_dcip(tmp_path):
 
         new_workspace.close()
         # Repeat with potential entity
-        path = os.path.join(tmp_path, r"testDC_copy_potential.geoh5")
+        path = tmp_path / r"testDC_copy_potential.geoh5"
         new_workspace = Workspace(path)
         potentials.copy(parent=new_workspace)
         new_workspace.close()

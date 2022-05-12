@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from os import path
 from unittest.mock import patch
 
 import numpy as np
@@ -33,7 +32,7 @@ def test_save_modified_properties(
     n_data = 12
     xyz = np.random.randn(n_data, 3)
 
-    h5file_path = path.join(tmp_path, "testPoints.geoh5")
+    h5file_path = tmp_path / r"testPoints.geoh5"
 
     # Create a workspace
     workspace = Workspace(h5file_path)

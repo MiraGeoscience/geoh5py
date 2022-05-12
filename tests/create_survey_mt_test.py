@@ -17,7 +17,6 @@
 
 # pylint: disable=R0914
 
-from os import path
 
 import numpy as np
 import pytest
@@ -31,7 +30,7 @@ def test_create_survey_mt(tmp_path):
 
     name = "TestMT"
     n_data = 12
-    h5file_path = path.join(tmp_path, "testMT.geoh5")
+    h5file_path = tmp_path / r"testMT.geoh5"
 
     with Workspace(h5file_path) as workspace:
         # Create sources along line

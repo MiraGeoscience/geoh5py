@@ -16,7 +16,6 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import inspect
-from os import path
 
 import pytest
 
@@ -38,7 +37,7 @@ def all_group_types():
 
 @pytest.mark.parametrize("group_class", all_group_types())
 def test_group_instantiation(group_class, tmp_path):
-    h5file_path = path.join(tmp_path, f"{__name__}.geoh5")
+    h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace(h5file_path) as workspace:
         group_type = group_class.find_or_create_type(workspace)
         isinstance(group_type, GroupType)
@@ -86,7 +85,7 @@ def test_custom_group_instantiation(tmp_path):
     with pytest.raises(RuntimeError):
         assert CustomGroup.default_type_uid() is None
 
-    h5file_path = path.join(tmp_path, f"{__name__}.geoh5")
+    h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace(h5file_path) as workspace:
         with pytest.raises(RuntimeError):
             # cannot get a pre-defined type for a CustomGroup

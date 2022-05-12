@@ -16,7 +16,6 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import inspect
-from os import path
 
 import pytest
 
@@ -40,7 +39,7 @@ def all_object_types():
 def test_object_instantiation(object_class, tmp_path):
     # TODO: no file on disk should be required for this test
     #       as workspace does not have to be saved
-    h5file_path = path.join(tmp_path, f"{__name__}.geoh5")
+    h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace(h5file_path) as workspace:
         object_type = object_class.find_or_create_type(workspace)
         isinstance(object_type, ObjectType)

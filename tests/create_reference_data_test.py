@@ -17,7 +17,6 @@
 
 import random
 import string
-from os import path
 
 import numpy as np
 
@@ -29,7 +28,7 @@ from geoh5py.workspace import Workspace
 def test_create_reference_data(tmp_path):
 
     name = "MyTestPointset"
-    h5file_path = path.join(tmp_path, "testPoints.geoh5")
+    h5file_path = tmp_path / r"testPoints.geoh5"
     # Generate a random cloud of points with reference values
     n_data = 12
     values = np.random.randint(1, high=8, size=n_data)

@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from os import path
 
 from geoh5py.objects import Octree
 from geoh5py.shared.utils import compare_entities
@@ -25,7 +24,7 @@ from geoh5py.workspace import Workspace
 def test_octree(tmp_path):
 
     name = "MyTestOctree"
-    h5file_path = path.join(tmp_path, "octree.geoh5")
+    h5file_path = tmp_path / r"octree.geoh5"
 
     with Workspace(h5file_path) as workspace:
         # Create an octree mesh with variable dimensions

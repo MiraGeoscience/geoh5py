@@ -116,7 +116,7 @@ def test_input_file_name_path(tmp_path):
     assert test.name == "Jarrod.ui.json"  # ui.json extension added
 
     # Test handling of path attribute
-    test.workspace = Workspace(path.join(tmp_path, "test.geoh5"))
+    test.workspace = Workspace(tmp_path / r"test.geoh5")
     assert test.path == str(tmp_path)  # pulled from workspace.h5file
     test.path = tmp_path
     assert test.path == tmp_path  # usual behaviour
@@ -126,7 +126,7 @@ def test_input_file_name_path(tmp_path):
     assert "'im/a/fake/path'" in str(excinfo.value)  # raises if not a dir
 
     # test path_name method
-    assert test.path_name == path.join(tmp_path, "Jarrod.ui.json")
+    assert test.path_name == str(tmp_path / r"Jarrod.ui.json")
     test = InputFile()
     assert test.path_name is None
 
@@ -481,7 +481,7 @@ def test_write_ui_json(tmp_path):
     ui_json["test"] = templates.float_parameter(optional="disabled")
     in_file = InputFile(ui_json=ui_json)
     in_file.write_ui_json(name="test_write.ui.json", path=tmp_path)
-    with open(path.join(tmp_path, "test_write.ui.json"), encoding="utf-8") as file:
+    with open(tmp_path / r"test_write.ui.json", encoding="utf-8") as file:
         ui_json = json.load(file)
         assert ui_json["test"]["value"] == 1.0
 

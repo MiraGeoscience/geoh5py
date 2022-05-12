@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from os import path
 
 import numpy as np
 
@@ -29,7 +28,7 @@ def test_set_parent(tmp_path):
     # Generate a random cloud of points
     xyz = np.random.randn(2, 3)
     name = "test_points"
-    h5file_path = path.join(tmp_path, "testProject.geoh5")
+    h5file_path = tmp_path / r"testProject.geoh5"
 
     with Workspace(h5file_path) as workspace:
         group_a = ContainerGroup.create(workspace)

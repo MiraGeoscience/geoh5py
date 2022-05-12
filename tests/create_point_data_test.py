@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 
 import numpy as np
 import pytest
@@ -32,7 +31,7 @@ def test_create_point_data(tmp_path):
     new_name = "TestName"
     # Generate a random cloud of points
     values = np.random.randn(12)
-    h5file_path = os.path.join(tmp_path, r"testPoints.geoh5")
+    h5file_path = tmp_path / r"testPoints.geoh5"
     workspace = Workspace(h5file_path)
     points = Points.create(workspace, vertices=np.random.randn(12, 3), allow_move=False)
     data = points.add_data({"DataValues": {"association": "VERTEX", "values": values}})

@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 
 import numpy as np
 import pytest
@@ -55,7 +54,7 @@ def test_copy_entity(tmp_path):
         },
     }
 
-    h5file_path = os.path.join(tmp_path, "testProject.geoh5")
+    h5file_path = tmp_path / r"testProject.geoh5"
 
     # Create a workspace
     with Workspace(h5file_path) as workspace:
@@ -76,7 +75,7 @@ def test_copy_entity(tmp_path):
         )
 
     workspace = Workspace(h5file_path)
-    new_workspace = Workspace(os.path.join(tmp_path, "testProject_2.geoh5"))
+    new_workspace = Workspace(tmp_path / r"testProject_2.geoh5")
     for entity in workspace.objects:
         entity.copy(parent=new_workspace)
 

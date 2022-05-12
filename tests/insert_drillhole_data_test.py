@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from os import path
 
 import numpy as np
 
@@ -27,7 +26,7 @@ def test_insert_drillhole_data(tmp_path):
     well_name = "bullseye"
     n_data = 10
     collocation = 1e-5
-    h5file_path = path.join(tmp_path, "testCurve.geoh5")
+    h5file_path = tmp_path / r"testCurve.geoh5"
 
     with Workspace(h5file_path) as workspace:
         max_depth = 100

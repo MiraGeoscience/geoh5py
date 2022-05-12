@@ -17,7 +17,6 @@
 
 # pylint: disable=R0914
 
-import os
 import uuid
 
 import numpy as np
@@ -31,7 +30,7 @@ from geoh5py.workspace import Workspace
 def test_create_survey_dcip(tmp_path):
     name = "TestCurrents"
     n_data = 12
-    path = os.path.join(tmp_path, "testDC.geoh5")
+    path = tmp_path / r"testDC.geoh5"
 
     # Create a workspace
     workspace = Workspace(path)

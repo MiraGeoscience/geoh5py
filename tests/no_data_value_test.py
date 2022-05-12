@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from os import path
 
 import numpy as np
 
@@ -35,7 +34,7 @@ def test_no_data_values(tmp_path):
     int_values[2:5] = np.nan
 
     all_nan = np.ones(n_data)
-    h5file_path = path.join(tmp_path, "testProject.geoh5")
+    h5file_path = tmp_path / r"testProject.geoh5"
 
     with Workspace(h5file_path) as workspace:
         points = Points.create(workspace, vertices=xyz)

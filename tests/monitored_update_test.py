@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from os import path
 
 import numpy as np
 
@@ -29,7 +28,7 @@ from geoh5py.workspace import Workspace
 def test_monitored_directory_copy(tmp_path):
     xyz = np.random.randn(12, 3)
     values = np.random.randn(12)
-    h5file_path = path.join(tmp_path, "testPoints.geoh5")
+    h5file_path = tmp_path / r"testPoints.geoh5"
     with Workspace(h5file_path) as workspace:
         group = ContainerGroup.create(workspace, name="groupee")
         points = Points.create(workspace, parent=group, vertices=xyz, allow_move=False)
