@@ -55,7 +55,7 @@ class Entity(ABC):
         self._allow_rename = True
         self._public = True
         self._on_file = False
-        self._metadata = None
+        self._metadata: dict | None = None
 
         for attr, item in kwargs.items():
             try:
@@ -250,7 +250,7 @@ class Entity(ABC):
         return sorted(name_list)
 
     @property
-    def metadata(self):
+    def metadata(self) -> dict | None:
         """
         Metadata attached to the entity.
         """
@@ -260,11 +260,11 @@ class Entity(ABC):
         return self._metadata
 
     @metadata.setter
-    def metadata(self, value):
+    def metadata(self, value: dict | None):
         if value is not None:
             assert isinstance(
                 value, (dict, str)
-            ), f"Input metadata must be of type {dict}, {str} or None"
+            ), f"Input metadata must be of type {dict} or None"
         self._metadata = value
         self.workspace.update_attribute(self, "metadata")
 

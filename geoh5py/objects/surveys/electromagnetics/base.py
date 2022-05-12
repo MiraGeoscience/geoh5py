@@ -364,7 +364,7 @@ class BaseEMSurvey(ObjectBase):
         return self._metadata
 
     @metadata.setter
-    def metadata(self, values):
+    def metadata(self, values: dict):
         if not isinstance(values, dict):
             raise TypeError("'metadata' must be of type 'dict'")
 

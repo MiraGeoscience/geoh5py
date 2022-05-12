@@ -33,7 +33,7 @@ class PotentialElectrode(Curve):
     __TYPE_UID = uuid.UUID("{275ecee9-9c24-4378-bf94-65f3c5fbe163}")
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._metadata = None
+        self._metadata: dict | None = None
         self._ab_cell_id: ReferencedData | None = None
 
         super().__init__(object_type, **kwargs)
