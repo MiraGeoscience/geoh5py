@@ -91,6 +91,14 @@ class BlockModel(ObjectBase):
 
         return self._centroids
 
+    @property
+    def cell_delimiters(self):
+        return [
+            self._u_cell_delimiters,
+            self._v_cell_delimiters,
+            self._z_cell_delimiters,
+        ]
+
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         """
@@ -124,7 +132,7 @@ class BlockModel(ObjectBase):
                 len(value) == 3
             ), "Origin must be a list or numpy array of shape (3, )"
 
-            self.modified_attributes = "attributes"
+            self.workspace.update_attribute(self, "attributes")
             self._centroids = None
 
             value = np.asarray(
@@ -144,10 +152,9 @@ class BlockModel(ObjectBase):
         if value is not None:
             value = np.r_[value]
             assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
-            self.modified_attributes = "attributes"
             self._centroids = None
-
             self._rotation = value.astype(float)
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def shape(self) -> tuple | None:
@@ -170,13 +177,10 @@ class BlockModel(ObjectBase):
         :obj:`numpy.array` of :obj:`float`:
         Nodal offsets along the u-axis relative to the origin.
         """
-        if (
-            getattr(self, "_u_cell_delimiters", None) is None
-        ) and self.existing_h5_entity:
-            delimiters = self.workspace.fetch_delimiters(self.uid)
-            self._u_cell_delimiters = delimiters[0]
-            self._v_cell_delimiters = delimiters[1]
-            self._z_cell_delimiters = delimiters[2]
+        if (getattr(self, "_u_cell_delimiters", None) is None) and self.on_file:
+            self._u_cell_delimiters = self.workspace.fetch_array_attribute(
+                self.uid, "u_cell_delimiters"
+            )
 
         return self._u_cell_delimiters
 
@@ -184,7 +188,7 @@ class BlockModel(ObjectBase):
     def u_cell_delimiters(self, value):
         if value is not None:
             value = np.r_[value]
-            self.modified_attributes = "cell_delimiters"
+            self.workspace.update_attribute(self, "u_cell_delimiters")
             self._centroids = None
 
             self._u_cell_delimiters = value.astype(float)
@@ -206,13 +210,10 @@ class BlockModel(ObjectBase):
         :obj:`numpy.array` of :obj:`float`:
         Nodal offsets along the v-axis relative to the origin.
         """
-        if (
-            getattr(self, "_v_cell_delimiters", None) is None
-        ) and self.existing_h5_entity:
-            delimiters = self.workspace.fetch_delimiters(self.uid)
-            self._u_cell_delimiters = delimiters[0]
-            self._v_cell_delimiters = delimiters[1]
-            self._z_cell_delimiters = delimiters[2]
+        if (getattr(self, "_v_cell_delimiters", None) is None) and self.on_file:
+            self._v_cell_delimiters = self.workspace.fetch_array_attribute(
+                self.uid, "v_cell_delimiters"
+            )
 
         return self._v_cell_delimiters
 
@@ -220,10 +221,9 @@ class BlockModel(ObjectBase):
     def v_cell_delimiters(self, value):
         if value is not None:
             value = np.r_[value]
-            self.modified_attributes = "cell_delimiters"
             self._centroids = None
-
             self._v_cell_delimiters = value.astype(float)
+            self.workspace.update_attribute(self, "v_cell_delimiters")
 
     @property
     def v_cells(self) -> np.ndarray | None:
@@ -242,13 +242,10 @@ class BlockModel(ObjectBase):
         :obj:`numpy.array` of :obj:`float`:
         Nodal offsets along the z-axis relative to the origin (positive up).
         """
-        if (
-            getattr(self, "_z_cell_delimiters", None) is None
-        ) and self.existing_h5_entity:
-            delimiters = self.workspace.fetch_delimiters(self.uid)
-            self._u_cell_delimiters = delimiters[0]
-            self._v_cell_delimiters = delimiters[1]
-            self._z_cell_delimiters = delimiters[2]
+        if (getattr(self, "_z_cell_delimiters", None) is None) and self.on_file:
+            self._z_cell_delimiters = self.workspace.fetch_array_attribute(
+                self.uid, "z_cell_delimiters"
+            )
 
         return self._z_cell_delimiters
 
@@ -256,10 +253,9 @@ class BlockModel(ObjectBase):
     def z_cell_delimiters(self, value):
         if value is not None:
             value = np.r_[value]
-            self.modified_attributes = "cell_delimiters"
             self._centroids = None
-
             self._z_cell_delimiters = value.astype(float)
+            self.workspace.update_attribute(self, "z_cell_delimiters")
 
     @property
     def z_cells(self) -> np.ndarray | None:

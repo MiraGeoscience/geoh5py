@@ -16,25 +16,18 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from geoh5py.groups import ContainerGroup
+from h5py import File
+
 from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
-def test_create_point_data(tmp_path):
-    h5file_path = tmp_path / r"test.geoh5"
-    with Workspace(h5file_path) as workspace:
+def test_fetch_handle(tmp_path):
+    h5file_path = tmp_path / r"test2.geoh5"
+    w_s = Workspace(h5file_path)
+    with File(h5file_path, "r+") as project:
+        base = list(project.keys())[0]
+        del project[base]["Objects"]
+        del project[base]["Types"]
 
-        group = ContainerGroup.create(workspace, parent=None)
-        assert (
-            group.parent == workspace.root
-        ), "Assigned parent=None should default to Root."
-
-        group = ContainerGroup.create(workspace)
-        assert (
-            group.parent == workspace.root
-        ), "Creation without parent should default to Root."
-
-        points = Points.create(workspace, parent=group)
-
-        assert points.parent == group, "Parent setter did not work."
+    Points.create(w_s)

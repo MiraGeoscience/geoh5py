@@ -16,8 +16,7 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import sys
-import tempfile
-from pathlib import Path
+from os import path
 
 import h5py
 import numpy as np
@@ -34,23 +33,22 @@ NON_ASCII_FILENAME = (
     raises=UnicodeEncodeError,
     reason="H5 library version < 1.12 does not support non-ASCII filename",
 )
-def test_write_reread_non_ascii_filename():
-    with tempfile.TemporaryDirectory() as tempdir:
-        dataset_name = "mydataset"
-        dataset_shape = (100,)
+def test_write_reread_non_ascii_filename(tmp_path):
+    dataset_name = "mydataset"
+    dataset_shape = (100,)
 
-        file_path = Path(tempdir) / NON_ASCII_FILENAME
-        # create a new file
-        with h5py.File(file_path, "w") as h5_file:
-            dataset = h5_file.create_dataset(dataset_name, dataset_shape, dtype="i")
-            assert dataset is not None
+    file_path = tmp_path / NON_ASCII_FILENAME
+    # create a new file
+    with h5py.File(file_path, "w") as h5_file:
+        dataset = h5_file.create_dataset(dataset_name, dataset_shape, dtype="i")
+        assert dataset is not None
 
-        # re-open that file
-        with h5py.File(file_path, "r") as h5_file:
-            dataset = h5_file[dataset_name]
-            assert dataset is not None
-            assert getattr(dataset, "shape") == dataset_shape
-            assert getattr(dataset, "dtype") == np.dtype("int32")
+    # re-open that file
+    with h5py.File(file_path, "r") as h5_file:
+        dataset = h5_file[dataset_name]
+        assert dataset is not None
+        assert getattr(dataset, "shape") == dataset_shape
+        assert getattr(dataset, "dtype") == np.dtype("int32")
 
 
 @pytest.mark.xfail(
@@ -58,11 +56,11 @@ def test_write_reread_non_ascii_filename():
     raises=UnicodeEncodeError,
     reason="H5 library version < 1.12 does not support non-ASCII filename",
 )
-def test_existing_non_ascii_filename():
-    with tempfile.TemporaryDirectory() as tempdir:
-        file_path = Path(tempdir) / NON_ASCII_FILENAME
-        with open(file_path, "w", encoding="utf-8"):
-            pass
+def test_existing_non_ascii_filename(tmp_path):
 
-        assert file_path.exists()
-        assert not h5py.is_hdf5(file_path)
+    file_path = tmp_path / NON_ASCII_FILENAME
+    with open(file_path, "w", encoding="utf-8"):
+        pass
+
+    assert path.exists(file_path)
+    assert not h5py.is_hdf5(file_path)

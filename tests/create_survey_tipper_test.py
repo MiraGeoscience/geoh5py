@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 
 import numpy as np
 import pytest
@@ -27,7 +26,7 @@ from geoh5py.workspace import Workspace
 
 def test_create_survey_tipper(tmp_path):
 
-    path = os.path.join(tmp_path, r"../testTipper.geoh5")
+    path = tmp_path / r"../testTipper.geoh5"
 
     workspace = Workspace(path)
     xlocs = np.linspace(-1000, 1000, 10)
@@ -108,8 +107,8 @@ def test_create_survey_tipper(tmp_path):
 
     # Test copying receiver over through the receivers
     # Create a workspace
-    receivers.copy(Workspace(os.path.join(tmp_path, r"testATEM_copy.geoh5")))
-    new_workspace = Workspace(os.path.join(tmp_path, r"testATEM_copy.geoh5"))
+    receivers.copy(Workspace(tmp_path / r"testATEM_copy.geoh5"))
+    new_workspace = Workspace(tmp_path / r"testATEM_copy.geoh5")
     receivers_rec = new_workspace.get_entity("TipperReceivers")[0]
     compare_entities(
         receivers, receivers_rec, ignore=["_receivers", "_base_stations", "_parent"]
@@ -122,7 +121,7 @@ def test_create_survey_tipper(tmp_path):
 
     # Test copying receiver over through the base_stations
     # Create a workspace
-    new_workspace = Workspace(os.path.join(tmp_path, r"testATEM_copy2.geoh5"))
+    new_workspace = Workspace(tmp_path / r"testATEM_copy2.geoh5")
     base_stations_rec = base_stations.copy(new_workspace)
     compare_entities(
         receivers,

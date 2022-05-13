@@ -15,8 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
 
 import numpy as np
 
@@ -24,7 +22,7 @@ from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
-def test_no_data_values():
+def test_no_data_values(tmp_path):
 
     # Generate a random cloud of points
     n_data = 12
@@ -36,12 +34,9 @@ def test_no_data_values():
     int_values[2:5] = np.nan
 
     all_nan = np.ones(n_data)
+    h5file_path = tmp_path / r"testProject.geoh5"
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testProject.geoh5"
-
-        # Create a workspace
-        workspace = Workspace(h5file_path)
+    with Workspace(h5file_path) as workspace:
         points = Points.create(workspace, vertices=xyz)
         data_objs = points.add_data(
             {
@@ -55,7 +50,6 @@ def test_no_data_values():
             }
         )
         data_objs[-1].values = None  # Reset all values to nan
-        workspace.finalize()
 
         # Read the data back in from a fresh workspace
         new_workspace = Workspace(h5file_path)

@@ -17,8 +17,6 @@
 
 # pylint: disable=R0914
 
-import tempfile
-from pathlib import Path
 
 import numpy as np
 
@@ -27,17 +25,13 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_copy_survey_dcip():
-
+def test_copy_survey_dcip(tmp_path):
     name = "TestCurrents"
     n_data = 12
+    path = tmp_path / r"testDC.geoh5"
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        path = Path(tempdir) / r"testDC.geoh5"
-
-        # Create a workspace
-        workspace = Workspace(path)
-
+    # Create a workspace
+    with Workspace(path) as workspace:
         # Create sources along line
         x_loc, y_loc = np.meshgrid(np.arange(n_data), np.arange(-1, 3))
         vertices = np.c_[x_loc.ravel(), y_loc.ravel(), np.zeros_like(x_loc).ravel()]
@@ -73,12 +67,12 @@ def test_copy_survey_dcip():
         )
         potentials.ab_cell_id = np.hstack(current_id).astype("int32")
         currents.potential_electrodes = potentials
-        workspace.finalize()
 
         # Copy the survey to a new workspace
-        path = Path(tempdir) / r"testDC_copy_current.geoh5"
+        path = tmp_path / r"testDC_copy_current.geoh5"
         new_workspace = Workspace(path)
         currents.copy(parent=new_workspace)
+        new_workspace.close()
 
         # Re-open the workspace and read data back in
         new_workspace = Workspace(path)
@@ -93,10 +87,12 @@ def test_copy_survey_dcip():
             potentials, potentials_rec, ignore=["_current_electrodes", "_parent"]
         )
 
+        new_workspace.close()
         # Repeat with potential entity
-        path = Path(tempdir) / r"testDC_copy_potential.geoh5"
+        path = tmp_path / r"testDC_copy_potential.geoh5"
         new_workspace = Workspace(path)
         potentials.copy(parent=new_workspace)
+        new_workspace.close()
 
         # Re-open the workspace and read data back in
         new_workspace = Workspace(path)
@@ -110,3 +106,4 @@ def test_copy_survey_dcip():
         compare_entities(
             potentials, potentials_rec, ignore=["_current_electrodes", "_parent"]
         )
+        new_workspace.close()

@@ -47,8 +47,8 @@ class FilenameData(Data):
 
     @file_name.setter
     def file_name(self, value):
-        self.modified_attributes = "values"
         self._file_name = value
+        self.workspace.update_attribute(self, "values")
 
     def save(self, path: str = "./", name=None):
         """
@@ -74,7 +74,7 @@ class FilenameData(Data):
         """
         if (
             self.file_name is not None
-            and self.existing_h5_entity
+            and self.on_file
             and getattr(self, "_values", None) is None
         ):
             self._values = self.workspace.fetch_file_object(self.uid, self.file_name)
@@ -85,7 +85,7 @@ class FilenameData(Data):
     def values(self, values):
         if not isinstance(values, bytes):
             raise ValueError("Input 'values' for FilenameData must be of type 'bytes'.")
-        self.modified_attributes = "values"
+        self.workspace.update_attribute(self, "values")
         self._values = values
 
     # TODO: implement specialization to access values.

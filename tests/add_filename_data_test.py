@@ -29,18 +29,18 @@ from geoh5py.workspace import Workspace
 
 
 def test_add_file(tmp_path):
-    workspace = Workspace(os.path.join(tmp_path, "testProject.geoh5"))
-    workspace_copy = Workspace(os.path.join(tmp_path, "testProject_B.geoh5"))
+    workspace = Workspace(tmp_path / r"testProject.geoh5")
+    workspace_copy = Workspace(tmp_path / r"testProject_B.geoh5")
     curve = Curve.create(workspace)
     group = ContainerGroup.create(workspace)
     data = curve.add_data({"ABC": {"values": "axs"}})
 
     xyz = np.random.randn(32)
-    np.savetxt(os.path.join(tmp_path, "numpy_array.txt"), xyz)
+    np.savetxt(tmp_path / r"numpy_array.txt", xyz)
     file_name = "numpy_array.txt"
     for obj in [data, curve, group]:
         try:
-            file_data = obj.add_file(os.path.join(tmp_path, file_name))
+            file_data = obj.add_file(tmp_path / file_name)
         except NotImplementedError:
             assert isinstance(
                 obj, Data
@@ -50,12 +50,12 @@ def test_add_file(tmp_path):
         assert file_data.file_name == file_name, "File_name not properly set."
         assert file_data.n_values == 1, "Object association should have 1 value."
         # Rename the file locally and write back out
-        new_path = os.path.join(tmp_path, "temp")
+        new_path = tmp_path / r"temp"
         file_data.save(path=new_path, name="numpy_array.dat")
         assert os.path.exists(
             os.path.join(new_path, "numpy_array.dat")
         ), f"Input path '{os.path.join(new_path, 'numpy_array.dat')}' does not exist."
-        workspace.finalize()
+
         file_data.save(path=new_path)
         np.testing.assert_array_equal(
             np.loadtxt(os.path.join(new_path, "numpy_array.txt")),
@@ -64,7 +64,9 @@ def test_add_file(tmp_path):
         )
 
         obj.copy(parent=workspace_copy)
-        workspace_copy = Workspace(os.path.join(tmp_path, "testProject_B.geoh5"))
+        workspace_copy.finalize()
+
+        workspace_copy.open()
         copied_obj = workspace_copy.get_entity(obj.uid)[0]
         rec_data = copied_obj.get_entity("numpy_array.txt")[0]
         compare_entities(file_data, rec_data, ignore=["_parent"])

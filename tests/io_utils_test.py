@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 from uuid import uuid4
 
 import numpy as np
@@ -41,7 +40,7 @@ def test_is_uuid():
 
 
 def test_entity2uuid(tmp_path):
-    w_s = Workspace(os.path.join(tmp_path, "test.geoh5"))
+    w_s = Workspace(tmp_path / r"test.geoh5")
     xyz = np.array([[1, 2, 3], [4, 5, 6]])
     points = Points.create(w_s, vertices=xyz, name="test_points")
     group = ContainerGroup.create(w_s)
@@ -50,7 +49,7 @@ def test_entity2uuid(tmp_path):
 
 
 def test_uuid2entity(tmp_path):
-    w_s = Workspace(os.path.join(tmp_path, "test.geoh5"))
+    w_s = Workspace(tmp_path / r"test.geoh5")
     xyz = np.array([[1, 2, 3], [4, 5, 6]])
     points = Points.create(w_s, vertices=xyz, name="test_points")
     assert points.uid == uuid2entity(points.uid, w_s).uid

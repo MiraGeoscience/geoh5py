@@ -33,15 +33,15 @@ class TextData(Data):
         """
         :obj:`str` Text value.
         """
-        if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
+        if (getattr(self, "_values", None) is None) and self.on_file:
             self._values = self.workspace.fetch_values(self.uid)
 
         return self._values
 
     @values.setter
     def values(self, values):
-        self.modified_attributes = "values"
         self._values = values
+        self.workspace.update_attribute(self, "values")
 
     def __call__(self):
         return self.values
@@ -72,7 +72,7 @@ class CommentsData(Data):
         """
         :obj:`list` List of comments
         """
-        if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
+        if (getattr(self, "_values", None) is None) and self.on_file:
             comment_str = self.workspace.fetch_values(self.uid)
 
             if comment_str is not None:
@@ -82,7 +82,7 @@ class CommentsData(Data):
 
     @values.setter
     def values(self, values):
-        self.modified_attributes = "values"
+        self.workspace.update_attribute(self, "values")
 
         if values is not None:
             for value in values:
@@ -96,6 +96,7 @@ class CommentsData(Data):
                 )
 
         self._values = values
+        self.workspace.update_attribute(self, "values")
 
     def __call__(self):
         return self.values

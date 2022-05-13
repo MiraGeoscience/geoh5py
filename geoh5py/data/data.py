@@ -34,15 +34,17 @@ class Data(Entity):
     _attribute_map.update({"Association": "association"})
     _visible = False
 
-    def __init__(self, data_type: DataType, **kwargs):
+    def __init__(
+        self,
+        data_type: DataType,
+        **kwargs,
+    ):
+        self._association = None
+        self._on_file = False
         assert data_type is not None
         assert data_type.primitive_type == self.primitive_type()
-        self._entity_type = data_type
-        self._association: DataAssociationEnum | None = None
+        self.entity_type = data_type
         self._values = None
-
-        if "association" in kwargs:
-            setattr(self, "association", kwargs["association"])
 
         super().__init__(**kwargs)
 
@@ -114,8 +116,7 @@ class Data(Entity):
     def entity_type(self, data_type: DataType):
 
         self._entity_type = data_type
-
-        self.modified_attributes = "entity_type"
+        self.workspace.update_attribute(self, "entity_type")
 
     @classmethod
     @abstractmethod

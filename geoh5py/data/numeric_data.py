@@ -38,7 +38,7 @@ class NumericData(Data, ABC):
         """
         :return: values: An array of float values
         """
-        if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
+        if (getattr(self, "_values", None) is None) and self.on_file:
             self._values = self.workspace.fetch_values(self.uid)
 
         if self._values is not None:
@@ -48,8 +48,8 @@ class NumericData(Data, ABC):
 
     @values.setter
     def values(self, values):
-        self.modified_attributes = "values"
         self._values = self.check_vector_length(values)
+        self.workspace.update_attribute(self, "values")
 
     def check_vector_length(self, values) -> np.ndarray:
         """

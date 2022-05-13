@@ -33,15 +33,15 @@ class EntityType(ABC):
 
     _attribute_map = {"Description": "description", "ID": "uid", "Name": "name"}
 
-    def __init__(self, workspace: ws.Workspace, **kwargs):
+    def __init__(self, workspace: ws.Workspace, uid: uuid.UUID | None = None, **kwargs):
         assert workspace is not None
         self._workspace = weakref.ref(workspace)
 
-        self._uid: uuid.UUID = uuid.uuid4()
+        assert uid is None or isinstance(uid, uuid.UUID)
+        self._uid: uuid.UUID = uid if uid is not None else uuid.uuid4()
         self._name: str | None = "Entity"
         self._description: str | None = None
-        self._existing_h5_entity = False
-        self._modified_attributes: list[str] = []
+        self._on_file = False
 
         for attr, item in kwargs.items():
             try:
@@ -66,7 +66,7 @@ class EntityType(ABC):
     @description.setter
     def description(self, description: str):
         self._description = description
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @description.getter
     def description(self):
@@ -79,16 +79,16 @@ class EntityType(ABC):
         return self._description
 
     @property
-    def existing_h5_entity(self) -> bool:
+    def on_file(self) -> bool:
         """
         :obj:`bool` Entity already present in
         :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
         """
-        return self._existing_h5_entity
+        return self._on_file
 
-    @existing_h5_entity.setter
-    def existing_h5_entity(self, value: bool):
-        self._existing_h5_entity = value
+    @on_file.setter
+    def on_file(self, value: bool):
+        self._on_file = value
 
     @classmethod
     def find(
@@ -100,28 +100,6 @@ class EntityType(ABC):
         :return: EntityType of None
         """
         return cast(TEntityType, workspace.find_type(type_uid, cls))
-
-    @property
-    def modified_attributes(self):
-        """
-        :obj:`list[str]` List of attributes to be updated in associated workspace
-        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
-        """
-        return self._modified_attributes
-
-    @modified_attributes.setter
-    def modified_attributes(self, values: list | str):
-        if self.existing_h5_entity:
-            if not isinstance(values, list):
-                values = [values]
-
-            # Check if re-setting the list or appending
-            if len(values) == 0:
-                self._modified_attributes = []
-            else:
-                for value in values:
-                    if value not in self._modified_attributes:
-                        self._modified_attributes.append(value)
 
     @staticmethod
     @abstractmethod
@@ -136,7 +114,7 @@ class EntityType(ABC):
     @name.setter
     def name(self, name: str):
         self._name = name
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def uid(self) -> uuid.UUID:
@@ -150,9 +128,9 @@ class EntityType(ABC):
     def uid(self, uid: str | uuid.UUID):
         if isinstance(uid, str):
             uid = uuid.UUID(uid)
-        self.modified_attributes = "attributes"
 
         self._uid = uid
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def workspace(self) -> ws.Workspace:

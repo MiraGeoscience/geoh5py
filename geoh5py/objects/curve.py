@@ -65,8 +65,8 @@ class Curve(Points):
                     cells.append(np.c_[ind[:-1], ind[1:]])
                 self._cells = np.vstack(cells)
 
-            elif self.existing_h5_entity:
-                self._cells = self.workspace.fetch_cells(self.uid)
+            elif self.on_file:
+                self._cells = self.workspace.fetch_array_attribute(self.uid)
             else:
                 if self.vertices is not None:
                     n_segments = self.vertices.shape[0]
@@ -81,9 +81,9 @@ class Curve(Points):
         assert np.issubdtype(
             indices.dtype, np.integer
         ), "Indices array must be of integer type"
-        self.modified_attributes = "cells"
         self._cells = indices.astype(np.int32)
         self._parts = None
+        self.workspace.update_attribute(self, "cells")
 
     @property
     def current_line_id(self):
@@ -105,7 +105,7 @@ class Curve(Points):
         )
 
         self._current_line_id = value
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -151,10 +151,9 @@ class Curve(Points):
             assert indices.shape == (
                 self.vertices.shape[0],
             ), f"Provided parts must be of shape {self.vertices.shape[0]}"
-
-            self.modified_attributes = "cells"
             self._parts = indices
             self._cells = None
+            self.workspace.update_attribute(self, "cells")
 
     @property
     def unique_parts(self):

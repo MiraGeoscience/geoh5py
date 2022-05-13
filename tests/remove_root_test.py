@@ -15,8 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
 
 import numpy as np
 from h5py import File
@@ -26,17 +24,14 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_remove_root():
+def test_remove_root(tmp_path):
 
     # Generate a random cloud of points
     n_data = 12
     xyz = np.random.randn(n_data, 3)
+    h5file_path = tmp_path / r"testProject.geoh5"
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testProject.geoh5"
-
-        # Create a workspace
-        workspace = Workspace(h5file_path)
+    with Workspace(h5file_path) as workspace:
         points = Points.create(workspace, vertices=xyz)
         data = points.add_data(
             {
@@ -53,8 +48,6 @@ def test_remove_root():
 
         group_name = "SomeGroup"
         data_group = points.add_data_to_group(data, group_name)
-
-        workspace.finalize()
 
         # Remove the root
         with File(h5file_path, "r+") as project:
@@ -73,9 +66,7 @@ def test_remove_root():
         compare_entities(
             points,
             rec_points,
-            ignore=["_parent", "_existing_h5_entity", "_property_groups"],
+            ignore=["_parent", "_on_file", "_property_groups"],
         )
-        compare_entities(data[0], rec_data, ignore=["_parent", "_existing_h5_entity"])
-        compare_entities(
-            data_group, rec_group, ignore=["_parent", "_existing_h5_entity"]
-        )
+        compare_entities(data[0], rec_data, ignore=["_parent", "_on_file"])
+        compare_entities(data_group, rec_group, ignore=["_parent", "_on_file"])

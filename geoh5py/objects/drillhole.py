@@ -76,16 +76,16 @@ class Drillhole(Points):
         Array of indices defining segments connecting vertices.
         """
         if getattr(self, "_cells", None) is None:
-            if self.existing_h5_entity:
-                self._cells = self.workspace.fetch_cells(self.uid)
+            if self.on_file:
+                self._cells = self.workspace.fetch_array_attribute(self.uid)
 
         return self._cells
 
     @cells.setter
     def cells(self, indices):
         assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
-        self.modified_attributes = "cells"
         self._cells = indices
+        self.workspace.update_attribute(self, "cells")
 
     @property
     def collar(self):
@@ -102,7 +102,7 @@ class Drillhole(Points):
 
             assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
 
-            self.modified_attributes = "attributes"
+            self.workspace.update_attribute(self, "attributes")
             value = np.asarray(
                 tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
             )
@@ -110,8 +110,8 @@ class Drillhole(Points):
         self._locations = None
 
         if self.trace is not None:
-            self.modified_attributes = "trace"
             self._trace = None
+            self.workspace.update_attribute(self, "trace")
 
     @property
     def cost(self):
@@ -212,8 +212,8 @@ class Drillhole(Points):
         """
         :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the surveys
         """
-        if (getattr(self, "_surveys", None) is None) and self.existing_h5_entity:
-            self._surveys = self.workspace.fetch_coordinates(self.uid, "surveys")
+        if (getattr(self, "_surveys", None) is None) and self.on_file:
+            self._surveys = self.workspace.fetch_array_attribute(self.uid, "surveys")
 
         if getattr(self, "_surveys", None) is not None:
             surveys = self._surveys.view("<f4").reshape((-1, 3))
@@ -234,14 +234,15 @@ class Drillhole(Points):
             if value.shape[1] != 3:
                 raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
 
-            self.modified_attributes = "surveys"
+            self.workspace.update_attribute(self, "surveys")
             self._surveys = np.asarray(
                 np.core.records.fromarrays(
                     value.T, names="Depth, Dip, Azimuth", formats="<f4, <f4, <f4"
                 )
             )
-            self.modified_attributes = "trace"
             self._trace = None
+            self.workspace.update_attribute(self, "trace")
+
         self._deviation_x = None
         self._deviation_y = None
         self._deviation_z = None
@@ -264,8 +265,8 @@ class Drillhole(Points):
         """
         :obj:`numpy.array`: Drillhole trace defining the path in 3D
         """
-        if self._trace is None and self.existing_h5_entity:
-            self._trace = self.workspace.fetch_coordinates(self.uid, "trace")
+        if self._trace is None and self.on_file:
+            self._trace = self.workspace.fetch_array_attribute(self.uid, "trace")
 
         if self._trace is not None:
             return self._trace.view("<f8").reshape((-1, 3))
@@ -390,7 +391,7 @@ class Drillhole(Points):
 
         # Check the depths and re-sort data if necessary
         self.sort_depths()
-        self.workspace.finalize()
+
         if len(data_objects) == 1:
             return data_object
 
@@ -482,7 +483,6 @@ class Drillhole(Points):
             )
             self.add_vertices(self.desurvey(np.delete(depth, indices[:, 1])))
             self._depth.values = depths
-            self.workspace.finalize()
 
         return values
 
@@ -605,5 +605,3 @@ class Drillhole(Points):
                 if self.cells is not None:
                     key_map = np.argsort(sort_ind)[self.cells.flatten()]
                     self.cells = key_map.reshape((-1, 2)).astype("uint32")
-
-        self.workspace.finalize()

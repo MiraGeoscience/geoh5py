@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 
 import numpy as np
 import pytest
@@ -32,7 +31,7 @@ def test_create_point_data(tmp_path):
     new_name = "TestName"
     # Generate a random cloud of points
     values = np.random.randn(12)
-    h5file_path = os.path.join(tmp_path, r"testPoints.geoh5")
+    h5file_path = tmp_path / r"testPoints.geoh5"
     workspace = Workspace(h5file_path)
     points = Points.create(workspace, vertices=np.random.randn(12, 3), allow_move=False)
     data = points.add_data({"DataValues": {"association": "VERTEX", "values": values}})
@@ -56,12 +55,12 @@ def test_create_point_data(tmp_path):
     data.allow_rename = False
     data.name = new_name
     # Fake ANALYST creating a StatsCache
-    with fetch_h5_handle(h5file_path) as h5file:
+    with fetch_h5_handle(h5file_path, mode="r+") as h5file:
         etype_handle = H5Writer.fetch_handle(h5file, data.entity_type)
         etype_handle.create_group("StatsCache")
     # Trigger replace of values
     data.values = values * 2.0
-    workspace.finalize()
+
     # Read the data back in from a fresh workspace
     new_workspace = Workspace(h5file_path)
     rec_obj = new_workspace.get_entity("Points")[0]

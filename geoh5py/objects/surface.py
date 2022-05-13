@@ -47,8 +47,8 @@ class Surface(Points):
         :return cells: :obj:`numpy.array` of :obj:`int`, shape ("*", 3)
         """
         if getattr(self, "_cells", None) is None:
-            if self.existing_h5_entity:
-                self._cells = self.workspace.fetch_cells(self.uid)
+            if self.on_file:
+                self._cells = self.workspace.fetch_array_attribute(self.uid)
 
         return self._cells
 
@@ -60,8 +60,8 @@ class Surface(Points):
         assert np.issubdtype(
             indices.dtype, np.integer
         ), "Indices array must be of integer type"
-        self.modified_attributes = "cells"
         self._cells = indices.astype(np.int32)
+        self.workspace.update_attribute(self, "cells")
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

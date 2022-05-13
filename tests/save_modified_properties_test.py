@@ -15,8 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
@@ -26,50 +24,37 @@ from geoh5py.workspace import Workspace
 
 
 @patch("geoh5py.io.h5_writer.H5Writer.write_data_values")
-@patch("geoh5py.io.h5_writer.H5Writer.write_coordinates")
+@patch("geoh5py.io.h5_writer.H5Writer.write_array_attribute")
 @patch("geoh5py.io.h5_writer.H5Writer.write_attributes")
 def test_save_modified_properties(
-    write_attributes,
-    write_coordinates,
-    write_data_values,
+    write_attributes, write_array_attribute, write_data_values, tmp_path
 ):
     n_data = 12
     xyz = np.random.randn(n_data, 3)
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testPoints.geoh5"
+    h5file_path = tmp_path / r"testPoints.geoh5"
 
-        # Create a workspace
-        workspace = Workspace(h5file_path)
-        points = Points.create(workspace)
-        workspace.finalize()
+    # Create a workspace
+    workspace = Workspace(h5file_path)
+    points = Points.create(workspace)
 
-        assert write_attributes.called, f"{write_attributes} was not called."
-        assert (
-            not write_coordinates.called
-        ), f"{write_coordinates} should not have been called."
-        assert (
-            not write_data_values.called
-        ), f"{write_data_values} should not have been called."
+    assert write_attributes.called, f"{write_attributes} was not called."
+    assert (
+        not write_array_attribute.called
+    ), f"{write_array_attribute} should not have been called."
+    assert (
+        not write_data_values.called
+    ), f"{write_data_values} should not have been called."
 
-        points.vertices = xyz
-        assert (
-            "vertices" in points.modified_attributes
-        ), "'vertices' should be in list of 'modified_attributes' "
+    points.vertices = xyz
 
-        workspace.finalize()
+    assert (
+        write_array_attribute.called
+    ), f"{write_array_attribute} should have been called."
+    assert (
+        not write_data_values.called
+    ), f"{write_data_values} should not have been called."
 
-        assert write_coordinates.called, f"{write_coordinates} should have been called."
-        assert (
-            not write_data_values.called
-        ), f"{write_data_values} should not have been called."
+    points.add_data({"rando": {"values": np.ones(n_data)}})
 
-        points.add_data({"rando": {"values": np.ones(n_data)}})
-
-        assert write_data_values.called, f"{write_data_values} should have been called."
-
-        points.name = "hello_world"
-
-        assert (
-            "attributes" in points.modified_attributes
-        ), "'attributes' should be in list of 'modified_attributes' "
+    assert write_data_values.called, f"{write_data_values} should have been called."

@@ -251,12 +251,15 @@ def monitored_directory_copy(
     :param copy_children: Option to copy children entities.
     """
     working_path = path.join(directory, ".working")
+
     if not path.exists(working_path):
         mkdir(working_path)
 
     temp_geoh5 = f"temp{time():.3f}.geoh5"
-    temp_workspace = Workspace(path.join(working_path, temp_geoh5))
-    entity.copy(parent=temp_workspace, copy_children=copy_children)
+
+    with Workspace(path.join(working_path, temp_geoh5)) as w_s:
+        entity.copy(parent=w_s, copy_children=copy_children)
+
     move(
         path.join(working_path, temp_geoh5),
         path.join(directory, temp_geoh5),

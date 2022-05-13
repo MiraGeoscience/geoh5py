@@ -15,8 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
 
 import numpy as np
 
@@ -24,11 +22,10 @@ from geoh5py.objects import Curve
 from geoh5py.workspace import Workspace
 
 
-def test_create_property_group():
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"prop_group_test.geoh5"
-        # Create a workspace
-        workspace = Workspace(h5file_path)
+def test_create_property_group(tmp_path):
+    h5file_path = tmp_path / r"prop_group_test.geoh5"
+
+    with Workspace(h5file_path) as workspace:
         curve = Curve.create(
             workspace,
             vertices=np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)],
@@ -51,7 +48,13 @@ def test_create_property_group():
         assert (
             workspace.find_data(single_data_group.properties[0]).name == f"Period{1}"
         ), "Failed at creating a property group by data name"
-        workspace.finalize()
+
+        # Create a new group by data uid
+        single_data_group = curve.add_data_to_group(props[1].uid, "Singleton")
+
+        assert (
+            workspace.find_data(single_data_group.properties[0]).name == f"Period{1}"
+        ), "Failed at creating a property group by data name"
 
         # Re-open the workspace
         workspace = Workspace(h5file_path)

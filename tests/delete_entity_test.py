@@ -15,9 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
 from gc import collect
-from pathlib import Path
 
 import numpy as np
 
@@ -26,15 +24,12 @@ from geoh5py.objects import Curve
 from geoh5py.workspace import Workspace
 
 
-def test_delete_entities():
-
+def test_delete_entities(tmp_path):
+    h5file_path = tmp_path / r"testPoints.geoh5"
     xyz = np.random.randn(12, 3)
     values = np.random.randn(12)
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        # Create a workspace
-        workspace = Workspace(str(Path(tempdir) / r"testPoints.geoh5"))
-
+    with Workspace(h5file_path) as workspace:
         group = ContainerGroup.create(workspace)
         curve_1 = Curve.create(workspace, vertices=xyz, parent=group)
         curve_1.add_data({"DataValues": {"association": "VERTEX", "values": values}})
@@ -96,17 +91,16 @@ def test_delete_entities():
             len(workspace.types) == 4
         ), "Data types were not properly removed from the workspace."
 
-        # Re-open the project and check all was removed
-        workspace = Workspace(str(Path(tempdir) / r"testPoints.geoh5"))
-        assert (
-            len(workspace.groups) == 2
-        ), "Groups were not properly written to the workspace."
-        assert (
-            len(workspace.objects) == 1
-        ), "Objects were not properly written to the workspace."
-        assert (
-            len(workspace.data) == 1
-        ), "Data were not properly written to the workspace."
-        assert (
-            len(workspace.types) == 4
-        ), "Types were not properly written to the workspace."
+    # Re-open the project and check all was removed
+    workspace = Workspace(h5file_path)
+    assert (
+        len(workspace.groups) == 2
+    ), "Groups were not properly written to the workspace."
+    assert (
+        len(workspace.objects) == 1
+    ), "Objects were not properly written to the workspace."
+    assert len(workspace.data) == 1, "Data were not properly written to the workspace."
+    assert (
+        len(workspace.types) == 4
+    ), "Types were not properly written to the workspace."
+    workspace.close()
