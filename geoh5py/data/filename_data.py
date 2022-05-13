@@ -85,8 +85,9 @@ class FilenameData(Data):
     def values(self, values):
         if not isinstance(values, bytes):
             raise ValueError("Input 'values' for FilenameData must be of type 'bytes'.")
-        self.workspace.update_attribute(self, "values")
+
         self._values = values
+        self.workspace.update_attribute(self, "values")
 
     # TODO: implement specialization to access values.
     # Stored as a 1D array of 32-bit unsigned integer type (native).
