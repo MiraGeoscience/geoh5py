@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-
 import pytest
 from h5py import File
 
@@ -40,10 +39,13 @@ def test_workspace_from_kwargs(tmp_path):
     )
     assert workspace.geoh5.mode == "r+"
 
-    # Test re-opening in read-only
-    workspace.open(mode="r")
+    # Test re-opening in read-only - stays in r+"
+    with pytest.warns(UserWarning) as warning:
+        workspace.open(mode="r")
 
-    assert workspace.geoh5.mode == "r"
+    assert f"Workspace already opened in mode {workspace.geoh5.mode}. " in str(
+        warning[0]
+    )
 
     workspace.close()
 

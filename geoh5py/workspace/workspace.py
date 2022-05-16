@@ -828,7 +828,11 @@ class Workspace(AbstractContextManager):
 
     def open(self, mode: str | None = None):
         if isinstance(self._geoh5, h5py.File) and self._geoh5:
-            self.geoh5.close()
+            warnings.warn(
+                f"Workspace already opened in mode {self._geoh5.mode}. "
+                "Consider closing the file first with 'close()'."
+            )
+            return
 
         if mode is None:
             mode = self._mode

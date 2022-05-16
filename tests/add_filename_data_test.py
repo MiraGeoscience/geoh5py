@@ -64,7 +64,7 @@ def test_add_file(tmp_path):
         )
 
         obj.copy(parent=workspace_copy)
-        workspace_copy.finalize()
+        workspace_copy.close()
 
         workspace_copy.open()
         copied_obj = workspace_copy.get_entity(obj.uid)[0]
