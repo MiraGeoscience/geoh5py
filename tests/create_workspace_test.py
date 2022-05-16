@@ -38,6 +38,13 @@ def test_workspace_from_kwargs(tmp_path):
         "UserWarning('Argument hello with value world is not a valid attribute"
         in str(warning[0])
     )
+    assert workspace.geoh5.mode == "r+"
+
+    # Test re-opening in read-only
+    workspace.open(mode="r")
+
+    assert workspace.geoh5.mode == "r"
+
     workspace.close()
 
     workspace = Workspace(h5file_tmp)
