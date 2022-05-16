@@ -827,6 +827,9 @@ class Workspace(AbstractContextManager):
         return self._all_objects()
 
     def open(self, mode: str | None = None):
+        if isinstance(self._geoh5, h5py.File) and self._geoh5:
+            self.geoh5.close()
+
         if mode is None:
             mode = self._mode
 
