@@ -81,9 +81,12 @@ def optional_type(ui_json: dict[str, dict], parameter: str):
     """
     is_optional = False
     if is_form(ui_json[parameter]):
-        is_optional |= ui_json[parameter].get("optional", False)
-        if "group" in ui_json[parameter]:
-            is_optional |= group_optional(ui_json, ui_json[parameter]["group"])
+        if "optional" in ui_json[parameter]:
+            is_optional = ui_json[parameter]["optional"]
+        elif "dependency" in ui_json[parameter]:
+            is_optional = True
+        elif "group" in ui_json[parameter]:
+            is_optional = group_optional(ui_json, ui_json[parameter]["group"])
 
     return is_optional
 
