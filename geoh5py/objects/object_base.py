@@ -280,6 +280,7 @@ class ObjectBase(Entity):
                 pg for pg in self.property_groups if pg.name == kwargs["name"]
             ][0]
         else:
+            kwargs["parent"] = self
             prop_group = PropertyGroup(**kwargs)
             self._property_groups += [prop_group]
 

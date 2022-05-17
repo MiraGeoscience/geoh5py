@@ -575,7 +575,7 @@ class Workspace(AbstractContextManager):
         property_groups = []
         for pg_id, attrs in group_dict.items():
 
-            group = PropertyGroup(uid=uuid.UUID(pg_id))
+            group = PropertyGroup(uid=uuid.UUID(pg_id), parent=entity)
 
             for attr, val in attrs.items():
 
