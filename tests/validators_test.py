@@ -204,17 +204,11 @@ def test_validate_data(tmp_path):
     ui_json = {
         "title": "test",
         "geoh5": path.join(tmp_path, "test.geoh5"),
-        "param_1a": {
-            "label": "param_1a",
-            "optional": True,
-            "value": None,
-            "group": "Data",
-        },
-        "param_1b": {"label": "param_1b", "value": None, "group": "Data"},
+        "param_1": {"label": "param_1", "optional": True, "value": None},
         "param_2": {"label": "param_2", "optional": True, "value": None},
     }
     validations = {
-        "param_1a": {"one_of": "sad little parameter", "types": [str, type(None)]},
+        "param_1": {"one_of": "sad little parameter", "types": [str, type(None)]},
         "param_2": {"one_of": "sad little parameter", "types": [str, type(None)]},
     }
     ifile = InputFile(ui_json=ui_json, validations=validations)
