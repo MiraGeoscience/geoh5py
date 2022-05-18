@@ -108,6 +108,17 @@ def test_optional_type():
     assert not optional_type(ui_json, "float_parameter")
     assert optional_type(ui_json, "other_float_parameter")
 
+    # Now check that optional is true if param is dependent on optional
+    ui_json = deepcopy(default_ui_json)
+    ui_json["string_parameter"] = templates.string_parameter(optional="disabled")
+    ui_json["float_parameter"] = templates.float_parameter()
+    ui_json["float_parameter"]["dependency"] = "string_parameter"
+    ui_json["float_parameter"]["dependencyType"] = "enabled"
+    assert optional_type(ui_json, "float_parameter")
+
+    ui_json["string_parameter"]["enabled"] = True
+    assert not optional_type(ui_json, "float_parameter")
+
 
 def test_group_enabled():
     ui_json = deepcopy(default_ui_json)
