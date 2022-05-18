@@ -116,6 +116,9 @@ def test_optional_type():
     ui_json["float_parameter"]["dependencyType"] = "enabled"
     assert optional_type(ui_json, "float_parameter")
 
+    ui_json["string_parameter"]["enabled"] = True
+    assert not optional_type(ui_json, "float_parameter")
+
 
 def test_group_enabled():
     ui_json = deepcopy(default_ui_json)
