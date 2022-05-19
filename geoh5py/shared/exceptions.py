@@ -29,6 +29,10 @@ if TYPE_CHECKING:
     from geoh5py.workspace import Workspace
 
 
+class Geoh5FileClosedError(ABC, Exception):
+    """Error for closed geoh5 file."""
+
+
 class BaseValidationError(ABC, Exception):
     """Base class for custom exceptions."""
 

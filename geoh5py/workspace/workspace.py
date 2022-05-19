@@ -40,6 +40,7 @@ from ..io import H5Reader, H5Writer
 from ..objects import ObjectBase
 from ..shared import weakref_utils
 from ..shared.entity import Entity
+from ..shared.exceptions import Geoh5FileClosedError
 
 if TYPE_CHECKING:
     from ..groups import group
@@ -153,11 +154,7 @@ class Workspace(AbstractContextManager):
                 H5Writer.save_entity, self.root, add_children=False, mode="r+"
             )
         self.geoh5.close()
-        self._data = {}
         self._geoh5 = None
-        self._groups = {}
-        self._objects = {}
-        self._types = {}
 
     @property
     def contributors(self) -> np.ndarray:
@@ -457,6 +454,11 @@ class Workspace(AbstractContextManager):
             ref_type = "Groups"
         elif isinstance(entity, ObjectBase):
             ref_type = "Objects"
+        else:
+            raise NotImplementedError(
+                "Method 'remove_recursively only implemented for classes of type"
+                f" {Data}, {Group} or {ObjectBase}"
+            )
 
         self._io_call(
             H5Writer.remove_entity,
@@ -702,7 +704,7 @@ class Workspace(AbstractContextManager):
         Instance of h5py.File.
         """
         if self._geoh5 is None:
-            self.open()
+            raise Geoh5FileClosedError(self.h5file)
 
         return self._geoh5
 
@@ -836,6 +838,11 @@ class Workspace(AbstractContextManager):
             mode = "r"
             self._geoh5 = h5py.File(self._h5file, mode)
 
+        self._data = {}
+        self._objects = {}
+        self._groups = {}
+        self._types = {}
+
         try:
             proj_attributes = self._io_call(H5Reader.fetch_project_attributes, mode="r")
 
@@ -930,7 +937,14 @@ class Workspace(AbstractContextManager):
                 "Consider closing the workspace (Geoscience ANALYST) and "
                 "re-opening in mode='r+'."
             )
-        return fun(self.geoh5, *args, **kwargs)
+
+        try:
+            return fun(self.geoh5, *args, **kwargs)
+        except Geoh5FileClosedError as error:
+            raise Geoh5FileClosedError(
+                f"Error executing {fun}. "
+                + "Consider re-opening with `Workspace.open()' or used within a context manager."
+            ) from error
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
