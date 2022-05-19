@@ -149,6 +149,9 @@ class Workspace(AbstractContextManager):
         """
         Close the file and clear properties for future open.
         """
+        if self._geoh5 is None:
+            return
+
         if self.geoh5.mode in ["r+", "a"]:
             self._io_call(
                 H5Writer.save_entity, self.root, add_children=False, mode="r+"
@@ -704,7 +707,7 @@ class Workspace(AbstractContextManager):
         Instance of h5py.File.
         """
         if self._geoh5 is None:
-            raise Geoh5FileClosedError(self.h5file)
+            raise Geoh5FileClosedError
 
         return self._geoh5
 
@@ -937,16 +940,17 @@ class Workspace(AbstractContextManager):
         """
         Run a H5Writer or H5Reader function with validation of target geoh5
         """
-        if mode in ["r+", "a"] and self.geoh5.mode == "r":
-            raise UserWarning(
-                f"Error performing {fun}. "
-                "Attempting to write to a geoh5 file in read-only mode. "
-                "Consider closing the workspace (Geoscience ANALYST) and "
-                "re-opening in mode='r+'."
-            )
-
         try:
+            if mode in ["r+", "a"] and self.geoh5.mode == "r":
+                raise UserWarning(
+                    f"Error performing {fun}. "
+                    "Attempting to write to a geoh5 file in read-only mode. "
+                    "Consider closing the workspace (Geoscience ANALYST) and "
+                    "re-opening in mode='r+'."
+                )
+
             return fun(self.geoh5, *args, **kwargs)
+
         except Geoh5FileClosedError as error:
             raise Geoh5FileClosedError(
                 f"Error executing {fun}. "
