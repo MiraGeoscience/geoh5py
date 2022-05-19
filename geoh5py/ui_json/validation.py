@@ -36,7 +36,7 @@ from geoh5py.shared.validators import (
     UUIDValidator,
     ValueValidator,
 )
-from geoh5py.ui_json.utils import group_optional, optional_type
+from geoh5py.ui_json.utils import optional_type
 from geoh5py.workspace import Workspace
 
 
@@ -185,10 +185,8 @@ class InputValidation:
 
             validations[key].update({"optional": optional_type(ui_json, key)})
 
-            if (
-                item.get("optional") or group_optional(ui_json, item.get("group", ""))
-            ) and "types" in validations[key]:
-                validations[key]["types"] += [type(None)]
+            if optional_type(ui_json, key) and "types" in validations[key]:
+                validations[key]["types"].append(type(None))
 
         return validations
 
