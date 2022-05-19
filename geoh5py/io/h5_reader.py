@@ -151,13 +151,51 @@ class H5Reader:
                 if child_type in ["Type", "PropertyGroups"]:
                     continue
 
-                if isinstance(child_list, h5py.Group):
+                if child_type == "Concatenated Data":
+                    children.update(
+                        cls.fetch_concatenated_children(file, uid, entity_type)
+                    )
+
+                elif isinstance(child_list, h5py.Group):
                     for uid_str in child_list.keys():
                         children[str2uuid(uid_str)] = child_type.replace(
                             "s", ""
                         ).lower()
 
         return children
+
+    @classmethod
+    def fetch_concatenated_children(
+        cls, file: str | h5py.File, uid: uuid.UUID, entity_type: str
+    ) -> dict:
+        """
+        Get :obj:`~geoh5py.shared.entity.Entity.children` of concatenated group.
+
+        :param file: :obj:`h5py.File` or name of the target geoh5 file
+        :param uid: Unique identifier
+        :param entity_type: Type of entity from
+            'group', 'data', 'object', 'group_type', 'data_type', 'object_type'
+
+
+        :return children: [{uuid: type}, ... ]
+            List of dictionaries for the children uid and type
+        """
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file.keys())[0]
+            # children = {}
+            entity_type = cls.format_type_string(entity_type)
+            # entity = h5file[name][entity_type][as_str_if_uuid(uid)]
+
+            try:
+                attr_str = h5file[name][entity_type][as_str_if_uuid(uid)][
+                    "Concatenated Data"
+                ]["Attributes"][()]
+                container = json.loads(str_from_utf8_bytes(attr_str))
+
+            except KeyError:
+                return {}
+
+            return container
 
     @classmethod
     def fetch_metadata(
