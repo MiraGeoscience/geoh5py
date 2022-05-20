@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-
 import pytest
 from h5py import File
 
@@ -38,6 +37,16 @@ def test_workspace_from_kwargs(tmp_path):
         "UserWarning('Argument hello with value world is not a valid attribute"
         in str(warning[0])
     )
+    assert workspace.geoh5.mode == "r+"
+
+    # Test re-opening in read-only - stays in r+"
+    with pytest.warns(UserWarning) as warning:
+        workspace.open(mode="r")
+
+    assert f"Workspace already opened in mode {workspace.geoh5.mode}. " in str(
+        warning[0]
+    )
+
     workspace.close()
 
     workspace = Workspace(h5file_tmp)

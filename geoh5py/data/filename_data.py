@@ -31,6 +31,9 @@ class FilenameData(Data):
         super().__init__(data_type, **kwargs)
         self._public = False
 
+        if self.on_file:
+            self._file_name = self.workspace.fetch_values(self.uid)
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.FILENAME
