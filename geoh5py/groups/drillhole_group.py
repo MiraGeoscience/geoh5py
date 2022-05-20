@@ -17,12 +17,12 @@
 
 import uuid
 
-from geoh5py.shared.concatenator import ConcatenatorEntity
+from geoh5py.shared.concatenator import Concatenator
 
 from .group import Group, GroupType
 
 
-class DrillholeGroup(Group, ConcatenatorEntity):
+class DrillholeGroup(Group, Concatenator):
     """The type for the group containing drillholes."""
 
     __TYPE_UID = uuid.UUID(

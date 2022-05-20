@@ -37,11 +37,9 @@ import uuid
 from geoh5py.shared import Entity, EntityType
 
 
-class ConcatenatorEntity(Entity):
+class Concatenator(Entity):
     """
-    Concatenation of objects and data.
-    This group is not registered to the workspace and only visible to the parent object.
-    Currently, only used by the DrillholeGroup
+    Class modifier for concatenation of objects and data.
     """
 
     _attribute_map = Entity._attribute_map.copy()
