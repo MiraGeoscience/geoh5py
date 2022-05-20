@@ -486,7 +486,6 @@ class Workspace(AbstractContextManager):
     def distance_unit(self, value: str):
         self._distance_unit = value
 
-
     def fetch_array_attribute(self, uid: uuid.UUID, key: str = "cells") -> np.ndarray:
         """
         Fetch attribute stored as structured array from the source geoh5.
@@ -559,10 +558,8 @@ class Workspace(AbstractContextManager):
         return family_tree
 
     def fetch_concatenated_children(self):
-        """
+        """ """
 
-        """
-        
     def fetch_metadata(self, uid: uuid.UUID, argument="Metadata"):
         """
         Fetch the metadata of an entity from the source geoh5.
