@@ -39,6 +39,7 @@ class Entity(ABC):
         "Allow rename": "allow_rename",
         "ID": "uid",
         "Name": "name",
+        "Partially hidden": "partially_hidden",
         "Public": "public",
         "Visible": "visible",
     }
@@ -53,6 +54,7 @@ class Entity(ABC):
         self._allow_delete = True
         self._allow_move = True
         self._allow_rename = True
+        self._partially_hidden = False
         self._public = True
         self._on_file = False
         self._metadata: dict | None = None
@@ -296,6 +298,18 @@ class Entity(ABC):
             if current_parent is not None and current_parent != self._parent:
                 current_parent.remove_children([self])
                 self.workspace.save_entity(self)
+
+    @property
+    def partially_hidden(self) -> bool:
+        """
+        :obj:`bool` Entity is partially hidden.
+        """
+        return self._partially_hidden
+
+    @partially_hidden.setter
+    def partially_hidden(self, value: bool):
+        self._partially_hidden = value
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def public(self) -> bool:

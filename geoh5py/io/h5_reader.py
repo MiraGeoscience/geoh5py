@@ -95,6 +95,11 @@ class H5Reader:
             if "PropertyGroups" in entity.keys():
                 property_groups = cls.fetch_property_groups(file, uid)
 
+            attributes["entity"]["concatenator_group"] = False
+
+            if "Concatenated Data" in entity.keys():
+                attributes["entity"]["concatenator_group"] = True
+
             attributes["entity"]["on_file"] = True
 
         return attributes, type_attributes, property_groups
@@ -153,7 +158,9 @@ class H5Reader:
 
                 if child_type == "Concatenated Data":
                     children.update(
-                        cls.fetch_concatenated_children(file, uid, entity_type)
+                        cls.fetch_concatenated_data(
+                            file, uid, entity_type, "Attributes"
+                        )
                     )
 
                 elif isinstance(child_list, h5py.Group):
@@ -165,9 +172,13 @@ class H5Reader:
         return children
 
     @classmethod
-    def fetch_concatenated_children(
-        cls, file: str | h5py.File, uid: uuid.UUID, entity_type: str
-    ) -> dict:
+    def fetch_concatenated_data(
+        cls,
+        file: str | h5py.File,
+        uid: uuid.UUID,
+        entity_type: str,
+        argument: str,
+    ):
         """
         Get :obj:`~geoh5py.shared.entity.Entity.children` of concatenated group.
 
@@ -175,27 +186,34 @@ class H5Reader:
         :param uid: Unique identifier
         :param entity_type: Type of entity from
             'group', 'data', 'object', 'group_type', 'data_type', 'object_type'
-
+        :param argument: Identifier for the attribute requested, chose from
+            'attributes',
 
         :return children: [{uuid: type}, ... ]
             List of dictionaries for the children uid and type
         """
         with fetch_h5_handle(file) as h5file:
             name = list(h5file.keys())[0]
-            # children = {}
             entity_type = cls.format_type_string(entity_type)
-            # entity = h5file[name][entity_type][as_str_if_uuid(uid)]
 
             try:
-                attr_str = h5file[name][entity_type][as_str_if_uuid(uid)][
+                group = h5file[name][entity_type][as_str_if_uuid(uid)][
                     "Concatenated Data"
-                ]["Attributes"][()]
-                container = json.loads(str_from_utf8_bytes(attr_str))
+                ]
 
             except KeyError:
-                return {}
+                return None
 
-            return container
+            attribute = None
+            if argument == "Attributes":
+                attribute = json.loads(str_from_utf8_bytes(group[argument][()]))
+
+            elif argument in ["Property Group IDs", "Concatenated object IDs"]:
+                attribute = [
+                    str2uuid(str_from_utf8_bytes(uid)) for uid in group[argument][:]
+                ]
+
+            return attribute
 
     @classmethod
     def fetch_metadata(

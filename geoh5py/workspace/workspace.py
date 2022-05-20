@@ -527,6 +527,10 @@ class Workspace(AbstractContextManager):
 
         family_tree = []
         for uid, child_type in children_list.items():
+            if uid == "Attributes":
+                family_tree += [self.fetch_concatenated_children(entity, child_type)]
+                continue
+
             if self.get_entity(uid)[0] is not None:
                 recovered_object = self.get_entity(uid)[0]
             else:
@@ -540,15 +544,9 @@ class Workspace(AbstractContextManager):
                 family_tree += [recovered_object]
 
                 if recursively:
-                    # Add fetch_concatenated_children
-                    if hasattr(recovered_object, "concatenated_data"):
-                        family_tree += self.fetch_concatenated_children(
-                            recovered_object
-                        )
-                    else:
-                        family_tree += self.fetch_children(
-                            recovered_object, recursively=True
-                        )
+                    family_tree += self.fetch_children(
+                        recovered_object, recursively=True
+                    )
 
                     if hasattr(recovered_object, "property_groups"):
                         family_tree += getattr(recovered_object, "property_groups")
@@ -558,8 +556,30 @@ class Workspace(AbstractContextManager):
 
         return family_tree
 
-    def fetch_concatenated_children(self):
-        """ """
+    def fetch_concatenated_children(self, group, attributes):
+        """Load all concatenated children."""
+        group.attributes = {elem["ID"]: elem for elem in attributes}
+        for key, attrs in group.attributes.items():
+
+            if key in group.property_group_ids:
+                PropertyGroup(**attrs)
+            else:
+                class_type = Data
+                if key in group.contatenated_object_ids:
+                    class_type = ObjectBase
+
+                type_attributes = {"type": attrs["Type ID"]}
+                self.create_entity(
+                    class_type,
+                    save_on_creation=False,
+                    **{**attrs.pop("Type ID"), **type_attributes},
+                )
+
+    def fetch_concatenated_data(self, uid: uuid.UUID, entity_type, argument: str):
+        """Fetch data under the Concatenated Data group of an entity."""
+        return self._io_call(
+            H5Reader.fetch_concatenated_data, uid, entity_type, argument, mode="r"
+        )
 
     def fetch_metadata(self, uid: uuid.UUID, argument="Metadata"):
         """

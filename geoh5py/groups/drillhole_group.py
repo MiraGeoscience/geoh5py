@@ -17,10 +17,12 @@
 
 import uuid
 
+from geoh5py.shared.concatenator import ConcatenatorEntity
+
 from .group import Group, GroupType
 
 
-class DrillholeGroup(Group):
+class DrillholeGroup(Group, ConcatenatorEntity):
     """The type for the group containing drillholes."""
 
     __TYPE_UID = uuid.UUID(
@@ -29,17 +31,7 @@ class DrillholeGroup(Group):
 
     _name = "Drillholes"
 
-    _attribute_map = Group._attribute_map.copy()
-    _attribute_map.update(
-        {
-            "Concatenated object IDs": "concatenated_object_ids",
-            "Concatenated Data": "concatenated_data",
-        }
-    )
-
     def __init__(self, group_type: GroupType, **kwargs):
-        self._concatenated_data = None
-        self._concatenated_object_ids = None
 
         assert group_type is not None
         super().__init__(group_type, **kwargs)
@@ -52,11 +44,3 @@ class DrillholeGroup(Group):
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
-
-    @property
-    def concatenated_data(self):
-        return self._concatenated_data
-
-    @property
-    def concatenated_objects_ids(self):
-        return self._concatenated_object_ids
