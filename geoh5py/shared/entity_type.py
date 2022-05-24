@@ -31,7 +31,7 @@ TEntityType = TypeVar("TEntityType", bound="EntityType")
 
 class EntityType(ABC):
 
-    _attribute_map = {"ID": "uid", "Name": "name"}
+    _attribute_map = {"Description": "description", "ID": "uid", "Name": "name"}
 
     def __init__(self, workspace: ws.Workspace, uid: uuid.UUID | None = None, **kwargs):
         assert workspace is not None
@@ -40,6 +40,7 @@ class EntityType(ABC):
         assert uid is None or isinstance(uid, uuid.UUID)
         self._uid: uuid.UUID = uid if uid is not None else uuid.uuid4()
         self._name: str | None = "Entity"
+        self._description: str | None = None
         self._on_file = False
 
         for attr, item in kwargs.items():
@@ -57,6 +58,15 @@ class EntityType(ABC):
         geoh5.
         """
         return self._attribute_map
+
+    @property
+    def description(self) -> str | None:
+        return self._description
+
+    @description.setter
+    def description(self, description: str):
+        self._description = description
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def on_file(self) -> bool:
