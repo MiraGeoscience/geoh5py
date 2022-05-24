@@ -75,7 +75,9 @@ def uuid2entity(value, workspace):
             if prop_group:
                 return prop_group[0]
 
-    return None
+        return None
+
+    return value
 
 
 def str2uuid(value):
