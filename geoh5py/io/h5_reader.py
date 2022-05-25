@@ -76,20 +76,9 @@ class H5Reader:
                 attributes["entity"][key] = value
 
             if "Type" in entity:
-                for key, value in entity["Type"].attrs.items():
-                    type_attributes["entity_type"][key] = value
-
-                if "Color map" in entity["Type"].keys():
-                    type_attributes["entity_type"]["color_map"] = {}
-                    for key, value in entity["Type"]["Color map"].attrs.items():
-                        type_attributes["entity_type"]["color_map"][key] = value
-                    type_attributes["entity_type"]["color_map"]["values"] = entity[
-                        "Type"
-                    ]["Color map"][:]
-
-                if "Value map" in entity["Type"].keys():
-                    mapping = cls.fetch_value_map(file, uid)
-                    type_attributes["entity_type"]["value_map"] = mapping
+                type_attributes["entity_type"] = cls.fetch_type_attributes(
+                    entity["Type"]
+                )
 
             # Check if the entity has property_group
             if "PropertyGroups" in entity.keys():
@@ -322,6 +311,27 @@ class H5Reader:
         return property_groups
 
     @classmethod
+    def fetch_type_attributes(cls, h5_handle):
+        """
+        Fetch type attributes from a given h5 handle.
+        """
+        type_attributes = {}
+        for key, value in h5_handle.attrs.items():
+            type_attributes[key] = value
+
+        if "Color map" in h5_handle.keys():
+            type_attributes["color_map"] = {}
+            for key, value in h5_handle["Color map"].attrs.items():
+                type_attributes["color_map"][key] = value
+            type_attributes["color_map"]["values"] = h5_handle["Color map"][:]
+
+        if "Value map" in h5_handle.keys():
+            mapping = cls.fetch_value_map(h5_handle)
+            type_attributes["value_map"] = mapping
+
+        return type_attributes
+
+    @classmethod
     def fetch_uuids(cls, file: str | h5py.File, entity_type: str) -> list:
         """
         Fetch all uuids of a given type from geoh5
@@ -344,27 +354,23 @@ class H5Reader:
         return uuids
 
     @classmethod
-    def fetch_value_map(cls, file: str | h5py.File, uid: uuid.UUID) -> dict:
+    def fetch_value_map(cls, h5_handle) -> dict:
         """
         Get data :obj:`~geoh5py.data.data.Data.value_map`
 
-        :param file: :obj:`h5py.File` or name of the target geoh5 file
-        :param uid: Unique identifier of the target entity
+        :param h5_handle: Handle to the target h5 group.
 
         :return value_map: :obj:`dict` of {:obj:`int`: :obj:`str`}
         """
-        with fetch_h5_handle(file) as h5file:
-            name = list(h5file.keys())[0]
-            try:
-                entity = h5file[name]["Data"][as_str_if_uuid(uid)]
-                value_map = entity["Type"]["Value map"][:]
-                mapping = {}
-                for key, value in value_map.tolist():
-                    value = str_from_utf8_bytes(value)
-                    mapping[key] = value
+        try:
+            value_map = h5_handle["Value map"][:]
+            mapping = {}
+            for key, value in value_map.tolist():
+                value = str_from_utf8_bytes(value)
+                mapping[key] = value
 
-            except KeyError:
-                mapping = {}
+        except KeyError:
+            mapping = {}
 
         return mapping
 

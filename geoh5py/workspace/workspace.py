@@ -568,12 +568,15 @@ class Workspace(AbstractContextManager):
             prop_groups[attrs["ID"]] = PropertyGroup(**attrs)
 
             for uid in prop_groups[attrs["ID"]].properties:
-                attrs = group.attributes[uid]
-                attrs["association"] = prop_groups[attrs["ID"]].association
+                data_attrs = group.attributes[uid]
+                data_attrs["association"] = prop_groups[attrs["ID"]].association
                 self.create_entity(
                     Data,
                     save_on_creation=False,
-                    **{"entity": attrs, "entity_type": {"uid": attrs["Type ID"]}},
+                    **{
+                        "entity": data_attrs,
+                        "entity_type": {"uid": data_attrs["Type ID"]},
+                    },
                 )
 
         for key in group.concatenated_object_ids:
