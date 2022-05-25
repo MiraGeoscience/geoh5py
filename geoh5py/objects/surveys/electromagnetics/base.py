@@ -107,7 +107,9 @@ class BaseEMSurvey(ObjectBase):
         """
         Append a property group to the entity and its metadata after validations.
         """
-        if name in [pg.name for pg in self.property_groups]:
+        if self.property_groups is not None and name in [
+            pg.name for pg in self.property_groups
+        ]:
             raise ValueError(
                 f"PropertyGroup named '{name}' already exists on the survey entity. "
                 f"Consider using the 'edit_metadata' method with "
@@ -315,7 +317,7 @@ class BaseEMSurvey(ObjectBase):
             values = [values]
 
         for value in values:
-            if value not in self.property_groups:
+            if self.property_groups is not None and value not in self.property_groups:
                 raise ValueError("Property group must be an existing PropertyGroup.")
 
             if len(value.properties) != len(self.channels):

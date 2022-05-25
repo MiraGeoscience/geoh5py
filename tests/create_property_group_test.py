@@ -30,6 +30,7 @@ def test_create_property_group(tmp_path):
             workspace,
             vertices=np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)],
         )
+
         # Add data
         props = []
         for i in range(4):
@@ -56,8 +57,8 @@ def test_create_property_group(tmp_path):
             workspace.find_data(single_data_group.properties[0]).name == f"Period{1}"
         ), "Failed at creating a property group by data name"
 
-        # Re-open the workspace
-        workspace = Workspace(h5file_path)
+    # Re-open the workspace
+    with Workspace(h5file_path) as workspace:
         rec_object = workspace.get_entity(curve.uid)[0]
         # Read the property_group back in
         rec_prop_group = rec_object.find_or_create_property_group(name="myGroup")
@@ -76,5 +77,13 @@ def test_create_property_group(tmp_path):
         new_curve = rec_object.copy(copy_children=False)
 
         assert (
-            new_curve.property_groups == []
+            new_curve.property_groups is None
         ), "Property_groups not properly removed on copy without children."
+
+        rec_object.property_groups = None
+
+    with Workspace(h5file_path) as workspace:
+        rec_object = workspace.get_entity(curve.uid)[0]
+        assert (
+            rec_object.property_groups is None
+        ), "Property_groups not properly removed."

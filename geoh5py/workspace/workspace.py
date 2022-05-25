@@ -548,10 +548,10 @@ class Workspace(AbstractContextManager):
                         recovered_object, recursively=True
                     )
 
-                    if hasattr(recovered_object, "property_groups"):
+                    if getattr(recovered_object, "property_groups", None) is not None:
                         family_tree += getattr(recovered_object, "property_groups")
 
-        if hasattr(entity, "property_groups"):
+        if getattr(entity, "property_groups", None) is not None:
             family_tree += getattr(entity, "property_groups")
 
         return family_tree

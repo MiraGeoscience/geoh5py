@@ -237,19 +237,14 @@ class H5Reader:
             except KeyError:
                 return None
 
-        if isinstance(metadata, str):
-            try:
-                metadata = json.loads(metadata)
-            except ValueError:
-                pass
+        metadata = json.loads(metadata)
 
-        if isinstance(metadata, dict):
-            for key, val in metadata.items():
-                if isinstance(val, dict):
-                    for sub_key, sub_val in val.items():
-                        metadata[key][sub_key] = str2uuid(sub_val)
-                else:
-                    metadata[key] = str2uuid(val)
+        for key, val in metadata.items():
+            if isinstance(val, dict):
+                for sub_key, sub_val in val.items():
+                    metadata[key][sub_key] = str2uuid(sub_val)
+            else:
+                metadata[key] = str2uuid(val)
 
         return metadata
 
