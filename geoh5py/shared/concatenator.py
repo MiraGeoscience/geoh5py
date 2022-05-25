@@ -87,7 +87,7 @@ class Concatenator(Entity):
     def concatenated_object_ids(self):
         """Dictionary of concatenated objects and data concatenated_object_ids."""
         if getattr(self, "_concatenated_object_ids", None) is None:
-            self.workspace.fetch_concatenated_data(
+            self._concatenated_object_ids = self.workspace.fetch_concatenated_data(
                 self.uid, "Group", "Concatenated object IDs"
             )
         return self._concatenated_object_ids
@@ -109,7 +109,7 @@ class Concatenator(Entity):
     def property_group_ids(self):
         """Dictionary of concatenated objects and data property_group_ids."""
         if getattr(self, "_property_group_ids", None) is None:
-            self.workspace.fetch_concatenated_data(
+            self._property_group_ids = self.workspace.fetch_concatenated_data(
                 self.uid, "Group", "Property Group IDs"
             )
         return self._property_group_ids

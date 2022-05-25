@@ -57,6 +57,7 @@ class Entity(ABC):
         self._partially_hidden = False
         self._public = True
         self._on_file = False
+        self._concatenated = False
         self._metadata: dict | None = None
 
         for attr, item in kwargs.items():
@@ -195,6 +196,11 @@ class Entity(ABC):
             cls, **{**entity_kwargs, **entity_type_kwargs}
         )
         return new_object
+
+    @property
+    def concatenated(self) -> bool:
+        """Entity is registered under a Concatenator group."""
+        return self._concatenated
 
     @property
     @abstractmethod

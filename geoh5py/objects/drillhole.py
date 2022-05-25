@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import re
 import uuid
 
 import numpy as np
@@ -99,6 +100,9 @@ class Drillhole(Points):
         if value is not None:
             if isinstance(value, np.ndarray):
                 value = value.tolist()
+
+            if isinstance(value, str):
+                value = [float(n) for n in re.findall(r"\d+\.\d+", value)]
 
             assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
 
@@ -203,7 +207,7 @@ class Drillhole(Points):
 
     @planning.setter
     def planning(self, value):
-        choices = ["Default", "Ongoing", "Planned", "Completed"]
+        choices = ["Default", "Ongoing", "Planned", "Completed", "No status"]
         assert value in choices, f"Provided planning value must be one of {choices}"
         self._planning = value
 

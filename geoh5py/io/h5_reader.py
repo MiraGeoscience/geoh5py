@@ -197,21 +197,26 @@ class H5Reader:
             entity_type = cls.format_type_string(entity_type)
 
             try:
-                group = h5file[name][entity_type][as_str_if_uuid(uid)][
-                    "Concatenated Data"
-                ]
+                group = h5file[name][entity_type][as_str_if_uuid(uid)]
 
+                if argument == "Concatenated object IDs":
+                    return [
+                        str2uuid(str_from_utf8_bytes(uid)) for uid in group[argument][:]
+                    ]
+
+                attribute = None
+                if argument == "Attributes":
+                    attribute = json.loads(
+                        str_from_utf8_bytes(group["Concatenated Data"][argument][()])
+                    )
+
+                elif argument == "Property Group IDs":
+                    attribute = [
+                        str2uuid(str_from_utf8_bytes(uid))
+                        for uid in group["Concatenated Data"][argument][:]
+                    ]
             except KeyError:
                 return None
-
-            attribute = None
-            if argument == "Attributes":
-                attribute = json.loads(str_from_utf8_bytes(group[argument][()]))
-
-            elif argument in ["Property Group IDs", "Concatenated object IDs"]:
-                attribute = [
-                    str2uuid(str_from_utf8_bytes(uid)) for uid in group[argument][:]
-                ]
 
             return attribute
 

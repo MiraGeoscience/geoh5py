@@ -558,22 +558,36 @@ class Workspace(AbstractContextManager):
 
     def fetch_concatenated_children(self, group, attributes):
         """Load all concatenated children."""
-        group.attributes = {elem["ID"]: elem for elem in attributes}
-        for key, attrs in group.attributes.items():
+        group.attributes = {uuid.UUID(elem["ID"]): elem for elem in attributes}
+        prop_groups = {}
+        for key in group.property_group_ids:
+            if key not in group.attributes:
+                continue
 
-            if key in group.property_group_ids:
-                PropertyGroup(**attrs)
-            else:
-                class_type = Data
-                if key in group.contatenated_object_ids:
-                    class_type = ObjectBase
+            attrs = group.attributes[key]
+            prop_groups[attrs["ID"]] = PropertyGroup(**attrs)
 
-                type_attributes = {"type": attrs["Type ID"]}
+            for uid in prop_groups[attrs["ID"]].properties:
+                attrs = group.attributes[uid]
+                attrs["association"] = prop_groups[attrs["ID"]].association
                 self.create_entity(
-                    class_type,
+                    Data,
                     save_on_creation=False,
-                    **{**attrs.pop("Type ID"), **type_attributes},
+                    **{"entity": attrs, "entity_type": {"uid": attrs["Type ID"]}},
                 )
+
+        for key in group.concatenated_object_ids:
+            attrs = group.attributes[key]
+            attrs["parent"] = group
+            class_type = ObjectBase
+            obj = self.create_entity(
+                class_type,
+                save_on_creation=False,
+                **{"entity": attrs, "entity_type": {"uid": attrs["Object Type ID"]}},
+            )
+            for attr, val in attrs.items():
+                if "Property" in attr:
+                    obj.add_children(self.get_entity(uuid.UUID(val)))
 
     def fetch_concatenated_data(self, uid: uuid.UUID, entity_type, argument: str):
         """Fetch data under the Concatenated Data group of an entity."""
