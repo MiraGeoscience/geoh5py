@@ -68,16 +68,6 @@ class EntityType(ABC):
         self._description = description
         self.workspace.update_attribute(self, "attributes")
 
-    @description.getter
-    def description(self):
-        """
-        :obj:`str` Entity type description.
-        """
-        if self._description is None:
-            self.description = self.name
-
-        return self._description
-
     @property
     def on_file(self) -> bool:
         """

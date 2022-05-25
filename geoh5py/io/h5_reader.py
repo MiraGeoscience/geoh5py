@@ -148,8 +148,12 @@ class H5Reader:
         """
         with fetch_h5_handle(file) as h5file:
             name = list(h5file.keys())[0]
-            children = {}
+            children: dict = {}
             entity_type = cls.format_type_string(entity_type)
+
+            if entity_type not in h5file[name]:
+                return children
+
             entity = h5file[name][entity_type][as_str_if_uuid(uid)]
 
             for child_type, child_list in entity.items():

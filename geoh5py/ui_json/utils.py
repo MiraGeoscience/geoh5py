@@ -261,6 +261,9 @@ def monitored_directory_copy(
 
     temp_geoh5 = f"temp{time():.3f}.geoh5"
 
+    if getattr(entity.workspace, "_geoh5") is None:
+        entity.workspace.open(mode="r")
+
     with Workspace(path.join(working_path, temp_geoh5)) as w_s:
         entity.copy(parent=w_s, copy_children=copy_children)
 

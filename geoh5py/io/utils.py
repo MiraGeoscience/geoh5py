@@ -62,12 +62,21 @@ def entity2uuid(value):
 def uuid2entity(value, workspace):
     """Convert UUID to a known entity."""
     if isinstance(value, UUID):
-        entity = [
-            child
-            for child in workspace.fetch_children(workspace.root, recursively=True)
-            if child.uid == value
-        ]
-        return entity[0] if entity else None
+        if value in workspace.list_entities_name:
+            return workspace.get_entity(value)[0]
+
+        for obj in workspace.objects:
+            prop_group = [
+                prop_group
+                for prop_group in obj.property_groups
+                if prop_group.uid == value
+            ]
+
+            if prop_group:
+                return prop_group[0]
+
+        return None
+
     return value
 
 

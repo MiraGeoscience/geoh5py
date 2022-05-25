@@ -43,7 +43,7 @@ def test_workspace_from_kwargs(tmp_path):
     with pytest.warns(UserWarning) as warning:
         workspace.open(mode="r")
 
-    assert f"Workspace already opened in mode {workspace.geoh5.mode}. " in str(
+    assert f"Workspace already opened in mode {workspace.geoh5.mode}." in str(
         warning[0]
     )
 
