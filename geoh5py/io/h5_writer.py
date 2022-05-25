@@ -296,7 +296,7 @@ class H5Writer:
 
                 value = as_str_if_uuid(value)
 
-                if key == "PropertyGroups" or (key == "Metadata" and value is None):
+                if key == "PropertyGroups" or value is None:
                     continue
 
                 if key in ["Association", "Primitive type"]:
@@ -306,8 +306,6 @@ class H5Writer:
                     entity_handle.attrs.create(key, int(value), dtype="int8")
                 elif isinstance(value, str):
                     entity_handle.attrs.create(key, value, dtype=cls.str_type)
-                elif value is None:
-                    entity_handle.attrs.create(key, "None", dtype=cls.str_type)
                 else:
                     entity_handle.attrs.create(
                         key, value, dtype=np.asarray(value).dtype

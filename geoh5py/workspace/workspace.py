@@ -40,6 +40,7 @@ from ..io import H5Reader, H5Writer
 from ..objects import ObjectBase
 from ..shared import weakref_utils
 from ..shared.entity import Entity
+from ..shared.exceptions import Geoh5FileClosedError
 
 if TYPE_CHECKING:
     from ..groups import group
@@ -148,16 +149,15 @@ class Workspace(AbstractContextManager):
         """
         Close the file and clear properties for future open.
         """
+        if self._geoh5 is None:
+            return
+
         if self.geoh5.mode in ["r+", "a"]:
             self._io_call(
                 H5Writer.save_entity, self.root, add_children=False, mode="r+"
             )
         self.geoh5.close()
-        self._data = {}
         self._geoh5 = None
-        self._groups = {}
-        self._objects = {}
-        self._types = {}
 
     @property
     def contributors(self) -> np.ndarray:
@@ -457,6 +457,11 @@ class Workspace(AbstractContextManager):
             ref_type = "Groups"
         elif isinstance(entity, ObjectBase):
             ref_type = "Objects"
+        else:
+            raise NotImplementedError(
+                "Method 'remove_recursively only implemented for classes of type"
+                f" {Data}, {Group} or {ObjectBase}"
+            )
 
         self._io_call(
             H5Writer.remove_entity,
@@ -538,10 +543,10 @@ class Workspace(AbstractContextManager):
                     family_tree += self.fetch_children(
                         recovered_object, recursively=True
                     )
-                    if hasattr(recovered_object, "property_groups"):
+                    if getattr(recovered_object, "property_groups", None) is not None:
                         family_tree += getattr(recovered_object, "property_groups")
 
-        if hasattr(entity, "property_groups"):
+        if getattr(entity, "property_groups", None) is not None:
             family_tree += getattr(entity, "property_groups")
 
         return family_tree
@@ -575,7 +580,7 @@ class Workspace(AbstractContextManager):
         property_groups = []
         for pg_id, attrs in group_dict.items():
 
-            group = PropertyGroup(uid=uuid.UUID(pg_id))
+            group = PropertyGroup(uid=uuid.UUID(pg_id), parent=entity)
 
             for attr, val in attrs.items():
 
@@ -702,7 +707,7 @@ class Workspace(AbstractContextManager):
         Instance of h5py.File.
         """
         if self._geoh5 is None:
-            self.open()
+            raise Geoh5FileClosedError
 
         return self._geoh5
 
@@ -827,6 +832,10 @@ class Workspace(AbstractContextManager):
         return self._all_objects()
 
     def open(self, mode: str | None = None):
+        if isinstance(self._geoh5, h5py.File):
+            warnings.warn(f"Workspace already opened in mode {self._geoh5.mode}.")
+            return
+
         if mode is None:
             mode = self._mode
 
@@ -835,6 +844,11 @@ class Workspace(AbstractContextManager):
         except OSError:
             mode = "r"
             self._geoh5 = h5py.File(self._h5file, mode)
+
+        self._data = {}
+        self._objects = {}
+        self._groups = {}
+        self._types = {}
 
         try:
             proj_attributes = self._io_call(H5Reader.fetch_project_attributes, mode="r")
@@ -923,14 +937,22 @@ class Workspace(AbstractContextManager):
         """
         Run a H5Writer or H5Reader function with validation of target geoh5
         """
-        if mode in ["r+", "a"] and self.geoh5.mode == "r":
-            raise UserWarning(
-                f"Error performing {fun}. "
-                "Attempting to write to a geoh5 file in read-only mode. "
-                "Consider closing the workspace (Geoscience ANALYST) and "
-                "re-opening in mode='r+'."
-            )
-        return fun(self.geoh5, *args, **kwargs)
+        try:
+            if mode in ["r+", "a"] and self.geoh5.mode == "r":
+                raise UserWarning(
+                    f"Error performing {fun}. "
+                    "Attempting to write to a geoh5 file in read-only mode. "
+                    "Consider closing the workspace (Geoscience ANALYST) and "
+                    "re-opening in mode='r+'."
+                )
+
+            return fun(self.geoh5, *args, **kwargs)
+
+        except Geoh5FileClosedError as error:
+            raise Geoh5FileClosedError(
+                f"Error executing {fun}. "
+                + "Consider re-opening with `Workspace.open()' or used within a context manager."
+            ) from error
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()

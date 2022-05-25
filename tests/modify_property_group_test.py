@@ -46,6 +46,7 @@ def test_modify_property_group(tmp_path):
     with Workspace(h5file_path) as workspace:
         curve = Curve.create(workspace, vertices=xyz, name=obj_name)
 
+        assert not workspace.fetch_property_groups(curve)
         # Add data
         props = []
         for i in range(4):

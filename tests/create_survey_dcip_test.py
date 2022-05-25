@@ -151,7 +151,6 @@ def test_create_survey_dcip(tmp_path):
         }
     ), "Error assigning metadata"
 
-    workspace.close()
     # Re-open the workspace and read data back in
     new_workspace = Workspace(path)
     currents_rec = new_workspace.get_entity(name)[0]

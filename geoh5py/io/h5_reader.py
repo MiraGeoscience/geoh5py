@@ -143,8 +143,12 @@ class H5Reader:
         """
         with fetch_h5_handle(file) as h5file:
             name = list(h5file.keys())[0]
-            children = {}
+            children: dict = {}
             entity_type = cls.format_type_string(entity_type)
+
+            if entity_type not in h5file[name]:
+                return children
+
             entity = h5file[name][entity_type][as_str_if_uuid(uid)]
 
             for child_type, child_list in entity.items():
@@ -183,19 +187,14 @@ class H5Reader:
             except KeyError:
                 return None
 
-        if isinstance(metadata, str):
-            try:
-                metadata = json.loads(metadata)
-            except ValueError:
-                pass
+        metadata = json.loads(metadata)
 
-        if isinstance(metadata, dict):
-            for key, val in metadata.items():
-                if isinstance(val, dict):
-                    for sub_key, sub_val in val.items():
-                        metadata[key][sub_key] = str2uuid(sub_val)
-                else:
-                    metadata[key] = str2uuid(val)
+        for key, val in metadata.items():
+            if isinstance(val, dict):
+                for sub_key, sub_val in val.items():
+                    metadata[key][sub_key] = str2uuid(sub_val)
+            else:
+                metadata[key] = str2uuid(val)
 
         return metadata
 

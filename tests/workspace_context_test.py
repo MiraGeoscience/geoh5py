@@ -19,6 +19,7 @@
 import pytest
 
 from geoh5py.objects import Points
+from geoh5py.shared.exceptions import Geoh5FileClosedError
 from geoh5py.workspace import Workspace, active_workspace
 
 
@@ -37,7 +38,12 @@ def test_workspace_context(tmp_path):
 
 def test_write_context(tmp_path):
     with Workspace(tmp_path / r"test2.geoh5", mode="a") as w_s:
-        Points.create(w_s)
+        points = Points.create(w_s)
+
+    with pytest.raises(Geoh5FileClosedError) as error:
+        w_s.fetch_children(points)
+
+    assert "Consider re-opening" in str(error)
 
     # Re-open in stanalone readonly
     w_s = Workspace(tmp_path / r"test2.geoh5")
