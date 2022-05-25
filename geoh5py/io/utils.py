@@ -65,15 +65,17 @@ def uuid2entity(value, workspace):
         if value in workspace.list_entities_name:
             return workspace.get_entity(value)[0]
 
+        # Search for property groups
         for obj in workspace.objects:
-            prop_group = [
-                prop_group
-                for prop_group in obj.property_groups
-                if prop_group.uid == value
-            ]
+            if getattr(obj, "property_groups", None) is not None:
+                prop_group = [
+                    prop_group
+                    for prop_group in obj.property_groups
+                    if prop_group.uid == value
+                ]
 
-            if prop_group:
-                return prop_group[0]
+                if prop_group:
+                    return prop_group[0]
 
         return None
 

@@ -48,7 +48,7 @@ class ObjectBase(Entity):
     def __init__(self, object_type: ObjectType, **kwargs):
         assert object_type is not None
         self._entity_type = object_type
-        self._property_groups: list[PropertyGroup] = []
+        self._property_groups: list[PropertyGroup] | None = None
         self._last_focus = "None"
         self._comments = None
         # self._clipping_ids: List[uuid.UUID] = []
@@ -201,11 +201,11 @@ class ObjectBase(Entity):
             if name is not None:
                 prop_groups = [
                     prop_group
-                    for prop_group in self.property_groups
+                    for prop_group in getattr(self, "property_groups")
                     if prop_group.name == name
                 ]
             else:
-                prop_groups = self.property_groups
+                prop_groups = getattr(self, "property_groups")
 
             for prop_group in prop_groups:
                 for uid in uids:
@@ -273,17 +273,20 @@ class ObjectBase(Entity):
 
         :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
+        property_groups = []
+        if self.property_groups is not None:
+            property_groups = self.property_groups
+
         if "name" in kwargs and any(
-            pg.name == kwargs["name"] for pg in self.property_groups
+            pg.name == kwargs["name"] for pg in property_groups
         ):
-            prop_group = [
-                pg for pg in self.property_groups if pg.name == kwargs["name"]
-            ][0]
+            prop_group = [pg for pg in property_groups if pg.name == kwargs["name"]][0]
         else:
             kwargs["parent"] = self
             prop_group = PropertyGroup(**kwargs)
-            self._property_groups += [prop_group]
+            property_groups += [prop_group]
 
+        self._property_groups = property_groups
         return prop_group
 
     def get_data(self, name: str) -> list[Data]:
@@ -344,7 +347,7 @@ class ObjectBase(Entity):
         return None
 
     @property
-    def property_groups(self) -> list[PropertyGroup]:
+    def property_groups(self) -> list[PropertyGroup] | None:
         """
         :obj:`list` of :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         """
@@ -353,12 +356,21 @@ class ObjectBase(Entity):
     @property_groups.setter
     def property_groups(self, prop_groups: list[PropertyGroup]):
         # Check for existing property_group
-        for prop_group in prop_groups:
-            if not any(
-                pg.uid == prop_group.uid for pg in self.property_groups
-            ) and not any(pg.name == prop_group.name for pg in self.property_groups):
-                prop_group.parent = self
-                self._property_groups = self.property_groups + [prop_group]
+        if prop_groups is None:
+            property_groups = None
+        else:
+            property_groups = self._property_groups
+            if property_groups is None:
+                property_groups = []
+
+            for prop_group in prop_groups:
+                if not any(
+                    pg.uid == prop_group.uid for pg in property_groups
+                ) and not any(pg.name == prop_group.name for pg in property_groups):
+                    prop_group.parent = self
+                    property_groups += [prop_group]
+
+        self._property_groups = property_groups
         self.workspace.update_attribute(self, "property_groups")
 
     @property
