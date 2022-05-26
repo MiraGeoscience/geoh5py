@@ -521,9 +521,12 @@ class Workspace(AbstractContextManager):
         else:
             entity_type = "data"
 
-        children_list = self._io_call(
-            H5Reader.fetch_children, entity.uid, entity_type, mode="r"
-        )
+        if isinstance(entity, RootGroup) and not entity.on_file:
+            children_list = {child.uid: "" for child in entity.children}
+        else:
+            children_list = self._io_call(
+                H5Reader.fetch_children, entity.uid, entity_type, mode="r"
+            )
 
         family_tree = []
         for uid, child_type in children_list.items():
