@@ -37,6 +37,7 @@ class Entity(ABC):
         "Allow delete": "allow_delete",
         "Allow move": "allow_move",
         "Allow rename": "allow_rename",
+        "Clipping IDs": "clipping_ids",
         "ID": "uid",
         "Name": "name",
         "Partially hidden": "partially_hidden",

@@ -39,6 +39,7 @@ from ..groups import CustomGroup, Group, PropertyGroup, RootGroup
 from ..io import H5Reader, H5Writer
 from ..objects import ObjectBase
 from ..shared import weakref_utils
+from ..shared.concatenator import Concatenator
 from ..shared.entity import Entity
 from ..shared.exceptions import Geoh5FileClosedError
 
@@ -556,8 +557,12 @@ class Workspace(AbstractContextManager):
 
         return family_tree
 
-    def fetch_concatenated_children(self, group, attributes):
-        """Load all concatenated children."""
+    def fetch_concatenated_children(self, group: Concatenator, attributes: list):
+        """
+        Load all concatenated children.
+        :param group: Concatenator group
+        :param attributes: Entities stored as list of dictionaries.
+        """
         group.attributes = {uuid.UUID(elem["ID"]): elem for elem in attributes}
         prop_groups = {}
         for key in group.property_group_ids:
@@ -570,32 +575,48 @@ class Workspace(AbstractContextManager):
             for uid in prop_groups[attrs["ID"]].properties:
                 data_attrs = group.attributes[uid]
                 data_attrs["association"] = prop_groups[attrs["ID"]].association
-                self.create_entity(
+
+                entity_type = self.fetch_type(uuid.UUID(data_attrs["Type ID"]), "Data")
+                data = self.create_entity(
                     Data,
                     save_on_creation=False,
                     **{
                         "entity": data_attrs,
-                        "entity_type": {"uid": data_attrs["Type ID"]},
+                        "entity_type": entity_type,
                     },
                 )
+                data._concatenated = True
 
         for key in group.concatenated_object_ids:
             attrs = group.attributes[key]
             attrs["parent"] = group
+            attrs["concatenated"] = True
             class_type = ObjectBase
             obj = self.create_entity(
                 class_type,
                 save_on_creation=False,
                 **{"entity": attrs, "entity_type": {"uid": attrs["Object Type ID"]}},
             )
+            obj._concatenated = True
             for attr, val in attrs.items():
                 if "Property" in attr:
                     obj.add_children(self.get_entity(uuid.UUID(val)))
 
-    def fetch_concatenated_data(self, uid: uuid.UUID, entity_type, argument: str):
+    def fetch_concatenated_data(self, entity: Group | ObjectBase, *arguments: str):
         """Fetch data under the Concatenated Data group of an entity."""
+        if isinstance(entity, Group):
+            entity_type = "Group"
+        else:
+            raise NotImplementedError(
+                "Method 'fetch_concatenated_data' currently only implemented for 'Group' entities."
+            )
+
         return self._io_call(
-            H5Reader.fetch_concatenated_data, uid, entity_type, argument, mode="r"
+            H5Reader.fetch_concatenated_data,
+            entity.uid,
+            entity_type,
+            *arguments,
+            mode="r",
         )
 
     def fetch_metadata(self, uid: uuid.UUID, argument="Metadata"):
@@ -639,6 +660,14 @@ class Workspace(AbstractContextManager):
             property_groups.append(group)
 
         return property_groups
+
+    def fetch_type(self, uid: uuid.UUID, entity_type: str):
+        """
+        Fetch attributes of a specific entity type.
+        :param uid: Unique identifier of the entity type.
+        :param entity_type: One of 'Data', 'Object' or 'Group'
+        """
+        return self._io_call(H5Reader.fetch_type, uid, entity_type)
 
     def fetch_values(self, uid: uuid.UUID) -> float | None:
         """

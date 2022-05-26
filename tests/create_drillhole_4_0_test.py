@@ -27,5 +27,5 @@ def test_create_drillhole_data(tmp_path):
     h5file_path = r"C:\Users\dominiquef\Desktop\GA_demo_4.0.geoh5"
 
     with Workspace(h5file_path) as w_s:
-
-        print(tmp_path, w_s.objects)
+        obj = w_s.objects[0]
+        obj.get_data_values("As")

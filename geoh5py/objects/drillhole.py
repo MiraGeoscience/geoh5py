@@ -47,6 +47,7 @@ class Drillhole(Points):
             "Cost": "cost",
             "Collar": "collar",
             "Planning": "planning",
+            "End of hole": "end_of_hole",
         }
     )
 
@@ -54,6 +55,7 @@ class Drillhole(Points):
         self._cells: np.ndarray | None = None
         self._collar: np.ndarray | None = None
         self._cost: float | None = 0.0
+        self._end_of_hole: int | None = None
         self._planning: str = "Default"
         self._surveys: np.ndarray | None = None
         self._trace: np.ndarray | None = None
@@ -128,6 +130,20 @@ class Drillhole(Points):
     def cost(self, value):
         assert isinstance(value, float), f"Provided cost value must be of type {float}"
         self._cost = value
+
+    @property
+    def end_of_hole(self):
+        """
+        :obj:`float`: End of drillhole in meters
+        """
+        return self._end_of_hole
+
+    @end_of_hole.setter
+    def end_of_hole(self, value):
+        assert isinstance(
+            value, (int, float, type(None))
+        ), f"Provided end_of_hole value must be of type {int}"
+        self._end_of_hole = value
 
     @property
     def deviation_x(self):

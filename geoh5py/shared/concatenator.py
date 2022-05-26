@@ -57,6 +57,8 @@ class Concatenator(Entity):
         self._concatenated_object_ids = None
         self._property_group_ids = None
         self._attributes = None
+        self._data: dict = {}
+        self._indices: dict = {}
 
         super().__init__(**kwargs)
 
@@ -88,7 +90,7 @@ class Concatenator(Entity):
         """Dictionary of concatenated objects and data concatenated_object_ids."""
         if getattr(self, "_concatenated_object_ids", None) is None:
             self._concatenated_object_ids = self.workspace.fetch_concatenated_data(
-                self.uid, "Group", "Concatenated object IDs"
+                self, "Concatenated object IDs"
             )
         return self._concatenated_object_ids
 
@@ -102,15 +104,40 @@ class Concatenator(Entity):
         self._concatenated_object_ids = object_ids
 
     @property
+    def data(self) -> dict:
+        """
+        Concatenated data values stored as a dictionary.
+        """
+        return self._data
+
+    @property
+    def indices(self) -> dict:
+        """
+        Concatenated indices stored as a dictionary.
+        """
+        return self._indices
+
+    @property
     def entity_type(self) -> EntityType:
         ...
+
+    def get_concatenated_data(self, entity: Entity):
+        """
+        Get values from a concatenated array.
+        """
+        if entity.name not in self.data:
+            data, indices = self.workspace.fetch_concatenated_data(self, entity.name)
+            self.data[entity.name] = data
+            self.indices[entity.name] = indices
+
+        return self.data[entity.name][self.indices[entity.name]]
 
     @property
     def property_group_ids(self):
         """Dictionary of concatenated objects and data property_group_ids."""
         if getattr(self, "_property_group_ids", None) is None:
             self._property_group_ids = self.workspace.fetch_concatenated_data(
-                self.uid, "Group", "Property Group IDs"
+                self, "Property Group IDs"
             )
         return self._property_group_ids
 

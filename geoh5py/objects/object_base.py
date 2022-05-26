@@ -317,6 +317,19 @@ class ObjectBase(Entity):
                 name_list.append(child.name)
         return sorted(name_list)
 
+    def get_data_values(self, name: str) -> list:
+        """
+        Generic function to get data values from object.
+        """
+        values = []
+        for child in self.get_data(name):
+            if self.concatenated:
+                values += [self.parent.get_concatenated_data(child)]
+            else:
+                values += [child.values]
+
+        return values
+
     @property
     def last_focus(self) -> str:
         """

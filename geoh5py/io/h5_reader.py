@@ -64,10 +64,8 @@ class H5Reader:
             property_groups: dict = {}
 
             entity_type = cls.format_type_string(entity_type)
-            if "type" in entity_type:
-                entity_type = entity_type.replace("_", " ") + "s"
-                entity = h5file[name]["Types"][entity_type][as_str_if_uuid(uid)]
-            elif entity_type == "Root":
+
+            if entity_type == "Root":
                 entity = h5file[name][entity_type]
             else:
                 entity = h5file[name][entity_type][as_str_if_uuid(uid)]
@@ -170,7 +168,7 @@ class H5Reader:
         file: str | h5py.File,
         uid: uuid.UUID,
         entity_type: str,
-        argument: str,
+        label: str,
     ):
         """
         Get :obj:`~geoh5py.shared.entity.Entity.children` of concatenated group.
@@ -179,8 +177,7 @@ class H5Reader:
         :param uid: Unique identifier
         :param entity_type: Type of entity from
             'group', 'data', 'object', 'group_type', 'data_type', 'object_type'
-        :param argument: Identifier for the attribute requested, chose from
-            'attributes',
+        :param label: Group identifier for the attribute requested.
 
         :return children: [{uuid: type}, ... ]
             List of dictionaries for the children uid and type
@@ -192,22 +189,45 @@ class H5Reader:
             try:
                 group = h5file[name][entity_type][as_str_if_uuid(uid)]
 
-                if argument == "Concatenated object IDs":
+                if label == "Concatenated object IDs":
                     return [
-                        str2uuid(str_from_utf8_bytes(uid)) for uid in group[argument][:]
+                        str2uuid(str_from_utf8_bytes(uid)) for uid in group[label][:]
                     ]
 
                 attribute = None
-                if argument == "Attributes":
-                    attribute = json.loads(
-                        str_from_utf8_bytes(group["Concatenated Data"][argument][()])
-                    )
+                group = group["Concatenated Data"]
+                if label == "Attributes":
+                    attribute = json.loads(str_from_utf8_bytes(group[label][()]))
 
-                elif argument == "Property Group IDs":
+                elif label == "Property Group IDs":
                     attribute = [
-                        str2uuid(str_from_utf8_bytes(uid))
-                        for uid in group["Concatenated Data"][argument][:]
+                        str2uuid(str_from_utf8_bytes(uid)) for uid in group[label][:]
                     ]
+                else:
+                    if label not in group["Index"]:
+                        raise UserWarning(
+                            f"{H5Reader.fetch_concatenated_data} for {label} does not have corresponding Index."
+                        )
+                    indices = group["Index"][label][:]
+                    for elem in indices:
+                        elem[2] = str2uuid(str_from_utf8_bytes(elem[2]))
+                        elem[3] = str2uuid(str_from_utf8_bytes(elem[3]))
+                    # indices["Object ID"] = [
+                    #     str2uuid(str_from_utf8_bytes(uid))
+                    #     for uid in indices["Object ID"]
+                    # ]
+                    # indices["Data ID"] = [
+                    #     str2uuid(str_from_utf8_bytes(uid))
+                    #     for uid in indices["Data ID"]
+                    # ]
+
+                    if label in group["Data"]:
+                        attribute = group["Data"][label][:]
+                    else:
+                        attribute = group[label][:]
+
+                    return attribute, indices
+
             except KeyError:
                 return None
 
@@ -224,7 +244,6 @@ class H5Reader:
         """
         Fetch text of dictionary type attributes of an entity.
         """
-
         with fetch_h5_handle(file) as h5file:
             name = list(h5file.keys())[0]
 
@@ -306,22 +325,40 @@ class H5Reader:
         return property_groups
 
     @classmethod
-    def fetch_type_attributes(cls, h5_handle):
+    def fetch_type(cls, file: str | h5py.File, uid: uuid.UUID, entity_type: str):
+        """
+        Fetch a type from the target geoh5.
+
+        :param file: :obj:`h5py.File` or name of the target geoh5 file
+        :param uid: Unique identifier of the target entity
+        :param entity_type: One of 'Data', 'Object' or 'Group'
+        :return property_group_attributes: :obj:`dict` of property groups
+            and respective attributes.
+
+        """
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file.keys())[0]
+            entity_type = entity_type + " types"
+            type_handle = h5file[name]["Types"][entity_type][as_str_if_uuid(uid)]
+            return cls.fetch_type_attributes(type_handle)
+
+    @classmethod
+    def fetch_type_attributes(cls, type_handle):
         """
         Fetch type attributes from a given h5 handle.
         """
         type_attributes = {}
-        for key, value in h5_handle.attrs.items():
+        for key, value in type_handle.attrs.items():
             type_attributes[key] = value
 
-        if "Color map" in h5_handle.keys():
+        if "Color map" in type_handle.keys():
             type_attributes["color_map"] = {}
-            for key, value in h5_handle["Color map"].attrs.items():
+            for key, value in type_handle["Color map"].attrs.items():
                 type_attributes["color_map"][key] = value
-            type_attributes["color_map"]["values"] = h5_handle["Color map"][:]
+            type_attributes["color_map"]["values"] = type_handle["Color map"][:]
 
-        if "Value map" in h5_handle.keys():
-            mapping = cls.fetch_value_map(h5_handle)
+        if "Value map" in type_handle.keys():
+            mapping = cls.fetch_value_map(type_handle)
             type_attributes["value_map"] = mapping
 
         return type_attributes
