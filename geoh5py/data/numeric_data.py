@@ -38,8 +38,11 @@ class NumericData(Data, ABC):
         """
         :return: values: An array of float values
         """
-        if (getattr(self, "_values", None) is None) and self.on_file:
-            self._values = self.workspace.fetch_values(self.uid)
+        if getattr(self, "_values", None) is None:
+            if self.concatenated:
+                self._values = self.parent.get_concatenated_data(self)
+            elif self.on_file:
+                self._values = self.workspace.fetch_values(self.uid)
 
         if self._values is not None:
             self._values = self.check_vector_length(self._values)

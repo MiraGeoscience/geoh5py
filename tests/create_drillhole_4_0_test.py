@@ -23,9 +23,10 @@
 from geoh5py.workspace import Workspace
 
 
-def test_create_drillhole_data(tmp_path):
+def test_create_drillhole_data():
     h5file_path = r"C:\Users\dominiquef\Desktop\GA_demo_4.0.geoh5"
 
     with Workspace(h5file_path) as w_s:
         obj = w_s.objects[0]
-        obj.get_data_values("As")
+        data = obj.get_data("As")[0]
+        print(data.values)

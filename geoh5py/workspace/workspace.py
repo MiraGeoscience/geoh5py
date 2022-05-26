@@ -502,7 +502,7 @@ class Workspace(AbstractContextManager):
 
     def fetch_children(
         self,
-        entity: Entity | None,
+        entity: Entity | Concatenator | None,
         recursively: bool = False,
     ) -> list:
         """
@@ -528,7 +528,7 @@ class Workspace(AbstractContextManager):
 
         family_tree = []
         for uid, child_type in children_list.items():
-            if uid == "Attributes":
+            if uid == "Attributes" and isinstance(entity, Concatenator):
                 family_tree += [self.fetch_concatenated_children(entity, child_type)]
                 continue
 
@@ -577,7 +577,7 @@ class Workspace(AbstractContextManager):
                 data_attrs["association"] = prop_groups[attrs["ID"]].association
 
                 entity_type = self.fetch_type(uuid.UUID(data_attrs["Type ID"]), "Data")
-                data = self.create_entity(
+                data_entity = self.create_entity(
                     Data,
                     save_on_creation=False,
                     **{
@@ -585,7 +585,8 @@ class Workspace(AbstractContextManager):
                         "entity_type": entity_type,
                     },
                 )
-                data._concatenated = True
+                if data_entity is not None:
+                    setattr(data_entity, "_concatenated", True)
 
         for key in group.concatenated_object_ids:
             attrs = group.attributes[key]
@@ -597,10 +598,14 @@ class Workspace(AbstractContextManager):
                 save_on_creation=False,
                 **{"entity": attrs, "entity_type": {"uid": attrs["Object Type ID"]}},
             )
-            obj._concatenated = True
-            for attr, val in attrs.items():
-                if "Property" in attr:
-                    obj.add_children(self.get_entity(uuid.UUID(val)))
+            if obj is not None:
+                setattr(obj, "_concatenated", True)
+                for attr, val in attrs.items():
+                    if "Property" in attr and isinstance(
+                        self.get_entity(uuid.UUID(val))[0], Data
+                    ):
+                        data_entity = self.get_entity(uuid.UUID(val))[0]
+                        setattr(data_entity, "_parent", obj)
 
     def fetch_concatenated_data(self, entity: Group | ObjectBase, *arguments: str):
         """Fetch data under the Concatenated Data group of an entity."""

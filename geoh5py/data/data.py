@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import uuid
 from abc import abstractmethod
 
 from ..shared import Entity
@@ -128,3 +129,11 @@ class Data(Entity):
         Alias not implemented from base Entity class.
         """
         raise NotImplementedError("Data entity cannot contain files.")
+
+    def remove_data_from_group(
+        self, data: list | Entity | uuid.UUID | str, name: str = None
+    ):
+        """
+        Remove self from a property group.
+        """
+        ...

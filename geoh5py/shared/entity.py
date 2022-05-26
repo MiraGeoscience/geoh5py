@@ -208,17 +208,11 @@ class Entity(ABC):
     def entity_type(self) -> shared.EntityType:
         ...
 
-    @property
-    def on_file(self) -> bool:
+    def get_concatenated_data(self, child: Entity) -> list:
         """
-        :obj:`bool` Entity already present in
-        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
+        Generic function to get data values from object.
         """
-        return self._on_file
-
-    @on_file.setter
-    def on_file(self, value: bool):
-        self._on_file = value
+        return self.parent.get_concatenated_data(self, child)
 
     @classmethod
     def fix_up_name(cls, name: str) -> str:
@@ -288,6 +282,18 @@ class Entity(ABC):
     def name(self, new_name: str):
         self._name = self.fix_up_name(new_name)
         self.workspace.update_attribute(self, "attributes")
+
+    @property
+    def on_file(self) -> bool:
+        """
+        :obj:`bool` Entity already present in
+        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
+        """
+        return self._on_file
+
+    @on_file.setter
+    def on_file(self, value: bool):
+        self._on_file = value
 
     @property
     def parent(self):
@@ -366,6 +372,44 @@ class Entity(ABC):
         """
         self._children = [child for child in self._children if child not in children]
         self.workspace.remove_children(self, children)
+
+    def remove_data_from_group(
+        self, data: list | Entity | uuid.UUID | str, name: str = None
+    ):
+        """
+        Remove data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
+        All given data must be children of the parent object.
+
+        :param data: :obj:`~geoh5py.data.data.Data` object,
+            :obj:`~geoh5py.shared.entity.Entity.uid` or
+            :obj:`~geoh5py.shared.entity.Entity.name` of data.
+        :param name: Name of a :obj:`~geoh5py.groups.property_group.PropertyGroup`.
+            A new group is created if none exist with the given name.
+        """
+        if getattr(self, "property_groups", None) is not None:
+
+            if isinstance(data, list):
+                uids = []
+                for datum in data:
+                    uids += self.reference_to_uid(datum)
+            else:
+                uids = self.reference_to_uid(data)
+
+            if name is not None:
+                prop_groups = [
+                    prop_group
+                    for prop_group in getattr(self, "property_groups")
+                    if prop_group.name == name
+                ]
+            else:
+                prop_groups = getattr(self, "property_groups")
+
+            for prop_group in prop_groups:
+                for uid in uids:
+                    if uid in prop_group.properties:
+                        prop_group.properties.remove(uid)
+
+            self.workspace.update_attribute(self, "property_groups")
 
     @property
     def uid(self) -> uuid.UUID:

@@ -176,44 +176,6 @@ class ObjectBase(Entity):
 
         return prop_group
 
-    def remove_data_from_group(
-        self, data: list | Data | uuid.UUID | str, name: str = None
-    ):
-        """
-        Remove data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
-        All given data must be children of the parent object.
-
-        :param data: :obj:`~geoh5py.data.data.Data` object,
-            :obj:`~geoh5py.shared.entity.Entity.uid` or
-            :obj:`~geoh5py.shared.entity.Entity.name` of data.
-        :param name: Name of a :obj:`~geoh5py.groups.property_group.PropertyGroup`.
-            A new group is created if none exist with the given name.
-        """
-        if getattr(self, "property_groups", None) is not None:
-
-            if isinstance(data, list):
-                uids = []
-                for datum in data:
-                    uids += self.reference_to_uid(datum)
-            else:
-                uids = self.reference_to_uid(data)
-
-            if name is not None:
-                prop_groups = [
-                    prop_group
-                    for prop_group in getattr(self, "property_groups")
-                    if prop_group.name == name
-                ]
-            else:
-                prop_groups = getattr(self, "property_groups")
-
-            for prop_group in prop_groups:
-                for uid in uids:
-                    if uid in prop_group.properties:
-                        prop_group.properties.remove(uid)
-
-            self.workspace.update_attribute(self, "property_groups")
-
     @property
     def cells(self):
         """
@@ -316,19 +278,6 @@ class ObjectBase(Entity):
             if isinstance(child, Data):
                 name_list.append(child.name)
         return sorted(name_list)
-
-    def get_data_values(self, name: str) -> list:
-        """
-        Generic function to get data values from object.
-        """
-        values = []
-        for child in self.get_data(name):
-            if self.concatenated:
-                values += [self.parent.get_concatenated_data(child)]
-            else:
-                values += [child.values]
-
-        return values
 
     @property
     def last_focus(self) -> str:
