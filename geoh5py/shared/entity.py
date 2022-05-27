@@ -208,11 +208,11 @@ class Entity(ABC):
     def entity_type(self) -> shared.EntityType:
         ...
 
-    def get_concatenated_data(self, child: Entity) -> list:
+    def get_concatenated_data(self, entity: Entity) -> list:
         """
         Generic function to get data values from object.
         """
-        return self.parent.get_concatenated_data(self, child)
+        return self.parent.get_concatenated_data(self, entity)
 
     @classmethod
     def fix_up_name(cls, name: str) -> str:

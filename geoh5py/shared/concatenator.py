@@ -56,6 +56,7 @@ class Concatenator(Entity):
         self._concatenated_data = None
         self._concatenated_object_ids = None
         self._property_group_ids = None
+        self._property_groups = None
         self._attributes = None
         self._data: dict = {}
         self._indices: dict = {}
@@ -149,3 +150,13 @@ class Concatenator(Entity):
             )
 
         self._property_group_ids = object_ids
+
+    @property
+    def property_groups(self):
+        """
+        Property groups for the concatenated data.
+        """
+        if getattr(self, "_property_groups", None) is None:
+            self._property_groups = self.workspace.fetch_property_groups(self)
+
+        return self._property_groups

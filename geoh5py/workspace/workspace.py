@@ -236,6 +236,22 @@ class Workspace(AbstractContextManager):
 
         return new_object
 
+    def create_concatenated_entity(self, attributes):
+        attributes["concatenated"] = True
+
+        if "Object Type ID" in attributes:
+            class_type = ObjectBase
+            type_attr = {"uid": attributes["Object Type ID"]}
+        else:
+            class_type = Data
+            type_attr = self.fetch_type(uuid.UUID(attributes["Type ID"]), "Data")
+
+        self.create_entity(
+            class_type,
+            save_on_creation=False,
+            **{"entity": attributes, "entity_type": type_attr},
+        )
+
     def create_data(
         self,
         entity_class,
@@ -529,7 +545,7 @@ class Workspace(AbstractContextManager):
         family_tree = []
         for uid, child_type in children_list.items():
             if uid == "Attributes" and isinstance(entity, Concatenator):
-                family_tree += [self.fetch_concatenated_children(entity, child_type)]
+                family_tree += [self.fetch_concatenated_objects(entity, child_type)]
                 continue
 
             if self.get_entity(uid)[0] is not None:
@@ -557,55 +573,18 @@ class Workspace(AbstractContextManager):
 
         return family_tree
 
-    def fetch_concatenated_children(self, group: Concatenator, attributes: list):
+    def fetch_concatenated_objects(self, group: Concatenator, attributes: list):
         """
         Load all concatenated children.
         :param group: Concatenator group
         :param attributes: Entities stored as list of dictionaries.
         """
         group.attributes = {uuid.UUID(elem["ID"]): elem for elem in attributes}
-        prop_groups = {}
-        for key in group.property_group_ids:
-            if key not in group.attributes:
-                continue
-
-            attrs = group.attributes[key]
-            prop_groups[attrs["ID"]] = PropertyGroup(**attrs)
-
-            for uid in prop_groups[attrs["ID"]].properties:
-                data_attrs = group.attributes[uid]
-                data_attrs["association"] = prop_groups[attrs["ID"]].association
-
-                entity_type = self.fetch_type(uuid.UUID(data_attrs["Type ID"]), "Data")
-                data_entity = self.create_entity(
-                    Data,
-                    save_on_creation=False,
-                    **{
-                        "entity": data_attrs,
-                        "entity_type": entity_type,
-                    },
-                )
-                if data_entity is not None:
-                    setattr(data_entity, "_concatenated", True)
 
         for key in group.concatenated_object_ids:
             attrs = group.attributes[key]
             attrs["parent"] = group
-            attrs["concatenated"] = True
-            class_type = ObjectBase
-            obj = self.create_entity(
-                class_type,
-                save_on_creation=False,
-                **{"entity": attrs, "entity_type": {"uid": attrs["Object Type ID"]}},
-            )
-            if obj is not None:
-                setattr(obj, "_concatenated", True)
-                for attr, val in attrs.items():
-                    if "Property" in attr and isinstance(
-                        self.get_entity(uuid.UUID(val))[0], Data
-                    ):
-                        data_entity = self.get_entity(uuid.UUID(val))[0]
-                        setattr(data_entity, "_parent", obj)
+            self.create_concatenated_entity(attrs)
 
     def fetch_concatenated_data(self, entity: Group | ObjectBase, *arguments: str):
         """Fetch data under the Concatenated Data group of an entity."""
@@ -647,22 +626,30 @@ class Workspace(AbstractContextManager):
 
         :param entity: Target object
         """
-
-        group_dict = self._io_call(H5Reader.fetch_property_groups, entity.uid)
-
         property_groups = []
-        for pg_id, attrs in group_dict.items():
-
-            group = PropertyGroup(uid=uuid.UUID(pg_id), parent=entity)
-
-            for attr, val in attrs.items():
-
-                try:
-                    setattr(group, group.attribute_map[attr], val)
-                except AttributeError:
+        if isinstance(entity, Concatenator):
+            for key in entity.property_group_ids:
+                if key not in entity.attributes:
                     continue
 
-            property_groups.append(group)
+                attrs = entity.attributes[key]
+                property_groups.append(PropertyGroup(**attrs))
+        else:
+
+            group_dict = self._io_call(H5Reader.fetch_property_groups, entity.uid)
+
+            for pg_id, attrs in group_dict.items():
+
+                group = PropertyGroup(uid=uuid.UUID(pg_id), parent=entity)
+
+                for attr, val in attrs.items():
+
+                    try:
+                        setattr(group, group.attribute_map[attr], val)
+                    except AttributeError:
+                        continue
+
+                property_groups.append(group)
 
         return property_groups
 
