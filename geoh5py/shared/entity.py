@@ -33,7 +33,7 @@ class Entity(ABC):
     Base Entity class
     """
 
-    _attribute_map = {
+    _attribute_map: dict = {
         "Allow delete": "allow_delete",
         "Allow move": "allow_move",
         "Allow rename": "allow_rename",
@@ -47,7 +47,6 @@ class Entity(ABC):
     _visible = True
 
     def __init__(self, uid: uuid.UUID | None = None, **kwargs):
-
         self._uid: uuid.UUID = uid if isinstance(uid, uuid.UUID) else uuid.uuid4()
         self._name = "Entity"
         self._parent: Entity | None = None
@@ -58,7 +57,6 @@ class Entity(ABC):
         self._partially_hidden = False
         self._public = True
         self._on_file = False
-        self._concatenated = False
         self._metadata: dict | None = None
 
         for attr, item in kwargs.items():
@@ -199,20 +197,9 @@ class Entity(ABC):
         return new_object
 
     @property
-    def concatenated(self) -> bool:
-        """Entity is registered under a Concatenator group."""
-        return self._concatenated
-
-    @property
     @abstractmethod
     def entity_type(self) -> shared.EntityType:
         ...
-
-    def get_concatenated_data(self, entity: Entity) -> list:
-        """
-        Generic function to get data values from object.
-        """
-        return self.parent.get_concatenated_data(self, entity)
 
     @classmethod
     def fix_up_name(cls, name: str) -> str:

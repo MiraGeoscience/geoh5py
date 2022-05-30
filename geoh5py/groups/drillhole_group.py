@@ -17,12 +17,12 @@
 
 import uuid
 
-from geoh5py.shared.concatenator import Concatenator
+from geoh5py.shared.concatenate import Concatenator
 
 from .group import Group, GroupType
 
 
-class DrillholeGroup(Group, Concatenator):
+class DrillholeGroup(Group):
     """The type for the group containing drillholes."""
 
     __TYPE_UID = uuid.UUID(
@@ -30,6 +30,19 @@ class DrillholeGroup(Group, Concatenator):
     )
 
     _name = "Drillholes"
+
+    def __new__(cls, **kwargs):
+        if kwargs.get("concatenator", False):
+            for key, item in Concatenator.__dict__.items():
+                if "__" in key:
+                    continue
+
+                if "attribute_map" in key:
+                    cls._attribute_map.update(item)
+                else:
+                    setattr(cls, key, getattr(Concatenator, key))
+
+        return super().__new__(cls)
 
     def __init__(self, group_type: GroupType, **kwargs):
 

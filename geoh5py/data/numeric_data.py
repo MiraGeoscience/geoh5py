@@ -18,6 +18,7 @@ from abc import ABC
 
 import numpy as np
 
+from ..shared.concatenate import Concatenated
 from .data import Data, DataType, PrimitiveTypeEnum
 
 
@@ -25,6 +26,19 @@ class NumericData(Data, ABC):
     """
     Data container for floats values
     """
+
+    def __new__(cls, **kwargs):
+        if kwargs.get("concatenated", False):
+            for key, item in Concatenated.__dict__.items():
+                if "__" in key:
+                    continue
+
+                if "attribute_map" in key:
+                    cls._attribute_map.update(item)
+                else:
+                    setattr(cls, key, getattr(Concatenated, key))
+
+        return super().__new__(cls)
 
     def __init__(self, data_type: DataType, **kwargs):
         super().__init__(data_type, **kwargs)
@@ -39,7 +53,7 @@ class NumericData(Data, ABC):
         :return: values: An array of float values
         """
         if getattr(self, "_values", None) is None:
-            if self.concatenated:
+            if isinstance(self, Concatenated):
                 self._values = self.parent.get_concatenated_data(self)
             elif self.on_file:
                 self._values = self.workspace.fetch_values(self.uid)

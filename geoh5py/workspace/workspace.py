@@ -39,7 +39,7 @@ from ..groups import CustomGroup, Group, PropertyGroup, RootGroup
 from ..io import H5Reader, H5Writer
 from ..objects import ObjectBase
 from ..shared import weakref_utils
-from ..shared.concatenator import Concatenator
+from ..shared.concatenate import Concatenator
 from ..shared.entity import Entity
 from ..shared.exceptions import Geoh5FileClosedError
 
@@ -407,7 +407,7 @@ class Workspace(AbstractContextManager):
                 for uid in uuids:
                     recovered_object = self.load_entity(uid, entity_type)
 
-                    if isinstance(recovered_object, Entity):
+                    if isinstance(recovered_object, (Group, ObjectBase)):
                         self.fetch_children(recovered_object, recursively=True)
                         getattr(recovered_object, "parent", None)
 
@@ -518,7 +518,7 @@ class Workspace(AbstractContextManager):
 
     def fetch_children(
         self,
-        entity: Entity | Concatenator | None,
+        entity: ObjectBase | Group | None,
         recursively: bool = False,
     ) -> list:
         """
@@ -544,7 +544,7 @@ class Workspace(AbstractContextManager):
 
         family_tree = []
         for uid, child_type in children_list.items():
-            if uid == "Attributes" and isinstance(entity, Concatenator):
+            if uid == "Attributes" and getattr(entity, "concatenator", False):
                 family_tree += [self.fetch_concatenated_objects(entity, child_type)]
                 continue
 
@@ -560,7 +560,7 @@ class Workspace(AbstractContextManager):
                 recovered_object.entity_type.on_file = True
                 family_tree += [recovered_object]
 
-                if recursively:
+                if recursively and isinstance(recovered_object, (Group, ObjectBase)):
                     family_tree += self.fetch_children(
                         recovered_object, recursively=True
                     )
@@ -573,18 +573,24 @@ class Workspace(AbstractContextManager):
 
         return family_tree
 
-    def fetch_concatenated_objects(self, group: Concatenator, attributes: list):
+    def fetch_concatenated_objects(self, group, attributes: list):
         """
         Load all concatenated children.
         :param group: Concatenator group
         :param attributes: Entities stored as list of dictionaries.
         """
-        group.attributes = {uuid.UUID(elem["ID"]): elem for elem in attributes}
+        if not hasattr(group, "attributes"):
+            raise UserWarning("Only Concatenator group can have concatenated objects.")
 
-        for key in group.concatenated_object_ids:
-            attrs = group.attributes[key]
-            attrs["parent"] = group
-            self.create_concatenated_entity(attrs)
+        setattr(
+            group, "attributes", {uuid.UUID(elem["ID"]): elem for elem in attributes}
+        )
+
+        if hasattr(group, "concatenated_object_ids"):
+            for key in getattr(group, "concatenated_object_ids"):
+                attrs = getattr(group, "attributes")[key]
+                attrs["parent"] = group
+                self.create_concatenated_entity(attrs)
 
     def fetch_concatenated_data(self, entity: Group | ObjectBase, *arguments: str):
         """Fetch data under the Concatenated Data group of an entity."""
@@ -607,8 +613,10 @@ class Workspace(AbstractContextManager):
         """
         Fetch the metadata of an entity from the source geoh5.
 
+        :param uid: Entity uid containing the metadata.
+        :param argument: Optional argument for other json-like attributes.
 
-        :return:
+        :return: Dictionary of values.
         """
         return self._io_call(
             H5Reader.fetch_metadata,

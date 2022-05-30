@@ -82,10 +82,10 @@ class H5Reader:
             if "PropertyGroups" in entity.keys():
                 property_groups = cls.fetch_property_groups(file, uid)
 
-            attributes["entity"]["concatenator_group"] = False
+            attributes["entity"]["concatenator"] = False
 
             if "Concatenated Data" in entity.keys():
-                attributes["entity"]["concatenator_group"] = True
+                attributes["entity"]["concatenator"] = True
 
             attributes["entity"]["on_file"] = True
 
@@ -206,7 +206,8 @@ class H5Reader:
                 else:
                     if label not in group["Index"]:
                         raise UserWarning(
-                            f"{H5Reader.fetch_concatenated_data} for {label} does not have corresponding Index."
+                            f"{H5Reader.fetch_concatenated_data} for {label} "
+                            f"does not have corresponding Index."
                         )
                     indices = group["Index"][label][:]
                     for elem in indices:

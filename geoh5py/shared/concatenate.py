@@ -34,45 +34,31 @@ from __future__ import annotations
 
 import uuid
 
-from geoh5py.shared import Entity, EntityType
+from geoh5py.data import Data
 
 
-class Concatenator(Entity):
+class Concatenator:
     """
     Class modifier for concatenation of objects and data.
     """
 
-    _attribute_map = Entity._attribute_map.copy()
-    _attribute_map.update(
-        {
-            "Attributes": "attributes",
-            "Property Groups IDs": "property_group_ids",
-            "Concatenated object IDs": "concatenated_object_ids",
-            "Concatenated Data": "concatenated_data",
-        }
-    )
+    _attribute_map = {
+        "Attributes": "attributes",
+        "Property Groups IDs": "property_group_ids",
+        "Concatenated object IDs": "concatenated_object_ids",
+        "Concatenated Data": "concatenated_data",
+    }
+    _concatenated_data = None
+    _concatenated_object_ids = None
+    _property_group_ids = None
+    _property_groups = None
+    _attributes = None
+    _data: dict = {}
+    _indices: dict = {}
 
     def __init__(self, **kwargs):
-        self._concatenated_data = None
-        self._concatenated_object_ids = None
-        self._property_group_ids = None
-        self._property_groups = None
-        self._attributes = None
-        self._data: dict = {}
-        self._indices: dict = {}
 
         super().__init__(**kwargs)
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID | None:
-        ...
-
-    @property
-    def attribute_map(self) -> dict:
-        """
-        :obj:`dict` Attribute names mapping between geoh5 and geoh5py
-        """
-        return self._attribute_map
 
     @property
     def attributes(self):
@@ -90,9 +76,9 @@ class Concatenator(Entity):
     def concatenated_object_ids(self):
         """Dictionary of concatenated objects and data concatenated_object_ids."""
         if getattr(self, "_concatenated_object_ids", None) is None:
-            self._concatenated_object_ids = self.workspace.fetch_concatenated_data(
-                self, "Concatenated object IDs"
-            )
+            self._concatenated_object_ids = getattr(
+                self, "workspace"
+            ).fetch_concatenated_data(self, "Concatenated object IDs")
         return self._concatenated_object_ids
 
     @concatenated_object_ids.setter
@@ -118,28 +104,26 @@ class Concatenator(Entity):
         """
         return self._indices
 
-    @property
-    def entity_type(self) -> EntityType:
-        ...
-
-    def get_concatenated_data(self, entity: Entity):
+    def get_concatenated_data(self, data_id: str | uuid.UUID):
         """
         Get values from a concatenated array.
         """
-        if entity.name not in self.data:
-            data, indices = self.workspace.fetch_concatenated_data(self, entity.name)
-            self.data[entity.name] = data
-            self.indices[entity.name] = indices
+        if data_id not in self.data:
+            data, indices = getattr(self, "workspace").fetch_concatenated_data(
+                self, data_id
+            )
+            self.data[data_id] = data
+            self.indices[data_id] = indices
 
-        return self.data[entity.name][self.indices[entity.name]]
+        return self.data[data_id][self.indices[data_id]]
 
     @property
     def property_group_ids(self):
         """Dictionary of concatenated objects and data property_group_ids."""
         if getattr(self, "_property_group_ids", None) is None:
-            self._property_group_ids = self.workspace.fetch_concatenated_data(
-                self, "Property Group IDs"
-            )
+            self._property_group_ids = getattr(
+                self, "workspace"
+            ).fetch_concatenated_data(self, "Property Group IDs")
         return self._property_group_ids
 
     @property_group_ids.setter
@@ -157,6 +141,41 @@ class Concatenator(Entity):
         Property groups for the concatenated data.
         """
         if getattr(self, "_property_groups", None) is None:
-            self._property_groups = self.workspace.fetch_property_groups(self)
+            self._property_groups = getattr(self, "workspace").fetch_property_groups(
+                self
+            )
 
         return self._property_groups
+
+
+class Concatenated:
+    """
+    Class modifier for concatenated objects and data.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def get_data(self, name: str) -> list:
+        """
+        Generic function to get data values from object.
+        """
+        entity_list = []
+
+        if f"Property:{name}" in self.__dict__:
+            if isinstance(getattr(self, f"Property:{name}"), str):
+                uid = getattr(self, f"Property:{name}")
+                attributes = getattr(self, "parent").attributes[uid]
+                attributes["parent"] = self
+
+                getattr(self, "workspace").create_concatenated_entity(attributes)
+                #
+                # getattr(self, "workspace").get_concatenated_data(
+                #     self, getattr(self, f"Property:{name}")
+                # )
+
+        for child in getattr(self, "children"):
+            if isinstance(child, Data) and child.name == name:
+                entity_list.append(child)
+
+        return entity_list

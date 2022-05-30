@@ -25,6 +25,7 @@ import uuid
 import numpy as np
 
 from ..data.data import Data
+from ..shared.concatenate import Concatenated
 from ..shared.utils import match_values, merge_arrays
 from .object_base import ObjectType
 from .points import Points
@@ -50,6 +51,19 @@ class Drillhole(Points):
             "End of hole": "end_of_hole",
         }
     )
+
+    def __new__(cls, **kwargs):
+        if kwargs.get("concatenated", False):
+            for key, item in Concatenated.__dict__.items():
+                if "__" in key:
+                    continue
+
+                if "attribute_map" in key:
+                    cls._attribute_map.update(item)
+                else:
+                    setattr(cls, key, getattr(Concatenated, key))
+
+        return super().__new__(cls)
 
     def __init__(self, object_type: ObjectType, **kwargs):
         self._cells: np.ndarray | None = None
