@@ -35,9 +35,9 @@ import numpy as np
 
 from .. import data, groups, objects
 from ..data import CommentsData, Data, DataType
-from ..groups import CustomGroup, Group, PropertyGroup, RootGroup
+from ..groups import CustomGroup, DrillholeGroup, Group, PropertyGroup, RootGroup
 from ..io import H5Reader, H5Writer
-from ..objects import ObjectBase
+from ..objects import Drillhole, ObjectBase
 from ..shared import weakref_utils
 from ..shared.concatenation import Concatenated, Concatenator
 from ..shared.entity import Entity
@@ -236,7 +236,7 @@ class Workspace(AbstractContextManager):
 
         return new_object
 
-    def create_concatenated_entity(self, attributes):
+    def create_from_concatenation(self, attributes):
         attributes["concatenation"] = Concatenated
 
         if "Object Type ID" in attributes:
@@ -329,7 +329,11 @@ class Workspace(AbstractContextManager):
                 entity_class, entity_kwargs, entity_type_kwargs
             )
 
-        if created_entity is not None and save_on_creation:
+        if (
+            created_entity is not None
+            and save_on_creation
+            and not isinstance(created_entity, Concatenated)
+        ):
             self.save_entity(created_entity)
 
         return created_entity
@@ -369,6 +373,11 @@ class Workspace(AbstractContextManager):
                 and member.default_type_uid() == entity_type_uid
             ):
                 entity_type = member.find_or_create_type(self, **entity_type_kwargs)
+                if self.version > 1.0 and member == DrillholeGroup:
+                    entity_kwargs["concatenation"] = Concatenator
+
+                if self.version > 1.0 and member == Drillhole:
+                    entity_kwargs["concatenation"] = Concatenated
                 created_entity = member(entity_type, **entity_kwargs)
 
                 return created_entity
@@ -590,7 +599,7 @@ class Workspace(AbstractContextManager):
             for key in getattr(group, "concatenated_object_ids"):
                 attrs = getattr(group, "attributes")[key]
                 attrs["parent"] = group
-                self.create_concatenated_entity(attrs)
+                self.create_from_concatenation(attrs)
 
     def fetch_concatenated_data(self, entity: Group | ObjectBase, *arguments: str):
         """Fetch data under the Concatenated Data group of an entity."""

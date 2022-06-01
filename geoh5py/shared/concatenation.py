@@ -148,6 +148,15 @@ class Concatenator:
 
         return self._property_groups
 
+    # def add_children(self, children):
+    #     """
+    #     :param children: Add a list of entities as
+    #         :obj:`~geoh5py.shared.entity.Entity.children`
+    #     """
+    #     for child in children:
+    #         if child not in self._children:
+    #             self._children.append(child)
+
 
 class Concatenated:
     """

@@ -45,7 +45,6 @@ class Entity(ABC):
         "Public": "public",
         "Visible": "visible",
     }
-    _visible = True
 
     def __new__(cls, *args, **kwargs):
         if kwargs.get("concatenation", False):
@@ -71,6 +70,7 @@ class Entity(ABC):
         self._partially_hidden = False
         self._public = True
         self._on_file = False
+        self._visible = True
         self._metadata: dict | None = None
 
         for attr, item in kwargs.items():
@@ -206,7 +206,8 @@ class Entity(ABC):
         )
         entity_kwargs = {"entity": kwargs}
         new_object = workspace.create_entity(
-            cls, **{**entity_kwargs, **entity_type_kwargs}
+            cls,
+            **{**entity_kwargs, **entity_type_kwargs},
         )
         return new_object
 
