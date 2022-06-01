@@ -388,6 +388,9 @@ class Workspace(AbstractContextManager):
                 uuids = self._io_call(H5Reader.fetch_uuids, entity_type, mode="r")
 
                 for uid in uuids:
+                    if isinstance(self.get_entity(uid)[0], Entity):
+                        continue
+
                     recovered_object = self.load_entity(uid, entity_type)
 
                     if isinstance(recovered_object, Entity):
@@ -795,6 +798,9 @@ class Workspace(AbstractContextManager):
 
         :return entity: Entity loaded from geoh5
         """
+        if isinstance(self.get_entity(uid)[0], Entity):
+            return self.get_entity(uid)[0]
+
         base_classes = {
             "group": Group,
             "object": ObjectBase,
