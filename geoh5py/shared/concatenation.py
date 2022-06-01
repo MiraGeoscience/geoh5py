@@ -279,3 +279,15 @@ class Concatenated:
         trace_depth = self.get_concatenated_data("TraceDepth")
 
         return trace_depth
+
+    @property
+    def parent(self):
+        return self._parent
+
+    @parent.setter
+    def parent(self, entity):
+        if not isinstance(entity, (Concatenated, Concatenator)):
+            raise AttributeError(
+                "The 'parent' of a concatenated entity must be of type 'Concatenator'."
+            )
+        self._parent = entity

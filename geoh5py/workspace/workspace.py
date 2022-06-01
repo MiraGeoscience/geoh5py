@@ -332,7 +332,7 @@ class Workspace(AbstractContextManager):
         if (
             created_entity is not None
             and save_on_creation
-            and not isinstance(created_entity, Concatenated)
+            and created_entity.concatenation is not Concatenated
         ):
             self.save_entity(created_entity)
 
@@ -373,10 +373,10 @@ class Workspace(AbstractContextManager):
                 and member.default_type_uid() == entity_type_uid
             ):
                 entity_type = member.find_or_create_type(self, **entity_type_kwargs)
-                if self.version > 1.0 and member == DrillholeGroup:
+                if self.version > 1.0 and member is DrillholeGroup:
                     entity_kwargs["concatenation"] = Concatenator
 
-                if self.version > 1.0 and member == Drillhole:
+                if self.version > 1.0 and member is Drillhole:
                     entity_kwargs["concatenation"] = Concatenated
                 created_entity = member(entity_type, **entity_kwargs)
 

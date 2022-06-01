@@ -56,6 +56,7 @@ class Entity(ABC):
                     cls._attribute_map.update(item)
                 else:
                     setattr(cls, key, getattr(kwargs["concatenation"], key))
+            setattr(cls, "concatenation", kwargs["concatenation"])
 
         return super().__new__(cls)
 
@@ -71,6 +72,7 @@ class Entity(ABC):
         self._public = True
         self._on_file = False
         self._visible = True
+        self._concatenation = False
         self._metadata: dict | None = None
 
         for attr, item in kwargs.items():
@@ -188,6 +190,11 @@ class Entity(ABC):
         )
 
         return new_entity
+
+    @property
+    def concatenation(self):
+        """Store the entity as Concatenated, Concatenator or standalone."""
+        return self._concatenation
 
     @classmethod
     def create(cls, workspace, **kwargs):
