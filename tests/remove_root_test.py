@@ -19,6 +19,8 @@
 import numpy as np
 from h5py import File
 
+from geoh5py.groups import ContainerGroup
+from geoh5py.io.utils import as_str_if_uuid
 from geoh5py.objects import Points
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
@@ -32,7 +34,8 @@ def test_remove_root(tmp_path):
     h5file_path = tmp_path / r"testProject.geoh5"
 
     with Workspace(h5file_path) as workspace:
-        points = Points.create(workspace, vertices=xyz)
+        group = ContainerGroup.create(workspace)
+        points = Points.create(workspace, vertices=xyz, parent=group)
         data = points.add_data(
             {
                 "DataValues": {
@@ -49,24 +52,37 @@ def test_remove_root(tmp_path):
         group_name = "SomeGroup"
         data_group = points.add_data_to_group(data, group_name)
 
-        # Remove the root
-        with File(h5file_path, "r+") as project:
-            base = list(project.keys())[0]
-            del project[base]["Root"]
-            del project[base]["Groups"]
-            del project[base]["Types"]["Group types"]
+        # Check no crash loading existing entity
+        assert workspace.load_entity(points.uid, "object")
+        assert len(workspace.fetch_children(None)) == 0
 
-        # Read the data back in from a fresh workspace
-        new_workspace = Workspace(h5file_path)
+    # Remove the root
+    with File(h5file_path, "r+") as project:
+        base = list(project.keys())[0]
+        del project[base]["Root"]
+        del project[base]["Groups"][as_str_if_uuid(workspace.root.uid)]
+        del project[base]["Types"]["Group types"]
 
+    # Read the data back in from a fresh workspace
+    with Workspace(h5file_path) as new_workspace:
+        assert len(new_workspace.fetch_children(new_workspace.root)) == 1
         rec_points = new_workspace.get_entity(points.name)[0]
-        rec_group = rec_points.find_or_create_property_group(name=group_name)
-        rec_data = new_workspace.get_entity(data[0].name)[0]
 
+        points.workspace.open()
         compare_entities(
             points,
             rec_points,
             ignore=["_parent", "_on_file", "_property_groups"],
         )
-        compare_entities(data[0], rec_data, ignore=["_parent", "_on_file"])
-        compare_entities(data_group, rec_group, ignore=["_parent", "_on_file"])
+        compare_entities(
+            data[0],
+            new_workspace.get_entity(data[0].name)[0],
+            ignore=["_parent", "_on_file"],
+        )
+        compare_entities(
+            data_group,
+            rec_points.find_or_create_property_group(name=group_name),
+            ignore=["_parent", "_on_file"],
+        )
+
+    points.workspace.close()
