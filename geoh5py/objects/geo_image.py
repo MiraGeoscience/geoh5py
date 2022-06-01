@@ -171,7 +171,6 @@ class GeoImage(ObjectBase):
 
         :return vertices: Corners (vertices) in world coordinates.
         """
-
         reference = np.asarray(reference)
         locations = np.asarray(locations)
         if self.image is None:

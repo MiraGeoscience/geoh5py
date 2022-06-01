@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import uuid
 
-from geoh5py.data import Data
+from numpy import ndarray, vstack
 
 
 class Concatenator:
@@ -104,18 +104,19 @@ class Concatenator:
         """
         return self._indices
 
-    def get_concatenated_data(self, data_id: str | uuid.UUID):
+    def get_concatenated_data(self, entity, field: str):
         """
         Get values from a concatenated array.
         """
-        if data_id not in self.data:
+        if field not in self.data:
             data, indices = getattr(self, "workspace").fetch_concatenated_data(
-                self, data_id
+                self, field
             )
-            self.data[data_id] = data
-            self.indices[data_id] = indices
+            self.data[field] = data
+            self.indices[field] = indices
 
-        return self.data[data_id][self.indices[data_id]]
+        start, size = self.indices[field][entity.uid][:2]
+        return self.data[field][start : start + size]
 
     @property
     def property_group_ids(self):
@@ -154,7 +155,44 @@ class Concatenated:
     """
 
     def __init__(self, **kwargs):
+        self._parent: Concatenated | Concatenator | None = None
+
         super().__init__(**kwargs)
+
+    def add_data(self, data: dict, property_group: str = None):
+        """
+        Overloaded :obj:`~geoh5py.objects.ObjectBase.add_data` method.
+        """
+        raise NotImplementedError(
+            "Concatenated entity `add_data` method not yet implemented."
+        )
+
+    def add_data_to_group(self, data: dict, property_group: str = None):
+        """
+        Overloaded :obj:`~geoh5py.objects.ObjectBase.add_data_to_group` method.
+        """
+        raise NotImplementedError(
+            "Concatenated entity `add_data_to_group` method not yet implemented."
+        )
+
+    def get_data_list(self):
+        """
+        Get list of data names.
+        """
+        data_list = []
+        for attr in self.__dict__:
+            if "Property:" in attr:
+                data_list.append(attr.replace("Property:", ""))
+
+        return data_list
+
+    def find_or_create_property_group(self, **kwargs):
+        """
+        Overloaded :obj:`~geoh5py.objects.ObjectBase.find_or_create_property_group` method.
+        """
+        raise NotImplementedError(
+            "Concatenated entity `find_or_create_property_group` method not yet implemented."
+        )
 
     def get_data(self, name: str) -> list:
         """
@@ -165,17 +203,70 @@ class Concatenated:
         if f"Property:{name}" in self.__dict__:
             if isinstance(getattr(self, f"Property:{name}"), str):
                 uid = getattr(self, f"Property:{name}")
-                attributes = getattr(self, "parent").attributes[uid]
+                attributes = getattr(self, "parent").attributes[uuid.UUID(uid)]
                 attributes["parent"] = self
-
                 getattr(self, "workspace").create_concatenated_entity(attributes)
-                #
-                # getattr(self, "workspace").get_concatenated_data(
-                #     self, getattr(self, f"Property:{name}")
-                # )
 
         for child in getattr(self, "children"):
-            if isinstance(child, Data) and child.name == name:
+            if hasattr(child, "name") and child.name == name:
                 entity_list.append(child)
 
         return entity_list
+
+    def get_concatenated_data(self, field: str):
+        """
+        Get values from the parent entity.
+        """
+        return getattr(self, "parent").get_concatenated_data(self, field)
+
+    @property
+    def values(self) -> ndarray:
+        """
+        :return: values: An array of float values
+        """
+        if not hasattr(self, "_values"):
+            raise AttributeError(f"Concatenated entity {self} does not have values.")
+
+        values = getattr(self, "parent").get_concatenated_data(getattr(self, "name"))
+
+        if values is not None:
+            values = getattr(self, "check_vector_length")(values)
+
+        return values
+
+    @property
+    def surveys(self):
+        """
+        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the surveys
+        """
+        surveys = self.get_concatenated_data("Surveys")
+
+        if surveys is not None:
+            surveys = vstack([surveys["Depth"], surveys["Azimuth"], surveys["Dip"]]).T
+            surveys = vstack([surveys[0, :], surveys])
+            surveys[0, 0] = 0.0
+
+            return surveys.astype(float)
+
+        return None
+
+    @property
+    def trace(self) -> ndarray | None:
+        """
+        :obj:`numpy.array`: Drillhole trace defining the path in 3D
+        """
+        trace = self.get_concatenated_data("Trace")
+
+        if trace is not None:
+            return trace.view("<f8").reshape((-1, 3))
+
+        return None
+
+    @property
+    def trace_depth(self) -> ndarray | None:
+        """
+        :obj:`numpy.array`: Drillhole trace depth from top to bottom
+        """
+        trace_depth = self.get_concatenated_data("TraceDepth")
+
+        return trace_depth

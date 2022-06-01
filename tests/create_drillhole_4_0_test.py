@@ -27,6 +27,8 @@ def test_create_drillhole_data():
     h5file_path = r"C:\Users\dominiquef\Desktop\GA_demo_4.0.geoh5"
 
     with Workspace(h5file_path) as w_s:
-        obj = w_s.objects[0]
+        obj = w_s.groups[1].children[2]
         data = obj.get_data("As")[0]
+        print(obj.get_data_list())
         print(data.values)
+        print(obj.surveys)

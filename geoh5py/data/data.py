@@ -15,12 +15,15 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=W0613
+
 from __future__ import annotations
 
 import uuid
 from abc import abstractmethod
 
 from ..shared import Entity
+from ..shared.concatenate import Concatenated
 from .data_association_enum import DataAssociationEnum
 from .data_type import DataType
 from .primitive_type_enum import PrimitiveTypeEnum
@@ -34,6 +37,19 @@ class Data(Entity):
     _attribute_map = Entity._attribute_map.copy()
     _attribute_map.update({"Association": "association"})
     _visible = False
+
+    def __new__(cls, *arg, **kwargs):
+        if kwargs.get("concatenated", False):
+            for key, item in Concatenated.__dict__.items():
+                if "__" in key:
+                    continue
+
+                if "attribute_map" in key:
+                    cls._attribute_map.update(item)
+                else:
+                    setattr(cls, key, getattr(Concatenated, key))
+
+        return super().__new__(cls)
 
     def __init__(
         self,

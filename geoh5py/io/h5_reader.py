@@ -209,18 +209,13 @@ class H5Reader:
                             f"{H5Reader.fetch_concatenated_data} for {label} "
                             f"does not have corresponding Index."
                         )
-                    indices = group["Index"][label][:]
-                    for elem in indices:
-                        elem[2] = str2uuid(str_from_utf8_bytes(elem[2]))
-                        elem[3] = str2uuid(str_from_utf8_bytes(elem[3]))
-                    # indices["Object ID"] = [
-                    #     str2uuid(str_from_utf8_bytes(uid))
-                    #     for uid in indices["Object ID"]
-                    # ]
-                    # indices["Data ID"] = [
-                    #     str2uuid(str_from_utf8_bytes(uid))
-                    #     for uid in indices["Data ID"]
-                    # ]
+                    indices = {}
+                    for elem in group["Index"][label][:]:
+                        indices[str2uuid(str_from_utf8_bytes(elem[2]))] = (
+                            elem[0],
+                            elem[1],
+                            str2uuid(str_from_utf8_bytes(elem[3])),
+                        )
 
                     if label in group["Data"]:
                         attribute = group["Data"][label][:]
