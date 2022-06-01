@@ -52,6 +52,10 @@ def test_remove_root(tmp_path):
         group_name = "SomeGroup"
         data_group = points.add_data_to_group(data, group_name)
 
+        # Check no crash loading existing entity
+        assert workspace.load_entity(points.uid, "object")
+        assert len(workspace.fetch_children(None)) == 0
+
     # Remove the root
     with File(h5file_path, "r+") as project:
         base = list(project.keys())[0]
@@ -61,6 +65,7 @@ def test_remove_root(tmp_path):
 
     # Read the data back in from a fresh workspace
     with Workspace(h5file_path) as new_workspace:
+        assert len(new_workspace.fetch_children(new_workspace.root)) == 1
         rec_points = new_workspace.get_entity(points.name)[0]
 
         points.workspace.open()
