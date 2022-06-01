@@ -28,7 +28,7 @@ import numpy as np
 from ..data.float_data import FloatData
 from ..data.integer_data import IntegerData
 from ..shared import fetch_h5_handle
-from ..shared.concatenate import Concatenator
+from ..shared.concatenation import Concatenator
 from .utils import as_str_if_uuid, key_map, str2uuid, str_from_utf8_bytes
 
 

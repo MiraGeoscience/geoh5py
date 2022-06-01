@@ -39,7 +39,7 @@ from ..groups import CustomGroup, Group, PropertyGroup, RootGroup
 from ..io import H5Reader, H5Writer
 from ..objects import ObjectBase
 from ..shared import weakref_utils
-from ..shared.concatenate import Concatenated, Concatenator
+from ..shared.concatenation import Concatenated, Concatenator
 from ..shared.entity import Entity
 from ..shared.exceptions import Geoh5FileClosedError
 
