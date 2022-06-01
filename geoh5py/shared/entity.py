@@ -16,6 +16,7 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 # pylint: disable=R0904
+# pylint: disable=W0613
 
 from __future__ import annotations
 
@@ -45,6 +46,19 @@ class Entity(ABC):
         "Visible": "visible",
     }
     _visible = True
+
+    def __new__(cls, *args, **kwargs):
+        if kwargs.get("concatenation", False):
+            for key, item in kwargs["concatenation"].__dict__.items():
+                if "__" in key:
+                    continue
+
+                if "attribute_map" in key:
+                    cls._attribute_map.update(item)
+                else:
+                    setattr(cls, key, getattr(kwargs["concatenation"], key))
+
+        return super().__new__(cls)
 
     def __init__(self, uid: uuid.UUID | None = None, **kwargs):
         self._uid: uuid.UUID = uid if isinstance(uid, uuid.UUID) else uuid.uuid4()

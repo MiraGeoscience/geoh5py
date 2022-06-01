@@ -15,11 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=W0613
-
 import uuid
-
-from geoh5py.shared.concatenate import Concatenator
 
 from .group import Group, GroupType
 
@@ -32,19 +28,6 @@ class DrillholeGroup(Group):
     )
 
     _name = "Drillholes"
-
-    def __new__(cls, *args, **kwargs):
-        if kwargs.get("concatenator", False):
-            for key, item in Concatenator.__dict__.items():
-                if "__" in key:
-                    continue
-
-                if "attribute_map" in key:
-                    cls._attribute_map.update(item)
-                else:
-                    setattr(cls, key, getattr(Concatenator, key))
-
-        return super().__new__(cls)
 
     def __init__(self, group_type: GroupType, **kwargs):
 

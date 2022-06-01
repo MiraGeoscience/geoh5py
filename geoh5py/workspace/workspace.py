@@ -39,7 +39,7 @@ from ..groups import CustomGroup, Group, PropertyGroup, RootGroup
 from ..io import H5Reader, H5Writer
 from ..objects import ObjectBase
 from ..shared import weakref_utils
-from ..shared.concatenate import Concatenator
+from ..shared.concatenate import Concatenated, Concatenator
 from ..shared.entity import Entity
 from ..shared.exceptions import Geoh5FileClosedError
 
@@ -237,7 +237,7 @@ class Workspace(AbstractContextManager):
         return new_object
 
     def create_concatenated_entity(self, attributes):
-        attributes["concatenated"] = True
+        attributes["concatenation"] = Concatenated
 
         if "Object Type ID" in attributes:
             class_type = ObjectBase
@@ -544,7 +544,7 @@ class Workspace(AbstractContextManager):
 
         family_tree = []
         for uid, child_type in children_list.items():
-            if uid == "Attributes" and getattr(entity, "concatenator", False):
+            if uid == "Attributes" and getattr(entity, "concatenation", False):
                 family_tree += [self.fetch_concatenated_objects(entity, child_type)]
                 continue
 
