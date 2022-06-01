@@ -15,4 +15,4 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = "0.3.0-alpha.1"
+__version__ = "0.3.0-alpha.2"
