@@ -78,7 +78,7 @@ class Drillhole(Points):
         """
         if getattr(self, "_cells", None) is None:
             if self.on_file:
-                self._cells = self.workspace.fetch_array_attribute(self.uid)
+                self._cells = self.workspace.fetch_array_attribute(self)
 
         return self._cells
 
@@ -231,7 +231,7 @@ class Drillhole(Points):
         :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the surveys
         """
         if (getattr(self, "_surveys", None) is None) and self.on_file:
-            self._surveys = self.workspace.fetch_array_attribute(self.uid, "surveys")
+            self._surveys = self.workspace.fetch_array_attribute(self, "surveys")
 
         if getattr(self, "_surveys", None) is not None:
             surveys = self._surveys.view("<f4").reshape((-1, 3))
@@ -284,7 +284,7 @@ class Drillhole(Points):
         :obj:`numpy.array`: Drillhole trace defining the path in 3D
         """
         if self._trace is None and self.on_file:
-            self._trace = self.workspace.fetch_array_attribute(self.uid, "trace")
+            self._trace = self.workspace.fetch_array_attribute(self, "trace")
 
         if self._trace is not None:
             return self._trace.view("<f8").reshape((-1, 3))

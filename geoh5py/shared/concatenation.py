@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import uuid
 
-from numpy import ndarray, vstack
+# from numpy import ndarray, vstack
 
 
 class Concatenator:
@@ -228,57 +228,57 @@ class Concatenated:
         """
         return getattr(self, "parent").get_concatenated_data(self, field)
 
-    @property
-    def values(self) -> ndarray:
-        """
-        :return: values: An array of float values
-        """
-        if not hasattr(self, "_values"):
-            raise AttributeError(f"Concatenated entity {self} does not have values.")
-
-        values = getattr(self, "parent").get_concatenated_data(getattr(self, "name"))
-
-        if values is not None:
-            values = getattr(self, "check_vector_length")(values)
-
-        return values
-
-    @property
-    def surveys(self):
-        """
-        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the surveys
-        """
-        surveys = self.get_concatenated_data("Surveys")
-
-        if surveys is not None:
-            surveys = vstack([surveys["Depth"], surveys["Azimuth"], surveys["Dip"]]).T
-            surveys = vstack([surveys[0, :], surveys])
-            surveys[0, 0] = 0.0
-
-            return surveys.astype(float)
-
-        return None
-
-    @property
-    def trace(self) -> ndarray | None:
-        """
-        :obj:`numpy.array`: Drillhole trace defining the path in 3D
-        """
-        trace = self.get_concatenated_data("Trace")
-
-        if trace is not None:
-            return trace.view("<f8").reshape((-1, 3))
-
-        return None
-
-    @property
-    def trace_depth(self) -> ndarray | None:
-        """
-        :obj:`numpy.array`: Drillhole trace depth from top to bottom
-        """
-        trace_depth = self.get_concatenated_data("TraceDepth")
-
-        return trace_depth
+    # @property
+    # def values(self) -> ndarray:
+    #     """
+    #     :return: values: An array of float values
+    #     """
+    #     if not hasattr(self, "_values"):
+    #         raise AttributeError(f"Concatenated entity {self} does not have values.")
+    #
+    #     values = getattr(self, "parent").get_concatenated_data(getattr(self, "name"))
+    #
+    #     if values is not None:
+    #         values = getattr(self, "check_vector_length")(values)
+    #
+    #     return values
+    #
+    # @property
+    # def surveys(self):
+    #     """
+    #     :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the surveys
+    #     """
+    #     surveys = self.get_concatenated_data("Surveys")
+    #
+    #     if surveys is not None:
+    #         surveys = vstack([surveys["Depth"], surveys["Azimuth"], surveys["Dip"]]).T
+    #         surveys = vstack([surveys[0, :], surveys])
+    #         surveys[0, 0] = 0.0
+    #
+    #         return surveys.astype(float)
+    #
+    #     return None
+    #
+    # @property
+    # def trace(self) -> ndarray | None:
+    #     """
+    #     :obj:`numpy.array`: Drillhole trace defining the path in 3D
+    #     """
+    #     trace = self.get_concatenated_data("Trace")
+    #
+    #     if trace is not None:
+    #         return trace.view("<f8").reshape((-1, 3))
+    #
+    #     return None
+    #
+    # @property
+    # def trace_depth(self) -> ndarray | None:
+    #     """
+    #     :obj:`numpy.array`: Drillhole trace depth from top to bottom
+    #     """
+    #     trace_depth = self.get_concatenated_data("TraceDepth")
+    #
+    #     return trace_depth
 
     @property
     def parent(self):
@@ -286,7 +286,9 @@ class Concatenated:
 
     @parent.setter
     def parent(self, entity):
-        if not isinstance(entity, (Concatenated, Concatenator)):
+        if (entity.concatenation is not Concatenated) and (
+            entity.concatenation is not Concatenator
+        ):
             raise AttributeError(
                 "The 'parent' of a concatenated entity must be of type 'Concatenator'."
             )

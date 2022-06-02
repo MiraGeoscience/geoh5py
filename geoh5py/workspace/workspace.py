@@ -332,7 +332,7 @@ class Workspace(AbstractContextManager):
         if (
             created_entity is not None
             and save_on_creation
-            and created_entity.concatenation is not Concatenated
+            # and created_entity.concatenation is not Concatenated
         ):
             self.save_entity(created_entity)
 
@@ -513,17 +513,20 @@ class Workspace(AbstractContextManager):
     def distance_unit(self, value: str):
         self._distance_unit = value
 
-    def fetch_array_attribute(self, uid: uuid.UUID, key: str = "cells") -> np.ndarray:
+    def fetch_array_attribute(self, entity: Entity, key: str = "cells") -> np.ndarray:
         """
         Fetch attribute stored as structured array from the source geoh5.
 
-        :param uid: Unique identifier of target entity.
+        :param entity: Unique identifier of target entity.
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         :param key: Field array name
 
         :return: Structured array.
         """
-        return self._io_call(H5Reader.fetch_array_attribute, uid, key, mode="r")
+        if entity.concatenation is Concatenated:
+            return getattr(entity, "get_concatenated_data")(key)
+
+        return self._io_call(H5Reader.fetch_array_attribute, entity.uid, key, mode="r")
 
     def fetch_children(
         self,
