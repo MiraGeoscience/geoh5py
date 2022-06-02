@@ -24,15 +24,17 @@ from geoh5py.objects import Drillhole
 from geoh5py.workspace import Workspace
 
 
-# def test_create_drillhole_data():
-#     h5file_path = r"C:\Users\dominiquef\Desktop\GA_demo_4.0.geoh5"
-#
-#     with Workspace(h5file_path) as w_s:
-#         obj = w_s.groups[1].children[2]
-#         data = obj.get_data("As")[0]
-#         print(obj.get_data_list())
-#         print(data.values)
-#         print(obj.surveys)
+def test_load_drillhole_data():
+    h5file_path = r"C:\Users\dominiquef\Desktop\GA_demo_4.0.geoh5"
+
+    with Workspace(h5file_path) as w_s:
+        obj = w_s.groups[1].children[2]
+        data = obj.get_data("As")[0]
+        print(obj.get_data_list())
+        print(data.values)
+        assert obj.surveys is not None
+
+
 def test_create_drillhole_data(tmp_path):
     h5file_path = tmp_path / r"testCurve.geoh5"
     well_name = "bullseye"

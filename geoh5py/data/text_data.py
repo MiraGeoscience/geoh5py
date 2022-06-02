@@ -34,7 +34,7 @@ class TextData(Data):
         :obj:`str` Text value.
         """
         if (getattr(self, "_values", None) is None) and self.on_file:
-            self._values = self.workspace.fetch_values(self.uid)
+            self._values = self.workspace.fetch_values(self)
 
         return self._values
 
@@ -73,7 +73,7 @@ class CommentsData(Data):
         :obj:`list` List of comments
         """
         if (getattr(self, "_values", None) is None) and self.on_file:
-            comment_str = self.workspace.fetch_values(self.uid)
+            comment_str = self.workspace.fetch_values(self)
 
             if comment_str is not None:
                 self._values = json.loads(comment_str)["Comments"]

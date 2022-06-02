@@ -40,6 +40,9 @@ key_map = {
     "color_map": "Color map",
     "metadata": "Metadata",
     "options": "options",
+    "concatenated_object_ids": "Concatenated object IDs",
+    "attributes": "Attributes",
+    "property_group_ids": "Property Group IDs",
 }
 
 

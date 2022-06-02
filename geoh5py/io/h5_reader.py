@@ -28,7 +28,6 @@ import numpy as np
 from ..data.float_data import FloatData
 from ..data.integer_data import IntegerData
 from ..shared import fetch_h5_handle
-# from ..shared.concatenation import Concatenator
 from .utils import as_str_if_uuid, key_map, str2uuid, str_from_utf8_bytes
 
 
@@ -143,17 +142,10 @@ class H5Reader:
             entity = h5file[name][entity_type][as_str_if_uuid(uid)]
 
             for child_type, child_list in entity.items():
-                if child_type in ["Type", "PropertyGroups"]:
+                if child_type in ["Type", "PropertyGroups", "Concatenated Data"]:
                     continue
 
-                if child_type == "Concatenated Data":
-                    children.update(
-                        cls.fetch_concatenated_data(
-                            file, uid, entity_type, "Attributes"
-                        )
-                    )
-
-                elif isinstance(child_list, h5py.Group):
+                if isinstance(child_list, h5py.Group):
                     for uid_str in child_list.keys():
                         children[str2uuid(uid_str)] = child_type.replace(
                             "s", ""
@@ -162,7 +154,7 @@ class H5Reader:
         return children
 
     @classmethod
-    def fetch_concatenated_data(
+    def fetch_concatenated_values(
         cls,
         file: str | h5py.File,
         uid: uuid.UUID,
@@ -184,6 +176,7 @@ class H5Reader:
         with fetch_h5_handle(file) as h5file:
             name = list(h5file.keys())[0]
             entity_type = cls.format_type_string(entity_type)
+            label = key_map.get(label, label)
 
             try:
                 group = h5file[name][entity_type][as_str_if_uuid(uid)]
@@ -193,7 +186,6 @@ class H5Reader:
                         str2uuid(str_from_utf8_bytes(uid)) for uid in group[label][:]
                     ]
 
-                attribute = None
                 group = group["Concatenated Data"]
                 if label == "Attributes":
                     attribute = json.loads(str_from_utf8_bytes(group[label][()]))
@@ -205,7 +197,7 @@ class H5Reader:
                 else:
                     if label not in group["Index"]:
                         raise UserWarning(
-                            f"{H5Reader.fetch_concatenated_data} for {label} "
+                            f"{H5Reader.fetch_concatenated_values} for '{label}' "
                             f"does not have corresponding Index."
                         )
                     indices = {}

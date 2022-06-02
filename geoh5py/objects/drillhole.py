@@ -234,7 +234,16 @@ class Drillhole(Points):
             self._surveys = self.workspace.fetch_array_attribute(self, "surveys")
 
         if getattr(self, "_surveys", None) is not None:
-            surveys = self._surveys.view("<f4").reshape((-1, 3))
+            try:
+                surveys = self._surveys.view("<f4").reshape((-1, 3))
+            except TypeError:
+                surveys = np.vstack(
+                    [
+                        self._surveys["Depth"],
+                        self._surveys["Azimuth"],
+                        self._surveys["Dip"],
+                    ]
+                ).T
 
             # Repeat first survey point at surface for de-survey interpolation
             surveys = np.vstack([surveys[0, :], surveys])

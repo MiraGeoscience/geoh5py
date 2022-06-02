@@ -32,7 +32,7 @@ class FilenameData(Data):
         self._public = False
 
         if self.on_file:
-            self._file_name = self.workspace.fetch_values(self.uid)
+            self._file_name = self.workspace.fetch_values(self)
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
@@ -44,7 +44,7 @@ class FilenameData(Data):
         :obj:`str` Text value.
         """
         if getattr(self, "_file_name", None) is None:
-            self._file_name = self.workspace.fetch_values(self.uid)
+            self._file_name = self.workspace.fetch_values(self)
 
         return self._file_name
 

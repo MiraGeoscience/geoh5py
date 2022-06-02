@@ -40,7 +40,7 @@ class NumericData(Data, ABC):
         :return: values: An array of float values
         """
         if getattr(self, "_values", None) is None:
-            self._values = self.workspace.fetch_values(self.uid)
+            self._values = self.workspace.fetch_values(self)
 
         if self._values is not None:
             self._values = self.check_vector_length(self._values)

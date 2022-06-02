@@ -63,12 +63,20 @@ class Concatenator:
     @property
     def attributes(self):
         """Dictionary of concatenated objects and data attributes."""
+        if self._attributes is None:
+            self.attributes = getattr(self, "workspace").fetch_concatenated_values(
+                self, "attributes"
+            )
+
         return self._attributes
 
     @attributes.setter
     def attributes(self, attr: dict):
         if not isinstance(attr, dict):
             raise AttributeError("Input value for 'attributes' must be of type dict.")
+
+        if "Attributes" in attr:
+            attr = {uuid.UUID(elem["ID"]): elem for elem in attr["Attributes"]}
 
         self._attributes = attr
 
@@ -78,7 +86,7 @@ class Concatenator:
         if getattr(self, "_concatenated_object_ids", None) is None:
             self._concatenated_object_ids = getattr(
                 self, "workspace"
-            ).fetch_concatenated_data(self, "Concatenated object IDs")
+            ).fetch_concatenated_values(self, "concatenated_object_ids")
         return self._concatenated_object_ids
 
     @concatenated_object_ids.setter
@@ -89,6 +97,10 @@ class Concatenator:
             )
 
         self._concatenated_object_ids = object_ids
+
+    @property
+    def concatenator(self):
+        return self
 
     @property
     def data(self) -> dict:
@@ -104,18 +116,40 @@ class Concatenator:
         """
         return self._indices
 
-    def get_concatenated_data(self, entity, field: str):
+    def fetch_concatenated_objects(self):
+        """
+        Load all concatenated children.
+        :param group: Concatenator group
+        :param attributes: Entities stored as list of dictionaries.
+        """
+        attr_dict = {}
+        for key in self.concatenated_object_ids:
+            attrs = {
+                attr: val
+                for attr, val in self.attributes[key].items()
+                if "Property" not in attr
+            }
+            attrs["parent"] = self
+            attr_dict[key] = getattr(self, "workspace").create_from_concatenation(attrs)
+
+        return attr_dict
+
+    def fetch_values(self, entity, field: str):
         """
         Get values from a concatenated array.
         """
         if field not in self.data:
-            data, indices = getattr(self, "workspace").fetch_concatenated_data(
+            data, indices = getattr(self, "workspace").fetch_concatenated_values(
                 self, field
             )
             self.data[field] = data
             self.indices[field] = indices
 
-        start, size = self.indices[field][entity.uid][:2]
+        try:
+            start, size = self.indices[field][entity.uid][:2]
+        except KeyError:
+            start, size = self.indices[field][entity.parent.uid][:2]
+
         return self.data[field][start : start + size]
 
     @property
@@ -124,7 +158,7 @@ class Concatenator:
         if getattr(self, "_property_group_ids", None) is None:
             self._property_group_ids = getattr(
                 self, "workspace"
-            ).fetch_concatenated_data(self, "Property Group IDs")
+            ).fetch_concatenated_values(self, "property_group_ids")
         return self._property_group_ids
 
     @property_group_ids.setter
@@ -191,16 +225,12 @@ class Concatenated:
             "Concatenated entity `add_data_to_group` method not yet implemented."
         )
 
-    def get_data_list(self):
+    @property
+    def concatenator(self):
         """
-        Get list of data names.
+        Parental Concatenator entity.
         """
-        data_list = []
-        for attr in self.__dict__:
-            if "Property:" in attr:
-                data_list.append(attr.replace("Property:", ""))
-
-        return data_list
+        return self.parent.concatenator if self.parent is not None else None
 
     def find_or_create_property_group(self, **kwargs):
         """
@@ -210,18 +240,23 @@ class Concatenated:
             "Concatenated entity `find_or_create_property_group` method not yet implemented."
         )
 
+    def fetch_values(self, entity, field: str):
+        """
+        Get values from the parent entity.
+        """
+        return self.concatenator.fetch_values(entity, field)
+
     def get_data(self, name: str) -> list:
         """
         Generic function to get data values from object.
         """
         entity_list = []
-
-        if f"Property:{name}" in self.__dict__:
-            if isinstance(getattr(self, f"Property:{name}"), str):
-                uid = getattr(self, f"Property:{name}")
-                attributes = getattr(self, "parent").attributes[uuid.UUID(uid)]
-                attributes["parent"] = self
-                getattr(self, "workspace").create_concatenated_entity(attributes)
+        uid = getattr(self, "uid")
+        if f"Property:{name}" in self.parent.attributes[uid]:
+            uid = self.parent.attributes[uid].get(f"Property:{name}")
+            attributes = self.parent.attributes[uuid.UUID(uid)]
+            attributes["parent"] = self
+            getattr(self, "workspace").create_from_concatenation(attributes)
 
         for child in getattr(self, "children"):
             if hasattr(child, "name") and child.name == name:
@@ -229,12 +264,18 @@ class Concatenated:
 
         return entity_list
 
-    @staticmethod
-    def get_concatenated_data(entity, field: str):
+    def get_data_list(self):
         """
-        Get values from the parent entity.
+        Get list of data names.
         """
-        return getattr(entity, "parent").get_concatenated_data(entity, field)
+        uid = getattr(self, "uid")
+        data_list = [
+            attr.replace("Property:", "")
+            for attr in self.parent.attributes[uid]
+            if "Property:" in attr
+        ]
+
+        return data_list
 
     @staticmethod
     def update_attributes(entity, field: str):
@@ -251,7 +292,7 @@ class Concatenated:
     #     if not hasattr(self, "_values"):
     #         raise AttributeError(f"Concatenated entity {self} does not have values.")
     #
-    #     values = getattr(self, "parent").get_concatenated_data(getattr(self, "name"))
+    #     values = getattr(self, "parent").fetch_values(getattr(self, "name"))
     #
     #     if values is not None:
     #         values = getattr(self, "check_vector_length")(values)
@@ -263,7 +304,7 @@ class Concatenated:
     #     """
     #     :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the surveys
     #     """
-    #     surveys = self.get_concatenated_data("Surveys")
+    #     surveys = self.fetch_values("Surveys")
     #
     #     if surveys is not None:
     #         surveys = vstack([surveys["Depth"], surveys["Azimuth"], surveys["Dip"]]).T
@@ -279,7 +320,7 @@ class Concatenated:
     #     """
     #     :obj:`numpy.array`: Drillhole trace defining the path in 3D
     #     """
-    #     trace = self.get_concatenated_data("Trace")
+    #     trace = self.fetch_values("Trace")
     #
     #     if trace is not None:
     #         return trace.view("<f8").reshape((-1, 3))
@@ -291,7 +332,7 @@ class Concatenated:
     #     """
     #     :obj:`numpy.array`: Drillhole trace depth from top to bottom
     #     """
-    #     trace_depth = self.get_concatenated_data("TraceDepth")
+    #     trace_depth = self.fetch_values("TraceDepth")
     #
     #     return trace_depth
 
@@ -300,11 +341,20 @@ class Concatenated:
         return self._parent
 
     @parent.setter
-    def parent(self, entity):
-        if (entity.concatenation is not Concatenated) and (
-            entity.concatenation is not Concatenator
+    def parent(self, parent):
+        if (parent.concatenation is not Concatenated) and (
+            parent.concatenation is not Concatenator
         ):
             raise AttributeError(
-                "The 'parent' of a concatenated entity must be of type 'Concatenator'."
+                "The 'parent' of a concatenated Entity must be of type 'Concatenator'."
             )
-        self._parent = entity
+        self._parent = parent
+
+        current_parent = self._parent
+
+        if parent is not None:
+            self._parent = parent
+            self._parent.add_children([self])
+
+            if current_parent is not None and current_parent != self._parent:
+                current_parent.remove_children([self])
