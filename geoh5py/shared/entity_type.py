@@ -38,10 +38,11 @@ class EntityType(ABC):
         self._workspace = weakref.ref(workspace)
 
         assert uid is None or isinstance(uid, uuid.UUID)
-        self._uid: uuid.UUID = uid if uid is not None else uuid.uuid4()
-        self._name: str | None = "Entity"
         self._description: str | None = None
+        self._concatenation = False
+        self._name: str | None = "Entity"
         self._on_file = False
+        self._uid: uuid.UUID = uid if uid is not None else uuid.uuid4()
 
         for attr, item in kwargs.items():
             try:
@@ -58,6 +59,11 @@ class EntityType(ABC):
         geoh5.
         """
         return self._attribute_map
+
+    @property
+    def concatenation(self):
+        """Store the entity as Concatenated, Concatenator or standalone."""
+        return self._concatenation
 
     @property
     def description(self) -> str | None:

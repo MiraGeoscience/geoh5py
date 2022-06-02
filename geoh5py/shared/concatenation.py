@@ -148,6 +148,13 @@ class Concatenator:
 
         return self._property_groups
 
+    def update_attributes(self, entity, field):
+        """Update the attributes of a concatenated entity."""
+
+        if field == "attributes":
+            for key in self.attributes[entity.uid]:
+                self.attributes[entity.uid][key] = getattr(entity, key)
+
     # def add_children(self, children):
     #     """
     #     :param children: Add a list of entities as
@@ -222,11 +229,19 @@ class Concatenated:
 
         return entity_list
 
-    def get_concatenated_data(self, field: str):
+    @staticmethod
+    def get_concatenated_data(entity, field: str):
         """
         Get values from the parent entity.
         """
-        return getattr(self, "parent").get_concatenated_data(self, field)
+        return getattr(entity, "parent").get_concatenated_data(entity, field)
+
+    @staticmethod
+    def update_attributes(entity, field: str):
+        """
+        Update the attributes on the concatenated entity.
+        """
+        return getattr(entity, "parent").update_attributes(entity, field)
 
     # @property
     # def values(self) -> ndarray:

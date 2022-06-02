@@ -524,7 +524,7 @@ class Workspace(AbstractContextManager):
         :return: Structured array.
         """
         if entity.concatenation is Concatenated:
-            return getattr(entity, "get_concatenated_data")(key)
+            return Concatenated.get_concatenated_data(entity, key)
 
         return self._io_call(H5Reader.fetch_array_attribute, entity.uid, key, mode="r")
 
@@ -1001,7 +1001,10 @@ class Workspace(AbstractContextManager):
         :param attribute: Name of the attribute to get updated to geoh5.
         """
         if entity.on_file:
-            self._io_call(H5Writer.update_field, entity, attribute, mode="r+")
+            if entity.concatenation is Concatenated:
+                Concatenated.update_attributes(entity, attribute)
+            else:
+                self._io_call(H5Writer.update_field, entity, attribute, mode="r+")
 
     @property
     def version(self) -> float:
