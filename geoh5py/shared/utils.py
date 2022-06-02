@@ -43,7 +43,7 @@ def fetch_h5_handle(file: str | h5py.File | Path, mode: str = "r") -> h5py.File:
         finally:
             pass
     else:
-        if not Path(file).suffix == ".geoh5":
+        if Path(file).suffix != ".geoh5":
             raise ValueError("Input h5 file must have a 'geoh5' extension.")
 
         h5file = h5py.File(file, mode)
