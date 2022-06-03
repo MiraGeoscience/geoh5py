@@ -42,6 +42,7 @@ from ..shared import weakref_utils
 from ..shared.concatenation import Concatenated, Concatenator
 from ..shared.entity import Entity
 from ..shared.exceptions import Geoh5FileClosedError
+from ..shared.utils import as_str_if_utf8_bytes, str2uuid
 
 if TYPE_CHECKING:
     from ..groups import group
@@ -526,11 +527,17 @@ class Workspace(AbstractContextManager):
         if entity.concatenation is Concatenated:
             return getattr(entity, "fetch_values")(entity, key)
 
-        return self._io_call(H5Reader.fetch_array_attribute, entity.uid, key, mode="r")
+        return self._io_call(
+            H5Reader.fetch_array_attribute,
+            entity.uid,
+            "Objects" if isinstance(entity, ObjectBase) else "Groups",
+            key,
+            mode="r",
+        )
 
     def fetch_children(
         self,
-        entity: ObjectBase | Group | None,
+        entity: Entity | None,
         recursively: bool = False,
     ) -> list:
         """
@@ -555,7 +562,13 @@ class Workspace(AbstractContextManager):
         )
 
         if entity.concatenation is Concatenator:
-            children_list.update(getattr(entity, "fetch_concatenated_objects")())
+            cat_children = getattr(entity, "fetch_concatenated_objects")()
+            children_list.update(
+                {
+                    str2uuid(as_str_if_utf8_bytes(uid)): attr
+                    for uid, attr in cat_children.items()
+                }
+            )
 
         family_tree = []
         for uid, child_type in children_list.items():

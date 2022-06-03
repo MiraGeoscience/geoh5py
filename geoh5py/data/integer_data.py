@@ -15,7 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-
+from ..shared import INTEGER_NDV
 from .data import PrimitiveTypeEnum
 from .numeric_data import NumericData
 
@@ -30,4 +30,4 @@ class IntegerData(NumericData):
         """
         No-Data-Value
         """
-        return -2147483648
+        return INTEGER_NDV

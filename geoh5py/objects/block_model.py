@@ -179,7 +179,7 @@ class BlockModel(ObjectBase):
         """
         if (getattr(self, "_u_cell_delimiters", None) is None) and self.on_file:
             self._u_cell_delimiters = self.workspace.fetch_array_attribute(
-                self.uid, "u_cell_delimiters"
+                self, "u_cell_delimiters"
             )
 
         return self._u_cell_delimiters
@@ -212,7 +212,7 @@ class BlockModel(ObjectBase):
         """
         if (getattr(self, "_v_cell_delimiters", None) is None) and self.on_file:
             self._v_cell_delimiters = self.workspace.fetch_array_attribute(
-                self.uid, "v_cell_delimiters"
+                self, "v_cell_delimiters"
             )
 
         return self._v_cell_delimiters
@@ -244,7 +244,7 @@ class BlockModel(ObjectBase):
         """
         if (getattr(self, "_z_cell_delimiters", None) is None) and self.on_file:
             self._z_cell_delimiters = self.workspace.fetch_array_attribute(
-                self.uid, "z_cell_delimiters"
+                self, "z_cell_delimiters"
             )
 
         return self._z_cell_delimiters

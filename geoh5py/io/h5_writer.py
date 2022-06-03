@@ -30,8 +30,8 @@ import numpy as np
 from ..data import CommentsData, Data, DataType, FilenameData, IntegerData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
-from ..shared import Entity, EntityType, fetch_h5_handle
-from .utils import as_str_if_uuid, dict_mapper, key_map
+from ..shared import Concatenator, Entity, EntityType, fetch_h5_handle
+from ..shared.utils import as_str_if_uuid, dict_mapper, key_map
 
 if TYPE_CHECKING:
     from .. import shared, workspace
@@ -226,9 +226,9 @@ class H5Writer:
         return new_entity
 
     @classmethod
-    def update_field(cls, file: str | h5py.File, entity, attribute: str):
+    def update_concatenated_field(cls, file: str | h5py.File, entity, attribute: str):
         """
-        Update the attributes of an :obj:`~geoh5py.shared.entity.Entity`.
+        Update the attributes of a concatenated :obj:`~geoh5py.shared.entity.Entity`.
 
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
@@ -249,6 +249,58 @@ class H5Writer:
                 return
 
             if attribute in ["values", "trace_depth", "metadata", "options"]:
+                cls.write_data_values(h5file, entity, attribute)
+            elif attribute in [
+                "cells",
+                "surveys",
+                "trace",
+                "vertices",
+                "octree_cells",
+                "u_cell_delimiters",
+                "v_cell_delimiters",
+                "z_cell_delimiters",
+            ]:
+                cls.write_array_attribute(h5file, entity, attribute)
+            elif attribute == "property_groups":
+                cls.write_property_groups(h5file, entity)
+            elif attribute == "color_map":
+                cls.write_color_map(h5file, entity)
+            elif attribute == "entity_type":
+                del entity_handle["Type"]
+                new_type = H5Writer.write_entity_type(h5file, entity.entity_type)
+                entity_handle["Type"] = new_type
+            else:
+                cls.write_attributes(h5file, entity)
+
+    @classmethod
+    def update_field(cls, file: str | h5py.File, entity, attribute: str):
+        """
+        Update the attributes of an :obj:`~geoh5py.shared.entity.Entity`.
+
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
+        :param attribute: Name of the attribute to get updated.
+        """
+        with fetch_h5_handle(file, mode="r+") as h5file:
+            entity_handle = H5Writer.fetch_handle(h5file, entity)
+
+            if entity.concatenation is Concatenator:
+                entity_handle = entity_handle["Concatenated Data"]
+
+            if entity_handle is None:
+                return
+
+            try:
+                del entity_handle[key_map[attribute]]
+            except KeyError:
+                pass
+
+            if attribute != "attributes" and getattr(entity, attribute, None) is None:
+                return
+
+            if attribute in ["values", "trace_depth", "metadata", "options"] or (
+                (entity.concatenation is Concatenator) and attribute == "attributes"
+            ):
                 cls.write_data_values(h5file, entity, attribute)
             elif attribute in [
                 "cells",
@@ -415,6 +467,64 @@ class H5Writer:
             elif attribute in entity_handle.keys():
                 del entity_handle[attribute]
 
+    # @classmethod
+    # def write_concatenated(
+    #     cls,
+    #     file: str | h5py.File,
+    #     entity,
+    #     attribute: str,
+    # ):
+    #     """
+    #     Get :obj:`~geoh5py.shared.entity.Entity.children` of concatenated group.
+    #
+    #     :param file: :obj:`h5py.File` or name of the target geoh5 file
+    #     :param uid: Unique identifier
+    #     :param entity_type: Type of entity from
+    #         'group', 'data', 'object', 'group_type', 'data_type', 'object_type'
+    #     :param label: Group identifier for the attribute requested.
+    #
+    #     :return children: [{uuid: type}, ... ]
+    #         List of dictionaries for the children uid and type
+    #     """
+    #     with fetch_h5_handle(file) as h5file:
+    #         entity_handle = H5Writer.fetch_handle(h5file, entity)
+    #
+    #         try:
+    #             group = entity_handle["Concatenated Data"]
+    #
+    #             if label == "Attributes":
+    #                 attribute = json.loads(str_from_utf8_bytes(group[label][()]))
+    #
+    #             elif label == "Property Group IDs":
+    #                 attribute = [
+    #                     str2uuid(str_from_utf8_bytes(uid)) for uid in group[label][:]
+    #                 ]
+    #             else:
+    #                 if label not in group["Index"]:
+    #                     raise UserWarning(
+    #                         f"{H5Reader.fetch_concatenated_values} for '{label}' "
+    #                         f"does not have corresponding Index."
+    #                     )
+    #                 indices = {}
+    #                 for elem in group["Index"][label][:]:
+    #                     indices[str2uuid(str_from_utf8_bytes(elem[2]))] = (
+    #                         elem[0],
+    #                         elem[1],
+    #                         str2uuid(str_from_utf8_bytes(elem[3])),
+    #                     )
+    #
+    #                 if label in group["Data"]:
+    #                     attribute = group["Data"][label][:]
+    #                 else:
+    #                     attribute = group[label][:]
+    #
+    #                 return attribute, indices
+    #
+    #         except KeyError:
+    #             return None
+    #
+    #         return attribute
+
     @classmethod
     def write_data_values(
         cls,
@@ -431,10 +541,14 @@ class H5Writer:
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
+
+            if entity.concatenation is Concatenator:
+                entity_handle = entity_handle["Concatenated Data"]
+
             if getattr(entity, attribute, None) is None:
                 return
 
-            values = getattr(entity, attribute)
+            values = getattr(entity, "_" + attribute)
 
             # Adding an array of values
             if isinstance(values, dict) or isinstance(entity, CommentsData):

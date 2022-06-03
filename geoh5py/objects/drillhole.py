@@ -106,16 +106,19 @@ class Drillhole(Points):
 
             assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
 
-            self.workspace.update_attribute(self, "attributes")
             value = np.asarray(
                 tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
             )
             self._collar = value
+            self.workspace.update_attribute(self, "attributes")
+
         self._locations = None
 
         if self.trace is not None:
             self._trace = None
+            self._trace_depth = None
             self.workspace.update_attribute(self, "trace")
+            self.workspace.update_attribute(self, "trace_depth")
 
     @property
     def cost(self):
@@ -128,6 +131,7 @@ class Drillhole(Points):
     def cost(self, value):
         assert isinstance(value, float), f"Provided cost value must be of type {float}"
         self._cost = value
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def end_of_hole(self):
@@ -142,6 +146,7 @@ class Drillhole(Points):
             value, (int, float, type(None))
         ), f"Provided end_of_hole value must be of type {int}"
         self._end_of_hole = value
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def deviation_x(self):
@@ -224,6 +229,7 @@ class Drillhole(Points):
         choices = ["Default", "Ongoing", "Planned", "Completed", "No status"]
         assert value in choices, f"Provided planning value must be one of {choices}"
         self._planning = value
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def surveys(self):
@@ -286,6 +292,7 @@ class Drillhole(Points):
     def default_collocation_distance(self, tol):
         assert tol > 0, "Tolerance value should be >0"
         self._default_collocation_distance = tol
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def trace(self) -> np.ndarray | None:

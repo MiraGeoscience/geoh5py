@@ -31,7 +31,7 @@ def test_create_drillhole_data(tmp_path):
     n_data = 10
     collocation = 1e-5
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace(h5file_path, version=1.0) as workspace:
         # Create a workspace
         max_depth = 100
         well = Drillhole.create(
@@ -110,7 +110,7 @@ def test_create_drillhole_data(tmp_path):
             new_count
         ), "Error with new number of vertices on log data creation."
         # Re-open the workspace and read data back in
-        new_workspace = Workspace(h5file_path)
+        new_workspace = Workspace(h5file_path, version=1.0)
         # Check entities
         compare_entities(
             well,
@@ -142,7 +142,7 @@ def test_single_survey(tmp_path):
 
     collar = np.r_[0.0, 10.0, 10.0]
     h5file_path = tmp_path / r"testCurve.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace(h5file_path, version=1.0) as workspace:
         well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, dip, azm])
         depths = [0.0, 1.0, 1000.0]
         locations = well.desurvey(depths)
@@ -170,7 +170,7 @@ def test_outside_survey(tmp_path):
 
     collar = np.r_[0.0, 10.0, 10.0]
     h5file_path = tmp_path / r"testCurve.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace(h5file_path, version=1.0) as workspace:
         well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, dip, azm])
         depths = [0.0, 1000.0]
         locations = well.desurvey(depths)
@@ -188,3 +188,69 @@ def test_outside_survey(tmp_path):
         )
 
         np.testing.assert_array_almost_equal(locations, solution, decimal=3)
+
+
+def test_insert_drillhole_data(tmp_path):
+    well_name = "bullseye"
+    n_data = 10
+    collocation = 1e-5
+    h5file_path = tmp_path / r"testCurve.geoh5"
+
+    with Workspace(h5file_path, version=1.0) as workspace:
+        max_depth = 100
+        well = Drillhole.create(
+            workspace,
+            collar=np.r_[0.0, 10.0, 10],
+            surveys=np.c_[
+                np.linspace(0, max_depth, n_data),
+                np.linspace(-89, -75, n_data),
+                np.ones(n_data) * 45.0,
+            ],
+            name=well_name,
+            default_collocation_distance=collocation,
+        )
+        # Add log-data
+        data_object = well.add_data(
+            {
+                "log_values": {
+                    "depth": np.sort(np.random.rand(n_data) * max_depth),
+                    "values": np.random.randint(1, high=8, size=n_data),
+                }
+            }
+        )
+
+        # Add more data with single match
+        old_depths = well.get_data("DEPTH")[0].values
+        indices = np.where(~np.isnan(old_depths))[0]
+        insert = np.random.randint(0, high=len(indices) - 1, size=2)
+        new_depths = old_depths[indices[insert]]
+        new_depths[0] -= 2e-6  # Out of tolerance
+        new_depths[1] -= 5e-7  # Within tolerance
+
+        match_test = well.add_data(
+            {
+                "match_depth": {
+                    "depth": new_depths,
+                    "values": np.random.randint(1, high=8, size=2),
+                    "collocation_distance": 1e-6,
+                }
+            }
+        )
+
+        assert (
+            well.n_vertices == n_data + 1
+        ), "Error adding values with collocated tolerance"
+        assert np.isnan(
+            data_object.values[indices[insert][0]]
+        ), "Old values not re-sorted properly after insertion"
+
+        insert_ind = np.where(~np.isnan(match_test.values))[0]
+        if insert[0] <= insert[1]:
+            assert all(
+                ind in [indices[insert][0], indices[insert][1] + 1]
+                for ind in insert_ind
+            ), "Depth insertion error"
+        else:
+            assert all(
+                ind in [indices[insert][0], indices[insert][1]] for ind in insert_ind
+            ), "Depth insertion error"

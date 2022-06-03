@@ -25,10 +25,8 @@ from typing import Any
 import h5py
 import numpy as np
 
-from ..data.float_data import FloatData
-from ..data.integer_data import IntegerData
-from ..shared import fetch_h5_handle
-from .utils import as_str_if_uuid, key_map, str2uuid, str_from_utf8_bytes
+from ..shared import FLOAT_NDV, INTEGER_NDV, fetch_h5_handle
+from ..shared.utils import as_str_if_utf8_bytes, as_str_if_uuid, key_map, str2uuid
 
 
 class H5Reader:
@@ -77,13 +75,9 @@ class H5Reader:
                 type_attributes["entity_type"] = cls.fetch_type_attributes(
                     entity["Type"]
                 )
-
             # Check if the entity has property_group
             if "PropertyGroups" in entity.keys():
                 property_groups = cls.fetch_property_groups(file, uid)
-
-            # if "Concatenated Data" in entity.keys():
-            #     attributes["entity"]["concatenation"] = Concatenator
 
             attributes["entity"]["on_file"] = True
 
@@ -91,7 +85,7 @@ class H5Reader:
 
     @classmethod
     def fetch_array_attribute(
-        cls, file: str | h5py.File, uid: uuid.UUID, key: str
+        cls, file: str | h5py.File, uid: uuid.UUID, entity_type: str, key: str
     ) -> np.ndarray | None:
         """
         Get an entity attribute stores as array such as
@@ -99,7 +93,8 @@ class H5Reader:
 
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         :param uid: Unique identifier of the target object.
-        :param key: Field attribute name
+        :param entity_type: Group type to fetch entity from.
+        :param key: Field attribute name.
 
         :return cells: :obj:`numpy.ndarray` of :obj:`int`.
         """
@@ -108,7 +103,9 @@ class H5Reader:
             indices = None
 
             try:
-                indices = h5file[name]["Objects"][as_str_if_uuid(uid)][key_map[key]][:]
+                indices = h5file[name][entity_type][as_str_if_uuid(uid)][key_map[key]][
+                    :
+                ]
             except KeyError:
                 pass
 
@@ -179,20 +176,20 @@ class H5Reader:
             label = key_map.get(label, label)
 
             try:
-                group = h5file[name][entity_type][as_str_if_uuid(uid)]
+                group = h5file[name][entity_type][as_str_if_uuid(uid)][
+                    "Concatenated Data"
+                ]
 
-                if label == "Concatenated object IDs":
-                    return [
-                        str2uuid(str_from_utf8_bytes(uid)) for uid in group[label][:]
-                    ]
-
-                group = group["Concatenated Data"]
                 if label == "Attributes":
-                    attribute = json.loads(str_from_utf8_bytes(group[label][()]))
+                    attribute = group[label][()]
+                    if isinstance(attribute, np.ndarray):
+                        attribute = attribute[0]
+
+                    attribute = json.loads(as_str_if_utf8_bytes(attribute))
 
                 elif label == "Property Group IDs":
                     attribute = [
-                        str2uuid(str_from_utf8_bytes(uid)) for uid in group[label][:]
+                        str2uuid(as_str_if_utf8_bytes(uid)) for uid in group[label][:]
                     ]
                 else:
                     if label not in group["Index"]:
@@ -202,10 +199,10 @@ class H5Reader:
                         )
                     indices = {}
                     for elem in group["Index"][label][:]:
-                        indices[str2uuid(str_from_utf8_bytes(elem[2]))] = (
+                        indices[elem[2]] = (
                             elem[0],
                             elem[1],
-                            str2uuid(str_from_utf8_bytes(elem[3])),
+                            elem[3],
                         )
 
                     if label in group["Data"]:
@@ -238,7 +235,7 @@ class H5Reader:
                 metadata = np.r_[
                     h5file[name][entity_type][as_str_if_uuid(uid)][argument]
                 ]
-                metadata = str_from_utf8_bytes(metadata[0])
+                metadata = as_str_if_utf8_bytes(metadata[0])
 
             except KeyError:
                 return None
@@ -385,7 +382,7 @@ class H5Reader:
             value_map = h5_handle["Value map"][:]
             mapping = {}
             for key, value in value_map.tolist():
-                value = str_from_utf8_bytes(value)
+                value = as_str_if_utf8_bytes(value)
                 mapping[key] = value
 
         except KeyError:
@@ -435,12 +432,12 @@ class H5Reader:
             try:
                 values = np.r_[h5file[name]["Data"][as_str_if_uuid(uid)]["Data"]]
                 if isinstance(values[0], (str, bytes)):
-                    values = str_from_utf8_bytes(values[0])
+                    values = as_str_if_utf8_bytes(values[0])
                 else:
                     if values.dtype in [float, "float64", "float32"]:
-                        ind = values == FloatData.ndv()
+                        ind = values == FLOAT_NDV
                     else:
-                        ind = values == IntegerData.ndv()
+                        ind = values == INTEGER_NDV
                         values = values.astype("float64")
                     values[ind] = np.nan
 

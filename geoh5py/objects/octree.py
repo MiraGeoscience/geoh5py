@@ -186,7 +186,7 @@ class Octree(ObjectBase):
         if getattr(self, "_octree_cells", None) is None:
             if self.on_file:
                 octree_cells = self.workspace.fetch_array_attribute(
-                    self.uid, "octree_cells"
+                    self, "octree_cells"
                 )
                 self._octree_cells = octree_cells
 
