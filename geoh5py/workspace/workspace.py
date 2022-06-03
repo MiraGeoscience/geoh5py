@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import inspect
+import io
 import uuid
 import warnings
 import weakref
@@ -716,22 +717,24 @@ class Workspace(AbstractContextManager):
         return self._geoh5
 
     @property
-    def h5file(self) -> str | Path:
+    def h5file(self) -> str | Path | bytes:
         """
         :str: Target *geoh5* file name with path.
         """
         return self._h5file
 
     @h5file.setter
-    def h5file(self, file: str | Path):
+    def h5file(self, file: str | Path | bytes):
 
-        if not isinstance(file, (str, Path)):
+        if not isinstance(file, (str, Path, bytes)):
             raise ValueError(
-                "The 'h5file' attribute must be a str or pathlib.Path to the target geoh5 file. "
+                "The 'h5file' attribute must be a str, pathlib.Path or bytes to the target geoh5 file. "
                 f"Provided {file} of type({type(file)})"
             )
 
-        if not str(file).endswith("geoh5"):
+        if isinstance(file, bytes):
+            file = io.BytesIO(file)
+        elif not str(file).endswith("geoh5"):
             raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
 
         self._h5file = file
