@@ -75,6 +75,9 @@ class Concatenator:
                 self._attributes_keys = [
                     elem["ID"] for elem in self._attributes["Attributes"]
                 ]
+            else:
+                self._attributes = {"Attributes": []}
+                self._attributes_keys = []
 
         return self._attributes["Attributes"]
 

@@ -16,10 +16,11 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
-# import numpy as np
+import numpy as np
+
 #
-# from geoh5py.groups import DrillholeGroup
-# from geoh5py.objects import Drillhole
+from geoh5py.groups import DrillholeGroup
+from geoh5py.objects import Drillhole
 # from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -38,28 +39,29 @@ def test_load_drillhole_data():
         assert obj.surveys is not None
 
 
-# def test_create_drillhole_data(tmp_path):
-#     h5file_path = tmp_path / r"testCurve.geoh5"
-#     well_name = "bullseye"
-#     n_data = 10
-#     collocation = 1e-5
-#
-#     with Workspace(h5file_path) as workspace:
-#         # Create a workspace
-#         dh_group = DrillholeGroup.create(workspace)
-#         max_depth = 100
-#         Drillhole.create(
-#             workspace,
-#             collar=np.r_[0.0, 10.0, 10],
-#             surveys=np.c_[
-#                 np.linspace(0, max_depth, n_data),
-#                 np.linspace(-89, -75, n_data),
-#                 np.ones(n_data) * 45.0,
-#             ],
-#             parent=dh_group,
-#             name=well_name,
-#             default_collocation_distance=collocation,
-#         )
+def test_create_drillhole_data(tmp_path):
+    h5file_path = tmp_path / r"testCurve.geoh5"
+    well_name = "bullseye"
+    n_data = 10
+    collocation = 1e-5
+
+    with Workspace(h5file_path) as workspace:
+        # Create a workspace
+        dh_group = DrillholeGroup.create(workspace)
+        max_depth = 100
+        Drillhole.create(
+            workspace,
+            collar=np.r_[0.0, 10.0, 10],
+            surveys=np.c_[
+                np.linspace(0, max_depth, n_data),
+                np.linspace(-89, -75, n_data),
+                np.ones(n_data) * 45.0,
+            ],
+            parent=dh_group,
+            name=well_name,
+            default_collocation_distance=collocation,
+        )
+
 
 # value_map = {}
 # for ref in range(8):
