@@ -17,6 +17,8 @@
 
 # pylint: disable=R0914
 
+from __future__ import annotations
+
 import uuid
 
 import numpy as np
