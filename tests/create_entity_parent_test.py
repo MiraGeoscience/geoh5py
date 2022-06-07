@@ -16,6 +16,8 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
+
 from geoh5py.groups import ContainerGroup
 from geoh5py.objects import Points
 from geoh5py.workspace import Workspace

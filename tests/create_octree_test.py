@@ -16,6 +16,8 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
+
 from geoh5py.objects import Octree
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
