@@ -117,6 +117,11 @@ def test_read_bytes(tmp_path):
     in_file.close()
 
     byte_ws = Workspace(io.BytesIO(byte_data))
-    file_ws = Workspace(tmp_path / r"test.geoh5")
+    byte_objects = byte_ws.objects
+    byte_ws.close()
 
-    assert len(byte_ws.objects) == len(file_ws.objects)
+    file_ws = Workspace(tmp_path / r"test.geoh5")
+    file_objects = file_ws.objects
+    file_ws.close()
+
+    assert len(byte_objects) == len(file_objects)
