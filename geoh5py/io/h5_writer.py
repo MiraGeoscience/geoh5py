@@ -254,12 +254,13 @@ class H5Writer:
                 pass
 
             dict_values = getattr(entity, attribute)
-            attr_handle.create_dataset(
-                channel,
-                data=dict_values[channel],
-                compression="gzip",
-                compression_opts=9,
-            )
+            if channel in dict_values:
+                attr_handle.create_dataset(
+                    channel,
+                    data=dict_values[channel],
+                    compression="gzip",
+                    compression_opts=9,
+                )
 
     @classmethod
     def update_field(cls, file: str | h5py.File, entity, attribute: str):

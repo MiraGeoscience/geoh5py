@@ -34,7 +34,8 @@ from __future__ import annotations
 
 import uuid
 
-import numpy
+import numpy as np
+from h5py import special_dtype
 
 from ..shared.utils import KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid
 
@@ -283,12 +284,21 @@ class Concatenator:
             if val is None:
                 continue
 
-            if isinstance(val, numpy.ndarray):
+            if isinstance(val, np.ndarray):
                 val = "{" + ", ".join(str(e) for e in val.tolist()) + "}"
             elif isinstance(val, uuid.UUID):
                 val = as_str_if_uuid(val)
 
             self.concatenated_attributes[index][key] = val
+
+        if hasattr(entity, "values"):
+            self.concatenated_attributes[index]["Type ID"] = as_str_if_uuid(
+                entity.entity_type.uid
+            )
+        else:
+            self.concatenated_attributes[index]["Object Type ID"] = as_str_if_uuid(
+                entity.entity_type.uid
+            )
 
         # TODO Only execute on close() for speed.
         getattr(self, "workspace").update_attribute(self, "concatenated_attributes")
@@ -313,46 +323,48 @@ class Concatenator:
 
         alias = KEY_MAP.get(field, field)
         index = self.fetch_index(entity, field)
-        if index is None:
-            start = 0
-            self.index[alias] = numpy.asarray(
-                numpy.core.records.fromarrays(
-                    ((), (), (), ()),
-                    names="Start index, Size, Object ID, Data ID",
-                    formats="<u4, <u4, O, O",
-                )
-            )
-
-        else:  # First remove the old data
+        if index is not None:  # First remove the old data
             start, size = self.index[alias][index][0], self.index[alias][index][1]
-            self.data[alias] = numpy.delete(
-                self.data[alias], numpy.arange(start, start + size), axis=0
+            self.data[alias] = np.delete(
+                self.data[alias], np.arange(start, start + size), axis=0
             )
             # Shift indices
             self.index[alias]["Start index"][
                 self.index[alias]["Start index"] > start
             ] -= size
             start = self.data[alias].shape[0] - 1
-            self.index[alias] = numpy.delete(self.index[alias], index, axis=0)
+            self.index[alias] = np.delete(self.index[alias], index, axis=0)
+        else:
+            start = 0
 
         if values is not None:
-            self.data[alias] = numpy.hstack([self.data[alias], values])
-            self.index[alias] = numpy.hstack(
+            indices = np.hstack(
                 [
-                    self.index[alias],
-                    numpy.asarray(
-                        numpy.core.records.fromarrays(
-                            (start, values.shape[0], obj_id, data_id),
-                            dtype=self.index[alias].dtype,
-                        )
-                    ),
+                    np.core.records.fromarrays(
+                        (start, values.shape[0], obj_id, data_id),
+                        dtype=[
+                            ("Start index", "<u4"),
+                            ("Size", "<u4"),
+                            ("Object ID", special_dtype(vlen=str)),
+                            ("Data ID", special_dtype(vlen=str)),
+                        ],
+                    )
                 ]
             )
+            if alias in self.index:
+                indices = np.hstack([self.index[alias], indices])
+
+            self.index[alias] = indices
+
+            if alias in self.data:
+                values = np.hstack([self.data[alias], values])
+
+            self.data[alias] = values
 
         getattr(self, "workspace").update_attribute(self, "index", alias)
 
         if hasattr(entity, f"_{field}"):  # For group property
-            setattr(self, f"_{field}", self.data[alias])
+            setattr(self, f"_{field}", self.data.get(alias))
             getattr(self, "workspace").update_attribute(self, field)
         else:  # For data values
             getattr(self, "workspace").update_attribute(self, "data", field)

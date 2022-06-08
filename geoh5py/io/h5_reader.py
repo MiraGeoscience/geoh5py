@@ -191,10 +191,7 @@ class H5Reader:
                     attribute = list(group["Data"])
                 else:
                     if label not in group["Index"]:
-                        raise UserWarning(
-                            f"{H5Reader.fetch_concatenated_values} for '{label}' "
-                            f"does not have corresponding Index."
-                        )
+                        return None
 
                     if label in group["Data"]:
                         attribute = group["Data"][label][:]
