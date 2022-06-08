@@ -248,11 +248,13 @@ class Workspace(AbstractContextManager):
             class_type = Data
             type_attr = self.fetch_type(uuid.UUID(attributes["Type ID"]), "Data")
 
-        self.create_entity(
+        recovered_entity = self.create_entity(
             class_type,
             save_on_creation=False,
             **{"entity": attributes, "entity_type": type_attr},
         )
+        recovered_entity.on_file = True
+        recovered_entity.entity_type.on_file = True
 
     def create_data(
         self,
@@ -1002,7 +1004,7 @@ class Workspace(AbstractContextManager):
         """
         if entity.on_file:
             if entity.concatenation is Concatenated:
-                Concatenated.update_attributes(entity, attribute)
+                getattr(entity, "concatenator").update_attributes(entity, attribute)
             elif channel is not None:
                 self._io_call(
                     H5Writer.update_concatenated_field,
@@ -1013,6 +1015,8 @@ class Workspace(AbstractContextManager):
                 )
             else:
                 self._io_call(H5Writer.update_field, entity, attribute, mode="r+")
+
+            self._io_call(H5Writer.clear_stats_cache, entity, mode="r+")
 
     @property
     def version(self) -> float:

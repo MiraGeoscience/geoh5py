@@ -60,7 +60,7 @@ class Data(Entity):
         :obj:`int`: Number of expected data values based on
         :obj:`~geoh5py.data.data.Data.association`
         """
-        if self.association is DataAssociationEnum.VERTEX:
+        if self.association in [DataAssociationEnum.VERTEX, DataAssociationEnum.DEPTH]:
             return self.parent.n_vertices
         if self.association is DataAssociationEnum.CELL:
             return self.parent.n_cells

@@ -208,20 +208,14 @@ class Concatenator:
         if field not in self.index:
             return None
 
-        try:
-            index = (
-                self.index[field]["Object ID"]
-                .tolist()
-                .index(as_str_if_uuid(entity.uid).encode())
-            )
-        except ValueError:
-            index = (
-                self.index[field]["Data ID"]
-                .tolist()
-                .index(as_str_if_uuid(entity.uid).encode())
-            )
+        uid = as_str_if_uuid(entity.uid).encode()
+        if uid in self.index[field]["Object ID"].tolist():
+            return self.index[field]["Object ID"].tolist().index(uid)
 
-        return index
+        if uid in self.index[field]["Data ID"].tolist():
+            return self.index[field]["Data ID"].tolist().index(uid)
+
+        return None
 
     def fetch_values(self, entity, field: str):
         """
@@ -268,8 +262,20 @@ class Concatenator:
 
         return self._property_groups
 
-    def update_attributes(self, entity):
-        """Update the attributes of a concatenated entity."""
+    def update_attributes(self, entity, label):
+        """
+        Update a concatenated entity.
+        """
+        if label == "attributes":
+            self.update_concatenated_attributes(entity)
+        else:
+            if hasattr(entity, "values"):
+                label = entity.name
+
+            self.update_array_attribute(entity, label)
+
+    def update_concatenated_attributes(self, entity):
+        """Update the concatenated attributes."""
         index = self.attr_index(entity.uid)
         for key, attr in entity.attribute_map.items():
             val = getattr(entity, attr)
@@ -281,9 +287,6 @@ class Concatenator:
                 val = "{" + ", ".join(str(e) for e in val.tolist()) + "}"
             elif isinstance(val, uuid.UUID):
                 val = as_str_if_uuid(val)
-
-            if key == "ID":
-                key = "Type ID" if hasattr(entity, "values") else "Object Type ID"
 
             self.concatenated_attributes[index][key] = val
 
@@ -333,9 +336,17 @@ class Concatenator:
             self.index[alias] = numpy.delete(self.index[alias], index, axis=0)
 
         if values is not None:
-            self.data[alias] = numpy.vstack([self.data[alias], values])
-            self.index[alias] = numpy.vstack(
-                [self.index[alias], (start, values.shape[0], obj_id, data_id)]
+            self.data[alias] = numpy.hstack([self.data[alias], values])
+            self.index[alias] = numpy.hstack(
+                [
+                    self.index[alias],
+                    numpy.asarray(
+                        numpy.core.records.fromarrays(
+                            (start, values.shape[0], obj_id, data_id),
+                            dtype=self.index[alias].dtype,
+                        )
+                    ),
+                ]
             )
 
         getattr(self, "workspace").update_attribute(self, "index", alias)
@@ -362,7 +373,7 @@ class Concatenator:
 
             self._attributes_keys.append(as_str_if_uuid(child.uid))
             self.concatenated_attributes.append({})
-            self.update_attributes(child)
+            self.update_concatenated_attributes(child)
 
             if hasattr(child, "surveys"):  # Specific to drillholes
                 self.update_array_attribute(child, "surveys")
@@ -448,12 +459,11 @@ class Concatenated:
 
         return data_list
 
-    @staticmethod
-    def update_attributes(entity, field: str):
+    def update_attributes(self, entity, field: str):
         """
         Update the attributes on the concatenated entity.
         """
-        return getattr(entity, "parent").update_attributes(entity, field)
+        return self.concatenator.update_attributes(entity, field)
 
     @property
     def parent(self) -> Concatenated | Concatenator:

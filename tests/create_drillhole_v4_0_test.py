@@ -33,6 +33,7 @@ def test_load_drillhole_data():
         obj = group.get_entity("4Q49")[0]
         obj.collar = [314000.0, 6075000.0, 200.0]
         data = obj.get_data("As")[0]
+        data.values = data.values**0.0
 
         print(obj.get_data_list())
         print(data.values)

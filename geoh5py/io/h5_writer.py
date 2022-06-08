@@ -552,10 +552,27 @@ class H5Writer:
                     compression="gzip",
                     compression_opts=9,
                 )
-                entity_type_handle = H5Writer.fetch_handle(h5file, entity.entity_type)
-                stats_cache = entity_type_handle.get("StatsCache")
-                if stats_cache is not None:
-                    del entity_type_handle["StatsCache"]
+
+    @classmethod
+    def clear_stats_cache(
+        cls,
+        file: str | h5py.File,
+        entity,
+    ):
+        """
+        Clear the StatsCache dataset.
+
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Target entity.
+        """
+        with fetch_h5_handle(file, mode="r+") as h5file:
+            if not isinstance(entity, Data):
+                return
+
+            entity_type_handle = H5Writer.fetch_handle(h5file, entity.entity_type)
+            stats_cache = entity_type_handle.get("StatsCache")
+            if stats_cache is not None:
+                del entity_type_handle["StatsCache"]
 
     @classmethod
     def write_entity(
