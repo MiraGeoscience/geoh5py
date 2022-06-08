@@ -68,7 +68,7 @@ class Workspace(AbstractContextManager):
         "Version": "version",
     }
 
-    def __init__(self, h5file: str | Path = "Analyst.geoh5", mode="a", **kwargs):
+    def __init__(self, h5file="Analyst.geoh5", mode="a", **kwargs):
 
         self._contributors = np.asarray(
             ["UserName"], dtype=h5py.special_dtype(vlen=str)
@@ -84,7 +84,7 @@ class Workspace(AbstractContextManager):
         self._objects: dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
         self._data: dict[uuid.UUID, ReferenceType[data.Data]] = {}
         self._geoh5: h5py.File | None = None
-        self.h5file: str | Path = h5file
+        self.h5file = h5file
 
         for attr, item in kwargs.items():
             if attr in self._attribute_map:
@@ -717,14 +717,14 @@ class Workspace(AbstractContextManager):
         return self._geoh5
 
     @property
-    def h5file(self) -> str | Path | bytes:
+    def h5file(self):
         """
         :str: Target *geoh5* file name with path.
         """
         return self._h5file
 
     @h5file.setter
-    def h5file(self, file: str | Path | bytes):
+    def h5file(self, file):
 
         if not isinstance(file, (str, Path, bytes)):
             raise ValueError(
