@@ -728,12 +728,10 @@ class Workspace(AbstractContextManager):
     @h5file.setter
     def h5file(self, file: str | Path | io.BytesIO):
 
-        if isinstance(file, bytes):
-            file = io.BytesIO(file)
-        elif isinstance(file, (str, Path)):
+        if isinstance(file, (str, Path)):
             if not str(file).endswith("geoh5"):
                 raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
-        else:
+        elif not isinstance(file, io.BytesIO):
             raise ValueError(
                 "The 'h5file' attribute must be a str, pathlib.Path or bytes to the target geoh5 file. "
                 f"Provided {file} of type({type(file)})"

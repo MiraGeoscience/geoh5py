@@ -14,6 +14,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+import io
 
 import pytest
 from h5py import File
@@ -115,7 +116,7 @@ def test_read_bytes(tmp_path):
     byte_data = in_file.read()
     in_file.close()
 
-    byte_ws = Workspace(byte_data)
+    byte_ws = Workspace(io.BytesIO(byte_data))
     file_ws = Workspace(tmp_path / r"test.geoh5")
 
     assert len(byte_ws.objects) == len(file_ws.objects)
