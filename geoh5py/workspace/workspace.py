@@ -68,7 +68,9 @@ class Workspace(AbstractContextManager):
         "Version": "version",
     }
 
-    def __init__(self, h5file="Analyst.geoh5", mode="a", **kwargs):
+    def __init__(
+        self, h5file: str | Path | io.BytesIO = "Analyst.geoh5", mode="a", **kwargs
+    ):
 
         self._contributors = np.asarray(
             ["UserName"], dtype=h5py.special_dtype(vlen=str)
@@ -84,7 +86,7 @@ class Workspace(AbstractContextManager):
         self._objects: dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
         self._data: dict[uuid.UUID, ReferenceType[data.Data]] = {}
         self._geoh5: h5py.File | None = None
-        self.h5file = h5file
+        self.h5file: str | Path | io.BytesIO = h5file
 
         for attr, item in kwargs.items():
             if attr in self._attribute_map:
@@ -717,25 +719,25 @@ class Workspace(AbstractContextManager):
         return self._geoh5
 
     @property
-    def h5file(self):
+    def h5file(self) -> str | Path | io.BytesIO:
         """
         :str: Target *geoh5* file name with path.
         """
         return self._h5file
 
     @h5file.setter
-    def h5file(self, file):
+    def h5file(self, file: str | Path | io.BytesIO):
 
-        if not isinstance(file, (str, Path, bytes)):
+        if isinstance(file, bytes):
+            file = io.BytesIO(file)
+        elif isinstance(file, (str, Path)):
+            if not str(file).endswith("geoh5"):
+                raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
+        else:
             raise ValueError(
                 "The 'h5file' attribute must be a str, pathlib.Path or bytes to the target geoh5 file. "
                 f"Provided {file} of type({type(file)})"
             )
-
-        if isinstance(file, bytes):
-            file = io.BytesIO(file)
-        elif not str(file).endswith("geoh5"):
-            raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
 
         self._h5file = file
 
