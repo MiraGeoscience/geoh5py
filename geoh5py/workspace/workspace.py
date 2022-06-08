@@ -159,6 +159,7 @@ class Workspace(AbstractContextManager):
                 H5Writer.save_entity, self.root, add_children=False, mode="r+"
             )
         self.geoh5.close()
+
         self._geoh5 = None
 
     @property
@@ -643,10 +644,10 @@ class Workspace(AbstractContextManager):
         property_groups = []
         if isinstance(entity, Concatenator):
             for key in entity.property_group_ids:
-                if key not in entity.attributes:
+                if key not in entity.concatenated_attributes:
                     continue
 
-                attrs = entity.attributes[key]
+                attrs = entity.concatenated_attributes[key]
                 property_groups.append(PropertyGroup(**attrs))
         else:
 
@@ -977,9 +978,12 @@ class Workspace(AbstractContextManager):
         :param add_children: Add children entities to geoh5.
         :param file: :obj:`h5py.File` or name of the target geoh5
         """
-        self._io_call(
-            H5Writer.save_entity, entity, add_children=add_children, mode="r+"
-        )
+        if entity.concatenation is Concatenated:
+            entity.save()
+        else:
+            self._io_call(
+                H5Writer.save_entity, entity, add_children=add_children, mode="r+"
+            )
 
     @property
     def types(self) -> list[EntityType]:
@@ -987,19 +991,26 @@ class Workspace(AbstractContextManager):
         return self._all_types()
 
     def update_attribute(
-        self,
-        entity: Entity | EntityType,
-        attribute: str,
+        self, entity: Entity | EntityType, attribute: str, channel: str = None
     ):
         """
         Save or update an entity to geoh5.
 
         :param entity: Entity to be written to geoh5.
         :param attribute: Name of the attribute to get updated to geoh5.
+        :param channel: Optional channel argument for concatenated data and index.
         """
         if entity.on_file:
             if entity.concatenation is Concatenated:
                 Concatenated.update_attributes(entity, attribute)
+            elif channel is not None:
+                self._io_call(
+                    H5Writer.update_concatenated_field,
+                    entity,
+                    attribute,
+                    channel,
+                    mode="r+",
+                )
             else:
                 self._io_call(H5Writer.update_field, entity, attribute, mode="r+")
 

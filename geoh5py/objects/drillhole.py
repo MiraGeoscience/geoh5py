@@ -129,7 +129,9 @@ class Drillhole(Points):
 
     @cost.setter
     def cost(self, value):
-        assert isinstance(value, float), f"Provided cost value must be of type {float}"
+        assert isinstance(
+            value, (float, int)
+        ), f"Provided cost value must be of type {float} or int."
         self._cost = value
         self.workspace.update_attribute(self, "attributes")
 

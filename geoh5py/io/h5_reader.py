@@ -26,7 +26,7 @@ import h5py
 import numpy as np
 
 from ..shared import FLOAT_NDV, INTEGER_NDV, fetch_h5_handle
-from ..shared.utils import as_str_if_utf8_bytes, as_str_if_uuid, key_map, str2uuid
+from ..shared.utils import KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid, str2uuid
 
 
 class H5Reader:
@@ -103,7 +103,7 @@ class H5Reader:
             indices = None
 
             try:
-                indices = h5file[name][entity_type][as_str_if_uuid(uid)][key_map[key]][
+                indices = h5file[name][entity_type][as_str_if_uuid(uid)][KEY_MAP[key]][
                     :
                 ]
             except KeyError:
@@ -173,36 +173,27 @@ class H5Reader:
         with fetch_h5_handle(file) as h5file:
             name = list(h5file.keys())[0]
             entity_type = cls.format_type_string(entity_type)
-            label = key_map.get(label, label)
+            label = KEY_MAP.get(label, label)
 
             try:
                 group = h5file[name][entity_type][as_str_if_uuid(uid)][
                     "Concatenated Data"
                 ]
-
                 if label == "Attributes":
                     attribute = group[label][()]
                     if isinstance(attribute, np.ndarray):
                         attribute = attribute[0]
 
                     attribute = json.loads(as_str_if_utf8_bytes(attribute))
-
-                elif label == "Property Group IDs":
-                    attribute = [
-                        str2uuid(as_str_if_utf8_bytes(uid)) for uid in group[label][:]
-                    ]
+                elif label == "Index":
+                    attribute = list(group["Index"])
+                elif label == "Data":
+                    attribute = list(group["Data"])
                 else:
                     if label not in group["Index"]:
                         raise UserWarning(
                             f"{H5Reader.fetch_concatenated_values} for '{label}' "
                             f"does not have corresponding Index."
-                        )
-                    indices = {}
-                    for elem in group["Index"][label][:]:
-                        indices[elem[2]] = (
-                            elem[0],
-                            elem[1],
-                            elem[3],
                         )
 
                     if label in group["Data"]:
@@ -210,7 +201,7 @@ class H5Reader:
                     else:
                         attribute = group[label][:]
 
-                    return attribute, indices
+                    return attribute, group["Index"][label][:]
 
             except KeyError:
                 return None

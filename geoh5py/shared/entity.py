@@ -69,6 +69,7 @@ class Entity(ABC):
         self._allow_move = True
         self._allow_rename = True
         self._partially_hidden = False
+        self._clipping_ids = None
         self._public = True
         self._on_file = False
         self._visible = True
@@ -170,6 +171,13 @@ class Entity(ABC):
         :obj:`list` Children entities in the workspace tree
         """
         return self._children
+
+    @property
+    def clipping_ids(self):
+        """
+        List of clipping uuids
+        """
+        return self._clipping_ids
 
     def copy(self, parent=None, copy_children: bool = True):
         """
@@ -419,6 +427,14 @@ class Entity(ABC):
                         prop_group.properties.remove(uid)
 
             self.workspace.update_attribute(self, "property_groups")
+
+    def save(self, add_children: bool = True):
+        """
+        Alias method of :func:`~geoh5py.workspace.Workspace.save_entity`.
+
+        :param add_children: Option to also save the children.
+        """
+        return self.workspace.save_entity(self, add_children=add_children)
 
     @property
     def uid(self) -> uuid.UUID:

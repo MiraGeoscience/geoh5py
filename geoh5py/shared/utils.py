@@ -183,7 +183,7 @@ def iterable_message(valid: list[Any] | None) -> str:
     return msg
 
 
-key_map = {
+KEY_MAP = {
     "values": "Data",
     "cells": "Cells",
     "surveys": "Surveys",
@@ -199,7 +199,7 @@ key_map = {
     "metadata": "Metadata",
     "options": "options",
     "concatenated_object_ids": "Concatenated object IDs",
-    "attributes": "Attributes",
+    "concatenated_attributes": "Attributes",
     "property_group_ids": "Property Group IDs",
 }
 

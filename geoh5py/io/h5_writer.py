@@ -31,7 +31,7 @@ from ..data import CommentsData, Data, DataType, FilenameData, IntegerData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import Concatenator, Entity, EntityType, fetch_h5_handle
-from ..shared.utils import as_str_if_uuid, dict_mapper, key_map
+from ..shared.utils import KEY_MAP, as_str_if_uuid, dict_mapper
 
 if TYPE_CHECKING:
     from .. import shared, workspace
@@ -226,13 +226,16 @@ class H5Writer:
         return new_entity
 
     @classmethod
-    def update_concatenated_field(cls, file: str | h5py.File, entity, attribute: str):
+    def update_concatenated_field(
+        cls, file: str | h5py.File, entity, attribute: str, channel: str
+    ):
         """
         Update the attributes of a concatenated :obj:`~geoh5py.shared.entity.Entity`.
 
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
         :param attribute: Name of the attribute to get updated.
+        :param channel: Name of the data or index to be modified.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
@@ -240,37 +243,23 @@ class H5Writer:
             if entity_handle is None:
                 return
 
+            attr_handle = entity_handle["Concatenated Data"].get(attribute.capitalize())
+
+            if attr_handle is None:
+                attr_handle = entity_handle.create_group(attribute.capitalize())
+
             try:
-                del entity_handle[key_map[attribute]]
+                del attr_handle[channel]
             except KeyError:
                 pass
 
-            if attribute != "attributes" and getattr(entity, attribute, None) is None:
-                return
-
-            if attribute in ["values", "trace_depth", "metadata", "options"]:
-                cls.write_data_values(h5file, entity, attribute)
-            elif attribute in [
-                "cells",
-                "surveys",
-                "trace",
-                "vertices",
-                "octree_cells",
-                "u_cell_delimiters",
-                "v_cell_delimiters",
-                "z_cell_delimiters",
-            ]:
-                cls.write_array_attribute(h5file, entity, attribute)
-            elif attribute == "property_groups":
-                cls.write_property_groups(h5file, entity)
-            elif attribute == "color_map":
-                cls.write_color_map(h5file, entity)
-            elif attribute == "entity_type":
-                del entity_handle["Type"]
-                new_type = H5Writer.write_entity_type(h5file, entity.entity_type)
-                entity_handle["Type"] = new_type
-            else:
-                cls.write_attributes(h5file, entity)
+            dict_values = getattr(entity, attribute)
+            attr_handle.create_dataset(
+                channel,
+                data=dict_values[channel],
+                compression="gzip",
+                compression_opts=9,
+            )
 
     @classmethod
     def update_field(cls, file: str | h5py.File, entity, attribute: str):
@@ -284,32 +273,26 @@ class H5Writer:
         with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
 
-            if entity.concatenation is Concatenator:
-                entity_handle = entity_handle["Concatenated Data"]
-
             if entity_handle is None:
                 return
 
-            try:
-                del entity_handle[key_map[attribute]]
-            except KeyError:
-                pass
-
-            if attribute != "attributes" and getattr(entity, attribute, None) is None:
-                return
-
-            if attribute in ["values", "trace_depth", "metadata", "options"] or (
-                (entity.concatenation is Concatenator) and attribute == "attributes"
-            ):
+            if attribute in [
+                "concatenated_attributes",
+                "metadata",
+                "options",
+                "trace_depth",
+                "values",
+            ]:
                 cls.write_data_values(h5file, entity, attribute)
             elif attribute in [
                 "cells",
+                "concatenated_object_ids",
+                "octree_cells",
                 "surveys",
                 "trace",
-                "vertices",
-                "octree_cells",
                 "u_cell_delimiters",
                 "v_cell_delimiters",
+                "vertices",
                 "z_cell_delimiters",
             ]:
                 cls.write_array_attribute(h5file, entity, attribute)
@@ -378,9 +361,14 @@ class H5Writer:
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             color_map = getattr(entity_type, "color_map", None)
+            entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)
+
+            try:
+                del entity_type_handle["Color map"]
+            except KeyError:
+                pass
 
             if color_map is not None and color_map.values is not None:
-                entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)
                 cls.create_dataset(
                     entity_type_handle,
                     getattr(color_map, "_values"),
@@ -408,9 +396,14 @@ class H5Writer:
             names = ["Key", "Value"]
             formats = ["<u4", h5py.special_dtype(vlen=str)]
 
-            if reference_value_map is not None and reference_value_map.map is not None:
-                entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)
+            entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)
 
+            try:
+                del entity_type_handle["Value map"]
+            except KeyError:
+                pass
+
+            if reference_value_map is not None and reference_value_map.map is not None:
                 dtype = list(zip(names, formats))
                 array = np.array(list(reference_value_map.map.items()), dtype=dtype)
                 cls.create_dataset(entity_type_handle, array, "Value map")
@@ -456,16 +449,24 @@ class H5Writer:
         with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
 
-            if getattr(entity, attribute, None) is not None:
+            if (
+                entity.concatenation is Concatenator
+                and attribute != "concatenated_object_ids"
+            ):
+                entity_handle = entity_handle["Concatenated Data"]
+
+            try:
+                del entity_handle[KEY_MAP[attribute]]
+            except KeyError:
+                pass
+
+            if getattr(entity, f"_{attribute}", None) is not None:
                 entity_handle.create_dataset(
-                    key_map[attribute],
-                    data=getattr(entity, "_" + attribute),
+                    KEY_MAP[attribute],
+                    data=getattr(entity, f"_{attribute}"),
                     compression="gzip",
                     compression_opts=9,
                 )
-
-            elif attribute in entity_handle.keys():
-                del entity_handle[attribute]
 
     # @classmethod
     # def write_concatenated(
@@ -545,6 +546,9 @@ class H5Writer:
             if entity.concatenation is Concatenator:
                 entity_handle = entity_handle["Concatenated Data"]
 
+            if KEY_MAP[attribute] in entity_handle:
+                del entity_handle[KEY_MAP[attribute]]
+
             if getattr(entity, attribute, None) is None:
                 return
 
@@ -559,13 +563,16 @@ class H5Writer:
                 values = dict_mapper(values, [as_str_if_uuid])
 
                 entity_handle.create_dataset(
-                    key_map[attribute],
+                    KEY_MAP[attribute],
                     data=json.dumps(values, indent=4),
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
                 )
 
             elif isinstance(entity, FilenameData):
+                if "Data" in entity_handle:
+                    del entity_handle["Data"]
+
                 entity_handle.create_dataset(
                     "Data",
                     data=entity.file_name,
@@ -584,11 +591,12 @@ class H5Writer:
 
             elif isinstance(values, str):
                 entity_handle.create_dataset(
-                    key_map[attribute],
+                    KEY_MAP[attribute],
                     data=values,
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
                 )
+
             else:
                 out_values = deepcopy(values)
                 if isinstance(entity, IntegerData):
@@ -597,7 +605,7 @@ class H5Writer:
                     out_values[np.isnan(out_values)] = entity.ndv()
 
                 entity_handle.create_dataset(
-                    key_map[attribute],
+                    KEY_MAP[attribute],
                     data=out_values,
                     compression="gzip",
                     compression_opts=9,
@@ -735,7 +743,7 @@ class H5Writer:
         with fetch_h5_handle(file, mode="r+") as h5file:
             H5Writer.update_field(h5file, entity, "attributes")
 
-            for attribute in key_map:
+            for attribute in KEY_MAP:
                 if getattr(entity, attribute, None) is not None:
                     H5Writer.update_field(h5file, entity, attribute)
 
@@ -760,9 +768,10 @@ class H5Writer:
 
                 entity_handle = H5Writer.fetch_handle(h5file, entity)
 
-                # Check if a group already exists, then remove and write
-                if "PropertyGroups" in entity_handle.keys():
+                try:
                     del entity_handle["PropertyGroups"]
+                except KeyError:
+                    pass
 
                 entity_handle.create_group("PropertyGroups")
                 for p_g in entity.property_groups:

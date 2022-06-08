@@ -53,7 +53,7 @@ class FilenameData(Data):
         self._file_name = value
         self.workspace.update_attribute(self, "values")
 
-    def save(self, path: str = "./", name=None):
+    def save_file(self, path: str = "./", name=None):
         """
         Save the file to disk.
 
