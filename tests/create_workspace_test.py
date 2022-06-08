@@ -16,6 +16,8 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 import io
 
+from __future__ import annotations
+
 import pytest
 from h5py import File
 
