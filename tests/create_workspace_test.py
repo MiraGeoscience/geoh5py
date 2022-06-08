@@ -18,6 +18,7 @@
 import pytest
 from h5py import File
 
+from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
@@ -101,3 +102,20 @@ def test_bad_extension(tmp_path):
         )
 
     assert "Input 'h5file' file must have a 'geoh5' extension." in str(error)
+
+
+def test_read_bytes(tmp_path):
+    ws = Workspace(
+        tmp_path / r"test.geoh5",
+    )
+    ws.create_entity(Points)
+    ws.close()
+
+    in_file = open(tmp_path / r"test.geoh5", "rb")
+    byte_data = in_file.read()
+    in_file.close()
+
+    byte_ws = Workspace(byte_data)
+    file_ws = Workspace(tmp_path / r"test.geoh5")
+
+    assert len(byte_ws.objects) == len(file_ws.objects)
