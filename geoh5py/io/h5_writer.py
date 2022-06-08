@@ -468,64 +468,6 @@ class H5Writer:
                     compression_opts=9,
                 )
 
-    # @classmethod
-    # def write_concatenated(
-    #     cls,
-    #     file: str | h5py.File,
-    #     entity,
-    #     attribute: str,
-    # ):
-    #     """
-    #     Get :obj:`~geoh5py.shared.entity.Entity.children` of concatenated group.
-    #
-    #     :param file: :obj:`h5py.File` or name of the target geoh5 file
-    #     :param uid: Unique identifier
-    #     :param entity_type: Type of entity from
-    #         'group', 'data', 'object', 'group_type', 'data_type', 'object_type'
-    #     :param label: Group identifier for the attribute requested.
-    #
-    #     :return children: [{uuid: type}, ... ]
-    #         List of dictionaries for the children uid and type
-    #     """
-    #     with fetch_h5_handle(file) as h5file:
-    #         entity_handle = H5Writer.fetch_handle(h5file, entity)
-    #
-    #         try:
-    #             group = entity_handle["Concatenated Data"]
-    #
-    #             if label == "Attributes":
-    #                 attribute = json.loads(str_from_utf8_bytes(group[label][()]))
-    #
-    #             elif label == "Property Group IDs":
-    #                 attribute = [
-    #                     str2uuid(str_from_utf8_bytes(uid)) for uid in group[label][:]
-    #                 ]
-    #             else:
-    #                 if label not in group["Index"]:
-    #                     raise UserWarning(
-    #                         f"{H5Reader.fetch_concatenated_values} for '{label}' "
-    #                         f"does not have corresponding Index."
-    #                     )
-    #                 indices = {}
-    #                 for elem in group["Index"][label][:]:
-    #                     indices[str2uuid(str_from_utf8_bytes(elem[2]))] = (
-    #                         elem[0],
-    #                         elem[1],
-    #                         str2uuid(str_from_utf8_bytes(elem[3])),
-    #                     )
-    #
-    #                 if label in group["Data"]:
-    #                     attribute = group["Data"][label][:]
-    #                 else:
-    #                     attribute = group[label][:]
-    #
-    #                 return attribute, indices
-    #
-    #         except KeyError:
-    #             return None
-    #
-    #         return attribute
-
     @classmethod
     def write_data_values(
         cls,
