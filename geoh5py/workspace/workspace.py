@@ -15,12 +15,15 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=R0902
 # pylint: disable=R0904
 # pylint: disable=C0302
 
 from __future__ import annotations
 
 import inspect
+import os
+import shutil
 import uuid
 import warnings
 import weakref
@@ -75,6 +78,7 @@ class Workspace(AbstractContextManager):
             ["UserName"], dtype=h5py.special_dtype(vlen=str)
         )
         self._root: Entity | None = None
+        self._repack: bool = False
         self._mode = mode
         self._distance_unit = "meter"
         self._ga_version = "1"
@@ -155,10 +159,24 @@ class Workspace(AbstractContextManager):
             return
 
         if self.geoh5.mode in ["r+", "a"]:
+            for entity in self.groups:
+                if entity.concatenation is Concatenator:
+                    self.update_attribute(entity, "concatenated_attributes")
+
             self._io_call(
                 H5Writer.save_entity, self.root, add_children=False, mode="r+"
             )
+
         self.geoh5.close()
+
+        if self.repack:
+            temp_file = (
+                os.path.basename(self.h5file) + ".v2"
+            )  # os.path.join(tempfile.gettempdir(), os.path.basename(self.h5file))
+            os.system(f'h5repack --native "{self.h5file}" "{temp_file}"')
+            os.remove(self.h5file)
+            shutil.move(temp_file, self.h5file)
+            self.repack = False
 
         self._geoh5 = None
 
@@ -292,6 +310,12 @@ class Workspace(AbstractContextManager):
                     and "UserComments" not in entity_kwargs.values()
                 ):
                     continue
+
+                if (
+                    self.version > 1.0
+                    and entity_kwargs["parent"].concatenation is Concatenated
+                ):
+                    entity_kwargs["concatenation"] = Concatenated
 
                 created_entity = member(data_type, **entity_kwargs)
 
@@ -434,7 +458,7 @@ class Workspace(AbstractContextManager):
                 parent.remove_data_from_group(child)
             elif isinstance(child, Group):
                 ref_type = "Groups"
-            elif isinstance(child, ObjectBase):
+            else:
                 ref_type = "Objects"
 
             self._io_call(H5Writer.remove_child, child.uid, ref_type, parent, mode="r+")
@@ -467,7 +491,9 @@ class Workspace(AbstractContextManager):
 
             if value() is None:
                 rem_list += [key]
-                self._io_call(H5Writer.remove_entity, key, rtype, mode="r+")
+                self._io_call(
+                    H5Writer.remove_entity, key, rtype, parent=self, mode="r+"
+                )
 
         for key in rem_list:
             del referents[key]
@@ -967,6 +993,17 @@ class Workspace(AbstractContextManager):
         :obj:`~geoh5py.groups.root_group.RootGroup` entity.
         """
         return self._root
+
+    @property
+    def repack(self) -> bool:
+        """
+        Flag to repack the file after data deletion
+        """
+        return self._repack
+
+    @repack.setter
+    def repack(self, value: bool):
+        self._repack = value
 
     def save_entity(
         self,

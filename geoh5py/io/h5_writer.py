@@ -107,6 +107,7 @@ class H5Writer:
             parent_handle = H5Writer.fetch_handle(h5file, parent)
             if parent_handle is not None and uid_str in parent_handle[ref_type].keys():
                 del parent_handle[ref_type][uid_str]
+                parent.workspace.repack = True
 
     @staticmethod
     def remove_entity(
@@ -250,6 +251,7 @@ class H5Writer:
 
             try:
                 del attr_handle[channel]
+                entity.workspace.repack = True
             except KeyError:
                 pass
 
@@ -303,6 +305,7 @@ class H5Writer:
                 cls.write_color_map(h5file, entity)
             elif attribute == "entity_type":
                 del entity_handle["Type"]
+                entity.workspace.repack = True
                 new_type = H5Writer.write_entity_type(h5file, entity.entity_type)
                 entity_handle["Type"] = new_type
             else:
@@ -366,6 +369,7 @@ class H5Writer:
 
             try:
                 del entity_type_handle["Color map"]
+                entity_type.workspace.repack = True
             except KeyError:
                 pass
 
@@ -401,6 +405,7 @@ class H5Writer:
 
             try:
                 del entity_type_handle["Value map"]
+                entity_type.workspace.repack = True
             except KeyError:
                 pass
 
@@ -458,6 +463,7 @@ class H5Writer:
 
             try:
                 del entity_handle[KEY_MAP[attribute]]
+                entity.workspace.repack = True
             except KeyError:
                 pass
 
@@ -491,6 +497,7 @@ class H5Writer:
 
             if KEY_MAP[attribute] in entity_handle:
                 del entity_handle[KEY_MAP[attribute]]
+                entity.workspace.repack = True
 
             if getattr(entity, attribute, None) is None:
                 return
@@ -515,6 +522,7 @@ class H5Writer:
             elif isinstance(entity, FilenameData):
                 if "Data" in entity_handle:
                     del entity_handle["Data"]
+                    entity.workspace.repack = True
 
                 entity_handle.create_dataset(
                     "Data",
@@ -525,6 +533,7 @@ class H5Writer:
 
                 if entity.file_name in entity_handle:
                     del entity_handle[entity.file_name]
+                    entity.workspace.repack = True
 
                 entity_handle.create_dataset(
                     entity.file_name,
@@ -574,6 +583,7 @@ class H5Writer:
             stats_cache = entity_type_handle.get("StatsCache")
             if stats_cache is not None:
                 del entity_type_handle["StatsCache"]
+                entity.workspace.repack = True
 
     @classmethod
     def write_entity(
@@ -730,6 +740,7 @@ class H5Writer:
 
                 try:
                     del entity_handle["PropertyGroups"]
+                    entity.workspace.repack = True
                 except KeyError:
                     pass
 
@@ -739,6 +750,7 @@ class H5Writer:
                     uid = as_str_if_uuid(p_g.uid)
                     if uid in entity_handle["PropertyGroups"].keys():
                         del entity_handle["PropertyGroups"][uid]
+                        entity.workspace.repack = True
 
                     entity_handle["PropertyGroups"].create_group(uid)
 
