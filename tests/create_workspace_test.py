@@ -14,12 +14,14 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
-
 from __future__ import annotations
+
+import io
 
 import pytest
 from h5py import File
 
+from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
@@ -103,3 +105,25 @@ def test_bad_extension(tmp_path):
         )
 
     assert "Input 'h5file' file must have a 'geoh5' extension." in str(error)
+
+
+def test_read_bytes(tmp_path):
+    ws = Workspace(
+        tmp_path / r"test.geoh5",
+    )
+    ws.create_entity(Points)
+    ws.close()
+
+    in_file = open(tmp_path / r"test.geoh5", "rb")
+    byte_data = in_file.read()
+    in_file.close()
+
+    byte_ws = Workspace(io.BytesIO(byte_data))
+    byte_objects = byte_ws.objects
+    byte_ws.close()
+
+    file_ws = Workspace(tmp_path / r"test.geoh5")
+    file_objects = file_ws.objects
+    file_ws.close()
+
+    assert len(byte_objects) == len(file_objects)
