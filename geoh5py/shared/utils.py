@@ -132,13 +132,23 @@ def compare_entities(object_a, object_b, ignore: list | None = None, decimal: in
                 getattr(object_a, attr[1:]), getattr(object_b, attr[1:]), ignore=ignore
             )
         else:
+
             if isinstance(getattr(object_a, attr[1:]), np.ndarray):
-                np.testing.assert_array_almost_equal(
-                    getattr(object_a, attr[1:]).tolist(),
-                    getattr(object_b, attr[1:]).tolist(),
-                    decimal=decimal,
-                    err_msg=f"Error comparing attribute '{attr}'.",
-                )
+                attr_a = getattr(object_a, attr[1:]).tolist()
+                if len(attr_a) > 0 and isinstance(attr_a[0], str):
+                    assert all(
+                        a == b
+                        for a, b in zip(
+                            getattr(object_a, attr[1:]), getattr(object_b, attr[1:])
+                        )
+                    ), f"Error comparing attribute '{attr}'."
+                else:
+                    np.testing.assert_array_almost_equal(
+                        attr_a,
+                        getattr(object_b, attr[1:]).tolist(),
+                        decimal=decimal,
+                        err_msg=f"Error comparing attribute '{attr}'.",
+                    )
             else:
                 assert np.all(
                     getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])

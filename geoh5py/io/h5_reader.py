@@ -414,7 +414,10 @@ class H5Reader:
             try:
                 values = np.r_[h5file[name]["Data"][as_str_if_uuid(uid)]["Data"]]
                 if isinstance(values[0], (str, bytes)):
-                    values = str_from_utf8_bytes(values[0])
+                    values = np.asarray([str_from_utf8_bytes(val) for val in values])
+                    if len(values) == 1:
+                        values = values[0]
+
                 else:
                     if values.dtype in [float, "float64", "float32"]:
                         ind = values == FloatData.ndv()

@@ -261,9 +261,9 @@ class Workspace:
                 and inspect.ismethod(member.primitive_type)
                 and data_type.primitive_type is member.primitive_type()
             ):
-                if (
-                    member is CommentsData
-                    and "UserComments" not in entity_kwargs.values()
+                if member is CommentsData and not any(
+                    isinstance(val, str) and val == "UserComments"
+                    for val in entity_kwargs.values()
                 ):
                     continue
 
