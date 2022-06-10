@@ -236,8 +236,8 @@ class ObjectBase(Entity):
         :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
         property_groups = []
-        if self.property_groups is not None:
-            property_groups = self.property_groups
+        if self._property_groups is not None:
+            property_groups = self._property_groups
 
         if "name" in kwargs and any(
             pg.name == kwargs["name"] for pg in property_groups

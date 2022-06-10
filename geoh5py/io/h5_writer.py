@@ -291,6 +291,7 @@ class H5Writer:
                 "cells",
                 "concatenated_object_ids",
                 "octree_cells",
+                "property_group_ids",
                 "surveys",
                 "trace",
                 "u_cell_delimiters",

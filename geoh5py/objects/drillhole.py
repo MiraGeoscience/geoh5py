@@ -322,16 +322,32 @@ class Drillhole(Points):
 
     @property
     def _from(self):
+        if self.workspace.version > 1.0:
+            obj_list = []
+            for name in self.get_data_list():
+                if "FROM" in name:
+                    obj_list.append(self.get_data(name))
+            return obj_list
+
         data_obj = self.get_data("FROM")
         if data_obj:
             return data_obj[0]
+
         return None
 
     @property
     def _to(self):
+        if self.workspace.version > 1.0:
+            obj_list = []
+            for name in self.get_data_list():
+                if "TO" in name:
+                    obj_list.append(self.get_data(name))
+            return obj_list
+
         data_obj = self.get_data("TO")
         if data_obj:
             return data_obj[0]
+
         return None
 
     @property
@@ -387,21 +403,31 @@ class Drillhole(Points):
                 collocation_distance = self.default_collocation_distance
 
             if "depth" in attr.keys():
-                attr["association"] = "VERTEX"
-                attr["values"] = self.validate_log_data(
-                    attr["depth"],
-                    attr["values"],
-                    collocation_distance=collocation_distance,
-                )
+                attr["from-to"] = np.c_[
+                    attr["depth"], attr["depth"] + collocation_distance
+                ]
                 del attr["depth"]
-            elif "from-to" in attr.keys():
-                attr["association"] = "CELL"
-                attr["values"] = self.validate_interval_data(
-                    attr["from-to"],
-                    attr["values"],
-                    collocation_distance=collocation_distance,
-                )
+
+            if "from-to" in attr.keys():
+                if self.workspace.version > 1.0:
+                    attr["association"] = "DEPTH"
+                    if property_group is None:
+                        property_group = self.validate_depth_data(
+                            attr["from-to"],
+                            attr["values"],
+                            collocation_distance=collocation_distance,
+                        )
+
+                else:
+                    attr["association"] = "CELL"
+                    attr["values"] = self.validate_interval_data(
+                        attr["from-to"],
+                        attr["values"],
+                        collocation_distance=collocation_distance,
+                    )
                 del attr["from-to"]
+            elif "FROM" in name or "TO" in name:
+                pass
             else:
                 assert attr["association"] == "OBJECT", (
                     "Input data dictionary must contain {key:values} "
@@ -473,56 +499,56 @@ class Drillhole(Points):
 
         return indices.astype("uint32")
 
-    def validate_log_data(self, depth, input_values, collocation_distance=1e-4):
+    def validate_depth_data(self, from_to, values, collocation_distance=1e-4):
         """
-        Compare new and current depth values, append new vertices if necessary and return
-        an augmented values vector that matches the vertices indexing.
+        Compare new and current depth values and re-use the property group if possible.
+        Otherwise a new property group is added.
+
+        :param from_to: Array of from-to values.
+        :param values: Data values to be added on the from-to intervals.
+        :collocation_distance: Threshold on the comparison between existing depth values.
         """
-        assert len(depth) == len(input_values), (
-            f"Mismatch between input 'depth' shape{depth.shape} "
-            + f"and 'values' shape{input_values.shape}"
+        if isinstance(from_to, list):
+            from_to = np.vtack(from_to)
+
+        assert from_to.shape[0] == len(values), (
+            f"Mismatch between input 'from_to' shape{from_to.shape} "
+            + f"and 'values' shape{values.shape}"
         )
+        assert from_to.shape[1] == 2, "The `from-to` values must have shape(*, 2)"
 
-        input_values = np.r_[input_values]
+        property_group = None
+        for _from, _to in zip(self._from, self._to):
+            if np.allclose(
+                np.c_[_from.values, _to.values], from_to, rtol=collocation_distance
+            ):
+                property_group = None
 
-        if self._depth is None:
-            self.workspace.create_entity(
-                Data,
-                entity={
-                    "parent": self,
-                    "association": "VERTEX",
-                    "name": "DEPTH",
-                },
-                entity_type={"primitive_type": "FLOAT"},
+        if property_group is None:
+            from_to = self.add_data(
+                {
+                    "FROM": {
+                        "parent": self,
+                        "association": "DEPTH",
+                        "name": "FROM",
+                        "values": from_to[:, 0],
+                        "entity_type": {"primitive_type": "FLOAT"},
+                    },
+                    "TO": {
+                        "parent": self,
+                        "association": "CELL",
+                        "values": from_to[:, 1],
+                        "entity_type": {"primitive_type": "FLOAT"},
+                    },
+                }
+            )
+            self.add_data_to_group(
+                from_to, f"Interval_{self.concatenator.n_property_groups+1}"
             )
 
-        if self._depth.values is None:  # First data appended
-            self.add_vertices(self.desurvey(depth))
-            depth = np.r_[np.ones(self.n_vertices - depth.shape[0]) * np.nan, depth]
-            values = np.r_[
-                np.ones(self.n_vertices - input_values.shape[0]) * np.nan, input_values
-            ]
-            self._depth.values = depth
+        return property_group
 
-        else:
-            depths, indices = merge_arrays(
-                self._depth.values,
-                depth,
-                return_mapping=True,
-                collocation_distance=collocation_distance,
-            )
-            values = merge_arrays(
-                np.ones(self.n_vertices) * np.nan,
-                input_values,
-                replace="B->A",
-                mapping=indices,
-            )
-            self.add_vertices(self.desurvey(np.delete(depth, indices[:, 1])))
-            self._depth.values = depths
-
-        return values
-
-    def validate_interval_data(self, from_to, input_values, collocation_distance=1e-4):
+    def validate_interval_data(self, from_to, values, collocation_distance=1e-4):
         """
         Compare new and current depth values, append new vertices if necessary and return
         an augmented values vector that matches the vertices indexing.
@@ -530,9 +556,9 @@ class Drillhole(Points):
         if isinstance(from_to, list):
             from_to = np.vtack(from_to)
 
-        assert from_to.shape[0] == len(input_values), (
+        assert from_to.shape[0] == len(values), (
             f"Mismatch between input 'from_to' shape{from_to.shape} "
-            + f"and 'values' shape{input_values.shape}"
+            + f"and 'values' shape{values.shape}"
         )
         assert from_to.shape[1] == 2, "The `from-to` values must have shape(*, 2)"
 
@@ -605,9 +631,9 @@ class Drillhole(Points):
             new_cells = np.delete(new_cells, cell_map[:, 1], 0)
 
             # Append values
-            input_values = merge_arrays(
+            values = merge_arrays(
                 np.ones(self.n_cells) * np.nan,
-                np.r_[input_values],
+                np.r_[values],
                 replace="B->A",
                 mapping=cell_map,
             )
@@ -619,7 +645,7 @@ class Drillhole(Points):
             )
             self.cells = np.r_[self.cells, new_cells.astype("uint32")]
 
-        return input_values
+        return values
 
     def sort_depths(self):
         """

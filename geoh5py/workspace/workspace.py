@@ -160,7 +160,7 @@ class Workspace(AbstractContextManager):
 
         if self.geoh5.mode in ["r+", "a"]:
             for entity in self.groups:
-                if entity.concatenation is Concatenator:
+                if entity.concatenation is Concatenator and self.repack:
                     self.update_attribute(entity, "concatenated_attributes")
 
             self._io_call(
@@ -173,9 +173,10 @@ class Workspace(AbstractContextManager):
             temp_file = (
                 os.path.basename(self.h5file) + ".v2"
             )  # os.path.join(tempfile.gettempdir(), os.path.basename(self.h5file))
-            os.system(f'h5repack --native "{self.h5file}" "{temp_file}"')
-            os.remove(self.h5file)
-            shutil.move(temp_file, self.h5file)
+            if not os.system(f'h5repack --native "{self.h5file}" "{temp_file}"'):
+                os.remove(self.h5file)
+                shutil.move(temp_file, self.h5file)
+
             self.repack = False
 
         self._geoh5 = None

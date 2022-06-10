@@ -37,7 +37,7 @@ import uuid
 import numpy as np
 from h5py import special_dtype
 
-from ..shared.utils import KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid
+from geoh5py.shared.utils import KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid
 
 
 class Concatenator:
@@ -234,22 +234,27 @@ class Concatenator:
         return self.data[field][start : start + size]
 
     @property
+    def n_property_groups(self):
+        """
+        Return the number of property groups.
+        """
+        if self.property_group_ids is None:
+            return 0
+
+        return len(self.property_group_ids)
+
+    @property
     def property_group_ids(self):
         """Dictionary of concatenated objects and data property_group_ids."""
         if getattr(self, "_property_group_ids", None) is None:
-            self._property_group_ids = getattr(
-                self, "workspace"
-            ).fetch_concatenated_values(self, "property_group_ids")
-        return self._property_group_ids
-
-    @property_group_ids.setter
-    def property_group_ids(self, object_ids: list[uuid.UUID]):
-        if not isinstance(object_ids, list):
-            raise AttributeError(
-                "Input value for 'property_group_ids' must be of type list."
+            property_groups_ids = getattr(self, "workspace").fetch_concatenated_values(
+                self, "property_group_ids"
             )
 
-        self._property_group_ids = object_ids
+            if property_groups_ids is not None:
+                self._property_group_ids = property_groups_ids[0]
+
+        return self._property_group_ids
 
     @property
     def property_groups(self):
@@ -260,6 +265,22 @@ class Concatenator:
             self._property_groups = getattr(self, "workspace").fetch_property_groups(
                 self
             )
+            # property_groups = []
+            # for key in self.property_group_ids:
+            #     attrs = {
+            #         attr: val
+            #         for attr, val in self.concatenated_attributes[
+            #             self.attr_index(key)
+            #         ].items()
+            #         if "Property" not in attr
+            #     }
+            #     attrs["parent"] = self
+            #     attrs["concatenation"] = Concatenated
+            #     prop_group = PropertyGroup(**attrs)
+            #     property_groups += [prop_group]
+            #
+            # if property_groups:
+            #     self._property_groups = property_groups
 
         return self._property_groups
 
@@ -288,6 +309,8 @@ class Concatenator:
                 val = "{" + ", ".join(str(e) for e in val.tolist()) + "}"
             elif isinstance(val, uuid.UUID):
                 val = as_str_if_uuid(val)
+            elif attr == "association":
+                val = val.name
 
             self.concatenated_attributes[index][key] = val
 
@@ -299,9 +322,7 @@ class Concatenator:
             self.concatenated_attributes[index]["Object Type ID"] = as_str_if_uuid(
                 entity.entity_type.uid
             )
-
-        # TODO Only execute on close() for speed.
-        getattr(self, "workspace").update_attribute(self, "concatenated_attributes")
+        getattr(self, "workspace").repack = True
 
     def update_array_attribute(self, entity, field):
         """
@@ -321,7 +342,11 @@ class Concatenator:
                 f"for the requested field {field}"
             )
 
-        alias = KEY_MAP.get(field, field)
+        if field == "property_groups":
+            alias = "Property Group IDs"
+            values = [as_str_if_uuid(val.uid).encode() for val in values]
+        else:
+            alias = KEY_MAP.get(field, field)
         index = self.fetch_index(entity, field)
         if index is not None:  # First remove the old data
             start, size = self.index[alias][index][0], self.index[alias][index][1]
@@ -341,7 +366,7 @@ class Concatenator:
             indices = np.hstack(
                 [
                     np.core.records.fromarrays(
-                        (start, values.shape[0], obj_id, data_id),
+                        (start, len(values), obj_id, data_id),
                         dtype=[
                             ("Start index", "<u4"),
                             ("Size", "<u4"),
@@ -364,6 +389,8 @@ class Concatenator:
         getattr(self, "workspace").update_attribute(self, "index", alias)
 
         if hasattr(entity, f"_{field}"):  # For group property
+            if field == "property_groups":
+                field = "property_group_ids"
             setattr(self, f"_{field}", self.data.get(alias))
             getattr(self, "workspace").update_attribute(self, field)
         else:  # For data values
@@ -375,21 +402,22 @@ class Concatenator:
 
         :param child: Concatenated entity
         """
+        self._attributes_keys.append(as_str_if_uuid(child.uid))
+        self.concatenated_attributes.append({})
+        self.update_concatenated_attributes(child)
+
         if hasattr(child, "values"):
-            pass
+            self.update_array_attribute(child, child.name)
         else:
             if child.uid not in self.concatenated_object_ids:
                 self.concatenated_object_ids = self.concatenated_object_ids + [
                     as_str_if_uuid(child.uid)
                 ]
-
-            self._attributes_keys.append(as_str_if_uuid(child.uid))
-            self.concatenated_attributes.append({})
-            self.update_concatenated_attributes(child)
-
             if hasattr(child, "surveys"):  # Specific to drillholes
                 self.update_array_attribute(child, "surveys")
                 self.update_array_attribute(child, "trace")
+
+        child.on_file = True
 
 
 class Concatenated:
@@ -402,36 +430,12 @@ class Concatenated:
 
         super().__init__(**kwargs)
 
-    def add_data(self, data: dict, property_group: str = None):
-        """
-        Overloaded :obj:`~geoh5py.objects.ObjectBase.add_data` method.
-        """
-        raise NotImplementedError(
-            "Concatenated entity `add_data` method not yet implemented."
-        )
-
-    def add_data_to_group(self, data: dict, property_group: str = None):
-        """
-        Overloaded :obj:`~geoh5py.objects.ObjectBase.add_data_to_group` method.
-        """
-        raise NotImplementedError(
-            "Concatenated entity `add_data_to_group` method not yet implemented."
-        )
-
     @property
     def concatenator(self) -> Concatenator:
         """
         Parental Concatenator entity.
         """
         return self._parent.concatenator
-
-    def find_or_create_property_group(self, **kwargs):
-        """
-        Overloaded :obj:`~geoh5py.objects.ObjectBase.find_or_create_property_group` method.
-        """
-        raise NotImplementedError(
-            "Concatenated entity `find_or_create_property_group` method not yet implemented."
-        )
 
     def fetch_values(self, entity, field: str):
         """
@@ -448,7 +452,7 @@ class Concatenated:
         attr = self.concatenator.concatenated_attributes[uid]
         if f"Property:{name}" in attr:
             uid = self.concatenator.attr_index(attr.get(f"Property:{name}"))
-            attributes: dict = self.concatenator.concatenated_attributes[uid]
+            attributes: dict = self.concatenator.concatenated_attributes[uid].copy()
             attributes["parent"] = self
             getattr(self, "workspace").create_from_concatenation(attributes)
 
@@ -491,6 +495,23 @@ class Concatenated:
             )
         self._parent = parent
         self._parent.add_children([self])
+
+    @property
+    def property_groups(self):
+        if getattr(self, "_property_groups", None) is None:
+            prop_groups = self.concatenator.fetch_values(self, "property_group_ids")
+
+            if prop_groups is None:
+                return
+
+            for key in prop_groups:
+                getattr(self, "find_or_create_property_group")(
+                    **self.concatenator.concatenated_attributes[
+                        self.concatenator.attr_index(key)
+                    ]
+                )
+
+        return self._property_groups
 
     def save(self):
         """
