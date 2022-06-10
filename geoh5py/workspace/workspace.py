@@ -27,6 +27,7 @@ import shutil
 import uuid
 import warnings
 import weakref
+import tempfile
 from contextlib import AbstractContextManager, contextmanager
 from gc import collect
 from pathlib import Path
@@ -170,9 +171,7 @@ class Workspace(AbstractContextManager):
         self.geoh5.close()
 
         if self.repack:
-            temp_file = (
-                os.path.basename(self.h5file) + ".v2"
-            )  # os.path.join(tempfile.gettempdir(), os.path.basename(self.h5file))
+            temp_file = os.path.join(tempfile.gettempdir(), os.path.basename(self.h5file))
             if not os.system(f'h5repack --native "{self.h5file}" "{temp_file}"'):
                 os.remove(self.h5file)
                 shutil.move(temp_file, self.h5file)

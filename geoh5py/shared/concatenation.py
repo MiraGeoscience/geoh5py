@@ -290,6 +290,11 @@ class Concatenator:
         """
         if label == "attributes":
             self.update_concatenated_attributes(entity)
+        elif label ==  "property_groups":
+            if getattr(entity, "property_groups", None) is not None:
+
+                for pg in getattr(entity, "property_groups"):
+                    self.add_save_concatenated(pg)
         else:
             if hasattr(entity, "values"):
                 label = entity.name
@@ -309,6 +314,8 @@ class Concatenator:
                 val = "{" + ", ".join(str(e) for e in val.tolist()) + "}"
             elif isinstance(val, uuid.UUID):
                 val = as_str_if_uuid(val)
+            elif isinstance(val, list):
+                val = [as_str_if_uuid(uid) for uid in val]
             elif attr == "association":
                 val = val.name
 
@@ -402,8 +409,10 @@ class Concatenator:
 
         :param child: Concatenated entity
         """
-        self._attributes_keys.append(as_str_if_uuid(child.uid))
-        self.concatenated_attributes.append({})
+        if as_str_if_uuid(child.uid) not in self._attributes_keys:
+            self._attributes_keys.append(as_str_if_uuid(child.uid))
+            self.concatenated_attributes.append({})
+
         self.update_concatenated_attributes(child)
 
         if hasattr(child, "values"):
