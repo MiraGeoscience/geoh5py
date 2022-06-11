@@ -30,10 +30,10 @@ def test_load_drillhole_data():
 
     with Workspace(h5file_path) as w_s:
         group = w_s.groups[1]
-        obj = group.get_entity("4Q49")[0]
+        obj = group.children[0]
         print(obj.property_groups)
-        # obj.collar = [314000.0, 6075000.0, 200.0]
-        data = obj.get_data("As")[0]
+        obj.collar = [314000.0, 6075000.0, 200.0]
+        # data = obj.get_data("As")[0]
         # data.values = data.values**0.0
 
         print(obj.get_data_list())
@@ -56,8 +56,8 @@ def test_create_drillhole_data(tmp_path):
             collar=np.r_[0.0, 10.0, 10],
             surveys=np.c_[
                 np.linspace(0, max_depth, n_data),
-                np.ones(n_data) * 45.0,
                 np.linspace(-89, -75, n_data),
+                np.ones(n_data) * 45.0,
             ],
             parent=dh_group,
             name=well_name,
