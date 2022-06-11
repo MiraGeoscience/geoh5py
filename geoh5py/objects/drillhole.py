@@ -256,7 +256,7 @@ class Drillhole(Points):
             # Repeat first survey point at surface for de-survey interpolation
             surveys = np.vstack([surveys[0, :], surveys])
             surveys[0, 0] = 0.0
-
+            self.end_of_hole = float(self._surveys["Depth"][-1])
             return surveys.astype(float)
 
         return None
@@ -272,9 +272,10 @@ class Drillhole(Points):
             self.workspace.update_attribute(self, "surveys")
             self._surveys = np.asarray(
                 np.core.records.fromarrays(
-                    value.T, names="Depth, Dip, Azimuth", formats="<f4, <f4, <f4"
+                    value.T, names="Depth, Azimuth, Dip", formats="<f4, <f4, <f4"
                 )
             )
+            self.end_of_hole = float(self._surveys["Depth"][-1])
             self._trace = None
             self.workspace.update_attribute(self, "trace")
 
@@ -447,12 +448,15 @@ class Drillhole(Points):
             )
 
             if property_group is not None:
-                self.add_data_to_group(data_object, property_group)
+                self.add_data_to_group(data_object, property_group.name)
 
             data_objects.append(data_object)
 
         # Check the depths and re-sort data if necessary
-        self.sort_depths()
+        if self.workspace.version > 1.0:
+            self.save()
+        else:
+            self.sort_depths()
 
         if len(data_objects) == 1:
             return data_object
@@ -536,13 +540,13 @@ class Drillhole(Points):
                     },
                     "TO": {
                         "parent": self,
-                        "association": "CELL",
+                        "association": "DEPTH",
                         "values": from_to[:, 1],
                         "entity_type": {"primitive_type": "FLOAT"},
                     },
                 }
             )
-            self.add_data_to_group(
+            property_group = self.add_data_to_group(
                 from_to, f"Interval_{self.concatenator.n_property_groups+1}"
             )
 

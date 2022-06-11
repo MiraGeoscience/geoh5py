@@ -28,7 +28,7 @@ import numpy as np
 from ..data import CommentsData, Data
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
-from ..shared import Entity
+from ..shared import Entity, Concatenated
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
@@ -163,7 +163,9 @@ class ObjectBase(Entity):
             uids = self.reference_to_uid(data)
 
         prop_group = self.find_or_create_property_group(
-            name=name, association=self.workspace.get_entity(uids[0])[0].association
+            name=name,
+            association=self.workspace.get_entity(uids[0])[0].association,
+            property_group_type="Interval table" if self.concatenation is Concatenated else "Multi-element"
         )
         for uid in uids:
             assert uid in [
