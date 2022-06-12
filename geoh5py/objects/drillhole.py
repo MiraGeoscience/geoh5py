@@ -404,12 +404,15 @@ class Drillhole(Points):
                 collocation_distance = self.default_collocation_distance
 
             if "depth" in attr.keys():
-                attr["from-to"] = np.c_[
-                    attr["depth"], attr["depth"] + collocation_distance
-                ]
+                attr["association"] = "VERTEX"
+                attr["values"] = self.validate_log_data(
+                    attr["depth"],
+                    attr["values"],
+                    collocation_distance=collocation_distance,
+                )
                 del attr["depth"]
 
-            if "from-to" in attr.keys():
+            elif "from-to" in attr.keys():
                 if self.workspace.version > 1.0:
                     attr["association"] = "DEPTH"
                     if property_group is None:
@@ -649,6 +652,55 @@ class Drillhole(Points):
                 self._to.values, from_to[:, 1], mapping=cell_map
             )
             self.cells = np.r_[self.cells, new_cells.astype("uint32")]
+
+        return values
+
+    def validate_log_data(self, depth, input_values, collocation_distance=1e-4):
+        """
+        Compare new and current depth values, append new vertices if necessary and return
+        an augmented values vector that matches the vertices indexing.
+        """
+        assert len(depth) == len(input_values), (
+            f"Mismatch between input 'depth' shape{depth.shape} "
+            + f"and 'values' shape{input_values.shape}"
+        )
+
+        input_values = np.r_[input_values]
+
+        if self._depth is None:
+            self.workspace.create_entity(
+                Data,
+                entity={
+                    "parent": self,
+                    "association": "VERTEX",
+                    "name": "DEPTH",
+                },
+                entity_type={"primitive_type": "FLOAT"},
+            )
+
+        if self._depth.values is None:  # First data appended
+            self.add_vertices(self.desurvey(depth))
+            depth = np.r_[np.ones(self.n_vertices - depth.shape[0]) * np.nan, depth]
+            values = np.r_[
+                np.ones(self.n_vertices - input_values.shape[0]) * np.nan, input_values
+            ]
+            self._depth.values = depth
+
+        else:
+            depths, indices = merge_arrays(
+                self._depth.values,
+                depth,
+                return_mapping=True,
+                collocation_distance=collocation_distance,
+            )
+            values = merge_arrays(
+                np.ones(self.n_vertices) * np.nan,
+                input_values,
+                replace="B->A",
+                mapping=indices,
+            )
+            self.add_vertices(self.desurvey(np.delete(depth, indices[:, 1])))
+            self._depth.values = depths
 
         return values
 

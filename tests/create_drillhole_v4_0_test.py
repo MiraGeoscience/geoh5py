@@ -36,8 +36,8 @@ def test_load_drillhole_data():
         # data = obj.get_data("As")[0]
         # data.values = data.values**0.0
 
-        print(obj.get_data_list())
-        print(data.values)
+        # print(obj.get_data_list())
+        # print(data.values)
         assert obj.surveys is not None
 
 
