@@ -1019,6 +1019,10 @@ class Workspace(AbstractContextManager):
         """
         if entity.concatenation is Concatenated:
             entity.save()
+            if hasattr(entity, "entity_type"):
+                self._io_call(
+                    H5Writer.write_entity_type, entity.entity_type, mode="r+"
+                )
         else:
             self._io_call(
                 H5Writer.save_entity, entity, add_children=add_children, mode="r+"

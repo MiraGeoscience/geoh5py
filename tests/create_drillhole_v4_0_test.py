@@ -47,7 +47,7 @@ def test_create_drillhole_data(tmp_path):
     n_data = 10
     collocation = 1e-5
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace(h5file_path, version=1.0) as workspace:
         # Create a workspace
         dh_group = DrillholeGroup.create(workspace)
         max_depth = 100

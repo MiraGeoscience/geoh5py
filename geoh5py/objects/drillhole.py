@@ -437,12 +437,12 @@ class Drillhole(Points):
                 )
 
             entity_type = self.validate_data_type(attr)
-            kwargs = {"parent": self, "association": attr["association"]}
+            kwargs = {"association": attr["association"]}
             for key, val in attr.items():
                 if key in ["parent", "association", "entity_type", "type"]:
                     continue
                 kwargs[key] = val
-
+            kwargs["parent"] = self
             data_object = self.workspace.create_entity(
                 Data, entity=kwargs, entity_type=entity_type
             )
@@ -532,17 +532,18 @@ class Drillhole(Points):
             from_to = self.add_data(
                 {
                     "FROM": {
-                        "parent": self,
                         "association": "DEPTH",
                         "name": "FROM",
                         "values": from_to[:, 0],
                         "entity_type": {"primitive_type": "FLOAT"},
+                        "parent": self,
                     },
                     "TO": {
-                        "parent": self,
                         "association": "DEPTH",
+                        "name": "TO",
                         "values": from_to[:, 1],
                         "entity_type": {"primitive_type": "FLOAT"},
+                        "parent": self,
                     },
                 }
             )

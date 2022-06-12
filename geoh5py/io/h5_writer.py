@@ -468,7 +468,7 @@ class H5Writer:
             except KeyError:
                 pass
 
-            if getattr(entity, f"_{attribute}", None) is not None:
+            if getattr(entity, f"{attribute}", None) is not None:
                 entity_handle.create_dataset(
                     KEY_MAP[attribute],
                     data=getattr(entity, f"_{attribute}"),
@@ -732,19 +732,16 @@ class H5Writer:
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
+            entity_handle = H5Writer.fetch_handle(h5file, entity)
+            try:
+                del entity_handle["PropertyGroups"]
+                entity.workspace.repack = True
+            except KeyError:
+                pass
 
             if hasattr(entity, "property_groups") and isinstance(
                 entity.property_groups, list
             ):
-
-                entity_handle = H5Writer.fetch_handle(h5file, entity)
-
-                try:
-                    del entity_handle["PropertyGroups"]
-                    entity.workspace.repack = True
-                except KeyError:
-                    pass
-
                 entity_handle.create_group("PropertyGroups")
                 for p_g in entity.property_groups:
 
