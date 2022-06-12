@@ -45,6 +45,7 @@ class Entity(ABC):
         "Public": "public",
         "Visible": "visible",
     }
+    _visible = True
 
     def __new__(cls, *args, **kwargs):
         if kwargs.get("concatenation", False):
@@ -72,7 +73,6 @@ class Entity(ABC):
         self._clipping_ids = None
         self._public = True
         self._on_file = False
-        self._visible = True
         self._concatenation = False
         self._metadata: dict | None = None
 

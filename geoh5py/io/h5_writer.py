@@ -629,6 +629,13 @@ class H5Writer:
                 concat_group.create_group("Data")
                 concat_group.create_group("Index")
 
+            if entity_type == "Groups":
+                entity_handle.create_group("Data")
+                entity_handle.create_group("Groups")
+                entity_handle.create_group("Objects")
+            elif entity_type == "Objects":
+                entity_handle.create_group("Data")
+
             # Add the type
             new_type = H5Writer.write_entity_type(h5file, entity.entity_type)
             entity_handle["Type"] = new_type
