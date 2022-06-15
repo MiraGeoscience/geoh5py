@@ -1034,7 +1034,7 @@ class Workspace(AbstractContextManager):
         return self._all_types()
 
     def update_attribute(
-        self, entity: Entity | EntityType, attribute: str, channel: str = None
+        self, entity: Entity | EntityType, attribute: str, channel: str = None, **kwargs
     ):
         """
         Save or update an entity to geoh5.
@@ -1055,7 +1055,7 @@ class Workspace(AbstractContextManager):
                     mode="r+",
                 )
             else:
-                self._io_call(H5Writer.update_field, entity, attribute, mode="r+")
+                self._io_call(H5Writer.update_field, entity, attribute, mode="r+", **kwargs)
 
             self._io_call(H5Writer.clear_stats_cache, entity, mode="r+")
 

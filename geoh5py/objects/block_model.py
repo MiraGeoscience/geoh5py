@@ -132,13 +132,14 @@ class BlockModel(ObjectBase):
                 len(value) == 3
             ), "Origin must be a list or numpy array of shape (3, )"
 
-            self.workspace.update_attribute(self, "attributes")
+
             self._centroids = None
 
             value = np.asarray(
                 tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
             )
             self._origin = value
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def rotation(self) -> float:
@@ -188,10 +189,9 @@ class BlockModel(ObjectBase):
     def u_cell_delimiters(self, value):
         if value is not None:
             value = np.r_[value]
-            self.workspace.update_attribute(self, "u_cell_delimiters")
             self._centroids = None
-
             self._u_cell_delimiters = value.astype(float)
+            self.workspace.update_attribute(self, "u_cell_delimiters")
 
     @property
     def u_cells(self) -> np.ndarray | None:

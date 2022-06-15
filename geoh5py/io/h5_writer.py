@@ -256,16 +256,28 @@ class H5Writer:
                 pass
 
             dict_values = getattr(entity, attribute)
+
+
             if channel in dict_values:
+                values = dict_values[channel]
+                if isinstance(values, np.ndarray) and values.dtype == np.float64:
+                    values = values.astype(np.float32)
+
                 attr_handle.create_dataset(
                     channel,
-                    data=dict_values[channel],
+                    data=values,
                     compression="gzip",
                     compression_opts=9,
                 )
 
     @classmethod
-    def update_field(cls, file: str | h5py.File, entity, attribute: str):
+    def update_field(
+            cls,
+            file: str | h5py.File,
+            entity,
+            attribute: str,
+            **kwargs
+    ):
         """
         Update the attributes of an :obj:`~geoh5py.shared.entity.Entity`.
 
@@ -286,12 +298,11 @@ class H5Writer:
                 "trace_depth",
                 "values",
             ]:
-                cls.write_data_values(h5file, entity, attribute)
+                cls.write_data_values(h5file, entity, attribute, **kwargs)
             elif attribute in [
                 "cells",
                 "concatenated_object_ids",
                 "octree_cells",
-                "property_group_ids",
                 "surveys",
                 "trace",
                 "u_cell_delimiters",
@@ -299,7 +310,9 @@ class H5Writer:
                 "vertices",
                 "z_cell_delimiters",
             ]:
-                cls.write_array_attribute(h5file, entity, attribute)
+                cls.write_array_attribute(h5file, entity, attribute, **kwargs)
+            elif attribute == "property_group_ids":
+                cls.write_array_attribute(h5file, entity, attribute, **kwargs)
             elif attribute == "property_groups":
                 cls.write_property_groups(h5file, entity)
             elif attribute == "color_map":
@@ -336,7 +349,7 @@ class H5Writer:
 
                 value = as_str_if_uuid(value)
 
-                if key == "PropertyGroups" or value is None:
+                if key == "PropertyGroups" or value is None or key in Concatenator._attribute_map:
                     continue
 
                 if key in ["Association", "Primitive type"]:
@@ -445,6 +458,8 @@ class H5Writer:
         file: str | h5py.File,
         entity,
         attribute,
+        values=None,
+        **kwargs
     ):
         """
         Add :obj:`~geoh5py.objects.object_base.ObjectBase.surveys` of an object.
@@ -455,6 +470,9 @@ class H5Writer:
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
+
+            if values is None:
+                values = getattr(entity, f"{attribute}", None)
 
             if (
                 entity.concatenation is Concatenator
@@ -468,12 +486,13 @@ class H5Writer:
             except KeyError:
                 pass
 
-            if getattr(entity, f"{attribute}", None) is not None:
+            if values is not None:
                 entity_handle.create_dataset(
                     KEY_MAP[attribute],
-                    data=getattr(entity, f"_{attribute}"),
+                    data=values,
                     compression="gzip",
                     compression_opts=9,
+                    **kwargs
                 )
 
     @classmethod
@@ -482,6 +501,7 @@ class H5Writer:
         file: str | h5py.File,
         entity,
         attribute,
+        values = None
     ):
         """
         Add data :obj:`~geoh5py.data.data.Data.values`.
@@ -500,10 +520,11 @@ class H5Writer:
                 del entity_handle[KEY_MAP[attribute]]
                 entity.workspace.repack = True
 
-            if getattr(entity, attribute, None) is None:
-                return
+            if values is None:
+                if getattr(entity, attribute, None) is None:
+                    return
 
-            values = getattr(entity, "_" + attribute)
+                values = getattr(entity, "_" + attribute)
 
             # Adding an array of values
             if isinstance(values, dict) or isinstance(entity, CommentsData):
@@ -628,8 +649,10 @@ class H5Writer:
                 concat_group = entity_handle.create_group("Concatenated Data")
                 concat_group.create_group("Data")
                 concat_group.create_group("Index")
-
-            if entity_type == "Groups":
+                entity_handle.create_group("Groups")
+                data_handles = entity_handle.create_group("Data")
+                data_handles = concat_group
+            elif entity_type == "Groups":
                 entity_handle.create_group("Data")
                 entity_handle.create_group("Groups")
                 entity_handle.create_group("Objects")

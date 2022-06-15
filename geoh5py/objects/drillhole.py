@@ -269,12 +269,12 @@ class Drillhole(Points):
             if value.shape[1] != 3:
                 raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
 
-            self.workspace.update_attribute(self, "surveys")
             self._surveys = np.asarray(
                 np.core.records.fromarrays(
                     value.T, names="Depth, Azimuth, Dip", formats="<f4, <f4, <f4"
                 )
             )
+            self.workspace.update_attribute(self, "surveys")
             self.end_of_hole = float(self._surveys["Depth"][-1])
             self._trace = None
             self.workspace.update_attribute(self, "trace")
@@ -385,6 +385,7 @@ class Drillhole(Points):
         data_objects = []
 
         for name, attr in data.items():
+            new_prop_goup = property_group
             assert isinstance(attr, dict), (
                 f"Given value to data {name} should of type {dict}. "
                 f"Type {type(attr)} given instead."
@@ -403,7 +404,7 @@ class Drillhole(Points):
             else:
                 collocation_distance = self.default_collocation_distance
 
-            if "depth" in attr.keys():
+            if "depth" in attr.keys() and self.workspace.version == 1.0:
                 attr["association"] = "VERTEX"
                 attr["values"] = self.validate_log_data(
                     attr["depth"],
@@ -416,7 +417,7 @@ class Drillhole(Points):
                 if self.workspace.version > 1.0:
                     attr["association"] = "DEPTH"
                     if property_group is None:
-                        property_group = self.validate_depth_data(
+                        new_prop_goup = self.validate_depth_data(
                             attr["from-to"],
                             attr["values"],
                             collocation_distance=collocation_distance,
@@ -435,24 +436,30 @@ class Drillhole(Points):
             else:
                 assert attr["association"] == "OBJECT", (
                     "Input data dictionary must contain {key:values} "
-                    + "{'depth':numpy.ndarray}, {'from-to':numpy.ndarray} "
+                    + "{'from-to':numpy.ndarray} "
                     + "or {'association': 'OBJECT'}."
                 )
 
             entity_type = self.validate_data_type(attr)
-            kwargs = {"association": attr["association"]}
+            kwargs = {
+                "name": None,
+                "parent": self,
+                "association": attr["association"],
+                "allow_move": False,
+            }
             for key, val in attr.items():
                 if key in ["parent", "association", "entity_type", "type"]:
                     continue
                 kwargs[key] = val
-            kwargs["parent"] = self
+
             data_object = self.workspace.create_entity(
                 Data, entity=kwargs, entity_type=entity_type
             )
 
-            if property_group is not None:
-                self.add_data_to_group(data_object, property_group.name)
+            if new_prop_goup is not None:
+                self.add_data_to_group(data_object, new_prop_goup.name)
 
+            new_prop_goup = None
             data_objects.append(data_object)
 
         # Check the depths and re-sort data if necessary
@@ -540,6 +547,8 @@ class Drillhole(Points):
                         "values": from_to[:, 0],
                         "entity_type": {"primitive_type": "FLOAT"},
                         "parent": self,
+                        "allow_move": False,
+                        "allow_delete": False,
                     },
                     "TO": {
                         "association": "DEPTH",
@@ -547,6 +556,8 @@ class Drillhole(Points):
                         "values": from_to[:, 1],
                         "entity_type": {"primitive_type": "FLOAT"},
                         "parent": self,
+                        "allow_move": False,
+                        "allow_delete": False,
                     },
                 }
             )

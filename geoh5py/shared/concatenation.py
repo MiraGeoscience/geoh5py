@@ -350,6 +350,13 @@ class Concatenator:
             if alias in self.data:
                 values = np.hstack([self.data[alias], values])
 
+            n_values = 64 - len(values) % 64
+
+            # if isinstance(values, np.ndarray):
+            # #     values += [np.nan for ii in range(n_values)]
+            # # else:
+            #     values = values.astype(np.float32)
+
             self.data[alias] = values
 
         getattr(self, "workspace").update_attribute(self, "index", alias)
@@ -357,8 +364,12 @@ class Concatenator:
         if hasattr(entity, f"_{field}"):  # For group property
             if field == "property_groups":
                 field = "property_group_ids"
-            setattr(self, f"_{field}", self.data.get(alias))
-            getattr(self, "workspace").update_attribute(self, field)
+            # setattr(self, f"_{field}", self.data.get(alias))
+                getattr(self, "workspace").update_attribute(self, field, values=self.data.get(alias), dtype=special_dtype(vlen=str), maxshape=(None,))
+            elif field == "surveys":
+                getattr(self, "workspace").update_attribute(self, field, values=self.data.get(alias), maxshape=(None,))
+            else:
+                getattr(self, "workspace").update_attribute(self, field, values=self.data.get(alias))
         else:  # For data values
             getattr(self, "workspace").update_attribute(self, "data", field)
 
