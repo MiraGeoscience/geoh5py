@@ -17,7 +17,7 @@
 
 import uuid
 
-# from ..shared.concatenation import Concatenator
+from ..shared.concatenation import Concatenator
 from .group import Group, GroupType
 
 
@@ -41,3 +41,15 @@ class DrillholeGroup(Group):
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
+
+
+class DrillholeGroupConcatenated(DrillholeGroup, Concatenator):
+    _attribute_map = DrillholeGroup._attribute_map.copy()
+    _attribute_map.update(
+        {
+            "Attributes": "concatenated_attributes",
+            "Property Groups IDs": "property_group_ids",
+            "Concatenated object IDs": "concatenated_object_ids",
+            "Concatenated Data": "concatenated_data",
+        }
+    )

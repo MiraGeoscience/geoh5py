@@ -24,10 +24,10 @@ from __future__ import annotations
 import inspect
 import os
 import shutil
+import tempfile
 import uuid
 import warnings
 import weakref
-import tempfile
 from contextlib import AbstractContextManager, contextmanager
 from gc import collect
 from pathlib import Path
@@ -39,9 +39,16 @@ import numpy as np
 
 from .. import data, groups, objects
 from ..data import CommentsData, Data, DataType
-from ..groups import CustomGroup, DrillholeGroup, Group, PropertyGroup, RootGroup
+from ..groups import (
+    CustomGroup,
+    DrillholeGroup,
+    DrillholeGroupConcatenated,
+    Group,
+    PropertyGroup,
+    RootGroup,
+)
 from ..io import H5Reader, H5Writer
-from ..objects import Drillhole, ObjectBase
+from ..objects import Drillhole, DrillholeConcatenated, ObjectBase
 from ..shared import weakref_utils
 from ..shared.concatenation import Concatenated, Concatenator
 from ..shared.entity import Entity
@@ -161,7 +168,7 @@ class Workspace(AbstractContextManager):
 
         if self.geoh5.mode in ["r+", "a"]:
             for entity in self.groups:
-                if entity.concatenation is Concatenator and self.repack:
+                if isinstance(entity, Concatenator) and self.repack:
                     self.update_attribute(entity, "concatenated_attributes")
 
             self._io_call(
@@ -171,7 +178,9 @@ class Workspace(AbstractContextManager):
         self.geoh5.close()
 
         if self.repack:
-            temp_file = os.path.join(tempfile.gettempdir(), os.path.basename(self.h5file))
+            temp_file = os.path.join(
+                tempfile.gettempdir(), os.path.basename(self.h5file)
+            )
             if not os.system(f'h5repack --native "{self.h5file}" "{temp_file}"'):
                 os.remove(self.h5file)
                 shutil.move(temp_file, self.h5file)
@@ -311,9 +320,8 @@ class Workspace(AbstractContextManager):
                 ):
                     continue
 
-                if (
-                    self.version > 1.0
-                    and entity_kwargs["parent"].concatenation is Concatenated
+                if self.version > 1.0 and isinstance(
+                    entity_kwargs["parent"], Concatenated
                 ):
                     entity_kwargs["concatenation"] = Concatenated
 
@@ -400,12 +408,13 @@ class Workspace(AbstractContextManager):
                 and not member == CustomGroup
                 and member.default_type_uid() == entity_type_uid
             ):
-                entity_type = member.find_or_create_type(self, **entity_type_kwargs)
-                if self.version > 1.0 and member is DrillholeGroup:
-                    entity_kwargs["concatenation"] = Concatenator
+                if self.version > 1.0:
+                    if member is DrillholeGroup:
+                        member = DrillholeGroupConcatenated
+                    elif member is Drillhole:
+                        member = DrillholeConcatenated
 
-                if self.version > 1.0 and member is Drillhole:
-                    entity_kwargs["concatenation"] = Concatenated
+                entity_type = member.find_or_create_type(self, **entity_type_kwargs)
                 created_entity = member(entity_type, **entity_kwargs)
 
                 return created_entity
@@ -553,7 +562,7 @@ class Workspace(AbstractContextManager):
 
         :return: Structured array.
         """
-        if entity.concatenation is Concatenated:
+        if isinstance(entity, Concatenated):
             return getattr(entity, "fetch_values")(entity, key)
 
         return self._io_call(
@@ -576,7 +585,7 @@ class Workspace(AbstractContextManager):
         :param recursively: Recover all children down the project tree
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         """
-        if entity is None or entity.concatenation is Concatenated:
+        if entity is None or isinstance(entity, Concatenated):
             return []
 
         if isinstance(entity, Group):
@@ -590,7 +599,7 @@ class Workspace(AbstractContextManager):
             H5Reader.fetch_children, entity.uid, entity_type, mode="r"
         )
 
-        if entity.concatenation is Concatenator:
+        if isinstance(entity, Concatenator):
             cat_children = getattr(entity, "fetch_concatenated_objects")()
             children_list.update(
                 {
@@ -671,6 +680,9 @@ class Workspace(AbstractContextManager):
         """
         property_groups = []
         if isinstance(entity, Concatenator):
+            if getattr(entity, "property_group_ids", None) is None:
+                return property_groups
+
             for key in entity.property_group_ids:
                 if key not in entity.concatenated_attributes:
                     continue
@@ -712,7 +724,7 @@ class Workspace(AbstractContextManager):
 
         :return: Array of values.
         """
-        if entity.concatenation is Concatenated:
+        if isinstance(entity, Concatenated):
             return getattr(entity, "fetch_values")(entity, entity.name)
 
         return self._io_call(H5Reader.fetch_values, entity.uid)
@@ -1017,12 +1029,10 @@ class Workspace(AbstractContextManager):
         :param add_children: Add children entities to geoh5.
         :param file: :obj:`h5py.File` or name of the target geoh5
         """
-        if entity.concatenation is Concatenated:
+        if isinstance(entity, Concatenated):
             entity.save()
             if hasattr(entity, "entity_type"):
-                self._io_call(
-                    H5Writer.write_entity_type, entity.entity_type, mode="r+"
-                )
+                self._io_call(H5Writer.write_entity_type, entity.entity_type, mode="r+")
         else:
             self._io_call(
                 H5Writer.save_entity, entity, add_children=add_children, mode="r+"
@@ -1044,7 +1054,7 @@ class Workspace(AbstractContextManager):
         :param channel: Optional channel argument for concatenated data and index.
         """
         if entity.on_file:
-            if entity.concatenation is Concatenated:
+            if isinstance(entity, Concatenated):
                 getattr(entity, "concatenator").update_attributes(entity, attribute)
             elif channel is not None:
                 self._io_call(
@@ -1055,7 +1065,9 @@ class Workspace(AbstractContextManager):
                     mode="r+",
                 )
             else:
-                self._io_call(H5Writer.update_field, entity, attribute, mode="r+", **kwargs)
+                self._io_call(
+                    H5Writer.update_field, entity, attribute, mode="r+", **kwargs
+                )
 
             self._io_call(H5Writer.clear_stats_cache, entity, mode="r+")
 

@@ -257,7 +257,6 @@ class H5Writer:
 
             dict_values = getattr(entity, attribute)
 
-
             if channel in dict_values:
                 values = dict_values[channel]
                 if isinstance(values, np.ndarray) and values.dtype == np.float64:
@@ -271,13 +270,7 @@ class H5Writer:
                 )
 
     @classmethod
-    def update_field(
-            cls,
-            file: str | h5py.File,
-            entity,
-            attribute: str,
-            **kwargs
-    ):
+    def update_field(cls, file: str | h5py.File, entity, attribute: str, **kwargs):
         """
         Update the attributes of an :obj:`~geoh5py.shared.entity.Entity`.
 
@@ -349,7 +342,9 @@ class H5Writer:
 
                 value = as_str_if_uuid(value)
 
-                if key == "PropertyGroups" or value is None or key in Concatenator._attribute_map:
+                if (
+                    key == "PropertyGroups" or value is None
+                ):  # or key in Concatenator._attribute_map:
                     continue
 
                 if key in ["Association", "Primitive type"]:
@@ -454,12 +449,7 @@ class H5Writer:
 
     @classmethod
     def write_array_attribute(
-        cls,
-        file: str | h5py.File,
-        entity,
-        attribute,
-        values=None,
-        **kwargs
+        cls, file: str | h5py.File, entity, attribute, values=None, **kwargs
     ):
         """
         Add :obj:`~geoh5py.objects.object_base.ObjectBase.surveys` of an object.
@@ -492,17 +482,11 @@ class H5Writer:
                     data=values,
                     compression="gzip",
                     compression_opts=9,
-                    **kwargs
+                    **kwargs,
                 )
 
     @classmethod
-    def write_data_values(
-        cls,
-        file: str | h5py.File,
-        entity,
-        attribute,
-        values = None
-    ):
+    def write_data_values(cls, file: str | h5py.File, entity, attribute, values=None):
         """
         Add data :obj:`~geoh5py.data.data.Data.values`.
 

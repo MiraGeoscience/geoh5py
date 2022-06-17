@@ -31,12 +31,6 @@ class Concatenator:
     Class modifier for concatenation of objects and data.
     """
 
-    _attribute_map = {
-        "Attributes": "concatenated_attributes",
-        "Property Groups IDs": "property_group_ids",
-        "Concatenated object IDs": "concatenated_object_ids",
-        "Concatenated Data": "concatenated_data",
-    }
     _concatenated_attributes = None
     _attributes_keys = None
     _concatenated_data = None

@@ -23,6 +23,7 @@ import uuid
 import numpy as np
 
 from ..data.data import Data
+from ..shared.concatenation import Concatenated
 from ..shared.utils import match_values, merge_arrays
 from .object_base import ObjectType
 from .points import Points
@@ -748,3 +749,7 @@ class Drillhole(Points):
                 if self.cells is not None:
                     key_map = np.argsort(sort_ind)[self.cells.flatten()]
                     self.cells = key_map.reshape((-1, 2)).astype("uint32")
+
+
+class DrillholeConcatenated(Drillhole, Concatenated):
+    """A concatenated representation of the Drillhole entity."""
