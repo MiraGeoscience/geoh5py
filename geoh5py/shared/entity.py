@@ -35,7 +35,6 @@ class Entity(ABC):
     """
     Base Entity class
     """
-
     _attribute_map: dict = {
         "Allow delete": "allow_delete",
         "Allow move": "allow_move",

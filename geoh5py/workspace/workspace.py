@@ -42,13 +42,12 @@ from ..data import CommentsData, Data, DataType
 from ..groups import (
     CustomGroup,
     DrillholeGroup,
-    DrillholeGroupConcatenated,
     Group,
     PropertyGroup,
     RootGroup,
 )
 from ..io import H5Reader, H5Writer
-from ..objects import Drillhole, DrillholeConcatenated, ObjectBase
+from ..objects import Drillhole, ObjectBase
 from ..shared import weakref_utils
 from ..shared.concatenation import Concatenated, Concatenator
 from ..shared.entity import Entity
@@ -399,7 +398,7 @@ class Workspace(AbstractContextManager):
                 entity_type_uid = uuid.uuid4()
 
         entity_class = entity_class.__bases__
-        for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
+        for name, member in inspect.getmembers(groups) + inspect.getmembers(objects):
             if (
                 inspect.isclass(member)
                 and issubclass(member, entity_class)
@@ -410,11 +409,12 @@ class Workspace(AbstractContextManager):
             ):
                 if self.version > 1.0:
                     if member is DrillholeGroup:
-                        member = DrillholeGroupConcatenated
+                        member = type(name + "Concatenator", (Concatenator, member), {})
                     elif member is Drillhole:
-                        member = DrillholeConcatenated
+                        member = type(name + "Concatenated", (Concatenated, member), {})
 
                 entity_type = member.find_or_create_type(self, **entity_type_kwargs)
+
                 created_entity = member(entity_type, **entity_kwargs)
 
                 return created_entity

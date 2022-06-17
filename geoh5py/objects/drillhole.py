@@ -749,7 +749,3 @@ class Drillhole(Points):
                 if self.cells is not None:
                     key_map = np.argsort(sort_ind)[self.cells.flatten()]
                     self.cells = key_map.reshape((-1, 2)).astype("uint32")
-
-
-class DrillholeConcatenated(Drillhole, Concatenated):
-    """A concatenated representation of the Drillhole entity."""

@@ -30,7 +30,6 @@ class Concatenator:
     """
     Class modifier for concatenation of objects and data.
     """
-
     _concatenated_attributes = None
     _attributes_keys = None
     _concatenated_data = None
@@ -40,10 +39,18 @@ class Concatenator:
     _property_group_ids = None
     _property_groups = None
 
-    def __init__(self, **kwargs):
+    def __init__(self, group_type, **kwargs):
 
-        super().__init__(**kwargs)
+        super().__init__(group_type, **kwargs)
 
+        self._attribute_map.update(
+            {
+                "Attributes": "concatenated_attributes",
+                "Property Groups IDs": "property_group_ids",
+                "Concatenated object IDs": "concatenated_object_ids",
+                "Concatenated Data": "concatenated_data",
+            }
+        )
     @property
     def attributes_keys(self):
         """List of uuids present in the concatenated attributes."""
@@ -430,18 +437,19 @@ class Concatenated:
     """
     Class modifier for concatenated objects and data.
     """
-
-    def __init__(self, parent: Concatenated | Concatenator, **kwargs):
-        self.parent = parent
-
-        super().__init__(**kwargs)
+    def __init__(self, entity_type, **kwargs):
+        super().__init__(entity_type, **kwargs)
 
     @property
     def concatenator(self) -> Concatenator:
         """
         Parental Concatenator entity.
         """
-        return self._parent.concatenator
+        if isinstance(self._parent, Concatenated):
+            return self._parent.concatenator
+        elif isinstance(self._parent, Concatenator):
+            return self._parent
+        return None
 
     def fetch_values(self, entity, field: str):
         """
@@ -493,11 +501,9 @@ class Concatenated:
 
     @parent.setter
     def parent(self, parent):
-        if (parent.concatenation is not Concatenated) and (
-            parent.concatenation is not Concatenator
-        ):
+        if not isinstance(parent, (Concatenated, Concatenator)):
             raise AttributeError(
-                "The 'parent' of a concatenated Entity must be of type 'Concatenator'."
+                "The 'parent' of a concatenated Entity must be of type 'Concatenator' or 'Concatenated'."
             )
         self._parent = parent
         self._parent.add_children([self])

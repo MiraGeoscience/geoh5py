@@ -465,7 +465,7 @@ class H5Writer:
                 values = getattr(entity, f"{attribute}", None)
 
             if (
-                entity.concatenation is Concatenator
+                isinstance(entity, Concatenator)
                 and attribute != "concatenated_object_ids"
             ):
                 entity_handle = entity_handle["Concatenated Data"]
@@ -497,7 +497,7 @@ class H5Writer:
         with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
 
-            if entity.concatenation is Concatenator:
+            if isinstance(entity, Concatenator):
                 entity_handle = entity_handle["Concatenated Data"]
 
             if KEY_MAP[attribute] in entity_handle:
@@ -629,7 +629,7 @@ class H5Writer:
                 return h5file[base][entity_type][as_str_if_uuid(uid)]
 
             entity_handle = h5file[base][entity_type].create_group(as_str_if_uuid(uid))
-            if entity.concatenation is Concatenator:
+            if isinstance(entity, Concatenator):
                 concat_group = entity_handle.create_group("Concatenated Data")
                 concat_group.create_group("Data")
                 concat_group.create_group("Index")
