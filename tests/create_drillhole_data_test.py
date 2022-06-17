@@ -39,8 +39,8 @@ def test_create_drillhole_data(tmp_path):
             collar=np.r_[0.0, 10.0, 10],
             surveys=np.c_[
                 np.linspace(0, max_depth, n_data),
-                np.linspace(-89, -75, n_data),
                 np.ones(n_data) * 45.0,
+                np.linspace(-89, -75, n_data),
             ],
             name=well_name,
             default_collocation_distance=collocation,

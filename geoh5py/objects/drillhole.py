@@ -15,6 +15,10 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=R0902
+# pylint: disable=R0904
+# pylint: disable=R0912
+
 from __future__ import annotations
 
 import re
@@ -23,7 +27,6 @@ import uuid
 import numpy as np
 
 from ..data.data import Data
-from ..shared.concatenation import Concatenated
 from ..shared.utils import match_values, merge_arrays
 from .object_base import ObjectType
 from .points import Points
@@ -537,6 +540,7 @@ class Drillhole(Points):
 
         property_group = None
         incrementer = ""
+        ind = 0
         for ind, (_from, _to) in enumerate(zip(self._from, self._to)):
             incrementer = f"({ind+1})"
             if (
@@ -575,9 +579,7 @@ class Drillhole(Points):
                     },
                 }
             )
-            property_group = self.add_data_to_group(
-                from_to, f"Interval_{self.concatenator.n_property_groups+1}"
-            )
+            property_group = self.add_data_to_group(from_to, f"Interval_{ind+1}")
 
         return property_group.name
 

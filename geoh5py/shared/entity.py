@@ -25,8 +25,6 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from .concatenation import Concatenated, Concatenator
-
 if TYPE_CHECKING:
     from .. import shared
 
@@ -35,6 +33,7 @@ class Entity(ABC):
     """
     Base Entity class
     """
+
     _attribute_map: dict = {
         "Allow delete": "allow_delete",
         "Allow move": "allow_move",
@@ -48,19 +47,6 @@ class Entity(ABC):
     }
     _visible = True
 
-    # def __new__(cls, *args, **kwargs):
-    #     if kwargs.get("concatenation", False):
-    #         for key, item in kwargs["concatenation"].__dict__.items():
-    #             if "__" in key:
-    #                 continue
-    #
-    #             if "attribute_map" in key:
-    #                 cls._attribute_map.update(item)
-    #             else:
-    #                 setattr(cls, key, getattr(kwargs["concatenation"], key))
-    #
-    #     return super().__new__(cls)
-
     def __init__(self, uid: uuid.UUID | None = None, **kwargs):
         self._uid: uuid.UUID = uid if isinstance(uid, uuid.UUID) else uuid.uuid4()
         self._name = "Entity"
@@ -73,7 +59,6 @@ class Entity(ABC):
         self._clipping_ids = None
         self._public = True
         self._on_file = False
-        self._concatenation: Concatenator | Concatenated | bool = False
         self._metadata: dict | None = None
 
         for attr, item in kwargs.items():
@@ -198,22 +183,6 @@ class Entity(ABC):
         )
 
         return new_entity
-
-    @property
-    def concatenation(self):
-        """Store the entity as Concatenated, Concatenator or standalone."""
-        return self._concatenation
-
-    @concatenation.setter
-    def concatenation(self, concatenation: Concatenator | Concatenated | bool):
-
-        if concatenation not in [Concatenated, Concatenator, bool]:
-            raise ValueError(
-                f"Input 'concatenation' for entity type '{type(self)}' "
-                "must be one of 'Concatenated', 'Concatenator' or False. "
-                f"Provided {type(concatenation)}"
-            )
-        self._concatenation = concatenation
 
     @classmethod
     def create(cls, workspace, **kwargs):

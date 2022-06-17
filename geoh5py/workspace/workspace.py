@@ -39,13 +39,7 @@ import numpy as np
 
 from .. import data, groups, objects
 from ..data import CommentsData, Data, DataType
-from ..groups import (
-    CustomGroup,
-    DrillholeGroup,
-    Group,
-    PropertyGroup,
-    RootGroup,
-)
+from ..groups import CustomGroup, DrillholeGroup, Group, PropertyGroup, RootGroup
 from ..io import H5Reader, H5Writer
 from ..objects import Drillhole, ObjectBase
 from ..shared import weakref_utils
@@ -265,8 +259,6 @@ class Workspace(AbstractContextManager):
         return new_object
 
     def create_from_concatenation(self, attributes):
-        attributes["concatenation"] = Concatenated
-
         if "Object Type ID" in attributes:
             class_type = ObjectBase
             type_attr = {"uid": attributes["Object Type ID"]}
@@ -304,7 +296,7 @@ class Workspace(AbstractContextManager):
                 self, **entity_type_kwargs
             )
 
-        for _, member in inspect.getmembers(data):
+        for name, member in inspect.getmembers(data):
             if (
                 inspect.isclass(member)
                 and issubclass(member, entity_class)
@@ -322,7 +314,7 @@ class Workspace(AbstractContextManager):
                 if self.version > 1.0 and isinstance(
                     entity_kwargs["parent"], Concatenated
                 ):
-                    entity_kwargs["concatenation"] = Concatenated
+                    member = type(name + "Concatenated", (Concatenated, member), {})
 
                 created_entity = member(data_type, **entity_kwargs)
 
@@ -678,7 +670,7 @@ class Workspace(AbstractContextManager):
 
         :param entity: Target object
         """
-        property_groups = []
+        property_groups: list = []
         if isinstance(entity, Concatenator):
             if getattr(entity, "property_group_ids", None) is None:
                 return property_groups

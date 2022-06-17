@@ -30,6 +30,7 @@ class Concatenator:
     """
     Class modifier for concatenation of objects and data.
     """
+
     _concatenated_attributes = None
     _attributes_keys = None
     _concatenated_data = None
@@ -43,7 +44,7 @@ class Concatenator:
 
         super().__init__(group_type, **kwargs)
 
-        self._attribute_map.update(
+        getattr(self, "_attribute_map").update(
             {
                 "Attributes": "concatenated_attributes",
                 "Property Groups IDs": "property_group_ids",
@@ -51,6 +52,7 @@ class Concatenator:
                 "Concatenated Data": "concatenated_data",
             }
         )
+
     @property
     def attributes_keys(self):
         """List of uuids present in the concatenated attributes."""
@@ -202,16 +204,6 @@ class Concatenator:
         start, size = self.index[field][index][0], self.index[field][index][1]
 
         return self.data[field][start : start + size]
-
-    @property
-    def n_property_groups(self):
-        """
-        Return the number of property groups.
-        """
-        if self.property_group_ids is None:
-            return 0
-
-        return len(self.property_group_ids)
 
     @property
     def property_group_ids(self):
@@ -437,8 +429,19 @@ class Concatenated:
     """
     Class modifier for concatenated objects and data.
     """
-    def __init__(self, entity_type, **kwargs):
-        super().__init__(entity_type, **kwargs)
+
+    _parent: Concatenated | Concatenator
+    _property_groups = None
+
+    def __init__(self, entity_type, parent=None, **kwargs):
+
+        if not isinstance(parent, (Concatenated, Concatenator)):
+            raise UserWarning(
+                "Creating a concatenated entity must have a parent "
+                "of type Concatenator for 'objects', or Concatenated for 'data'."
+            )
+
+        super().__init__(entity_type, parent=parent, **kwargs)
 
     @property
     def concatenator(self) -> Concatenator:
@@ -447,9 +450,8 @@ class Concatenated:
         """
         if isinstance(self._parent, Concatenated):
             return self._parent.concatenator
-        elif isinstance(self._parent, Concatenator):
-            return self._parent
-        return None
+
+        return self._parent
 
     def fetch_values(self, entity, field: str):
         """
@@ -503,7 +505,8 @@ class Concatenated:
     def parent(self, parent):
         if not isinstance(parent, (Concatenated, Concatenator)):
             raise AttributeError(
-                "The 'parent' of a concatenated Entity must be of type 'Concatenator' or 'Concatenated'."
+                "The 'parent' of a concatenated Entity must be of type "
+                "'Concatenator' or 'Concatenated'."
             )
         self._parent = parent
         self._parent.add_children([self])
@@ -519,7 +522,7 @@ class Concatenated:
             prop_groups = self.concatenator.fetch_values(self, "property_group_ids")
 
             if prop_groups is None:
-                return
+                return None
 
             for key in prop_groups:
                 getattr(self, "find_or_create_property_group")(

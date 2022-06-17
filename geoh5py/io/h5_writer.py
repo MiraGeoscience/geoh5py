@@ -461,8 +461,8 @@ class H5Writer:
         with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
 
-            if values is None:
-                values = getattr(entity, f"{attribute}", None)
+            if values is None and getattr(entity, f"{attribute}", None) is not None:
+                values = getattr(entity, f"_{attribute}", None)
 
             if (
                 isinstance(entity, Concatenator)
@@ -634,8 +634,6 @@ class H5Writer:
                 concat_group.create_group("Data")
                 concat_group.create_group("Index")
                 entity_handle.create_group("Groups")
-                data_handles = entity_handle.create_group("Data")
-                data_handles = concat_group
             elif entity_type == "Groups":
                 entity_handle.create_group("Data")
                 entity_handle.create_group("Groups")

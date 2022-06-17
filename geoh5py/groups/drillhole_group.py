@@ -17,7 +17,6 @@
 
 import uuid
 
-from ..shared.concatenation import Concatenator
 from .group import Group, GroupType
 
 
