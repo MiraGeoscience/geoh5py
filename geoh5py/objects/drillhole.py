@@ -256,7 +256,7 @@ class Drillhole(Points):
             # Repeat first survey point at surface for de-survey interpolation
             surveys = np.vstack([surveys[0, :], surveys])
             surveys[0, 0] = 0.0
-            self.end_of_hole = float(self._surveys["Depth"][-1])
+
             return surveys.astype(float)
 
         return None
@@ -325,9 +325,11 @@ class Drillhole(Points):
     def _from(self):
         if self.workspace.version > 1.0:
             obj_list = []
-            for name in self.get_data_list():
+            for name in self.parent.index:
                 if "FROM" in name:
-                    obj_list.append(self.get_data(name))
+                    obj_list += self.workspace.get_entity(
+                        uuid.UUID(self.parent.index[name][0][3].decode())
+                    )
             return obj_list
 
         data_obj = self.get_data("FROM")
@@ -340,9 +342,11 @@ class Drillhole(Points):
     def _to(self):
         if self.workspace.version > 1.0:
             obj_list = []
-            for name in self.get_data_list():
+            for name in self.parent.index:
                 if "TO" in name:
-                    obj_list.append(self.get_data(name))
+                    obj_list += self.workspace.get_entity(
+                        uuid.UUID(self.parent.index[name][0][3].decode())
+                    )
             return obj_list
 
         data_obj = self.get_data("TO")
@@ -422,7 +426,6 @@ class Drillhole(Points):
                             attr["values"],
                             collocation_distance=collocation_distance,
                         )
-
                 else:
                     attr["association"] = "CELL"
                     attr["values"] = self.validate_interval_data(
@@ -457,7 +460,7 @@ class Drillhole(Points):
             )
 
             if new_prop_goup is not None:
-                self.add_data_to_group(data_object, new_prop_goup.name)
+                self.add_data_to_group(data_object, new_prop_goup)
 
             new_prop_goup = None
             data_objects.append(data_object)
@@ -513,7 +516,7 @@ class Drillhole(Points):
 
         return indices.astype("uint32")
 
-    def validate_depth_data(self, from_to, values, collocation_distance=1e-4):
+    def validate_depth_data(self, from_to, values, collocation_distance=1e-4) -> str:
         """
         Compare new and current depth values and re-use the property group if possible.
         Otherwise a new property group is added.
@@ -532,27 +535,37 @@ class Drillhole(Points):
         assert from_to.shape[1] == 2, "The `from-to` values must have shape(*, 2)"
 
         property_group = None
-        for _from, _to in zip(self._from, self._to):
-            if np.allclose(
-                np.c_[_from.values, _to.values], from_to, rtol=collocation_distance
+        incrementer = ""
+        for ind, (_from, _to) in enumerate(zip(self._from, self._to)):
+            incrementer = f"({ind+1})"
+            if (
+                _from in self.children
+                and _from.values.shape[0] == from_to.shape[0]
+                and np.allclose(
+                    np.c_[_from.values, _to.values], from_to, rtol=collocation_distance
+                )
             ):
-                property_group = None
+                property_group = [
+                    prop_group
+                    for prop_group in _from.parent.property_groups
+                    if _from.uid in prop_group.properties
+                ][0]
 
         if property_group is None:
             from_to = self.add_data(
                 {
-                    "FROM": {
+                    "FROM"
+                    + incrementer: {
                         "association": "DEPTH",
-                        "name": "FROM",
                         "values": from_to[:, 0],
                         "entity_type": {"primitive_type": "FLOAT"},
                         "parent": self,
                         "allow_move": False,
                         "allow_delete": False,
                     },
-                    "TO": {
+                    "TO"
+                    + incrementer: {
                         "association": "DEPTH",
-                        "name": "TO",
                         "values": from_to[:, 1],
                         "entity_type": {"primitive_type": "FLOAT"},
                         "parent": self,
@@ -565,7 +578,7 @@ class Drillhole(Points):
                 from_to, f"Interval_{self.concatenator.n_property_groups+1}"
             )
 
-        return property_group
+        return property_group.name
 
     def validate_interval_data(self, from_to, values, collocation_distance=1e-4):
         """

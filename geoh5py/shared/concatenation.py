@@ -54,7 +54,6 @@ class Concatenator:
     def attributes_keys(self):
         """List of uuids present in the concatenated attributes."""
         if getattr(self, "_attributes_keys", None) is None:
-            attributes = self.concatenated_attributes
             self._attributes_keys = [
                 elem["ID"] for elem in self.concatenated_attributes
             ]
@@ -244,11 +243,12 @@ class Concatenator:
         """
         if label == "attributes":
             self.update_concatenated_attributes(entity)
-        elif label ==  "property_groups":
+        elif label == "property_groups":
             if getattr(entity, "property_groups", None) is not None:
 
-                for pg in getattr(entity, "property_groups"):
-                    self.add_save_concatenated(pg)
+                for prop_group in getattr(entity, "property_groups"):
+                    self.add_save_concatenated(prop_group)
+                self._property_group_ids = None
 
             self.update_array_attribute(entity, label)
 
@@ -279,15 +279,11 @@ class Concatenator:
             target_attributes[key] = val
 
         if hasattr(entity, "values"):
-            target_attributes["Type ID"] = as_str_if_uuid(
-                entity.entity_type.uid
-            )
+            target_attributes["Type ID"] = as_str_if_uuid(entity.entity_type.uid)
         elif hasattr(entity, "properties"):
             pass
         else:
-            target_attributes["Object Type ID"] = as_str_if_uuid(
-                entity.entity_type.uid
-            )
+            target_attributes["Object Type ID"] = as_str_if_uuid(entity.entity_type.uid)
         getattr(self, "workspace").repack = True
 
     def update_array_attribute(self, entity, field):
@@ -313,20 +309,8 @@ class Concatenator:
             values = [as_str_if_uuid(val.uid).encode() for val in values]
         else:
             alias = KEY_MAP.get(field, field)
-        index = self.fetch_index(entity, alias)
-        if index is not None:  # First remove the old data
-            start, size = self.index[alias][index][0], self.index[alias][index][1]
-            self.data[alias] = np.delete(
-                self.data[alias], np.arange(start, start + size), axis=0
-            )
-            # Shift indices
-            self.index[alias]["Start index"][
-                self.index[alias]["Start index"] > start
-            ] -= size
-            start = self.data[alias].shape[0]
-            self.index[alias] = np.delete(self.index[alias], index, axis=0)
-        else:
-            start = 0
+
+        start = self.fetch_start_index(entity, alias)
 
         if values is not None:
             indices = np.hstack(
@@ -350,26 +334,28 @@ class Concatenator:
             if alias in self.data:
                 values = np.hstack([self.data[alias], values])
 
-            n_values = 64 - len(values) % 64
-
-            # if isinstance(values, np.ndarray):
-            # #     values += [np.nan for ii in range(n_values)]
-            # # else:
-            #     values = values.astype(np.float32)
-
             self.data[alias] = values
 
         getattr(self, "workspace").update_attribute(self, "index", alias)
 
+        property_kwarg = {
+            "property_group_ids": {
+                "dtype": special_dtype(vlen=str),
+                "maxshape": (None,),
+            },
+            "surveys": {"maxshape": (None,)},
+        }
+
         if hasattr(entity, f"_{field}"):  # For group property
             if field == "property_groups":
                 field = "property_group_ids"
-            # setattr(self, f"_{field}", self.data.get(alias))
-                getattr(self, "workspace").update_attribute(self, field, values=self.data.get(alias), dtype=special_dtype(vlen=str), maxshape=(None,))
-            elif field == "surveys":
-                getattr(self, "workspace").update_attribute(self, field, values=self.data.get(alias), maxshape=(None,))
-            else:
-                getattr(self, "workspace").update_attribute(self, field, values=self.data.get(alias))
+
+            getattr(self, "workspace").update_attribute(
+                self,
+                field,
+                values=self.data.get(alias),
+                **property_kwarg.get(field, {}),
+            )
         else:  # For data values
             getattr(self, "workspace").update_attribute(self, "data", field)
 
@@ -379,10 +365,6 @@ class Concatenator:
 
         :param child: Concatenated entity
         """
-        if as_str_if_uuid(child.uid) not in self.attributes_keys:
-            self.attributes_keys.append(as_str_if_uuid(child.uid))
-            self.concatenated_attributes.append({})
-
         self.update_concatenated_attributes(child)
 
         if hasattr(child, "values"):
@@ -411,15 +393,44 @@ class Concatenator:
         uid = as_str_if_uuid(uid)
 
         try:
-            index = getattr(self, "attributes_keys").index(
+            index = self.attributes_keys.index(
                 as_str_if_uuid(as_str_if_utf8_bytes(uid))
             )
-        except KeyError as error:
-            raise KeyError(
-                f"Identifier {uid} not present in Concatenator 'Attributes'."
-            ) from error
+        except ValueError:
+            self.attributes_keys.append(as_str_if_utf8_bytes(uid))
+            self.concatenated_attributes.append({})
+            return self.concatenator.concatenated_attributes[-1]
 
         return self.concatenator.concatenated_attributes[index]
+
+    def fetch_start_index(self, entity, label: str):
+        """
+        Fetch starting index for a given entity and label.
+        Existing date is removed such that new entries can be appended.
+        """
+        index = self.fetch_index(entity, label)
+        if index is not None:  # First remove the old data
+            self.delete_index_data(label, index)
+            start = self.data[label].shape[0]
+
+        elif label in self.index:
+            start = np.sum(self.index[label]["Size"])
+        else:
+            start = 0
+
+        return start
+
+    def delete_index_data(self, label: str, index: int):
+        start, size = self.index[label][index][0], self.index[label][index][1]
+        self.data[label] = np.delete(
+            self.data[label], np.arange(start, start + size), axis=0
+        )
+        # Shift indices
+        self.index[label]["Start index"][
+            self.index[label]["Start index"] > start
+        ] -= size
+        self.index[label] = np.delete(self.index[label], index, axis=0)
+
 
 class Concatenated:
     """
@@ -450,8 +461,11 @@ class Concatenated:
         """
         entity_list = []
         attr = self.concatenator.get_attributes(getattr(self, "uid"))
-        if f"Property:{name}" in attr:
-            attributes: dict = self.concatenator.get_attributes(attr.get(f"Property:{name}")).copy()
+
+        if f"Property:{name}" in attr and name not in self.get_data_list():
+            attributes: dict = self.concatenator.get_attributes(
+                attr.get(f"Property:{name}")
+            ).copy()
             attributes["parent"] = self
             getattr(self, "workspace").create_from_concatenation(attributes)
 
