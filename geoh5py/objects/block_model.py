@@ -132,7 +132,6 @@ class BlockModel(ObjectBase):
                 len(value) == 3
             ), "Origin must be a list or numpy array of shape (3, )"
 
-
             self._centroids = None
 
             value = np.asarray(
