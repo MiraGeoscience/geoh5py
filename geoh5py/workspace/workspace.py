@@ -22,6 +22,7 @@
 from __future__ import annotations
 
 import inspect
+import io
 import os
 import shutil
 import tempfile
@@ -73,7 +74,9 @@ class Workspace(AbstractContextManager):
         "Version": "version",
     }
 
-    def __init__(self, h5file: str | Path = "Analyst.geoh5", mode="a", **kwargs):
+    def __init__(
+        self, h5file: str | Path | io.BytesIO = "Analyst.geoh5", mode="a", **kwargs
+    ):
 
         self._contributors = np.asarray(
             ["UserName"], dtype=h5py.special_dtype(vlen=str)
@@ -90,7 +93,7 @@ class Workspace(AbstractContextManager):
         self._objects: dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
         self._data: dict[uuid.UUID, ReferenceType[data.Data]] = {}
         self._geoh5: h5py.File | None = None
-        self.h5file: str | Path = h5file
+        self.h5file: str | Path | io.BytesIO = h5file
 
         for attr, item in kwargs.items():
             if attr in self._attribute_map:
@@ -164,9 +167,7 @@ class Workspace(AbstractContextManager):
                 if isinstance(entity, Concatenator) and self.repack:
                     self.update_attribute(entity, "concatenated_attributes")
 
-            self._io_call(
-                H5Writer.save_entity, self.root, add_children=False, mode="r+"
-            )
+            self._io_call(H5Writer.save_entity, self.root, add_children=True, mode="r+")
 
         self.geoh5.close()
 
@@ -443,11 +444,14 @@ class Workspace(AbstractContextManager):
                 uuids = self._io_call(H5Reader.fetch_uuids, entity_type, mode="r")
 
                 for uid in uuids:
+                    if isinstance(self.get_entity(uid)[0], Entity):
+                        continue
+
                     recovered_object = self.load_entity(uid, entity_type)
 
                     if isinstance(recovered_object, (Group, ObjectBase)):
                         self.fetch_children(recovered_object, recursively=True)
-                        getattr(recovered_object, "parent", None)
+                        # getattr(recovered_object, "parent", None)
 
     def remove_children(self, parent, children: list):
         """
@@ -587,9 +591,12 @@ class Workspace(AbstractContextManager):
         else:
             entity_type = "data"
 
-        children_list = self._io_call(
-            H5Reader.fetch_children, entity.uid, entity_type, mode="r"
-        )
+        if isinstance(entity, RootGroup) and not entity.on_file:
+            children_list = {child.uid: "" for child in entity.children}
+        else:
+            children_list = self._io_call(
+                H5Reader.fetch_children, entity.uid, entity_type, mode="r"
+            )
 
         if isinstance(entity, Concatenator):
             cat_children = getattr(entity, "fetch_concatenated_objects")()
@@ -602,14 +609,12 @@ class Workspace(AbstractContextManager):
 
         family_tree = []
         for uid, child_type in children_list.items():
-            if self.get_entity(uid)[0] is not None:
-                recovered_object = self.get_entity(uid)[0]
-            else:
+
+            recovered_object = self.get_entity(uid)[0]
+            if recovered_object is None:
                 recovered_object = self.load_entity(uid, child_type, parent=entity)
 
             if recovered_object is not None:
-
-                # Assumes the object was pulled from h5
                 recovered_object.on_file = True
                 recovered_object.entity_type.on_file = True
                 family_tree += [recovered_object]
@@ -830,23 +835,24 @@ class Workspace(AbstractContextManager):
         return self._geoh5
 
     @property
-    def h5file(self) -> str | Path:
+    def h5file(self) -> str | Path | io.BytesIO:
         """
         :str: Target *geoh5* file name with path.
         """
         return self._h5file
 
     @h5file.setter
-    def h5file(self, file: str | Path):
+    def h5file(self, file: str | Path | io.BytesIO):
 
-        if not isinstance(file, (str, Path)):
+        if isinstance(file, (str, Path)):
+            if not str(file).endswith("geoh5"):
+                raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
+        elif not isinstance(file, io.BytesIO):
             raise ValueError(
-                "The 'h5file' attribute must be a str or pathlib.Path to the target geoh5 file. "
+                "The 'h5file' attribute must be a str, "
+                "pathlib.Path or bytes to the target geoh5 file. "
                 f"Provided {file} of type({type(file)})"
             )
-
-        if not str(file).endswith("geoh5"):
-            raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
 
         self._h5file = file
 
@@ -910,6 +916,9 @@ class Workspace(AbstractContextManager):
 
         :return entity: Entity loaded from geoh5
         """
+        if isinstance(self.get_entity(uid)[0], Entity):
+            return self.get_entity(uid)[0]
+
         base_classes = {
             "group": Group,
             "object": ObjectBase,
@@ -1099,7 +1108,8 @@ class Workspace(AbstractContextManager):
         except Geoh5FileClosedError as error:
             raise Geoh5FileClosedError(
                 f"Error executing {fun}. "
-                + "Consider re-opening with `Workspace.open()' or used within a context manager."
+                + "Consider re-opening with `Workspace.open()' "
+                "or used within a context manager."
             ) from error
 
     def __exit__(self, exc_type, exc_value, traceback):

@@ -14,6 +14,9 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
+from __future__ import annotations
+
 import json
 from copy import deepcopy
 from os import path

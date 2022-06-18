@@ -650,8 +650,8 @@ class H5Writer:
             entity.on_file = True
 
             if isinstance(entity, RootGroup):
-                if "Root" not in h5file[base].keys():
-                    h5file[base].create_group = "Root"
+                if "Root" in h5file[base]:
+                    del h5file[base]["Root"]
 
                 h5file[base]["Root"] = entity_handle
 

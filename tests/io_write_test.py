@@ -16,6 +16,8 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
+
 from h5py import File
 
 from geoh5py.objects import Points

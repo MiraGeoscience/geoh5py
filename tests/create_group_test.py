@@ -16,6 +16,8 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
+
 from geoh5py.groups import ContainerGroup, SimPEGGroup
 from geoh5py.shared.utils import compare_entities
 from geoh5py.ui_json import constants, templates

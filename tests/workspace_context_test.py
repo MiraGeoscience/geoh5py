@@ -16,6 +16,8 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
+
 import pytest
 
 from geoh5py.objects import Points
@@ -63,4 +65,4 @@ def test_read_only(tmp_path):
         with Workspace(tmp_path / r"test.geoh5", mode="r") as w_s:
             Points.create(w_s)
 
-    assert "Attempting to write to a geoh5 file in read-only mode. " in str(error)
+    assert "geoh5 file in read-only mode" in str(error)
