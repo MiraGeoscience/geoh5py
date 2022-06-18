@@ -53,31 +53,47 @@ class Concatenator:
             }
         )
 
+    def add_attribute(self, uid):
+        """Add new element to the concatenated attributes."""
+        if self.attributes_keys is None:
+            self._attributes_keys = []
+
+        self.attributes_keys.append(uid)
+
+        if self.concatenated_attributes is None:
+            self._concatenated_attributes = {"Attributes": []}
+
+        self.concatenated_attributes["Attributes"].append({})
+
     @property
     def attributes_keys(self):
         """List of uuids present in the concatenated attributes."""
-        if getattr(self, "_attributes_keys", None) is None:
+        if (
+            getattr(self, "_attributes_keys", None) is None
+            and self.concatenated_attributes is not None
+        ):
             self._attributes_keys = [
-                elem["ID"] for elem in self.concatenated_attributes
+                elem["ID"] for elem in self.concatenated_attributes["Attributes"]
             ]
 
         return self._attributes_keys
 
     @property
-    def concatenated_attributes(self) -> list[dict]:
+    def concatenated_attributes(self) -> dict | None:
         """Dictionary of concatenated objects and data attributes."""
         if self._concatenated_attributes is None:
-            self._concatenated_attributes = getattr(
+            self.concatenated_attributes = getattr(
                 self, "workspace"
             ).fetch_concatenated_values(self, "concatenated_attributes")
 
-            if self._concatenated_attributes is None:
-                self._concatenated_attributes = {"Attributes": []}
-
-        return self._concatenated_attributes["Attributes"]
+        return self._concatenated_attributes
 
     @concatenated_attributes.setter
     def concatenated_attributes(self, attr: dict):
+        if attr is None:
+            self._concatenated_attributes = None
+            return
+
         if not isinstance(attr, dict):
             raise AttributeError(
                 "Input value for 'concatenated_attributes' must be of type dict."
@@ -383,18 +399,18 @@ class Concatenator:
         if isinstance(uid, str):
             uid = uuid.UUID(uid)
 
-        uid = as_str_if_uuid(uid)
+        uid = as_str_if_utf8_bytes(as_str_if_uuid(uid))
 
-        try:
-            index = self.attributes_keys.index(
-                as_str_if_uuid(as_str_if_utf8_bytes(uid))
-            )
-        except ValueError:
-            self.attributes_keys.append(as_str_if_utf8_bytes(uid))
-            self.concatenated_attributes.append({})
-            return self.concatenator.concatenated_attributes[-1]
+        if (
+            self.attributes_keys is not None
+            and as_str_if_uuid(uid) in self.attributes_keys
+        ):
+            index = self.attributes_keys.index(as_str_if_uuid(uid))
+        else:
+            self.add_attribute(uid)
+            index = -1
 
-        return self.concatenator.concatenated_attributes[index]
+        return self.concatenator.concatenated_attributes["Attributes"][index]
 
     def fetch_start_index(self, entity, label: str):
         """

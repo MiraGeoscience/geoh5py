@@ -677,14 +677,16 @@ class Workspace(AbstractContextManager):
         """
         property_groups: list = []
         if isinstance(entity, Concatenator):
-            if getattr(entity, "property_group_ids", None) is None:
+            if (
+                getattr(entity, "property_group_ids", None) is None
+            ) or entity.concatenated_attributes is None:
                 return property_groups
 
             for key in entity.property_group_ids:
                 if key not in entity.concatenated_attributes:
                     continue
 
-                attrs = entity.concatenated_attributes[key]
+                attrs = entity.concatenated_attributes["Attributes"][key]
                 property_groups.append(PropertyGroup(**attrs))
         else:
 

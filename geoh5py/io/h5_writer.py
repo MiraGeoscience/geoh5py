@@ -343,7 +343,7 @@ class H5Writer:
                 value = as_str_if_uuid(value)
 
                 if (
-                    key == "PropertyGroups" or value is None
+                    key in ["PropertyGroups", "Attributes"] or value is None
                 ):  # or key in Concatenator._attribute_map:
                     continue
 
