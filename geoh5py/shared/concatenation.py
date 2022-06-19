@@ -155,10 +155,6 @@ class Concatenator:
                 self, "Index"
             )
 
-            if data_list is None:
-                self._data, self._index = {}, {}
-                return self._index
-
             data = {}
             index = {}
             for key in data_list:
@@ -449,15 +445,19 @@ class Concatenated:
     _parent: Concatenated | Concatenator
     _property_groups = None
 
-    def __init__(self, entity_type, parent=None, **kwargs):
+    def __init__(self, entity_type, **kwargs):
+        attribute_map = getattr(self, "_attribute_map", {})
+        attr = {"name": None, "parent": None}
+        for key, value in kwargs.items():
+            attr[attribute_map.get(key, key)] = value
 
-        if not isinstance(parent, (Concatenated, Concatenator)):
+        if not isinstance(attr.get("parent"), (Concatenated, Concatenator)):
             raise UserWarning(
                 "Creating a concatenated entity must have a parent "
                 "of type Concatenator for 'objects', or Concatenated for 'data'."
             )
 
-        super().__init__(entity_type, parent=parent, **kwargs)
+        super().__init__(entity_type, **attr)
 
     @property
     def concatenator(self) -> Concatenator:
@@ -480,14 +480,18 @@ class Concatenated:
         Generic function to get data values from object.
         """
         entity_list = []
-        attr = self.concatenator.get_attributes(getattr(self, "uid"))
+        attr = self.concatenator.get_attributes(getattr(self, "uid")).copy()
 
-        if f"Property:{name}" in attr and name not in self.get_data_list():
-            attributes: dict = self.concatenator.get_attributes(
-                attr.get(f"Property:{name}")
-            ).copy()
-            attributes["parent"] = self
-            getattr(self, "workspace").create_from_concatenation(attributes)
+        for key, value in attr.items():
+            if (
+                "Property:" in key
+                and getattr(self, "workspace").get_entity(uuid.UUID(value))[0] is None
+            ):
+                attributes: dict = self.concatenator.get_attributes(
+                    attr.get(key)
+                ).copy()
+                attributes["parent"] = self
+                getattr(self, "workspace").create_from_concatenation(attributes)
 
         for child in getattr(self, "children"):
             if hasattr(child, "name") and child.name == name:

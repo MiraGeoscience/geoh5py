@@ -275,6 +275,8 @@ class Workspace(AbstractContextManager):
         recovered_entity.on_file = True
         recovered_entity.entity_type.on_file = True
 
+        return recovered_entity
+
     def create_data(
         self,
         entity_class,

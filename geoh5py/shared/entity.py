@@ -25,6 +25,8 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from geoh5py.shared.utils import str2uuid
+
 if TYPE_CHECKING:
     from .. import shared
 
@@ -48,7 +50,9 @@ class Entity(ABC):
     _visible = True
 
     def __init__(self, uid: uuid.UUID | None = None, **kwargs):
-        self._uid: uuid.UUID = uid if isinstance(uid, uuid.UUID) else uuid.uuid4()
+        self._uid: uuid.UUID = (
+            str2uuid(uid) if isinstance(str2uuid(uid), uuid.UUID) else uuid.uuid4()
+        )
         self._name = "Entity"
         self._parent: Entity | None = None
         self._children: list = []
