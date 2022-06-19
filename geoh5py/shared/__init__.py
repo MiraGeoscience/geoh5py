@@ -20,16 +20,9 @@
 
 from . import weakref_utils
 from .concatenation import Concatenated, Concatenator
-from .coord3d import Coord3D
-from .date_time import DateTime
-from .distance_unit import DistanceUnit
 from .entity import Entity
 from .entity_type import EntityType
-from .file_name import FileName
 from .utils import fetch_h5_handle, match_values, merge_arrays
-from .version_number import VersionNumber
-from .version_string import VersionString
-from .vertex_index import VertexIndex
 
 INTEGER_NDV = -2147483648
 FLOAT_NDV = 1.17549435e-38
