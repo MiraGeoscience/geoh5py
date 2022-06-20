@@ -419,6 +419,17 @@ class Drillhole(Points):
             else:
                 collocation_distance = self.default_collocation_distance
 
+            if (
+                "depth" not in attr.keys()
+                and "from-to" not in attr.keys()
+                and "association" not in attr.keys()
+            ):
+                assert attr["association"] == "OBJECT", (
+                    "Input data dictionary must contain {key:values} "
+                    + "{'from-to':numpy.ndarray} "
+                    + "or {'association': 'OBJECT'}."
+                )
+
             if "depth" in attr.keys():
                 if self.workspace.version == 1.0:
                     attr["association"] = "VERTEX"
@@ -452,14 +463,6 @@ class Drillhole(Points):
                         collocation_distance=collocation_distance,
                     )
                 del attr["from-to"]
-            elif "FROM" in name or "TO" in name:
-                pass
-            else:
-                assert attr["association"] == "OBJECT", (
-                    "Input data dictionary must contain {key:values} "
-                    + "{'from-to':numpy.ndarray} "
-                    + "or {'association': 'OBJECT'}."
-                )
 
             entity_type = self.validate_data_type(attr)
             kwargs = {
