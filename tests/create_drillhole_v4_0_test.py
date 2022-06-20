@@ -15,6 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=R0914
 
 import numpy as np
 import pytest
@@ -131,6 +132,20 @@ def test_create_drillhole_data(tmp_path):
         assert dh_group.fetch_index(well_b_data, well_b_data.name) == 1, (
             "'interval_values' on well_b should be the second entry.",
         )
+
+        with pytest.raises(UserWarning) as error:
+            well_b.add_data(
+                {
+                    "Depth Data": {
+                        "values": np.random.randn(10),
+                        "depth": np.sort(
+                            np.random.uniform(low=0.05, high=100, size=(10,))
+                        ),
+                    },
+                }
+            )
+
+        assert "Data with name 'Depth Data' already present" in str(error)
 
         well_b_data.values = np.random.randn(from_to_b.shape[0])
 

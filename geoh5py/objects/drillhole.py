@@ -404,6 +404,13 @@ class Drillhole(Points):
 
             attr["name"] = name.replace("/", "\u2044")  # Specific
 
+            if attr["name"] in self.get_data_list():
+                raise UserWarning(
+                    f"Data with name '{attr['name']}' already present "
+                    f"on the drillhole '{self.name}'. "
+                    "Consider changing the values or renaming."
+                )
+
             if "collocation_distance" in attr.keys():
                 assert (
                     attr["collocation_distance"] > 0
