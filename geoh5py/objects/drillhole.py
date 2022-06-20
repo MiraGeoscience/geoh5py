@@ -402,7 +402,7 @@ class Drillhole(Points):
                 attr.keys()
             ), f"Given attr for data {name} should include 'values'"
 
-            attr["name"] = name
+            attr["name"] = name.replace("/", "\u2044")  # Specific
 
             if "collocation_distance" in attr.keys():
                 assert (
@@ -412,16 +412,23 @@ class Drillhole(Points):
             else:
                 collocation_distance = self.default_collocation_distance
 
-            if "depth" in attr.keys() and self.workspace.version == 1.0:
-                attr["association"] = "VERTEX"
-                attr["values"] = self.validate_log_data(
-                    attr["depth"],
-                    attr["values"],
-                    collocation_distance=collocation_distance,
-                )
+            if "depth" in attr.keys():
+                if self.workspace.version == 1.0:
+                    attr["association"] = "VERTEX"
+                    attr["values"] = self.validate_log_data(
+                        attr["depth"],
+                        attr["values"],
+                        collocation_distance=collocation_distance,
+                    )
+
+                else:
+                    attr["from-to"] = np.c_[
+                        attr["depth"], attr["depth"] + collocation_distance
+                    ]
+
                 del attr["depth"]
 
-            elif "from-to" in attr.keys():
+            if "from-to" in attr.keys():
                 if self.workspace.version > 1.0:
                     attr["association"] = "DEPTH"
                     if property_group is None:
@@ -541,13 +548,14 @@ class Drillhole(Points):
         property_group = None
         incrementer = ""
         ind = 0
-        for ind, (_from, _to) in enumerate(zip(self._from, self._to)):
+        for _from, _to in zip(self._from, self._to):
+            ind = len(self.parent.property_group_ids)
             incrementer = f"({ind+1})"
             if (
                 _from in self.children
                 and _from.values.shape[0] == from_to.shape[0]
                 and np.allclose(
-                    np.c_[_from.values, _to.values], from_to, rtol=collocation_distance
+                    np.c_[_from.values, _to.values], from_to, atol=collocation_distance
                 )
             ):
                 property_group = [

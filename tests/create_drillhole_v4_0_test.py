@@ -27,7 +27,7 @@ from geoh5py.workspace import Workspace
 
 def test_create_drillhole_data(tmp_path):
     h5file_path = tmp_path / r"testCurve.geoh5"
-    well_name = "bullseye"
+    well_name = "bullseye/"
     n_data = 10
 
     with Workspace(h5file_path, version=2.0) as workspace:
@@ -63,6 +63,24 @@ def test_create_drillhole_data(tmp_path):
             parent=dh_group,
             name=well_name,
         )
+
+        # Add both set of log data with 0.5 m tolerance
+        well.add_data(
+            {
+                "my_log_values/": {
+                    "depth": np.arange(0, 50.0),
+                    "values": np.random.randn(np.arange(0, 50.0).shape[0]),
+                },
+                "log_wt_tolerance": {
+                    "depth": np.arange(0.01, 50.01),
+                    "values": np.random.randn(np.arange(0.01, 50.01).shape[0]),
+                },
+            }
+        )
+
+        assert len(dh_group.property_groups[0].properties) == 4
+        assert len(well.get_data("my_log_values/")) == 1
+
         well_b = well.copy()
         well_b.name = "Number 2"
         well_b.collar = np.r_[10.0, 10.0, 10]
@@ -101,6 +119,14 @@ def test_create_drillhole_data(tmp_path):
                 },
             }
         )
+        depth_data = well_b.add_data(
+            {
+                "Depth Data": {
+                    "values": np.random.randn(10),
+                    "depth": np.sort(np.random.uniform(low=0.05, high=100, size=(10,))),
+                },
+            }
+        )
 
         assert dh_group.fetch_index(well_b_data, well_b_data.name) == 1, (
             "'interval_values' on well_b should be the second entry.",
@@ -110,10 +136,9 @@ def test_create_drillhole_data(tmp_path):
 
     new_workspace = Workspace(h5file_path)
     # Check entities
-    rec_well = new_workspace.get_entity(well_name)[0]
     compare_entities(
         well,
-        rec_well,
+        new_workspace.get_entity(well_name)[0],
         ignore=[
             "_parent",
             "_metadata",
@@ -147,12 +172,13 @@ def test_create_drillhole_data(tmp_path):
             "_property_groups",
         ],
     )
-    rec_well = new_workspace.get_entity("Number 2")[0]
-    rec_well.get_data_list()
     compare_entities(
-        well_b_data,
-        rec_well.get_data("interval_values")[0],
+        depth_data,
+        new_workspace.get_entity("Number 2")[0].get_data("Depth Data")[0],
         ignore=["_metadata", "_parent"],
     )
 
-    assert rec_well.get_data_list() == well_b.get_data_list()
+    assert (
+        new_workspace.get_entity("Number 2")[0].get_data_list()
+        == well_b.get_data_list()
+    )

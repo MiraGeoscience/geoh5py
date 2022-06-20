@@ -685,7 +685,7 @@ class Workspace(AbstractContextManager):
                 return property_groups
 
             for key in entity.property_group_ids:
-                if key not in entity.concatenated_attributes:
+                if key not in entity.attributes_keys:
                     continue
 
                 attrs = entity.concatenated_attributes["Attributes"][key]

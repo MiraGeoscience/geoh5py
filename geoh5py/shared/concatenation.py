@@ -112,18 +112,17 @@ class Concatenator:
     def concatenated_object_ids(self):
         """Dictionary of concatenated objects and data concatenated_object_ids."""
         if getattr(self, "_concatenated_object_ids", None) is None:
-            self._concatenated_object_ids = getattr(
+            self.concatenated_object_ids = getattr(
                 self, "workspace"
             ).fetch_array_attribute(self, "concatenated_object_ids")
-
-        if self._concatenated_object_ids is None:
-            self.concatenated_object_ids = []
 
         return self._concatenated_object_ids
 
     @concatenated_object_ids.setter
-    def concatenated_object_ids(self, object_ids: list[uuid.UUID]):
-        if not isinstance(object_ids, list):
+    def concatenated_object_ids(self, object_ids: list[uuid.UUID] | np.ndarray | None):
+        if isinstance(object_ids, np.ndarray):
+            object_ids = object_ids.tolist()
+        elif not isinstance(object_ids, (list, type(None))):
             raise AttributeError(
                 "Input value for 'concatenated_object_ids' must be of type list."
             )
@@ -253,6 +252,9 @@ class Concatenator:
 
                 for prop_group in getattr(entity, "property_groups"):
                     self.add_save_concatenated(prop_group)
+                    if prop_group not in self.property_groups:
+                        self._property_groups.append(prop_group)
+
                 self._property_group_ids = None
 
             self.update_array_attribute(entity, label)
@@ -375,11 +377,17 @@ class Concatenator:
         if hasattr(child, "values"):
             self.update_array_attribute(child, child.name)
         elif hasattr(child, "surveys"):  # Specific to drillholes
-            if as_str_if_uuid(child.uid) not in self.concatenated_object_ids:
-                self.concatenated_object_ids = self.concatenated_object_ids + [
-                    as_str_if_uuid(child.uid)
-                ]
+            uid = as_str_if_uuid(child.uid).encode()
+            concat_object_ids = [uid]
+            if self._concatenated_object_ids is not None:
+                if uid not in self._concatenated_object_ids:
+                    concat_object_ids = (
+                        self._concatenated_object_ids + concat_object_ids
+                    )
+                else:
+                    concat_object_ids = self._concatenated_object_ids
 
+            self.concatenated_object_ids = concat_object_ids
             self.update_array_attribute(child, "surveys")
             self.update_array_attribute(child, "trace")
 
@@ -447,7 +455,7 @@ class Concatenated:
 
     def __init__(self, entity_type, **kwargs):
         attribute_map = getattr(self, "_attribute_map", {})
-        attr = {"name": None, "parent": None}
+        attr = {"name": "Entity", "parent": None}
         for key, value in kwargs.items():
             attr[attribute_map.get(key, key)] = value
 
@@ -494,7 +502,7 @@ class Concatenated:
                 getattr(self, "workspace").create_from_concatenation(attributes)
 
         for child in getattr(self, "children"):
-            if hasattr(child, "name") and child.name == name:
+            if hasattr(child, "name") and child.name == name.replace("/", "\u2044"):
                 entity_list.append(child)
 
         return entity_list
