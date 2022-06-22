@@ -82,7 +82,7 @@ class Concatenator:
     def concatenated_attributes(self) -> dict | None:
         """Dictionary of concatenated objects and data attributes."""
         if self._concatenated_attributes is None:
-            self.concatenated_attributes = getattr(
+            self._concatenated_attributes = getattr(
                 self, "workspace"
             ).fetch_concatenated_values(self, "concatenated_attributes")
 
@@ -112,9 +112,13 @@ class Concatenator:
     def concatenated_object_ids(self):
         """Dictionary of concatenated objects and data concatenated_object_ids."""
         if getattr(self, "_concatenated_object_ids", None) is None:
-            self.concatenated_object_ids = getattr(
-                self, "workspace"
-            ).fetch_array_attribute(self, "concatenated_object_ids")
+            concatenated_object_ids = getattr(self, "workspace").fetch_array_attribute(
+                self, "concatenated_object_ids"
+            )
+            if isinstance(concatenated_object_ids, np.ndarray):
+                concatenated_object_ids = concatenated_object_ids.tolist()
+
+            self._concatenated_object_ids = concatenated_object_ids
 
         return self._concatenated_object_ids
 
