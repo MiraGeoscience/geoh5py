@@ -144,7 +144,10 @@ class Concatenator:
         Concatenated data values stored as a dictionary.
         """
         if getattr(self, "_data", None) is None:
-            getattr(self, "index")
+            data_list = getattr(self, "workspace").fetch_concatenated_values(
+                self, "Data"
+            )
+            self._data = {name: None for name in data_list}
 
         return self._data
 
@@ -157,15 +160,7 @@ class Concatenator:
             data_list = getattr(self, "workspace").fetch_concatenated_values(
                 self, "Index"
             )
-
-            data = {}
-            index = {}
-            for key in data_list:
-                arrays = getattr(self, "workspace").fetch_concatenated_values(self, key)
-                if arrays is not None:
-                    data[key], index[key] = arrays
-
-            self._data, self._index = data, index
+            self._index = {name: None for name in data_list}
 
         return self._index
 
@@ -195,6 +190,11 @@ class Concatenator:
 
         if field not in self.index:
             return None
+
+        if self.index[field] is None:
+            self.data[field], self.index[field] = getattr(
+                self, "workspace"
+            ).fetch_concatenated_values(self, field)
 
         uid = as_str_if_uuid(entity.uid).encode()
         if uid in self.index[field]["Object ID"].tolist():
