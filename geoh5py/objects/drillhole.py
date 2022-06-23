@@ -447,7 +447,7 @@ class Drillhole(Points):
                 del attr["depth"]
 
             if "from-to" in attr.keys():
-                if self.workspace.version > 1.0:
+                if self.workspace.version >= 2.0:
                     attr["association"] = "DEPTH"
                     if property_group is None:
                         new_prop_goup = self.validate_depth_data(
