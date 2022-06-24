@@ -37,7 +37,7 @@ def test_create_drillhole_data(tmp_path):
 
         assert (
             dh_group.data == {}
-        ), "DrillholeGroup should have an empty dictionary of data."
+        ), "DrillholeGroup should not have data on instantiation."
         with pytest.raises(AttributeError) as excinfo:
             dh_group.concatenated_attributes = []
 

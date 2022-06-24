@@ -247,7 +247,9 @@ class H5Writer:
             attr_handle = entity_handle["Concatenated Data"].get(attribute.capitalize())
 
             if attr_handle is None:
-                attr_handle = entity_handle.create_group(attribute.capitalize())
+                attr_handle = entity_handle["Concatenated Data"].create_group(
+                    attribute.capitalize()
+                )
 
             try:
                 del attr_handle[channel]
@@ -631,7 +633,6 @@ class H5Writer:
             entity_handle = h5file[base][entity_type].create_group(as_str_if_uuid(uid))
             if isinstance(entity, Concatenator):
                 concat_group = entity_handle.create_group("Concatenated Data")
-                concat_group.create_group("Data")
                 concat_group.create_group("Index")
                 entity_handle.create_group("Groups")
             elif entity_type == "Groups":

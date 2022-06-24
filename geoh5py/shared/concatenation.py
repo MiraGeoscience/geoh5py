@@ -149,6 +149,8 @@ class Concatenator:
             )
             if data_list is not None:
                 self._data = {name: None for name in data_list}
+            else:
+                self._data = {}
 
         return self._data
 
@@ -190,7 +192,7 @@ class Concatenator:
         """
         field = KEY_MAP.get(field, field)
 
-        if self.index is None or field not in self.index:
+        if field not in self.index:
             return None
 
         if self.index[field] is None:
