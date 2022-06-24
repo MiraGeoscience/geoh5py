@@ -325,7 +325,9 @@ class H5Reader:
         return property_groups
 
     @classmethod
-    def fetch_type(cls, file: str | h5py.File, uid: uuid.UUID, entity_type: str):
+    def fetch_type(
+        cls, file: str | h5py.File, uid: uuid.UUID, entity_type: str
+    ) -> dict:
         """
         Fetch a type from the target geoh5.
 
@@ -343,7 +345,7 @@ class H5Reader:
             return cls.fetch_type_attributes(type_handle)
 
     @classmethod
-    def fetch_type_attributes(cls, type_handle):
+    def fetch_type_attributes(cls, type_handle: h5py.Group) -> dict:
         """
         Fetch type attributes from a given h5 handle.
         """
@@ -386,7 +388,7 @@ class H5Reader:
         return uuids
 
     @classmethod
-    def fetch_value_map(cls, h5_handle) -> dict:
+    def fetch_value_map(cls, h5_handle: h5py.Group) -> dict:
         """
         Get data :obj:`~geoh5py.data.data.Data.value_map`
 
