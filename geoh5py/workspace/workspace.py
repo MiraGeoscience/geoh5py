@@ -636,7 +636,7 @@ class Workspace(AbstractContextManager):
 
         return family_tree
 
-    def fetch_concatenated_values(self, entity: Group | ObjectBase, *arguments: str):
+    def fetch_concatenated_values(self, entity: Group | ObjectBase, label: str):
         """Fetch data under the Concatenated Data group of an entity."""
         if isinstance(entity, Group):
             entity_type = "Group"
@@ -646,11 +646,20 @@ class Workspace(AbstractContextManager):
                 "for 'Group' entities."
             )
 
+        if label in ["Attributes", "Index", "Data"]:
+            return self._io_call(
+                H5Reader.fetch_concatenated_attributes,
+                entity.uid,
+                entity_type,
+                label,
+                mode="r",
+            )
+
         return self._io_call(
             H5Reader.fetch_concatenated_values,
             entity.uid,
             entity_type,
-            *arguments,
+            label,
             mode="r",
         )
 

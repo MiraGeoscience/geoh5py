@@ -56,7 +56,7 @@ class H5Reader:
         property_groups: :obj:`dict` of data :obj:`uuid.UUID`
         """
         with fetch_h5_handle(file) as h5file:
-            name = list(h5file.keys())[0]
+            name = list(h5file)[0]
             attributes: dict = {"entity": {}}
             type_attributes: dict = {"entity_type": {}}
             property_groups: dict = {}
@@ -76,7 +76,7 @@ class H5Reader:
                     entity["Type"]
                 )
             # Check if the entity has property_group
-            if "PropertyGroups" in entity.keys():
+            if "PropertyGroups" in entity:
                 property_groups = cls.fetch_property_groups(file, uid)
 
             attributes["entity"]["on_file"] = True
@@ -99,7 +99,7 @@ class H5Reader:
         :return cells: :obj:`numpy.ndarray` of :obj:`int`.
         """
         with fetch_h5_handle(file) as h5file:
-            name = list(h5file.keys())[0]
+            name = list(h5file)[0]
             indices = None
 
             try:
@@ -129,7 +129,7 @@ class H5Reader:
             List of dictionaries for the children uid and type
         """
         with fetch_h5_handle(file) as h5file:
-            name = list(h5file.keys())[0]
+            name = list(h5file)[0]
             children: dict = {}
             entity_type = cls.format_type_string(entity_type)
 
@@ -143,7 +143,7 @@ class H5Reader:
                     continue
 
                 if isinstance(child_list, h5py.Group):
-                    for uid_str in child_list.keys():
+                    for uid_str in child_list:
                         children[str2uuid(uid_str)] = child_type.replace(
                             "s", ""
                         ).lower()
@@ -157,9 +157,9 @@ class H5Reader:
         uid: uuid.UUID,
         entity_type: str,
         label: str,
-    ):
+    ) -> tuple | None:
         """
-        Get :obj:`~geoh5py.shared.entity.Entity.children` of concatenated group.
+        Get :obj:`~geoh5py.shared.entity.Entity.children` values of concatenated group.
 
         :param file: :obj:`h5py.File` or name of the target geoh5 file
         :param uid: Unique identifier
@@ -171,7 +171,49 @@ class H5Reader:
             List of dictionaries for the children uid and type
         """
         with fetch_h5_handle(file) as h5file:
-            name = list(h5file.keys())[0]
+            name = list(h5file)[0]
+            entity_type = cls.format_type_string(entity_type)
+            label = KEY_MAP.get(label, label)
+
+            try:
+                group = h5file[name][entity_type][as_str_if_uuid(uid)][
+                    "Concatenated Data"
+                ]
+                if label not in group["Index"]:
+                    return None
+
+                if label in group["Data"]:
+                    attribute = group["Data"][label][:]
+                else:
+                    attribute = group[label][:]
+
+                return attribute, group["Index"][label][:]
+
+            except KeyError:
+                return None
+
+    @classmethod
+    def fetch_concatenated_attributes(
+        cls,
+        file: str | h5py.File,
+        uid: uuid.UUID,
+        entity_type: str,
+        label: str,
+    ) -> list | dict | None:
+        """
+        Get 'Attributes', 'Data' or 'Index' from Concatenator group.
+
+        :param file: :obj:`h5py.File` or name of the target geoh5 file
+        :param uid: Unique identifier
+        :param entity_type: Type of entity from
+            'group', 'data', 'object', 'group_type', 'data_type', 'object_type'
+        :param label: Group identifier for the attribute requested.
+
+        :return children: [{uuid: type}, ... ]
+            List of dictionaries for the children uid and type
+        """
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file)[0]
             entity_type = cls.format_type_string(entity_type)
             label = KEY_MAP.get(label, label)
 
@@ -184,26 +226,12 @@ class H5Reader:
                     if isinstance(attribute, np.ndarray):
                         attribute = attribute[0]
 
-                    attribute = json.loads(as_str_if_utf8_bytes(attribute))
-                elif label == "Index":
-                    attribute = list(group["Index"])
-                elif label == "Data":
-                    attribute = list(group["Data"])
-                else:
-                    if label not in group["Index"]:
-                        return None
+                    return json.loads(as_str_if_utf8_bytes(attribute))
 
-                    if label in group["Data"]:
-                        attribute = group["Data"][label][:]
-                    else:
-                        attribute = group[label][:]
-
-                    return attribute, group["Index"][label][:]
+                return list(group[label])
 
             except KeyError:
                 return None
-
-            return attribute
 
     @classmethod
     def fetch_metadata(
@@ -217,7 +245,7 @@ class H5Reader:
         Fetch text of dictionary type attributes of an entity.
         """
         with fetch_h5_handle(file) as h5file:
-            name = list(h5file.keys())[0]
+            name = list(h5file)[0]
 
             try:
                 metadata = np.r_[
@@ -249,7 +277,7 @@ class H5Reader:
         :return attributes: :obj:`dict` of attributes.
         """
         with fetch_h5_handle(file) as h5file:
-            name = list(h5file.keys())
+            name = list(h5file)
             if len(name) != 1:
                 raise FileNotFoundError
 
@@ -282,13 +310,13 @@ class H5Reader:
             }
         """
         with fetch_h5_handle(file) as h5file:
-            name = list(h5file.keys())[0]
+            name = list(h5file)[0]
             property_groups: dict[str, dict[str, str]] = {}
             try:
                 pg_handle = h5file[name]["Objects"][as_str_if_uuid(uid)][
                     "PropertyGroups"
                 ]
-                for pg_uid in pg_handle.keys():
+                for pg_uid in pg_handle:
                     property_groups[pg_uid] = {}
                     for attr, value in pg_handle[pg_uid].attrs.items():
                         property_groups[pg_uid][attr] = value
@@ -309,7 +337,7 @@ class H5Reader:
 
         """
         with fetch_h5_handle(file) as h5file:
-            name = list(h5file.keys())[0]
+            name = list(h5file)[0]
             entity_type = entity_type + " types"
             type_handle = h5file[name]["Types"][entity_type][as_str_if_uuid(uid)]
             return cls.fetch_type_attributes(type_handle)
@@ -323,13 +351,13 @@ class H5Reader:
         for key, value in type_handle.attrs.items():
             type_attributes[key] = value
 
-        if "Color map" in type_handle.keys():
+        if "Color map" in type_handle:
             type_attributes["color_map"] = {}
             for key, value in type_handle["Color map"].attrs.items():
                 type_attributes["color_map"][key] = value
             type_attributes["color_map"]["values"] = type_handle["Color map"][:]
 
-        if "Value map" in type_handle.keys():
+        if "Value map" in type_handle:
             mapping = cls.fetch_value_map(type_handle)
             type_attributes["value_map"] = mapping
 
@@ -348,10 +376,10 @@ class H5Reader:
             List of uuids
         """
         with fetch_h5_handle(file) as h5file:
-            name = list(h5file.keys())[0]
+            name = list(h5file)[0]
             entity_type = cls.format_type_string(entity_type)
             try:
-                uuids = [str2uuid(uid) for uid in h5file[name][entity_type].keys()]
+                uuids = [str2uuid(uid) for uid in h5file[name][entity_type]]
             except KeyError:
                 uuids = []
 
@@ -392,7 +420,7 @@ class H5Reader:
         :return values: Data file stored as bytes
         """
         with fetch_h5_handle(file) as h5file:
-            name = list(h5file.keys())[0]
+            name = list(h5file)[0]
 
             try:
                 bytes_value = h5file[name]["Data"][as_str_if_uuid(uid)][file_name][
@@ -415,7 +443,7 @@ class H5Reader:
         :return values: :obj:`numpy.array` of :obj:`float`
         """
         with fetch_h5_handle(file) as h5file:
-            name = list(h5file.keys())[0]
+            name = list(h5file)[0]
 
             try:
                 values = np.r_[h5file[name]["Data"][as_str_if_uuid(uid)]["Data"]]

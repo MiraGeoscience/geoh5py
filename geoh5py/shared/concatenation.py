@@ -35,8 +35,8 @@ class Concatenator:
     _attributes_keys = None
     _concatenated_data = None
     _concatenated_object_ids = None
-    _data: dict | None = None
-    _index: dict | None = None
+    _data: dict
+    _index: dict
     _property_group_ids = None
     _property_groups = None
 
@@ -84,7 +84,7 @@ class Concatenator:
         if self._concatenated_attributes is None:
             self._concatenated_attributes = getattr(
                 self, "workspace"
-            ).fetch_concatenated_values(self, "concatenated_attributes")
+            ).fetch_concatenated_values(self, "Attributes")
 
         return self._concatenated_attributes
 
@@ -139,7 +139,7 @@ class Concatenator:
         return self
 
     @property
-    def data(self):
+    def data(self) -> dict:
         """
         Concatenated data values stored as a dictionary.
         """
@@ -147,12 +147,13 @@ class Concatenator:
             data_list = getattr(self, "workspace").fetch_concatenated_values(
                 self, "Data"
             )
-            self._data = {name: None for name in data_list}
+            if data_list is not None:
+                self._data = {name: None for name in data_list}
 
         return self._data
 
     @property
-    def index(self):
+    def index(self) -> dict:
         """
         Concatenated index stored as a dictionary.
         """
@@ -160,11 +161,12 @@ class Concatenator:
             data_list = getattr(self, "workspace").fetch_concatenated_values(
                 self, "Index"
             )
-            self._index = {name: None for name in data_list}
+            if data_list is not None:
+                self._index = {name: None for name in data_list}
 
         return self._index
 
-    def fetch_concatenated_objects(self):
+    def fetch_concatenated_objects(self) -> dict:
         """
         Load all concatenated children.
         :param group: Concatenator group
@@ -188,7 +190,7 @@ class Concatenator:
         """
         field = KEY_MAP.get(field, field)
 
-        if field not in self.index:
+        if self.index is None or field not in self.index:
             return None
 
         if self.index[field] is None:
