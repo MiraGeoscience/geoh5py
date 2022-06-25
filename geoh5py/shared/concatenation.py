@@ -89,7 +89,7 @@ class Concatenator:
         return self._concatenated_attributes
 
     @property
-    def concatenated_object_ids(self):
+    def concatenated_object_ids(self) -> list[uuid.UUID] | None:
         """Dictionary of concatenated objects and data concatenated_object_ids."""
         if getattr(self, "_concatenated_object_ids", None) is None:
             concatenated_object_ids = getattr(self, "workspace").fetch_array_attribute(
@@ -155,6 +155,9 @@ class Concatenator:
         :param attributes: Entities stored as list of dictionaries.
         """
         attr_dict = {}
+        if self.concatenated_object_ids is None:
+            return {}
+
         for key in self.concatenated_object_ids:
             attrs = {
                 attr: val
