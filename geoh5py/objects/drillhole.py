@@ -480,6 +480,9 @@ class Drillhole(Points):
                 Data, entity=kwargs, entity_type=entity_type
             )
 
+            if not isinstance(data_object, Data):
+                continue
+
             if new_prop_goup is not None:
                 self.add_data_to_group(data_object, new_prop_goup)
 
@@ -493,7 +496,7 @@ class Drillhole(Points):
             self.sort_depths()
 
         if len(data_objects) == 1:
-            return data_object
+            return data_objects[0]
 
         return data_objects
 
@@ -690,13 +693,13 @@ class Drillhole(Points):
                 replace="B->A",
                 mapping=cell_map,
             )
+            self.cells = np.r_[self.cells, new_cells.astype("uint32")]
             self._from.values = merge_arrays(
                 self._from.values, from_to[:, 0], mapping=cell_map
             )
             self._to.values = merge_arrays(
                 self._to.values, from_to[:, 1], mapping=cell_map
             )
-            self.cells = np.r_[self.cells, new_cells.astype("uint32")]
 
         return values
 

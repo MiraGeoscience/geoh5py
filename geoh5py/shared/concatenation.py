@@ -277,7 +277,7 @@ class Concatenator:
         """Update the concatenated attributes."""
         target_attributes = self.get_attributes(entity.uid)
         for key, attr in entity.attribute_map.items():
-            val = getattr(entity, attr)
+            val = getattr(entity, attr, None)
 
             if val is None or attr == "property_groups":
                 continue

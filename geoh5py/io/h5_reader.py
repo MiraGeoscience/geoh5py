@@ -435,7 +435,9 @@ class H5Reader:
         return bytes_value
 
     @classmethod
-    def fetch_values(cls, file: str | h5py.File, uid: uuid.UUID) -> float | None:
+    def fetch_values(
+        cls, file: str | h5py.File, uid: uuid.UUID
+    ) -> np.ndarray | str | float | None:
         """
         Get data :obj:`~geoh5py.data.data.Data.values`
 

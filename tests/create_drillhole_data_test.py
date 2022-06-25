@@ -119,6 +119,8 @@ def test_create_drillhole_data(tmp_path):
             new_workspace.get_entity(well_name)[0],
             ignore=["_default_collocation_distance"],
         )
+        # Force refresh of vector length
+        setattr(data_objects[0], "_values", None)
         compare_entities(
             data_objects[0],
             new_workspace.get_entity("interval_values")[0],

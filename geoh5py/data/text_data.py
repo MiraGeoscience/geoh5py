@@ -19,28 +19,41 @@ from __future__ import annotations
 
 import json
 
+import numpy as np
+
 from .data import Data
 from .primitive_type_enum import PrimitiveTypeEnum
 
 
 class TextData(Data):
+
+    _values: np.ndarray | str | None
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.TEXT
 
     @property
-    def values(self) -> str | None:
+    def values(self) -> np.ndarray | str | None:
         """
         :obj:`str` Text value.
         """
         if (getattr(self, "_values", None) is None) and self.on_file:
-            self._values = self.workspace.fetch_values(self)
+            values = self.workspace.fetch_values(self)
+            if isinstance(values, (np.ndarray, str, type(None))):
+                self._values = values
 
         return self._values
 
     @values.setter
-    def values(self, values):
+    def values(self, values: np.ndarray | str | None):
         self._values = values
+
+        if not isinstance(values, (np.ndarray, str, type(None))):
+            raise ValueError(
+                f"Input 'values' for {self} must be of type {np.ndarray}  str or None."
+            )
+
         self.workspace.update_attribute(self, "values")
 
     def __call__(self):
@@ -75,7 +88,7 @@ class CommentsData(Data):
         if (getattr(self, "_values", None) is None) and self.on_file:
             comment_str = self.workspace.fetch_values(self)
 
-            if comment_str is not None:
+            if isinstance(comment_str, str):
                 self._values = json.loads(comment_str)["Comments"]
 
         return self._values

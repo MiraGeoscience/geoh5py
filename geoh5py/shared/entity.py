@@ -28,6 +28,7 @@ from geoh5py.shared.utils import str2uuid
 
 if TYPE_CHECKING:
     from .. import shared
+    from ..workspace import Workspace
 
 
 class Entity(ABC):
@@ -39,7 +40,7 @@ class Entity(ABC):
         "Allow delete": "allow_delete",
         "Allow move": "allow_move",
         "Allow rename": "allow_rename",
-        "Clipping IDs": "clipping_ids",
+        "Clipping IDs": "clipping_ids: list | None",
         "ID": "uid",
         "Name": "name",
         "Partially hidden": "partially_hidden",
@@ -49,7 +50,7 @@ class Entity(ABC):
     _visible = True
 
     def __init__(self, uid: uuid.UUID | None = None, **kwargs):
-        self._uid: uuid.UUID = (
+        self._uid = (
             str2uuid(uid) if isinstance(str2uuid(uid), uuid.UUID) else uuid.uuid4()
         )
         self._name = "Entity"
@@ -59,7 +60,7 @@ class Entity(ABC):
         self._allow_move = True
         self._allow_rename = True
         self._partially_hidden = False
-        self._clipping_ids = None
+        self._clipping_ids: list[uuid.UUID] | None = None
         self._public = True
         self._on_file = False
         self._metadata: dict | None = None
@@ -161,7 +162,7 @@ class Entity(ABC):
         return self._children
 
     @property
-    def clipping_ids(self):
+    def clipping_ids(self) -> list[uuid.UUID] | None:
         """
         List of clipping uuids
         """
@@ -286,7 +287,7 @@ class Entity(ABC):
     @property
     def on_file(self) -> bool:
         """
-        :obj:`bool` Entity already present in
+        Whether this Entity is already stored on
         :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
         """
         return self._on_file
@@ -315,7 +316,7 @@ class Entity(ABC):
     @property
     def partially_hidden(self) -> bool:
         """
-        :obj:`bool` Entity is partially hidden.
+        Whether this Entity is partially hidden.
         """
         return self._partially_hidden
 
@@ -327,7 +328,7 @@ class Entity(ABC):
     @property
     def public(self) -> bool:
         """
-        :obj:`bool` Entity is accessible in the workspace tree and other parts
+        Whether this Entity is accessible in the workspace tree and other parts
             of the the user interface in ANALYST.
         """
         return self._public
@@ -352,7 +353,7 @@ class Entity(ABC):
             uid = [
                 obj.uid
                 for obj in self.workspace.get_entity(value)
-                if obj.uid in children_uid
+                if (obj is not None) and (obj.uid in children_uid)
             ]
         elif isinstance(value, uuid.UUID):
             uid = [value]
@@ -375,7 +376,7 @@ class Entity(ABC):
 
     def remove_data_from_group(
         self, data: list | Entity | uuid.UUID | str, name: str = None
-    ):
+    ) -> None:
         """
         Remove data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
         All given data must be children of the parent object.
@@ -433,7 +434,7 @@ class Entity(ABC):
     @property
     def visible(self) -> bool:
         """
-        :obj:`bool` Entity visible in camera (checked in ANALYST object tree).
+        Whether the Entity is visible in camera (checked in ANALYST object tree).
         """
         return self._visible
 
@@ -443,7 +444,7 @@ class Entity(ABC):
         self.workspace.update_attribute(self, "attributes")
 
     @property
-    def workspace(self):
+    def workspace(self) -> Workspace:
         """
         :obj:`~geoh5py.workspace.workspace.Workspace` to which the Entity belongs to.
         """

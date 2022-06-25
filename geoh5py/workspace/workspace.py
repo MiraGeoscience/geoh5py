@@ -282,7 +282,7 @@ class Workspace(AbstractContextManager):
         entity_class,
         entity_kwargs: dict,
         entity_type_kwargs: dict | DataType,
-    ) -> Entity | None:
+    ) -> Data | None:
         """
         Create a new Data entity with attributes.
 
@@ -330,7 +330,7 @@ class Workspace(AbstractContextManager):
         entity_class,
         save_on_creation: bool = True,
         **kwargs,
-    ) -> Entity | None:
+    ) -> Data | Group | ObjectBase | None:
         """
         Function to create and register a new entity and its entity_type.
 
@@ -347,30 +347,29 @@ class Workspace(AbstractContextManager):
         ):
             entity_kwargs["parent"] = self.root
 
+        created_entity: Data | Group | ObjectBase | None = None
         if entity_class is Data or entity_class is None:
             created_entity = self.create_data(Data, entity_kwargs, entity_type_kwargs)
+
         elif entity_class is RootGroup:
             created_entity = RootGroup(
                 RootGroup.find_or_create_type(self, **entity_type_kwargs),
                 **entity_kwargs,
             )
-        else:
+
+        elif issubclass(entity_class, (Group, ObjectBase)):
             created_entity = self.create_object_or_group(
                 entity_class, entity_kwargs, entity_type_kwargs
             )
 
-        if (
-            created_entity is not None
-            and save_on_creation
-            # and created_entity.concatenation is not Concatenated
-        ):
+        if created_entity is not None and save_on_creation:
             self.save_entity(created_entity)
 
         return created_entity
 
     def create_object_or_group(
         self, entity_class, entity_kwargs: dict, entity_type_kwargs: dict
-    ) -> Entity | None:
+    ) -> Group | ObjectBase | None:
         """
         Create an object or a group with attributes.
 
@@ -728,7 +727,7 @@ class Workspace(AbstractContextManager):
         """
         return self._io_call(H5Reader.fetch_type, uid, entity_type)
 
-    def fetch_values(self, entity: Entity) -> float | None:
+    def fetch_values(self, entity: Entity) -> np.ndarray | str | float | None:
         """
         Fetch the data values from the source geoh5.
 
@@ -827,6 +826,9 @@ class Workspace(AbstractContextManager):
             list_entity_uid = [
                 key for key, val in self.list_entities_name.items() if val == name
             ]
+
+        if not list_entity_uid:
+            return [None]
 
         entity_list: list[Entity | None] = []
         for uid in list_entity_uid:

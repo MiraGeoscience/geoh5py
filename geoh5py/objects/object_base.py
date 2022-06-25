@@ -130,18 +130,21 @@ class ObjectBase(Entity):
                 Data, entity=kwargs, entity_type=entity_type
             )
 
+            if not isinstance(data_object, Data):
+                continue
+
             if property_group is not None:
                 self.add_data_to_group(data_object, property_group)
 
             data_objects.append(data_object)
 
         if len(data_objects) == 1:
-            return data_object
+            return data_objects[0]
 
         return data_objects
 
     def add_data_to_group(
-        self, data: list | Data | uuid.UUID | str, name: str
+        self, data: list | Data | uuid.UUID, name: str
     ) -> PropertyGroup:
         """
         Append data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
@@ -162,9 +165,14 @@ class ObjectBase(Entity):
         else:
             uids = self.reference_to_uid(data)
 
+        association = None
+        template = self.workspace.get_entity(uids[0])[0]
+        if isinstance(template, Data):
+            association = template.association
+
         prop_group = self.find_or_create_property_group(
             name=name,
-            association=self.workspace.get_entity(uids[0])[0].association,
+            association=association,
             property_group_type="Interval table"
             if isinstance(self, Concatenated)
             else "Multi-element",

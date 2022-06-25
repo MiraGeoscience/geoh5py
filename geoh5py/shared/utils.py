@@ -20,11 +20,15 @@ from __future__ import annotations
 from abc import ABC
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 from uuid import UUID
 
 import h5py
 import numpy as np
+
+if TYPE_CHECKING:
+    from ..workspace import Workspace
+    from .entity import Entity
 
 
 @contextmanager
@@ -55,7 +59,7 @@ def fetch_h5_handle(file: str | h5py.File | Path, mode: str = "r") -> h5py.File:
             h5file.close()
 
 
-def match_values(vec_a, vec_b, collocation_distance=1e-4):
+def match_values(vec_a, vec_b, collocation_distance=1e-4) -> np.ndarray:
     """
     Find indices of matching values between two arrays, within collocation_distance.
 
@@ -88,7 +92,7 @@ def merge_arrays(
     mapping=None,
     collocation_distance=1e-4,
     return_mapping=False,
-):
+) -> np.ndarray:
     """
     Given two numpy.arrays of different length, find the matching values and append both arrays.
 
@@ -122,7 +126,9 @@ def merge_arrays(
     return np.r_[head, tail]
 
 
-def compare_entities(object_a, object_b, ignore: list | None = None, decimal: int = 6):
+def compare_entities(
+    object_a, object_b, ignore: list | None = None, decimal: int = 6
+) -> None:
 
     ignore_list = ["_workspace", "_children"]
     if ignore is not None:
@@ -204,7 +210,7 @@ KEY_MAP = {
 }
 
 
-def is_uuid(value: str):
+def is_uuid(value: str) -> bool:
     """Check if a string is UUID compliant."""
     try:
         UUID(str(value))
@@ -213,14 +219,14 @@ def is_uuid(value: str):
         return False
 
 
-def entity2uuid(value):
+def entity2uuid(value: Any) -> UUID | Any:
     """Convert an entity to its UUID."""
     if hasattr(value, "uid"):
         return value.uid
     return value
 
 
-def uuid2entity(value, workspace):
+def uuid2entity(value: UUID, workspace: Workspace) -> Entity | Any:
     """Convert UUID to a known entity."""
     if isinstance(value, UUID):
         if value in workspace.list_entities_name:
@@ -231,7 +237,7 @@ def uuid2entity(value, workspace):
             if getattr(obj, "property_groups", None) is not None:
                 prop_group = [
                     prop_group
-                    for prop_group in obj.property_groups
+                    for prop_group in getattr(obj, "property_groups")
                     if prop_group.uid == value
                 ]
 
@@ -243,7 +249,7 @@ def uuid2entity(value, workspace):
     return value
 
 
-def str2uuid(value):
+def str2uuid(value: Any) -> UUID | Any:
     """Convert string to UUID"""
     if is_uuid(value):
         # TODO insert validation
