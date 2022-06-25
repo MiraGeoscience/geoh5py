@@ -280,15 +280,13 @@ def dict_mapper(
     val, string_funcs: list[Callable], *args, omit: dict | None = None
 ) -> dict:
     """
-    Recurses through nested dictionary and applies mapping funcs to all values
+    Recursion through nested dictionaries and applies mapping functions to values.
 
-    Parameters
-    ----------
-    val :
-        Dictionary val (could be another dictionary).
-    string_funcs:
-        Function to apply to values within dictionary.
-    omit: Dictionary of functions to omit.
+    :param val: Value (could be another dictionary) to apply transform functions.
+    :param string_funcs: Functions to apply on values within the input dictionary.
+    :param omit: Dictionary of functions to omit.
+
+    :return val: Transformed values
     """
     if omit is None:
         omit = {}
