@@ -583,7 +583,7 @@ class H5Writer:
     def clear_stats_cache(
         cls,
         file: str | h5py.File,
-        entity,
+        entity: Data,
     ) -> None:
         """
         Clear the StatsCache dataset.

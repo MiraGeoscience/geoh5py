@@ -46,8 +46,6 @@ class GeoImage(ObjectBase):
 
         super().__init__(object_type, **kwargs)
 
-        self.entity_type._name = "GeoImage"
-
         object_type.workspace._register_object(self)
 
     @property
