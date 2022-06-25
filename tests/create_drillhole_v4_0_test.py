@@ -38,20 +38,6 @@ def test_create_drillhole_data(tmp_path):
         assert (
             dh_group.data == {}
         ), "DrillholeGroup should not have data on instantiation."
-        with pytest.raises(AttributeError) as excinfo:
-            dh_group.concatenated_attributes = []
-
-        assert "Input value for 'concatenated_attributes' must be of type dict." in str(
-            excinfo
-        )
-
-        with pytest.raises(AttributeError) as excinfo:
-            dh_group.concatenated_attributes = {}
-
-        assert (
-            "The first key of 'concatenated_attributes' must be 'Attributes'."
-            in str(excinfo)
-        )
 
         well = Drillhole.create(
             workspace,

@@ -88,26 +88,6 @@ class Concatenator:
 
         return self._concatenated_attributes
 
-    @concatenated_attributes.setter
-    def concatenated_attributes(self, attr: dict):
-        if attr is None:
-            self._concatenated_attributes = None
-            return
-
-        if not isinstance(attr, dict):
-            raise AttributeError(
-                "Input value for 'concatenated_attributes' must be of type dict."
-            )
-
-        if "Attributes" not in attr:
-            raise AttributeError(
-                "The first key of 'concatenated_attributes' must be 'Attributes'."
-            )
-
-        self._concatenated_attributes = attr
-
-        getattr(self, "workspace").update_attribute(self, "concatenated_attributes")
-
     @property
     def concatenated_object_ids(self):
         """Dictionary of concatenated objects and data concatenated_object_ids."""
