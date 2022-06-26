@@ -25,6 +25,7 @@ import numpy as np
 from h5py import special_dtype
 
 from geoh5py.groups import Group
+from geoh5py.shared.entity import Entity
 from geoh5py.shared.utils import KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid
 
 if TYPE_CHECKING:
@@ -453,7 +454,7 @@ class Concatenator(Group):
         self.index[label] = np.delete(self.index[label], index, axis=0)
 
 
-class Concatenated:
+class Concatenated(Entity):
     """
     Class modifier for concatenated objects and data.
     """
@@ -565,8 +566,14 @@ class Concatenated:
 
         return self._property_groups
 
-    def save(self):
+    def save(self, add_children: bool = True):
         """
         Save the concatenated object or data to concatenator.
+
+        :param add_children: Save the children of the concatenated entity.
         """
         self.concatenator.add_save_concatenated(self)
+
+        if add_children:
+            for child in self.children:
+                child.save()

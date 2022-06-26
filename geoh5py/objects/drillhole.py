@@ -491,7 +491,7 @@ class Drillhole(Points):
 
         # Check the depths and re-sort data if necessary
         if self.workspace.version > 1.0:
-            self.save()
+            self.save(add_children=False)
         else:
             self.sort_depths()
 
