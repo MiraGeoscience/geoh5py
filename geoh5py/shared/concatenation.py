@@ -217,7 +217,7 @@ class Concatenator(Group):
         return self.data[field][start : start + size]
 
     @property
-    def property_group_ids(self) -> np.ndarray | None:
+    def property_group_ids(self) -> list | None:
         """Dictionary of concatenated objects and data property_group_ids."""
         if self._property_group_ids is None:
             property_groups_ids = self.workspace.fetch_concatenated_values(
@@ -225,7 +225,7 @@ class Concatenator(Group):
             )
 
             if property_groups_ids is not None:
-                self._property_group_ids = property_groups_ids[0]
+                self._property_group_ids = property_groups_ids[0].tolist()
 
         return self._property_group_ids
 
@@ -239,8 +239,14 @@ class Concatenator(Group):
             if getattr(entity, "property_groups", None) is not None:
                 for prop_group in getattr(entity, "property_groups"):
                     self.add_save_concatenated(prop_group)
-
-                self._property_group_ids = None
+                    if (
+                        self.property_group_ids is not None
+                        and as_str_if_uuid(prop_group.uid).encode()
+                        not in self.property_group_ids
+                    ):
+                        self.property_group_ids.append(
+                            as_str_if_uuid(prop_group.uid).encode()
+                        )
 
             self.update_array_attribute(entity, label)
 
