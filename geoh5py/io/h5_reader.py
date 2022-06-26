@@ -468,6 +468,7 @@ class H5Reader:
 
     @staticmethod
     def format_type_string(string: str) -> str:
+        """Format names used for types."""
         string = string.capitalize()
         if string in ["Group", "Object"]:
             string += "s"
