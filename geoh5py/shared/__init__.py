@@ -19,7 +19,6 @@
 # flake8: noqa
 
 from . import weakref_utils
-from .concatenation import Concatenated, Concatenator
 from .entity import Entity
 from .entity_type import EntityType
 from .utils import fetch_h5_handle, match_values, merge_arrays

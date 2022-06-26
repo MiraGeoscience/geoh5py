@@ -30,7 +30,8 @@ import numpy as np
 from ..data import CommentsData, Data, DataType, FilenameData, IntegerData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
-from ..shared import Concatenator, Entity, EntityType, fetch_h5_handle
+from ..shared import Entity, EntityType, fetch_h5_handle
+from ..shared.concatenation import Concatenator
 from ..shared.utils import KEY_MAP, as_str_if_uuid, dict_mapper
 
 if TYPE_CHECKING:

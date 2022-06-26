@@ -24,14 +24,16 @@ from typing import TYPE_CHECKING
 import numpy as np
 from h5py import special_dtype
 
+from geoh5py.groups import Group
 from geoh5py.shared.utils import KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid
 
 if TYPE_CHECKING:
     from ..data import Data
+    from ..groups import GroupType
     from ..objects import ObjectBase
 
 
-class Concatenator:
+class Concatenator(Group):
     """
     Class modifier for concatenation of objects and data.
     """
@@ -44,7 +46,7 @@ class Concatenator:
     _property_group_ids: np.ndarray | None = None
     _property_groups: list | None = None
 
-    def __init__(self, group_type, **kwargs):
+    def __init__(self, group_type: GroupType, **kwargs):
 
         super().__init__(group_type, **kwargs)
 
@@ -219,7 +221,7 @@ class Concatenator:
     @property
     def property_group_ids(self) -> np.ndarray | None:
         """Dictionary of concatenated objects and data property_group_ids."""
-        if getattr(self, "_property_group_ids", None) is None:
+        if self._property_group_ids is None:
             property_groups_ids = getattr(self, "workspace").fetch_concatenated_values(
                 self, "property_group_ids"
             )

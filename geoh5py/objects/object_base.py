@@ -28,7 +28,8 @@ import numpy as np
 from ..data import CommentsData, Data
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
-from ..shared import Concatenated, Entity
+from ..shared import Entity
+from ..shared.concatenation import Concatenated
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
