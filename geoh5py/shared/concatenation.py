@@ -89,9 +89,9 @@ class Concatenator(Group):
     def concatenated_attributes(self) -> dict | None:
         """Dictionary of concatenated objects and data attributes."""
         if self._concatenated_attributes is None:
-            concatenated_attributes = getattr(
-                self, "workspace"
-            ).fetch_concatenated_values(self, "Attributes")
+            concatenated_attributes = self.workspace.fetch_concatenated_values(
+                self, "Attributes"
+            )
 
             if concatenated_attributes is None:
                 concatenated_attributes = {"Attributes": []}
@@ -104,7 +104,7 @@ class Concatenator(Group):
     def concatenated_object_ids(self) -> list[uuid.UUID] | None:
         """Dictionary of concatenated objects and data concatenated_object_ids."""
         if getattr(self, "_concatenated_object_ids", None) is None:
-            concatenated_object_ids = getattr(self, "workspace").fetch_array_attribute(
+            concatenated_object_ids = self.workspace.fetch_array_attribute(
                 self, "concatenated_object_ids"
             )
             if isinstance(concatenated_object_ids, np.ndarray):
@@ -124,7 +124,7 @@ class Concatenator(Group):
             )
 
         self._concatenated_object_ids = object_ids
-        getattr(self, "workspace").update_attribute(self, "concatenated_object_ids")
+        self.workspace.update_attribute(self, "concatenated_object_ids")
 
     @property
     def data(self) -> dict:
@@ -132,9 +132,7 @@ class Concatenator(Group):
         Concatenated data values stored as a dictionary.
         """
         if getattr(self, "_data", None) is None:
-            data_list = getattr(self, "workspace").fetch_concatenated_values(
-                self, "Data"
-            )
+            data_list = self.workspace.fetch_concatenated_values(self, "Data")
             if data_list is not None:
                 self._data = {name: None for name in data_list}
             else:
@@ -148,9 +146,7 @@ class Concatenator(Group):
         Concatenated index stored as a dictionary.
         """
         if getattr(self, "_index", None) is None:
-            data_list = getattr(self, "workspace").fetch_concatenated_values(
-                self, "Index"
-            )
+            data_list = self.workspace.fetch_concatenated_values(self, "Index")
             if data_list is not None:
                 self._index = {name: None for name in data_list}
 
@@ -171,7 +167,7 @@ class Concatenator(Group):
                 if "Property" not in attr
             }
             attrs["parent"] = self
-            attr_dict[key] = getattr(self, "workspace").create_from_concatenation(attrs)
+            attr_dict[key] = self.workspace.create_from_concatenation(attrs)
 
         return attr_dict
 
@@ -188,9 +184,10 @@ class Concatenator(Group):
             return None
 
         if self.index[field] is None:
-            self.data[field], self.index[field] = getattr(
-                self, "workspace"
-            ).fetch_concatenated_values(self, field)
+            (
+                self.data[field],
+                self.index[field],
+            ) = self.workspace.fetch_concatenated_values(self, field)
 
         uid = as_str_if_uuid(entity.uid).encode()
         if uid in self.index[field]["Object ID"].tolist():
@@ -223,7 +220,7 @@ class Concatenator(Group):
     def property_group_ids(self) -> np.ndarray | None:
         """Dictionary of concatenated objects and data property_group_ids."""
         if self._property_group_ids is None:
-            property_groups_ids = getattr(self, "workspace").fetch_concatenated_values(
+            property_groups_ids = self.workspace.fetch_concatenated_values(
                 self, "property_group_ids"
             )
 
@@ -232,20 +229,6 @@ class Concatenator(Group):
 
         return self._property_group_ids
 
-    @property
-    def property_groups(self) -> list | None:
-        """
-        Property groups for the concatenated data.
-        """
-        if getattr(self, "_property_groups", None) is None:
-            property_groups = getattr(self, "workspace").fetch_property_groups(self)
-            if property_groups is None:
-                property_groups = []
-
-            self._property_groups = property_groups
-
-        return self._property_groups
-
     def update_attributes(self, entity: ObjectBase | Data, label: str) -> None:
         """
         Update a concatenated entity.
@@ -253,14 +236,9 @@ class Concatenator(Group):
         if label == "attributes":
             self.update_concatenated_attributes(entity)
         elif label == "property_groups":
-            if (
-                getattr(entity, "property_groups", None) is not None
-                and self.property_groups is not None
-            ):
+            if getattr(entity, "property_groups", None) is not None:
                 for prop_group in getattr(entity, "property_groups"):
                     self.add_save_concatenated(prop_group)
-                    if prop_group not in self.property_groups:
-                        self.property_groups.append(prop_group)
 
                 self._property_group_ids = None
 
@@ -298,7 +276,7 @@ class Concatenator(Group):
             pass
         else:
             target_attributes["Object Type ID"] = as_str_if_uuid(entity.entity_type.uid)
-        getattr(self, "workspace").repack = True
+        self.workspace.repack = True
 
     def update_array_attribute(self, entity, field):
         """
@@ -350,7 +328,7 @@ class Concatenator(Group):
 
             self.data[alias] = values
 
-        getattr(self, "workspace").update_attribute(self, "index", alias)
+        self.workspace.update_attribute(self, "index", alias)
 
         property_kwarg = {
             "property_group_ids": {
@@ -364,14 +342,14 @@ class Concatenator(Group):
             if field == "property_groups":
                 field = "property_group_ids"
 
-            getattr(self, "workspace").update_attribute(
+            self.workspace.update_attribute(
                 self,
                 field,
                 values=self.data.get(alias),
                 **property_kwarg.get(field, {}),
             )
         else:  # For data values
-            getattr(self, "workspace").update_attribute(self, "data", field)
+            self.workspace.update_attribute(self, "data", field)
 
     def add_save_concatenated(self, child):
         """
@@ -502,11 +480,11 @@ class Concatenated(Entity):
         for key, value in attr.items():
             if (
                 "Property:" in key
-                and getattr(self, "workspace").get_entity(uuid.UUID(value))[0] is None
+                and self.workspace.get_entity(uuid.UUID(value))[0] is None
             ):
                 attributes: dict = self.concatenator.get_attributes(value).copy()
                 attributes["parent"] = self
-                getattr(self, "workspace").create_from_concatenation(attributes)
+                self.workspace.create_from_concatenation(attributes)
 
         for child in getattr(self, "children"):
             if hasattr(child, "name") and child.name == name.replace("/", "\u2044"):

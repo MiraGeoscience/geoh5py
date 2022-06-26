@@ -65,7 +65,6 @@ def test_create_drillhole_data(tmp_path):
             }
         )
 
-        assert len(dh_group.property_groups[0].properties) == 4
         assert len(well.get_data("my_log_values/")) == 1
 
         well_b = well.copy()
