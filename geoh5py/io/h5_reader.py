@@ -467,7 +467,7 @@ class H5Reader:
         return values
 
     @staticmethod
-    def format_type_string(string):
+    def format_type_string(string: str) -> str:
         string = string.capitalize()
         if string in ["Group", "Object"]:
             string += "s"

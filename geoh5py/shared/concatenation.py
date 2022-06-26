@@ -19,11 +19,16 @@
 from __future__ import annotations
 
 import uuid
+from typing import TYPE_CHECKING
 
 import numpy as np
 from h5py import special_dtype
 
 from geoh5py.shared.utils import KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid
+
+if TYPE_CHECKING:
+    from ..data import Data
+    from ..objects import ObjectBase
 
 
 class Concatenator:
@@ -31,14 +36,13 @@ class Concatenator:
     Class modifier for concatenation of objects and data.
     """
 
-    _concatenated_attributes = None
-    _attributes_keys = None
-    _concatenated_data = None
-    _concatenated_object_ids = None
+    _concatenated_attributes: dict | None = None
+    _attributes_keys: list[uuid.UUID] | None = None
+    _concatenated_object_ids: list[uuid.UUID] | None = None
     _data: dict
     _index: dict
-    _property_group_ids = None
-    _property_groups = None
+    _property_group_ids: np.ndarray | None = None
+    _property_groups: list | None = None
 
     def __init__(self, group_type, **kwargs):
 
@@ -49,32 +53,32 @@ class Concatenator:
                 "Attributes": "concatenated_attributes",
                 "Property Groups IDs": "property_group_ids",
                 "Concatenated object IDs": "concatenated_object_ids",
-                "Concatenated Data": "concatenated_data",
             }
         )
 
-    def add_attribute(self, uid):
-        """Add new element to the concatenated attributes."""
-        if self.attributes_keys is None:
-            self._attributes_keys = []
+    def add_attribute(self, uid: str) -> None:
+        """
+        Add new element to the concatenated attributes.
 
-        self.attributes_keys.append(uid)
+        :param uid: Unique identifier of the new concatenated entity in str format.
+        """
+        if self.attributes_keys is not None:
+            self.attributes_keys.append(uid)
 
-        if self.concatenated_attributes is None:
-            self._concatenated_attributes = {"Attributes": []}
-
-        self.concatenated_attributes["Attributes"].append({})
+        if self.concatenated_attributes is not None:
+            self.concatenated_attributes["Attributes"].append({})
 
     @property
-    def attributes_keys(self):
+    def attributes_keys(self) -> list | None:
         """List of uuids present in the concatenated attributes."""
-        if (
-            getattr(self, "_attributes_keys", None) is None
-            and self.concatenated_attributes is not None
-        ):
-            self._attributes_keys = [
-                elem["ID"] for elem in self.concatenated_attributes["Attributes"]
-            ]
+        if getattr(self, "_attributes_keys", None) is None:
+            attributes_keys = []
+            if self.concatenated_attributes is not None:
+                attributes_keys = [
+                    elem["ID"] for elem in self.concatenated_attributes["Attributes"]
+                ]
+
+            self._attributes_keys = attributes_keys
 
         return self._attributes_keys
 
@@ -82,9 +86,14 @@ class Concatenator:
     def concatenated_attributes(self) -> dict | None:
         """Dictionary of concatenated objects and data attributes."""
         if self._concatenated_attributes is None:
-            self._concatenated_attributes = getattr(
+            concatenated_attributes = getattr(
                 self, "workspace"
             ).fetch_concatenated_values(self, "Attributes")
+
+            if concatenated_attributes is None:
+                concatenated_attributes = {"Attributes": []}
+
+            self._concatenated_attributes = concatenated_attributes
 
         return self._concatenated_attributes
 
@@ -113,10 +122,6 @@ class Concatenator:
 
         self._concatenated_object_ids = object_ids
         getattr(self, "workspace").update_attribute(self, "concatenated_object_ids")
-
-    @property
-    def concatenator(self):
-        return self
 
     @property
     def data(self) -> dict:
@@ -151,8 +156,6 @@ class Concatenator:
     def fetch_concatenated_objects(self) -> dict:
         """
         Load all concatenated children.
-        :param group: Concatenator group
-        :param attributes: Entities stored as list of dictionaries.
         """
         attr_dict = {}
         if self.concatenated_object_ids is None:
@@ -169,9 +172,12 @@ class Concatenator:
 
         return attr_dict
 
-    def fetch_index(self, entity, field: str):
+    def fetch_index(self, entity: ObjectBase, field: str) -> int | None:
         """
-        Fetch the array index for specific entity and data field.
+        Fetch the array index for specific concatenated object and data field.
+
+        :param entity: Parent entity with data
+        :param field: Name of the target data.
         """
         field = KEY_MAP.get(field, field)
 
@@ -192,9 +198,12 @@ class Concatenator:
 
         return None
 
-    def fetch_values(self, entity, field: str):
+    def fetch_values(self, entity: ObjectBase, field: str) -> np.ndarray | None:
         """
-        Get values from a concatenated array.
+        Get an array of values from concatenated data.
+
+        :param entity: Parent entity with data
+        :param field: Name of the target data.
         """
         field = KEY_MAP.get(field, field)
 
@@ -208,7 +217,7 @@ class Concatenator:
         return self.data[field][start : start + size]
 
     @property
-    def property_group_ids(self):
+    def property_group_ids(self) -> np.ndarray | None:
         """Dictionary of concatenated objects and data property_group_ids."""
         if getattr(self, "_property_group_ids", None) is None:
             property_groups_ids = getattr(self, "workspace").fetch_concatenated_values(
@@ -221,30 +230,34 @@ class Concatenator:
         return self._property_group_ids
 
     @property
-    def property_groups(self):
+    def property_groups(self) -> list | None:
         """
         Property groups for the concatenated data.
         """
         if getattr(self, "_property_groups", None) is None:
-            self._property_groups = getattr(self, "workspace").fetch_property_groups(
-                self
-            )
+            property_groups = getattr(self, "workspace").fetch_property_groups(self)
+            if property_groups is None:
+                property_groups = []
+
+            self._property_groups = property_groups
 
         return self._property_groups
 
-    def update_attributes(self, entity, label):
+    def update_attributes(self, entity: ObjectBase | Data, label: str) -> None:
         """
         Update a concatenated entity.
         """
         if label == "attributes":
             self.update_concatenated_attributes(entity)
         elif label == "property_groups":
-            if getattr(entity, "property_groups", None) is not None:
-
+            if (
+                getattr(entity, "property_groups", None) is not None
+                and self.property_groups is not None
+            ):
                 for prop_group in getattr(entity, "property_groups"):
                     self.add_save_concatenated(prop_group)
                     if prop_group not in self.property_groups:
-                        self._property_groups.append(prop_group)
+                        self.property_groups.append(prop_group)
 
                 self._property_group_ids = None
 
@@ -384,10 +397,12 @@ class Concatenator:
 
         child.on_file = True
 
-    def get_attributes(self, uid: bytes | str | uuid.UUID):
+    def get_attributes(self, uid: bytes | str | uuid.UUID) -> dict:
         """
         Fast reference index to concatenated attribute keys.
         """
+        if self.concatenated_attributes is None:
+            return {}
 
         uid = as_str_if_utf8_bytes(uid)
 
@@ -405,7 +420,7 @@ class Concatenator:
             self.add_attribute(uid)
             index = -1
 
-        return self.concatenator.concatenated_attributes["Attributes"][index]
+        return self.concatenated_attributes["Attributes"][index]
 
     def fetch_start_index(self, entity, label: str):
         """
@@ -486,9 +501,7 @@ class Concatenated:
                 "Property:" in key
                 and getattr(self, "workspace").get_entity(uuid.UUID(value))[0] is None
             ):
-                attributes: dict = self.concatenator.get_attributes(
-                    attr.get(key)
-                ).copy()
+                attributes: dict = self.concatenator.get_attributes(value).copy()
                 attributes["parent"] = self
                 getattr(self, "workspace").create_from_concatenation(attributes)
 
