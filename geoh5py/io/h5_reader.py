@@ -239,6 +239,11 @@ class H5Reader:
     ) -> str | dict | None:
         """
         Fetch text of dictionary type attributes of an entity.
+
+        :param file: Target h5 file.
+        :param uid: Unique identifier of the target Entity.
+        :param entity_type: Base type of the target Entity.
+        :param argument: Label name of the dictionary.
         """
         with fetch_h5_handle(file) as h5file:
             name = list(h5file)[0]
