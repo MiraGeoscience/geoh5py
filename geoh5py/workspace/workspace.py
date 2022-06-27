@@ -24,6 +24,7 @@ import inspect
 import io
 import os
 import shutil
+import subprocess
 import tempfile
 import uuid
 import warnings
@@ -31,6 +32,7 @@ import weakref
 from contextlib import AbstractContextManager, contextmanager
 from gc import collect
 from pathlib import Path
+from subprocess import CalledProcessError
 from typing import TYPE_CHECKING, ClassVar, cast
 from weakref import ReferenceType
 
@@ -174,9 +176,14 @@ class Workspace(AbstractContextManager):
             temp_file = os.path.join(
                 tempfile.gettempdir(), os.path.basename(self.h5file)
             )
-            if not os.system(f'h5repack --native "{self.h5file}" "{temp_file}"'):
+            try:
+                subprocess.run(
+                    f'h5repack --native "{self.h5file}" "{temp_file}"', check=True
+                )
                 os.remove(self.h5file)
                 shutil.move(temp_file, self.h5file)
+            except CalledProcessError:
+                pass
 
             self.repack = False
 
