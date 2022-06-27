@@ -56,7 +56,9 @@ def test_create_drillhole_data(tmp_path):
             {
                 "my_log_values/": {
                     "depth": np.arange(0, 50.0),
-                    "values": np.random.randn(np.arange(0, 50.0).shape[0]),
+                    "values": np.random.randn(np.arange(0, 50.0).shape[0] - 1).astype(
+                        np.float32
+                    ),
                 },
                 "log_wt_tolerance": {
                     "depth": np.arange(0.01, 50.01),

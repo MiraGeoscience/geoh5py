@@ -17,7 +17,6 @@
 
 # pylint: disable=R0902
 # pylint: disable=R0904
-# pylint: disable=R0912
 
 from __future__ import annotations
 
@@ -415,86 +414,35 @@ class Drillhole(Points):
         """
         data_objects = []
 
-        for name, attr in data.items():
-            new_prop_goup = property_group
-            assert isinstance(attr, dict), (
+        for name, attributes in data.items():
+            assert isinstance(attributes, dict), (
                 f"Given value to data {name} should of type {dict}. "
-                f"Type {type(attr)} given instead."
+                f"Type {type(attributes)} given instead."
             )
-            assert "values" in list(
-                attr.keys()
-            ), f"Given attr for data {name} should include 'values'"
+            assert (
+                "values" in attributes
+            ), f"Given attributes for data {name} should include 'values'"
 
-            attr["name"] = name.replace("/", "\u2044")  # Specific
+            attributes["name"] = name.replace("/", "\u2044")  # Specific
 
-            if attr["name"] in self.get_data_list():
+            if attributes["name"] in self.get_data_list():
                 raise UserWarning(
-                    f"Data with name '{attr['name']}' already present "
+                    f"Data with name '{attributes['name']}' already present "
                     f"on the drillhole '{self.name}'. "
                     "Consider changing the values or renaming."
                 )
 
-            if "collocation_distance" in attr.keys():
-                assert (
-                    attr["collocation_distance"] > 0
-                ), "Input depth 'collocation_distance' must be >0."
-                collocation_distance = attr["collocation_distance"]
-            else:
-                collocation_distance = self.default_collocation_distance
-
-            if (
-                "depth" not in attr.keys()
-                and "from-to" not in attr.keys()
-                and "association" not in attr.keys()
-            ):
-                assert attr["association"] == "OBJECT", (
-                    "Input data dictionary must contain {key:values} "
-                    + "{'from-to':numpy.ndarray} "
-                    + "or {'association': 'OBJECT'}."
-                )
-
-            if "depth" in attr.keys():
-                if self.workspace.version == 1.0:
-                    attr["association"] = "VERTEX"
-                    attr["values"] = self.validate_log_data(
-                        attr["depth"],
-                        attr["values"],
-                        collocation_distance=collocation_distance,
-                    )
-
-                else:
-                    attr["from-to"] = np.c_[
-                        attr["depth"], attr["depth"] + collocation_distance
-                    ]
-
-                del attr["depth"]
-
-            if "from-to" in attr.keys():
-                if self.workspace.version >= 2.0:
-                    attr["association"] = "DEPTH"
-                    if property_group is None:
-                        new_prop_goup = self.validate_depth_data(
-                            attr["from-to"],
-                            attr["values"],
-                            collocation_distance=collocation_distance,
-                        )
-                else:
-                    attr["association"] = "CELL"
-                    attr["values"] = self.validate_interval_data(
-                        attr["from-to"],
-                        attr["values"],
-                        collocation_distance=collocation_distance,
-                    )
-                del attr["from-to"]
-
-            entity_type = self.validate_data_type(attr)
+            attributes, new_property_group = self.validate_data(
+                attributes, property_group
+            )
+            entity_type = self.validate_data_type(attributes)
             kwargs = {
                 "name": None,
                 "parent": self,
-                "association": attr["association"],
+                "association": attributes["association"],
                 "allow_move": False,
             }
-            for key, val in attr.items():
+            for key, val in attributes.items():
                 if key in ["parent", "association", "entity_type", "type"]:
                     continue
                 kwargs[key] = val
@@ -506,10 +454,9 @@ class Drillhole(Points):
             if not isinstance(data_object, Data):
                 continue
 
-            if new_prop_goup is not None:
-                self.add_data_to_group(data_object, new_prop_goup)
+            if new_property_group is not None:
+                self.add_data_to_group(data_object, new_property_group)
 
-            new_prop_goup = None
             data_objects.append(data_object)
 
         # Check the depths and re-sort data if necessary
@@ -575,7 +522,7 @@ class Drillhole(Points):
         if isinstance(from_to, list):
             from_to = np.vtack(from_to)
 
-        assert from_to.shape[0] == len(values), (
+        assert from_to.shape[0] >= len(values), (
             f"Mismatch between input 'from_to' shape{from_to.shape} "
             + f"and 'values' shape{values.shape}"
         )
@@ -777,6 +724,65 @@ class Drillhole(Points):
             self.depths.values = depths
 
         return values
+
+    def validate_data(self, attributes: dict, property_group=None) -> tuple:
+        """
+        Validate input drillhole data attributes.
+
+        :param attributes: Dictionary of data attributes.
+        :param property_group: Input property group to validate against.
+        """
+        collocation_distance = attributes.get(
+            "collocation_distance", self.default_collocation_distance
+        )
+        if collocation_distance < 0:
+            raise UserWarning("Input depth 'collocation_distance' must be >0.")
+
+        if (
+            "depth" not in attributes
+            and "from-to" not in attributes
+            and "association" not in attributes
+        ):
+            assert attributes["association"] == "OBJECT", (
+                "Input data dictionary must contain {key:values} "
+                + "{'from-to':numpy.ndarray} "
+                + "or {'association': 'OBJECT'}."
+            )
+
+        if "depth" in attributes.keys():
+            if self.workspace.version == 1.0:
+                attributes["association"] = "VERTEX"
+                attributes["values"] = self.validate_log_data(
+                    attributes["depth"],
+                    attributes["values"],
+                    collocation_distance=collocation_distance,
+                )
+
+            else:
+                attributes["from-to"] = np.c_[
+                    attributes["depth"], attributes["depth"] + collocation_distance
+                ]
+
+            del attributes["depth"]
+
+        if "from-to" in attributes.keys():
+            if self.workspace.version >= 2.0:
+                attributes["association"] = "DEPTH"
+                property_group = self.validate_depth_data(
+                    attributes["from-to"],
+                    attributes["values"],
+                    collocation_distance=collocation_distance,
+                )
+            else:
+                attributes["association"] = "CELL"
+                attributes["values"] = self.validate_interval_data(
+                    attributes["from-to"],
+                    attributes["values"],
+                    collocation_distance=collocation_distance,
+                )
+            del attributes["from-to"]
+
+        return attributes, property_group
 
     def sort_depths(self):
         """
