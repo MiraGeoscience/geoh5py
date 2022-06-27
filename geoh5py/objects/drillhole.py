@@ -16,7 +16,6 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 # pylint: disable=R0902
-# pylint: disable=R0904
 
 from __future__ import annotations
 
@@ -63,9 +62,6 @@ class Drillhole(Points):
         self._trace: np.ndarray | None = None
         self._trace_depth: np.ndarray | None = None
         self._locations = None
-        self._deviation_x = None
-        self._deviation_y = None
-        self._deviation_z = None
         self._default_collocation_distance = 1e-2
 
         super().__init__(object_type, **kwargs)
@@ -155,56 +151,6 @@ class Drillhole(Points):
         self.workspace.update_attribute(self, "attributes")
 
     @property
-    def deviation_x(self):
-        """
-        :obj:`numpy.ndarray`: Store the change in x-coordinates along the well path.
-        """
-        if getattr(self, "_deviation_x", None) is None and self.surveys is not None:
-            lengths = self.surveys[1:, 0] - self.surveys[:-1, 0]
-            dl_in = np.cos(np.deg2rad(450.0 - self.surveys[:-1, 2] % 360.0)) * np.cos(
-                np.deg2rad(self.surveys[:-1, 1])
-            )
-            dl_out = np.cos(np.deg2rad(450.0 - self.surveys[1:, 2] % 360.0)) * np.cos(
-                np.deg2rad(self.surveys[1:, 1])
-            )
-            ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
-            self._deviation_x = dl_in + lengths * ddl / 2.0
-
-        return self._deviation_x
-
-    @property
-    def deviation_y(self):
-        """
-        :obj:`numpy.ndarray`: Store the change in y-coordinates along the well path.
-        """
-        if getattr(self, "_deviation_y", None) is None and self.surveys is not None:
-            lengths = self.surveys[1:, 0] - self.surveys[:-1, 0]
-            dl_in = np.sin(np.deg2rad(450.0 - self.surveys[:-1, 2] % 360.0)) * np.cos(
-                np.deg2rad(self.surveys[:-1, 1])
-            )
-            dl_out = np.sin(np.deg2rad(450.0 - self.surveys[1:, 2] % 360.0)) * np.cos(
-                np.deg2rad(self.surveys[1:, 1])
-            )
-            ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
-            self._deviation_y = dl_in + lengths * ddl / 2.0
-
-        return self._deviation_y
-
-    @property
-    def deviation_z(self):
-        """
-        :obj:`numpy.ndarray`: Store the change in z-coordinates along the well path.
-        """
-        if getattr(self, "_deviation_z", None) is None and self.surveys is not None:
-            lengths = self.surveys[1:, 0] - self.surveys[:-1, 0]
-            dl_in = np.sin(np.deg2rad(self.surveys[:-1, 1]))
-            dl_out = np.sin(np.deg2rad(self.surveys[1:, 1]))
-            ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
-            self._deviation_z = dl_in + lengths * ddl / 2.0
-
-        return self._deviation_z
-
-    @property
     def locations(self):
         """
         :obj:`numpy.ndarray`: Lookup array of the well path x,y,z coordinates.
@@ -215,10 +161,13 @@ class Drillhole(Points):
             and self.surveys is not None
         ):
             lengths = self.surveys[1:, 0] - self.surveys[:-1, 0]
+            deviation_x = compute_deviation(self.surveys, "x")
+            deviation_y = compute_deviation(self.surveys, "y")
+            deviation_z = compute_deviation(self.surveys, "z")
             self._locations = np.c_[
-                self.collar["x"] + np.cumsum(np.r_[0.0, lengths * self.deviation_x]),
-                self.collar["y"] + np.cumsum(np.r_[0.0, lengths * self.deviation_y]),
-                self.collar["z"] + np.cumsum(np.r_[0.0, lengths * self.deviation_z]),
+                self.collar["x"] + np.cumsum(np.r_[0.0, lengths * deviation_x]),
+                self.collar["y"] + np.cumsum(np.r_[0.0, lengths * deviation_y]),
+                self.collar["z"] + np.cumsum(np.r_[0.0, lengths * deviation_z]),
             ]
 
         return self._locations
@@ -283,9 +232,6 @@ class Drillhole(Points):
             self._trace = None
             self.workspace.update_attribute(self, "trace")
 
-        self._deviation_x = None
-        self._deviation_y = None
-        self._deviation_z = None
         self._locations = None
 
     @property
@@ -485,14 +431,19 @@ class Drillhole(Points):
             np.searchsorted(self.surveys[:, 0], depths, side="left") - 1,
             0,
         )
-        ind_dev = np.minimum(ind_loc, self.deviation_x.shape[0] - 1)
+
+        deviation_x = compute_deviation(self.surveys, "x")
+        deviation_y = compute_deviation(self.surveys, "y")
+        deviation_z = compute_deviation(self.surveys, "z")
+
+        ind_dev = np.minimum(ind_loc, deviation_x.shape[0] - 1)
         locations = (
             self.locations[ind_loc, :]
             + (depths - self.surveys[ind_loc, 0])[:, None]
             * np.c_[
-                self.deviation_x[ind_dev],
-                self.deviation_y[ind_dev],
-                self.deviation_z[ind_dev],
+                deviation_x[ind_dev],
+                deviation_y[ind_dev],
+                deviation_z[ind_dev],
             ]
         )
         return locations
@@ -804,3 +755,37 @@ class Drillhole(Points):
                 if self.cells is not None:
                     key_map = np.argsort(sort_ind)[self.cells.flatten()]
                     self.cells = key_map.reshape((-1, 2)).astype("uint32")
+
+
+def compute_deviation(surveys: np.ndarray, axis: str) -> np.ndarray | None:
+    """Compute deviation from survey parameters"""
+    if surveys is None:
+        return None
+
+    lengths = surveys[1:, 0] - surveys[:-1, 0]
+    if axis == "x":
+        dl_in = np.cos(np.deg2rad(450.0 - surveys[:-1, 2] % 360.0)) * np.cos(
+            np.deg2rad(surveys[:-1, 1])
+        )
+        dl_out = np.cos(np.deg2rad(450.0 - surveys[1:, 2] % 360.0)) * np.cos(
+            np.deg2rad(surveys[1:, 1])
+        )
+        ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
+
+    elif axis == "y":
+        dl_in = np.sin(np.deg2rad(450.0 - surveys[:-1, 2] % 360.0)) * np.cos(
+            np.deg2rad(surveys[:-1, 1])
+        )
+        dl_out = np.sin(np.deg2rad(450.0 - surveys[1:, 2] % 360.0)) * np.cos(
+            np.deg2rad(surveys[1:, 1])
+        )
+        ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
+
+    elif axis == "z":
+        dl_in = np.sin(np.deg2rad(surveys[:-1, 1]))
+        dl_out = np.sin(np.deg2rad(surveys[1:, 1]))
+        ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
+
+    else:
+        raise ValueError("Input 'axis' must be 'x', 'y' and 'z'.")
+    return dl_in + lengths * ddl / 2.0
