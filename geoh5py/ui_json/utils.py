@@ -84,8 +84,7 @@ def optional_type(ui_json: dict[str, dict], parameter: str):
         if "optional" in ui_json[parameter]:
             is_optional = ui_json[parameter]["optional"]
         elif "dependency" in ui_json[parameter]:
-            if optional_type(ui_json, ui_json[parameter]["dependency"]):
-                is_optional = not ui_json[ui_json[parameter]["dependency"]]["enabled"]
+            is_optional = True
         elif "group" in ui_json[parameter]:
             is_optional = group_optional(ui_json, ui_json[parameter]["group"])
 
