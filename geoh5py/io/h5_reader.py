@@ -100,16 +100,12 @@ class H5Reader:
         """
         with fetch_h5_handle(file) as h5file:
             name = list(h5file)[0]
-            indices = None
-
+            label = KEY_MAP.get(key, key)
             try:
-                indices = h5file[name][entity_type][as_str_if_uuid(uid)][KEY_MAP[key]][
-                    :
-                ]
+                values = h5file[name][entity_type][as_str_if_uuid(uid)][label][:]
+                return values
             except KeyError:
-                pass
-
-        return indices
+                return None
 
     @classmethod
     def fetch_children(

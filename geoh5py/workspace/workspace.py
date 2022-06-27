@@ -640,7 +640,49 @@ class Workspace(AbstractContextManager):
 
         return family_tree
 
-    def fetch_concatenated_values(self, entity: Group | ObjectBase, label: str):
+    def fetch_concatenated_attributes(
+        self, entity: Group | ObjectBase, label: str
+    ) -> dict | None:
+        """Fetch attributes of Concatenated entities."""
+        if isinstance(entity, Group):
+            entity_type = "Group"
+        else:
+            raise NotImplementedError(
+                "Method 'fetch_concatenated_attributes' currently only implemented "
+                "for 'Group' entities."
+            )
+
+        return self._io_call(
+            H5Reader.fetch_concatenated_attributes,
+            entity.uid,
+            entity_type,
+            label,
+            mode="r",
+        )
+
+    def fetch_concatenated_list(
+        self, entity: Group | ObjectBase, label: str
+    ) -> list | None:
+        """Fetch list of data or indices of Concatenated entities."""
+        if isinstance(entity, Group):
+            entity_type = "Group"
+        else:
+            raise NotImplementedError(
+                "Method 'fetch_concatenated_list' currently only implemented "
+                "for 'Group' entities."
+            )
+
+        return self._io_call(
+            H5Reader.fetch_concatenated_attributes,
+            entity.uid,
+            entity_type,
+            label,
+            mode="r",
+        )
+
+    def fetch_concatenated_values(
+        self, entity: Group | ObjectBase, label: str
+    ) -> tuple | None:
         """Fetch data under the Concatenated Data group of an entity."""
         if isinstance(entity, Group):
             entity_type = "Group"
@@ -648,15 +690,6 @@ class Workspace(AbstractContextManager):
             raise NotImplementedError(
                 "Method 'fetch_concatenated_values' currently only implemented "
                 "for 'Group' entities."
-            )
-
-        if label in ["Attributes", "Index", "Data"]:
-            return self._io_call(
-                H5Reader.fetch_concatenated_attributes,
-                entity.uid,
-                entity_type,
-                label,
-                mode="r",
             )
 
         return self._io_call(

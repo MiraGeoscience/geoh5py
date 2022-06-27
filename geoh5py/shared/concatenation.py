@@ -88,7 +88,7 @@ class Concatenator(Group):
     def concatenated_attributes(self) -> dict | None:
         """Dictionary of concatenated objects and data attributes."""
         if self._concatenated_attributes is None:
-            concatenated_attributes = self.workspace.fetch_concatenated_values(
+            concatenated_attributes = self.workspace.fetch_concatenated_attributes(
                 self, "Attributes"
             )
 
@@ -131,7 +131,7 @@ class Concatenator(Group):
         Concatenated data values stored as a dictionary.
         """
         if getattr(self, "_data", None) is None:
-            data_list = self.workspace.fetch_concatenated_values(self, "Data")
+            data_list = self.workspace.fetch_concatenated_list(self, "Data")
             if data_list is not None:
                 self._data = {name: None for name in data_list}
             else:
@@ -145,7 +145,7 @@ class Concatenator(Group):
         Concatenated index stored as a dictionary.
         """
         if getattr(self, "_index", None) is None:
-            data_list = self.workspace.fetch_concatenated_values(self, "Index")
+            data_list = self.workspace.fetch_concatenated_list(self, "Index")
             if data_list is not None:
                 self._index = {name: None for name in data_list}
 
@@ -183,10 +183,9 @@ class Concatenator(Group):
             return None
 
         if self.index[field] is None:
-            (
-                self.data[field],
-                self.index[field],
-            ) = self.workspace.fetch_concatenated_values(self, field)
+            values = self.workspace.fetch_concatenated_values(self, field)
+            if isinstance(values, tuple):
+                self.data[field], self.index[field] = values
 
         uid = as_str_if_uuid(entity.uid).encode()
         ind = np.where(self.index[field]["Object ID"] == uid)[0]
