@@ -533,10 +533,10 @@ class Concatenated(Entity):
 
     @property
     def property_groups(self):
-        if getattr(self, "_property_groups", None) is None:
+        if self._property_groups is None:
             prop_groups = self.concatenator.fetch_values(self, "property_group_ids")
 
-            if prop_groups is None:
+            if prop_groups is None or isinstance(self, Data):
                 return None
 
             for key in prop_groups:
