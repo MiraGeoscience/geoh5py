@@ -190,11 +190,13 @@ class Concatenator(Group):
             ) = self.workspace.fetch_concatenated_values(self, field)
 
         uid = as_str_if_uuid(entity.uid).encode()
-        if uid in self.index[field]["Object ID"].tolist():
-            return self.index[field]["Object ID"].tolist().index(uid)
+        ind = np.where(self.index[field]["Object ID"] == uid)[0]
+        if len(ind) == 1:
+            return ind[0]
 
-        if uid in self.index[field]["Data ID"].tolist():
-            return self.index[field]["Data ID"].tolist().index(uid)
+        ind = np.where(self.index[field]["Data ID"] == uid)[0]
+        if len(ind) == 1:
+            return ind[0]
 
         return None
 
