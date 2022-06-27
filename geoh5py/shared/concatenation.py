@@ -478,7 +478,7 @@ class Concatenated(Entity):
 
         return self._parent
 
-    def get_data(self, name: str) -> list:
+    def get_data(self, name: str) -> list[Data]:
         """
         Generic function to get data values from object.
         """
@@ -532,7 +532,7 @@ class Concatenated(Entity):
                 parental_attr[f"Property:{self.name}"] = as_str_if_uuid(self.uid)
 
     @property
-    def property_groups(self):
+    def property_groups(self) -> list | None:
         if self._property_groups is None:
             prop_groups = self.concatenator.fetch_values(self, "property_group_ids")
 
