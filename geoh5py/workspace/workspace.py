@@ -780,7 +780,7 @@ class Workspace(AbstractContextManager):
 
         return property_groups
 
-    def fetch_type(self, uid: uuid.UUID, entity_type: str):
+    def fetch_type(self, uid: uuid.UUID, entity_type: str) -> dict:
         """
         Fetch attributes of a specific entity type.
         :param uid: Unique identifier of the entity type.
