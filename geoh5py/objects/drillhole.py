@@ -128,7 +128,7 @@ class Drillhole(Points):
         return self._cost
 
     @cost.setter
-    def cost(self, value):
+    def cost(self, value: float | int):
         assert isinstance(
             value, (float, int)
         ), f"Provided cost value must be of type {float} or int."
@@ -143,7 +143,7 @@ class Drillhole(Points):
         return self._end_of_hole
 
     @end_of_hole.setter
-    def end_of_hole(self, value):
+    def end_of_hole(self, value: float | int | None):
         assert isinstance(
             value, (int, float, type(None))
         ), f"Provided end_of_hole value must be of type {int}"
@@ -180,7 +180,7 @@ class Drillhole(Points):
         return self._planning
 
     @planning.setter
-    def planning(self, value):
+    def planning(self, value: str):
         choices = ["Default", "Ongoing", "Planned", "Completed", "No status"]
         assert value in choices, f"Provided planning value must be one of {choices}"
         self._planning = value
