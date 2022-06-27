@@ -330,7 +330,7 @@ class Workspace(AbstractContextManager):
         entity_class,
         save_on_creation: bool = True,
         **kwargs,
-    ) -> Data | Group | ObjectBase | None:
+    ) -> Entity | None:
         """
         Function to create and register a new entity and its entity_type.
 

@@ -26,7 +26,7 @@ import uuid
 
 import numpy as np
 
-from ..data.data import Data
+from ..data import Data, FloatData
 from ..shared.utils import match_values, merge_arrays
 from .object_base import ObjectType
 from .points import Points
@@ -57,6 +57,7 @@ class Drillhole(Points):
         self._cells: np.ndarray | None = None
         self._collar: np.ndarray | None = None
         self._cost: float | None = 0.0
+        self._depths: FloatData | None = None
         self._end_of_hole: int | None = None
         self._planning: str = "Default"
         self._surveys: np.ndarray | None = None
@@ -360,11 +361,33 @@ class Drillhole(Points):
         return None
 
     @property
-    def _depth(self) -> Data | None:
-        data_obj = self.get_data("DEPTH")
-        if data_obj:
-            return data_obj[0]
-        return None
+    def depths(self) -> FloatData | None:
+        if self._depths is None:
+            data_obj = self.get_data("DEPTH")
+            if data_obj and isinstance(data_obj[0], FloatData):
+                self.depths = data_obj[0]
+        return self._depths
+
+    @depths.setter
+    def depths(self, value: FloatData | np.ndarray | None):
+        if isinstance(value, np.ndarray):
+            value = self.workspace.create_entity(
+                Data,
+                entity={
+                    "parent": self,
+                    "association": "VERTEX",
+                    "name": "DEPTH",
+                    "values": value,
+                },
+                entity_type={"primitive_type": "FLOAT"},
+            )
+
+        if isinstance(value, (FloatData, type(None))):
+            self._depths = value
+        else:
+            raise ValueError(
+                f"Input '_depth' property must be of type{FloatData} or None"
+            )
 
     def add_data(self, data: dict, property_group: str = None) -> Data | list[Data]:
         """
@@ -604,7 +627,12 @@ class Drillhole(Points):
 
         return property_group.name
 
-    def validate_interval_data(self, from_to, values, collocation_distance=1e-4):
+    def validate_interval_data(
+        self,
+        from_to: np.ndarray | list,
+        values: np.ndarray,
+        collocation_distance: float = 1e-4,
+    ):
         """
         Compare new and current depth values, append new vertices if necessary and return
         an augmented values vector that matches the vertices indexing.
@@ -612,11 +640,14 @@ class Drillhole(Points):
         if isinstance(from_to, list):
             from_to = np.vtack(from_to)
 
-        assert from_to.shape[0] == len(values), (
-            f"Mismatch between input 'from_to' shape{from_to.shape} "
-            + f"and 'values' shape{values.shape}"
-        )
-        assert from_to.shape[1] == 2, "The `from-to` values must have shape(*, 2)"
+        if from_to.shape[0] != len(values):
+            raise ValueError(
+                f"Mismatch between input 'from_to' shape{from_to.shape} "
+                + f"and 'values' shape{values.shape}"
+            )
+
+        if from_to.shape[1] != 2:
+            raise ValueError("The `from-to` values must have shape(*, 2).")
 
         if (self._from is None) and (self._to is None):
             uni_depth, inv_map = np.unique(from_to, return_inverse=True)
@@ -643,7 +674,7 @@ class Drillhole(Points):
                 },
                 entity_type={"primitive_type": "FLOAT"},
             )
-        else:
+        elif self.cells is not None:
             from_ind = match_values(
                 self._from.values,
                 from_to[:, 0],
@@ -721,29 +752,17 @@ class Drillhole(Points):
 
         input_values = np.r_[input_values]
 
-        depth = self._depth
-        if depth is None:
-            depth = self.workspace.create_entity(
-                Data,
-                entity={
-                    "parent": self,
-                    "association": "VERTEX",
-                    "name": "DEPTH",
-                },
-                entity_type={"primitive_type": "FLOAT"},
-            )
-
-        if depth.values is None:  # First data appended
+        if self.depths is None:
             self.add_vertices(self.desurvey(depth))
-            depth = np.r_[np.ones(self.n_vertices - depth.shape[0]) * np.nan, depth]
+            self.depths = np.r_[
+                np.ones(self.n_vertices - depth.shape[0]) * np.nan, depth
+            ]
             values = np.r_[
                 np.ones(self.n_vertices - input_values.shape[0]) * np.nan, input_values
             ]
-            depth.values = depth
-
         else:
             depths, indices = merge_arrays(
-                depth.values,
+                self.depths.values,
                 depth,
                 return_mapping=True,
                 collocation_distance=collocation_distance,
@@ -755,7 +774,7 @@ class Drillhole(Points):
                 mapping=indices,
             )
             self.add_vertices(self.desurvey(np.delete(depth, indices[:, 1])))
-            depth.values = depths
+            self.depths.values = depths
 
         return values
 

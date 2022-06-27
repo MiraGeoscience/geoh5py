@@ -117,7 +117,7 @@ def test_create_drillhole_data(tmp_path):
         compare_entities(
             well,
             new_workspace.get_entity(well_name)[0],
-            ignore=["_default_collocation_distance"],
+            ignore=["_default_collocation_distance", "_parent"],
         )
         # Force refresh of vector length
         setattr(data_objects[0], "_values", None)
@@ -225,13 +225,11 @@ def test_insert_drillhole_data(tmp_path):
 
         # Add more data with single match
         old_depths = well.get_data("DEPTH")[0].values
-        indices = np.where(~np.isnan(old_depths))[0]
-        insert = np.random.randint(0, high=len(indices) - 1, size=2)
-        new_depths = old_depths[indices[insert]]
+        insert = np.random.randint(0, high=n_data - 1, size=2)
+        new_depths = old_depths[insert]
         new_depths[0] -= 2e-6  # Out of tolerance
         new_depths[1] -= 5e-7  # Within tolerance
-
-        match_test = well.add_data(
+        well.add_data(
             {
                 "match_depth": {
                     "depth": new_depths,
@@ -245,16 +243,9 @@ def test_insert_drillhole_data(tmp_path):
             well.n_vertices == n_data + 1
         ), "Error adding values with collocated tolerance"
         assert np.isnan(
-            data_object.values[indices[insert][0]]
+            data_object.values[insert[0]]
         ), "Old values not re-sorted properly after insertion"
 
-        insert_ind = np.where(~np.isnan(match_test.values))[0]
-        if insert[0] <= insert[1]:
-            assert all(
-                ind in [indices[insert][0], indices[insert][1] + 1]
-                for ind in insert_ind
-            ), "Depth insertion error"
-        else:
-            assert all(
-                ind in [indices[insert][0], indices[insert][1]] for ind in insert_ind
-            ), "Depth insertion error"
+        assert (
+            np.where(well.depths.values == new_depths[0])[0] == insert[0]
+        ), "Depth insertion error"
