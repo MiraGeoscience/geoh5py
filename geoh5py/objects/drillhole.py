@@ -360,7 +360,7 @@ class Drillhole(Points):
         return None
 
     @property
-    def _depth(self):
+    def _depth(self) -> Data | None:
         data_obj = self.get_data("DEPTH")
         if data_obj:
             return data_obj[0]
@@ -703,20 +703,27 @@ class Drillhole(Points):
 
         return values
 
-    def validate_log_data(self, depth, input_values, collocation_distance=1e-4):
+    def validate_log_data(
+        self,
+        depth: np.ndarray,
+        input_values: np.ndarray,
+        collocation_distance=1e-4,
+    ) -> np.ndarray:
         """
-        Compare new and current depth values, append new vertices if necessary and return
+        Compare new and current depth values. Append new vertices if necessary and return
         an augmented values vector that matches the vertices indexing.
         """
-        assert len(depth) == len(input_values), (
-            f"Mismatch between input 'depth' shape{depth.shape} "
-            + f"and 'values' shape{input_values.shape}"
-        )
+        if depth.shape != input_values.shape:
+            raise ValueError(
+                f"Mismatch between input 'depth' shape{depth.shape} "
+                + f"and 'values' shape{input_values.shape}"
+            )
 
         input_values = np.r_[input_values]
 
-        if self._depth is None:
-            self.workspace.create_entity(
+        depth = self._depth
+        if depth is None:
+            depth = self.workspace.create_entity(
                 Data,
                 entity={
                     "parent": self,
@@ -726,17 +733,17 @@ class Drillhole(Points):
                 entity_type={"primitive_type": "FLOAT"},
             )
 
-        if self._depth.values is None:  # First data appended
+        if depth.values is None:  # First data appended
             self.add_vertices(self.desurvey(depth))
             depth = np.r_[np.ones(self.n_vertices - depth.shape[0]) * np.nan, depth]
             values = np.r_[
                 np.ones(self.n_vertices - input_values.shape[0]) * np.nan, input_values
             ]
-            self._depth.values = depth
+            depth.values = depth
 
         else:
             depths, indices = merge_arrays(
-                self._depth.values,
+                depth.values,
                 depth,
                 return_mapping=True,
                 collocation_distance=collocation_distance,
@@ -748,7 +755,7 @@ class Drillhole(Points):
                 mapping=indices,
             )
             self.add_vertices(self.desurvey(np.delete(depth, indices[:, 1])))
-            self._depth.values = depths
+            depth.values = depths
 
         return values
 
