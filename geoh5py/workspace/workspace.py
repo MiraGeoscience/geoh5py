@@ -172,7 +172,7 @@ class Workspace(AbstractContextManager):
 
         self.geoh5.close()
 
-        if self.repack:
+        if self.repack and not isinstance(self.h5file, io.BytesIO):
             temp_file = os.path.join(
                 tempfile.gettempdir(), os.path.basename(self.h5file)
             )
@@ -460,7 +460,6 @@ class Workspace(AbstractContextManager):
 
                     if isinstance(recovered_object, (Group, ObjectBase)):
                         self.fetch_children(recovered_object, recursively=True)
-                        # getattr(recovered_object, "parent", None)
 
     def remove_children(self, parent, children: list):
         """
