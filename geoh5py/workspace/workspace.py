@@ -178,7 +178,9 @@ class Workspace(AbstractContextManager):
             )
             try:
                 subprocess.run(
-                    f'h5repack --native "{self.h5file}" "{temp_file}"', check=True
+                    f'h5repack --native "{self.h5file}" "{temp_file}"',
+                    check=True,
+                    shell=True,
                 )
                 os.remove(self.h5file)
                 shutil.move(temp_file, self.h5file)
