@@ -526,7 +526,7 @@ class Concatenated(Entity):
         self._parent = parent
         self._parent.add_children([self])
 
-        if isinstance(self, Data):
+        if isinstance(self, Data) and isinstance(self, Concatenated):
             parental_attr = self.concatenator.get_attributes(self.parent.uid)
             if f"Property:{self.name}" not in parental_attr:
                 parental_attr[f"Property:{self.name}"] = as_str_if_uuid(self.uid)
