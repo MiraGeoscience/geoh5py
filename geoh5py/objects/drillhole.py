@@ -56,7 +56,7 @@ class Drillhole(Points):
         self._collar: np.ndarray | None = None
         self._cost: float | None = 0.0
         self._depths: FloatData | None = None
-        self._end_of_hole: int | None = None
+        self._end_of_hole: float | None = None
         self._planning: str = "Default"
         self._surveys: np.ndarray | None = None
         self._trace: np.ndarray | None = None
@@ -136,9 +136,9 @@ class Drillhole(Points):
         self.workspace.update_attribute(self, "attributes")
 
     @property
-    def end_of_hole(self):
+    def end_of_hole(self) -> float | None:
         """
-        :obj:`float`: End of drillhole in meters
+        End of drillhole in meters
         """
         return self._end_of_hole
 
@@ -151,9 +151,9 @@ class Drillhole(Points):
         self.workspace.update_attribute(self, "attributes")
 
     @property
-    def locations(self):
+    def locations(self) -> np.ndarray | None:
         """
-        :obj:`numpy.ndarray`: Lookup array of the well path x,y,z coordinates.
+        Lookup array of the well path in x, y, z coordinates.
         """
         if (
             getattr(self, "_locations", None) is None
@@ -173,9 +173,9 @@ class Drillhole(Points):
         return self._locations
 
     @property
-    def planning(self):
+    def planning(self) -> str:
         """
-        :obj:`str`: Status of the hole: ["Default", "Ongoing", "Planned", "Completed"]
+        Status of the hole on of "Default", "Ongoing", "Planned", "Completed" or "No status"
         """
         return self._planning
 
@@ -187,14 +187,14 @@ class Drillhole(Points):
         self.workspace.update_attribute(self, "attributes")
 
     @property
-    def surveys(self):
+    def surveys(self) -> np.ndarray | None:
         """
-        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the surveys
+        Coordinates of the surveys
         """
         if (getattr(self, "_surveys", None) is None) and self.on_file:
             self._surveys = self.workspace.fetch_array_attribute(self, "surveys")
 
-        if getattr(self, "_surveys", None) is not None:
+        if isinstance(self._surveys, np.ndarray):
             try:
                 surveys = self._surveys.view("<f4").reshape((-1, 3))
             except TypeError:
@@ -273,7 +273,7 @@ class Drillhole(Points):
 
     @property
     def _from(self):
-        if self.workspace.version > 1.0:
+        if self.workspace.version >= 2.0:
             obj_list = []
             for name in self.parent.index:
                 if "FROM" in name:
@@ -290,7 +290,7 @@ class Drillhole(Points):
 
     @property
     def _to(self):
-        if self.workspace.version > 1.0:
+        if self.workspace.version >= 2.0:
             obj_list = []
             for name in self.parent.index:
                 if "TO" in name:
@@ -406,7 +406,7 @@ class Drillhole(Points):
             data_objects.append(data_object)
 
         # Check the depths and re-sort data if necessary
-        if self.workspace.version > 1.0:
+        if self.workspace.version >= 2.0:
             self.save(add_children=False)
         else:
             self.sort_depths()

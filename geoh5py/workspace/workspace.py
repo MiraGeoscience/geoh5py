@@ -720,7 +720,7 @@ class Workspace(AbstractContextManager):
             mode="r",
         )
 
-    def fetch_metadata(self, uid: uuid.UUID, argument="Metadata"):
+    def fetch_metadata(self, uid: uuid.UUID, argument="Metadata") -> dict | None:
         """
         Fetch the metadata of an entity from the source geoh5.
 
@@ -811,7 +811,7 @@ class Workspace(AbstractContextManager):
         """
         return self._io_call(H5Reader.fetch_file_object, uid, file_name)
 
-    def finalize(self):
+    def finalize(self) -> None:
         """
         Deprecate method finalize
 
@@ -1036,7 +1036,7 @@ class Workspace(AbstractContextManager):
         """Get all active Object entities registered in the workspace."""
         return self._all_objects()
 
-    def open(self, mode: str | None = None):
+    def open(self, mode: str | None = None) -> None:
         if isinstance(self._geoh5, h5py.File):
             warnings.warn(f"Workspace already opened in mode {self._geoh5.mode}.")
             return
@@ -1100,7 +1100,7 @@ class Workspace(AbstractContextManager):
         self,
         entity: Entity,
         add_children: bool = True,
-    ):
+    ) -> None:
         """
         Save or update an entity to geoh5.
 
@@ -1125,7 +1125,7 @@ class Workspace(AbstractContextManager):
 
     def update_attribute(
         self, entity: Entity | EntityType, attribute: str, channel: str = None, **kwargs
-    ):
+    ) -> None:
         """
         Save or update an entity to geoh5.
 
@@ -1163,7 +1163,7 @@ class Workspace(AbstractContextManager):
         self._version = value
 
     @property
-    def workspace(self):
+    def workspace(self) -> Workspace:
         """
         This workspace instance itself.
         """
