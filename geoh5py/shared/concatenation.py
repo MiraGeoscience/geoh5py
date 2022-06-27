@@ -24,14 +24,13 @@ from typing import TYPE_CHECKING
 import numpy as np
 from h5py import special_dtype
 
+from geoh5py.data import Data
 from geoh5py.groups import Group
 from geoh5py.shared.entity import Entity
 from geoh5py.shared.utils import KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid
 
 if TYPE_CHECKING:
-    from ..data import Data
     from ..groups import GroupType
-    from ..objects import ObjectBase
 
 
 class Concatenator(Group):
@@ -171,7 +170,7 @@ class Concatenator(Group):
 
         return attr_dict
 
-    def fetch_index(self, entity: ObjectBase, field: str) -> int | None:
+    def fetch_index(self, entity: Concatenated, field: str) -> int | None:
         """
         Fetch the array index for specific concatenated object and data field.
 
@@ -200,7 +199,7 @@ class Concatenator(Group):
 
         return None
 
-    def fetch_values(self, entity: ObjectBase, field: str) -> np.ndarray | None:
+    def fetch_values(self, entity: Concatenated, field: str) -> np.ndarray | None:
         """
         Get an array of values from concatenated data.
 
@@ -231,7 +230,7 @@ class Concatenator(Group):
 
         return self._property_group_ids
 
-    def update_attributes(self, entity: ObjectBase | Data, label: str) -> None:
+    def update_attributes(self, entity: Concatenated, label: str) -> None:
         """
         Update a concatenated entity.
         """
@@ -253,12 +252,12 @@ class Concatenator(Group):
             self.update_array_attribute(entity, label)
 
         else:
-            if hasattr(entity, "values"):
+            if isinstance(entity, Data):
                 label = entity.name
 
             self.update_array_attribute(entity, label)
 
-    def update_concatenated_attributes(self, entity: ObjectBase | Data) -> None:
+    def update_concatenated_attributes(self, entity: Concatenated) -> None:
         """
         Update the concatenated attributes.
         :param entity: Concatenated entity with attributes.
@@ -281,7 +280,7 @@ class Concatenator(Group):
 
             target_attributes[key] = val
 
-        if hasattr(entity, "values"):
+        if isinstance(entity, Data):
             target_attributes["Type ID"] = as_str_if_uuid(entity.entity_type.uid)
         elif hasattr(entity, "properties"):
             pass
@@ -289,10 +288,10 @@ class Concatenator(Group):
             target_attributes["Object Type ID"] = as_str_if_uuid(entity.entity_type.uid)
         self.workspace.repack = True
 
-    def update_array_attribute(self, entity, field: str) -> None:
+    def update_array_attribute(self, entity: Concatenated, field: str) -> None:
         """
-        Update values stored as data. Row data and indices are first remove then appended.
-
+        Update values stored as data.
+        Row data and indices are first remove then appended.
 
         :param entity: Concatenated entity with array values.
         :param field: Name of the valued field.
@@ -407,21 +406,21 @@ class Concatenator(Group):
 
         uid = as_str_if_utf8_bytes(as_str_if_uuid(uid))
 
-        if (
-            self.attributes_keys is not None
-            and as_str_if_uuid(uid) in self.attributes_keys
-        ):
-            index = self.attributes_keys.index(as_str_if_uuid(uid))
+        if self.attributes_keys is not None and uid in self.attributes_keys:
+            index = self.attributes_keys.index(uid)
         else:
             self.add_attribute(uid)
             index = -1
 
         return self.concatenated_attributes["Attributes"][index]
 
-    def fetch_start_index(self, entity, label: str) -> int:
+    def fetch_start_index(self, entity: Concatenated, label: str) -> int:
         """
         Fetch starting index for a given entity and label.
         Existing date is removed such that new entries can be appended.
+
+        :param entity: Concatenated entity to be added.
+        :param label: Name of the attribute requiring an update.
         """
         index = self.fetch_index(entity, label)
         if index is not None:  # First remove the old data
@@ -479,12 +478,6 @@ class Concatenated(Entity):
 
         return self._parent
 
-    def fetch_values(self, entity, field: str):
-        """
-        Get values from the parent entity.
-        """
-        return self.concatenator.fetch_values(entity, field)
-
     def get_data(self, name: str) -> list:
         """
         Generic function to get data values from object.
@@ -513,17 +506,11 @@ class Concatenated(Entity):
         """
         data_list = [
             attr.replace("Property:", "")
-            for attr in self.concatenator.get_attributes(getattr(self, "uid"))
+            for attr in self.concatenator.get_attributes(self.uid)
             if "Property:" in attr
         ]
 
         return data_list
-
-    def update_attributes(self, entity, field: str):
-        """
-        Update the attributes on the concatenated entity.
-        """
-        return self.concatenator.update_attributes(entity, field)
 
     @property
     def parent(self) -> Concatenated | Concatenator:
@@ -539,7 +526,7 @@ class Concatenated(Entity):
         self._parent = parent
         self._parent.add_children([self])
 
-        if hasattr(self, "values"):
+        if isinstance(self, Data):
             parental_attr = self.concatenator.get_attributes(self.parent.uid)
             if f"Property:{self.name}" not in parental_attr:
                 parental_attr[f"Property:{self.name}"] = as_str_if_uuid(self.uid)
@@ -558,15 +545,3 @@ class Concatenated(Entity):
                 )
 
         return self._property_groups
-
-    def save(self, add_children: bool = True):
-        """
-        Save the concatenated object or data to concatenator.
-
-        :param add_children: Save the children of the concatenated entity.
-        """
-        self.concatenator.add_save_concatenated(self)
-
-        if add_children:
-            for child in self.children:
-                child.save()

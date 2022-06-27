@@ -562,7 +562,7 @@ class Workspace(AbstractContextManager):
         :return: Structured array.
         """
         if isinstance(entity, Concatenated):
-            return getattr(entity, "fetch_values")(entity, key)
+            return entity.concatenator.fetch_values(entity, key)
 
         return self._io_call(
             H5Reader.fetch_array_attribute,
@@ -737,7 +737,7 @@ class Workspace(AbstractContextManager):
         :return: Array of values.
         """
         if isinstance(entity, Concatenated):
-            return getattr(entity, "fetch_values")(entity, entity.name)
+            return entity.concatenator.fetch_values(entity, entity.name)
 
         return self._io_call(H5Reader.fetch_values, entity.uid)
 
@@ -1049,7 +1049,8 @@ class Workspace(AbstractContextManager):
         :param file: :obj:`h5py.File` or name of the target geoh5
         """
         if isinstance(entity, Concatenated):
-            entity.save()
+            entity.concatenator.add_save_concatenated(entity)
+
             if hasattr(entity, "entity_type"):
                 self._io_call(H5Writer.write_entity_type, entity.entity_type, mode="r+")
         else:
@@ -1074,7 +1075,7 @@ class Workspace(AbstractContextManager):
         """
         if entity.on_file:
             if isinstance(entity, Concatenated):
-                getattr(entity, "concatenator").update_attributes(entity, attribute)
+                entity.concatenator.update_attributes(entity, attribute)
             elif channel is not None:
                 self._io_call(
                     H5Writer.update_concatenated_field,
