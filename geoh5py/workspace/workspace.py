@@ -583,11 +583,13 @@ class Workspace(AbstractContextManager):
         recursively: bool = False,
     ) -> list:
         """
-        Recover and register children entities from the geoh5
+        Recover and register children entities from the geoh5.
 
-        :param entity: Parental entity
-        :param recursively: Recover all children down the project tree
-        :param file: :obj:`h5py.File` or name of the target geoh5 file
+        :param entity: Parental entity.
+        :param recursively: Recover all children down the project tree.
+        :param file: :obj:`h5py.File` or name of the target geoh5 file.
+
+        :return list: List of children entities.
         """
         if entity is None or isinstance(entity, Concatenated):
             return []
@@ -640,10 +642,14 @@ class Workspace(AbstractContextManager):
 
         return family_tree
 
-    def fetch_concatenated_attributes(
-        self, entity: Group | ObjectBase, label: str
-    ) -> dict | None:
-        """Fetch attributes of Concatenated entities."""
+    def fetch_concatenated_attributes(self, entity: Group | ObjectBase) -> dict | None:
+        """
+        Fetch attributes of Concatenated entities.
+
+        :param entity: Concatenator group.
+
+        :return: Dictionary of attributes.
+        """
         if isinstance(entity, Group):
             entity_type = "Group"
         else:
@@ -656,14 +662,21 @@ class Workspace(AbstractContextManager):
             H5Reader.fetch_concatenated_attributes,
             entity.uid,
             entity_type,
-            label,
+            "Attributes",
             mode="r",
         )
 
     def fetch_concatenated_list(
         self, entity: Group | ObjectBase, label: str
     ) -> list | None:
-        """Fetch list of data or indices of Concatenated entities."""
+        """
+        Fetch list of data or indices of Concatenated entities.
+
+        :param entity: Concatenator group.
+        :param label: Label name of the h5py.Group
+
+        :return: List of concatenated Data names.
+        """
         if isinstance(entity, Group):
             entity_type = "Group"
         else:
@@ -683,7 +696,14 @@ class Workspace(AbstractContextManager):
     def fetch_concatenated_values(
         self, entity: Group | ObjectBase, label: str
     ) -> tuple | None:
-        """Fetch data under the Concatenated Data group of an entity."""
+        """
+        Fetch data under the Concatenated Data group of an entity.
+
+        :param entity: Concatenator group.
+        :param label: Name of the target data.
+
+        :return: Index array and data values for the target label.
+        """
         if isinstance(entity, Group):
             entity_type = "Group"
         else:
@@ -724,6 +744,8 @@ class Workspace(AbstractContextManager):
         Fetch all property_groups on an object from the source geoh5
 
         :param entity: Target object
+
+        :return: List of PropertyGroups
         """
         property_groups: list = []
         if isinstance(entity, Concatenator):

@@ -88,9 +88,7 @@ class Concatenator(Group):
     def concatenated_attributes(self) -> dict | None:
         """Dictionary of concatenated objects and data attributes."""
         if self._concatenated_attributes is None:
-            concatenated_attributes = self.workspace.fetch_concatenated_attributes(
-                self, "Attributes"
-            )
+            concatenated_attributes = self.workspace.fetch_concatenated_attributes(self)
 
             if concatenated_attributes is None:
                 concatenated_attributes = {"Attributes": []}
