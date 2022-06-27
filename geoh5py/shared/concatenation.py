@@ -41,7 +41,7 @@ class Concatenator(Group):
 
     _concatenated_attributes: dict | None = None
     _attributes_keys: list[uuid.UUID] | None = None
-    _concatenated_object_ids: list[uuid.UUID] | None = None
+    _concatenated_object_ids: list[bytes] | None = None
     _data: dict
     _index: dict
     _property_group_ids: np.ndarray | None = None
@@ -101,7 +101,7 @@ class Concatenator(Group):
         return self._concatenated_attributes
 
     @property
-    def concatenated_object_ids(self) -> list[uuid.UUID] | None:
+    def concatenated_object_ids(self) -> list[bytes] | None:
         """Dictionary of concatenated objects and data concatenated_object_ids."""
         if getattr(self, "_concatenated_object_ids", None) is None:
             concatenated_object_ids = self.workspace.fetch_array_attribute(
@@ -256,8 +256,11 @@ class Concatenator(Group):
 
             self.update_array_attribute(entity, label)
 
-    def update_concatenated_attributes(self, entity):
-        """Update the concatenated attributes."""
+    def update_concatenated_attributes(self, entity: ObjectBase | Data) -> None:
+        """
+        Update the concatenated attributes.
+        :param entity: Concatenated entity with attributes.
+        """
         target_attributes = self.get_attributes(entity.uid)
         for key, attr in entity.attribute_map.items():
             val = getattr(entity, attr, None)
@@ -284,9 +287,13 @@ class Concatenator(Group):
             target_attributes["Object Type ID"] = as_str_if_uuid(entity.entity_type.uid)
         self.workspace.repack = True
 
-    def update_array_attribute(self, entity, field):
+    def update_array_attribute(self, entity, field: str) -> None:
         """
-        Update values stored as data.
+        Update values stored as data. Row data and indices are first remove then appended.
+
+
+        :param entity: Concatenated entity with array values.
+        :param field: Name of the valued field.
         """
         if hasattr(entity, f"_{field}"):
             values = getattr(entity, f"_{field}", None)
@@ -302,7 +309,7 @@ class Concatenator(Group):
                 f"for the requested field {field}"
             )
 
-        if field == "property_groups":
+        if field == "property_groups" and isinstance(values, list):
             alias = "Property Group IDs"
             values = [as_str_if_uuid(val.uid).encode() for val in values]
         else:
@@ -357,7 +364,7 @@ class Concatenator(Group):
         else:  # For data values
             self.workspace.update_attribute(self, "data", field)
 
-    def add_save_concatenated(self, child):
+    def add_save_concatenated(self, child) -> None:
         """
         Add or save a concatenated entity.
 
@@ -409,7 +416,7 @@ class Concatenator(Group):
 
         return self.concatenated_attributes["Attributes"][index]
 
-    def fetch_start_index(self, entity, label: str):
+    def fetch_start_index(self, entity, label: str) -> int:
         """
         Fetch starting index for a given entity and label.
         Existing date is removed such that new entries can be appended.
@@ -426,7 +433,7 @@ class Concatenator(Group):
 
         return start
 
-    def delete_index_data(self, label: str, index: int):
+    def delete_index_data(self, label: str, index: int) -> None:
         start, size = self.index[label][index][0], self.index[label][index][1]
         self.data[label] = np.delete(
             self.data[label], np.arange(start, start + size), axis=0
