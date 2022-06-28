@@ -21,6 +21,7 @@ import random
 import string
 
 import numpy as np
+import pytest
 
 from geoh5py.objects import Drillhole
 from geoh5py.shared.utils import compare_entities
@@ -31,7 +32,6 @@ def test_create_drillhole_data(tmp_path):
     h5file_path = tmp_path / r"testCurve.geoh5"
     well_name = "bullseye"
     n_data = 10
-    collocation = 1e-5
 
     with Workspace(h5file_path, version=1.0) as workspace:
         # Create a workspace
@@ -45,7 +45,7 @@ def test_create_drillhole_data(tmp_path):
                 np.linspace(-89, -75, n_data),
             ],
             name=well_name,
-            default_collocation_distance=collocation,
+            default_collocation_distance=1e-5,
         )
         value_map = {}
         for ref in range(8):
@@ -59,12 +59,49 @@ def test_create_drillhole_data(tmp_path):
         ).reshape((-1, 2))
         from_to_b = np.vstack([from_to_a[0, :], [30.1, 55.5], [56.5, 80.2]])
 
+        with pytest.raises(ValueError) as error:
+            well.add_data(
+                {
+                    "interval_values": {
+                        "values": np.random.randn(from_to_a.shape[0]),
+                        "from-to": from_to_a[1:, 0],
+                    },
+                }
+            )
+
+        assert "Mismatch between input" in str(error)
+
+        with pytest.raises(ValueError) as error:
+            well.add_data(
+                {
+                    "interval_values": {
+                        "values": np.random.randn(from_to_a.shape[0]),
+                        "from-to": from_to_a[:, 0],
+                    },
+                }
+            )
+
+        assert "The `from-to` values must have shape(*, 2)." in str(error)
+
+        with pytest.raises(UserWarning) as error:
+            well.add_data(
+                {
+                    "interval_values": {
+                        "values": np.random.randn(from_to_a.shape[0]),
+                        "from-to": from_to_a[:, 0],
+                        "collocation_distance": -1,
+                    },
+                }
+            )
+
+        assert "Input depth 'collocation_distance' must be >0." in str(error)
+
         # Add from-to data
         data_objects = well.add_data(
             {
                 "interval_values": {
                     "values": np.random.randn(from_to_a.shape[0]),
-                    "from-to": from_to_a,
+                    "from-to": from_to_a.tolist(),
                 },
                 "int_interval_list": {
                     "values": [1, 2, 3],
@@ -93,6 +130,18 @@ def test_create_drillhole_data(tmp_path):
             == well.n_cells
         ), "Shape or FROM to n_cells differ."
 
+        with pytest.raises(ValueError) as error:
+            well.add_data(
+                {
+                    "log_values": {
+                        "values": np.random.randn(n_data - 1),
+                        "depth": np.random.randn(n_data),
+                    },
+                }
+            )
+
+        assert "Mismatch between input 'depth'" in str(error)
+
         # Add log-data
         data_objects += [
             well.add_data(
@@ -107,6 +156,14 @@ def test_create_drillhole_data(tmp_path):
             )
         ]
 
+        well.add_data(
+            {
+                "label": {
+                    "association": "OBJECT",
+                    "values": "ABC",
+                },
+            }
+        )
         new_count = from_to_a.size + 4 + n_data
         assert well.n_vertices == (
             new_count

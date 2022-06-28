@@ -536,7 +536,7 @@ class Drillhole(Points):
         an augmented values vector that matches the vertices indexing.
         """
         if isinstance(from_to, list):
-            from_to = np.vtack(from_to)
+            from_to = np.vstack(from_to)
 
         if from_to.shape[0] != len(values):
             raise ValueError(
@@ -544,7 +544,7 @@ class Drillhole(Points):
                 + f"and 'values' shape{values.shape}"
             )
 
-        if from_to.shape[1] != 2:
+        if from_to.ndim != 2 or from_to.shape[1] != 2:
             raise ValueError("The `from-to` values must have shape(*, 2).")
 
         if (self._from is None) and (self._to is None):
