@@ -275,6 +275,8 @@ class Workspace(AbstractContextManager):
             class_type = Data
             type_attr = self.fetch_type(uuid.UUID(attributes["Type ID"]), "Data")
 
+        if "Name" in attributes:
+            attributes["Name"] = attributes["Name"].replace("\u2044", "/")
         recovered_entity = self.create_entity(
             class_type,
             save_on_creation=False,
@@ -611,7 +613,7 @@ class Workspace(AbstractContextManager):
             )
 
         if isinstance(entity, Concatenator):
-            cat_children = getattr(entity, "fetch_concatenated_objects")()
+            cat_children = entity.fetch_concatenated_objects()
             children_list.update(
                 {
                     str2uuid(as_str_if_utf8_bytes(uid)): attr

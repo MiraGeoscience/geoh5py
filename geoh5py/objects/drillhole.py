@@ -369,7 +369,7 @@ class Drillhole(Points):
                 "values" in attributes
             ), f"Given attributes for data {name} should include 'values'"
 
-            attributes["name"] = name.replace("/", "\u2044")  # Specific
+            attributes["name"] = name
 
             if attributes["name"] in self.get_data_list():
                 raise UserWarning(

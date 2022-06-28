@@ -131,7 +131,7 @@ class Concatenator(Group):
         if getattr(self, "_data", None) is None:
             data_list = self.workspace.fetch_concatenated_list(self, "Data")
             if data_list is not None:
-                self._data = {name: None for name in data_list}
+                self._data = {name.replace("\u2044", "/"): None for name in data_list}
             else:
                 self._data = {}
 
@@ -145,7 +145,7 @@ class Concatenator(Group):
         if getattr(self, "_index", None) is None:
             data_list = self.workspace.fetch_concatenated_list(self, "Index")
             if data_list is not None:
-                self._index = {name: None for name in data_list}
+                self._index = {name.replace("\u2044", "/"): None for name in data_list}
 
         return self._index
 
@@ -265,6 +265,9 @@ class Concatenator(Group):
 
             if val is None or attr == "property_groups":
                 continue
+
+            if attr == "name":
+                val = val.replace("/", "\u2044")
 
             if isinstance(val, np.ndarray):
                 val = "{" + ", ".join(str(e) for e in val.tolist()) + "}"
@@ -492,7 +495,7 @@ class Concatenated(Entity):
                 self.workspace.create_from_concatenation(attributes)
 
         for child in getattr(self, "children"):
-            if hasattr(child, "name") and child.name == name.replace("/", "\u2044"):
+            if hasattr(child, "name") and child.name == name:
                 entity_list.append(child)
 
         return entity_list
@@ -502,7 +505,7 @@ class Concatenated(Entity):
         Get list of data names.
         """
         data_list = [
-            attr.replace("Property:", "")
+            attr.replace("Property:", "").replace("\u2044", "/")
             for attr in self.concatenator.get_attributes(self.uid)
             if "Property:" in attr
         ]
@@ -525,8 +528,9 @@ class Concatenated(Entity):
 
         if isinstance(self, Data) and isinstance(self, Concatenated):
             parental_attr = self.concatenator.get_attributes(self.parent.uid)
-            if f"Property:{self.name}" not in parental_attr:
-                parental_attr[f"Property:{self.name}"] = as_str_if_uuid(self.uid)
+            alias = self.name.replace("/", "\u2044")
+            if f"Property:{alias}" not in parental_attr:
+                parental_attr[f"Property:{alias}"] = as_str_if_uuid(self.uid)
 
     @property
     def property_groups(self) -> list | None:

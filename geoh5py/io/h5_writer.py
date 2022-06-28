@@ -255,9 +255,9 @@ class H5Writer:
                 attr_handle = entity_handle["Concatenated Data"].create_group(
                     attribute.capitalize()
                 )
-
+            name = channel.replace("/", "\u2044")
             try:
-                del attr_handle[channel]
+                del attr_handle[name]
                 entity.workspace.repack = True
             except KeyError:
                 pass
@@ -270,7 +270,7 @@ class H5Writer:
                     values = values.astype(np.float32)
 
                 attr_handle.create_dataset(
-                    channel,
+                    name,
                     data=values,
                     compression="gzip",
                     compression_opts=9,
