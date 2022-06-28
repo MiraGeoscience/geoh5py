@@ -735,10 +735,6 @@ class H5Writer:
         :param entity: Target :obj:`~geoh5py.data.filename_data.FilenameData` entity.
         :param values: Bytes data
         """
-        if "Data" in entity_handle:
-            del entity_handle["Data"]
-            entity.workspace.repack = True
-
         entity_handle.create_dataset(
             "Data",
             data=entity.file_name,

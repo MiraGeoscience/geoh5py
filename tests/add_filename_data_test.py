@@ -64,7 +64,7 @@ def test_add_file(tmp_path):
             np.loadtxt(BytesIO(file_data.values)),
             err_msg="Loaded and stored bytes array not the same",
         )
-
+        file_data.values = b"abc"
         obj.copy(parent=workspace_copy)
         workspace_copy.close()
 
