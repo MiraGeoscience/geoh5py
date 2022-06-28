@@ -79,3 +79,8 @@ def test_add_file(tmp_path):
     assert "Input 'values' for FilenameData must be of type 'bytes'." in str(
         excinfo.value
     )
+
+    with pytest.raises(AttributeError) as excinfo:
+        file_data.file_name = None
+
+    assert "FilenameData requires the 'file_name' to be set." in str(excinfo.value)

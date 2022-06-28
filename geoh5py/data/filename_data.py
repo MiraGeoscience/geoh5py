@@ -28,8 +28,9 @@ class FilenameData(Data):
     _name = "GeoImageMesh_Image"
     _values: bytes | None
 
-    def __init__(self, data_type: DataType, **kwargs):
-        super().__init__(data_type, **kwargs)
+    def __init__(self, data_type: DataType, file_name=None, **kwargs):
+
+        super().__init__(data_type, file_name=file_name, **kwargs)
         self._public = False
 
     @classmethod
