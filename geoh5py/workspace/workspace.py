@@ -751,38 +751,10 @@ class Workspace(AbstractContextManager):
 
         :return: List of PropertyGroups
         """
-        property_groups: list = []
-        if isinstance(entity, Concatenator):
-            if (
-                entity.property_group_ids is None
-                or entity.concatenated_attributes is None
-            ):
-                return property_groups
-
-            for key in entity.property_group_ids:
-                if entity.attributes_keys is None or key not in entity.attributes_keys:
-                    continue
-
-                attrs = entity.concatenated_attributes["Attributes"][key]
-                property_groups.append(PropertyGroup(**attrs))
-        else:
-
-            group_dict = self._io_call(H5Reader.fetch_property_groups, entity.uid)
-
-            for pg_id, attrs in group_dict.items():
-
-                group = PropertyGroup(uid=uuid.UUID(pg_id), parent=entity)
-
-                for attr, val in attrs.items():
-
-                    try:
-                        setattr(group, group.attribute_map[attr], val)
-                    except AttributeError:
-                        continue
-
-                property_groups.append(group)
-
-        return property_groups
+        raise DeprecationWarning(
+            f"Method 'fetch_property_groups' of {self} as been removed. "
+            "Use `entity.property_groups` instead."
+        )
 
     def fetch_type(self, uid: uuid.UUID, entity_type: str) -> dict:
         """
