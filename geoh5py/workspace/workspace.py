@@ -401,12 +401,11 @@ class Workspace(AbstractContextManager):
             else:
                 entity_type_uid = uuid.uuid4()
 
-        entity_class = entity_class.__bases__
         for name, member in inspect.getmembers(groups) + inspect.getmembers(objects):
             if (
                 inspect.isclass(member)
-                and issubclass(member, entity_class)
-                and member is not entity_class
+                and issubclass(member, entity_class.__bases__)
+                and member is not entity_class.__bases__
                 and hasattr(member, "default_type_uid")
                 and not member == CustomGroup
                 and member.default_type_uid() == entity_type_uid
