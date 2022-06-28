@@ -25,7 +25,7 @@ import uuid
 import numpy as np
 
 from ..data import Data, FloatData
-from ..shared.utils import match_values, merge_arrays
+from ..shared.utils import merge_arrays
 from .object_base import ObjectType
 from .points import Points
 
@@ -573,47 +573,25 @@ class Drillhole(Points):
                 entity_type={"primitive_type": "FLOAT"},
             )
         elif self.cells is not None:
-            from_ind = match_values(
-                self._from.values,
-                from_to[:, 0],
-                collocation_distance=collocation_distance,
-            )
-            to_ind = match_values(
-                self._to.values,
-                from_to[:, 1],
-                collocation_distance=collocation_distance,
-            )
+            out_vec = np.c_[self._from.values, self._to.values]
+            dist_match = []
+            for i, elem in enumerate(from_to):
+                ind = np.where(
+                    np.linalg.norm(elem - out_vec, axis=1) < collocation_distance
+                )[0]
+                if len(ind) > 0:
+                    dist_match.append([ind[0], i])
 
-            # Find matching cells
-            in_match = np.ones((self._from.values.shape[0], 2)) * np.nan
-            in_match[from_ind[:, 0], 0] = from_ind[:, 1]
-            in_match[to_ind[:, 0], 1] = to_ind[:, 1]
-
-            out_match = np.ones_like(from_to) * np.nan
-            out_match[from_ind[:, 1], 0] = from_ind[:, 0]
-            out_match[to_ind[:, 1], 1] = to_ind[:, 0]
-
-            cell_map = np.c_[
-                np.where(in_match[:, 0] == in_match[:, 1])[0],
-                np.where(out_match[:, 0] == out_match[:, 1])[0],
-            ]
+            cell_map: np.ndarray = np.asarray(dist_match, dtype=int)
 
             # Add vertices
             vert_new = np.ones_like(from_to, dtype="bool")
-            vert_new[from_ind[:, 1], 0] = False
-            vert_new[to_ind[:, 1], 1] = False
+            if cell_map.ndim == 2:
+                vert_new[cell_map[:, 1], :] = False
             ind_new = np.where(vert_new.flatten())[0]
             uni_new, inv_map = np.unique(
                 from_to.flatten()[ind_new], return_inverse=True
             )
-
-            # Add cells
-            new_cells = np.ones_like(from_to.flatten()) * np.nan
-            new_cells[ind_new] = self.add_vertices(self.desurvey(uni_new))[inv_map]
-            new_cells = new_cells.reshape((-1, 2))
-            new_cells[from_ind[:, 1], 0] = self.cells[from_ind[:, 0], 0]
-            new_cells[to_ind[:, 1], 1] = self.cells[to_ind[:, 0], 1]
-            new_cells = np.delete(new_cells, cell_map[:, 1], 0)
 
             # Append values
             values = merge_arrays(
@@ -622,7 +600,12 @@ class Drillhole(Points):
                 replace="B->A",
                 mapping=cell_map,
             )
-            self.cells = np.r_[self.cells, new_cells.astype("uint32")]
+            self.cells = np.r_[
+                self.cells,
+                self.add_vertices(self.desurvey(uni_new))[inv_map]
+                .reshape((-1, 2))
+                .astype("uint32"),
+            ]
             self._from.values = merge_arrays(
                 self._from.values, from_to[:, 0], mapping=cell_map
             )
