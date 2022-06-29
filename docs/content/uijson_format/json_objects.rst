@@ -1,5 +1,3 @@
-.. _bool_param:
-
 Boolean parameter
 =================
 
@@ -143,8 +141,6 @@ A file parameter comes with an icon to choose the file, with a ``str`` value. Ex
 .. figure:: ./images/file_choice.png
 
 
-.. _object_parameter:
-
 Geoscience ANALYST Object parameter
 ===================================
 
@@ -164,8 +160,6 @@ To choose an object from a dropdown menu, the `universally unique identifier (UU
 
 .. figure:: ./images/object_param.png
 
-
-.. _data_parameter:
 
 Geoscience ANALYST Data parameter
 =================================

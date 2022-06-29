@@ -1,5 +1,3 @@
-.. _ga_group_types:
-
 Group Types
 ***********
 

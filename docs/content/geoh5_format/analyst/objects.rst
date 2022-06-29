@@ -1,11 +1,7 @@
-.. _analyst_objects:
-
 ANALYST Objects
 ===============
 
 Entities with spatial information used to store data.
-
-.. _geoh5_points:
 
 Points
 ------
@@ -14,14 +10,11 @@ Points
 
 3-D scatter points object defined by vertices with fixed coordinates in Cartesian system (x, y and z).
 
-Datasets
-^^^^^^^^
+**Datasets**
 :Vertices: 1D composite array
 
     [*x* ``double``, *y* ``double``, *z* ``double``]
 
-
-.. _geoh5_curve:
 
 Curve
 -----
@@ -31,16 +24,14 @@ Curve
 Polyline object defined by a series of line segments (cells) connecting vertices.
 Data can be associated to either the vertices or cells.
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Current line property ID: ``str``, *UUID*
 
     Unique identifier of a reference data for naming of curve parts.
 
 
-Datasets
-^^^^^^^^
+**Datasets**
 
 :Cells: Array of ``int32``, shape(N, 2)
 
@@ -53,8 +44,7 @@ Surface
 
 Triangulated mesh object defined by cells (triangles) and vertices.
 
-Datasets
-^^^^^^^^
+**Datasets**
 
 :Cells: Array of ``int32``, shape(N, 3)
 
@@ -77,8 +67,7 @@ to a 1-D vector index can be calculated from
 Without rotation angles, U points eastwards, V points northwards, and Z points upwards.
 Since their geometry is defined entirely by the additional data described below, block models do not require a ``Vertices`` or ``Cells`` dataset.
 
-Datasets
-^^^^^^^^
+**Datasets**
 :U cell delimiters: array of ``double``, shape(nU,)
 
     Distances of cell edges from origin along the U axis (first value should be 0)
@@ -89,8 +78,7 @@ Datasets
 
     Distances of cell edges from origin upwards along the vertical axis (first value should be 0)
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Origin: composite type
 
@@ -115,8 +103,7 @@ The conversion between the grid coordinates of a cell to its 1-D vector index ca
 Without rotation angles, U points eastwards and V points northwards. Since their geometry is defined entirely by the additional data
 described below, 2D grids do not require a Vertices or Cells dataset.
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Origin: composite type
 
@@ -146,8 +133,7 @@ Vertices represent points along the drillhole path (support for data rather than
 Cells contain two vertices and represent intervals along the drillhole path (and are a support for interval data as well).
 Cells may overlap with each other to accommodate the different sampling intervals of various data.
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Collar: composite type, shape(3,)
 
@@ -155,8 +141,7 @@ Attributes
 
     Collar location
 
-Datasets
-^^^^^^^^
+**Datasets**
 :Surveys: composite array, shape(3,)
 
     [*Depth* ``double``, *Dip* ``double``, *Azimuth* ``double``]
@@ -194,8 +179,7 @@ Label
 
 Has no vertices nor cell data
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Target position: composite type, shape(3,)
 
@@ -256,8 +240,7 @@ Octree
 
 Semi-structured grid that stores cells in a tree structure with eight octants.
 
-Datasets
-^^^^^^^^
+**Datasets**
 
 :Octree Cells: composite type, shape(N, 4)
 
@@ -266,8 +249,7 @@ Datasets
     Array defining the position (I, J, K) and size (NCells) of every cell within
     the base octree grid.
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :NU: ``integer``
     Number of base cells along the U-axis.
@@ -307,8 +289,6 @@ Text Object
 *To be further documented*
 
 
-.. _geoh5_potential_electrode:
-
 Potential Electrode
 -------------------
 
@@ -316,8 +296,7 @@ Potential Electrode
 
 :ref:`Curve <geoh5_curve>` object representing the receiver electrodes of a direct-current resistivity survey.
 
-Datasets
-^^^^^^^^
+**Datasets**
 
 :Metadata: json formatted ``string``
 
@@ -338,7 +317,6 @@ Requirements
     to every potential measurement.
 
 
-.. _geoh5_current_electrode:
 
 Current Electrode
 -----------------
@@ -347,8 +325,7 @@ Current Electrode
 
 :ref:`Curve <geoh5_curve>` object representing the transmitter electrodes of a direct-current resistivity survey.
 
-Datasets
-^^^^^^^^
+**Datasets**
 
 :Metadata: json formatted ``string``
 
@@ -385,7 +362,6 @@ Airborne EM
 
 *To be further documented*
 
-.. _geoh5_atem_rx:
 
 Airborne TEM Rx
 ---------------
@@ -394,13 +370,11 @@ Airborne TEM Rx
 
 :ref:`Curve <geoh5_curve>` object representing an array of time-domain electromagnetic receiver dipoles.
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Target position: composite type
 
-Datasets
-^^^^^^^^
+**Datasets**
 
 :Metadata: json formatted ``string``
 
@@ -451,8 +425,6 @@ Datasets
             Generally used as the reference (t_i=0.0) for the provided data channels:
             (-) on-time an (+) off-time.
 
-.. _geoh5_atem_tx:
-
 Airborne TEM Tx
 ---------------
 
@@ -460,8 +432,7 @@ Airborne TEM Tx
 
 :ref:`Curve <geoh5_curve>` object representing an array of time-domain electromagnetic transmitter loops.
 
-Datasets
-^^^^^^^^
+**Datasets**
 
 :Metadata: json formatted ``string``
 
@@ -636,7 +607,6 @@ Magnetotellurics
         Sampling units, must be one of "Hertz (Hz)", "KiloHertz (kHz)", "MegaHertz (MHz)" or
         "Gigahertz (GHz)".
 
-.. _geoh5_tipper_receivers:
 
 Tipper Rx
 ---------
@@ -666,7 +636,6 @@ Tipper Rx
         Sampling units, must be one of "Hertz (Hz)", "KiloHertz (kHz)", "MegaHertz (MHz)" or
         "Gigahertz (GHz)".
 
-.. _geoh5_tipper_base_stations:
 
 Tipper Base stations
 --------------------

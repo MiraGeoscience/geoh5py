@@ -49,8 +49,6 @@ groupDependencyType ``str``
     What happens when the group's dependency parameter is checked. Options are ``enabled`` or ``disabled``.
 
 
-.. _json_param_examples:
-
 Parameter Types
 ^^^^^^^^^^^^^^^
 There are other JSON members that may be available or required based on the parameter type. The following sections define different parameter types that can be found in the **ui.json** format.
