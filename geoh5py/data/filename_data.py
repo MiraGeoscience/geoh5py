@@ -97,6 +97,9 @@ class FilenameData(Data):
         if not isinstance(values, bytes):
             raise ValueError("Input 'values' for FilenameData must be of type 'bytes'.")
 
+        if self.file_name is None:
+            raise AttributeError("FilenameData requires the 'file_name' to be set.")
+
         self._values = values
         self.workspace.update_attribute(self, "values")
 
