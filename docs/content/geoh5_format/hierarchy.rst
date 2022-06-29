@@ -52,6 +52,7 @@ special meanings to a collection of entities or to create specialized software
 functionality.
 
 **Attributes**
+
 :Name: ``str``
     Name of the object displayed in the project tree.
 :ID: ``str``, *UUID*

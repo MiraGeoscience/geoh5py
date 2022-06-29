@@ -71,6 +71,7 @@ Since their geometry is defined entirely by the additional data described below,
 :U cell delimiters: array of ``double``, shape(nU,)
 
     Distances of cell edges from origin along the U axis (first value should be 0)
+
 :V cell delimiters: array of ``double``, shape(nV,)
 
     Distances of cell edges from origin along the V axis (first value should be 0)
@@ -147,6 +148,7 @@ Cells may overlap with each other to accommodate the different sampling interval
     [*Depth* ``double``, *Dip* ``double``, *Azimuth* ``double``]
 
     Survey locations
+
 :Trace: 1D composite array
 
     [*X* ``double``, *Y* ``double``, *Z* ``double``]
@@ -307,8 +309,7 @@ Potential Electrode
     - "Potential Electrodes" ``uuid``: Identifier for the linked :ref:`Potential Electrode <geoh5_potential_electrode>`
 
 
-Requirements
-^^^^^^^^^^^^
+**Requirements**
 
 :A-B Cell ID: Data entity
 
@@ -333,8 +334,7 @@ Current Electrode
     the :ref:`Potential Electrode <geoh5_potential_electrode>` object.
 
 
-Requirements
-^^^^^^^^^^^^
+**Requirements**
 
 :A-B Cell ID: Data entity
 
