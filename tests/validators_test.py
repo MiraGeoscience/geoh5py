@@ -205,8 +205,8 @@ def test_validate_data(tmp_path):
     ui_json = {
         "title": "test",
         "geoh5": str(tmp_path / r"test.geoh5"),
-        "param_1": {"label": "param_1", "optional": True, "value": None},
-        "param_2": {"label": "param_2", "optional": True, "value": None},
+        "param_1": {"label": "param_1", "optional": True, "enabled": False, "value": None},
+        "param_2": {"label": "param_2", "optional": True, "enabled": False, "value": None},
     }
     validations = {
         "param_1": {"one_of": "sad little parameter", "types": [str, type(None)]},
@@ -217,7 +217,7 @@ def test_validate_data(tmp_path):
         ifile.validators.validate_data(ifile.data)
     assert "at least one sad little parameter" in str(excinfo.value)
 
-    ui_json["param_1"].update({"optional": False})
+    ui_json["param_1"].update({"enabled": True})
     ifile = InputFile(ui_json=ui_json, validations=validations)
     with pytest.raises(OptionalValidationError) as excinfo:
         ifile.validators.validate_data(ifile.data)

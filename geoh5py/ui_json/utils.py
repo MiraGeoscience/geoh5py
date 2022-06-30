@@ -71,24 +71,75 @@ def group_optional(ui_json: dict[str, dict], group_name: str):
     parameters = find_all(group, "groupOptional")
     return group[parameters[0]]["groupOptional"] if parameters else False
 
+def optional_requires_value(ui_json: dict[str, dict], parameter: str):
+    """True if enabled else False."""
+    return ui_json[parameter].get("enabled", True)
 
-def optional_type(ui_json: dict[str, dict], parameter: str):
+def dependency_requires_value(ui_json: dict[str, dict], parameter: str):
     """
-    Check if a ui.json parameter is optional or groupOptional
+    Handles dependency and optional requirements.
+
+    If dependency doesn't require a value then the function returns False. But
+    if the dependency does require a value, the return value is either True,
+    or will take on the enabled state if the dependent parameter is optional.
+    """
+    dependency = ui_json[parameter]["dependency"]
+    key = "enabled" if ui_json[dependency].get("optional", False) else "value"
+    if ui_json[parameter].get("dependencyType", "enabled") == "enabled":
+        is_required = ui_json[dependency].get(key, True)
+    else:
+        is_required = not ui_json[dependency].get(key, True)
+
+    if ("optional" in ui_json[parameter]) & is_required:
+        is_required = ui_json[parameter]["enabled"]
+
+    return is_required
+
+def group_requires_value(ui_json: dict[str, dict], parameter: str):
+    """True is groupOptional and group is enabled else False"""
+    is_required = True
+    groupname = ui_json[parameter]["group"]
+    group = collect(ui_json, "group", groupname)
+    if group_optional(ui_json, groupname):
+        is_required = group_enabled(group)
+    return is_required
+
+def requires_value(ui_json: dict[str, dict], parameter: str):
+    """
+    Check if a ui.json parameter requires a value (is not optional).
+
+    The required status of a parameter depends on a hierarchy of ui switches.
+    At the top is the groupOptional switch, below that is the dependency
+    switch, and on the bottom is the optional switch.  When group optional
+    is disabled all parameters in the group are not required, When the
+    groupOptional is enabled the required status of a parameter depends first
+    any dependencies and lastly on it's optional status.
+
 
     :param ui_json: UI.json dictionary
     :param parameter: Name of parameter to check type.
     """
-    is_optional = False
-    if is_form(ui_json[parameter]):
-        if "optional" in ui_json[parameter]:
-            is_optional = ui_json[parameter]["optional"]
-        elif "dependency" in ui_json[parameter]:
-            is_optional = True
-        elif "group" in ui_json[parameter]:
-            is_optional = group_optional(ui_json, ui_json[parameter]["group"])
+    is_required = True
 
-    return is_optional
+    if is_form(ui_json[parameter]):
+
+        if "group" in ui_json[parameter]:
+            group_required = group_requires_value(ui_json, parameter)
+            if group_required:
+                if ("dependency" in ui_json[parameter]):
+                    is_required = dependency_requires_value(ui_json, parameter)
+                elif ("optional" in ui_json[parameter]):
+                    is_required = optional_requires_value(ui_json, parameter)
+            else:
+                is_required = False
+
+        elif "dependency" in ui_json[parameter]:
+            is_required = dependency_requires_value(ui_json, parameter)
+
+        elif "optional" in ui_json[parameter]:
+            is_required = optional_requires_value(ui_json, parameter)
+
+    return is_required
 
 
 def group_enabled(group: dict[str, dict]) -> bool:
