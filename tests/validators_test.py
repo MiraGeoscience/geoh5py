@@ -205,8 +205,18 @@ def test_validate_data(tmp_path):
     ui_json = {
         "title": "test",
         "geoh5": str(tmp_path / r"test.geoh5"),
-        "param_1": {"label": "param_1", "optional": True, "enabled": False, "value": None},
-        "param_2": {"label": "param_2", "optional": True, "enabled": False, "value": None},
+        "param_1": {
+            "label": "param_1",
+            "optional": True,
+            "enabled": False,
+            "value": None,
+        },
+        "param_2": {
+            "label": "param_2",
+            "optional": True,
+            "enabled": False,
+            "value": None,
+        },
     }
     validations = {
         "param_1": {"one_of": "sad little parameter", "types": [str, type(None)]},

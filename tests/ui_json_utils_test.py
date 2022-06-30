@@ -177,14 +177,9 @@ def test_requires_value():
     ui_json["bool_parameter"]["value"] = True
     assert not requires_value(ui_json, "integer_parameter")
 
-
-
-
-
     # Check the normal behaviour
     ui_json["other_parameter"] = templates.float_parameter()
     assert requires_value(ui_json, "other_parameter")
-
 
 
 def test_group_enabled():

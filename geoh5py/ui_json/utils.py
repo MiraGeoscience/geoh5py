@@ -71,9 +71,11 @@ def group_optional(ui_json: dict[str, dict], group_name: str):
     parameters = find_all(group, "groupOptional")
     return group[parameters[0]]["groupOptional"] if parameters else False
 
+
 def optional_requires_value(ui_json: dict[str, dict], parameter: str):
     """True if enabled else False."""
     return ui_json[parameter].get("enabled", True)
+
 
 def dependency_requires_value(ui_json: dict[str, dict], parameter: str):
     """
@@ -95,6 +97,7 @@ def dependency_requires_value(ui_json: dict[str, dict], parameter: str):
 
     return is_required
 
+
 def group_requires_value(ui_json: dict[str, dict], parameter: str):
     """True is groupOptional and group is enabled else False"""
     is_required = True
@@ -103,6 +106,7 @@ def group_requires_value(ui_json: dict[str, dict], parameter: str):
     if group_optional(ui_json, groupname):
         is_required = group_enabled(group)
     return is_required
+
 
 def requires_value(ui_json: dict[str, dict], parameter: str):
     """
@@ -126,9 +130,9 @@ def requires_value(ui_json: dict[str, dict], parameter: str):
         if "group" in ui_json[parameter]:
             group_required = group_requires_value(ui_json, parameter)
             if group_required:
-                if ("dependency" in ui_json[parameter]):
+                if "dependency" in ui_json[parameter]:
                     is_required = dependency_requires_value(ui_json, parameter)
-                elif ("optional" in ui_json[parameter]):
+                elif "optional" in ui_json[parameter]:
                     is_required = optional_requires_value(ui_json, parameter)
             else:
                 is_required = False

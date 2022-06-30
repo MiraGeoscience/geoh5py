@@ -359,9 +359,9 @@ def test_invalid_uuid_string(tmp_path):
 
     with pytest.raises(TypeValidationError) as excinfo:
         getattr(in_file, "data")
-    assert TypeValidationError.message(
-        "data", "int", ["str", "UUID", "Entity"]
-    ) == str(excinfo.value)
+    assert TypeValidationError.message("data", "int", ["str", "UUID", "Entity"]) == str(
+        excinfo.value
+    )
 
 
 def test_valid_uuid_in_workspace(tmp_path):
