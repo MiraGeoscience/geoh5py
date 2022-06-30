@@ -15,9 +15,9 @@ The bulk of the data is accessible both directly by ``UUID`` through the
 :Objects: Flat container for all object entities
 :Root: Optional hard link to ``workspace`` group, top of group hierarchy.
 :Types:
-    - :ref:`Data Types <data_types>`: Flat container for all data types
-    - :ref:`Group Types <group_types>`: Flat container for all group types
-    - :ref:`Object Types <object_types>`: Flat container for all object types
+    - `Data Types`_: Flat container for all data types
+    - `Group Types`_: Flat container for all group types
+    - `Object Types`_: Flat container for all object types
 
 .. figure:: ./images/entity_links.png
     :align: right
@@ -140,7 +140,7 @@ Containers for data values of various types.
 Data are currently **always stored as a 1D array**, even in the case of
 single-value data with the ``Object`` association (in which case it is a
 1D array of length 1).
-See the :ref:`Data Types <data_types>` section for the list of supported data types.
+See the `Data Types`_ section for the list of supported data types.
 
 **Attributes**
 

@@ -296,7 +296,7 @@ Potential Electrode
 
 **UUID : {275ecee9-9c24-4378-bf94-65f3c5fbe163}**
 
-:ref:`Curve <geoh5_curve>` object representing the receiver electrodes of a direct-current resistivity survey.
+`Curve`_ object representing the receiver electrodes of a direct-current resistivity survey.
 
 **Datasets**
 
@@ -304,9 +304,9 @@ Potential Electrode
 
     Dictionary defining the link between the source and receiver objects.
 
-    - "Current Electrodes" ``uuid``: Identifier for the linked :ref:`Current Electrode <geoh5_current_electrode>`
+    - "Current Electrodes" ``uuid``: Identifier for the linked `Current Electrode`_
 
-    - "Potential Electrodes" ``uuid``: Identifier for the linked :ref:`Potential Electrode <geoh5_potential_electrode>`
+    - "Potential Electrodes" ``uuid``: Identifier for the linked `Potential Electrode`_
 
 
 **Requirements**
@@ -314,7 +314,7 @@ Potential Electrode
 :A-B Cell ID: Data entity
 
     Reference data named "A-B Cell ID" with ``association=CELL`` expected.
-    The values define the source dipole (cell) from the :ref:`Current Electrode <geoh5_current_electrode>`
+    The values define the source dipole (cell) from the `Current Electrode`_
     to every potential measurement.
 
 
@@ -324,14 +324,14 @@ Current Electrode
 
 **UUID : {9b08bb5a-300c-48fe-9007-d206f971ea92}**
 
-:ref:`Curve <geoh5_curve>` object representing the transmitter electrodes of a direct-current resistivity survey.
+`Curve`_ object representing the transmitter electrodes of a direct-current resistivity survey.
 
 **Datasets**
 
 :Metadata: json formatted ``string``
 
     Dictionary defining the link between the source and receiver objects. Same definition as
-    the :ref:`Potential Electrode <geoh5_potential_electrode>` object.
+    the `Potential Electrode`_ object.
 
 
 **Requirements**
@@ -368,7 +368,7 @@ Airborne TEM Rx
 
 **UUID : {19730589-fd28-4649-9de0-ad47249d9aba}**
 
-:ref:`Curve <geoh5_curve>` object representing an array of time-domain electromagnetic receiver dipoles.
+`Curve`_ object representing an array of time-domain electromagnetic receiver dipoles.
 
 **Attributes**
 
@@ -378,7 +378,7 @@ Airborne TEM Rx
 
 :Metadata: json formatted ``string``
 
-    Dictionary of survey parameters shared with the :ref:`Transmitters <geoh5_atem_tx>`. The following items are core
+    Dictionary of survey parameters shared with the `Airborne TEM Tx`_. The following items are core
     parameters stored under the "EM Dataset" key.
 
     - "Channels": ``list`` of ``double``
@@ -430,15 +430,15 @@ Airborne TEM Tx
 
 **UUID : {58c4849f-41e2-4e09-b69b-01cf4286cded}**
 
-:ref:`Curve <geoh5_curve>` object representing an array of time-domain electromagnetic transmitter loops.
+`Curve`_ object representing an array of time-domain electromagnetic transmitter loops.
 
 **Datasets**
 
 :Metadata: json formatted ``string``
 
-    See definition from the :ref:`Airborne TEM Rx <geoh5_atem_rx>` object. The "Transmitters" ``uuid`` value
+    See definition from the `Airborne TEM Rx`_ object. The "Transmitters" ``uuid`` value
     should point to itself, while the "Receivers" ``uuid`` refers the linked
-    :ref:`Airborne TEM Rx <geoh5_atem_rx>` object.
+    `Airborne TEM Rx`_ object.
 
 
 Airborne FEM Rx
@@ -586,7 +586,7 @@ Magnetotellurics
 
 **UUID : {b99bd6e5-4fe1-45a5-bd2f-75fc31f91b38}**
 
-:ref:`Points <geoh5_points>` object representing a magnetotelluric survey.
+`Points`_ object representing a magnetotelluric survey.
 
 :Metadata: json formatted ``string``
 
@@ -613,7 +613,7 @@ Tipper Rx
 
 **UUID : {0b639533-f35b-44d8-92a8-f70ecff3fd26}**
 
-:ref:`Curve <geoh5_curve>` object representing a tipper survey.
+`Curve`_ object representing a tipper survey.
 
 :Metadata: json formatted ``string``
 
@@ -629,7 +629,7 @@ Tipper Rx
     - "Receivers": ``uuid``
         Reference to itself.
     - "Base stations: ``uuid``
-        Reference to :ref:`Tipper Base stations <geoh5_tipper_base_stations>`
+        Reference to `Tipper Base stations`_
     - "Survey type": ``string``
         Static field set to "Magnetotellurics"
     - "Unit": ``string``
@@ -642,10 +642,10 @@ Tipper Base stations
 
 **UUID : {f495cd13-f09b-4a97-9212-2ea392aeb375}**
 
-:ref:`Points <geoh5_points>` object representing a tipper survey.
+`Points`_ object representing a tipper survey.
 
 :Metadata: json formatted ``string``
 
-    See definition from the :ref:`Tipper Rx <geoh5_tipper_receivers>` object. The "Base stations" ``uuid`` value
+    See definition from the `Tipper Rx`_ object. The "Base stations" ``uuid`` value
     should point to itself, while the "Receivers" ``uuid`` refers the linked
-    :ref:`Tipper Rx <geoh5_tipper_receivers>` object.
+    `Tipper Rx`_ object.
