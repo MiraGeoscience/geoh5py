@@ -244,7 +244,7 @@ def monitored_directory_copy(
     directory: str, entity: ObjectBase, copy_children: bool = True
 ):
     """
-    Create a temporary *.geoh5 file in the monitoring folder and export entity for update.
+    Create a temporary geoh5 file in the monitoring folder and export entity for update.
 
     :param directory: Monitoring directory
     :param entity: Entity to be updated

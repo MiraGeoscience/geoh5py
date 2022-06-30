@@ -1,9 +1,19 @@
 #  Copyright (c) 2022 Mira Geoscience Ltd.
 #
-#  This file is part of geoapps.
+#  This file is part of geoh5py.
 #
-#  geoapps is distributed under the terms and conditions of the MIT License
-#  (see LICENSE file at the root of this source code package).
+#  geoh5py is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU Lesser General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  geoh5py is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 
@@ -172,7 +182,7 @@ class InputFile:
     @staticmethod
     def read_ui_json(json_file: str, **kwargs):
         """
-        Read and create an InputFile from *.ui.json
+        Read and create an InputFile from ui.json
         """
         input_file = InputFile(**kwargs)
 
@@ -218,11 +228,10 @@ class InputFile:
         Update the ui.json values and enabled status from input data.
 
         :param data: Key and value pairs expected by the ui_json.
-        :param none_map : Map parameter 'None' values to non-null numeric types.
+        :param none_map: Map parameter 'None' values to non-null numeric types.
             The parameters in the dictionary are mapped to optional and disabled.
 
-        :raises ValueError : If attempting to set None value to non-optional
-            parameter.
+        :raises ValueError: If attempting to set None to non-optional parameter.
         """
         if self.ui_json is None:
             raise UserWarning("InputFile requires a 'ui_json' to be defined.")
@@ -325,7 +334,7 @@ class InputFile:
         Writes a formatted ui.json file from InputFile data
 
         :param name: Name of the file
-        :param none_map : Map parameter None values to non-null numeric types.
+        :param none_map: Map parameter None values to non-null numeric types.
         :param path: Directory to write the ui.json to.
         """
         if name is not None:
