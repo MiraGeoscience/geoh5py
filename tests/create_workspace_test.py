@@ -108,22 +108,16 @@ def test_bad_extension(tmp_path):
 
 
 def test_read_bytes(tmp_path):
-    ws = Workspace(
-        tmp_path / r"test.geoh5",
-    )
-    ws.create_entity(Points)
-    ws.close()
+    with Workspace(tmp_path / r"test.geoh5") as workspace:
+        workspace.create_entity(Points)
 
-    in_file = open(tmp_path / r"test.geoh5", "rb")
-    byte_data = in_file.read()
-    in_file.close()
+    with open(tmp_path / r"test.geoh5", "rb") as in_file:
+        byte_data = in_file.read()
 
-    byte_ws = Workspace(io.BytesIO(byte_data))
-    byte_objects = byte_ws.objects
-    byte_ws.close()
+    with Workspace(io.BytesIO(byte_data)) as byte_ws:
+        byte_objects = byte_ws.objects
 
-    file_ws = Workspace(tmp_path / r"test.geoh5")
-    file_objects = file_ws.objects
-    file_ws.close()
+    with Workspace(tmp_path / r"test.geoh5") as file_ws:
+        file_objects = file_ws.objects
 
     assert len(byte_objects) == len(file_objects)
