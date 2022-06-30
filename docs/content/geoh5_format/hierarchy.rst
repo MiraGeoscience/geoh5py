@@ -15,9 +15,9 @@ The bulk of the data is accessible both directly by ``UUID`` through the
 :Objects: Flat container for all object entities
 :Root: Optional hard link to ``workspace`` group, top of group hierarchy.
 :Types:
-    - :ref:`Data Types <data_types>`: Flat container for all data types
-    - :ref:`Group Types <group_types>`: Flat container for all group types
-    - :ref:`Object Types <object_types>`: Flat container for all object types
+    - `Data Types`_: Flat container for all data types
+    - `Group Types`_: Flat container for all group types
+    - `Object Types`_: Flat container for all object types
 
 .. figure:: ./images/entity_links.png
     :align: right
@@ -29,8 +29,7 @@ traversals. There is no data duplication, merely multiple references (pointers) 
 the data storage on file. Types are shared (and thus generally written to file first). All
 groups, objects and data must include a hard link to their type.
 
-Attributes
-----------
+**Attributes**
 
 :Version: ``double``
     Version of specification used by this file
@@ -52,8 +51,8 @@ Groups are simple container for other groups and objects. They are often used to
 special meanings to a collection of entities or to create specialized software
 functionality.
 
-Attributes
-----------
+**Attributes**
+
 :Name: ``str``
     Name of the object displayed in the project tree.
 :ID: ``str``, *UUID*
@@ -101,8 +100,7 @@ segments). The exact requirements and interpretation depends on the
 type.
 
 
-Attributes
-----------
+**Attributes**
 
 :Name: ``str``
     Name of the object displayed in the project tree.
@@ -142,10 +140,9 @@ Containers for data values of various types.
 Data are currently **always stored as a 1D array**, even in the case of
 single-value data with the ``Object`` association (in which case it is a
 1D array of length 1).
-See the :ref:`Data Types <data_types>` section for the list of supported data types.
+See the `Data Types`_ section for the list of supported data types.
 
-Attributes
-----------
+**Attributes**
 
 :Association: ``str``
     Describes which part the property is tied to. Must be one of:
@@ -178,13 +175,10 @@ While they are structured similarly, **each group, object or set of data
 has a type that defines how its HDF5 datasets should be interpreted**.
 This type is shared among any number of entities (groups/objects/data sets).
 
-.. _group_types:
-
 Group Types
 -----------
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Name: ``str``
     Name of the group displayed in the project tree.
@@ -199,15 +193,12 @@ Attributes
 
 
 
-.. _object_types:
-
 Object Types
 ------------
 
 Objects are containers for data values with spatial information.
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Name: ``str``
     Name of the object displayed in the project tree.
@@ -216,8 +207,6 @@ Attributes
 :Description: ``str``
     (Optional) Description of the type.
 
-
-.. _data_types:
 
 Data Types
 ----------
@@ -230,8 +219,7 @@ type identifiers can also be reserved as a means of identifying a
 specific kind of data.
 
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Name: ``str``
     Name of the object displayed in the project tree.

@@ -1,11 +1,7 @@
-.. _analyst_objects:
-
 ANALYST Objects
 ===============
 
 Entities with spatial information used to store data.
-
-.. _geoh5_points:
 
 Points
 ------
@@ -14,14 +10,11 @@ Points
 
 3-D scatter points object defined by vertices with fixed coordinates in Cartesian system (x, y and z).
 
-Datasets
-^^^^^^^^
+**Datasets**
 :Vertices: 1D composite array
 
     [*x* ``double``, *y* ``double``, *z* ``double``]
 
-
-.. _geoh5_curve:
 
 Curve
 -----
@@ -31,16 +24,14 @@ Curve
 Polyline object defined by a series of line segments (cells) connecting vertices.
 Data can be associated to either the vertices or cells.
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Current line property ID: ``str``, *UUID*
 
     Unique identifier of a reference data for naming of curve parts.
 
 
-Datasets
-^^^^^^^^
+**Datasets**
 
 :Cells: Array of ``int32``, shape(N, 2)
 
@@ -53,8 +44,7 @@ Surface
 
 Triangulated mesh object defined by cells (triangles) and vertices.
 
-Datasets
-^^^^^^^^
+**Datasets**
 
 :Cells: Array of ``int32``, shape(N, 3)
 
@@ -77,11 +67,11 @@ to a 1-D vector index can be calculated from
 Without rotation angles, U points eastwards, V points northwards, and Z points upwards.
 Since their geometry is defined entirely by the additional data described below, block models do not require a ``Vertices`` or ``Cells`` dataset.
 
-Datasets
-^^^^^^^^
+**Datasets**
 :U cell delimiters: array of ``double``, shape(nU,)
 
     Distances of cell edges from origin along the U axis (first value should be 0)
+
 :V cell delimiters: array of ``double``, shape(nV,)
 
     Distances of cell edges from origin along the V axis (first value should be 0)
@@ -89,8 +79,7 @@ Datasets
 
     Distances of cell edges from origin upwards along the vertical axis (first value should be 0)
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Origin: composite type
 
@@ -115,8 +104,7 @@ The conversion between the grid coordinates of a cell to its 1-D vector index ca
 Without rotation angles, U points eastwards and V points northwards. Since their geometry is defined entirely by the additional data
 described below, 2D grids do not require a Vertices or Cells dataset.
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Origin: composite type
 
@@ -146,8 +134,7 @@ Vertices represent points along the drillhole path (support for data rather than
 Cells contain two vertices and represent intervals along the drillhole path (and are a support for interval data as well).
 Cells may overlap with each other to accommodate the different sampling intervals of various data.
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Collar: composite type, shape(3,)
 
@@ -155,13 +142,13 @@ Attributes
 
     Collar location
 
-Datasets
-^^^^^^^^
+**Datasets**
 :Surveys: composite array, shape(3,)
 
     [*Depth* ``double``, *Dip* ``double``, *Azimuth* ``double``]
 
     Survey locations
+
 :Trace: 1D composite array
 
     [*X* ``double``, *Y* ``double``, *Z* ``double``]
@@ -194,8 +181,7 @@ Label
 
 Has no vertices nor cell data
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Target position: composite type, shape(3,)
 
@@ -256,8 +242,7 @@ Octree
 
 Semi-structured grid that stores cells in a tree structure with eight octants.
 
-Datasets
-^^^^^^^^
+**Datasets**
 
 :Octree Cells: composite type, shape(N, 4)
 
@@ -266,8 +251,7 @@ Datasets
     Array defining the position (I, J, K) and size (NCells) of every cell within
     the base octree grid.
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :NU: ``integer``
     Number of base cells along the U-axis.
@@ -307,57 +291,50 @@ Text Object
 *To be further documented*
 
 
-.. _geoh5_potential_electrode:
-
 Potential Electrode
 -------------------
 
 **UUID : {275ecee9-9c24-4378-bf94-65f3c5fbe163}**
 
-:ref:`Curve <geoh5_curve>` object representing the receiver electrodes of a direct-current resistivity survey.
+`Curve`_ object representing the receiver electrodes of a direct-current resistivity survey.
 
-Datasets
-^^^^^^^^
+**Datasets**
 
 :Metadata: json formatted ``string``
 
     Dictionary defining the link between the source and receiver objects.
 
-    - "Current Electrodes" ``uuid``: Identifier for the linked :ref:`Current Electrode <geoh5_current_electrode>`
+    - "Current Electrodes" ``uuid``: Identifier for the linked `Current Electrode`_
 
-    - "Potential Electrodes" ``uuid``: Identifier for the linked :ref:`Potential Electrode <geoh5_potential_electrode>`
+    - "Potential Electrodes" ``uuid``: Identifier for the linked `Potential Electrode`_
 
 
-Requirements
-^^^^^^^^^^^^
+**Requirements**
 
 :A-B Cell ID: Data entity
 
     Reference data named "A-B Cell ID" with ``association=CELL`` expected.
-    The values define the source dipole (cell) from the :ref:`Current Electrode <geoh5_current_electrode>`
+    The values define the source dipole (cell) from the `Current Electrode`_
     to every potential measurement.
 
 
-.. _geoh5_current_electrode:
 
 Current Electrode
 -----------------
 
 **UUID : {9b08bb5a-300c-48fe-9007-d206f971ea92}**
 
-:ref:`Curve <geoh5_curve>` object representing the transmitter electrodes of a direct-current resistivity survey.
+`Curve`_ object representing the transmitter electrodes of a direct-current resistivity survey.
 
-Datasets
-^^^^^^^^
+**Datasets**
 
 :Metadata: json formatted ``string``
 
     Dictionary defining the link between the source and receiver objects. Same definition as
-    the :ref:`Potential Electrode <geoh5_potential_electrode>` object.
+    the `Potential Electrode`_ object.
 
 
-Requirements
-^^^^^^^^^^^^
+**Requirements**
 
 :A-B Cell ID: Data entity
 
@@ -385,26 +362,23 @@ Airborne EM
 
 *To be further documented*
 
-.. _geoh5_atem_rx:
 
 Airborne TEM Rx
 ---------------
 
 **UUID : {19730589-fd28-4649-9de0-ad47249d9aba}**
 
-:ref:`Curve <geoh5_curve>` object representing an array of time-domain electromagnetic receiver dipoles.
+`Curve`_ object representing an array of time-domain electromagnetic receiver dipoles.
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Target position: composite type
 
-Datasets
-^^^^^^^^
+**Datasets**
 
 :Metadata: json formatted ``string``
 
-    Dictionary of survey parameters shared with the :ref:`Transmitters <geoh5_atem_tx>`. The following items are core
+    Dictionary of survey parameters shared with the `Airborne TEM Tx`_. The following items are core
     parameters stored under the "EM Dataset" key.
 
     - "Channels": ``list`` of ``double``
@@ -451,23 +425,20 @@ Datasets
             Generally used as the reference (t_i=0.0) for the provided data channels:
             (-) on-time an (+) off-time.
 
-.. _geoh5_atem_tx:
-
 Airborne TEM Tx
 ---------------
 
 **UUID : {58c4849f-41e2-4e09-b69b-01cf4286cded}**
 
-:ref:`Curve <geoh5_curve>` object representing an array of time-domain electromagnetic transmitter loops.
+`Curve`_ object representing an array of time-domain electromagnetic transmitter loops.
 
-Datasets
-^^^^^^^^
+**Datasets**
 
 :Metadata: json formatted ``string``
 
-    See definition from the :ref:`Airborne TEM Rx <geoh5_atem_rx>` object. The "Transmitters" ``uuid`` value
+    See definition from the `Airborne TEM Rx`_ object. The "Transmitters" ``uuid`` value
     should point to itself, while the "Receivers" ``uuid`` refers the linked
-    :ref:`Airborne TEM Rx <geoh5_atem_rx>` object.
+    `Airborne TEM Rx`_ object.
 
 
 Airborne FEM Rx
@@ -615,7 +586,7 @@ Magnetotellurics
 
 **UUID : {b99bd6e5-4fe1-45a5-bd2f-75fc31f91b38}**
 
-:ref:`Points <geoh5_points>` object representing a magnetotelluric survey.
+`Points`_ object representing a magnetotelluric survey.
 
 :Metadata: json formatted ``string``
 
@@ -636,14 +607,13 @@ Magnetotellurics
         Sampling units, must be one of "Hertz (Hz)", "KiloHertz (kHz)", "MegaHertz (MHz)" or
         "Gigahertz (GHz)".
 
-.. _geoh5_tipper_receivers:
 
 Tipper Rx
 ---------
 
 **UUID : {0b639533-f35b-44d8-92a8-f70ecff3fd26}**
 
-:ref:`Curve <geoh5_curve>` object representing a tipper survey.
+`Curve`_ object representing a tipper survey.
 
 :Metadata: json formatted ``string``
 
@@ -659,24 +629,23 @@ Tipper Rx
     - "Receivers": ``uuid``
         Reference to itself.
     - "Base stations: ``uuid``
-        Reference to :ref:`Tipper Base stations <geoh5_tipper_base_stations>`
+        Reference to `Tipper Base stations`_
     - "Survey type": ``string``
         Static field set to "Magnetotellurics"
     - "Unit": ``string``
         Sampling units, must be one of "Hertz (Hz)", "KiloHertz (kHz)", "MegaHertz (MHz)" or
         "Gigahertz (GHz)".
 
-.. _geoh5_tipper_base_stations:
 
 Tipper Base stations
 --------------------
 
 **UUID : {f495cd13-f09b-4a97-9212-2ea392aeb375}**
 
-:ref:`Points <geoh5_points>` object representing a tipper survey.
+`Points`_ object representing a tipper survey.
 
 :Metadata: json formatted ``string``
 
-    See definition from the :ref:`Tipper Rx <geoh5_tipper_receivers>` object. The "Base stations" ``uuid`` value
+    See definition from the `Tipper Rx`_ object. The "Base stations" ``uuid`` value
     should point to itself, while the "Receivers" ``uuid`` refers the linked
-    :ref:`Tipper Rx <geoh5_tipper_receivers>` object.
+    `Tipper Rx`_ object.
