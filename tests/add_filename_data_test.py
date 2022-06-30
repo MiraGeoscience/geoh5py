@@ -53,18 +53,18 @@ def test_add_file(tmp_path):
         assert file_data.n_values == 1, "Object association should have 1 value."
         # Rename the file locally and write back out
         new_path = tmp_path / r"temp"
-        file_data.save(path=new_path, name="numpy_array.dat")
+        file_data.save_file(path=new_path, name="numpy_array.dat")
         assert os.path.exists(
             os.path.join(new_path, "numpy_array.dat")
         ), f"Input path '{os.path.join(new_path, 'numpy_array.dat')}' does not exist."
 
-        file_data.save(path=new_path)
+        file_data.save_file(path=new_path)
         np.testing.assert_array_equal(
             np.loadtxt(os.path.join(new_path, "numpy_array.txt")),
             np.loadtxt(BytesIO(file_data.values)),
             err_msg="Loaded and stored bytes array not the same",
         )
-
+        file_data.values = b"abc"
         obj.copy(parent=workspace_copy)
         workspace_copy.close()
 
@@ -79,3 +79,8 @@ def test_add_file(tmp_path):
     assert "Input 'values' for FilenameData must be of type 'bytes'." in str(
         excinfo.value
     )
+
+    with pytest.raises(AttributeError) as excinfo:
+        file_data.file_name = None
+
+    assert "FilenameData requires the 'file_name' to be set." in str(excinfo.value)

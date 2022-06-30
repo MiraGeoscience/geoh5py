@@ -24,6 +24,7 @@ import pytest
 from geoh5py import groups
 from geoh5py.groups import CustomGroup, Group, GroupType, RootGroup
 from geoh5py.objects import ObjectType
+from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
@@ -84,14 +85,10 @@ def test_group_instantiation(group_class, tmp_path):
 
 
 def test_custom_group_instantiation(tmp_path):
-    with pytest.raises(RuntimeError):
-        assert CustomGroup.default_type_uid() is None
+    assert CustomGroup.default_type_uid() is None
 
     h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace(h5file_path) as workspace:
-        with pytest.raises(RuntimeError):
-            # cannot get a pre-defined type for a CustomGroup
-            CustomGroup.find_or_create_type(workspace)
 
         group_type = GroupType.create_custom(
             workspace, name="test custom", description="test custom description"
@@ -105,7 +102,10 @@ def test_custom_group_instantiation(tmp_path):
         assert workspace.find_type(group_type.uid, GroupType) is group_type
         assert GroupType.find(workspace, group_type.uid) is group_type
 
-        created_group = CustomGroup(group_type, name="test custom group")
+        created_group = CustomGroup(
+            group_type, name="test custom group", parent=workspace.root
+        )
+        workspace.save_entity(created_group)
         assert created_group.uid is not None
         assert created_group.uid.int != 0
         assert created_group.name == "test custom group"
@@ -113,18 +113,19 @@ def test_custom_group_instantiation(tmp_path):
 
         _can_find(workspace, created_group)
 
-        # now, make sure that unused data and types do not remain reference in the workspace
+        # now, make sure that unused data and types remains referenced in the workspace
         group_type_uid = group_type.uid
         group_type = None
-        # group_type is referenced by created_group, so it should survive in the workspace
         assert workspace.find_type(group_type_uid, GroupType) is not None
 
-        created_group_uid = created_group.uid
-        created_group = None
-        # no more reference on group_type, so it should be gone from the workspace
-        assert workspace.find_data(created_group_uid) is None
-        # no more reference on created_group, so it should be gone from the workspace
-        assert workspace.find_type(group_type_uid, GroupType) is None
+    with Workspace(h5file_path) as new_workspace:
+        rec_group = new_workspace.get_entity("test custom group")[0]
+
+    compare_entities(
+        rec_group,
+        created_group,
+        ignore=["_parent", "_metadata"],
+    )
 
 
 def _can_find(workspace, created_group):
