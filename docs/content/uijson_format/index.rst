@@ -5,10 +5,30 @@ About
 ^^^^^
 
 The **ui.json** format provides a framework to create a simple User Interface (UI) between geoh5py and `Geoscience ANALYST Pro
-<http://www.mirageoscience.com/our-products/software-product/geoscience-analyst>`_. The format is built on an array of `JSON objects <./json_objects.rst>`_, representing parameters used to render the UI, and pass variables to an accompanying python script.
+<http://www.mirageoscience.com/our-products/software-product/geoscience-analyst>`_. The format uses JSON objects, to represent `script parameters <./json_objects.rst>`_ used to render the UI, and pass variables to an accompanying python script.
 
 
-Each ui.json object requires at least a **label** and **value** parameter, however additional parameters can be used to define types of input and additional dependencies.
+Each ui.json object requires at least a **label** and **value** parameter, however additional parameters can be used to define different types of input (filepaths, geoh5py objects, strings etc.) and additional dependencies.
+
+For example, consider the below example of a ui.json which describes a single script parameter to reference a block model.
+
+.. code-block:: json
+
+    {
+    "grid_object": {
+    "meshType": ["{B020A277-90E2-4CD7-84D6-612EE3F25051}"],
+    "main": true,
+    "label": "Select Block Model",
+    "value": ""
+    }
+    }
+
+
+The resulting UI looks like:
+.. figure:: ./images/block_model_param.png
+
+Note the 'meshType' is used to filter geoh5py object types, defined by their UUID. A complete list of UUID's for geoh5py objects are available in the `geoh5 objects documentation <../content/geoh5_format/analyst/objects.rst>`_.
+
 
 When executing a ui.json script from Geoscience ANALYST Pro, the **value** and **enabled** parameter will be updated or added to each JSON.
 
@@ -95,7 +115,7 @@ Tips on creating UIs
 
 External Links
 ^^^^^^^^^^^^^^
- - https://www.w3schools.com/js/js_json_objects.asp
-- `JSON Terminology <https://json-schema.org/specification.html>`_
+- `JSON Objects <https://www.w3schools.com/js/js_json_objects.asp>`_
+- `JSON Schema <https://json-schema.org/specification.html>`_
 - `Universally Unique IDentifier (UUID) <https://en.wikipedia.org/wiki/Universally_unique_identifier>`_
 - `C++ JSON Library <https://github.com/nlohmann/JSON>`_
