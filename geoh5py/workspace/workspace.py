@@ -1016,6 +1016,7 @@ class Workspace(AbstractContextManager):
         Open a geoh5 file and load the tree structure.
 
         :param mode: Optional mode of h5py.File. Defaults to 'r+'.
+        :return: `self`
         """
         if isinstance(self._geoh5, h5py.File):
             warnings.warn(f"Workspace already opened in mode {self._geoh5.mode}.")
