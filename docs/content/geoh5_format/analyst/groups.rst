@@ -29,6 +29,25 @@ The ``Root`` group defines the tree structure used in Geoscience ANALYST
 describing the parent-child relationships of entities. If absent, any Groups/Objects/Data
 will be brought into Geoscience ANALYST under the workspace group, still respecting any defined hierarchy links.
 
+SimPEG
+======
+
+**UUID : {55ed3daf-c192-4d4b-a439-60fa987fe2b8}**
+
+Container group for SimPEG inversions. Contains
+
+Datasets
+^^^^^^^^
+
+:Metadata: json formatted ``string``
+
+    Dictionary of inversion options.
+
+:options: ui.json formatted ``string``
+
+    Dictionary holding the corresponding ui.json.
+
+
 
 Tools
 =====

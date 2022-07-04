@@ -29,6 +29,7 @@ from ..data import CommentsData, Data
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
+from ..shared.concatenation import Concatenated
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
@@ -48,7 +49,7 @@ class ObjectBase(Entity):
     def __init__(self, object_type: ObjectType, **kwargs):
         assert object_type is not None
         self._entity_type = object_type
-        self._property_groups: list[PropertyGroup] = []
+        self._property_groups: list[PropertyGroup] | None = None
         self._last_focus = "None"
         self._comments = None
         # self._clipping_ids: List[uuid.UUID] = []
@@ -130,20 +131,21 @@ class ObjectBase(Entity):
                 Data, entity=kwargs, entity_type=entity_type
             )
 
+            if not isinstance(data_object, Data):
+                continue
+
             if property_group is not None:
                 self.add_data_to_group(data_object, property_group)
 
             data_objects.append(data_object)
 
-        self.workspace.finalize()
-
         if len(data_objects) == 1:
-            return data_object
+            return data_objects[0]
 
         return data_objects
 
     def add_data_to_group(
-        self, data: list | Data | uuid.UUID | str, name: str
+        self, data: list | Data | uuid.UUID, name: str
     ) -> PropertyGroup:
         """
         Append data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
@@ -164,8 +166,17 @@ class ObjectBase(Entity):
         else:
             uids = self.reference_to_uid(data)
 
+        association = None
+        template = self.workspace.get_entity(uids[0])[0]
+        if isinstance(template, Data):
+            association = template.association
+
         prop_group = self.find_or_create_property_group(
-            name=name, association=self.workspace.get_entity(uids[0])[0].association
+            name=name,
+            association=association,
+            property_group_type="Interval table"
+            if isinstance(self, Concatenated)
+            else "Multi-element",
         )
         for uid in uids:
             assert uid in [
@@ -173,46 +184,10 @@ class ObjectBase(Entity):
             ], f"Given data with uuid {uid} does not match any known children"
             if uid not in prop_group.properties:
                 prop_group.properties.append(uid)
-                self.modified_attributes = "property_groups"
+
+        self.workspace.update_attribute(self, "property_groups")
 
         return prop_group
-
-    def remove_data_from_group(
-        self, data: list | Data | uuid.UUID | str, name: str = None
-    ):
-        """
-        Remove data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
-        All given data must be children of the parent object.
-
-        :param data: :obj:`~geoh5py.data.data.Data` object,
-            :obj:`~geoh5py.shared.entity.Entity.uid` or
-            :obj:`~geoh5py.shared.entity.Entity.name` of data.
-        :param name: Name of a :obj:`~geoh5py.groups.property_group.PropertyGroup`.
-            A new group is created if none exist with the given name.
-        """
-        if getattr(self, "property_groups", None) is not None:
-
-            if isinstance(data, list):
-                uids = []
-                for datum in data:
-                    uids += self.reference_to_uid(datum)
-            else:
-                uids = self.reference_to_uid(data)
-
-            if name is not None:
-                prop_groups = [
-                    prop_group
-                    for prop_group in self.property_groups
-                    if prop_group.name == name
-                ]
-            else:
-                prop_groups = self.property_groups
-
-            for prop_group in prop_groups:
-                for uid in uids:
-                    if uid in prop_group.properties:
-                        prop_group.properties.remove(uid)
-                        self.modified_attributes = "property_groups"
 
     @property
     def cells(self):
@@ -273,16 +248,20 @@ class ObjectBase(Entity):
 
         :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        if "name" in kwargs and any(
-            pg.name == kwargs["name"] for pg in self.property_groups
-        ):
-            prop_group = [
-                pg for pg in self.property_groups if pg.name == kwargs["name"]
-            ][0]
-        else:
-            prop_group = PropertyGroup(**kwargs)
-            self.property_groups = [prop_group]
+        property_groups = []
+        if self._property_groups is not None:
+            property_groups = self._property_groups
 
+        if "name" in kwargs and any(
+            pg.name == kwargs["name"] for pg in property_groups
+        ):
+            prop_group = [pg for pg in property_groups if pg.name == kwargs["name"]][0]
+        else:
+            kwargs["parent"] = self
+            prop_group = PropertyGroup(**kwargs)
+            property_groups += [prop_group]
+
+        self._property_groups = property_groups
         return prop_group
 
     def get_data(self, name: str) -> list[Data]:
@@ -343,7 +322,7 @@ class ObjectBase(Entity):
         return None
 
     @property
-    def property_groups(self) -> list[PropertyGroup]:
+    def property_groups(self) -> list[PropertyGroup] | None:
         """
         :obj:`list` of :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         """
@@ -352,14 +331,22 @@ class ObjectBase(Entity):
     @property_groups.setter
     def property_groups(self, prop_groups: list[PropertyGroup]):
         # Check for existing property_group
-        for prop_group in prop_groups:
-            if not any(
-                pg.uid == prop_group.uid for pg in self.property_groups
-            ) and not any(pg.name == prop_group.name for pg in self.property_groups):
-                prop_group.parent = self
+        if prop_groups is None:
+            property_groups = None
+        else:
+            property_groups = self._property_groups
+            if property_groups is None:
+                property_groups = []
 
-                self.modified_attributes = "property_groups"
-                self._property_groups = self.property_groups + [prop_group]
+            for prop_group in prop_groups:
+                if not any(
+                    pg.uid == prop_group.uid for pg in property_groups
+                ) and not any(pg.name == prop_group.name for pg in property_groups):
+                    prop_group.parent = self
+                    property_groups += [prop_group]
+
+        self._property_groups = property_groups
+        self.workspace.update_attribute(self, "property_groups")
 
     @property
     def vertices(self):

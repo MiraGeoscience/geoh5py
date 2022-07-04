@@ -81,9 +81,13 @@ def optional_type(ui_json: dict[str, dict], parameter: str):
     """
     is_optional = False
     if is_form(ui_json[parameter]):
-        is_optional |= ui_json[parameter].get("optional", False)
-        if "group" in ui_json[parameter]:
-            is_optional |= group_optional(ui_json, ui_json[parameter]["group"])
+        if "optional" in ui_json[parameter]:
+            is_optional = ui_json[parameter]["optional"]
+        elif "dependency" in ui_json[parameter]:
+            if optional_type(ui_json, ui_json[parameter]["dependency"]):
+                is_optional = not ui_json[ui_json[parameter]["dependency"]]["enabled"]
+        elif "group" in ui_json[parameter]:
+            is_optional = group_optional(ui_json, ui_json[parameter]["group"])
 
     return is_optional
 
@@ -251,12 +255,18 @@ def monitored_directory_copy(
     :param copy_children: Option to copy children entities.
     """
     working_path = path.join(directory, ".working")
+
     if not path.exists(working_path):
         mkdir(working_path)
 
     temp_geoh5 = f"temp{time():.3f}.geoh5"
-    temp_workspace = Workspace(path.join(working_path, temp_geoh5))
-    entity.copy(parent=temp_workspace, copy_children=copy_children)
+
+    if getattr(entity.workspace, "_geoh5") is None:
+        entity.workspace.open(mode="r")
+
+    with Workspace(path.join(working_path, temp_geoh5)) as w_s:
+        entity.copy(parent=w_s, copy_children=copy_children)
+
     move(
         path.join(working_path, temp_geoh5),
         path.join(directory, temp_geoh5),

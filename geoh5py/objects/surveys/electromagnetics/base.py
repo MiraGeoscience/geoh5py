@@ -40,7 +40,6 @@ class BaseEMSurvey(ObjectBase):
     _transmitters: BaseEMSurvey | None = None
 
     def __init__(self, object_type: ObjectType, **kwargs):
-
         super().__init__(object_type, **kwargs)
 
     def add_components_data(self, data: dict) -> list[PropertyGroup]:
@@ -101,7 +100,6 @@ class BaseEMSurvey(ObjectBase):
         for name, data_block in data.items():
             prop_group = self.add_validate_component_data(name, data_block)
             prop_groups.append(prop_group)
-        self.workspace.finalize()
 
         return prop_groups
 
@@ -109,7 +107,9 @@ class BaseEMSurvey(ObjectBase):
         """
         Append a property group to the entity and its metadata after validations.
         """
-        if name in [pg.name for pg in self.property_groups]:
+        if self.property_groups is not None and name in [
+            pg.name for pg in self.property_groups
+        ]:
             raise ValueError(
                 f"PropertyGroup named '{name}' already exists on the survey entity. "
                 f"Consider using the 'edit_metadata' method with "
@@ -229,7 +229,6 @@ class BaseEMSurvey(ObjectBase):
                 complement.metadata = self.metadata
 
         new_entity.metadata = metadata
-        parent.workspace.finalize()
 
         return new_entity
 
@@ -294,8 +293,7 @@ class BaseEMSurvey(ObjectBase):
         if getattr(self, "base_stations", None) is not None:
             getattr(self, "base_stations").metadata = self.metadata
 
-        self.modified_attributes = "metadata"
-        self.workspace.finalize()
+        self.workspace.update_attribute(self, "metadata")
 
     def _edit_validate_property_groups(
         self, values: PropertyGroup | list[PropertyGroup] | None
@@ -319,7 +317,7 @@ class BaseEMSurvey(ObjectBase):
             values = [values]
 
         for value in values:
-            if value not in self.property_groups:
+            if self.property_groups is not None and value not in self.property_groups:
                 raise ValueError("Property group must be an existing PropertyGroup.")
 
             if len(value.properties) != len(self.channels):
@@ -352,7 +350,7 @@ class BaseEMSurvey(ObjectBase):
         self.edit_metadata({"Input type": value})
 
     @property
-    def metadata(self) -> dict:
+    def metadata(self):
         """Metadata attached to the entity."""
         if getattr(self, "_metadata", None) is None:
             metadata = self.workspace.fetch_metadata(self.uid)
@@ -393,7 +391,7 @@ class BaseEMSurvey(ObjectBase):
                     continue
 
         self._metadata = values
-        self.modified_attributes = "metadata"
+        self.workspace.update_attribute(self, "metadata")
 
     @property
     def receivers(self) -> BaseEMSurvey | None:
@@ -402,13 +400,13 @@ class BaseEMSurvey(ObjectBase):
         """
         if getattr(self, "_receivers", None) is None:
             if self.metadata is not None and "Receivers" in self.metadata["EM Dataset"]:
-                rx_uid = self.metadata["EM Dataset"]["Receivers"]
+                receiver = self.metadata["EM Dataset"]["Receivers"]
+                receiver_entity = self.workspace.get_entity(receiver)[0]
 
-                try:
-                    self._receivers = self.workspace.get_entity(rx_uid)[0]
-                except IndexError:
-                    print("Associated Receivers entity not found in Workspace.")
-                    return None
+                if isinstance(receiver_entity, BaseEMSurvey):
+                    self._receivers = receiver_entity
+                else:
+                    print("Associated receivers entity not found in Workspace.")
 
         return self._receivers
 
@@ -445,13 +443,13 @@ class BaseEMSurvey(ObjectBase):
                 self.metadata is not None
                 and "Transmitters" in self.metadata["EM Dataset"]
             ):
-                tx_uid = self.metadata["EM Dataset"]["Transmitters"]
+                transmitter = self.metadata["EM Dataset"]["Transmitters"]
+                transmitter_entity = self.workspace.get_entity(transmitter)[0]
 
-                try:
-                    self._transmitters = self.workspace.get_entity(tx_uid)[0]
-                except IndexError:
+                if isinstance(transmitter_entity, BaseEMSurvey):
+                    self._transmitters = transmitter_entity
+                else:
                     print("Associated transmitters entity not found in Workspace.")
-                    return None
 
         return self._transmitters
 

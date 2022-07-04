@@ -15,8 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
+
+from __future__ import annotations
 
 import numpy as np
 
@@ -24,16 +24,13 @@ from geoh5py.objects import Drillhole
 from geoh5py.workspace import Workspace
 
 
-def test_insert_drillhole_data():
-
+def test_insert_drillhole_data(tmp_path):
     well_name = "bullseye"
     n_data = 10
     collocation = 1e-5
+    h5file_path = tmp_path / r"testCurve.geoh5"
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testCurve.geoh5"
-        # Create a workspace
-        workspace = Workspace(h5file_path)
+    with Workspace(h5file_path, version=1.0) as workspace:
         max_depth = 100
         well = Drillhole.create(
             workspace,
@@ -55,8 +52,6 @@ def test_insert_drillhole_data():
                 }
             }
         )
-
-        workspace.finalize()
 
         # Add more data with single match
         old_depths = well.get_data("DEPTH")[0].values

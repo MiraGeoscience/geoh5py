@@ -14,6 +14,9 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
+from __future__ import annotations
+
 from abc import ABC
 
 import numpy as np
@@ -34,36 +37,48 @@ class NumericData(Data, ABC):
         return PrimitiveTypeEnum.INVALID
 
     @property
-    def values(self) -> np.ndarray:
+    def values(self) -> np.ndarray | None:
         """
         :return: values: An array of float values
         """
-        if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
-            self._values = self.workspace.fetch_values(self.uid)
+        if getattr(self, "_values", None) is None:
+            values = self.workspace.fetch_values(self)
 
-        if self._values is not None:
-            self._values = self.check_vector_length(self._values)
+            if isinstance(values, (np.ndarray, type(None))):
+                self._values = self.check_vector_length(values)
 
         return self._values
 
     @values.setter
-    def values(self, values):
-        self.modified_attributes = "values"
-        self._values = self.check_vector_length(values)
+    def values(self, values: np.ndarray | None):
+        if isinstance(values, (np.ndarray, type(None))):
+            values = self.check_vector_length(values)
+
+        else:
+            raise ValueError(
+                f"Input 'values' for {self} must be of type {np.ndarray} or None."
+            )
+
+        self._values = values
+
+        self.workspace.update_attribute(self, "values")
 
     def check_vector_length(self, values) -> np.ndarray:
         """
         Check for possible mismatch between the length of values
         stored and the expected number of cells or vertices.
         """
-        if self.n_values is not None and (
-            values is None or len(values) < self.n_values
-        ):
-            full_vector = np.ones(self.n_values) * np.nan
-            full_vector[: len(np.ravel(values))] = np.ravel(values)
+        if self.n_values is not None:
+            if values is None or len(values) < self.n_values:
+                full_vector = np.ones(self.n_values) * np.nan
+                full_vector[: len(np.ravel(values))] = np.ravel(values)
+                return full_vector
 
-            return full_vector
-
+            if len(values) > self.n_values:
+                raise ValueError(
+                    f"Input 'values' of shape({self.n_values},) expected. "
+                    f"Array of shape{values.shape} provided.)"
+                )
         return values
 
     def __call__(self):

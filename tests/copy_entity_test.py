@@ -15,7 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+
+from __future__ import annotations
 
 import numpy as np
 import pytest
@@ -55,28 +56,28 @@ def test_copy_entity(tmp_path):
         },
     }
 
-    h5file_path = os.path.join(tmp_path, "testProject.geoh5")
+    h5file_path = tmp_path / r"testProject.geoh5"
 
     # Create a workspace
+    with Workspace(h5file_path) as workspace:
+        for obj, kwargs in objects.items():
+            entity = obj.create(workspace, **kwargs)
+
+            if getattr(entity, "vertices", None) is not None:
+                values = np.random.randn(entity.n_vertices)
+            else:
+                values = np.random.randn(entity.n_cells)
+
+            data = entity.add_data({"DataValues": {"values": values}})
+
+        with pytest.raises(ValueError) as excinfo:
+            workspace.copy_to_parent(entity, data)
+        assert "Input 'parent' should be of type (ObjectBase, Group, Workspace)" in str(
+            excinfo.value
+        )
+
     workspace = Workspace(h5file_path)
-    for obj, kwargs in objects.items():
-        entity = obj.create(workspace, **kwargs)
-
-        if getattr(entity, "vertices", None) is not None:
-            values = np.random.randn(entity.n_vertices)
-        else:
-            values = np.random.randn(entity.n_cells)
-
-        data = entity.add_data({"DataValues": {"values": values}})
-
-    with pytest.raises(ValueError) as excinfo:
-        workspace.copy_to_parent(entity, data)
-    assert "Input 'parent' should be of type (ObjectBase, Group, Workspace)" in str(
-        excinfo.value
-    )
-
-    workspace = Workspace(h5file_path)
-    new_workspace = Workspace(os.path.join(tmp_path, "testProject_2.geoh5"))
+    new_workspace = Workspace(tmp_path / r"testProject_2.geoh5")
     for entity in workspace.objects:
         entity.copy(parent=new_workspace)
 

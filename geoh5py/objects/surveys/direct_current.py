@@ -74,7 +74,12 @@ class PotentialElectrode(Curve):
                 ):
                     entity_type = self.current_electrodes.ab_cell_id.entity_type
                 else:
-                    entity_type = {"primitive_type": "REFERENCED"}
+                    value_map = {ii: str(ii) for ii in range(data.max() + 1)}
+                    value_map[0] = "Unknown"
+                    entity_type = {
+                        "primitive_type": "REFERENCED",
+                        "value_map": value_map,
+                    }
 
                 data = self.add_data(
                     {
@@ -131,7 +136,6 @@ class PotentialElectrode(Curve):
         ):
             self.current_electrodes.ab_cell_id.copy(parent=new_currents)
         new_entity.current_electrodes = new_currents
-        parent.workspace.finalize()
 
         return new_entity
 
@@ -170,7 +174,6 @@ class PotentialElectrode(Curve):
             self.ab_cell_id, ReferencedData
         ):
             self.ab_cell_id.entity_type = current_electrodes.ab_cell_id.entity_type
-        self.workspace.finalize()
 
     @property
     def potential_electrodes(self):
@@ -180,7 +183,7 @@ class PotentialElectrode(Curve):
         return self
 
     @property
-    def metadata(self) -> dict | None:
+    def metadata(self):
         """
         Metadata attached to the entity.
         """
@@ -190,7 +193,7 @@ class PotentialElectrode(Curve):
         return self._metadata
 
     @metadata.setter
-    def metadata(self, values: dict[str, uuid.UUID]):
+    def metadata(self, values):
         if not len(values) == 2:
             raise ValueError(
                 f"Metadata must have two key-value pairs. {values} provided."
@@ -208,7 +211,7 @@ class PotentialElectrode(Curve):
             raise IndexError("Input Potential Electrodes uuid not present in Workspace")
 
         self._metadata = values
-        self.modified_attributes = "metadata"
+        self.workspace.update_attribute(self, "metadata")
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -226,8 +229,7 @@ class CurrentElectrode(PotentialElectrode):
     __TYPE_UID = uuid.UUID("{9b08bb5a-300c-48fe-9007-d206f971ea92}")
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._current_line_id: uuid.UUID | None
-        self._metadata: dict[uuid.UUID, uuid.UUID] | None
+        self._current_line_id: uuid.UUID | None = None
 
         super().__init__(object_type, **kwargs)
 
@@ -272,7 +274,6 @@ class CurrentElectrode(PotentialElectrode):
         ):
             self.potential_electrodes.ab_cell_id.copy(parent=new_potentials)
         new_entity.potential_electrodes = new_potentials
-        parent.workspace.finalize()
 
         return new_entity
 
@@ -296,12 +297,13 @@ class CurrentElectrode(PotentialElectrode):
             raise AttributeError("No Current-Receiver metadata set.")
 
         potential = self.metadata["Potential Electrodes"]
+        potential_entity = self.workspace.get_entity(potential)[0]
 
-        try:
-            return self.workspace.get_entity(potential)[0]
-        except IndexError:
-            print("Associated PotentialElectrode entity not found in Workspace.")
-            return None
+        if isinstance(potential_entity, PotentialElectrode):
+            return potential_entity
+
+        print("Associated PotentialElectrode entity not found in Workspace.")
+        return None
 
     @potential_electrodes.setter
     def potential_electrodes(self, potential_electrodes: PotentialElectrode):
@@ -341,8 +343,10 @@ class CurrentElectrode(PotentialElectrode):
                 "A-B Cell ID": {
                     "values": data,
                     "association": "CELL",
-                    "entity_type": {"primitive_type": "REFERENCED"},
-                    "value_map": value_map,
+                    "entity_type": {
+                        "primitive_type": "REFERENCED",
+                        "value_map": value_map,
+                    },
                 }
             }
         )

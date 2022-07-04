@@ -15,11 +15,13 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 from copy import deepcopy
 
 import pytest
 
-from geoh5py.io.utils import dict_mapper
+from geoh5py.shared.utils import dict_mapper
 from geoh5py.ui_json import templates
 from geoh5py.ui_json.constants import default_ui_json
 from geoh5py.ui_json.utils import (
@@ -107,6 +109,17 @@ def test_optional_type():
     ui_json["string_parameter"]["groupOptional"] = False
     assert not optional_type(ui_json, "float_parameter")
     assert optional_type(ui_json, "other_float_parameter")
+
+    # Now check that optional is true if param is dependent on optional
+    ui_json = deepcopy(default_ui_json)
+    ui_json["string_parameter"] = templates.string_parameter(optional="disabled")
+    ui_json["float_parameter"] = templates.float_parameter()
+    ui_json["float_parameter"]["dependency"] = "string_parameter"
+    ui_json["float_parameter"]["dependencyType"] = "enabled"
+    assert optional_type(ui_json, "float_parameter")
+
+    ui_json["string_parameter"]["enabled"] = True
+    assert not optional_type(ui_json, "float_parameter")
 
 
 def test_group_enabled():

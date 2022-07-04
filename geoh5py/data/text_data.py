@@ -19,29 +19,42 @@ from __future__ import annotations
 
 import json
 
+import numpy as np
+
 from .data import Data
 from .primitive_type_enum import PrimitiveTypeEnum
 
 
 class TextData(Data):
+
+    _values: np.ndarray | str | None
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.TEXT
 
     @property
-    def values(self) -> str | None:
+    def values(self) -> np.ndarray | str | None:
         """
         :obj:`str` Text value.
         """
-        if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
-            self._values = self.workspace.fetch_values(self.uid)
+        if (getattr(self, "_values", None) is None) and self.on_file:
+            values = self.workspace.fetch_values(self)
+            if isinstance(values, (np.ndarray, str, type(None))):
+                self._values = values
 
         return self._values
 
     @values.setter
-    def values(self, values):
-        self.modified_attributes = "values"
+    def values(self, values: np.ndarray | str | None):
         self._values = values
+
+        if not isinstance(values, (np.ndarray, str, type(None))):
+            raise ValueError(
+                f"Input 'values' for {self} must be of type {np.ndarray}  str or None."
+            )
+
+        self.workspace.update_attribute(self, "values")
 
     def __call__(self):
         return self.values
@@ -72,17 +85,17 @@ class CommentsData(Data):
         """
         :obj:`list` List of comments
         """
-        if (getattr(self, "_values", None) is None) and self.existing_h5_entity:
-            comment_str = self.workspace.fetch_values(self.uid)
+        if (getattr(self, "_values", None) is None) and self.on_file:
+            comment_str = self.workspace.fetch_values(self)
 
-            if comment_str is not None:
+            if isinstance(comment_str, str):
                 self._values = json.loads(comment_str)["Comments"]
 
         return self._values
 
     @values.setter
     def values(self, values):
-        self.modified_attributes = "values"
+        self.workspace.update_attribute(self, "values")
 
         if values is not None:
             for value in values:
@@ -96,6 +109,7 @@ class CommentsData(Data):
                 )
 
         self._values = values
+        self.workspace.update_attribute(self, "values")
 
     def __call__(self):
         return self.values

@@ -24,8 +24,11 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from geoh5py.shared.utils import str2uuid
+
 if TYPE_CHECKING:
     from .. import shared
+    from ..workspace import Workspace
 
 
 class Entity(ABC):
@@ -33,30 +36,34 @@ class Entity(ABC):
     Base Entity class
     """
 
-    _attribute_map = {
+    _attribute_map: dict = {
         "Allow delete": "allow_delete",
         "Allow move": "allow_move",
         "Allow rename": "allow_rename",
+        "Clipping IDs": "clipping_ids: list | None",
         "ID": "uid",
         "Name": "name",
+        "Partially hidden": "partially_hidden",
         "Public": "public",
         "Visible": "visible",
     }
     _visible = True
 
-    def __init__(self, **kwargs):
-
-        self._uid: uuid.UUID = uuid.uuid4()
+    def __init__(self, uid: uuid.UUID | None = None, **kwargs):
+        self._uid = (
+            str2uuid(uid) if isinstance(str2uuid(uid), uuid.UUID) else uuid.uuid4()
+        )
         self._name = "Entity"
-        self._parent = None
+        self._parent: Entity | None = None
         self._children: list = []
         self._allow_delete = True
         self._allow_move = True
         self._allow_rename = True
+        self._partially_hidden = False
+        self._clipping_ids: list[uuid.UUID] | None = None
         self._public = True
-        self._existing_h5_entity = False
-        self._metadata = None
-        self._modified_attributes: list[str] = []
+        self._on_file = False
+        self._metadata: dict | None = None
 
         for attr, item in kwargs.items():
             try:
@@ -113,7 +120,7 @@ class Entity(ABC):
     @allow_delete.setter
     def allow_delete(self, value: bool):
         self._allow_delete = value
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def allow_move(self) -> bool:
@@ -125,7 +132,7 @@ class Entity(ABC):
     @allow_move.setter
     def allow_move(self, value: bool):
         self._allow_move = value
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def allow_rename(self) -> bool:
@@ -137,7 +144,7 @@ class Entity(ABC):
     @allow_rename.setter
     def allow_rename(self, value: bool):
         self._allow_rename = value
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def attribute_map(self) -> dict:
@@ -153,6 +160,13 @@ class Entity(ABC):
         :obj:`list` Children entities in the workspace tree
         """
         return self._children
+
+    @property
+    def clipping_ids(self) -> list[uuid.UUID] | None:
+        """
+        List of clipping uuids
+        """
+        return self._clipping_ids
 
     def copy(self, parent=None, copy_children: bool = True):
         """
@@ -191,27 +205,15 @@ class Entity(ABC):
         )
         entity_kwargs = {"entity": kwargs}
         new_object = workspace.create_entity(
-            cls, **{**entity_kwargs, **entity_type_kwargs}
+            cls,
+            **{**entity_kwargs, **entity_type_kwargs},
         )
-        workspace.finalize()
         return new_object
 
     @property
     @abstractmethod
     def entity_type(self) -> shared.EntityType:
         ...
-
-    @property
-    def existing_h5_entity(self) -> bool:
-        """
-        :obj:`bool` Entity already present in
-        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
-        """
-        return self._existing_h5_entity
-
-    @existing_h5_entity.setter
-    def existing_h5_entity(self, value: bool):
-        self._existing_h5_entity = value
 
     @classmethod
     def fix_up_name(cls, name: str) -> str:
@@ -252,7 +254,7 @@ class Entity(ABC):
         return sorted(name_list)
 
     @property
-    def metadata(self) -> str | dict | None:
+    def metadata(self) -> dict | None:
         """
         Metadata attached to the entity.
         """
@@ -262,35 +264,13 @@ class Entity(ABC):
         return self._metadata
 
     @metadata.setter
-    def metadata(self, value: dict | str | None):
+    def metadata(self, value: dict | None):
         if value is not None:
             assert isinstance(
                 value, (dict, str)
-            ), f"Input metadata must be of type {dict}, {str} or None"
+            ), f"Input metadata must be of type {dict} or None"
         self._metadata = value
-        self.modified_attributes = "metadata"
-
-    @property
-    def modified_attributes(self):
-        """
-        :obj:`list[str]` List of attributes to be updated in associated workspace
-        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
-        """
-        return self._modified_attributes
-
-    @modified_attributes.setter
-    def modified_attributes(self, values: list | str):
-        if self.existing_h5_entity:
-            if not isinstance(values, list):
-                values = [values]
-
-            # Check if re-setting the list or appending
-            if len(values) == 0:
-                self._modified_attributes = []
-            else:
-                for value in values:
-                    if value not in self._modified_attributes:
-                        self._modified_attributes.append(value)
+        self.workspace.update_attribute(self, "metadata")
 
     @property
     def name(self) -> str:
@@ -302,23 +282,31 @@ class Entity(ABC):
     @name.setter
     def name(self, new_name: str):
         self._name = self.fix_up_name(new_name)
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
+
+    @property
+    def on_file(self) -> bool:
+        """
+        Whether this Entity is already stored on
+        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
+        """
+        return self._on_file
+
+    @on_file.setter
+    def on_file(self, value: bool):
+        self._on_file = value
 
     @property
     def parent(self):
         return self._parent
 
     @parent.setter
-    def parent(self, parent: shared.Entity | uuid.UUID):
+    def parent(self, parent: shared.Entity):
+
+        current_parent = self._parent
 
         if parent is not None:
-            if isinstance(parent, uuid.UUID):
-                uid = parent
-            else:
-                uid = parent.uid
-
-            current_parent = self._parent
-            self._parent = self.workspace.get_entity(uid)[0]
+            self._parent = parent
             self._parent.add_children([self])
 
             if current_parent is not None and current_parent != self._parent:
@@ -326,9 +314,21 @@ class Entity(ABC):
                 self.workspace.save_entity(self)
 
     @property
+    def partially_hidden(self) -> bool:
+        """
+        Whether this Entity is partially hidden.
+        """
+        return self._partially_hidden
+
+    @partially_hidden.setter
+    def partially_hidden(self, value: bool):
+        self._partially_hidden = value
+        self.workspace.update_attribute(self, "attributes")
+
+    @property
     def public(self) -> bool:
         """
-        :obj:`bool` Entity is accessible in the workspace tree and other parts
+        Whether this Entity is accessible in the workspace tree and other parts
             of the the user interface in ANALYST.
         """
         return self._public
@@ -336,7 +336,7 @@ class Entity(ABC):
     @public.setter
     def public(self, value: bool):
         self._public = value
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     def reference_to_uid(self, value: Entity | str | uuid.UUID) -> list[uuid.UUID]:
         """
@@ -353,7 +353,7 @@ class Entity(ABC):
             uid = [
                 obj.uid
                 for obj in self.workspace.get_entity(value)
-                if obj.uid in children_uid
+                if (obj is not None) and (obj.uid in children_uid)
             ]
         elif isinstance(value, uuid.UUID):
             uid = [value]
@@ -374,6 +374,52 @@ class Entity(ABC):
         self._children = [child for child in self._children if child not in children]
         self.workspace.remove_children(self, children)
 
+    def remove_data_from_group(
+        self, data: list | Entity | uuid.UUID | str, name: str = None
+    ) -> None:
+        """
+        Remove data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
+        All given data must be children of the parent object.
+
+        :param data: :obj:`~geoh5py.data.data.Data` object,
+            :obj:`~geoh5py.shared.entity.Entity.uid` or
+            :obj:`~geoh5py.shared.entity.Entity.name` of data.
+        :param name: Name of a :obj:`~geoh5py.groups.property_group.PropertyGroup`.
+            A new group is created if none exist with the given name.
+        """
+        if getattr(self, "property_groups", None) is not None:
+
+            if isinstance(data, list):
+                uids = []
+                for datum in data:
+                    uids += self.reference_to_uid(datum)
+            else:
+                uids = self.reference_to_uid(data)
+
+            if name is not None:
+                prop_groups = [
+                    prop_group
+                    for prop_group in getattr(self, "property_groups")
+                    if prop_group.name == name
+                ]
+            else:
+                prop_groups = getattr(self, "property_groups")
+
+            for prop_group in prop_groups:
+                for uid in uids:
+                    if uid in prop_group.properties:
+                        prop_group.properties.remove(uid)
+
+            self.workspace.update_attribute(self, "property_groups")
+
+    def save(self, add_children: bool = True):
+        """
+        Alias method of :func:`~geoh5py.workspace.Workspace.save_entity`.
+
+        :param add_children: Option to also save the children.
+        """
+        return self.workspace.save_entity(self, add_children=add_children)
+
     @property
     def uid(self) -> uuid.UUID:
         return self._uid
@@ -385,31 +431,20 @@ class Entity(ABC):
 
         self._uid = uid
 
-    @uid.getter
-    def uid(self):
-        """
-        :obj:`uuid.UUID` The unique identifier of an entity, either as stored
-        in geoh5 or generated in :func:`~uuid.UUID.uuid4` format.
-        """
-        if self._uid is None:
-            self._uid = uuid.uuid4()
-
-        return self._uid
-
     @property
     def visible(self) -> bool:
         """
-        :obj:`bool` Entity visible in camera (checked in ANALYST object tree).
+        Whether the Entity is visible in camera (checked in ANALYST object tree).
         """
         return self._visible
 
     @visible.setter
     def visible(self, value: bool):
         self._visible = value
-        self.modified_attributes = "attributes"
+        self.workspace.update_attribute(self, "attributes")
 
     @property
-    def workspace(self):
+    def workspace(self) -> Workspace:
         """
         :obj:`~geoh5py.workspace.workspace.Workspace` to which the Entity belongs to.
         """

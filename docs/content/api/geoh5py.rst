@@ -1,5 +1,5 @@
-API Reference
-=============
+geoh5py
+=======
 
 .. toctree::
    :maxdepth: 4
