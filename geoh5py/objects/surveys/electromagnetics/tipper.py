@@ -64,15 +64,15 @@ class BaseTipper(BaseEMSurvey):
                 self.metadata is not None
                 and "Base stations" in self.metadata["EM Dataset"]
             ):
-                tx_uid = self.metadata["EM Dataset"]["Base stations"]
+                base_station = self.metadata["EM Dataset"]["Base stations"]
+                base_station_entity = self.workspace.get_entity(base_station)[0]
 
-                try:
-                    self._base_stations = self.workspace.get_entity(tx_uid)[0]
-                except IndexError:
+                if isinstance(base_station_entity, TipperBaseStations):
+                    self._base_stations = base_station_entity
+                else:
                     warnings.warn(
                         "Associated `base_stations` entity not set.", UserWarning
                     )
-                    return None
 
         return self._base_stations
 

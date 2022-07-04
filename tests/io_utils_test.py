@@ -22,16 +22,16 @@ from uuid import uuid4
 import numpy as np
 
 from geoh5py.groups import ContainerGroup
-from geoh5py.io.utils import (
+from geoh5py.objects import Points
+from geoh5py.shared.utils import (
+    as_str_if_utf8_bytes,
     as_str_if_uuid,
     bool_value,
     entity2uuid,
     is_uuid,
     str2uuid,
-    str_from_utf8_bytes,
     uuid2entity,
 )
-from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
@@ -77,4 +77,4 @@ def test_bool_value():
 
 
 def test_str_from_utf8_bytes():
-    assert str_from_utf8_bytes(b"s") == "s"
+    assert as_str_if_utf8_bytes(b"s") == "s"

@@ -34,7 +34,7 @@ class Octree(ObjectBase):
         fields=(0x4EA87376, 0x3ECE, 0x438B, 0xBF, 0x12, 0x3479733DED46)
     )
 
-    _attribute_map = ObjectBase._attribute_map.copy()
+    _attribute_map: dict = ObjectBase._attribute_map.copy()
     _attribute_map.update(
         {
             "NU": "u_count",
@@ -186,7 +186,7 @@ class Octree(ObjectBase):
         if getattr(self, "_octree_cells", None) is None:
             if self.on_file:
                 octree_cells = self.workspace.fetch_array_attribute(
-                    self.uid, "octree_cells"
+                    self, "octree_cells"
                 )
                 self._octree_cells = octree_cells
 

@@ -22,9 +22,8 @@ import numpy as np
 from h5py import File
 
 from geoh5py.groups import ContainerGroup
-from geoh5py.io.utils import as_str_if_uuid
 from geoh5py.objects import Points
-from geoh5py.shared.utils import compare_entities
+from geoh5py.shared.utils import as_str_if_uuid, compare_entities
 from geoh5py.workspace import Workspace
 
 

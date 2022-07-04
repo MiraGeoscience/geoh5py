@@ -38,6 +38,11 @@ class Group(Entity):
         self._entity_type = group_type
         super().__init__(**kwargs)
 
+    @classmethod
+    @abstractmethod
+    def default_type_uid(cls) -> uuid.UUID | None:
+        ...
+
     def add_comment(self, comment: str, author: str = None):
         """
         Add text comment to an object.
@@ -87,8 +92,3 @@ class Group(Entity):
     def find_or_create_type(cls, workspace: workspace.Workspace, **kwargs) -> GroupType:
 
         return GroupType.find_or_create(workspace, cls, **kwargs)
-
-    @classmethod
-    @abstractmethod
-    def default_type_uid(cls) -> uuid.UUID | None:
-        ...

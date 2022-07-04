@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import uuid
 from abc import abstractmethod
 
 from ..shared import Entity
@@ -31,7 +32,7 @@ class Data(Entity):
     """
 
     _attribute_map = Entity._attribute_map.copy()
-    _attribute_map.update({"Association": "association"})
+    _attribute_map.update({"Association": "association", "Modifiable": "modifiable"})
     _visible = False
 
     def __init__(
@@ -41,6 +42,7 @@ class Data(Entity):
     ):
         self._association = None
         self._on_file = False
+        self._modifiable = True
         assert data_type is not None
         assert data_type.primitive_type == self.primitive_type()
         self.entity_type = data_type
@@ -60,6 +62,8 @@ class Data(Entity):
         :obj:`~geoh5py.data.data.Data.association`
         """
         if self.association is DataAssociationEnum.VERTEX:
+            return self.parent.n_vertices
+        if self.association is DataAssociationEnum.DEPTH:
             return self.parent.n_vertices
         if self.association is DataAssociationEnum.CELL:
             return self.parent.n_cells
@@ -106,6 +110,18 @@ class Data(Entity):
         self._association = value
 
     @property
+    def modifiable(self) -> bool:
+        """
+        :obj:`bool` Entity can be modified.
+        """
+        return self._modifiable
+
+    @modifiable.setter
+    def modifiable(self, value: bool):
+        self._modifiable = value
+        self.workspace.update_attribute(self, "attributes")
+
+    @property
     def entity_type(self) -> DataType:
         """
         :obj:`~geoh5py.data.data_type.DataType`
@@ -128,3 +144,11 @@ class Data(Entity):
         Alias not implemented from base Entity class.
         """
         raise NotImplementedError("Data entity cannot contain files.")
+
+    def remove_data_from_group(
+        self, data: list | Entity | uuid.UUID | str, name: str = None
+    ):
+        """
+        Remove self from a property group.
+        """
+        ...

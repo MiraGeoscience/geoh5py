@@ -29,14 +29,13 @@ class DrillholeGroup(Group):
         fields=(0x825424FB, 0xC2C6, 0x4FEA, 0x9F, 0x2B, 0x6CD00023D393)
     )
 
-    _name = "Drillholes"
+    def __init__(self, group_type: GroupType, name="Drillholes Group", **kwargs):
 
-    def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
-        super().__init__(group_type, **kwargs)
+        super().__init__(group_type, name=name, **kwargs)
 
         if self.entity_type.name == "Entity":
-            self.entity_type.name = "Drillholes Group"
+            self.entity_type.name = name
 
         group_type.workspace._register_group(self)
 

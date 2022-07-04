@@ -33,3 +33,4 @@ class DataAssociationEnum(Enum):
     VERTEX = 3
     FACE = 4
     GROUP = 5
+    DEPTH = 6
