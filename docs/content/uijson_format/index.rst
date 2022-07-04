@@ -4,31 +4,39 @@ UI.JSON Format
 About
 ^^^^^
 
-The **ui.json** format provides a User Interface (UI) between geoh5py and `Geoscience ANALYST Pro
-<http://www.mirageoscience.com/our-products/software-product/geoscience-analyst>`_. The file structure is built on an array of `JSON objects <https://json-schema.org/specification.html>`_, each representing a parameter that is used in a python script. An object contains members that control the style and behaviour of the UI. In general only a **label** and **value** member is required in each object, however as outlined below, there are many types of input and dependencies that can be drawn on throughout the file. On output from Geoscience ANALYST, the value and whether the parameter is enabled will be updated or added to each JSON. Extra objects in the JSON are allowed and are ignored, but written out by Geoscience ANALYST. In general, objects will be put in order that they are set in the JSON. The exception is data parameters that depend on object parameters. Placing those parameters in the same group will ensure that they are close in the UI.
+The **ui.json** format provides a framework to create a simple User Interface (UI) between geoh5py and `Geoscience ANALYST Pro
+<http://www.mirageoscience.com/our-products/software-product/geoscience-analyst>`_. The format is built on an array of `JSON objects <./json_objects.rst>`_, representing parameters used to render the UI, and pass variables to an accompanying python script.
 
 
-Input Objects
-^^^^^^^^^^^^^
-Within the **ui.json** file, each JSON object with **value** and **label** members will be considered a parameter to the UI. The following JSON objects could also be present:
+Each ui.json object requires at least a **label** and **value** parameter, however additional parameters can be used to define types of input and additional dependencies.
+
+When executing a ui.json script from Geoscience ANALYST Pro, the **value** and **enabled** parameter will be updated or added to each JSON.
+
+Additional objects outside the scope of this API are ignored by Geoscience ANALYST but written out in the resulting ui.json file. In general, script variables will be displayed in the order that they are set in the ui-JSON file. The exception is data parameters that are set as dependancies on other object parameters. Placing those parameters in the same group will ensure that they are close in the UI.
+
+
+Usage with Geoscience ANALYST Pro
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A ui.json file contains parameters that reference a python script to run, and an optional conda environment to use. Ensure the conda and python paths are set up in Geoscience ANALYST preferences.
 
 run_command ``str``
     Name of python script excluding the .py extension (i.e., "run_me" for run_me.py) required for Geoscience ANALYST Pro to run on save or auto-load.
 conda_environment ``str``
     Optional name of conda environment to activate when running the python script in *run_command*
-title ``str``
-    Optional title of user interface window
 
-Object Members
-^^^^^^^^^^^^^^
-Each JSON object with the following members become a parameter in the user interface. Each object must have the members ``label`` and ``value``. Each member will contribute to the appearence and behaviour within Geoscience ANALYST>. The possible members that can be given to all parameter objects are:
+
+Parameters
+^^^^^^^^^^
+The following key/value pairs are available to all input parameters in the ui.json schema. The **label** and **value** keys required in each parameter. The other optional keys are used to describe how the UI will render and parameter dependancies.
 
 label ``str``
     Required string describing parameter. A colon will automatically be added within Geoscience ANALYST, so this should be omitted.
 value ``str``, ``int``, ``bool`` , or ``float``
-    This require member takes a different form, including empty, depending on the :ref:`parameter type <json_param_examples>`. The value is updated when written from Geoscience ANALYST.
+    This required member takes a different form, including empty, depending on the :ref:`parameter type <json_param_examples>`. The value is updated when written from Geoscience ANALYST.
+title ``str``
+    Title of user interface window
 main ``bool``
-    If set to true, the parameter is shown in the first tab and will throw an error if not given and not optional. Optional parameters may be set to main. When main is not given or is false, the parameter will be under the *Optional Parameters* tab.
+    If set to true, the parameter is shown in the first tab of the UI and will throw an error if not present (and not optional). Optional parameters may be set to main. When main is not given or is false, the parameter will be under the *Optional Parameters* tab.
 tooltip ``str``
    String describing the parameter in detail that appears when the mouse hovers over it.
 optional ``bool``
@@ -40,7 +48,7 @@ group ``str``
 groupOptional ``bool``
     If true, adds a checkbox in the top of the group box next to the name. The group parameters will be disabled if not checked. The initial statedpends on the **groupDependency** and **groupDependencyType** members and the **enabled** member of the group's parameters.
 dependency ``str``
-    The name of the object of which this object is dependent upon. The dependency parameter should be optional or boolean parameter (i.e., has a checkbox).
+    The name of the parameter which this parameter is dependent upon. The dependency parameter should be optional or boolean parameter (i.e., has a checkbox).
 dependencyType ``str``
     What happens when the dependency member is checked. Options are ``enabled`` or ``disabled``
 groupDependency ``str``
@@ -51,9 +59,9 @@ groupDependencyType ``str``
 
 .. _json_param_examples:
 
-Parameter Types
-^^^^^^^^^^^^^^^
-There are other JSON members that may be available or required based on the parameter type. The following sections define different parameter types that can be found in the **ui.json** format.
+Additional Parameters
+^^^^^^^^^^^^^^^^^^^^^
+Other keys may be used, or are required based on the goeh5py type https://geoh5py.readthedocs.io/en/stable/content/geoh5_format/analyst/objects.html. The following sections define different parameters that can be used in the **ui.json** schema.
 
  .. toctree::
    :maxdepth: 1
@@ -61,11 +69,11 @@ There are other JSON members that may be available or required based on the para
    json_objects.rst
 
 
-Exporting from Geoscience ANALYST
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-When a **ui.json** is saved with Geoscience ANALYST Pro, the following object members are updated or added:
+Executing python scripts from Geoscience ANALYST Pro
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+When a **ui.json** is run with Geoscience ANALYST Pro, the following parameters are updated or added:
 
-- The **value** member with the appropriate type
+- The **value** member is updated with the UUID
 - The **enabled** member ``bool`` for whether the parameter is enabled
 - The :ref:`Data parameter <data_parameter>` will also have updated **isValue** and **property** members. The **isValue** ``bool`` member is *true* if the **value** member was selected and *false* if the **property** member was selected.
 
@@ -78,18 +86,16 @@ The following JSON objects will be written (and overwritten if given) upon expor
 
 Tips on creating UIs
 ^^^^^^^^^^^^^^^^^^^^
-Here are a few tips on creating good looking UIs:
-
-- Keep labels short and concise. Be consistent with capitalization and do not include the colons. Geoscience ANALYST will add colons and align them.
-- Write detailed tooltips.
-- Group related objects, but do not use a group if there are fewer than 3 objects.
-- The **main** member is for general, required parameters. Do not include this member with every object, unless there are only a handful of objects. Objects that are in the required parameters without a valid value will invoke an error when exporting or running from Geoscience ANALYST. "Non-main" members are designated to a second page under *Optional parameters*.
+- Keep labels descriptive and concise
+- Write detailed tooltips
+- Group related attributes
+- The **main** attribute is for general, required script variables. Do not include this member with every object, unless there are only a handful of objects. Objects that are in the required parameters without a valid value will invoke an error when exporting or running from Geoscience ANALYST. "Non-main" members are designated to a second page under *Optional parameters*.
 - Utilize **optional** object members and dependencies. If a single workspace object input is optional, use the :ref:`Object parameter <object_parameter>` rather than two parameters with a dependency.
 
 
 External Links
 ^^^^^^^^^^^^^^
-
+ - https://www.w3schools.com/js/js_json_objects.asp
 - `JSON Terminology <https://json-schema.org/specification.html>`_
 - `Universally Unique IDentifier (UUID) <https://en.wikipedia.org/wiki/Universally_unique_identifier>`_
 - `C++ JSON Library <https://github.com/nlohmann/JSON>`_
