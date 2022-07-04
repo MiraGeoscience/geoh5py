@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import h5py
 import pytest
 
 from geoh5py.objects import Points
@@ -50,6 +51,14 @@ def test_write_context(tmp_path):
     # Re-open in stanalone readonly
     w_s = Workspace(tmp_path / r"test2.geoh5")
     assert len(w_s.objects) == 1, "Issue creating an object with context manager."
+    w_s.close()
+
+    # Re-open in context
+    with w_s.open():
+        assert isinstance(w_s.geoh5, h5py.File)
+
+    with pytest.raises(Geoh5FileClosedError):
+        getattr(w_s, "geoh5")
 
 
 def test_read_only(tmp_path):

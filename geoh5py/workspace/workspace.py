@@ -1011,10 +1011,16 @@ class Workspace(AbstractContextManager):
         """Get all active Object entities registered in the workspace."""
         return self._all_objects()
 
-    def open(self, mode: str | None = None) -> None:
+    def open(self, mode: str | None = None) -> Workspace:
+        """
+        Open a geoh5 file and load the tree structure.
+
+        :param mode: Optional mode of h5py.File. Defaults to 'r+'.
+        :return: `self`
+        """
         if isinstance(self._geoh5, h5py.File):
             warnings.warn(f"Workspace already opened in mode {self._geoh5.mode}.")
-            return
+            return self
 
         if mode is None:
             mode = self._mode
@@ -1040,6 +1046,8 @@ class Workspace(AbstractContextManager):
             self._io_call(H5Writer.create_geoh5, self, mode="a")
 
         self.fetch_or_create_root()
+
+        return self
 
     def _register_type(self, entity_type: EntityType):
         weakref_utils.insert_once(self._types, entity_type.uid, entity_type)
