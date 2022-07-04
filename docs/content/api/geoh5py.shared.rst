@@ -2,26 +2,10 @@ geoh5py.shared
 ==============
 
 
-geoh5py.shared.coord3d
-----------------------
+geoh5py.shared.concatenation
+----------------------------
 
-.. automodule:: geoh5py.shared.coord3d
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-geoh5py.shared.date\_time
--------------------------
-
-.. automodule:: geoh5py.shared.date_time
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-geoh5py.shared.distance\_unit
------------------------------
-
-.. automodule:: geoh5py.shared.distance_unit
+.. automodule:: geoh5py.shared.concatenation
    :members:
    :undoc-members:
    :show-inheritance:
@@ -42,10 +26,10 @@ geoh5py.shared.entity\_type
    :undoc-members:
    :show-inheritance:
 
-geoh5py.shared.file\_name
+geoh5py.shared.exceptions
 -------------------------
 
-.. automodule:: geoh5py.shared.file_name
+.. automodule:: geoh5py.shared.exceptions
    :members:
    :undoc-members:
    :show-inheritance:
@@ -58,26 +42,10 @@ geoh5py.shared.utils
    :undoc-members:
    :show-inheritance:
 
-geoh5py.shared.version\_number
-------------------------------
+geoh5py.shared.validators
+-------------------------
 
-.. automodule:: geoh5py.shared.version_number
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-geoh5py.shared.version\_string
-------------------------------
-
-.. automodule:: geoh5py.shared.version_string
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-geoh5py.shared.vertex\_index
-----------------------------
-
-.. automodule:: geoh5py.shared.vertex_index
+.. automodule:: geoh5py.shared.validators
    :members:
    :undoc-members:
    :show-inheritance:
