@@ -31,7 +31,7 @@ from geoh5py.ui_json.utils import (
     group_optional,
     is_form,
     is_uijson,
-    optional_type,
+    requires_value,
     set_enabled,
     truth,
 )
@@ -95,31 +95,91 @@ def test_group_optional():
     assert not group_optional(ui_json, "test")
 
 
-def test_optional_type():
+def test_requires_value():
+
+    # Check the groupOptional behaviour
     ui_json = deepcopy(default_ui_json)
     ui_json["string_parameter"] = templates.string_parameter()
     ui_json["string_parameter"]["group"] = "test"
     ui_json["string_parameter"]["groupOptional"] = True
-    ui_json["float_parameter"] = templates.float_parameter()
+    ui_json["float_parameter"] = templates.float_parameter(optional="enabled")
     ui_json["float_parameter"]["group"] = "test"
     ui_json["integer_parameter"] = templates.integer_parameter()
     ui_json["integer_parameter"]["group"] = "test"
-    ui_json["other_float_parameter"] = templates.float_parameter(optional="enabled")
-    assert optional_type(ui_json, "integer_parameter")
-    ui_json["string_parameter"]["groupOptional"] = False
-    assert not optional_type(ui_json, "float_parameter")
-    assert optional_type(ui_json, "other_float_parameter")
+    assert requires_value(ui_json, "string_parameter")
+    assert requires_value(ui_json, "float_parameter")
+    assert requires_value(ui_json, "integer_parameter")
 
-    # Now check that optional is true if param is dependent on optional
-    ui_json = deepcopy(default_ui_json)
-    ui_json["string_parameter"] = templates.string_parameter(optional="disabled")
-    ui_json["float_parameter"] = templates.float_parameter()
-    ui_json["float_parameter"]["dependency"] = "string_parameter"
-    ui_json["float_parameter"]["dependencyType"] = "enabled"
-    assert optional_type(ui_json, "float_parameter")
+    ui_json["string_parameter"]["enabled"] = False
+    assert not requires_value(ui_json, "string_parameter")
+    assert not requires_value(ui_json, "float_parameter")
+    assert not requires_value(ui_json, "integer_parameter")
 
-    ui_json["string_parameter"]["enabled"] = True
-    assert not optional_type(ui_json, "float_parameter")
+    # Check the optional dependency behaviour
+    ui_json.pop("string_parameter")
+    ui_json["float_parameter"]["enabled"] = True
+    ui_json["integer_parameter"]["dependency"] = "float_parameter"
+    ui_json["integer_parameter"]["dependencyType"] = "enabled"
+    assert requires_value(ui_json, "float_parameter")
+    assert requires_value(ui_json, "integer_parameter")
+
+    ui_json["float_parameter"]["enabled"] = False
+    assert not requires_value(ui_json, "float_parameter")
+    assert not requires_value(ui_json, "integer_parameter")
+
+    ui_json["integer_parameter"]["dependencyType"] = "disabled"
+    assert not requires_value(ui_json, "float_parameter")
+    assert requires_value(ui_json, "integer_parameter")
+
+    ui_json["float_parameter"]["enabled"] = True
+    assert requires_value(ui_json, "float_parameter")
+    assert not requires_value(ui_json, "integer_parameter")
+
+    # Check boolean dependency
+    ui_json["bool_parameter"] = templates.bool_parameter()
+    ui_json["bool_parameter"]["value"] = True
+    ui_json["integer_parameter"]["dependency"] = "bool_parameter"
+    ui_json["integer_parameter"]["dependencyType"] = "enabled"
+    assert requires_value(ui_json, "bool_parameter")
+    assert requires_value(ui_json, "integer_parameter")
+    ui_json["bool_parameter"]["value"] = False
+    assert requires_value(ui_json, "bool_parameter")
+    assert not requires_value(ui_json, "integer_parameter")
+
+    ui_json["integer_parameter"]["dependencyType"] = "disabled"
+    assert requires_value(ui_json, "bool_parameter")
+    assert requires_value(ui_json, "integer_parameter")
+    ui_json["bool_parameter"]["value"] = True
+    assert requires_value(ui_json, "bool_parameter")
+    assert not requires_value(ui_json, "integer_parameter")
+
+    # Check optional inside boolean dependency
+    ui_json["integer_parameter"]["dependencyType"] = "enabled"
+    ui_json["bool_parameter"]["value"] = True
+    ui_json["integer_parameter"]["optional"] = True
+    ui_json["integer_parameter"]["enabled"] = True
+    assert requires_value(ui_json, "integer_parameter")
+    ui_json["bool_parameter"]["value"] = False
+    assert not requires_value(ui_json, "integer_parameter")
+    ui_json["integer_parameter"]["enabled"] = False
+    assert not requires_value(ui_json, "integer_parameter")
+    ui_json["bool_parameter"]["value"] = True
+    assert not requires_value(ui_json, "integer_parameter")
+
+    ui_json["integer_parameter"]["dependencyType"] = "disabled"
+    ui_json["bool_parameter"]["value"] = True
+    ui_json["integer_parameter"]["enabled"] = True
+    assert not requires_value(ui_json, "integer_parameter")
+    ui_json["bool_parameter"]["value"] = False
+    assert requires_value(ui_json, "integer_parameter")
+    ui_json["integer_parameter"]["enabled"] = False
+    assert not requires_value(ui_json, "integer_parameter")
+    ui_json["bool_parameter"]["value"] = True
+    assert not requires_value(ui_json, "integer_parameter")
+
+    # Check the normal behaviour
+    ui_json["other_parameter"] = templates.float_parameter()
+    assert requires_value(ui_json, "other_parameter")
 
 
 def test_group_enabled():

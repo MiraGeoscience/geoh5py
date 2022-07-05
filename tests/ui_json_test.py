@@ -359,9 +359,9 @@ def test_invalid_uuid_string(tmp_path):
 
     with pytest.raises(TypeValidationError) as excinfo:
         getattr(in_file, "data")
-    assert TypeValidationError.message(
-        "data", "int", ["str", "UUID", "Entity", "NoneType"]
-    ) == str(excinfo.value)
+    assert TypeValidationError.message("data", "int", ["str", "UUID", "Entity"]) == str(
+        excinfo.value
+    )
 
 
 def test_valid_uuid_in_workspace(tmp_path):
@@ -501,7 +501,7 @@ def test_data_value_parameter_a(tmp_path):
     assert ui_json["data"]["optional"]
     assert ui_json["data"]["enabled"]
 
-    in_file = InputFile(ui_json=ui_json)
+    in_file = InputFile(ui_json=ui_json, validation_options={"disabled": True})
     out_file = in_file.write_ui_json(path=tmp_path, name="ABC")
     reload_input = InputFile.read_ui_json(out_file)
 
