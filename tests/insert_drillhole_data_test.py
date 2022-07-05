@@ -30,7 +30,7 @@ def test_insert_drillhole_data(tmp_path):
     collocation = 1e-5
     h5file_path = tmp_path / r"testCurve.geoh5"
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace(h5file_path, version=1.0) as workspace:
         max_depth = 100
         well = Drillhole.create(
             workspace,

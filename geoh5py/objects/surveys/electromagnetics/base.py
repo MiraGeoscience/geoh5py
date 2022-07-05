@@ -400,13 +400,13 @@ class BaseEMSurvey(ObjectBase):
         """
         if getattr(self, "_receivers", None) is None:
             if self.metadata is not None and "Receivers" in self.metadata["EM Dataset"]:
-                rx_uid = self.metadata["EM Dataset"]["Receivers"]
+                receiver = self.metadata["EM Dataset"]["Receivers"]
+                receiver_entity = self.workspace.get_entity(receiver)[0]
 
-                try:
-                    self._receivers = self.workspace.get_entity(rx_uid)[0]
-                except IndexError:
-                    print("Associated Receivers entity not found in Workspace.")
-                    return None
+                if isinstance(receiver_entity, BaseEMSurvey):
+                    self._receivers = receiver_entity
+                else:
+                    print("Associated receivers entity not found in Workspace.")
 
         return self._receivers
 
@@ -443,13 +443,13 @@ class BaseEMSurvey(ObjectBase):
                 self.metadata is not None
                 and "Transmitters" in self.metadata["EM Dataset"]
             ):
-                tx_uid = self.metadata["EM Dataset"]["Transmitters"]
+                transmitter = self.metadata["EM Dataset"]["Transmitters"]
+                transmitter_entity = self.workspace.get_entity(transmitter)[0]
 
-                try:
-                    self._transmitters = self.workspace.get_entity(tx_uid)[0]
-                except IndexError:
+                if isinstance(transmitter_entity, BaseEMSurvey):
+                    self._transmitters = transmitter_entity
+                else:
                     print("Associated transmitters entity not found in Workspace.")
-                    return None
 
         return self._transmitters
 

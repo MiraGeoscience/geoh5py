@@ -24,15 +24,14 @@ from .data_type import DataType
 
 class FilenameData(Data):
 
-    _file_name = None
+    _file_name: str | None = None
     _name = "GeoImageMesh_Image"
+    _values: bytes | None
 
-    def __init__(self, data_type: DataType, **kwargs):
-        super().__init__(data_type, **kwargs)
+    def __init__(self, data_type: DataType, file_name=None, **kwargs):
+
+        super().__init__(data_type, file_name=file_name, **kwargs)
         self._public = False
-
-        if self.on_file:
-            self._file_name = self.workspace.fetch_values(self.uid)
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
@@ -44,16 +43,25 @@ class FilenameData(Data):
         :obj:`str` Text value.
         """
         if getattr(self, "_file_name", None) is None:
-            self._file_name = self.workspace.fetch_values(self.uid)
+            file_name = self.workspace.fetch_values(self)
+
+            if isinstance(file_name, (str, type(None))):
+                self._file_name = file_name
 
         return self._file_name
 
     @file_name.setter
-    def file_name(self, value):
+    def file_name(self, value: str | None):
         self._file_name = value
+
+        if not isinstance(value, (str, type(None))):
+            raise ValueError(
+                f"Input 'file_name' for {self} must be of type str or None."
+            )
+
         self.workspace.update_attribute(self, "values")
 
-    def save(self, path: str = "./", name=None):
+    def save_file(self, path: str = "./", name=None):
         """
         Save the file to disk.
 
@@ -88,6 +96,9 @@ class FilenameData(Data):
     def values(self, values):
         if not isinstance(values, bytes):
             raise ValueError("Input 'values' for FilenameData must be of type 'bytes'.")
+
+        if self.file_name is None:
+            raise AttributeError("FilenameData requires the 'file_name' to be set.")
 
         self._values = values
         self.workspace.update_attribute(self, "values")

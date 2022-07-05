@@ -39,7 +39,7 @@ def test_monitored_directory_copy(tmp_path):
         new_workspace = Workspace(new_file)
 
         assert (
-            len(new_workspace.get_entity("groupee")) == 0
+            new_workspace.get_entity("groupee")[0] is None
         ), "Parental group should not have been copied."
 
         for entity in workspace.objects:

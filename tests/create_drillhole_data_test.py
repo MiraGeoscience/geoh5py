@@ -21,6 +21,7 @@ import random
 import string
 
 import numpy as np
+import pytest
 
 from geoh5py.objects import Drillhole
 from geoh5py.shared.utils import compare_entities
@@ -31,9 +32,8 @@ def test_create_drillhole_data(tmp_path):
     h5file_path = tmp_path / r"testCurve.geoh5"
     well_name = "bullseye"
     n_data = 10
-    collocation = 1e-5
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace(h5file_path, version=1.0) as workspace:
         # Create a workspace
         max_depth = 100
         well = Drillhole.create(
@@ -41,11 +41,11 @@ def test_create_drillhole_data(tmp_path):
             collar=np.r_[0.0, 10.0, 10],
             surveys=np.c_[
                 np.linspace(0, max_depth, n_data),
-                np.linspace(-89, -75, n_data),
                 np.ones(n_data) * 45.0,
+                np.linspace(-89, -75, n_data),
             ],
             name=well_name,
-            default_collocation_distance=collocation,
+            default_collocation_distance=1e-5,
         )
         value_map = {}
         for ref in range(8):
@@ -59,12 +59,49 @@ def test_create_drillhole_data(tmp_path):
         ).reshape((-1, 2))
         from_to_b = np.vstack([from_to_a[0, :], [30.1, 55.5], [56.5, 80.2]])
 
+        with pytest.raises(ValueError) as error:
+            well.add_data(
+                {
+                    "interval_values": {
+                        "values": np.random.randn(from_to_a.shape[0]),
+                        "from-to": from_to_a[1:, 0],
+                    },
+                }
+            )
+
+        assert "Mismatch between input" in str(error)
+
+        with pytest.raises(ValueError) as error:
+            well.add_data(
+                {
+                    "interval_values": {
+                        "values": np.random.randn(from_to_a.shape[0]),
+                        "from-to": from_to_a[:, 0],
+                    },
+                }
+            )
+
+        assert "The `from-to` values must have shape(*, 2)." in str(error)
+
+        with pytest.raises(UserWarning) as error:
+            well.add_data(
+                {
+                    "interval_values": {
+                        "values": np.random.randn(from_to_a.shape[0]),
+                        "from-to": from_to_a[:, 0],
+                        "collocation_distance": -1,
+                    },
+                }
+            )
+
+        assert "Input depth 'collocation_distance' must be >0." in str(error)
+
         # Add from-to data
         data_objects = well.add_data(
             {
                 "interval_values": {
                     "values": np.random.randn(from_to_a.shape[0]),
-                    "from-to": from_to_a,
+                    "from-to": from_to_a.tolist(),
                 },
                 "int_interval_list": {
                     "values": [1, 2, 3],
@@ -93,6 +130,18 @@ def test_create_drillhole_data(tmp_path):
             == well.n_cells
         ), "Shape or FROM to n_cells differ."
 
+        with pytest.raises(ValueError) as error:
+            well.add_data(
+                {
+                    "log_values": {
+                        "values": np.random.randn(n_data - 1),
+                        "depth": np.random.randn(n_data),
+                    },
+                }
+            )
+
+        assert "Mismatch between input 'depth'" in str(error)
+
         # Add log-data
         data_objects += [
             well.add_data(
@@ -107,18 +156,28 @@ def test_create_drillhole_data(tmp_path):
             )
         ]
 
+        well.add_data(
+            {
+                "label": {
+                    "association": "OBJECT",
+                    "values": "ABC",
+                },
+            }
+        )
         new_count = from_to_a.size + 4 + n_data
         assert well.n_vertices == (
             new_count
         ), "Error with new number of vertices on log data creation."
         # Re-open the workspace and read data back in
-        new_workspace = Workspace(h5file_path)
+        new_workspace = Workspace(h5file_path, version=1.0)
         # Check entities
         compare_entities(
             well,
             new_workspace.get_entity(well_name)[0],
-            ignore=["_default_collocation_distance"],
+            ignore=["_default_collocation_distance", "_parent"],
         )
+        # Force refresh of vector length
+        setattr(data_objects[0], "_values", None)
         compare_entities(
             data_objects[0],
             new_workspace.get_entity("interval_values")[0],
@@ -144,7 +203,7 @@ def test_single_survey(tmp_path):
 
     collar = np.r_[0.0, 10.0, 10.0]
     h5file_path = tmp_path / r"testCurve.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace(h5file_path, version=1.0) as workspace:
         well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, dip, azm])
         depths = [0.0, 1.0, 1000.0]
         locations = well.desurvey(depths)
@@ -172,7 +231,7 @@ def test_outside_survey(tmp_path):
 
     collar = np.r_[0.0, 10.0, 10.0]
     h5file_path = tmp_path / r"testCurve.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace(h5file_path, version=1.0) as workspace:
         well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, dip, azm])
         depths = [0.0, 1000.0]
         locations = well.desurvey(depths)
@@ -190,3 +249,60 @@ def test_outside_survey(tmp_path):
         )
 
         np.testing.assert_array_almost_equal(locations, solution, decimal=3)
+
+
+def test_insert_drillhole_data(tmp_path):
+    well_name = "bullseye"
+    n_data = 10
+    collocation = 1e-5
+    h5file_path = tmp_path / r"testCurve.geoh5"
+
+    with Workspace(h5file_path, version=1.0) as workspace:
+        max_depth = 100
+        well = Drillhole.create(
+            workspace,
+            collar=np.r_[0.0, 10.0, 10],
+            surveys=np.c_[
+                np.linspace(0, max_depth, n_data),
+                np.linspace(-89, -75, n_data),
+                np.ones(n_data) * 45.0,
+            ],
+            name=well_name,
+            default_collocation_distance=collocation,
+        )
+        # Add log-data
+        data_object = well.add_data(
+            {
+                "log_values": {
+                    "depth": np.sort(np.random.rand(n_data) * max_depth),
+                    "values": np.random.randint(1, high=8, size=n_data),
+                }
+            }
+        )
+
+        # Add more data with single match
+        old_depths = well.get_data("DEPTH")[0].values
+        insert = np.random.randint(0, high=n_data - 1, size=2)
+        new_depths = old_depths[insert]
+        new_depths[0] -= 2e-6  # Out of tolerance
+        new_depths[1] -= 5e-7  # Within tolerance
+        well.add_data(
+            {
+                "match_depth": {
+                    "depth": new_depths,
+                    "values": np.random.randint(1, high=8, size=2),
+                    "collocation_distance": 1e-6,
+                }
+            }
+        )
+
+        assert (
+            well.n_vertices == n_data + 1
+        ), "Error adding values with collocated tolerance"
+        assert np.isnan(
+            data_object.values[insert[0]]
+        ), "Old values not re-sorted properly after insertion"
+
+        assert (
+            np.where(well.depths.values == new_depths[0])[0] == insert[0]
+        ), "Depth insertion error"
