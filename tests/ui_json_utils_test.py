@@ -135,8 +135,11 @@ def test_requires_value():
     assert requires_value(ui_json, "float_parameter")
     assert not requires_value(ui_json, "integer_parameter")
 
-    # Check boolean dependency
+
+def test_bool_required_value():
+    ui_json = deepcopy(default_ui_json)
     ui_json["bool_parameter"] = templates.bool_parameter()
+    ui_json["integer_parameter"] = templates.integer_parameter()
     ui_json["bool_parameter"]["value"] = True
     ui_json["integer_parameter"]["dependency"] = "bool_parameter"
     ui_json["integer_parameter"]["dependencyType"] = "enabled"
