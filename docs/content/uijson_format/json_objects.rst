@@ -1,3 +1,4 @@
+
 .. _bool_param:
 
 Boolean Parameter
@@ -18,8 +19,6 @@ A parameter named "input" that has a ``bool`` value.
 
 .. figure:: ./images/bool_param.png
     :height: 100
-
-
 
 
 Integer Parameter
@@ -143,10 +142,13 @@ A file parameter comes with an icon to choose the file, with a ``str`` value. Ex
 .. figure:: ./images/file_choice.png
 
 
+
 .. _object_parameter:
 
 Geoscience ANALYST Object Parameter
 ===================================
+
+
 
 To choose an object from a dropdown menu, the `universally unique identifier (UUID) <https://en.wikipedia.org/wiki/Universally_unique_identifier>`_  of the :ref:`Object Type <object_types>`: is required for the filtering of objects. This is given as a single or array of ``str`` in the member **meshType**. The icon to pick the object comes with this parameter. The value returned is the *UUID* of the Geoscience ANALYST object selected.
 
@@ -165,9 +167,11 @@ To choose an object from a dropdown menu, the `universally unique identifier (UU
 .. figure:: ./images/object_param.png
 
 
+
 .. _data_parameter:
 
-Geoscience ANALYST Data Parameter
+
+Geoscience ANALYST Data parameter
 =================================
 
 Creating a parameter to choose a Geoscience ANALYST object's data requires extra members:
