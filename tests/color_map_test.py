@@ -15,12 +15,14 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from os import path
+
+from __future__ import annotations
 
 import numpy as np
 import pytest
 
 from geoh5py.objects import Grid2D
+from geoh5py.shared.utils import compare_entities
 from geoh5py.shared.validators import ShapeValidationError
 from geoh5py.workspace import Workspace
 
@@ -33,11 +35,10 @@ def test_create_color_map(tmp_path):
     n_x, n_y = 10, 15
     values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
 
-    h5file_path = path.join(tmp_path, r"test_color_map.geoh5")
+    h5file_path = tmp_path / r"test_color_map.geoh5"
 
     # Create a workspace
     workspace = Workspace(h5file_path)
-
     grid = Grid2D.create(
         workspace,
         origin=[0, 0, 0],
@@ -93,18 +94,18 @@ def test_create_color_map(tmp_path):
     assert "Input 'values' must contain fields with types" in str(
         error
     ), "Failed to raise error for color_map recarray with wrong names."
+    workspace.close()
 
     # Read the data back in from a fresh workspace
     new_workspace = Workspace(h5file_path)
     rec_data = new_workspace.get_entity("DataValues")[0]
+    compare_entities(
+        rec_data.entity_type.color_map, data.entity_type.color_map, ignore=["_parent"]
+    )
 
-    assert np.all(
-        getattr(rec_data.entity_type.color_map, key)
-        == getattr(data.entity_type.color_map, key)
-        for key in ["name", "values"]
-    ), "Issue updating the ColorMap."
+    new_workspace = Workspace(tmp_path / r"test_color_map_copy.geoh5")
 
-    new_workspace = Workspace(path.join(tmp_path, r"test_color_map_copy.geoh5"))
+    workspace.open(mode="r")
     data.copy(parent=new_workspace)
 
     rec_data = new_workspace.get_entity("DataValues")[0]

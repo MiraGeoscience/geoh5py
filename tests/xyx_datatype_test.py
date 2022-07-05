@@ -15,42 +15,39 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
+
+from __future__ import annotations
 
 from geoh5py.data import DataType, GeometricDataConstants
 from geoh5py.workspace import Workspace
 
 
-def test_xyz_dataype():
-    # TODO: no file on disk should be required for this test
-    #       as workspace does not have to be saved
-    with tempfile.TemporaryDirectory() as tempdir:
-        the_workspace = Workspace(Path(tempdir) / f"{__name__}.geoh5")
-
-        x_datatype = DataType.for_x_data(the_workspace)
+def test_xyz_dataype(tmp_path):
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+    with Workspace(h5file_path) as workspace:
+        x_datatype = DataType.for_x_data(workspace)
         assert x_datatype.uid == GeometricDataConstants.x_datatype_uid()
         assert (
-            DataType.find(the_workspace, GeometricDataConstants.x_datatype_uid())
+            DataType.find(workspace, GeometricDataConstants.x_datatype_uid())
             is x_datatype
         )
         # make sure another call does no re-create another type
-        assert DataType.for_x_data(the_workspace) is x_datatype
+        assert DataType.for_x_data(workspace) is x_datatype
 
-        y_datatype = DataType.for_y_data(the_workspace)
+        y_datatype = DataType.for_y_data(workspace)
         assert y_datatype.uid == GeometricDataConstants.y_datatype_uid()
         assert (
-            DataType.find(the_workspace, GeometricDataConstants.y_datatype_uid())
+            DataType.find(workspace, GeometricDataConstants.y_datatype_uid())
             is y_datatype
         )
         # make sure another call does no re-create another type
-        assert DataType.for_y_data(the_workspace) is y_datatype
+        assert DataType.for_y_data(workspace) is y_datatype
 
-        z_datatype = DataType.for_z_data(the_workspace)
+        z_datatype = DataType.for_z_data(workspace)
         assert z_datatype.uid == GeometricDataConstants.z_datatype_uid()
         assert (
-            DataType.find(the_workspace, GeometricDataConstants.z_datatype_uid())
+            DataType.find(workspace, GeometricDataConstants.z_datatype_uid())
             is z_datatype
         )
         # make sure another call does no re-create another type
-        assert DataType.for_z_data(the_workspace) is z_datatype
+        assert DataType.for_z_data(workspace) is z_datatype

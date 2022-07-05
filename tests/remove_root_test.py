@@ -15,29 +15,28 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
+
+from __future__ import annotations
 
 import numpy as np
 from h5py import File
 
+from geoh5py.groups import ContainerGroup
 from geoh5py.objects import Points
-from geoh5py.shared.utils import compare_entities
+from geoh5py.shared.utils import as_str_if_uuid, compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_remove_root():
+def test_remove_root(tmp_path):
 
     # Generate a random cloud of points
     n_data = 12
     xyz = np.random.randn(n_data, 3)
+    h5file_path = tmp_path / r"testProject.geoh5"
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testProject.geoh5"
-
-        # Create a workspace
-        workspace = Workspace(h5file_path)
-        points = Points.create(workspace, vertices=xyz)
+    with Workspace(h5file_path) as workspace:
+        group = ContainerGroup.create(workspace)
+        points = Points.create(workspace, vertices=xyz, parent=group)
         data = points.add_data(
             {
                 "DataValues": {
@@ -54,28 +53,40 @@ def test_remove_root():
         group_name = "SomeGroup"
         data_group = points.add_data_to_group(data, group_name)
 
-        workspace.finalize()
+        # Check no crash loading existing entity
+        assert workspace.load_entity(points.uid, "object")
+        assert len(workspace.fetch_children(None)) == 0
 
-        # Remove the root
-        with File(h5file_path, "r+") as project:
-            base = list(project.keys())[0]
-            del project[base]["Root"]
-            del project[base]["Groups"]
-            del project[base]["Types"]["Group types"]
+    # Remove the root
+    with File(h5file_path, "r+") as project:
+        base = list(project.keys())[0]
+        del project[base]["Root"]
+        del project[base]["Groups"][as_str_if_uuid(workspace.root.uid)]
+        del project[base]["Types"]["Group types"]
 
-        # Read the data back in from a fresh workspace
-        new_workspace = Workspace(h5file_path)
-
+    # Read the data back in from a fresh workspace
+    with Workspace(h5file_path) as new_workspace:
+        assert len(new_workspace.fetch_children(new_workspace.root)) == 1
         rec_points = new_workspace.get_entity(points.name)[0]
-        rec_group = rec_points.find_or_create_property_group(name=group_name)
-        rec_data = new_workspace.get_entity(data[0].name)[0]
 
+        points.workspace.open()
         compare_entities(
             points,
             rec_points,
-            ignore=["_parent", "_existing_h5_entity", "_property_groups"],
+            ignore=["_parent", "_on_file", "_property_groups"],
         )
-        compare_entities(data[0], rec_data, ignore=["_parent", "_existing_h5_entity"])
         compare_entities(
-            data_group, rec_group, ignore=["_parent", "_existing_h5_entity"]
+            data[0],
+            new_workspace.get_entity(data[0].name)[0],
+            ignore=["_parent", "_on_file"],
         )
+        compare_entities(
+            data_group,
+            rec_points.find_or_create_property_group(name=group_name),
+            ignore=["_parent", "_on_file"],
+        )
+
+    points.workspace.close()
+
+    with Workspace(h5file_path) as new_workspace:
+        assert len(new_workspace.list_entities_name) == 5, "Issue re-building the Root."

@@ -16,6 +16,8 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
+
 from uuid import UUID
 
 from ..groups import PropertyGroup
@@ -47,7 +49,7 @@ ui_validations = {
             "Strike & dip",
         ],
     },
-    "dataType": {"values": ["Float", "Text", "Integer"]},
+    "dataType": {"values": ["Float", "Text", "Integer", "Referenced"]},
     "dependency": {"types": [str, type(None)]},
     "dependencyType": {"values": ["enabled", "disabled"]},
     "enabled": {"types": [bool, type(None)]},
