@@ -185,13 +185,13 @@ class Grid2D(ObjectBase):
 
             assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
 
-            self.workspace.update_attribute(self, "attributes")
             self._centroids = None
 
             value = np.asarray(
                 tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
             )
             self._origin = value
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def rotation(self) -> float:
@@ -231,10 +231,9 @@ class Grid2D(ObjectBase):
             value = np.r_[value]
             assert len(value) == 1, "u_cell_size must be a float of shape (1,)"
 
-            self.workspace.update_attribute(self, "attributes")
             self._centroids = None
-
             self._u_cell_size = value.astype(float)
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def u_count(self) -> int | None:
@@ -264,10 +263,9 @@ class Grid2D(ObjectBase):
         if value is not None:
             value = np.r_[value]
             assert len(value) == 1, "v_cell_size must be a float of shape (1,)"
-            self.workspace.update_attribute(self, "attributes")
             self._centroids = None
-
             self._v_cell_size = value.astype(float)
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def v_count(self) -> int | None:
@@ -299,7 +297,6 @@ class Grid2D(ObjectBase):
                 0,
                 1,
             ], "vertical must be of type 'bool'"
-            self.workspace.update_attribute(self, "attributes")
             self._centroids = None
-
             self._vertical = value
+            self.workspace.update_attribute(self, "attributes")

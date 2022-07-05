@@ -39,5 +39,5 @@ class CustomGroup(Group):
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID | None:
-        raise RuntimeError(f"No predefined static type UUID for {cls}.")
-        # return None
+        # raise RuntimeError(f"No predefined static type UUID for {cls}.")
+        return None

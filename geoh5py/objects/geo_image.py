@@ -46,8 +46,6 @@ class GeoImage(ObjectBase):
 
         super().__init__(object_type, **kwargs)
 
-        self.entity_type.name = "GeoImage"
-
         object_type.workspace._register_object(self)
 
     @property
@@ -60,7 +58,7 @@ class GeoImage(ObjectBase):
         if getattr(self, "_cells", None) is None:
 
             if self.on_file:
-                self._cells = self.workspace.fetch_array_attribute(self.uid)
+                self._cells = self.workspace.fetch_array_attribute(self)
             else:
                 self.cells = np.c_[[0, 1, 2, 0], [0, 2, 3, 0]].T.astype("uint32")
 
@@ -171,7 +169,6 @@ class GeoImage(ObjectBase):
 
         :return vertices: Corners (vertices) in world coordinates.
         """
-
         reference = np.asarray(reference)
         locations = np.asarray(locations)
         if self.image is None:
@@ -218,7 +215,7 @@ class GeoImage(ObjectBase):
         Defines the four corners of the geo_image
         """
         if (getattr(self, "_vertices", None) is None) and self.on_file:
-            self._vertices = self.workspace.fetch_array_attribute(self.uid, "vertices")
+            self._vertices = self.workspace.fetch_array_attribute(self, "vertices")
 
         if self._vertices is None and self.image is not None:
             self.vertices = self.default_vertices

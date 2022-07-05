@@ -297,12 +297,13 @@ class CurrentElectrode(PotentialElectrode):
             raise AttributeError("No Current-Receiver metadata set.")
 
         potential = self.metadata["Potential Electrodes"]
+        potential_entity = self.workspace.get_entity(potential)[0]
 
-        try:
-            return self.workspace.get_entity(potential)[0]
-        except IndexError:
-            print("Associated PotentialElectrode entity not found in Workspace.")
-            return None
+        if isinstance(potential_entity, PotentialElectrode):
+            return potential_entity
+
+        print("Associated PotentialElectrode entity not found in Workspace.")
+        return None
 
     @potential_electrodes.setter
     def potential_electrodes(self, potential_electrodes: PotentialElectrode):

@@ -132,13 +132,13 @@ class BlockModel(ObjectBase):
                 len(value) == 3
             ), "Origin must be a list or numpy array of shape (3, )"
 
-            self.workspace.update_attribute(self, "attributes")
             self._centroids = None
 
             value = np.asarray(
                 tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
             )
             self._origin = value
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def rotation(self) -> float:
@@ -179,7 +179,7 @@ class BlockModel(ObjectBase):
         """
         if (getattr(self, "_u_cell_delimiters", None) is None) and self.on_file:
             self._u_cell_delimiters = self.workspace.fetch_array_attribute(
-                self.uid, "u_cell_delimiters"
+                self, "u_cell_delimiters"
             )
 
         return self._u_cell_delimiters
@@ -188,10 +188,9 @@ class BlockModel(ObjectBase):
     def u_cell_delimiters(self, value):
         if value is not None:
             value = np.r_[value]
-            self.workspace.update_attribute(self, "u_cell_delimiters")
             self._centroids = None
-
             self._u_cell_delimiters = value.astype(float)
+            self.workspace.update_attribute(self, "u_cell_delimiters")
 
     @property
     def u_cells(self) -> np.ndarray | None:
@@ -212,7 +211,7 @@ class BlockModel(ObjectBase):
         """
         if (getattr(self, "_v_cell_delimiters", None) is None) and self.on_file:
             self._v_cell_delimiters = self.workspace.fetch_array_attribute(
-                self.uid, "v_cell_delimiters"
+                self, "v_cell_delimiters"
             )
 
         return self._v_cell_delimiters
@@ -244,7 +243,7 @@ class BlockModel(ObjectBase):
         """
         if (getattr(self, "_z_cell_delimiters", None) is None) and self.on_file:
             self._z_cell_delimiters = self.workspace.fetch_array_attribute(
-                self.uid, "z_cell_delimiters"
+                self, "z_cell_delimiters"
             )
 
         return self._z_cell_delimiters

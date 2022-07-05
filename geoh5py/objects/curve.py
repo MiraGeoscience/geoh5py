@@ -66,7 +66,7 @@ class Curve(Points):
                 self._cells = np.vstack(cells)
 
             elif self.on_file:
-                self._cells = self.workspace.fetch_array_attribute(self.uid)
+                self._cells = self.workspace.fetch_array_attribute(self)
             else:
                 if self.vertices is not None:
                     n_segments = self.vertices.shape[0]
