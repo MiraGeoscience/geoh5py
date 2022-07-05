@@ -8,9 +8,9 @@ The **ui.json** format provides a schema to create a simple User Interface (UI) 
 <http://www.mirageoscience.com/our-products/software-product/geoscience-analyst>`_. The format uses JSON objects to represent `script parameters <./json_objects.rst>`_ used in the UI, and pass those parameters to an accompanying python script.
 
 
-Each ui.json object requires at least a **label** and **value** parameter, however additional parameters can be used to define different types of input (filepaths, geoh5py objects, strings etc.) and additional dependencies between script parameters.
+Each ui.json object requires at least a **label** and **value** member, however additional members can be used to define different types of input and additional dependencies between parameters.
 
-For example, a simple ui.json below describes a single parameter called 'grid_object', which is used to select a block model.
+For example, a simple ui.json below describes a single parameter called 'grid_object', which is used to select a block model within a geoh5 file.
 
 .. code-block:: json
 
@@ -23,19 +23,24 @@ For example, a simple ui.json below describes a single parameter called 'grid_ob
     }
     }
 
-Note the **meshType** used to select a geoh5py object, is defined by a list of their UUID. A complete list of UUID's for geoh5py object types are available in the `geoh5 objects documentation <../content/geoh5_format/analyst/objects.rst>`_.
+Note: The **meshType** used to select the grid object is defined by a list of UUID. A complete list of UUID's for geoh5 object types are available in the `geoh5 objects documentation <../content/geoh5_format/analyst/objects.rst>`_.
 
 
 Usage with Geoscience ANALYST Pro
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A ui.json file shall contain the parameters that reference a python script to run, and an optional conda environment to use. Ensure the conda and python paths are set up in Geoscience ANALYST preferences.
+A ui.json file shall contain the parameters that reference a python script to run. Ensure the python path is set up correctly in Geoscience ANALYST preferences. Optionally include a conda environment to use in the preferences and in the ui.json script parameter **conda_environment**.
+
+.. figure:: ./images/ANALYST_preferences.png
+
 
 run_command ``str``
     Name of python script excluding the .py extension (i.e., "run_me" for run_me.py) required for Geoscience ANALYST Pro to run on save or auto-load.
 conda_environment ``str``
     Optional name of conda environment to activate when running the python script in *run_command*
+title ``str``
+    Title of user interface window
 
-To complete the example above with a python script to print out the name of a block model object, we will add the **run_command** parameter to the ui.json file. Within the accompanying python script, the parameters from the ui.json file is passed to the script as arguments, and can be accessed using the InputFile module of geoh5py as shown below:
+To complete the example above with a python script to print out the name of a block model object, we will add the **run_command**, and **title** parameter to the ui.json file.
 
 .. code-block:: json
 
@@ -50,7 +55,9 @@ To complete the example above with a python script to print out the name of a bl
     "run_command": "run_me"
     }
 
-The following python code in the same directory as the ui.json file with the filename 'run_me.py' will be run.
+.. figure:: ./images/block_model_uijson.png
+
+Within the accompanying python script, the parameters from the ui.json is passed to the python script as a dictionary of arguments, and can be accessed using the InputFile module of geoh5py as shown below:
 
 .. code-block:: python
 
@@ -66,31 +73,29 @@ The following python code in the same directory as the ui.json file with the fil
     print(f"The selected object name is {bm.name}")
 
 
-.. figure:: ./images/block_model_param_complete.png
+.. figure:: ./images/block_model_output.png
 
 When a **ui.json** is run within Geoscience ANALYST Pro, the following parameters are updated or added:
 
-- The **value** member is updated with the UUID
-- The **enabled** member ``bool`` for whether the parameter is enabled
+- The **value** member is updated with the UUID of the object selected in the UI
+- The **enabled** member ``bool`` is set for whether the parameter is enabled
 - The :ref:`Data parameter <data_parameter>` will also have updated **isValue** and **property** members. The **isValue** ``bool`` member is *true* if the **value** member was selected and *false* if the **property** member was selected.
 
 The following JSON objects will be written (and overwritten if given) upon running a ui.json from Geoscience ANALYST Pro:
 
-- monitoring_directory ``str`` the absolute path of a monitoring directory. Workspace files written to this folder will be automatically processed by Geoscience ANALYST.
-- workspace_geoh5 ``str`` the absolute path to the current workspace (if previously saved) being used
-- geoh5 ``str`` the absolute path to the geoh5 written containing all the objects of the workspace within the parameters of the **ui.json**. One only needs to use this workspace along with the JSON file to access the objects with geoh5py.
+- **monitoring_directory** ``str`` the absolute path of a monitoring directory. Workspace files written to this folder will be automatically processed by Geoscience ANALYST.
+- **workspace_geoh5** ``str`` the absolute path to the current workspace (if previously saved) being used
+- **geoh5** ``str`` the absolute path to the geoh5 written containing all the objects of the workspace within the parameters of the **ui.json**. One only needs to use this workspace along with the JSON file to access the objects with geoh5py.
 
 
 Parameters available for all ui.json objects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The following key/value pairs are available to all input parameters in the ui.json schema. The **label** and **value** keys required in each parameter. The other optional keys are used to describe how the UI will render and parameter dependancies.
+The following members are available to all input parameters in the ui.json schema.
 
 label ``str``
     Required string describing parameter. A colon will automatically be added within Geoscience ANALYST, so this should be omitted.
 value ``str``, ``int``, ``bool`` , or ``float``
     This required member takes a different form, including empty, depending on the :ref:`parameter type <json_param_examples>`. The value is updated when written from Geoscience ANALYST.
-title ``str``
-    Required Title of user interface window
 main ``bool``
     If set to true, the parameter is shown in the first tab of the UI and will throw an error if not present (and not optional). Optional parameters may be set to main. When main is not given or is false, the parameter will be under the *Optional Parameters* tab.
 tooltip ``str``
@@ -127,11 +132,11 @@ The following sections define different object specific parameters that can be u
 
 Tips on creating UIs
 ^^^^^^^^^^^^^^^^^^^^
-- Keep labels descriptive and concise
+- Keep labels concise
 - Write detailed tooltips
 - Group related attributes
-- The **main** attribute is for general, required script variables. Do not include this member with every object, unless there are only a handful of objects. Objects that are in the required parameters without a valid value will invoke an error when exporting or running from Geoscience ANALYST. "Non-main" members are designated to a second page under *Optional parameters*.
-- Utilize **optional** object members and dependencies. If a single workspace object input is optional, use the :ref:`Object parameter <object_parameter>` rather than two parameters with a dependency.
+- Don't include the **main** member with every parameter. "Non-main" members are designated to a second page under *Optional parameters*
+- Utilize **optional** object members and dependencies.
 
 
 External Links

@@ -1,7 +1,7 @@
 .. _bool_param:
 
-Boolean
-=======
+Boolean Parameter
+=================
 
 A parameter named "input" that has a ``bool`` value.
 
@@ -22,8 +22,8 @@ A parameter named "input" that has a ``bool`` value.
 
 
 
-Integer
-=======
+Integer Parameter
+=================
 
 A parameter that has an ``int`` value. The optional parameters ``min`` and ``max`` invoke a validator to insure the bound(s) are enforced.
 
@@ -43,8 +43,8 @@ A parameter that has an ``int`` value. The optional parameters ``min`` and ``max
     :height: 100
 
 
-Float
-=====
+Float Parameter
+===============
 
 A parameter that has a ``float`` value. The optional parameters are:
 
@@ -76,8 +76,8 @@ precision ``int``
     :height: 100
 
 
-String
-======
+String Parameter
+================
 
 For a simple string parameter, use an empty ``str`` value to have an empty string. Only a ``label`` and ``value`` is required.
 
@@ -96,8 +96,8 @@ For a simple string parameter, use an empty ``str`` value to have an empty strin
 
 
 
-Multi-choice string
--------------------
+Multi-choice string Parameter
+-----------------------------
 
 For a drop-down selection, add a ``choiceList`` member with an array of strings (``str``)
 
@@ -120,8 +120,8 @@ For a drop-down selection, add a ``choiceList`` member with an array of strings 
 
 
 
-File
-====
+File Parameter
+==============
 
 A file parameter comes with an icon to choose the file, with a ``str`` value. Extra members of the file object parameter are **fileDescription** and **fileType**. Both of these are ``str`` types and can be arrays, but must be of the same length
 
@@ -145,8 +145,8 @@ A file parameter comes with an icon to choose the file, with a ``str`` value. Ex
 
 .. _object_parameter:
 
-Geoscience ANALYST Object
-=========================
+Geoscience ANALYST Object Parameter
+===================================
 
 To choose an object from a dropdown menu, the `universally unique identifier (UUID) <https://en.wikipedia.org/wiki/Universally_unique_identifier>`_  of the :ref:`Object Type <object_types>`: is required for the filtering of objects. This is given as a single or array of ``str`` in the member **meshType**. The icon to pick the object comes with this parameter. The value returned is the *UUID* of the Geoscience ANALYST object selected.
 
@@ -167,8 +167,8 @@ To choose an object from a dropdown menu, the `universally unique identifier (UU
 
 .. _data_parameter:
 
-Geoscience ANALYST Data
-=======================
+Geoscience ANALYST Data Parameter
+=================================
 
 Creating a parameter to choose a Geoscience ANALYST object's data requires extra members:
 
@@ -190,8 +190,8 @@ precision ``int``
     Optional number of decimal places for the value.
 
 
-Drop-down
----------
+Drop-down Parameter
+-------------------
 In this example, the object parameter *data_mesh* is also given for reference.
 
 .. code-block:: json
@@ -220,8 +220,8 @@ In this example, the object parameter *data_mesh* is also given for reference.
 
 
 
-Data or value
--------------
+Data or value Parameter
+-----------------------
 In some cases, a parameter may take its data from a Geoscience ANALYST object or simply a ``float`` value. The use of the member **isValue** and **property** together allows for the UI to switch between these two cases. In the top image, the **isValue** is true, so the **value** member of 1.0 will initially be active. When the icon is clicked, the type of input is switched to the **property** member (bottom image). The **uncertainty channel** object also depends on the **data_mesh** object. The drop-down selection will filter data from the chosen object that is located on the vertices and is float. The **isValue** is set to false upon export in this case.
 
 
