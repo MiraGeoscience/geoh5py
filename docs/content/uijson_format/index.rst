@@ -40,7 +40,7 @@ conda_environment ``str``
 title ``str``
     Title of user interface window
 
-To complete the example above with a Python script to print out the name of a block model object, add the **run_command**, and **title** parameter to the ui.json file.
+To complete the example above, add the **run_command**, and **title** parameter to the ui.json file.
 
 .. code-block:: json
 
