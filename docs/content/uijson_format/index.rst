@@ -28,7 +28,7 @@ Note: The **meshType** used to select the grid object is defined by a list of UU
 
 Usage with Geoscience ANALYST Pro
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A ui.json file shall contain the parameters that reference a python script to run. Ensure the python path is set up correctly in Geoscience ANALYST preferences. Optionally include a conda environment to use in the preferences and in the ui.json script parameter **conda_environment**.
+A ui.json file contains the parameters that reference a Python script to run. Ensure the Python path is set up correctly in Geoscience ANALYST preferences. Optionally include a conda environment to use in the preferences and in the ui.json script parameter **conda_environment**.
 
 .. figure:: ./images/ANALYST_preferences.png
 
@@ -40,7 +40,7 @@ conda_environment ``str``
 title ``str``
     Title of user interface window
 
-To complete the example above with a python script to print out the name of a block model object, we will add the **run_command**, and **title** parameter to the ui.json file.
+To complete the example above with a Python script to print out the name of a block model object, add the **run_command**, and **title** parameter to the ui.json file.
 
 .. code-block:: json
 
@@ -95,7 +95,7 @@ The following members are available to all input parameters in the ui.json schem
 label ``str``
     Required string describing parameter. A colon will automatically be added within Geoscience ANALYST, so this should be omitted.
 value ``str``, ``int``, ``bool`` , or ``float``
-    This required member takes a different form, including empty, depending on the :ref:`parameter type <json_param_examples>`. The value is updated when written from Geoscience ANALYST.
+    This required member takes a different form, including the empty string '', depending on the :ref:`parameter type <json_param_examples>`. The value is updated when written from Geoscience ANALYST.
 main ``bool``
     If set to true, the parameter is shown in the first tab of the UI and will throw an error if not present (and not optional). Optional parameters may be set to main. When main is not given or is false, the parameter will be under the *Optional Parameters* tab.
 tooltip ``str``
