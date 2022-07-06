@@ -84,7 +84,7 @@ When a **ui.json** is run within Geoscience ANALYST Pro, the following parameter
 The following JSON objects will be written (and overwritten if given) upon running a ui.json from Geoscience ANALYST Pro:
 
 - **monitoring_directory** ``str`` the absolute path of a monitoring directory. Workspace files written to this folder will be automatically processed by Geoscience ANALYST.
-- **workspace_geoh5** ``str`` the absolute path to the current workspace (if previously saved) being used
+- **workspace_geoh5** ``str`` (Optional) Path to the source geoh5 file (for reference only)
 - **geoh5** ``str`` the absolute path to the geoh5 written containing all the objects of the workspace within the parameters of the **ui.json**. One only needs to use this workspace along with the JSON file to access the objects with geoh5py.
 
 
