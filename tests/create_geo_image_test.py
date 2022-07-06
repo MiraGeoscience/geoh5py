@@ -15,7 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from os import path
+
+from __future__ import annotations
 
 import numpy as np
 import pytest
@@ -27,7 +28,7 @@ from geoh5py.workspace import Workspace
 
 def test_create_copy_geoimage(tmp_path):
 
-    workspace = Workspace(path.join(tmp_path, "geo_image_test.geoh5"))
+    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
     pixels = np.r_[
         np.c_[32, 0],
         np.c_[32, 64],
@@ -95,24 +96,24 @@ def test_create_copy_geoimage(tmp_path):
     assert geoimage_copy.image == geoimage.image, "Error setting image from bytes."
 
     # Re-load from file
-    geoimage.image.save(path.join(tmp_path, "test.tiff"))
+    geoimage.image.save(tmp_path / r"test.tiff")
     geoimage_file = GeoImage.create(workspace, name="MyGeoImage")
 
     with pytest.raises(ValueError) as excinfo:
-        geoimage_file.image = path.join(tmp_path, "abc.tiff")
+        geoimage_file.image = str(tmp_path / r"abc.tiff")
 
     assert "does not exist" in str(excinfo.value)
 
-    geoimage_file.image = path.join(tmp_path, "test.tiff")
+    geoimage_file.image = str(tmp_path / r"test.tiff")
 
     assert (
         geoimage_file.image == geoimage.image
     ), "Error writing and re-loading the image file."
 
-    new_workspace = Workspace(path.join(tmp_path, "geo_image_test2.geoh5"))
+    new_workspace = Workspace(tmp_path / r"geo_image_test2.geoh5")
     geoimage.copy(parent=new_workspace)
 
-    new_workspace = Workspace(path.join(tmp_path, "geo_image_test2.geoh5"))
+    new_workspace = Workspace(tmp_path / r"geo_image_test2.geoh5")
     rec_image = new_workspace.get_entity("MyGeoImage")[0]
     compare_entities(geoimage, rec_image, ignore=["_parent", "_image"])
 

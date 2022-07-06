@@ -24,18 +24,18 @@ from copy import deepcopy
 from typing import Any
 from uuid import UUID
 
-from geoh5py.io.utils import (
+from geoh5py.shared import Entity
+from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
+from geoh5py.shared.validators import AssociationValidator
+from geoh5py.workspace import Workspace
+
+from ..shared.utils import (
     as_str_if_uuid,
     dict_mapper,
     entity2uuid,
     str2uuid,
     uuid2entity,
 )
-from geoh5py.shared import Entity
-from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
-from geoh5py.shared.validators import AssociationValidator
-from geoh5py.workspace import Workspace
-
 from .constants import base_validations, ui_validations
 from .utils import (
     container_group2name,
@@ -231,7 +231,7 @@ class InputFile:
         :param none_map: Map parameter 'None' values to non-null numeric types.
             The parameters in the dictionary are mapped to optional and disabled.
 
-        :raises ValueError: If attempting to set None to non-optional parameter.
+        :raises UserWarning: If attempting to set None value to non-optional parameter.
         """
         if self.ui_json is None:
             raise UserWarning("InputFile requires a 'ui_json' to be defined.")

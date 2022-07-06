@@ -15,8 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
+
+from __future__ import annotations
 
 import numpy as np
 
@@ -25,42 +25,38 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_grid_2d_data():
+def test_create_grid_2d_data(tmp_path):
 
     name = "MyTestGrid2D"
 
     # Generate a 2D array
     n_x, n_y = 10, 15
     values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
+    h5file_path = tmp_path / r"test2Grid.geoh5"
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"test2Grid.geoh5"
+    # Create a workspace
+    workspace = Workspace(h5file_path)
 
-        # Create a workspace
-        workspace = Workspace(h5file_path)
+    grid = Grid2D.create(
+        workspace,
+        origin=[0, 0, 0],
+        u_cell_size=20.0,
+        v_cell_size=30.0,
+        u_count=n_x,
+        v_count=n_y,
+        name=name,
+        allow_move=False,
+    )
 
-        grid = Grid2D.create(
-            workspace,
-            origin=[0, 0, 0],
-            u_cell_size=20.0,
-            v_cell_size=30.0,
-            u_count=n_x,
-            v_count=n_y,
-            name=name,
-            allow_move=False,
-        )
+    data = grid.add_data({"DataValues": {"values": values}})
+    grid.rotation = 45.0
 
-        data = grid.add_data({"DataValues": {"values": values}})
-        grid.rotation = 45.0
+    # Read the data back in from a fresh workspace
+    new_workspace = Workspace(h5file_path)
 
-        workspace.finalize()
+    rec_obj = new_workspace.get_entity(name)[0]
 
-        # Read the data back in from a fresh workspace
-        new_workspace = Workspace(h5file_path)
+    rec_data = new_workspace.get_entity("DataValues")[0]
 
-        rec_obj = new_workspace.get_entity(name)[0]
-
-        rec_data = new_workspace.get_entity("DataValues")[0]
-
-        compare_entities(grid, rec_obj)
-        compare_entities(data, rec_data)
+    compare_entities(grid, rec_obj)
+    compare_entities(data, rec_data)

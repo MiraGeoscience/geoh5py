@@ -15,7 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from os import path
+
+from __future__ import annotations
 
 import numpy as np
 import pytest
@@ -75,8 +76,8 @@ def test_validation_types():
 
 def test_association_validator(tmp_path):
 
-    workspace = Workspace(path.join(tmp_path, "test.geoh5"))
-    workspace2 = Workspace(path.join(tmp_path, "test2.geoh5"))
+    workspace = Workspace(tmp_path / r"test.geoh5")
+    workspace2 = Workspace(tmp_path / r"test2.geoh5")
     points = Points.create(workspace, vertices=np.array([[1, 2, 3], [4, 5, 6]]))
     points2 = Points.create(workspace2, vertices=np.array([[1, 2, 3], [4, 5, 6]]))
     validator = AssociationValidator()
@@ -107,7 +108,7 @@ def test_association_validator(tmp_path):
 
 def test_property_group_validator(tmp_path):
 
-    workspace = Workspace(path.join(tmp_path, "test.geoh5"))
+    workspace = Workspace(tmp_path / r"test.geoh5")
     points = Points.create(
         workspace, vertices=np.array([[1, 2, 3], [4, 5, 6]]), name="test_points"
     )
@@ -203,9 +204,19 @@ def test_value_validator():
 def test_validate_data(tmp_path):
     ui_json = {
         "title": "test",
-        "geoh5": path.join(tmp_path, "test.geoh5"),
-        "param_1": {"label": "param_1", "optional": True, "value": None},
-        "param_2": {"label": "param_2", "optional": True, "value": None},
+        "geoh5": str(tmp_path / r"test.geoh5"),
+        "param_1": {
+            "label": "param_1",
+            "optional": True,
+            "enabled": False,
+            "value": None,
+        },
+        "param_2": {
+            "label": "param_2",
+            "optional": True,
+            "enabled": False,
+            "value": None,
+        },
     }
     validations = {
         "param_1": {"one_of": "sad little parameter", "types": [str, type(None)]},
@@ -216,7 +227,7 @@ def test_validate_data(tmp_path):
         ifile.validators.validate_data(ifile.data)
     assert "at least one sad little parameter" in str(excinfo.value)
 
-    ui_json["param_1"].update({"optional": False})
+    ui_json["param_1"].update({"enabled": True})
     ifile = InputFile(ui_json=ui_json, validations=validations)
     with pytest.raises(OptionalValidationError) as excinfo:
         ifile.validators.validate_data(ifile.data)

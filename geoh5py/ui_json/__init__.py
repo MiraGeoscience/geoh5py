@@ -19,4 +19,5 @@
 # flake8: noqa
 
 from .input_file import InputFile
+from .utils import monitored_directory_copy
 from .validation import InputValidation

@@ -14,49 +14,61 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
 
-from os import path
+import io
 
 import pytest
 from h5py import File
 
+from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
 def test_workspace_from_kwargs(tmp_path):
+    h5file_tmp = tmp_path / r"test.geoh5"
 
     attr = {
         "Contributors": "TARS",
-        "version": 999.1,
-        "ga_version": "2",
         "distance_unit": "feet",
         "hello": "world",
     }
 
     with pytest.warns(UserWarning) as warning:
-        workspace = Workspace(path.join(tmp_path, "test.geoh5"), **attr)
+        workspace = Workspace(h5file_tmp, **attr)
 
     assert (
         "UserWarning('Argument hello with value world is not a valid attribute"
         in str(warning[0])
     )
-    workspace.finalize()
+    assert workspace.geoh5.mode == "r+"
 
-    workspace = Workspace(
-        path.join(tmp_path, "test.geoh5"),
+    # Test re-opening in read-only - stays in r+"
+    with pytest.warns(UserWarning) as warning:
+        workspace.open(mode="r")
+
+    assert f"Workspace already opened in mode {workspace.geoh5.mode}." in str(
+        warning[0]
     )
+
+    workspace.close()
+
+    workspace = Workspace(h5file_tmp)
     for key, value in attr.items():
         if getattr(workspace, key, None) is not None:
             assert (
                 getattr(workspace, key.lower()) == value
             ), f"Error changing value for attribute {key}."
 
+    workspace.close()
+
 
 def test_empty_workspace(tmp_path):
     Workspace(
-        path.join(tmp_path, "test.geoh5"),
-    )
-    with File(path.join(tmp_path, "test.geoh5"), "r+") as file:
+        tmp_path / r"test.geoh5",
+    ).close()
+
+    with File(tmp_path / r"test.geoh5", "r+") as file:
         del file["GEOSCIENCE"]["Groups"]
         del file["GEOSCIENCE"]["Data"]
         del file["GEOSCIENCE"]["Objects"]
@@ -64,10 +76,10 @@ def test_empty_workspace(tmp_path):
         del file["GEOSCIENCE"]["Types"]
 
     Workspace(
-        path.join(tmp_path, "test.geoh5"),
-    )
+        tmp_path / r"test.geoh5",
+    ).close()
 
-    with File(path.join(tmp_path, "test.geoh5"), "r+") as file:
+    with File(tmp_path / r"test.geoh5", "r+") as file:
         assert (
             "Types" in file["GEOSCIENCE"]
         ), "Failed to regenerate the geoh5 structure."
@@ -75,17 +87,37 @@ def test_empty_workspace(tmp_path):
 
 def test_missing_type(tmp_path):
     Workspace(
-        path.join(tmp_path, "test.geoh5"),
-    )
-    with File(path.join(tmp_path, "test.geoh5"), "r+") as file:
+        tmp_path / r"test.geoh5",
+    ).close()
+    with File(tmp_path / r"test.geoh5", "r+") as file:
         for group in file["GEOSCIENCE"]["Groups"].values():
             del group["Type"]
 
     Workspace(
-        path.join(tmp_path, "test.geoh5"),
-    )
+        tmp_path / r"test.geoh5",
+    ).close()
 
-    with File(path.join(tmp_path, "test.geoh5"), "r+") as file:
-        assert all(
-            "Type" in group for group in file["GEOSCIENCE"]["Groups"].values()
-        ), "Failed to regenerate the Type in geoh5 structure."
+
+def test_bad_extension(tmp_path):
+    with pytest.raises(ValueError) as error:
+        Workspace(
+            tmp_path / r"test.h5",
+        )
+
+    assert "Input 'h5file' file must have a 'geoh5' extension." in str(error)
+
+
+def test_read_bytes(tmp_path):
+    with Workspace(tmp_path / r"test.geoh5") as workspace:
+        workspace.create_entity(Points)
+
+    with open(tmp_path / r"test.geoh5", "rb") as in_file:
+        byte_data = in_file.read()
+
+    with Workspace(io.BytesIO(byte_data)) as byte_ws:
+        byte_objects = byte_ws.objects
+
+    with Workspace(tmp_path / r"test.geoh5") as file_ws:
+        file_objects = file_ws.objects
+
+    assert len(byte_objects) == len(file_objects)
