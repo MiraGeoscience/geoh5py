@@ -25,7 +25,6 @@ import numpy as np
 from geoh5py.data import FloatData
 from geoh5py.groups import PropertyGroup
 from geoh5py.objects import ObjectBase
-from geoh5py.objects.object_type import ObjectType
 
 
 class BaseEMSurvey(ObjectBase):
@@ -38,9 +37,6 @@ class BaseEMSurvey(ObjectBase):
     __UNITS = None
     _receivers: BaseEMSurvey | None = None
     _transmitters: BaseEMSurvey | None = None
-
-    def __init__(self, object_type: ObjectType, **kwargs):
-        super().__init__(object_type, **kwargs)
 
     def add_components_data(self, data: dict) -> list[PropertyGroup]:
         """
