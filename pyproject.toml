@@ -23,10 +23,10 @@ classifiers = [
 exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
 
 [tool.poetry.dependencies]
-numpy = "!=1.19.4"
-python = "^3.7.2"
+python = "^3.7.2,<3.11"
 Pillow = ">=8.0.1,<10.0.0"
 h5py = "^3.2.1"
+numpy = "!=1.19.4, ^1.21.5"
 
 
 [tool.poetry.dev-dependencies]
