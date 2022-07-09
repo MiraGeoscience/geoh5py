@@ -241,7 +241,6 @@ class BaseEMSurvey(ObjectBase):
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         """Default unique identifier. Implemented on the child class."""
-        ...
 
     @property
     def default_transmitter_type(self) -> type:
