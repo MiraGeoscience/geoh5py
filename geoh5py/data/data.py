@@ -151,4 +151,3 @@ class Data(Entity):
         """
         Remove self from a property group.
         """
-        ...

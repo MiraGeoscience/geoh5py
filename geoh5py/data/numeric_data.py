@@ -21,16 +21,13 @@ from abc import ABC
 
 import numpy as np
 
-from .data import Data, DataType, PrimitiveTypeEnum
+from .data import Data, PrimitiveTypeEnum
 
 
 class NumericData(Data, ABC):
     """
     Data container for floats values
     """
-
-    def __init__(self, data_type: DataType, **kwargs):
-        super().__init__(data_type, **kwargs)
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:

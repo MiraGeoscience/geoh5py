@@ -25,6 +25,7 @@ from geoh5py.shared import weakref_utils
 
 
 class AnyObject:
+    # pylint: disable=too-few-public-methods
     pass
 
 

@@ -916,7 +916,7 @@ class Workspace(AbstractContextManager):
         """
         data_name = {}
         for key, val in self._data.items():
-            entity = val.__call__()
+            entity = val()
             if entity is not None:
                 data_name[key] = entity.name
         return data_name
@@ -938,7 +938,7 @@ class Workspace(AbstractContextManager):
         """
         groups_name = {}
         for key, val in self._groups.items():
-            entity = val.__call__()
+            entity = val()
             if entity is not None:
                 groups_name[key] = entity.name
         return groups_name
@@ -950,7 +950,7 @@ class Workspace(AbstractContextManager):
         """
         objects_name = {}
         for key, val in self._objects.items():
-            entity = val.__call__()
+            entity = val()
             if entity is not None:
                 objects_name[key] = entity.name
         return objects_name

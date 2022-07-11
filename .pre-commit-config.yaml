@@ -64,7 +64,7 @@ repos:
         require_serial: true  # pylint does its own parallelism
         types: [text]
         types_or: [python, pyi]
-        exclude: (devtools|docs)/
+        exclude: (devtools|docs|geoh5py/interfaces)/
     -   id: check-copyright
         name: Check copyright
         entry: python devtools/check-copyright.py

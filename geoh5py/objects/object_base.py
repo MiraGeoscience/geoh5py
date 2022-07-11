@@ -196,7 +196,6 @@ class ObjectBase(Entity):
         defining the connection between
         :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
         """
-        ...
 
     @property
     def comments(self):
@@ -354,7 +353,6 @@ class ObjectBase(Entity):
         :obj:`numpy.array` of :obj:`float`, shape (\*, 3): Array of x, y, z coordinates
         defining the position of points in 3D space.
         """
-        ...
 
     def validate_data_association(self, attribute_dict):
         """
