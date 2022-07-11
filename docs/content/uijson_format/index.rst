@@ -5,8 +5,7 @@ About
 ^^^^^
 
 The **ui.json** format provides a schema to create a simple User Interface (UI) between geoh5py and `Geoscience ANALYST Pro
-<http://www.mirageoscience.com/our-products/software-product/geoscience-analyst>`_. The format uses JSON objects to represent `script parameters <./json_objects.rst>`_ used in the UI, and pass those parameters to an accompanying python script.
-
+<http://www.mirageoscience.com/our-products/software-product/geoscience-analyst>`_. The format uses `JSON objects <https://json-schema.org/specification.html>`_ to represent `script parameters <./json_objects.rst>`_ used in the UI, and pass those parameters to an accompanying python script.
 
 Each ui.json object requires at least a **label** and **value** member, however additional members can be used to define different types of input and additional dependencies between parameters.
 
@@ -28,7 +27,7 @@ Note: The **meshType** used to select the grid object is defined by a list of UU
 
 Usage with Geoscience ANALYST Pro
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A ui.json file contains the parameters that reference a Python script to run. Ensure the Python path is set up correctly in Geoscience ANALYST preferences. Optionally include a conda environment to use in the preferences and in the ui.json script parameter **conda_environment**.
+A ui.json file contains the parameters that reference a Python script to run. Geoscience ANALYST must be configured prior to running the application by setting the path to Python scripts or to a Conda environment as defined by the **conda_environment** parameter.
 
 .. figure:: ./images/ANALYST_preferences.png
 
