@@ -14,8 +14,8 @@ Points
 
 3-D scatter points object defined by vertices with fixed coordinates in Cartesian system (x, y and z).
 
-Datasets
-^^^^^^^^
+**Datasets**
+
 :Vertices: 1D composite array
 
     [*x* ``double``, *y* ``double``, *z* ``double``]
