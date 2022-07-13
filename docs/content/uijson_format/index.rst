@@ -140,6 +140,5 @@ Tips on creating UIs
 
 External Links
 ^^^^^^^^^^^^^^
-- `JSON Objects <https://www.w3schools.com/js/js_json_objects.asp>`_
 - `JSON Schema <https://json-schema.org/specification.html>`_
 - `Universally Unique IDentifier (UUID) <https://en.wikipedia.org/wiki/Universally_unique_identifier>`_
