@@ -1,3 +1,6 @@
+
+.. _primitive_type:
+
 Primitive Types
 ===============
 

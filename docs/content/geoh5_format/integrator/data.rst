@@ -1,3 +1,5 @@
+.. _integrator_data:
+
 Geoscience INTEGRATOR Data Set
 ==============================
 
