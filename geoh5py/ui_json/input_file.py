@@ -184,6 +184,9 @@ class InputFile:
         with open(json_file, encoding="utf-8") as file:
             input_file.load(json.load(file))
 
+        if isinstance(input_file.workspace, Workspace):
+            input_file.workspace.close()
+
         return input_file
 
     @property
