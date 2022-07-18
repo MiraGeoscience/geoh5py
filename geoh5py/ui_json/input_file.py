@@ -145,7 +145,7 @@ class InputFile:
     def load(self, input_dict: dict[str, Any]):
         """Load data from dictionary and validate."""
         self.ui_json = input_dict
-        self.data = flatten(input_dict)
+        self.data = flatten(self.ui_json)
 
     @property
     def path(self) -> str | None:
