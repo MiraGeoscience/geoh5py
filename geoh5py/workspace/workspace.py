@@ -41,7 +41,14 @@ import numpy as np
 
 from .. import data, groups, objects
 from ..data import CommentsData, Data, DataType
-from ..groups import CustomGroup, DrillholeGroup, Group, PropertyGroup, RootGroup
+from ..groups import (
+    CustomGroup,
+    DrillholeGroup,
+    Group,
+    IntegratorDrillholeGroup,
+    PropertyGroup,
+    RootGroup,
+)
 from ..io import H5Reader, H5Writer
 from ..objects import Drillhole, ObjectBase
 from ..shared import weakref_utils
@@ -282,8 +289,9 @@ class Workspace(AbstractContextManager):
             save_on_creation=False,
             **{"entity": attributes, "entity_type": type_attr},
         )
-        recovered_entity.on_file = True
-        recovered_entity.entity_type.on_file = True
+        if recovered_entity is not None:
+            recovered_entity.on_file = True
+            recovered_entity.entity_type.on_file = True
 
         return recovered_entity
 
@@ -411,10 +419,11 @@ class Workspace(AbstractContextManager):
                 and member.default_type_uid() == entity_type_uid
             ):
                 if self.version > 1.0:
-                    if member is DrillholeGroup:
+                    if member in (DrillholeGroup, IntegratorDrillholeGroup):
                         member = type(name + "Concatenator", (Concatenator, member), {})
                     elif member is Drillhole and isinstance(
-                        entity_kwargs.get("parent"), DrillholeGroup
+                        entity_kwargs.get("parent"),
+                        (DrillholeGroup, IntegratorDrillholeGroup),
                     ):
                         member = type(name + "Concatenated", (Concatenated, member), {})
 

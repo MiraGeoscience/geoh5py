@@ -42,3 +42,17 @@ class DrillholeGroup(Group):
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
+
+
+class IntegratorDrillholeGroup(DrillholeGroup):
+    """The type for the group containing drillholes."""
+
+    __TYPE_UID = uuid.UUID("{952829b6-76a2-4d0b-b908-7f8d2482dc0d}")
+
+    def __init__(self, group_type: GroupType, **kwargs):
+
+        super().__init__(group_type, **kwargs)
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID
