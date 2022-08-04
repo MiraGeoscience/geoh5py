@@ -22,7 +22,7 @@ For example, a simple ui.json below describes a single parameter called 'grid_ob
     }
     }
 
-Note: The **meshType** used to select the grid object is defined by a list of UUID. A complete list of UUID's for geoh5 object types are available in the `geoh5 objects documentation <../content/geoh5_format/analyst/objects.rst>`_.
+Note: The **meshType** used to select the grid object is defined by a list of UUID. A complete list of UUID's for geoh5 object types are available in the `geoh5 objects documentation <../geoh5_format/analyst/objects.rst>`_.
 
 
 Usage with Geoscience ANALYST Pro
