@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from h5py import special_dtype
 
-from geoh5py.data import Data
+from geoh5py.data import Data, DataType
 from geoh5py.groups import Group
 from geoh5py.shared.entity import Entity
 from geoh5py.shared.utils import (
@@ -163,12 +163,27 @@ class Concatenator(Group):
 
         new_entity = parent.workspace.copy_to_parent(self, parent, copy_children=False)
 
+        if self.concatenated_attributes is None:
+            return new_entity
+
         for field in self.index:
             values = self.workspace.fetch_concatenated_values(self, field)
             if isinstance(values, tuple):
                 new_entity.data[field], new_entity.index[field] = values
 
             new_entity.save_attribute(field)
+
+            # Copy over the data type
+            for elem in self.concatenated_attributes["Attributes"]:
+
+                if "Name" in elem and elem["Name"] == field and "Type ID" in elem:
+                    attr_type = self.workspace.fetch_type(
+                        uuid.UUID(elem["Type ID"]), "Data"
+                    )
+                    data_type = DataType.find_or_create(
+                        new_entity.workspace, **attr_type
+                    )
+                    new_entity.workspace.save_entity_type(data_type)
 
         return new_entity
 

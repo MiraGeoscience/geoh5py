@@ -1107,11 +1107,20 @@ class Workspace(AbstractContextManager):
             entity.concatenator.add_save_concatenated(entity)
 
             if hasattr(entity, "entity_type"):
-                self._io_call(H5Writer.write_entity_type, entity.entity_type, mode="r+")
+                self.save_entity_type(entity.entity_type)
+
         else:
             self._io_call(
                 H5Writer.save_entity, entity, add_children=add_children, mode="r+"
             )
+
+    def save_entity_type(self, entity_type: EntityType) -> None:
+        """
+        Save or update an entity_type to geoh5.
+
+        :param entity_type: Entity to be written to geoh5.
+        """
+        self._io_call(H5Writer.write_entity_type, entity_type, mode="r+")
 
     @property
     def types(self) -> list[EntityType]:
