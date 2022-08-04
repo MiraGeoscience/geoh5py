@@ -52,7 +52,7 @@ class ObjectBase(Entity):
         self._property_groups: list[PropertyGroup] | None = None
         self._last_focus = "None"
         self._comments = None
-        # self._clipping_ids: List[uuid.UUID] = []
+        # self._clipping_ids: list[uuid.UUID] = []
 
         if not any(key for key in kwargs if key in ["name", "Name"]):
             kwargs["name"] = type(self).__name__
@@ -264,7 +264,7 @@ class ObjectBase(Entity):
         self._property_groups = property_groups
         return prop_group
 
-    def get_data(self, name: str) -> list[Data]:
+    def get_data(self, name: str | uuid.UUID) -> list[Data]:
         """
         Get a child :obj:`~geoh5py.data.data.Data` by name.
 
@@ -275,12 +275,15 @@ class ObjectBase(Entity):
         entity_list = []
 
         for child in self.children:
-            if isinstance(child, Data) and child.name == name:
-                entity_list.append(child)
+            if isinstance(child, Data):
+                if (
+                    isinstance(name, uuid.UUID) and child.uid == name
+                ) or child.name == name:
+                    entity_list.append(child)
 
         return entity_list
 
-    def get_data_list(self) -> list[str]:
+    def get_data_list(self, attribute="name") -> list[str]:
         """
         Get a list of names of all children :obj:`~geoh5py.data.data.Data`.
 
@@ -289,7 +292,7 @@ class ObjectBase(Entity):
         name_list = []
         for child in self.children:
             if isinstance(child, Data):
-                name_list.append(child.name)
+                name_list.append(getattr(child, attribute))
         return sorted(name_list)
 
     @property
@@ -330,7 +333,6 @@ class ObjectBase(Entity):
 
     @property_groups.setter
     def property_groups(self, prop_groups: list[PropertyGroup]):
-        # Check for existing property_group
         if prop_groups is None:
             property_groups = None
         else:

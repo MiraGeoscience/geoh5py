@@ -326,9 +326,13 @@ class Workspace(AbstractContextManager):
                 and inspect.ismethod(member.primitive_type)
                 and data_type.primitive_type is member.primitive_type()
             ):
-                if (
-                    member is CommentsData
-                    and "UserComments" not in entity_kwargs.values()
+
+                if member is CommentsData and not np.any(
+                    [
+                        value == "UserComments"
+                        for value in entity_kwargs.values()
+                        if isinstance(value, str)
+                    ]
                 ):
                     continue
 
@@ -338,7 +342,6 @@ class Workspace(AbstractContextManager):
                     member = type(name + "Concatenated", (Concatenated, member), {})
 
                 created_entity = member(data_type, **entity_kwargs)
-
                 return created_entity
 
         return None
