@@ -217,7 +217,9 @@ class DataType(EntityType):
     @primitive_type.setter
     def primitive_type(self, value):
         if isinstance(value, str):
-            self._primitive_type = getattr(PrimitiveTypeEnum, value.upper())
+            self._primitive_type = getattr(
+                PrimitiveTypeEnum, value.replace("-", "_").upper()
+            )
         else:
             assert isinstance(
                 value, PrimitiveTypeEnum

@@ -305,6 +305,7 @@ class H5Writer:
                 "cells",
                 "concatenated_object_ids",
                 "octree_cells",
+                "property_group_ids",
                 "surveys",
                 "trace",
                 "u_cell_delimiters",
@@ -312,8 +313,6 @@ class H5Writer:
                 "vertices",
                 "z_cell_delimiters",
             ]:
-                cls.write_array_attribute(h5file, entity, attribute, **kwargs)
-            elif attribute == "property_group_ids":
                 cls.write_array_attribute(h5file, entity, attribute, **kwargs)
             elif attribute == "property_groups":
                 cls.write_property_groups(h5file, entity)
@@ -360,7 +359,7 @@ class H5Writer:
                     continue
 
                 if key in ["Association", "Primitive type"]:
-                    value = value.name.lower().capitalize()
+                    value = value.name.lower().title().replace("_", "-")
 
                 if isinstance(value, (np.int8, bool)):
                     entity_handle.attrs.create(key, int(value), dtype="int8")
@@ -512,7 +511,7 @@ class H5Writer:
 
     @classmethod
     def write_data_values(
-        cls, file: str | h5py.File, entity, attribute, values=None
+        cls, file: str | h5py.File, entity, attribute, values=None, **kwargs
     ) -> None:
         """
         Add data :obj:`~geoh5py.data.data.Data.values`.
@@ -553,6 +552,7 @@ class H5Writer:
                     data=json.dumps(values, indent=4),
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
+                    **kwargs,
                 )
 
             elif isinstance(entity, FilenameData):
@@ -564,13 +564,15 @@ class H5Writer:
                     data=values,
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
+                    **kwargs,
                 )
 
             else:
                 out_values = deepcopy(values)
                 if isinstance(entity, IntegerData):
                     out_values = np.round(out_values).astype("int32")
-                else:
+
+                if getattr(entity, "ndv", None) is not None:
                     out_values[np.isnan(out_values)] = entity.ndv()
 
                 entity_handle.create_dataset(
@@ -578,6 +580,7 @@ class H5Writer:
                     data=out_values,
                     compression="gzip",
                     compression_opts=9,
+                    **kwargs,
                 )
 
     @classmethod

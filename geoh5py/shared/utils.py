@@ -209,6 +209,8 @@ KEY_MAP = {
     "property_group_ids": "Property Group IDs",
 }
 
+INV_KEY_MAP = {value: key for key, value in KEY_MAP.items()}
+
 
 def is_uuid(value: str) -> bool:
     """Check if a string is UUID compliant."""

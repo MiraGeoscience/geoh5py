@@ -27,10 +27,25 @@ from h5py import special_dtype
 from geoh5py.data import Data
 from geoh5py.groups import Group
 from geoh5py.shared.entity import Entity
-from geoh5py.shared.utils import KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid
+from geoh5py.shared.utils import (
+    INV_KEY_MAP,
+    KEY_MAP,
+    as_str_if_utf8_bytes,
+    as_str_if_uuid,
+)
 
 if TYPE_CHECKING:
     from ..groups import GroupType
+
+PROPERTY_KWARGS = {
+    "trace": {"maxshape": (None,)},
+    "trace_depth": {"maxshape": (None,)},
+    "property_group_ids": {
+        "dtype": special_dtype(vlen=str),
+        "maxshape": (None,),
+    },
+    "surveys": {"maxshape": (None,)},
+}
 
 
 class Concatenator(Group):
@@ -97,6 +112,15 @@ class Concatenator(Group):
 
         return self._concatenated_attributes
 
+    @concatenated_attributes.setter
+    def concatenated_attributes(self, concatenated_attributes: dict):
+        if not isinstance(concatenated_attributes, (dict, type(None))):
+            raise ValueError(
+                "Input 'concatenated_attributes' must be a dictionary or None"
+            )
+
+        self._concatenated_attributes = concatenated_attributes
+
     @property
     def concatenated_object_ids(self) -> list[bytes] | None:
         """Dictionary of concatenated objects and data concatenated_object_ids."""
@@ -123,6 +147,31 @@ class Concatenator(Group):
         self._concatenated_object_ids = object_ids
         self.workspace.update_attribute(self, "concatenated_object_ids")
 
+    def copy(self, parent=None, copy_children: bool = True):
+        """
+        Function to copy an entity to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: Create copies of all children entities along with it.
+
+        :return entity: Registered Entity to the workspace.
+        """
+
+        if parent is None:
+            parent = self.parent
+
+        new_entity = parent.workspace.copy_to_parent(self, parent, copy_children=False)
+
+        for field in self.index:
+            values = self.workspace.fetch_concatenated_values(self, field)
+            if isinstance(values, tuple):
+                new_entity.data[field], new_entity.index[field] = values
+
+            new_entity.save_attribute(field)
+
+        return new_entity
+
     @property
     def data(self) -> dict:
         """
@@ -137,6 +186,13 @@ class Concatenator(Group):
 
         return self._data
 
+    @data.setter
+    def data(self, data: dict):
+        if not isinstance(data, dict):
+            raise ValueError("Input 'data' must be a dictionary")
+
+        self._data = data
+
     @property
     def index(self) -> dict:
         """
@@ -148,6 +204,13 @@ class Concatenator(Group):
                 self._index = {name.replace("\u2044", "/"): None for name in data_list}
 
         return self._index
+
+    @index.setter
+    def index(self, index: dict):
+        if not isinstance(index, dict):
+            raise ValueError("Input 'index' must be a dictionary")
+
+        self._index = index
 
     def fetch_concatenated_objects(self) -> dict:
         """
@@ -311,10 +374,10 @@ class Concatenator(Group):
             )
 
         if field == "property_groups" and isinstance(values, list):
-            alias = "Property Group IDs"
+            field = "property_group_ids"
             values = [as_str_if_uuid(val.uid).encode() for val in values]
-        else:
-            alias = KEY_MAP.get(field, field)
+
+        alias = KEY_MAP.get(field, field)
 
         start = self.fetch_start_index(entity, alias)
 
@@ -342,17 +405,19 @@ class Concatenator(Group):
 
             self.data[alias] = values
 
+            self.save_attribute(field)
+
+    def save_attribute(self, field: str):
+        """
+        Save a concatenated attribute.
+
+        :param field: Name of the attribute
+        """
+        field = INV_KEY_MAP.get(field, field)
+        alias = KEY_MAP.get(field, field)
         self.workspace.update_attribute(self, "index", alias)
 
-        property_kwarg = {
-            "property_group_ids": {
-                "dtype": special_dtype(vlen=str),
-                "maxshape": (None,),
-            },
-            "surveys": {"maxshape": (None,)},
-        }
-
-        if hasattr(entity, f"_{field}"):  # For group property
+        if field in PROPERTY_KWARGS:  # For group property
             if field == "property_groups":
                 field = "property_group_ids"
 
@@ -360,7 +425,7 @@ class Concatenator(Group):
                 self,
                 field,
                 values=self.data.get(alias),
-                **property_kwarg.get(field, {}),
+                **PROPERTY_KWARGS.get(field, {}),
             )
         else:  # For data values
             self.workspace.update_attribute(self, "data", field)
