@@ -276,7 +276,7 @@ class Drillhole(Points):
         if self.workspace.version >= 2.0:
             obj_list = []
             for name in self.parent.index:
-                if "FROM" in name:
+                if "from" in name.lower():
                     obj_list += self.workspace.get_entity(
                         uuid.UUID(self.parent.index[name][0][3].decode())
                     )
@@ -293,7 +293,7 @@ class Drillhole(Points):
         if self.workspace.version >= 2.0:
             obj_list = []
             for name in self.parent.index:
-                if "TO" in name:
+                if "to" in name.lower():
                     obj_list += self.workspace.get_entity(
                         uuid.UUID(self.parent.index[name][0][3].decode())
                     )
