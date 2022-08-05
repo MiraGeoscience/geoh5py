@@ -17,6 +17,10 @@
 
 from __future__ import annotations
 
+import warnings
+
+import numpy as np
+
 from ..shared import INTEGER_NDV
 from .data import PrimitiveTypeEnum
 from .numeric_data import NumericData
@@ -33,3 +37,37 @@ class IntegerData(NumericData):
         No-Data-Value
         """
         return INTEGER_NDV
+
+    @property
+    def values(self) -> np.ndarray | None:
+        """
+        :return: values: An array of integer values
+        """
+        if getattr(self, "_values", None) is None:
+            values = self.workspace.fetch_values(self)
+
+            if isinstance(values, (np.ndarray, type(None))):
+                self._values = self.check_vector_length(values)
+
+        return self._values
+
+    @values.setter
+    def values(self, values: np.ndarray | None):
+        if isinstance(values, (np.ndarray, type(None))):
+            values = self.check_vector_length(values)
+
+        else:
+            raise ValueError(
+                f"Input 'values' for {self} must be of type {np.ndarray} or None."
+            )
+
+        if isinstance(values, np.ndarray) and values.dtype not in [np.uint32, np.int32]:
+            warnings.warn(
+                f"Values provided in {values.dtype} are converted to int32 for "
+                f"{self.primitive_type()} data '{self.name}.'"
+            )
+            values = values.astype(np.int32)
+
+        self._values = values
+
+        self.workspace.update_attribute(self, "values")
