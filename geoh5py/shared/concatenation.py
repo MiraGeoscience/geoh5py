@@ -175,7 +175,6 @@ class Concatenator(Group):
 
             # Copy over the data type
             for elem in self.concatenated_attributes["Attributes"]:
-
                 if "Name" in elem and elem["Name"] == field and "Type ID" in elem:
                     attr_type = self.workspace.fetch_type(
                         uuid.UUID(elem["Type ID"]), "Data"
@@ -184,6 +183,8 @@ class Concatenator(Group):
                         new_entity.workspace, **attr_type
                     )
                     new_entity.workspace.save_entity_type(data_type)
+
+        new_entity.workspace.fetch_children(new_entity)
 
         return new_entity
 
