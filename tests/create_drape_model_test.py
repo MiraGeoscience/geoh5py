@@ -18,8 +18,9 @@
 import os
 
 import numpy as np
-
 #
+import pytest
+
 from geoh5py.objects import DrapeModel
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
@@ -41,11 +42,24 @@ def test_create_drape_model(tmp_path):
         y = np.cos(2 * np.arange(n_col) / n_col * np.pi)
         top = bottom.flatten()[::n_row] + 0.1
         layers = np.tile(n_row, n_col)
-        drape = DrapeModel.create(
-            workspace,
-            prisms=np.c_[x, y, top, np.arange(0, i.flatten().shape[0], n_row), layers],
-            layers=np.c_[i.flatten(), j.flatten(), bottom.flatten()],
-        )
+        drape = DrapeModel.create(workspace)
+
+        with pytest.raises(AttributeError) as error:
+            getattr(drape, "centroids")
+
+        assert "Attribute 'layers'" in str(error)
+
+        drape.layers = np.c_[i.flatten(), j.flatten(), bottom.flatten()]
+
+        with pytest.raises(AttributeError) as error:
+            getattr(drape, "centroids")
+
+        assert "Attribute 'prisms'" in str(error)
+
+        drape.prisms = np.c_[
+            x, y, top, np.arange(0, i.flatten().shape[0], n_row), layers
+        ]
+
         drape.add_data(
             {
                 "indices": {
