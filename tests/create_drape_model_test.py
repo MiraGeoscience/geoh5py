@@ -47,7 +47,12 @@ def test_create_drape_model(tmp_path):
             layers=np.c_[i.flatten(), j.flatten(), bottom.flatten()],
         )
         drape.add_data(
-            {"indices": {"values": (i * n_row + j).flatten(), "association": "CELL"}}
+            {
+                "indices": {
+                    "values": (i * n_row + j).flatten().astype(np.int32),
+                    "association": "CELL",
+                }
+            }
         )
 
         with Workspace(os.path.join(tmp_path, "tester.geoh5")) as new_workspace:
