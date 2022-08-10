@@ -202,6 +202,9 @@ def test_value_validator():
 
 
 def test_validate_data(tmp_path):
+    with Workspace(str(tmp_path / r"test.geoh5")):
+        pass
+
     ui_json = {
         "title": "test",
         "geoh5": str(tmp_path / r"test.geoh5"),
