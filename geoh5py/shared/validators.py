@@ -80,9 +80,6 @@ class OptionalValidator(BaseValidator):
 
     validator_type = "optional"
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     @classmethod
     def validate(
         cls,
@@ -103,9 +100,6 @@ class AssociationValidator(BaseValidator):
     """Validate the association between data and parent object."""
 
     validator_type = "association"
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     @classmethod
     def validate(
@@ -154,21 +148,16 @@ class PropertyGroupValidator(BaseValidator):
 
     validator_type = "property_group_type"
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     @classmethod
     def validate(cls, name: str, value: PropertyGroup, valid: str) -> None:
-        if value.property_group_type != valid:
+
+        if (value is not None) and (value.property_group_type != valid):
             raise PropertyGroupValidationError(name, value, valid)
 
 
 class AtLeastOneValidator(BaseValidator):
 
     validator_type = "one_of"
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     @classmethod
     def validate(cls, name, value, valid):
@@ -182,9 +171,6 @@ class RequiredValidator(BaseValidator):
     """
 
     validator_type = "required"
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: bool) -> None:
@@ -201,9 +187,6 @@ class ShapeValidator(BaseValidator):
     """Validate the shape of provided value."""
 
     validator_type = "shape"
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: tuple[int]) -> None:
@@ -226,9 +209,6 @@ class TypeValidator(BaseValidator):
     """
 
     validator_type = "types"
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: list[type] | type) -> None:
@@ -257,9 +237,6 @@ class UUIDValidator(BaseValidator):
 
     validator_type = "uuid"
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     @classmethod
     def validate(cls, name: str, value: Any, valid: None = None) -> None:
         """
@@ -281,9 +258,6 @@ class ValueValidator(BaseValidator):
     """
 
     validator_type = "values"
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: list[float | str]) -> None:

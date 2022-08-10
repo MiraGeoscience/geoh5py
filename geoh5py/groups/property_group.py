@@ -19,9 +19,12 @@ from __future__ import annotations
 
 import uuid
 from abc import ABC
+from typing import TYPE_CHECKING
 
-from ..data import DataAssociationEnum
-from ..shared import Entity
+from geoh5py.data import DataAssociationEnum
+
+if TYPE_CHECKING:
+    from geoh5py.shared import Entity
 
 
 class PropertyGroup(ABC):

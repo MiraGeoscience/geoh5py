@@ -46,8 +46,6 @@ class GeoImage(ObjectBase):
 
         super().__init__(object_type, **kwargs)
 
-        self.entity_type.name = "GeoImage"
-
         object_type.workspace._register_object(self)
 
     @property
@@ -59,8 +57,8 @@ class GeoImage(ObjectBase):
         """
         if getattr(self, "_cells", None) is None:
 
-            if self.existing_h5_entity:
-                self._cells = self.workspace.fetch_cells(self.uid)
+            if self.on_file:
+                self._cells = self.workspace.fetch_array_attribute(self)
             else:
                 self.cells = np.c_[[0, 1, 2, 0], [0, 2, 3, 0]].T.astype("uint32")
 
@@ -69,9 +67,8 @@ class GeoImage(ObjectBase):
     @cells.setter
     def cells(self, indices):
         assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
-        self.modified_attributes = "cells"
         self._cells = indices
-        self.workspace.finalize()
+        self.workspace.update_attribute(self, "cells")
 
     @property
     def default_vertices(self):
@@ -172,7 +169,6 @@ class GeoImage(ObjectBase):
 
         :return vertices: Corners (vertices) in world coordinates.
         """
-
         reference = np.asarray(reference)
         locations = np.asarray(locations)
         if self.image is None:
@@ -218,8 +214,8 @@ class GeoImage(ObjectBase):
         :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`:
         Defines the four corners of the geo_image
         """
-        if (getattr(self, "_vertices", None) is None) and self.existing_h5_entity:
-            self._vertices = self.workspace.fetch_coordinates(self.uid, "vertices")
+        if (getattr(self, "_vertices", None) is None) and self.on_file:
+            self._vertices = self.workspace.fetch_array_attribute(self, "vertices")
 
         if self._vertices is None and self.image is not None:
             self.vertices = self.default_vertices
@@ -240,6 +236,5 @@ class GeoImage(ObjectBase):
         xyz = np.asarray(
             np.core.records.fromarrays(xyz.T, names="x, y, z", formats="<f8, <f8, <f8")
         )
-        self.modified_attributes = "vertices"
         self._vertices = xyz
-        self.workspace.finalize()
+        self.workspace.update_attribute(self, "vertices")

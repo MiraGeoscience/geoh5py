@@ -15,10 +15,11 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import uuid
 
 from ..curve import Curve
-from ..object_type import ObjectType
 
 
 class AirborneMagnetics(Curve):
@@ -32,9 +33,6 @@ class AirborneMagnetics(Curve):
     __TYPE_UID = uuid.UUID(
         fields=(0x4B99204C, 0xD133, 0x4579, 0xA9, 0x16, 0xA9C8B98CFCCB)
     )
-
-    def __init__(self, object_type: ObjectType, **kwargs):
-        super().__init__(object_type, **kwargs)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

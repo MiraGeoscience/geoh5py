@@ -94,17 +94,16 @@ class DrapeModel(ObjectBase):
         """
         :obj:`~geoh5py.objects.object_base.ObjectBase.layers`
         """
-        if self._layers is None and self.existing_h5_entity:
-            self._layers = self.workspace.fetch_coordinates(self.uid, "layers")
+        if self._layers is None and self.on_file:
+            self._layers = self.workspace.fetch_array_attribute(self, "layers")
 
         if self._layers is not None:
-            return np.array(self._layers.tolist())
+            return np.asarray(self._layers.tolist())
 
         return None
 
     @layers.setter
     def layers(self, xyz: np.ndarray):
-        self.modified_attributes = "layers"
         assert (
             xyz.shape[1] == 3
         ), f"Array of layers must be of shape (*, 3). Array of shape {xyz.shape} provided."
@@ -114,11 +113,12 @@ class DrapeModel(ObjectBase):
                 dtype=[("I", "<i4"), ("K", "<i4"), ("Bottom elevation", "<f8")],
             )
         )
+        self.workspace.update_attribute(self, "layers")
 
     @property
     def n_cells(self):
         if self.prisms is not None:
-            return self.prisms.shape[0]
+            return int(self._prisms["Layer count"].sum())
         return None
 
     @property
@@ -126,8 +126,8 @@ class DrapeModel(ObjectBase):
         """
         :obj:`~geoh5py.objects.object_base.ObjectBase.prisms`
         """
-        if self._prisms is None and self.existing_h5_entity:
-            self._prisms = self.workspace.fetch_coordinates(self.uid, "prisms")
+        if self._prisms is None and self.on_file:
+            self._prisms = self.workspace.fetch_array_attribute(self, "prisms")
 
         if self._prisms is not None:
             return np.array(self._prisms.tolist())
@@ -136,7 +136,6 @@ class DrapeModel(ObjectBase):
 
     @prisms.setter
     def prisms(self, xyz: np.ndarray):
-        self.modified_attributes = "prisms"
         assert (
             xyz.shape[1] == 5
         ), f"Array of prisms must be of shape (*, 5). Array of shape {xyz.shape} provided."
@@ -155,3 +154,4 @@ class DrapeModel(ObjectBase):
                 },
             )
         )
+        self.workspace.update_attribute(self, "prisms")

@@ -15,22 +15,23 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+from __future__ import annotations
+
 from uuid import uuid4
 
 import numpy as np
 
 from geoh5py.groups import ContainerGroup
-from geoh5py.io.utils import (
+from geoh5py.objects import Points
+from geoh5py.shared.utils import (
+    as_str_if_utf8_bytes,
     as_str_if_uuid,
     bool_value,
     entity2uuid,
     is_uuid,
     str2uuid,
-    str_from_utf8_bytes,
     uuid2entity,
 )
-from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
@@ -41,7 +42,7 @@ def test_is_uuid():
 
 
 def test_entity2uuid(tmp_path):
-    w_s = Workspace(os.path.join(tmp_path, "test.geoh5"))
+    w_s = Workspace(tmp_path / r"test.geoh5")
     xyz = np.array([[1, 2, 3], [4, 5, 6]])
     points = Points.create(w_s, vertices=xyz, name="test_points")
     group = ContainerGroup.create(w_s)
@@ -50,7 +51,7 @@ def test_entity2uuid(tmp_path):
 
 
 def test_uuid2entity(tmp_path):
-    w_s = Workspace(os.path.join(tmp_path, "test.geoh5"))
+    w_s = Workspace(tmp_path / r"test.geoh5")
     xyz = np.array([[1, 2, 3], [4, 5, 6]])
     points = Points.create(w_s, vertices=xyz, name="test_points")
     assert points.uid == uuid2entity(points.uid, w_s).uid
@@ -76,4 +77,4 @@ def test_bool_value():
 
 
 def test_str_from_utf8_bytes():
-    assert str_from_utf8_bytes(b"s") == "s"
+    assert as_str_if_utf8_bytes(b"s") == "s"

@@ -92,7 +92,7 @@ class ColorMap:
             )
 
         if self.parent is not None:
-            self.parent.modified_attributes = "color_map"
+            getattr(self.parent, "workspace").update_attribute(self, "color_map")
 
     @property
     def name(self) -> str:
@@ -106,7 +106,7 @@ class ColorMap:
         self._name = value
 
         if self.parent is not None:
-            self.parent.modified_attributes = "color_map"
+            getattr(self.parent, "workspace").update_attribute(self, "color_map")
 
     @property
     def parent(self):

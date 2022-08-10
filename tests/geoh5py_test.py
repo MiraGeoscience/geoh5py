@@ -15,6 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
+import re
 from pathlib import Path
 
 import toml
@@ -31,5 +34,15 @@ def get_version():
     return pyproject["tool"]["poetry"]["version"]
 
 
-def test_version():
+def test_version_is_consistent():
     assert geoh5py.__version__ == get_version()
+
+
+def test_version_is_semver():
+    semver_re = (
+        r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)"
+        r"(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)"
+        r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
+        r"(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
+    )
+    assert re.search(semver_re, geoh5py.__version__) is not None
