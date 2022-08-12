@@ -275,9 +275,12 @@ class Drillhole(Points):
     def _from(self):
         if self.workspace.version >= 2.0:
             obj_list = []
-            for name in self.get_data_list():
-                if "from" in name.lower():
-                    obj_list += self.get_data(name)
+            for prop_group in (
+                self.property_groups if self.property_groups is not None else []
+            ):
+                data = [self.get_data(child)[0] for child in prop_group.properties]
+                if len(data) > 0 and "from" in data[0].name.lower():
+                    obj_list.append(data[0])
             return obj_list
 
         data_obj = self.get_data("FROM")
@@ -290,9 +293,12 @@ class Drillhole(Points):
     def _to(self):
         if self.workspace.version >= 2.0:
             obj_list = []
-            for name in self.get_data_list():
-                if "to" in name.lower():
-                    obj_list += self.get_data(name)
+            for prop_group in (
+                self.property_groups if self.property_groups is not None else []
+            ):
+                data = [self.get_data(child)[0] for child in prop_group.properties]
+                if len(data) > 1 and "to" in data[1].name.lower():
+                    obj_list.append(data[1])
             return obj_list
 
         data_obj = self.get_data("TO")
