@@ -573,7 +573,7 @@ class H5Writer:
                     out_values = np.round(out_values).astype("int32")
 
                 if getattr(entity, "ndv", None) is not None:
-                    out_values[np.isnan(out_values)] = entity.ndv()
+                    out_values[np.isnan(out_values)] = entity.ndv
 
                 entity_handle.create_dataset(
                     KEY_MAP[attribute],

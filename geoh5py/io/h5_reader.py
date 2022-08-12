@@ -25,7 +25,7 @@ from typing import Any
 import h5py
 import numpy as np
 
-from ..shared import FLOAT_NDV, INTEGER_NDV, fetch_h5_handle
+from ..shared import FLOAT_NDV, fetch_h5_handle
 from ..shared.utils import KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid, str2uuid
 
 
@@ -457,10 +457,7 @@ class H5Reader:
                 else:
                     if values.dtype in [float, "float64", "float32"]:
                         ind = values == FLOAT_NDV
-                    else:
-                        ind = values == INTEGER_NDV
-                        values = values.astype("float64")
-                    values[ind] = np.nan
+                        values[ind] = np.nan
 
             except KeyError:
                 values = None

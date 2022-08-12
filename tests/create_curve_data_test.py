@@ -45,7 +45,9 @@ def test_create_curve_data(tmp_path):
 
         data_objects = curve.add_data(
             {
-                "vertexValues": {"values": np.random.randn(curve.n_vertices)},
+                "vertexValues": {
+                    "values": np.random.randint(0, curve.n_vertices, curve.n_vertices)
+                },
                 "cellValues": {"values": np.random.randn(curve.n_cells)},
             }
         )

@@ -342,5 +342,7 @@ def test_survey_tem_data(tmp_path):
     new_workspace = Workspace(Path(tmp_path) / r"testATEM_copy2.geoh5")
     receivers_rec = receivers.copy(new_workspace)
     compare_entities(
-        receivers, receivers_rec, ignore=["_receivers", "_transmitters", "_parent"]
+        receivers,
+        receivers_rec,
+        ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
     )

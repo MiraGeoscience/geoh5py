@@ -31,8 +31,8 @@ class IntegerData(NumericData):
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.INTEGER
 
-    @classmethod
-    def ndv(cls) -> int:
+    @property
+    def ndv(self) -> int:
         """
         No-Data-Value
         """
@@ -66,6 +66,7 @@ class IntegerData(NumericData):
                 f"Values provided in {values.dtype} are converted to int32 for "
                 f"{self.primitive_type()} data '{self.name}.'"
             )
+            values[np.isnan(values)] = self.ndv
             values = values.astype(np.int32)
 
         self._values = values
