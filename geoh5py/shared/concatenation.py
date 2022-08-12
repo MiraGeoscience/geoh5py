@@ -526,23 +526,16 @@ class Concatenator(Group):
 
 class Concatenated(Entity):
     """
-    Class modifier for concatenated objects and data.
+    Base class modifier for concatenated objects and data.
     """
 
     _parent: Concatenated | Concatenator
-    _property_groups = None
 
     def __init__(self, entity_type, **kwargs):
         attribute_map = getattr(self, "_attribute_map", {})
         attr = {"name": "Entity", "parent": None}
         for key, value in kwargs.items():
             attr[attribute_map.get(key, key)] = value
-
-        if not isinstance(attr.get("parent"), (Concatenated, Concatenator)):
-            raise UserWarning(
-                "Creating a concatenated entity must have a parent "
-                "of type Concatenator for 'objects', or Concatenated for 'data'."
-            )
 
         super().__init__(entity_type, **attr)
 
@@ -555,6 +548,56 @@ class Concatenated(Entity):
             return self._parent.concatenator
 
         return self._parent
+
+
+class ConcatenatedData(Concatenated):
+    _parent: Concatenated
+
+    def __init__(self, entity_type, **kwargs):
+        if kwargs.get("parent") is None or not isinstance(
+            kwargs.get("parent"), Concatenated
+        ):
+            raise UserWarning(
+                "Creating a concatenated data must have a parent "
+                "of type Concatenated."
+            )
+
+        super().__init__(entity_type, **kwargs)
+
+    @property
+    def parent(self) -> Concatenated:
+        return self._parent
+
+    @parent.setter
+    def parent(self, parent):
+        if not isinstance(parent, Concatenated):
+            raise AttributeError(
+                "The 'parent' of a concatenated Data must be of type 'Concatenated'."
+            )
+        self._parent = parent
+        self._parent.add_children([self])
+
+        parental_attr = self.concatenator.get_attributes(self.parent.uid)
+
+        if f"Property:{self.name}" not in parental_attr:
+            parental_attr[f"Property:{self.name}"] = as_str_if_uuid(self.uid)
+
+
+class ConcatenatedObject(Concatenated):
+
+    _parent: Concatenator
+    _property_groups = None
+
+    def __init__(self, entity_type, **kwargs):
+        if kwargs.get("parent") is None or not isinstance(
+            kwargs.get("parent"), Concatenator
+        ):
+            raise UserWarning(
+                "Creating a concatenated object must have a parent "
+                "of type Concatenator."
+            )
+
+        super().__init__(entity_type, **kwargs)
 
     def get_data(self, name: str | uuid.UUID) -> list[Data]:
         """
@@ -598,24 +641,18 @@ class Concatenated(Entity):
         return data_list
 
     @property
-    def parent(self) -> Concatenated | Concatenator:
+    def parent(self) -> Concatenator:
         return self._parent
 
     @parent.setter
     def parent(self, parent):
-        if not isinstance(parent, (Concatenated, Concatenator)):
+        if not isinstance(parent, Concatenator):
             raise AttributeError(
-                "The 'parent' of a concatenated Entity must be of type "
-                "'Concatenator' or 'Concatenated'."
+                "The 'parent' of a concatenated Object must be of type "
+                "'Concatenator'."
             )
         self._parent = parent
         self._parent.add_children([self])
-
-        if isinstance(self, Data) and isinstance(self, Concatenated):
-            parental_attr = self.concatenator.get_attributes(self.parent.uid)
-
-            if f"Property:{self.name}" not in parental_attr:
-                parental_attr[f"Property:{self.name}"] = as_str_if_uuid(self.uid)
 
     @property
     def property_groups(self) -> list | None:

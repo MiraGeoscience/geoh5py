@@ -52,7 +52,12 @@ from ..groups import (
 from ..io import H5Reader, H5Writer
 from ..objects import Drillhole, ObjectBase
 from ..shared import weakref_utils
-from ..shared.concatenation import Concatenated, Concatenator
+from ..shared.concatenation import (
+    Concatenated,
+    ConcatenatedData,
+    ConcatenatedObject,
+    Concatenator,
+)
 from ..shared.entity import Entity
 from ..shared.exceptions import Geoh5FileClosedError
 from ..shared.utils import as_str_if_utf8_bytes, get_attributes, str2uuid
@@ -351,9 +356,9 @@ class Workspace(AbstractContextManager):
                     continue
 
                 if self.version > 1.0 and isinstance(
-                    entity_kwargs["parent"], Concatenated
+                    entity_kwargs["parent"], ConcatenatedObject
                 ):
-                    member = type(name + "Concatenated", (Concatenated, member), {})
+                    member = type(name + "Concatenated", (ConcatenatedData, member), {})
 
                 created_entity = member(data_type, **entity_kwargs)
                 return created_entity
@@ -442,7 +447,9 @@ class Workspace(AbstractContextManager):
                         entity_kwargs.get("parent"),
                         (DrillholeGroup, IntegratorDrillholeGroup),
                     ):
-                        member = type(name + "Concatenated", (Concatenated, member), {})
+                        member = type(
+                            name + "Concatenated", (ConcatenatedObject, member), {}
+                        )
 
                 entity_type = member.find_or_create_type(self, **entity_type_kwargs)
 
@@ -620,7 +627,7 @@ class Workspace(AbstractContextManager):
 
         :return list: List of children entities.
         """
-        if entity is None or isinstance(entity, Concatenated):
+        if entity is None or isinstance(entity, ConcatenatedData):
             return []
 
         if isinstance(entity, Group):
@@ -673,7 +680,7 @@ class Workspace(AbstractContextManager):
 
     def fetch_concatenated_attributes(self, entity: Group | ObjectBase) -> dict | None:
         """
-        Fetch attributes of Concatenated entities.
+        Fetch attributes of ConcatenatedData entities.
 
         :param entity: Concatenator group.
 
@@ -699,7 +706,7 @@ class Workspace(AbstractContextManager):
         self, entity: Group | ObjectBase, label: str
     ) -> list | None:
         """
-        Fetch list of data or indices of Concatenated entities.
+        Fetch list of data or indices of ConcatenatedData entities.
 
         :param entity: Concatenator group.
         :param label: Label name of the h5py.Group
@@ -726,7 +733,7 @@ class Workspace(AbstractContextManager):
         self, entity: Group | ObjectBase, label: str
     ) -> tuple | None:
         """
-        Fetch data under the Concatenated Data group of an entity.
+        Fetch data under the ConcatenatedData Data group of an entity.
 
         :param entity: Concatenator group.
         :param label: Name of the target data.
@@ -797,7 +804,7 @@ class Workspace(AbstractContextManager):
 
         :return: Array of values.
         """
-        if isinstance(entity, Concatenated):
+        if isinstance(entity, ConcatenatedData):
             return entity.concatenator.fetch_values(entity, entity.name)
 
         return self._io_call(H5Reader.fetch_values, entity.uid)
