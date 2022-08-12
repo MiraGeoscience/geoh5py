@@ -559,7 +559,7 @@ class Concatenated(Entity):
 
         return self._parent
 
-    def get_data(self, name: str) -> list[Data]:
+    def get_data(self, name: str | uuid.UUID) -> list[Data]:
         """
         Generic function to get data values from object.
         """
@@ -576,7 +576,14 @@ class Concatenated(Entity):
                 self.workspace.create_from_concatenation(attributes)
 
         for child in getattr(self, "children"):
-            if hasattr(child, "name") and child.name == name:
+
+            if (
+                isinstance(name, str) and hasattr(child, "name") and child.name == name
+            ) or (
+                isinstance(name, uuid.UUID)
+                and hasattr(child, "uid")
+                and child.uid == name
+            ):
                 entity_list.append(child)
 
         return entity_list
