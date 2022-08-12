@@ -648,7 +648,9 @@ class H5Writer:
             entity_handle = h5file[base][entity_type].create_group(as_str_if_uuid(uid))
             if isinstance(entity, Concatenator):
                 concat_group = entity_handle.create_group("Concatenated Data")
+                entity_handle.create_group("Data")
                 concat_group.create_group("Index")
+                concat_group.create_group("Data")
                 entity_handle.create_group("Groups")
             elif entity_type == "Groups":
                 entity_handle.create_group("Data")

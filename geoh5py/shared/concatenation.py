@@ -345,9 +345,6 @@ class Concatenator(Group):
             if val is None or attr == "property_groups":
                 continue
 
-            if attr == "name":
-                val = val.replace("/", "\u2044")
-
             if isinstance(val, np.ndarray):
                 val = "{" + ", ".join(str(e) for e in val.tolist()) + "}"
             elif isinstance(val, uuid.UUID):
@@ -616,9 +613,9 @@ class Concatenated(Entity):
 
         if isinstance(self, Data) and isinstance(self, Concatenated):
             parental_attr = self.concatenator.get_attributes(self.parent.uid)
-            alias = self.name.replace("/", "\u2044")
-            if f"Property:{alias}" not in parental_attr:
-                parental_attr[f"Property:{alias}"] = as_str_if_uuid(self.uid)
+
+            if f"Property:{self.name}" not in parental_attr:
+                parental_attr[f"Property:{self.name}"] = as_str_if_uuid(self.uid)
 
     @property
     def property_groups(self) -> list | None:
