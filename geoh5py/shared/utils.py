@@ -29,6 +29,7 @@ import numpy as np
 if TYPE_CHECKING:
     from ..workspace import Workspace
     from .entity import Entity
+    from .entity_type import EntityType
 
 
 @contextmanager
@@ -302,3 +303,16 @@ def dict_mapper(
     for fun in string_funcs:
         val = fun(val, *args)
     return val
+
+
+def get_attributes(entity: Entity | EntityType, omit_list=(), attributes=None):
+    """Extract the attributes of an object with omissions."""
+    if attributes is None:
+        attributes = {}
+    for key in vars(entity):
+        if key not in omit_list:
+            if key[0] == "_":
+                key = key[1:]
+
+            attributes[key] = getattr(entity, key)
+    return attributes

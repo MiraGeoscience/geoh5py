@@ -55,7 +55,7 @@ from ..shared import weakref_utils
 from ..shared.concatenation import Concatenated, Concatenator
 from ..shared.entity import Entity
 from ..shared.exceptions import Geoh5FileClosedError
-from ..shared.utils import as_str_if_utf8_bytes, str2uuid
+from ..shared.utils import as_str_if_utf8_bytes, get_attributes, str2uuid
 
 if TYPE_CHECKING:
     from ..groups import group
@@ -222,24 +222,15 @@ class Workspace(AbstractContextManager):
 
         :return: The Entity registered to the workspace.
         """
-
-        entity_kwargs: dict = {"entity": {"uid": None, "parent": None}}
-        for key in entity.__dict__:
-            if key not in ["_uid", "_entity_type", "_on_file"] + list(omit_list):
-                if key[0] == "_":
-                    key = key[1:]
-
-                entity_kwargs["entity"][key] = getattr(entity, key)
-
-        entity_type_kwargs: dict = {"entity_type": {}}
-        for key in entity.entity_type.__dict__:
-            if key not in ["_workspace", "_on_file"] + list(omit_list):
-                if key[0] == "_":
-                    key = key[1:]
-
-                entity_type_kwargs["entity_type"][key] = getattr(
-                    entity.entity_type, key
-                )
+        entity_kwargs = get_attributes(
+            entity,
+            omit_list=["_uid", "_entity_type", "_on_file"] + list(omit_list),
+            attributes={"uid": None, "parent": None},
+        )
+        entity_type_kwargs = get_attributes(
+            entity.entity_type,
+            omit_list=["_workspace", "_on_file"] + list(omit_list),
+        )
 
         if not isinstance(parent, (ObjectBase, Group, Workspace)):
             raise ValueError(
@@ -251,28 +242,51 @@ class Workspace(AbstractContextManager):
 
         # Assign the same uid if possible
         if parent.workspace.get_entity(entity.uid)[0] is None:
-            entity_kwargs["entity"]["uid"] = entity.uid
+            entity_kwargs["uid"] = entity.uid
 
-        entity_kwargs["entity"]["parent"] = parent
+        entity_kwargs["parent"] = parent
 
         entity_type = type(entity)
         if isinstance(entity, Data):
             entity_type = Data
 
-        if not copy_children and "property_groups" in entity_kwargs["entity"]:
-            del entity_kwargs["entity"]["property_groups"]
+        prop_groups = []
+        if "property_groups" in entity_kwargs:
+            if copy_children:
+                prop_groups = entity_kwargs["property_groups"]
+
+            del entity_kwargs["property_groups"]
 
         new_object = parent.workspace.create_entity(
-            entity_type, **{**entity_kwargs, **entity_type_kwargs}
+            entity_type, **{"entity": entity_kwargs, "entity_type": entity_type_kwargs}
         )
 
         if copy_children:
+            children_map = {}
             for child in entity.children:
-                new_object.add_children(
-                    [self.copy_to_parent(child, new_object, copy_children=True)]
-                )
+                new_child = self.copy_to_parent(child, new_object, copy_children=True)
+                new_object.add_children([new_child])
+                children_map[child.uid] = new_child.uid
+
+            if prop_groups:
+                self.copy_property_groups(new_object, prop_groups, children_map)
+                self.workspace.update_attribute(new_object, "property_groups")
 
         return new_object
+
+    @classmethod
+    def copy_property_groups(
+        cls, entity: ObjectBase, propery_groups: list[PropertyGroup], data_map: dict
+    ):
+        for prop_group in propery_groups:
+            new_group = entity.find_or_create_property_group(
+                **{
+                    "association": prop_group.association,
+                    "name": prop_group.name,
+                    "property_group_type": prop_group.property_group_type,
+                }
+            )
+            new_group.properties = [data_map[uid] for uid in prop_group.properties]
 
     def create_from_concatenation(self, attributes):
         if "Object Type ID" in attributes:

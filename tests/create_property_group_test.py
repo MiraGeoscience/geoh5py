@@ -89,3 +89,34 @@ def test_create_property_group(tmp_path):
         assert (
             rec_object.property_groups is None
         ), "Property_groups not properly removed."
+
+
+def test_copy_property_group(tmp_path):
+    h5file_path = tmp_path / r"prop_group_test.geoh5"
+
+    with Workspace(h5file_path) as workspace:
+        curve = Curve.create(
+            workspace,
+            vertices=np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)],
+        )
+
+        # Add data
+        props = []
+        for i in range(4):
+            values = np.cos(curve.vertices[:, 0] / (i + 1))
+            props += [
+                curve.add_data(
+                    {f"Period{i+1}": {"values": values}}, property_group="myGroup"
+                )
+            ]
+
+        # New property group object should have been created on copy
+        curve_2 = curve.copy()
+
+        assert len(curve_2.property_groups) > 0
+        assert all(
+            [
+                len(curve_2.get_data(uid)) > 0
+                for uid in curve_2.property_groups[0].properties
+            ]
+        )
