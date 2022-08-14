@@ -25,7 +25,7 @@ import numpy as np
 from h5py import special_dtype
 
 from geoh5py.data import Data, DataType
-from geoh5py.groups import Group
+from geoh5py.groups import Group, PropertyGroup
 from geoh5py.shared.entity import Entity
 from geoh5py.shared.utils import (
     INV_KEY_MAP,
@@ -194,11 +194,7 @@ class Concatenator(Group):
         Concatenated data values stored as a dictionary.
         """
         if getattr(self, "_data", None) is None:
-            data_list = self.workspace.fetch_concatenated_list(self, "Data")
-            if data_list is not None:
-                self._data = {name.replace("\u2044", "/"): None for name in data_list}
-            else:
-                self._data = {}
+            self._data, self._index = self.fetch_concatenated_data_index()
 
         return self._data
 
@@ -215,9 +211,7 @@ class Concatenator(Group):
         Concatenated index stored as a dictionary.
         """
         if getattr(self, "_index", None) is None:
-            data_list = self.workspace.fetch_concatenated_list(self, "Index")
-            if data_list is not None:
-                self._index = {name.replace("\u2044", "/"): None for name in data_list}
+            self._data, self._index = self.fetch_concatenated_data_index()
 
         return self._index
 
@@ -227,6 +221,20 @@ class Concatenator(Group):
             raise ValueError("Input 'index' must be a dictionary")
 
         self._index = index
+
+    def fetch_concatenated_data_index(self):
+        """Extract concatenation arrays."""
+        data, index = {}, {}
+        data_list = self.workspace.fetch_concatenated_list(self, "Index")
+
+        if data_list is not None:
+            for field in data_list:
+                name = field.replace("\u2044", "/")
+                values = self.workspace.fetch_concatenated_values(self, field)
+                if isinstance(values, tuple):
+                    data[name], index[name] = values
+
+        return data, index
 
     def fetch_concatenated_objects(self) -> dict:
         """
@@ -565,6 +573,18 @@ class ConcatenatedData(Concatenated):
         super().__init__(entity_type, **kwargs)
 
     @property
+    def property_group(self):
+        """Get the property group containing the data interval."""
+        if self.parent.property_groups is None:
+            return None
+
+        for prop_group in self.parent.property_groups:
+            if self.uid in prop_group.properties:
+                return prop_group
+
+        return None
+
+    @property
     def parent(self) -> Concatenated:
         return self._parent
 
@@ -581,6 +601,59 @@ class ConcatenatedData(Concatenated):
 
         if f"Property:{self.name}" not in parental_attr:
             parental_attr[f"Property:{self.name}"] = as_str_if_uuid(self.uid)
+
+
+class ConcatenatedPropertyGroup(PropertyGroup):
+    _parent: Concatenated
+
+    def __init__(self, **kwargs):
+        if kwargs.get("parent") is None or not isinstance(
+            kwargs.get("parent"), Concatenated
+        ):
+            raise UserWarning(
+                "Creating a concatenated data must have a parent "
+                "of type Concatenated."
+            )
+
+        super().__init__(**kwargs)
+
+    @property
+    def _from(self):
+        """Return the data entities definind the 'from' depth intervals."""
+        if self.properties is None or len(self.properties) < 1:
+            return None
+
+        data = self.parent.get_data(self.properties[0])[0]
+
+        if "from" in data.name:
+            return data
+
+        return None
+
+    @property
+    def _to(self):
+        """Return the data entities definind the 'to' depth intervals."""
+        if self.properties is None or len(self.properties) < 2:
+            return None
+
+        data = self.parent.get_data(self.properties[1])[0]
+
+        if "to" in data.name:
+            return data
+
+        return None
+
+    @property
+    def parent(self) -> Concatenated:
+        return self._parent
+
+    @parent.setter
+    def parent(self, parent):
+        if not isinstance(parent, Concatenated):
+            raise AttributeError(
+                "The 'parent' of a concatenated Data must be of type 'Concatenated'."
+            )
+        self._parent = parent
 
 
 class ConcatenatedObject(Concatenated):

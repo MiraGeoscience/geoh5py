@@ -29,7 +29,7 @@ from ..data import CommentsData, Data
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
-from ..shared.concatenation import Concatenated
+from ..shared.concatenation import Concatenated, ConcatenatedPropertyGroup
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
@@ -174,9 +174,6 @@ class ObjectBase(Entity):
         prop_group = self.find_or_create_property_group(
             name=name,
             association=association,
-            property_group_type="Interval table"
-            if isinstance(self, Concatenated)
-            else "Multi-element",
         )
         for uid in uids:
             assert uid in [
@@ -258,7 +255,19 @@ class ObjectBase(Entity):
             prop_group = [pg for pg in property_groups if pg.name == kwargs["name"]][0]
         else:
             kwargs["parent"] = self
-            prop_group = PropertyGroup(**kwargs)
+
+            if isinstance(self, Concatenated):
+                member = type(
+                    "PropertyGroupConcatenated",
+                    (ConcatenatedPropertyGroup, PropertyGroup),
+                    {},
+                )
+                kwargs["property_group_type"] = "Interval table"
+                prop_group = member(**kwargs)
+            else:
+                kwargs["property_group_type"] = "Multi-element"
+                prop_group = PropertyGroup(**kwargs)
+
             property_groups += [prop_group]
 
         self._property_groups = property_groups
