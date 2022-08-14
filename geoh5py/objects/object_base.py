@@ -257,13 +257,8 @@ class ObjectBase(Entity):
             kwargs["parent"] = self
 
             if isinstance(self, Concatenated):
-                member = type(
-                    "PropertyGroupConcatenated",
-                    (ConcatenatedPropertyGroup, PropertyGroup),
-                    {},
-                )
                 kwargs["property_group_type"] = "Interval table"
-                prop_group = member(**kwargs)
+                prop_group = ConcatenatedPropertyGroup(**kwargs)
             else:
                 kwargs["property_group_type"] = "Multi-element"
                 prop_group = PropertyGroup(**kwargs)
