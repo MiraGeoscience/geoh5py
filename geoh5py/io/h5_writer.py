@@ -304,7 +304,9 @@ class H5Writer:
             elif attribute in [
                 "cells",
                 "concatenated_object_ids",
+                "layers",
                 "octree_cells",
+                "prisms",
                 "surveys",
                 "trace",
                 "u_cell_delimiters",

@@ -19,6 +19,7 @@
 # flake8: noqa
 from .block_model import BlockModel
 from .curve import Curve
+from .drape_model import DrapeModel
 from .drillhole import Drillhole
 from .geo_image import GeoImage
 from .grid2d import Grid2D
