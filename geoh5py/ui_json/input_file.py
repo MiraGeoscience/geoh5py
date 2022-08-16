@@ -78,13 +78,15 @@ class InputFile:
         ui_json: dict[str, Any] = None,
         validations: dict = None,
         validation_options: dict = None,
-        workspace: Workspace = None,
     ):
+        self._workspace = None
         self._validation_options = validation_options
         self.validations = validations
         self.ui_json = ui_json
         self.data = data
-        self.workspace = workspace
+
+        if isinstance(self.workspace, Workspace):
+            self.workspace.close()
 
     @property
     def data(self):
@@ -111,7 +113,7 @@ class InputFile:
                     "equal the number of parameters in 'ui_json'."
                 )
 
-            if "geoh5" in value:
+            if self.workspace is None and "geoh5" in value:
                 self.workspace = value["geoh5"]
 
             value = self._promote(value)
@@ -143,7 +145,7 @@ class InputFile:
     def load(self, input_dict: dict[str, Any]):
         """Load data from dictionary and validate."""
         self.ui_json = input_dict
-        self.data = flatten(input_dict)
+        self.data = flatten(self.ui_json)
 
     @property
     def path(self) -> str | None:
@@ -182,6 +184,9 @@ class InputFile:
         with open(json_file, encoding="utf-8") as file:
             input_file.load(json.load(file))
 
+        if isinstance(input_file.workspace, Workspace):
+            input_file.workspace.close()
+
         return input_file
 
     @property
@@ -198,7 +203,7 @@ class InputFile:
             if not isinstance(value, dict):
                 raise ValueError("Input 'ui_json' must be of type dict or None.")
 
-            self._ui_json = self.numify(value)
+            self._ui_json = self.numify(value.copy())
             default_validations = InputValidation.infer_validations(self._ui_json)
             for key, validations in default_validations.items():
                 if key in self.validations:
@@ -304,10 +309,16 @@ class InputFile:
 
     @workspace.setter
     def workspace(self, workspace: Workspace | None):
-        if workspace is not None and not isinstance(workspace, Workspace):
-            raise ValueError(
-                "Input 'workspace' must be a valid :obj:`geoh5py.workspace.Workspace`"
-            )
+        if workspace is not None:
+            if self._workspace is not None:
+                raise UserWarning(
+                    "Attribute 'workspace' already set. Consider creating a new InputFile from arguments."
+                )
+
+            if not isinstance(workspace, Workspace):
+                raise ValueError(
+                    "Input 'workspace' must be a valid :obj:`geoh5py.workspace.Workspace`."
+                )
 
         self._workspace = workspace
 
@@ -427,6 +438,9 @@ class InputFile:
 
     def _promote(self, var: dict[str, Any]) -> dict[str, Any]:
         """Convert uuids to entities from the workspace."""
+        if self.workspace is None:
+            return var
+
         for key, value in var.items():
 
             if isinstance(value, dict):
