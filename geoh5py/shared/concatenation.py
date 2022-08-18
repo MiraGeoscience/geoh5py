@@ -625,7 +625,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
         data = self.parent.get_data(self.properties[0])[0]
 
-        if "from" in data.name:
+        if "from" in data.name.lower():
             return data
 
         return None
@@ -638,7 +638,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
         data = self.parent.get_data(self.properties[1])[0]
 
-        if "to" in data.name:
+        if "to" in data.name.lower():
             return data
 
         return None
