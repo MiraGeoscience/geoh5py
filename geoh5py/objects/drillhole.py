@@ -466,12 +466,12 @@ class Drillhole(Points):
         return indices.astype("uint32")
 
     def validate_depth_data(
-            self,
-            name: str,
-            from_to: list | np.ndarray | None,
-            values: np.ndarray,
-            group_name: str = None,
-            collocation_distance=1e-4
+        self,
+        name: str,
+        from_to: list | np.ndarray | None,
+        values: np.ndarray,
+        group_name: str = None,
+        collocation_distance=1e-4,
     ) -> str:
         """
         Compare new and current depth values and re-use the property group if possible.
@@ -493,8 +493,8 @@ class Drillhole(Points):
                 from_to = np.vtack(from_to)
 
             assert from_to.shape[0] >= len(values), (
-                    f"Mismatch between input 'from_to' shape{from_to.shape} "
-                    + f"and 'values' shape{values.shape}"
+                f"Mismatch between input 'from_to' shape{from_to.shape} "
+                + f"and 'values' shape{values.shape}"
             )
             assert from_to.shape[1] == 2, "The `from-to` values must have shape(*, 2)"
 
@@ -504,11 +504,12 @@ class Drillhole(Points):
             and self.property_groups is not None
         ):
             for property_group in self.property_groups:
-                if (
-                    property_group._from.values.shape[0] == from_to.shape[0]
-                    and np.allclose(
-                        np.c_[property_group._from.values, property_group._to.values], from_to, atol=collocation_distance
-                    )
+                if property_group._from.values.shape[0] == from_to.shape[
+                    0
+                ] and np.allclose(
+                    np.c_[property_group._from.values, property_group._to.values],
+                    from_to,
+                    atol=collocation_distance,
                 ):
                     return property_group.name
 
@@ -550,7 +551,7 @@ class Drillhole(Points):
                     "allow_delete": False,
                 },
             },
-            property_group.name
+            property_group.name,
         )
 
         return property_group.name
