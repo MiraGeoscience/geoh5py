@@ -55,6 +55,7 @@ from ..shared import weakref_utils
 from ..shared.concatenation import (
     Concatenated,
     ConcatenatedData,
+    ConcatenatedDrillhole,
     ConcatenatedObject,
     Concatenator,
 )
@@ -449,7 +450,7 @@ class Workspace(AbstractContextManager):
                         (DrillholeGroup, IntegratorDrillholeGroup),
                     ):
                         member = type(
-                            name + "Concatenated", (ConcatenatedObject, member), {}
+                            name + "Concatenated", (ConcatenatedDrillhole, member), {}
                         )
 
                 entity_type = member.find_or_create_type(self, **entity_type_kwargs)

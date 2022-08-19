@@ -618,7 +618,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         super().__init__(**kwargs)
 
     @property
-    def _from(self):
+    def from_(self):
         """Return the data entities definind the 'from' depth intervals."""
         if self.properties is None or len(self.properties) < 1:
             return None
@@ -631,7 +631,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         return None
 
     @property
-    def _to(self):
+    def to_(self):
         """Return the data entities definind the 'to' depth intervals."""
         if self.properties is None or len(self.properties) < 2:
             return None
@@ -659,7 +659,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 class ConcatenatedObject(Concatenated):
 
     _parent: Concatenator
-    _property_groups = None
+    _property_groups: list[ConcatenatedPropertyGroup] | None = None
 
     def __init__(self, entity_type, **kwargs):
         if kwargs.get("parent") is None or not isinstance(
@@ -741,3 +741,175 @@ class ConcatenatedObject(Concatenated):
                 )
 
         return self._property_groups
+
+
+class ConcatenatedDrillhole(ConcatenatedObject):
+    @property
+    def from_(self) -> list[Data]:
+        """
+        Depth data corresponding to the tops of the interval values.
+        """
+        obj_list = []
+        for prop_group in (
+            self.property_groups if self.property_groups is not None else []
+        ):
+            data = [self.get_data(child)[0] for child in prop_group.properties]
+            if len(data) > 0 and "from" in data[0].name.lower():
+                obj_list.append(data[0])
+        return obj_list
+
+    @property
+    def to_(self) -> list[Data]:
+        """
+        Depth data corresponding to the bottoms of the interval values.
+        """
+        obj_list = []
+        for prop_group in (
+            self.property_groups if self.property_groups is not None else []
+        ):
+            data = [self.get_data(child)[0] for child in prop_group.properties]
+            if len(data) > 1 and "to" in data[1].name.lower():
+                obj_list.append(data[1])
+        return obj_list
+
+    def validate_data(self, attributes: dict, property_group=None) -> tuple:
+        """
+        Validate input drillhole data attributes.
+
+        :param attributes: Dictionary of data attributes.
+        :param property_group: Input property group to validate against.
+        """
+        collocation_distance = attributes.get(
+            "collocation_distance", getattr(self, "default_collocation_distance")
+        )
+        if collocation_distance < 0:
+            raise UserWarning("Input depth 'collocation_distance' must be >0.")
+
+        if (
+            "depth" not in attributes
+            and "from-to" not in attributes
+            and "association" not in attributes
+        ):
+            if property_group is None:
+                raise AttributeError(
+                    "Input data dictionary must contain {key:values} "
+                    + "{'from-to':numpy.ndarray} "
+                    + "or {'association': 'OBJECT'}."
+                )
+            attributes["from-to"] = None
+
+        if "depth" in attributes.keys():
+            attributes["from-to"] = np.c_[
+                attributes["depth"], attributes["depth"] + collocation_distance
+            ]
+
+            del attributes["depth"]
+
+        if "from-to" in attributes.keys():
+            attributes["association"] = "DEPTH"
+            property_group = self.validate_interval_data(
+                attributes.get("name"),
+                attributes.get("from-to"),
+                attributes.get("values"),
+                group_name=property_group,
+                collocation_distance=collocation_distance,
+            )
+
+            del attributes["from-to"]
+
+        return attributes, property_group
+
+    def validate_interval_data(
+        self,
+        name: str | None,
+        from_to: list | np.ndarray | None,
+        values: np.ndarray,
+        group_name: str = None,
+        collocation_distance=1e-4,
+    ) -> str:
+        """
+        Compare new and current depth values and re-use the property group if possible.
+        Otherwise a new property group is added.
+
+        :param from_to: Array of from-to values.
+        :param values: Data values to be added on the from-to intervals.
+        :param group_name: Property group name
+        :collocation_distance: Threshold on the comparison between existing depth values.
+        """
+        if name in self.get_data_list():
+            raise UserWarning(
+                f"Data '{name}' already present on the object. "
+                "Consider changing the values directly."
+            )
+
+        if from_to is not None:
+            if isinstance(from_to, list):
+                from_to = np.vtack(from_to)
+
+            assert from_to.shape[0] >= len(values), (
+                f"Mismatch between input 'from_to' shape{from_to.shape} "
+                + f"and 'values' shape{values.shape}"
+            )
+            assert from_to.shape[1] == 2, "The `from-to` values must have shape(*, 2)"
+
+        if (
+            from_to is not None
+            and group_name is None
+            and self.property_groups is not None
+        ):
+            for property_group in self.property_groups:
+                if property_group.from_.values.shape[0] == from_to.shape[
+                    0
+                ] and np.allclose(
+                    np.c_[property_group.from_.values, property_group.to_.values],
+                    from_to,
+                    atol=collocation_distance,
+                ):
+                    return property_group.name
+
+        ind = 0
+        label = ""
+        if len(self.from_) > 0:
+            ind = len(self.from_)
+            label = f"({ind})"
+
+        if group_name is None:
+            group_name = f"Interval_{ind}"
+
+        property_group = getattr(self, "find_or_create_property_group")(
+            name=group_name, association="DEPTH"
+        )
+
+        if property_group.from_ is not None:
+            if property_group.from_.values.shape[0] != values.shape[0]:
+                raise ValueError(
+                    f"Input values for '{name}' with shape({values.shape[0]}) "
+                    f"do not match the from-to intervals of the group '{group_name}' "
+                    f"with shape({property_group.from_.values.shape[0]}). Check values or "
+                    f"assign to a new property group."
+                )
+            return property_group.name
+
+        from_to = getattr(self, "add_data")(
+            {
+                f"FROM{label}": {
+                    "association": "DEPTH",
+                    "values": from_to[:, 0],
+                    "entity_type": {"primitive_type": "FLOAT"},
+                    "parent": self,
+                    "allow_move": False,
+                    "allow_delete": False,
+                },
+                f"TO{label}": {
+                    "association": "DEPTH",
+                    "values": from_to[:, 1],
+                    "entity_type": {"primitive_type": "FLOAT"},
+                    "parent": self,
+                    "allow_move": False,
+                    "allow_delete": False,
+                },
+            },
+            property_group.name,
+        )
+
+        return property_group.name

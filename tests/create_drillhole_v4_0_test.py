@@ -28,6 +28,7 @@ from geoh5py.workspace import Workspace
 
 def test_create_drillhole_data(tmp_path):
     h5file_path = tmp_path / r"testCurve.geoh5"
+    new_path = tmp_path / r"testCurve2.geoh5"
     well_name = "bullseye/"
     n_data = 10
 
@@ -56,13 +57,11 @@ def test_create_drillhole_data(tmp_path):
             {
                 "my_log_values/": {
                     "depth": np.arange(0, 50.0),
-                    "values": np.random.randn(np.arange(0, 50.0).shape[0] - 1).astype(
-                        np.float32
-                    ),
+                    "values": np.random.randn(50),
                 },
                 "log_wt_tolerance": {
                     "depth": np.arange(0.01, 50.01),
-                    "values": np.random.randn(np.arange(0.01, 50.01).shape[0]),
+                    "values": np.random.randn(50),
                 },
             }
         )
@@ -136,51 +135,62 @@ def test_create_drillhole_data(tmp_path):
 
         well_b_data.values = np.random.randn(from_to_b.shape[0])
 
-    new_workspace = Workspace(h5file_path)
-    # Check entities
-    compare_entities(
-        well,
-        new_workspace.get_entity(well_name)[0],
-        ignore=[
-            "_parent",
-            "_metadata",
-            "_default_collocation_distance",
-            "_property_groups",
-        ],
-    )
-    compare_entities(
-        data_objects[0],
-        well.get_data("interval_values")[0],
-        ignore=["_metadata", "_parent"],
-    )
-    compare_entities(
-        data_objects[1],
-        well.get_entity("int_interval_list")[0],
-        ignore=["_metadata", "_parent"],
-    )
-    compare_entities(
-        data_objects[2],
-        well.get_entity("interval_values_b")[0],
-        ignore=["_metadata", "_parent"],
-    )
+    with well.workspace.open() as workspace:
+        workspace = Workspace(h5file_path)
+        # Check entities
+        compare_entities(
+            well,
+            workspace.get_entity(well_name)[0],
+            ignore=[
+                "_parent",
+                "_metadata",
+                "_default_collocation_distance",
+                "_property_groups",
+            ],
+        )
+        compare_entities(
+            data_objects[0],
+            well.get_data("interval_values")[0],
+            ignore=["_metadata", "_parent"],
+        )
+        compare_entities(
+            data_objects[1],
+            well.get_entity("int_interval_list")[0],
+            ignore=["_metadata", "_parent"],
+        )
+        compare_entities(
+            data_objects[2],
+            well.get_entity("interval_values_b")[0],
+            ignore=["_metadata", "_parent"],
+        )
 
-    compare_entities(
-        well_b,
-        new_workspace.get_entity("Number 2")[0],
-        ignore=[
-            "_parent",
-            "_metadata",
-            "_default_collocation_distance",
-            "_property_groups",
-        ],
-    )
-    compare_entities(
-        depth_data,
-        new_workspace.get_entity("Number 2")[0].get_data("Depth Data")[0],
-        ignore=["_metadata", "_parent"],
-    )
+        compare_entities(
+            well_b,
+            workspace.get_entity("Number 2")[0],
+            ignore=[
+                "_parent",
+                "_metadata",
+                "_default_collocation_distance",
+                "_property_groups",
+            ],
+        )
+        compare_entities(
+            depth_data,
+            workspace.get_entity("Number 2")[0].get_data("Depth Data")[0],
+            ignore=["_metadata", "_parent"],
+        )
 
-    assert (
-        new_workspace.get_entity("Number 2")[0].get_data_list()
-        == well_b.get_data_list()
-    )
+        assert (
+            workspace.get_entity("Number 2")[0].get_data_list()
+            == well_b.get_data_list()
+        )
+
+        with Workspace(new_path, version=2.0) as new_workspace:
+            new_group = dh_group.copy(parent=new_workspace)
+            well = new_group.children[0]
+            well.add_data(
+                {
+                    "new_data": {"values": np.random.randn(50).astype(np.float32)},
+                },
+                property_group=well.property_groups[0].name,
+            )
