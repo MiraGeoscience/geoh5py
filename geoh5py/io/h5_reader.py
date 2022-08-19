@@ -129,7 +129,10 @@ class H5Reader:
             children: dict = {}
             entity_type = cls.format_type_string(entity_type)
 
-            if entity_type not in h5file[name]:
+            if (
+                entity_type not in h5file[name]
+                or as_str_if_uuid(uid) not in h5file[name][entity_type]
+            ):
                 return children
 
             entity = h5file[name][entity_type][as_str_if_uuid(uid)]

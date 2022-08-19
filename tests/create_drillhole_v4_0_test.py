@@ -136,7 +136,6 @@ def test_create_drillhole_data(tmp_path):
         well_b_data.values = np.random.randn(from_to_b.shape[0])
 
     with well.workspace.open() as workspace:
-        workspace = Workspace(h5file_path)
         # Check entities
         compare_entities(
             well,
