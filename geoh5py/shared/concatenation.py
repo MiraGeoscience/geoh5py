@@ -913,3 +913,6 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         )
 
         return property_group.name
+
+    def sort_depths(self):
+        """Bypass sort_depths from previous version."""

@@ -396,10 +396,7 @@ class Drillhole(Points):
             data_objects.append(data_object)
 
         # Check the depths and re-sort data if necessary
-        if self.workspace.version >= 2.0:
-            self.save(add_children=False)
-        else:
-            self.sort_depths()
+        self.sort_depths()
 
         if len(data_objects) == 1:
             return data_objects[0]
