@@ -15,29 +15,45 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
 
-from geoh5py.groups import ContainerGroup
+from __future__ import annotations
+
+from geoh5py.groups import ContainerGroup, SimPEGGroup
 from geoh5py.shared.utils import compare_entities
+from geoh5py.ui_json import constants, templates
 from geoh5py.workspace import Workspace
 
 
-def test_create_group():
+def test_create_group(tmp_path):
 
+    h5file_path = tmp_path / r"testGroup.geoh5"
     group_name = "MyTestContainer"
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testGroup.geoh5"
+    # Create a workspace
+    workspace = Workspace(h5file_path)
+    group = ContainerGroup.create(workspace, name=group_name)
+    workspace.save_entity(group)
 
-        # Create a workspace
-        workspace = Workspace(h5file_path)
+    # Read the group back in
+    rec_obj = workspace.get_entity(group_name)[0]
+    compare_entities(group, rec_obj)
 
-        group = ContainerGroup.create(workspace, name=group_name)
-        workspace.save_entity(group)
-        workspace.finalize()
 
-        # Read the group back in
-        rec_obj = workspace.get_entity(group_name)[0]
+def test_simpeg_group(tmp_path):
 
-        compare_entities(group, rec_obj)
+    h5file_path = tmp_path / r"testGroup.geoh5"
+
+    # Create a workspace with group
+    workspace = Workspace(h5file_path)
+    group = SimPEGGroup.create(workspace)
+    group.options = constants.default_ui_json
+    group.options["something"] = templates.float_parameter()
+
+    # Copy
+    new_workspace = Workspace(tmp_path / r"testGroup2.geoh5")
+    group.copy(parent=new_workspace)
+
+    # Read back in and compare
+    new_workspace = Workspace(tmp_path / r"testGroup2.geoh5")
+    rec_obj = new_workspace.get_entity(group.uid)[0]
+    compare_entities(group, rec_obj, ignore=["_parent"])

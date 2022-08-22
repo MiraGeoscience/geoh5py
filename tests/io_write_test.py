@@ -16,13 +16,20 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
-class DateTime:
-    """
-    Time stamp
+from __future__ import annotations
 
-    .. warning:: Not implemented
+from h5py import File
 
-    """
+from geoh5py.objects import Points
+from geoh5py.workspace import Workspace
 
-    def __init__(self):
-        self._rep = None
+
+def test_fetch_handle(tmp_path):
+    h5file_path = tmp_path / r"test2.geoh5"
+    w_s = Workspace(h5file_path)
+    with File(h5file_path, "r+") as project:
+        base = list(project.keys())[0]
+        del project[base]["Objects"]
+        del project[base]["Types"]
+
+    Points.create(w_s)

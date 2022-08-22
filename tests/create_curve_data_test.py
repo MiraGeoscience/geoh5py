@@ -15,8 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
+
+from __future__ import annotations
 
 import numpy as np
 
@@ -25,19 +25,14 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_curve_data():
+def test_create_curve_data(tmp_path):
 
     curve_name = "TestCurve"
-
+    h5file_path = tmp_path / r"testCurve.geoh5"
     # Generate a random cloud of points
     n_data = 12
 
-    with tempfile.TemporaryDirectory() as tempdir:
-
-        h5file_path = Path(tempdir) / r"testCurve.geoh5"
-
-        # Create a workspace
-        workspace = Workspace(h5file_path)
+    with Workspace(h5file_path) as workspace:
 
         curve = Curve.create(
             workspace, vertices=np.random.randn(n_data, 3), name=curve_name
@@ -50,12 +45,13 @@ def test_create_curve_data():
 
         data_objects = curve.add_data(
             {
-                "vertexValues": {"values": np.random.randn(curve.n_vertices)},
+                "vertexValues": {
+                    "values": np.random.randint(0, curve.n_vertices, curve.n_vertices)
+                },
                 "cellValues": {"values": np.random.randn(curve.n_cells)},
             }
         )
 
-        workspace.finalize()
         # Re-open the workspace and read data back in
         ws2 = Workspace(h5file_path)
 
@@ -71,7 +67,6 @@ def test_create_curve_data():
         # Modify and write
         obj_rec.vertices = np.random.randn(n_data, 3)
         data_vert_rec.values = np.random.randn(n_data)
-        ws2.finalize()
 
         # Read back and compare
         ws3 = Workspace(h5file_path)
@@ -80,3 +75,4 @@ def test_create_curve_data():
 
         compare_entities(obj_rec, obj)
         compare_entities(data_vert_rec, data_vertex)
+        ws2.close()

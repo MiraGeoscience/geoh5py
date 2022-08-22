@@ -19,21 +19,27 @@ from __future__ import annotations
 
 from abc import ABC
 from contextlib import contextmanager
-from typing import Any
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Callable
+from uuid import UUID
 
 import h5py
 import numpy as np
 
+if TYPE_CHECKING:
+    from ..workspace import Workspace
+    from .entity import Entity
+    from .entity_type import EntityType
+
 
 @contextmanager
-def fetch_h5_handle(
-    file: str | h5py.File,
-) -> h5py.File:
+def fetch_h5_handle(file: str | h5py.File | Path, mode: str = "r") -> h5py.File:
     """
     Open in read+ mode a geoh5 file from string.
     If receiving a file instead of a string, merely return the given file.
 
     :param file: Name or handle to a geoh5 file.
+    :param mode: Set the h5 read/write mode
 
     :return h5py.File: Handle to an opened h5py file.
     """
@@ -43,14 +49,18 @@ def fetch_h5_handle(
         finally:
             pass
     else:
-        h5file = h5py.File(file, "r+")
+        if Path(file).suffix != ".geoh5":
+            raise ValueError("Input h5 file must have a 'geoh5' extension.")
+
+        h5file = h5py.File(file, mode)
+
         try:
             yield h5file
         finally:
             h5file.close()
 
 
-def match_values(vec_a, vec_b, collocation_distance=1e-4):
+def match_values(vec_a, vec_b, collocation_distance=1e-4) -> np.ndarray:
     """
     Find indices of matching values between two arrays, within collocation_distance.
 
@@ -83,7 +93,7 @@ def merge_arrays(
     mapping=None,
     collocation_distance=1e-4,
     return_mapping=False,
-):
+) -> np.ndarray:
     """
     Given two numpy.arrays of different length, find the matching values and append both arrays.
 
@@ -117,7 +127,9 @@ def merge_arrays(
     return np.r_[head, tail]
 
 
-def compare_entities(object_a, object_b, ignore: list | None = None, decimal: int = 6):
+def compare_entities(
+    object_a, object_b, ignore: list | None = None, decimal: int = 6
+) -> None:
 
     ignore_list = ["_workspace", "_children"]
     if ignore is not None:
@@ -186,3 +198,131 @@ def iterable_message(valid: list[Any] | None) -> str:
         msg = f" Must be: '{valid[0]}'."
 
     return msg
+
+
+KEY_MAP = {
+    "values": "Data",
+    "cells": "Cells",
+    "surveys": "Surveys",
+    "trace": "Trace",
+    "trace_depth": "TraceDepth",
+    "vertices": "Vertices",
+    "octree_cells": "Octree Cells",
+    "property_groups": "PropertyGroups",
+    "u_cell_delimiters": "U cell delimiters",
+    "v_cell_delimiters": "V cell delimiters",
+    "z_cell_delimiters": "Z cell delimiters",
+    "color_map": "Color map",
+    "metadata": "Metadata",
+    "options": "options",
+    "concatenated_object_ids": "Concatenated object IDs",
+    "concatenated_attributes": "Attributes",
+    "property_group_ids": "Property Group IDs",
+}
+
+INV_KEY_MAP = {value: key for key, value in KEY_MAP.items()}
+
+
+def is_uuid(value: str) -> bool:
+    """Check if a string is UUID compliant."""
+    try:
+        UUID(str(value))
+        return True
+    except ValueError:
+        return False
+
+
+def entity2uuid(value: Any) -> UUID | Any:
+    """Convert an entity to its UUID."""
+    if hasattr(value, "uid"):
+        return value.uid
+    return value
+
+
+def uuid2entity(value: UUID, workspace: Workspace) -> Entity | Any:
+    """Convert UUID to a known entity."""
+    if isinstance(value, UUID):
+        if value in workspace.list_entities_name:
+            return workspace.get_entity(value)[0]
+
+        # Search for property groups
+        for obj in workspace.objects:
+            if getattr(obj, "property_groups", None) is not None:
+                prop_group = [
+                    prop_group
+                    for prop_group in getattr(obj, "property_groups")
+                    if prop_group.uid == value
+                ]
+
+                if prop_group:
+                    return prop_group[0]
+
+        return None
+
+    return value
+
+
+def str2uuid(value: Any) -> UUID | Any:
+    """Convert string to UUID"""
+    if is_uuid(value):
+        # TODO insert validation
+        return UUID(str(value))
+    return value
+
+
+def as_str_if_uuid(value: UUID | Any) -> str | Any:
+    """Convert :obj:`UUID` to string used in geoh5."""
+    if isinstance(value, UUID):
+        return "{" + str(value) + "}"
+    return value
+
+
+def bool_value(value: np.int8) -> bool:
+    """Convert logical int8 to bool."""
+    return bool(value)
+
+
+def as_str_if_utf8_bytes(value) -> str:
+    """Convert bytes to string"""
+    if isinstance(value, bytes):
+        value = value.decode("utf-8")
+    return value
+
+
+def dict_mapper(
+    val, string_funcs: list[Callable], *args, omit: dict | None = None
+) -> dict:
+    """
+    Recursion through nested dictionaries and applies mapping functions to values.
+
+    :param val: Value (could be another dictionary) to apply transform functions.
+    :param string_funcs: Functions to apply on values within the input dictionary.
+    :param omit: Dictionary of functions to omit.
+
+    :return val: Transformed values
+    """
+    if omit is None:
+        omit = {}
+    if isinstance(val, dict):
+        for key, values in val.items():
+            val[key] = dict_mapper(
+                values,
+                [fun for fun in string_funcs if fun not in omit.get(key, [])],
+            )
+
+    for fun in string_funcs:
+        val = fun(val, *args)
+    return val
+
+
+def get_attributes(entity: Entity | EntityType, omit_list=(), attributes=None):
+    """Extract the attributes of an object with omissions."""
+    if attributes is None:
+        attributes = {}
+    for key in vars(entity):
+        if key not in omit_list:
+            if key[0] == "_":
+                key = key[1:]
+
+            attributes[key] = getattr(entity, key)
+    return attributes

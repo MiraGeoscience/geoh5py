@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Release 0.3.0 - 2022/06/30
+--------------------------
+
+This release addresses changes introduced by the geoh5 v2.0 standard.
+
+- Drillhole objects and associated data are stored as Concatenated entities under the DrillholeGroup.
+- Use of context manager for the Workspace with options for read/write mode specifications added.
+- Implementation of a SimPEGGroup entity.
+
+
 Release 0.2.0 - 2022/04/18
 --------------------------
 

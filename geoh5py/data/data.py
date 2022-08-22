@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import uuid
 from abc import abstractmethod
 
 from ..shared import Entity
@@ -31,18 +32,21 @@ class Data(Entity):
     """
 
     _attribute_map = Entity._attribute_map.copy()
-    _attribute_map.update({"Association": "association"})
+    _attribute_map.update({"Association": "association", "Modifiable": "modifiable"})
     _visible = False
 
-    def __init__(self, data_type: DataType, **kwargs):
+    def __init__(
+        self,
+        data_type: DataType,
+        **kwargs,
+    ):
+        self._association = None
+        self._on_file = False
+        self._modifiable = True
         assert data_type is not None
         assert data_type.primitive_type == self.primitive_type()
-        self._entity_type = data_type
-        self._association: DataAssociationEnum | None = None
+        self.entity_type = data_type
         self._values = None
-
-        if "association" in kwargs:
-            setattr(self, "association", kwargs["association"])
 
         super().__init__(**kwargs)
 
@@ -58,6 +62,8 @@ class Data(Entity):
         :obj:`~geoh5py.data.data.Data.association`
         """
         if self.association is DataAssociationEnum.VERTEX:
+            return self.parent.n_vertices
+        if self.association is DataAssociationEnum.DEPTH:
             return self.parent.n_vertices
         if self.association is DataAssociationEnum.CELL:
             return self.parent.n_cells
@@ -104,6 +110,18 @@ class Data(Entity):
         self._association = value
 
     @property
+    def modifiable(self) -> bool:
+        """
+        :obj:`bool` Entity can be modified.
+        """
+        return self._modifiable
+
+    @modifiable.setter
+    def modifiable(self, value: bool):
+        self._modifiable = value
+        self.workspace.update_attribute(self, "attributes")
+
+    @property
     def entity_type(self) -> DataType:
         """
         :obj:`~geoh5py.data.data_type.DataType`
@@ -114,8 +132,7 @@ class Data(Entity):
     def entity_type(self, data_type: DataType):
 
         self._entity_type = data_type
-
-        self.modified_attributes = "entity_type"
+        self.workspace.update_attribute(self, "entity_type")
 
     @classmethod
     @abstractmethod
@@ -127,3 +144,11 @@ class Data(Entity):
         Alias not implemented from base Entity class.
         """
         raise NotImplementedError("Data entity cannot contain files.")
+
+    def remove_data_from_group(
+        self, data: list | Entity | uuid.UUID | str, name: str = None
+    ):
+        """
+        Remove self from a property group.
+        """
+        ...

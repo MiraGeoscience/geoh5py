@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2020 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,14 +15,25 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+import uuid
 
-class FileName:
-    """
-    File name
+from .group import Group, GroupType
 
-    .. warning:: Not implemented
 
-    """
+class MapsGroup(Group):
+    """ The type for the basic Container group."""
 
-    def __init__(self):
-        self._rep = None
+    __TYPE_UID = uuid.UUID("{4d65f8c3-a015-4c01-b411-412c0f4f0884}")
+
+    _name = "Maps Group"
+    _description = "Maps Group"
+
+    def __init__(self, group_type: GroupType, **kwargs):
+        assert group_type is not None
+        super().__init__(group_type, **kwargs)
+
+        group_type.workspace._register_group(self)
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID

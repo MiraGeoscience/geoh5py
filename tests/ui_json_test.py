@@ -14,6 +14,9 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
+from __future__ import annotations
+
 import json
 from copy import deepcopy
 from os import path
@@ -60,8 +63,6 @@ def get_workspace(directory):
         points_b = points.copy(copy_children=True)
         points_b.name = "Points_B"
         points_b.add_data_to_group(points_b.children, name="My group2")
-
-        workspace.finalize()
 
     return workspace
 
@@ -118,7 +119,7 @@ def test_input_file_name_path(tmp_path):
     assert test.name == "Jarrod.ui.json"  # ui.json extension added
 
     # Test handling of path attribute
-    test.workspace = Workspace(path.join(tmp_path, "test.geoh5"))
+    test.workspace = Workspace(tmp_path / r"test.geoh5")
     assert test.path == str(tmp_path)  # pulled from workspace.h5file
     test.path = tmp_path
     assert test.path == tmp_path  # usual behaviour
@@ -128,7 +129,7 @@ def test_input_file_name_path(tmp_path):
     assert "'im/a/fake/path'" in str(excinfo.value)  # raises if not a dir
 
     # test path_name method
-    assert test.path_name == path.join(tmp_path, "Jarrod.ui.json")
+    assert test.path_name == str(tmp_path / r"Jarrod.ui.json")
     test = InputFile()
     assert test.path_name is None
 
@@ -358,9 +359,9 @@ def test_invalid_uuid_string(tmp_path):
 
     with pytest.raises(TypeValidationError) as excinfo:
         getattr(in_file, "data")
-    assert TypeValidationError.message(
-        "data", "int", ["str", "UUID", "Entity", "NoneType"]
-    ) == str(excinfo.value)
+    assert TypeValidationError.message("data", "int", ["str", "UUID", "Entity"]) == str(
+        excinfo.value
+    )
 
 
 def test_valid_uuid_in_workspace(tmp_path):
@@ -483,7 +484,7 @@ def test_write_ui_json(tmp_path):
     ui_json["test"] = templates.float_parameter(optional="disabled")
     in_file = InputFile(ui_json=ui_json)
     in_file.write_ui_json(name="test_write.ui.json", path=tmp_path)
-    with open(path.join(tmp_path, "test_write.ui.json"), encoding="utf-8") as file:
+    with open(tmp_path / r"test_write.ui.json", encoding="utf-8") as file:
         ui_json = json.load(file)
         assert ui_json["test"]["value"] == 1.0
 
@@ -500,7 +501,7 @@ def test_data_value_parameter_a(tmp_path):
     assert ui_json["data"]["optional"]
     assert ui_json["data"]["enabled"]
 
-    in_file = InputFile(ui_json=ui_json)
+    in_file = InputFile(ui_json=ui_json, validation_options={"disabled": True})
     out_file = in_file.write_ui_json(path=tmp_path, name="ABC")
     reload_input = InputFile.read_ui_json(out_file)
 

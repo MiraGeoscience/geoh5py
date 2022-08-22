@@ -14,18 +14,18 @@ from copy import deepcopy
 from typing import Any
 from uuid import UUID
 
-from geoh5py.io.utils import (
+from geoh5py.shared import Entity
+from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
+from geoh5py.shared.validators import AssociationValidator
+from geoh5py.workspace import Workspace
+
+from ..shared.utils import (
     as_str_if_uuid,
     dict_mapper,
     entity2uuid,
     str2uuid,
     uuid2entity,
 )
-from geoh5py.shared import Entity
-from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
-from geoh5py.shared.validators import AssociationValidator
-from geoh5py.workspace import Workspace
-
 from .constants import base_validations, ui_validations
 from .utils import (
     container_group2name,
@@ -78,13 +78,15 @@ class InputFile:
         ui_json: dict[str, Any] = None,
         validations: dict = None,
         validation_options: dict = None,
-        workspace: Workspace = None,
     ):
+        self._workspace = None
         self._validation_options = validation_options
         self.validations = validations
         self.ui_json = ui_json
         self.data = data
-        self.workspace = workspace
+
+        if isinstance(self.workspace, Workspace):
+            self.workspace.close()
 
     @property
     def data(self):
@@ -111,7 +113,7 @@ class InputFile:
                     "equal the number of parameters in 'ui_json'."
                 )
 
-            if "geoh5" in value:
+            if self.workspace is None and "geoh5" in value:
                 self.workspace = value["geoh5"]
 
             value = self._promote(value)
@@ -143,7 +145,7 @@ class InputFile:
     def load(self, input_dict: dict[str, Any]):
         """Load data from dictionary and validate."""
         self.ui_json = input_dict
-        self.data = flatten(input_dict)
+        self.data = flatten(self.ui_json)
 
     @property
     def path(self) -> str | None:
@@ -172,7 +174,7 @@ class InputFile:
     @staticmethod
     def read_ui_json(json_file: str, **kwargs):
         """
-        Read and create an InputFile from *.ui.json
+        Read and create an InputFile from ui.json
         """
         input_file = InputFile(**kwargs)
 
@@ -181,6 +183,9 @@ class InputFile:
 
         with open(json_file, encoding="utf-8") as file:
             input_file.load(json.load(file))
+
+        if isinstance(input_file.workspace, Workspace):
+            input_file.workspace.close()
 
         return input_file
 
@@ -198,7 +203,7 @@ class InputFile:
             if not isinstance(value, dict):
                 raise ValueError("Input 'ui_json' must be of type dict or None.")
 
-            self._ui_json = self.numify(value)
+            self._ui_json = self.numify(value.copy())
             default_validations = InputValidation.infer_validations(self._ui_json)
             for key, validations in default_validations.items():
                 if key in self.validations:
@@ -218,11 +223,10 @@ class InputFile:
         Update the ui.json values and enabled status from input data.
 
         :param data: Key and value pairs expected by the ui_json.
-        :param none_map : Map parameter 'None' values to non-null numeric types.
+        :param none_map: Map parameter 'None' values to non-null numeric types.
             The parameters in the dictionary are mapped to optional and disabled.
 
-        :raises ValueError : If attempting to set None value to non-optional
-            parameter.
+        :raises UserWarning: If attempting to set None value to non-optional parameter.
         """
         if self.ui_json is None:
             raise UserWarning("InputFile requires a 'ui_json' to be defined.")
@@ -305,10 +309,16 @@ class InputFile:
 
     @workspace.setter
     def workspace(self, workspace: Workspace | None):
-        if workspace is not None and not isinstance(workspace, Workspace):
-            raise ValueError(
-                "Input 'workspace' must be a valid :obj:`geoh5py.workspace.Workspace`"
-            )
+        if workspace is not None:
+            if self._workspace is not None:
+                raise UserWarning(
+                    "Attribute 'workspace' already set. Consider creating a new InputFile from arguments."
+                )
+
+            if not isinstance(workspace, Workspace):
+                raise ValueError(
+                    "Input 'workspace' must be a valid :obj:`geoh5py.workspace.Workspace`."
+                )
 
         self._workspace = workspace
 
@@ -325,7 +335,7 @@ class InputFile:
         Writes a formatted ui.json file from InputFile data
 
         :param name: Name of the file
-        :param none_map : Map parameter None values to non-null numeric types.
+        :param none_map: Map parameter None values to non-null numeric types.
         :param path: Directory to write the ui.json to.
         """
         if name is not None:
@@ -428,6 +438,9 @@ class InputFile:
 
     def _promote(self, var: dict[str, Any]) -> dict[str, Any]:
         """Convert uuids to entities from the workspace."""
+        if self.workspace is None:
+            return var
+
         for key, value in var.items():
 
             if isinstance(value, dict):

@@ -15,7 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 
+from ..shared import FLOAT_NDV
 from .data import DataType, PrimitiveTypeEnum
 from .numeric_data import NumericData
 
@@ -32,9 +34,9 @@ class FloatData(NumericData):
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.FLOAT
 
-    @classmethod
-    def ndv(cls) -> float:
+    @property
+    def ndv(self) -> float:
         """
         No-Data-Value
         """
-        return 1.17549435e-38
+        return FLOAT_NDV

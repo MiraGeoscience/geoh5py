@@ -15,6 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 from pathlib import Path
 
 import numpy as np
@@ -142,8 +144,6 @@ def test_create_survey_tem(tmp_path):
     assert getattr(
         receivers, "relative_to_bearing", None
     ), "Failed setting 'relative_to_bearing' to True."
-
-    workspace.finalize()
 
     new_workspace = Workspace(path)
     transmitters_rec = new_workspace.get_entity(name + "_tx")[0]
@@ -334,7 +334,6 @@ def test_survey_tem_data(tmp_path):
     receivers.timing_mark = 10**-3.1
     receivers.waveform = waveform
 
-    workspace.finalize()
     new_workspace = Workspace(path)
 
     receivers_rec = new_workspace.get_entity(name + "_rx")[0]
@@ -343,5 +342,7 @@ def test_survey_tem_data(tmp_path):
     new_workspace = Workspace(Path(tmp_path) / r"testATEM_copy2.geoh5")
     receivers_rec = receivers.copy(new_workspace)
     compare_entities(
-        receivers, receivers_rec, ignore=["_receivers", "_transmitters", "_parent"]
+        receivers,
+        receivers_rec,
+        ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
     )

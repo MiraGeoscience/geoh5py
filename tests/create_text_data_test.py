@@ -17,8 +17,6 @@
 
 import random
 import string
-import tempfile
-from pathlib import Path
 
 import numpy as np
 
@@ -27,7 +25,7 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_text_data():
+def test_create_text_data(tmp_path):
 
     name = "MyTestPointset"
 
@@ -39,29 +37,32 @@ def test_create_text_data():
             for jj in range(12)
         ]
     )
+    h5file_path = tmp_path / r"testTextData.geoh5"
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testPoints.geoh5"
+    with Workspace(h5file_path) as workspace:
+        with Workspace(tmp_path / r"testTextData_copy.geoh5") as new_workspace:
+            points = Points.create(
+                workspace,
+                vertices=np.random.randn(n_data, 3),
+                name=name,
+                allow_move=False,
+            )
 
-        # Create a workspace
-        workspace = Workspace(h5file_path)
-
-        points = Points.create(
-            workspace, vertices=np.random.randn(n_data, 3), name=name, allow_move=False
-        )
-
-        data = points.add_data(
-            {
-                "DataValues": {
-                    "type": "text",
-                    "values": values,
+            data = points.add_data(
+                {
+                    "DataValues": {
+                        "type": "text",
+                        "values": values,
+                    }
                 }
-            }
-        )
+            )
 
-        new_workspace = Workspace(h5file_path)
-        rec_obj = new_workspace.get_entity(name)[0]
-        rec_data = new_workspace.get_entity("DataValues")[0]
+            points.copy(new_workspace)
 
-        compare_entities(points, rec_obj)
-        compare_entities(data, rec_data)
+    with workspace.open():
+        with new_workspace.open():
+            rec_obj = new_workspace.get_entity(name)[0]
+            rec_data = new_workspace.get_entity("DataValues")[0]
+
+            compare_entities(points, rec_obj, ignore=["_parent"])
+            compare_entities(data, rec_data, ignore=["_parent"])

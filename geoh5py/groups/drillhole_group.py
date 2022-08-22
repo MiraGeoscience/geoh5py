@@ -15,6 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import uuid
 
 from .group import Group, GroupType
@@ -27,16 +29,29 @@ class DrillholeGroup(Group):
         fields=(0x825424FB, 0xC2C6, 0x4FEA, 0x9F, 0x2B, 0x6CD00023D393)
     )
 
-    _name = "Drillholes"
+    def __init__(self, group_type: GroupType, name="Drillholes Group", **kwargs):
 
-    def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
-        super().__init__(group_type, **kwargs)
+        super().__init__(group_type, name=name, **kwargs)
 
         if self.entity_type.name == "Entity":
-            self.entity_type.name = "Drillholes Group"
+            self.entity_type.name = name
 
         group_type.workspace._register_group(self)
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID
+
+
+class IntegratorDrillholeGroup(DrillholeGroup):
+    """The type for the group containing drillholes."""
+
+    __TYPE_UID = uuid.UUID("{952829b6-76a2-4d0b-b908-7f8d2482dc0d}")
+
+    def __init__(self, group_type: GroupType, **kwargs):
+
+        super().__init__(group_type, **kwargs)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

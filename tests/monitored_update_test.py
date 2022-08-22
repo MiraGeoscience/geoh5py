@@ -15,8 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import tempfile
-from pathlib import Path
+
+from __future__ import annotations
 
 import numpy as np
 
@@ -27,21 +27,19 @@ from geoh5py.ui_json.utils import monitored_directory_copy
 from geoh5py.workspace import Workspace
 
 
-def test_monitored_directory_copy():
+def test_monitored_directory_copy(tmp_path):
     xyz = np.random.randn(12, 3)
     values = np.random.randn(12)
-
-    with tempfile.TemporaryDirectory() as tempdir:
-        h5file_path = Path(tempdir) / r"testPoints.geoh5"
-        workspace = Workspace(h5file_path)
+    h5file_path = tmp_path / r"testPoints.geoh5"
+    with Workspace(h5file_path) as workspace:
         group = ContainerGroup.create(workspace, name="groupee")
         points = Points.create(workspace, parent=group, vertices=xyz, allow_move=False)
         points.add_data({"DataValues": {"association": "VERTEX", "values": values}})
-        new_file = monitored_directory_copy(tempdir, points)
+        new_file = monitored_directory_copy(tmp_path, points)
         new_workspace = Workspace(new_file)
 
         assert (
-            len(new_workspace.get_entity("groupee")) == 0
+            new_workspace.get_entity("groupee")[0] is None
         ), "Parental group should not have been copied."
 
         for entity in workspace.objects:
@@ -53,7 +51,7 @@ def test_monitored_directory_copy():
             compare_entities(entity, rec_entity, ignore=["_parent"])
             compare_entities(entity.children[0], rec_data, ignore=["_parent"])
 
-        new_file = monitored_directory_copy(tempdir, points, copy_children=False)
+        new_file = monitored_directory_copy(tmp_path, points, copy_children=False)
         new_workspace = Workspace(new_file)
 
         assert len(new_workspace.data) == 0, "Child data should not have been copied."

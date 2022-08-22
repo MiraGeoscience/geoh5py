@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2020 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,24 +15,25 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+import uuid
 
-class VersionString:
-    """
-    Version of Geoscience ANALYST
+from .group import Group, GroupType
 
-    .. warning:: Not implemented
 
-    """
+class AirborneGeophysics(Group):
+    """ The type for the basic Container group."""
 
-    def __init__(self, value: str):
-        self._value = value
+    __TYPE_UID = uuid.UUID("{812f3b2a-fdae-4752-8391-3b657953a983}")
 
-    @property
-    def value(self) -> str:
-        return self._value
+    _name = "Airborne Geophysics"
+    _description = "Airborne Geophysics"
 
-    def __str__(self):
-        return self._value
+    def __init__(self, group_type: GroupType, **kwargs):
+        assert group_type is not None
+        super().__init__(group_type, **kwargs)
 
-    def _h5_rep(self) -> str:
-        return self._value
+        group_type.workspace._register_group(self)
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID

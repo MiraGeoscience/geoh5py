@@ -14,7 +14,6 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
-
 from __future__ import annotations
 
 import uuid
@@ -22,25 +21,47 @@ import uuid
 from .group import Group, GroupType
 
 
-class GiftoolsGroup(Group):
-    """The type for a GIFtools group."""
+class SimPEGGroup(Group):
+    """Group for SimPEG inversions."""
 
-    __TYPE_UID = uuid.UUID(
-        fields=(0x585B3218, 0xC24B, 0x41FE, 0xAD, 0x1F, 0x24D5E6E8348A)
-    )
+    __TYPE_UID = uuid.UUID("{55ed3daf-c192-4d4b-a439-60fa987fe2b8}")
 
-    _name = "GIFtools Project"
-    _description = "GIFtools Project"
+    _name = "SimPEG"
+    _description = "SimPEG"
+    _options = None
 
     def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
 
         if self.entity_type.name == "Entity":
-            self.entity_type.name = "GIFtools Group"
+            self.entity_type.name = "SimPEG"
 
         group_type.workspace._register_group(self)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
+
+    @property
+    def options(self) -> dict | None:
+        """
+        Metadata attached to the entity.
+        """
+        if getattr(self, "_options", None) is None:
+            self._options = self.workspace.fetch_metadata(self.uid, argument="options")
+
+        if self._options is None:
+            self._options = {}
+
+        return self._options
+
+    @options.setter
+    def options(self, value: dict | None):
+        if value is not None:
+            assert isinstance(
+                value, dict
+            ), f"Input 'options' must be of type {dict} or None"
+
+        self._options = value
+        self.workspace.update_attribute(self, "options")
