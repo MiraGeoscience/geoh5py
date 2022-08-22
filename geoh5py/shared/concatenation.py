@@ -417,7 +417,9 @@ class Concatenator(Group):
                 ]
             )
             if alias in self.index:
-                indices = np.hstack([self.index[alias], indices])
+                indices = np.hstack([self.index[alias], indices]).astype(
+                    self.index[alias].dtype
+                )
 
             self.index[alias] = indices
 
