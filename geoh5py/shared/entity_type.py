@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from .. import workspace as ws
 
 
-TEntityType = TypeVar("TEntityType", bound="EntityType")
+EntityTypeT = TypeVar("EntityTypeT", bound="EntityType")
 
 
 class EntityType(ABC):
@@ -82,14 +82,14 @@ class EntityType(ABC):
 
     @classmethod
     def find(
-        cls: type[TEntityType], workspace: ws.Workspace, type_uid: uuid.UUID
-    ) -> TEntityType | None:
+        cls: type[EntityTypeT], workspace: ws.Workspace, type_uid: uuid.UUID
+    ) -> EntityTypeT | None:
         """Finds in the given Workspace the EntityType with the given UUID for
         this specific EntityType implementation class.
 
         :return: EntityType of None
         """
-        return cast(TEntityType, workspace.find_type(type_uid, cls))
+        return cast(EntityTypeT, workspace.find_type(type_uid, cls))
 
     @staticmethod
     @abstractmethod

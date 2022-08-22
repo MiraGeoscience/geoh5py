@@ -21,6 +21,7 @@ import weakref
 
 
 class AnyObject:
+    # pylint: disable=too-few-public-methods
     pass
 
 

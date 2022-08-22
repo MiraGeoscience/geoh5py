@@ -201,23 +201,25 @@ def iterable_message(valid: list[Any] | None) -> str:
 
 
 KEY_MAP = {
-    "values": "Data",
     "cells": "Cells",
+    "color_map": "Color map",
+    "concatenated_attributes": "Attributes",
+    "concatenated_object_ids": "Concatenated object IDs",
+    "layers": "Layers",
+    "metadata": "Metadata",
+    "octree_cells": "Octree Cells",
+    "options": "options",
+    "prisms": "Prisms",
+    "property_groups": "PropertyGroups",
+    "property_group_ids": "Property Group IDs",
     "surveys": "Surveys",
     "trace": "Trace",
     "trace_depth": "TraceDepth",
-    "vertices": "Vertices",
-    "octree_cells": "Octree Cells",
-    "property_groups": "PropertyGroups",
     "u_cell_delimiters": "U cell delimiters",
     "v_cell_delimiters": "V cell delimiters",
+    "values": "Data",
+    "vertices": "Vertices",
     "z_cell_delimiters": "Z cell delimiters",
-    "color_map": "Color map",
-    "metadata": "Metadata",
-    "options": "options",
-    "concatenated_object_ids": "Concatenated object IDs",
-    "concatenated_attributes": "Attributes",
-    "property_group_ids": "Property Group IDs",
 }
 
 INV_KEY_MAP = {value: key for key, value in KEY_MAP.items()}
