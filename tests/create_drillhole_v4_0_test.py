@@ -163,9 +163,11 @@ def test_create_drillhole_data(tmp_path):
             ignore=["_metadata", "_parent"],
         )
 
+        well_b_reload = workspace.get_entity("Number 2")[0]
+
         compare_entities(
             well_b,
-            workspace.get_entity("Number 2")[0],
+            well_b_reload,
             ignore=[
                 "_parent",
                 "_metadata",
@@ -175,7 +177,7 @@ def test_create_drillhole_data(tmp_path):
         )
         compare_entities(
             depth_data,
-            workspace.get_entity("Number 2")[0].get_data("Depth Data")[0],
+            well_b_reload.get_data("Depth Data")[0],
             ignore=["_metadata", "_parent"],
         )
 

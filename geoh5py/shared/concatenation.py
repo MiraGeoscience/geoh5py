@@ -680,13 +680,14 @@ class ConcatenatedObject(Concatenated):
         attr = self.concatenator.get_attributes(getattr(self, "uid")).copy()
 
         for key, value in attr.items():
-            if (
-                "Property:" in key
-                and self.workspace.get_entity(uuid.UUID(value))[0] is None
-            ):
-                attributes: dict = self.concatenator.get_attributes(value).copy()
-                attributes["parent"] = self
-                self.workspace.create_from_concatenation(attributes)
+            if "Property:" in key:
+                child_data = self.workspace.get_entity(uuid.UUID(value))[0]
+                if child_data is None:
+                    attributes: dict = self.concatenator.get_attributes(value).copy()
+                    attributes["parent"] = self
+                    self.workspace.create_from_concatenation(attributes)
+                else:
+                    self.add_children([child_data])
 
         for child in getattr(self, "children"):
 
