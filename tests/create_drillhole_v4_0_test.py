@@ -195,3 +195,50 @@ def test_create_drillhole_data(tmp_path):
                 },
                 property_group=well.property_groups[0].name,
             )
+
+
+def test_remove_drillhole_data(tmp_path):
+    h5file_path = tmp_path / r"testCurve.geoh5"
+    well_name = "bullseye/"
+    n_data = 10
+
+    with Workspace(h5file_path, version=2.0) as workspace:
+        # Create a workspace
+        dh_group = DrillholeGroup.create(workspace)
+
+        assert (
+            dh_group.data == {}
+        ), "DrillholeGroup should not have data on instantiation."
+
+        well = Drillhole.create(
+            workspace,
+            collar=np.r_[0.0, 10.0, 10],
+            surveys=np.c_[
+                np.linspace(0, 100, n_data),
+                np.ones(n_data) * 45.0,
+                np.linspace(-89, -75, n_data),
+            ],
+            parent=dh_group,
+            name=well_name,
+        )
+
+        # Add both set of log data with 0.5 m tolerance
+        well.add_data(
+            {
+                "my_log_values/": {
+                    "depth": np.arange(0, 50.0),
+                    "values": np.random.randn(50),
+                },
+                "log_wt_tolerance": {
+                    "depth": np.arange(0.01, 50.01),
+                    "values": np.random.randn(50),
+                },
+            }
+        )
+
+    with Workspace(h5file_path, version=2.0) as workspace:
+        well = workspace.get_entity(well_name)[0]
+        data = well.get_data("log_wt_tolerance")[0]
+        workspace.remove_entity(data)
+
+        workspace.remove_entity(well)
