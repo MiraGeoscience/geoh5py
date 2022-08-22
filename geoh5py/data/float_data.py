@@ -18,7 +18,7 @@
 from __future__ import annotations
 
 from ..shared import FLOAT_NDV
-from .data import DataType, PrimitiveTypeEnum
+from .data import PrimitiveTypeEnum
 from .numeric_data import NumericData
 
 
@@ -26,9 +26,6 @@ class FloatData(NumericData):
     """
     Data container for floats values
     """
-
-    def __init__(self, data_type: DataType, **kwargs):
-        super().__init__(data_type, **kwargs)
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
