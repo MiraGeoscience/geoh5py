@@ -21,7 +21,7 @@ from .group import Group, GroupType
 
 
 class MapsGroup(Group):
-    """ The type for the basic Container group."""
+    """The type for the basic Container group."""
 
     __TYPE_UID = uuid.UUID("{4d65f8c3-a015-4c01-b411-412c0f4f0884}")
 
