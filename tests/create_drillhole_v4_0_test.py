@@ -53,6 +53,19 @@ def test_create_drillhole_data(tmp_path):
         )
 
         # Add both set of log data with 0.5 m tolerance
+        with pytest.raises(UserWarning) as error:
+            well.add_data(
+                {
+                    "my_log_values/": {
+                        "depth": np.arange(0, 50.0),
+                        "values": np.random.randn(50),
+                    }
+                },
+                collocation_distance=-1.0,
+            )
+
+        assert "Input depth 'collocation_distance' must be >0." in str(error)
+
         well.add_data(
             {
                 "my_log_values/": {
@@ -118,6 +131,8 @@ def test_create_drillhole_data(tmp_path):
         assert dh_group.fetch_index(well_b_data, well_b_data.name) == 1, (
             "'interval_values' on well_b should be the second entry.",
         )
+
+        assert len(well.to_) == len(well.from_) == 3, "Should have only 3 from-to data."
 
         with pytest.raises(UserWarning) as error:
             well_b.add_data(

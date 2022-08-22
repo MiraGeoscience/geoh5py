@@ -775,16 +775,19 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                 obj_list.append(data[1])
         return obj_list
 
-    def validate_data(self, attributes: dict, property_group=None) -> tuple:
+    def validate_data(
+        self, attributes: dict, property_group=None, collocation_distance=None
+    ) -> tuple:
         """
         Validate input drillhole data attributes.
 
         :param attributes: Dictionary of data attributes.
         :param property_group: Input property group to validate against.
         """
-        collocation_distance = attributes.get(
-            "collocation_distance", getattr(self, "default_collocation_distance")
-        )
+        if collocation_distance is None:
+            collocation_distance = attributes.get(
+                "collocation_distance", getattr(self, "default_collocation_distance")
+            )
         if collocation_distance < 0:
             raise UserWarning("Input depth 'collocation_distance' must be >0.")
 
