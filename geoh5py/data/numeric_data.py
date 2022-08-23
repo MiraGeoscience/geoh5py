@@ -86,6 +86,3 @@ class NumericData(Data, ABC):
                     f"Array of shape{values.shape} provided.)"
                 )
         return values
-
-    def __call__(self):
-        return self.values
