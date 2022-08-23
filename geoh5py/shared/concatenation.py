@@ -842,15 +842,11 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         :param group_name: Property group name
         :collocation_distance: Threshold on the comparison between existing depth values.
         """
-        if name in self.get_data_list():
-            raise UserWarning(
-                f"Data '{name}' already present on the object. "
-                "Consider changing the values directly."
-            )
-
         if from_to is not None:
             if isinstance(from_to, list):
-                from_to = np.vtack(from_to)
+                from_to = np.vstack(from_to)
+                if from_to.shape[0] == 2:
+                    from_to = from_to.T
 
             assert from_to.shape[0] >= len(values), (
                 f"Mismatch between input 'from_to' shape{from_to.shape} "

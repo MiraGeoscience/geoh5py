@@ -66,6 +66,18 @@ def test_create_drillhole_data(tmp_path):
 
         assert "Input depth 'collocation_distance' must be >0." in str(error)
 
+        # Add both set of log data with 0.5 m tolerance
+        with pytest.raises(AttributeError) as error:
+            well.add_data(
+                {
+                    "my_log_values/": {
+                        "values": np.random.randn(50),
+                    }
+                },
+            )
+
+        assert "Input data dictionary must contain" in str(error)
+
         well.add_data(
             {
                 "my_log_values/": {
@@ -80,6 +92,18 @@ def test_create_drillhole_data(tmp_path):
         )
 
         assert len(well.get_data("my_log_values/")) == 1
+
+        with pytest.raises(UserWarning) as error:
+            well.add_data(
+                {
+                    "my_log_values/": {
+                        "depth": np.arange(0, 50.0),
+                        "values": np.random.randn(50),
+                    },
+                }
+            )
+
+        assert "already present on the drillhole" in str(error)
 
         well_b = well.copy()
         well_b.name = "Number 2"
@@ -96,11 +120,11 @@ def test_create_drillhole_data(tmp_path):
             {
                 "interval_values": {
                     "values": np.random.randn(from_to_a.shape[0]),
-                    "from-to": from_to_a,
+                    "from-to": from_to_a.tolist(),
                 },
                 "int_interval_list": {
                     "values": np.asarray([1, 2, 3]),
-                    "from-to": from_to_b,
+                    "from-to": from_to_b.T.tolist(),
                     "value_map": {1: "Unit_A", 2: "Unit_B", 3: "Unit_C"},
                     "type": "referenced",
                 },
@@ -204,9 +228,24 @@ def test_create_drillhole_data(tmp_path):
         with Workspace(new_path, version=2.0) as new_workspace:
             new_group = dh_group.copy(parent=new_workspace)
             well = new_group.children[0]
+
+            with pytest.raises(ValueError) as error:
+                well.add_data(
+                    {
+                        "new_data": {"values": np.random.randn(49).astype(np.float32)},
+                    },
+                    property_group=well.property_groups[0].name,
+                )
+
+            assert "Input values for 'new_data' with shape(49)" in str(error)
+
             well.add_data(
                 {
                     "new_data": {"values": np.random.randn(50).astype(np.float32)},
                 },
                 property_group=well.property_groups[0].name,
             )
+
+        assert (
+            len(well.property_groups[0].properties) == 5
+        ), "Issue adding data to interval."
