@@ -26,11 +26,9 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_drillhole_data(tmp_path):
-    h5file_path = tmp_path / r"testCurve.geoh5"
-    new_path = tmp_path / r"testCurve2.geoh5"
-    well_name = "bullseye/"
-    n_data = 10
+def test_concatenator(tmp_path):
+
+    h5file_path = tmp_path / r"test_Concatenator.geoh5"
 
     with Workspace(h5file_path, version=2.0) as workspace:
         # Create a workspace
@@ -39,6 +37,47 @@ def test_create_drillhole_data(tmp_path):
         assert (
             dh_group.data == {}
         ), "DrillholeGroup should not have data on instantiation."
+
+        with pytest.raises(ValueError) as error:
+            dh_group.concatenated_attributes = "123"
+
+        assert "Input 'concatenated_attributes' must be a dictionary or None" in str(
+            error
+        )
+
+        with pytest.raises(AttributeError) as error:
+            dh_group.concatenated_object_ids = "123"
+
+        assert "Input value for 'concatenated_object_ids' must be of type list." in str(
+            error
+        )
+
+        with pytest.raises(ValueError) as error:
+            dh_group.data = "123"
+
+        assert "Input 'data' must be a dictionary" in str(error)
+
+        with pytest.raises(ValueError) as error:
+            dh_group.index = "123"
+
+        assert "Input 'index' must be a dictionary" in str(error)
+
+        assert dh_group.fetch_concatenated_objects() == {}
+
+        dh_group_copy = dh_group.copy()
+
+        compare_entities(dh_group_copy, dh_group, ignore=["_uid"])
+
+
+def test_create_drillhole_data(tmp_path):
+    h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
+    new_path = tmp_path / r"test_drillholeGroup2.geoh5"
+    well_name = "bullseye/"
+    n_data = 10
+
+    with Workspace(h5file_path, version=2.0) as workspace:
+        # Create a workspace
+        dh_group = DrillholeGroup.create(workspace)
 
         well = Drillhole.create(
             workspace,
@@ -53,12 +92,13 @@ def test_create_drillhole_data(tmp_path):
         )
 
         # Add both set of log data with 0.5 m tolerance
+        values = np.random.randn(50)
         with pytest.raises(UserWarning) as error:
             well.add_data(
                 {
                     "my_log_values/": {
                         "depth": np.arange(0, 50.0),
-                        "values": np.random.randn(50),
+                        "values": values,
                     }
                 },
                 collocation_distance=-1.0,
@@ -186,6 +226,7 @@ def test_create_drillhole_data(tmp_path):
                 "_property_groups",
             ],
         )
+
         compare_entities(
             data_objects[0],
             well.get_data("interval_values")[0],

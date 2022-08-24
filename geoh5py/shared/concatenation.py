@@ -136,10 +136,11 @@ class Concatenator(Group):
         return self._concatenated_object_ids
 
     @concatenated_object_ids.setter
-    def concatenated_object_ids(self, object_ids: list[uuid.UUID] | np.ndarray | None):
+    def concatenated_object_ids(self, object_ids: list[bytes] | None):
         if isinstance(object_ids, np.ndarray):
             object_ids = object_ids.tolist()
-        elif not isinstance(object_ids, (list, type(None))):
+
+        if not isinstance(object_ids, (list, type(None))):
             raise AttributeError(
                 "Input value for 'concatenated_object_ids' must be of type list."
             )
