@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING
 import h5py
 import numpy as np
 
-from ..data import CommentsData, Data, DataType, FilenameData, IntegerData
+from ..data import CommentsData, Data, DataType, FilenameData, IntegerData, TextData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import Entity, EntityType, fetch_h5_handle
@@ -580,6 +580,9 @@ class H5Writer:
                 out_values = deepcopy(values)
                 if isinstance(entity, IntegerData):
                     out_values = np.round(out_values).astype("int32")
+
+                elif isinstance(entity, TextData):
+                    out_values = [val.encode() for val in values]
 
                 if getattr(entity, "ndv", None) is not None:
                     out_values[np.isnan(out_values)] = entity.ndv
