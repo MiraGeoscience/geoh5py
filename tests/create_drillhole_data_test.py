@@ -291,9 +291,9 @@ def test_insert_drillhole_data(tmp_path):
                 "match_depth": {
                     "depth": new_depths,
                     "values": np.random.randint(1, high=8, size=2),
-                    "collocation_distance": 1e-6,
-                }
-            }
+                },
+            },
+            collocation_distance=1e-6,
         )
 
         assert (

@@ -56,6 +56,9 @@ def test_create_curve_data(tmp_path):
             }
         )
 
+        assert np.all(
+            data_objects[0]() == data_objects[0].values
+        ), "Error using the data.call()."
         # Re-open the workspace and read data back in
         ws2 = Workspace(h5file_path)
 

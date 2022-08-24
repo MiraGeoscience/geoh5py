@@ -210,9 +210,8 @@ class BaseEMSurvey(ObjectBase):
         )
         metadata["EM Dataset"][new_entity.type] = new_entity.uid
         for associate in ["transmitters", "receivers", "base_stations"]:
-            if (
-                getattr(self, associate, None) is not None
-                and getattr(self, associate) != self
+            if getattr(self, associate, None) is not None and not isinstance(
+                getattr(self, associate), type(self)
             ):
                 complement = parent.workspace.copy_to_parent(
                     getattr(self, associate),

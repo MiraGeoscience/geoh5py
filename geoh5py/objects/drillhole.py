@@ -322,7 +322,9 @@ class Drillhole(Points):
                 f"Input '_depth' property must be of type{FloatData} or None"
             )
 
-    def add_data(self, data: dict, property_group: str = None) -> Data | list[Data]:
+    def add_data(
+        self, data: dict, property_group: str = None, collocation_distance=None
+    ) -> Data | list[Data]:
         """
         Create :obj:`~geoh5py.data.data.Data` specific to the drillhole object
         from dictionary of name and arguments. A keyword 'depth' or 'from-to'
@@ -369,7 +371,7 @@ class Drillhole(Points):
                 )
 
             attributes, new_property_group = self.validate_data(
-                attributes, property_group
+                attributes, property_group, collocation_distance=collocation_distance
             )
             entity_type = self.validate_data_type(attributes)
             kwargs = {
@@ -582,16 +584,20 @@ class Drillhole(Points):
 
         return values
 
-    def validate_data(self, attributes: dict, property_group=None) -> tuple:
+    def validate_data(
+        self, attributes: dict, property_group=None, collocation_distance=None
+    ) -> tuple:
         """
         Validate input drillhole data attributes.
 
         :param attributes: Dictionary of data attributes.
         :param property_group: Input property group to validate against.
         """
-        collocation_distance = attributes.get(
-            "collocation_distance", self.default_collocation_distance
-        )
+        if collocation_distance is None:
+            collocation_distance = attributes.get(
+                "collocation_distance", self.default_collocation_distance
+            )
+
         if collocation_distance < 0:
             raise UserWarning("Input depth 'collocation_distance' must be >0.")
 

@@ -136,10 +136,11 @@ class Concatenator(Group):
         return self._concatenated_object_ids
 
     @concatenated_object_ids.setter
-    def concatenated_object_ids(self, object_ids: list[uuid.UUID] | np.ndarray | None):
+    def concatenated_object_ids(self, object_ids: list[bytes] | None):
         if isinstance(object_ids, np.ndarray):
             object_ids = object_ids.tolist()
-        elif not isinstance(object_ids, (list, type(None))):
+
+        if not isinstance(object_ids, (list, type(None))):
             raise AttributeError(
                 "Input value for 'concatenated_object_ids' must be of type list."
             )
@@ -775,16 +776,19 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                 obj_list.append(data[1])
         return obj_list
 
-    def validate_data(self, attributes: dict, property_group=None) -> tuple:
+    def validate_data(
+        self, attributes: dict, property_group=None, collocation_distance=None
+    ) -> tuple:
         """
         Validate input drillhole data attributes.
 
         :param attributes: Dictionary of data attributes.
         :param property_group: Input property group to validate against.
         """
-        collocation_distance = attributes.get(
-            "collocation_distance", getattr(self, "default_collocation_distance")
-        )
+        if collocation_distance is None:
+            collocation_distance = attributes.get(
+                "collocation_distance", getattr(self, "default_collocation_distance")
+            )
         if collocation_distance < 0:
             raise UserWarning("Input depth 'collocation_distance' must be >0.")
 
@@ -839,15 +843,11 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         :param group_name: Property group name
         :collocation_distance: Threshold on the comparison between existing depth values.
         """
-        if name in self.get_data_list():
-            raise UserWarning(
-                f"Data '{name}' already present on the object. "
-                "Consider changing the values directly."
-            )
-
         if from_to is not None:
             if isinstance(from_to, list):
-                from_to = np.vtack(from_to)
+                from_to = np.vstack(from_to)
+                if from_to.shape[0] == 2:
+                    from_to = from_to.T
 
             assert from_to.shape[0] >= len(values), (
                 f"Mismatch between input 'from_to' shape{from_to.shape} "

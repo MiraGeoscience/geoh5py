@@ -347,13 +347,9 @@ class Workspace(AbstractContextManager):
                 and inspect.ismethod(member.primitive_type)
                 and data_type.primitive_type is member.primitive_type()
             ):
-
-                if member is CommentsData and not np.any(
-                    [
-                        value == "UserComments"
-                        for value in entity_kwargs.values()
-                        if isinstance(value, str)
-                    ]
+                if member is CommentsData and not any(
+                    isinstance(val, str) and val == "UserComments"
+                    for val in entity_kwargs.values()
                 ):
                     continue
 
