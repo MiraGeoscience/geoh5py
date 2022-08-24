@@ -107,7 +107,7 @@ class H5Writer:
             uid_str = as_str_if_uuid(uid)
             parent_handle = H5Writer.fetch_handle(h5file, parent)
 
-            if parent_handle is None:
+            if parent_handle is None or parent_handle.get(ref_type) is None:
                 return
 
             if uid_str in parent_handle[ref_type]:
@@ -269,12 +269,13 @@ class H5Writer:
                 if isinstance(values, np.ndarray) and values.dtype == np.float64:
                     values = values.astype(np.float32)
 
-                attr_handle.create_dataset(
-                    name,
-                    data=values,
-                    compression="gzip",
-                    compression_opts=9,
-                )
+                if len(values) > 0:
+                    attr_handle.create_dataset(
+                        name,
+                        data=values,
+                        compression="gzip",
+                        compression_opts=9,
+                    )
 
     @classmethod
     def update_field(

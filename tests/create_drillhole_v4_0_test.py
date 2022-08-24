@@ -293,13 +293,13 @@ def test_create_drillhole_data(tmp_path):
 
 
 def test_remove_drillhole_data(tmp_path):
-    h5file_path = tmp_path / r"testCurve.geoh5"
-    well_name = "bullseye/"
+    h5file_path = tmp_path / r"test_remove_concatenated.geoh5"
+    well_name = "well"
     n_data = 10
 
     with Workspace(h5file_path, version=2.0) as workspace:
         # Create a workspace
-        dh_group = DrillholeGroup.create(workspace)
+        dh_group = DrillholeGroup.create(workspace, name="DH_group")
 
         assert (
             dh_group.data == {}
@@ -330,10 +330,25 @@ def test_remove_drillhole_data(tmp_path):
                 },
             }
         )
+        well_b = well.copy()
+        well_b.name = "Number 2"
+        well_b.collar = np.r_[10.0, 10.0, 10]
+
+        well_c = well.copy()
+        well_c.name = "Number 3"
+        well_c.collar = np.r_[10.0, -10.0, 10]
+
+    with Workspace(h5file_path, version=2.0) as workspace:
+        dh_group = workspace.get_entity("DH_group")[0]
+
+        well = workspace.get_entity(well_name)[0]
+        well_b = workspace.get_entity("Number 2")[0]
+        data = well.get_data("my_log_values/")[0]
+        print(data.uid)
+        workspace.remove_entity(data)
+        workspace.remove_entity(well_b)
 
     with Workspace(h5file_path, version=2.0) as workspace:
         well = workspace.get_entity(well_name)[0]
-        data = well.get_data("log_wt_tolerance")[0]
-        workspace.remove_entity(data)
-
-        workspace.remove_entity(well)
+        assert "my_log_values/" not in well.get_entity_list()
+        assert workspace.get_entity("Number 2")[0] is None
