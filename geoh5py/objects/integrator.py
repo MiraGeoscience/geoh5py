@@ -15,43 +15,46 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from __future__ import annotations
-
 import uuid
 
-from .group import Group, GroupType
+from .object_base import ObjectType
+from .points import Points
+from .surface import Surface
 
 
-class DrillholeGroup(Group):
-    """The type for the group containing drillholes."""
+class IntegratorPoints(Points):
+    """
+    INTEGRATOR Points object.
+    Sub-class of :obj:`geoh5py.objects.points.Points`.
+    """
 
-    __TYPE_UID = uuid.UUID(
-        fields=(0x825424FB, 0xC2C6, 0x4FEA, 0x9F, 0x2B, 0x6CD00023D393)
-    )
+    __TYPE_UID = uuid.UUID("{6832ACF3-78AA-44D3-8506-9574A3510C44}")
 
-    def __init__(self, group_type: GroupType, name="Drillholes Group", **kwargs):
+    def __init__(self, object_type: ObjectType, **kwargs):
 
-        assert group_type is not None
-        super().__init__(group_type, name=name, **kwargs)
+        super().__init__(object_type, **kwargs)
 
-        if self.entity_type.name == "Entity":
-            self.entity_type.name = name
-
-        group_type.workspace._register_group(self)
+        self.entity_type.name = "Geoscience INTEGRATOR Points"
+        self.entity_type.description = "Geoscience INTEGRATOR Points"
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
 
 
-class IntegratorDrillholeGroup(DrillholeGroup):
-    """The type for the group containing drillholes."""
+class NeighbourhoodSurface(Surface):
+    """
+    Points object made up of vertices.
+    """
 
-    __TYPE_UID = uuid.UUID("{952829b6-76a2-4d0b-b908-7f8d2482dc0d}")
+    __TYPE_UID = uuid.UUID("{88087FB8-76AE-445B-9CDF-68DBCE530404}")
 
-    def __init__(self, group_type: GroupType, **kwargs):
+    def __init__(self, object_type: ObjectType, **kwargs):
 
-        super().__init__(group_type, **kwargs)
+        super().__init__(object_type, **kwargs)
+
+        self.entity_type.name = "Neighbourhood Surface"
+        self.entity_type.description = "Neighbourhood Surface"
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

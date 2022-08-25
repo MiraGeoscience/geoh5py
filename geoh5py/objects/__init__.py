@@ -23,6 +23,7 @@ from .drape_model import DrapeModel
 from .drillhole import Drillhole
 from .geo_image import GeoImage
 from .grid2d import Grid2D
+from .integrator import IntegratorPoints, NeighbourhoodSurface
 from .label import Label
 from .notype_object import NoTypeObject
 from .object_base import ObjectBase

@@ -31,8 +31,8 @@ class FloatData(NumericData):
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.FLOAT
 
-    @classmethod
-    def ndv(cls) -> float:
+    @property
+    def ndv(self) -> float:
         """
         No-Data-Value
         """

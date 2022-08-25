@@ -15,22 +15,25 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=unused-import
-# flake8: noqa
+import uuid
 
-from .blob_data import BlobData
-from .data import Data
-from .data_association_enum import DataAssociationEnum
-from .data_type import DataType
-from .data_unit import DataUnit
-from .datetime_data import DatetimeData
-from .filename_data import FilenameData
-from .float_data import FloatData
-from .geometric_data_constants import GeometricDataConstants
-from .integer_data import IntegerData
-from .numeric_data import NumericData
-from .primitive_type_enum import PrimitiveTypeEnum
-from .reference_value_map import ReferenceValueMap
-from .referenced_data import ReferencedData
-from .text_data import CommentsData, MultiTextData, TextData
-from .unknown_data import UnknownData
+from .group import Group, GroupType
+
+
+class AirborneGeophysics(Group):
+    """The type for the basic Container group."""
+
+    __TYPE_UID = uuid.UUID("{812f3b2a-fdae-4752-8391-3b657953a983}")
+
+    _name = "Airborne Geophysics"
+    _description = "Airborne Geophysics"
+
+    def __init__(self, group_type: GroupType, **kwargs):
+        assert group_type is not None
+        super().__init__(group_type, **kwargs)
+
+        group_type.workspace._register_group(self)
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID

@@ -56,9 +56,6 @@ class TextData(Data):
 
         self.workspace.update_attribute(self, "values")
 
-    def __call__(self):
-        return self.values
-
 
 class CommentsData(Data):
     """
@@ -111,5 +108,34 @@ class CommentsData(Data):
         self._values = values
         self.workspace.update_attribute(self, "values")
 
-    def __call__(self):
-        return self.values
+
+class MultiTextData(Data):
+
+    _values: np.ndarray | str | None
+
+    @classmethod
+    def primitive_type(cls) -> PrimitiveTypeEnum:
+        return PrimitiveTypeEnum.MULTI_TEXT
+
+    @property
+    def values(self) -> np.ndarray | str | None:
+        """
+        :obj:`str` Text value.
+        """
+        if (getattr(self, "_values", None) is None) and self.on_file:
+            values = self.workspace.fetch_values(self)
+            if isinstance(values, (np.ndarray, str, type(None))):
+                self._values = values
+
+        return self._values
+
+    @values.setter
+    def values(self, values: np.ndarray | str | None):
+        self._values = values
+
+        if not isinstance(values, (np.ndarray, str, type(None))):
+            raise ValueError(
+                f"Input 'values' for {self} must be of type {np.ndarray}  str or None."
+            )
+
+        self.workspace.update_attribute(self, "values")

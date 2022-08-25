@@ -41,14 +41,27 @@ import numpy as np
 
 from .. import data, groups, objects
 from ..data import CommentsData, Data, DataType
-from ..groups import CustomGroup, DrillholeGroup, Group, PropertyGroup, RootGroup
+from ..groups import (
+    CustomGroup,
+    DrillholeGroup,
+    Group,
+    IntegratorDrillholeGroup,
+    PropertyGroup,
+    RootGroup,
+)
 from ..io import H5Reader, H5Writer
 from ..objects import Drillhole, ObjectBase
 from ..shared import weakref_utils
-from ..shared.concatenation import Concatenated, Concatenator
+from ..shared.concatenation import (
+    Concatenated,
+    ConcatenatedData,
+    ConcatenatedDrillhole,
+    ConcatenatedObject,
+    Concatenator,
+)
 from ..shared.entity import Entity
 from ..shared.exceptions import Geoh5FileClosedError
-from ..shared.utils import as_str_if_utf8_bytes, str2uuid
+from ..shared.utils import as_str_if_utf8_bytes, get_attributes, str2uuid
 
 if TYPE_CHECKING:
     from ..groups import group
@@ -171,7 +184,7 @@ class Workspace(AbstractContextManager):
             self._io_call(H5Writer.save_entity, self.root, add_children=True, mode="r+")
 
         self.geoh5.close()
-
+        self._data = {}
         if self.repack and not isinstance(self.h5file, io.BytesIO):
             temp_file = os.path.join(
                 tempfile.gettempdir(), os.path.basename(self.h5file)
@@ -216,24 +229,15 @@ class Workspace(AbstractContextManager):
 
         :return: The Entity registered to the workspace.
         """
-
-        entity_kwargs: dict = {"entity": {"uid": None, "parent": None}}
-        for key in entity.__dict__:
-            if key not in ["_uid", "_entity_type", "_on_file"] + list(omit_list):
-                if key[0] == "_":
-                    key = key[1:]
-
-                entity_kwargs["entity"][key] = getattr(entity, key)
-
-        entity_type_kwargs: dict = {"entity_type": {}}
-        for key in entity.entity_type.__dict__:
-            if key not in ["_workspace", "_on_file"] + list(omit_list):
-                if key[0] == "_":
-                    key = key[1:]
-
-                entity_type_kwargs["entity_type"][key] = getattr(
-                    entity.entity_type, key
-                )
+        entity_kwargs = get_attributes(
+            entity,
+            omit_list=["_uid", "_entity_type", "_on_file"] + list(omit_list),
+            attributes={"uid": None, "parent": None},
+        )
+        entity_type_kwargs = get_attributes(
+            entity.entity_type,
+            omit_list=["_workspace", "_on_file"] + list(omit_list),
+        )
 
         if not isinstance(parent, (ObjectBase, Group, Workspace)):
             raise ValueError(
@@ -245,28 +249,51 @@ class Workspace(AbstractContextManager):
 
         # Assign the same uid if possible
         if parent.workspace.get_entity(entity.uid)[0] is None:
-            entity_kwargs["entity"]["uid"] = entity.uid
+            entity_kwargs["uid"] = entity.uid
 
-        entity_kwargs["entity"]["parent"] = parent
+        entity_kwargs["parent"] = parent
 
         entity_type = type(entity)
         if isinstance(entity, Data):
             entity_type = Data
 
-        if not copy_children and "property_groups" in entity_kwargs["entity"]:
-            del entity_kwargs["entity"]["property_groups"]
+        prop_groups = []
+        if "property_groups" in entity_kwargs:
+            if copy_children:
+                prop_groups = entity_kwargs["property_groups"]
+
+            del entity_kwargs["property_groups"]
 
         new_object = parent.workspace.create_entity(
-            entity_type, **{**entity_kwargs, **entity_type_kwargs}
+            entity_type, **{"entity": entity_kwargs, "entity_type": entity_type_kwargs}
         )
 
         if copy_children:
+            children_map = {}
             for child in entity.children:
-                new_object.add_children(
-                    [self.copy_to_parent(child, new_object, copy_children=True)]
-                )
+                new_child = self.copy_to_parent(child, new_object, copy_children=True)
+                new_object.add_children([new_child])
+                children_map[child.uid] = new_child.uid
+
+            if prop_groups:
+                self.copy_property_groups(new_object, prop_groups, children_map)
+                self.workspace.update_attribute(new_object, "property_groups")
 
         return new_object
+
+    @classmethod
+    def copy_property_groups(
+        cls, entity: ObjectBase, propery_groups: list[PropertyGroup], data_map: dict
+    ):
+        for prop_group in propery_groups:
+            new_group = entity.find_or_create_property_group(
+                **{
+                    "association": prop_group.association,
+                    "name": prop_group.name,
+                    "property_group_type": prop_group.property_group_type,
+                }
+            )
+            new_group.properties = [data_map[uid] for uid in prop_group.properties]
 
     def create_from_concatenation(self, attributes):
         if "Object Type ID" in attributes:
@@ -283,8 +310,9 @@ class Workspace(AbstractContextManager):
             save_on_creation=False,
             **{"entity": attributes, "entity_type": type_attr},
         )
-        recovered_entity.on_file = True
-        recovered_entity.entity_type.on_file = True
+        if recovered_entity is not None:
+            recovered_entity.on_file = True
+            recovered_entity.entity_type.on_file = True
 
         return recovered_entity
 
@@ -319,19 +347,18 @@ class Workspace(AbstractContextManager):
                 and inspect.ismethod(member.primitive_type)
                 and data_type.primitive_type is member.primitive_type()
             ):
-                if (
-                    member is CommentsData
-                    and "UserComments" not in entity_kwargs.values()
+                if member is CommentsData and not any(
+                    isinstance(val, str) and val == "UserComments"
+                    for val in entity_kwargs.values()
                 ):
                     continue
 
                 if self.version > 1.0 and isinstance(
-                    entity_kwargs["parent"], Concatenated
+                    entity_kwargs["parent"], ConcatenatedObject
                 ):
-                    member = type(name + "Concatenated", (Concatenated, member), {})
+                    member = type(name + "Concatenated", (ConcatenatedData, member), {})
 
                 created_entity = member(data_type, **entity_kwargs)
-
                 return created_entity
 
         return None
@@ -412,12 +439,15 @@ class Workspace(AbstractContextManager):
                 and member.default_type_uid() == entity_type_uid
             ):
                 if self.version > 1.0:
-                    if member is DrillholeGroup:
+                    if member in (DrillholeGroup, IntegratorDrillholeGroup):
                         member = type(name + "Concatenator", (Concatenator, member), {})
                     elif member is Drillhole and isinstance(
-                        entity_kwargs.get("parent"), DrillholeGroup
+                        entity_kwargs.get("parent"),
+                        (DrillholeGroup, IntegratorDrillholeGroup),
                     ):
-                        member = type(name + "Concatenated", (Concatenated, member), {})
+                        member = type(
+                            name + "Concatenated", (ConcatenatedDrillhole, member), {}
+                        )
 
                 entity_type = member.find_or_create_type(self, **entity_type_kwargs)
 
@@ -595,7 +625,7 @@ class Workspace(AbstractContextManager):
 
         :return list: List of children entities.
         """
-        if entity is None or isinstance(entity, Concatenated):
+        if entity is None or isinstance(entity, ConcatenatedData):
             return []
 
         if isinstance(entity, Group):
@@ -648,7 +678,7 @@ class Workspace(AbstractContextManager):
 
     def fetch_concatenated_attributes(self, entity: Group | ObjectBase) -> dict | None:
         """
-        Fetch attributes of Concatenated entities.
+        Fetch attributes of ConcatenatedData entities.
 
         :param entity: Concatenator group.
 
@@ -674,7 +704,7 @@ class Workspace(AbstractContextManager):
         self, entity: Group | ObjectBase, label: str
     ) -> list | None:
         """
-        Fetch list of data or indices of Concatenated entities.
+        Fetch list of data or indices of ConcatenatedData entities.
 
         :param entity: Concatenator group.
         :param label: Label name of the h5py.Group
@@ -701,7 +731,7 @@ class Workspace(AbstractContextManager):
         self, entity: Group | ObjectBase, label: str
     ) -> tuple | None:
         """
-        Fetch data under the Concatenated Data group of an entity.
+        Fetch data under the ConcatenatedData Data group of an entity.
 
         :param entity: Concatenator group.
         :param label: Name of the target data.
@@ -772,7 +802,7 @@ class Workspace(AbstractContextManager):
 
         :return: Array of values.
         """
-        if isinstance(entity, Concatenated):
+        if isinstance(entity, ConcatenatedData):
             return entity.concatenator.fetch_values(entity, entity.name)
 
         return self._io_call(H5Reader.fetch_values, entity.uid)
@@ -1096,11 +1126,20 @@ class Workspace(AbstractContextManager):
             entity.concatenator.add_save_concatenated(entity)
 
             if hasattr(entity, "entity_type"):
-                self._io_call(H5Writer.write_entity_type, entity.entity_type, mode="r+")
+                self.save_entity_type(entity.entity_type)
+
         else:
             self._io_call(
                 H5Writer.save_entity, entity, add_children=add_children, mode="r+"
             )
+
+    def save_entity_type(self, entity_type: EntityType) -> None:
+        """
+        Save or update an entity_type to geoh5.
+
+        :param entity_type: Entity to be written to geoh5.
+        """
+        self._io_call(H5Writer.write_entity_type, entity_type, mode="r+")
 
     @property
     def types(self) -> list[EntityType]:

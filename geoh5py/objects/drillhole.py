@@ -15,7 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=R0902
+# pylint: disable=R0902, R0904
 
 from __future__ import annotations
 
@@ -272,16 +272,10 @@ class Drillhole(Points):
         return self._trace_depth
 
     @property
-    def _from(self):
-        if self.workspace.version >= 2.0:
-            obj_list = []
-            for name in self.parent.index:
-                if "FROM" in name:
-                    obj_list += self.workspace.get_entity(
-                        uuid.UUID(self.parent.index[name][0][3].decode())
-                    )
-            return obj_list
-
+    def from_(self):
+        """
+        Depth data corresponding to the tops of the interval values.
+        """
         data_obj = self.get_data("FROM")
         if data_obj:
             return data_obj[0]
@@ -289,16 +283,10 @@ class Drillhole(Points):
         return None
 
     @property
-    def _to(self):
-        if self.workspace.version >= 2.0:
-            obj_list = []
-            for name in self.parent.index:
-                if "TO" in name:
-                    obj_list += self.workspace.get_entity(
-                        uuid.UUID(self.parent.index[name][0][3].decode())
-                    )
-            return obj_list
-
+    def to_(self):
+        """
+        Depth data corresponding to the bottoms of the interval values.
+        """
         data_obj = self.get_data("TO")
         if data_obj:
             return data_obj[0]
@@ -334,7 +322,9 @@ class Drillhole(Points):
                 f"Input '_depth' property must be of type{FloatData} or None"
             )
 
-    def add_data(self, data: dict, property_group: str = None) -> Data | list[Data]:
+    def add_data(
+        self, data: dict, property_group: str = None, collocation_distance=None
+    ) -> Data | list[Data]:
         """
         Create :obj:`~geoh5py.data.data.Data` specific to the drillhole object
         from dictionary of name and arguments. A keyword 'depth' or 'from-to'
@@ -355,6 +345,8 @@ class Drillhole(Points):
                     "depth": numpy.ndarray,
                     },
             }
+
+        :param property_group: Name of the property group to add the data into.
 
         :return: List of new Data objects.
         """
@@ -379,7 +371,7 @@ class Drillhole(Points):
                 )
 
             attributes, new_property_group = self.validate_data(
-                attributes, property_group
+                attributes, property_group, collocation_distance=collocation_distance
             )
             entity_type = self.validate_data_type(attributes)
             kwargs = {
@@ -406,10 +398,7 @@ class Drillhole(Points):
             data_objects.append(data_object)
 
         # Check the depths and re-sort data if necessary
-        if self.workspace.version >= 2.0:
-            self.save(add_children=False)
-        else:
-            self.sort_depths()
+        self.sort_depths()
 
         if len(data_objects) == 1:
             return data_objects[0]
@@ -461,70 +450,6 @@ class Drillhole(Points):
 
         return indices.astype("uint32")
 
-    def validate_depth_data(self, from_to, values, collocation_distance=1e-4) -> str:
-        """
-        Compare new and current depth values and re-use the property group if possible.
-        Otherwise a new property group is added.
-
-        :param from_to: Array of from-to values.
-        :param values: Data values to be added on the from-to intervals.
-        :collocation_distance: Threshold on the comparison between existing depth values.
-        """
-        if isinstance(from_to, list):
-            from_to = np.vtack(from_to)
-
-        assert from_to.shape[0] >= len(values), (
-            f"Mismatch between input 'from_to' shape{from_to.shape} "
-            + f"and 'values' shape{values.shape}"
-        )
-        assert from_to.shape[1] == 2, "The `from-to` values must have shape(*, 2)"
-
-        property_group = None
-        incrementer = ""
-        ind = 0
-        for _from, _to in zip(self._from, self._to):
-            ind = len(self.parent.property_group_ids)
-            incrementer = f"({ind+1})"
-            if (
-                _from in self.children
-                and _from.values.shape[0] == from_to.shape[0]
-                and np.allclose(
-                    np.c_[_from.values, _to.values], from_to, atol=collocation_distance
-                )
-            ):
-                property_group = [
-                    prop_group
-                    for prop_group in _from.parent.property_groups
-                    if _from.uid in prop_group.properties
-                ][0]
-
-        if property_group is None:
-            from_to = self.add_data(
-                {
-                    "FROM"
-                    + incrementer: {
-                        "association": "DEPTH",
-                        "values": from_to[:, 0],
-                        "entity_type": {"primitive_type": "FLOAT"},
-                        "parent": self,
-                        "allow_move": False,
-                        "allow_delete": False,
-                    },
-                    "TO"
-                    + incrementer: {
-                        "association": "DEPTH",
-                        "values": from_to[:, 1],
-                        "entity_type": {"primitive_type": "FLOAT"},
-                        "parent": self,
-                        "allow_move": False,
-                        "allow_delete": False,
-                    },
-                }
-            )
-            property_group = self.add_data_to_group(from_to, f"Interval_{ind+1}")
-
-        return property_group.name
-
     def validate_interval_data(
         self,
         from_to: np.ndarray | list,
@@ -547,7 +472,7 @@ class Drillhole(Points):
         if from_to.ndim != 2 or from_to.shape[1] != 2:
             raise ValueError("The `from-to` values must have shape(*, 2).")
 
-        if (self._from is None) and (self._to is None):
+        if (self.from_ is None) and (self.to_ is None):
             uni_depth, inv_map = np.unique(from_to, return_inverse=True)
             self.cells = self.add_vertices(self.desurvey(uni_depth))[inv_map].reshape(
                 (-1, 2)
@@ -572,8 +497,8 @@ class Drillhole(Points):
                 },
                 entity_type={"primitive_type": "FLOAT"},
             )
-        elif self.cells is not None:
-            out_vec = np.c_[self._from.values, self._to.values]
+        elif self.cells is not None and self.from_ is not None and self.to_ is not None:
+            out_vec = np.c_[self.from_.values, self.to_.values]
             dist_match = []
             for i, elem in enumerate(from_to):
                 ind = np.where(
@@ -606,11 +531,11 @@ class Drillhole(Points):
                 .reshape((-1, 2))
                 .astype("uint32"),
             ]
-            self._from.values = merge_arrays(
-                self._from.values, from_to[:, 0], mapping=cell_map
+            self.from_.values = merge_arrays(
+                self.from_.values, from_to[:, 0], mapping=cell_map
             )
-            self._to.values = merge_arrays(
-                self._to.values, from_to[:, 1], mapping=cell_map
+            self.to_.values = merge_arrays(
+                self.to_.values, from_to[:, 1], mapping=cell_map
             )
 
         return values
@@ -659,16 +584,20 @@ class Drillhole(Points):
 
         return values
 
-    def validate_data(self, attributes: dict, property_group=None) -> tuple:
+    def validate_data(
+        self, attributes: dict, property_group=None, collocation_distance=None
+    ) -> tuple:
         """
         Validate input drillhole data attributes.
 
         :param attributes: Dictionary of data attributes.
         :param property_group: Input property group to validate against.
         """
-        collocation_distance = attributes.get(
-            "collocation_distance", self.default_collocation_distance
-        )
+        if collocation_distance is None:
+            collocation_distance = attributes.get(
+                "collocation_distance", self.default_collocation_distance
+            )
+
         if collocation_distance < 0:
             raise UserWarning("Input depth 'collocation_distance' must be >0.")
 
@@ -684,36 +613,21 @@ class Drillhole(Points):
             )
 
         if "depth" in attributes.keys():
-            if self.workspace.version == 1.0:
-                attributes["association"] = "VERTEX"
-                attributes["values"] = self.validate_log_data(
-                    attributes["depth"],
-                    attributes["values"],
-                    collocation_distance=collocation_distance,
-                )
-
-            else:
-                attributes["from-to"] = np.c_[
-                    attributes["depth"], attributes["depth"] + collocation_distance
-                ]
-
+            attributes["association"] = "VERTEX"
+            attributes["values"] = self.validate_log_data(
+                attributes["depth"],
+                attributes["values"],
+                collocation_distance=collocation_distance,
+            )
             del attributes["depth"]
 
         if "from-to" in attributes.keys():
-            if self.workspace.version >= 2.0:
-                attributes["association"] = "DEPTH"
-                property_group = self.validate_depth_data(
-                    attributes["from-to"],
-                    attributes["values"],
-                    collocation_distance=collocation_distance,
-                )
-            else:
-                attributes["association"] = "CELL"
-                attributes["values"] = self.validate_interval_data(
-                    attributes["from-to"],
-                    attributes["values"],
-                    collocation_distance=collocation_distance,
-                )
+            attributes["association"] = "CELL"
+            attributes["values"] = self.validate_interval_data(
+                attributes["from-to"],
+                attributes["values"],
+                collocation_distance=collocation_distance,
+            )
             del attributes["from-to"]
 
         return attributes, property_group

@@ -29,6 +29,7 @@ import numpy as np
 if TYPE_CHECKING:
     from ..workspace import Workspace
     from .entity import Entity
+    from .entity_type import EntityType
 
 
 @contextmanager
@@ -143,13 +144,23 @@ def compare_entities(
                 getattr(object_a, attr[1:]), getattr(object_b, attr[1:]), ignore=ignore
             )
         else:
+
             if isinstance(getattr(object_a, attr[1:]), np.ndarray):
-                np.testing.assert_array_almost_equal(
-                    getattr(object_a, attr[1:]).tolist(),
-                    getattr(object_b, attr[1:]).tolist(),
-                    decimal=decimal,
-                    err_msg=f"Error comparing attribute '{attr}'.",
-                )
+                attr_a = getattr(object_a, attr[1:]).tolist()
+                if len(attr_a) > 0 and isinstance(attr_a[0], str):
+                    assert all(
+                        a == b
+                        for a, b in zip(
+                            getattr(object_a, attr[1:]), getattr(object_b, attr[1:])
+                        )
+                    ), f"Error comparing attribute '{attr}'."
+                else:
+                    np.testing.assert_array_almost_equal(
+                        attr_a,
+                        getattr(object_b, attr[1:]).tolist(),
+                        decimal=decimal,
+                        err_msg=f"Error comparing attribute '{attr}'.",
+                    )
             else:
                 assert np.all(
                     getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
@@ -210,6 +221,8 @@ KEY_MAP = {
     "vertices": "Vertices",
     "z_cell_delimiters": "Z cell delimiters",
 }
+
+INV_KEY_MAP = {value: key for key, value in KEY_MAP.items()}
 
 
 def is_uuid(value: str) -> bool:
@@ -302,3 +315,16 @@ def dict_mapper(
     for fun in string_funcs:
         val = fun(val, *args)
     return val
+
+
+def get_attributes(entity: Entity | EntityType, omit_list=(), attributes=None):
+    """Extract the attributes of an object with omissions."""
+    if attributes is None:
+        attributes = {}
+    for key in vars(entity):
+        if key not in omit_list:
+            if key[0] == "_":
+                key = key[1:]
+
+            attributes[key] = getattr(entity, key)
+    return attributes

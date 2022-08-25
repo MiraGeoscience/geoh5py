@@ -37,3 +37,4 @@ class PrimitiveTypeEnum(Enum):
     VECTOR = 7
     DATETIME = 8
     GEOMETRIC = 9
+    MULTI_TEXT = 10

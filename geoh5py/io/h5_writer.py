@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING
 import h5py
 import numpy as np
 
-from ..data import CommentsData, Data, DataType, FilenameData, IntegerData
+from ..data import CommentsData, Data, DataType, FilenameData, IntegerData, TextData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import Entity, EntityType, fetch_h5_handle
@@ -306,6 +306,7 @@ class H5Writer:
                 "concatenated_object_ids",
                 "layers",
                 "octree_cells",
+                "property_group_ids",
                 "prisms",
                 "surveys",
                 "trace",
@@ -314,8 +315,6 @@ class H5Writer:
                 "vertices",
                 "z_cell_delimiters",
             ]:
-                cls.write_array_attribute(h5file, entity, attribute, **kwargs)
-            elif attribute == "property_group_ids":
                 cls.write_array_attribute(h5file, entity, attribute, **kwargs)
             elif attribute == "property_groups":
                 cls.write_property_groups(h5file, entity)
@@ -357,12 +356,19 @@ class H5Writer:
                 value = as_str_if_uuid(value)
 
                 if (
-                    key in ["PropertyGroups", "Attributes"] or value is None
+                    key
+                    in [
+                        "PropertyGroups",
+                        "Attributes",
+                        "Property Groups IDs",
+                        "Concatenated object IDs",
+                    ]
+                    or value is None
                 ):  # or key in Concatenator._attribute_map:
                     continue
 
                 if key in ["Association", "Primitive type"]:
-                    value = value.name.lower().capitalize()
+                    value = value.name.lower().title().replace("_", "-")
 
                 if isinstance(value, (np.int8, bool)):
                     entity_handle.attrs.create(key, int(value), dtype="int8")
@@ -514,7 +520,7 @@ class H5Writer:
 
     @classmethod
     def write_data_values(
-        cls, file: str | h5py.File, entity, attribute, values=None
+        cls, file: str | h5py.File, entity, attribute, values=None, **kwargs
     ) -> None:
         """
         Add data :obj:`~geoh5py.data.data.Data.values`.
@@ -555,6 +561,7 @@ class H5Writer:
                     data=json.dumps(values, indent=4),
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
+                    **kwargs,
                 )
 
             elif isinstance(entity, FilenameData):
@@ -566,20 +573,26 @@ class H5Writer:
                     data=values,
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
+                    **kwargs,
                 )
 
             else:
                 out_values = deepcopy(values)
                 if isinstance(entity, IntegerData):
                     out_values = np.round(out_values).astype("int32")
-                else:
-                    out_values[np.isnan(out_values)] = entity.ndv()
+
+                elif isinstance(entity, TextData):
+                    out_values = [val.encode() for val in values]
+
+                if getattr(entity, "ndv", None) is not None:
+                    out_values[np.isnan(out_values)] = entity.ndv
 
                 entity_handle.create_dataset(
                     KEY_MAP[attribute],
                     data=out_values,
                     compression="gzip",
                     compression_opts=9,
+                    **kwargs,
                 )
 
     @classmethod
@@ -647,7 +660,9 @@ class H5Writer:
             entity_handle = h5file[base][entity_type].create_group(as_str_if_uuid(uid))
             if isinstance(entity, Concatenator):
                 concat_group = entity_handle.create_group("Concatenated Data")
+                entity_handle.create_group("Data")
                 concat_group.create_group("Index")
+                concat_group.create_group("Data")
                 entity_handle.create_group("Groups")
             elif entity_type == "Groups":
                 entity_handle.create_group("Data")

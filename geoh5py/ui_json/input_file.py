@@ -312,7 +312,8 @@ class InputFile:
         if workspace is not None:
             if self._workspace is not None:
                 raise UserWarning(
-                    "Attribute 'workspace' already set. Consider creating a new InputFile from arguments."
+                    "Attribute 'workspace' already set. "
+                    "Consider creating a new InputFile from arguments."
                 )
 
             if not isinstance(workspace, Workspace):

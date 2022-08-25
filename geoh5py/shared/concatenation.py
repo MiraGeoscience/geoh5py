@@ -24,13 +24,28 @@ from typing import TYPE_CHECKING
 import numpy as np
 from h5py import special_dtype
 
-from geoh5py.data import Data
-from geoh5py.groups import Group
+from geoh5py.data import Data, DataType
+from geoh5py.groups import Group, PropertyGroup
 from geoh5py.shared.entity import Entity
-from geoh5py.shared.utils import KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid
+from geoh5py.shared.utils import (
+    INV_KEY_MAP,
+    KEY_MAP,
+    as_str_if_utf8_bytes,
+    as_str_if_uuid,
+)
 
 if TYPE_CHECKING:
     from ..groups import GroupType
+
+PROPERTY_KWARGS = {
+    "trace": {"maxshape": (None,)},
+    "trace_depth": {"maxshape": (None,)},
+    "property_group_ids": {
+        "dtype": special_dtype(vlen=str),
+        "maxshape": (None,),
+    },
+    "surveys": {"maxshape": (None,)},
+}
 
 
 class Concatenator(Group):
@@ -97,6 +112,15 @@ class Concatenator(Group):
 
         return self._concatenated_attributes
 
+    @concatenated_attributes.setter
+    def concatenated_attributes(self, concatenated_attributes: dict):
+        if not isinstance(concatenated_attributes, (dict, type(None))):
+            raise ValueError(
+                "Input 'concatenated_attributes' must be a dictionary or None"
+            )
+
+        self._concatenated_attributes = concatenated_attributes
+
     @property
     def concatenated_object_ids(self) -> list[bytes] | None:
         """Dictionary of concatenated objects and data concatenated_object_ids."""
@@ -112,10 +136,11 @@ class Concatenator(Group):
         return self._concatenated_object_ids
 
     @concatenated_object_ids.setter
-    def concatenated_object_ids(self, object_ids: list[uuid.UUID] | np.ndarray | None):
+    def concatenated_object_ids(self, object_ids: list[bytes] | None):
         if isinstance(object_ids, np.ndarray):
             object_ids = object_ids.tolist()
-        elif not isinstance(object_ids, (list, type(None))):
+
+        if not isinstance(object_ids, (list, type(None))):
             raise AttributeError(
                 "Input value for 'concatenated_object_ids' must be of type list."
             )
@@ -123,19 +148,63 @@ class Concatenator(Group):
         self._concatenated_object_ids = object_ids
         self.workspace.update_attribute(self, "concatenated_object_ids")
 
+    def copy(self, parent=None, copy_children: bool = True):
+        """
+        Function to copy an entity to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: Create copies of all children entities along with it.
+
+        :return entity: Registered Entity to the workspace.
+        """
+
+        if parent is None:
+            parent = self.parent
+
+        new_entity = parent.workspace.copy_to_parent(self, parent, copy_children=False)
+
+        if self.concatenated_attributes is None:
+            return new_entity
+
+        for field in self.index:
+            values = self.workspace.fetch_concatenated_values(self, field)
+            if isinstance(values, tuple):
+                new_entity.data[field], new_entity.index[field] = values
+
+            new_entity.save_attribute(field)
+
+            # Copy over the data type
+            for elem in self.concatenated_attributes["Attributes"]:
+                if "Name" in elem and elem["Name"] == field and "Type ID" in elem:
+                    attr_type = self.workspace.fetch_type(
+                        uuid.UUID(elem["Type ID"]), "Data"
+                    )
+                    data_type = DataType.find_or_create(
+                        new_entity.workspace, **attr_type
+                    )
+                    new_entity.workspace.save_entity_type(data_type)
+
+        new_entity.workspace.fetch_children(new_entity)
+
+        return new_entity
+
     @property
     def data(self) -> dict:
         """
         Concatenated data values stored as a dictionary.
         """
         if getattr(self, "_data", None) is None:
-            data_list = self.workspace.fetch_concatenated_list(self, "Data")
-            if data_list is not None:
-                self._data = {name.replace("\u2044", "/"): None for name in data_list}
-            else:
-                self._data = {}
+            self._data, self._index = self.fetch_concatenated_data_index()
 
         return self._data
+
+    @data.setter
+    def data(self, data: dict):
+        if not isinstance(data, dict):
+            raise ValueError("Input 'data' must be a dictionary")
+
+        self._data = data
 
     @property
     def index(self) -> dict:
@@ -143,11 +212,30 @@ class Concatenator(Group):
         Concatenated index stored as a dictionary.
         """
         if getattr(self, "_index", None) is None:
-            data_list = self.workspace.fetch_concatenated_list(self, "Index")
-            if data_list is not None:
-                self._index = {name.replace("\u2044", "/"): None for name in data_list}
+            self._data, self._index = self.fetch_concatenated_data_index()
 
         return self._index
+
+    @index.setter
+    def index(self, index: dict):
+        if not isinstance(index, dict):
+            raise ValueError("Input 'index' must be a dictionary")
+
+        self._index = index
+
+    def fetch_concatenated_data_index(self):
+        """Extract concatenation arrays."""
+        data, index = {}, {}
+        data_list = self.workspace.fetch_concatenated_list(self, "Index")
+
+        if data_list is not None:
+            for field in data_list:
+                name = field.replace("\u2044", "/")
+                values = self.workspace.fetch_concatenated_values(self, field)
+                if isinstance(values, tuple):
+                    data[name], index[name] = values
+
+        return data, index
 
     def fetch_concatenated_objects(self) -> dict:
         """
@@ -180,19 +268,16 @@ class Concatenator(Group):
         if field not in self.index:
             return None
 
-        if self.index[field] is None:
-            values = self.workspace.fetch_concatenated_values(self, field)
-            if isinstance(values, tuple):
-                self.data[field], self.index[field] = values
-
         uid = as_str_if_uuid(entity.uid).encode()
-        ind = np.where(self.index[field]["Object ID"] == uid)[0]
-        if len(ind) == 1:
-            return ind[0]
 
-        ind = np.where(self.index[field]["Data ID"] == uid)[0]
-        if len(ind) == 1:
-            return ind[0]
+        if isinstance(entity, ConcatenatedData):
+            ind = np.where(self.index[field]["Data ID"] == uid)[0]
+            if len(ind) == 1:
+                return ind[0]
+        else:
+            ind = np.where(self.index[field]["Object ID"] == uid)[0]
+            if len(ind) == 1:
+                return ind[0]
 
         return None
 
@@ -266,9 +351,6 @@ class Concatenator(Group):
             if val is None or attr == "property_groups":
                 continue
 
-            if attr == "name":
-                val = val.replace("/", "\u2044")
-
             if isinstance(val, np.ndarray):
                 val = "{" + ", ".join(str(e) for e in val.tolist()) + "}"
             elif isinstance(val, uuid.UUID):
@@ -311,10 +393,10 @@ class Concatenator(Group):
             )
 
         if field == "property_groups" and isinstance(values, list):
-            alias = "Property Group IDs"
+            field = "property_group_ids"
             values = [as_str_if_uuid(val.uid).encode() for val in values]
-        else:
-            alias = KEY_MAP.get(field, field)
+
+        alias = KEY_MAP.get(field, field)
 
         start = self.fetch_start_index(entity, alias)
 
@@ -333,7 +415,9 @@ class Concatenator(Group):
                 ]
             )
             if alias in self.index:
-                indices = np.hstack([self.index[alias], indices])
+                indices = np.hstack([self.index[alias], indices]).astype(
+                    self.index[alias].dtype
+                )
 
             self.index[alias] = indices
 
@@ -342,17 +426,19 @@ class Concatenator(Group):
 
             self.data[alias] = values
 
+            self.save_attribute(field)
+
+    def save_attribute(self, field: str):
+        """
+        Save a concatenated attribute.
+
+        :param field: Name of the attribute
+        """
+        field = INV_KEY_MAP.get(field, field)
+        alias = KEY_MAP.get(field, field)
         self.workspace.update_attribute(self, "index", alias)
 
-        property_kwarg = {
-            "property_group_ids": {
-                "dtype": special_dtype(vlen=str),
-                "maxshape": (None,),
-            },
-            "surveys": {"maxshape": (None,)},
-        }
-
-        if hasattr(entity, f"_{field}"):  # For group property
+        if field in PROPERTY_KWARGS:  # For group property
             if field == "property_groups":
                 field = "property_group_ids"
 
@@ -360,7 +446,7 @@ class Concatenator(Group):
                 self,
                 field,
                 values=self.data.get(alias),
-                **property_kwarg.get(field, {}),
+                **PROPERTY_KWARGS.get(field, {}),
             )
         else:  # For data values
             self.workspace.update_attribute(self, "data", field)
@@ -448,23 +534,16 @@ class Concatenator(Group):
 
 class Concatenated(Entity):
     """
-    Class modifier for concatenated objects and data.
+    Base class modifier for concatenated objects and data.
     """
 
     _parent: Concatenated | Concatenator
-    _property_groups = None
 
     def __init__(self, entity_type, **kwargs):
         attribute_map = getattr(self, "_attribute_map", {})
         attr = {"name": "Entity", "parent": None}
         for key, value in kwargs.items():
             attr[attribute_map.get(key, key)] = value
-
-        if not isinstance(attr.get("parent"), (Concatenated, Concatenator)):
-            raise UserWarning(
-                "Creating a concatenated entity must have a parent "
-                "of type Concatenator for 'objects', or Concatenated for 'data'."
-            )
 
         super().__init__(entity_type, **attr)
 
@@ -478,7 +557,122 @@ class Concatenated(Entity):
 
         return self._parent
 
-    def get_data(self, name: str) -> list[Data]:
+
+class ConcatenatedData(Concatenated):
+    _parent: Concatenated
+
+    def __init__(self, entity_type, **kwargs):
+        if kwargs.get("parent") is None or not isinstance(
+            kwargs.get("parent"), Concatenated
+        ):
+            raise UserWarning(
+                "Creating a concatenated data must have a parent "
+                "of type Concatenated."
+            )
+
+        super().__init__(entity_type, **kwargs)
+
+    @property
+    def property_group(self):
+        """Get the property group containing the data interval."""
+        if self.parent.property_groups is None:
+            return None
+
+        for prop_group in self.parent.property_groups:
+            if self.uid in prop_group.properties:
+                return prop_group
+
+        return None
+
+    @property
+    def parent(self) -> Concatenated:
+        return self._parent
+
+    @parent.setter
+    def parent(self, parent):
+        if not isinstance(parent, Concatenated):
+            raise AttributeError(
+                "The 'parent' of a concatenated Data must be of type 'Concatenated'."
+            )
+        self._parent = parent
+        self._parent.add_children([self])
+
+        parental_attr = self.concatenator.get_attributes(self.parent.uid)
+
+        if f"Property:{self.name}" not in parental_attr:
+            parental_attr[f"Property:{self.name}"] = as_str_if_uuid(self.uid)
+
+
+class ConcatenatedPropertyGroup(PropertyGroup):
+    _parent: Concatenated
+
+    def __init__(self, **kwargs):
+        if kwargs.get("parent") is None or not isinstance(
+            kwargs.get("parent"), Concatenated
+        ):
+            raise UserWarning(
+                "Creating a concatenated data must have a parent "
+                "of type Concatenated."
+            )
+
+        super().__init__(**kwargs)
+
+    @property
+    def from_(self):
+        """Return the data entities definind the 'from' depth intervals."""
+        if self.properties is None or len(self.properties) < 1:
+            return None
+
+        data = self.parent.get_data(self.properties[0])[0]
+
+        if "from" in data.name.lower():
+            return data
+
+        return None
+
+    @property
+    def to_(self):
+        """Return the data entities definind the 'to' depth intervals."""
+        if self.properties is None or len(self.properties) < 2:
+            return None
+
+        data = self.parent.get_data(self.properties[1])[0]
+
+        if "to" in data.name.lower():
+            return data
+
+        return None
+
+    @property
+    def parent(self) -> Concatenated:
+        return self._parent
+
+    @parent.setter
+    def parent(self, parent):
+        if not isinstance(parent, Concatenated):
+            raise AttributeError(
+                "The 'parent' of a concatenated Data must be of type 'Concatenated'."
+            )
+        self._parent = parent
+
+
+class ConcatenatedObject(Concatenated):
+
+    _parent: Concatenator
+    _property_groups: list[ConcatenatedPropertyGroup] | None = None
+
+    def __init__(self, entity_type, **kwargs):
+        if kwargs.get("parent") is None or not isinstance(
+            kwargs.get("parent"), Concatenator
+        ):
+            raise UserWarning(
+                "Creating a concatenated object must have a parent "
+                "of type Concatenator."
+            )
+
+        super().__init__(entity_type, **kwargs)
+
+    def get_data(self, name: str | uuid.UUID) -> list[Data]:
         """
         Generic function to get data values from object.
         """
@@ -486,16 +680,24 @@ class Concatenated(Entity):
         attr = self.concatenator.get_attributes(getattr(self, "uid")).copy()
 
         for key, value in attr.items():
-            if (
-                "Property:" in key
-                and self.workspace.get_entity(uuid.UUID(value))[0] is None
-            ):
-                attributes: dict = self.concatenator.get_attributes(value).copy()
-                attributes["parent"] = self
-                self.workspace.create_from_concatenation(attributes)
+            if "Property:" in key:
+                child_data = self.workspace.get_entity(uuid.UUID(value))[0]
+                if child_data is None:
+                    attributes: dict = self.concatenator.get_attributes(value).copy()
+                    attributes["parent"] = self
+                    self.workspace.create_from_concatenation(attributes)
+                else:
+                    self.add_children([child_data])
 
         for child in getattr(self, "children"):
-            if hasattr(child, "name") and child.name == name:
+
+            if (
+                isinstance(name, str) and hasattr(child, "name") and child.name == name
+            ) or (
+                isinstance(name, uuid.UUID)
+                and hasattr(child, "uid")
+                and child.uid == name
+            ):
                 entity_list.append(child)
 
         return entity_list
@@ -513,24 +715,18 @@ class Concatenated(Entity):
         return data_list
 
     @property
-    def parent(self) -> Concatenated | Concatenator:
+    def parent(self) -> Concatenator:
         return self._parent
 
     @parent.setter
     def parent(self, parent):
-        if not isinstance(parent, (Concatenated, Concatenator)):
+        if not isinstance(parent, Concatenator):
             raise AttributeError(
-                "The 'parent' of a concatenated Entity must be of type "
-                "'Concatenator' or 'Concatenated'."
+                "The 'parent' of a concatenated Object must be of type "
+                "'Concatenator'."
             )
         self._parent = parent
         self._parent.add_children([self])
-
-        if isinstance(self, Data) and isinstance(self, Concatenated):
-            parental_attr = self.concatenator.get_attributes(self.parent.uid)
-            alias = self.name.replace("/", "\u2044")
-            if f"Property:{alias}" not in parental_attr:
-                parental_attr[f"Property:{alias}"] = as_str_if_uuid(self.uid)
 
     @property
     def property_groups(self) -> list | None:
@@ -546,3 +742,177 @@ class Concatenated(Entity):
                 )
 
         return self._property_groups
+
+
+class ConcatenatedDrillhole(ConcatenatedObject):
+    @property
+    def from_(self) -> list[Data]:
+        """
+        Depth data corresponding to the tops of the interval values.
+        """
+        obj_list = []
+        for prop_group in (
+            self.property_groups if self.property_groups is not None else []
+        ):
+            data = [self.get_data(child)[0] for child in prop_group.properties]
+            if len(data) > 0 and "from" in data[0].name.lower():
+                obj_list.append(data[0])
+        return obj_list
+
+    @property
+    def to_(self) -> list[Data]:
+        """
+        Depth data corresponding to the bottoms of the interval values.
+        """
+        obj_list = []
+        for prop_group in (
+            self.property_groups if self.property_groups is not None else []
+        ):
+            data = [self.get_data(child)[0] for child in prop_group.properties]
+            if len(data) > 1 and "to" in data[1].name.lower():
+                obj_list.append(data[1])
+        return obj_list
+
+    def validate_data(
+        self, attributes: dict, property_group=None, collocation_distance=None
+    ) -> tuple:
+        """
+        Validate input drillhole data attributes.
+
+        :param attributes: Dictionary of data attributes.
+        :param property_group: Input property group to validate against.
+        """
+        if collocation_distance is None:
+            collocation_distance = attributes.get(
+                "collocation_distance", getattr(self, "default_collocation_distance")
+            )
+        if collocation_distance < 0:
+            raise UserWarning("Input depth 'collocation_distance' must be >0.")
+
+        if (
+            "depth" not in attributes
+            and "from-to" not in attributes
+            and "association" not in attributes
+        ):
+            if property_group is None:
+                raise AttributeError(
+                    "Input data dictionary must contain {key:values} "
+                    + "{'from-to':numpy.ndarray} "
+                    + "or {'association': 'OBJECT'}."
+                )
+            attributes["from-to"] = None
+
+        if "depth" in attributes.keys():
+            attributes["from-to"] = np.c_[
+                attributes["depth"], attributes["depth"] + collocation_distance
+            ]
+
+            del attributes["depth"]
+
+        if "from-to" in attributes.keys():
+            attributes["association"] = "DEPTH"
+            property_group = self.validate_interval_data(
+                attributes.get("name"),
+                attributes.get("from-to"),
+                attributes.get("values"),
+                group_name=property_group,
+                collocation_distance=collocation_distance,
+            )
+
+            del attributes["from-to"]
+
+        return attributes, property_group
+
+    def validate_interval_data(
+        self,
+        name: str | None,
+        from_to: list | np.ndarray | None,
+        values: np.ndarray,
+        group_name: str = None,
+        collocation_distance=1e-4,
+    ) -> str:
+        """
+        Compare new and current depth values and re-use the property group if possible.
+        Otherwise a new property group is added.
+
+        :param from_to: Array of from-to values.
+        :param values: Data values to be added on the from-to intervals.
+        :param group_name: Property group name
+        :collocation_distance: Threshold on the comparison between existing depth values.
+        """
+        if from_to is not None:
+            if isinstance(from_to, list):
+                from_to = np.vstack(from_to)
+                if from_to.shape[0] == 2:
+                    from_to = from_to.T
+
+            assert from_to.shape[0] >= len(values), (
+                f"Mismatch between input 'from_to' shape{from_to.shape} "
+                + f"and 'values' shape{values.shape}"
+            )
+            assert from_to.shape[1] == 2, "The `from-to` values must have shape(*, 2)"
+
+        if (
+            from_to is not None
+            and group_name is None
+            and self.property_groups is not None
+        ):
+            for property_group in self.property_groups:
+                if property_group.from_.values.shape[0] == from_to.shape[
+                    0
+                ] and np.allclose(
+                    np.c_[property_group.from_.values, property_group.to_.values],
+                    from_to,
+                    atol=collocation_distance,
+                ):
+                    return property_group.name
+
+        ind = 0
+        label = ""
+        if len(self.from_) > 0:
+            ind = len(self.from_)
+            label = f"({ind})"
+
+        if group_name is None:
+            group_name = f"Interval_{ind}"
+
+        property_group = getattr(self, "find_or_create_property_group")(
+            name=group_name, association="DEPTH"
+        )
+
+        if property_group.from_ is not None:
+            if property_group.from_.values.shape[0] != values.shape[0]:
+                raise ValueError(
+                    f"Input values for '{name}' with shape({values.shape[0]}) "
+                    f"do not match the from-to intervals of the group '{group_name}' "
+                    f"with shape({property_group.from_.values.shape[0]}). Check values or "
+                    f"assign to a new property group."
+                )
+            return property_group.name
+
+        from_to = getattr(self, "add_data")(
+            {
+                f"FROM{label}": {
+                    "association": "DEPTH",
+                    "values": from_to[:, 0],
+                    "entity_type": {"primitive_type": "FLOAT"},
+                    "parent": self,
+                    "allow_move": False,
+                    "allow_delete": False,
+                },
+                f"TO{label}": {
+                    "association": "DEPTH",
+                    "values": from_to[:, 1],
+                    "entity_type": {"primitive_type": "FLOAT"},
+                    "parent": self,
+                    "allow_move": False,
+                    "allow_delete": False,
+                },
+            },
+            property_group.name,
+        )
+
+        return property_group.name
+
+    def sort_depths(self):
+        """Bypass sort_depths from previous version."""

@@ -25,7 +25,7 @@ from typing import Any
 import h5py
 import numpy as np
 
-from ..shared import FLOAT_NDV, INTEGER_NDV, fetch_h5_handle
+from ..shared import FLOAT_NDV, fetch_h5_handle
 from ..shared.utils import KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid, str2uuid
 
 
@@ -129,7 +129,10 @@ class H5Reader:
             children: dict = {}
             entity_type = cls.format_type_string(entity_type)
 
-            if entity_type not in h5file[name]:
+            if (
+                entity_type not in h5file[name]
+                or as_str_if_uuid(uid) not in h5file[name][entity_type]
+            ):
                 return children
 
             entity = h5file[name][entity_type][as_str_if_uuid(uid)]
@@ -453,14 +456,13 @@ class H5Reader:
             try:
                 values = np.r_[h5file[name]["Data"][as_str_if_uuid(uid)]["Data"]]
                 if isinstance(values[0], (str, bytes)):
-                    values = as_str_if_utf8_bytes(values[0])
+                    values = np.asarray([as_str_if_utf8_bytes(val) for val in values])
+                    if len(values) == 1:
+                        values = values[0]
                 else:
                     if values.dtype in [float, "float64", "float32"]:
                         ind = values == FLOAT_NDV
-                    else:
-                        ind = values == INTEGER_NDV
-                        values = values.astype("float64")
-                    values[ind] = np.nan
+                        values[ind] = np.nan
 
             except KeyError:
                 values = None
