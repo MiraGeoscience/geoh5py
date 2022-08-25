@@ -18,7 +18,6 @@
 import os
 
 import numpy as np
-#
 import pytest
 
 from geoh5py.objects import DrapeModel
