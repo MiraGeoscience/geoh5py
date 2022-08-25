@@ -41,7 +41,6 @@ def test_create_drape_model(tmp_path):
         x = np.sin(2 * np.arange(n_col) / n_col * np.pi)
         y = np.cos(2 * np.arange(n_col) / n_col * np.pi)
         top = bottom.flatten()[::n_row] + 0.1
-        layers = np.tile(n_row, n_col)
         drape = DrapeModel.create(workspace)
 
         with pytest.raises(AttributeError) as error:
@@ -57,7 +56,7 @@ def test_create_drape_model(tmp_path):
         assert "Attribute 'prisms'" in str(error)
 
         drape.prisms = np.c_[
-            x, y, top, np.arange(0, i.flatten().shape[0], n_row), layers
+            x, y, top, np.arange(0, i.flatten().shape[0], n_row), np.tile(n_row, n_col)
         ]
 
         drape.add_data(
