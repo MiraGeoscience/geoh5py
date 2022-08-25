@@ -20,8 +20,15 @@
 import numpy as np
 import pytest
 
-from geoh5py.groups import DrillholeGroup
+from geoh5py.data import FloatData, data_type
+from geoh5py.groups import ContainerGroup, DrillholeGroup
 from geoh5py.objects import Drillhole
+from geoh5py.shared.concatenation import (
+    ConcatenatedData,
+    ConcatenatedObject,
+    ConcatenatedPropertyGroup,
+    Concatenator,
+)
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -69,6 +76,59 @@ def test_concatenator(tmp_path):
         compare_entities(dh_group_copy, dh_group, ignore=["_uid"])
 
 
+def test_concatenated_entities(tmp_path):
+    h5file_path = tmp_path / r"test_concatenated_data.geoh5"
+    with Workspace(h5file_path, version=2.0) as workspace:
+
+        class_type = type("TestGroup", (Concatenator, ContainerGroup), {})
+        entity_type = class_type.find_or_create_type(workspace)
+        concat = class_type(entity_type)
+
+        class_type = type("TestObject", (ConcatenatedObject, Drillhole), {})
+        entity_type = class_type.find_or_create_type(workspace)
+
+        with pytest.raises(UserWarning) as error:
+            concat_object = class_type(entity_type)
+
+        assert (
+            "Creating a concatenated object must have a parent of type Concatenator."
+            in str(error)
+        )
+
+        concat_object = class_type(entity_type, parent=concat)
+
+        with pytest.raises(UserWarning) as error:
+            class_type = type("TestData", (ConcatenatedData, FloatData), {})
+            dtype = data_type.DataType.find_or_create(
+                workspace, primitive_type=FloatData.primitive_type()
+            )
+            data = class_type(dtype)
+
+        assert "Creating a concatenated data must have a parent" in str(error)
+
+        data = class_type(dtype, parent=concat_object)
+
+        assert data.property_group is None
+
+        with pytest.raises(UserWarning) as error:
+            prop_group = ConcatenatedPropertyGroup()
+
+        assert "Creating a concatenated data must have a parent" in str(error)
+
+        prop_group = ConcatenatedPropertyGroup(parent=concat_object)
+
+        with pytest.raises(AttributeError) as error:
+            prop_group.parent = Drillhole
+
+        assert (
+            "The 'parent' of a concatenated Data must be of type 'Concatenated'"
+            in str(error)
+        )
+
+        assert prop_group.to_ is None
+        assert prop_group.from_ is None
+
+
 def test_create_drillhole_data(tmp_path):
     h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
     new_path = tmp_path / r"test_drillholeGroup2.geoh5"
@@ -90,6 +150,11 @@ def test_create_drillhole_data(tmp_path):
             parent=dh_group,
             name=well_name,
         )
+
+        with pytest.raises(UserWarning) as error:
+            dh_group.update_array_attribute(well, "abc")
+
+        assert f"Input entity {well} does not have a property or values" in str(error)
 
         # Add both set of log data with 0.5 m tolerance
         values = np.random.randn(50)
@@ -174,6 +239,8 @@ def test_create_drillhole_data(tmp_path):
                 },
             }
         )
+
+        assert data_objects[1].property_group == data_objects[2].property_group
 
         well_b_data = well_b.add_data(
             {

@@ -115,8 +115,6 @@ def test_copy_property_group(tmp_path):
 
         assert len(curve_2.property_groups) > 0
         assert all(
-            [
-                len(curve_2.get_data(uid)) > 0
-                for uid in curve_2.property_groups[0].properties
-            ]
+            len(curve_2.get_data(uid)) > 0
+            for uid in curve_2.property_groups[0].properties
         )

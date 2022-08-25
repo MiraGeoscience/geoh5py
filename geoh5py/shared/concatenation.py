@@ -277,19 +277,16 @@ class Concatenator(Group):
         if field not in self.index:
             return None
 
-        if self.index[field] is None:
-            values = self.workspace.fetch_concatenated_values(self, field)
-            if isinstance(values, tuple):
-                self.data[field], self.index[field] = values
-
         uid = as_str_if_uuid(entity.uid).encode()
-        ind = np.where(self.index[field]["Object ID"] == uid)[0]
-        if len(ind) == 1:
-            return ind[0]
 
-        ind = np.where(self.index[field]["Data ID"] == uid)[0]
-        if len(ind) == 1:
-            return ind[0]
+        if isinstance(entity, ConcatenatedData):
+            ind = np.where(self.index[field]["Data ID"] == uid)[0]
+            if len(ind) == 1:
+                return ind[0]
+        else:
+            ind = np.where(self.index[field]["Object ID"] == uid)[0]
+            if len(ind) == 1:
+                return ind[0]
 
         return None
 
