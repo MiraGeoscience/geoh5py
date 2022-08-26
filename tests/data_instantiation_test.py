@@ -22,14 +22,18 @@ import inspect
 import pytest
 
 from geoh5py import data
-from geoh5py.data import Data, DataAssociationEnum, DataType
+from geoh5py.data import Data, DataAssociationEnum, DataType, NumericData
 from geoh5py.objects import ObjectType
 from geoh5py.workspace import Workspace
 
 
 def all_data_types():
     for _, obj in inspect.getmembers(data):
-        if inspect.isclass(obj) and issubclass(obj, Data) and obj is not Data:
+        if (
+            inspect.isclass(obj)
+            and issubclass(obj, Data)
+            and obj not in (Data, NumericData)
+        ):
             yield obj
 
 
