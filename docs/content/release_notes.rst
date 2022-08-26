@@ -1,6 +1,17 @@
 Release Notes
 =============
 
+Release 0.3.1 - 2022/08/26
+--------------------------
+
+This release addresses issues encountered after the 0.3.0 release.
+
+- GEOPY-608: Check for 'allow_delete' status before removing.
+- GEOPY-600: Fix crash on missing 'Group types' group from project written by ANALYST.
+- GEOPY-587: Increase PEP8 compliance after pylint update.
+- GEOPY-575: Improve ui.json documentation.
+
+
 Release 0.3.0 - 2022/06/30
 --------------------------
 
