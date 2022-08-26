@@ -17,7 +17,7 @@
 
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 
 import numpy as np
 
@@ -34,6 +34,7 @@ class NumericData(Data, ABC):
         return PrimitiveTypeEnum.INVALID
 
     @property
+    @abstractmethod
     def ndv(self):
         """No-data-value"""
 
