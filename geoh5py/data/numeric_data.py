@@ -33,8 +33,8 @@ class NumericData(Data, ABC):
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.INVALID
 
-    @abstractmethod
     @property
+    @abstractmethod
     def ndv(self):
         """No-data-value"""
 
