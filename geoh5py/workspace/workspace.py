@@ -181,6 +181,7 @@ class Workspace(AbstractContextManager):
                     f'h5repack --native "{self.h5file}" "{temp_file}"',
                     check=True,
                     shell=True,
+                    stdout=subprocess.DEVNULL,
                 )
                 os.remove(self.h5file)
                 shutil.move(temp_file, self.h5file)
@@ -483,6 +484,12 @@ class Workspace(AbstractContextManager):
         """
         Function to remove an entity and its children from the workspace
         """
+        if not entity.allow_delete:
+            raise UserWarning(
+                f"The 'allow_delete' property of entity {entity} prevents it from "
+                "being removed. Please revise."
+            )
+
         parent = entity.parent
 
         self.workspace.remove_recursively(entity)
