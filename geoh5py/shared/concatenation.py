@@ -73,18 +73,6 @@ class Concatenator(Group):
             }
         )
 
-    def add_attribute(self, uid: str) -> None:
-        """
-        Add new element to the concatenated attributes.
-
-        :param uid: Unique identifier of the new concatenated entity in str format.
-        """
-        if self.attributes_keys is not None:
-            self.attributes_keys.append(uid)
-
-        if self.concatenated_attributes is not None:
-            self.concatenated_attributes["Attributes"].append({})
-
     @property
     def attributes_keys(self) -> list | None:
         """List of uuids present in the concatenated attributes."""
@@ -98,6 +86,33 @@ class Concatenator(Group):
             self._attributes_keys = attributes_keys
 
         return self._attributes_keys
+
+    def add_save_concatenated(self, child) -> None:
+        """
+        Add or save a concatenated entity.
+
+        :param child: Concatenated entity
+        """
+        self.update_concatenated_attributes(child)
+
+        if hasattr(child, "values"):
+            self.update_array_attribute(child, child.name)
+        elif hasattr(child, "surveys"):  # Specific to drillholes
+            uid = as_str_if_uuid(child.uid).encode()
+            concat_object_ids = [uid]
+            if self._concatenated_object_ids is not None:
+                if uid not in self._concatenated_object_ids:
+                    concat_object_ids = (
+                        self._concatenated_object_ids + concat_object_ids
+                    )
+                else:
+                    concat_object_ids = self._concatenated_object_ids
+
+            self.concatenated_object_ids = concat_object_ids
+            self.update_array_attribute(child, "surveys")
+            self.update_array_attribute(child, "trace")
+
+        child.on_file = True
 
     @property
     def concatenated_attributes(self) -> dict | None:
@@ -206,22 +221,16 @@ class Concatenator(Group):
 
         self._data = data
 
-    @property
-    def index(self) -> dict:
-        """
-        Concatenated index stored as a dictionary.
-        """
-        if getattr(self, "_index", None) is None:
-            self._data, self._index = self.fetch_concatenated_data_index()
-
-        return self._index
-
-    @index.setter
-    def index(self, index: dict):
-        if not isinstance(index, dict):
-            raise ValueError("Input 'index' must be a dictionary")
-
-        self._index = index
+    def delete_index_data(self, label: str, index: int) -> None:
+        start, size = self.index[label][index][0], self.index[label][index][1]
+        self.data[label] = np.delete(
+            self.data[label], np.arange(start, start + size), axis=0
+        )
+        # Shift indices
+        self.index[label]["Start index"][
+            self.index[label]["Start index"] > start
+        ] -= size
+        self.index[label] = np.delete(self.index[label], index, axis=0)
 
     def fetch_concatenated_data_index(self):
         """Extract concatenation arrays."""
@@ -281,6 +290,26 @@ class Concatenator(Group):
 
         return None
 
+    def fetch_start_index(self, entity: Concatenated, label: str) -> int:
+        """
+        Fetch starting index for a given entity and label.
+        Existing date is removed such that new entries can be appended.
+
+        :param entity: Concatenated entity to be added.
+        :param label: Name of the attribute requiring an update.
+        """
+        index = self.fetch_index(entity, label)
+        if index is not None:  # First remove the old data
+            self.delete_index_data(label, index)
+            start = self.data[label].shape[0]
+
+        elif label in self.index:
+            start = np.sum(self.index[label]["Size"])
+        else:
+            start = 0
+
+        return start
+
     def fetch_values(self, entity: Concatenated, field: str) -> np.ndarray | None:
         """
         Get an array of values from concatenated data.
@@ -299,6 +328,50 @@ class Concatenator(Group):
 
         return self.data[field][start : start + size]
 
+    def get_attributes(self, uid: bytes | str | uuid.UUID) -> dict:
+        """
+        Fast reference index to concatenated attribute keys.
+        """
+        if self.concatenated_attributes is None:
+            return {}
+
+        uid = as_str_if_utf8_bytes(uid)
+
+        if isinstance(uid, str):
+            uid = uuid.UUID(uid)
+
+        uid = as_str_if_utf8_bytes(as_str_if_uuid(uid))
+
+        if self.attributes_keys is not None and uid in self.attributes_keys:
+            index = self.attributes_keys.index(uid)
+        else:
+            if self.attributes_keys is not None:
+                self.attributes_keys.append(uid)
+
+            if self.concatenated_attributes is not None:
+                self.concatenated_attributes["Attributes"].append({})
+
+            index = -1
+
+        return self.concatenated_attributes["Attributes"][index]
+
+    @property
+    def index(self) -> dict:
+        """
+        Concatenated index stored as a dictionary.
+        """
+        if getattr(self, "_index", None) is None:
+            self._data, self._index = self.fetch_concatenated_data_index()
+
+        return self._index
+
+    @index.setter
+    def index(self, index: dict):
+        if not isinstance(index, dict):
+            raise ValueError("Input 'index' must be a dictionary")
+
+        self._index = index
+
     @property
     def property_group_ids(self) -> list | None:
         """Dictionary of concatenated objects and data property_group_ids."""
@@ -311,6 +384,55 @@ class Concatenator(Group):
                 self._property_group_ids = property_groups_ids[0].tolist()
 
         return self._property_group_ids
+
+    def remove_entity(self, entity: Concatenated):
+        """Remove a concatenated entity."""
+
+        if isinstance(entity, ConcatenatedData):
+            # Remove the rows of data and index
+            self.update_array_attribute(entity, entity.name, remove=True)
+            # Remove from the concatenated Attributes
+            parent_attr = self.get_attributes(entity.parent.uid)
+            name = entity.name
+            del parent_attr[f"Property:{name}"]
+        elif isinstance(entity, ConcatenatedObject):
+
+            if entity.property_groups is not None:
+                self.update_array_attribute(entity, "property_groups", remove=True)
+
+            object_ids = self.concatenated_object_ids
+
+            if object_ids is not None:
+                object_ids.remove(as_str_if_uuid(entity.uid).encode())
+                self.concatenated_object_ids = object_ids
+
+        if self.concatenated_attributes is not None:
+            attr_handle = self.get_attributes(entity.uid)
+            self.concatenated_attributes["Attributes"].remove(attr_handle)
+            self.workspace.repack = True
+
+    def save_attribute(self, field: str):
+        """
+        Save a concatenated attribute.
+
+        :param field: Name of the attribute
+        """
+        field = INV_KEY_MAP.get(field, field)
+        alias = KEY_MAP.get(field, field)
+        self.workspace.update_attribute(self, "index", alias)
+
+        if field in PROPERTY_KWARGS:  # For group property
+            if field == "property_groups":
+                field = "property_group_ids"
+
+            self.workspace.update_attribute(
+                self,
+                field,
+                values=self.data.get(alias),
+                **PROPERTY_KWARGS.get(field, {}),
+            )
+        else:  # For data values
+            self.workspace.update_attribute(self, "data", field)
 
     def update_attributes(self, entity: Concatenated, label: str) -> None:
         """
@@ -370,7 +492,9 @@ class Concatenator(Group):
             target_attributes["Object Type ID"] = as_str_if_uuid(entity.entity_type.uid)
         self.workspace.repack = True
 
-    def update_array_attribute(self, entity: Concatenated, field: str) -> None:
+    def update_array_attribute(
+        self, entity: Concatenated, field: str, remove=False
+    ) -> None:
         """
         Update values stored as data.
         Row data and indices are first remove then appended.
@@ -400,7 +524,7 @@ class Concatenator(Group):
 
         start = self.fetch_start_index(entity, alias)
 
-        if values is not None:
+        if values is not None and not remove:
             indices = np.hstack(
                 [
                     np.core.records.fromarrays(
@@ -426,110 +550,7 @@ class Concatenator(Group):
 
             self.data[alias] = values
 
-            self.save_attribute(field)
-
-    def save_attribute(self, field: str):
-        """
-        Save a concatenated attribute.
-
-        :param field: Name of the attribute
-        """
-        field = INV_KEY_MAP.get(field, field)
-        alias = KEY_MAP.get(field, field)
-        self.workspace.update_attribute(self, "index", alias)
-
-        if field in PROPERTY_KWARGS:  # For group property
-            if field == "property_groups":
-                field = "property_group_ids"
-
-            self.workspace.update_attribute(
-                self,
-                field,
-                values=self.data.get(alias),
-                **PROPERTY_KWARGS.get(field, {}),
-            )
-        else:  # For data values
-            self.workspace.update_attribute(self, "data", field)
-
-    def add_save_concatenated(self, child) -> None:
-        """
-        Add or save a concatenated entity.
-
-        :param child: Concatenated entity
-        """
-        self.update_concatenated_attributes(child)
-
-        if hasattr(child, "values"):
-            self.update_array_attribute(child, child.name)
-        elif hasattr(child, "surveys"):  # Specific to drillholes
-            uid = as_str_if_uuid(child.uid).encode()
-            concat_object_ids = [uid]
-            if self._concatenated_object_ids is not None:
-                if uid not in self._concatenated_object_ids:
-                    concat_object_ids = (
-                        self._concatenated_object_ids + concat_object_ids
-                    )
-                else:
-                    concat_object_ids = self._concatenated_object_ids
-
-            self.concatenated_object_ids = concat_object_ids
-            self.update_array_attribute(child, "surveys")
-            self.update_array_attribute(child, "trace")
-
-        child.on_file = True
-
-    def get_attributes(self, uid: bytes | str | uuid.UUID) -> dict:
-        """
-        Fast reference index to concatenated attribute keys.
-        """
-        if self.concatenated_attributes is None:
-            return {}
-
-        uid = as_str_if_utf8_bytes(uid)
-
-        if isinstance(uid, str):
-            uid = uuid.UUID(uid)
-
-        uid = as_str_if_utf8_bytes(as_str_if_uuid(uid))
-
-        if self.attributes_keys is not None and uid in self.attributes_keys:
-            index = self.attributes_keys.index(uid)
-        else:
-            self.add_attribute(uid)
-            index = -1
-
-        return self.concatenated_attributes["Attributes"][index]
-
-    def fetch_start_index(self, entity: Concatenated, label: str) -> int:
-        """
-        Fetch starting index for a given entity and label.
-        Existing date is removed such that new entries can be appended.
-
-        :param entity: Concatenated entity to be added.
-        :param label: Name of the attribute requiring an update.
-        """
-        index = self.fetch_index(entity, label)
-        if index is not None:  # First remove the old data
-            self.delete_index_data(label, index)
-            start = self.data[label].shape[0]
-
-        elif label in self.index:
-            start = np.sum(self.index[label]["Size"])
-        else:
-            start = 0
-
-        return start
-
-    def delete_index_data(self, label: str, index: int) -> None:
-        start, size = self.index[label][index][0], self.index[label][index][1]
-        self.data[label] = np.delete(
-            self.data[label], np.arange(start, start + size), axis=0
-        )
-        # Shift indices
-        self.index[label]["Start index"][
-            self.index[label]["Start index"] > start
-        ] -= size
-        self.index[label] = np.delete(self.index[label], index, axis=0)
+        self.save_attribute(field)
 
 
 class Concatenated(Entity):

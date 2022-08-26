@@ -357,3 +357,65 @@ def test_create_drillhole_data(tmp_path):
         assert (
             len(well.property_groups[0].properties) == 5
         ), "Issue adding data to interval."
+
+
+def test_remove_drillhole_data(tmp_path):
+    h5file_path = tmp_path / r"test_remove_concatenated.geoh5"
+    well_name = "well"
+    n_data = 10
+
+    with Workspace(h5file_path, version=2.0) as workspace:
+        # Create a workspace
+        dh_group = DrillholeGroup.create(workspace, name="DH_group")
+
+        assert (
+            dh_group.data == {}
+        ), "DrillholeGroup should not have data on instantiation."
+
+        well = Drillhole.create(
+            workspace,
+            collar=np.r_[0.0, 10.0, 10],
+            surveys=np.c_[
+                np.linspace(0, 100, n_data),
+                np.ones(n_data) * 45.0,
+                np.linspace(-89, -75, n_data),
+            ],
+            parent=dh_group,
+            name=well_name,
+        )
+
+        # Add both set of log data with 0.5 m tolerance
+        well.add_data(
+            {
+                "my_log_values/": {
+                    "depth": np.arange(0, 50.0),
+                    "values": np.random.randn(50),
+                },
+                "log_wt_tolerance": {
+                    "depth": np.arange(0.01, 50.01),
+                    "values": np.random.randn(50),
+                },
+            }
+        )
+        well_b = well.copy()
+        well_b.name = "Number 2"
+        well_b.collar = np.r_[10.0, 10.0, 10]
+
+        well_c = well.copy()
+        well_c.name = "Number 3"
+        well_c.collar = np.r_[10.0, -10.0, 10]
+
+    with Workspace(h5file_path, version=2.0) as workspace:
+        dh_group = workspace.get_entity("DH_group")[0]
+
+        well = workspace.get_entity(well_name)[0]
+        well_b = workspace.get_entity("Number 2")[0]
+        data = well.get_data("my_log_values/")[0]
+        print(data.uid)
+        workspace.remove_entity(data)
+        workspace.remove_entity(well_b)
+
+    with Workspace(h5file_path, version=2.0) as workspace:
+        well = workspace.get_entity(well_name)[0]
+        assert "my_log_values/" not in well.get_entity_list()
+        assert workspace.get_entity("Number 2")[0] is None

@@ -497,22 +497,21 @@ class Workspace(AbstractContextManager):
 
     def remove_children(self, parent, children: list):
         """
-        Remove a list of entities from a parent.
+        Remove a list of entities from a parent. The target entities remain
+        present on file.
         """
         for child in children:
-            if isinstance(child, Data):
-                ref_type = "Data"
+
+            ref_type = self.str_from_type(child)
+
+            if ref_type == "Data":
                 parent.remove_data_from_group(child)
-            elif isinstance(child, Group):
-                ref_type = "Groups"
-            else:
-                ref_type = "Objects"
 
             self._io_call(H5Writer.remove_child, child.uid, ref_type, parent, mode="r+")
 
     def remove_entity(self, entity: Entity):
         """
-        Function to remove an entity and its children from the workspace
+        Function to remove an entity and its children from the workspace.
         """
         if not entity.allow_delete:
             raise UserWarning(
@@ -520,16 +519,22 @@ class Workspace(AbstractContextManager):
                 "being removed. Please revise."
             )
 
-        parent = entity.parent
+        if not isinstance(entity, Concatenator):
+            self.workspace.remove_recursively(entity)
 
-        self.workspace.remove_recursively(entity)
-
-        parent.children.remove(entity)
-
-        del entity
-
-        collect()
-        self.remove_none_referents(self._types, "Types")
+        if isinstance(entity, Concatenated):
+            entity.concatenator.remove_entity(entity)
+        else:
+            ref_type = self.str_from_type(entity)
+            self._io_call(
+                H5Writer.remove_entity,
+                entity.uid,
+                ref_type,
+                mode="r+",
+            )
+            del entity
+            collect()
+            self.remove_none_referents(self._types, "Types")
 
     def remove_none_referents(
         self,
@@ -555,30 +560,9 @@ class Workspace(AbstractContextManager):
         """Delete an entity and its children from the workspace and geoh5 recursively"""
         parent = entity.parent
         for child in entity.children:
-            self.remove_recursively(child)
+            self.remove_entity(child)
 
-        entity.remove_children(entity.children)  # Remove link to children
-
-        if isinstance(entity, Data):
-            ref_type = "Data"
-            parent.remove_data_from_group(entity)
-        elif isinstance(entity, Group):
-            ref_type = "Groups"
-        elif isinstance(entity, ObjectBase):
-            ref_type = "Objects"
-        else:
-            raise NotImplementedError(
-                "Method 'remove_recursively only implemented for classes of type"
-                f" {Data}, {Group} or {ObjectBase}"
-            )
-
-        self._io_call(
-            H5Writer.remove_entity,
-            entity.uid,
-            ref_type,
-            parent=parent,
-            mode="r+",
-        )
+        parent.remove_children([entity])
 
     def deactivate(self):
         """Deactivate this workspace if it was the active one, else does nothing."""
@@ -1146,6 +1130,19 @@ class Workspace(AbstractContextManager):
         :param entity_type: Entity to be written to geoh5.
         """
         self._io_call(H5Writer.write_entity_type, entity_type, mode="r+")
+
+    @staticmethod
+    def str_from_type(entity) -> str | None:
+        if isinstance(entity, Data):
+            return "Data"
+
+        if isinstance(entity, Group):
+            return "Groups"
+
+        if isinstance(entity, ObjectBase):
+            return "Objects"
+
+        return None
 
     @property
     def types(self) -> list[EntityType]:
