@@ -21,7 +21,7 @@ import uuid
 
 import numpy as np
 
-from geoh5py.objects import Curve
+from geoh5py.objects.curve import Curve
 
 from .base import BaseEMSurvey
 
