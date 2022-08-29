@@ -20,7 +20,8 @@ from __future__ import annotations
 import uuid
 
 from geoh5py.objects.points import Points
-from geoh5py.objects.surveys.electromagnetics.base import BaseEMSurvey
+
+from .base import BaseEMSurvey
 
 
 class MTReceivers(BaseEMSurvey, Points):

@@ -23,7 +23,8 @@ import warnings
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_type import ObjectType
 from geoh5py.objects.points import Points
-from geoh5py.objects.surveys.electromagnetics.base import BaseEMSurvey
+
+from .base import BaseEMSurvey
 
 
 class BaseTipper(BaseEMSurvey):
