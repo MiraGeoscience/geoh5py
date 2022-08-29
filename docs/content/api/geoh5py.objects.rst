@@ -23,6 +23,14 @@ geoh5py.objects.curve
    :undoc-members:
    :show-inheritance:
 
+geoh5py.objects.drape\_model
+----------------------------
+
+.. automodule:: geoh5py.objects.drape_model
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 geoh5py.objects.drillhole
 -------------------------
 
@@ -43,6 +51,14 @@ geoh5py.objects.grid2d
 ----------------------
 
 .. automodule:: geoh5py.objects.grid2d
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+geoh5py.objects.integrator
+--------------------------
+
+.. automodule:: geoh5py.objects.integrator
    :members:
    :undoc-members:
    :show-inheritance:
