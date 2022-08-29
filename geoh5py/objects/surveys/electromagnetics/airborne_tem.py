@@ -22,8 +22,7 @@ import uuid
 import numpy as np
 
 from geoh5py.objects.curve import Curve
-
-from .base import BaseEMSurvey
+from geoh5py.objects.surveys.electromagnetics.base import BaseEMSurvey
 
 
 class BaseAirborneTEM(BaseEMSurvey, Curve):
