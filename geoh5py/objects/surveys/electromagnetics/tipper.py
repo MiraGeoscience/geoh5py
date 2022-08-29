@@ -20,10 +20,10 @@ from __future__ import annotations
 import uuid
 import warnings
 
-from geoh5py.objects import Curve, Points
+from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_type import ObjectType
-
-from .base import BaseEMSurvey
+from geoh5py.objects.points import Points
+from geoh5py.objects.surveys.electromagnetics.base import BaseEMSurvey
 
 
 class BaseTipper(BaseEMSurvey):
