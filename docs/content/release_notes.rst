@@ -1,6 +1,21 @@
 Release Notes
 =============
 
+Release 0.4.0 - 2022/08/26
+--------------------------
+
+Major release adding new classes and fixing issues with the DrillholeGroup class.
+
+- Fixes for concatenated DrillHoleGroup
+    - GEOPY-598: Implement IntegratorDrillholeGroup class
+    - GEOPY-583: Better handling of adding and removing concatenaned drillholes and data intervals.
+- GEOPY-584: Preserve integer values on IntegerData class.
+- GEOPY-548: Allow TextData values on vertices and cells.
+- GEOPY-329: API implementation of DrapeModel object class.
+- GEOPY-462: Documentation fixes
+
+
+
 Release 0.3.1 - 2022/08/26
 --------------------------
 

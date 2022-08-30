@@ -22,10 +22,9 @@ from typing import Any
 
 import numpy as np
 
-from geoh5py.data import FloatData
-from geoh5py.groups import PropertyGroup
-from geoh5py.objects import ObjectBase
-from geoh5py.objects.object_type import ObjectType
+from geoh5py.data.float_data import FloatData
+from geoh5py.groups.property_group import PropertyGroup
+from geoh5py.objects.object_base import ObjectBase
 
 
 class BaseEMSurvey(ObjectBase):
@@ -38,9 +37,6 @@ class BaseEMSurvey(ObjectBase):
     __UNITS = None
     _receivers: BaseEMSurvey | None = None
     _transmitters: BaseEMSurvey | None = None
-
-    def __init__(self, object_type: ObjectType, **kwargs):
-        super().__init__(object_type, **kwargs)
 
     def add_components_data(self, data: dict) -> list[PropertyGroup]:
         """
@@ -214,9 +210,8 @@ class BaseEMSurvey(ObjectBase):
         )
         metadata["EM Dataset"][new_entity.type] = new_entity.uid
         for associate in ["transmitters", "receivers", "base_stations"]:
-            if (
-                getattr(self, associate, None) is not None
-                and getattr(self, associate) != self
+            if getattr(self, associate, None) is not None and not isinstance(
+                getattr(self, associate), type(self)
             ):
                 complement = parent.workspace.copy_to_parent(
                     getattr(self, associate),
@@ -245,7 +240,6 @@ class BaseEMSurvey(ObjectBase):
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         """Default unique identifier. Implemented on the child class."""
-        ...
 
     @property
     def default_transmitter_type(self) -> type:

@@ -45,11 +45,20 @@ def test_create_curve_data(tmp_path):
 
         data_objects = curve.add_data(
             {
-                "vertexValues": {"values": np.random.randn(curve.n_vertices)},
-                "cellValues": {"values": np.random.randn(curve.n_cells)},
+                "vertexValues": {
+                    "values": np.random.randint(
+                        0, curve.n_vertices, curve.n_vertices
+                    ).astype(np.uint32)
+                },
+                "cellValues": {
+                    "values": np.random.randn(curve.n_cells).astype(np.float64)
+                },
             }
         )
 
+        assert np.all(
+            data_objects[0]() == data_objects[0].values
+        ), "Error using the data.call()."
         # Re-open the workspace and read data back in
         ws2 = Workspace(h5file_path)
 

@@ -16,6 +16,8 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
+# pylint: disable=duplicate-code
+
 from __future__ import annotations
 
 import numpy as np

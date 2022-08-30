@@ -151,4 +151,6 @@ class Data(Entity):
         """
         Remove self from a property group.
         """
-        ...
+
+    def __call__(self):
+        return self.values

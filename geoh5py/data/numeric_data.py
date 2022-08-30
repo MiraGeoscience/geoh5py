@@ -17,11 +17,11 @@
 
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 
 import numpy as np
 
-from .data import Data, DataType, PrimitiveTypeEnum
+from .data import Data, PrimitiveTypeEnum
 
 
 class NumericData(Data, ABC):
@@ -29,12 +29,14 @@ class NumericData(Data, ABC):
     Data container for floats values
     """
 
-    def __init__(self, data_type: DataType, **kwargs):
-        super().__init__(data_type, **kwargs)
-
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.INVALID
+
+    @property
+    @abstractmethod
+    def ndv(self):
+        """No-data-value"""
 
     @property
     def values(self) -> np.ndarray | None:
@@ -70,7 +72,12 @@ class NumericData(Data, ABC):
         """
         if self.n_values is not None:
             if values is None or len(values) < self.n_values:
-                full_vector = np.ones(self.n_values) * np.nan
+                full_vector = np.ones(self.n_values, dtype=type(self.ndv))
+                if isinstance(self.ndv, float):
+                    full_vector *= np.nan
+                else:
+                    full_vector *= self.ndv
+
                 full_vector[: len(np.ravel(values))] = np.ravel(values)
                 return full_vector
 
@@ -80,6 +87,3 @@ class NumericData(Data, ABC):
                     f"Array of shape{values.shape} provided.)"
                 )
         return values
-
-    def __call__(self):
-        return self.values

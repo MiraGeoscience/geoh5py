@@ -15,20 +15,25 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from __future__ import annotations
+import uuid
 
-import weakref
-
-
-class AnyObject:
-    # pylint: disable=too-few-public-methods
-    pass
+from .group import Group, GroupType
 
 
-def test_weakref_identity():
-    any_object = AnyObject()
-    ref = weakref.ref(any_object)
-    assert ref() == any_object
-    assert ref() is any_object
-    assert ref is not any_object
-    assert ref != any_object
+class MapsGroup(Group):
+    """The type for the basic Container group."""
+
+    __TYPE_UID = uuid.UUID("{4d65f8c3-a015-4c01-b411-412c0f4f0884}")
+
+    _name = "Maps Group"
+    _description = "Maps Group"
+
+    def __init__(self, group_type: GroupType, **kwargs):
+        assert group_type is not None
+        super().__init__(group_type, **kwargs)
+
+        group_type.workspace._register_group(self)
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID

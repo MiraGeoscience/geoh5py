@@ -50,6 +50,22 @@ geoh5py.groups.group\_type
    :undoc-members:
    :show-inheritance:
 
+geoh5py.groups.integrator\_group
+--------------------------------
+
+.. automodule:: geoh5py.groups.integrator_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+geoh5py.groups.maps\_group
+--------------------------
+
+.. automodule:: geoh5py.groups.maps_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 geoh5py.groups.notype\_group
 ----------------------------
 
@@ -78,6 +94,14 @@ geoh5py.groups.simpeg\_group
 ----------------------------
 
 .. automodule:: geoh5py.groups.simpeg_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+geoh5py.groups.survey\_group
+----------------------------
+
+.. automodule:: geoh5py.groups.survey_group
    :members:
    :undoc-members:
    :show-inheritance:

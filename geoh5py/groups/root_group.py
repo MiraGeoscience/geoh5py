@@ -17,8 +17,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from . import NoTypeGroup
-from .group import GroupType
+
+if TYPE_CHECKING:
+    from ..groups import GroupType
 
 
 class RootGroup(NoTypeGroup):

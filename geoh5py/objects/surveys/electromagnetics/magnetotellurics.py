@@ -19,8 +19,7 @@ from __future__ import annotations
 
 import uuid
 
-from geoh5py.objects import Points
-from geoh5py.objects.object_type import ObjectType
+from geoh5py.objects.points import Points
 
 from .base import BaseEMSurvey
 
@@ -39,9 +38,6 @@ class MTReceivers(BaseEMSurvey, Points):
         "Gigahertz (GHz)",
     ]
     __INPUT_TYPE = ["Rx only"]
-
-    def __init__(self, object_type: ObjectType, **kwargs):
-        super().__init__(object_type, **kwargs)
 
     @property
     def default_input_types(self) -> list[str]:

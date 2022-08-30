@@ -21,8 +21,7 @@ import uuid
 
 import numpy as np
 
-from geoh5py.objects import Curve
-from geoh5py.objects.object_type import ObjectType
+from geoh5py.objects.curve import Curve
 
 from .base import BaseEMSurvey
 
@@ -43,17 +42,6 @@ class BaseAirborneTEM(BaseEMSurvey, Curve):
         "Nanoseconds (ns)",
     ]
     __INPUT_TYPE = ["Rx", "Tx", "Tx and Rx"]
-
-    def __init__(
-        self,
-        object_type: ObjectType,
-        **kwargs,
-    ):
-
-        super().__init__(
-            object_type,
-            **kwargs,
-        )
 
     @property
     def default_input_types(self) -> list[str]:
@@ -291,9 +279,6 @@ class AirborneTEMReceivers(BaseAirborneTEM):
     __TYPE_UID = uuid.UUID("{19730589-fd28-4649-9de0-ad47249d9aba}")
     __TYPE = "Receivers"
 
-    def __init__(self, object_type: ObjectType, **kwargs):
-        super().__init__(object_type, **kwargs)
-
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         """
@@ -321,9 +306,6 @@ class AirborneTEMTransmitters(BaseAirborneTEM):
 
     __TYPE_UID = uuid.UUID("{58c4849f-41e2-4e09-b69b-01cf4286cded}")
     __TYPE = "Transmitters"
-
-    def __init__(self, object_type: ObjectType, **kwargs):
-        super().__init__(object_type, **kwargs)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

@@ -15,6 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=duplicate-code
+
 from __future__ import annotations
 
 import random
@@ -291,9 +293,9 @@ def test_insert_drillhole_data(tmp_path):
                 "match_depth": {
                     "depth": new_depths,
                     "values": np.random.randint(1, high=8, size=2),
-                    "collocation_distance": 1e-6,
-                }
-            }
+                },
+            },
+            collocation_distance=1e-6,
         )
 
         assert (
