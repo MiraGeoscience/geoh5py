@@ -20,6 +20,7 @@ from __future__ import annotations
 from gc import collect
 
 import numpy as np
+import pytest
 
 from geoh5py.groups import ContainerGroup
 from geoh5py.objects import Curve
@@ -37,7 +38,9 @@ def test_delete_entities(tmp_path):
         curve_1.add_data({"DataValues": {"association": "VERTEX", "values": values}})
 
         # Create second object with data sharing type
-        curve_2 = Curve.create(workspace, vertices=xyz, parent=group)
+        curve_2 = Curve.create(
+            workspace, vertices=xyz, parent=group, allow_delete=False
+        )
 
         # Add data
         for i in range(4):
@@ -76,9 +79,15 @@ def test_delete_entities(tmp_path):
         ), "Data types were not properly removed from the workspace."
 
         # Remove entire object with data
+        with pytest.raises(UserWarning) as error:
+            workspace.remove_entity(curve_2)
+
+        assert "The 'allow_delete' property of entity" in str(error)
+
+        curve_2.allow_delete = True
         workspace.remove_entity(curve_2)
 
-        del curve_2  # Needed since still referenced in current script
+        del curve_2, error  # Needed since still referenced in current script
         collect()
         assert (
             len(workspace.groups) == 2

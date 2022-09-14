@@ -68,10 +68,11 @@ class BaseValidator(ABC):
         )
 
     @property
-    @classmethod
     @abstractmethod
-    def validator_type(cls):
-        """Validation type identifier."""
+    def validator_type(self):
+        """
+        Validation type identifier.
+        """
         raise NotImplementedError("Must implement the validator_type property.")
 
 
