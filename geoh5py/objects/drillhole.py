@@ -201,8 +201,8 @@ class Drillhole(Points):
                 surveys = np.vstack(
                     [
                         self._surveys["Depth"],
-                        self._surveys["Azimuth"],
                         self._surveys["Dip"],
+                        self._surveys["Azimuth"],
                     ]
                 ).T
 
