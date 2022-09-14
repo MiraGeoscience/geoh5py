@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import uuid
 
-from geoh5py.objects import Points
+from geoh5py.objects.points import Points
 
 from .base import BaseEMSurvey
 

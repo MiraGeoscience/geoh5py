@@ -22,9 +22,9 @@ from typing import Any
 
 import numpy as np
 
-from geoh5py.data import FloatData
-from geoh5py.groups import PropertyGroup
-from geoh5py.objects import ObjectBase
+from geoh5py.data.float_data import FloatData
+from geoh5py.groups.property_group import PropertyGroup
+from geoh5py.objects.object_base import ObjectBase
 
 
 class BaseEMSurvey(ObjectBase):

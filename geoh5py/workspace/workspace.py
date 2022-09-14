@@ -513,6 +513,12 @@ class Workspace(AbstractContextManager):
         """
         Function to remove an entity and its children from the workspace.
         """
+        if not entity.allow_delete:
+            raise UserWarning(
+                f"The 'allow_delete' property of entity {entity} prevents it from "
+                "being removed. Please revise."
+            )
+
         if not isinstance(entity, Concatenator):
             self.workspace.remove_recursively(entity)
 
