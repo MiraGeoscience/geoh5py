@@ -187,7 +187,7 @@ class Drillhole(Points):
         self.workspace.update_attribute(self, "attributes")
 
     @property
-    def surveys(self) -> np.ndarray | None:
+    def surveys(self) -> np.ndarray:
         """
         Coordinates of the surveys
         """
@@ -195,24 +195,22 @@ class Drillhole(Points):
             self._surveys = self.workspace.fetch_array_attribute(self, "surveys")
 
         if isinstance(self._surveys, np.ndarray):
-            try:
-                surveys = self._surveys.view("<f4").reshape((-1, 3))
-            except TypeError:
-                surveys = np.vstack(
-                    [
-                        self._surveys["Depth"],
-                        self._surveys["Azimuth"],
-                        self._surveys["Dip"],
-                    ]
-                ).T
+            surveys = np.vstack(
+                [
+                    self._surveys["Depth"],
+                    self._surveys["Azimuth"],
+                    self._surveys["Dip"],
+                ]
+            ).T
 
-            # Repeat first survey point at surface for de-survey interpolation
-            surveys = np.vstack([surveys[0, :], surveys])
-            surveys[0, 0] = 0.0
+        else:
+            surveys = np.c_[0, 0, -90]
 
-            return surveys.astype(float)
+        # Repeat first survey point at surface for de-survey interpolation
+        surveys = np.vstack([surveys[0, :], surveys])
+        surveys[0, 0] = 0.0
 
-        return None
+        return surveys.astype(float)
 
     @surveys.setter
     def surveys(self, value):
@@ -661,26 +659,26 @@ def compute_deviation(surveys: np.ndarray, axis: str) -> np.ndarray | None:
 
     lengths = surveys[1:, 0] - surveys[:-1, 0]
     if axis == "x":
-        dl_in = np.cos(np.deg2rad(450.0 - surveys[:-1, 2] % 360.0)) * np.cos(
-            np.deg2rad(surveys[:-1, 1])
+        dl_in = np.cos(np.deg2rad(450.0 - surveys[:-1, 1] % 360.0)) * np.cos(
+            np.deg2rad(surveys[:-1, 2])
         )
-        dl_out = np.cos(np.deg2rad(450.0 - surveys[1:, 2] % 360.0)) * np.cos(
-            np.deg2rad(surveys[1:, 1])
+        dl_out = np.cos(np.deg2rad(450.0 - surveys[1:, 1] % 360.0)) * np.cos(
+            np.deg2rad(surveys[1:, 2])
         )
         ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
 
     elif axis == "y":
-        dl_in = np.sin(np.deg2rad(450.0 - surveys[:-1, 2] % 360.0)) * np.cos(
-            np.deg2rad(surveys[:-1, 1])
+        dl_in = np.sin(np.deg2rad(450.0 - surveys[:-1, 1] % 360.0)) * np.cos(
+            np.deg2rad(surveys[:-1, 2])
         )
-        dl_out = np.sin(np.deg2rad(450.0 - surveys[1:, 2] % 360.0)) * np.cos(
-            np.deg2rad(surveys[1:, 1])
+        dl_out = np.sin(np.deg2rad(450.0 - surveys[1:, 1] % 360.0)) * np.cos(
+            np.deg2rad(surveys[1:, 2])
         )
         ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
 
     elif axis == "z":
-        dl_in = np.sin(np.deg2rad(surveys[:-1, 1]))
-        dl_out = np.sin(np.deg2rad(surveys[1:, 1]))
+        dl_in = np.sin(np.deg2rad(surveys[:-1, 2]))
+        dl_out = np.sin(np.deg2rad(surveys[1:, 2]))
         ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
 
     else:

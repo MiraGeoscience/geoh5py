@@ -197,6 +197,19 @@ def test_create_drillhole_data(tmp_path):
         )
 
 
+def test_no_survey(tmp_path):
+    collar = np.r_[0.0, 10.0, 10.0]
+    h5file_path = tmp_path / r"testCurve.geoh5"
+    with Workspace(h5file_path, version=1.0) as workspace:
+        well = Drillhole.create(workspace, collar=collar)
+        depths = [0.0, 1.0, 1000.0]
+        locations = well.desurvey(depths)
+        solution = np.kron(collar, np.ones((3, 1)))
+        solution[:, 2] -= depths
+
+        np.testing.assert_array_almost_equal(locations, solution, decimal=3)
+
+
 def test_single_survey(tmp_path):
     # Create a simple well
     dist = np.random.rand(1) * 100.0
@@ -206,7 +219,7 @@ def test_single_survey(tmp_path):
     collar = np.r_[0.0, 10.0, 10.0]
     h5file_path = tmp_path / r"testCurve.geoh5"
     with Workspace(h5file_path, version=1.0) as workspace:
-        well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, dip, azm])
+        well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, azm, dip])
         depths = [0.0, 1.0, 1000.0]
         locations = well.desurvey(depths)
         solution = (
@@ -234,7 +247,7 @@ def test_outside_survey(tmp_path):
     collar = np.r_[0.0, 10.0, 10.0]
     h5file_path = tmp_path / r"testCurve.geoh5"
     with Workspace(h5file_path, version=1.0) as workspace:
-        well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, dip, azm])
+        well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, azm, dip])
         depths = [0.0, 1000.0]
         locations = well.desurvey(depths)
         solution = (
@@ -266,8 +279,8 @@ def test_insert_drillhole_data(tmp_path):
             collar=np.r_[0.0, 10.0, 10],
             surveys=np.c_[
                 np.linspace(0, max_depth, n_data),
-                np.linspace(-89, -75, n_data),
                 np.ones(n_data) * 45.0,
+                np.linspace(-89, -75, n_data),
             ],
             name=well_name,
             default_collocation_distance=collocation,
