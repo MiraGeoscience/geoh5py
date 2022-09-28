@@ -57,11 +57,38 @@ class Surface(Points):
         if isinstance(indices, list):
             indices = np.vstack(indices)
 
-        assert np.issubdtype(
-            indices.dtype, np.integer
-        ), "Indices array must be of integer type"
+        if indices.shape[1] != 3:
+            raise ValueError("Array of cells should be of shape (*, 3).")
+
+        if not np.issubdtype(indices.dtype, np.integer):
+            raise ValueError("Indices array must be of integer type")
+
+        if self._cells is not None and indices.shape[0] < self._cells.shape[0]:
+            raise UserWarning(
+                "Attempting to assign 'cells' with fewer values. "
+                "Use the `remove_cells` method instead."
+            )
+
         self._cells = indices.astype(np.int32)
         self.workspace.update_attribute(self, "cells")
+
+    def remove_cells(self, indices: list[int]):
+        """Safely remove cells and corresponding data entries."""
+
+        if self._cells is None:
+            raise UserWarning("No cells to be removed.")
+
+        if (
+            isinstance(self.cells, np.ndarray)
+            and np.max(indices) > self.cells.shape[0] - 1
+        ):
+            raise UserWarning("Found indices larger than the number of cells.")
+
+        cells = np.delete(self.cells, indices, axis=0)
+        self._cells = None
+        self.cells = cells
+
+        self.remove_children_values(indices, "CELL")
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

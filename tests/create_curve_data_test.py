@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from geoh5py.objects import Curve
 from geoh5py.shared.utils import compare_entities
@@ -83,3 +84,23 @@ def test_create_curve_data(tmp_path):
         compare_entities(obj_rec, obj)
         compare_entities(data_vert_rec, data_vertex)
         ws2.close()
+
+
+def test_remove_cells_data(tmp_path):
+
+    # Generate a random cloud of points
+    n_data = 12
+
+    with Workspace(tmp_path / r"testCurve.geoh5") as workspace:
+
+        curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
+
+        with pytest.raises(UserWarning) as err:
+            curve.remove_cells(12)
+
+        assert "Found indices larger than the number of cells." in str(err)
+
+        with pytest.raises(UserWarning) as err:
+            curve.cells = curve.cells[1:, :]
+
+        assert "Attempting to assign 'cells' with fewer values." in str(err)

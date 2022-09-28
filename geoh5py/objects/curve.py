@@ -63,24 +63,38 @@ class Curve(Points):
                 for part_id in self.unique_parts:
                     ind = np.where(self.parts == part_id)[0]
                     cells.append(np.c_[ind[:-1], ind[1:]])
-                self._cells = np.vstack(cells)
+                self.cells = np.vstack(cells)
 
             elif self.on_file:
                 self._cells = self.workspace.fetch_array_attribute(self)
-            else:
-                if self.vertices is not None:
-                    n_segments = self.vertices.shape[0]
-                    self._cells = np.c_[
-                        np.arange(0, n_segments - 1), np.arange(1, n_segments)
-                    ].astype("uint32")
+
+            elif self.vertices is not None:
+                n_segments = self.vertices.shape[0]
+                self.cells = np.c_[
+                    np.arange(0, n_segments - 1), np.arange(1, n_segments)
+                ].astype("uint32")
 
         return self._cells
 
     @cells.setter
-    def cells(self, indices):
-        assert np.issubdtype(
-            indices.dtype, np.integer
-        ), "Indices array must be of integer type"
+    def cells(self, indices: list | np.ndarray | None):
+        if isinstance(indices, list):
+            indices = np.vstack(indices)
+
+        if self._cells is not None and (
+            indices is None or indices.shape[0] < self._cells.shape[0]
+        ):
+            raise UserWarning(
+                "Attempting to assign 'cells' with fewer values. "
+                "Use the `remove_cells` method instead."
+            )
+
+        if indices.shape[1] != 2:
+            raise ValueError("Array of cells should be of shape (*, 2).")
+
+        if not np.issubdtype(indices.dtype, np.integer):
+            raise ValueError("Indices array must be of integer type")
+
         self._cells = indices.astype(np.int32)
         self._parts = None
         self.workspace.update_attribute(self, "cells")
@@ -154,6 +168,24 @@ class Curve(Points):
             self._parts = indices
             self._cells = None
             self.workspace.update_attribute(self, "cells")
+
+    def remove_cells(self, indices: list[int]):
+        """Safely remove cells and corresponding data entries."""
+
+        if self._cells is None:
+            raise UserWarning("No cells to be removed.")
+
+        if (
+            isinstance(self.cells, np.ndarray)
+            and np.max(indices) > self.cells.shape[0] - 1
+        ):
+            raise UserWarning("Found indices larger than the number of cells.")
+
+        cells = np.delete(self.cells, indices, axis=0)
+        self._cells = None
+        self.cells = cells
+
+        self.remove_children_values(indices, "CELL")
 
     @property
     def unique_parts(self):

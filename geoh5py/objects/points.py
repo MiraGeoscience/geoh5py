@@ -21,7 +21,6 @@ import uuid
 
 import numpy as np
 
-from ..data.data_association_enum import DataAssociationEnum
 from .object_base import ObjectBase, ObjectType
 
 
@@ -94,10 +93,4 @@ class Points(ObjectBase):
         self._vertices = None
         self.vertices = vertices
 
-        for child in self.children:
-            if (
-                getattr(child, "values", None) is not None
-                and isinstance(child.association, DataAssociationEnum)
-                and child.association.name == "VERTEX"
-            ):
-                child.values = np.delete(child.values, indices, axis=0)
+        self.remove_children_values(indices, "VERTEX")
