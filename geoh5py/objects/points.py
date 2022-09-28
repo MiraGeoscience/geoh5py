@@ -21,6 +21,7 @@ import uuid
 
 import numpy as np
 
+from ..data.data_association_enum import DataAssociationEnum
 from .object_base import ObjectBase, ObjectType
 
 
@@ -57,9 +58,18 @@ class Points(ObjectBase):
 
     @vertices.setter
     def vertices(self, xyz: np.ndarray):
-        assert (
-            xyz.shape[1] == 3
-        ), f"Array of vertices must be of shape (*, 3). Array of shape {xyz.shape} provided."
+
+        if xyz.shape[1] != 3:
+            raise ValueError(
+                f"Array of vertices must be of shape (*, 3). Array of shape {xyz.shape} provided."
+            )
+
+        if self._vertices is not None and xyz.shape[0] < self._vertices.shape[0]:
+            raise UserWarning(
+                "Attempting to assign 'vertices' with fewer values. "
+                "Use the `remove_vertices` method instead."
+            )
+
         self._vertices = np.asarray(
             np.core.records.fromarrays(
                 xyz.T.tolist(),
@@ -67,3 +77,27 @@ class Points(ObjectBase):
             )
         )
         self.workspace.update_attribute(self, "vertices")
+
+    def remove_vertices(self, indices: list[int]):
+        """Safely remove vertices and corresponding data entries."""
+
+        if self._vertices is None:
+            raise UserWarning("No vertices to be removed.")
+
+        if (
+            isinstance(self.vertices, np.ndarray)
+            and np.max(indices) > self.vertices.shape[0] - 1
+        ):
+            raise UserWarning("Found indices larger than the number of vertices.")
+
+        vertices = np.delete(self.vertices, indices, axis=0)
+        self._vertices = None
+        self.vertices = vertices
+
+        for child in self.children:
+            if (
+                getattr(child, "values", None) is not None
+                and isinstance(child.association, DataAssociationEnum)
+                and child.association.name == "VERTEX"
+            ):
+                child.values = np.delete(child.values, indices, axis=0)

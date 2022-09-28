@@ -76,3 +76,36 @@ def test_create_point_data(tmp_path):
         assert (
             etype_handle.get("StatsCache") is None
         ), "StatsCache was not properly deleted on update of values"
+
+
+def test_remove_point_data(tmp_path):
+    # Generate a random cloud of points
+    values = np.random.randn(12)
+    h5file_path = tmp_path / r"testPoints.geoh5"
+    with Workspace(h5file_path) as workspace:
+        points = Points.create(workspace)
+
+        with pytest.raises(UserWarning) as err:
+            points.remove_vertices(12)
+
+        assert "No vertices to be removed." in str(err)
+
+        points.vertices = np.random.randn(12, 3)
+
+        data = points.add_data(
+            {"DataValues": {"association": "VERTEX", "values": values}}
+        )
+
+        with pytest.raises(UserWarning) as err:
+            points.vertices = np.random.randn(10, 3)
+
+        assert "Attempting to assign 'vertices' with fewer values." in str(err)
+
+        with pytest.raises(UserWarning) as err:
+            points.remove_vertices(12)
+
+        assert "Found indices larger than the number of vertices." in str(err)
+
+        points.remove_vertices([1, 2])
+
+        assert len(data.values) == 10, "Error removing data values with vertices."
