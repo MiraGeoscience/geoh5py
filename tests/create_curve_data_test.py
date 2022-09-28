@@ -94,6 +94,13 @@ def test_remove_cells_data(tmp_path):
     with Workspace(tmp_path / r"testCurve.geoh5") as workspace:
 
         curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
+        data = curve.add_data(
+            {
+                "cellValues": {
+                    "values": np.random.randn(curve.n_cells).astype(np.float64)
+                },
+            }
+        )
 
         with pytest.raises(UserWarning) as err:
             curve.remove_cells(12)
@@ -104,3 +111,7 @@ def test_remove_cells_data(tmp_path):
             curve.cells = curve.cells[1:, :]
 
         assert "Attempting to assign 'cells' with fewer values." in str(err)
+
+        curve.remove_cells([0])
+
+        assert len(data.values) == 10, "Error removing data values with cells."

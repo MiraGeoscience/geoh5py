@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from geoh5py.objects import Surface
 from geoh5py.shared.utils import compare_entities
@@ -60,3 +61,26 @@ def test_create_surface_data(tmp_path):
 
         compare_entities(surface, rec_obj)
         compare_entities(data, rec_data)
+
+
+def test_remove_cells_surface_data(tmp_path):
+    h5file_path = tmp_path / r"../test_create_surface_data0/testSurface.geoh5"
+
+    with Workspace(h5file_path) as workspace:
+        surface = workspace.objects[0].copy()
+
+        with pytest.raises(UserWarning) as err:
+            surface.remove_cells(101)
+
+        assert "Found indices larger than the number of cells." in str(err)
+
+        with pytest.raises(UserWarning) as err:
+            surface.cells = surface.cells[1:, :]
+
+        assert "Attempting to assign 'cells' with fewer values." in str(err)
+
+        surface.remove_cells([0])
+
+        assert (
+            len(surface.children[0].values) == 99
+        ), "Error removing data values with cells."
