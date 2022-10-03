@@ -47,9 +47,15 @@ def test_create_surface_data(tmp_path):
         )
 
         # Create a geoh5 surface
-        surface = Surface.create(
-            workspace, name="mySurf", vertices=xyz, cells=simplices
-        )
+        surface = Surface.create(workspace, name="mySurf", vertices=xyz)
+
+        with pytest.raises(ValueError, match="Array of cells should be of shape"):
+            surface.cells = np.c_[[0, 1]]
+
+        with pytest.raises(ValueError, match="Indices array must be of integer type"):
+            surface.cells = simplices.astype(float)
+
+        surface.cells = simplices.tolist()
 
         data = surface.add_data({"TMI": {"values": values}})
 
