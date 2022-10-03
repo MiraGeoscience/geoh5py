@@ -38,6 +38,9 @@ def test_create_curve_data(tmp_path):
         curve = Curve.create(
             workspace, vertices=np.random.randn(n_data, 3), name=curve_name
         )
+        setattr(curve, "_cells", None)
+        with pytest.warns(UserWarning, match="No cells to be removed."):
+            curve.remove_cells(0)
 
         # Get and change the parts
         parts = curve.parts
