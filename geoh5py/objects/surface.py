@@ -66,7 +66,7 @@ class Surface(Points):
                 "Use the `remove_cells` method instead."
             )
 
-        if indices.shape[1] != 3:
+        if indices.ndim != 2 or indices.shape[1] != 3:
             raise ValueError("Array of cells should be of shape (*, 3).")
 
         if not np.issubdtype(indices.dtype, np.integer):

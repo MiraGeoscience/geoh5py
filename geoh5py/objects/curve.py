@@ -90,7 +90,7 @@ class Curve(Points):
                 "Use the `remove_cells` method instead."
             )
 
-        if indices.shape[1] != 2:
+        if indices.ndim != 2 or indices.shape[1] != 2:
             raise ValueError("Array of cells should be of shape (*, 2).")
 
         if not np.issubdtype(indices.dtype, np.integer):

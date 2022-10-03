@@ -84,6 +84,9 @@ def test_remove_point_data(tmp_path):
         with pytest.warns(UserWarning, match="No vertices to be removed."):
             points.remove_vertices(12)
 
+        with pytest.raises(ValueError, match="Array of vertices must be of shape"):
+            points.vertices = np.r_[1, 2, 3]
+
         points.vertices = np.random.randn(12, 3)
 
         data = points.add_data(
