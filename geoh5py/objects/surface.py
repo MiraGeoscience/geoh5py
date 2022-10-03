@@ -79,7 +79,7 @@ class Surface(Points):
         """Safely remove cells and corresponding data entries."""
 
         if self._cells is None:
-            warnings.warn("No cells to be removed.")
+            warnings.warn("No cells to be removed.", UserWarning)
 
         if (
             isinstance(self.cells, np.ndarray)

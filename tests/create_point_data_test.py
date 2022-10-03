@@ -81,7 +81,7 @@ def test_remove_point_data(tmp_path):
     with Workspace(h5file_path) as workspace:
         points = Points.create(workspace)
 
-        with pytest.warns(match="No vertices to be removed."):
+        with pytest.warns(UserWarning, match="No vertices to be removed."):
             points.remove_vertices(12)
 
         points.vertices = np.random.randn(12, 3)

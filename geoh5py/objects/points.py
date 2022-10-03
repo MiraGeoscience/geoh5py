@@ -82,7 +82,7 @@ class Points(ObjectBase):
         """Safely remove vertices and corresponding data entries."""
 
         if self._vertices is None:
-            warnings.warn("No vertices to be removed.")
+            warnings.warn("No vertices to be removed.", UserWarning)
             return
 
         if (
