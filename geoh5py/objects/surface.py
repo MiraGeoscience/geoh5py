@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 
 import numpy as np
 
@@ -60,7 +61,7 @@ class Surface(Points):
         if self._cells is not None and (
             indices is None or indices.shape[0] < self._cells.shape[0]
         ):
-            raise UserWarning(
+            raise ValueError(
                 "Attempting to assign 'cells' with fewer values. "
                 "Use the `remove_cells` method instead."
             )
@@ -78,13 +79,13 @@ class Surface(Points):
         """Safely remove cells and corresponding data entries."""
 
         if self._cells is None:
-            raise UserWarning("No cells to be removed.")
+            warnings.warn("No cells to be removed.")
 
         if (
             isinstance(self.cells, np.ndarray)
             and np.max(indices) > self.cells.shape[0] - 1
         ):
-            raise UserWarning("Found indices larger than the number of cells.")
+            raise ValueError("Found indices larger than the number of cells.")
 
         cells = np.delete(self.cells, indices, axis=0)
         self._cells = None

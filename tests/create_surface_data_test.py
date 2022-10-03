@@ -69,15 +69,15 @@ def test_remove_cells_surface_data(tmp_path):
     with Workspace(h5file_path) as workspace:
         surface = workspace.objects[0].copy()
 
-        with pytest.raises(UserWarning) as err:
+        with pytest.raises(
+            ValueError, match="Found indices larger than the number of cells."
+        ):
             surface.remove_cells(101)
 
-        assert "Found indices larger than the number of cells." in str(err)
-
-        with pytest.raises(UserWarning) as err:
+        with pytest.raises(
+            ValueError, match="Attempting to assign 'cells' with fewer values."
+        ):
             surface.cells = surface.cells[1:, :]
-
-        assert "Attempting to assign 'cells' with fewer values." in str(err)
 
         surface.remove_cells([0])
 

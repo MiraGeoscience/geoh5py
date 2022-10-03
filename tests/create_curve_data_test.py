@@ -102,15 +102,15 @@ def test_remove_cells_data(tmp_path):
             }
         )
 
-        with pytest.raises(UserWarning) as err:
+        with pytest.raises(
+            ValueError, match="Found indices larger than the number of cells."
+        ):
             curve.remove_cells(12)
 
-        assert "Found indices larger than the number of cells." in str(err)
-
-        with pytest.raises(UserWarning) as err:
+        with pytest.raises(
+            ValueError, match="Attempting to assign 'cells' with fewer values."
+        ):
             curve.cells = curve.cells[1:, :]
-
-        assert "Attempting to assign 'cells' with fewer values." in str(err)
 
         curve.remove_cells([0])
 

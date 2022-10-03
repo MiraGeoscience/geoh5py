@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 
 import numpy as np
 
@@ -64,7 +65,7 @@ class Points(ObjectBase):
             )
 
         if self._vertices is not None and xyz.shape[0] < self._vertices.shape[0]:
-            raise UserWarning(
+            raise ValueError(
                 "Attempting to assign 'vertices' with fewer values. "
                 "Use the `remove_vertices` method instead."
             )
@@ -81,13 +82,14 @@ class Points(ObjectBase):
         """Safely remove vertices and corresponding data entries."""
 
         if self._vertices is None:
-            raise UserWarning("No vertices to be removed.")
+            warnings.warn("No vertices to be removed.")
+            return
 
         if (
             isinstance(self.vertices, np.ndarray)
             and np.max(indices) > self.vertices.shape[0] - 1
         ):
-            raise UserWarning("Found indices larger than the number of vertices.")
+            raise ValueError("Found indices larger than the number of vertices.")
 
         vertices = np.delete(self.vertices, indices, axis=0)
         self._vertices = None

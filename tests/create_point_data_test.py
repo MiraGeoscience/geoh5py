@@ -38,15 +38,11 @@ def test_create_point_data(tmp_path):
     points = Points.create(workspace, vertices=np.random.randn(12, 3), allow_move=False)
     data = points.add_data({"DataValues": {"association": "VERTEX", "values": values}})
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ValueError, match="Association flag should be one of"):
         points.add_data({"test": {"association": "ABC", "values": values}})
 
-    assert "Association flag should be one of" in str(excinfo.value)
-
-    with pytest.raises(TypeError) as excinfo:
+    with pytest.raises(TypeError, match="Association must be of type"):
         points.add_data({"test": {"association": Points, "values": values}})
-
-    assert "Association must be of type" in str(excinfo.value)
 
     tag = points.add_data(
         {"my_comment": {"association": "OBJECT", "values": "hello_world"}}
@@ -85,10 +81,8 @@ def test_remove_point_data(tmp_path):
     with Workspace(h5file_path) as workspace:
         points = Points.create(workspace)
 
-        with pytest.raises(UserWarning) as err:
+        with pytest.warns(match="No vertices to be removed."):
             points.remove_vertices(12)
-
-        assert "No vertices to be removed." in str(err)
 
         points.vertices = np.random.randn(12, 3)
 
@@ -96,15 +90,15 @@ def test_remove_point_data(tmp_path):
             {"DataValues": {"association": "VERTEX", "values": values}}
         )
 
-        with pytest.raises(UserWarning) as err:
+        with pytest.raises(
+            ValueError, match="Attempting to assign 'vertices' with fewer values."
+        ):
             points.vertices = np.random.randn(10, 3)
 
-        assert "Attempting to assign 'vertices' with fewer values." in str(err)
-
-        with pytest.raises(UserWarning) as err:
+        with pytest.raises(
+            ValueError, match="Found indices larger than the number of vertices."
+        ):
             points.remove_vertices(12)
-
-        assert "Found indices larger than the number of vertices." in str(err)
 
         points.remove_vertices([1, 2])
 
