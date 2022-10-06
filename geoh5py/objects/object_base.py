@@ -90,7 +90,9 @@ class ObjectBase(Entity):
         else:
             self.comments.values = self.comments.values + [comment_dict]
 
-    def add_data(self, data: dict, property_group: str = None) -> Data | list[Data]:
+    def add_data(
+        self, data: dict, property_group: str | PropertyGroup | None = None
+    ) -> Data | list[Data]:
         """
         Create :obj:`~geoh5py.data.data.Data` from dictionary of name and arguments.
         The provided arguments can be any property of the target Data class.
@@ -145,7 +147,7 @@ class ObjectBase(Entity):
         return data_objects
 
     def add_data_to_group(
-        self, data: list | Data | uuid.UUID, name: str
+        self, data: list | Data | uuid.UUID, property_group: str | PropertyGroup
     ) -> PropertyGroup:
         """
         Append data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
@@ -154,7 +156,7 @@ class ObjectBase(Entity):
         :param data: :obj:`~geoh5py.data.data.Data` object,
             :obj:`~geoh5py.shared.entity.Entity.uid` or
             :obj:`~geoh5py.shared.entity.Entity.name` of data.
-        :param name: Name of a :obj:`~geoh5py.groups.property_group.PropertyGroup`.
+        :param property_group: Name or :obj:`~geoh5py.groups.property_group.PropertyGroup`.
             A new group is created if none exist with the given name.
 
         :return: The target property group.
@@ -171,20 +173,21 @@ class ObjectBase(Entity):
         if isinstance(template, Data):
             association = template.association
 
-        prop_group = self.find_or_create_property_group(
-            name=name,
-            association=association,
-        )
+        if isinstance(property_group, str):
+            property_group = self.find_or_create_property_group(
+                name=property_group,
+                association=association,
+            )
         for uid in uids:
             assert uid in [
                 child.uid for child in self.children
             ], f"Given data with uuid {uid} does not match any known children"
-            if uid not in prop_group.properties:
-                prop_group.properties.append(uid)
+            if uid not in property_group.properties:
+                property_group.properties.append(uid)
 
         self.workspace.update_attribute(self, "property_groups")
 
-        return prop_group
+        return property_group
 
     @property
     def cells(self):
@@ -255,11 +258,19 @@ class ObjectBase(Entity):
         else:
             kwargs["parent"] = self
 
+            if (
+                "property_group_type" not in kwargs
+                and "Property Group Type" not in kwargs
+            ):
+                if isinstance(self, Concatenated):
+                    kwargs["property_group_type"] = "Interval table"
+                else:
+                    kwargs["property_group_type"] = "Multi-element"
+
             if isinstance(self, Concatenated):
-                kwargs["property_group_type"] = "Interval table"
+
                 prop_group = ConcatenatedPropertyGroup(**kwargs)
             else:
-                kwargs["property_group_type"] = "Multi-element"
                 prop_group = PropertyGroup(**kwargs)
 
             property_groups += [prop_group]
