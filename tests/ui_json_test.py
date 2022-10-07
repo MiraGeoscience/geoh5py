@@ -58,11 +58,11 @@ def get_workspace(directory):
                 "values B": {"values": np.random.randn(12)},
             }
         )
-        points.add_data_to_group(data, name="My group")
+        points.add_data_to_group(data, "My group")
 
         points_b = points.copy(copy_children=True)
         points_b.name = "Points_B"
-        points_b.add_data_to_group(points_b.children, name="My group2")
+        points_b.add_data_to_group(points_b.children, "My group2")
 
     return workspace
 

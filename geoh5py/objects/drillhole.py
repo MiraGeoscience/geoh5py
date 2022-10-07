@@ -25,6 +25,7 @@ import uuid
 import numpy as np
 
 from ..data import Data, FloatData
+from ..groups import PropertyGroup
 from ..shared.utils import merge_arrays
 from .object_base import ObjectType
 from .points import Points
@@ -321,7 +322,10 @@ class Drillhole(Points):
             )
 
     def add_data(
-        self, data: dict, property_group: str = None, collocation_distance=None
+        self,
+        data: dict,
+        property_group: str | PropertyGroup | None = None,
+        collocation_distance=None,
     ) -> Data | list[Data]:
         """
         Create :obj:`~geoh5py.data.data.Data` specific to the drillhole object
@@ -344,7 +348,7 @@ class Drillhole(Points):
                     },
             }
 
-        :param property_group: Name of the property group to add the data into.
+        :param property_group: Name or PropertyGroup used to group the data.
 
         :return: List of new Data objects.
         """
@@ -599,16 +603,13 @@ class Drillhole(Points):
         if collocation_distance < 0:
             raise UserWarning("Input depth 'collocation_distance' must be >0.")
 
-        if (
-            "depth" not in attributes
-            and "from-to" not in attributes
-            and "association" not in attributes
-        ):
-            assert attributes["association"] == "OBJECT", (
-                "Input data dictionary must contain {key:values} "
-                + "{'from-to':numpy.ndarray} "
-                + "or {'association': 'OBJECT'}."
-            )
+        if "depth" not in attributes and "from-to" not in attributes:
+            if "association" not in attributes or attributes["association"] != "OBJECT":
+                raise ValueError(
+                    "Input data dictionary must contain {key:values} "
+                    + "{'from-to':numpy.ndarray} "
+                    + "or {'association': 'OBJECT'}."
+                )
 
         if "depth" in attributes.keys():
             attributes["association"] = "VERTEX"
