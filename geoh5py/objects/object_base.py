@@ -27,6 +27,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..data import CommentsData, Data
+from ..data.data_association_enum import DataAssociationEnum
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
@@ -380,6 +381,15 @@ class ObjectBase(Entity):
 
         self._property_groups = property_groups
         self.workspace.update_attribute(self, "property_groups")
+
+    def remove_children_values(self, indices: list[int], association: str):
+        for child in self.children:
+            if (
+                getattr(child, "values", None) is not None
+                and isinstance(child.association, DataAssociationEnum)
+                and child.association.name == association
+            ):
+                child.values = np.delete(child.values, indices, axis=0)
 
     @property
     def vertices(self):
