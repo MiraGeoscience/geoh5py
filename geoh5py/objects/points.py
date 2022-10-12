@@ -91,4 +91,5 @@ class Points(ObjectBase):
                 dtype=[("x", "<f8"), ("y", "<f8"), ("z", "<f8")],
             )
         )
+        self._extent = None
         self.workspace.update_attribute(self, "vertices")
