@@ -59,6 +59,8 @@ class Points(ObjectBase):
             return None
 
         new_entity = self.copy(parent=parent, copy_children=copy_children)
+        indices = mask_by_extent(self.vertices, bounds)
+        new_entity.remove_vertices(~indices)
         return new_entity
 
     @property
