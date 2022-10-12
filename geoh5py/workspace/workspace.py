@@ -61,7 +61,7 @@ from ..shared.concatenation import (
 )
 from ..shared.entity import Entity
 from ..shared.exceptions import Geoh5FileClosedError
-from ..shared.utils import as_str_if_utf8_bytes, str2uuid
+from ..shared.utils import as_str_if_utf8_bytes, get_attributes, str2uuid
 
 if TYPE_CHECKING:
     from ..groups import group
@@ -235,16 +235,17 @@ class Workspace(AbstractContextManager):
 
         :return: The Entity registered to the workspace.
         """
-        entity_kwargs = entity.get_attributes(
+        entity_kwargs = get_attributes(
+            entity,
             omit_list=["_uid", "_entity_type", "_on_file"] + list(omit_list),
             attributes={"uid": None, "parent": None},
-            extent=extent,
         )
 
         if entity_kwargs is None:
             return None
 
-        entity_type_kwargs = entity.entity_type.get_attributes(
+        entity_type_kwargs = get_attributes(
+            entity.entity_type,
             omit_list=["_workspace", "_on_file"] + list(omit_list),
         )
 

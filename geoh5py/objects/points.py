@@ -43,17 +43,9 @@ class Points(ObjectBase):
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
 
-    @property
-    def extent(self):
-        """
-        Bounding box 3D coordinates defining the limits of the vertices.
-        """
-        if self._extent is None and self._vertices is not None:
-            self._extent = np.c_[self.vertices.min(axis=0), self.vertices.max(axis=0)].T
-
-        return self._extent
-
-    def clip_by_extent(self, bounds: np.ndarray, attributes: dict) -> dict | None:
+    def clip_by_extent(
+        self, bounds: np.ndarray, parent=None, copy_children: bool = True
+    ) -> Points | None:
         """
         Find indices of vertices within a rectangular bounds.
 
@@ -65,7 +57,8 @@ class Points(ObjectBase):
         if not any(mask_by_extent(bounds, self.extent)):
             return None
 
-        return attributes
+        new_entity = self.copy(parent=parent, copy_children=copy_children)
+        return new_entity
 
     @property
     def vertices(self) -> np.ndarray | None:

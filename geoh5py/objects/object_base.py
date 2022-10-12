@@ -212,7 +212,9 @@ class ObjectBase(Entity):
     def default_type_uid(cls) -> uuid.UUID:
         ...
 
-    def clip_by_extent(self, bounds: np.ndarray, attributes: dict) -> dict | None:
+    def clip_by_extent(
+        self, bounds: np.ndarray, parent=None, copy_children: bool = True
+    ) -> ObjectBase | None:
         """
         Find indices of vertices within a rectangular bounds.
 
@@ -221,7 +223,8 @@ class ObjectBase(Entity):
             with shape(2, 3) defining the top and bottom limits.
         :param attributes: Dictionary of attributes to clip by extent.
         """
-        return attributes
+        new_entity = self.copy(parent=parent, copy_children=copy_children)
+        return new_entity
 
     @property
     def entity_type(self) -> ObjectType:
@@ -232,10 +235,15 @@ class ObjectBase(Entity):
 
     @property
     def extent(self):
-        """
-        Bounding box 3D coordinates defining the limits of the entity.
-        """
-        return None
+        if self._extent is None:
+            locations = getattr(self, "vertices", None)
+            if locations is None:
+                locations = getattr(self, "centroids", None)
+
+            if locations is not None:
+                self._extent = np.c_[locations.min(axis=0), locations.max(axis=0)].T
+
+        return self._extent
 
     @property
     def faces(self):

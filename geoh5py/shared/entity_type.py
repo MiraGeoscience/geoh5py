@@ -79,18 +79,6 @@ class EntityType(ABC):
         """
         return cast(EntityTypeT, workspace.find_type(type_uid, cls))
 
-    def get_attributes(self, omit_list=(), attributes=None):
-        """Extract the attributes of an object with omissions."""
-        if attributes is None:
-            attributes = {}
-        for key in vars(self):
-            if key not in omit_list:
-                if key[0] == "_":
-                    key = key[1:]
-
-                attributes[key] = getattr(self, key)
-        return attributes
-
     @property
     def on_file(self) -> bool:
         """

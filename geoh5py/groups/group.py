@@ -75,7 +75,9 @@ class Group(Entity):
         else:
             self.comments.values = self.comments.values + [comment_dict]
 
-    def clip_by_extent(self, bounds: np.ndarray, attributes: dict) -> dict | None:
+    def clip_by_extent(
+        self, bounds: np.ndarray, parent=None, copy_children: bool = True
+    ) -> Group | None:
         """
         Find indices of vertices within a rectangular bounds.
 
@@ -84,7 +86,8 @@ class Group(Entity):
             with shape(2, 3) defining the top and bottom limits.
         :param attributes: Dictionary of attributes to clip by extent.
         """
-        return attributes
+        new_entity = self.copy(parent=parent, copy_children=copy_children)
+        return new_entity
 
     @property
     def comments(self):

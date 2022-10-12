@@ -349,3 +349,16 @@ def mask_by_extent(locations: np.ndarray, extent: np.ndarray) -> np.ndarray:
     )
 
     return indices
+
+
+def get_attributes(entity, omit_list=(), attributes=None):
+    """Extract the attributes of an object with omissions."""
+    if attributes is None:
+        attributes = {}
+    for key in vars(entity):
+        if key not in omit_list:
+            if key[0] == "_":
+                key = key[1:]
+
+            attributes[key] = getattr(entity, key)
+    return attributes

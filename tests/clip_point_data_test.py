@@ -39,7 +39,7 @@ def test_clip_point_data(tmp_path):
         data = points.add_data(
             {"DataValues": {"association": "VERTEX", "values": values}}
         )
-
-        points.copy(extent=extent)
+        with Workspace(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
+            points.clip_by_extent(extent, parent=new_workspace)
 
     print(data)
