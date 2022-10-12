@@ -27,6 +27,8 @@ from typing import TYPE_CHECKING
 from geoh5py.shared.utils import str2uuid
 
 if TYPE_CHECKING:
+    import numpy as np
+
     from .. import shared
     from ..workspace import Workspace
 
@@ -161,6 +163,17 @@ class Entity(ABC):
         """
         return self._children
 
+    @abstractmethod
+    def clip_by_extent(self, bounds: np.ndarray, attributes: dict) -> dict | None:
+        """
+        Find indices of vertices within a rectangular bounds.
+
+        :param bounds: shape(2, 2) Bounding box defined by the South-West and
+            North-East coordinates. Extents can also be provided as 3D coordinates
+            with shape(2, 3) defining the top and bottom limits.
+        :param attributes: Dictionary of attributes to clip by extent.
+        """
+
     @property
     def clipping_ids(self) -> list[uuid.UUID] | None:
         """
@@ -168,13 +181,17 @@ class Entity(ABC):
         """
         return self._clipping_ids
 
-    def copy(self, parent=None, copy_children: bool = True):
+    def copy(
+        self, parent=None, copy_children: bool = True, extent: np.ndarray | None = None
+    ):
         """
         Function to copy an entity to a different parent entity.
 
         :param parent: Target parent to copy the entity under. Copied to current
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: Create copies of all children entities along with it.
+        :param copy_children: (Optional) Create copies of all children entities along with it.
+        :param extent: (Optional) Clip a copy by extent defined by a South-West
+            and North-East corners.
 
         :return entity: Registered Entity to the workspace.
         """
@@ -183,7 +200,7 @@ class Entity(ABC):
             parent = self.parent
 
         new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children
+            self, parent, copy_children=copy_children, extent=extent
         )
 
         return new_entity
@@ -215,6 +232,13 @@ class Entity(ABC):
     def entity_type(self) -> shared.EntityType:
         ...
 
+    @property
+    @abstractmethod
+    def extent(self):
+        """
+        Bounding box 3D coordinates defining the limits of the entity.
+        """
+
     @classmethod
     def fix_up_name(cls, name: str) -> str:
         """If the given  name is not a valid one, transforms it to make it valid
@@ -224,6 +248,23 @@ class Entity(ABC):
         # TODO: implement an actual fixup
         #  (possibly it has to be abstract with different implementations per Entity type)
         return name
+
+    def get_attributes(
+        self, omit_list=(), attributes=None, extent: np.ndarray | None = None
+    ):
+        """Extract the attributes of an object with omissions."""
+        if attributes is None:
+            attributes = {}
+        for key in vars(self):
+            if key not in omit_list:
+                if key[0] == "_":
+                    key = key[1:]
+
+                attributes[key] = getattr(self, key)
+
+        if extent is not None:
+            attributes = self.clip_by_extent(extent, attributes)
+        return attributes
 
     def get_entity(self, name: str | uuid.UUID) -> list[Entity]:
         """

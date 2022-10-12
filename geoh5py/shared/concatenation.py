@@ -163,13 +163,17 @@ class Concatenator(Group):
         self._concatenated_object_ids = object_ids
         self.workspace.update_attribute(self, "concatenated_object_ids")
 
-    def copy(self, parent=None, copy_children: bool = True):
+    def copy(
+        self, parent=None, copy_children: bool = True, extent: np.ndarray | None = None
+    ):
         """
         Function to copy an entity to a different parent entity.
 
         :param parent: Target parent to copy the entity under. Copied to current
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: Create copies of all children entities along with it.
+        :param extent: (Optional) Clip a copy by extent defined by a South-West
+            and North-East corners.
 
         :return entity: Registered Entity to the workspace.
         """
@@ -257,7 +261,7 @@ class Concatenator(Group):
         for key in self.concatenated_object_ids:
             attrs = {
                 attr: val
-                for attr, val in self.get_attributes(key).items()
+                for attr, val in self.get_concatenated_attributes(key).items()
                 if "Property" not in attr
             }
             attrs["parent"] = self
@@ -328,7 +332,7 @@ class Concatenator(Group):
 
         return self.data[field][start : start + size]
 
-    def get_attributes(self, uid: bytes | str | uuid.UUID) -> dict:
+    def get_concatenated_attributes(self, uid: bytes | str | uuid.UUID) -> dict:
         """
         Fast reference index to concatenated attribute keys.
         """
@@ -392,7 +396,7 @@ class Concatenator(Group):
             # Remove the rows of data and index
             self.update_array_attribute(entity, entity.name, remove=True)
             # Remove from the concatenated Attributes
-            parent_attr = self.get_attributes(entity.parent.uid)
+            parent_attr = self.get_concatenated_attributes(entity.parent.uid)
             name = entity.name
             del parent_attr[f"Property:{name}"]
         elif isinstance(entity, ConcatenatedObject):
@@ -407,7 +411,7 @@ class Concatenator(Group):
                 self.concatenated_object_ids = object_ids
 
         if self.concatenated_attributes is not None:
-            attr_handle = self.get_attributes(entity.uid)
+            attr_handle = self.get_concatenated_attributes(entity.uid)
             self.concatenated_attributes["Attributes"].remove(attr_handle)
             self.workspace.repack = True
 
@@ -466,7 +470,7 @@ class Concatenator(Group):
         Update the concatenated attributes.
         :param entity: Concatenated entity with attributes.
         """
-        target_attributes = self.get_attributes(entity.uid)
+        target_attributes = self.get_concatenated_attributes(entity.uid)
         for key, attr in entity.attribute_map.items():
             val = getattr(entity, attr, None)
 
@@ -618,7 +622,7 @@ class ConcatenatedData(Concatenated):
         self._parent = parent
         self._parent.add_children([self])
 
-        parental_attr = self.concatenator.get_attributes(self.parent.uid)
+        parental_attr = self.concatenator.get_concatenated_attributes(self.parent.uid)
 
         if f"Property:{self.name}" not in parental_attr:
             parental_attr[f"Property:{self.name}"] = as_str_if_uuid(self.uid)
@@ -698,13 +702,17 @@ class ConcatenatedObject(Concatenated):
         Generic function to get data values from object.
         """
         entity_list = []
-        attr = self.concatenator.get_attributes(getattr(self, "uid")).copy()
+        attr = self.concatenator.get_concatenated_attributes(
+            getattr(self, "uid")
+        ).copy()
 
         for key, value in attr.items():
             if "Property:" in key:
                 child_data = self.workspace.get_entity(uuid.UUID(value))[0]
                 if child_data is None:
-                    attributes: dict = self.concatenator.get_attributes(value).copy()
+                    attributes: dict = self.concatenator.get_concatenated_attributes(
+                        value
+                    ).copy()
                     attributes["parent"] = self
                     self.workspace.create_from_concatenation(attributes)
                 else:
@@ -729,7 +737,7 @@ class ConcatenatedObject(Concatenated):
         """
         data_list = [
             attr.replace("Property:", "").replace("\u2044", "/")
-            for attr in self.concatenator.get_attributes(self.uid)
+            for attr in self.concatenator.get_concatenated_attributes(self.uid)
             if "Property:" in attr
         ]
 
@@ -759,7 +767,7 @@ class ConcatenatedObject(Concatenated):
 
             for key in prop_groups:
                 getattr(self, "find_or_create_property_group")(
-                    **self.concatenator.get_attributes(key)
+                    **self.concatenator.get_concatenated_attributes(key)
                 )
 
         return self._property_groups

@@ -15,6 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=R0904
 
 from __future__ import annotations
 
@@ -48,10 +49,11 @@ class ObjectBase(Entity):
 
     def __init__(self, object_type: ObjectType, **kwargs):
         assert object_type is not None
-        self._entity_type = object_type
-        self._property_groups: list[PropertyGroup] | None = None
-        self._last_focus = "None"
         self._comments = None
+        self._entity_type = object_type
+        self._extent = None
+        self._last_focus = "None"
+        self._property_groups: list[PropertyGroup] | None = None
         # self._clipping_ids: list[uuid.UUID] = []
 
         if not any(key for key in kwargs if key in ["name", "Name"]):
@@ -210,12 +212,30 @@ class ObjectBase(Entity):
     def default_type_uid(cls) -> uuid.UUID:
         ...
 
+    def clip_by_extent(self, bounds: np.ndarray, attributes: dict) -> dict | None:
+        """
+        Find indices of vertices within a rectangular bounds.
+
+        :param bounds: shape(2, 2) Bounding box defined by the South-West and
+            North-East coordinates. Extents can also be provided as 3D coordinates
+            with shape(2, 3) defining the top and bottom limits.
+        :param attributes: Dictionary of attributes to clip by extent.
+        """
+        return attributes
+
     @property
     def entity_type(self) -> ObjectType:
         """
         :obj:`~geoh5py.shared.entity_type.EntityType`: Object type.
         """
         return self._entity_type
+
+    @property
+    def extent(self):
+        """
+        Bounding box 3D coordinates defining the limits of the entity.
+        """
+        return None
 
     @property
     def faces(self):

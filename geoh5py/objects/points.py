@@ -21,6 +21,7 @@ import uuid
 
 import numpy as np
 
+from ..shared.utils import mask_by_extent
 from .object_base import ObjectBase, ObjectType
 
 
@@ -41,6 +42,30 @@ class Points(ObjectBase):
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
+
+    @property
+    def extent(self):
+        """
+        Bounding box 3D coordinates defining the limits of the vertices.
+        """
+        if self._extent is None and self._vertices is not None:
+            self._extent = np.c_[self.vertices.min(axis=0), self.vertices.max(axis=0)].T
+
+        return self._extent
+
+    def clip_by_extent(self, bounds: np.ndarray, attributes: dict) -> dict | None:
+        """
+        Find indices of vertices within a rectangular bounds.
+
+        :param bounds: shape(2, 2) Bounding box defined by the South-West and
+            North-East coordinates. Extents can also be provided as 3D coordinates
+            with shape(2, 3) defining the top and bottom limits.
+        :param attributes: Dictionary of attributes to clip by extent.
+        """
+        if not any(mask_by_extent(bounds, self.extent)):
+            return None
+
+        return attributes
 
     @property
     def vertices(self) -> np.ndarray | None:
