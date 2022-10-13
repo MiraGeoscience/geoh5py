@@ -53,7 +53,7 @@ def test_create_curve_data(tmp_path):
         with pytest.raises(ValueError, match="Array of cells should be of shape"):
             curve.cells = np.c_[1]
 
-        with pytest.raises(ValueError, match="Indices array must be of integer type"):
+        with pytest.raises(TypeError, match="Indices array must be of integer type"):
             curve.cells = np.c_[0.0, 1.0]
 
         curve.cells = cells.tolist()
