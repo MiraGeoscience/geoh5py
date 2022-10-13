@@ -33,6 +33,13 @@ def test_clip_point_data(tmp_path):
         np.percentile(vertices, 25, axis=0), np.percentile(vertices, 75, axis=0)
     ].T
 
+    clippings = np.all(
+        np.c_[
+            np.all(vertices >= extent[0, :], axis=1),
+            np.all(vertices <= extent[1, :], axis=1),
+        ],
+        axis=1,
+    )
     h5file_path = tmp_path / r"testClipPoints.geoh5"
     with Workspace(h5file_path) as workspace:
         points = Points.create(workspace, vertices=vertices, allow_move=False)
@@ -40,6 +47,9 @@ def test_clip_point_data(tmp_path):
             {"DataValues": {"association": "VERTEX", "values": values}}
         )
         with Workspace(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
-            points.clip_by_extent(extent, parent=new_workspace)
+            clipped_pts = points.clip_by_extent(extent, parent=new_workspace)
+            clipped_d = clipped_pts.get_data("DataValues")[0]
+            assert clipped_pts.n_vertices == clippings.sum()
+            assert np.all(clipped_d.values == data.values[clippings])
 
     print(data)
