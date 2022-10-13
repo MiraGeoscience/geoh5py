@@ -26,17 +26,74 @@ from .object_base import ObjectType
 from .points import Points
 
 
-class Curve(Points):
+class CellObject(Points):
+    """
+    Base class for object with cells.
+    """
+
+    _attribute_map = Points._attribute_map.copy()
+
+    def __init__(self, object_type: ObjectType, **kwargs):
+
+        self._cells: np.ndarray | None = None
+
+        super().__init__(object_type, **kwargs)
+
+    def remove_cells(self, indices: list[int]):
+        """Safely remove cells and corresponding data entries."""
+
+        if self._cells is None:
+            warnings.warn("No cells to be removed.", UserWarning)
+            return
+
+        if (
+            isinstance(self.cells, np.ndarray)
+            and np.max(indices) > self.cells.shape[0] - 1
+        ):
+            raise ValueError("Found indices larger than the number of cells.")
+
+        cells = np.delete(self.cells, indices, axis=0)
+        self._cells = None
+        setattr(self, "cells", cells)
+
+        self.remove_children_values(indices, "CELL")
+
+    def remove_vertices(self, indices: list[int]):
+        """Safely remove vertices and corresponding data entries."""
+
+        if self.vertices is None:
+            warnings.warn("No vertices to be removed.", UserWarning)
+            return
+
+        if (
+            isinstance(self.vertices, np.ndarray)
+            and np.max(indices) > self.vertices.shape[0] - 1
+        ):
+            raise ValueError("Found indices larger than the number of vertices.")
+
+        vert_index = np.ones(self.vertices.shape[0], dtype=bool)
+        vert_index[indices] = False
+        vertices = self.vertices[vert_index, :]
+
+        self._vertices = None
+        setattr(self, "vertices", vertices)
+        self.remove_children_values(indices, "VERTEX")
+
+        new_index = np.ones_like(vert_index, dtype=int)
+        new_index[vert_index] = np.arange(self.vertices.shape[0])
+        self.remove_cells(np.where(~np.all(vert_index[self.cells], axis=1)))
+        setattr(self, "cells", new_index[self.cells])
+
+
+class Curve(CellObject):
     """
     Curve object defined by a series of line segments (:obj:`~geoh5py.objects.curve.Curve.cells`)
     connecting :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
     """
 
-    _attribute_map = Points._attribute_map.copy()
+    _attribute_map = CellObject._attribute_map.copy()
     _attribute_map.update(
         {
-            "Last focus": "last_focus",
-            "PropertyGroups": "property_groups",
             "Current line property ID": "current_line_id",
         }
     )
@@ -47,7 +104,6 @@ class Curve(Points):
 
     def __init__(self, object_type: ObjectType, **kwargs):
 
-        self._cells: np.ndarray | None = None
         self._parts: np.ndarray | None = None
         super().__init__(object_type, **kwargs)
 
@@ -69,7 +125,7 @@ class Curve(Points):
             elif self.on_file:
                 self._cells = self.workspace.fetch_array_attribute(self)
 
-            elif self.vertices is not None:
+            if self._cells is None and self.vertices is not None:
                 n_segments = self.vertices.shape[0]
                 self.cells = np.c_[
                     np.arange(0, n_segments - 1), np.arange(1, n_segments)
@@ -169,25 +225,6 @@ class Curve(Points):
             self._parts = indices
             self._cells = None
             self.workspace.update_attribute(self, "cells")
-
-    def remove_cells(self, indices: list[int]):
-        """Safely remove cells and corresponding data entries."""
-
-        if self._cells is None:
-            warnings.warn("No cells to be removed.", UserWarning)
-            return
-
-        if (
-            isinstance(self.cells, np.ndarray)
-            and np.max(indices) > self.cells.shape[0] - 1
-        ):
-            raise ValueError("Found indices larger than the number of cells.")
-
-        cells = np.delete(self.cells, indices, axis=0)
-        self._cells = None
-        self.cells = cells
-
-        self.remove_children_values(indices, "CELL")
 
     @property
     def unique_parts(self):

@@ -115,5 +115,4 @@ class Points(ObjectBase):
         vertices = np.delete(self.vertices, indices, axis=0)
         self._vertices = None
         self.vertices = vertices
-
         self.remove_children_values(indices, "VERTEX")
