@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from geoh5py.objects import Points
+from geoh5py.objects import Curve, Points
 from geoh5py.workspace import Workspace
 
 
@@ -52,4 +52,41 @@ def test_clip_point_data(tmp_path):
             assert clipped_pts.n_vertices == clippings.sum()
             assert np.all(clipped_d.values == data.values[clippings])
 
-    print(data)
+
+def test_clip_curve_data(tmp_path):
+
+    # Generate a random cloud of points
+    vertices = np.random.randn(100, 3)
+    extent = np.c_[
+        np.percentile(vertices, 10, axis=0), np.percentile(vertices, 90, axis=0)
+    ].T
+
+    clippings = np.all(
+        np.c_[
+            np.all(vertices >= extent[0, :], axis=1),
+            np.all(vertices <= extent[1, :], axis=1),
+        ],
+        axis=1,
+    )
+    h5file_path = tmp_path / r"testClipCurve.geoh5"
+    with Workspace(h5file_path) as workspace:
+        curve = Curve.create(workspace, vertices=vertices, allow_move=False)
+        data = curve.add_data(
+            {
+                "VertexValues": {
+                    "association": "VERTEX",
+                    "values": np.random.randn(curve.n_vertices),
+                },
+                "CellValues": {
+                    "association": "CELL",
+                    "values": np.random.randn(curve.n_cells),
+                },
+            }
+        )
+        with Workspace(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
+            clipped_pts = curve.clip_by_extent(extent, parent=new_workspace)
+            clipped_d = clipped_pts.get_data("VertexValues")[0]
+            clipped_c = clipped_pts.get_data("CellValues")[0]
+            assert clipped_pts.n_vertices == clippings.sum()
+            assert np.all(clipped_d.values == data[0].values[clippings])
+            assert len(clipped_c.values) == clipped_pts.n_cells
