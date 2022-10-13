@@ -70,7 +70,7 @@ class Surface(Points):
             raise ValueError("Array of cells should be of shape (*, 3).")
 
         if not np.issubdtype(indices.dtype, np.integer):
-            raise ValueError("Indices array must be of integer type")
+            raise TypeError("Indices array must be of integer type")
 
         self._cells = indices.astype(np.int32)
         self.workspace.update_attribute(self, "cells")
