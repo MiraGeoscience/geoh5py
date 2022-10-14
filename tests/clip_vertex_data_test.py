@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from geoh5py.groups import ContainerGroup
 from geoh5py.objects import Curve, Points
 from geoh5py.workspace import Workspace
 
@@ -90,3 +91,39 @@ def test_clip_curve_data(tmp_path):
             assert clipped_pts.n_vertices == clippings.sum()
             assert np.all(clipped_d.values == data[0].values[clippings])
             assert len(clipped_c.values) == clipped_pts.n_cells
+
+
+def test_clip_groups(tmp_path):
+    vertices = np.random.randn(100, 3)
+    extent = np.c_[
+        np.percentile(vertices, 10, axis=0), np.percentile(vertices, 90, axis=0)
+    ].T
+    h5file_path = tmp_path / r"testClipGroup.geoh5"
+    with Workspace(h5file_path) as workspace:
+        group_a = ContainerGroup.create(workspace, name="GroupA")
+        group_b = ContainerGroup.create(workspace, name="GroupB", parent=group_a)
+        curve_a = Curve.create(workspace, vertices=vertices, parent=group_a)
+        curve_b = Curve.create(
+            workspace, vertices=np.c_[1000.0, 1000.0, 0.0], parent=group_b
+        )
+        curve_a.add_data(
+            {
+                "values_a": {
+                    "values": np.random.randn(curve_a.n_vertices),
+                },
+            }
+        )
+        curve_b.add_data(
+            {
+                "values_a": {
+                    "values": np.random.randn(curve_b.n_vertices),
+                },
+            }
+        )
+        with Workspace(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
+            group_a.clip_by_extent(extent, parent=new_workspace)
+
+            assert (
+                len(new_workspace.objects) == 1
+            ), "Error removing curve without nodes."
+            assert len(new_workspace.groups) == 2, "Error removing empty group."
