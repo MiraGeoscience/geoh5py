@@ -836,7 +836,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                 attributes.get("name"),
                 attributes.get("from-to"),
                 attributes.get("values"),
-                group_name=property_group,
+                property_group=property_group,
                 collocation_distance=collocation_distance,
             )
 
@@ -849,16 +849,16 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         name: str | None,
         from_to: list | np.ndarray | None,
         values: np.ndarray,
-        group_name: str = None,
+        property_group: str | ConcatenatedPropertyGroup | None = None,
         collocation_distance=1e-4,
-    ) -> str:
+    ) -> ConcatenatedPropertyGroup:
         """
         Compare new and current depth values and re-use the property group if possible.
         Otherwise a new property group is added.
 
         :param from_to: Array of from-to values.
         :param values: Data values to be added on the from-to intervals.
-        :param group_name: Property group name
+        :param property_group: Property group name
         :collocation_distance: Threshold on the comparison between existing depth values.
         """
         if from_to is not None:
@@ -875,18 +875,16 @@ class ConcatenatedDrillhole(ConcatenatedObject):
 
         if (
             from_to is not None
-            and group_name is None
+            and property_group is None
             and self.property_groups is not None
         ):
-            for property_group in self.property_groups:
-                if property_group.from_.values.shape[0] == from_to.shape[
-                    0
-                ] and np.allclose(
-                    np.c_[property_group.from_.values, property_group.to_.values],
+            for p_g in self.property_groups:
+                if p_g.from_.values.shape[0] == from_to.shape[0] and np.allclose(
+                    np.c_[p_g.from_.values, p_g.to_.values],
                     from_to,
                     atol=collocation_distance,
                 ):
-                    return property_group.name
+                    return p_g
 
         ind = 0
         label = ""
@@ -894,22 +892,25 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             ind = len(self.from_)
             label = f"({ind})"
 
-        if group_name is None:
-            group_name = f"Interval_{ind}"
+        if property_group is None:
+            property_group = f"Interval_{ind}"
 
-        property_group = getattr(self, "find_or_create_property_group")(
-            name=group_name, association="DEPTH"
-        )
+        if isinstance(property_group, str):
+            out_group: ConcatenatedPropertyGroup = getattr(
+                self, "find_or_create_property_group"
+            )(name=property_group, association="DEPTH")
+        else:
+            out_group = property_group
 
-        if property_group.from_ is not None:
-            if property_group.from_.values.shape[0] != values.shape[0]:
+        if out_group.from_ is not None:
+            if out_group.from_.values.shape[0] != values.shape[0]:
                 raise ValueError(
                     f"Input values for '{name}' with shape({values.shape[0]}) "
-                    f"do not match the from-to intervals of the group '{group_name}' "
-                    f"with shape({property_group.from_.values.shape[0]}). Check values or "
+                    f"do not match the from-to intervals of the group '{out_group}' "
+                    f"with shape({out_group.from_.values.shape[0]}). Check values or "
                     f"assign to a new property group."
                 )
-            return property_group.name
+            return out_group
 
         from_to = getattr(self, "add_data")(
             {
@@ -930,10 +931,10 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                     "allow_delete": False,
                 },
             },
-            property_group.name,
+            out_group,
         )
 
-        return property_group.name
+        return out_group
 
     def sort_depths(self):
         """Bypass sort_depths from previous version."""

@@ -582,7 +582,7 @@ class H5Writer:
                 if isinstance(entity, IntegerData):
                     out_values = np.round(out_values).astype("int32")
 
-                elif isinstance(entity, TextData):
+                elif isinstance(entity, TextData) and not isinstance(values[0], bytes):
                     out_values = [val.encode() for val in values]
 
                 if getattr(entity, "ndv", None) is not None:
