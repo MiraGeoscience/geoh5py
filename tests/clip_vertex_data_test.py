@@ -48,7 +48,7 @@ def test_clip_point_data(tmp_path):
             {"DataValues": {"association": "VERTEX", "values": values}}
         )
         with Workspace(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
-            clipped_pts = points.clip_by_extent(extent, parent=new_workspace)
+            clipped_pts = points.copy_from_extent(extent, parent=new_workspace)
             clipped_d = clipped_pts.get_data("DataValues")[0]
             assert clipped_pts.n_vertices == clippings.sum()
             assert np.all(clipped_d.values == data.values[clippings])
@@ -85,7 +85,7 @@ def test_clip_curve_data(tmp_path):
             }
         )
         with Workspace(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
-            clipped_pts = curve.clip_by_extent(extent, parent=new_workspace)
+            clipped_pts = curve.copy_from_extent(extent, parent=new_workspace)
             clipped_d = clipped_pts.get_data("VertexValues")[0]
             clipped_c = clipped_pts.get_data("CellValues")[0]
             assert clipped_pts.n_vertices == clippings.sum()
@@ -121,7 +121,7 @@ def test_clip_groups(tmp_path):
             }
         )
         with Workspace(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
-            group_a.clip_by_extent(extent, parent=new_workspace)
+            group_a.copy_from_extent(extent, parent=new_workspace)
 
             assert (
                 len(new_workspace.objects) == 1

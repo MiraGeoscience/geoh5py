@@ -17,7 +17,9 @@
 
 # pylint: disable=unused-import
 # flake8: noqa
+
 from .block_model import BlockModel
+from .cell_object import CellObject
 from .curve import Curve
 from .drape_model import DrapeModel
 from .drillhole import Drillhole

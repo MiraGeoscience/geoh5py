@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -32,6 +33,7 @@ from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
 from ..shared.concatenation import Concatenated, ConcatenatedPropertyGroup
+from ..shared.utils import mask_by_extent
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
@@ -213,7 +215,7 @@ class ObjectBase(Entity):
     def default_type_uid(cls) -> uuid.UUID:
         ...
 
-    def clip_by_extent(
+    def copy_from_extent(
         self, bounds: np.ndarray, parent=None, copy_children: bool = True
     ) -> ObjectBase | None:
         """
@@ -224,8 +226,30 @@ class ObjectBase(Entity):
             with shape(2, 3) defining the top and bottom limits.
         :param attributes: Dictionary of attributes to clip by extent.
         """
+        if not any(mask_by_extent(bounds, self.extent)) and not any(
+            mask_by_extent(self.extent, bounds)
+        ):
+            return None
+
         new_entity = self.copy(parent=parent, copy_children=copy_children)
-        return new_entity
+        return new_entity.clip_by_extent(bounds)
+
+    def clip_by_extent(self, bounds: np.ndarray) -> ObjectBase | None:
+        """
+        Find indices of cells within a rectangular bounds.
+
+        :param bounds: shape(2, 2) Bounding box defined by the South-West and
+            North-East coordinates. Extents can also be provided as 3D coordinates
+            with shape(2, 3) defining the top and bottom limits.
+        :param attributes: Dictionary of attributes to clip by extent.
+        """
+
+        # TODO Clip entity within bounds.
+        warnings.warn(
+            f"Method 'clip_by_extent' for entity {type(self)} not fully implemented. "
+            f"Bounds {bounds} ignored."
+        )
+        return self
 
     @property
     def entity_type(self) -> ObjectType:

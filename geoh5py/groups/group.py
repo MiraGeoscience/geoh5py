@@ -75,7 +75,7 @@ class Group(Entity):
         else:
             self.comments.values = self.comments.values + [comment_dict]
 
-    def clip_by_extent(
+    def copy_from_extent(
         self, bounds: np.ndarray, parent=None, copy_children: bool = True
     ) -> Group | None:
         """
@@ -88,7 +88,9 @@ class Group(Entity):
         """
         new_entity = self.copy(parent=parent, copy_children=False)
         for child in self.children:
-            child.clip_by_extent(bounds, parent=new_entity, copy_children=copy_children)
+            child.copy_from_extent(
+                bounds, parent=new_entity, copy_children=copy_children
+            )
 
         if len(new_entity.children) == 0:
             new_entity.workspace.remove_entity(new_entity)

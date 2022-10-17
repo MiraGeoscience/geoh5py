@@ -17,11 +17,16 @@
 
 from __future__ import annotations
 
+import uuid
 import warnings
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from geoh5py.objects import ObjectType, Points
+from .points import Points
+
+if TYPE_CHECKING:
+    from geoh5py.objects import ObjectType
 
 
 class CellObject(Points):
@@ -36,6 +41,10 @@ class CellObject(Points):
         self._cells: np.ndarray | None = None
 
         super().__init__(object_type, **kwargs)
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        """Default type uid."""
 
     def remove_cells(self, indices: list[int]):
         """Safely remove cells and corresponding data entries."""
