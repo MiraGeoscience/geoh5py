@@ -21,7 +21,7 @@ import uuid
 
 import numpy as np
 
-from .curve import CellObject
+from .cell_object import CellObject
 from .object_base import ObjectType
 
 

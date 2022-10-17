@@ -43,7 +43,7 @@ class ObjectBase(Entity):
     Object base class.
     """
 
-    _attribute_map = Entity._attribute_map.copy()
+    _attribute_map: dict = Entity._attribute_map.copy()
     _attribute_map.update(
         {"Last focus": "last_focus", "PropertyGroups": "property_groups"}
     )
