@@ -316,7 +316,9 @@ def dict_mapper(
     return val
 
 
-def mask_by_extent(locations: np.ndarray, extent: np.ndarray) -> np.ndarray:
+def mask_by_extent(
+    locations: np.ndarray, extent: np.ndarray | list[list]
+) -> np.ndarray:
     """
     Find indices of locations within a rectangular extent.
 
@@ -329,16 +331,19 @@ def mask_by_extent(locations: np.ndarray, extent: np.ndarray) -> np.ndarray:
         extent = np.vstack(extent)
 
     if not isinstance(extent, np.ndarray) or extent.ndim != 2:
-        raise ValueError("Input 'extent' must be an array-like of shape (2, 3).")
+        raise ValueError("Input 'extent' must be a 2D array-like.")
 
-    if extent.shape[1] == 2:
+    if extent.shape == (2, 2):
         extent = np.c_[extent, [-np.inf, np.inf]]
+
+    if extent.shape != (2, 3):
+        raise ValueError("Input 'extent' must be an array-like of shape(2, 3).")
 
     if isinstance(locations, list):
         locations = np.vstack(locations)
 
-    if not isinstance(extent, np.ndarray) or extent.shape[1] != 3:
-        raise ValueError("Input 'extent' must be an array-like of shape(*, 3).")
+    if locations.shape[1] != 3:
+        raise ValueError("Input 'locations' must be an array-like of shape(*, 3).")
 
     indices = np.all(
         np.c_[
