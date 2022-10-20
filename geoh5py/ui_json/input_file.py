@@ -31,12 +31,10 @@ from .utils import (
     container_group2name,
     flatten,
     inf2str,
-    list2str,
     none2str,
     path2workspace,
     set_enabled,
     str2inf,
-    str2list,
     str2none,
     workspace2path,
 )
@@ -374,15 +372,8 @@ class InputFile:
             representations in json format.
         """
         for key, value in var.items():
-            exclude = ["choiceList", "meshType", "dataType", "association"]
-            mappers = (
-                [list2str, inf2str, as_str_if_uuid, none2str]
-                if key not in exclude
-                else [inf2str, as_str_if_uuid, none2str]
-            )
-            var[key] = dict_mapper(
-                value, mappers, omit={ex: [list2str] for ex in exclude}
-            )
+            mappers = [inf2str, as_str_if_uuid, none2str]
+            var[key] = dict_mapper(value, mappers)
 
         return var
 
@@ -414,11 +405,7 @@ class InputFile:
 
                 value = cls.numify(value)
 
-            mappers = (
-                [str2none, str2inf, str2uuid, path2workspace]
-                if key == "ignore_values"
-                else [str2list, str2none, str2inf, str2uuid, path2workspace]
-            )
+            mappers = [str2none, str2inf, str2uuid, path2workspace]
             ui_json[key] = dict_mapper(value, mappers)
 
         return ui_json
@@ -446,8 +433,20 @@ class InputFile:
 
             if isinstance(value, dict):
                 var[key] = self._promote(value)
-            elif isinstance(value, UUID):
-                self.association_validator(key, value, self.workspace)
-                var[key] = uuid2entity(value, self.workspace)
+            else:
+                if isinstance(value, list):
+                    var[key] = [self._uid_promotion(key, val) for val in value]
+                else:
+                    var[key] = self._uid_promotion(key, value)
 
         return var
+
+    def _uid_promotion(self, key, value):
+        """
+        Check if the value needs to be promoted.
+        """
+        if isinstance(value, UUID):
+            self.association_validator(key, value, self.workspace)
+            value = uuid2entity(value, self.workspace)
+
+        return value

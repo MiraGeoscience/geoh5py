@@ -303,14 +303,15 @@ def dict_mapper(
 
     :return val: Transformed values
     """
-    if omit is None:
-        omit = {}
     if isinstance(val, dict):
         for key, values in val.items():
-            val[key] = dict_mapper(
-                values,
-                [fun for fun in string_funcs if fun not in omit.get(key, [])],
-            )
+            short_list = string_funcs.copy()
+            if omit is not None:
+                short_list = [
+                    fun for fun in string_funcs if fun not in omit.get(key, [])
+                ]
+
+            val[key] = dict_mapper(values, short_list)
 
     for fun in string_funcs:
         val = fun(val, *args)

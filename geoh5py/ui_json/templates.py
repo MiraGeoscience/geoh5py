@@ -163,25 +163,33 @@ def string_parameter(
 
 
 def choice_string_parameter(
-    main: bool = True,
-    label: str = "String data",
     choice_list: tuple = ("Option A", "Option B"),
-    value: str = "Option A",
+    label: str = "String data",
+    main: bool = True,
+    multi_select: bool = False,
     optional: str | None = None,
+    value: str = "Option A",
 ) -> dict:
     """
     Dropdown menu of string choices.
 
     :param main: Show form in main.
-    :param label: Label identifier.
-    :param value: Input value.
     :param choice_list: List of options.
+    :param label: Label identifier.
+    :param multi_select: Option to select multiple choices.
+    :param value: Input value.
     :param optional: Make optional if not None. Initial state provided by not None
         value.  Can be either 'enabled' or 'disabled'.
 
     :returns: Ui_json compliant dictionary.
     """
-    form = {"main": main, "label": label, "value": value, "choiceList": choice_list}
+    form = {
+        "main": main,
+        "multiSelect": multi_select,
+        "label": label,
+        "value": value,
+        "choiceList": choice_list,
+    }
 
     if optional is not None:
         form.update(optional_parameter(optional))
@@ -225,6 +233,7 @@ def file_parameter(
 def object_parameter(
     main: bool = True,
     label: str = "Object",
+    multi_select: bool = False,
     mesh_type: tuple = tuple(known_types),
     value: str = None,
     optional: str | None = None,
@@ -235,13 +244,20 @@ def object_parameter(
     :param main: Show form in main.
     :param label: Label identifier.
     :param value: Input value.
+    :param multi_select: Option to select multiple choices.
     :param mesh_type: Type of selectable objects.
     :param optional: Make optional if not None. Initial state provided by not None
         value.  Can be either 'enabled' or 'disabled'.
 
     :returns: Ui_json compliant dictionary.
     """
-    form = {"main": main, "label": label, "value": value, "meshType": mesh_type}
+    form = {
+        "main": main,
+        "label": label,
+        "value": value,
+        "multiSelect": multi_select,
+        "meshType": mesh_type,
+    }
 
     if optional is not None:
         form.update(optional_parameter(optional))

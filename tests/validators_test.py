@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+import re
+
 import numpy as np
 import pytest
 
@@ -136,7 +138,7 @@ def test_shape_validator():
     validator = ShapeValidator()
     with pytest.raises(ShapeValidationError) as excinfo:
         validator("test", [[1, 2, 3], [4, 5, 6]], (3, 2))
-    assert ShapeValidationError.message("test", (2, 3), (3, 2)) == str(excinfo.value)
+    assert ShapeValidationError.message("test", (2,), (3, 2)) == str(excinfo.value)
 
     # No validation error for None
     validator("test", None, (3, 2))
@@ -146,33 +148,41 @@ def test_type_validator():
 
     validator = TypeValidator()
 
+    with pytest.raises(
+        TypeError,
+        match=re.escape("Input `valid` options must be a type or list of types."),
+    ):
+        validator("test", 3, 123)
+
     # Test non-iterable value, single valid
-    with pytest.raises(TypeValidationError) as excinfo:
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message("test", int.__name__, [type({}).__name__]),
+    ):
         validator("test", 3, type({}))
-    assert TypeValidationError.message(
-        "test", int.__name__, [type({}).__name__]
-    ) == str(excinfo.value)
 
     # Test non-iterable value, more than one valid
-    with pytest.raises(TypeValidationError) as excinfo:
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message(
+            "test", int.__name__, [str.__name__, type({}).__name__]
+        ),
+    ):
         validator("test", 3, [str, type({})])
-    assert TypeValidationError.message(
-        "test", int.__name__, [str.__name__, type({}).__name__]
-    ) == str(excinfo.value)
 
     # Test iterable value single valid both invalid
-    with pytest.raises(TypeValidationError) as excinfo:
-        validator("test", [3, 2], type({}))
-    assert TypeValidationError.message(
-        "test", int.__name__, [type({}).__name__]
-    ) == str(excinfo.value)
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message("test", int.__name__, [type({}).__name__]),
+    ):
+        validator("test", [3, 2], [type({})])
 
     # Test iterable value single valid one valid, one invalid
-    with pytest.raises(TypeValidationError) as excinfo:
-        validator("test", [3, "a"], int)
-    assert TypeValidationError.message("test", str.__name__, [int.__name__]) == str(
-        excinfo.value
-    )
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message("test", str.__name__, [int.__name__]),
+    ):
+        validator("test", [3, "a"], [int])
 
 
 def test_uuid_validator():

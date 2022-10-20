@@ -290,6 +290,49 @@ def test_choice_string_parameter(tmp_path):
     assert test["enabled"]
 
 
+def test_multi_choice_string_parameter(tmp_path):
+
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["choice_string_parameter"] = templates.choice_string_parameter()
+    ui_json["choice_string_parameter"]["multiSelect"] = True
+    ui_json["choice_string_parameter"]["value"] = ""
+    in_file = InputFile(ui_json=ui_json)
+
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message(
+            "choice_string_parameter", "NoneType", ["list"]
+        ),
+    ):
+        getattr(in_file, "data")
+
+    ui_json["choice_string_parameter"]["value"] = []
+    in_file = InputFile(ui_json=ui_json)
+    data = in_file.data
+
+    data["choice_string_parameter"] = ["Option C"]
+
+    with pytest.raises(
+        ValueValidationError,
+        match=ValueValidationError.message(
+            "choice_string_parameter", "Option C", ["Option A", "Option B"]
+        ),
+    ):
+        in_file.data = data
+
+    data["choice_string_parameter"] = ["Option A"]
+    in_file.data = data
+
+    out_file = in_file.write_ui_json()
+    reload_input = InputFile.read_ui_json(out_file)
+
+    assert reload_input.data["choice_string_parameter"] == [
+        "Option A"
+    ], "IntegerParameter did not properly save to file."
+
+
 def test_file_parameter():
     test = templates.file_parameter(optional="enabled")
     assert test["optional"]
@@ -302,12 +345,12 @@ def test_shape_parameter(tmp_path):
     ui_json = deepcopy(default_ui_json)
     ui_json["data"] = templates.string_parameter(value="2,5,6,7")
     ui_json["geoh5"] = workspace
-    in_file = InputFile(ui_json=ui_json, validations={"data": {"shape": (3,)}})
+    in_file = InputFile(ui_json=ui_json, validations={"data": {"shape": (2,)}})
 
     with pytest.raises(ShapeValidationError) as excinfo:
         getattr(in_file, "data")
 
-    assert ShapeValidationError.message("data", (4,), (3,)) == str(excinfo.value)
+    assert ShapeValidationError.message("data", (1,), (2,)) == str(excinfo.value)
 
 
 def test_missing_required_field(tmp_path):
