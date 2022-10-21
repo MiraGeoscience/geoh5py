@@ -286,8 +286,9 @@ class InputValidation:
                     one_of_validations[one_of_group] = val
 
             if "association" in validations and validations["association"] in data:
-                validations["association"] = data[validations["association"]]
-                self.validate(param, data[param], validations)
+                valid = validations.copy()
+                valid["association"] = data[validations["association"]]
+                self.validate(param, data[param], valid)
             else:
                 self.validate(param, data.get(param, None), validations)
 

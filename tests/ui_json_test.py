@@ -582,6 +582,49 @@ def test_data_value_parameter_b(tmp_path):
     assert reload_input.ui_json["data"]["isValue"]
 
 
+def test_multi_object_value_parameter(tmp_path):
+
+    workspace = get_workspace(tmp_path)
+    points_a = workspace.get_entity("Points_A")[0]
+    points_b = workspace.get_entity("Points_B")[0]
+    data_b = points_a.children[0]
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["object"] = templates.object_parameter(value=[], multi_select=True)
+    ui_json["data"] = templates.data_value_parameter(
+        parent="object", is_value=False, prop=data_b.uid
+    )
+    in_file = InputFile(ui_json=ui_json)
+
+    with pytest.warns(
+        UserWarning,
+        match="Data associated with multiSelect dependent is not supported. Validation ignored.",
+    ):
+        getattr(in_file, "data")
+
+    ui_json.pop("data")
+    in_file = InputFile(ui_json=ui_json)
+    data = in_file.data
+    data["object"] = points_b.uid
+
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message("object", "Points", ["list"]),
+    ):
+        in_file.data = data
+
+    data["object"] = [points_b.uid]
+    in_file.data = data
+
+    out_file = in_file.write_ui_json()
+    reload_input = InputFile.read_ui_json(out_file)
+    object_b = reload_input.workspace.get_entity("Points_B")
+
+    assert (
+        reload_input.data["object"] == object_b
+    ), "IntegerParameter did not properly save to file."
+
+
 def test_data_parameter(tmp_path):
     workspace = get_workspace(tmp_path)
     points_b = workspace.get_entity("Points_B")[0]

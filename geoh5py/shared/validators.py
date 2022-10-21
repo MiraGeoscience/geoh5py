@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import warnings
 from abc import ABC, abstractmethod
 from typing import Any
 from uuid import UUID
@@ -115,6 +116,12 @@ class AssociationValidator(BaseValidator):
         :param valid: Expected value shape
         """
         if valid is None:
+            return
+
+        if isinstance(valid, list):
+            warnings.warn(
+                "Data associated with multiSelect dependent is not supported. Validation ignored."
+            )
             return
 
         if not isinstance(valid, (Entity, Workspace)):
