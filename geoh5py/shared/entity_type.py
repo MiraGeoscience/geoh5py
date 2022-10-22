@@ -68,6 +68,17 @@ class EntityType(ABC):
         self._description = description
         self.workspace.update_attribute(self, "attributes")
 
+    @classmethod
+    def find(
+        cls: type[EntityTypeT], workspace: ws.Workspace, type_uid: uuid.UUID
+    ) -> EntityTypeT | None:
+        """Finds in the given Workspace the EntityType with the given UUID for
+        this specific EntityType implementation class.
+
+        :return: EntityType of None
+        """
+        return cast(EntityTypeT, workspace.find_type(type_uid, cls))
+
     @property
     def on_file(self) -> bool:
         """
@@ -79,17 +90,6 @@ class EntityType(ABC):
     @on_file.setter
     def on_file(self, value: bool):
         self._on_file = value
-
-    @classmethod
-    def find(
-        cls: type[EntityTypeT], workspace: ws.Workspace, type_uid: uuid.UUID
-    ) -> EntityTypeT | None:
-        """Finds in the given Workspace the EntityType with the given UUID for
-        this specific EntityType implementation class.
-
-        :return: EntityType of None
-        """
-        return cast(EntityTypeT, workspace.find_type(type_uid, cls))
 
     @staticmethod
     @abstractmethod

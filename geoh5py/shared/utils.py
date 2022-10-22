@@ -29,7 +29,6 @@ import numpy as np
 if TYPE_CHECKING:
     from ..workspace import Workspace
     from .entity import Entity
-    from .entity_type import EntityType
 
 
 @contextmanager
@@ -317,7 +316,47 @@ def dict_mapper(
     return val
 
 
-def get_attributes(entity: Entity | EntityType, omit_list=(), attributes=None):
+def mask_by_extent(
+    locations: np.ndarray, extent: np.ndarray | list[list]
+) -> np.ndarray:
+    """
+    Find indices of locations within a rectangular extent.
+
+    :param locations: shape(*, 3) Coordinates to be evaluated.
+    :param extent: shape(2, 2) Limits defined by the South-West and
+        North-East corners. Extents can also be provided as 3D coordinates
+        with shape(2, 3) defining the top and bottom limits.
+    """
+    if isinstance(extent, list):
+        extent = np.vstack(extent)
+
+    if not isinstance(extent, np.ndarray) or extent.ndim != 2:
+        raise ValueError("Input 'extent' must be a 2D array-like.")
+
+    if extent.shape == (2, 2):
+        extent = np.c_[extent, [-np.inf, np.inf]]
+
+    if extent.shape != (2, 3):
+        raise ValueError("Input 'extent' must be an array-like of shape(2, 3).")
+
+    if isinstance(locations, list):
+        locations = np.vstack(locations)
+
+    if locations.shape[1] != 3:
+        raise ValueError("Input 'locations' must be an array-like of shape(*, 3).")
+
+    indices = np.all(
+        np.c_[
+            np.all(locations >= extent[0, :], axis=1),
+            np.all(locations <= extent[1, :], axis=1),
+        ],
+        axis=1,
+    )
+
+    return indices
+
+
+def get_attributes(entity, omit_list=(), attributes=None):
     """Extract the attributes of an object with omissions."""
     if attributes is None:
         attributes = {}

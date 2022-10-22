@@ -18,15 +18,14 @@
 from __future__ import annotations
 
 import uuid
-import warnings
 
 import numpy as np
 
+from .cell_object import CellObject
 from .object_base import ObjectType
-from .points import Points
 
 
-class Surface(Points):
+class Surface(CellObject):
     """
     Surface object defined by vertices and cells
     """
@@ -74,24 +73,6 @@ class Surface(Points):
 
         self._cells = indices.astype(np.int32)
         self.workspace.update_attribute(self, "cells")
-
-    def remove_cells(self, indices: list[int]):
-        """Safely remove cells and corresponding data entries."""
-
-        if self._cells is None:
-            warnings.warn("No cells to be removed.", UserWarning)
-
-        if (
-            isinstance(self.cells, np.ndarray)
-            and np.max(indices) > self.cells.shape[0] - 1
-        ):
-            raise ValueError("Found indices larger than the number of cells.")
-
-        cells = np.delete(self.cells, indices, axis=0)
-        self._cells = None
-        self.cells = cells
-
-        self.remove_children_values(indices, "CELL")
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

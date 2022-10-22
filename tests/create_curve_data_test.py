@@ -129,3 +129,34 @@ def test_remove_cells_data(tmp_path):
         curve.remove_cells([0])
 
         assert len(data.values) == 10, "Error removing data values with cells."
+
+
+def test_remove_vertex_data(tmp_path):
+
+    # Generate a random cloud of points
+    n_data = 12
+
+    with Workspace(tmp_path / r"testCurve.geoh5") as workspace:
+
+        curve = Curve.create(workspace)
+        with pytest.warns(UserWarning, match="No vertices to be removed."):
+            curve.remove_vertices(12)
+
+        curve.vertices = np.random.randn(n_data, 3)
+        data = curve.add_data(
+            {
+                "cellValues": {
+                    "values": np.random.randn(curve.n_cells).astype(np.float64)
+                },
+            }
+        )
+
+        with pytest.raises(
+            ValueError, match="Found indices larger than the number of vertices."
+        ):
+            curve.remove_vertices(12)
+
+        curve.remove_vertices([0, 3])
+
+        assert len(data.values) == 8, "Error removing data values with cells."
+        assert len(curve.vertices) == 10, "Error removing vertices from cells."

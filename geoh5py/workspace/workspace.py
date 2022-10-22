@@ -217,7 +217,12 @@ class Workspace(AbstractContextManager):
         self._contributors = np.asarray(value, dtype=h5py.special_dtype(vlen=str))
 
     def copy_to_parent(
-        self, entity, parent, copy_children: bool = True, omit_list: tuple = ()
+        self,
+        entity,
+        parent,
+        copy_children: bool = True,
+        omit_list: tuple = (),
+        extent: np.ndarray | None = None,
     ):
         """
         Copy an entity to a different parent with copies of children.
@@ -226,6 +231,7 @@ class Workspace(AbstractContextManager):
         :param parent: Target parent to copy the entity under.
         :param copy_children: Copy all children of the entity.
         :param omit_list: List of property names to omit on copy
+        :param mask: Clip object's copy by extent defined by a South-West and North-East corners.
 
         :return: The Entity registered to the workspace.
         """
@@ -234,6 +240,10 @@ class Workspace(AbstractContextManager):
             omit_list=["_uid", "_entity_type", "_on_file"] + list(omit_list),
             attributes={"uid": None, "parent": None},
         )
+
+        if entity_kwargs is None:
+            return None
+
         entity_type_kwargs = get_attributes(
             entity.entity_type,
             omit_list=["_workspace", "_on_file"] + list(omit_list),
@@ -271,7 +281,9 @@ class Workspace(AbstractContextManager):
         if copy_children:
             children_map = {}
             for child in entity.children:
-                new_child = self.copy_to_parent(child, new_object, copy_children=True)
+                new_child = self.copy_to_parent(
+                    child, new_object, copy_children=True, extent=extent
+                )
                 new_object.add_children([new_child])
                 children_map[child.uid] = new_child.uid
 

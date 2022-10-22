@@ -22,6 +22,7 @@ import warnings
 
 import numpy as np
 
+from ..shared.utils import mask_by_extent
 from .object_base import ObjectBase, ObjectType
 
 
@@ -42,6 +43,18 @@ class Points(ObjectBase):
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
+
+    def clip_by_extent(self, bounds: np.ndarray) -> Points | None:
+        """
+        Find indices of vertices within a rectangular bounds.
+
+        :param bounds: shape(2, 2) Bounding box defined by the South-West and
+            North-East coordinates. Extents can also be provided as 3D coordinates
+            with shape(2, 3) defining the top and bottom limits.
+        """
+        indices = mask_by_extent(self.vertices, bounds)
+        self.remove_vertices(~indices)
+        return self
 
     @property
     def vertices(self) -> np.ndarray | None:
@@ -76,6 +89,7 @@ class Points(ObjectBase):
                 dtype=[("x", "<f8"), ("y", "<f8"), ("z", "<f8")],
             )
         )
+        self._extent = None
         self.workspace.update_attribute(self, "vertices")
 
     def remove_vertices(self, indices: list[int]):
@@ -94,5 +108,4 @@ class Points(ObjectBase):
         vertices = np.delete(self.vertices, indices, axis=0)
         self._vertices = None
         self.vertices = vertices
-
         self.remove_children_values(indices, "VERTEX")
