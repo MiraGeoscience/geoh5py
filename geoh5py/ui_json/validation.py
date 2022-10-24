@@ -240,10 +240,10 @@ class InputValidation:
             validations = self.validations[name]
 
         for validator in [
-            TypeValidator,
             RequiredValidator,
             AtLeastOneValidator,
             OptionalValidator,
+            TypeValidator,
             UUIDValidator,
             AssociationValidator,
             PropertyGroupValidator,

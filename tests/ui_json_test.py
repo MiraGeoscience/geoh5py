@@ -294,6 +294,8 @@ def test_multi_choice_string_parameter(tmp_path):
     ui_json["geoh5"] = workspace
     ui_json["choice_string_parameter"] = templates.choice_string_parameter()
     ui_json["choice_string_parameter"]["multiSelect"] = True
+    ui_json["choice_string_parameter"]["optional"] = True
+    ui_json["choice_string_parameter"]["enabled"] = False
     ui_json["choice_string_parameter"]["value"] = ""
     in_file = InputFile(ui_json=ui_json)
 
@@ -305,6 +307,7 @@ def test_multi_choice_string_parameter(tmp_path):
     ):
         getattr(in_file, "data")
 
+    ui_json["choice_string_parameter"]["enabled"] = True
     ui_json["choice_string_parameter"]["value"] = []
     in_file = InputFile(ui_json=ui_json)
     data = in_file.data
