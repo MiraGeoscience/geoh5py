@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Release 0.5.0 - 2022/10/26
+--------------------------
+
+- GEOPY-624: Add functionality to remove vertices and cells
+- GEOPY-644: Functionality to copy object within box extent. Only implemented for vertex-based object.
+- Bug fixes:
+    - GEOPY-650: Deal with INTEGRATOR text data in byte format.
+    - GEOPY-615: Fix de-survey method for older geoh5 v1 format.
+
+
 Release 0.4.0 - 2022/08/26
 --------------------------
 
