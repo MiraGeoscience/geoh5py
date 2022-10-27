@@ -28,7 +28,7 @@ jobs:
         python_ver: ['3.8', '3.9', '3.10']
     defaults:
       run:
-        shell: powershell
+        shell: bash
     runs-on: windows-latest
     env:
       POETRY_VIRTUALENVS_CREATE: true
