@@ -80,9 +80,9 @@ master_doc = "index"
 project = "geoh5py"
 
 # The short X.Y version.
-version = "0.5.0-alpha.1"
+version = "0.5.0"
 # The full version, including alpha/beta/rc tags.
-release = "0.5.0-alpha.1"
+release = "0.5.0"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
