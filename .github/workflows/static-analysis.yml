@@ -22,10 +22,6 @@ env:
 jobs:
   pylint:
     name: pylint
-    strategy:
-      fail-fast: false
-      matrix:
-        python_ver: ['3.10']
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -38,7 +34,7 @@ jobs:
       - name: Set up Python version
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python_ver }}
+          python-version: 3.9
       - name: Get full Python version
         id: full-python-version
         shell: bash

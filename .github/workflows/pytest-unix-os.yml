@@ -21,7 +21,7 @@ env:
 
 jobs:
   pytest:
-    name: pytest (Unix)
+    name: pytest
     strategy:
       fail-fast: false
       matrix:
