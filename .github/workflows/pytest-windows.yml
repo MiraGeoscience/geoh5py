@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_ver: [3.7, 3.8, 3.9]
+        python_ver: ['3.8', '3.9', '3.10']
     defaults:
       run:
         shell: bash
@@ -60,7 +60,7 @@ jobs:
     - name: pytest
       run: poetry run pytest --cov-report=xml --cov=geoh5py --cov-branch --cov-fail-under=80
     - name: Codecov
-      if: ${{ success() && matrix.python_ver == '3.7' }}
+      if: ${{ success() && matrix.python_ver == '3.10' }}
       uses: codecov/codecov-action@v1
       with:
         name: GitHub
