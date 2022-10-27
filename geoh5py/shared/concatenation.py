@@ -644,7 +644,9 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         if self.properties is None or len(self.properties) < 1:
             return None
 
-        data = self.parent.get_data(self.properties[0])[0]
+        data = self.parent.get_data(  # pylint: disable=no-value-for-parameter
+            self.properties[0]
+        )[0]
 
         if isinstance(data, Data) and "from" in data.name.lower():
             return data
@@ -657,7 +659,9 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         if self.properties is None or len(self.properties) < 2:
             return None
 
-        data = self.parent.get_data(self.properties[1])[0]
+        data = self.parent.get_data(  # pylint: disable=no-value-for-parameter
+            self.properties[1]
+        )[0]
 
         if isinstance(data, Data) and "to" in data.name.lower():
             return data
