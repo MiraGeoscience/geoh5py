@@ -17,7 +17,11 @@
 
 from __future__ import annotations
 
-from geoh5py.shared.utils import iterable, iterable_message
+import re
+
+import pytest
+
+from geoh5py.shared.utils import iterable, iterable_message, mask_by_extent
 
 
 def test_iterable():
@@ -32,3 +36,26 @@ def test_iterable_message():
     assert iterable_message(None) == ""
     assert "Must be one of:" in iterable_message([1, 2, 3])
     assert "Must be:" in iterable_message([1])
+
+
+def test_mask_by_extent():
+    corners = [[-1, -2], [4, 5], [2, 3]]
+    points = [-100, 100, 0]
+    with pytest.raises(
+        ValueError, match=re.escape("Input 'extent' must be a 2D array-like.")
+    ):
+        mask_by_extent(points, 1.0)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Input 'extent' must be an array-like of shape(2, 3)."),
+    ):
+        mask_by_extent(points, corners)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Input 'locations' must be an array-like of shape(*, 3)."),
+    ):
+        mask_by_extent(points, corners[:2])
+
+    assert not mask_by_extent([points], corners[:2]), "Point should have been outside."

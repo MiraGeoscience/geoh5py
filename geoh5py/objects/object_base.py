@@ -15,10 +15,12 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=R0904
 
 from __future__ import annotations
 
 import uuid
+import warnings
 from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -26,10 +28,12 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..data import CommentsData, Data
+from ..data.data_association_enum import DataAssociationEnum
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
 from ..shared.concatenation import Concatenated, ConcatenatedPropertyGroup
+from ..shared.utils import mask_by_extent
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
@@ -41,17 +45,18 @@ class ObjectBase(Entity):
     Object base class.
     """
 
-    _attribute_map = Entity._attribute_map.copy()
+    _attribute_map: dict = Entity._attribute_map.copy()
     _attribute_map.update(
         {"Last focus": "last_focus", "PropertyGroups": "property_groups"}
     )
 
     def __init__(self, object_type: ObjectType, **kwargs):
         assert object_type is not None
-        self._entity_type = object_type
-        self._property_groups: list[PropertyGroup] | None = None
-        self._last_focus = "None"
         self._comments = None
+        self._entity_type = object_type
+        self._extent = None
+        self._last_focus = "None"
+        self._property_groups: list[PropertyGroup] | None = None
         # self._clipping_ids: list[uuid.UUID] = []
 
         if not any(key for key in kwargs if key in ["name", "Name"]):
@@ -90,7 +95,9 @@ class ObjectBase(Entity):
         else:
             self.comments.values = self.comments.values + [comment_dict]
 
-    def add_data(self, data: dict, property_group: str = None) -> Data | list[Data]:
+    def add_data(
+        self, data: dict, property_group: str | PropertyGroup | None = None
+    ) -> Data | list[Data]:
         """
         Create :obj:`~geoh5py.data.data.Data` from dictionary of name and arguments.
         The provided arguments can be any property of the target Data class.
@@ -145,7 +152,7 @@ class ObjectBase(Entity):
         return data_objects
 
     def add_data_to_group(
-        self, data: list | Data | uuid.UUID, name: str
+        self, data: list | Data | uuid.UUID, property_group: str | PropertyGroup
     ) -> PropertyGroup:
         """
         Append data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
@@ -154,7 +161,7 @@ class ObjectBase(Entity):
         :param data: :obj:`~geoh5py.data.data.Data` object,
             :obj:`~geoh5py.shared.entity.Entity.uid` or
             :obj:`~geoh5py.shared.entity.Entity.name` of data.
-        :param name: Name of a :obj:`~geoh5py.groups.property_group.PropertyGroup`.
+        :param property_group: Name or :obj:`~geoh5py.groups.property_group.PropertyGroup`.
             A new group is created if none exist with the given name.
 
         :return: The target property group.
@@ -171,20 +178,21 @@ class ObjectBase(Entity):
         if isinstance(template, Data):
             association = template.association
 
-        prop_group = self.find_or_create_property_group(
-            name=name,
-            association=association,
-        )
+        if isinstance(property_group, str):
+            property_group = self.find_or_create_property_group(
+                name=property_group,
+                association=association,
+            )
         for uid in uids:
             assert uid in [
                 child.uid for child in self.children
             ], f"Given data with uuid {uid} does not match any known children"
-            if uid not in prop_group.properties:
-                prop_group.properties.append(uid)
+            if uid not in property_group.properties:
+                property_group.properties.append(uid)
 
         self.workspace.update_attribute(self, "property_groups")
 
-        return prop_group
+        return property_group
 
     @property
     def cells(self):
@@ -210,12 +218,60 @@ class ObjectBase(Entity):
     def default_type_uid(cls) -> uuid.UUID:
         ...
 
+    def copy_from_extent(
+        self, bounds: np.ndarray, parent=None, copy_children: bool = True
+    ) -> ObjectBase | None:
+        """
+        Find indices of vertices within a rectangular bounds.
+
+        :param bounds: shape(2, 2) Bounding box defined by the South-West and
+            North-East coordinates. Extents can also be provided as 3D coordinates
+            with shape(2, 3) defining the top and bottom limits.
+        :param attributes: Dictionary of attributes to clip by extent.
+        """
+        if not any(mask_by_extent(bounds, self.extent)) and not any(
+            mask_by_extent(self.extent, bounds)
+        ):
+            return None
+
+        new_entity = self.copy(parent=parent, copy_children=copy_children)
+        return new_entity.clip_by_extent(bounds)
+
+    def clip_by_extent(self, bounds: np.ndarray) -> ObjectBase | None:
+        """
+        Find indices of cells within a rectangular bounds.
+
+        :param bounds: shape(2, 2) Bounding box defined by the South-West and
+            North-East coordinates. Extents can also be provided as 3D coordinates
+            with shape(2, 3) defining the top and bottom limits.
+        :param attributes: Dictionary of attributes to clip by extent.
+        """
+
+        # TODO Clip entity within bounds.
+        warnings.warn(
+            f"Method 'clip_by_extent' for entity {type(self)} not fully implemented. "
+            f"Bounds {bounds} ignored."
+        )
+        return self
+
     @property
     def entity_type(self) -> ObjectType:
         """
         :obj:`~geoh5py.shared.entity_type.EntityType`: Object type.
         """
         return self._entity_type
+
+    @property
+    def extent(self):
+        if self._extent is None:
+            locations = getattr(self, "vertices", None)
+            if locations is None:
+                locations = getattr(self, "centroids", None)
+
+            if locations is not None:
+                self._extent = np.c_[locations.min(axis=0), locations.max(axis=0)].T
+
+        return self._extent
 
     @property
     def faces(self):
@@ -255,11 +311,19 @@ class ObjectBase(Entity):
         else:
             kwargs["parent"] = self
 
+            if (
+                "property_group_type" not in kwargs
+                and "Property Group Type" not in kwargs
+            ):
+                if isinstance(self, Concatenated):
+                    kwargs["property_group_type"] = "Interval table"
+                else:
+                    kwargs["property_group_type"] = "Multi-element"
+
             if isinstance(self, Concatenated):
-                kwargs["property_group_type"] = "Interval table"
+
                 prop_group = ConcatenatedPropertyGroup(**kwargs)
             else:
-                kwargs["property_group_type"] = "Multi-element"
                 prop_group = PropertyGroup(**kwargs)
 
             property_groups += [prop_group]
@@ -352,6 +416,15 @@ class ObjectBase(Entity):
 
         self._property_groups = property_groups
         self.workspace.update_attribute(self, "property_groups")
+
+    def remove_children_values(self, indices: list[int], association: str):
+        for child in self.children:
+            if (
+                getattr(child, "values", None) is not None
+                and isinstance(child.association, DataAssociationEnum)
+                and child.association.name == association
+            ):
+                child.values = np.delete(child.values, indices, axis=0)
 
     @property
     def vertices(self):

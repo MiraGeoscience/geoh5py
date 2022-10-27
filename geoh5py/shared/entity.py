@@ -174,7 +174,7 @@ class Entity(ABC):
 
         :param parent: Target parent to copy the entity under. Copied to current
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: Create copies of all children entities along with it.
+        :param copy_children: (Optional) Create copies of all children entities along with it.
 
         :return entity: Registered Entity to the workspace.
         """

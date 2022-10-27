@@ -127,7 +127,7 @@ class BaseTipper(BaseEMSurvey):
         return self.__UNITS
 
 
-class TipperReceivers(BaseTipper, Curve):
+class TipperReceivers(BaseTipper, Curve):  # pylint: disable=too-many-ancestors
     """
     A z-tipper EM survey object.
     """

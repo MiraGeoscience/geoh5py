@@ -22,6 +22,8 @@ from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 from ..data import CommentsData, Data
 from ..shared import Entity
 from .group_type import GroupType
@@ -73,6 +75,30 @@ class Group(Entity):
         else:
             self.comments.values = self.comments.values + [comment_dict]
 
+    def copy_from_extent(
+        self, bounds: np.ndarray, parent=None, copy_children: bool = True
+    ) -> Group | None:
+        """
+        Find indices of vertices within a rectangular bounds.
+
+        :param bounds: shape(2, 2) Bounding box defined by the South-West and
+            North-East coordinates. Extents can also be provided as 3D coordinates
+            with shape(2, 3) defining the top and bottom limits.
+        :param attributes: Dictionary of attributes to clip by extent.
+        """
+        new_entity = self.copy(parent=parent, copy_children=False)
+        for child in self.children:
+            child.copy_from_extent(
+                bounds, parent=new_entity, copy_children=copy_children
+            )
+
+        if len(new_entity.children) == 0:
+            new_entity.workspace.remove_entity(new_entity)
+            del new_entity
+            return None
+
+        return new_entity
+
     @property
     def comments(self):
         """
@@ -87,6 +113,13 @@ class Group(Entity):
     @property
     def entity_type(self) -> GroupType:
         return self._entity_type
+
+    @property
+    def extent(self):
+        """
+        Bounding box 3D coordinates defining the limits of the entity.
+        """
+        return None
 
     @classmethod
     def find_or_create_type(cls, workspace: workspace.Workspace, **kwargs) -> GroupType:

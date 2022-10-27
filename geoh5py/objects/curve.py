@@ -21,21 +21,19 @@ import uuid
 
 import numpy as np
 
+from .cell_object import CellObject
 from .object_base import ObjectType
-from .points import Points
 
 
-class Curve(Points):
+class Curve(CellObject):
     """
     Curve object defined by a series of line segments (:obj:`~geoh5py.objects.curve.Curve.cells`)
     connecting :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
     """
 
-    _attribute_map = Points._attribute_map.copy()
+    _attribute_map: dict = CellObject._attribute_map.copy()
     _attribute_map.update(
         {
-            "Last focus": "last_focus",
-            "PropertyGroups": "property_groups",
             "Current line property ID": "current_line_id",
         }
     )
@@ -46,7 +44,6 @@ class Curve(Points):
 
     def __init__(self, object_type: ObjectType, **kwargs):
 
-        self._cells: np.ndarray | None = None
         self._parts: np.ndarray | None = None
         super().__init__(object_type, **kwargs)
 
@@ -63,24 +60,38 @@ class Curve(Points):
                 for part_id in self.unique_parts:
                     ind = np.where(self.parts == part_id)[0]
                     cells.append(np.c_[ind[:-1], ind[1:]])
-                self._cells = np.vstack(cells)
+                self.cells = np.vstack(cells)
 
             elif self.on_file:
                 self._cells = self.workspace.fetch_array_attribute(self)
-            else:
-                if self.vertices is not None:
-                    n_segments = self.vertices.shape[0]
-                    self._cells = np.c_[
-                        np.arange(0, n_segments - 1), np.arange(1, n_segments)
-                    ].astype("uint32")
+
+            if self._cells is None and self.vertices is not None:
+                n_segments = self.vertices.shape[0]
+                self.cells = np.c_[
+                    np.arange(0, n_segments - 1), np.arange(1, n_segments)
+                ].astype("uint32")
 
         return self._cells
 
     @cells.setter
-    def cells(self, indices):
-        assert np.issubdtype(
-            indices.dtype, np.integer
-        ), "Indices array must be of integer type"
+    def cells(self, indices: list | np.ndarray | None):
+        if isinstance(indices, list):
+            indices = np.vstack(indices)
+
+        if self._cells is not None and (
+            indices is None or indices.shape[0] < self._cells.shape[0]
+        ):
+            raise ValueError(
+                "Attempting to assign 'cells' with fewer values. "
+                "Use the `remove_cells` method instead."
+            )
+
+        if indices.ndim != 2 or indices.shape[1] != 2:
+            raise ValueError("Array of cells should be of shape (*, 2).")
+
+        if not np.issubdtype(indices.dtype, np.integer):
+            raise TypeError("Indices array must be of integer type")
+
         self._cells = indices.astype(np.int32)
         self._parts = None
         self.workspace.update_attribute(self, "cells")

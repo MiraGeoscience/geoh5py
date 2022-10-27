@@ -25,6 +25,7 @@ import uuid
 import numpy as np
 
 from ..data import Data, FloatData
+from ..groups import PropertyGroup
 from ..shared.utils import merge_arrays
 from .object_base import ObjectType
 from .points import Points
@@ -187,7 +188,7 @@ class Drillhole(Points):
         self.workspace.update_attribute(self, "attributes")
 
     @property
-    def surveys(self) -> np.ndarray | None:
+    def surveys(self) -> np.ndarray:
         """
         Coordinates of the surveys
         """
@@ -195,24 +196,22 @@ class Drillhole(Points):
             self._surveys = self.workspace.fetch_array_attribute(self, "surveys")
 
         if isinstance(self._surveys, np.ndarray):
-            try:
-                surveys = self._surveys.view("<f4").reshape((-1, 3))
-            except TypeError:
-                surveys = np.vstack(
-                    [
-                        self._surveys["Depth"],
-                        self._surveys["Azimuth"],
-                        self._surveys["Dip"],
-                    ]
-                ).T
+            surveys = np.vstack(
+                [
+                    self._surveys["Depth"],
+                    self._surveys["Azimuth"],
+                    self._surveys["Dip"],
+                ]
+            ).T
 
-            # Repeat first survey point at surface for de-survey interpolation
-            surveys = np.vstack([surveys[0, :], surveys])
-            surveys[0, 0] = 0.0
+        else:
+            surveys = np.c_[0, 0, -90]
 
-            return surveys.astype(float)
+        # Repeat first survey point at surface for de-survey interpolation
+        surveys = np.vstack([surveys[0, :], surveys])
+        surveys[0, 0] = 0.0
 
-        return None
+        return surveys.astype(float)
 
     @surveys.setter
     def surveys(self, value):
@@ -323,7 +322,10 @@ class Drillhole(Points):
             )
 
     def add_data(
-        self, data: dict, property_group: str = None, collocation_distance=None
+        self,
+        data: dict,
+        property_group: str | PropertyGroup | None = None,
+        collocation_distance=None,
     ) -> Data | list[Data]:
         """
         Create :obj:`~geoh5py.data.data.Data` specific to the drillhole object
@@ -346,7 +348,7 @@ class Drillhole(Points):
                     },
             }
 
-        :param property_group: Name of the property group to add the data into.
+        :param property_group: Name or PropertyGroup used to group the data.
 
         :return: List of new Data objects.
         """
@@ -601,16 +603,13 @@ class Drillhole(Points):
         if collocation_distance < 0:
             raise UserWarning("Input depth 'collocation_distance' must be >0.")
 
-        if (
-            "depth" not in attributes
-            and "from-to" not in attributes
-            and "association" not in attributes
-        ):
-            assert attributes["association"] == "OBJECT", (
-                "Input data dictionary must contain {key:values} "
-                + "{'from-to':numpy.ndarray} "
-                + "or {'association': 'OBJECT'}."
-            )
+        if "depth" not in attributes and "from-to" not in attributes:
+            if "association" not in attributes or attributes["association"] != "OBJECT":
+                raise ValueError(
+                    "Input data dictionary must contain {key:values} "
+                    + "{'from-to':numpy.ndarray} "
+                    + "or {'association': 'OBJECT'}."
+                )
 
         if "depth" in attributes.keys():
             attributes["association"] = "VERTEX"
@@ -661,26 +660,26 @@ def compute_deviation(surveys: np.ndarray, axis: str) -> np.ndarray | None:
 
     lengths = surveys[1:, 0] - surveys[:-1, 0]
     if axis == "x":
-        dl_in = np.cos(np.deg2rad(450.0 - surveys[:-1, 2] % 360.0)) * np.cos(
-            np.deg2rad(surveys[:-1, 1])
+        dl_in = np.cos(np.deg2rad(450.0 - surveys[:-1, 1] % 360.0)) * np.cos(
+            np.deg2rad(surveys[:-1, 2])
         )
-        dl_out = np.cos(np.deg2rad(450.0 - surveys[1:, 2] % 360.0)) * np.cos(
-            np.deg2rad(surveys[1:, 1])
+        dl_out = np.cos(np.deg2rad(450.0 - surveys[1:, 1] % 360.0)) * np.cos(
+            np.deg2rad(surveys[1:, 2])
         )
         ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
 
     elif axis == "y":
-        dl_in = np.sin(np.deg2rad(450.0 - surveys[:-1, 2] % 360.0)) * np.cos(
-            np.deg2rad(surveys[:-1, 1])
+        dl_in = np.sin(np.deg2rad(450.0 - surveys[:-1, 1] % 360.0)) * np.cos(
+            np.deg2rad(surveys[:-1, 2])
         )
-        dl_out = np.sin(np.deg2rad(450.0 - surveys[1:, 2] % 360.0)) * np.cos(
-            np.deg2rad(surveys[1:, 1])
+        dl_out = np.sin(np.deg2rad(450.0 - surveys[1:, 1] % 360.0)) * np.cos(
+            np.deg2rad(surveys[1:, 2])
         )
         ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
 
     elif axis == "z":
-        dl_in = np.sin(np.deg2rad(surveys[:-1, 1]))
-        dl_out = np.sin(np.deg2rad(surveys[1:, 1]))
+        dl_in = np.sin(np.deg2rad(surveys[:-1, 2]))
+        dl_out = np.sin(np.deg2rad(surveys[1:, 2]))
         ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
 
     else:

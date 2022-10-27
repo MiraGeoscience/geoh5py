@@ -257,7 +257,7 @@ class Concatenator(Group):
         for key in self.concatenated_object_ids:
             attrs = {
                 attr: val
-                for attr, val in self.get_attributes(key).items()
+                for attr, val in self.get_concatenated_attributes(key).items()
                 if "Property" not in attr
             }
             attrs["parent"] = self
@@ -328,7 +328,7 @@ class Concatenator(Group):
 
         return self.data[field][start : start + size]
 
-    def get_attributes(self, uid: bytes | str | uuid.UUID) -> dict:
+    def get_concatenated_attributes(self, uid: bytes | str | uuid.UUID) -> dict:
         """
         Fast reference index to concatenated attribute keys.
         """
@@ -392,7 +392,7 @@ class Concatenator(Group):
             # Remove the rows of data and index
             self.update_array_attribute(entity, entity.name, remove=True)
             # Remove from the concatenated Attributes
-            parent_attr = self.get_attributes(entity.parent.uid)
+            parent_attr = self.get_concatenated_attributes(entity.parent.uid)
             name = entity.name
             del parent_attr[f"Property:{name}"]
         elif isinstance(entity, ConcatenatedObject):
@@ -407,7 +407,7 @@ class Concatenator(Group):
                 self.concatenated_object_ids = object_ids
 
         if self.concatenated_attributes is not None:
-            attr_handle = self.get_attributes(entity.uid)
+            attr_handle = self.get_concatenated_attributes(entity.uid)
             self.concatenated_attributes["Attributes"].remove(attr_handle)
             self.workspace.repack = True
 
@@ -466,7 +466,7 @@ class Concatenator(Group):
         Update the concatenated attributes.
         :param entity: Concatenated entity with attributes.
         """
-        target_attributes = self.get_attributes(entity.uid)
+        target_attributes = self.get_concatenated_attributes(entity.uid)
         for key, attr in entity.attribute_map.items():
             val = getattr(entity, attr, None)
 
@@ -618,7 +618,7 @@ class ConcatenatedData(Concatenated):
         self._parent = parent
         self._parent.add_children([self])
 
-        parental_attr = self.concatenator.get_attributes(self.parent.uid)
+        parental_attr = self.concatenator.get_concatenated_attributes(self.parent.uid)
 
         if f"Property:{self.name}" not in parental_attr:
             parental_attr[f"Property:{self.name}"] = as_str_if_uuid(self.uid)
@@ -644,9 +644,11 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         if self.properties is None or len(self.properties) < 1:
             return None
 
-        data = self.parent.get_data(self.properties[0])[0]
+        data = self.parent.get_data(  # pylint: disable=no-value-for-parameter
+            self.properties[0]
+        )[0]
 
-        if "from" in data.name.lower():
+        if isinstance(data, Data) and "from" in data.name.lower():
             return data
 
         return None
@@ -657,9 +659,11 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         if self.properties is None or len(self.properties) < 2:
             return None
 
-        data = self.parent.get_data(self.properties[1])[0]
+        data = self.parent.get_data(  # pylint: disable=no-value-for-parameter
+            self.properties[1]
+        )[0]
 
-        if "to" in data.name.lower():
+        if isinstance(data, Data) and "to" in data.name.lower():
             return data
 
         return None
@@ -698,13 +702,17 @@ class ConcatenatedObject(Concatenated):
         Generic function to get data values from object.
         """
         entity_list = []
-        attr = self.concatenator.get_attributes(getattr(self, "uid")).copy()
+        attr = self.concatenator.get_concatenated_attributes(
+            getattr(self, "uid")
+        ).copy()
 
         for key, value in attr.items():
             if "Property:" in key:
                 child_data = self.workspace.get_entity(uuid.UUID(value))[0]
                 if child_data is None:
-                    attributes: dict = self.concatenator.get_attributes(value).copy()
+                    attributes: dict = self.concatenator.get_concatenated_attributes(
+                        value
+                    ).copy()
                     attributes["parent"] = self
                     self.workspace.create_from_concatenation(attributes)
                 else:
@@ -729,7 +737,7 @@ class ConcatenatedObject(Concatenated):
         """
         data_list = [
             attr.replace("Property:", "").replace("\u2044", "/")
-            for attr in self.concatenator.get_attributes(self.uid)
+            for attr in self.concatenator.get_concatenated_attributes(self.uid)
             if "Property:" in attr
         ]
 
@@ -759,7 +767,7 @@ class ConcatenatedObject(Concatenated):
 
             for key in prop_groups:
                 getattr(self, "find_or_create_property_group")(
-                    **self.concatenator.get_attributes(key)
+                    **self.concatenator.get_concatenated_attributes(key)
                 )
 
         return self._property_groups
@@ -836,7 +844,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                 attributes.get("name"),
                 attributes.get("from-to"),
                 attributes.get("values"),
-                group_name=property_group,
+                property_group=property_group,
                 collocation_distance=collocation_distance,
             )
 
@@ -849,16 +857,16 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         name: str | None,
         from_to: list | np.ndarray | None,
         values: np.ndarray,
-        group_name: str = None,
+        property_group: str | ConcatenatedPropertyGroup | None = None,
         collocation_distance=1e-4,
-    ) -> str:
+    ) -> ConcatenatedPropertyGroup:
         """
         Compare new and current depth values and re-use the property group if possible.
         Otherwise a new property group is added.
 
         :param from_to: Array of from-to values.
         :param values: Data values to be added on the from-to intervals.
-        :param group_name: Property group name
+        :param property_group: Property group name
         :collocation_distance: Threshold on the comparison between existing depth values.
         """
         if from_to is not None:
@@ -875,18 +883,16 @@ class ConcatenatedDrillhole(ConcatenatedObject):
 
         if (
             from_to is not None
-            and group_name is None
+            and property_group is None
             and self.property_groups is not None
         ):
-            for property_group in self.property_groups:
-                if property_group.from_.values.shape[0] == from_to.shape[
-                    0
-                ] and np.allclose(
-                    np.c_[property_group.from_.values, property_group.to_.values],
+            for p_g in self.property_groups:
+                if p_g.from_.values.shape[0] == from_to.shape[0] and np.allclose(
+                    np.c_[p_g.from_.values, p_g.to_.values],
                     from_to,
                     atol=collocation_distance,
                 ):
-                    return property_group.name
+                    return p_g
 
         ind = 0
         label = ""
@@ -894,22 +900,25 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             ind = len(self.from_)
             label = f"({ind})"
 
-        if group_name is None:
-            group_name = f"Interval_{ind}"
+        if property_group is None:
+            property_group = f"Interval_{ind}"
 
-        property_group = getattr(self, "find_or_create_property_group")(
-            name=group_name, association="DEPTH"
-        )
+        if isinstance(property_group, str):
+            out_group: ConcatenatedPropertyGroup = getattr(
+                self, "find_or_create_property_group"
+            )(name=property_group, association="DEPTH")
+        else:
+            out_group = property_group
 
-        if property_group.from_ is not None:
-            if property_group.from_.values.shape[0] != values.shape[0]:
+        if out_group.from_ is not None:
+            if out_group.from_.values.shape[0] != values.shape[0]:
                 raise ValueError(
                     f"Input values for '{name}' with shape({values.shape[0]}) "
-                    f"do not match the from-to intervals of the group '{group_name}' "
-                    f"with shape({property_group.from_.values.shape[0]}). Check values or "
+                    f"do not match the from-to intervals of the group '{out_group}' "
+                    f"with shape({out_group.from_.values.shape[0]}). Check values or "
                     f"assign to a new property group."
                 )
-            return property_group.name
+            return out_group
 
         from_to = getattr(self, "add_data")(
             {
@@ -930,10 +939,10 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                     "allow_delete": False,
                 },
             },
-            property_group.name,
+            out_group,
         )
 
-        return property_group.name
+        return out_group
 
     def sort_depths(self):
         """Bypass sort_depths from previous version."""

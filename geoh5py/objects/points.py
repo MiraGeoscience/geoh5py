@@ -18,9 +18,11 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 
 import numpy as np
 
+from ..shared.utils import mask_by_extent
 from .object_base import ObjectBase, ObjectType
 
 
@@ -42,6 +44,18 @@ class Points(ObjectBase):
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
 
+    def clip_by_extent(self, bounds: np.ndarray) -> Points | None:
+        """
+        Find indices of vertices within a rectangular bounds.
+
+        :param bounds: shape(2, 2) Bounding box defined by the South-West and
+            North-East coordinates. Extents can also be provided as 3D coordinates
+            with shape(2, 3) defining the top and bottom limits.
+        """
+        indices = mask_by_extent(self.vertices, bounds)
+        self.remove_vertices(~indices)
+        return self
+
     @property
     def vertices(self) -> np.ndarray | None:
         """
@@ -57,13 +71,41 @@ class Points(ObjectBase):
 
     @vertices.setter
     def vertices(self, xyz: np.ndarray):
-        assert (
-            xyz.shape[1] == 3
-        ), f"Array of vertices must be of shape (*, 3). Array of shape {xyz.shape} provided."
+
+        if xyz.ndim != 2 or xyz.shape[1] != 3:
+            raise ValueError(
+                f"Array of vertices must be of shape (*, 3). Array of shape {xyz.shape} provided."
+            )
+
+        if self._vertices is not None and xyz.shape[0] < self._vertices.shape[0]:
+            raise ValueError(
+                "Attempting to assign 'vertices' with fewer values. "
+                "Use the `remove_vertices` method instead."
+            )
+
         self._vertices = np.asarray(
             np.core.records.fromarrays(
                 xyz.T.tolist(),
                 dtype=[("x", "<f8"), ("y", "<f8"), ("z", "<f8")],
             )
         )
+        self._extent = None
         self.workspace.update_attribute(self, "vertices")
+
+    def remove_vertices(self, indices: list[int]):
+        """Safely remove vertices and corresponding data entries."""
+
+        if self._vertices is None:
+            warnings.warn("No vertices to be removed.", UserWarning)
+            return
+
+        if (
+            isinstance(self.vertices, np.ndarray)
+            and np.max(indices) > self.vertices.shape[0] - 1
+        ):
+            raise ValueError("Found indices larger than the number of vertices.")
+
+        vertices = np.delete(self.vertices, indices, axis=0)
+        self._vertices = None
+        self.vertices = vertices
+        self.remove_children_values(indices, "VERTEX")

@@ -271,7 +271,7 @@ class BaseAirborneTEM(BaseEMSurvey, Curve):
         self.set_metadata("yaw", value)
 
 
-class AirborneTEMReceivers(BaseAirborneTEM):
+class AirborneTEMReceivers(BaseAirborneTEM):  # pylint: disable=too-many-ancestors
     """
     Airborne time-domain electromagnetic receivers class.
     """
@@ -299,7 +299,7 @@ class AirborneTEMReceivers(BaseAirborneTEM):
         return self.__TYPE
 
 
-class AirborneTEMTransmitters(BaseAirborneTEM):
+class AirborneTEMTransmitters(BaseAirborneTEM):  # pylint: disable=too-many-ancestors
     """
     Airborne time-domain electromagnetic transmitters class.
     """
