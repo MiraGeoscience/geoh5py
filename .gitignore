@@ -136,5 +136,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# isort config is in pyproject.toml
+.isort.cfg
+
 # geoh5 locks
 *.geoh5.lock
