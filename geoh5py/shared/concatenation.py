@@ -163,17 +163,13 @@ class Concatenator(Group):
         self._concatenated_object_ids = object_ids
         self.workspace.update_attribute(self, "concatenated_object_ids")
 
-    def copy(
-        self, parent=None, copy_children: bool = True, extent: np.ndarray | None = None
-    ):
+    def copy(self, parent=None, copy_children: bool = True):
         """
         Function to copy an entity to a different parent entity.
 
         :param parent: Target parent to copy the entity under. Copied to current
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: Create copies of all children entities along with it.
-        :param extent: (Optional) Clip a copy by extent defined by a South-West
-            and North-East corners.
 
         :return entity: Registered Entity to the workspace.
         """
