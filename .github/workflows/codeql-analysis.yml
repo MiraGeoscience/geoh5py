@@ -33,9 +33,9 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Set up Python version
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.10'
     - name: Get full Python version
@@ -46,7 +46,7 @@ jobs:
         curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
         echo "$HOME/.poetry/bin" >> $GITHUB_PATH
     - name: Set up cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       id: cache
       env:
         # Increase this value to reset cache if poetry.lock has not changed
@@ -65,7 +65,7 @@ jobs:
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v1
+      uses: github/codeql-action/init@v2
       with:
         languages: python
         # Override the default behavior so that the action doesn't attempt
@@ -78,4 +78,4 @@ jobs:
         # queries: ./path/to/local/query, your-org/your-repo/queries@main
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v1
+      uses: github/codeql-action/analyze@v2
