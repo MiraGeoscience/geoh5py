@@ -119,6 +119,7 @@ class GeoImage(ObjectBase):
 
         :return: List of new Data objects.
         """
+        tif = False
         if isinstance(image, np.ndarray) and image.ndim in [2, 3]:
             if image.ndim == 3 and image.shape[2] != 3:
                 raise ValueError(
@@ -133,7 +134,15 @@ class GeoImage(ObjectBase):
         elif isinstance(image, str):
             if not os.path.exists(image):
                 raise ValueError(f"Input image file {image} does not exist.")
-            image = Image.open(image)
+
+            if image.split(".")[-1] in ("tif", "tiff"):
+                tif = True
+                image_copy = Image.open(image)
+                image = image_copy.copy()
+            else:
+                image = Image.open(image)
+
+
         elif isinstance(image, bytes):
             image = Image.open(BytesIO(image))
         elif not isinstance(image, Image.Image):
@@ -157,6 +166,10 @@ class GeoImage(ObjectBase):
             image.entity_type.name = "GeoImageMesh_Image"
 
         self.vertices = self.default_vertices
+
+        #if the image is a tiff, georeference the image
+        if tif:
+            self.georeferencing_from_tiff(image_copy)
 
     def georeference(self, reference: np.ndarray | list, locations: np.ndarray | list):
         """
@@ -238,3 +251,38 @@ class GeoImage(ObjectBase):
         )
         self._vertices = xyz
         self.workspace.update_attribute(self, "vertices")
+
+    def georeferencing_from_tiff(self, image:Image.Image):
+        """
+        Get the geogrpahic informations from the PIL image to georeference it.
+        Run the georefence() method of the object.
+        """
+        try:
+            #get geographic informations
+            georeferencing = {id_: image.tag[id_] for id_ in image.tag}
+            u_origin = georeferencing[33922][3]
+            v_origin = georeferencing[33922][4]
+            u_cell_size = georeferencing[33550][0]
+            v_cell_size = georeferencing[33550][1]
+            u_count = georeferencing[256][0]
+            v_count = georeferencing[257][0]
+            u_oposite = u_origin + u_cell_size * u_count
+            v_oposite = v_origin - v_cell_size * v_count
+
+            #prepare georeferencing
+            reference = np.array([[     0., v_count],
+                                  [u_count, v_count],
+                                  [u_count,    0.]])
+
+            locations = np.array([[ u_origin, v_origin , 0.],
+                                  [u_oposite, v_origin , 0.],
+                                  [u_oposite, v_oposite, 0.]])
+
+            #georeference the raster
+            self.georeference(reference, locations)
+
+        except AttributeError:
+            print("The 'tif.' image has no referencing informations.")
+
+
+
