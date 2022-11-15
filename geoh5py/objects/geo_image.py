@@ -324,7 +324,7 @@ class GeoImage(ObjectBase):
         )
 
         #add the data to the 2dgrid
-        if transform is "GRAY":
+        if transform == "GRAY":
             grid.add_data(
                 data={
                     f"{name}_GRAY":{
@@ -333,7 +333,7 @@ class GeoImage(ObjectBase):
                     }
                 }
             )
-        elif transform is "RGB":
+        elif transform == "RGB":
             grid.add_data(
                 data={
                     f"{name}_R":{
