@@ -20,11 +20,13 @@ import os
 import uuid
 from io import BytesIO
 from tempfile import TemporaryDirectory
+from warnings import warn
 
 import numpy as np
 from PIL import Image
 
 from ..data import FilenameData
+from ..groups.group import Group
 from .grid2d import Grid2D
 from .object_base import ObjectBase, ObjectType
 
@@ -135,8 +137,8 @@ class GeoImage(ObjectBase):
             if not os.path.exists(image):
                 raise ValueError(f"Input image file {image} does not exist.")
 
-            # image_copy is the original because Image.copy() does not returm tags
-            if image.split(".")[-1] in ("tif", "tiff"):
+            # image_copy is the original because Image.copy() does not return tags
+            if image.endswith(("tif", "tiff")):
                 image_copy = Image.open(image)
                 image = image_copy.copy()
             else:
@@ -253,11 +255,12 @@ class GeoImage(ObjectBase):
 
     def georeferencing_from_tiff(self, image: Image.Image):
         """
-        Get the geogrpahic informations from the PIL image to georeference it.
+        Get the geogrpahic information from the PIL image to georeference it.
         Run the georefence() method of the object.
+        :param image: a .tif image open with PIL.Image.
         """
         try:
-            # get geographic informations
+            # get geographic information
             georeferencing = {id_: image.tag[id_] for id_ in image.tag}
             u_origin = georeferencing[33922][3]
             v_origin = georeferencing[33922][4]
@@ -282,41 +285,53 @@ class GeoImage(ObjectBase):
             # georeference the raster
             self.georeference(reference, locations)
 
-        except AttributeError:
-            print("The 'tif.' image has no referencing informations.")
+        except (AttributeError, KeyError):
+            warn("The 'tif.' image has no referencing information.")
 
     def to_grid2d(
         self,
-        new_name: str = None,
+        name: str = None,
         rotation: float = 0.0,
         dip: float = 0.0,
         elevation: float = 0.0,
         transform: str = "GRAY",
-    ):
+        parent: Group = None,
+    ) -> Grid2D:
         """
-        Create a geoh5py GRID2D object from the geoimage in the same workspace.
-        :param new_name: the name to give to the new GRID2D; if None the same name is given, default=None.
-        :param rotation: the value of the rotation of the GRID2D, default=0.
-        :param dip: the value of the dip of the GRID2D, default=0.
-        :param elevation: the value of elevation of the GRID2D, default=0.
+        Create a geoh5py :obj:geoh5py.objects.grid2d.Grid2D from the geoimage in the same workspace.
+        :param name: the name of the new Grid2D; if None the same name is given, default=None.
+        :param rotation: the value of the rotation of the Grid2D, default=0.
+        :param dip: the value of the dip of the Grid2D, default=0.
+        :param elevation: the value of elevation of the Grid2D, default=0.
         :param transform: the type of transform ; if "GRAY" convert the image to grayscale ;
-         if "RGB" every band is sent to a data of a grid.
+        if "RGB" every band is sent to a data of a grid.
+        :param parent: defined a parent to the object; if None its assigned to root, default=None.
+        :return: the new created grid.
         """
-        assert transform in ["GRAY", "RGB"], "'transform' has to be 'GRAY' or 'RGB'."
+        if transform not in ["GRAY", "RGB"]:
+            raise KeyError(
+                f"'transform' has to be 'GRAY' or 'RGB', you entered {transform} instead."
+            )
+        if self._vertices is None:
+            raise AttributeError("The 'vertices' has to be previously defined")
 
         # option to define a new name
-        if new_name is None:
+        if name is None:
             name = self.name
-        else:
-            name = new_name
 
-        # get geographic informations
+        # get geographic information
         u_origin = self.vertices[0, 0]
         v_origin = self.vertices[2, 1]
         u_count = self.default_vertices[1, 0]
         v_count = self.default_vertices[0, 1]
         u_cell_size = abs(u_origin - self.vertices[1, 0]) / u_count
         v_cell_size = abs(v_origin - self.vertices[0, 1]) / v_count
+
+        # create parent
+        if parent is None:
+            parent = self.workspace.root
+        elif not isinstance(parent.type, Group):
+            raise ValueError("The 'parent' option has to be a group or None ")
 
         # create the 2dgrid
         grid = Grid2D.create(
@@ -329,6 +344,7 @@ class GeoImage(ObjectBase):
             v_count=v_count,
             rotation=float(rotation),
             dip=float(dip),
+            parent=parent,
         )
 
         # add the data to the 2dgrid
@@ -351,26 +367,19 @@ class GeoImage(ObjectBase):
                             Image.open(BytesIO(self.image_data.values))
                         ).astype(np.uint32)[::-1, :, 0],
                         "association": "CELL",
-                    }
-                }
-            )
-            grid.add_data(
-                data={
+                    },
                     f"{name}_G": {
                         "values": np.array(
                             Image.open(BytesIO(self.image_data.values))
                         ).astype(np.uint32)[::-1, :, 1],
                         "association": "CELL",
-                    }
-                }
-            )
-            grid.add_data(
-                data={
+                    },
                     f"{name}_B": {
                         "values": np.array(
                             Image.open(BytesIO(self.image_data.values))
                         ).astype(np.uint32)[::-1, :, 2],
                         "association": "CELL",
-                    }
+                    },
                 }
             )
+        return grid
