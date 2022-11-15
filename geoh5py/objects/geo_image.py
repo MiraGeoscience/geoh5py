@@ -26,6 +26,7 @@ from PIL import Image
 
 from ..data import FilenameData
 from .object_base import ObjectBase, ObjectType
+from .grid2d import Grid2D
 
 
 class GeoImage(ObjectBase):
@@ -282,6 +283,89 @@ class GeoImage(ObjectBase):
 
         except AttributeError:
             print("The 'tif.' image has no referencing informations.")
+
+    def to_grid2d(self, new_name:str=None, rotation:float=0., dip:float=0., elevation:float=0., transform:str="GRAY"):
+        """
+        Create a geoh5py GRID2D object from the geoimage in the same workspace.
+        :param new_name: the name to give to the new GRID2D; if None the same name is given, default=None.
+        :param rotation: the value of the rotation of the GRID2D, default=0.
+        :param dip: the value of the dip of the GRID2D, default=0.
+        :param elevation: the value of elevation of the GRID2D, default=0.
+        :param transform: the type of transform ; if "GRAY" convert the image to grayscale ;
+         if "RGB" every band is sent to a data of a grid.
+        """
+        assert transform in ["GRAY", "RGB"], "'transform' has to be 'GRAY' or 'RGB'."
+
+        #option to define a new name
+        if new_name is None:
+            name = self.name
+        else:
+            name = new_name
+
+        #get geographic informations
+        u_origin = self.vertices[0,0]
+        v_origin = self.vertices[2,1]
+        u_count = self.default_vertices[1,0]
+        v_count = self.default_vertices[0,1]
+        u_cell_size = abs(u_origin-self.vertices[1, 0])/u_count
+        v_cell_size = abs(v_origin-self.vertices[0,1])/v_count
+
+        # create the 2dgrid
+        grid = Grid2D.create(
+            self.workspace,
+            name=name,
+            origin=[u_origin, v_origin, elevation],
+            u_cell_size=u_cell_size,
+            v_cell_size=v_cell_size,
+            u_count=u_count,
+            v_count=v_count,
+            rotation=float(rotation),
+            dip=float(dip),
+        )
+
+        #add the data to the 2dgrid
+        if transform is "GRAY":
+            grid.add_data(
+                data={
+                    f"{name}_GRAY":{
+                        "values": np.array(Image.open(BytesIO(self.image_data.values)).convert("L")).astype(np.uint32)[::-1],
+                        "association":"CELL",
+                    }
+                }
+            )
+        elif transform is "RGB":
+            grid.add_data(
+                data={
+                    f"{name}_R":{
+                        "values": np.array(Image.open(BytesIO(self.image_data.values))).astype(np.uint32)[::-1,:,0],
+                        "association":"CELL",
+                    }
+                }
+            )
+            grid.add_data(
+                data={
+                    f"{name}_G":{
+                        "values": np.array(Image.open(BytesIO(self.image_data.values))).astype(np.uint32)[::-1,:,1],
+                        "association":"CELL",
+                    }
+                }
+            )
+            grid.add_data(
+                data={
+                    f"{name}_B":{
+                        "values": np.array(Image.open(BytesIO(self.image_data.values))).astype(np.uint32)[::-1,:,2],
+                        "association":"CELL",
+                    }
+                }
+            )
+
+
+
+
+
+
+
+
 
 
 
