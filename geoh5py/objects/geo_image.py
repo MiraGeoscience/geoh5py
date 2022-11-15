@@ -119,7 +119,6 @@ class GeoImage(ObjectBase):
 
         :return: List of new Data objects.
         """
-        tif = False
         if isinstance(image, np.ndarray) and image.ndim in [2, 3]:
             if image.ndim == 3 and image.shape[2] != 3:
                 raise ValueError(
@@ -135,8 +134,8 @@ class GeoImage(ObjectBase):
             if not os.path.exists(image):
                 raise ValueError(f"Input image file {image} does not exist.")
 
+            #image_copy is the original because Image.copy() does not returm tags
             if image.split(".")[-1] in ("tif", "tiff"):
-                tif = True
                 image_copy = Image.open(image)
                 image = image_copy.copy()
             else:
@@ -168,7 +167,7 @@ class GeoImage(ObjectBase):
         self.vertices = self.default_vertices
 
         #if the image is a tiff, georeference the image
-        if tif:
+        if "image_copy" in locals():
             self.georeferencing_from_tiff(image_copy)
 
     def georeference(self, reference: np.ndarray | list, locations: np.ndarray | list):
