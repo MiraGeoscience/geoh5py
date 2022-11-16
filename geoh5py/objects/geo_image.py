@@ -26,7 +26,6 @@ import numpy as np
 from PIL import Image
 
 from ..data import FilenameData
-from ..groups.group import Group
 from .grid2d import Grid2D
 from .object_base import ObjectBase, ObjectType
 
@@ -290,23 +289,15 @@ class GeoImage(ObjectBase):
 
     def to_grid2d(
         self,
-        name: str = None,
-        rotation: float = 0.0,
-        dip: float = 0.0,
-        elevation: float = 0.0,
         transform: str = "GRAY",
-        parent: Group = None,
+        **grid2d_kwargs,
     ) -> Grid2D:
         """
         Create a geoh5py :obj:geoh5py.objects.grid2d.Grid2D from the geoimage in the same workspace.
-        :param name: the name of the new Grid2D; if None the same name is given, default=None.
-        :param rotation: the value of the rotation of the Grid2D, default=0.
-        :param dip: the value of the dip of the Grid2D, default=0.
-        :param elevation: the value of elevation of the Grid2D, default=0.
         :param transform: the type of transform ; if "GRAY" convert the image to grayscale ;
         if "RGB" every band is sent to a data of a grid.
-        :param parent: defined a parent to the object; if None its assigned to root, default=None.
-        :return: the new created grid.
+        :param grid2d_kwargs: **kwargs arguments of Grid2D: name, parent, rotation, dip, elevation.
+        :return: the new created Grid2D.
         """
         if transform not in ["GRAY", "RGB"]:
             raise KeyError(
@@ -315,9 +306,9 @@ class GeoImage(ObjectBase):
         if self._vertices is None:
             raise AttributeError("The 'vertices' has to be previously defined")
 
-        # option to define a new name
-        if name is None:
-            name = self.name
+        # define name and elevation
+        name = grid2d_kwargs.get("name", self.name)
+        elevation = grid2d_kwargs.get("elevation", 0)
 
         # get geographic information
         u_origin = self.vertices[0, 0]
@@ -327,34 +318,24 @@ class GeoImage(ObjectBase):
         u_cell_size = abs(u_origin - self.vertices[1, 0]) / u_count
         v_cell_size = abs(v_origin - self.vertices[0, 1]) / v_count
 
-        # create parent
-        if parent is None:
-            parent = self.workspace.root
-        elif not isinstance(parent.type, Group):
-            raise ValueError("The 'parent' option has to be a group or None ")
-
         # create the 2dgrid
         grid = Grid2D.create(
             self.workspace,
-            name=name,
             origin=[u_origin, v_origin, elevation],
             u_cell_size=u_cell_size,
             v_cell_size=v_cell_size,
             u_count=u_count,
             v_count=v_count,
-            rotation=float(rotation),
-            dip=float(dip),
-            parent=parent,
+            **grid2d_kwargs,
         )
 
         # add the data to the 2dgrid
+        value = Image.open(BytesIO(self.image_data.values))
         if transform == "GRAY":
             grid.add_data(
                 data={
                     f"{name}_GRAY": {
-                        "values": np.array(
-                            Image.open(BytesIO(self.image_data.values)).convert("L")
-                        ).astype(np.uint32)[::-1],
+                        "values": np.array(value.convert("L")).astype(np.uint32)[::-1],
                         "association": "CELL",
                     }
                 }
@@ -363,21 +344,15 @@ class GeoImage(ObjectBase):
             grid.add_data(
                 data={
                     f"{name}_R": {
-                        "values": np.array(
-                            Image.open(BytesIO(self.image_data.values))
-                        ).astype(np.uint32)[::-1, :, 0],
+                        "values": np.array(value).astype(np.uint32)[::-1, :, 0],
                         "association": "CELL",
                     },
                     f"{name}_G": {
-                        "values": np.array(
-                            Image.open(BytesIO(self.image_data.values))
-                        ).astype(np.uint32)[::-1, :, 1],
+                        "values": np.array(value).astype(np.uint32)[::-1, :, 1],
                         "association": "CELL",
                     },
                     f"{name}_B": {
-                        "values": np.array(
-                            Image.open(BytesIO(self.image_data.values))
-                        ).astype(np.uint32)[::-1, :, 2],
+                        "values": np.array(value).astype(np.uint32)[::-1, :, 2],
                         "association": "CELL",
                     },
                 }
