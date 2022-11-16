@@ -24,6 +24,7 @@ from warnings import warn
 
 import numpy as np
 from PIL import Image
+from PIL.TiffImagePlugin import TiffImageFile
 
 from ..data import FilenameData
 from .grid2d import Grid2D
@@ -137,12 +138,11 @@ class GeoImage(ObjectBase):
             if not os.path.exists(image):
                 raise ValueError(f"Input image file {image} does not exist.")
 
+            image = Image.open(image)
+
             # if the image is a tiff save tag information
-            if image.endswith(("tif", "tiff")):
-                image = Image.open(image)
+            if isinstance(image, TiffImageFile):
                 self.tag = image
-            else:
-                image = Image.open(image)
 
         elif isinstance(image, bytes):
             image = Image.open(BytesIO(image))
