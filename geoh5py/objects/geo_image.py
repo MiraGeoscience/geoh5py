@@ -166,11 +166,6 @@ class GeoImage(ObjectBase):
             image.name = "GeoImageMesh_Image"
             image.entity_type.name = "GeoImageMesh_Image"
 
-        self.vertices = self.default_vertices
-
-        # if the image is a tiff, georeference the image
-        self.georeferencing_from_tiff()
-
     def georeference(self, reference: np.ndarray | list, locations: np.ndarray | list):
         """
         Georeference the image vertices (corners) based on input reference and
@@ -231,7 +226,10 @@ class GeoImage(ObjectBase):
             self._vertices = self.workspace.fetch_array_attribute(self, "vertices")
 
         if self._vertices is None and self.image is not None:
-            self.vertices = self.default_vertices
+            if self.tag is not None:
+                self.georeferencing_from_tiff()
+            else:
+                self.vertices = self.default_vertices
 
         if self._vertices is not None:
             return self._vertices.view("<f8").reshape((-1, 3)).astype(float)
