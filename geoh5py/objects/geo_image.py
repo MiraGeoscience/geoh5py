@@ -46,7 +46,7 @@ class GeoImage(ObjectBase):
     def __init__(self, object_type: ObjectType, **kwargs):
         self._vertices = None
         self._cells = None
-        self._tag = None
+        self._tag: dict | None = None
 
         super().__init__(object_type, **kwargs)
 
