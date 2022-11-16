@@ -45,6 +45,7 @@ class GeoImage(ObjectBase):
     def __init__(self, object_type: ObjectType, **kwargs):
         self._vertices = None
         self._cells = None
+        self._tag = None
 
         super().__init__(object_type, **kwargs)
 
@@ -136,10 +137,10 @@ class GeoImage(ObjectBase):
             if not os.path.exists(image):
                 raise ValueError(f"Input image file {image} does not exist.")
 
-            # image_copy is the original because Image.copy() does not return tags
+            # if the image is a tiff save tag information
             if image.endswith(("tif", "tiff")):
-                image_copy = Image.open(image)
-                image = image_copy.copy()
+                image = Image.open(image)
+                self.tag = image
             else:
                 image = Image.open(image)
 
@@ -168,8 +169,7 @@ class GeoImage(ObjectBase):
         self.vertices = self.default_vertices
 
         # if the image is a tiff, georeference the image
-        if "image_copy" in locals():
-            self.georeferencing_from_tiff(image_copy)
+        self.georeferencing_from_tiff()
 
     def georeference(self, reference: np.ndarray | list, locations: np.ndarray | list):
         """
@@ -252,37 +252,56 @@ class GeoImage(ObjectBase):
         self._vertices = xyz
         self.workspace.update_attribute(self, "vertices")
 
-    def georeferencing_from_tiff(self, image: Image.Image):
+    @property
+    def tag(self) -> dict | None:
+        """
+        Return the tag information of the input image (if .tif).
+        :return: a dictionary containing the PIL.Image.tag information.
+        """
+        if self._tag:
+            return self._tag.copy()
+        return None
+
+    @tag.setter
+    def tag(self, image: Image.Image):
+        if not isinstance(image, Image.Image):
+            raise ValueError("Input 'tag' must be a PIL.Image")
+
+        self._tag = dict(image.tag)
+
+    def georeferencing_from_tiff(self):
         """
         Get the geogrpahic information from the PIL image to georeference it.
         Run the georefence() method of the object.
         :param image: a .tif image open with PIL.Image.
         """
         try:
-            # get geographic information
-            georeferencing = {id_: image.tag[id_] for id_ in image.tag}
-            u_origin = georeferencing[33922][3]
-            v_origin = georeferencing[33922][4]
-            u_cell_size = georeferencing[33550][0]
-            v_cell_size = georeferencing[33550][1]
-            u_count = georeferencing[256][0]
-            v_count = georeferencing[257][0]
-            u_oposite = u_origin + u_cell_size * u_count
-            v_oposite = v_origin - v_cell_size * v_count
+            if self._tag:
+                # get geographic information
+                u_origin = self._tag[33922][3]
+                v_origin = self._tag[33922][4]
+                u_cell_size = self._tag[33550][0]
+                v_cell_size = self._tag[33550][1]
+                u_count = self._tag[256][0]
+                v_count = self._tag[257][0]
+                u_oposite = u_origin + u_cell_size * u_count
+                v_oposite = v_origin - v_cell_size * v_count
 
-            # prepare georeferencing
-            reference = np.array([[0.0, v_count], [u_count, v_count], [u_count, 0.0]])
+                # prepare georeferencing
+                reference = np.array(
+                    [[0.0, v_count], [u_count, v_count], [u_count, 0.0]]
+                )
 
-            locations = np.array(
-                [
-                    [u_origin, v_origin, 0.0],
-                    [u_oposite, v_origin, 0.0],
-                    [u_oposite, v_oposite, 0.0],
-                ]
-            )
+                locations = np.array(
+                    [
+                        [u_origin, v_origin, 0.0],
+                        [u_oposite, v_origin, 0.0],
+                        [u_oposite, v_oposite, 0.0],
+                    ]
+                )
 
-            # georeference the raster
-            self.georeference(reference, locations)
+                # georeference the raster
+                self.georeference(reference, locations)
 
         except (AttributeError, KeyError):
             warn("The 'tif.' image has no referencing information.")
