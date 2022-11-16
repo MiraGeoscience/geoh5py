@@ -263,11 +263,13 @@ class GeoImage(ObjectBase):
         return None
 
     @tag.setter
-    def tag(self, image: Image.Image):
-        if not isinstance(image, Image.Image):
+    def tag(self, image: Image.Image | None):
+        if isinstance(image, Image.Image):
+            self._tag = dict(image.tag)
+        elif image is None:
+            self._tag = None
+        else:
             raise ValueError("Input 'tag' must be a PIL.Image")
-
-        self._tag = dict(image.tag)
 
     def georeferencing_from_tiff(self):
         """
