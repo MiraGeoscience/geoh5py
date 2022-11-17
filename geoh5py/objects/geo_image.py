@@ -230,8 +230,8 @@ class GeoImage(ObjectBase):
         if self.tag is None:
             self._tag = {}
             width, height = self.image.size
-            self._tag[256] = width
-            self._tag[257] = height
+            self._tag[256] = (width,)
+            self._tag[257] = (height,)
             self._tag[33922] = (
                 0.0,
                 0.0,
@@ -393,6 +393,9 @@ class GeoImage(ObjectBase):
                 }
             )
         elif transform == "RGB":
+            if np.array(value).shape[-1] != 3:
+                raise IndexError("To export to RGB the image has to have 3 bands")
+
             grid.add_data(
                 data={
                     f"{name}_R": {

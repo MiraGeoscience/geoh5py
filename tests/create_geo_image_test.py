@@ -174,9 +174,10 @@ def test_georeference_image(tmp_path):
     geoimage = GeoImage.create(
         workspace, name="test_area", image=f"{str(tmp_path)}/testtif.tif"
     )
+    _ = geoimage.vertices
 
     image = Image.open(f"{str(tmp_path)}/testtif.tif")
-    assert isinstance(image, TiffImageFile)
+
     geoimage = GeoImage.create(workspace, name="test_area", image=image)
 
     # create Gray grid2d
@@ -187,14 +188,13 @@ def test_georeference_image(tmp_path):
 
     assert isinstance(grid2d_gray, Grid2D)
     assert isinstance(grid2d_rgb, Grid2D)
+    assert isinstance(geoimage.image_georeferenced, Image.Image)
 
     # test grid2d errors
     with pytest.raises(KeyError) as excinfo:
         geoimage.to_grid2d(new_name="RGB", transform="bidon")
 
     assert "has to be 'GRAY" in str(excinfo.value)
-
-    assert isinstance(geoimage.image_georeferenced, Image.Image)
 
     # test save_as
     with pytest.raises(TypeError) as excinfo:
@@ -218,3 +218,12 @@ def test_georeference_image(tmp_path):
     assert isinstance(image, TiffImageFile)
 
     geoimage.save_as("saved_tif.png", str(tmp_path))
+
+    image = Image.open(f"{str(tmp_path)}/testtif.tif").convert("L")
+    geoimage = GeoImage.create(workspace, name="test_area", image=image)
+
+    # test grid2d errors
+    with pytest.raises(IndexError) as excinfo:
+        geoimage.to_grid2d(new_name="RGB", transform="RGB")
+
+    assert "have 3 bands" in str(excinfo.value)
