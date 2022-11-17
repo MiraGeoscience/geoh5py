@@ -146,10 +146,13 @@ class GeoImage(ObjectBase):
 
         elif isinstance(image, bytes):
             image = Image.open(BytesIO(image))
+        elif isinstance(image, TiffImageFile):
+            self.tag = image
         elif not isinstance(image, Image.Image):
             raise ValueError(
                 "Input 'value' for the 'image' property must be "
                 "a 2D or 3D numpy.ndarray, bytes, PIL.Image or a path to an existing image."
+                f"Get type {type(image)} instead."
             )
 
         with TemporaryDirectory() as tempdir:
@@ -216,6 +219,33 @@ class GeoImage(ObjectBase):
             param_z[0] + np.dot(corners, param_z[1:]),
         ]
 
+        self.set_tag_from_vertices()
+
+    def set_tag_from_vertices(self):
+        """
+        If tag is None, set the basic tag values based on vertices
+        in order to export as a georeferenced .tiff.
+        WARNING: this function must be used after georeference().
+        """
+        if self.tag is None:
+            self._tag = {}
+            width, height = self.image.size
+            self._tag[256] = width
+            self._tag[257] = height
+            self._tag[33922] = (
+                0.0,
+                0.0,
+                0.0,
+                self.vertices[0, 0],
+                self.vertices[0, 1],
+                self.vertices[0, 2],
+            )
+            self._tag[33550] = (
+                abs(self.vertices[1, 0] - self.vertices[0, 0]) / width,
+                abs(self.vertices[0, 1] - self.vertices[2, 1]) / height,
+                0.0,
+            )
+
     @property
     def vertices(self) -> np.ndarray | None:
         """
@@ -227,6 +257,7 @@ class GeoImage(ObjectBase):
 
         if self._vertices is None and self.image is not None:
             if self.tag is not None:
+                self.vertices = self.default_vertices
                 self.georeferencing_from_tiff()
             else:
                 self.vertices = self.default_vertices
@@ -261,9 +292,11 @@ class GeoImage(ObjectBase):
         return None
 
     @tag.setter
-    def tag(self, image: Image.Image | None):
+    def tag(self, image: Image.Image | dict | None):
         if isinstance(image, Image.Image):
             self._tag = dict(image.tag)
+        elif isinstance(image, dict):
+            self._tag = image
         elif image is None:
             self._tag = None
         else:
@@ -394,29 +427,20 @@ class GeoImage(ObjectBase):
 
         return None
 
-    def save_as_georeferenced_tif(
-        self, name: str, path: str = ""
-    ):  # todo: export as a normal tiff if no tag?
+    def save_as(self, name: str, path: str = ""):
         """
-        Function to save the geoimage as a georeferenced .tif file.
+        Function to save the geoimage into a file.
+        It the name ends by '.tif' or '.tiff' and the tag is not None
         :param name: the name to give to the image.
         :param path: the path of the file of the image, default: ''.
         """
 
         # verifications
-        if self.tag is None:
-            raise AttributeError(
-                "The 'tag' has to be previously defined to save image as tif"
-            )
         if self.image is None:
             raise AttributeError("The object contains no image data")
         if not isinstance(name, str):
             raise TypeError(
                 f"The 'name' has to be a string; a '{type(name)}' was entered instead"
-            )
-        if not name.endswith((".tif", ".tiff")):
-            raise ValueError(
-                "The 'name' of the tif image has to end with '.tif' or '.tiff'"
             )
         if not isinstance(path, str):
             raise TypeError(
@@ -425,6 +449,9 @@ class GeoImage(ObjectBase):
         if path != "" and not os.path.isdir(path):
             raise FileNotFoundError(f"No such file or directory: {path}")
 
-        # save the image
-        image: Image = self.image_georeferenced
-        image.save(os.path.join(path, name), exif=image.getexif())
+        if name.endswith((".tif", ".tiff")) and self.tag is not None:
+            # save the image
+            image: Image = self.image_georeferenced
+            image.save(os.path.join(path, name), exif=image.getexif())
+        else:
+            self.image.save(os.path.join(path, name))

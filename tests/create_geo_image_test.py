@@ -20,15 +20,35 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from PIL import Image
+from PIL.TiffImagePlugin import TiffImageFile
 
-from geoh5py.objects import GeoImage
+from geoh5py.objects import GeoImage, Grid2D
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
+
+# test tag
+tag = {
+    256: (128,),
+    257: (128,),
+    258: (8, 8, 8),
+    259: (1,),
+    33922: (0.0, 0.0, 0.0, 522796.33210329525, 7244067.563364625, 0.0),
+    42113: ("255",),
+    262: (2,),
+    33550: (0.9990415797117552, 0.999041579711816, 0.0),
+    339: (1, 1, 1),
+    277: (3,),
+    278: (5,),
+    284: (1,),
+    34737: ("WGS 84 / UTM zone 34N|WGS 84|",),
+}
 
 
 def test_create_copy_geoimage(tmp_path):
 
     workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+
     pixels = np.r_[
         np.c_[32, 0],
         np.c_[32, 64],
@@ -39,7 +59,17 @@ def test_create_copy_geoimage(tmp_path):
         np.c_[5.0, 10.0, 3],
         np.c_[10.0, 10.0, 3],
     ]
+
     geoimage = GeoImage.create(workspace, name="MyGeoImage")
+
+    assert geoimage.default_vertices is None
+
+    assert geoimage.image_georeferenced is None
+
+    with pytest.raises(AttributeError) as excinfo:
+        geoimage.save_as("test")
+
+    assert "The object contains no image data" in str(excinfo.value)
 
     with pytest.raises(AttributeError) as excinfo:
         geoimage.georeference(pixels[0, :], points)
@@ -61,6 +91,11 @@ def test_create_copy_geoimage(tmp_path):
         "Shape of the 'image' must be a 2D or a 3D array with shape(*,*, 3) "
         "representing 'RGB' values." in str(excinfo)
     )
+
+    with pytest.raises(AttributeError) as excinfo:
+        geoimage.to_grid2d()
+
+    assert "The 'vertices' has to be previously defined" in str(excinfo)
 
     geoimage.image = np.random.randint(0, 255, (128, 128))
 
@@ -84,6 +119,9 @@ def test_create_copy_geoimage(tmp_path):
         np.asarray([[0, 15, 6], [10, 15, 6], [10, 5, 0], [0, 5, 0]]),
         err_msg="Issue geo-referencing the coordinates.",
     )
+
+    geoimage.to_grid2d()
+    geoimage.save_as("testtif.tif", str(tmp_path))
 
     geoimage_copy = GeoImage.create(workspace, name="MyGeoImageTwin")
     geoimage.image_data.copy(parent=geoimage_copy)
@@ -115,6 +153,68 @@ def test_create_copy_geoimage(tmp_path):
 
     new_workspace = Workspace(tmp_path / r"geo_image_test2.geoh5")
     rec_image = new_workspace.get_entity("MyGeoImage")[0]
-    compare_entities(geoimage, rec_image, ignore=["_parent", "_image"])
+
+    compare_entities(geoimage, rec_image, ignore=["_parent", "_image", "_tag"])
 
     assert rec_image.image == geoimage.image, "Error copying the bytes image data."
+
+
+def test_georeference_image(tmp_path):
+    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+
+    # create and save a tiff
+    image = Image.fromarray(
+        np.random.randint(0, 255, (128, 128, 3)).astype("uint8"), "RGB"
+    )
+    for id_ in tag.items():
+        image.getexif()[id_[0]] = id_[1]
+    image.save(tmp_path / r"testtif.tif")
+
+    # load image
+    geoimage = GeoImage.create(
+        workspace, name="test_area", image=f"{str(tmp_path)}/testtif.tif"
+    )
+
+    image = Image.open(f"{str(tmp_path)}/testtif.tif")
+    assert isinstance(image, TiffImageFile)
+    geoimage = GeoImage.create(workspace, name="test_area", image=image)
+
+    # create Gray grid2d
+    grid2d_gray = geoimage.to_grid2d()
+
+    # create RGB grid2d
+    grid2d_rgb = geoimage.to_grid2d(new_name="RGB", transform="RGB")
+
+    assert isinstance(grid2d_gray, Grid2D)
+    assert isinstance(grid2d_rgb, Grid2D)
+
+    # test grid2d errors
+    with pytest.raises(KeyError) as excinfo:
+        geoimage.to_grid2d(new_name="RGB", transform="bidon")
+
+    assert "has to be 'GRAY" in str(excinfo.value)
+
+    assert isinstance(geoimage.image_georeferenced, Image.Image)
+
+    # test save_as
+    with pytest.raises(TypeError) as excinfo:
+        geoimage.save_as(0)
+
+    assert "has to be a string" in str(excinfo.value)
+
+    with pytest.raises(TypeError) as excinfo:
+        geoimage.save_as("test", 0)
+
+    assert "has to be a string" in str(excinfo.value)
+
+    with pytest.raises(FileNotFoundError) as excinfo:
+        geoimage.save_as("test", "path/bidon")
+
+    assert "No such file or directory" in str(excinfo.value)
+
+    geoimage.save_as("saved_tif.tif", str(tmp_path))
+    image = Image.open(tmp_path / r"saved_tif.tif")
+
+    assert isinstance(image, TiffImageFile)
+
+    geoimage.save_as("saved_tif.png", str(tmp_path))
