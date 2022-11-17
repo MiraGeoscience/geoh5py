@@ -379,3 +379,54 @@ class GeoImage(ObjectBase):
                 }
             )
         return grid
+
+    @property
+    def image_georeferenced(self) -> Image.Image | None:
+        """
+        Get the image as a georeferenced :obj:`PIL.Image` object.
+        """
+        if self.tag is not None and self.image is not None:
+            image = self.image
+
+            # modify the exif
+            for id_ in self.tag:
+                image.getexif()[id_] = self.tag[id_]
+
+            return image
+
+        return None
+
+    def export_as_georeferenced_tif(
+        self, name: str, path: str = ""
+    ):  # todo: export as a normal tiff if no tag?
+        """
+        Function to export the geoimage as a georeferenced .tif file.
+        :param name: the name to give to the image.
+        :param path: the path of the file of the image, default: ''.
+        """
+
+        # verifications
+        if self.tag is None:
+            raise AttributeError(
+                "The 'tag' has to be previously defined to save image as tif"
+            )
+        if self.image is None:
+            raise AttributeError("The object contains no image data")
+        if not isinstance(name, str):
+            raise TypeError(
+                f"The 'name' has to be a string; a '{type(name)}' was entered instead"
+            )
+        if not name.endswith((".tif", ".tiff")):
+            raise ValueError(
+                "The 'name' of the tif image has to end with '.tif' or '.tiff'"
+            )
+        if not isinstance(path, str):
+            raise TypeError(
+                f"The 'path' has to be a string; a '{type(name)}' was entered instead"
+            )
+        if path != "" and not os.path.isdir(path):
+            raise FileNotFoundError(f"No such file or directory: {path}")
+
+        # save the image
+        image = self.image_georeferenced
+        image.save(os.path.join(path, name), exif=image.getexif())
