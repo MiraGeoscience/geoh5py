@@ -271,7 +271,7 @@ class GeoImage(ObjectBase):
 
     def georeferencing_from_tiff(self):
         """
-        Get the geogrpahic information from the PIL image to georeference it.
+        Get the geogrpahic information from the PIL Image to georeference it.
         Run the georefence() method of the object.
         :param image: a .tif image open with PIL.Image.
         """
@@ -322,7 +322,7 @@ class GeoImage(ObjectBase):
             raise KeyError(
                 f"'transform' has to be 'GRAY' or 'RGB', you entered {transform} instead."
             )
-        if self._vertices is None:
+        if self.vertices is None:
             raise AttributeError("The 'vertices' has to be previously defined")
 
         # define name and elevation
@@ -394,11 +394,11 @@ class GeoImage(ObjectBase):
 
         return None
 
-    def export_as_georeferenced_tif(
+    def save_as_georeferenced_tif(
         self, name: str, path: str = ""
     ):  # todo: export as a normal tiff if no tag?
         """
-        Function to export the geoimage as a georeferenced .tif file.
+        Function to save the geoimage as a georeferenced .tif file.
         :param name: the name to give to the image.
         :param path: the path of the file of the image, default: ''.
         """
@@ -426,5 +426,5 @@ class GeoImage(ObjectBase):
             raise FileNotFoundError(f"No such file or directory: {path}")
 
         # save the image
-        image = self.image_georeferenced
+        image: Image = self.image_georeferenced
         image.save(os.path.join(path, name), exif=image.getexif())
