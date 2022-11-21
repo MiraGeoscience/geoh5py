@@ -436,7 +436,7 @@ class GeoImage(ObjectBase):
     def save_as(self, name: str, path: str | Path = ""):
         """
         Function to save the geoimage into an image file.
-        It the name ends by '.tif' or '.tiff' and the tag is not None,
+        It the name ends by '.tif' or '.tiff' and the tag is not None
         then the image is saved as georeferenced tiff image ;
         else, the image is save with PIL.Image's save function.
         :param name: the name to give to the image.
