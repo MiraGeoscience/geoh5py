@@ -304,7 +304,7 @@ class GeoImage(ObjectBase):
 
     def georeferencing_from_tiff(self):
         """
-        Get the geogrpahic information from the PIL Image to georeference it.
+        Get the geographic information from the PIL Image to georeference it.
         Run the georefence() method of the object.
         :param image: a .tif image open with PIL.Image.
         """
