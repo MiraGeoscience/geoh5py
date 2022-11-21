@@ -28,7 +28,6 @@ from PIL import Image
 from PIL.TiffImagePlugin import TiffImageFile
 
 from ..data import FilenameData
-from .grid2d import Grid2D
 from .object_base import ObjectBase, ObjectType
 
 
@@ -317,14 +316,14 @@ class GeoImage(ObjectBase):
 
         try:
             # get geographic information
-            u_origin = self._tag[33922][3]
-            v_origin = self._tag[33922][4]
-            u_cell_size = self._tag[33550][0]
-            v_cell_size = self._tag[33550][1]
-            u_count = self._tag[256][0]
-            v_count = self._tag[257][0]
-            u_oposite = u_origin + u_cell_size * u_count
-            v_oposite = v_origin - v_cell_size * v_count
+            u_origin = float(self._tag[33922][3])
+            v_origin = float(self._tag[33922][4])
+            u_cell_size = float(self._tag[33550][0])
+            v_cell_size = float(self._tag[33550][1])
+            u_count = float(self._tag[256][0])
+            v_count = float(self._tag[257][0])
+            u_oposite = float(u_origin + u_cell_size * u_count)
+            v_oposite = float(v_origin - v_cell_size * v_count)
 
             # prepare georeferencing
             reference = np.array([[0.0, v_count], [u_count, v_count], [u_count, 0.0]])
@@ -346,7 +345,7 @@ class GeoImage(ObjectBase):
         self,
         transform: str = "GRAY",
         **grid2d_kwargs,
-    ) -> Grid2D:
+    ):
         """
         Create a geoh5py :obj:geoh5py.objects.grid2d.Grid2D from the geoimage in the same workspace.
         :param transform: the type of transform ; if "GRAY" convert the image to grayscale ;
@@ -354,6 +353,8 @@ class GeoImage(ObjectBase):
         :param **grid2d_kwargs: Any argument supported by :obj:`geoh5py.objects.grid2d.Grid2D`.
         :return: the new created Grid2D.
         """
+        from .grid2d import Grid2D  # import here to avoid circular import
+
         if transform not in ["GRAY", "RGB"]:
             raise KeyError(
                 f"'transform' has to be 'GRAY' or 'RGB', you entered {transform} instead."
