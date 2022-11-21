@@ -97,6 +97,16 @@ def test_create_copy_geoimage(tmp_path):
 
     assert "The 'vertices' has to be previously defined" in str(excinfo)
 
+    with pytest.raises(AttributeError) as excinfo:
+        geoimage.set_tag_from_vertices()
+
+    assert "There is no image to reference" in str(excinfo)
+
+    with pytest.raises(AttributeError) as excinfo:
+        geoimage.georeferencing_from_tiff()
+
+    assert "The image is not georeferenced" in str(excinfo)
+
     geoimage.image = np.random.randint(0, 255, (128, 128))
 
     with pytest.raises(ValueError) as excinfo:
@@ -185,8 +195,8 @@ def test_georeference_image(tmp_path):
 
     assert "Input 'tag' must" in str(excinfo.value)
 
-    image = Image.open(tmp_path / r"testtif.tif")
-
+    # image = Image.open(tmp_path / r"testtif.tif")
+    geoimage.tag = {"test": 3}
     geoimage.georeferencing_from_tiff()
 
     image = Image.open(f"{str(tmp_path)}/testtif.tif")

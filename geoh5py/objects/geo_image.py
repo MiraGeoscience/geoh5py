@@ -19,6 +19,7 @@ from __future__ import annotations
 import os
 import uuid
 from io import BytesIO
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from warnings import warn
 
@@ -227,24 +228,27 @@ class GeoImage(ObjectBase):
         in order to export as a georeferenced .tiff.
         WARNING: this function must be used after georeference().
         """
-        if self.tag is None:
-            self._tag = {}
-            width, height = self.image.size
-            self._tag[256] = (width,)
-            self._tag[257] = (height,)
-            self._tag[33922] = (
-                0.0,
-                0.0,
-                0.0,
-                self.vertices[0, 0],
-                self.vertices[0, 1],
-                self.vertices[0, 2],
-            )
-            self._tag[33550] = (
-                abs(self.vertices[1, 0] - self.vertices[0, 0]) / width,
-                abs(self.vertices[0, 1] - self.vertices[2, 1]) / height,
-                0.0,
-            )
+
+        if self.image is None:
+            raise AttributeError("There is no image to reference")
+
+        self._tag = {}
+        width, height = self.image.size
+        self._tag[256] = (width,)
+        self._tag[257] = (height,)
+        self._tag[33922] = (
+            0.0,
+            0.0,
+            0.0,
+            self.vertices[0, 0],
+            self.vertices[0, 1],
+            self.vertices[0, 2],
+        )
+        self._tag[33550] = (
+            abs(self.vertices[1, 0] - self.vertices[0, 0]) / width,
+            abs(self.vertices[0, 1] - self.vertices[2, 1]) / height,
+            0.0,
+        )
 
     @property
     def vertices(self) -> np.ndarray | None:
@@ -284,7 +288,7 @@ class GeoImage(ObjectBase):
     @property
     def tag(self) -> dict | None:
         """
-        Return the tag information of the input image (if .tif).
+        Georeferencing information of a tiff image stored in the header.
         :return: a dictionary containing the PIL.Image.tag information.
         """
         if self._tag:
@@ -304,40 +308,39 @@ class GeoImage(ObjectBase):
 
     def georeferencing_from_tiff(self):
         """
-        Get the geogrpahic information from the PIL Image to georeference it.
+        Get the geographic information from the PIL Image to georeference it.
         Run the georefence() method of the object.
         :param image: a .tif image open with PIL.Image.
         """
+        if self._tag is None:
+            raise AttributeError("The image is not georeferenced")
+
         try:
-            if self._tag:
-                # get geographic information
-                u_origin = self._tag[33922][3]
-                v_origin = self._tag[33922][4]
-                u_cell_size = self._tag[33550][0]
-                v_cell_size = self._tag[33550][1]
-                u_count = self._tag[256][0]
-                v_count = self._tag[257][0]
-                u_oposite = u_origin + u_cell_size * u_count
-                v_oposite = v_origin - v_cell_size * v_count
+            # get geographic information
+            u_origin = self._tag[33922][3]
+            v_origin = self._tag[33922][4]
+            u_cell_size = self._tag[33550][0]
+            v_cell_size = self._tag[33550][1]
+            u_count = self._tag[256][0]
+            v_count = self._tag[257][0]
+            u_oposite = u_origin + u_cell_size * u_count
+            v_oposite = v_origin - v_cell_size * v_count
 
-                # prepare georeferencing
-                reference = np.array(
-                    [[0.0, v_count], [u_count, v_count], [u_count, 0.0]]
-                )
+            # prepare georeferencing
+            reference = np.array([[0.0, v_count], [u_count, v_count], [u_count, 0.0]])
 
-                locations = np.array(
-                    [
-                        [u_origin, v_origin, 0.0],
-                        [u_oposite, v_origin, 0.0],
-                        [u_oposite, v_oposite, 0.0],
-                    ]
-                )
+            locations = np.array(
+                [
+                    [u_origin, v_origin, 0.0],
+                    [u_oposite, v_origin, 0.0],
+                    [u_oposite, v_oposite, 0.0],
+                ]
+            )
 
-                # georeference the raster
-                self.georeference(reference, locations)
-
-        except (AttributeError, KeyError):
-            warn("The 'tif.' image has no referencing information.")
+            # georeference the raster
+            self.georeference(reference, locations)
+        except KeyError:
+            warn("The 'tif.' image has no referencing information")
 
     def to_grid2d(
         self,
@@ -348,7 +351,7 @@ class GeoImage(ObjectBase):
         Create a geoh5py :obj:geoh5py.objects.grid2d.Grid2D from the geoimage in the same workspace.
         :param transform: the type of transform ; if "GRAY" convert the image to grayscale ;
         if "RGB" every band is sent to a data of a grid.
-        :param grid2d_kwargs: **kwargs arguments of Grid2D: name, parent, rotation, dip, elevation.
+        :param **grid2d_kwargs: Any argument supported by :obj:`geoh5py.objects.grid2d.Grid2D`.
         :return: the new created Grid2D.
         """
         if transform not in ["GRAY", "RGB"]:
@@ -430,14 +433,15 @@ class GeoImage(ObjectBase):
 
         return None
 
-    def save_as(self, name: str, path: str = ""):
+    def save_as(self, name: str, path: str | Path = ""):
         """
-        Function to save the geoimage into a file.
+        Function to save the geoimage into an image file.
         It the name ends by '.tif' or '.tiff' and the tag is not None
+        then the image is saved as georeferenced tiff image ;
+        else, the image is save with PIL.Image's save function.
         :param name: the name to give to the image.
         :param path: the path of the file of the image, default: ''.
         """
-
         # verifications
         if self.image is None:
             raise AttributeError("The object contains no image data")
@@ -445,9 +449,9 @@ class GeoImage(ObjectBase):
             raise TypeError(
                 f"The 'name' has to be a string; a '{type(name)}' was entered instead"
             )
-        if not isinstance(path, str):
+        if not isinstance(path, (str, Path)):
             raise TypeError(
-                f"The 'path' has to be a string; a '{type(name)}' was entered instead"
+                f"The 'path' has to be a string or a Path; a '{type(name)}' was entered instead"
             )
         if path != "" and not os.path.isdir(path):
             raise FileNotFoundError(f"No such file or directory: {path}")
