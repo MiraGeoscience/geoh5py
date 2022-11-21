@@ -158,6 +158,8 @@ def test_create_copy_geoimage(tmp_path):
 
     assert rec_image.image == geoimage.image, "Error copying the bytes image data."
 
+    geoimage.vertices = geoimage.vertices
+
 
 def test_georeference_image(tmp_path):
     workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
@@ -168,13 +170,24 @@ def test_georeference_image(tmp_path):
     )
     for id_ in tag.items():
         image.getexif()[id_[0]] = id_[1]
-    image.save(tmp_path / r"testtif.tif")
+    image.save(tmp_path / r"testtif.tif", exif=image.getexif())
 
     # load image
     geoimage = GeoImage.create(
         workspace, name="test_area", image=f"{str(tmp_path)}/testtif.tif"
     )
-    _ = geoimage.vertices
+
+    geoimage.tag = None
+
+    # test grid2d errors
+    with pytest.raises(ValueError) as excinfo:
+        geoimage.tag = 42
+
+    assert "Input 'tag' must" in str(excinfo.value)
+
+    image = Image.open(tmp_path / r"testtif.tif")
+
+    geoimage.georeferencing_from_tiff()
 
     image = Image.open(f"{str(tmp_path)}/testtif.tif")
 

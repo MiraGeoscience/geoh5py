@@ -293,7 +293,7 @@ class GeoImage(ObjectBase):
 
     @tag.setter
     def tag(self, image: Image.Image | dict | None):
-        if isinstance(image, Image.Image):
+        if isinstance(image, (Image.Image, TiffImageFile)):
             self._tag = dict(image.tag)
         elif isinstance(image, dict):
             self._tag = image
