@@ -27,6 +27,8 @@ import numpy as np
 from PIL import Image
 from PIL.TiffImagePlugin import TiffImageFile
 
+from geoh5py.objects.grid2d import Grid2D
+
 from ..data import FilenameData
 from .object_base import ObjectBase, ObjectType
 
@@ -353,7 +355,6 @@ class GeoImage(ObjectBase):
         :param **grid2d_kwargs: Any argument supported by :obj:`geoh5py.objects.grid2d.Grid2D`.
         :return: the new created Grid2D.
         """
-        from .grid2d import Grid2D  # import here to avoid circular import
 
         if transform not in ["GRAY", "RGB"]:
             raise KeyError(
