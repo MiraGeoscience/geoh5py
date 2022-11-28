@@ -22,6 +22,7 @@ import uuid
 import numpy as np
 from PIL import Image
 
+from .. import objects
 from .object_base import ObjectBase, ObjectType
 
 
@@ -220,7 +221,7 @@ class Grid2D(ObjectBase):
         return None
 
     @property
-    def u_cell_size(self) -> float | None:
+    def u_cell_size(self) -> np.ndarray | None:
         """
         :obj:`float`: Cell size along the u-axis.
         """
@@ -253,7 +254,7 @@ class Grid2D(ObjectBase):
             self.workspace.update_attribute(self, "attributes")
 
     @property
-    def v_cell_size(self) -> float | None:
+    def v_cell_size(self) -> np.ndarray | None:
         """
         :obj:`float`: Cell size along the v-axis
         """
@@ -329,24 +330,31 @@ class Grid2D(ObjectBase):
         :obj:geoh5py.objects.geo_image.GeoImage object.
         :return: a dictionary of the tag.
         """
-        tag = {}
+        if self.v_cell_size is not np.ndarray or self.u_cell_size is not np.ndarray:
+            raise AttributeError("The Grid2D has no geographic information")
+
+        if self.u_count is None or self.v_count is None:
+            raise AttributeError("The Grid2D has no superficy")
+
         u_origin, v_origin, z_origin = self.origin.item()
         v_oposite = v_origin + self.v_cell_size * self.v_count
-        tag[33922] = (
-            0.0,
-            0.0,
-            0.0,
-            u_origin,
-            v_oposite,
-            z_origin,
-        )
-        tag[33550] = (
-            self.u_cell_size[0],
-            self.v_cell_size[0],
-            0.0,
-        )
-        tag[256] = (self.u_count,)
-        tag[257] = (self.v_count,)
+        tag = {
+            256: (self.u_count,),
+            257: (self.v_count,),
+            33550: (
+                self.u_cell_size[0],
+                self.v_cell_size[0],
+                0.0,
+            ),
+            33922: (
+                0.0,
+                0.0,
+                0.0,
+                u_origin,
+                v_oposite,
+                z_origin,
+            ),
+        }
 
         return tag
 
@@ -355,11 +363,9 @@ class Grid2D(ObjectBase):
         Create a :obj:geoh5py.objects.geo_image.GeoImage object from the current Grid2D.
         :param data_list: the list of the data name to pass as band in the image.
         The len of the list can only be 1, 3, 4.
-        :param **geoimage_kwargs: any argument supported by :obj:`geoh5py.objects.geo_image.GeoImage`.
+        :param **geoimage_kwargs: any argument of :obj:`geoh5py.objects.geo_image.GeoImage`.
         :return: a new georeferenced :obj:`geoh5py.objects.geo_image.GeoImage`.
         """
-        from .geo_image import GeoImage  # import here to avoid circular import
-
         # catch exception if str is entered instead of a list
         if isinstance(data_list, str):
             data_list = [data_list]
@@ -393,7 +399,7 @@ class Grid2D(ObjectBase):
             image = Image.fromarray(data, mode="CMYK")
 
         # create a geoimage
-        new_geoimage = GeoImage.create(
+        new_geoimage = objects.GeoImage.create(
             self.workspace, image=image, tag=self.get_tag(), **geoimage_kwargs
         )
 

@@ -27,6 +27,7 @@ import numpy as np
 from PIL import Image
 from PIL.TiffImagePlugin import TiffImageFile
 
+from .. import objects
 from ..data import FilenameData
 from .object_base import ObjectBase, ObjectType
 
@@ -353,8 +354,6 @@ class GeoImage(ObjectBase):
         :param **grid2d_kwargs: Any argument supported by :obj:`geoh5py.objects.grid2d.Grid2D`.
         :return: the new created Grid2D.
         """
-        from .grid2d import Grid2D  # import here to avoid circular import
-
         if transform not in ["GRAY", "RGB"]:
             raise KeyError(
                 f"'transform' has to be 'GRAY' or 'RGB', you entered {transform} instead."
@@ -375,7 +374,7 @@ class GeoImage(ObjectBase):
         v_cell_size = abs(v_origin - self.vertices[0, 1]) / v_count
 
         # create the 2dgrid
-        grid = Grid2D.create(
+        grid = objects.Grid2D.create(
             self.workspace,
             origin=[u_origin, v_origin, elevation],
             u_cell_size=u_cell_size,
