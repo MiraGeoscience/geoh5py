@@ -87,3 +87,9 @@ def test_create_grid_2d_data(tmp_path):
     geoimage = grid.to_geoimage(["DataValues"])
 
     assert isinstance(geoimage, GeoImage)
+
+    geoimage = grid.to_geoimage(["DataValues", "DataValues", "DataValues"])
+
+    geoimage = grid.to_geoimage(
+        ["DataValues", "DataValues", "DataValues", "DataValues"]
+    )

@@ -374,7 +374,7 @@ class Grid2D(ObjectBase):
 
         # prepare the image
         if isinstance(data_list, list):
-            if len(data_list) != 1 and len(data_list) != 3 and len(data_list) != 4:
+            if len(data_list) not in [1, 3, 4]:
                 raise IndexError("Only 1, 3, or 4 layers can be selected")
 
             data = np.empty((self.v_count, self.u_count, 0)).astype(np.uint8)
