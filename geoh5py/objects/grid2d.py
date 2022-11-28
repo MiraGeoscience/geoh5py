@@ -223,7 +223,7 @@ class Grid2D(ObjectBase):
     @property
     def u_cell_size(self) -> np.ndarray | None:
         """
-        :obj:`float`: Cell size along the u-axis.
+        :obj:`np.ndarray`: Cell size along the u-axis.
         """
         return self._u_cell_size
 
@@ -256,7 +256,7 @@ class Grid2D(ObjectBase):
     @property
     def v_cell_size(self) -> np.ndarray | None:
         """
-        :obj:`float`: Cell size along the v-axis
+        :obj:`np.ndarray`: Cell size along the v-axis
         """
         return self._v_cell_size
 
@@ -330,7 +330,9 @@ class Grid2D(ObjectBase):
         :obj:geoh5py.objects.geo_image.GeoImage object.
         :return: a dictionary of the tag.
         """
-        if self.v_cell_size is not np.ndarray or self.u_cell_size is not np.ndarray:
+        if not isinstance(self.v_cell_size, np.ndarray) or not isinstance(
+            self.u_cell_size, np.ndarray
+        ):
             raise AttributeError("The Grid2D has no geographic information")
 
         if self.u_count is None or self.v_count is None:

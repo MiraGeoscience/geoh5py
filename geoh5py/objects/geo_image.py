@@ -312,17 +312,17 @@ class GeoImage(ObjectBase):
         Run the georefence() method of the object.
         :param image: a .tif image open with PIL.Image.
         """
-        if self._tag is None:
+        if self.tag is None:
             raise AttributeError("The image is not georeferenced")
 
         try:
             # get geographic information
-            u_origin = float(self._tag[33922][3])
-            v_origin = float(self._tag[33922][4])
-            u_cell_size = float(self._tag[33550][0])
-            v_cell_size = float(self._tag[33550][1])
-            u_count = float(self._tag[256][0])
-            v_count = float(self._tag[257][0])
+            u_origin = float(self.tag[33922][3])
+            v_origin = float(self.tag[33922][4])
+            u_cell_size = float(self.tag[33550][0])
+            v_cell_size = float(self.tag[33550][1])
+            u_count = float(self.tag[256][0])
+            v_count = float(self.tag[257][0])
             u_oposite = float(u_origin + u_cell_size * u_count)
             v_oposite = float(v_origin - v_cell_size * v_count)
 
