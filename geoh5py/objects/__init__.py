@@ -20,6 +20,7 @@
 
 from .block_model import BlockModel
 from .cell_object import CellObject
+from .convert import Convert
 from .curve import Curve
 from .drape_model import DrapeModel
 from .drillhole import Drillhole

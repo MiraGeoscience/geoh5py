@@ -342,81 +342,6 @@ class GeoImage(ObjectBase):
         except KeyError:
             warn("The 'tif.' image has no referencing information")
 
-    def to_grid2d(
-        self,
-        transform: str = "GRAY",
-        **grid2d_kwargs,
-    ):
-        """
-        Create a geoh5py :obj:geoh5py.objects.grid2d.Grid2D from the geoimage in the same workspace.
-        :param transform: the type of transform ; if "GRAY" convert the image to grayscale ;
-        if "RGB" every band is sent to a data of a grid.
-        :param **grid2d_kwargs: Any argument supported by :obj:`geoh5py.objects.grid2d.Grid2D`.
-        :return: the new created Grid2D.
-        """
-        if transform not in ["GRAY", "RGB"]:
-            raise KeyError(
-                f"'transform' has to be 'GRAY' or 'RGB', you entered {transform} instead."
-            )
-        if self.vertices is None:
-            raise AttributeError("The 'vertices' has to be previously defined")
-
-        # define name and elevation
-        name = grid2d_kwargs.get("name", self.name)
-        elevation = grid2d_kwargs.get("elevation", 0)
-
-        # get geographic information
-        u_origin = self.vertices[0, 0]
-        v_origin = self.vertices[2, 1]
-        u_count = self.default_vertices[1, 0]
-        v_count = self.default_vertices[0, 1]
-        u_cell_size = abs(u_origin - self.vertices[1, 0]) / u_count
-        v_cell_size = abs(v_origin - self.vertices[0, 1]) / v_count
-
-        # create the 2dgrid
-        grid = objects.Grid2D.create(
-            self.workspace,
-            origin=[u_origin, v_origin, elevation],
-            u_cell_size=u_cell_size,
-            v_cell_size=v_cell_size,
-            u_count=u_count,
-            v_count=v_count,
-            **grid2d_kwargs,
-        )
-
-        # add the data to the 2dgrid
-        value = Image.open(BytesIO(self.image_data.values))
-        if transform == "GRAY":
-            grid.add_data(
-                data={
-                    f"{name}_GRAY": {
-                        "values": np.array(value.convert("L")).astype(np.uint32)[::-1],
-                        "association": "CELL",
-                    }
-                }
-            )
-        elif transform == "RGB":
-            if np.array(value).shape[-1] != 3:
-                raise IndexError("To export to RGB the image has to have 3 bands")
-
-            grid.add_data(
-                data={
-                    f"{name}_R": {
-                        "values": np.array(value).astype(np.uint32)[::-1, :, 0],
-                        "association": "CELL",
-                    },
-                    f"{name}_G": {
-                        "values": np.array(value).astype(np.uint32)[::-1, :, 1],
-                        "association": "CELL",
-                    },
-                    f"{name}_B": {
-                        "values": np.array(value).astype(np.uint32)[::-1, :, 2],
-                        "association": "CELL",
-                    },
-                }
-            )
-        return grid
-
     @property
     def image_georeferenced(self) -> Image.Image | None:
         """
@@ -462,3 +387,20 @@ class GeoImage(ObjectBase):
             image.save(os.path.join(path, name), exif=image.getexif())
         else:
             self.image.save(os.path.join(path, name))
+
+    def to_grid2d(
+        self,
+        transform: str = "GRAY",
+        **grid2d_kwargs,
+    ) -> objects.Grid2D:
+        """
+        Create a geoh5py :obj:geoh5py.objects.grid2d.Grid2D from the geoimage in the same workspace.
+        :param transform: the type of transform ; if "GRAY" convert the image to grayscale ;
+        if "RGB" every band is sent to a data of a grid.
+        :param **grid2d_kwargs: Any argument supported by :obj:`geoh5py.objects.grid2d.Grid2D`.
+        :return: the new created Grid2D.
+        """
+        converter = objects.Convert(self)
+        grid2d = converter.geoimage_to_grid2d(transform, **grid2d_kwargs)
+
+        return grid2d
