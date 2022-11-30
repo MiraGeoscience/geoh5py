@@ -22,6 +22,7 @@ import uuid
 import numpy as np
 
 from .. import objects
+from ..shared import conversion
 from .object_base import ObjectBase, ObjectType
 
 
@@ -310,7 +311,7 @@ class Grid2D(ObjectBase):
         :param **geoimage_kwargs: any argument of :obj:`geoh5py.objects.geo_image.GeoImage`.
         :return: a new georeferenced :obj:`geoh5py.objects.geo_image.GeoImage`.
         """
-        converter = objects.Convert(self)
-        geoimage = converter.grid2d_to_geoimage(data_list, **geoimage_kwargs)
+        converter = conversion.Grid2dToGeoImage(self)
+        geoimage = converter(data_list, **geoimage_kwargs)
 
         return geoimage

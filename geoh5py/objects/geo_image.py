@@ -29,6 +29,7 @@ from PIL.TiffImagePlugin import TiffImageFile
 
 from .. import objects
 from ..data import FilenameData
+from ..shared import conversion
 from .object_base import ObjectBase, ObjectType
 
 
@@ -402,7 +403,7 @@ class GeoImage(ObjectBase):
         :param **grid2d_kwargs: Any argument supported by :obj:`geoh5py.objects.grid2d.Grid2D`.
         :return: the new created Grid2D.
         """
-        converter = objects.Convert(self)
-        grid2d = converter.geoimage_to_grid2d(transform, **grid2d_kwargs)
+        converter = conversion.GeoImagetoGrid2D(self)
+        grid2d = converter(transform, **grid2d_kwargs)
 
         return grid2d
