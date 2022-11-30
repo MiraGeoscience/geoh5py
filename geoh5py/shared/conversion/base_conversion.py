@@ -20,18 +20,48 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ...workspace import Workspace
+
 if TYPE_CHECKING:
     from ..entity import Entity
 
 
-class ConversionBase:  # pylint: disable=too-few-public-methods
+class ConversionBase:
     def __init__(self, entity: Entity):
         """
         Converter class from an :obj:geoh5py.shared.entity.Entity to another.
         :param entity: the entity to convert.
         """
         self._entity = entity
+        self._workspace = self.entity.workspace
+        self._name = self.entity.name
+
+    def change_workspace(self, grid2d_kwargs: dict):
+        """
+        Change the workspace of the object based on a dictionary.
+        :param grid2d_kwargs: the dict of the kwargs verify if parent exists.
+        """
+        # verify parent
+        parent = grid2d_kwargs.get("parent", None)
+
+        if parent:
+            if not hasattr(parent, "workspace"):
+                raise AttributeError("The parent kwarg must has a 'workspace'")
+
+            self._workspace = parent.workspace
 
     @property
-    def entity(self):
+    def entity(self) -> Entity:
         return self._entity
+
+    @property
+    def workspace(self) -> Workspace:
+        return self._workspace
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, new_name: str):
+        self._name = new_name

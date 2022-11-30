@@ -32,11 +32,14 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 import numpy as np
 from PIL import Image
 
 from ... import objects
+from ...data import Data
+from ...shared import FLOAT_NDV
 from .base_conversion import ConversionBase
 
 if TYPE_CHECKING:
@@ -45,24 +48,27 @@ if TYPE_CHECKING:
 
 class Grid2dToGeoImage(ConversionBase):
     """
-    Convert a :obj:geoh5py.objects.grid2d.Grid2D object
-    to a georeferenced :obj:geoh5py.objects.geo_image.GeoImage object.
+    Convert a :obj:'geoh5py.objects.grid2d.Grid2D' object
+    to a georeferenced :obj:'geoh5py.objects.geo_image.GeoImage' object.
     """
 
     def __init__(self, entity: Grid2D):
         """
-        :param entity: the :obj:geoh5py.objects.grid2d.Grid2D to convert.
+        :param entity: the :obj:'geoh5py.objects.grid2d.Grid2D' to convert.
         """
         if not isinstance(entity, objects.Grid2D):
             raise TypeError(f"Entity must be 'Grid2D', {type(entity)} passed instead")
 
         super().__init__(entity)
+        self._data = None
+        self._image = None
+        self._geoimage = None
         self.entity: Grid2D
 
     def grid_to_tag(self) -> dict:
         """
         Compute the tag dictionary of the Grid2D as required by the
-        :obj:geoh5py.objects.geo_image.GeoImage object.
+        :obj:'geoh5py.objects.geo_image.GeoImage' object.
         :return: a dictionary of the tag.
         """
         if not isinstance(self.entity.v_cell_size, np.ndarray) or not isinstance(
@@ -95,78 +101,136 @@ class Grid2dToGeoImage(ConversionBase):
 
         return tag
 
-    def data_to_pil_format(self, data_name: str) -> np.array:
+    def data_to_pil_format(self, data: np.array) -> np.array:
         """
-        Convert a data of the Grid2D to a numpy array
-        with a format compatible with :obj:`PIL.Image` object.
-        :param data_name: the name of the data to extract.
+        Convert a numpy array with a format compatible with :obj:`PIL.Image` object.
+        :param data: the data to convert.
         :return: the data formatted with the right shape,
-        beetweem 0 and 255, as uint8.
+        between 0 and 255, as uint8.
         """
-        # get the data
-        data = self.entity.get_data(data_name)[0].values
-
         # reshape them
         data = data.reshape(self.entity.v_count, self.entity.u_count)[::-1]
 
-        # normalize them #todo: change the no number value in np.nan
+        # remove nan values
+        data = np.where(data == FLOAT_NDV, np.nan, data)
+
+        # normalize them
         min_, max_ = np.nanmin(data), np.nanmax(data)
         data = (data - min_) / (max_ - min_)
         data *= 255
 
         return data.astype(np.uint8)
 
-    def __call__(self, data_list: list | str, **geoimage_kwargs) -> GeoImage:
+    def key_to_data(self, key: str | int | UUID | Data) -> np.array:
         """
-        Create a :obj:geoh5py.objects.geo_image.GeoImage object from the current Grid2D.
+        Extract the data from the entity in :obj:'np.array' format;
+        The data can be of type: ':obj:str', ':obj:int', ':obj:UUID', or ':obj:Data'.
+        :param key: the key of the data to extract.
+        :return: an np. array containing the data.
+        """
+        # get the values
+        if isinstance(key, str):
+            data = self.entity.get_data(key)
+        elif isinstance(key, int):
+            if key > len(self.entity.get_entity_list()):
+                raise IndexError(
+                    "'int' values pass as key can't be larger than number of data,",
+                    f"data number: {len(self.entity.get_entity_list())}, key: {key}",
+                )
+            key_ = self.entity.get_entity_list()[key]
+            data = self.entity.get_entity(key_)
+        elif isinstance(key, UUID):
+            data = self.entity.get_entity(key)
+        elif isinstance(key, Data):
+            data = key
+        else:
+            raise TypeError(
+                "The dtype of the keys must be :",
+                "'str', 'int', 'Data', 'UUID',",
+                f"but you entered a {type(key)}",
+            )
+
+        # verify if data exists
+        if isinstance(data, list):
+            print(len(data))
+            if len(data) != 1:
+                raise KeyError(f"the key '{key}' you entered does not exists.")
+            data = data[0]
+
+        return data.values
+
+    def data_from_keys(self, keys: list | str | int | UUID | Data):
+        """
+        Take a list of (or a unique) key to extract from the object,
+        and create a :obj:'np.array' with those data.
+        :param keys: the list of the data to extract.
+        """
+
+        # if unique key transform to list
+        if isinstance(keys, (str, int, UUID, Data)):
+            keys = [keys]
+
+        # prepare the image
+        if isinstance(keys, list):
+            self._data = np.empty((self.entity.v_count, self.entity.u_count, 0)).astype(
+                np.uint8
+            )
+
+            for key in keys:
+                data_temp = self.key_to_data(key)
+                data_temp = self.data_to_pil_format(data_temp)
+                self._data = np.dstack((self._data, data_temp))
+        else:
+            raise TypeError(
+                "The keys must be pass as a list",
+                f"but you entered a {type(keys)} ",
+            )
+
+    def convert_to_PIL(self):
+        """
+        Convert the data from :obj:'np.array' to :obj:'PIL.Image' format.
+        """
+        if not isinstance(self._data, np.array):
+            raise AttributeError("No data is selected.")
+
+        if self._data.shape[-1] == 1:
+            self._image = Image.fromarray(self._data[:, :, 0], mode="L")
+        elif self._data.shape[-1] == 3:
+            self._image = Image.fromarray(self._data, mode="RGB")
+        elif self._data.shape[-1] == 4:
+            self._image = Image.fromarray(self._data, mode="CMYK")
+        else:
+            raise IndexError("Only 1, 3, or 4 layers can be selected")
+
+    def create_geoimage(self, **geoimage_kwargs) -> GeoImage:
+        """
+        Create an :obj:'geoh5py.objects.geo_image.GeoImage' from the extracted data.
+        :param geoimage_kwargs:
+        :return: the new GeoImage
+        """
+        # create a geoimage
+        self._geoimage = objects.GeoImage.create(
+            self.workspace, image=self._image, tag=self.grid_to_tag(), **geoimage_kwargs
+        )
+
+        # georeference it
+        self._geoimage.georeferencing_from_tiff()
+
+    def __call__(self, keys: list | str, **geoimage_kwargs) -> GeoImage:
+        """
+        Create a :obj:'geoh5py.objects.geo_image.GeoImage' object from the current Grid2D.
         :param data_list: the list of the data name to pass as band in the image.
         The len of the list can only be 1, 3, 4.
         :param **geoimage_kwargs: any argument of :obj:`geoh5py.objects.geo_image.GeoImage`.
         :return: a new georeferenced :obj:`geoh5py.objects.geo_image.GeoImage`.
         """
-        # catch exception if str is entered instead of a list
-        if isinstance(data_list, str):
-            data_list = [data_list]
+        self.change_workspace(geoimage_kwargs)
 
-        # prepare the image
-        if isinstance(data_list, list):
-            if len(data_list) not in [1, 3, 4]:
-                raise IndexError("Only 1, 3, or 4 layers can be selected")
+        # get the data
+        self.data_from_keys(keys)
+        self.convert_to_PIL()
 
-            data = np.empty((self.entity.v_count, self.entity.u_count, 0)).astype(
-                np.uint8
-            )
-            for data_name in data_list:
-                if data_name not in self.entity.get_data_list():
-                    raise KeyError(
-                        f"The key {data_list} is not in the data: {self.entity.get_data_list()}"
-                    )
+        # convert
+        self.create_geoimage(**geoimage_kwargs)
 
-                data_temp = self.data_to_pil_format(data_name)
-                data = np.dstack((data, data_temp))
-        else:
-            raise TypeError(
-                "The type of the keys must be a string or a list,",
-                f"but you entered an {type(data_list)} ",
-            )
-
-        # convert to PIL
-        if data.shape[-1] == 1:
-            image = Image.fromarray(data[:, :, 0], mode="L")
-        elif data.shape[-1] == 3:
-            image = Image.fromarray(data, mode="RGB")
-        elif data.shape[-1] == 4:
-            image = Image.fromarray(data, mode="CMYK")
-
-        workspace = geoimage_kwargs.get("workspace", self.entity.workspace)
-        geoimage_kwargs.pop("workspace", None)
-
-        # create a geoimage
-        new_geoimage = objects.GeoImage.create(
-            workspace, image=image, tag=self.grid_to_tag(), **geoimage_kwargs
-        )
-
-        # georeference it
-        new_geoimage.georeferencing_from_tiff()
-
-        return new_geoimage
+        return self._geoimage

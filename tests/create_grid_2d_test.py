@@ -59,10 +59,10 @@ def test_create_grid_2d_data(tmp_path):
             allow_move=False,
         )
 
-        with pytest.raises(TypeError, match="The type of the keys"):
-            grid.to_geoimage(123)
+        with pytest.raises(TypeError, match="'The keys must be pass as a list"):
+            grid.to_geoimage(("test", 3))
 
-        with pytest.raises(KeyError, match=" is not in the data: "):
+        with pytest.raises(KeyError, match=" you entered does not exists."):
             grid.to_geoimage("DataValues")
 
         data = grid.add_data({"DataValues": {"values": values}})
