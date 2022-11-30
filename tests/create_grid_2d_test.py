@@ -43,14 +43,8 @@ def test_create_grid_2d_data(tmp_path):
     with workspace.open("r+") as workspace_context:
         grid = Grid2D.create(workspace_context)
 
-        with pytest.raises(AttributeError, match="The Grid2D has no geographic"):
-            grid.get_tag()
-
         grid.u_cell_size = 20.0
         grid.v_cell_size = 20.0
-
-        with pytest.raises(AttributeError, match="The Grid2D has no number of cells"):
-            grid.get_tag()
 
         workspace_context.remove_entity(grid)
 
