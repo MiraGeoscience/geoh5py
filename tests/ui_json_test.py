@@ -501,7 +501,7 @@ def test_data_value_parameter_a(tmp_path):
     assert ui_json["data"]["optional"]
     assert ui_json["data"]["enabled"]
 
-    in_file = InputFile(ui_json=ui_json, validation_options={"disabled": True})
+    in_file = InputFile(ui_json=ui_json, validate=False)
     out_file = in_file.write_ui_json(path=tmp_path, name="ABC")
     reload_input = InputFile.read_ui_json(out_file)
 
