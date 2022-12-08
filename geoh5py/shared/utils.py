@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
 
 @contextmanager
-def fetch_active_workspace(workspace: Workspace, mode: str = "r"):
+def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
     """
     Open a workspace in read mode.
     If receiving an opened Workspace instead, merely return the given workspace.
@@ -43,7 +43,11 @@ def fetch_active_workspace(workspace: Workspace, mode: str = "r"):
 
     :return h5py.File: Handle to an opened Workspace.
     """
-    if getattr(workspace, "_geoh5") and mode in workspace.geoh5.mode:
+    if (
+        workspace is None
+        or getattr(workspace, "_geoh5")
+        and mode in workspace.geoh5.mode
+    ):
         try:
             yield workspace
         finally:
