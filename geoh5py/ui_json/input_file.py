@@ -176,7 +176,10 @@ class InputFile:
         """
         Read and create an InputFile from ui.json
         """
+
         input_file = InputFile(**kwargs)
+        input_file.path = os.path.dirname(json_file)
+        input_file.name = os.path.basename(json_file)
 
         if "ui.json" not in json_file:
             raise ValueError("Input file should have the extension *.ui.json")
