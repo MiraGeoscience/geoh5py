@@ -346,7 +346,7 @@ class InputFile:
             self.name = name
 
         if path is not None:
-            self.path = path
+            self.path = os.path.abspath(path)
 
         if self.path_name is None:
             raise AttributeError(
