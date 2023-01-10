@@ -176,9 +176,8 @@ class InputFile:
         """
         Read and create an InputFile from ui.json
         """
-
         input_file = InputFile(**kwargs)
-        input_file.path = os.path.dirname(json_file)
+        input_file.path = os.path.dirname(os.path.abspath(json_file))
         input_file.name = os.path.basename(json_file)
 
         if "ui.json" not in json_file:
@@ -342,6 +341,7 @@ class InputFile:
         :param none_map: Map parameter None values to non-null numeric types.
         :param path: Directory to write the ui.json to.
         """
+
         if name is not None:
             self.name = name
 
