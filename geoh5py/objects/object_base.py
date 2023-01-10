@@ -32,7 +32,6 @@ from ..data.data_association_enum import DataAssociationEnum
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
-from ..shared.concatenation import Concatenated, ConcatenatedPropertyGroup
 from ..shared.utils import mask_by_extent
 from .object_type import ObjectType
 
@@ -67,7 +66,7 @@ class ObjectBase(Entity):
         if self.entity_type.name == "Entity":
             self.entity_type.name = type(self).__name__
 
-    def add_comment(self, comment: str, author: str = None):
+    def add_comment(self, comment: str, author: str | None = None):
         """
         Add text comment to an object.
 
@@ -309,22 +308,13 @@ class ObjectBase(Entity):
         ):
             prop_group = [pg for pg in property_groups if pg.name == kwargs["name"]][0]
         else:
-            kwargs["parent"] = self
-
             if (
                 "property_group_type" not in kwargs
                 and "Property Group Type" not in kwargs
             ):
-                if isinstance(self, Concatenated):
-                    kwargs["property_group_type"] = "Interval table"
-                else:
-                    kwargs["property_group_type"] = "Multi-element"
+                kwargs["property_group_type"] = "Multi-element"
 
-            if isinstance(self, Concatenated):
-
-                prop_group = ConcatenatedPropertyGroup(**kwargs)
-            else:
-                prop_group = PropertyGroup(**kwargs)
+            prop_group = PropertyGroup(self, **kwargs)
 
             property_groups += [prop_group]
 
@@ -350,7 +340,7 @@ class ObjectBase(Entity):
 
         return entity_list
 
-    def get_data_list(self, attribute="name") -> list[str]:
+    def get_data_list(self, attribute="name") -> list:
         """
         Get a list of names of all children :obj:`~geoh5py.data.data.Data`.
 

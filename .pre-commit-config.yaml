@@ -53,7 +53,7 @@ repos:
     -   id: mypy
         additional_dependencies: [types-toml]
         args: [--ignore-missing-imports, --scripts-are-modules, --show-error-context,
-               --show-column-numbers]
+               --show-column-numbers, --check-untyped-defs]
         exclude: (geoh5py/interfaces/__init__\.py|geoh5py/handlers/__init__\.py)
 -   repo: local
     hooks:

@@ -31,7 +31,7 @@ class UnknownData(Data):
         data_type: DataType,
         association: DataAssociationEnum,
         name: str,
-        uid: uuid.UUID = None,
+        uid: uuid.UUID | None = None,
     ):
         super().__init__(data_type, association=association, name=name, uid=uid)
 
