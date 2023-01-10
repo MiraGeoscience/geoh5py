@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -66,61 +66,41 @@ def test_create_copy_geoimage(tmp_path):
 
     assert geoimage.image_georeferenced is None
 
-    with pytest.raises(AttributeError) as excinfo:
+    with pytest.raises(AttributeError, match="The object contains no image data"):
         geoimage.save_as("test")
 
-    assert "The object contains no image data" in str(excinfo.value)
-
-    with pytest.raises(AttributeError) as excinfo:
+    with pytest.raises(AttributeError, match="An 'image' must be set be"):
         geoimage.georeference(pixels[0, :], points)
 
-    assert "An 'image' must be set be" in str(excinfo)
-
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(
+        ValueError,
+        match="Input 'value' for the 'image' property must be a 2D or 3D numpy.ndarray",
+    ):
         geoimage.image = np.random.randn(12)
 
-    assert (
-        "Input 'value' for the 'image' property must be a 2D or 3D numpy.ndarray"
-        in str(excinfo)
-    )
-
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ValueError, match="Shape of the 'image' must be a 2D or "):
         geoimage.image = np.random.randn(12, 12, 4)
 
-    assert (
-        "Shape of the 'image' must be a 2D or a 3D array with shape(*,*, 3) "
-        "representing 'RGB' values." in str(excinfo)
-    )
-
-    with pytest.raises(AttributeError) as excinfo:
+    with pytest.raises(
+        AttributeError, match="The 'vertices' has to be previously defined"
+    ):
         geoimage.to_grid2d()
 
-    assert "The 'vertices' has to be previously defined" in str(excinfo)
-
-    with pytest.raises(AttributeError) as excinfo:
+    with pytest.raises(AttributeError, match="There is no image to reference"):
         geoimage.set_tag_from_vertices()
 
-    assert "There is no image to reference" in str(excinfo)
-
-    with pytest.raises(AttributeError) as excinfo:
+    with pytest.raises(AttributeError, match="The image is not georeferenced"):
         geoimage.georeferencing_from_tiff()
-
-    assert "The image is not georeferenced" in str(excinfo)
 
     geoimage.image = np.random.randint(0, 255, (128, 128))
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ValueError, match="Input reference points must be a 2D array"):
         geoimage.georeference(pixels[0, :], points)
 
-    assert (
-        "Input reference points must be a 2D array of shape(*, 2) with at least 3 control points."
-        in str(excinfo.value)
-    )
-
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(
+        ValueError, match="Input 'locations' must be a 2D array of shape"
+    ):
         geoimage.georeference(pixels, points[0, :])
-
-    assert "Input 'locations' must be a 2D array of shape(*, 3)" in str(excinfo.value)
 
     geoimage.image = np.random.randint(0, 255, (128, 64, 3))
     geoimage.georeference(pixels, points)
@@ -147,10 +127,8 @@ def test_create_copy_geoimage(tmp_path):
     geoimage.image.save(tmp_path / r"test.tiff")
     geoimage_file = GeoImage.create(workspace, name="MyGeoImage")
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ValueError, match="does not exist"):
         geoimage_file.image = str(tmp_path / r"abc.tiff")
-
-    assert "does not exist" in str(excinfo.value)
 
     geoimage_file.image = str(tmp_path / r"test.tiff")
 
@@ -190,10 +168,8 @@ def test_georeference_image(tmp_path):
     geoimage.tag = None
 
     # test grid2d errors
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ValueError, match="Input 'tag' must"):
         geoimage.tag = 42
-
-    assert "Input 'tag' must" in str(excinfo.value)
 
     # image = Image.open(tmp_path / r"testtif.tif")
     geoimage.tag = {"test": 3}
@@ -214,26 +190,18 @@ def test_georeference_image(tmp_path):
     assert isinstance(geoimage.image_georeferenced, Image.Image)
 
     # test grid2d errors
-    with pytest.raises(KeyError) as excinfo:
+    with pytest.raises(KeyError, match="has to be 'GRAY"):
         geoimage.to_grid2d(new_name="RGB", transform="bidon")
 
-    assert "has to be 'GRAY" in str(excinfo.value)
-
     # test save_as
-    with pytest.raises(TypeError) as excinfo:
+    with pytest.raises(TypeError, match="has to be a string"):
         geoimage.save_as(0)
 
-    assert "has to be a string" in str(excinfo.value)
-
-    with pytest.raises(TypeError) as excinfo:
+    with pytest.raises(TypeError, match="has to be a string"):
         geoimage.save_as("test", 0)
 
-    assert "has to be a string" in str(excinfo.value)
-
-    with pytest.raises(FileNotFoundError) as excinfo:
+    with pytest.raises(FileNotFoundError, match="No such file or directory"):
         geoimage.save_as("test", "path/bidon")
-
-    assert "No such file or directory" in str(excinfo.value)
 
     geoimage.save_as("saved_tif.tif", str(tmp_path))
     image = Image.open(tmp_path / r"saved_tif.tif")
@@ -246,7 +214,5 @@ def test_georeference_image(tmp_path):
     geoimage = GeoImage.create(workspace, name="test_area", image=image)
 
     # test grid2d errors
-    with pytest.raises(IndexError) as excinfo:
+    with pytest.raises(IndexError, match="have 3 bands"):
         geoimage.to_grid2d(new_name="RGB", transform="RGB")
-
-    assert "have 3 bands" in str(excinfo.value)

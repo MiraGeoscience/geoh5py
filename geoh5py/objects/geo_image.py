@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -27,8 +27,8 @@ import numpy as np
 from PIL import Image
 from PIL.TiffImagePlugin import TiffImageFile
 
+from .. import objects
 from ..data import FilenameData
-from .grid2d import Grid2D
 from .object_base import ObjectBase, ObjectType
 
 
@@ -312,19 +312,19 @@ class GeoImage(ObjectBase):
         Run the georefence() method of the object.
         :param image: a .tif image open with PIL.Image.
         """
-        if self._tag is None:
+        if self.tag is None:
             raise AttributeError("The image is not georeferenced")
 
         try:
             # get geographic information
-            u_origin = self._tag[33922][3]
-            v_origin = self._tag[33922][4]
-            u_cell_size = self._tag[33550][0]
-            v_cell_size = self._tag[33550][1]
-            u_count = self._tag[256][0]
-            v_count = self._tag[257][0]
-            u_oposite = u_origin + u_cell_size * u_count
-            v_oposite = v_origin - v_cell_size * v_count
+            u_origin = float(self.tag[33922][3])
+            v_origin = float(self.tag[33922][4])
+            u_cell_size = float(self.tag[33550][0])
+            v_cell_size = float(self.tag[33550][1])
+            u_count = float(self.tag[256][0])
+            v_count = float(self.tag[257][0])
+            u_oposite = float(u_origin + u_cell_size * u_count)
+            v_oposite = float(v_origin - v_cell_size * v_count)
 
             # prepare georeferencing
             reference = np.array([[0.0, v_count], [u_count, v_count], [u_count, 0.0]])
@@ -346,7 +346,7 @@ class GeoImage(ObjectBase):
         self,
         transform: str = "GRAY",
         **grid2d_kwargs,
-    ) -> Grid2D:
+    ):
         """
         Create a geoh5py :obj:geoh5py.objects.grid2d.Grid2D from the geoimage in the same workspace.
         :param transform: the type of transform ; if "GRAY" convert the image to grayscale ;
@@ -374,7 +374,7 @@ class GeoImage(ObjectBase):
         v_cell_size = abs(v_origin - self.vertices[0, 1]) / v_count
 
         # create the 2dgrid
-        grid = Grid2D.create(
+        grid = objects.Grid2D.create(
             self.workspace,
             origin=[u_origin, v_origin, elevation],
             u_cell_size=u_cell_size,
