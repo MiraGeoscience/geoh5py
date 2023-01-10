@@ -20,7 +20,9 @@ from __future__ import annotations
 import uuid
 
 import numpy as np
+from PIL import Image
 
+from .. import objects
 from .object_base import ObjectBase, ObjectType
 
 
@@ -219,9 +221,9 @@ class Grid2D(ObjectBase):
         return None
 
     @property
-    def u_cell_size(self) -> float | None:
+    def u_cell_size(self) -> np.ndarray | None:
         """
-        :obj:`float`: Cell size along the u-axis.
+        :obj:`np.ndarray`: Cell size along the u-axis.
         """
         return self._u_cell_size
 
@@ -252,9 +254,9 @@ class Grid2D(ObjectBase):
             self.workspace.update_attribute(self, "attributes")
 
     @property
-    def v_cell_size(self) -> float | None:
+    def v_cell_size(self) -> np.ndarray | None:
         """
-        :obj:`float`: Cell size along the v-axis
+        :obj:`np.ndarray`: Cell size along the v-axis
         """
         return self._v_cell_size
 
@@ -300,3 +302,110 @@ class Grid2D(ObjectBase):
             self._centroids = None
             self._vertical = value
             self.workspace.update_attribute(self, "attributes")
+
+    def data_to_pil_format(self, data_name: str) -> np.array:
+        """
+        Convert a data of the Grid2D to a numpy array
+        with a format compatible with :obj:`PIL.Image` object.
+        :param data_name: the name of the data to extract.
+        :return: the data formatted with the right shape,
+        beetweem 0 and 255, as uint8.
+        """
+        # get the data
+        data = self.get_data(data_name)[0].values
+
+        # reshape them
+        data = data.reshape(self.v_count, self.u_count)[::-1]
+
+        # normalize them #todo: change the no number value in np.nan
+        min_, max_ = np.nanmin(data), np.nanmax(data)
+        data = (data - min_) / (max_ - min_)
+        data *= 255
+
+        return data.astype(np.uint8)
+
+    def get_tag(self) -> dict:
+        """
+        Compute the tag dictionary of the Grid2D as required by the
+        :obj:geoh5py.objects.geo_image.GeoImage object.
+        :return: a dictionary of the tag.
+        """
+        if not isinstance(self.v_cell_size, np.ndarray) or not isinstance(
+            self.u_cell_size, np.ndarray
+        ):
+            raise AttributeError("The Grid2D has no geographic information")
+
+        if self.u_count is None or self.v_count is None:
+            raise AttributeError("The Grid2D has no number of cells")
+
+        u_origin, v_origin, z_origin = self.origin.item()
+        v_oposite = v_origin + self.v_cell_size * self.v_count
+        tag = {
+            256: (self.u_count,),
+            257: (self.v_count,),
+            33550: (
+                self.u_cell_size[0],
+                self.v_cell_size[0],
+                0.0,
+            ),
+            33922: (
+                0.0,
+                0.0,
+                0.0,
+                u_origin,
+                v_oposite,
+                z_origin,
+            ),
+        }
+
+        return tag
+
+    def to_geoimage(self, data_list: list | str, **geoimage_kwargs):
+        """
+        Create a :obj:geoh5py.objects.geo_image.GeoImage object from the current Grid2D.
+        :param data_list: the list of the data name to pass as band in the image.
+        The len of the list can only be 1, 3, 4.
+        :param **geoimage_kwargs: any argument of :obj:`geoh5py.objects.geo_image.GeoImage`.
+        :return: a new georeferenced :obj:`geoh5py.objects.geo_image.GeoImage`.
+        """
+        # catch exception if str is entered instead of a list
+        if isinstance(data_list, str):
+            data_list = [data_list]
+
+        # prepare the image
+        if isinstance(data_list, list):
+            if len(data_list) not in [1, 3, 4]:
+                raise IndexError("Only 1, 3, or 4 layers can be selected")
+
+            data = np.empty((self.v_count, self.u_count, 0)).astype(np.uint8)
+            for data_name in data_list:
+                if data_name not in self.get_data_list():
+                    raise KeyError(
+                        f"The key {data_list} is not in the data: {self.get_data_list()}"
+                    )
+
+                data_temp = self.data_to_pil_format(data_name)
+                data = np.dstack((data, data_temp))
+        else:
+            raise TypeError(
+                "The type of the keys must be a string or a list,",
+                f"but you entered an {type(data_list)} ",
+            )
+
+        # convert to PIL
+        if data.shape[-1] == 1:
+            image = Image.fromarray(data[:, :, 0], mode="L")
+        elif data.shape[-1] == 3:
+            image = Image.fromarray(data, mode="RGB")
+        elif data.shape[-1] == 4:
+            image = Image.fromarray(data, mode="CMYK")
+
+        # create a geoimage
+        new_geoimage = objects.GeoImage.create(
+            self.workspace, image=image, tag=self.get_tag(), **geoimage_kwargs
+        )
+
+        # georeference it
+        new_geoimage.georeferencing_from_tiff()
+
+        return new_geoimage
