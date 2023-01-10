@@ -15,6 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# mypy: ignore-errors
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -56,20 +58,16 @@ def test_create_survey_tem(tmp_path):
         error
     ), "Missed raising error on 'transmitter' change."
 
-    with pytest.raises(AttributeError) as error:
+    with pytest.raises(
+        TypeError, match=f"Provided receivers must be of type {type(receivers)}"
+    ):
         receivers.receivers = transmitters
 
-    assert f"The 'receivers' attribute cannot be set on class {type(receivers)}" in str(
-        error
-    ), "Missed raising AttributeError on setting 'receivers' on self."
-
-    with pytest.raises(AttributeError) as error:
+    with pytest.raises(
+        TypeError,
+        match=f"Provided transmitters must be of type {transmitters.default_transmitter_type}. ",
+    ):
         transmitters.transmitters = receivers
-
-    assert (
-        f"The 'transmitters' attribute cannot be set on class {type(transmitters)}"
-        in str(error)
-    ), "Missed raising AttributeError on setting 'transmitters' on self."
 
     receivers.transmitters = transmitters
 

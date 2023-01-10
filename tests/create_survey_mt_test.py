@@ -16,6 +16,7 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 # pylint: disable=R0914
+# mypy: ignore-errors
 
 
 from __future__ import annotations
@@ -46,13 +47,14 @@ def test_create_survey_mt(tmp_path):
         # Create the survey from vertices
         mt_survey = MTReceivers.create(workspace, vertices=vertices, name=name)
 
-        with pytest.raises(AttributeError) as error:
+        with pytest.raises(
+            TypeError,
+            match=(
+                f"Provided receivers must be of type {mt_survey.default_receiver_type}. "
+                f"{type('123')} provided."
+            ),
+        ):
             mt_survey.receivers = "123"
-
-        assert (
-            f"The 'receivers' attribute cannot be set on class {type(mt_survey)}."
-            in str(error)
-        ), "Missed raising AttributeError on setting 'receivers' on self."
 
         for key, value in {
             "input_type": "Rx only",
@@ -61,24 +63,18 @@ def test_create_survey_mt(tmp_path):
         }.items():
             assert getattr(mt_survey, key) == value, f"Error setting defaults for {key}"
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match="Input 'input_type' must be one of"):
             mt_survey.input_type = "XYZ"
-
-        assert "Input 'input_type' must be one of" in str(
-            excinfo
-        ), "Failed to raise ValueError on input_type."
 
         mt_survey.input_type = "Rx only"
 
-        with pytest.raises(TypeError) as excinfo:
+        with pytest.raises(TypeError, match="'metadata' must be of type 'dict'"):
             mt_survey.metadata = "Hello World"
-        assert "'metadata' must be of type 'dict'" in str(excinfo)
 
-        with pytest.raises(KeyError) as excinfo:
+        with pytest.raises(
+            KeyError, match=f"{list(mt_survey.default_metadata['EM Dataset'].keys())}"
+        ):
             mt_survey.metadata = {"EM Dataset": {}}
-        assert f"{list(mt_survey.default_metadata['EM Dataset'].keys())}" in str(
-            excinfo
-        )
 
         mt_survey.metadata = mt_survey.default_metadata
 

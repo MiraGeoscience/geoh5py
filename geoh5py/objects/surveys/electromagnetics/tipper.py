@@ -80,7 +80,7 @@ class BaseTipper(BaseEMSurvey):
     @base_stations.setter
     def base_stations(self, base: TipperBaseStations):
         if not isinstance(base, (TipperBaseStations, type(None))):
-            raise AttributeError(
+            raise TypeError(
                 f"Input `base_stations` must be of type '{TipperBaseStations}' or None"
             )
 
