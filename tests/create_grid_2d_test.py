@@ -21,8 +21,9 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
-from geoh5py.objects import Grid2D
+from geoh5py.objects import GeoImage, Grid2D
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -39,26 +40,59 @@ def test_create_grid_2d_data(tmp_path):
     # Create a workspace
     workspace = Workspace(h5file_path)
 
-    grid = Grid2D.create(
-        workspace,
-        origin=[0, 0, 0],
-        u_cell_size=20.0,
-        v_cell_size=30.0,
-        u_count=n_x,
-        v_count=n_y,
-        name=name,
-        allow_move=False,
-    )
+    with workspace.open("r+") as workspace_context:
+        grid = Grid2D.create(workspace_context)
 
-    data = grid.add_data({"DataValues": {"values": values}})
-    grid.rotation = 45.0
+        with pytest.raises(AttributeError, match="The Grid2D has no geographic"):
+            grid.get_tag()
 
-    # Read the data back in from a fresh workspace
-    new_workspace = Workspace(h5file_path)
+        grid.u_cell_size = 20.0
+        grid.v_cell_size = 20.0
 
-    rec_obj = new_workspace.get_entity(name)[0]
+        with pytest.raises(AttributeError, match="The Grid2D has no number of cells"):
+            grid.get_tag()
 
-    rec_data = new_workspace.get_entity("DataValues")[0]
+        workspace_context.remove_entity(grid)
 
-    compare_entities(grid, rec_obj)
-    compare_entities(data, rec_data)
+        grid = Grid2D.create(
+            workspace_context,
+            origin=[0, 0, 0],
+            u_cell_size=20.0,
+            v_cell_size=30.0,
+            u_count=n_x,
+            v_count=n_y,
+            name=name,
+            allow_move=False,
+        )
+
+        with pytest.raises(TypeError, match="The type of the keys"):
+            grid.to_geoimage(123)
+
+        with pytest.raises(KeyError, match=" is not in the data: "):
+            grid.to_geoimage("DataValues")
+
+        data = grid.add_data({"DataValues": {"values": values}})
+        grid.rotation = 45.0
+
+        # Read the data back in from a fresh workspace
+        new_workspace = Workspace(h5file_path)
+
+        rec_obj = new_workspace.get_entity(name)[0]
+
+        rec_data = new_workspace.get_entity("DataValues")[0]
+
+        compare_entities(grid, rec_obj)
+        compare_entities(data, rec_data)
+
+        with pytest.raises(IndexError, match="Only 1, 3, or 4 layers can be selected"):
+            grid.to_geoimage(["DataValues", "DataValues"])
+
+        geoimage = grid.to_geoimage(["DataValues"])
+
+        assert isinstance(geoimage, GeoImage)
+
+        geoimage = grid.to_geoimage(["DataValues", "DataValues", "DataValues"])
+
+        geoimage = grid.to_geoimage(
+            ["DataValues", "DataValues", "DataValues", "DataValues"]
+        )
