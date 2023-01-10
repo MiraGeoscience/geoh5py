@@ -44,6 +44,17 @@ class BaseAirborneTEM(BaseEMSurvey, Curve):
     __INPUT_TYPE = ["Rx", "Tx", "Tx and Rx"]
 
     @property
+    def crossline_offset(self) -> float | uuid.UUID | None:
+        """
+        Numeric value or property UUID for the crossline offset between receiver and transmitter.
+        """
+        return self.fetch_metadata("crossline_offset")
+
+    @crossline_offset.setter
+    def crossline_offset(self, value: float | uuid.UUID | None):
+        self.set_metadata("crossline_offset", value)
+
+    @property
     def default_input_types(self) -> list[str]:
         """Input types. Must be one of 'Rx', 'Tx', 'Tx and Rx'."""
         return self.__INPUT_TYPE
@@ -72,6 +83,20 @@ class BaseAirborneTEM(BaseEMSurvey, Curve):
         """
         return self.__UNITS
 
+    @property
+    def default_receiver_type(self):
+        """
+        :return: Transmitter class
+        """
+        return AirborneTEMReceivers
+
+    @property
+    def default_transmitter_type(self):
+        """
+        :return: Transmitter class
+        """
+        return AirborneTEMTransmitters
+
     def fetch_metadata(self, key: str) -> float | uuid.UUID | None:
         """
         Fetch entry from the metadata.
@@ -82,17 +107,6 @@ class BaseAirborneTEM(BaseEMSurvey, Curve):
         if field + " property" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"][field + " property"]
         return None
-
-    @property
-    def crossline_offset(self) -> float | uuid.UUID | None:
-        """
-        Numeric value or property UUID for the crossline offset between receiver and transmitter.
-        """
-        return self.fetch_metadata("crossline_offset")
-
-    @crossline_offset.setter
-    def crossline_offset(self, value: float | uuid.UUID | None):
-        self.set_metadata("crossline_offset", value)
 
     @property
     def inline_offset(self) -> float | uuid.UUID | None:
@@ -287,13 +301,6 @@ class AirborneTEMReceivers(BaseAirborneTEM):  # pylint: disable=too-many-ancesto
         return cls.__TYPE_UID
 
     @property
-    def default_transmitter_type(self):
-        """
-        :return: Transmitter class
-        """
-        return AirborneTEMTransmitters
-
-    @property
     def type(self):
         """Survey element type"""
         return self.__TYPE
@@ -313,13 +320,6 @@ class AirborneTEMTransmitters(BaseAirborneTEM):  # pylint: disable=too-many-ance
         :return: Default unique identifier
         """
         return cls.__TYPE_UID
-
-    @property
-    def default_receiver_type(self):
-        """
-        :return: Transmitter class
-        """
-        return AirborneTEMReceivers
 
     @property
     def type(self):

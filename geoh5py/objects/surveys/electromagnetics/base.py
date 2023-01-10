@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import uuid
+from abc import ABC, abstractmethod
 from typing import Any
 
 import numpy as np
@@ -27,7 +28,7 @@ from geoh5py.groups.property_group import PropertyGroup
 from geoh5py.objects.object_base import ObjectBase
 
 
-class BaseEMSurvey(ObjectBase):
+class BaseEMSurvey(ObjectBase, ABC):
     """
     A base electromagnetics survey object.
     """
@@ -228,9 +229,9 @@ class BaseEMSurvey(ObjectBase):
         return new_entity
 
     @property
+    @abstractmethod
     def default_input_types(self) -> list[str] | None:
         """Input types. Must be one of 'Rx', 'Tx', 'Tx and Rx'."""
-        return self.__INPUT_TYPE
 
     @property
     def default_metadata(self):
@@ -238,22 +239,23 @@ class BaseEMSurvey(ObjectBase):
         return {"EM Dataset": {}}
 
     @classmethod
+    @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:
         """Default unique identifier. Implemented on the child class."""
 
     @property
+    @abstractmethod
     def default_transmitter_type(self) -> type:
         """
         :return: Transmitters implemented on the child class.
         """
-        return type(None)
 
     @property
+    @abstractmethod
     def default_receiver_type(self) -> type:
         """
         :return: Receivers implemented on the child class.
         """
-        return type(None)
 
     @property
     def default_units(self) -> list[str] | None:

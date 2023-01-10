@@ -103,6 +103,20 @@ class BaseTipper(BaseEMSurvey):
         return self.__INPUT_TYPE
 
     @property
+    def default_receiver_type(self):
+        """
+        :return: Transmitter class
+        """
+        return TipperReceivers
+
+    @property
+    def default_transmitter_type(self):
+        """
+        :return: Transmitter class
+        """
+        return type(None)
+
+    @property
     def default_metadata(self) -> dict:
         """
         :return: Default unique identifier
@@ -171,13 +185,6 @@ class TipperBaseStations(BaseTipper, Points):
         :return: Default unique identifier
         """
         return cls.__TYPE_UID
-
-    @property
-    def default_receiver_type(self):
-        """
-        :return: Receiver class
-        """
-        return TipperReceivers
 
     @property
     def type(self):
