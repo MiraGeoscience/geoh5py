@@ -54,7 +54,7 @@ repos:
         additional_dependencies: [types-toml]
         args: [--ignore-missing-imports, --scripts-are-modules, --show-error-context,
                --show-column-numbers]
-        exclude: geoh5py/interfaces/__init__\.py
+        exclude: (geoh5py/interfaces/__init__\.py|geoh5py/handlers/__init__\.py)
 -   repo: local
     hooks:
     -   id: pylint
@@ -64,7 +64,7 @@ repos:
         require_serial: true  # pylint does its own parallelism
         types: [text]
         types_or: [python, pyi]
-        exclude: (devtools|docs|geoh5py/interfaces)/
+        exclude: (devtools|docs|geoh5py/interfaces|geoh5py/handlers)/
     -   id: check-copyright
         name: Check copyright
         entry: python devtools/check-copyright.py
