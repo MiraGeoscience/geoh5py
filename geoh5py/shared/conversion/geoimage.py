@@ -38,18 +38,17 @@ import numpy as np
 from PIL import Image
 
 from ... import objects
-from .base_conversion import ConversionBase
+from .base import GridObject
 
 if TYPE_CHECKING:
     from ...objects import GeoImage
 
 
-class GeoImagetoGrid2D(ConversionBase):
+class GeoImage(GridObject):
     """
-    Convert a :obj:'geoh5py.objects.geo_image.GeoImage' object
-    to a georeferenced :obj:'geoh5py.objects.grid2d.Grid2D' object.
+    Convert a :obj:'geoh5py.objects.geo_image.GeoImage' object.
     """
-
+    _entity: GeoImage
     def __init__(self, entity: GeoImage):
         """
         :param entity: the :obj:'geoh5py.objects.geo_image.GeoImage' to convert.

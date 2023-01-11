@@ -18,5 +18,5 @@
 # pylint: disable=unused-import
 # flake8: noqa
 
-from .geoimage_to_grid2d import GeoImagetoGrid2D
-from .grid2d_to_geoimage import Grid2dToGeoImage
+from .geoimage import GeoImagetoGrid2D
+from .grid2d import Grid2dToGeoImage
