@@ -38,13 +38,13 @@ import numpy as np
 from PIL import Image
 
 from ... import objects
-from .base import GridObject
+from .base import ConversionBase
 
 if TYPE_CHECKING:
     from ...objects import GeoImage
 
 
-class GeoImage(GridObject):
+class GeoImage(ConversionBase):
     """
     Convert a :obj:'geoh5py.objects.geo_image.GeoImage' object.
     """
@@ -67,6 +67,9 @@ class GeoImage(GridObject):
         self._u_cell_size = None
         self._v_cell_size = None
         self.entity: GeoImage
+
+    def to_grid2d(self):
+        """"""
 
     def get_attributes(self, **_):
         """

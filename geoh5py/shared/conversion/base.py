@@ -40,7 +40,7 @@ class ConversionBase(ABC):
         self._entity = entity
 
     @abstractmethod
-    def get_attributes(self):
+    def get_attributes(self, **kwargs):
         """"""
 
     @abstractmethod
@@ -110,5 +110,8 @@ class GridObject(ConversionBase):
             workspace = self.entity.workspace
 
         points = Points.create(workspace, vertices=self.centroids, **kwargs)
+        for child in entity.children:
+            if child.association == "CELL":
+                child.copy(parent=points, association="VERTEX")
 
         return points

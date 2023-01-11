@@ -65,6 +65,9 @@ class Grid2D(GridObject):
         self._tag: dict | None = None
         self.entity: Grid2D
 
+    def to_geoimage(self):
+
+
     def grid_to_tag(self):
         """
         Compute the tag dictionary of the Grid2D as required by the
