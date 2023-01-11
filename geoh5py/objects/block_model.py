@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd
 #
 #  This file is part of geoh5py.
 #
@@ -45,13 +45,13 @@ class BlockModel(ObjectBase):
         self._u_cell_delimiters = None
         self._v_cell_delimiters = None
         self._z_cell_delimiters = None
-        self._centroids = None
+        self._centroids: np.ndarray | None = None
         super().__init__(object_type, **kwargs)
 
         object_type.workspace._register_object(self)
 
     @property
-    def centroids(self):
+    def centroids(self) -> np.ndarray | None:
         """
         :obj:`numpy.array`,
         shape (:obj:`~geoh5py.objects.block_model.BlockModel.n_cells`, 3):
@@ -65,7 +65,13 @@ class BlockModel(ObjectBase):
                 [x_N, y_N, z_N]
             ]
         """
-        if getattr(self, "_centroids", None) is None:
+        if (
+            getattr(self, "_centroids", None) is None
+            and self.u_cells is not None
+            and self.v_cells is not None
+            and self.z_cells is not None
+            and self.origin is not None
+        ):
 
             cell_center_u = np.cumsum(self.u_cells) - self.u_cells / 2.0
             cell_center_v = np.cumsum(self.v_cells) - self.v_cells / 2.0

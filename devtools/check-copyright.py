@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-#  Copyright (c) 2023 Mira Geoscience Ltd Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd
 #
 #  This file is part of geoh5py.
 #
