@@ -24,7 +24,7 @@ import uuid
 
 import numpy as np
 
-from ..data import Data, FloatData
+from ..data import Data, FloatData, NumericData
 from ..groups import PropertyGroup
 from ..shared.utils import merge_arrays
 from .object_base import ObjectType
@@ -411,9 +411,11 @@ class Drillhole(Points):
         """
         Function to return x, y, z coordinates from depth.
         """
-        assert (
-            self.surveys is not None and self.collar is not None
-        ), "'surveys' and 'collar' attributes required for desurvey operation"
+        if self.locations is None or self.surveys is None:
+            raise AttributeError(
+                "The 'desurvey' operation requires the 'surveys' and 'locations' "
+                "attribute to be defined."
+            )
 
         if isinstance(depths, list):
             depths = np.asarray(depths)
@@ -422,11 +424,9 @@ class Drillhole(Points):
             np.searchsorted(self.surveys[:, 0], depths, side="left") - 1,
             0,
         )
-
         deviation_x = compute_deviation(self.surveys, "x")
         deviation_y = compute_deviation(self.surveys, "y")
         deviation_z = compute_deviation(self.surveys, "z")
-
         ind_dev = np.minimum(ind_loc, deviation_x.shape[0] - 1)
         locations = (
             self.locations[ind_loc, :]
@@ -444,11 +444,11 @@ class Drillhole(Points):
         Function to add vertices to the drillhole
         """
         indices = np.arange(xyz.shape[0])
-        if self.n_vertices is None:
-            self.vertices = xyz
-        else:
+        if isinstance(self.vertices, np.ndarray):
             indices += self.vertices.shape[0]
             self.vertices = np.vstack([self.vertices, xyz])
+        else:
+            self.vertices = xyz
 
         return indices.astype("uint32")
 
@@ -637,12 +637,19 @@ class Drillhole(Points):
         """
         if self.get_data("DEPTH"):
             data_obj = self.get_data("DEPTH")[0]
-            depths = data_obj.check_vector_length(data_obj.values)
+
+            depths = data_obj.values
+            if isinstance(data_obj, NumericData):
+                depths = data_obj.check_vector_length(depths)
+
             if not np.all(np.diff(depths) >= 0):
                 sort_ind = np.argsort(depths)
 
                 for child in self.children:
-                    if isinstance(child, Data) and child.association.name == "VERTEX":
+                    if (
+                        isinstance(child, NumericData)
+                        and getattr(child.association, "name", None) == "VERTEX"
+                    ):
                         child.values = child.check_vector_length(child.values)[sort_ind]
 
                 if self.vertices is not None:
@@ -653,12 +660,18 @@ class Drillhole(Points):
                     self.cells = key_map.reshape((-1, 2)).astype("uint32")
 
 
-def compute_deviation(surveys: np.ndarray, axis: str) -> np.ndarray | None:
+def compute_deviation(surveys: np.ndarray, axis: str) -> np.ndarray:
     """Compute deviation from survey parameters"""
     if surveys is None:
-        return None
+        raise AttributeError(
+            "Cannot compute deviation coordinates without `survey` attribute."
+        )
 
     lengths = surveys[1:, 0] - surveys[:-1, 0]
+
+    if axis not in "xyz":
+        raise ValueError("Input 'axis' must be 'x', 'y' and 'z'.")
+
     if axis == "x":
         dl_in = np.cos(np.deg2rad(450.0 - surveys[:-1, 1] % 360.0)) * np.cos(
             np.deg2rad(surveys[:-1, 2])
@@ -677,11 +690,9 @@ def compute_deviation(surveys: np.ndarray, axis: str) -> np.ndarray | None:
         )
         ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
 
-    elif axis == "z":
+    else:
         dl_in = np.sin(np.deg2rad(surveys[:-1, 2]))
         dl_out = np.sin(np.deg2rad(surveys[1:, 2]))
         ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
 
-    else:
-        raise ValueError("Input 'axis' must be 'x', 'y' and 'z'.")
     return dl_in + lengths * ddl / 2.0

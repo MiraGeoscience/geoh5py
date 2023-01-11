@@ -135,8 +135,8 @@ class DrapeModel(ObjectBase):
 
     @property
     def n_cells(self):
-        if self.prisms is not None:
-            return int(self.prisms["Layer count"].sum())
+        if self._prisms is not None:
+            return int(self._prisms["Layer count"].sum())
         return None
 
     @property
