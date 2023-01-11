@@ -10,7 +10,7 @@ ci:
 
 repos:
 -   repo: https://github.com/psf/black
-    rev: 22.8.0
+    rev: 22.10.0
     hooks:
     -   id: black
         types: [text]
@@ -41,14 +41,14 @@ repos:
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v2.37.3
+    rev: v3.1.0
     hooks:
     -   id: pyupgrade
         args: [--py37-plus]
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.971
+    rev: v0.982
     hooks:
     -   id: mypy
         additional_dependencies: [types-toml]
@@ -73,7 +73,7 @@ repos:
         types_or: [python, pyi]
         exclude: ^(devtools/|docs/|setup.py)
 -   repo: https://github.com/codespell-project/codespell
-    rev: v2.2.1
+    rev: v2.2.2
     hooks:
     -   id: codespell
         exclude: (\.ipynb$|^\.github/workflows/issue_to_jira.yml$)
