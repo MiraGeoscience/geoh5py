@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -303,15 +303,19 @@ class Grid2D(ObjectBase):
             self._vertical = value
             self.workspace.update_attribute(self, "attributes")
 
-    def to_geoimage(self, data_list: list | str, **geoimage_kwargs) -> objects.GeoImage:
+    def to_geoimage(self, keys: list | str, **geoimage_kwargs) -> objects.GeoImage:
         """
         Create a :obj:geoh5py.objects.geo_image.GeoImage object from the current Grid2D.
-        :param data_list: the list of the data name to pass as band in the image.
+        :param keys: the list of the data name to pass as band in the image.
         The len of the list can only be 1, 3, 4.
         :param **geoimage_kwargs: any argument of :obj:`geoh5py.objects.geo_image.GeoImage`.
         :return: a new georeferenced :obj:`geoh5py.objects.geo_image.GeoImage`.
         """
+        # add keys to the kwargs
+        geoimage_kwargs["keys"] = keys
+
+        # convert the grid to a geoimage
         converter = conversion.Grid2dToGeoImage(self)
-        geoimage = converter(data_list, **geoimage_kwargs)
+        geoimage = converter(**geoimage_kwargs)
 
         return geoimage

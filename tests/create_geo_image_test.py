@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -81,9 +81,7 @@ def test_create_copy_geoimage(tmp_path):
     with pytest.raises(ValueError, match="Shape of the 'image' must be a 2D or "):
         geoimage.image = np.random.randn(12, 12, 4)
 
-    with pytest.raises(
-        AttributeError, match="The 'vertices' has to be previously defined"
-    ):
+    with pytest.raises(AttributeError, match="GeoImage has no vertices"):
         geoimage.to_grid2d()
 
     with pytest.raises(AttributeError, match="There is no image to reference"):

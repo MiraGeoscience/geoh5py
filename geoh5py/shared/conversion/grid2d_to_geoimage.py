@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -43,7 +43,7 @@ from ...shared import FLOAT_NDV
 from .base_conversion import ConversionBase
 
 if TYPE_CHECKING:
-    from ...objects import GeoImage, Grid2D
+    from ...objects import Grid2D
 
 
 class Grid2dToGeoImage(ConversionBase):
@@ -62,14 +62,13 @@ class Grid2dToGeoImage(ConversionBase):
         super().__init__(entity)
         self._data = None
         self._image = None
-        self._geoimage = None
+        self._tag: dict | None = None
         self.entity: Grid2D
 
-    def grid_to_tag(self) -> dict:
+    def grid_to_tag(self):
         """
         Compute the tag dictionary of the Grid2D as required by the
         :obj:'geoh5py.objects.geo_image.GeoImage' object.
-        :return: a dictionary of the tag.
         """
         if not isinstance(self.entity.v_cell_size, np.ndarray) or not isinstance(
             self.entity.u_cell_size, np.ndarray
@@ -81,7 +80,8 @@ class Grid2dToGeoImage(ConversionBase):
 
         u_origin, v_origin, z_origin = self.entity.origin.item()
         v_oposite = v_origin + self.entity.v_cell_size * self.entity.v_count
-        tag = {
+
+        self._tag = {
             256: (self.entity.u_count,),
             257: (self.entity.v_count,),
             33550: (
@@ -98,8 +98,6 @@ class Grid2dToGeoImage(ConversionBase):
                 z_origin,
             ),
         }
-
-        return tag
 
     def data_to_pil_format(self, data: np.array) -> np.array:
         """
@@ -138,11 +136,11 @@ class Grid2dToGeoImage(ConversionBase):
                     f"data number: {len(self.entity.get_entity_list())}, key: {key}",
                 )
             key_ = self.entity.get_entity_list()[key]
-            data = self.entity.get_entity(key_)
+            data = self.entity.get_entity(key_)  # type: ignore
         elif isinstance(key, UUID):
-            data = self.entity.get_entity(key)
+            data = self.entity.get_entity(key)  # type: ignore
         elif isinstance(key, Data):
-            data = key
+            data = key  # type: ignore
         else:
             raise TypeError(
                 "The dtype of the keys must be :",
@@ -152,12 +150,11 @@ class Grid2dToGeoImage(ConversionBase):
 
         # verify if data exists
         if isinstance(data, list):
-            print(len(data))
             if len(data) != 1:
                 raise KeyError(f"the key '{key}' you entered does not exists.")
-            data = data[0]
+            data = data[0]  # type: ignore
 
-        return data.values
+        return data.values  # type: ignore
 
     def data_from_keys(self, keys: list | str | int | UUID | Data):
         """
@@ -186,11 +183,11 @@ class Grid2dToGeoImage(ConversionBase):
                 f"but you entered a {type(keys)} ",
             )
 
-    def convert_to_PIL(self):
+    def convert_to_pillow(self):
         """
         Convert the data from :obj:'np.array' to :obj:'PIL.Image' format.
         """
-        if not isinstance(self._data, np.array):
+        if not isinstance(self._data, np.ndarray):
             raise AttributeError("No data is selected.")
 
         if self._data.shape[-1] == 1:
@@ -202,35 +199,51 @@ class Grid2dToGeoImage(ConversionBase):
         else:
             raise IndexError("Only 1, 3, or 4 layers can be selected")
 
-    def create_geoimage(self, **geoimage_kwargs) -> GeoImage:
+    def verify_kwargs(self, **geoimage_kwargs):
         """
-        Create an :obj:'geoh5py.objects.geo_image.GeoImage' from the extracted data.
-        :param geoimage_kwargs:
-        :return: the new GeoImage
+        Verify if the kwargs are valid.
+        :param geoimage_kwargs: the kwargs to verify.
         """
-        # create a geoimage
-        self._geoimage = objects.GeoImage.create(
-            self.workspace, image=self._image, tag=self.grid_to_tag(), **geoimage_kwargs
-        )
+        super().verify_kwargs()
 
-        # georeference it
-        self._geoimage.georeferencing_from_tiff()
+        self.name = geoimage_kwargs.get("name", self.entity.name)
+        self.change_workspace_parent(**geoimage_kwargs)
 
-    def __call__(self, keys: list | str, **geoimage_kwargs) -> GeoImage:
+    def get_attributes(self, **kwargs):
         """
-        Create a :obj:'geoh5py.objects.geo_image.GeoImage' object from the current Grid2D.
-        :param data_list: the list of the data name to pass as band in the image.
-        The len of the list can only be 1, 3, 4.
-        :param **geoimage_kwargs: any argument of :obj:`geoh5py.objects.geo_image.GeoImage`.
-        :return: a new georeferenced :obj:`geoh5py.objects.geo_image.GeoImage`.
+        Get the attributes of the entity.
+        In order to select the layers, you can pass "keys" in the kwargs
+        (see 'data_from_keys()' function).
+        By default the first data layer is selected.
+        :param kwargs: the kwargs to pass to the function.
         """
-        self.change_workspace(geoimage_kwargs)
+        super().get_attributes()
+
+        # get the tag of the data
+        self.grid_to_tag()
 
         # get the data
-        self.data_from_keys(keys)
-        self.convert_to_PIL()
+        self.data_from_keys(kwargs.get("keys", 0))
+        self.convert_to_pillow()
 
-        # convert
-        self.create_geoimage(**geoimage_kwargs)
+    def create_output(self, **kwargs):
+        """
+        Create the output of the object.
+        :param kwargs: the kwargs to pass to the :obj:'geoh5py.objects.geo_image.GeoImage'.
+        """
+        super().create_output()
 
-        return self._geoimage
+        # create a geoimage
+        self._output = objects.GeoImage.create(
+            self.workspace_output, image=self._image, tag=self._tag, **kwargs
+        )
+
+    def add_data_output(self, **_):
+        """
+        Add the data to the workspace (georeference the data).
+        """
+        # pylint: disable=unused-argument
+        super().add_data_output()
+
+        # georeference it
+        self._output.georeferencing_from_tiff()

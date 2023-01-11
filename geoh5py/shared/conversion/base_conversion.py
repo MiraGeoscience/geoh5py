@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,11 +18,11 @@
 
 from __future__ import annotations
 
+from abc import abstractmethod
 from typing import TYPE_CHECKING
 
-from ...workspace import Workspace
-
 if TYPE_CHECKING:
+    from ...workspace.workspace import Workspace
     from ..entity import Entity
 
 
@@ -33,30 +33,59 @@ class ConversionBase:
         :param entity: the entity to convert.
         """
         self._entity = entity
-        self._workspace = self.entity.workspace
+        self._workspace_output = self.entity.workspace
         self._name = self.entity.name
+        self._output = None
 
-    def change_workspace(self, grid2d_kwargs: dict):
+    def change_workspace_parent(self, **grid2d_kwargs):
         """
         Change the workspace of the object based on a dictionary.
         :param grid2d_kwargs: the dict of the kwargs verify if parent exists.
         """
+        # verify if workspace in grid2d_kwargs
+        if grid2d_kwargs.get("workspace", None) is not None:
+            raise ValueError("workspace cannot be set in the object")
+
         # verify parent
         parent = grid2d_kwargs.get("parent", None)
 
-        if parent:
+        if grid2d_kwargs.get("parent", None):
             if not hasattr(parent, "workspace"):
                 raise AttributeError("The parent kwarg must has a 'workspace'")
 
-            self._workspace = parent.workspace
+            self._workspace_output = parent.workspace
+
+    @abstractmethod
+    def get_attributes(self):
+        pass
+
+    @abstractmethod
+    def create_output(self):
+        pass
+
+    @abstractmethod
+    def add_data_output(self):
+        pass
+
+    @abstractmethod
+    def verify_kwargs(self):
+        pass
+
+    def __call__(self, **kwargs):
+        self.verify_kwargs(**kwargs)
+        self.get_attributes(**kwargs)
+        self.create_output(**kwargs)
+        self.add_data_output(**kwargs)
+
+        return self._output
 
     @property
     def entity(self) -> Entity:
         return self._entity
 
     @property
-    def workspace(self) -> Workspace:
-        return self._workspace
+    def workspace_output(self) -> Workspace:
+        return self._workspace_output
 
     @property
     def name(self) -> str:
