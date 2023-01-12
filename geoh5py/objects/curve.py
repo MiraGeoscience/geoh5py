@@ -21,6 +21,7 @@ import uuid
 
 import numpy as np
 
+from ..shared.utils import str2uuid
 from .cell_object import CellObject
 from .object_base import ObjectType
 
@@ -43,7 +44,7 @@ class Curve(CellObject):
     )
 
     def __init__(self, object_type: ObjectType, **kwargs):
-
+        self._current_line_id: uuid.UUID | None = None
         self._parts: np.ndarray | None = None
         super().__init__(object_type, **kwargs)
 
@@ -97,7 +98,7 @@ class Curve(CellObject):
         self.workspace.update_attribute(self, "cells")
 
     @property
-    def current_line_id(self):
+    def current_line_id(self) -> uuid.UUID | None:
 
         if getattr(self, "_current_line_id", None) is None:
             self._current_line_id = uuid.uuid4()
@@ -105,15 +106,15 @@ class Curve(CellObject):
         return self._current_line_id
 
     @current_line_id.setter
-    def current_line_id(self, value: uuid.UUID):
+    def current_line_id(self, value: uuid.UUID | None):
 
-        if isinstance(value, str):
-            value = uuid.UUID(value)
+        value = str2uuid(value)
 
-        assert isinstance(value, uuid.UUID), (
-            f"Input current_line_id value should be of type {uuid.UUID}."
-            f" {type(value)} provided"
-        )
+        if not isinstance(value, (uuid.UUID, type(None))):
+            raise TypeError(
+                f"Input current_line_id value should be of type {uuid.UUID}."
+                f" {type(value)} provided"
+            )
 
         self._current_line_id = value
         self.workspace.update_attribute(self, "attributes")
@@ -135,7 +136,11 @@ class Curve(CellObject):
         property. The definition of the :obj:`~geoh5py.objects.curve.Curve.cells`
         property get modified by the setting of parts.
         """
-        if getattr(self, "_parts", None) is None and self.cells is not None:
+        if (
+            getattr(self, "_parts", None) is None
+            and self.cells is not None
+            and self.vertices is not None
+        ):
 
             cells = self.cells
             parts = np.zeros(self.vertices.shape[0], dtype="int")
