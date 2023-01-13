@@ -469,10 +469,7 @@ class BaseEMSurvey(ObjectBase, ABC):
         """
         Default channel units for time or frequency defined on the child class.
         """
-        if "Unit" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Unit"]
-
-        return None
+        return self.metadata["EM Dataset"].get("Unit")
 
     @unit.setter
     def unit(self, value: str):

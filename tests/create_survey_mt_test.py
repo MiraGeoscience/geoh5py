@@ -21,6 +21,8 @@
 
 from __future__ import annotations
 
+import re
+
 import numpy as np
 import pytest
 
@@ -78,21 +80,26 @@ def test_create_survey_mt(tmp_path):
 
         mt_survey.metadata = mt_survey.default_metadata
 
-        with pytest.raises(TypeError) as excinfo:
-            mt_survey.channels = 1.0
-        assert "Values provided as 'channels' must be a list" in str(excinfo)
+        assert mt_survey.type == "Receivers"
 
-        with pytest.raises(AttributeError) as excinfo:
+        with pytest.raises(
+            TypeError, match="Values provided as 'channels' must be a list"
+        ):
+            mt_survey.channels = 1.0
+
+        with pytest.raises(
+            AttributeError,
+            match=(
+                "The 'channels' attribute of an EMSurvey class must be set before "
+                "the 'add_components_data' method can be used."
+            ),
+        ):
             mt_survey.add_components_data(123.0)
-        assert (
-            "The 'channels' attribute of an EMSurvey class must be set before "
-            "the 'add_components_data' method can be used."
-        ) in str(excinfo)
+
         mt_survey.channels = [5.0, 10.0, 100.0]
 
-        with pytest.raises(TypeError) as excinfo:
+        with pytest.raises(TypeError, match="Input data must be nested dictionaries"):
             mt_survey.add_components_data(123.0)
-        assert "Input data must be nested dictionaries" in str(excinfo)
 
         # Create some simple data
         data = {}
@@ -106,21 +113,25 @@ def test_create_survey_mt(tmp_path):
                 comp_dict[f"{component}_{freq}"] = {"values": values}
 
             if c_ind == 0:
-                with pytest.raises(TypeError) as excinfo:
+                with pytest.raises(
+                    TypeError,
+                    match=re.escape(
+                        "List of values provided for component 'Zxx (real)' "
+                        "must be a list of "
+                    ),
+                ):
                     mt_survey.add_components_data({component: values})
-                assert (
-                    "List of values provided for component 'Zxx (real)' "
-                    "must be a list of "
-                ) in str(excinfo)
 
-                with pytest.raises(TypeError) as excinfo:
+                with pytest.raises(
+                    TypeError,
+                    match=(
+                        "Given value to data 5.0 should of type "
+                        "<class 'dict'> or attributes"
+                    ),
+                ):
                     mt_survey.add_components_data(
                         {component: {ind: values for ind in mt_survey.channels}}
                     )
-                assert (
-                    "Given value to data 5.0 should of type "
-                    "<class 'dict'> or attributes"
-                ) in str(excinfo)
 
             # Give well-formed dictionary
             data[component] = comp_dict
@@ -131,13 +142,11 @@ def test_create_survey_mt(tmp_path):
             mt_survey.property_groups
         ), "Metadata 'Property groups' malformed"
 
-        with pytest.raises(AttributeError) as excinfo:
+        with pytest.raises(
+            AttributeError,
+            match=f"The 'transmitters' attribute cannot be set on class {type(mt_survey)}.",
+        ):
             mt_survey.transmitters = AirborneTEMTransmitters
-
-        assert (
-            f"The 'transmitters' attribute cannot be set on class {type(mt_survey)}."
-            in str(excinfo)
-        ), "Failed to raise AttributeError."
 
         # Re-open the workspace and read data back in
         new_workspace = Workspace(h5file_path)
