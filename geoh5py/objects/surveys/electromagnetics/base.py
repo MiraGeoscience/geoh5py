@@ -408,11 +408,6 @@ class BaseEMSurvey(ObjectBase, ABC):
 
     @receivers.setter
     def receivers(self, receivers: BaseEMSurvey):
-        if isinstance(None, self.default_receiver_type):
-            raise AttributeError(
-                f"The 'receivers' attribute cannot be set on class {type(self)}."
-            )
-
         if not isinstance(receivers, self.default_receiver_type):
             raise TypeError(
                 f"Provided receivers must be of type {self.default_receiver_type}. "
