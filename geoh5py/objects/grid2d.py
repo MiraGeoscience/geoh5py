@@ -338,6 +338,9 @@ class Grid2D(ObjectBase):
         if self.u_count is None or self.v_count is None:
             raise AttributeError("The Grid2D has no number of cells")
 
+        if self.rotation != 0.0:
+            raise UserWarning("Cannot assign tag for rotated Grid2D.")
+
         u_origin, v_origin, z_origin = self.origin.item()
         v_oposite = v_origin + self.v_cell_size * self.v_count
         tag = {
