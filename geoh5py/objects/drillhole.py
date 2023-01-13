@@ -97,7 +97,7 @@ class Drillhole(Points):
         return self._collar
 
     @collar.setter
-    def collar(self, value):
+    def collar(self, value: list | np.ndarray | None):
         if value is not None:
             if isinstance(value, np.ndarray):
                 value = value.tolist()
@@ -105,7 +105,8 @@ class Drillhole(Points):
             if isinstance(value, str):
                 value = [float(n) for n in re.findall(r"\d+\.\d+", value)]
 
-            assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
+            if len(value) != 3:
+                raise ValueError("Origin must be a list or numpy array of len (3,).")
 
             value = np.asarray(
                 tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
@@ -156,19 +157,13 @@ class Drillhole(Points):
         """
         Lookup array of the well path in x, y, z coordinates.
         """
-        if (
-            getattr(self, "_locations", None) is None
-            and self.collar is not None
-            and self.surveys is not None
-        ):
+        if getattr(self, "_locations", None) is None and self.collar is not None:
             lengths = self.surveys[1:, 0] - self.surveys[:-1, 0]
-            deviation_x = compute_deviation(self.surveys, "x")
-            deviation_y = compute_deviation(self.surveys, "y")
-            deviation_z = compute_deviation(self.surveys, "z")
+            deviation = compute_deviation(self.surveys)
             self._locations = np.c_[
-                self.collar["x"] + np.cumsum(np.r_[0.0, lengths * deviation_x]),
-                self.collar["y"] + np.cumsum(np.r_[0.0, lengths * deviation_y]),
-                self.collar["z"] + np.cumsum(np.r_[0.0, lengths * deviation_z]),
+                self.collar["x"] + np.cumsum(np.r_[0.0, lengths * deviation[:, 0]]),
+                self.collar["y"] + np.cumsum(np.r_[0.0, lengths * deviation[:, 1]]),
+                self.collar["z"] + np.cumsum(np.r_[0.0, lengths * deviation[:, 2]]),
             ]
 
         return self._locations
@@ -411,9 +406,9 @@ class Drillhole(Points):
         """
         Function to return x, y, z coordinates from depth.
         """
-        if self.locations is None or self.surveys is None:
+        if self.locations is None:
             raise AttributeError(
-                "The 'desurvey' operation requires the 'surveys' and 'locations' "
+                "The 'desurvey' operation requires the 'locations' "
                 "attribute to be defined."
             )
 
@@ -424,17 +419,15 @@ class Drillhole(Points):
             np.searchsorted(self.surveys[:, 0], depths, side="left") - 1,
             0,
         )
-        deviation_x = compute_deviation(self.surveys, "x")
-        deviation_y = compute_deviation(self.surveys, "y")
-        deviation_z = compute_deviation(self.surveys, "z")
-        ind_dev = np.minimum(ind_loc, deviation_x.shape[0] - 1)
+        deviation = compute_deviation(self.surveys)
+        ind_dev = np.minimum(ind_loc, deviation.shape[0] - 1)
         locations = (
             self.locations[ind_loc, :]
-            + (depths - self.surveys[ind_loc, 0])[:, None]
+            + np.r_[depths - self.surveys[ind_loc, 0]][:, None]
             * np.c_[
-                deviation_x[ind_dev],
-                deviation_y[ind_dev],
-                deviation_z[ind_dev],
+                deviation[ind_dev, 0],
+                deviation[ind_dev, 1],
+                deviation[ind_dev, 2],
             ]
         )
         return locations
@@ -660,8 +653,12 @@ class Drillhole(Points):
                     self.cells = key_map.reshape((-1, 2)).astype("uint32")
 
 
-def compute_deviation(surveys: np.ndarray, axis: str) -> np.ndarray:
-    """Compute deviation from survey parameters"""
+def compute_deviation(surveys: np.ndarray) -> np.ndarray:
+    """
+    Compute deviation distances from survey parameters.
+
+    :param surveys: Array of azimuth, dip and depth values.
+    """
     if surveys is None:
         raise AttributeError(
             "Cannot compute deviation coordinates without `survey` attribute."
@@ -669,30 +666,46 @@ def compute_deviation(surveys: np.ndarray, axis: str) -> np.ndarray:
 
     lengths = surveys[1:, 0] - surveys[:-1, 0]
 
-    if axis not in "xyz":
-        raise ValueError("Input 'axis' must be 'x', 'y' and 'z'.")
-
-    if axis == "x":
-        dl_in = np.cos(np.deg2rad(450.0 - surveys[:-1, 1] % 360.0)) * np.cos(
-            np.deg2rad(surveys[:-1, 2])
-        )
-        dl_out = np.cos(np.deg2rad(450.0 - surveys[1:, 1] % 360.0)) * np.cos(
-            np.deg2rad(surveys[1:, 2])
-        )
+    deviation = []
+    for component in [deviation_x, deviation_y, deviation_z]:
+        dl_in = component(surveys[:-1, 1], surveys[:-1, 2])
+        dl_out = component(surveys[1:, 1], surveys[1:, 2])
         ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
+        deviation += [dl_in + lengths * ddl / 2.0]
 
-    elif axis == "y":
-        dl_in = np.sin(np.deg2rad(450.0 - surveys[:-1, 1] % 360.0)) * np.cos(
-            np.deg2rad(surveys[:-1, 2])
-        )
-        dl_out = np.sin(np.deg2rad(450.0 - surveys[1:, 1] % 360.0)) * np.cos(
-            np.deg2rad(surveys[1:, 2])
-        )
-        ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
+    return np.vstack(deviation).T
 
-    else:
-        dl_in = np.sin(np.deg2rad(surveys[:-1, 2]))
-        dl_out = np.sin(np.deg2rad(surveys[1:, 2]))
-        ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
 
-    return dl_in + lengths * ddl / 2.0
+def deviation_x(azimuth, dip):
+    """
+    Compute the easting deviation.
+
+    :param azimuth: Degree angle clockwise from North
+    :param dip: Degree angle positive down from horizontal
+
+    :return deviation: Change in easting distance.
+    """
+    return np.cos(np.deg2rad(450.0 - azimuth % 360.0)) * np.cos(np.deg2rad(dip))
+
+
+def deviation_y(azimuth, dip):
+    """
+    Compute the northing deviation.
+
+    :param azimuth: Degree angle clockwise from North
+    :param dip: Degree angle positive down from horizontal
+
+    :return deviation: Change in northing distance.
+    """
+    return np.sin(np.deg2rad(450.0 - azimuth % 360.0)) * np.cos(np.deg2rad(dip))
+
+
+def deviation_z(_, dip):
+    """
+    Compute the vertical deviation.
+
+    :param dip: Degree angle positive down from horizontal
+
+    :return deviation: Change in vertical distance.
+    """
+    return np.sin(np.deg2rad(dip))
