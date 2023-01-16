@@ -102,10 +102,6 @@ class PropertyGroup(ABC):
         """
         return self._parent
 
-    @parent.setter
-    def parent(self, parent: ObjectBase):
-        self._parent = parent
-
     @property
     def properties(self) -> list[uuid.UUID]:
         """
