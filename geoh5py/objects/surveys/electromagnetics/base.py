@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import uuid
+from abc import ABC, abstractmethod
 from typing import Any
 
 import numpy as np
@@ -27,7 +28,7 @@ from geoh5py.groups.property_group import PropertyGroup
 from geoh5py.objects.object_base import ObjectBase
 
 
-class BaseEMSurvey(ObjectBase):
+class BaseEMSurvey(ObjectBase, ABC):
     """
     A base electromagnetics survey object.
     """
@@ -35,6 +36,7 @@ class BaseEMSurvey(ObjectBase):
     __INPUT_TYPE = None
     __TYPE = None
     __UNITS = None
+
     _receivers: BaseEMSurvey | None = None
     _transmitters: BaseEMSurvey | None = None
 
@@ -228,9 +230,9 @@ class BaseEMSurvey(ObjectBase):
         return new_entity
 
     @property
+    @abstractmethod
     def default_input_types(self) -> list[str] | None:
         """Input types. Must be one of 'Rx', 'Tx', 'Tx and Rx'."""
-        return self.__INPUT_TYPE
 
     @property
     def default_metadata(self):
@@ -240,6 +242,13 @@ class BaseEMSurvey(ObjectBase):
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         """Default unique identifier. Implemented on the child class."""
+
+    @property
+    @abstractmethod
+    def default_units(self) -> list[str]:
+        """Accepted time units. Must be one of "Seconds (s)",
+        "Milliseconds (ms)", "Microseconds (us)" or "Nanoseconds (ns)"
+        """
 
     @property
     def default_transmitter_type(self) -> type:
@@ -254,11 +263,6 @@ class BaseEMSurvey(ObjectBase):
         :return: Receivers implemented on the child class.
         """
         return type(None)
-
-    @property
-    def default_units(self) -> list[str] | None:
-        """Accepted sampling units."""
-        return self.__UNITS
 
     def edit_metadata(self, entries: dict[str, Any]):
         """
@@ -428,7 +432,7 @@ class BaseEMSurvey(ObjectBase):
         return None
 
     @property
-    def transmitters(self) -> BaseEMSurvey | None:
+    def transmitters(self):
         """
         The associated TEM transmitters (sources).
         """
@@ -463,9 +467,9 @@ class BaseEMSurvey(ObjectBase):
         self.edit_metadata({"Transmitters": transmitters.uid})
 
     @property
+    @abstractmethod
     def type(self):
         """Survey element type"""
-        return self.__TYPE
 
     @property
     def unit(self) -> float | None:
@@ -483,3 +487,110 @@ class BaseEMSurvey(ObjectBase):
             if value not in self.default_units:
                 raise ValueError(f"Input 'unit' must be one of {self.default_units}")
             self.edit_metadata({"Unit": value})
+
+
+class BaseTEMSurvey(BaseEMSurvey):
+
+    __UNITS = [
+        "Seconds (s)",
+        "Milliseconds (ms)",
+        "Microseconds (us)",
+        "Nanoseconds (ns)",
+    ]
+
+    __INPUT_TYPE = ["Rx", "Tx", "Tx and Rx"]
+
+    @property
+    def default_input_types(self) -> list[str]:
+        """Input types. Must be 'Rx only'"""
+        return self.__INPUT_TYPE
+
+    @property
+    def default_units(self) -> list[str]:
+        """Accepted time units. Must be one of "Seconds (s)",
+        "Milliseconds (ms)", "Microseconds (us)" or "Nanoseconds (ns)"
+        """
+        return self.__UNITS
+
+    @property
+    def timing_mark(self) -> float | None:
+        """
+        Timing mark from the beginning of the discrete :attr:`waveform`.
+        Generally used as the reference (time=0.0) for the provided
+        (-) on-time an (+) off-time :attr:`channels`.
+        """
+        if (
+            "Waveform" in self.metadata["EM Dataset"]
+            and "Timing mark" in self.metadata["EM Dataset"]["Waveform"]
+        ):
+            timing_mark = self.metadata["EM Dataset"]["Waveform"]["Timing mark"]
+            return timing_mark
+
+        return None
+
+    @timing_mark.setter
+    def timing_mark(self, timing_mark: float | None):
+        if not isinstance(timing_mark, (float, type(None))):
+            raise ValueError("Input timing_mark must be a float or None.")
+
+        if self.waveform is not None:
+            value = self.metadata["EM Dataset"]["Waveform"]
+        else:
+            value = {}
+
+        if timing_mark is None and "Timing mark" in value:
+            del value["Timing mark"]
+        else:
+            value["Timing mark"] = timing_mark
+
+        self.edit_metadata({"Waveform": value})
+
+    @property
+    def waveform(self) -> np.ndarray | None:
+        """
+        Discrete waveform of the TEM source provided as
+        :obj:`numpy.array` of type :obj:`float`, shape(n, 2)
+
+        .. code-block:: python
+
+            waveform = [
+                [time_1, current_1],
+                [time_2, current_2],
+                ...
+            ]
+
+        """
+        if (
+            "Waveform" in self.metadata["EM Dataset"]
+            and "Discretization" in self.metadata["EM Dataset"]["Waveform"]
+        ):
+            waveform = np.vstack(
+                [
+                    [row["time"], row["current"]]
+                    for row in self.metadata["EM Dataset"]["Waveform"]["Discretization"]
+                ]
+            )
+            return waveform
+        return None
+
+    @waveform.setter
+    def waveform(self, waveform: np.ndarray | None):
+        if not isinstance(waveform, (np.ndarray, type(None))):
+            raise TypeError("Input waveform must be a numpy.ndarray or None.")
+
+        if self.timing_mark is not None:
+            value = self.metadata["EM Dataset"]["Waveform"]
+        else:
+            value = {"Timing mark": 0.0}
+
+        if isinstance(waveform, np.ndarray):
+            if waveform.ndim != 2 or waveform.shape[1] != 2:
+                raise ValueError(
+                    "Input waveform must be a numpy.ndarray of shape (*, 2)."
+                )
+
+            value["Discretization"] = [
+                {"current": row[1], "time": row[0]} for row in waveform
+            ]
+
+        self.edit_metadata({"Waveform": value})

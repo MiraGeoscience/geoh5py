@@ -42,10 +42,10 @@ class Curve(CellObject):
         fields=(0x6A057FDC, 0xB355, 0x11E3, 0x95, 0xBE, 0xFD84A7FFCB88)
     )
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, object_type: ObjectType, name="Curve", **kwargs):
 
         self._parts: np.ndarray | None = None
-        super().__init__(object_type, **kwargs)
+        super().__init__(object_type, name=name, **kwargs)
 
     @property
     def cells(self) -> np.ndarray | None:

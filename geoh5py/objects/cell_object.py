@@ -36,11 +36,11 @@ class CellObject(Points):
 
     _attribute_map: dict = Points._attribute_map.copy()
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, object_type: ObjectType, name="Object", **kwargs):
 
         self._cells: np.ndarray | None = None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(object_type, name=name, **kwargs)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
