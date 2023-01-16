@@ -48,6 +48,20 @@ class BaseGroundTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
             }
         }
 
+    @property
+    def default_receiver_type(self):
+        """
+        :return: Transmitter class
+        """
+        return GroundTEMReceiversLargeLoop
+
+    @property
+    def default_transmitter_type(self):
+        """
+        :return: Transmitter class
+        """
+        return GroundTEMTransmittersLargeLoop
+
 
 class GroundTEMReceiversLargeLoop(BaseGroundTEM):  # pylint: disable=too-many-ancestors
     """

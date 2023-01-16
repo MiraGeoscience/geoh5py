@@ -59,7 +59,7 @@ class Octree(ObjectBase):
         self._v_cell_size = None
         self._w_cell_size = None
         self._octree_cells = None
-        self._centroids = None
+        self._centroids: np.ndarray | None = None
         super().__init__(object_type, **kwargs)
 
         object_type.workspace._register_object(self)
@@ -279,14 +279,14 @@ class Octree(ObjectBase):
         return self._u_cell_size
 
     @u_cell_size.setter
-    def u_cell_size(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "u_cell_size must be type(float) of shape (1,)"
-            self.workspace.update_attribute(self, "attributes")
-            self._centroids = None
+    def u_cell_size(self, value: float):
+        if not isinstance(value, (float, np.ndarray)):
+            raise TypeError("Attribute 'u_cell_size' must be type(float).")
 
-            self._u_cell_size = value.astype(float)
+        self.workspace.update_attribute(self, "attributes")
+        self._centroids = None
+
+        self._u_cell_size = np.r_[value].astype(float)
 
     @property
     def u_count(self) -> int | None:
@@ -296,13 +296,14 @@ class Octree(ObjectBase):
         return self._u_count
 
     @u_count.setter
-    def u_count(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "u_count must be type(int) of shape (1,)"
-            self._centroids = None
-            self._u_count = int(value)
-            self.workspace.update_attribute(self, "attributes")
+    def u_count(self, value: int):
+        if not isinstance(value, (float, np.int32, int)) or np.log2(value) % 1.0 != 0:
+            raise TypeError("Attribute 'u_count' must be type(int) in power of 2.")
+
+        self._centroids = None
+
+        self._u_count = np.int32(value)
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def v_cell_size(self) -> float | None:
@@ -312,14 +313,13 @@ class Octree(ObjectBase):
         return self._v_cell_size
 
     @v_cell_size.setter
-    def v_cell_size(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "v_cell_size must be type(float) of shape (1,)"
-            self.workspace.update_attribute(self, "attributes")
-            self._centroids = None
+    def v_cell_size(self, value: float):
+        if not isinstance(value, (float, np.ndarray)):
+            raise TypeError("Attribute 'v_cell_size' must be type(float).")
+        self.workspace.update_attribute(self, "attributes")
+        self._centroids = None
 
-            self._v_cell_size = value.astype(float)
+        self._v_cell_size = np.r_[value].astype(float)
 
     @property
     def v_count(self) -> int | None:
@@ -329,13 +329,12 @@ class Octree(ObjectBase):
         return self._v_count
 
     @v_count.setter
-    def v_count(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "v_count must be type(int) of shape (1,)"
-            self._centroids = None
-            self._v_count = int(value)
-            self.workspace.update_attribute(self, "attributes")
+    def v_count(self, value: int):
+        if not isinstance(value, (float, np.int32, int)) or np.log2(value) % 1.0 != 0:
+            raise TypeError("Attribute 'v_count' must be type(int) in power of 2.")
+        self._centroids = None
+        self._v_count = np.int32(value)
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def w_cell_size(self) -> float | None:
@@ -345,14 +344,13 @@ class Octree(ObjectBase):
         return self._w_cell_size
 
     @w_cell_size.setter
-    def w_cell_size(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "w_cell_size must be type(float) of shape (1,)"
-            self.workspace.update_attribute(self, "attributes")
-            self._centroids = None
+    def w_cell_size(self, value: float):
+        if not isinstance(value, (float, np.ndarray)):
+            raise TypeError("Attribute 'w_cell_size' must be type(float).")
+        self.workspace.update_attribute(self, "attributes")
+        self._centroids = None
 
-            self._w_cell_size = value.astype(float)
+        self._w_cell_size = np.r_[value].astype(float)
 
     @property
     def w_count(self) -> int | None:
@@ -362,10 +360,9 @@ class Octree(ObjectBase):
         return self._w_count
 
     @w_count.setter
-    def w_count(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "w_count must be type(int) of shape (1,)"
-            self._centroids = None
-            self._w_count = int(value)
-            self.workspace.update_attribute(self, "attributes")
+    def w_count(self, value: int):
+        if not isinstance(value, (float, np.int32, int)) or np.log2(value) % 1.0 != 0:
+            raise TypeError("Attribute 'w_count' must be type(int) in power of 2.")
+        self._centroids = None
+        self._w_count = np.int32(value)
+        self.workspace.update_attribute(self, "attributes")

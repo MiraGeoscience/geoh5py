@@ -23,7 +23,7 @@ from abc import ABC
 class ReferenceValueMap(ABC):
     """Maps from reference index to reference value of ReferencedData."""
 
-    def __init__(self, color_map: dict[int, str] = None):
+    def __init__(self, color_map: dict[int, str] | None = None):
         self._map = {} if color_map is None else color_map
 
     def __getitem__(self, item: int) -> str:

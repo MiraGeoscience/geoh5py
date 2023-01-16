@@ -80,7 +80,7 @@ class BaseTipper(BaseEMSurvey):
     @base_stations.setter
     def base_stations(self, base: TipperBaseStations):
         if not isinstance(base, (TipperBaseStations, type(None))):
-            raise AttributeError(
+            raise TypeError(
                 f"Input `base_stations` must be of type '{TipperBaseStations}' or None"
             )
 
@@ -101,6 +101,20 @@ class BaseTipper(BaseEMSurvey):
     def default_input_types(self) -> list[str]:
         """Input types. Must be 'Rx and base stations'"""
         return self.__INPUT_TYPE
+
+    @property
+    def default_receiver_type(self):
+        """
+        :return: Transmitter class
+        """
+        return TipperReceivers
+
+    @property
+    def default_transmitter_type(self):
+        """
+        :return: Transmitter class
+        """
+        return type(None)
 
     @property
     def default_metadata(self) -> dict:
@@ -135,10 +149,10 @@ class TipperReceivers(BaseTipper, Curve):  # pylint: disable=too-many-ancestors
     __TYPE_UID = uuid.UUID("{0b639533-f35b-44d8-92a8-f70ecff3fd26}")
     __TYPE = "Receivers"
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, object_type: ObjectType, name="Tipper rx", **kwargs):
         self._base_stations: TipperBaseStations | None = None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(object_type, name=name, **kwargs)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -161,9 +175,9 @@ class TipperBaseStations(BaseTipper, Points):
     __TYPE_UID = uuid.UUID("{f495cd13-f09b-4a97-9212-2ea392aeb375}")
     __TYPE = "Base stations"
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, object_type: ObjectType, name="Tipper base", **kwargs):
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(object_type, name=name, **kwargs)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -171,13 +185,6 @@ class TipperBaseStations(BaseTipper, Points):
         :return: Default unique identifier
         """
         return cls.__TYPE_UID
-
-    @property
-    def default_receiver_type(self):
-        """
-        :return: Receiver class
-        """
-        return TipperReceivers
 
     @property
     def type(self):

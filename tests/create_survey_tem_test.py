@@ -58,14 +58,14 @@ def test_create_survey_airborne_tem(tmp_path):
         receivers.transmitters = "123"
 
     with pytest.raises(
-        AttributeError,
-        match=f"The 'receivers' attribute cannot be set on class {type(receivers)}",
+        TypeError,
+        match=f"Provided receivers must be of type {type(receivers)}",
     ):
         receivers.receivers = transmitters
 
     with pytest.raises(
-        AttributeError,
-        match=f"The 'transmitters' attribute cannot be set on class {type(transmitters)}",
+        TypeError,
+        match=f"Provided transmitters must be of type {type(transmitters)}",
     ):
         transmitters.transmitters = receivers
 
@@ -369,14 +369,14 @@ def test_create_survey_ground_tem_large_loop(tmp_path):
         receivers.transmitters = "123"
 
     with pytest.raises(
-        AttributeError,
-        match=f"The 'receivers' attribute cannot be set on class {type(receivers)}",
+        TypeError,
+        match=f"Provided receivers must be of type {type(receivers)}",
     ):
         receivers.receivers = transmitters
 
     with pytest.raises(
-        AttributeError,
-        match=f"The 'transmitters' attribute cannot be set on class {type(transmitters)}",
+        TypeError,
+        match=f"Provided transmitters must be of type {type(transmitters)}",
     ):
         transmitters.transmitters = receivers
 

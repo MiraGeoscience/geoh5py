@@ -240,29 +240,30 @@ class BaseEMSurvey(ObjectBase, ABC):
         return {"EM Dataset": {}}
 
     @classmethod
+    @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:
         """Default unique identifier. Implemented on the child class."""
 
     @property
     @abstractmethod
-    def default_units(self) -> list[str]:
-        """Accepted time units. Must be one of "Seconds (s)",
-        "Milliseconds (ms)", "Microseconds (us)" or "Nanoseconds (ns)"
-        """
-
-    @property
     def default_transmitter_type(self) -> type:
         """
         :return: Transmitters implemented on the child class.
         """
-        return type(None)
 
     @property
+    @abstractmethod
     def default_receiver_type(self) -> type:
         """
         :return: Receivers implemented on the child class.
         """
-        return type(None)
+
+    @property
+    @abstractmethod
+    def default_units(self) -> list[str]:
+        """
+        List of accepted units.
+        """
 
     def edit_metadata(self, entries: dict[str, Any]):
         """
@@ -410,11 +411,6 @@ class BaseEMSurvey(ObjectBase, ABC):
 
     @receivers.setter
     def receivers(self, receivers: BaseEMSurvey):
-        if isinstance(None, self.default_receiver_type):
-            raise AttributeError(
-                f"The 'receivers' attribute cannot be set on class {type(self)}."
-            )
-
         if not isinstance(receivers, self.default_receiver_type):
             raise TypeError(
                 f"Provided receivers must be of type {self.default_receiver_type}. "
@@ -476,10 +472,7 @@ class BaseEMSurvey(ObjectBase, ABC):
         """
         Default channel units for time or frequency defined on the child class.
         """
-        if "Unit" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Unit"]
-
-        return None
+        return self.metadata["EM Dataset"].get("Unit")
 
     @unit.setter
     def unit(self, value: str):

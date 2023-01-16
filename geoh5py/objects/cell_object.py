@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import uuid
 import warnings
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
     from geoh5py.objects import ObjectType
 
 
-class CellObject(Points):
+class CellObject(Points, ABC):
     """
     Base class for object with cells.
     """
@@ -43,6 +44,7 @@ class CellObject(Points):
         super().__init__(object_type, name=name, **kwargs)
 
     @classmethod
+    @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:
         """Default type uid."""
 
