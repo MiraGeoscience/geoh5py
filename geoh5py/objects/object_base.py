@@ -340,7 +340,7 @@ class ObjectBase(Entity):
 
         return entity_list
 
-    def get_data_list(self, attribute="name") -> list:
+    def get_data_list(self, attribute="name") -> list[str]:
         """
         Get a list of names of all children :obj:`~geoh5py.data.data.Data`.
 
