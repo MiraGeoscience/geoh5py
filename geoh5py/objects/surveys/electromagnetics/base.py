@@ -223,7 +223,12 @@ class BaseEMSurvey(ObjectBase, ABC):
                 )
                 setattr(new_entity, associate, complement)
                 metadata["EM Dataset"][complement.type] = complement.uid
-                complement.metadata = self.metadata
+                complement.metadata = metadata
+
+        if getattr(new_entity.receivers, "tx_id_property", None) is not None:
+            new_entity.receivers.tx_id_property = new_entity.get_data(
+                new_entity.receivers.tx_id_property.name
+            )[0]
 
         new_entity.metadata = metadata
 
@@ -283,16 +288,9 @@ class BaseEMSurvey(ObjectBase, ABC):
             else:
                 self.metadata["EM Dataset"][key] = value
 
-        if getattr(self, "receivers", None) is not None:
-            getattr(self, "receivers").metadata = self.metadata
-
-        if getattr(self, "transmitters", None) is not None:
-            getattr(self, "transmitters").metadata = self.metadata
-
-        if getattr(self, "base_stations", None) is not None:
-            getattr(self, "base_stations").metadata = self.metadata
-
-        self.workspace.update_attribute(self, "metadata")
+        for dependent in ["receivers", "transmitters", "base_stations"]:
+            if getattr(self, dependent, None) is not None:
+                getattr(self, dependent).metadata = self.metadata
 
     def _edit_validate_property_groups(
         self, values: PropertyGroup | list[PropertyGroup] | None
@@ -392,6 +390,12 @@ class BaseEMSurvey(ObjectBase, ABC):
         self._metadata = values
         self.workspace.update_attribute(self, "metadata")
 
+        for elem in ["receivers", "transmitters", "base_stations"]:
+            dependent = getattr(self, elem, None)
+            if dependent is not None and dependent is not self:
+                setattr(dependent, "_metadata", values)
+                self.workspace.update_attribute(self, "metadata")
+
     @property
     def receivers(self) -> BaseEMSurvey | None:
         """
@@ -404,8 +408,6 @@ class BaseEMSurvey(ObjectBase, ABC):
 
                 if isinstance(receiver_entity, BaseEMSurvey):
                     self._receivers = receiver_entity
-                else:
-                    print("Associated receivers entity not found in Workspace.")
 
         return self._receivers
 
@@ -442,8 +444,6 @@ class BaseEMSurvey(ObjectBase, ABC):
 
                 if isinstance(transmitter_entity, BaseEMSurvey):
                     self._transmitters = transmitter_entity
-                else:
-                    print("Associated transmitters entity not found in Workspace.")
 
         return self._transmitters
 
@@ -482,7 +482,7 @@ class BaseEMSurvey(ObjectBase, ABC):
             self.edit_metadata({"Unit": value})
 
 
-class BaseTEMSurvey(BaseEMSurvey):
+class BaseTEMSurvey(BaseEMSurvey, ABC):
 
     __UNITS = [
         "Seconds (s)",
@@ -491,12 +491,10 @@ class BaseTEMSurvey(BaseEMSurvey):
         "Nanoseconds (ns)",
     ]
 
-    __INPUT_TYPE = ["Rx", "Tx", "Tx and Rx"]
-
     @property
+    @abstractmethod
     def default_input_types(self) -> list[str]:
-        """Input types. Must be 'Rx only'"""
-        return self.__INPUT_TYPE
+        """Input types for the survey element."""
 
     @property
     def default_units(self) -> list[str]:

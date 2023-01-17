@@ -316,7 +316,9 @@ def test_survey_airborne_tem_data(tmp_path):
     )
 
 
-def test_create_survey_ground_tem_large_loop(tmp_path):
+def test_create_survey_ground_tem_large_loop(
+    tmp_path,
+):  # pylint: disable=too-many-locals
 
     path = Path(tmp_path) / r"../groundTEM.geoh5"
 
@@ -383,3 +385,10 @@ def test_create_survey_ground_tem_large_loop(tmp_path):
     receivers.transmitters = transmitters
 
     receivers.tx_id_property = np.hstack(tx_id)
+
+    new_workspace = Workspace(Path(tmp_path) / r"testGround_copy.geoh5")
+    receivers_rec = receivers.copy(new_workspace)
+    compare_entities(
+        receivers, receivers_rec, ignore=["_receivers", "_transmitters", "_parent"]
+    )
+    new_workspace.close()
