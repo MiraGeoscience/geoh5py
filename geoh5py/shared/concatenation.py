@@ -803,12 +803,6 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
         return self._property_groups
 
-    @property_groups.setter
-    def property_groups(self, prop_groups: list[PropertyGroup]):
-        raise NotImplementedError(
-            "Setting property_groups on ConcatenatedObject not supported."
-        )
-
 
 class ConcatenatedDrillhole(ConcatenatedObject):
     @property
