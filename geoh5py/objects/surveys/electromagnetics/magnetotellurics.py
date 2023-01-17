@@ -46,7 +46,7 @@ class MTReceivers(BaseEMSurvey, Points):
 
     @property
     def default_input_types(self) -> list[str]:
-        """Input types. Must be 'Rx only'"""
+        """Choice of survey creation types."""
         return self.__INPUT_TYPE
 
     @property

@@ -26,6 +26,8 @@ from .base import BaseTEMSurvey
 
 
 class BaseAirborneTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
+
+    __INPUT_TYPE = ["Rx", "Tx", "Tx and Rx"]
     _PROPERTY_MAP = {
         "crossline_offset": "Crossline offset",
         "inline_offset": "Inline offset",
@@ -63,6 +65,11 @@ class BaseAirborneTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancesto
                 "Waveform": {"Timing mark": 0.0},
             }
         }
+
+    @property
+    def default_input_types(self) -> list[str]:
+        """Choice of survey creation types."""
+        return self.__INPUT_TYPE
 
     @property
     def default_receiver_type(self):

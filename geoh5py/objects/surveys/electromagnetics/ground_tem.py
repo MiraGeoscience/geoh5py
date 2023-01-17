@@ -29,6 +29,9 @@ from .base import BaseTEMSurvey
 
 
 class BaseGroundTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
+
+    __INPUT_TYPE = ["Tx and Rx"]
+
     @property
     def default_metadata(self) -> dict:
         """
@@ -47,6 +50,11 @@ class BaseGroundTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
                 "Waveform": {"Timing mark": 0.0},
             }
         }
+
+    @property
+    def default_input_types(self) -> list[str]:
+        """Choice of survey creation types."""
+        return self.__INPUT_TYPE
 
     @property
     def default_receiver_type(self):

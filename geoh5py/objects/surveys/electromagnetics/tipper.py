@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 import uuid
-import warnings
 
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_type import ObjectType
@@ -70,10 +69,6 @@ class BaseTipper(BaseEMSurvey):
 
                 if isinstance(base_station_entity, TipperBaseStations):
                     self._base_stations = base_station_entity
-                else:
-                    warnings.warn(
-                        "Associated `base_stations` entity not set.", UserWarning
-                    )
 
         return self._base_stations
 
@@ -99,7 +94,7 @@ class BaseTipper(BaseEMSurvey):
 
     @property
     def default_input_types(self) -> list[str]:
-        """Input types. Must be 'Rx and base stations'"""
+        """Choice of survey creation types."""
         return self.__INPUT_TYPE
 
     @property
