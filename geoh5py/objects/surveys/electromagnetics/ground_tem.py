@@ -189,21 +189,30 @@ class GroundTEMTransmittersLargeLoop(
         return self._tx_id_property
 
     @tx_id_property.setter
-    def tx_id_property(self, values: np.ndarray):
-        if not isinstance(values, np.ndarray):
-            raise TypeError("Input value for 'tx_id_property' should be a np.ndarray.)")
-
-        self.add_data(
-            {
-                "Transmitter ID": {
-                    "values": values.astype(np.int32),
-                    "value_map": {
-                        ind: f"Loop {ind}" for ind in np.unique(values.astype(np.int32))
-                    },
-                    "type": "referenced",
+    def tx_id_property(self, values: np.ndarray | ReferencedData):
+        if isinstance(values, np.ndarray):
+            values = self.add_data(
+                {
+                    "Transmitter ID": {
+                        "values": values.astype(np.int32),
+                        "value_map": {
+                            ind: f"Loop {ind}"
+                            for ind in np.unique(values.astype(np.int32))
+                        },
+                        "type": "referenced",
+                    }
                 }
-            }
-        )
+            )
+        elif isinstance(values, ReferencedData):
+            if values.parent is not None and values.parent.uid != self.uid:
+                values = values.copy(parent=self)
+
+        else:
+            raise TypeError(
+                "Input value for 'tx_id_property' should be a np.ndarray or ReferenceData.)"
+            )
+
+        self._tx_id_property = values
 
     @property
     def type(self):
