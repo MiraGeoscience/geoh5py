@@ -803,22 +803,6 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
         return self._property_groups
 
-    @property_groups.setter
-    def property_groups(self, prop_groups: list[PropertyGroup]):
-        if not isinstance(prop_groups, list):
-            raise ValueError("Input property_groups must be a list of PropertyGroups")
-        property_groups = getattr(self, "_property_groups", [])
-
-        for prop_group in prop_groups:
-            if not any(pg.uid == prop_group.uid for pg in property_groups) and not any(
-                pg.name == prop_group.name for pg in property_groups
-            ):
-                prop_group.parent = self
-                property_groups += [prop_group]
-
-        self._property_groups = property_groups
-        self.workspace.update_attribute(self, "property_groups")
-
 
 class ConcatenatedDrillhole(ConcatenatedObject):
     @property

@@ -388,23 +388,25 @@ class ObjectBase(Entity):
         """
         return self._property_groups
 
-    @property_groups.setter
-    def property_groups(self, prop_groups: list[PropertyGroup]):
-        if prop_groups is None:
-            property_groups = None
+    def remove_property_groups(
+        self, property_groups: PropertyGroup | list[PropertyGroup]
+    ):
+        if isinstance(property_groups, PropertyGroup):
+            property_groups = [property_groups]
+
+        if self.property_groups is None:
+            return
+
+        keepers = []
+        for property_group in self.property_groups:
+            if property_group not in self.property_groups:
+                keepers += [property_group]
+
+        if not keepers:
+            self._property_groups = None
         else:
-            property_groups = self._property_groups
-            if property_groups is None:
-                property_groups = []
+            self._property_groups = keepers
 
-            for prop_group in prop_groups:
-                if not any(
-                    pg.uid == prop_group.uid for pg in property_groups
-                ) and not any(pg.name == prop_group.name for pg in property_groups):
-                    prop_group.parent = self
-                    property_groups += [prop_group]
-
-        self._property_groups = property_groups
         self.workspace.update_attribute(self, "property_groups")
 
     def remove_children_values(self, indices: list[int], association: str):

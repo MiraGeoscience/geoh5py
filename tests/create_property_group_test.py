@@ -82,7 +82,7 @@ def test_create_property_group(tmp_path):
             new_curve.property_groups is None
         ), "Property_groups not properly removed on copy without children."
 
-        rec_object.property_groups = None
+        rec_object.remove_property_groups(rec_object.property_groups)
 
     with Workspace(h5file_path) as workspace:
         rec_object = workspace.get_entity(curve.uid)[0]
