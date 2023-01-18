@@ -176,10 +176,13 @@ class InputFile:
         """
         Read and create an InputFile from ui.json
         """
-        input_file = InputFile(**kwargs)
 
         if "ui.json" not in json_file:
             raise ValueError("Input file should have the extension *.ui.json")
+
+        input_file = InputFile(**kwargs)
+        input_file.path = os.path.dirname(os.path.abspath(json_file))
+        input_file.name = os.path.basename(json_file)
 
         with open(json_file, encoding="utf-8") as file:
             input_file.load(json.load(file))
@@ -339,11 +342,12 @@ class InputFile:
         :param none_map: Map parameter None values to non-null numeric types.
         :param path: Directory to write the ui.json to.
         """
+
         if name is not None:
             self.name = name
 
         if path is not None:
-            self.path = path
+            self.path = os.path.abspath(path)
 
         if self.path_name is None:
             raise AttributeError(
