@@ -375,7 +375,7 @@ class Entity(ABC):
         self.workspace.remove_children(self, children)
 
     def remove_data_from_group(
-        self, data: list | Entity | uuid.UUID | str, name: str = None
+        self, data: list | Entity | uuid.UUID | str, name: str | None = None
     ) -> None:
         """
         Remove data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`

@@ -18,6 +18,10 @@
 
 from __future__ import annotations
 
+import re
+
+import pytest
+
 from geoh5py.objects import Octree
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
@@ -30,6 +34,7 @@ def test_octree(tmp_path):
 
     with Workspace(h5file_path) as workspace:
         # Create an octree mesh with variable dimensions
+
         mesh = Octree.create(
             workspace,
             name=name,
@@ -42,6 +47,27 @@ def test_octree(tmp_path):
             w_cell_size=2.0,
             rotation=45,
         )
+
+        for attr in [
+            "u_count",
+            "v_count",
+            "w_count",
+        ]:
+            with pytest.raises(
+                TypeError,
+                match=re.escape(f"Attribute '{attr}' must be type(int) in power of 2."),
+            ):
+                setattr(mesh, attr, 12.0)
+
+        for attr in [
+            "u_cell_size",
+            "v_cell_size",
+            "w_cell_size",
+        ]:
+            with pytest.raises(
+                TypeError, match=re.escape(f"Attribute '{attr}' must be type(float).")
+            ):
+                setattr(mesh, attr, "abc")
 
         assert mesh.n_cells == 8, "Number of octree cells after base_refine is wrong"
 

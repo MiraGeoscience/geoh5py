@@ -15,6 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# mypy: ignore-errors
 
 from __future__ import annotations
 
@@ -48,27 +49,20 @@ def test_create_survey_tipper(tmp_path):
 
     assert "Associated `base_stations` entity not set." in str(warn[0])
 
-    with pytest.raises(AttributeError) as error:
+    with pytest.raises(TypeError) as error:
         receivers.base_stations = "123"
 
     assert f"{TipperBaseStations}" in str(
         error
     ), "Missed raising error on 'base stations' change."
 
-    with pytest.raises(AttributeError) as error:
+    with pytest.raises(
+        TypeError, match=f"Provided receivers must be of type {type(receivers)}."
+    ):
         receivers.receivers = base_stations
 
-    assert (
-        f"The 'receivers' attribute cannot be set on class {type(receivers)}."
-        in str(error)
-    ), ("Missed raising AttributeError on setting 'receivers' on self.")
-
-    with pytest.raises(AttributeError) as error:
+    with pytest.raises(TypeError, match=f"{TipperBaseStations}"):
         base_stations.base_stations = receivers
-
-    assert f"{TipperBaseStations}" in str(
-        error
-    ), "Missed raising AttributeError on setting 'base_stations' from receiver class."
 
     with pytest.raises(AttributeError) as error:
         base_stations.base_stations = base_stations

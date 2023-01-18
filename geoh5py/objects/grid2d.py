@@ -58,9 +58,9 @@ class Grid2D(ObjectBase):
         self._origin = np.array([0, 0, 0])
         self._u_cell_size = None
         self._v_cell_size = None
-        self._u_count = None
-        self._v_count = None
-        self._rotation = 0.0
+        self._u_count: int | None = None
+        self._v_count: int | None = None
+        self._rotation: float = 0.0
         self._vertical = False
         self._dip = 0.0
         self._centroids: np.ndarray | None = None
@@ -304,6 +304,7 @@ class Grid2D(ObjectBase):
             self.workspace.update_attribute(self, "attributes")
 
     def to_geoimage(self, keys: list | str, **geoimage_kwargs) -> objects.GeoImage:
+
         """
         Create a :obj:geoh5py.objects.geo_image.GeoImage object from the current Grid2D.
         :param keys: the list of the data name to pass as band in the image.

@@ -16,13 +16,14 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 # pylint: disable=R0914
+# mypy: ignore-errors
 
 import numpy as np
 import pytest
 
 from geoh5py.data import FloatData, data_type
-from geoh5py.groups import ContainerGroup, DrillholeGroup
-from geoh5py.objects import Drillhole
+from geoh5py.groups import ContainerGroup, DrillholeGroup, Group
+from geoh5py.objects import Drillhole, ObjectBase
 from geoh5py.shared.concatenation import (
     ConcatenatedData,
     ConcatenatedObject,
@@ -81,21 +82,21 @@ def test_concatenated_entities(tmp_path):
     with Workspace(h5file_path, version=2.0) as workspace:
 
         class_type = type("TestGroup", (Concatenator, ContainerGroup), {})
-        entity_type = class_type.find_or_create_type(workspace)
+        entity_type = Group.find_or_create_type(workspace)
         concat = class_type(entity_type)
 
-        class_type = type("TestObject", (ConcatenatedObject, Drillhole), {})
-        entity_type = class_type.find_or_create_type(workspace)
+        class_obj_type = type("TestObject", (ConcatenatedObject, Drillhole), {})
+        object_type = ObjectBase.find_or_create_type(workspace)
 
         with pytest.raises(UserWarning) as error:
-            concat_object = class_type(entity_type)
+            concat_object = class_obj_type(object_type)
 
         assert (
             "Creating a concatenated object must have a parent of type Concatenator."
             in str(error)
         )
 
-        concat_object = class_type(entity_type, parent=concat)
+        concat_object = class_obj_type(object_type, parent=concat)
 
         with pytest.raises(UserWarning) as error:
             class_type = type("TestData", (ConcatenatedData, FloatData), {})
@@ -111,7 +112,7 @@ def test_concatenated_entities(tmp_path):
         assert data.property_group is None
 
         with pytest.raises(UserWarning) as error:
-            prop_group = ConcatenatedPropertyGroup()
+            prop_group = ConcatenatedPropertyGroup(None)
 
         assert "Creating a concatenated data must have a parent" in str(error)
 

@@ -81,8 +81,12 @@ def test_create_grid_2d_data(tmp_path):
         with pytest.raises(IndexError, match="Only 1, 3, or 4 layers can be selected"):
             grid.to_geoimage(["DataValues", "DataValues"])
 
-        geoimage = grid.to_geoimage(["DataValues"])
+        with pytest.raises(UserWarning, match="Cannot assign tag for rotated Grid2D."):
+            geoimage = grid.to_geoimage(["DataValues"])
 
+        grid.rotation = 0.0
+        geoimage = grid.to_geoimage(["DataValues"])
+        geoimage.save_as("geotiff.tiff", path=tmp_path)
         assert isinstance(geoimage, GeoImage)
 
         geoimage = grid.to_geoimage(["DataValues", "DataValues", "DataValues"])

@@ -69,7 +69,7 @@ class BaseValidator(ABC):
 
     @property
     @abstractmethod
-    def validator_type(self):
+    def validator_type(self) -> str:
         """
         Validation type identifier.
         """
