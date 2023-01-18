@@ -60,6 +60,20 @@ class MTReceivers(BaseEMSurvey, Points):
             }
         }
 
+    @property
+    def default_receiver_type(self):
+        """
+        :return: Transmitter class
+        """
+        return MTReceivers
+
+    @property
+    def default_transmitter_type(self):
+        """
+        :return: Transmitter class
+        """
+        return type(None)
+
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         """

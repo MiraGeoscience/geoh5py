@@ -65,19 +65,22 @@ class InputFile:
 
     _path: str | None = None
     _name: str | None = None
+    _data: dict[str, Any] | None
+    _ui_json: dict[str, Any] | None
     _ui_validators: InputValidation = InputValidation(
         validations=ui_validations,
         validation_options={"ignore_list": ("value",)},
     )
     _validators = None
+    _validations: dict | None
     association_validator = AssociationValidator()
 
     def __init__(
         self,
-        data: dict[str, Any] = None,
-        ui_json: dict[str, Any] = None,
-        validations: dict = None,
-        validation_options: dict = None,
+        data: dict[str, Any] | None = None,
+        ui_json: dict[str, Any] | None = None,
+        validations: dict | None = None,
+        validation_options: dict | None = None,
     ):
         self._workspace = None
         self._validation_options = validation_options
@@ -90,10 +93,7 @@ class InputFile:
 
     @property
     def data(self):
-        if (
-            getattr(self, "_data", None) is None
-            and getattr(self, "_ui_json", None) is not None
-        ):
+        if getattr(self, "_data", None) is None and self.ui_json is not None:
             self.data = flatten(self.ui_json)
 
         return self._data
@@ -198,7 +198,7 @@ class InputFile:
 
     @ui_json.setter
     def ui_json(self, value: dict[str, Any]):
-        if value is not None:
+        if value is not None and self.validations is not None:
 
             if not isinstance(value, dict):
                 raise ValueError("Input 'ui_json' must be of type dict or None.")
@@ -208,7 +208,7 @@ class InputFile:
             for key, validations in default_validations.items():
                 if key in self.validations:
                     validations = {**validations, **self.validations[key]}
-                self._validations[key] = validations
+                self.validations[key] = validations
         else:
             self._ui_json = None
         self._validators = None
@@ -273,7 +273,7 @@ class InputFile:
         return self._validation_options
 
     @property
-    def validations(self):
+    def validations(self) -> dict | None:
         if getattr(self, "_validations", None) is None:
             self._validations = deepcopy(base_validations)
 
@@ -328,9 +328,9 @@ class InputFile:
 
     def write_ui_json(
         self,
-        name: str = None,
-        none_map: dict[str, Any] = None,
-        path: str = None,
+        name: str | None = None,
+        none_map: dict[str, Any] | None = None,
+        path: str | None = None,
     ):
         """
         Writes a formatted ui.json file from InputFile data

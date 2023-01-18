@@ -80,7 +80,7 @@ class BaseTipper(BaseEMSurvey):
     @base_stations.setter
     def base_stations(self, base: TipperBaseStations):
         if not isinstance(base, (TipperBaseStations, type(None))):
-            raise AttributeError(
+            raise TypeError(
                 f"Input `base_stations` must be of type '{TipperBaseStations}' or None"
             )
 
@@ -101,6 +101,20 @@ class BaseTipper(BaseEMSurvey):
     def default_input_types(self) -> list[str]:
         """Input types. Must be 'Rx and base stations'"""
         return self.__INPUT_TYPE
+
+    @property
+    def default_receiver_type(self):
+        """
+        :return: Transmitter class
+        """
+        return TipperReceivers
+
+    @property
+    def default_transmitter_type(self):
+        """
+        :return: Transmitter class
+        """
+        return type(None)
 
     @property
     def default_metadata(self) -> dict:
@@ -171,13 +185,6 @@ class TipperBaseStations(BaseTipper, Points):
         :return: Default unique identifier
         """
         return cls.__TYPE_UID
-
-    @property
-    def default_receiver_type(self):
-        """
-        :return: Receiver class
-        """
-        return TipperReceivers
 
     @property
     def type(self):

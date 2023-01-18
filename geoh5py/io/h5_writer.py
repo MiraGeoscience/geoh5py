@@ -119,7 +119,7 @@ class H5Writer:
         file: str | h5py.File,
         uid: uuid.UUID,
         ref_type: str,
-        parent: Entity = None,
+        parent: Entity | None = None,
     ) -> None:
         """
         Remove an entity and its type from the target geoh5 file.

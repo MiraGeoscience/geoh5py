@@ -330,7 +330,7 @@ class CurrentElectrode(PotentialElectrode):
         """
         Utility function to set ab_cell_id's based on curve cells.
         """
-        if getattr(self, "cells", None) is None:
+        if getattr(self, "cells", None) is None or self.n_cells is None:
             raise AttributeError(
                 "Cells must be set before assigning default ab_cell_id"
             )
@@ -338,7 +338,7 @@ class CurrentElectrode(PotentialElectrode):
         data = np.arange(self.n_cells) + 1
         value_map = {ii: str(ii) for ii in range(self.n_cells + 1)}
         value_map[0] = "Unknown"
-        self._ab_cell_id = self.add_data(
+        ab_cell_id = self.add_data(
             {
                 "A-B Cell ID": {
                     "values": data,
@@ -350,4 +350,6 @@ class CurrentElectrode(PotentialElectrode):
                 }
             }
         )
-        self._ab_cell_id.entity_type.name = "A-B"
+        if isinstance(ab_cell_id, ReferencedData):
+            ab_cell_id.entity_type.name = "A-B"
+            self._ab_cell_id = ab_cell_id

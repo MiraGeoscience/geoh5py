@@ -232,6 +232,9 @@ class GeoImage(ObjectBase):
         if self.image is None:
             raise AttributeError("There is no image to reference")
 
+        if self.vertices is None:
+            raise AttributeError("Vertices must be set for referencing")
+
         self._tag = {}
         width, height = self.image.size
         self._tag[256] = (width,)

@@ -226,7 +226,7 @@ def object_parameter(
     main: bool = True,
     label: str = "Object",
     mesh_type: tuple = tuple(known_types),
-    value: str = None,
+    value: str | None = None,
     optional: str | None = None,
 ) -> dict:
     """
@@ -253,7 +253,7 @@ def data_parameter(
     label: str = "Data channel",
     association: str = "Vertex",
     data_type: str = "Float",
-    data_group_type: str = None,
+    data_group_type: str | None = None,
     parent: str = "",
     value: str = "",
     optional: str | None = None,

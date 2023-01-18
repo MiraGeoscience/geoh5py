@@ -79,7 +79,7 @@ class Workspace(AbstractContextManager):
         A new project is created if the target file cannot by found on disk.
     """
 
-    _active_ref: ClassVar[ReferenceType[Workspace]] = type(None)  # type: ignore
+    _active_ref: ClassVar[ReferenceType[Workspace]] | type(None) = type(None)  # type: ignore
 
     _attribute_map = {
         "Contributors": "contributors",
@@ -308,20 +308,31 @@ class Workspace(AbstractContextManager):
             new_group.properties = [data_map[uid] for uid in prop_group.properties]
 
     def create_from_concatenation(self, attributes):
-        if "Object Type ID" in attributes:
-            class_type = ObjectBase
-            type_attr = {"uid": attributes["Object Type ID"]}
-        else:
-            class_type = Data
-            type_attr = self.fetch_type(uuid.UUID(attributes["Type ID"]), "Data")
-
         if "Name" in attributes:
             attributes["Name"] = attributes["Name"].replace("\u2044", "/")
-        recovered_entity = self.create_entity(
-            class_type,
-            save_on_creation=False,
-            **{"entity": attributes, "entity_type": type_attr},
-        )
+
+        if "Object Type ID" in attributes:
+            recovered_entity = self.create_entity(
+                ObjectBase,
+                save_on_creation=False,
+                **{
+                    "entity": attributes,
+                    "entity_type": {"uid": attributes["Object Type ID"]},
+                },
+            )
+
+        else:
+            recovered_entity = self.create_entity(
+                Data,
+                save_on_creation=False,
+                **{
+                    "entity": attributes,
+                    "entity_type": self.fetch_type(
+                        uuid.UUID(attributes["Type ID"]), "Data"
+                    ),
+                },
+            )
+
         if recovered_entity is not None:
             recovered_entity.on_file = True
             recovered_entity.entity_type.on_file = True
@@ -486,13 +497,14 @@ class Workspace(AbstractContextManager):
         return self._all_data()
 
     def fetch_or_create_root(self):
-        try:
-            self._root = self.load_entity(uuid.uuid4(), "root")
+        root = self.load_entity(uuid.uuid4(), "root")
+        if root:
+            self._root = root
             self._root.on_file = True
             self._root.entity_type.on_file = True
             self.fetch_children(self._root, recursively=True)
 
-        except KeyError:
+        else:
             self._root = self.create_entity(RootGroup, save_on_creation=False)
 
             for entity_type in ["group", "object"]:
@@ -992,7 +1004,7 @@ class Workspace(AbstractContextManager):
         self,
         uid: uuid.UUID,
         entity_type: str,
-        parent: Entity = None,
+        parent: Entity | None = None,
     ) -> Entity | None:
         """
         Recover an entity from geoh5.
@@ -1011,23 +1023,24 @@ class Workspace(AbstractContextManager):
             "data": Data,
             "root": RootGroup,
         }
-        (
-            attributes,
-            type_attributes,
-            property_groups,
-        ) = self._io_call(H5Reader.fetch_attributes, uid, entity_type, mode="r")
+        attributes = self._io_call(
+            H5Reader.fetch_attributes, uid, entity_type, mode="r"
+        )
+
+        if attributes is None:
+            return None
 
         if parent is not None:
-            attributes["entity"]["parent"] = parent
+            attributes[0]["entity"]["parent"] = parent
 
         entity = self.create_entity(
             base_classes[entity_type],
             save_on_creation=False,
-            **{**attributes, **type_attributes},
+            **{**attributes[0], **attributes[1]},
         )
 
-        if isinstance(entity, ObjectBase) and len(property_groups) > 0:
-            for kwargs in property_groups.values():
+        if isinstance(entity, ObjectBase) and len(attributes[2]) > 0:
+            for kwargs in attributes[2].values():
                 entity.find_or_create_property_group(**kwargs)
 
         return entity
@@ -1162,7 +1175,11 @@ class Workspace(AbstractContextManager):
         return self._all_types()
 
     def update_attribute(
-        self, entity: Entity | EntityType, attribute: str, channel: str = None, **kwargs
+        self,
+        entity: Entity | EntityType,
+        attribute: str,
+        channel: str | None = None,
+        **kwargs,
     ) -> None:
         """
         Save or update an entity to geoh5.
