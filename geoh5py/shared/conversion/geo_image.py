@@ -186,7 +186,6 @@ class GeoImageConversion(ConversionBase):
         update the name, the elevation, and the workspace if needed.
         :param grid2d_kwargs:
         """
-        super().verify_kwargs()
         self.name = grid2d_kwargs.get("name", self.entity.name)
         self._elevation = grid2d_kwargs.get("elevation", 0)
         self.change_workspace_parent(**grid2d_kwargs)

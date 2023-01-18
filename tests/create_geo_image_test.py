@@ -24,6 +24,7 @@ from PIL import Image
 from PIL.TiffImagePlugin import TiffImageFile
 
 from geoh5py.objects import GeoImage, Grid2D
+from geoh5py.shared.conversion import GeoImageConversion
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -72,6 +73,9 @@ def test_create_copy_geoimage(tmp_path):
     with pytest.raises(AttributeError, match="An 'image' must be set be"):
         geoimage.georeference(pixels[0, :], points)
 
+    with pytest.raises(ValueError, match="Input 'vertices' must be"):
+        geoimage.vertices = [1, 2, 3]
+
     with pytest.raises(
         ValueError,
         match="Input 'value' for the 'image' property must be a 2D or 3D numpy.ndarray",
@@ -84,13 +88,18 @@ def test_create_copy_geoimage(tmp_path):
     with pytest.raises(AttributeError, match="GeoImage has no vertices"):
         geoimage.to_grid2d()
 
-    with pytest.raises(AttributeError, match="There is no image to reference"):
+    assert geoimage.image is None
+
+    with pytest.raises(AttributeError, match="There is no image to"):
         geoimage.set_tag_from_vertices()
 
     with pytest.raises(AttributeError, match="The image is not georeferenced"):
         geoimage.georeferencing_from_tiff()
 
     geoimage.image = np.random.randint(0, 255, (128, 128))
+
+    # with pytest.raises(AttributeError, match="Vertices must be set for referencing"):
+    #     geoimage.set_tag_from_vertices()
 
     with pytest.raises(ValueError, match="Input reference points must be a 2D array"):
         geoimage.georeference(pixels[0, :], points)
@@ -214,3 +223,20 @@ def test_georeference_image(tmp_path):
     # test grid2d errors
     with pytest.raises(IndexError, match="have 3 bands"):
         geoimage.to_grid2d(new_name="RGB", transform="RGB")
+
+    # extensive test conversion
+    with pytest.raises(TypeError, match="Entity must be a 'GeoImage'"):
+        _ = GeoImageConversion(["bidon"])
+
+    converter = GeoImageConversion(geoimage)
+
+    with pytest.raises(IndexError, match="To export to CMYK the image"):
+        converter.add_cmyk_data()
+
+    image = Image.fromarray(
+        np.random.randint(0, 255, (128, 128, 4)).astype("uint8"), "CMYK"
+    )
+
+    geoimage.image = image
+
+    geoimage.to_grid2d(new_name="CMYK", transform="CMYK")

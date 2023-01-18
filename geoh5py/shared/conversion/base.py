@@ -18,7 +18,7 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import TYPE_CHECKING
 
 from ... import objects
@@ -42,12 +42,15 @@ class ConversionBase(ABC):
         self._entity: Entity = entity
         self._output = None
         self._workspace_output: Workspace | None = None
+        self._name: str | None = None
 
-    @abstractmethod
-    def verify_kwargs(self):
+    def verify_kwargs(self, **kwargs):
         """
-        Abstract method to verify the kwargs passed to the converter.
+        Verify if the kwargs are valid.
+        :param kwargs: the kwargs to verify.
         """
+        self._name = kwargs.get("name", self.entity.name)
+        self.change_workspace_parent(**kwargs)
 
     def change_workspace_parent(self, **kwargs):
         """
@@ -96,6 +99,21 @@ class ConversionBase(ABC):
         :param value: any values to be pass to output.
         """
         self._output = value
+
+    @property
+    def name(self) -> str | None:
+        """Name of the output object"""
+        return self._name
+
+    @name.setter
+    def name(self, value: str):
+        """
+        Set the name of the output object.
+        :param value: name of the output object.
+        """
+        if not isinstance(value, str):
+            raise TypeError("Name must be a string.")
+        self._name = value
 
 
 class CellObject(ConversionBase):
