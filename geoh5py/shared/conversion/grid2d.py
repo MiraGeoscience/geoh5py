@@ -40,13 +40,13 @@ from PIL import Image
 from ... import objects
 from ...data import Data
 from ...shared import FLOAT_NDV
-from .base import GridObject
+from .base import CellObject
 
 if TYPE_CHECKING:
-    from ...objects import Grid2D
+    from ...objects import GeoImage, Grid2D
 
 
-class Grid2D(GridObject):
+class Grid2DConversion(CellObject):
     """
     Convert a :obj:'geoh5py.objects.grid2d.Grid2D' object
     to a georeferenced :obj:'geoh5py.objects.geo_image.GeoImage' object.
@@ -64,9 +64,10 @@ class Grid2D(GridObject):
         self._image = None
         self._tag: dict | None = None
         self.entity: Grid2D
+        self.output: GeoImage  # type: ignore
+        self.name: str
 
-    def to_geoimage(self):
-
+    # convert to geoimage
 
     def grid_to_tag(self):
         """
@@ -212,41 +213,32 @@ class Grid2D(GridObject):
         self.name = geoimage_kwargs.get("name", self.entity.name)
         self.change_workspace_parent(**geoimage_kwargs)
 
-    def get_attributes(self, **kwargs):
+    def to_geoimage(
+        self, keys: list | str | int | UUID | Data, **geoimage_kwargs
+    ) -> GeoImage:
         """
-        Get the attributes of the entity.
-        In order to select the layers, you can pass "keys" in the kwargs
-        (see 'data_from_keys()' function).
-        By default the first data layer is selected.
-        :param kwargs: the kwargs to pass to the function.
+        Convert the object to a :obj:'GeoImage' object.
+        :param keys: the data to extract.
+        :param geoimage_kwargs: the kwargs to pass to the :obj:'GeoImage' object.
         """
-        super().get_attributes()
+        self.verify_kwargs(**geoimage_kwargs)
 
         # get the tag of the data
         self.grid_to_tag()
 
         # get the data
-        self.data_from_keys(kwargs.get("keys", 0))
+        self.data_from_keys(keys)
         self.convert_to_pillow()
 
-    def create_output(self, **kwargs):
-        """
-        Create the output of the object.
-        :param kwargs: the kwargs to pass to the :obj:'geoh5py.objects.geo_image.GeoImage'.
-        """
-        super().create_output()
-
         # create a geoimage
-        self._output = objects.GeoImage.create(
-            self.workspace_output, image=self._image, tag=self._tag, **kwargs
+        self.output = objects.GeoImage.create(
+            self.workspace_output, image=self._image, tag=self._tag, **geoimage_kwargs
         )
 
-    def add_data_output(self, **_):
-        """
-        Add the data to the workspace (georeference the data).
-        """
-        # pylint: disable=unused-argument
-        super().add_data_output()
-
         # georeference it
-        self._output.georeferencing_from_tiff()
+        self.output.georeferencing_from_tiff()
+
+        # copy properties
+        self.copy_properties()
+
+        return self.output

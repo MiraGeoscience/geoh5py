@@ -168,14 +168,14 @@ class Entity(ABC):
         """
         return self._clipping_ids
 
-    def copy(self, parent=None, copy_children: bool = True):
+    def copy(self, parent=None, copy_children: bool = True, **kwargs):
         """
         Function to copy an entity to a different parent entity.
 
         :param parent: Target parent to copy the entity under. Copied to current
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: (Optional) Create copies of all children entities along with it.
-
+        :param kwargs: Additional keyword arguments to pass to the copy constructor.
         :return entity: Registered Entity to the workspace.
         """
 
@@ -183,7 +183,7 @@ class Entity(ABC):
             parent = self.parent
 
         new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children
+            self, parent, copy_children=copy_children, **kwargs
         )
 
         return new_entity

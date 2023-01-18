@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,5 +18,5 @@
 # pylint: disable=unused-import
 # flake8: noqa
 
-from .geoimage import GeoImagetoGrid2D
-from .grid2d import Grid2dToGeoImage
+from .geo_image import GeoImageConversion
+from .grid2d import Grid2DConversion

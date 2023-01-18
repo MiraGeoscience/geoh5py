@@ -367,3 +367,15 @@ def get_attributes(entity, omit_list=(), attributes=None):
 
             attributes[key] = getattr(entity, key)
     return attributes
+
+
+def overwrite_kwargs(to_overwrite: dict, kwargs: dict) -> dict:
+    """
+    Overwrite kwargs with overwrite.
+    :param to_overwrite: Dictionary of kwargs to overwrite.
+    :param kwargs: Dictionary of kwargs.
+    """
+    for key, value in kwargs.items():
+        if key in kwargs:
+            to_overwrite[key] = value
+    return to_overwrite

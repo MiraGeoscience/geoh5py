@@ -399,14 +399,11 @@ class GeoImage(ObjectBase):
         Create a geoh5py :obj:geoh5py.objects.grid2d.Grid2D from the geoimage in the same workspace.
         :param transform: the type of transform ; if "GRAY" convert the image to grayscale ;
         if "RGB" every band is sent to a data of a grid.
-        :param **grid2d_kwargs: Any argument supported by :obj:`geoh5py.objects.grid2d.Grid2D`.
         :return: the new created :obj:`geoh5py.objects.grid2d.Grid2D`.
         """
-        # add transform to kwargs
-        grid2d_kwargs["transform"] = transform
 
         # convert the geoimage to grid
-        converter = conversion.GeoImagetoGrid2D(self)
-        grid2d = converter(**grid2d_kwargs)
+        converter = conversion.GeoImageConversion(self)
+        grid2d = converter.to_grid2d(transform, **grid2d_kwargs)
 
         return grid2d

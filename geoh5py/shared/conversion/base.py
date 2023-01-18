@@ -21,97 +21,131 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from ...objects import Points
+from ... import objects
 
 if TYPE_CHECKING:
-    from ...workspace.workspace import Workspace
-    from ..entity import Entity
-    from ...objects import ObjectBase
+    from ...objects import BlockModel, Grid2D, ObjectBase, Octree, Points
+    from ...shared.entity import Entity
+    from ...workspace import Workspace
+
+entity_properties = ["name", "allow_rename", "allow_move", "allow_delete"]
 
 
 class ConversionBase(ABC):
     _entity: ObjectBase
-    
+
     def __init__(self, entity: ObjectBase):
         """
         Converter class from an :obj:geoh5py.shared.entity.Entity to another.
         :param entity: the entity to convert.
         """
-        self._entity = entity
-
-    @abstractmethod
-    def get_attributes(self, **kwargs):
-        """"""
-
-    @abstractmethod
-    def create_output(self):
-        """"""
-
-    @abstractmethod
-    def add_data_output(self):
-        """"""
+        self._entity: Entity = entity
+        self._output = None
+        self._workspace_output: Workspace | None = None
 
     @abstractmethod
     def verify_kwargs(self):
-        """"""
+        """
+        Abstract method to verify the kwargs passed to the converter.
+        """
 
-    def __call__(self, **kwargs):
-        self.verify_kwargs(**kwargs)
-        self.get_attributes(**kwargs)
-        self.create_output(**kwargs)
-        self.add_data_output(**kwargs)
+    def change_workspace_parent(self, **kwargs):
+        """
+        Define the workspace of the converter class if the workspace is defined in the kwargs;
+        else the workspace of the input entity is used.
+        """
+        if "workspace" in kwargs:
+            self._workspace_output = kwargs["workspace"]
+        else:
+            self._workspace_output = self._entity.workspace
 
-        return self._output
+    def copy_properties(self):
+        """
+        Copy all the properties from the original entity to the new one.
+        """
+        if self._output is not None:
+            for property_ in entity_properties:
+                setattr(self._output, property_, getattr(self._entity, property_))
+        else:
+            raise ValueError("Output has not been created yet.")
 
     @property
-    def entity(self) -> ObjectBase:
+    def workspace_output(self) -> Workspace:
+        """Workspace of the output object"""
+        if self._workspace_output is not None:
+            return self._workspace_output
+        raise ValueError(
+            "Workspace has not been defined yet,\
+        please run change_workspace_parent()."
+        )
+
+    @property
+    def entity(self) -> Entity:
         """Input object"""
         return self._entity
 
+    @property
+    def output(self):
+        """Output object"""
+        return self._output
 
-def VertexObject(ConversionBase):
+    @output.setter
+    def output(self, value):
+        """
+        Set the output object.
+        :param value: any values to be pass to output.
+        """
+        self._output = value
+
+
+class CellObject(ConversionBase):
     def __init__(self, entity: ObjectBase):
         """
-        Converter class from grid-based object to Points.
+        Converter class from grid-based (association: cell) object to Points.
         :param entity: the entity to convert.
         """
-
-        if getattr(entity, "vertices", None) is None:
-            raise TypeError("Input entity for `VertexObject` conversion must have vertices.")
-
-        super().__init__(entity)
-
-    def to_points(self, workspace=None, **kwargs):
-        """Cell-based object conversion to Points"""
-        if workspace is None:
-            workspace = self.entity.workspace
-
-        points = Points.create(workspace, vertices=self.vertices, **kwargs)
-
-        return points
-
-
-class GridObject(ConversionBase):
-
-    def __init__(self, entity: ObjectBase):
-        """
-        Converter class from grid-based object to Points.
-        :param entity: the entity to convert.
-        """
-
-        if getattr(entity, "centroids"):
-            raise TypeError("Input entity for `GridObject` conversion must have centroids.")
+        # verify if the entity contains centroids
+        if not hasattr(entity, "centroids"):
+            raise TypeError(
+                "Input entity for `GridObject` conversion must have centroids."
+            )
 
         super().__init__(entity)
+        self.output: Points
+        self.entity: Grid2D | BlockModel | Octree
 
-    def to_points(self, workspace=None, **kwargs):
+    def copy_child_properties(self, association: str):
+        """
+        Copy child properties from the original entity to the new one.
+        :param association: association of the children to copy.
+        """
+        if self.output is not None:
+            for child in self.entity.children:
+                child.copy(
+                    parent=self.output,
+                    association=association
+                    if child.association == "CELL"
+                    else child.association,
+                )
+        else:
+            raise ValueError("Output has not been created yet.")
+
+    def to_points(self, parent=None, **kwargs) -> Points:
         """Cell-based object conversion to Points"""
-        if workspace is None:
+        if parent is None:
             workspace = self.entity.workspace
+        else:
+            workspace = parent.workspace
 
-        points = Points.create(workspace, vertices=self.centroids, **kwargs)
-        for child in entity.children:
-            if child.association == "CELL":
-                child.copy(parent=points, association="VERTEX")
+        # create the point object
+        self.output = objects.Points.create(
+            workspace, parent=parent, vertices=self.entity.centroids, **kwargs
+        )
 
-        return points
+        # copy the properties of the original object
+        self.copy_properties()
+
+        # change the association of the children
+        self.copy_child_properties(association="VERTEX")
+
+        return self.output

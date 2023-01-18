@@ -307,15 +307,11 @@ class Grid2D(ObjectBase):
         """
         Create a :obj:geoh5py.objects.geo_image.GeoImage object from the current Grid2D.
         :param keys: the list of the data name to pass as band in the image.
-        The len of the list can only be 1, 3, 4.
-        :param **geoimage_kwargs: any argument of :obj:`geoh5py.objects.geo_image.GeoImage`.
+        Warning: The len of the list can only be 1, 3, 4 (Pillow restrictions).
         :return: a new georeferenced :obj:`geoh5py.objects.geo_image.GeoImage`.
         """
-        # add keys to the kwargs
-        geoimage_kwargs["keys"] = keys
-
         # convert the grid to a geoimage
-        converter = conversion.Grid2dToGeoImage(self)
-        geoimage = converter(**geoimage_kwargs)
+        converter = conversion.Grid2DConversion(self)
+        geoimage = converter.to_geoimage(keys, **geoimage_kwargs)
 
         return geoimage

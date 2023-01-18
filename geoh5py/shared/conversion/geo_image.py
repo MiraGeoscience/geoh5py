@@ -41,14 +41,16 @@ from ... import objects
 from .base import ConversionBase
 
 if TYPE_CHECKING:
-    from ...objects import GeoImage
+    from ...objects import GeoImage, Grid2D
 
 
-class GeoImage(ConversionBase):
+class GeoImageConversion(ConversionBase):
     """
     Convert a :obj:'geoh5py.objects.geo_image.GeoImage' object.
     """
+
     _entity: GeoImage
+
     def __init__(self, entity: GeoImage):
         """
         :param entity: the :obj:'geoh5py.objects.geo_image.GeoImage' to convert.
@@ -67,16 +69,13 @@ class GeoImage(ConversionBase):
         self._u_cell_size = None
         self._v_cell_size = None
         self.entity: GeoImage
+        self.output: Grid2D
+        self.name: str
 
-    def to_grid2d(self):
-        """"""
-
-    def get_attributes(self, **_):
+    def convert_to_grid2d_reference(self):
         """
         Extract the geographic information from the entity.
         """
-        super().get_attributes()
-
         if self.entity.vertices is None:
             raise AttributeError("GeoImage has no vertices")
 
@@ -93,31 +92,13 @@ class GeoImage(ConversionBase):
             abs(self._v_origin - self.entity.vertices[0, 1]) / self._v_count
         )
 
-    def create_output(self, **kwargs):
-        """
-        Create an :obj:'geoh5py.objects.grid2d.Grid2D' using the entity.
-        :param grid2d_kwargs: the kwargs passed to create the entity.
-        """
-        # create the 2dgrid
-        super().create_output()
-
-        self._output = objects.Grid2D.create(
-            self.workspace_output,
-            origin=[self._u_origin, self._v_origin, self._elevation],
-            u_cell_size=self._u_cell_size,
-            v_cell_size=self._v_cell_size,
-            u_count=self._u_count,
-            v_count=self._v_count,
-            **kwargs,
-        )
-
     def add_gray_data(self):
         """
         Send the image as gray in the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
         value = Image.open(BytesIO(self.entity.image_data.values))
 
-        self._output.add_data(
+        self.output.add_data(
             data={
                 f"{self.name}_GRAY": {
                     "values": np.array(value.convert("L")).astype(np.uint32)[::-1],
@@ -135,7 +116,7 @@ class GeoImage(ConversionBase):
         if np.array(value).shape[-1] != 3:
             raise IndexError("To export to RGB the image has to have 3 bands")
 
-        self._output.add_data(
+        self.output.add_data(
             data={
                 f"{self.name}_R": {
                     "values": np.array(value).astype(np.uint32)[::-1, :, 0],
@@ -161,7 +142,7 @@ class GeoImage(ConversionBase):
         if np.array(value).shape[-1] != 4:
             raise IndexError("To export to CMYK the image has to have 4 bands")
 
-        self._output.add_data(
+        self.output.add_data(
             data={
                 f"{self.name}_C": {
                     "values": np.array(value).astype(np.uint32)[::-1, :, 0],
@@ -182,16 +163,11 @@ class GeoImage(ConversionBase):
             }
         )
 
-    def add_data_output(self, **kwargs):
+    def add_data_2dgrid(self, transform):
         """
         Select the type of the image transformation.
         :param transform: the transforming type option.
         """
-        super().add_data_output()
-
-        # verify if 'transform' is in kwargs
-        transform = kwargs.get("transform", None)
-
         # add the data to the 2dgrid
         if transform == "GRAY":
             self.add_gray_data()
@@ -214,3 +190,34 @@ class GeoImage(ConversionBase):
         self.name = grid2d_kwargs.get("name", self.entity.name)
         self._elevation = grid2d_kwargs.get("elevation", 0)
         self.change_workspace_parent(**grid2d_kwargs)
+
+    def to_grid2d(self, transform: str, **grid2d_kwargs) -> Grid2D:
+        """
+        Transform the :obj:'geoh5py.objects.image.Image' to a :obj:'geoh5py.objects.grid2d.Grid2D'.
+        :param transform: the transforming type option.
+        :return: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
+        """
+
+        self.verify_kwargs(**grid2d_kwargs)
+
+        # get the vertices of the Grid2D
+        self.convert_to_grid2d_reference()
+
+        # create output object
+        self.output = objects.Grid2D.create(
+            self.workspace_output,
+            origin=[self._u_origin, self._v_origin, self._elevation],
+            u_cell_size=self._u_cell_size,
+            v_cell_size=self._v_cell_size,
+            u_count=self._u_count,
+            v_count=self._v_count,
+            **grid2d_kwargs,
+        )
+
+        # add the data to the Grid2D
+        self.add_data_2dgrid(transform)
+
+        # convert the properties of the geoimage to the grid
+        self.copy_properties()
+
+        return self.output
