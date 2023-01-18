@@ -69,6 +69,9 @@ def test_create_grid_2d_data(tmp_path):
         with pytest.raises(ValueError, match="Workspace has not been defined"):
             _ = converter.workspace_output
 
+        with pytest.raises(TypeError, match="Name must be a string"):
+            converter.name = 0
+
         converter.change_workspace_parent(workspace=workspace_context)
 
         with pytest.raises(ValueError, match="Output has not been created"):
@@ -90,3 +93,4 @@ def test_create_grid_2d_data(tmp_path):
             cell_converter.copy_child_properties(association="VERTEX")
 
         cell_converter.to_points()
+        cell_converter.to_points(parent=grid.parent)
