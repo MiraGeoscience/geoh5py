@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import os
+import typing
 import uuid
 from io import BytesIO
 from pathlib import Path
@@ -46,7 +47,7 @@ class GeoImage(ObjectBase):
     )
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._vertices = None
+        self._vertices: None | np.ndarray = None
         self._cells = None
         self._tag: dict | None = None
 
@@ -223,6 +224,7 @@ class GeoImage(ObjectBase):
 
         self.set_tag_from_vertices()
 
+    @typing.no_type_check
     def set_tag_from_vertices(self):
         """
         If tag is None, set the basic tag values based on vertices
@@ -231,7 +233,7 @@ class GeoImage(ObjectBase):
         """
 
         if self.image is None:
-            raise AttributeError("There is no image to reference"
+            raise AttributeError("There is no image to reference")
 
         if self._tag is None:
             self._tag = {}
