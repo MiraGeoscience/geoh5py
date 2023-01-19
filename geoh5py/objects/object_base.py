@@ -340,7 +340,7 @@ class ObjectBase(Entity):
 
         return entity_list
 
-    def get_data_list(self, attribute="name") -> list:
+    def get_data_list(self, attribute="name") -> list[str]:
         """
         Get a list of names of all children :obj:`~geoh5py.data.data.Data`.
 
@@ -384,22 +384,22 @@ class ObjectBase(Entity):
     @property
     def property_groups(self) -> list[PropertyGroup] | None:
         """
-        :obj:`list` of :obj:`~geoh5py.groups.property_group.PropertyGroup`.
+        List of :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         """
         return self._property_groups
 
     def remove_property_groups(
         self, property_groups: PropertyGroup | list[PropertyGroup]
     ):
-        if isinstance(property_groups, PropertyGroup):
-            property_groups = [property_groups]
-
         if self.property_groups is None:
             return
 
+        if isinstance(property_groups, PropertyGroup):
+            property_groups = [property_groups]
+
         keepers = []
         for property_group in self.property_groups:
-            if property_group not in self.property_groups:
+            if property_group not in property_groups:
                 keepers += [property_group]
 
         if not keepers:
