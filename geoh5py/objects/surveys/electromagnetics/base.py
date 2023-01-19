@@ -205,7 +205,7 @@ class BaseEMSurvey(ObjectBase, ABC):
         if parent is None:
             parent = self.parent
 
-        omit_list = ["_metadata", "_receivers", "_transmitters"]
+        omit_list = ["_metadata", "_receivers", "_transmitters", "_base_stations"]
         metadata = self.metadata.copy()
         new_entity = parent.workspace.copy_to_parent(
             self, parent, copy_children=copy_children, omit_list=omit_list
