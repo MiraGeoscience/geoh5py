@@ -30,7 +30,7 @@ from PIL.TiffImagePlugin import TiffImageFile
 
 from .. import objects
 from ..data import FilenameData
-from ..shared import conversion
+from ..shared.conversion import GeoImageConversion
 from .object_base import ObjectBase, ObjectType
 
 
@@ -45,6 +45,8 @@ class GeoImage(ObjectBase):
     __TYPE_UID = uuid.UUID(
         fields=(0x77AC043C, 0xFE8D, 0x4D14, 0x81, 0x67, 0x75E300FB835A)
     )
+
+    _converter = GeoImageConversion
 
     def __init__(self, object_type: ObjectType, **kwargs):
         self._vertices: None | np.ndarray = None
@@ -403,9 +405,4 @@ class GeoImage(ObjectBase):
         if "RGB" every band is sent to a data of a grid.
         :return: the new created :obj:`geoh5py.objects.grid2d.Grid2D`.
         """
-
-        # convert the geoimage to grid
-        converter = conversion.GeoImageConversion(self)
-        grid2d = converter.to_grid2d(transform, **grid2d_kwargs)
-
-        return grid2d
+        return self.converter.to_grid2d(self, transform, **grid2d_kwargs)

@@ -23,7 +23,7 @@ import uuid
 import warnings
 from abc import abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -48,6 +48,7 @@ class ObjectBase(Entity):
     _attribute_map.update(
         {"Last focus": "last_focus", "PropertyGroups": "property_groups"}
     )
+    _converter: Any = None
 
     def __init__(self, object_type: ObjectType, **kwargs):
         assert object_type is not None
@@ -424,6 +425,14 @@ class ObjectBase(Entity):
         :obj:`numpy.array` of :obj:`float`, shape (\*, 3): Array of x, y, z coordinates
         defining the position of points in 3D space.
         """
+
+    @classmethod  # type: ignore
+    @property
+    def converter(cls):
+        """
+        :return: The converter for the object.
+        """
+        return cls._converter
 
     def validate_data_association(self, attribute_dict):
         """

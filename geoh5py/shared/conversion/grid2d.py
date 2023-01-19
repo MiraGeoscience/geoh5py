@@ -52,45 +52,33 @@ class Grid2DConversion(CellObject):
     to a georeferenced :obj:'geoh5py.objects.geo_image.GeoImage' object.
     """
 
-    def __init__(self, entity: Grid2D):
-        """
-        :param entity: the :obj:'geoh5py.objects.grid2d.Grid2D' to convert.
-        """
-        if not isinstance(entity, objects.Grid2D):
-            raise TypeError(f"Entity must be 'Grid2D', {type(entity)} passed instead")
-
-        super().__init__(entity)
-        self._data = None
-        self._image = None
-        self._tag: dict | None = None
-        self.entity: Grid2D
-        self.output: GeoImage  # type: ignore
-        self.name: str
-
     # convert to geoimage
 
-    def grid_to_tag(self):
+    @classmethod
+    def grid_to_tag(cls, input_entity: Grid2D) -> dict:
         """
-        Compute the tag dictionary of the Grid2D as required by the
-        :obj:'geoh5py.objects.geo_image.GeoImage' object.
+        Compute the tag dictionary of the :obj:'geoh5py.objects.geo_image.Grid2D'
+        as required by the :obj:'geoh5py.objects.geo_image.GeoImage' object.
+        :param input_entity: the Grid2D object to convert.
+        :return tag: the tag dictionary.
         """
-        if not isinstance(self.entity.v_cell_size, np.ndarray) or not isinstance(
-            self.entity.u_cell_size, np.ndarray
+        if not isinstance(input_entity.v_cell_size, np.ndarray) or not isinstance(
+            input_entity.u_cell_size, np.ndarray
         ):
             raise AttributeError("The Grid2D has no geographic information")
 
-        if self.entity.u_count is None or self.entity.v_count is None:
+        if input_entity.u_count is None or input_entity.v_count is None:
             raise AttributeError("The Grid2D has no number of cells")
 
-        u_origin, v_origin, z_origin = self.entity.origin.item()
-        v_oposite = v_origin + self.entity.v_cell_size * self.entity.v_count
+        u_origin, v_origin, z_origin = input_entity.origin.item()
+        v_oposite = v_origin + input_entity.v_cell_size * input_entity.v_count
 
-        self._tag = {
-            256: (self.entity.u_count,),
-            257: (self.entity.v_count,),
+        tag = {
+            256: (input_entity.u_count,),
+            257: (input_entity.v_count,),
             33550: (
-                self.entity.u_cell_size[0],
-                self.entity.v_cell_size[0],
+                input_entity.u_cell_size[0],
+                input_entity.v_cell_size[0],
                 0.0,
             ),
             33922: (
@@ -103,15 +91,19 @@ class Grid2DConversion(CellObject):
             ),
         }
 
-    def data_to_pil_format(self, data: np.array) -> np.array:
+        return tag
+
+    @classmethod
+    def data_to_pil_format(cls, input_entity: Grid2D, data: np.ndarray) -> np.ndarray:
         """
         Convert a numpy array with a format compatible with :obj:`PIL.Image` object.
+        :param input_entity: the Grid2D object to convert.
         :param data: the data to convert.
         :return: the data formatted with the right shape,
         between 0 and 255, as uint8.
         """
         # reshape them
-        data = data.reshape(self.entity.v_count, self.entity.u_count)[::-1]
+        data = data.reshape(input_entity.v_count, input_entity.u_count)[::-1]
 
         # remove nan values
         data = np.where(data == FLOAT_NDV, np.nan, data)
@@ -123,26 +115,30 @@ class Grid2DConversion(CellObject):
 
         return data.astype(np.uint8)
 
-    def key_to_data(self, key: str | int | UUID | Data) -> np.array:
+    @classmethod
+    def key_to_data(
+        cls, input_entity: Grid2D, key: str | int | UUID | Data
+    ) -> np.ndarray:
         """
         Extract the data from the entity in :obj:'np.array' format;
         The data can be of type: ':obj:str', ':obj:int', ':obj:UUID', or ':obj:Data'.
+        :param input_entity: the Grid2D object to convert.
         :param key: the key of the data to extract.
         :return: an np. array containing the data.
         """
         # get the values
         if isinstance(key, str):
-            data = self.entity.get_data(key)
+            data = input_entity.get_data(key)
         elif isinstance(key, int):
-            if key > len(self.entity.get_entity_list()):
+            if key > len(input_entity.get_entity_list()):
                 raise IndexError(
                     "'int' values pass as key can't be larger than number of data,",
-                    f"data number: {len(self.entity.get_entity_list())}, key: {key}",
+                    f"data number: {len(input_entity.get_entity_list())}, key: {key}",
                 )
-            key_ = self.entity.get_entity_list()[key]
-            data = self.entity.get_entity(key_)  # type: ignore
+            key_ = input_entity.get_entity_list()[key]
+            data = input_entity.get_entity(key_)  # type: ignore
         elif isinstance(key, UUID):
-            data = self.entity.get_entity(key)  # type: ignore
+            data = input_entity.get_entity(key)  # type: ignore
         elif isinstance(key, Data):
             data = key  # type: ignore
         else:
@@ -160,11 +156,16 @@ class Grid2DConversion(CellObject):
 
         return data.values  # type: ignore
 
-    def data_from_keys(self, keys: list | str | int | UUID | Data):
+    @classmethod
+    def data_from_keys(
+        cls, input_entity: Grid2D, keys: list | str | int | UUID | Data
+    ) -> np.ndarray:
         """
         Take a list of (or a unique) key to extract from the object,
         and create a :obj:'np.array' with those data.
+        :param input_entity: the Grid2D object to convert.
         :param keys: the list of the data to extract.
+        :return data: the data extracted from the object.
         """
 
         # if unique key transform to list
@@ -173,72 +174,71 @@ class Grid2DConversion(CellObject):
 
         # prepare the image
         if isinstance(keys, list):
-            self._data = np.empty((self.entity.v_count, self.entity.u_count, 0)).astype(
+            data = np.empty((input_entity.v_count, input_entity.u_count, 0)).astype(
                 np.uint8
             )
 
             for key in keys:
-                data_temp = self.key_to_data(key)
-                data_temp = self.data_to_pil_format(data_temp)
-                self._data = np.dstack((self._data, data_temp))
-        else:
-            raise TypeError(
-                "The keys must be pass as a list",
-                f"but you entered a {type(keys)} ",
-            )
+                data_temp = cls.key_to_data(input_entity, key)
+                data_temp = cls.data_to_pil_format(input_entity, data_temp)
+                data = np.dstack((data, data_temp))
 
-    def convert_to_pillow(self):
+            return data
+
+        raise TypeError(
+            "The keys must be pass as a list",
+            f"but you entered a {type(keys)} ",
+        )
+
+    @classmethod
+    def convert_to_pillow(cls, data: np.ndarray) -> Image:
         """
         Convert the data from :obj:'np.array' to :obj:'PIL.Image' format.
         """
-        if not isinstance(self._data, np.ndarray):
+        if not isinstance(data, np.ndarray):
             raise AttributeError("No data is selected.")
 
-        if self._data.shape[-1] == 1:
-            self._image = Image.fromarray(self._data[:, :, 0], mode="L")
-        elif self._data.shape[-1] == 3:
-            self._image = Image.fromarray(self._data, mode="RGB")
-        elif self._data.shape[-1] == 4:
-            self._image = Image.fromarray(self._data, mode="CMYK")
-        else:
-            raise IndexError("Only 1, 3, or 4 layers can be selected")
+        if data.shape[-1] == 1:
+            return Image.fromarray(data[:, :, 0], mode="L")
+        if data.shape[-1] == 3:
+            return Image.fromarray(data, mode="RGB")
+        if data.shape[-1] == 4:
+            return Image.fromarray(data, mode="CMYK")
 
-    def verify_kwargs(self, **geoimage_kwargs):
-        """
-        Verify if the kwargs are valid.
-        :param geoimage_kwargs: the kwargs to verify.
-        """
-        super().verify_kwargs()
+        raise IndexError("Only 1, 3, or 4 layers can be selected")
 
-        self.name = geoimage_kwargs.get("name", self.entity.name)
-        self.change_workspace_parent(**geoimage_kwargs)
-
+    @classmethod
     def to_geoimage(
-        self, keys: list | str | int | UUID | Data, **geoimage_kwargs
+        cls,
+        input_entity: Grid2D,
+        keys: list | str | int | UUID | Data,
+        **geoimage_kwargs,
     ) -> GeoImage:
         """
         Convert the object to a :obj:'GeoImage' object.
+        :param input_entity: the Grid2D object to convert.
         :param keys: the data to extract.
         :param geoimage_kwargs: the kwargs to pass to the :obj:'GeoImage' object.
         """
-        self.verify_kwargs(**geoimage_kwargs)
+
+        properties = cls.verify_kwargs(input_entity, **geoimage_kwargs)
 
         # get the tag of the data
-        self.grid_to_tag()
+        tag = cls.grid_to_tag(input_entity)
 
         # get the data
-        self.data_from_keys(keys)
-        self.convert_to_pillow()
+        data = cls.data_from_keys(input_entity, keys)
+        image = cls.convert_to_pillow(data)
 
         # create a geoimage
-        self.output = objects.GeoImage.create(
-            self.workspace_output, image=self._image, tag=self._tag, **geoimage_kwargs
+        output = objects.GeoImage.create(
+            properties["workspace"], image=image, tag=tag, **geoimage_kwargs
         )
 
         # georeference it
-        self.output.georeferencing_from_tiff()
+        output.georeferencing_from_tiff()
 
         # copy properties
-        self.copy_properties()
+        cls.copy_properties(input_entity, output)
 
-        return self.output
+        return output

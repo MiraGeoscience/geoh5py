@@ -22,7 +22,7 @@ import uuid
 import numpy as np
 
 from .. import objects
-from ..shared import conversion
+from ..shared.conversion import Grid2DConversion
 from .object_base import ObjectBase, ObjectType
 
 
@@ -52,6 +52,8 @@ class Grid2D(ObjectBase):
             "Vertical": "vertical",
         }
     )
+
+    _converter = Grid2DConversion
 
     def __init__(self, object_type: ObjectType, **kwargs):
 
@@ -311,8 +313,4 @@ class Grid2D(ObjectBase):
         Warning: The len of the list can only be 1, 3, 4 (Pillow restrictions).
         :return: a new georeferenced :obj:`geoh5py.objects.geo_image.GeoImage`.
         """
-        # convert the grid to a geoimage
-        converter = conversion.Grid2DConversion(self)
-        geoimage = converter.to_geoimage(keys, **geoimage_kwargs)
-
-        return geoimage
+        return self.converter.to_geoimage(self, keys, **geoimage_kwargs)
