@@ -71,10 +71,10 @@ def test_create_grid_2d_data(tmp_path):
 
         converter = CellObject
 
+        values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
+        grid.add_data(data={"DataValues": {"values": values, "association": "CELL"}})
+
         points = converter.to_points(grid)
 
         with pytest.raises(TypeError, match="Input entity for `GridObject` conversion"):
             converter.to_points(points)
-
-        values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
-        grid.add_data(data={"DataValues": {"values": values, "association": "CELL"}})
