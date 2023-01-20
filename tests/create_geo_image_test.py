@@ -24,7 +24,7 @@ from PIL import Image
 from PIL.TiffImagePlugin import TiffImageFile
 
 from geoh5py.objects import GeoImage, Grid2D
-# from geoh5py.shared.conversion import GeoImageConversion
+from geoh5py.shared.conversion import GeoImageConversion
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -228,10 +228,10 @@ def test_georeference_image(tmp_path):
     # with pytest.raises(TypeError, match="Entity must be a 'GeoImage'"):
     #     _ = GeoImageConversion(["bidon"])
 
-    # converter = GeoImageConversion(geoimage)
+    converter = GeoImageConversion
     # geoimage.conversion_type.to_grid2d(geomiage)
-    # with pytest.raises(IndexError, match="To export to CMYK the image"):
-    #     converter.add_cmyk_data()
+    with pytest.raises(IndexError, match="To export to CMYK the image"):
+        converter.add_cmyk_data(geoimage, grid2d_gray, "bidon")
 
     image = Image.fromarray(
         np.random.randint(0, 255, (128, 128, 4)).astype("uint8"), "CMYK"

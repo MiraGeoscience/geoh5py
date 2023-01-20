@@ -37,12 +37,11 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from geoh5py.objects import Grid2D
-# from geoh5py.shared.conversion.base import CellObject, ConversionBase
+from geoh5py.shared.conversion.base import CellObject, ConversionBase
 from geoh5py.workspace import Workspace
-
-# import pytest
 
 
 def test_create_grid_2d_data(tmp_path):
@@ -65,33 +64,17 @@ def test_create_grid_2d_data(tmp_path):
             allow_move=False,
         )
 
-        # converter = ConversionBase(entity=grid)
+        converter = ConversionBase
 
-        # with pytest.raises(ValueError, match="Workspace has not been defined"):
-        #     _ = converter.workspace_output
-        #
-        # with pytest.raises(TypeError, match="Name must be a string"):
-        #     converter.name = 0
+        _ = converter.change_workspace_parent(grid, parent=grid)
+        _ = converter.change_workspace_parent(grid, workspace=grid.workspace)
 
-        # _ = converter.change_workspace_parent(workspace=workspace_context)
-        #
-        # with pytest.raises(ValueError, match="Output has not been created"):
-        #     converter.copy_properties()
+        converter = CellObject
 
-        # test cell object
+        points = converter.to_points(grid)
 
-        # with pytest.raises(TypeError, match="Input entity for `GridObject` conversion"):
-        #     _ = CellObject(None)
+        with pytest.raises(TypeError, match="Input entity for `GridObject` conversion"):
+            converter.to_points(points)
 
         values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
         grid.add_data(data={"DataValues": {"values": values, "association": "CELL"}})
-        # cell_converter = CellObject(grid)
-
-        # with pytest.raises(ValueError, match="Output has not been created"):
-        #     cell_converter.copy_properties()
-
-        # with pytest.raises(ValueError, match="Output has not been created"):
-        #     cell_converter.copy_child_properties(association="VERTEX")
-
-        # cell_converter.to_points()
-        # cell_converter.to_points(parent=grid.parent)

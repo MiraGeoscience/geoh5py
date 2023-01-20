@@ -26,6 +26,7 @@ from ... import objects
 if TYPE_CHECKING:
     from ...objects import Points
     from ...shared.entity import Entity
+    from ...workspace import Workspace
 
 
 entity_properties = ["name", "allow_rename", "allow_move", "allow_delete"]
@@ -52,7 +53,7 @@ class ConversionBase(ABC):
         return output_properties
 
     @classmethod
-    def change_workspace_parent(cls, input_entity: Entity, **kwargs) -> tuple:
+    def change_workspace_parent(cls, input_entity: Entity, **kwargs) -> Workspace:
         """
         Define the parent of the converter class if the parent is defined in the kwargs;
         and the workspace to use.
