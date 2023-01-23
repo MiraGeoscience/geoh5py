@@ -207,7 +207,8 @@ class Grid2DConversion(CellObject):
         :param geoimage_kwargs: the kwargs to pass to the :obj:'GeoImage' object.
         """
 
-        properties = cls.verify_kwargs(input_entity, **geoimage_kwargs)
+        workspace = cls.validate_workspace(input_entity, **geoimage_kwargs)
+        geoimage_kwargs = cls.verify_kwargs(input_entity, **geoimage_kwargs)
 
         # get the tag of the data
         geoimage_kwargs["tag"] = cls.grid_to_tag(input_entity)
@@ -217,12 +218,9 @@ class Grid2DConversion(CellObject):
         geoimage_kwargs["image"] = cls.convert_to_pillow(data)
 
         # create a geoimage
-        output = objects.GeoImage.create(properties["workspace"], **geoimage_kwargs)
+        output = objects.GeoImage.create(workspace, **geoimage_kwargs)
 
         # georeference it
         output.georeferencing_from_tiff()
-
-        # copy properties
-        cls.copy_properties(input_entity, output, **geoimage_kwargs)
 
         return output
