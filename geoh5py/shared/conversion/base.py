@@ -18,12 +18,13 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import TYPE_CHECKING
 
-from ...objects import ObjectBase, Points
+from ... import objects
 
 if TYPE_CHECKING:
+    from ...objects import ObjectBase
     from ...workspace import Workspace
 
 CORE_PROPERTIES = ["name", "allow_rename", "allow_move", "allow_delete"]
@@ -49,7 +50,6 @@ class ConversionBase(ABC):
         for child in input_entity.children:
             child.copy(parent=output, association=association, **kwargs)
 
-    @abstractmethod
     @classmethod
     def verify_kwargs(cls, input_entity, **kwargs) -> dict:
         """
@@ -96,7 +96,7 @@ class CellObject(ConversionBase):
     @classmethod
     def to_points(
         cls, input_entity: ObjectBase, copy_children=True, **kwargs
-    ) -> Points:
+    ) -> objects.Points:
         """
         Cell-based object conversion to Points
 
@@ -117,7 +117,7 @@ class CellObject(ConversionBase):
         kwargs["vertices"] = getattr(input_entity, "centroids", None)
 
         # create the point object
-        output = Points.create(workspace, **kwargs)
+        output = objects.Points.create(workspace, **kwargs)
 
         # change the association of the children
         if copy_children:
