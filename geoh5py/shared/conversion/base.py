@@ -47,8 +47,7 @@ class ConversionBase(ABC):
         :param association: Association of the children to copy.
         """
         for child in input_entity.children:
-            if child not in kwargs:
-                child.copy(parent=output, association=association)
+            child.copy(parent=output, association=association, **kwargs)
 
     @abstractmethod
     @classmethod
