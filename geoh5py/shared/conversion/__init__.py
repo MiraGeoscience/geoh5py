@@ -18,5 +18,6 @@
 # pylint: disable=unused-import
 # flake8: noqa
 
+from .base import BaseConversion, CellObjectConversion
 from .geo_image import GeoImageConversion
 from .grid2d import Grid2DConversion

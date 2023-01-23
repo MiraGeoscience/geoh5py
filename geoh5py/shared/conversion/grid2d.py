@@ -26,13 +26,13 @@ from PIL import Image
 from ... import objects
 from ...data import Data
 from ...shared import FLOAT_NDV
-from .base import CellObject
+from .base import CellObjectConversion
 
 if TYPE_CHECKING:
     from ...objects import GeoImage, Grid2D
 
 
-class Grid2DConversion(CellObject):
+class Grid2DConversion(CellObjectConversion):
     """
     Convert a :obj:'geoh5py.objects.grid2d.Grid2D' object
     to a georeferenced :obj:'geoh5py.objects.geo_image.GeoImage' object.

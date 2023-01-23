@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 CORE_PROPERTIES = ["name", "allow_rename", "allow_move", "allow_delete"]
 
 
-class ConversionBase(ABC):
+class BaseConversion(ABC):
     def __init__(self):
         """
         Converter class from an :obj:geoh5py.shared.entity.Entity to another..
@@ -87,7 +87,7 @@ class ConversionBase(ABC):
         return workspace
 
 
-class CellObject(ConversionBase):
+class CellObjectConversion(BaseConversion):
     """
     Converter class from a :obj:geoh5py.objects.CellObject to
     a :obj:geoh5py.objects.Points.

@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 
 from geoh5py.objects import Grid2D
-from geoh5py.shared.conversion.base import CellObject
+from geoh5py.shared.conversion.base import CellObjectConversion
 from geoh5py.workspace import Workspace
 
 
@@ -48,7 +48,7 @@ def test_create_grid_2d_data(tmp_path):
             allow_move=False,
         )
 
-        converter = CellObject
+        converter = CellObjectConversion
 
         values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
         grid.add_data(data={"DataValues": {"values": values, "association": "CELL"}})

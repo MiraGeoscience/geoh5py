@@ -24,13 +24,13 @@ import numpy as np
 from PIL import Image
 
 from ... import objects
-from .base import ConversionBase
+from .base import BaseConversion
 
 if TYPE_CHECKING:
     from ...objects import GeoImage, Grid2D
 
 
-class GeoImageConversion(ConversionBase):
+class GeoImageConversion(BaseConversion):
     """
     Convert a :obj:'geoh5py.objects.geo_image.GeoImage' object.
     """

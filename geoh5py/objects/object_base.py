@@ -32,6 +32,7 @@ from ..data.data_association_enum import DataAssociationEnum
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
+from ..shared.conversion import BaseConversion
 from ..shared.utils import mask_by_extent
 from .object_type import ObjectType
 
@@ -428,7 +429,7 @@ class ObjectBase(Entity):
 
     @classmethod  # type: ignore
     @property
-    def converter(cls):
+    def converter(cls) -> BaseConversion | None:
         """
         :return: The converter for the object.
         """
