@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from abc import ABC, abstractmethod
 from typing import Any
@@ -585,3 +586,13 @@ class BaseTEMSurvey(BaseEMSurvey, ABC):
             ]
 
         self.edit_metadata({"Waveform": value})
+
+    @property
+    def waveform_parameters(self) -> dict | None:
+        """Access the waveform parameters stored as a dictionary."""
+        waveform = self.get_data("_waveform_parameters")[0]
+
+        if waveform is not None:
+            return json.loads(waveform.values)
+
+        return None
