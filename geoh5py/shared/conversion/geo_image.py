@@ -14,21 +14,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
 from __future__ import annotations
 
 from io import BytesIO
@@ -196,6 +182,10 @@ class GeoImageConversion(ConversionBase):
         )
         output_properties["elevation"] = kwargs.get("elevation", 0)
 
+        # remove the properties from the kwargs
+        for key in output_properties:
+            _ = kwargs.pop(key, None)
+
         return output_properties
 
     @classmethod
@@ -212,20 +202,11 @@ class GeoImageConversion(ConversionBase):
         properties = cls.verify_kwargs(input_entity, **grid2d_kwargs)
 
         # get the vertices of the Grid2D
-        grid2d_attributes = cls.convert_to_grid2d_reference(input_entity)
+        grid2d_kwargs.update(cls.convert_to_grid2d_reference(input_entity))
 
         # create output object
         output = objects.Grid2D.create(
             properties["workspace"],
-            origin=[
-                grid2d_attributes["u_origin"],
-                grid2d_attributes["v_origin"],
-                properties["elevation"],
-            ],
-            u_cell_size=grid2d_attributes["u_cell_size"],
-            v_cell_size=grid2d_attributes["v_cell_size"],
-            u_count=grid2d_attributes["u_count"],
-            v_count=grid2d_attributes["v_count"],
             **grid2d_kwargs,
         )
 
@@ -233,6 +214,6 @@ class GeoImageConversion(ConversionBase):
         cls.add_data_2dgrid(input_entity, output, transform, properties["name"])
 
         # convert the properties of the geoimage to the grid
-        cls.copy_properties(input_entity, output)
+        cls.copy_properties(input_entity, output, **grid2d_kwargs)
 
         return output

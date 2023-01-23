@@ -28,7 +28,6 @@ if TYPE_CHECKING:
     from ...shared.entity import Entity
     from ...workspace import Workspace
 
-
 entity_properties = ["name", "allow_rename", "allow_move", "allow_delete"]
 
 
@@ -41,14 +40,16 @@ class ConversionBase(ABC):
     @classmethod
     def verify_kwargs(cls, input_entity, **kwargs) -> dict:
         """
-        Verify if the kwargs are valid.
+        Verify if the kwargs are valid and update kwargs.
         :param input_entity: The input entity to convert.
         :return: A dictionary of the valid kwargs.
         """
-        output_properties = {}
-        output_properties["workspace"] = cls.change_workspace_parent(
-            input_entity, **kwargs
-        )
+        output_properties = {
+            "workspace": cls.change_workspace_parent(input_entity, **kwargs)
+        }
+
+        # remove workspace in kwargs
+        _ = kwargs.pop("workspace", None)
 
         return output_properties
 
@@ -71,20 +72,21 @@ class ConversionBase(ABC):
         return workspace
 
     @classmethod
-    def copy_properties(cls, input_entity: Entity, output: Entity):
+    def copy_properties(cls, input_entity: Entity, output: Entity, **kwargs):
         """
         Copy all the properties from the original entity to the new one.
         :param input_entity: The input entity to convert.
         :param output: the new entity.
         """
         for property_ in entity_properties:
-            setattr(output, property_, getattr(input_entity, property_))
+            if property_ not in kwargs:
+                setattr(output, property_, getattr(input_entity, property_))
 
 
 class CellObject(ConversionBase):
     @classmethod
     def copy_child_properties(
-        cls, input_entity: Entity, output: Entity, association: str
+        cls, input_entity: Entity, output: Entity, association: str, **kwargs
     ):
         """
         Copy child properties from the original entity to the new one.
@@ -93,12 +95,13 @@ class CellObject(ConversionBase):
         :param association: association of the children to copy.
         """
         for child in input_entity.children:
-            child.copy(
-                parent=output,
-                association=association
-                if child.association == "CELL"
-                else child.association,
-            )
+            if child not in kwargs:
+                child.copy(
+                    parent=output,
+                    association=association
+                    if child.association == "CELL"
+                    else child.association,
+                )
 
     @classmethod
     def to_points(cls, input_entity: Entity, **kwargs) -> Points:
@@ -121,10 +124,13 @@ class CellObject(ConversionBase):
             properties["workspace"], vertices=input_entity.centroids, **kwargs
         )
 
+        # update kwargs
+        kwargs.update(properties)
+
         # copy the properties of the original object
-        cls.copy_properties(input_entity, output)
+        cls.copy_properties(input_entity, output, **kwargs)
 
         # change the association of the children
-        cls.copy_child_properties(input_entity, output, association="VERTEX")
+        cls.copy_child_properties(input_entity, output, association="VERTEX", **kwargs)
 
         return output

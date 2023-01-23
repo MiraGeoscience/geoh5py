@@ -14,21 +14,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -224,21 +210,19 @@ class Grid2DConversion(CellObject):
         properties = cls.verify_kwargs(input_entity, **geoimage_kwargs)
 
         # get the tag of the data
-        tag = cls.grid_to_tag(input_entity)
+        geoimage_kwargs["tag"] = cls.grid_to_tag(input_entity)
 
         # get the data
         data = cls.data_from_keys(input_entity, keys)
-        image = cls.convert_to_pillow(data)
+        geoimage_kwargs["image"] = cls.convert_to_pillow(data)
 
         # create a geoimage
-        output = objects.GeoImage.create(
-            properties["workspace"], image=image, tag=tag, **geoimage_kwargs
-        )
+        output = objects.GeoImage.create(properties["workspace"], **geoimage_kwargs)
 
         # georeference it
         output.georeferencing_from_tiff()
 
         # copy properties
-        cls.copy_properties(input_entity, output)
+        cls.copy_properties(input_entity, output, **geoimage_kwargs)
 
         return output

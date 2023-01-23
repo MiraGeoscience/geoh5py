@@ -17,11 +17,11 @@
 from __future__ import annotations
 
 import os
-import typing
 import uuid
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Any
 from warnings import warn
 
 import numpy as np
@@ -51,7 +51,7 @@ class GeoImage(ObjectBase):
     def __init__(self, object_type: ObjectType, **kwargs):
         self._vertices: None | np.ndarray = None
         self._cells = None
-        self._tag: dict | None = None
+        self._tag: dict[int, Any] | None = None
 
         super().__init__(object_type, **kwargs)
 
@@ -226,7 +226,6 @@ class GeoImage(ObjectBase):
 
         self.set_tag_from_vertices()
 
-    @typing.no_type_check
     def set_tag_from_vertices(self):
         """
         If tag is None, set the basic tag values based on vertices
@@ -236,6 +235,9 @@ class GeoImage(ObjectBase):
 
         if self.image is None:
             raise AttributeError("There is no image to reference")
+
+        if not isinstance(self.vertices, np.ndarray):
+            raise AttributeError("Vertices must be set before setting tag")
 
         if self._tag is None:
             self._tag = {}
