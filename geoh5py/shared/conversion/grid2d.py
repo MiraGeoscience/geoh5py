@@ -56,7 +56,10 @@ class Grid2DConversion(CellObject):
         if input_entity.u_count is None or input_entity.v_count is None:
             raise AttributeError("The Grid2D has no number of cells")
 
-        u_origin, v_origin, z_origin = input_entity.origin.item()
+        if not isinstance(input_entity.origin, np.ndarray):
+            raise AttributeError("The Grid2D has no origin")
+
+        u_origin, v_origin, z_origin = input_entity.origin.tolist()
         v_oposite = v_origin + input_entity.v_cell_size * input_entity.v_count
 
         tag = {

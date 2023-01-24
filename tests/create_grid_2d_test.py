@@ -102,6 +102,9 @@ def test_create_grid_2d_data(tmp_path):
             allow_move=False,
         )
 
+        print(grid.origin.tolist())
+        assert isinstance(grid.origin, np.ndarray)
+
         with pytest.raises(TypeError, match="'The keys must be pass as a list"):
             grid.to_geoimage(("test", 3))
 
