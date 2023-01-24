@@ -24,37 +24,52 @@ from typing import TYPE_CHECKING
 from ... import objects
 
 if TYPE_CHECKING:
-    from ...objects import Points
-    from ...shared.entity import Entity
+    from ...objects import ObjectBase
     from ...workspace import Workspace
 
-entity_properties = ["name", "allow_rename", "allow_move", "allow_delete"]
+CORE_PROPERTIES = ["name", "allow_rename", "allow_move", "allow_delete"]
 
 
-class ConversionBase(ABC):
+class BaseConversion(ABC):
     def __init__(self):
         """
         Converter class from an :obj:geoh5py.shared.entity.Entity to another..
         """
 
     @classmethod
+    def copy_child_properties(
+        cls, input_entity: ObjectBase, output: ObjectBase, association: str, **kwargs
+    ):
+        """
+        Copy child properties from the original entity to the new one.
+
+        :param input_entity: The input entity to convert.
+        :param output: The new entity.
+        :param association: Association of the children to copy.
+        """
+        for child in input_entity.children:
+            child.copy(parent=output, association=association, **kwargs)
+
+    @classmethod
     def verify_kwargs(cls, input_entity, **kwargs) -> dict:
         """
-        Verify if the kwargs are valid and update kwargs.
+        Verify if the kwargs are valid and update kwargs with core properties.
+
         :param input_entity: The input entity to convert.
+        :param kwargs: Additional keyword arguments.
+
         :return: A dictionary of the valid kwargs.
         """
-        output_properties = {
-            "workspace": cls.change_workspace_parent(input_entity, **kwargs)
-        }
+        output_properties = {key: getattr(input_entity, key) for key in CORE_PROPERTIES}
 
-        # remove workspace in kwargs
-        _ = kwargs.pop("workspace", None)
+        for key, value in kwargs.items():
+            if hasattr(input_entity, key):
+                output_properties[key] = value
 
         return output_properties
 
     @classmethod
-    def change_workspace_parent(cls, input_entity: Entity, **kwargs) -> Workspace:
+    def validate_workspace(cls, input_entity: ObjectBase, **kwargs) -> Workspace:
         """
         Define the parent of the converter class if the parent is defined in the kwargs;
         and the workspace to use.
@@ -71,66 +86,41 @@ class ConversionBase(ABC):
 
         return workspace
 
-    @classmethod
-    def copy_properties(cls, input_entity: Entity, output: Entity, **kwargs):
-        """
-        Copy all the properties from the original entity to the new one.
-        :param input_entity: The input entity to convert.
-        :param output: the new entity.
-        """
-        for property_ in entity_properties:
-            if property_ not in kwargs:
-                setattr(output, property_, getattr(input_entity, property_))
 
-
-class CellObject(ConversionBase):
-    @classmethod
-    def copy_child_properties(
-        cls, input_entity: Entity, output: Entity, association: str, **kwargs
-    ):
-        """
-        Copy child properties from the original entity to the new one.
-        :param input_entity: The input entity to convert.
-        :param output: the new entity.
-        :param association: association of the children to copy.
-        """
-        for child in input_entity.children:
-            if child not in kwargs:
-                child.copy(
-                    parent=output,
-                    association=association
-                    if child.association == "CELL"
-                    else child.association,
-                )
+class CellObjectConversion(BaseConversion):
+    """
+    Converter class from a :obj:geoh5py.objects.CellObject to
+    a :obj:geoh5py.objects.Points.
+    """
 
     @classmethod
-    def to_points(cls, input_entity: Entity, **kwargs) -> Points:
+    def to_points(
+        cls, input_entity: ObjectBase, copy_children=True, **kwargs
+    ) -> objects.Points:
         """
         Cell-based object conversion to Points
+
         :param input_entity: The input entity to convert.
-        :return: a Points object.
+
+        :return: A Points object.
         """
         # verify if the entity contains centroids
-        if not hasattr(input_entity, "centroids"):
+        if getattr(input_entity, "centroids", None) is None:
             raise TypeError(
                 "Input entity for `GridObject` conversion must have centroids."
             )
 
+        workspace = cls.validate_workspace(input_entity, **kwargs)
+
         # get the properties
-        properties = cls.verify_kwargs(input_entity, **kwargs)
+        kwargs = cls.verify_kwargs(input_entity, **kwargs)
+        kwargs["vertices"] = getattr(input_entity, "centroids", None)
 
         # create the point object
-        output = objects.Points.create(
-            properties["workspace"], vertices=input_entity.centroids, **kwargs
-        )
-
-        # update kwargs
-        kwargs.update(properties)
-
-        # copy the properties of the original object
-        cls.copy_properties(input_entity, output, **kwargs)
+        output = objects.Points.create(workspace, **kwargs)
 
         # change the association of the children
-        cls.copy_child_properties(input_entity, output, association="VERTEX", **kwargs)
+        if copy_children:
+            cls.copy_child_properties(input_entity, output, association="VERTEX")
 
         return output

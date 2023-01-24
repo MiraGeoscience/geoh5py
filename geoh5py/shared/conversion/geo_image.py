@@ -24,26 +24,27 @@ import numpy as np
 from PIL import Image
 
 from ... import objects
-from .base import ConversionBase
+from .base import BaseConversion
 
 if TYPE_CHECKING:
     from ...objects import GeoImage, Grid2D
 
 
-class GeoImageConversion(ConversionBase):
+class GeoImageConversion(BaseConversion):
     """
     Convert a :obj:'geoh5py.objects.geo_image.GeoImage' object.
     """
 
     @classmethod
-    def convert_to_grid2d_reference(cls, input_entity: GeoImage) -> dict:
+    def convert_to_grid2d_reference(
+        cls, input_entity: GeoImage, grid2d_attributes
+    ) -> dict:
         """
         Extract the geographic information from the entity.
         """
         if input_entity.vertices is None:
             raise AttributeError("GeoImage has no vertices")
 
-        grid2d_attributes = {}
         # get geographic information
         grid2d_attributes["u_origin"] = input_entity.vertices[0, 0]
         grid2d_attributes["v_origin"] = input_entity.vertices[2, 1]
@@ -58,7 +59,7 @@ class GeoImageConversion(ConversionBase):
             abs(grid2d_attributes["v_origin"] - input_entity.vertices[0, 1])
             / grid2d_attributes["v_count"]
         )
-
+        grid2d_attributes["elevation"] = grid2d_attributes.get("elevation", 0)
         return grid2d_attributes
 
     @classmethod
@@ -168,29 +169,8 @@ class GeoImageConversion(ConversionBase):
             )
 
     @classmethod
-    def verify_kwargs(cls, input_entity: GeoImage, **kwargs) -> dict:
-        """
-        Verify if the kwargs are valid.
-        :param input_entity: :obj:'geoh5py.objects.geo_image.GeoImage' object.
-        :param kwargs: the kwargs to verify.
-        """
-        output_properties = {}
-
-        output_properties["name"] = kwargs.get("name", input_entity.name)
-        output_properties["workspace"] = cls.change_workspace_parent(
-            input_entity, **kwargs
-        )
-        output_properties["elevation"] = kwargs.get("elevation", 0)
-
-        # remove the properties from the kwargs
-        for key in output_properties:
-            _ = kwargs.pop(key, None)
-
-        return output_properties
-
-    @classmethod
     def to_grid2d(
-        cls, input_entity: GeoImage, transform: str, **grid2d_kwargs
+        cls, input_entity: GeoImage, transform: str, copy_children=True, **grid2d_kwargs
     ) -> Grid2D:
         """
         Transform the :obj:'geoh5py.objects.image.Image' to a :obj:'geoh5py.objects.grid2d.Grid2D'.
@@ -198,22 +178,15 @@ class GeoImageConversion(ConversionBase):
         :param transform: the transforming type option.
         :return: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
-
-        properties = cls.verify_kwargs(input_entity, **grid2d_kwargs)
-
-        # get the vertices of the Grid2D
-        grid2d_kwargs.update(cls.convert_to_grid2d_reference(input_entity))
-
-        # create output object
+        workspace = cls.validate_workspace(input_entity, **grid2d_kwargs)
+        grid2d_kwargs = cls.verify_kwargs(input_entity, **grid2d_kwargs)
+        grid2d_kwargs = cls.convert_to_grid2d_reference(input_entity, grid2d_kwargs)
         output = objects.Grid2D.create(
-            properties["workspace"],
+            workspace,
             **grid2d_kwargs,
         )
 
-        # add the data to the Grid2D
-        cls.add_data_2dgrid(input_entity, output, transform, properties["name"])
-
-        # convert the properties of the geoimage to the grid
-        cls.copy_properties(input_entity, output, **grid2d_kwargs)
+        if copy_children:
+            cls.add_data_2dgrid(input_entity, output, transform, output.name)
 
         return output
