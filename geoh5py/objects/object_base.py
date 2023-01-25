@@ -23,7 +23,7 @@ import uuid
 import warnings
 from abc import abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -49,7 +49,7 @@ class ObjectBase(Entity):
     _attribute_map.update(
         {"Last focus": "last_focus", "PropertyGroups": "property_groups"}
     )
-    _converter: Any = None
+    _converter: type[BaseConversion] | None = None
 
     def __init__(self, object_type: ObjectType, **kwargs):
         assert object_type is not None
@@ -428,7 +428,7 @@ class ObjectBase(Entity):
         """
 
     @property
-    def converter(self) -> BaseConversion | None:
+    def converter(self):
         """
         :return: The converter for the object.
         """
