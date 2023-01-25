@@ -103,7 +103,7 @@ class PotentialElectrode(Curve):
             return self.ab_cell_id.value_map
         return None
 
-    def copy(self, parent=None, copy_children: bool = True):
+    def copy(self, parent=None, copy_children: bool = True, **kwargs):
         """
         Function to copy a survey to a different parent entity.
 
@@ -118,7 +118,7 @@ class PotentialElectrode(Curve):
 
         omit_list = ["_metadata", "_potential_electrodes", "_current_electrodes"]
         new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children, omit_list=omit_list
+            self, parent, copy_children=copy_children, omit_list=omit_list, **kwargs
         )
         setattr(new_entity, "_ab_cell_id", None)
         if new_entity.ab_cell_id is None and self.ab_cell_id is not None:
@@ -240,7 +240,7 @@ class CurrentElectrode(PotentialElectrode):
         """
         return cls.__TYPE_UID
 
-    def copy(self, parent=None, copy_children: bool = True):
+    def copy(self, parent=None, copy_children: bool = True, **kwargs):
         """
         Function to copy a survey to a different parent entity.
 
@@ -255,7 +255,7 @@ class CurrentElectrode(PotentialElectrode):
 
         omit_list = ["_metadata", "_potential_electrodes", "_current_electrodes"]
         new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children, omit_list=omit_list
+            self, parent, copy_children=copy_children, omit_list=omit_list, **kwargs
         )
         setattr(new_entity, "_ab_cell_id", None)
         if new_entity.ab_cell_id is None and self.ab_cell_id is not None:
