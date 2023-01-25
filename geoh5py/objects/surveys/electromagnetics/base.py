@@ -193,7 +193,7 @@ class BaseEMSurvey(ObjectBase, ABC):
 
         return None
 
-    def copy(self, parent=None, copy_children: bool = True) -> BaseEMSurvey:
+    def copy(self, parent=None, copy_children: bool = True, **kwargs) -> BaseEMSurvey:
         """
         Function to copy a AirborneTEMReceivers to a different parent entity.
 
@@ -209,7 +209,7 @@ class BaseEMSurvey(ObjectBase, ABC):
         omit_list = ["_metadata", "_receivers", "_transmitters", "_base_stations"]
         metadata = self.metadata.copy()
         new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children, omit_list=omit_list
+            self, parent, copy_children=copy_children, omit_list=omit_list, **kwargs
         )
         metadata["EM Dataset"][new_entity.type] = new_entity.uid
         for associate in ["transmitters", "receivers", "base_stations"]:
