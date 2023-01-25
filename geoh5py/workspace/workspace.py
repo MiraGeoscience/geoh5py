@@ -61,7 +61,12 @@ from ..shared.concatenation import (
 )
 from ..shared.entity import Entity
 from ..shared.exceptions import Geoh5FileClosedError
-from ..shared.utils import as_str_if_utf8_bytes, get_attributes, str2uuid
+from ..shared.utils import (
+    as_str_if_utf8_bytes,
+    get_attributes,
+    overwrite_kwargs,
+    str2uuid,
+)
 
 if TYPE_CHECKING:
     from ..groups import group
@@ -223,6 +228,7 @@ class Workspace(AbstractContextManager):
         copy_children: bool = True,
         omit_list: tuple = (),
         extent: np.ndarray | None = None,
+        **kwargs,
     ):
         """
         Copy an entity to a different parent with copies of children.
@@ -231,7 +237,8 @@ class Workspace(AbstractContextManager):
         :param parent: Target parent to copy the entity under.
         :param copy_children: Copy all children of the entity.
         :param omit_list: List of property names to omit on copy
-        :param mask: Clip object's copy by extent defined by a South-West and North-East corners.
+        :param extent: Clip object's copy by extent defined by a South-West and North-East corners.
+        :param kwargs: Additional keyword arguments passed to the copy constructor.
 
         :return: The Entity registered to the workspace.
         """
@@ -248,6 +255,10 @@ class Workspace(AbstractContextManager):
             entity.entity_type,
             omit_list=["_workspace", "_on_file"] + list(omit_list),
         )
+
+        # overwrite kwargs
+        entity_kwargs = overwrite_kwargs(entity_kwargs, kwargs)
+        entity_type_kwargs = overwrite_kwargs(entity_type_kwargs, kwargs)
 
         if not isinstance(parent, (ObjectBase, Group, Workspace)):
             raise ValueError(
