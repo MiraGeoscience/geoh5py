@@ -701,11 +701,13 @@ class Workspace(AbstractContextManager):
 
         return family_tree
 
-    def fetch_concatenated_attributes(self, entity: Group | ObjectBase) -> dict | None:
+    def fetch_concatenated_attributes(
+        self, entity: Concatenator | ConcatenatedObject
+    ) -> dict | None:
         """
-        Fetch attributes of ConcatenatedData entities.
+        Fetch attributes of Concatenated entity.
 
-        :param entity: Concatenator group.
+        :param entity: Concatenator group or ConcatenateObject.
 
         :return: Dictionary of attributes.
         """
@@ -721,7 +723,7 @@ class Workspace(AbstractContextManager):
             H5Reader.fetch_concatenated_attributes,
             entity.uid,
             entity_type,
-            "Attributes",
+            entity.concat_attr_str,
             mode="r",
         )
 
