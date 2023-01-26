@@ -361,6 +361,7 @@ class H5Writer:
                     in [
                         "PropertyGroups",
                         "Attributes",
+                        "Attributes Jsons",
                         "Property Groups IDs",
                         "Concatenated object IDs",
                     ]
@@ -520,7 +521,7 @@ class H5Writer:
                 )
 
     @classmethod
-    def write_data_values(
+    def write_data_values(  # pylint: disable=too-many-branches
         cls, file: str | h5py.File, entity, attribute, values=None, **kwargs
     ) -> None:
         """
@@ -538,6 +539,11 @@ class H5Writer:
 
             if isinstance(entity, Concatenator):
                 entity_handle = entity_handle["Concatenated Data"]
+                if (
+                    attribute == "concatenated_attributes"
+                    and entity.concat_attr_str == "Attributes Jsons"
+                ):
+                    KEY_MAP[attribute] = entity.concat_attr_str
 
             if KEY_MAP[attribute] in entity_handle:
                 del entity_handle[KEY_MAP[attribute]]
@@ -548,6 +554,13 @@ class H5Writer:
                     return
 
                 values = getattr(entity, "_" + attribute)
+                if (
+                    attribute == "concatenated_attributes"
+                    and entity.concat_attr_str == "Attributes Jsons"
+                ):
+                    values = [
+                        json.dumps(val).encode("utf-8") for val in values["Attributes"]
+                    ]
 
             # Adding an array of values
             if isinstance(values, dict) or isinstance(entity, CommentsData):

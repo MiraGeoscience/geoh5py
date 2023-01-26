@@ -360,19 +360,14 @@ def test_create_drillhole_data(tmp_path):
         ), "Issue adding data to interval."
 
 
-def test_remove_drillhole_data(tmp_path):
-    h5file_path = tmp_path / r"test_remove_concatenated.geoh5"
+def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
+
     well_name = "well"
     n_data = 10
 
-    with Workspace(h5file_path, version=2.0) as workspace:
+    with Workspace(h5file_path, version=version, ga_version=ga_version) as workspace:
         # Create a workspace
         dh_group = DrillholeGroup.create(workspace, name="DH_group")
-
-        assert (
-            dh_group.data == {}
-        ), "DrillholeGroup should not have data on instantiation."
-
         well = Drillhole.create(
             workspace,
             collar=np.r_[0.0, 10.0, 10],
@@ -384,6 +379,11 @@ def test_remove_drillhole_data(tmp_path):
             parent=dh_group,
             name=well_name,
         )
+        # Create random from-to
+        from_to_a = np.sort(np.random.uniform(low=0.05, high=100, size=(50,))).reshape(
+            (-1, 2)
+        )
+        from_to_b = np.vstack([from_to_a[0, :], [30.1, 55.5], [56.5, 80.2]])
 
         # Add both set of log data with 0.5 m tolerance
         well.add_data(
@@ -406,10 +406,24 @@ def test_remove_drillhole_data(tmp_path):
         well_c.name = "Number 3"
         well_c.collar = np.r_[10.0, -10.0, 10]
 
-    with Workspace(h5file_path, version=2.0) as workspace:
-        dh_group = workspace.get_entity("DH_group")[0]
+        well.add_data(
+            {
+                "interval_values_b": {
+                    "values": np.random.randn(from_to_b.shape[0]),
+                    "from-to": from_to_b,
+                },
+            }
+        )
+    return dh_group, workspace
 
-        well = workspace.get_entity(well_name)[0]
+
+def test_remove_drillhole_data(tmp_path):
+    h5file_path = tmp_path / r"test_remove_concatenated.geoh5"
+
+    create_drillholes(h5file_path, version=2.0, ga_version="1.0")
+
+    with Workspace(h5file_path, version=2.0) as workspace:
+        well = workspace.get_entity("well")[0]
         well_b = workspace.get_entity("Number 2")[0]
         data = well.get_data("my_log_values/")[0]
         print(data.uid)
@@ -417,6 +431,15 @@ def test_remove_drillhole_data(tmp_path):
         workspace.remove_entity(well_b)
 
     with Workspace(h5file_path, version=2.0) as workspace:
-        well = workspace.get_entity(well_name)[0]
+        well = workspace.get_entity("well")[0]
         assert "my_log_values/" not in well.get_entity_list()
         assert workspace.get_entity("Number 2")[0] is None
+
+
+def test_create_drillhole_data_v4_2(tmp_path):
+    h5file_path = tmp_path / r"test_create_concatenated_v4_2.geoh5"
+    dh_group, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
+
+    with workspace.open():
+        assert dh_group.workspace.ga_version == "4.2"
+        assert dh_group.concat_attr_str == "Attributes Jsons"

@@ -15,9 +15,11 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=too-many-lines
 
 from __future__ import annotations
 
+import re
 import uuid
 from typing import TYPE_CHECKING
 
@@ -49,7 +51,7 @@ PROPERTY_KWARGS = {
 }
 
 
-class Concatenator(Group):
+class Concatenator(Group):  # pylint: disable=too-many-public-methods
     """
     Class modifier for concatenation of objects and data.
     """
@@ -57,6 +59,7 @@ class Concatenator(Group):
     _concatenated_attributes: dict | None = None
     _attributes_keys: list[uuid.UUID] | None = None
     _concatenated_object_ids: list[bytes] | None = None
+    _concat_attr_str: str | None = None
     _data: dict
     _index: dict
     _property_group_ids: np.ndarray | None = None
@@ -68,7 +71,7 @@ class Concatenator(Group):
 
         getattr(self, "_attribute_map").update(
             {
-                "Attributes": "concatenated_attributes",
+                self.concat_attr_str: "concatenated_attributes",
                 "Property Groups IDs": "property_group_ids",
                 "Concatenated object IDs": "concatenated_object_ids",
             }
@@ -114,6 +117,20 @@ class Concatenator(Group):
             self.update_array_attribute(child, "trace")
 
         child.on_file = True
+
+    @property
+    def concat_attr_str(self) -> str:
+        """String identifier for the concatenated attributes."""
+        if self._concat_attr_str is None:
+            self._concat_attr_str = "Attributes"
+            if (
+                self.workspace.ga_version is not None
+                and "4." in self.workspace.ga_version
+            ):
+                version = re.findall(r"\d+\.\d+", self.workspace.ga_version)
+                if version and float(version[0]) >= 4.2:
+                    self._concat_attr_str = "Attributes Jsons"
+        return self._concat_attr_str
 
     @property
     def concatenated_attributes(self) -> dict | None:
@@ -562,6 +579,7 @@ class Concatenated(Entity):
     """
 
     _parent: Concatenated | Concatenator
+    _concat_attr_str: str = "Attributes"
 
     def __init__(self, entity_type, **kwargs):
         attribute_map = getattr(self, "_attribute_map", {})
@@ -570,6 +588,11 @@ class Concatenated(Entity):
             attr[attribute_map.get(key, key)] = value
 
         super().__init__(entity_type, **attr)
+
+    @property
+    def concat_attr_str(self) -> str:
+        """String identifier for the concatenated attributes."""
+        return self._concat_attr_str
 
     @property
     def concatenator(self) -> Concatenator:
