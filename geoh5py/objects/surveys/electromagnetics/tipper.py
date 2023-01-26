@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 import uuid
-import warnings
 
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_type import ObjectType
@@ -70,10 +69,6 @@ class BaseTipper(BaseEMSurvey):
 
                 if isinstance(base_station_entity, TipperBaseStations):
                     self._base_stations = base_station_entity
-                else:
-                    warnings.warn(
-                        "Associated `base_stations` entity not set.", UserWarning
-                    )
 
         return self._base_stations
 
@@ -99,7 +94,7 @@ class BaseTipper(BaseEMSurvey):
 
     @property
     def default_input_types(self) -> list[str]:
-        """Input types. Must be 'Rx and base stations'"""
+        """Choice of survey creation types."""
         return self.__INPUT_TYPE
 
     @property
@@ -149,10 +144,10 @@ class TipperReceivers(BaseTipper, Curve):  # pylint: disable=too-many-ancestors
     __TYPE_UID = uuid.UUID("{0b639533-f35b-44d8-92a8-f70ecff3fd26}")
     __TYPE = "Receivers"
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, object_type: ObjectType, name="Tipper rx", **kwargs):
         self._base_stations: TipperBaseStations | None = None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(object_type, name=name, **kwargs)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -175,9 +170,9 @@ class TipperBaseStations(BaseTipper, Points):
     __TYPE_UID = uuid.UUID("{f495cd13-f09b-4a97-9212-2ea392aeb375}")
     __TYPE = "Base stations"
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, object_type: ObjectType, name="Tipper base", **kwargs):
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(object_type, name=name, **kwargs)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

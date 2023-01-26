@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import uuid
 
+from geoh5py.objects.object_base import ObjectType
 from geoh5py.objects.points import Points
 
 from .base import BaseEMSurvey
@@ -39,9 +40,13 @@ class MTReceivers(BaseEMSurvey, Points):
     ]
     __INPUT_TYPE = ["Rx only"]
 
+    def __init__(self, object_type: ObjectType, name="Magnetotellurics rx", **kwargs):
+
+        super().__init__(object_type, name=name, **kwargs)
+
     @property
     def default_input_types(self) -> list[str]:
-        """Input types. Must be 'Rx only'"""
+        """Choice of survey creation types."""
         return self.__INPUT_TYPE
 
     @property

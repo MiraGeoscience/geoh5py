@@ -44,17 +44,8 @@ def test_create_survey_tipper(tmp_path):
         base_stations, TipperBaseStations
     ), "Entity type TipperBaseStations failed to create."
 
-    with pytest.warns(UserWarning) as warn:
-        print(receivers.base_stations)
-
-    assert "Associated `base_stations` entity not set." in str(warn[0])
-
-    with pytest.raises(TypeError) as error:
+    with pytest.raises(TypeError, match=f"{TipperBaseStations}"):
         receivers.base_stations = "123"
-
-    assert f"{TipperBaseStations}" in str(
-        error
-    ), "Missed raising error on 'base stations' change."
 
     with pytest.raises(
         TypeError, match=f"Provided receivers must be of type {type(receivers)}."
@@ -64,22 +55,20 @@ def test_create_survey_tipper(tmp_path):
     with pytest.raises(TypeError, match=f"{TipperBaseStations}"):
         base_stations.base_stations = receivers
 
-    with pytest.raises(AttributeError) as error:
+    with pytest.raises(
+        AttributeError,
+        match=f"The 'base_station' attribute cannot be set on class {TipperBaseStations}.",
+    ):
         base_stations.base_stations = base_stations
-
-    assert (
-        f"The 'base_station' attribute cannot be set on class {TipperBaseStations}."
-        in str(error)
-    ), "Missed raising AttributeError on setting 'base_stations' on self."
 
     assert base_stations.base_stations == base_stations
 
     base_stations_test = TipperBaseStations.create(workspace, vertices=vertices[1:, :])
 
-    with pytest.raises(AttributeError) as error:
+    with pytest.raises(
+        AttributeError, match="The input 'base_stations' should have n_vertices"
+    ):
         receivers.base_stations = base_stations_test
-
-    assert "The input 'base_stations' should have n_vertices" in str(error)
 
     receivers.base_stations = base_stations
 
@@ -105,7 +94,7 @@ def test_create_survey_tipper(tmp_path):
     # Create a workspace
     receivers.copy(Workspace(tmp_path / r"testATEM_copy.geoh5"))
     new_workspace = Workspace(tmp_path / r"testATEM_copy.geoh5")
-    receivers_rec = new_workspace.get_entity("TipperReceivers")[0]
+    receivers_rec = new_workspace.get_entity("Tipper rx")[0]
     compare_entities(
         receivers, receivers_rec, ignore=["_receivers", "_base_stations", "_parent"]
     )

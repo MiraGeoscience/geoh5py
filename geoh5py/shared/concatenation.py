@@ -164,7 +164,7 @@ class Concatenator(Group):
         self._concatenated_object_ids = object_ids
         self.workspace.update_attribute(self, "concatenated_object_ids")
 
-    def copy(self, parent=None, copy_children: bool = True):
+    def copy(self, parent=None, copy_children: bool = True, **kwargs):
         """
         Function to copy an entity to a different parent entity.
 
@@ -178,7 +178,9 @@ class Concatenator(Group):
         if parent is None:
             parent = self.parent
 
-        new_entity = parent.workspace.copy_to_parent(self, parent, copy_children=False)
+        new_entity = parent.workspace.copy_to_parent(
+            self, parent, copy_children=False, **kwargs
+        )
 
         if self.concatenated_attributes is None:
             return new_entity

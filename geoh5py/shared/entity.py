@@ -49,11 +49,11 @@ class Entity(ABC):
     }
     _visible = True
 
-    def __init__(self, uid: uuid.UUID | None = None, **kwargs):
+    def __init__(self, uid: uuid.UUID | None = None, name="Entity", **kwargs):
         self._uid = (
             str2uuid(uid) if isinstance(str2uuid(uid), uuid.UUID) else uuid.uuid4()
         )
-        self._name = "Entity"
+        self._name = name
         self._parent: Entity | None = None
         self._children: list = []
         self._allow_delete = True

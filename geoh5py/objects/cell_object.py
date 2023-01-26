@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from ..data import Data
 from .points import Points
 
 if TYPE_CHECKING:
@@ -37,11 +38,11 @@ class CellObject(Points, ABC):
 
     _attribute_map: dict = Points._attribute_map.copy()
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, object_type: ObjectType, name="Object", **kwargs):
 
         self._cells: np.ndarray | None = None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(object_type, name=name, **kwargs)
 
     @classmethod
     @abstractmethod
@@ -60,6 +61,11 @@ class CellObject(Points, ABC):
             and np.max(indices) > self.cells.shape[0] - 1
         ):
             raise ValueError("Found indices larger than the number of cells.")
+
+        # Pre-load data values
+        for child in self.children:
+            if isinstance(child, Data):
+                getattr(child, "values")
 
         cells = np.delete(self.cells, indices, axis=0)
         self._cells = None
@@ -83,6 +89,11 @@ class CellObject(Points, ABC):
         vert_index = np.ones(self.vertices.shape[0], dtype=bool)
         vert_index[indices] = False
         vertices = self.vertices[vert_index, :]
+
+        # Pre-load data values
+        for child in self.children:
+            if isinstance(child, Data):
+                getattr(child, "values")
 
         self._vertices = None
         setattr(self, "vertices", vertices)
