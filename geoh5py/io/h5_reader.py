@@ -230,6 +230,14 @@ class H5Reader:
 
                     return json.loads(as_str_if_utf8_bytes(attribute))
 
+                if label == "Attributes Jsons":
+                    attribute = group[label][()]
+                    return {
+                        "Attributes": [
+                            json.loads(as_str_if_utf8_bytes(val)) for val in attribute
+                        ]
+                    }
+
                 return list(group[label])
 
             except KeyError:
