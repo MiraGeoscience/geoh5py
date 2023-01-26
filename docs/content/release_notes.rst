@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Release 0.6.0 - 2023/01/26
+--------------------------
+
+- GEOPY-700, 701, 721, 726: Add functionality to convert between Grid2D and GeoImages.
+- GEOPY-843: Update drillhole group compatibility with ANALYST v4.2
+- GEOPY-746: Implement ground TEM (large-loop) survey type.
+
+
 Release 0.5.0 - 2022/10/26
 --------------------------
 
