@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -58,9 +58,9 @@ class InputValidation:
 
     def __init__(
         self,
-        validators: dict[str, BaseValidator] = None,
+        validators: dict[str, BaseValidator] | None = None,
         validations: dict[str, Any] | None = None,
-        workspace: Workspace = None,
+        workspace: Workspace | None = None,
         ui_json: dict[str, Any] | None = None,
         validation_options: dict[str, Any] | None = None,
     ):
@@ -120,7 +120,8 @@ class InputValidation:
     def _required_validators(validations):
         """Returns dictionary of validators required by validations."""
         unique_validators = InputValidation._unique_validators(validations)
-        all_validators = {k.validator_type: k() for k in BaseValidator.__subclasses__()}
+        sub_classes: list[BaseValidator] = getattr(BaseValidator, "__subclasses__")()
+        all_validators: dict[str, Any] = {k.validator_type: k() for k in sub_classes}
         val = {}
         for k in unique_validators:
             if k not in all_validators:
@@ -221,7 +222,9 @@ class InputValidation:
                     out[key].update(val)
         return out
 
-    def validate(self, name: str, value: Any, validations: dict[str, Any] = None):
+    def validate(
+        self, name: str, value: Any, validations: dict[str, Any] | None = None
+    ):
         """
         Run validations on a given key and value.
 

@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -21,7 +21,12 @@ import re
 
 import pytest
 
-from geoh5py.shared.utils import iterable, iterable_message, mask_by_extent
+from geoh5py.shared.utils import (
+    iterable,
+    iterable_message,
+    mask_by_extent,
+    overwrite_kwargs,
+)
 
 
 def test_iterable():
@@ -59,3 +64,13 @@ def test_mask_by_extent():
         mask_by_extent(points, corners[:2])
 
     assert not mask_by_extent([points], corners[:2]), "Point should have been outside."
+
+
+def test_overwrite_kwargs():
+
+    kwargs = {"test": 8}
+    kwargs_to_overwrite = {"test": 9}
+
+    new_kwargs = overwrite_kwargs(kwargs, kwargs_to_overwrite)
+
+    assert new_kwargs["test"] == kwargs_to_overwrite["test"]

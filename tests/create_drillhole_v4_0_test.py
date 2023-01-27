@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -16,13 +16,14 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 # pylint: disable=R0914
+# mypy: ignore-errors
 
 import numpy as np
 import pytest
 
 from geoh5py.data import FloatData, data_type
-from geoh5py.groups import ContainerGroup, DrillholeGroup
-from geoh5py.objects import Drillhole
+from geoh5py.groups import ContainerGroup, DrillholeGroup, Group
+from geoh5py.objects import Drillhole, ObjectBase
 from geoh5py.shared.concatenation import (
     ConcatenatedData,
     ConcatenatedObject,
@@ -81,21 +82,21 @@ def test_concatenated_entities(tmp_path):
     with Workspace(h5file_path, version=2.0) as workspace:
 
         class_type = type("TestGroup", (Concatenator, ContainerGroup), {})
-        entity_type = class_type.find_or_create_type(workspace)
+        entity_type = Group.find_or_create_type(workspace)
         concat = class_type(entity_type)
 
-        class_type = type("TestObject", (ConcatenatedObject, Drillhole), {})
-        entity_type = class_type.find_or_create_type(workspace)
+        class_obj_type = type("TestObject", (ConcatenatedObject, Drillhole), {})
+        object_type = ObjectBase.find_or_create_type(workspace)
 
         with pytest.raises(UserWarning) as error:
-            concat_object = class_type(entity_type)
+            concat_object = class_obj_type(object_type)
 
         assert (
             "Creating a concatenated object must have a parent of type Concatenator."
             in str(error)
         )
 
-        concat_object = class_type(entity_type, parent=concat)
+        concat_object = class_obj_type(object_type, parent=concat)
 
         with pytest.raises(UserWarning) as error:
             class_type = type("TestData", (ConcatenatedData, FloatData), {})
@@ -111,7 +112,7 @@ def test_concatenated_entities(tmp_path):
         assert data.property_group is None
 
         with pytest.raises(UserWarning) as error:
-            prop_group = ConcatenatedPropertyGroup()
+            prop_group = ConcatenatedPropertyGroup(None)
 
         assert "Creating a concatenated data must have a parent" in str(error)
 
@@ -359,19 +360,14 @@ def test_create_drillhole_data(tmp_path):
         ), "Issue adding data to interval."
 
 
-def test_remove_drillhole_data(tmp_path):
-    h5file_path = tmp_path / r"test_remove_concatenated.geoh5"
+def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
+
     well_name = "well"
     n_data = 10
 
-    with Workspace(h5file_path, version=2.0) as workspace:
+    with Workspace(h5file_path, version=version, ga_version=ga_version) as workspace:
         # Create a workspace
         dh_group = DrillholeGroup.create(workspace, name="DH_group")
-
-        assert (
-            dh_group.data == {}
-        ), "DrillholeGroup should not have data on instantiation."
-
         well = Drillhole.create(
             workspace,
             collar=np.r_[0.0, 10.0, 10],
@@ -383,6 +379,11 @@ def test_remove_drillhole_data(tmp_path):
             parent=dh_group,
             name=well_name,
         )
+        # Create random from-to
+        from_to_a = np.sort(np.random.uniform(low=0.05, high=100, size=(50,))).reshape(
+            (-1, 2)
+        )
+        from_to_b = np.vstack([from_to_a[0, :], [30.1, 55.5], [56.5, 80.2]])
 
         # Add both set of log data with 0.5 m tolerance
         well.add_data(
@@ -405,10 +406,24 @@ def test_remove_drillhole_data(tmp_path):
         well_c.name = "Number 3"
         well_c.collar = np.r_[10.0, -10.0, 10]
 
-    with Workspace(h5file_path, version=2.0) as workspace:
-        dh_group = workspace.get_entity("DH_group")[0]
+        well.add_data(
+            {
+                "interval_values_b": {
+                    "values": np.random.randn(from_to_b.shape[0]),
+                    "from-to": from_to_b,
+                },
+            }
+        )
+    return dh_group, workspace
 
-        well = workspace.get_entity(well_name)[0]
+
+def test_remove_drillhole_data(tmp_path):
+    h5file_path = tmp_path / r"test_remove_concatenated.geoh5"
+
+    create_drillholes(h5file_path, version=2.0, ga_version="1.0")
+
+    with Workspace(h5file_path, version=2.0) as workspace:
+        well = workspace.get_entity("well")[0]
         well_b = workspace.get_entity("Number 2")[0]
         data = well.get_data("my_log_values/")[0]
         print(data.uid)
@@ -416,6 +431,15 @@ def test_remove_drillhole_data(tmp_path):
         workspace.remove_entity(well_b)
 
     with Workspace(h5file_path, version=2.0) as workspace:
-        well = workspace.get_entity(well_name)[0]
+        well = workspace.get_entity("well")[0]
         assert "my_log_values/" not in well.get_entity_list()
         assert workspace.get_entity("Number 2")[0] is None
+
+
+def test_create_drillhole_data_v4_2(tmp_path):
+    h5file_path = tmp_path / r"test_create_concatenated_v4_2.geoh5"
+    dh_group, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
+
+    with workspace.open():
+        assert dh_group.workspace.ga_version == "4.2"
+        assert dh_group.concat_attr_str == "Attributes Jsons"

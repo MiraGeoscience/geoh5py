@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -135,7 +135,7 @@ class DrapeModel(ObjectBase):
 
     @property
     def n_cells(self):
-        if self.prisms is not None:
+        if self._prisms is not None:
             return int(self._prisms["Layer count"].sum())
         return None
 

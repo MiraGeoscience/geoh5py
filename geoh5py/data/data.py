@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -146,7 +146,7 @@ class Data(Entity):
         raise NotImplementedError("Data entity cannot contain files.")
 
     def remove_data_from_group(
-        self, data: list | Entity | uuid.UUID | str, name: str = None
+        self, data: list | Entity | uuid.UUID | str, name: str | None = None
     ):
         """
         Remove self from a property group.

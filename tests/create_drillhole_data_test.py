@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -40,15 +40,22 @@ def test_create_drillhole_data(tmp_path):
         max_depth = 100
         well = Drillhole.create(
             workspace,
-            collar=np.r_[0.0, 10.0, 10],
-            surveys=np.c_[
-                np.linspace(0, max_depth, n_data),
-                np.ones(n_data) * 45.0,
-                np.linspace(-89, -75, n_data),
-            ],
             name=well_name,
             default_collocation_distance=1e-5,
         )
+
+        with pytest.raises(
+            AttributeError, match="The 'desurvey' operation requires the 'locations'"
+        ):
+            well.desurvey(0.0)
+
+        well.collar = [0.0, 10.0, 10]
+        well.surveys = np.c_[
+            np.linspace(0, max_depth, n_data),
+            np.ones(n_data) * 45.0,
+            np.linspace(-89, -75, n_data),
+        ]
+
         value_map = {}
         for ref in range(8):
             value_map[ref] = "".join(

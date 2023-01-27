@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -19,30 +19,33 @@ from __future__ import annotations
 
 import uuid
 import warnings
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 import numpy as np
 
+from ..data import Data
 from .points import Points
 
 if TYPE_CHECKING:
     from geoh5py.objects import ObjectType
 
 
-class CellObject(Points):
+class CellObject(Points, ABC):
     """
     Base class for object with cells.
     """
 
     _attribute_map: dict = Points._attribute_map.copy()
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, object_type: ObjectType, name="Object", **kwargs):
 
         self._cells: np.ndarray | None = None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(object_type, name=name, **kwargs)
 
     @classmethod
+    @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:
         """Default type uid."""
 
@@ -58,6 +61,11 @@ class CellObject(Points):
             and np.max(indices) > self.cells.shape[0] - 1
         ):
             raise ValueError("Found indices larger than the number of cells.")
+
+        # Pre-load data values
+        for child in self.children:
+            if isinstance(child, Data):
+                getattr(child, "values")
 
         cells = np.delete(self.cells, indices, axis=0)
         self._cells = None
@@ -81,6 +89,11 @@ class CellObject(Points):
         vert_index = np.ones(self.vertices.shape[0], dtype=bool)
         vert_index[indices] = False
         vertices = self.vertices[vert_index, :]
+
+        # Pre-load data values
+        for child in self.children:
+            if isinstance(child, Data):
+                getattr(child, "values")
 
         self._vertices = None
         setattr(self, "vertices", vertices)

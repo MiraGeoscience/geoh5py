@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -45,7 +45,7 @@ class Group(Entity):
     def default_type_uid(cls) -> uuid.UUID | None:
         ...
 
-    def add_comment(self, comment: str, author: str = None):
+    def add_comment(self, comment: str, author: str | None = None):
         """
         Add text comment to an object.
 

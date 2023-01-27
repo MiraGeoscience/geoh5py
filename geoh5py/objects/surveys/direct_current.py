@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -103,7 +103,7 @@ class PotentialElectrode(Curve):
             return self.ab_cell_id.value_map
         return None
 
-    def copy(self, parent=None, copy_children: bool = True):
+    def copy(self, parent=None, copy_children: bool = True, **kwargs):
         """
         Function to copy a survey to a different parent entity.
 
@@ -118,7 +118,7 @@ class PotentialElectrode(Curve):
 
         omit_list = ["_metadata", "_potential_electrodes", "_current_electrodes"]
         new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children, omit_list=omit_list
+            self, parent, copy_children=copy_children, omit_list=omit_list, **kwargs
         )
         setattr(new_entity, "_ab_cell_id", None)
         if new_entity.ab_cell_id is None and self.ab_cell_id is not None:
@@ -240,7 +240,7 @@ class CurrentElectrode(PotentialElectrode):
         """
         return cls.__TYPE_UID
 
-    def copy(self, parent=None, copy_children: bool = True):
+    def copy(self, parent=None, copy_children: bool = True, **kwargs):
         """
         Function to copy a survey to a different parent entity.
 
@@ -255,7 +255,7 @@ class CurrentElectrode(PotentialElectrode):
 
         omit_list = ["_metadata", "_potential_electrodes", "_current_electrodes"]
         new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children, omit_list=omit_list
+            self, parent, copy_children=copy_children, omit_list=omit_list, **kwargs
         )
         setattr(new_entity, "_ab_cell_id", None)
         if new_entity.ab_cell_id is None and self.ab_cell_id is not None:
@@ -330,7 +330,7 @@ class CurrentElectrode(PotentialElectrode):
         """
         Utility function to set ab_cell_id's based on curve cells.
         """
-        if getattr(self, "cells", None) is None:
+        if getattr(self, "cells", None) is None or self.n_cells is None:
             raise AttributeError(
                 "Cells must be set before assigning default ab_cell_id"
             )
@@ -338,7 +338,7 @@ class CurrentElectrode(PotentialElectrode):
         data = np.arange(self.n_cells) + 1
         value_map = {ii: str(ii) for ii in range(self.n_cells + 1)}
         value_map[0] = "Unknown"
-        self._ab_cell_id = self.add_data(
+        ab_cell_id = self.add_data(
             {
                 "A-B Cell ID": {
                     "values": data,
@@ -350,4 +350,6 @@ class CurrentElectrode(PotentialElectrode):
                 }
             }
         )
-        self._ab_cell_id.entity_type.name = "A-B"
+        if isinstance(ab_cell_id, ReferencedData):
+            ab_cell_id.entity_type.name = "A-B"
+            self._ab_cell_id = ab_cell_id

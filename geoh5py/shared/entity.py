@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -49,11 +49,11 @@ class Entity(ABC):
     }
     _visible = True
 
-    def __init__(self, uid: uuid.UUID | None = None, **kwargs):
+    def __init__(self, uid: uuid.UUID | None = None, name="Entity", **kwargs):
         self._uid = (
             str2uuid(uid) if isinstance(str2uuid(uid), uuid.UUID) else uuid.uuid4()
         )
-        self._name = "Entity"
+        self._name = name
         self._parent: Entity | None = None
         self._children: list = []
         self._allow_delete = True
@@ -168,14 +168,14 @@ class Entity(ABC):
         """
         return self._clipping_ids
 
-    def copy(self, parent=None, copy_children: bool = True):
+    def copy(self, parent=None, copy_children: bool = True, **kwargs):
         """
         Function to copy an entity to a different parent entity.
 
         :param parent: Target parent to copy the entity under. Copied to current
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: (Optional) Create copies of all children entities along with it.
-
+        :param kwargs: Additional keyword arguments to pass to the copy constructor.
         :return entity: Registered Entity to the workspace.
         """
 
@@ -183,7 +183,7 @@ class Entity(ABC):
             parent = self.parent
 
         new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children
+            self, parent, copy_children=copy_children, **kwargs
         )
 
         return new_entity
@@ -375,7 +375,7 @@ class Entity(ABC):
         self.workspace.remove_children(self, children)
 
     def remove_data_from_group(
-        self, data: list | Entity | uuid.UUID | str, name: str = None
+        self, data: list | Entity | uuid.UUID | str, name: str | None = None
     ) -> None:
         """
         Remove data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`

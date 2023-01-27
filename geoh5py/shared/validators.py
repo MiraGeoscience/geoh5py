@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -69,7 +69,7 @@ class BaseValidator(ABC):
 
     @property
     @abstractmethod
-    def validator_type(self):
+    def validator_type(self) -> str:
         """
         Validation type identifier.
         """

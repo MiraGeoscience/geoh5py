@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -32,7 +32,7 @@ from ..data.data_association_enum import DataAssociationEnum
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
-from ..shared.concatenation import Concatenated, ConcatenatedPropertyGroup
+from ..shared.conversion import BaseConversion
 from ..shared.utils import mask_by_extent
 from .object_type import ObjectType
 
@@ -49,6 +49,7 @@ class ObjectBase(Entity):
     _attribute_map.update(
         {"Last focus": "last_focus", "PropertyGroups": "property_groups"}
     )
+    _converter: type[BaseConversion] | None = None
 
     def __init__(self, object_type: ObjectType, **kwargs):
         assert object_type is not None
@@ -67,7 +68,7 @@ class ObjectBase(Entity):
         if self.entity_type.name == "Entity":
             self.entity_type.name = type(self).__name__
 
-    def add_comment(self, comment: str, author: str = None):
+    def add_comment(self, comment: str, author: str | None = None):
         """
         Add text comment to an object.
 
@@ -309,22 +310,13 @@ class ObjectBase(Entity):
         ):
             prop_group = [pg for pg in property_groups if pg.name == kwargs["name"]][0]
         else:
-            kwargs["parent"] = self
-
             if (
                 "property_group_type" not in kwargs
                 and "Property Group Type" not in kwargs
             ):
-                if isinstance(self, Concatenated):
-                    kwargs["property_group_type"] = "Interval table"
-                else:
-                    kwargs["property_group_type"] = "Multi-element"
+                kwargs["property_group_type"] = "Multi-element"
 
-            if isinstance(self, Concatenated):
-
-                prop_group = ConcatenatedPropertyGroup(**kwargs)
-            else:
-                prop_group = PropertyGroup(**kwargs)
+            prop_group = PropertyGroup(self, **kwargs)
 
             property_groups += [prop_group]
 
@@ -394,27 +386,29 @@ class ObjectBase(Entity):
     @property
     def property_groups(self) -> list[PropertyGroup] | None:
         """
-        :obj:`list` of :obj:`~geoh5py.groups.property_group.PropertyGroup`.
+        List of :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         """
         return self._property_groups
 
-    @property_groups.setter
-    def property_groups(self, prop_groups: list[PropertyGroup]):
-        if prop_groups is None:
-            property_groups = None
+    def remove_property_groups(
+        self, property_groups: PropertyGroup | list[PropertyGroup]
+    ):
+        if self.property_groups is None:
+            return
+
+        if isinstance(property_groups, PropertyGroup):
+            property_groups = [property_groups]
+
+        keepers = []
+        for property_group in self.property_groups:
+            if property_group not in property_groups:
+                keepers += [property_group]
+
+        if not keepers:
+            self._property_groups = None
         else:
-            property_groups = self._property_groups
-            if property_groups is None:
-                property_groups = []
+            self._property_groups = keepers
 
-            for prop_group in prop_groups:
-                if not any(
-                    pg.uid == prop_group.uid for pg in property_groups
-                ) and not any(pg.name == prop_group.name for pg in property_groups):
-                    prop_group.parent = self
-                    property_groups += [prop_group]
-
-        self._property_groups = property_groups
         self.workspace.update_attribute(self, "property_groups")
 
     def remove_children_values(self, indices: list[int], association: str):
@@ -432,6 +426,13 @@ class ObjectBase(Entity):
         :obj:`numpy.array` of :obj:`float`, shape (\*, 3): Array of x, y, z coordinates
         defining the position of points in 3D space.
         """
+
+    @property
+    def converter(self):
+        """
+        :return: The converter for the object.
+        """
+        return self._converter
 
     def validate_data_association(self, attribute_dict):
         """

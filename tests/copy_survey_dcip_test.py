@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from geoh5py.objects import CurrentElectrode, PotentialElectrode
 from geoh5py.shared.utils import compare_entities
@@ -38,9 +39,13 @@ def test_copy_survey_dcip(tmp_path):
         x_loc, y_loc = np.meshgrid(np.arange(n_data), np.arange(-1, 3))
         vertices = np.c_[x_loc.ravel(), y_loc.ravel(), np.zeros_like(x_loc).ravel()]
         parts = np.kron(np.arange(4), np.ones(n_data)).astype("int")
-        currents = CurrentElectrode.create(
-            workspace, name=name, vertices=vertices, parts=parts
-        )
+        currents = CurrentElectrode.create(workspace, name=name)
+
+        with pytest.raises(AttributeError, match="Cells must be set"):
+            currents.add_default_ab_cell_id()
+
+        currents.vertices = vertices
+        currents.parts = parts
         currents.add_default_ab_cell_id()
         potentials = PotentialElectrode.create(
             workspace, name=name + "_rx", vertices=vertices

@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -37,6 +37,10 @@ from .surveys.direct_current import CurrentElectrode, PotentialElectrode
 from .surveys.electromagnetics.airborne_tem import (
     AirborneTEMReceivers,
     AirborneTEMTransmitters,
+)
+from .surveys.electromagnetics.ground_tem import (
+    GroundTEMReceiversLargeLoop,
+    GroundTEMTransmittersLargeLoop,
 )
 from .surveys.electromagnetics.magnetotellurics import MTReceivers
 from .surveys.electromagnetics.tipper import TipperBaseStations, TipperReceivers

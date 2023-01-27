@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -21,6 +21,8 @@ import uuid
 
 import numpy as np
 
+from .. import objects
+from ..shared.conversion import Grid2DConversion
 from .object_base import ObjectBase, ObjectType
 
 
@@ -51,14 +53,16 @@ class Grid2D(ObjectBase):
         }
     )
 
+    _converter = Grid2DConversion
+
     def __init__(self, object_type: ObjectType, **kwargs):
 
         self._origin = np.array([0, 0, 0])
         self._u_cell_size = None
         self._v_cell_size = None
-        self._u_count = None
-        self._v_count = None
-        self._rotation = 0.0
+        self._u_count: int | None = None
+        self._v_count: int | None = None
+        self._rotation: float = 0.0
         self._vertical = False
         self._dip = 0.0
         self._centroids: np.ndarray | None = None
@@ -219,9 +223,9 @@ class Grid2D(ObjectBase):
         return None
 
     @property
-    def u_cell_size(self) -> float | None:
+    def u_cell_size(self) -> np.ndarray | None:
         """
-        :obj:`float`: Cell size along the u-axis.
+        :obj:`np.ndarray`: Cell size along the u-axis.
         """
         return self._u_cell_size
 
@@ -252,9 +256,9 @@ class Grid2D(ObjectBase):
             self.workspace.update_attribute(self, "attributes")
 
     @property
-    def v_cell_size(self) -> float | None:
+    def v_cell_size(self) -> np.ndarray | None:
         """
-        :obj:`float`: Cell size along the v-axis
+        :obj:`np.ndarray`: Cell size along the v-axis
         """
         return self._v_cell_size
 
@@ -300,3 +304,13 @@ class Grid2D(ObjectBase):
             self._centroids = None
             self._vertical = value
             self.workspace.update_attribute(self, "attributes")
+
+    def to_geoimage(self, keys: list | str, **geoimage_kwargs) -> objects.GeoImage:
+
+        """
+        Create a :obj:geoh5py.objects.geo_image.GeoImage object from the current Grid2D.
+        :param keys: the list of the data name to pass as band in the image.
+        Warning: The len of the list can only be 1, 3, 4 (Pillow restrictions).
+        :return: a new georeferenced :obj:`geoh5py.objects.geo_image.GeoImage`.
+        """
+        return self.converter.to_geoimage(self, keys, **geoimage_kwargs)

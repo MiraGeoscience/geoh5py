@@ -16,6 +16,10 @@ on:
       - feature/**
       - hotfix/**
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 env:
   source_dir: geoh5py
 
@@ -26,7 +30,7 @@ jobs:
       fail-fast: false
       matrix:
         python_ver: ['3.8', '3.9', '3.10']
-        os: [ubuntu-latest,' macos-latest']
+        os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     defaults:
       run:

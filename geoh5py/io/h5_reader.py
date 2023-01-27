@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -40,7 +40,7 @@ class H5Reader:
         file: str | h5py.File,
         uid: uuid.UUID,
         entity_type: str,
-    ) -> tuple[dict, dict, dict]:
+    ) -> tuple[dict, dict, dict] | None:
         """
         Get attributes of an :obj:`~geoh5py.shared.entity.Entity`.
 
@@ -57,16 +57,19 @@ class H5Reader:
         """
         with fetch_h5_handle(file) as h5file:
             name = list(h5file)[0]
-            attributes: dict = {"entity": {}}
-            type_attributes: dict = {"entity_type": {}}
-            property_groups: dict = {}
-
             entity_type = cls.format_type_string(entity_type)
 
             if entity_type == "Root":
-                entity = h5file[name][entity_type]
+                entity = h5file[name].get(entity_type)
             else:
-                entity = h5file[name][entity_type][as_str_if_uuid(uid)]
+                entity = h5file[name][entity_type].get(as_str_if_uuid(uid))
+
+            if entity is None:
+                return None
+
+            attributes: dict = {"entity": {}}
+            type_attributes: dict = {"entity_type": {}}
+            property_groups: dict = {}
 
             for key, value in entity.attrs.items():
                 attributes["entity"][key] = value
@@ -226,6 +229,14 @@ class H5Reader:
                         attribute = attribute[0]
 
                     return json.loads(as_str_if_utf8_bytes(attribute))
+
+                if label == "Attributes Jsons":
+                    attribute = group[label][()]
+                    return {
+                        "Attributes": [
+                            json.loads(as_str_if_utf8_bytes(val)) for val in attribute
+                        ]
+                    }
 
                 return list(group[label])
 
