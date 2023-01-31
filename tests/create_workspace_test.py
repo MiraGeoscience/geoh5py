@@ -129,6 +129,9 @@ def test_reopening_mode(tmp_path):
         pass
 
     with workspace.open(mode="r") as workspace:
+        with fetch_active_workspace(workspace, mode="r") as re_open:
+            assert re_open.geoh5.mode == "r"
+
         with pytest.warns(UserWarning, match="Closing the workspace in mode 'r'"):
             with fetch_active_workspace(workspace, mode="r+"):
                 pass
