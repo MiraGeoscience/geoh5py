@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 @contextmanager
 def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
     """
-    Open a workspace in read mode.
+    Open a workspace in the requested 'mode'.
     If receiving an opened Workspace instead, merely return the given workspace.
 
     :param workspace: A Workspace class
