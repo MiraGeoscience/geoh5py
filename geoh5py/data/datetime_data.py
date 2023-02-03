@@ -17,10 +17,11 @@
 
 from __future__ import annotations
 
-from .data import Data, PrimitiveTypeEnum
+from .data import PrimitiveTypeEnum
+from .text_data import TextData
 
 
-class DatetimeData(Data):
+class DatetimeData(TextData):
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.DATETIME
