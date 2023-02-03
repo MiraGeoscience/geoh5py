@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import warnings
 from abc import ABC
 from contextlib import contextmanager
 from pathlib import Path
@@ -29,6 +30,40 @@ import numpy as np
 if TYPE_CHECKING:
     from ..workspace import Workspace
     from .entity import Entity
+
+
+@contextmanager
+def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
+    """
+    Open a workspace in the requested 'mode'.
+    If receiving an opened Workspace instead, merely return the given workspace.
+
+    :param workspace: A Workspace class
+    :param mode: Set the h5 read/write mode
+
+    :return h5py.File: Handle to an opened Workspace.
+    """
+    if (
+        workspace is None
+        or getattr(workspace, "_geoh5")
+        and mode in workspace.geoh5.mode
+    ):
+        try:
+            yield workspace
+        finally:
+            pass
+    else:
+        if getattr(workspace, "_geoh5"):
+            warnings.warn(
+                f"Closing the workspace in mode '{workspace.geoh5.mode}' "
+                f"and re-opening in mode '{mode}'."
+            )
+            workspace.close()
+
+        try:
+            yield workspace.open(mode=mode)
+        finally:
+            workspace.close()
 
 
 @contextmanager
