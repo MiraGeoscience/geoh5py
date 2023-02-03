@@ -345,6 +345,7 @@ class Workspace(AbstractContextManager):
             )
 
         if recovered_entity is not None:
+            self.save_entity_type(recovered_entity.entity_type)
             recovered_entity.on_file = True
             recovered_entity.entity_type.on_file = True
 
