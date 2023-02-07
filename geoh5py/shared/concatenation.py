@@ -203,6 +203,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             return new_entity
 
         for field in self.index:
+
             values = self.workspace.fetch_concatenated_values(self, field)
             if isinstance(values, tuple):
                 new_entity.data[field], new_entity.index[field] = values
@@ -210,15 +211,13 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             new_entity.save_attribute(field)
 
             # Copy over the data type
-            for elem in self.concatenated_attributes["Attributes"]:
-                if "Name" in elem and elem["Name"] == field and "Type ID" in elem:
-                    attr_type = self.workspace.fetch_type(
-                        uuid.UUID(elem["Type ID"]), "Data"
-                    )
-                    data_type = DataType.find_or_create(
-                        new_entity.workspace, **attr_type
-                    )
-                    new_entity.workspace.save_entity_type(data_type)
+        for elem in self.concatenated_attributes["Attributes"]:
+            if "Name" in elem and "Type ID" in elem:
+                attr_type = self.workspace.fetch_type(
+                    uuid.UUID(elem["Type ID"]), "Data"
+                )
+                data_type = DataType.find_or_create(new_entity.workspace, **attr_type)
+                new_entity.workspace.save_entity_type(data_type)
 
         new_entity.workspace.fetch_children(new_entity)
 

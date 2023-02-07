@@ -370,7 +370,7 @@ class H5Writer:
                     continue
 
                 if key in ["Association", "Primitive type"]:
-                    value = value.name.lower().title().replace("_", "-")
+                    value = KEY_MAP[value.name]
 
                 if isinstance(value, (np.int8, bool)):
                     entity_handle.attrs.create(key, int(value), dtype="int8")

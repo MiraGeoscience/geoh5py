@@ -254,8 +254,25 @@ KEY_MAP = {
     "values": "Data",
     "vertices": "Vertices",
     "z_cell_delimiters": "Z cell delimiters",
+    "INVALID": "Invalid",
+    "INTEGER": "Integer",
+    "FLOAT": "Float",
+    "TEXT": "Text",
+    "REFERENCED": "Referenced",
+    "FILENAME": "Filename",
+    "BLOB": "Blob",
+    "VECTOR": "Vector",
+    "DATETIME": "DateTime",
+    "GEOMETRIC": "Geometric",
+    "MULTI_TEXT": "Multi-Text",
+    "UNKNOWN": "Unknown",
+    "OBJECT": "Object",
+    "CELL": "Cell",
+    "VERTEX": "Vertex",
+    "FACE": "Face",
+    "GROUP": "Group",
+    "DEPTH": "Depth",
 }
-
 INV_KEY_MAP = {value: key for key, value in KEY_MAP.items()}
 
 

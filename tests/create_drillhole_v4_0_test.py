@@ -426,7 +426,6 @@ def test_remove_drillhole_data(tmp_path):
         well = workspace.get_entity("well")[0]
         well_b = workspace.get_entity("Number 2")[0]
         data = well.get_data("my_log_values/")[0]
-        print(data.uid)
         workspace.remove_entity(data)
         workspace.remove_entity(well_b)
 
@@ -443,3 +442,22 @@ def test_create_drillhole_data_v4_2(tmp_path):
     with workspace.open():
         assert dh_group.workspace.ga_version == "4.2"
         assert dh_group.concat_attr_str == "Attributes Jsons"
+
+
+def test_copy_drillhole_group(tmp_path):
+    h5file_path = tmp_path / r"test_copy_concatenated.geoh5"
+
+    dh_group, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
+
+    with workspace.open():
+        with Workspace(
+            tmp_path / r"test_copy_concatenated_copy.geoh5",
+            version=2.0,
+            ga_version="4.2",
+        ) as new_space:
+            dh_group_copy = dh_group.copy(parent=new_space)
+            compare_entities(
+                dh_group_copy,
+                dh_group,
+                ignore=["_metadata", "_parent"],
+            )
