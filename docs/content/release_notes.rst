@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Release 0.6.1 - 2023/02/08
+--------------------------
+
+- GEOPY-848: Fix issue copying drillholes with datetime.
+- GEOPY-847: Fix issue with clipping by extent with 2d coordinates
+- GEOPY-537: Add convenience method to get an active workspace.
+
+
 Release 0.6.0 - 2023/01/26
 --------------------------
 
