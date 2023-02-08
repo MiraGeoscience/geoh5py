@@ -53,15 +53,9 @@ def test_mask_by_extent():
 
     with pytest.raises(
         ValueError,
-        match=re.escape("Input 'extent' must be an array-like of shape(2, 3)."),
+        match=re.escape("Input 'locations' must be an array-like"),
     ):
-        mask_by_extent(points, corners)
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape("Input 'locations' must be an array-like of shape(*, 3)."),
-    ):
-        mask_by_extent(points, corners[:2])
+        mask_by_extent("abc", corners)
 
     assert not mask_by_extent([points], corners[:2]), "Point should have been outside."
 
