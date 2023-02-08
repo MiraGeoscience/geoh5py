@@ -395,7 +395,7 @@ def mask_by_extent(
 
     indices = np.ones(locations.shape[0], dtype=bool)
     for loc, lim in zip(locations.T, extent.T):
-        indices = np.logical_and(indices, np.logical_and(lim[0] <= loc, loc <= lim[1]))
+        indices &= (lim[0] <= loc) & (loc <= lim[1])
 
     return indices
 
