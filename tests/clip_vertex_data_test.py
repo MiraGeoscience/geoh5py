@@ -92,6 +92,24 @@ def test_clip_curve_data(tmp_path):
             assert np.all(clipped_d.values == data[0].values[clippings])
             assert len(clipped_c.values) == clipped_pts.n_cells
 
+    # Repeat with 2D bounds
+    extent = extent[:, :2]
+    clippings = np.all(
+        np.c_[
+            np.all(vertices >= np.r_[extent[0, :], -np.inf], axis=1),
+            np.all(vertices <= np.r_[extent[1, :], np.inf], axis=1),
+        ],
+        axis=1,
+    )
+    with workspace.open():
+        with Workspace(tmp_path / r"testClipPoints_copy2D.geoh5") as new_workspace:
+            clipped_pts = curve.copy_from_extent(extent, parent=new_workspace)
+            clipped_d = clipped_pts.get_data("VertexValues")[0]
+            clipped_c = clipped_pts.get_data("CellValues")[0]
+            assert clipped_pts.n_vertices == clippings.sum()
+            assert np.all(clipped_d.values == data[0].values[clippings])
+            assert len(clipped_c.values) == clipped_pts.n_cells
+
 
 def test_clip_groups(tmp_path):
     vertices = np.random.randn(100, 3)

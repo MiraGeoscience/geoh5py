@@ -374,7 +374,7 @@ def mask_by_extent(
     """
     Find indices of locations within a rectangular extent.
 
-    :param locations: shape(*, 3) Coordinates to be evaluated.
+    :param locations: shape(*, 3) or shape(*, 3) Coordinates to be evaluated.
     :param extent: shape(2, 2) Limits defined by the South-West and
         North-East corners. Extents can also be provided as 3D coordinates
         with shape(2, 3) defining the top and bottom limits.
@@ -385,25 +385,17 @@ def mask_by_extent(
     if not isinstance(extent, np.ndarray) or extent.ndim != 2:
         raise ValueError("Input 'extent' must be a 2D array-like.")
 
-    if extent.shape == (2, 2):
-        extent = np.c_[extent, [-np.inf, np.inf]]
-
-    if extent.shape != (2, 3):
-        raise ValueError("Input 'extent' must be an array-like of shape(2, 3).")
-
     if isinstance(locations, list):
         locations = np.vstack(locations)
 
-    if locations.shape[1] != 3:
-        raise ValueError("Input 'locations' must be an array-like of shape(*, 3).")
+    if not isinstance(locations, np.ndarray) or locations.ndim != 2:
+        raise ValueError(
+            "Input 'locations' must be an array-like of shape(*, 3) or (*, 2)."
+        )
 
-    indices = np.all(
-        np.c_[
-            np.all(locations >= extent[0, :], axis=1),
-            np.all(locations <= extent[1, :], axis=1),
-        ],
-        axis=1,
-    )
+    indices = np.ones(locations.shape[0], dtype=bool)
+    for loc, lim in zip(locations.T, extent.T):
+        indices = np.logical_and(indices, np.logical_and(lim[0] <= loc, loc <= lim[1]))
 
     return indices
 
