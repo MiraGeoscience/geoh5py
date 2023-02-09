@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import warnings
 from abc import ABC
 from contextlib import contextmanager
 from pathlib import Path
@@ -29,6 +30,40 @@ import numpy as np
 if TYPE_CHECKING:
     from ..workspace import Workspace
     from .entity import Entity
+
+
+@contextmanager
+def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
+    """
+    Open a workspace in the requested 'mode'.
+    If receiving an opened Workspace instead, merely return the given workspace.
+
+    :param workspace: A Workspace class
+    :param mode: Set the h5 read/write mode
+
+    :return h5py.File: Handle to an opened Workspace.
+    """
+    if (
+        workspace is None
+        or getattr(workspace, "_geoh5")
+        and mode in workspace.geoh5.mode
+    ):
+        try:
+            yield workspace
+        finally:
+            pass
+    else:
+        if getattr(workspace, "_geoh5"):
+            warnings.warn(
+                f"Closing the workspace in mode '{workspace.geoh5.mode}' "
+                f"and re-opening in mode '{mode}'."
+            )
+            workspace.close()
+
+        try:
+            yield workspace.open(mode=mode)
+        finally:
+            workspace.close()
 
 
 @contextmanager
@@ -219,8 +254,25 @@ KEY_MAP = {
     "values": "Data",
     "vertices": "Vertices",
     "z_cell_delimiters": "Z cell delimiters",
+    "INVALID": "Invalid",
+    "INTEGER": "Integer",
+    "FLOAT": "Float",
+    "TEXT": "Text",
+    "REFERENCED": "Referenced",
+    "FILENAME": "Filename",
+    "BLOB": "Blob",
+    "VECTOR": "Vector",
+    "DATETIME": "DateTime",
+    "GEOMETRIC": "Geometric",
+    "MULTI_TEXT": "Multi-Text",
+    "UNKNOWN": "Unknown",
+    "OBJECT": "Object",
+    "CELL": "Cell",
+    "VERTEX": "Vertex",
+    "FACE": "Face",
+    "GROUP": "Group",
+    "DEPTH": "Depth",
 }
-
 INV_KEY_MAP = {value: key for key, value in KEY_MAP.items()}
 
 
@@ -322,7 +374,7 @@ def mask_by_extent(
     """
     Find indices of locations within a rectangular extent.
 
-    :param locations: shape(*, 3) Coordinates to be evaluated.
+    :param locations: shape(*, 3) or shape(*, 2) Coordinates to be evaluated.
     :param extent: shape(2, 2) Limits defined by the South-West and
         North-East corners. Extents can also be provided as 3D coordinates
         with shape(2, 3) defining the top and bottom limits.
@@ -333,25 +385,17 @@ def mask_by_extent(
     if not isinstance(extent, np.ndarray) or extent.ndim != 2:
         raise ValueError("Input 'extent' must be a 2D array-like.")
 
-    if extent.shape == (2, 2):
-        extent = np.c_[extent, [-np.inf, np.inf]]
-
-    if extent.shape != (2, 3):
-        raise ValueError("Input 'extent' must be an array-like of shape(2, 3).")
-
     if isinstance(locations, list):
         locations = np.vstack(locations)
 
-    if locations.shape[1] != 3:
-        raise ValueError("Input 'locations' must be an array-like of shape(*, 3).")
+    if not isinstance(locations, np.ndarray) or locations.ndim != 2:
+        raise ValueError(
+            "Input 'locations' must be an array-like of shape(*, 3) or (*, 2)."
+        )
 
-    indices = np.all(
-        np.c_[
-            np.all(locations >= extent[0, :], axis=1),
-            np.all(locations <= extent[1, :], axis=1),
-        ],
-        axis=1,
-    )
+    indices = np.ones(locations.shape[0], dtype=bool)
+    for loc, lim in zip(locations.T, extent.T):
+        indices &= (lim[0] <= loc) & (loc <= lim[1])
 
     return indices
 
