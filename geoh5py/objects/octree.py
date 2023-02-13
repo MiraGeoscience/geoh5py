@@ -49,7 +49,6 @@ class Octree(ObjectBase):
     )
 
     def __init__(self, object_type: ObjectType, **kwargs):
-
         self._origin = [0, 0, 0]
         self._rotation = 0.0
         self._u_count = None
@@ -197,7 +196,6 @@ class Octree(ObjectBase):
 
     @octree_cells.setter
     def octree_cells(self, value):
-
         if value is not None:
             dtypes = [("I", "<i4"), ("J", "<i4"), ("K", "<i4"), ("NCells", "<i4")]
             if len(value.dtype) > 1:

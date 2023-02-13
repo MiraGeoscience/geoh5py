@@ -71,7 +71,6 @@ class Points(ObjectBase):
 
     @vertices.setter
     def vertices(self, xyz: np.ndarray):
-
         if xyz.ndim != 2 or xyz.shape[1] != 3:
             raise ValueError(
                 f"Array of vertices must be of shape (*, 3). Array of shape {xyz.shape} provided."

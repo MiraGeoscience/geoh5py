@@ -26,7 +26,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_block_model_data(tmp_path):
-
     name = "MyTestBlockModel"
     h5file_path = tmp_path / r"block_model.geoh5"
     # Generate a 3D array

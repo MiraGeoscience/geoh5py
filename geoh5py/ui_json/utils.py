@@ -138,7 +138,6 @@ def requires_value(ui_json: dict[str, dict], parameter: str) -> bool:
     is_required = True
 
     if is_form(ui_json[parameter]):
-
         if "group" in ui_json[parameter]:
             group_required = group_requires_value(ui_json, parameter)
             if group_required:

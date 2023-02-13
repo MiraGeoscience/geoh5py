@@ -46,7 +46,6 @@ from geoh5py.workspace import Workspace
 
 
 def get_workspace(directory):
-
     workspace = Workspace(path.join(directory, "..", "testPoints.geoh5"))
     if len(workspace.objects) == 0:
         xyz = np.random.randn(12, 3)
@@ -68,7 +67,6 @@ def get_workspace(directory):
 
 
 def test_input_file_json():
-
     # Test missing required ui_json parameter
     with pytest.raises(ValueError) as excinfo:
         InputFile(ui_json=123)
@@ -148,7 +146,6 @@ def test_optional_parameter():
 
 
 def test_bool_parameter():
-
     ui_json = deepcopy(default_ui_json)
     ui_json["logic"] = templates.bool_parameter()
     ui_json["logic"]["value"] = True
@@ -161,7 +158,6 @@ def test_bool_parameter():
 
 
 def test_integer_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -198,7 +194,6 @@ def test_integer_parameter(tmp_path):
 
 
 def test_float_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -229,7 +224,6 @@ def test_float_parameter(tmp_path):
 
 
 def test_string_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -260,7 +254,6 @@ def test_string_parameter(tmp_path):
 
 
 def test_choice_string_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -297,7 +290,6 @@ def test_file_parameter():
 
 
 def test_shape_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["data"] = templates.string_parameter(value="2,5,6,7")
@@ -311,7 +303,6 @@ def test_shape_parameter(tmp_path):
 
 
 def test_missing_required_field(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["object"] = templates.object_parameter(optional="enabled")
@@ -511,7 +502,6 @@ def test_data_value_parameter_a(tmp_path):
 
 # @pytest.mark.skip(reason="Failing on github for unknown reason")
 def test_data_value_parameter_b(tmp_path):
-
     workspace = get_workspace(tmp_path)
     points_a = workspace.get_entity("Points_A")[0]
     data_b = points_a.children[0]

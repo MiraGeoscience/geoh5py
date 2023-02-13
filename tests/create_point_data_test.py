@@ -29,7 +29,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_point_data(tmp_path):
-
     new_name = "TestName"
     # Generate a random cloud of points
     values = np.random.randn(12)

@@ -60,7 +60,6 @@ class Group(Entity):
         comment_dict = {"Author": author, "Date": date, "Text": comment}
 
         if self.comments is None:
-
             self.workspace.create_entity(
                 Data,
                 entity={
@@ -123,5 +122,4 @@ class Group(Entity):
 
     @classmethod
     def find_or_create_type(cls, workspace: workspace.Workspace, **kwargs) -> GroupType:
-
         return GroupType.find_or_create(workspace, cls, **kwargs)

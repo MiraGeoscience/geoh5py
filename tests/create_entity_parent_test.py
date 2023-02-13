@@ -26,7 +26,6 @@ from geoh5py.workspace import Workspace
 def test_create_point_data(tmp_path):
     h5file_path = tmp_path / r"test.geoh5"
     with Workspace(h5file_path) as workspace:
-
         group = ContainerGroup.create(workspace, parent=None)
         assert (
             group.parent == workspace.root

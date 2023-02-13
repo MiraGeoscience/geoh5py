@@ -26,7 +26,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_clip_point_data(tmp_path):
-
     # Generate a random cloud of points
     values = np.random.randn(100)
     vertices = np.random.randn(100, 3)
@@ -55,7 +54,6 @@ def test_clip_point_data(tmp_path):
 
 
 def test_clip_curve_data(tmp_path):
-
     # Generate a random cloud of points
     vertices = np.random.randn(100, 3)
     extent = np.c_[

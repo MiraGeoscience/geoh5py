@@ -99,7 +99,6 @@ class Curve(CellObject):
 
     @property
     def current_line_id(self) -> uuid.UUID | None:
-
         if getattr(self, "_current_line_id", None) is None:
             self._current_line_id = uuid.uuid4()
 
@@ -107,7 +106,6 @@ class Curve(CellObject):
 
     @current_line_id.setter
     def current_line_id(self, value: uuid.UUID | None):
-
         value = str2uuid(value)
 
         if not isinstance(value, (uuid.UUID, type(None))):
@@ -141,12 +139,10 @@ class Curve(CellObject):
             and self.cells is not None
             and self.vertices is not None
         ):
-
             cells = self.cells
             parts = np.zeros(self.vertices.shape[0], dtype="int")
             count = 0
             for ind in range(1, cells.shape[0]):
-
                 if cells[ind, 0] != cells[ind - 1, 1]:
                     count += 1
 
@@ -178,7 +174,6 @@ class Curve(CellObject):
         identifiers.
         """
         if self.parts is not None:
-
             return np.unique(self.parts).tolist()
 
         return None

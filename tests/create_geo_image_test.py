@@ -47,7 +47,6 @@ tag = {
 
 
 def test_create_copy_geoimage(tmp_path):
-
     workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
 
     pixels = np.r_[

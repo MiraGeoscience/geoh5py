@@ -39,7 +39,6 @@ class CellObject(Points, ABC):
     _attribute_map: dict = Points._attribute_map.copy()
 
     def __init__(self, object_type: ObjectType, name="Object", **kwargs):
-
         self._cells: np.ndarray | None = None
 
         super().__init__(object_type, name=name, **kwargs)

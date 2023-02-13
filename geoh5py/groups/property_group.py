@@ -112,7 +112,6 @@ class PropertyGroup(ABC):
 
     @properties.setter
     def properties(self, uids: list[str | uuid.UUID]):
-
         properties = []
         for uid in uids:
             if isinstance(uid, str):

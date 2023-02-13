@@ -65,7 +65,6 @@ class GeoImage(ObjectBase):
         :obj:`~geoh5py.objects.curve.Curve.parts` if set by the user.
         """
         if getattr(self, "_cells", None) is None:
-
             if self.on_file:
                 self._cells = self.workspace.fetch_array_attribute(self)
             else:

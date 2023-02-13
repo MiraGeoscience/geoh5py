@@ -26,7 +26,6 @@ from .base import BaseTEMSurvey
 
 
 class BaseAirborneTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
-
     __INPUT_TYPE = ["Rx", "Tx", "Tx and Rx"]
     _PROPERTY_MAP = {
         "crossline_offset": "Crossline offset",

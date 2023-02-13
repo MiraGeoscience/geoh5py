@@ -27,14 +27,12 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_curve_data(tmp_path):
-
     curve_name = "TestCurve"
     h5file_path = tmp_path / r"testCurve.geoh5"
     # Generate a random cloud of points
     n_data = 12
 
     with Workspace(h5file_path) as workspace:
-
         curve = Curve.create(
             workspace, vertices=np.random.randn(n_data, 3), name=curve_name
         )
@@ -82,7 +80,6 @@ def test_create_curve_data(tmp_path):
         ), "Error using the data.call()."
         # Re-open the workspace and read data back in
         with Workspace(h5file_path) as ws2:
-
             obj_rec = ws2.get_entity(curve_name)[0]
             data_vert_rec = ws2.get_entity("vertexValues")[0]
 
@@ -107,12 +104,10 @@ def test_create_curve_data(tmp_path):
 
 
 def test_remove_cells_data(tmp_path):
-
     # Generate a random cloud of points
     n_data = 12
 
     with Workspace(tmp_path / r"testCurve.geoh5") as workspace:
-
         curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
         data = curve.add_data(
             {
@@ -138,12 +133,10 @@ def test_remove_cells_data(tmp_path):
 
 
 def test_remove_vertex_data(tmp_path):
-
     # Generate a random cloud of points
     n_data = 12
 
     with Workspace(tmp_path / r"testCurve.geoh5") as workspace:
-
         curve = Curve.create(workspace)
         with pytest.warns(UserWarning, match="No vertices to be removed."):
             curve.remove_vertices(12)

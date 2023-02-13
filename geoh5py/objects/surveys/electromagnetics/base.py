@@ -484,7 +484,6 @@ class BaseEMSurvey(ObjectBase, ABC):
 
 
 class BaseTEMSurvey(BaseEMSurvey, ABC):
-
     __UNITS = [
         "Seconds (s)",
         "Milliseconds (ms)",

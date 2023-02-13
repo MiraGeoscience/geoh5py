@@ -23,13 +23,11 @@ from .data_type import DataType
 
 
 class FilenameData(Data):
-
     _file_name: str | None = None
     _name = "GeoImageMesh_Image"
     _values: bytes | None
 
     def __init__(self, data_type: DataType, file_name=None, **kwargs):
-
         super().__init__(data_type, file_name=file_name, **kwargs)
         self._public = False
 

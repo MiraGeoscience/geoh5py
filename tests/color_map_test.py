@@ -28,7 +28,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_color_map(tmp_path):
-
     name = "Grid2D_Colormap"
 
     # Generate a 2D array

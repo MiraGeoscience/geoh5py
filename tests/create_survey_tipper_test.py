@@ -28,7 +28,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_survey_tipper(tmp_path):
-
     path = tmp_path / r"../testTipper.geoh5"
 
     workspace = Workspace(path)

@@ -30,7 +30,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_grid_2d_data(tmp_path):
-
     name = "MyTestGrid2D"
 
     # Generate a 2D array

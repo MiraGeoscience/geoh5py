@@ -96,7 +96,6 @@ def test_group_optional():
 
 
 def test_requires_value():
-
     # Check the groupOptional behaviour
     ui_json = deepcopy(default_ui_json)
     ui_json["string_parameter"] = templates.string_parameter()

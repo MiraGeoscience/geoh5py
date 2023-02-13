@@ -89,7 +89,6 @@ class DataType(EntityType):
 
     @color_map.setter
     def color_map(self, color_map: ColorMap | dict | np.ndarray):
-
         if isinstance(color_map, dict):
             color_map = ColorMap(**color_map)
 

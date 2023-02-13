@@ -269,7 +269,6 @@ class InputValidation:
         one_of_validations: dict[str, Any] = {}
         local_validations = self.validations.copy()
         for param, validations in local_validations.items():
-
             if param not in data.keys():
                 if "required" in validations and not self.ignore_requirements:
                     raise RequiredValidationError(param)
