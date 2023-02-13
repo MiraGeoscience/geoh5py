@@ -385,6 +385,8 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
         )
         from_to_b = np.vstack([from_to_a[0, :], [30.1, 55.5], [56.5, 80.2]])
 
+        values = np.random.randn(50)
+        values[0] = np.nan
         # Add both set of log data with 0.5 m tolerance
         well.add_data(
             {
@@ -394,7 +396,7 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
                 },
                 "log_wt_tolerance": {
                     "depth": np.arange(0.01, 50.01),
-                    "values": np.random.randn(50),
+                    "values": values,
                 },
             }
         )
@@ -428,6 +430,8 @@ def test_remove_drillhole_data(tmp_path):
         data = well.get_data("my_log_values/")[0]
         workspace.remove_entity(data)
         workspace.remove_entity(well_b)
+
+        assert np.isnan(well.get_data("log_wt_tolerance")[0].values).sum() == 1
 
     with Workspace(h5file_path, version=2.0) as workspace:
         well = workspace.get_entity("well")[0]

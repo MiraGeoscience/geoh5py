@@ -30,7 +30,7 @@ import numpy as np
 from ..data import CommentsData, Data, DataType, FilenameData, IntegerData, TextData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
-from ..shared import Entity, EntityType, fetch_h5_handle
+from ..shared import FLOAT_NDV, Entity, EntityType, fetch_h5_handle
 from ..shared.concatenation import Concatenator
 from ..shared.utils import KEY_MAP, as_str_if_uuid, dict_mapper
 
@@ -267,6 +267,7 @@ class H5Writer:
             if channel in dict_values:
                 values = dict_values[channel]
                 if isinstance(values, np.ndarray) and values.dtype == np.float64:
+                    values[np.isnan(values)] = FLOAT_NDV
                     values = values.astype(np.float32)
 
                 if len(values) > 0:
