@@ -96,7 +96,6 @@ class Workspace(AbstractContextManager):
     def __init__(
         self, h5file: str | Path | io.BytesIO = "Analyst.geoh5", mode="a", **kwargs
     ):
-
         self._contributors = np.asarray(
             ["UserName"], dtype=h5py.special_dtype(vlen=str)
         )
@@ -536,7 +535,6 @@ class Workspace(AbstractContextManager):
         present on file.
         """
         for child in children:
-
             ref_type = self.str_from_type(child)
 
             if ref_type == "Data":
@@ -581,7 +579,6 @@ class Workspace(AbstractContextManager):
         """
         rem_list: list = []
         for key, value in referents.items():
-
             if value() is None:
                 rem_list += [key]
                 self._io_call(
@@ -678,7 +675,6 @@ class Workspace(AbstractContextManager):
 
         family_tree = []
         for uid, child_type in children_list.items():
-
             recovered_object = self.get_entity(uid)[0]
             if recovered_object is None:
                 recovered_object = self.load_entity(uid, child_type, parent=entity)
@@ -954,7 +950,6 @@ class Workspace(AbstractContextManager):
 
     @h5file.setter
     def h5file(self, file: str | Path | io.BytesIO):
-
         if isinstance(file, (str, Path)):
             if not str(file).endswith("geoh5"):
                 raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")

@@ -25,7 +25,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_no_data_values(tmp_path):
-
     # Generate a random cloud of points
     n_data = 12
     xyz = np.random.randn(n_data, 3)
@@ -55,7 +54,6 @@ def test_no_data_values(tmp_path):
 
     # Read the data back in from a fresh workspace
     with Workspace(h5file_path) as new_workspace:
-
         for data in data_objs:
             rec_data = new_workspace.get_entity(data.name)[0]
 

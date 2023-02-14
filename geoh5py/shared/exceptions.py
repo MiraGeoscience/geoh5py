@@ -129,7 +129,6 @@ class TypeValidationError(BaseValidationError):
     """Error on type validation."""
 
     def __init__(self, name: str, value: str, validation: str | list[str]):
-
         super().__init__(TypeValidationError.message(name, value, validation))
 
     @staticmethod
@@ -154,7 +153,6 @@ class ValueValidationError(BaseValidationError):
     """Error on value validation."""
 
     def __init__(self, name: str, value: Any, validation: list[Any]):
-
         super().__init__(ValueValidationError.message(name, value, validation))
 
     @staticmethod

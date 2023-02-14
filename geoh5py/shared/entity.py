@@ -302,7 +302,6 @@ class Entity(ABC):
 
     @parent.setter
     def parent(self, parent: shared.Entity):
-
         current_parent = self._parent
 
         if parent is not None:
@@ -388,7 +387,6 @@ class Entity(ABC):
             A new group is created if none exist with the given name.
         """
         if getattr(self, "property_groups", None) is not None:
-
             if isinstance(data, list):
                 uids = []
                 for datum in data:

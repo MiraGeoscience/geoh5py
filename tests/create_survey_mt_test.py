@@ -32,7 +32,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_survey_mt(tmp_path):
-
     name = "TestMT"
     n_data = 12
     h5file_path = tmp_path / r"testMT.geoh5"

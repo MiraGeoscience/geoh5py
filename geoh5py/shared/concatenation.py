@@ -66,7 +66,6 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
     _property_groups: list | None = None
 
     def __init__(self, group_type: GroupType, **kwargs):
-
         super().__init__(group_type, **kwargs)
 
         getattr(self, "_attribute_map").update(
@@ -203,7 +202,6 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             return new_entity
 
         for field in self.index:
-
             values = self.workspace.fetch_concatenated_values(self, field)
             if isinstance(values, tuple):
                 new_entity.data[field], new_entity.index[field] = values
@@ -415,7 +413,6 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             name = entity.name
             del parent_attr[f"Property:{name}"]
         elif isinstance(entity, ConcatenatedObject):
-
             if entity.property_groups is not None:
                 self.update_array_attribute(entity, "property_groups", remove=True)
 
@@ -608,7 +605,6 @@ class ConcatenatedData(Concatenated):
     _parent: ConcatenatedObject
 
     def __init__(self, entity_type, **kwargs):
-
         if kwargs.get("parent") is None or not isinstance(
             kwargs.get("parent"), ConcatenatedObject
         ):
@@ -706,7 +702,6 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
 
 class ConcatenatedObject(Concatenated, ObjectBase):
-
     _parent: Concatenator
     _property_groups: list | None = None
 
@@ -774,7 +769,6 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                     self.add_children([child_data])
 
         for child in getattr(self, "children"):
-
             if (
                 isinstance(name, str) and hasattr(child, "name") and child.name == name
             ) or (

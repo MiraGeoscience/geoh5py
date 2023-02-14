@@ -72,7 +72,6 @@ class BlockModel(ObjectBase):
             and self.z_cells is not None
             and self.origin is not None
         ):
-
             cell_center_u = np.cumsum(self.u_cells) - self.u_cells / 2.0
             cell_center_v = np.cumsum(self.v_cells) - self.v_cells / 2.0
             cell_center_z = np.cumsum(self.z_cells) - self.z_cells / 2.0

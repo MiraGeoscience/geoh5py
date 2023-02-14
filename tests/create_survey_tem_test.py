@@ -33,7 +33,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_survey_airborne_tem(tmp_path):
-
     name = "Survey"
     path = Path(tmp_path) / r"../testATEM.geoh5"
 
@@ -182,7 +181,6 @@ def test_create_survey_airborne_tem(tmp_path):
 
 
 def test_survey_airborne_tem_data(tmp_path):
-
     name = "Survey"
     path = Path(tmp_path) / r"../testATEM.geoh5"
 
@@ -319,7 +317,6 @@ def test_survey_airborne_tem_data(tmp_path):
 def test_create_survey_ground_tem_large_loop(
     tmp_path,
 ):  # pylint: disable=too-many-locals
-
     path = Path(tmp_path) / r"../groundTEM.geoh5"
 
     # Create a workspace

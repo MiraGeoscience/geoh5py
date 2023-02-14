@@ -30,7 +30,6 @@ class DrillholeGroup(Group):
     )
 
     def __init__(self, group_type: GroupType, name="Drillholes Group", **kwargs):
-
         assert group_type is not None
         super().__init__(group_type, name=name, **kwargs)
 
@@ -50,7 +49,6 @@ class IntegratorDrillholeGroup(DrillholeGroup):
     __TYPE_UID = uuid.UUID("{952829b6-76a2-4d0b-b908-7f8d2482dc0d}")
 
     def __init__(self, group_type: GroupType, **kwargs):
-
         super().__init__(group_type, **kwargs)
 
     @classmethod

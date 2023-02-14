@@ -94,7 +94,6 @@ def test_copy_entity(tmp_path):
         entity.copy(parent=new_workspace)
 
     for entity in workspace.objects:
-
         # Read the data back in from a fresh workspace
         rec_entity = new_workspace.get_entity(entity.uid)[0]
         rec_data = new_workspace.get_entity(entity.children[0].uid)[0]

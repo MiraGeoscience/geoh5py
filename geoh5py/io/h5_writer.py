@@ -195,7 +195,6 @@ class H5Writer:
 
             # Check if already in the project
             if as_str_if_uuid(uid) in base_handle:
-
                 if return_parent:
                     return base_handle
 
@@ -348,7 +347,6 @@ class H5Writer:
                 return
 
             for key, attr in entity.attribute_map.items():
-
                 try:
                     value = getattr(entity, attr)
                 except AttributeError:
@@ -650,7 +648,6 @@ class H5Writer:
         :return entity: Pointer to the written entity. Active link if "close_file" is False.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-
             base = list(h5file)[0]
 
             if isinstance(entity, Data):
@@ -834,7 +831,6 @@ class H5Writer:
             ):
                 entity_handle.create_group("PropertyGroups")
                 for p_g in entity.property_groups:
-
                     uid = as_str_if_uuid(p_g.uid)
                     if uid in entity_handle["PropertyGroups"]:
                         del entity_handle["PropertyGroups"][uid]
@@ -845,7 +841,6 @@ class H5Writer:
                     group_handle = entity_handle["PropertyGroups"][uid]
 
                     for key, attr in p_g.attribute_map.items():
-
                         try:
                             value = getattr(p_g, attr)
                         except AttributeError:
@@ -880,7 +875,6 @@ class H5Writer:
             :obj:`~geoh5py.groups.root_group.RootGroup`.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-
             if isinstance(entity, RootGroup):
                 return
 

@@ -25,7 +25,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_group(tmp_path):
-
     h5file_path = tmp_path / r"testGroup.geoh5"
     group_name = "MyTestContainer"
 
@@ -40,7 +39,6 @@ def test_create_group(tmp_path):
 
 
 def test_simpeg_group(tmp_path):
-
     h5file_path = tmp_path / r"testGroup.geoh5"
 
     # Create a workspace with group

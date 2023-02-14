@@ -41,7 +41,6 @@ class MTReceivers(BaseEMSurvey, Points):
     __INPUT_TYPE = ["Rx only"]
 
     def __init__(self, object_type: ObjectType, name="Magnetotellurics rx", **kwargs):
-
         super().__init__(object_type, name=name, **kwargs)
 
     @property

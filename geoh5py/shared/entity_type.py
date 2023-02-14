@@ -30,7 +30,6 @@ EntityTypeT = TypeVar("EntityTypeT", bound="EntityType")
 
 
 class EntityType(ABC):
-
     _attribute_map = {"Description": "description", "ID": "uid", "Name": "name"}
 
     def __init__(self, workspace: ws.Workspace, uid: uuid.UUID | None = None, **kwargs):

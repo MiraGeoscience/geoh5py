@@ -96,7 +96,6 @@ class Data(Entity):
     @association.setter
     def association(self, value: str | DataAssociationEnum):
         if isinstance(value, str):
-
             if value.upper() not in DataAssociationEnum.__members__:
                 raise ValueError(
                     f"Association flag should be one of {DataAssociationEnum.__members__}"
@@ -130,7 +129,6 @@ class Data(Entity):
 
     @entity_type.setter
     def entity_type(self, data_type: DataType):
-
         self._entity_type = data_type
         self.workspace.update_attribute(self, "entity_type")
 

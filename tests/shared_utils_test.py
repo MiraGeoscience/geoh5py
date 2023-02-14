@@ -61,7 +61,6 @@ def test_mask_by_extent():
 
 
 def test_overwrite_kwargs():
-
     kwargs = {"test": 8}
     kwargs_to_overwrite = {"test": 9}
 

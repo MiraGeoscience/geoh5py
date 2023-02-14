@@ -29,7 +29,6 @@ from .base import BaseTEMSurvey
 
 
 class BaseGroundTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
-
     __INPUT_TYPE = ["Tx and Rx"]
 
     @property
@@ -116,7 +115,6 @@ class GroundTEMReceiversLargeLoop(BaseGroundTEM):  # pylint: disable=too-many-an
 
     @tx_id_property.setter
     def tx_id_property(self, value: uuid.UUID | ReferencedData | np.ndarray | None):
-
         if isinstance(value, uuid.UUID):
             value = self.get_data(value)[0]
 

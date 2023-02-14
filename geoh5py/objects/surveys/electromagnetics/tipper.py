@@ -171,7 +171,6 @@ class TipperBaseStations(BaseTipper, Points):
     __TYPE = "Base stations"
 
     def __init__(self, object_type: ObjectType, name="Tipper base", **kwargs):
-
         super().__init__(object_type, name=name, **kwargs)
 
     @classmethod

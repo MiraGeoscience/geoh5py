@@ -164,7 +164,6 @@ def merge_arrays(
 def compare_entities(
     object_a, object_b, ignore: list | None = None, decimal: int = 6
 ) -> None:
-
     ignore_list = ["_workspace", "_children"]
     if ignore is not None:
         for item in ignore:
@@ -178,7 +177,6 @@ def compare_entities(
                 getattr(object_a, attr[1:]), getattr(object_b, attr[1:]), ignore=ignore
             )
         else:
-
             if isinstance(getattr(object_a, attr[1:]), np.ndarray):
                 attr_a = getattr(object_a, attr[1:]).tolist()
                 if len(attr_a) > 0 and isinstance(attr_a[0], str):
