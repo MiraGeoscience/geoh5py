@@ -150,6 +150,11 @@ def test_create_drillhole_data(tmp_path):
             name=well_name,
         )
 
+        # Plain drillhole
+        singleton = Drillhole.create(workspace)
+        with pytest.raises(TypeError, match="Expected a Concatenated object"):
+            singleton.parent = dh_group
+
         with pytest.raises(UserWarning) as error:
             dh_group.update_array_attribute(well, "abc")
 
