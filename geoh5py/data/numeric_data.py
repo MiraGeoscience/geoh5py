@@ -73,11 +73,7 @@ class NumericData(Data, ABC):
         if self.n_values is not None:
             if values is None or len(values) < self.n_values:
                 full_vector = np.ones(self.n_values, dtype=type(self.ndv))
-                if isinstance(self.ndv, float):
-                    full_vector *= np.nan
-                else:
-                    full_vector *= self.ndv
-
+                full_vector *= np.nan if isinstance(self.ndv, float) else self.ndv
                 full_vector[: len(np.ravel(values))] = np.ravel(values)
                 return full_vector
 
