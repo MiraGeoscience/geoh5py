@@ -134,4 +134,4 @@ def test_reopening_mode(tmp_path):
 
         with pytest.warns(UserWarning, match="Closing the workspace in mode 'r'"):
             with fetch_active_workspace(workspace, mode="r+"):
-                pass
+                assert workspace.geoh5.mode == "r+"
