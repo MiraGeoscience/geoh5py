@@ -151,18 +151,20 @@ def test_create_drillhole_data(tmp_path):
         )
 
         # Plain drillhole
-        singleton = Drillhole.create(workspace)
+        singleton = Drillhole.create(
+            workspace,
+        )
         with pytest.raises(TypeError, match="Expected a Concatenated object"):
             singleton.parent = dh_group
 
-        with pytest.raises(UserWarning) as error:
+        with pytest.raises(UserWarning, match="does not have a property or values"):
             dh_group.update_array_attribute(well, "abc")
-
-        assert f"Input entity {well} does not have a property or values" in str(error)
 
         # Add both set of log data with 0.5 m tolerance
         values = np.random.randn(50)
-        with pytest.raises(UserWarning) as error:
+        with pytest.raises(
+            UserWarning, match="Input depth 'collocation_distance' must be >0."
+        ):
             well.add_data(
                 {
                     "my_log_values/": {
@@ -173,10 +175,8 @@ def test_create_drillhole_data(tmp_path):
                 collocation_distance=-1.0,
             )
 
-        assert "Input depth 'collocation_distance' must be >0." in str(error)
-
         # Add both set of log data with 0.5 m tolerance
-        with pytest.raises(AttributeError) as error:
+        with pytest.raises(AttributeError, match="Input data dictionary must contain"):
             well.add_data(
                 {
                     "my_log_values/": {
@@ -184,8 +184,6 @@ def test_create_drillhole_data(tmp_path):
                     }
                 },
             )
-
-        assert "Input data dictionary must contain" in str(error)
 
         well.add_data(
             {
@@ -202,7 +200,7 @@ def test_create_drillhole_data(tmp_path):
 
         assert len(well.get_data("my_log_values/")) == 1
 
-        with pytest.raises(UserWarning) as error:
+        with pytest.raises(UserWarning, match="already present on the drillhole"):
             well.add_data(
                 {
                     "my_log_values/": {
@@ -211,8 +209,6 @@ def test_create_drillhole_data(tmp_path):
                     },
                 }
             )
-
-        assert "already present on the drillhole" in str(error)
 
         well_b = well.copy()
         well_b.name = "Number 2"
@@ -269,7 +265,9 @@ def test_create_drillhole_data(tmp_path):
 
         assert len(well.to_) == len(well.from_) == 3, "Should have only 3 from-to data."
 
-        with pytest.raises(UserWarning) as error:
+        with pytest.raises(
+            UserWarning, match="Data with name 'Depth Data' already present"
+        ):
             well_b.add_data(
                 {
                     "Depth Data": {
@@ -280,8 +278,6 @@ def test_create_drillhole_data(tmp_path):
                     },
                 }
             )
-
-        assert "Data with name 'Depth Data' already present" in str(error)
 
         well_b_data.values = np.random.randn(from_to_b.shape[0])
 
@@ -341,15 +337,15 @@ def test_create_drillhole_data(tmp_path):
             new_group = dh_group.copy(parent=new_workspace)
             well = new_group.children[0]
 
-            with pytest.raises(ValueError) as error:
+            with pytest.raises(
+                ValueError, match="Input values for 'new_data' with shape"
+            ):
                 well.add_data(
                     {
                         "new_data": {"values": np.random.randn(49).astype(np.float32)},
                     },
                     property_group=well.property_groups[0].name,
                 )
-
-            assert "Input values for 'new_data' with shape(49)" in str(error)
 
             well.add_data(
                 {
