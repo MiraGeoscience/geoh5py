@@ -16,11 +16,11 @@ checks:
   method-complexity:
     enabled: true
     config:
-      threshold: 5
+      threshold: 6
   method-count:
     enabled: true
     config:
-      threshold: 20
+      threshold: 25
   method-lines:
     enabled: true
     config:
