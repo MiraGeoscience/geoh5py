@@ -189,7 +189,7 @@ def test_create_drillhole_data(tmp_path):
             {
                 "my_log_values/": {
                     "depth": np.arange(0, 50.0),
-                    "values": np.random.randn(50),
+                    "values": np.random.randn(30),
                 },
                 "log_wt_tolerance": {
                     "depth": np.arange(0.01, 50.01),
@@ -199,6 +199,7 @@ def test_create_drillhole_data(tmp_path):
         )
 
         assert len(well.get_data("my_log_values/")) == 1
+        assert len(well.get_data("my_log_values/")[0].values) == 50
 
         with pytest.raises(UserWarning, match="already present on the drillhole"):
             well.add_data(

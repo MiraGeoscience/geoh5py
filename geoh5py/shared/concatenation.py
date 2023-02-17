@@ -902,6 +902,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             del attributes["depth"]
 
         if "from-to" in attributes.keys():
+            values = attributes.get("values")
             attributes["association"] = "DEPTH"
             property_group = self.validate_interval_data(
                 attributes.get("name"),
@@ -910,6 +911,15 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                 property_group=property_group,
                 collocation_distance=collocation_distance,
             )
+            if (
+                isinstance(values, np.ndarray)
+                and values.shape[0] < property_group.from_.values.shape[0]
+            ):
+                attributes["values"] = np.pad(
+                    values,
+                    (0, property_group.from_.values.shape[0] - len(values)),
+                    constant_values=np.nan,
+                )
 
             del attributes["from-to"]
 
