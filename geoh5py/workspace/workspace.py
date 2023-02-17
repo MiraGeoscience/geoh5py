@@ -63,6 +63,7 @@ from ..shared.entity import Entity
 from ..shared.exceptions import Geoh5FileClosedError
 from ..shared.utils import (
     as_str_if_utf8_bytes,
+    clear_array_attributes,
     get_attributes,
     overwrite_kwargs,
     str2uuid,
@@ -226,7 +227,7 @@ class Workspace(AbstractContextManager):
         parent,
         copy_children: bool = True,
         omit_list: tuple = (),
-        extent: np.ndarray | None = None,
+        clear_cache: bool = False,
         **kwargs,
     ):
         """
@@ -236,7 +237,7 @@ class Workspace(AbstractContextManager):
         :param parent: Target parent to copy the entity under.
         :param copy_children: Copy all children of the entity.
         :param omit_list: List of property names to omit on copy
-        :param extent: Clip object's copy by extent defined by a South-West and North-East corners.
+        :param clear_cache: Clear array attributes after copy.
         :param kwargs: Additional keyword arguments passed to the copy constructor.
 
         :return: The Entity registered to the workspace.
@@ -292,7 +293,7 @@ class Workspace(AbstractContextManager):
             children_map = {}
             for child in entity.children:
                 new_child = self.copy_to_parent(
-                    child, new_object, copy_children=True, extent=extent
+                    child, new_object, copy_children=True, clear_cache=clear_cache
                 )
                 new_object.add_children([new_child])
                 children_map[child.uid] = new_child.uid
@@ -300,6 +301,9 @@ class Workspace(AbstractContextManager):
             if prop_groups:
                 self.copy_property_groups(new_object, prop_groups, children_map)
                 self.workspace.update_attribute(new_object, "property_groups")
+
+        if clear_cache:
+            clear_array_attributes(entity)
 
         return new_object
 

@@ -168,7 +168,13 @@ class Entity(ABC):
         """
         return self._clipping_ids
 
-    def copy(self, parent=None, copy_children: bool = True, **kwargs):
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        **kwargs,
+    ):
         """
         Function to copy an entity to a different parent entity.
 
@@ -183,7 +189,7 @@ class Entity(ABC):
             parent = self.parent
 
         new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children, **kwargs
+            self, parent, copy_children=copy_children, clear_cache=clear_cache, **kwargs
         )
 
         return new_entity
