@@ -90,6 +90,20 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return self._attributes_keys
 
+    def add_children(self, children: list[Entity]):
+        """
+        :param children: Add a list of entities as
+            :obj:`~geoh5py.shared.entity.Entity.children`
+        """
+        for child in children:
+            if not isinstance(child, Concatenated):
+                raise TypeError(
+                    f"Expected a Concatenated object, not {type(child).__name__}"
+                )
+
+            if child not in self._children:
+                self._children.append(child)
+
     def add_save_concatenated(self, child) -> None:
         """
         Add or save a concatenated entity.
