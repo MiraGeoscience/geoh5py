@@ -304,6 +304,7 @@ class Workspace(AbstractContextManager):
 
         if clear_cache:
             clear_array_attributes(entity)
+            clear_array_attributes(new_object)
 
         return new_object
 

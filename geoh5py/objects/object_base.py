@@ -422,7 +422,9 @@ class ObjectBase(Entity):
 
         self.workspace.update_attribute(self, "property_groups")
 
-    def remove_children_values(self, indices: list[int], association: str):
+    def remove_children_values(
+        self, indices: list[int], association: str, clear_cache: bool = False
+    ):
         for child in self.children:
             if (
                 getattr(child, "values", None) is not None
@@ -430,6 +432,8 @@ class ObjectBase(Entity):
                 and child.association.name == association
             ):
                 child.values = np.delete(child.values, indices, axis=0)
+                if clear_cache:
+                    clear_array_attributes(child)
 
     @property
     def vertices(self):

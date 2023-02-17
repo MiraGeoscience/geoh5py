@@ -44,7 +44,9 @@ class Points(ObjectBase):
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
 
-    def clip_by_extent(self, bounds: np.ndarray) -> Points | None:
+    def clip_by_extent(
+        self, bounds: np.ndarray, clear_cache: bool = False
+    ) -> Points | None:
         """
         Find indices of vertices within a rectangular bounds.
 
@@ -53,7 +55,7 @@ class Points(ObjectBase):
             with shape(2, 3) defining the top and bottom limits.
         """
         indices = mask_by_extent(self.vertices, bounds)
-        self.remove_vertices(~indices)
+        self.remove_vertices(~indices, clear_cache=clear_cache)
         return self
 
     @property
@@ -91,7 +93,7 @@ class Points(ObjectBase):
         self._extent = None
         self.workspace.update_attribute(self, "vertices")
 
-    def remove_vertices(self, indices: list[int]):
+    def remove_vertices(self, indices: list[int], clear_cache: bool = False):
         """Safely remove vertices and corresponding data entries."""
 
         if self._vertices is None:
@@ -107,4 +109,4 @@ class Points(ObjectBase):
         vertices = np.delete(self.vertices, indices, axis=0)
         self._vertices = None
         self.vertices = vertices
-        self.remove_children_values(indices, "VERTEX")
+        self.remove_children_values(indices, "VERTEX", clear_cache=clear_cache)
