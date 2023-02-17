@@ -75,7 +75,11 @@ class Group(Entity):
             self.comments.values = self.comments.values + [comment_dict]
 
     def copy_from_extent(
-        self, bounds: np.ndarray, parent=None, copy_children: bool = True
+        self,
+        bounds: np.ndarray,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
     ) -> Group | None:
         """
         Find indices of vertices within a rectangular bounds.
@@ -88,7 +92,10 @@ class Group(Entity):
         new_entity = self.copy(parent=parent, copy_children=False)
         for child in self.children:
             child.copy_from_extent(
-                bounds, parent=new_entity, copy_children=copy_children
+                bounds,
+                parent=new_entity,
+                copy_children=copy_children,
+                clear_cache=clear_cache,
             )
 
         if len(new_entity.children) == 0:

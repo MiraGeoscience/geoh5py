@@ -161,6 +161,22 @@ def merge_arrays(
     return np.r_[head, tail]
 
 
+def clear_array_attributes(entity: Entity, recursive: bool = False):
+    """
+    Clear all attributes from an entity.
+
+    :param entity: Entity to clear attributes from.
+    :param recursive: Clear attributes from children entities.
+    """
+    for attribute in ["vertices", "cells", "values", "prisms", "layers"]:
+        if hasattr(entity, attribute):
+            setattr(entity, f"_{attribute}", None)
+
+    if recursive:
+        for child in entity.children:
+            clear_array_attributes(child, recursive=recursive)
+
+
 def compare_entities(
     object_a, object_b, ignore: list | None = None, decimal: int = 6
 ) -> None:

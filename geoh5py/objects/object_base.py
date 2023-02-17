@@ -33,7 +33,7 @@ from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
 from ..shared.conversion import BaseConversion
-from ..shared.utils import mask_by_extent
+from ..shared.utils import clear_array_attributes, mask_by_extent
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
@@ -220,7 +220,11 @@ class ObjectBase(Entity):
         ...
 
     def copy_from_extent(
-        self, bounds: np.ndarray, parent=None, copy_children: bool = True
+        self,
+        bounds: np.ndarray,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
     ) -> ObjectBase | None:
         """
         Find indices of vertices within a rectangular bounds.
@@ -236,7 +240,13 @@ class ObjectBase(Entity):
             return None
 
         new_entity = self.copy(parent=parent, copy_children=copy_children)
-        return new_entity.clip_by_extent(bounds)
+        new_entity.clip_by_extent(bounds)
+
+        if clear_cache:
+            clear_array_attributes(self, recursive=copy_children)
+            clear_array_attributes(new_entity, recursive=copy_children)
+
+        return new_entity
 
     def clip_by_extent(self, bounds: np.ndarray) -> ObjectBase | None:
         """
