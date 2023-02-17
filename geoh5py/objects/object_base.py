@@ -239,11 +239,12 @@ class ObjectBase(Entity):
         ):
             return None
 
-        new_entity = self.copy(parent=parent, copy_children=copy_children)
+        new_entity = self.copy(
+            parent=parent, copy_children=copy_children, clear_cache=clear_cache
+        )
         new_entity.clip_by_extent(bounds)
 
         if clear_cache:
-            clear_array_attributes(self, recursive=copy_children)
             clear_array_attributes(new_entity, recursive=copy_children)
 
         return new_entity
