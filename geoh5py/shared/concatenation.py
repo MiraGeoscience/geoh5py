@@ -90,6 +90,20 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return self._attributes_keys
 
+    def add_children(self, children: list[Entity]):
+        """
+        :param children: Add a list of entities as
+            :obj:`~geoh5py.shared.entity.Entity.children`
+        """
+        for child in children:
+            if not isinstance(child, Concatenated):
+                raise TypeError(
+                    f"Expected a Concatenated object, not {type(child).__name__}"
+                )
+
+            if child not in self._children:
+                self._children.append(child)
+
     def add_save_concatenated(self, child) -> None:
         """
         Add or save a concatenated entity.
@@ -895,6 +909,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             del attributes["depth"]
 
         if "from-to" in attributes.keys():
+            values = attributes.get("values")
             attributes["association"] = "DEPTH"
             property_group = self.validate_interval_data(
                 attributes.get("name"),
@@ -903,6 +918,15 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                 property_group=property_group,
                 collocation_distance=collocation_distance,
             )
+            if (
+                isinstance(values, np.ndarray)
+                and values.shape[0] < property_group.from_.values.shape[0]
+            ):
+                attributes["values"] = np.pad(
+                    values,
+                    (0, property_group.from_.values.shape[0] - len(values)),
+                    constant_values=np.nan,
+                )
 
             del attributes["from-to"]
 
