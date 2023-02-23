@@ -92,7 +92,7 @@ To build the api docs using autodocs
     :target: https://geoh5py.readthedocs.io/en/latest/?badge=latest
 
 .. |coverage| image:: https://codecov.io/gh/MiraGeoscience/geoh5py/branch/develop/graph/badge.svg
-    :alt: Test coverage
+    :alt: Code coverage
     :target: https://codecov.io/gh/MiraGeoscience/geoh5py
 
 .. |style| image:: https://img.shields.io/badge/code%20style-black-000000.svg
@@ -112,8 +112,8 @@ To build the api docs using autodocs
     :target: https://pypi.python.org/pypi/geoh5py/
 
 .. |precommit_ci| image:: https://results.pre-commit.ci/badge/github/MiraGeoscience/geoh5py/develop.svg
-   :target: https://results.pre-commit.ci/latest/github/MiraGeoscience/geoh5py/develop
-   :alt: pre-commit.ci status
+    :alt: pre-commit.ci status
+    :target: https://results.pre-commit.ci/latest/github/MiraGeoscience/geoh5py/develop
 
 License
 ^^^^^^^
