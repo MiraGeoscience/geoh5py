@@ -219,35 +219,42 @@ class ObjectBase(Entity):
     def default_type_uid(cls) -> uuid.UUID:
         ...
 
-    def copy_from_extent(
+    def mask_by_extent(
         self,
         bounds: np.ndarray,
-        parent=None,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-    ) -> ObjectBase | None:
+    ) -> np.ndarray | None:
         """
-        Find indices of vertices within a rectangular bounds.
+        Find indices of vertices or centroids within a rectangular bounds.
 
         :param bounds: shape(2, 2) Bounding box defined by the South-West and
             North-East coordinates. Extents can also be provided as 3D coordinates
             with shape(2, 3) defining the top and bottom limits.
-        :param attributes: Dictionary of attributes to clip by extent.
         """
         if not any(mask_by_extent(bounds, self.extent)) and not any(
             mask_by_extent(self.extent, bounds)
         ):
             return None
 
-        new_entity = self.copy(
-            parent=parent, copy_children=copy_children, clear_cache=clear_cache
-        )
-        new_entity.clip_by_extent(bounds)
+        if getattr(self, "collar", None) is not None:
+            return mask_by_extent(self.collar, bounds)
 
-        if clear_cache:
-            clear_array_attributes(new_entity, recursive=copy_children)
+        if self.vertices is not None:
+            return mask_by_extent(self.vertices, bounds)
 
-        return new_entity
+        if self.centroids is not None:
+            return mask_by_extent(self.centroids, bounds)
+
+        return None
+    #
+    #     new_entity = self.copy(
+    #         parent=parent, copy_children=copy_children, clear_cache=clear_cache
+    #     )
+    #     new_entity.clip_by_extent(bounds)
+    #
+    #     if clear_cache:
+    #         clear_array_attributes(new_entity, recursive=copy_children)
+    #
+    #     return new_entity
 
     def clip_by_extent(self, bounds: np.ndarray) -> ObjectBase | None:
         """

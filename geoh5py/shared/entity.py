@@ -24,7 +24,7 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from geoh5py.shared.utils import str2uuid
+from geoh5py.shared.utils import str2uuid, mask_by_extent
 
 if TYPE_CHECKING:
     from .. import shared
@@ -168,11 +168,20 @@ class Entity(ABC):
         """
         return self._clipping_ids
 
+    @abstractmethod
+    def mask_by_extent(self, extent: list[float]):
+        """
+        Mask data by extent.
+
+        :param extent: [xmin, ymin, xmax, ymax]
+        """
+
     def copy(
         self,
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
+        extent: list[float] | np.ndarray | None = None,
         **kwargs,
     ):
         """
@@ -184,12 +193,22 @@ class Entity(ABC):
         :param kwargs: Additional keyword arguments to pass to the copy constructor.
         :return entity: Registered Entity to the workspace.
         """
+        indices = None
+        if extent is not None:
+            indices = self.mask_by_extent(extent)
+            if indices is None:
+                return None
 
         if parent is None:
             parent = self.parent
 
         new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children, clear_cache=clear_cache, **kwargs
+            self,
+            parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            filter=indices,
+            **kwargs
         )
 
         return new_entity

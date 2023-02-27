@@ -20,7 +20,10 @@ from __future__ import annotations
 import uuid
 from abc import abstractmethod
 
+import numpy as np
+
 from ..shared import Entity
+from ..shared.utils import mask_by_extent
 from .data_association_enum import DataAssociationEnum
 from .data_type import DataType
 from .primitive_type_enum import PrimitiveTypeEnum
@@ -54,6 +57,13 @@ class Data(Entity):
             self.entity_type.name = self.name
 
         data_type.workspace._register_data(self)
+
+    @property
+    def extent(self):
+        if self._extent is None:
+            self._extent = self.parent.extent
+
+        return self._extent
 
     @property
     def n_values(self) -> int | None:
@@ -150,5 +160,32 @@ class Data(Entity):
         Remove self from a property group.
         """
 
+    def mask_by_extent(
+        self,
+        bounds: np.ndarray,
+    ) -> np.ndarray | None:
+        """
+        Find indices of data vertices or centroids within a rectangular bounds.
+
+        :param bounds: shape(2, 2) Bounding box defined by the South-West and
+            North-East coordinates. Extents can also be provided as 3D coordinates
+            with shape(2, 3) defining the top and bottom limits.
+        """
+        if self.association is DataAssociationEnum.VERTEX:
+            return mask_by_extent(self.parent.vertices, bounds)
+
+        if self.association is DataAssociationEnum.CELL:
+            if self.parent.centroids is not None:
+                return mask_by_extent(self.parent.centroids, bounds)
+
+            indices = mask_by_extent(self.parent.vertices, bounds)
+            if indices is not None:
+                indices = np.all(indices[self.parent.cells], axis=1)
+
+            return indices
+
+        return np.ones_like(self.values, dtype=bool)
+
     def __call__(self):
         return self.values
+

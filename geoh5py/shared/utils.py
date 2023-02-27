@@ -414,7 +414,7 @@ def mask_by_extent(
     return indices
 
 
-def get_attributes(entity, omit_list=(), attributes=None):
+def get_attributes(entity, omit_list=(), attributes=None, filter: np.ndarray | None = None):
     """Extract the attributes of an object with omissions."""
     if attributes is None:
         attributes = {}
@@ -423,17 +423,10 @@ def get_attributes(entity, omit_list=(), attributes=None):
             if key[0] == "_":
                 key = key[1:]
 
-            attributes[key] = getattr(entity, key)
+            attr = getattr(entity, key)
+
+            if filter is not None and isinstance(attr, np.ndarray) and attr.ndim > 0 and filter.shape[0] == attr.shape[0]:
+                attr = attr[filter]
+
+            attributes[key] = attr
     return attributes
-
-
-def overwrite_kwargs(to_overwrite: dict, kwargs_to_add: dict) -> dict:
-    """
-    Overwrite kwargs with overwrite.
-    :param to_overwrite: Dictionary of kwargs to overwrite.
-    :param kwargs_to_add: Dictionary of kwargs to modify to_overwrite.
-    """
-    for key, value in kwargs_to_add.items():
-        if key in to_overwrite:
-            to_overwrite[key] = value
-    return to_overwrite

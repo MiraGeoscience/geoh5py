@@ -65,7 +65,6 @@ from ..shared.utils import (
     as_str_if_utf8_bytes,
     clear_array_attributes,
     get_attributes,
-    overwrite_kwargs,
     str2uuid,
 )
 
@@ -228,6 +227,7 @@ class Workspace(AbstractContextManager):
         copy_children: bool = True,
         omit_list: tuple = (),
         clear_cache: bool = False,
+        filter: np.ndarray | None = None,
         **kwargs,
     ):
         """
@@ -246,6 +246,7 @@ class Workspace(AbstractContextManager):
             entity,
             omit_list=["_uid", "_entity_type", "_on_file"] + list(omit_list),
             attributes={"uid": None, "parent": None},
+            filter=filter,
         )
 
         if entity_kwargs is None:
@@ -257,8 +258,8 @@ class Workspace(AbstractContextManager):
         )
 
         # overwrite kwargs
-        entity_kwargs = overwrite_kwargs(entity_kwargs, kwargs)
-        entity_type_kwargs = overwrite_kwargs(entity_type_kwargs, kwargs)
+        entity_kwargs.update((k, kwargs[k]) for k in entity_kwargs.keys() & kwargs.keys())
+        entity_type_kwargs.update((k, kwargs[k]) for k in entity_type_kwargs.keys() & kwargs.keys())
 
         if not isinstance(parent, (ObjectBase, Group, Workspace)):
             raise ValueError(
@@ -293,7 +294,7 @@ class Workspace(AbstractContextManager):
             children_map = {}
             for child in entity.children:
                 new_child = self.copy_to_parent(
-                    child, new_object, copy_children=True, clear_cache=clear_cache
+                    child, new_object, copy_children=True, clear_cache=clear_cache, filter=filter
                 )
                 new_object.add_children([new_child])
                 children_map[child.uid] = new_child.uid
