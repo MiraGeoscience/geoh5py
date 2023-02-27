@@ -330,8 +330,8 @@ class Entity(ABC):
         current_parent = self._parent
 
         if parent is not None:
+            parent.add_children([self])
             self._parent = parent
-            self._parent.add_children([self])
 
             if current_parent is not None and current_parent != self._parent:
                 current_parent.remove_children([self])
