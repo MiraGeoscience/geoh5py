@@ -245,6 +245,7 @@ class ObjectBase(Entity):
             return mask_by_extent(self.centroids, bounds)
 
         return None
+
     #
     #     new_entity = self.copy(
     #         parent=parent, copy_children=copy_children, clear_cache=clear_cache

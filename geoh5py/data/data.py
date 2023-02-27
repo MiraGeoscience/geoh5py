@@ -188,4 +188,3 @@ class Data(Entity):
 
     def __call__(self):
         return self.values
-

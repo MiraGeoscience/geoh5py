@@ -258,8 +258,12 @@ class Workspace(AbstractContextManager):
         )
 
         # overwrite kwargs
-        entity_kwargs.update((k, kwargs[k]) for k in entity_kwargs.keys() & kwargs.keys())
-        entity_type_kwargs.update((k, kwargs[k]) for k in entity_type_kwargs.keys() & kwargs.keys())
+        entity_kwargs.update(
+            (k, kwargs[k]) for k in entity_kwargs.keys() & kwargs.keys()
+        )
+        entity_type_kwargs.update(
+            (k, kwargs[k]) for k in entity_type_kwargs.keys() & kwargs.keys()
+        )
 
         if not isinstance(parent, (ObjectBase, Group, Workspace)):
             raise ValueError(
@@ -294,7 +298,11 @@ class Workspace(AbstractContextManager):
             children_map = {}
             for child in entity.children:
                 new_child = self.copy_to_parent(
-                    child, new_object, copy_children=True, clear_cache=clear_cache, filter=filter
+                    child,
+                    new_object,
+                    copy_children=True,
+                    clear_cache=clear_cache,
+                    filter=filter,
                 )
                 new_object.add_children([new_child])
                 children_map[child.uid] = new_child.uid

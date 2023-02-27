@@ -21,11 +21,7 @@ import re
 
 import pytest
 
-from geoh5py.shared.utils import (
-    iterable,
-    iterable_message,
-    mask_by_extent,
-)
+from geoh5py.shared.utils import iterable, iterable_message, mask_by_extent
 
 
 def test_iterable():

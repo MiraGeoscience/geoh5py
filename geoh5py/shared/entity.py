@@ -24,7 +24,7 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from geoh5py.shared.utils import str2uuid, mask_by_extent
+from geoh5py.shared.utils import mask_by_extent, str2uuid
 
 if TYPE_CHECKING:
     from .. import shared
@@ -208,7 +208,7 @@ class Entity(ABC):
             copy_children=copy_children,
             clear_cache=clear_cache,
             filter=indices,
-            **kwargs
+            **kwargs,
         )
 
         return new_entity

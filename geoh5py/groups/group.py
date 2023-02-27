@@ -104,10 +104,7 @@ class Group(Entity):
             parent = self.parent
 
         new_entity = parent.workspace.copy_to_parent(
-            self,
-            parent,
-            copy_children=False,
-            **kwargs
+            self, parent, copy_children=False, **kwargs
         )
 
         if copy_children:
