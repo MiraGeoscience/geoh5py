@@ -18,15 +18,19 @@
 from __future__ import annotations
 
 import uuid
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from .. import objects
 from ..shared.conversion import Grid2DConversion
-from .object_base import ObjectBase, ObjectType
+from .grid_object import GridObject
+
+if TYPE_CHECKING:
+    from geoh5py.objects import ObjectType
 
 
-class Grid2D(ObjectBase):
+class Grid2D(GridObject):
     """
     Rectilinear 2D grid of uniform cell size. The grid can
     be oriented in 3D space through horizontal :obj:`~geoh5py.objects.grid2d.Grid2D.rotation`
@@ -39,7 +43,7 @@ class Grid2D(ObjectBase):
         fields=(0x48F5054A, 0x1C5C, 0x4CA4, 0x90, 0x48, 0x80F36DC60A06)
     )
 
-    _attribute_map = ObjectBase._attribute_map.copy()
+    _attribute_map = GridObject._attribute_map.copy()
     _attribute_map.update(
         {
             "Dip": "dip",
@@ -64,7 +68,6 @@ class Grid2D(ObjectBase):
         self._rotation: float = 0.0
         self._vertical = False
         self._dip = 0.0
-        self._centroids: np.ndarray | None = None
 
         super().__init__(object_type, **kwargs)
 

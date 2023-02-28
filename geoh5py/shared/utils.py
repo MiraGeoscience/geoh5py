@@ -415,7 +415,7 @@ def mask_by_extent(
 
 
 def get_attributes(
-    entity, omit_list=(), attributes=None, filter: np.ndarray | None = None
+    entity, omit_list=(), attributes=None, mask: np.ndarray | None = None
 ):
     """Extract the attributes of an object with omissions."""
     if attributes is None:
@@ -428,12 +428,12 @@ def get_attributes(
             attr = getattr(entity, key)
 
             if (
-                filter is not None
+                mask is not None
                 and isinstance(attr, np.ndarray)
                 and attr.ndim > 0
-                and filter.shape[0] == attr.shape[0]
+                and mask.shape[0] == attr.shape[0]
             ):
-                attr = attr[filter]
+                attr = attr[mask]
 
             attributes[key] = attr
     return attributes

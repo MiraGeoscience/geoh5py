@@ -18,13 +18,17 @@
 from __future__ import annotations
 
 import uuid
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from .object_base import ObjectBase, ObjectType
+from .grid_object import GridObject
+
+if TYPE_CHECKING:
+    from geoh5py.objects import ObjectType
 
 
-class Octree(ObjectBase):
+class Octree(GridObject):
     """
     Octree mesh class that uses a tree structure such that cells
     can be subdivided it into eight octants.
@@ -34,7 +38,7 @@ class Octree(ObjectBase):
         fields=(0x4EA87376, 0x3ECE, 0x438B, 0xBF, 0x12, 0x3479733DED46)
     )
 
-    _attribute_map: dict = ObjectBase._attribute_map.copy()
+    _attribute_map: dict = GridObject._attribute_map.copy()
     _attribute_map.update(
         {
             "NU": "u_count",
@@ -58,7 +62,7 @@ class Octree(ObjectBase):
         self._v_cell_size = None
         self._w_cell_size = None
         self._octree_cells = None
-        self._centroids: np.ndarray | None = None
+
         super().__init__(object_type, **kwargs)
 
         object_type.workspace._register_object(self)

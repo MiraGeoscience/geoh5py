@@ -26,7 +26,7 @@ import numpy as np
 
 from ..data import Data, FloatData, NumericData
 from ..groups import PropertyGroup
-from ..shared.utils import merge_arrays
+from ..shared.utils import mask_by_extent, merge_arrays
 from .object_base import ObjectType
 from .points import Points
 
@@ -167,6 +167,27 @@ class Drillhole(Points):
             ]
 
         return self._locations
+
+    def mask_by_extent(
+        self,
+        extent: np.ndarray,
+    ) -> np.ndarray | None:
+        """
+        Find indices of vertices or centroids within a rectangular extent.
+
+        :param extent: shape(2, 2) Bounding box defined by the South-West and
+            North-East coordinates. Extents can also be provided as 3D coordinates
+            with shape(2, 3) defining the top and bottom limits.
+        """
+        if not any(mask_by_extent(extent, self.extent)) and not any(
+            mask_by_extent(self.extent, extent)
+        ):
+            return None
+
+        if self.collar is not None:
+            return mask_by_extent(self.collar, extent)
+
+        return None
 
     @property
     def planning(self) -> str:

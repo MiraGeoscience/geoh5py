@@ -24,9 +24,11 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from geoh5py.shared.utils import mask_by_extent, str2uuid
+from geoh5py.shared.utils import str2uuid
 
 if TYPE_CHECKING:
+    from numpy import ndarray
+
     from .. import shared
     from ..workspace import Workspace
 
@@ -55,6 +57,7 @@ class Entity(ABC):
         )
         self._name = name
         self._parent: Entity | None = None
+        self._extent: ndarray | None = None
         self._children: list = []
         self._allow_delete = True
         self._allow_move = True
@@ -181,7 +184,7 @@ class Entity(ABC):
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
-        extent: list[float] | np.ndarray | None = None,
+        extent: list[float] | ndarray | None = None,
         **kwargs,
     ):
         """

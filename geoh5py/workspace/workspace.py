@@ -15,7 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=R0904
+# pylint: disable=R0904, R0913, R0914
 # pylint: disable=C0302
 
 from __future__ import annotations
@@ -227,7 +227,7 @@ class Workspace(AbstractContextManager):
         copy_children: bool = True,
         omit_list: tuple = (),
         clear_cache: bool = False,
-        filter: np.ndarray | None = None,
+        mask: np.ndarray | None = None,
         **kwargs,
     ):
         """
@@ -246,7 +246,7 @@ class Workspace(AbstractContextManager):
             entity,
             omit_list=["_uid", "_entity_type", "_on_file"] + list(omit_list),
             attributes={"uid": None, "parent": None},
-            filter=filter,
+            mask=mask,
         )
 
         if entity_kwargs is None:
@@ -302,7 +302,7 @@ class Workspace(AbstractContextManager):
                     new_object,
                     copy_children=True,
                     clear_cache=clear_cache,
-                    filter=filter,
+                    mask=mask,
                 )
                 new_object.add_children([new_child])
                 children_map[child.uid] = new_child.uid

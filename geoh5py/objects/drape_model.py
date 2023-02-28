@@ -22,10 +22,11 @@ import warnings
 
 import numpy as np
 
+from .grid_object import GridObject
 from .object_base import ObjectBase, ObjectType
 
 
-class DrapeModel(ObjectBase):
+class DrapeModel(GridObject):
     """
     Drape (curtain) model object made up of layers and prisms.
     """
@@ -35,7 +36,6 @@ class DrapeModel(ObjectBase):
     def __init__(self, object_type: ObjectType, **kwargs):
         self._layers: np.ndarray | None = None
         self._prisms: np.ndarray | None = None
-        self._centroids: np.ndarray | None = None
 
         super().__init__(object_type, **kwargs)
 

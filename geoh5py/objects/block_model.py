@@ -18,13 +18,17 @@
 from __future__ import annotations
 
 import uuid
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from .object_base import ObjectBase, ObjectType
+from .grid_object import GridObject
+
+if TYPE_CHECKING:
+    from geoh5py.objects import ObjectType
 
 
-class BlockModel(ObjectBase):
+class BlockModel(GridObject):
     """
     Rectilinear 3D tensor mesh defined by three perpendicular axes.
     Each axis is divided into discrete intervals that define the cell dimensions.
@@ -36,7 +40,7 @@ class BlockModel(ObjectBase):
     __TYPE_UID = uuid.UUID(
         fields=(0xB020A277, 0x90E2, 0x4CD7, 0x84, 0xD6, 0x612EE3F25051)
     )
-    _attribute_map = ObjectBase._attribute_map.copy()
+    _attribute_map = GridObject._attribute_map.copy()
     _attribute_map.update({"Origin": "origin", "Rotation": "rotation"})
 
     def __init__(self, object_type: ObjectType, **kwargs):
@@ -45,7 +49,7 @@ class BlockModel(ObjectBase):
         self._u_cell_delimiters = None
         self._v_cell_delimiters = None
         self._z_cell_delimiters = None
-        self._centroids: np.ndarray | None = None
+
         super().__init__(object_type, **kwargs)
 
         object_type.workspace._register_object(self)

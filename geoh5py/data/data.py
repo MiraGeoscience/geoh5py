@@ -162,23 +162,23 @@ class Data(Entity):
 
     def mask_by_extent(
         self,
-        bounds: np.ndarray,
+        extent: np.ndarray,
     ) -> np.ndarray | None:
         """
-        Find indices of data vertices or centroids within a rectangular bounds.
+        Find indices of data vertices or centroids within a rectangular extent.
 
-        :param bounds: shape(2, 2) Bounding box defined by the South-West and
+        :param extent: shape(2, 2) Bounding box defined by the South-West and
             North-East coordinates. Extents can also be provided as 3D coordinates
             with shape(2, 3) defining the top and bottom limits.
         """
         if self.association is DataAssociationEnum.VERTEX:
-            return mask_by_extent(self.parent.vertices, bounds)
+            return mask_by_extent(self.parent.vertices, extent)
 
         if self.association is DataAssociationEnum.CELL:
             if self.parent.centroids is not None:
-                return mask_by_extent(self.parent.centroids, bounds)
+                return mask_by_extent(self.parent.centroids, extent)
 
-            indices = mask_by_extent(self.parent.vertices, bounds)
+            indices = mask_by_extent(self.parent.vertices, extent)
             if indices is not None:
                 indices = np.all(indices[self.parent.cells], axis=1)
 

@@ -19,7 +19,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from geoh5py.objects import Grid2D
 from geoh5py.workspace import Workspace

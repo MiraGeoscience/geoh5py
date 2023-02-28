@@ -33,7 +33,7 @@ from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
 from ..shared.conversion import BaseConversion
-from ..shared.utils import clear_array_attributes, mask_by_extent
+from ..shared.utils import clear_array_attributes
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
@@ -55,7 +55,6 @@ class ObjectBase(Entity):
         assert object_type is not None
         self._comments = None
         self._entity_type = object_type
-        self._extent = None
         self._last_focus = "None"
         self._property_groups: list[PropertyGroup] | None = None
         # self._clipping_ids: list[uuid.UUID] = []
@@ -217,45 +216,22 @@ class ObjectBase(Entity):
     @classmethod
     @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:
-        ...
+        """
+        Default entity type unique identifier
+        """
 
+    @abstractmethod
     def mask_by_extent(
         self,
-        bounds: np.ndarray,
+        extent: np.ndarray,
     ) -> np.ndarray | None:
         """
-        Find indices of vertices or centroids within a rectangular bounds.
+        Find indices of vertices or centroids within a rectangular extent.
 
-        :param bounds: shape(2, 2) Bounding box defined by the South-West and
+        :param extent: shape(2, 2) Bounding box defined by the South-West and
             North-East coordinates. Extents can also be provided as 3D coordinates
             with shape(2, 3) defining the top and bottom limits.
         """
-        if not any(mask_by_extent(bounds, self.extent)) and not any(
-            mask_by_extent(self.extent, bounds)
-        ):
-            return None
-
-        if getattr(self, "collar", None) is not None:
-            return mask_by_extent(self.collar, bounds)
-
-        if self.vertices is not None:
-            return mask_by_extent(self.vertices, bounds)
-
-        if self.centroids is not None:
-            return mask_by_extent(self.centroids, bounds)
-
-        return None
-
-    #
-    #     new_entity = self.copy(
-    #         parent=parent, copy_children=copy_children, clear_cache=clear_cache
-    #     )
-    #     new_entity.clip_by_extent(bounds)
-    #
-    #     if clear_cache:
-    #         clear_array_attributes(new_entity, recursive=copy_children)
-    #
-    #     return new_entity
 
     def clip_by_extent(self, bounds: np.ndarray) -> ObjectBase | None:
         """
