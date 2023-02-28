@@ -31,6 +31,7 @@ from PIL.TiffImagePlugin import TiffImageFile
 from .. import objects
 from ..data import FilenameData
 from ..shared.conversion import GeoImageConversion
+from ..shared.utils import mask_by_extent
 from .object_base import ObjectBase, ObjectType
 
 
@@ -93,6 +94,14 @@ class GeoImage(ObjectBase):
                 ]
             )
         return None
+
+    @property
+    def extent(self):
+        """Geographical extent of the image."""
+        if self._extent is None and self.vertices is not None:
+            self._extent = np.c_[self.vertices.min(axis=0), self.vertices.max(axis=0)].T
+
+        return self._extent
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -224,6 +233,24 @@ class GeoImage(ObjectBase):
         ]
 
         self.set_tag_from_vertices()
+
+    def mask_by_extent(
+        self,
+        extent: np.ndarray,
+    ) -> np.ndarray | None:
+        """
+        Find indices of vertices within a rectangular extent.
+
+        :param extent: shape(2, 2) Bounding box defined by the South-West and
+            North-East coordinates. Extents can also be provided as 3D coordinates
+            with shape(2, 3) defining the top and bottom limits.
+        """
+        if not any(mask_by_extent(extent, self.extent)) and not any(
+            mask_by_extent(self.extent, extent)
+        ):
+            return None
+
+        return np.r_[True]
 
     def set_tag_from_vertices(self):
         """

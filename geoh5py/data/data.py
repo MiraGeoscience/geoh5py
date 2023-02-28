@@ -59,11 +59,14 @@ class Data(Entity):
         data_type.workspace._register_data(self)
 
     @property
-    def extent(self):
-        if self._extent is None:
-            self._extent = self.parent.extent
+    def extent(self) -> np.ndarray | None:
+        """
+        Geography bounding box of the parent object.
 
-        return self._extent
+        :return: shape(2, 3) Bounding box defined by the bottom South-West and
+            top North-East coordinates.
+        """
+        return self.parent.extent
 
     @property
     def n_values(self) -> int | None:

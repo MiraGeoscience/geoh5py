@@ -258,20 +258,18 @@ class ObjectBase(Entity):
         return self._entity_type
 
     @property
+    @abstractmethod
     def extent(self):
-        if self._extent is None:
-            locations = getattr(self, "vertices", None)
-            if locations is None:
-                locations = getattr(self, "centroids", None)
+        """
+        Geography bounding box of the object.
 
-            if locations is not None:
-                self._extent = np.c_[locations.min(axis=0), locations.max(axis=0)].T
-
-        return self._extent
+        :return: shape(2, 3) Bounding box defined by the bottom South-West and
+            top North-East coordinates.
+        """
 
     @property
     def faces(self):
-        ...
+        """Object faces."""
 
     @classmethod
     def find_or_create_type(

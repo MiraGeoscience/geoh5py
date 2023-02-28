@@ -58,6 +58,19 @@ class Points(ObjectBase):
         self.remove_vertices(~indices, clear_cache=clear_cache)
         return self
 
+    @property
+    def extent(self) -> np.ndarray | None:
+        """
+        Geography bounding box of the object.
+
+        :return: shape(2, 3) Bounding box defined by the bottom South-West and
+            top North-East coordinates.
+        """
+        if self._extent is None and self.vertices is not None:
+            self._extent = np.c_[self.vertices.min(axis=0), self.vertices.max(axis=0)].T
+
+        return self._extent
+
     def mask_by_extent(
         self,
         extent: np.ndarray,

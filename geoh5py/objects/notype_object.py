@@ -18,9 +18,13 @@
 from __future__ import annotations
 
 import uuid
+from typing import TYPE_CHECKING
 
 from .object_base import ObjectBase
 from .object_type import ObjectType
+
+if TYPE_CHECKING:
+    from numpy import ndarray
 
 
 class NoTypeObject(ObjectBase):
@@ -40,3 +44,23 @@ class NoTypeObject(ObjectBase):
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
+
+    @property
+    def extent(self):
+        """
+        Geography bounding box of the object.
+        """
+        return None
+
+    def mask_by_extent(
+        self,
+        extent: ndarray,
+    ) -> ndarray | None:
+        """
+        Find indices of vertices or centroids within a rectangular extent.
+
+        :param extent: shape(2, 2) Bounding box defined by the South-West and
+            North-East coordinates. Extents can also be provided as 3D coordinates
+            with shape(2, 3) defining the top and bottom limits.
+        """
+        return None

@@ -54,6 +54,21 @@ class GridObject(ObjectBase, ABC):
     def default_type_uid(cls) -> uuid.UUID:
         """Default type uid."""
 
+    @property
+    def extent(self):
+        """
+        Geography bounding box of the object.
+
+        :return: shape(2, 3) Bounding box defined by the bottom South-West and
+            top North-East coordinates.
+        """
+        if self._extent is None and self.centroids is not None:
+            self._extent = np.c_[
+                self.centroids.min(axis=0), self.centroids.max(axis=0)
+            ].T
+
+        return self._extent
+
     def mask_by_extent(
         self,
         extent: np.ndarray,
