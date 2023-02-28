@@ -98,7 +98,7 @@ def test_copy_survey_dcip(tmp_path):
         # Repeat with potential entity
         path = tmp_path / r"testDC_copy_potential.geoh5"
         new_workspace = Workspace(path)
-        potentials.copy(parent=new_workspace)
+        currents_rec = potentials.copy(parent=new_workspace)
         new_workspace.close()
 
         # Re-open the workspace and read data back in

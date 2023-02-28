@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import uuid
+from abc import ABC, abstractmethod
 
 import numpy as np
 
@@ -25,13 +26,7 @@ from ..curve import Curve
 from ..object_type import ObjectType
 
 
-class PotentialElectrode(Curve):
-    """
-    Ground potential electrode (receiver).
-    """
-
-    __TYPE_UID = uuid.UUID("{275ecee9-9c24-4378-bf94-65f3c5fbe163}")
-
+class BaseElectrode(Curve, ABC):
     def __init__(self, object_type: ObjectType, **kwargs):
         self._metadata: dict | None = None
         self._ab_cell_id: ReferencedData | None = None
@@ -108,6 +103,7 @@ class PotentialElectrode(Curve):
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
+        extent: list[float] | np.ndarray | None = None,
         **kwargs,
     ):
         """
@@ -117,11 +113,20 @@ class PotentialElectrode(Curve):
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: Create copies of all children entities along with it.
         :param clear_cache: Clear array attributes after copy.
+        :param extent: Extent of the copied entity.
 
         :return entity: Registered Entity to the workspace.
         """
         if parent is None:
             parent = self.parent
+
+        indices = None
+        cell_indices = None
+        if extent is not None:
+            indices = self.mask_by_extent(extent)
+            if indices is None:
+                return None
+            cell_indices = np.any(indices[self.cells], axis=1)
 
         omit_list = ["_metadata", "_potential_electrodes", "_current_electrodes"]
         new_entity = parent.workspace.copy_to_parent(
@@ -130,27 +135,107 @@ class PotentialElectrode(Curve):
             copy_children=copy_children,
             omit_list=omit_list,
             clear_cache=clear_cache,
+            mask=indices,
             **kwargs,
         )
         setattr(new_entity, "_ab_cell_id", None)
         if new_entity.ab_cell_id is None and self.ab_cell_id is not None:
-            self.ab_cell_id.copy(parent=new_entity)
-        new_currents = parent.workspace.copy_to_parent(
-            self.current_electrodes,
+            parent.workspace.copy_to_parent(
+                self.ab_cell_id, new_entity, mask=cell_indices
+            )
+
+        if isinstance(self, PotentialElectrode):
+            complement = self.current_electrodes
+        else:
+            complement = self.potential_electrodes
+
+        if indices is not None:
+            indices = None
+            cell_indices = None
+            if new_entity.ab_cell_id is not None and complement.ab_cell_id is not None:
+                unique_ids = np.zeros(
+                    len(complement.ab_cell_id.value_map.map) - 1, dtype=bool
+                )
+                unique_ids[new_entity.ab_cell_id.values - 1] = True
+                cell_indices = unique_ids[complement.ab_cell_id.values - 1]
+                indices = np.zeros(complement.n_vertices, dtype=bool)
+                indices[complement.cells[cell_indices, :].ravel()] = True
+
+        new_complement = parent.workspace.copy_to_parent(
+            complement,
             parent,
             copy_children=copy_children,
             omit_list=omit_list,
             clear_cache=clear_cache,
+            mask=indices,
         )
-        setattr(new_currents, "_ab_cell_id", None)
-        if (
-            new_currents.ab_cell_id is None
-            and self.current_electrodes.ab_cell_id is not None
-        ):
-            self.current_electrodes.ab_cell_id.copy(parent=new_currents)
-        new_entity.current_electrodes = new_currents
+        setattr(new_complement, "_ab_cell_id", None)
+        if new_complement.ab_cell_id is None and complement.ab_cell_id is not None:
+            parent.workspace.copy_to_parent(
+                complement.ab_cell_id,
+                new_complement,
+                mask=cell_indices,
+            )
+
+        if isinstance(self, PotentialElectrode):
+            new_entity.current_electrodes = new_complement
+        else:
+            new_entity.potential_electrodes = new_complement
 
         return new_entity
+
+    @property
+    @abstractmethod
+    def current_electrodes(self):
+        """
+        The associated current_electrodes (transmitters)
+        """
+
+    @property
+    def metadata(self):
+        """
+        Metadata attached to the entity.
+        """
+        if getattr(self, "_metadata", None) is None:
+            metadata = self.workspace.fetch_metadata(self.uid)
+            self._metadata = metadata
+        return self._metadata
+
+    @metadata.setter
+    def metadata(self, values):
+        if not len(values) == 2:
+            raise ValueError(
+                f"Metadata must have two key-value pairs. {values} provided."
+            )
+
+        default_keys = ["Current Electrodes", "Potential Electrodes"]
+
+        if list(values.keys()) != default_keys:
+            raise ValueError(f"Input metadata must have for keys {default_keys}")
+
+        if self.workspace.get_entity(values["Current Electrodes"])[0] is None:
+            raise IndexError("Input Current Electrodes uuid not present in Workspace")
+
+        if self.workspace.get_entity(values["Potential Electrodes"])[0] is None:
+            raise IndexError("Input Potential Electrodes uuid not present in Workspace")
+
+        self._metadata = values
+        self.workspace.update_attribute(self, "metadata")
+
+    @property
+    @abstractmethod
+    def potential_electrodes(self):
+        """
+        The associated potential_electrodes (receivers)
+        """
+
+
+class PotentialElectrode(BaseElectrode):
+    """
+    Ground potential electrode (receiver).
+    """
+
+    __TYPE_UID = uuid.UUID("{275ecee9-9c24-4378-bf94-65f3c5fbe163}")
 
     @property
     def current_electrodes(self):
@@ -195,37 +280,6 @@ class PotentialElectrode(Curve):
         """
         return self
 
-    @property
-    def metadata(self):
-        """
-        Metadata attached to the entity.
-        """
-        if getattr(self, "_metadata", None) is None:
-            metadata = self.workspace.fetch_metadata(self.uid)
-            self._metadata = metadata
-        return self._metadata
-
-    @metadata.setter
-    def metadata(self, values):
-        if not len(values) == 2:
-            raise ValueError(
-                f"Metadata must have two key-value pairs. {values} provided."
-            )
-
-        default_keys = ["Current Electrodes", "Potential Electrodes"]
-
-        if list(values.keys()) != default_keys:
-            raise ValueError(f"Input metadata must have for keys {default_keys}")
-
-        if self.workspace.get_entity(values["Current Electrodes"])[0] is None:
-            raise IndexError("Input Current Electrodes uuid not present in Workspace")
-
-        if self.workspace.get_entity(values["Potential Electrodes"])[0] is None:
-            raise IndexError("Input Potential Electrodes uuid not present in Workspace")
-
-        self._metadata = values
-        self.workspace.update_attribute(self, "metadata")
-
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         """
@@ -234,7 +288,7 @@ class PotentialElectrode(Curve):
         return cls.__TYPE_UID
 
 
-class CurrentElectrode(PotentialElectrode):
+class CurrentElectrode(BaseElectrode):
     """
     Ground direct current electrode (transmitter).
     """
@@ -252,50 +306,6 @@ class CurrentElectrode(PotentialElectrode):
         :return: Default unique identifier
         """
         return cls.__TYPE_UID
-
-    def copy(
-        self,
-        parent=None,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        **kwargs,
-    ):
-        """
-        Function to copy a survey to a different parent entity.
-
-        :param parent: Target parent to copy the entity under. Copied to current
-            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: Create copies of all children entities along with it.
-        :param clear_cache: Clear array attributes after copy.
-
-        :return entity: Registered Entity to the workspace.
-        """
-        if parent is None:
-            parent = self.parent
-
-        omit_list = ["_metadata", "_potential_electrodes", "_current_electrodes"]
-        new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children, omit_list=omit_list, **kwargs
-        )
-        setattr(new_entity, "_ab_cell_id", None)
-        if new_entity.ab_cell_id is None and self.ab_cell_id is not None:
-            self.ab_cell_id.copy(parent=new_entity)
-        new_potentials = parent.workspace.copy_to_parent(
-            self.potential_electrodes,
-            parent,
-            copy_children=copy_children,
-            omit_list=omit_list,
-        )
-        setattr(new_potentials, "_ab_cell_id", None)
-        if (
-            new_potentials.ab_cell_id is None
-            and self.potential_electrodes is not None
-            and self.potential_electrodes.ab_cell_id is not None
-        ):
-            self.potential_electrodes.ab_cell_id.copy(parent=new_potentials)
-        new_entity.potential_electrodes = new_potentials
-
-        return new_entity
 
     @property
     def current_electrodes(self):
