@@ -210,7 +210,7 @@ class Entity(ABC):
             parent,
             copy_children=copy_children,
             clear_cache=clear_cache,
-            filter=indices,
+            mask=indices,
             **kwargs,
         )
 

@@ -71,6 +71,6 @@ class GridObject(ObjectBase, ABC):
             return None
 
         if self.centroids is not None:
-            return mask_by_extent(getattr(self, "centroids", None), extent)
+            return mask_by_extent(self.centroids, extent)
 
         return None

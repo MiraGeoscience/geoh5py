@@ -100,7 +100,6 @@ def test_create_curve_data(tmp_path):
 
                 compare_entities(obj_rec, obj)
                 compare_entities(data_vert_rec, data_vertex)
-                ws2.close()
 
 
 def test_remove_cells_data(tmp_path):
