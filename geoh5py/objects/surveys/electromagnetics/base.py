@@ -200,7 +200,7 @@ class BaseEMSurvey(ObjectBase, ABC):
         clear_cache: bool = False,
         extent: list[float] | np.ndarray | None = None,
         **kwargs,
-    ) -> BaseEMSurvey:
+    ) -> BaseEMSurvey | None:
         """
         Function to copy a AirborneTEMReceivers to a different parent entity.
 
@@ -214,6 +214,12 @@ class BaseEMSurvey(ObjectBase, ABC):
         if parent is None:
             parent = self.parent
 
+        indices = None
+        if extent is not None:
+            indices = self.mask_by_extent(extent)
+            if indices is None:
+                return None
+
         omit_list = ["_metadata", "_receivers", "_transmitters", "_base_stations"]
         metadata = self.metadata.copy()
         new_entity = parent.workspace.copy_to_parent(
@@ -222,6 +228,7 @@ class BaseEMSurvey(ObjectBase, ABC):
             copy_children=copy_children,
             omit_list=omit_list,
             clear_cache=clear_cache,
+            mask=indices,
             **kwargs,
         )
         metadata["EM Dataset"][new_entity.type] = new_entity.uid

@@ -217,7 +217,11 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             parent = self.parent
 
         new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=False, clear_cache=clear_cache, **kwargs
+            self,
+            parent,
+            copy_children=False,
+            clear_cache=clear_cache,
+            **kwargs,
         )
 
         if self.concatenated_attributes is None:
