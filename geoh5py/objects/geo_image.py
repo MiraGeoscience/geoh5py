@@ -240,6 +240,7 @@ class GeoImage(ObjectBase):
     ) -> np.ndarray | None:
         """
         Find indices of vertices within a rectangular extent.
+        Keep all if at least one corner falls within the extent.
 
         :param extent: shape(2, 2) Bounding box defined by the South-West and
             North-East coordinates. Extents can also be provided as 3D coordinates
@@ -250,7 +251,10 @@ class GeoImage(ObjectBase):
         ):
             return None
 
-        return np.r_[True]
+        if self.vertices is not None:
+            return np.ones(self.vertices.shape[0], dtype=bool)
+
+        return None
 
     def set_tag_from_vertices(self):
         """

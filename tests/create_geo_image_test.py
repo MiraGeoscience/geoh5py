@@ -154,6 +154,13 @@ def test_create_copy_geoimage(tmp_path):
 
     geoimage.vertices = geoimage.vertices
 
+    # Test copy from extent that clips one corner
+    new_image = geoimage.copy(extent=[[9, 9], [10, 10]])
+    assert new_image is not None, "Error copying from extent."
+
+    new_image = geoimage.copy(extent=[[100, 100], [200, 200]])
+    assert new_image.image is None, "Error copying from extent that is out of bounds."
+
 
 def test_georeference_image(tmp_path):
     workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
