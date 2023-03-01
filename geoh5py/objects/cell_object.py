@@ -48,8 +48,13 @@ class CellObject(Points, ABC):
     def default_type_uid(cls) -> uuid.UUID:
         """Default type uid."""
 
-    def remove_cells(self, indices: list[int]):
-        """Safely remove cells and corresponding data entries."""
+    def remove_cells(self, indices: list[int] | np.ndarray, clear_cache: bool = False):
+        """
+        Safely remove cells and corresponding data entries.
+
+        :param indices: Indices of cells to be removed.
+        :param clear_cache: Clear cache of data values.
+        """
 
         if self._cells is None:
             warnings.warn("No cells to be removed.", UserWarning)
@@ -70,10 +75,15 @@ class CellObject(Points, ABC):
         self._cells = None
         setattr(self, "cells", cells)
 
-        self.remove_children_values(indices, "CELL")
+        self.remove_children_values(indices, "CELL", clear_cache=clear_cache)
 
-    def remove_vertices(self, indices: list[int]):
-        """Safely remove vertices and corresponding data entries."""
+    def remove_vertices(self, indices: list[int], clear_cache: bool = False):
+        """
+        Safely remove vertices and cells and corresponding data entries.
+
+        :param indices: Indices of vertices to be removed.
+        :param clear_cache: Clear cache of data values.
+        """
 
         if self.vertices is None:
             warnings.warn("No vertices to be removed.", UserWarning)
@@ -96,7 +106,7 @@ class CellObject(Points, ABC):
 
         self._vertices = None
         setattr(self, "vertices", vertices)
-        self.remove_children_values(indices, "VERTEX")
+        self.remove_children_values(indices, "VERTEX", clear_cache=clear_cache)
 
         new_index = np.ones_like(vert_index, dtype=int)
         new_index[vert_index] = np.arange(self.vertices.shape[0])
