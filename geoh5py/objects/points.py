@@ -22,6 +22,7 @@ import warnings
 
 import numpy as np
 
+from ..data import Data
 from ..shared.utils import mask_by_extent
 from .object_base import ObjectBase, ObjectType
 
@@ -144,3 +145,56 @@ class Points(ObjectBase):
         self._vertices = None
         self.vertices = vertices
         self.remove_children_values(indices, "VERTEX", clear_cache=clear_cache)
+
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Function to copy an entity to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: (Optional) Create copies of all children entities along with it.
+        :param clear_cache: Clear array attributes after copy.
+        :param mask: Extent of the copied entity.
+        :param kwargs: Additional keyword arguments to pass to the copy constructor.
+
+        :return entity: Registered Entity to the workspace.
+        """
+        if parent is None:
+            parent = self.parent
+
+        if mask is None:
+            mask = np.ones(self.vertices.shape[0], dtype=bool)
+
+        if not isinstance(mask, np.ndarray) or mask.shape != (self.vertices.shape[0],):
+            raise ValueError("Mask must be an array of shape (n_vertices,).")
+
+        new_entity = parent.workspace.copy_to_parent(
+            self,
+            parent,
+            clear_cache=clear_cache,
+            vertices=self.vertices[mask, :],
+            **kwargs,
+        )
+
+        if copy_children:
+            children_map = {}
+            for child in self.children:
+                child_copy = child.copy(
+                    parent=new_entity, copy_children=True, mask=mask
+                )
+                children_map[child.uid] = child_copy.uid
+
+            if self.property_groups:
+                self.workspace.copy_property_groups(
+                    new_entity, self.property_groups, children_map
+                )
+                new_entity.workspace.update_attribute(new_entity, "property_groups")
+
+        return new_entity

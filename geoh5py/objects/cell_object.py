@@ -112,3 +112,62 @@ class CellObject(Points, ABC):
         new_index[vert_index] = np.arange(self.vertices.shape[0])
         self.remove_cells(np.where(~np.all(vert_index[self.cells], axis=1)))
         setattr(self, "cells", new_index[self.cells])
+
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: list[float] | np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        :param parent: New parent for the copied object.
+        :param copy_children: Copy children entities.
+        :param clear_cache: Clear cache of data values.
+        :param mask: Extent of the copied object.
+        :param kwargs: Additional keyword arguments.
+        """
+
+        if parent is None:
+            parent = self.parent
+
+        if mask is None:
+            mask = np.ones(self.vertices.shape[0], dtype=bool)
+
+        if not isinstance(mask, np.ndarray) or mask.shape != (self.vertices.shape[0],):
+            raise ValueError("Mask must be an array of shape (n_vertices,).")
+
+        kwargs.update({"vertices": self.vertices[mask, :]})
+
+        if self.cells is not None:
+            cell_mask = np.any(mask[self.cells], axis=1)
+            kwargs.update(
+                {
+                    "cells": self.cells[cell_mask, :],
+                }
+            )
+        else:
+            cell_mask = None
+
+        new_object = self.workspace.copy_to_parent(
+            self,
+            parent,
+            clear_cache=clear_cache,
+            **kwargs,
+        )
+
+        if copy_children:
+            for child in self.children:
+                if isinstance(child, Data):
+                    new_object = child.copy(
+                        parent=new_object,
+                        clear_cache=clear_cache,
+                        mask=cell_mask if child.association == "CELL" else mask,
+                    )
+                else:
+                    new_object = self.workspace.copy_to_parent(
+                        child, new_object, clear_cache=clear_cache
+                    )
+
+        return new_object

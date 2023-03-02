@@ -225,7 +225,6 @@ class BaseEMSurvey(ObjectBase, ABC):
         new_entity = parent.workspace.copy_to_parent(
             self,
             parent,
-            copy_children=copy_children,
             omit_list=omit_list,
             clear_cache=clear_cache,
             mask=indices,
@@ -236,12 +235,13 @@ class BaseEMSurvey(ObjectBase, ABC):
             if getattr(self, associate, None) is not None and not isinstance(
                 getattr(self, associate), type(self)
             ):
-                complement = parent.workspace.copy_to_parent(
+                complement = parent.workspace.copy(
                     getattr(self, associate),
                     parent,
                     copy_children=copy_children,
                     omit_list=omit_list,
                     clear_cache=clear_cache,
+                    extent=extent,
                 )
                 setattr(new_entity, associate, complement)
                 metadata["EM Dataset"][complement.type] = complement.uid

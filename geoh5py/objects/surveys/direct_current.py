@@ -120,67 +120,50 @@ class BaseElectrode(Curve, ABC):
         if parent is None:
             parent = self.parent
 
-        indices = None
-        cell_indices = None
-        if extent is not None:
-            indices = self.mask_by_extent(extent)
-            if indices is None:
-                return None
-            cell_indices = np.any(indices[self.cells], axis=1)
-
-        omit_list = ["_metadata", "_potential_electrodes", "_current_electrodes"]
-        new_entity = parent.workspace.copy_to_parent(
-            self,
-            parent,
-            copy_children=copy_children,
-            omit_list=omit_list,
+        omit_list = [
+            "_ab_cell_id",
+            "_metadata",
+            "_potential_electrodes",
+            "_current_electrodes",
+        ]
+        new_entity = super().copy(
+            parent=parent,
             clear_cache=clear_cache,
-            mask=indices,
+            copy_children=copy_children,
+            extent=extent,
             **kwargs,
         )
-        setattr(new_entity, "_ab_cell_id", None)
-        if new_entity.ab_cell_id is None and self.ab_cell_id is not None:
-            parent.workspace.copy_to_parent(
-                self.ab_cell_id, new_entity, mask=cell_indices
-            )
 
         if isinstance(self, PotentialElectrode):
             complement = self.current_electrodes
         else:
             complement = self.potential_electrodes
 
-        if indices is not None:
-            indices = None
-            cell_indices = None
-            if new_entity.ab_cell_id is not None and complement.ab_cell_id is not None:
-                unique_ids = np.zeros(
-                    len(complement.ab_cell_id.value_map.map) - 1, dtype=bool
-                )
-                unique_ids[new_entity.ab_cell_id.values - 1] = True
-                cell_indices = unique_ids[complement.ab_cell_id.values - 1]
-                indices = np.zeros(complement.n_vertices, dtype=bool)
-                indices[complement.cells[cell_indices, :].ravel()] = True
+        # Reset the extent of the complement
+        if new_entity.ab_cell_id is not None and complement is not None:
+            ab_cell_ids = np.unique(new_entity.ab_cell_id.values)
+            indices = np.zeros(complement.n_vertices, dtype=bool)
+            indices[complement.cells[ab_cell_ids, :]] = True
 
-        new_complement = parent.workspace.copy_to_parent(
-            complement,
-            parent,
-            copy_children=copy_children,
-            omit_list=omit_list,
-            clear_cache=clear_cache,
-            mask=indices,
-        )
-        setattr(new_complement, "_ab_cell_id", None)
-        if new_complement.ab_cell_id is None and complement.ab_cell_id is not None:
-            parent.workspace.copy_to_parent(
-                complement.ab_cell_id,
-                new_complement,
-                mask=cell_indices,
+            new_complement = parent.workspace.copy_to_parent(
+                complement,
+                parent,
+                omit_list=omit_list,
+                clear_cache=clear_cache,
+                mask=indices,
             )
+            setattr(new_complement, "_ab_cell_id", None)
+            if new_complement.ab_cell_id is None and complement.ab_cell_id is not None:
+                parent.workspace.copy_to_parent(
+                    complement.ab_cell_id,
+                    new_complement,
+                    mask=cell_indices,
+                )
 
-        if isinstance(self, PotentialElectrode):
-            new_entity.current_electrodes = new_complement
-        else:
-            new_entity.potential_electrodes = new_complement
+            if isinstance(self, PotentialElectrode):
+                new_entity.current_electrodes = new_complement
+            else:
+                new_entity.potential_electrodes = new_complement
 
         return new_entity
 

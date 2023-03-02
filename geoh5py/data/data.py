@@ -58,6 +58,48 @@ class Data(Entity):
 
         data_type.workspace._register_data(self)
 
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        extent: list[float] | ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Function to copy data to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: (Optional) Create copies of all children entities along with it.
+        :param clear_cache: Clear array attributes after copy.
+        :param extent: Extent of the copied entity.
+        :param kwargs: Additional keyword arguments to pass to the copy constructor.
+
+        :return entity: Registered Entity to the workspace.
+        """
+        indices = None
+        if extent is not None:
+            indices = self.mask_by_extent(extent)
+            if indices is None:
+                return None
+
+        if parent is None:
+            parent = self.parent
+
+        new_entity = parent.workspace.copy_to_parent(
+            self,
+            parent,
+            clear_cache=clear_cache,
+            mask=indices,
+            **kwargs,
+        )
+        if copy_children:
+            for child in self.children:
+                child.copy(parent=new_entity, copy_children=True)
+
+        return new_entity
+
     @property
     def extent(self) -> np.ndarray | None:
         """
@@ -178,7 +220,7 @@ class Data(Entity):
             return mask_by_extent(self.parent.vertices, extent)
 
         if self.association is DataAssociationEnum.CELL:
-            if self.parent.centroids is not None:
+            if getattr(self.parent, "centroids", None) is not None:
                 return mask_by_extent(self.parent.centroids, extent)
 
             indices = mask_by_extent(self.parent.vertices, extent)

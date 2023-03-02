@@ -49,6 +49,64 @@ class GridObject(ObjectBase, ABC):
         Cell center locations in world coordinates.
         """
 
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        extent: list[float] | np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Function to copy an entity to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: (Optional) Create copies of all children entities along with it.
+        :param clear_cache: Clear array attributes after copy.
+        :param extent: Extent of the copied entity.
+        :param kwargs: Additional keyword arguments to pass to the copy constructor.
+
+        :return entity: Registered Entity to the workspace.
+        """
+        indices = None
+        if extent is not None:
+            indices = self.mask_by_extent(extent)
+            if indices is None:
+                return None
+
+        if parent is None:
+            parent = self.parent
+
+        new_entity = parent.workspace.copy_to_parent(
+            self,
+            parent,
+            clear_cache=clear_cache,
+            **kwargs,
+        )
+        if copy_children:
+            children_map = {}
+            for child in self.children:
+                child_copy = child.copy(parent=new_entity, copy_children=True)
+                if (
+                    isinstance(getattr(child_copy, "values", None), np.ndarray)
+                    and indices is not None
+                    and child_copy.values.shape == indices.shape
+                ):
+                    values = child_copy.values
+                    values[~indices] = np.nan
+                    child_copy.values = values
+
+                children_map[child.uid] = child_copy.uid
+
+            if self.property_groups:
+                self.workspace.copy_property_groups(
+                    new_entity, self.property_groups, children_map
+                )
+                new_entity.workspace.update_attribute(new_entity, "property_groups")
+
+        return new_entity
+
     @classmethod
     @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:

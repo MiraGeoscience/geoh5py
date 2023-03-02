@@ -224,10 +224,8 @@ class Workspace(AbstractContextManager):
         self,
         entity,
         parent,
-        copy_children: bool = True,
         omit_list: tuple = (),
         clear_cache: bool = False,
-        mask: np.ndarray | None = None,
         **kwargs,
     ):
         """
@@ -235,7 +233,6 @@ class Workspace(AbstractContextManager):
 
         :param entity: Entity to be copied.
         :param parent: Target parent to copy the entity under.
-        :param copy_children: Copy all children of the entity.
         :param omit_list: List of property names to omit on copy
         :param clear_cache: Clear array attributes after copy.
         :param kwargs: Additional keyword arguments passed to the copy constructor.
@@ -246,7 +243,6 @@ class Workspace(AbstractContextManager):
             entity,
             omit_list=["_uid", "_entity_type", "_on_file"] + list(omit_list),
             attributes={"uid": None, "parent": None},
-            mask=mask,
         )
 
         if entity_kwargs is None:
@@ -283,33 +279,11 @@ class Workspace(AbstractContextManager):
         if isinstance(entity, Data):
             entity_type = Data
 
-        prop_groups = []
-        if "property_groups" in entity_kwargs:
-            if copy_children:
-                prop_groups = entity_kwargs["property_groups"]
-
-            del entity_kwargs["property_groups"]
+        entity_kwargs.pop("property_groups", None)
 
         new_object = parent.workspace.create_entity(
             entity_type, **{"entity": entity_kwargs, "entity_type": entity_type_kwargs}
         )
-
-        if copy_children:
-            children_map = {}
-            for child in entity.children:
-                new_child = self.copy_to_parent(
-                    child,
-                    new_object,
-                    copy_children=True,
-                    clear_cache=clear_cache,
-                    mask=mask,
-                )
-                new_object.add_children([new_child])
-                children_map[child.uid] = new_child.uid
-
-            if prop_groups:
-                self.copy_property_groups(new_object, prop_groups, children_map)
-                self.workspace.update_attribute(new_object, "property_groups")
 
         if clear_cache:
             clear_array_attributes(entity)
