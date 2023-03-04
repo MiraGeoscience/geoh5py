@@ -47,7 +47,7 @@ def test_create_survey_airborne_tem(tmp_path):
         receivers, AirborneTEMReceivers
     ), "Entity type AirborneTEMReceivers failed to create."
     transmitters = AirborneTEMTransmitters.create(
-        workspace, vertices=vertices, name=name + "_tx"
+        workspace, vertices=vertices + 10.0, name=name + "_tx"
     )
     assert isinstance(
         transmitters, AirborneTEMTransmitters
@@ -299,19 +299,33 @@ def test_survey_airborne_tem_data(tmp_path):
     assert "Discretization" not in receivers.metadata["EM Dataset"]["Waveform"]
     receivers.timing_mark = 10**-3.1
     receivers.waveform = waveform
+    workspace.close()
 
-    new_workspace = Workspace(path)
+    # Test copying receiver over through the receivers
+    with Workspace(path) as workspace:
+        receivers_orig = workspace.get_entity(name + "_rx")[0]
+        np.testing.assert_almost_equal(receivers_orig.waveform, waveform)
 
-    receivers_rec = new_workspace.get_entity(name + "_rx")[0]
-    np.testing.assert_almost_equal(receivers_rec.waveform, waveform)
+        with Workspace(Path(tmp_path) / r"testATEM_copy2.geoh5") as new_workspace:
+            receivers_rec = receivers_orig.copy(new_workspace)
+            compare_entities(
+                receivers_orig,
+                receivers_rec,
+                ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
+            )
 
-    new_workspace = Workspace(Path(tmp_path) / r"testATEM_copy2.geoh5")
-    receivers_rec = receivers.copy(new_workspace)
-    compare_entities(
-        receivers,
-        receivers_rec,
-        ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
-    )
+        with Workspace(Path(tmp_path) / r"testATEM_copy_extent.geoh5") as new_workspace:
+            receivers_rec = receivers_orig.copy_from_extent(
+                [[0, -5], [1500, 5]], parent=new_workspace
+            )
+            assert receivers_rec.n_vertices == receivers_rec.transmitters.n_vertices
+            np.testing.assert_almost_equal(
+                receivers_orig.vertices[5:, :], receivers_rec.vertices
+            )
+            for child_a, child_b in zip(
+                receivers_orig.children, receivers_rec.children
+            ):
+                np.testing.assert_almost_equal(child_a.values[5:], child_b.values)
 
 
 def test_create_survey_ground_tem_large_loop(

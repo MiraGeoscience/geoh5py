@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import uuid
 
+import numpy as np
+
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_base import ObjectType
 
@@ -46,6 +48,77 @@ class BaseAirborneTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancesto
     @crossline_offset.setter
     def crossline_offset(self, value: float | uuid.UUID | None):
         self.set_metadata("crossline_offset", value)
+
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        cell_mask: list[float] | np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Function to copy a survey to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: Create copies of all children entities along with it.
+        :param clear_cache: Clear array attributes after copy.
+        :param mask: Array of indices to sub-sample the input entity.
+        :param cell_mask: Array of indices to sub-sample the input entity cells.
+        :param kwargs: Additional keyword arguments.
+
+        :return: New copy of the input entity.
+        """
+        if parent is None:
+            parent = self.parent
+
+        omit_list = [
+            "_metadata",
+            "_receivers",
+            "_transmitters",
+        ]
+        metadata = self.metadata.copy()
+        if mask is not None and self.vertices is not None:
+            if not isinstance(mask, np.ndarray) or mask.shape != (
+                self.vertices.shape[0],
+            ):
+                raise ValueError("Mask must be an array of shape (n_vertices,).")
+
+        new_entity = super().copy(
+            parent=parent,
+            clear_cache=clear_cache,
+            copy_children=copy_children,
+            mask=mask,
+            omit_list=omit_list,
+            **kwargs,
+        )
+
+        metadata["EM Dataset"][new_entity.type] = new_entity.uid
+
+        complement: AirborneTEMTransmitters | AirborneTEMReceivers = (
+            self.transmitters  # type: ignore
+            if isinstance(self, AirborneTEMReceivers)
+            else self.receivers
+        )
+        if complement is not None:
+            new_complement = super(Curve, complement).copy(  # type: ignore
+                parent=parent,
+                omit_list=omit_list,
+                copy_children=copy_children,
+                clear_cache=clear_cache,
+                mask=mask,
+                cell_mask=cell_mask,
+            )
+
+            setattr(new_entity, complement.type, new_complement)
+            metadata["EM Dataset"][complement.type] = new_complement.uid
+            new_complement.metadata = metadata
+
+        new_entity.metadata = metadata
+
+        return new_entity
 
     @property
     def default_metadata(self) -> dict:

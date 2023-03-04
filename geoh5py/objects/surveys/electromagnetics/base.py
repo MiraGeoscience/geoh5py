@@ -193,69 +193,6 @@ class BaseEMSurvey(ObjectBase, ABC):
 
         return None
 
-    def copy(
-        self,
-        parent=None,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        extent: list[float] | np.ndarray | None = None,
-        **kwargs,
-    ) -> BaseEMSurvey | None:
-        """
-        Function to copy a AirborneTEMReceivers to a different parent entity.
-
-        :param parent: Target parent to copy the entity under. Copied to current
-            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: Create copies of AirborneTEMReceivers along with it.
-        :param clear_cache: Clear array attributes after copy.
-
-        :return entity: Registered AirborneTEMReceivers to the workspace.
-        """
-        if parent is None:
-            parent = self.parent
-
-        indices = None
-        if extent is not None:
-            indices = self.mask_by_extent(extent)
-            if indices is None:
-                return None
-
-        omit_list = ["_metadata", "_receivers", "_transmitters", "_base_stations"]
-        metadata = self.metadata.copy()
-        new_entity = parent.workspace.copy_to_parent(
-            self,
-            parent,
-            omit_list=omit_list,
-            clear_cache=clear_cache,
-            mask=indices,
-            **kwargs,
-        )
-        metadata["EM Dataset"][new_entity.type] = new_entity.uid
-        for associate in ["transmitters", "receivers", "base_stations"]:
-            if getattr(self, associate, None) is not None and not isinstance(
-                getattr(self, associate), type(self)
-            ):
-                complement = parent.workspace.copy(
-                    getattr(self, associate),
-                    parent,
-                    copy_children=copy_children,
-                    omit_list=omit_list,
-                    clear_cache=clear_cache,
-                    extent=extent,
-                )
-                setattr(new_entity, associate, complement)
-                metadata["EM Dataset"][complement.type] = complement.uid
-                complement.metadata = metadata
-
-        if getattr(new_entity.receivers, "tx_id_property", None) is not None:
-            new_entity.receivers.tx_id_property = new_entity.get_data(
-                new_entity.receivers.tx_id_property.name
-            )[0]
-
-        new_entity.metadata = metadata
-
-        return new_entity
-
     @property
     @abstractmethod
     def default_input_types(self) -> list[str] | None:
