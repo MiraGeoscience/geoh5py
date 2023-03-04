@@ -63,7 +63,7 @@ class Data(Entity):
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
-        extent: list[float] | ndarray | None = None,
+        mask: np.ndarray | None = None,
         **kwargs,
     ):
         """
@@ -73,30 +73,30 @@ class Data(Entity):
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: (Optional) Create copies of all children entities along with it.
         :param clear_cache: Clear array attributes after copy.
-        :param extent: Extent of the copied entity.
+        :param mask: Extent of the copied entity.
         :param kwargs: Additional keyword arguments to pass to the copy constructor.
 
         :return entity: Registered Entity to the workspace.
         """
-        indices = None
-        if extent is not None:
-            indices = self.mask_by_extent(extent)
-            if indices is None:
-                return None
-
         if parent is None:
             parent = self.parent
+
+        if not isinstance(mask, (np.ndarray, type(None))):
+            raise ValueError("Mask must be an array or None.")
+
+        if (
+            mask is not None
+            and self.values is not None
+            and mask.shape == self.values.shape
+        ):
+            kwargs.update({"values": self.values[mask]})
 
         new_entity = parent.workspace.copy_to_parent(
             self,
             parent,
             clear_cache=clear_cache,
-            mask=indices,
             **kwargs,
         )
-        if copy_children:
-            for child in self.children:
-                child.copy(parent=new_entity, copy_children=True)
 
         return new_entity
 

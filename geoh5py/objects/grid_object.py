@@ -54,29 +54,33 @@ class GridObject(ObjectBase, ABC):
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
-        extent: list[float] | np.ndarray | None = None,
+        mask: np.ndarray | None = None,
         **kwargs,
     ):
         """
         Function to copy an entity to a different parent entity.
 
-        :param parent: Target parent to copy the entity under. Copied to current
-            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: (Optional) Create copies of all children entities along with it.
-        :param clear_cache: Clear array attributes after copy.
-        :param extent: Extent of the copied entity.
-        :param kwargs: Additional keyword arguments to pass to the copy constructor.
+        :param parent: New parent for the copied object.
+        :param copy_children: Copy children entities.
+        :param clear_cache: Clear cache of data values.
+        :param mask: Array of indices to sub-sample the input entity.
+        :param kwargs: Additional keyword arguments.
 
-        :return entity: Registered Entity to the workspace.
+        :return: New copy of the input entity.
         """
-        indices = None
-        if extent is not None:
-            indices = self.mask_by_extent(extent)
-            if indices is None:
-                return None
 
         if parent is None:
             parent = self.parent
+
+        if (
+            mask is not None
+            and self.centroids is not None
+            and (
+                not isinstance(mask, np.ndarray)
+                or mask.shape != (self.centroids.shape[0],)
+            )
+        ):
+            raise ValueError("Mask must be an array of shape (n_vertices,).")
 
         new_entity = parent.workspace.copy_to_parent(
             self,
@@ -87,16 +91,19 @@ class GridObject(ObjectBase, ABC):
         if copy_children:
             children_map = {}
             for child in self.children:
-                child_copy = child.copy(parent=new_entity, copy_children=True)
                 if (
-                    isinstance(getattr(child_copy, "values", None), np.ndarray)
-                    and indices is not None
-                    and child_copy.values.shape == indices.shape
+                    isinstance(mask, np.ndarray)
+                    and isinstance(getattr(child, "values", None), np.ndarray)
+                    and child.values.shape == mask.shape
                 ):
-                    values = child_copy.values
-                    values[~indices] = np.nan
-                    child_copy.values = values
+                    values = np.ones_like(child.values) * np.nan
+                    values[mask] = child.values[mask]
+                else:
+                    values = child.values
 
+                child_copy = child.copy(
+                    parent=new_entity, clear_cache=clear_cache, values=values
+                )
                 children_map[child.uid] = child_copy.uid
 
             if self.property_groups:

@@ -84,25 +84,16 @@ class GeoImage(ObjectBase):
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
-        extent: list[float] | np.ndarray | None = None,
         **kwargs,
     ):
         """
         Function to copy an entity to a different parent entity.
 
-        :param parent: Target parent to copy the entity under. Copied to current
-            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: (Optional) Create copies of all children entities along with it.
-        :param clear_cache: Clear array attributes after copy.
-        :param extent: Extent of the copied entity.
-        :param kwargs: Additional keyword arguments to pass to the copy constructor.
-
-        :return entity: Registered Entity to the workspace.
+        :param parent: New parent for the copied object.
+        :param copy_children: Copy children entities.
+        :param clear_cache: Clear cache of data values.
+        :param kwargs: Additional keyword arguments.
         """
-        if extent is not None:
-            indices = self.mask_by_extent(extent)
-            if indices is None:
-                return None
 
         if parent is None:
             parent = self.parent
@@ -116,7 +107,9 @@ class GeoImage(ObjectBase):
         if copy_children:
             children_map = {}
             for child in self.children:
-                child_copy = child.copy(parent=new_entity, copy_children=True)
+                child_copy = child.copy(
+                    parent=new_entity, copy_children=True, clear_cache=clear_cache
+                )
                 children_map[child.uid] = child_copy.uid
 
             if self.property_groups:

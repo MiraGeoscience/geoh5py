@@ -22,7 +22,6 @@ import warnings
 
 import numpy as np
 
-from ..data import Data
 from ..shared.utils import mask_by_extent
 from .object_base import ObjectBase, ObjectType
 
@@ -161,25 +160,26 @@ class Points(ObjectBase):
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: (Optional) Create copies of all children entities along with it.
         :param clear_cache: Clear array attributes after copy.
-        :param mask: Extent of the copied entity.
-        :param kwargs: Additional keyword arguments to pass to the copy constructor.
+        :param mask: Array of indices to sub-sample the input entity.
+        :param kwargs: Additional keyword arguments.
 
-        :return entity: Registered Entity to the workspace.
+        :return: New copy of the input entity.
         """
         if parent is None:
             parent = self.parent
 
-        if mask is None:
-            mask = np.ones(self.vertices.shape[0], dtype=bool)
+        if mask is not None and self.vertices is not None:
+            if not isinstance(mask, np.ndarray) or mask.shape != (
+                self.vertices.shape[0],
+            ):
+                raise ValueError("Mask must be an array of shape (n_vertices,).")
 
-        if not isinstance(mask, np.ndarray) or mask.shape != (self.vertices.shape[0],):
-            raise ValueError("Mask must be an array of shape (n_vertices,).")
+            kwargs.update({"vertices": self.vertices[mask]})
 
         new_entity = parent.workspace.copy_to_parent(
             self,
             parent,
             clear_cache=clear_cache,
-            vertices=self.vertices[mask, :],
             **kwargs,
         )
 

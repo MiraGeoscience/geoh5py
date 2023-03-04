@@ -48,7 +48,7 @@ def test_copy_extent_grid_2d(tmp_path):
 
     data = grid.add_data({"rando": {"values": values.flatten()}})
 
-    new_grid = grid.copy(extent=np.r_[np.c_[50, 50, 0], np.c_[200, 200, 0]])
+    new_grid = grid.copy_from_extent(np.r_[np.c_[50, 50, 0], np.c_[200, 200, 0]])
 
     assert new_grid.n_cells == grid.n_cells
     assert new_grid.children[0].values.shape == data.values.shape

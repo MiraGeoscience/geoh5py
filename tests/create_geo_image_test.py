@@ -158,7 +158,7 @@ def test_create_copy_geoimage(tmp_path):
     new_image = geoimage.copy(extent=[[9, 9], [10, 10]])
     assert new_image is not None, "Error copying from extent."
 
-    new_image = geoimage.copy(extent=[[100, 100], [200, 200]])
+    new_image = geoimage.copy_from_extent([[100, 100], [200, 200]])
     assert new_image is None, "Error copying from extent that is out of bounds."
 
 

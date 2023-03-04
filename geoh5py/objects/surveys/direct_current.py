@@ -53,7 +53,11 @@ class BaseElectrode(Curve, ABC):
         if isinstance(data, Data):
             if not isinstance(data, ReferencedData):
                 raise TypeError(f"ab_cell_id must be of type {ReferencedData}")
-            self._ab_cell_id = data
+
+            if data.parent.uid == self.uid:
+                self._ab_cell_id = data
+            else:
+                self._ab_cell_id = data.copy(parent=self)
         else:
             if data.dtype != np.int32:
                 print("ab_cell_id values will be converted to type 'int32'")
@@ -103,7 +107,8 @@ class BaseElectrode(Curve, ABC):
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
-        extent: list[float] | np.ndarray | None = None,
+        mask: np.ndarray | None = None,
+        cell_mask: list[float] | np.ndarray | None = None,
         **kwargs,
     ):
         """
@@ -113,9 +118,11 @@ class BaseElectrode(Curve, ABC):
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: Create copies of all children entities along with it.
         :param clear_cache: Clear array attributes after copy.
-        :param extent: Extent of the copied entity.
+        :param mask: Array of indices to sub-sample the input entity.
+        :param cell_mask: Array of indices to sub-sample the input entity cells.
+        :param kwargs: Additional keyword arguments.
 
-        :return entity: Registered Entity to the workspace.
+        :return: New copy of the input entity.
         """
         if parent is None:
             parent = self.parent
@@ -126,44 +133,94 @@ class BaseElectrode(Curve, ABC):
             "_potential_electrodes",
             "_current_electrodes",
         ]
+
+        if mask is not None and self.vertices is not None:
+            if not isinstance(mask, np.ndarray) or mask.shape != (
+                self.vertices.shape[0],
+            ):
+                raise ValueError("Mask must be an array of shape (n_vertices,).")
+
         new_entity = super().copy(
             parent=parent,
             clear_cache=clear_cache,
             copy_children=copy_children,
-            extent=extent,
+            mask=mask,
+            omit_list=omit_list,
             **kwargs,
         )
 
-        if isinstance(self, PotentialElectrode):
-            complement = self.current_electrodes
-        else:
-            complement = self.potential_electrodes
+        if (
+            cell_mask is None
+            and mask is not None
+            and new_entity.ab_cell_id is None
+            and self.ab_cell_id is not None
+            and self.ab_cell_id.values is not None
+        ):
+            cell_mask = np.all(mask[self.cells], axis=1)
+            new_entity.ab_cell_id = self.ab_cell_id.values[cell_mask]
 
-        # Reset the extent of the complement
-        if new_entity.ab_cell_id is not None and complement is not None:
-            ab_cell_ids = np.unique(new_entity.ab_cell_id.values)
-            indices = np.zeros(complement.n_vertices, dtype=bool)
-            indices[complement.cells[ab_cell_ids, :]] = True
+        complement: CurrentElectrode | PotentialElectrode = (
+            self.current_electrodes
+            if isinstance(self, PotentialElectrode)
+            else self.potential_electrodes
+        )
 
-            new_complement = parent.workspace.copy_to_parent(
-                complement,
-                parent,
-                omit_list=omit_list,
-                clear_cache=clear_cache,
-                mask=indices,
+        # Set the mask of the complement
+        if (
+            new_entity.ab_cell_id is not None
+            and complement is not None
+            and complement.ab_cell_id is not None
+            and complement.ab_cell_id.values is not None
+            and complement.vertices is not None
+            and complement.cells is not None
+        ):
+            intersect = np.intersect1d(
+                new_entity.ab_cell_id.values,
+                complement.ab_cell_id.values,
             )
-            setattr(new_complement, "_ab_cell_id", None)
-            if new_complement.ab_cell_id is None and complement.ab_cell_id is not None:
-                parent.workspace.copy_to_parent(
-                    complement.ab_cell_id,
-                    new_complement,
-                    mask=cell_indices,
-                )
+            cell_mask = np.r_[
+                [(val in intersect) for val in complement.ab_cell_id.values]
+            ]
+
+            # Convert cell indices to vertex indices
+            mask = np.zeros(complement.vertices.shape[0], dtype=bool)
+            mask[complement.cells[cell_mask, :]] = True
+
+            new_complement = super(Curve, complement).copy(  # type: ignore
+                parent=parent,
+                omit_list=omit_list,
+                copy_children=copy_children,
+                clear_cache=clear_cache,
+                mask=mask,
+                cell_mask=cell_mask,
+            )
 
             if isinstance(self, PotentialElectrode):
                 new_entity.current_electrodes = new_complement
             else:
                 new_entity.potential_electrodes = new_complement
+
+            if new_complement.ab_cell_id is None and complement.ab_cell_id is not None:
+                new_complement.ab_cell_id = complement.ab_cell_id.values[cell_mask]
+
+            # Re-number the ab_cell_id
+            value_map = {
+                val: ind
+                for ind, val in enumerate(
+                    np.r_[0, np.unique(new_entity.current_electrodes.ab_cell_id.values)]
+                )
+            }
+            new_map = {
+                val: new_entity.current_electrodes.ab_cell_id.value_map.map[val]
+                for val in value_map.values()
+            }
+            new_complement.ab_cell_id = np.asarray(
+                [value_map[val] for val in new_complement.ab_cell_id.values]
+            )
+            new_entity.ab_cell_id = np.asarray(
+                [value_map[val] for val in new_entity.ab_cell_id.values]
+            )
+            new_entity.ab_cell_id.value_map.map = new_map
 
         return new_entity
 
