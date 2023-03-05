@@ -78,7 +78,7 @@ def test_remove_cells_surface_data(tmp_path):
         with pytest.raises(
             ValueError, match="Found indices larger than the number of cells."
         ):
-            surface.remove_cells(101)
+            surface.remove_cells([101])
 
         with pytest.raises(
             ValueError, match="Attempting to assign 'cells' with fewer values."
@@ -109,7 +109,7 @@ def test_remove_vertices_surface_data(tmp_path):
         with pytest.raises(
             ValueError, match="Found indices larger than the number of vertices."
         ):
-            surface.remove_vertices(1001)
+            surface.remove_vertices([1001])
 
         logic = np.ones(surface.n_vertices)
         logic[[0, 3]] = False

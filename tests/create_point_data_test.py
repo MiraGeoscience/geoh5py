@@ -100,7 +100,7 @@ def test_remove_point_data(tmp_path):
         with pytest.raises(
             ValueError, match="Found indices larger than the number of vertices."
         ):
-            points.remove_vertices(12)
+            points.remove_vertices([12])
 
         points.remove_vertices([1, 2])
 

@@ -213,6 +213,64 @@ class ObjectBase(Entity):
 
         return None
 
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: list[float] | np.ndarray | None = None,
+        cell_mask: list[float] | np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Function to copy an entity to a different parent entity.
+
+        :param parent: New parent for the copied object.
+        :param copy_children: Copy children entities.
+        :param clear_cache: Clear cache of data values.
+        :param mask: Array of indices to sub-sample the input entity.
+        :param cell_mask: Array of indices to sub-sample the input entity cells.
+        :param kwargs: Additional keyword arguments.
+
+        :return: New copy of the input entity.
+        """
+
+        if parent is None:
+            parent = self.parent
+
+        new_object = self.workspace.copy_to_parent(
+            self,
+            parent,
+            clear_cache=clear_cache,
+            **kwargs,
+        )
+
+        if copy_children:
+            children_map = {}
+            for child in self.children:
+                if isinstance(child, Data) and child.association is not None:
+                    if child.name in ["A-B Cell ID", "Transmitter ID"]:
+                        continue
+
+                    child_copy = child.copy(
+                        parent=new_object,
+                        clear_cache=clear_cache,
+                        mask=cell_mask if child.association.name == "CELL" else mask,
+                    )
+                else:
+                    child_copy = self.workspace.copy_to_parent(
+                        child, new_object, clear_cache=clear_cache
+                    )
+                children_map[child.uid] = child_copy.uid
+
+            if self.property_groups:
+                self.workspace.copy_property_groups(
+                    new_object, self.property_groups, children_map
+                )
+                new_object.workspace.update_attribute(new_object, "property_groups")
+
+        return new_object
+
     @classmethod
     @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -405,8 +463,17 @@ class ObjectBase(Entity):
         self.workspace.update_attribute(self, "property_groups")
 
     def remove_children_values(
-        self, indices: list[int], association: str, clear_cache: bool = False
+        self,
+        indices: list[int] | np.ndarray,
+        association: str,
+        clear_cache: bool = False,
     ):
+        if isinstance(indices, list):
+            indices = np.array(indices)
+
+        if not isinstance(indices, np.ndarray):
+            raise TypeError("Indices must be a list or numpy array.")
+
         for child in self.children:
             if (
                 getattr(child, "values", None) is not None

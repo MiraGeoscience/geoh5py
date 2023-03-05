@@ -119,7 +119,7 @@ def test_remove_cells_data(tmp_path):
         with pytest.raises(
             ValueError, match="Found indices larger than the number of cells."
         ):
-            curve.remove_cells(12)
+            curve.remove_cells([12])
 
         with pytest.raises(
             ValueError, match="Attempting to assign 'cells' with fewer values."
@@ -152,7 +152,7 @@ def test_remove_vertex_data(tmp_path):
         with pytest.raises(
             ValueError, match="Found indices larger than the number of vertices."
         ):
-            curve.remove_vertices(12)
+            curve.remove_vertices([12])
 
         curve.remove_vertices([0, 3])
 

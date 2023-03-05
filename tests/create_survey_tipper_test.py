@@ -28,7 +28,7 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_survey_tipper(tmp_path):
-    path = tmp_path / r"../testTipper.geoh5"
+    path = tmp_path / r"test_Tipper.geoh5"
 
     workspace = Workspace(path)
     xlocs = np.linspace(-1000, 1000, 10)
@@ -91,29 +91,31 @@ def test_create_survey_tipper(tmp_path):
 
     # Test copying receiver over through the receivers
     # Create a workspace
-    receivers.copy(Workspace(tmp_path / r"testATEM_copy.geoh5"))
-    new_workspace = Workspace(tmp_path / r"testATEM_copy.geoh5")
-    receivers_rec = new_workspace.get_entity("Tipper rx")[0]
-    compare_entities(
-        receivers, receivers_rec, ignore=["_receivers", "_base_stations", "_parent"]
-    )
-    compare_entities(
-        base_stations,
-        receivers_rec.base_stations,
-        ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
-    )
+    receivers.copy(Workspace(tmp_path / r"test_Tipper_copy.geoh5"))
+    with Workspace(tmp_path / r"test_Tipper_copy.geoh5") as new_workspace:
+        receivers_rec = new_workspace.get_entity("Tipper rx")[0]
+        compare_entities(
+            receivers, receivers_rec, ignore=["_receivers", "_base_stations", "_parent"]
+        )
+        compare_entities(
+            base_stations,
+            receivers_rec.base_stations,
+            ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
+        )
 
     # Test copying receiver over through the base_stations
     # Create a workspace
-    new_workspace = Workspace(tmp_path / r"testATEM_copy2.geoh5")
-    base_stations_rec = base_stations.copy(new_workspace)
-    compare_entities(
-        receivers,
-        base_stations_rec.receivers,
-        ignore=["_receivers", "_base_stations", "_parent"],
-    )
-    compare_entities(
-        base_stations,
-        base_stations_rec,
-        ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
-    )
+    with Workspace(tmp_path / r"test_Tipper_copy2.geoh5") as new_workspace:
+        base_stations_rec = base_stations.copy(new_workspace)
+        compare_entities(
+            receivers,
+            base_stations_rec.receivers,
+            ignore=["_receivers", "_base_stations", "_parent"],
+        )
+        compare_entities(
+            base_stations,
+            base_stations_rec,
+            ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
+        )
+
+    workspace.close()

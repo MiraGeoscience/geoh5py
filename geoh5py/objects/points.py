@@ -127,12 +127,25 @@ class Points(ObjectBase):
         self._extent = None
         self.workspace.update_attribute(self, "vertices")
 
-    def remove_vertices(self, indices: list[int], clear_cache: bool = False):
-        """Safely remove vertices and corresponding data entries."""
+    def remove_vertices(
+        self, indices: list[int] | np.ndarray, clear_cache: bool = False
+    ):
+        """
+        Safely remove vertices and corresponding data entries.
+
+        :param indices: Indices of vertices to remove.
+        :param clear_cache: Clear cached data and attributes.
+        """
 
         if self._vertices is None:
             warnings.warn("No vertices to be removed.", UserWarning)
             return
+
+        if isinstance(indices, list):
+            indices = np.array(indices)
+
+        if not isinstance(indices, np.ndarray):
+            raise TypeError("Indices must be a list or numpy array.")
 
         if (
             isinstance(self.vertices, np.ndarray)
@@ -150,24 +163,23 @@ class Points(ObjectBase):
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
-        mask: np.ndarray | None = None,
+        mask: list[float] | np.ndarray | None = None,
+        cell_mask: list[float] | np.ndarray | None = None,
         **kwargs,
     ):
         """
         Function to copy an entity to a different parent entity.
 
-        :param parent: Target parent to copy the entity under. Copied to current
-            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: (Optional) Create copies of all children entities along with it.
-        :param clear_cache: Clear array attributes after copy.
+        :param parent: New parent for the copied object.
+        :param copy_children: Copy children entities.
+        :param clear_cache: Clear cache of data values.
         :param mask: Array of indices to sub-sample the input entity.
+        :param cell_mask: Array of indices to sub-sample the input entity cells.
         :param kwargs: Additional keyword arguments.
 
         :return: New copy of the input entity.
-        """
-        if parent is None:
-            parent = self.parent
 
+        """
         if mask is not None and self.vertices is not None:
             if not isinstance(mask, np.ndarray) or mask.shape != (
                 self.vertices.shape[0],
@@ -176,25 +188,13 @@ class Points(ObjectBase):
 
             kwargs.update({"vertices": self.vertices[mask]})
 
-        new_entity = parent.workspace.copy_to_parent(
-            self,
-            parent,
+        new_entity = super().copy(
+            parent=parent,
+            copy_children=copy_children,
             clear_cache=clear_cache,
+            mask=mask,
+            cell_mask=cell_mask,
             **kwargs,
         )
-
-        if copy_children:
-            children_map = {}
-            for child in self.children:
-                child_copy = child.copy(
-                    parent=new_entity, copy_children=True, mask=mask
-                )
-                children_map[child.uid] = child_copy.uid
-
-            if self.property_groups:
-                self.workspace.copy_property_groups(
-                    new_entity, self.property_groups, children_map
-                )
-                new_entity.workspace.update_attribute(new_entity, "property_groups")
 
         return new_entity
