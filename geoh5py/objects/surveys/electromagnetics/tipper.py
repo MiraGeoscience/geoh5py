@@ -15,9 +15,13 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=bad-super-call
+
 from __future__ import annotations
 
 import uuid
+
+import numpy as np
 
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_type import ObjectType
@@ -39,6 +43,7 @@ class BaseTipper(BaseEMSurvey):
     ]
     __INPUT_TYPE = ["Rx and base stations"]
     _base_stations = None
+    _receivers = None
 
     def __init__(
         self,
@@ -91,6 +96,123 @@ class BaseTipper(BaseEMSurvey):
 
         self._base_stations = base
         self.edit_metadata({"Base stations": base.uid})
+
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        cell_mask: list[float] | np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Function to copy a survey to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: Create copies of all children entities along with it.
+        :param clear_cache: Clear array attributes after copy.
+        :param mask: Array of indices to sub-sample the input entity.
+        :param cell_mask: Array of indices to sub-sample the input entity cells.
+        :param kwargs: Additional keyword arguments.
+
+        :return: New copy of the input entity.
+        """
+        if parent is None:
+            parent = self.parent
+
+        omit_list = [
+            "_metadata",
+            "_receivers",
+            "_base_stations",
+        ]
+        metadata = self.metadata.copy()
+        if mask is not None and self.vertices is not None:
+            if not isinstance(mask, np.ndarray) or mask.shape != (
+                self.vertices.shape[0],
+            ):
+                raise ValueError("Mask must be an array of shape (n_vertices,).")
+
+        new_entity = super().copy(
+            parent=parent,
+            clear_cache=clear_cache,
+            copy_children=copy_children,
+            mask=mask,
+            omit_list=omit_list,
+            **kwargs,
+        )
+
+        metadata["EM Dataset"][new_entity.type] = new_entity.uid
+
+        complement: TipperBaseStations | TipperReceivers = (
+            self.base_stations  # type: ignore
+            if isinstance(self, TipperReceivers)
+            else self.receivers
+        )
+        base_class: type[Points] | type[Curve] = (
+            Points if isinstance(self, TipperReceivers) else Curve  # type: ignore
+        )
+
+        if complement is not None:
+            # Reset mask
+            new_complement = super(base_class, complement).copy(  # type: ignore
+                parent=parent,
+                omit_list=omit_list,
+                copy_children=copy_children,
+                clear_cache=clear_cache,
+            )
+
+            setattr(new_entity, complement.type, new_complement)
+            metadata["EM Dataset"][complement.type] = new_complement.uid
+            new_complement.metadata = metadata
+
+        new_entity.metadata = metadata
+        return new_entity
+
+    def copy_from_extent(
+        self,
+        extent: list[float] | np.ndarray,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        **kwargs,
+    ):
+        """
+        Function to copy an entity to a different parent entity.
+
+        :param extent: Extent of the copied entity.
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: (Optional) Create copies of all children entities along with it.
+        :param clear_cache: Clear array attributes after copy.
+        :param kwargs: Additional keyword arguments to pass to the copy constructor.
+
+        :return entity: Registered Entity to the workspace.
+        """
+        indices = self.mask_by_extent(extent)
+        if indices is None:
+            return None
+
+        new_entity = self.copy(
+            parent=parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            mask=indices,
+            **kwargs,
+        )
+
+        complement: TipperBaseStations | TipperReceivers = (
+            self.base_stations  # type: ignore
+            if isinstance(self, TipperReceivers)
+            else self.receivers
+        )
+
+        indices = complement.mask_by_extent(extent)
+        if indices is not None:
+            complement.remove_vertices(indices)
+
+        return new_entity
 
     @property
     def default_input_types(self) -> list[str]:
