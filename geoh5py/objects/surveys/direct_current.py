@@ -27,6 +27,9 @@ from ..object_type import ObjectType
 
 
 class BaseElectrode(Curve, ABC):
+    _potential_electrodes: PotentialElectrode | None = None
+    _current_electrodes: CurrentElectrode | None = None
+
     def __init__(self, object_type: ObjectType, **kwargs):
         self._metadata: dict | None = None
         self._ab_cell_id: ReferencedData | None = None
@@ -67,15 +70,18 @@ class BaseElectrode(Curve, ABC):
                 if isinstance(child, ReferencedData):
                     child.values = data.astype(np.int32)
             else:
-                if (
-                    getattr(self, "current_electrodes", None) is not None
-                    and getattr(self.current_electrodes, "ab_cell_id", None) is not None
-                ):
-                    entity_type = self.current_electrodes.ab_cell_id.entity_type
+                complement: CurrentElectrode | PotentialElectrode = (
+                    self.current_electrodes
+                    if isinstance(self, PotentialElectrode)
+                    else self.potential_electrodes
+                )
+
+                if complement is not None and complement.ab_cell_id is not None:
+                    entity_type = complement.ab_cell_id.entity_type
                 else:
                     value_map = {ii: str(ii) for ii in range(data.max() + 1)}
                     value_map[0] = "Unknown"
-                    entity_type = {
+                    entity_type = {  # type: ignore
                         "primitive_type": "REFERENCED",
                         "value_map": value_map,
                     }
@@ -151,12 +157,16 @@ class BaseElectrode(Curve, ABC):
 
         if (
             cell_mask is None
-            and mask is not None
+            and self.cells is not None
             and new_entity.ab_cell_id is None
             and self.ab_cell_id is not None
             and self.ab_cell_id.values is not None
         ):
-            cell_mask = np.all(mask[self.cells], axis=1)
+            if mask is not None:
+                cell_mask = np.all(mask[self.cells], axis=1)
+            else:
+                cell_mask = np.ones(self.cells.shape[0], dtype=bool)
+
             new_entity.ab_cell_id = self.ab_cell_id.values[cell_mask]
 
         complement: CurrentElectrode | PotentialElectrode = (
@@ -214,10 +224,10 @@ class BaseElectrode(Curve, ABC):
                 val: new_entity.current_electrodes.ab_cell_id.value_map.map[val]
                 for val in value_map.values()
             }
-            new_complement.ab_cell_id = np.asarray(
+            new_complement.ab_cell_id.values = np.asarray(
                 [value_map[val] for val in new_complement.ab_cell_id.values]
             )
-            new_entity.ab_cell_id = np.asarray(
+            new_entity.ab_cell_id.values = np.asarray(
                 [value_map[val] for val in new_entity.ab_cell_id.values]
             )
             new_entity.ab_cell_id.value_map.map = new_map
@@ -282,15 +292,15 @@ class PotentialElectrode(BaseElectrode):
         """
         The associated current electrode object (sources).
         """
-        if self.metadata is None:
-            raise AttributeError("No Current-Receiver metadata set.")
-        currents = self.metadata["Current Electrodes"]
+        if getattr(self, "_current_electrodes", None) is None:
+            if self.metadata is not None and "Current Electrodes" in self.metadata:
+                transmitter = self.metadata["Current Electrodes"]
+                transmitter_entity = self.workspace.get_entity(transmitter)[0]
 
-        try:
-            return self.workspace.get_entity(currents)[0]
-        except IndexError:
-            print("Associated CurrentElectrode entity not found in Workspace.")
-            return None
+                if isinstance(transmitter_entity, CurrentElectrode):
+                    self._current_electrodes = transmitter_entity
+
+        return self._current_electrodes
 
     @current_electrodes.setter
     def current_electrodes(self, current_electrodes: CurrentElectrode):
@@ -363,17 +373,15 @@ class CurrentElectrode(BaseElectrode):
         """
         The associated potential_electrodes (receivers)
         """
-        if self.metadata is None:
-            raise AttributeError("No Current-Receiver metadata set.")
+        if getattr(self, "_potential_electrodes", None) is None:
+            if self.metadata is not None and "Potential Electrodes" in self.metadata:
+                potential = self.metadata["Potential Electrodes"]
+                potential_entity = self.workspace.get_entity(potential)[0]
 
-        potential = self.metadata["Potential Electrodes"]
-        potential_entity = self.workspace.get_entity(potential)[0]
+                if isinstance(potential_entity, PotentialElectrode):
+                    self._potential_electrodes = potential_entity
 
-        if isinstance(potential_entity, PotentialElectrode):
-            return potential_entity
-
-        print("Associated PotentialElectrode entity not found in Workspace.")
-        return None
+        return self._potential_electrodes
 
     @potential_electrodes.setter
     def potential_electrodes(self, potential_electrodes: PotentialElectrode):

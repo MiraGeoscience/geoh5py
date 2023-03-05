@@ -15,6 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=too-many-locals, too-many-branches
+
 from __future__ import annotations
 
 import uuid
@@ -30,6 +32,149 @@ from .base import BaseTEMSurvey
 
 class BaseGroundTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
     __INPUT_TYPE = ["Tx and Rx"]
+    _tx_id_property: ReferencedData | None = None
+
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        cell_mask: list[float] | np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Function to copy a survey to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: Create copies of all children entities along with it.
+        :param clear_cache: Clear array attributes after copy.
+        :param mask: Array of indices to sub-sample the input entity.
+        :param cell_mask: Array of indices to sub-sample the input entity cells.
+        :param kwargs: Additional keyword arguments.
+
+        :return: New copy of the input entity.
+        """
+        if parent is None:
+            parent = self.parent
+
+        omit_list = [
+            "_metadata",
+            "_receivers",
+            "_transmitters",
+            "_base_stations",
+            "_tx_id_property",
+        ]
+        metadata = self.metadata.copy()
+        if mask is not None and self.vertices is not None:
+            if not isinstance(mask, np.ndarray) or mask.shape != (
+                self.vertices.shape[0],
+            ):
+                raise ValueError("Mask must be an array of shape (n_vertices,).")
+
+        new_entity = super().copy(
+            parent=parent,
+            clear_cache=clear_cache,
+            copy_children=copy_children,
+            mask=mask,
+            omit_list=omit_list,
+            **kwargs,
+        )
+
+        if (
+            cell_mask is None
+            and self.cells is not None
+            and new_entity.tx_id_property is None
+            and self.tx_id_property is not None
+            and self.tx_id_property.values is not None
+        ):
+            if mask is not None:
+                if isinstance(self, GroundTEMReceiversLargeLoop):
+                    cell_mask = mask
+                else:
+                    cell_mask = np.all(mask[self.cells], axis=1)
+            else:
+                cell_mask = np.ones(self.tx_id_property.values.shape[0], dtype=bool)
+
+            new_entity.tx_id_property = self.tx_id_property.values[cell_mask]
+        metadata["EM Dataset"][new_entity.type] = new_entity.uid
+        complement: GroundTEMTransmittersLargeLoop | GroundTEMReceiversLargeLoop = (
+            self.transmitters  # type: ignore
+            if isinstance(self, GroundTEMReceiversLargeLoop)
+            else self.receivers
+        )
+
+        if (
+            new_entity.tx_id_property is not None
+            and complement is not None
+            and complement.tx_id_property is not None
+            and complement.tx_id_property.values is not None
+            and complement.vertices is not None
+            and complement.cells is not None
+        ):
+            intersect = np.intersect1d(
+                new_entity.tx_id_property.values,
+                complement.tx_id_property.values,
+            )
+
+            # Convert cell indices to vertex indices
+            if isinstance(complement, GroundTEMReceiversLargeLoop):
+                mask = np.r_[
+                    [(val in intersect) for val in complement.tx_id_property.values]
+                ]
+                cell_mask = None
+                tx_ids = complement.tx_id_property.values[mask]
+            else:
+                cell_mask = np.r_[
+                    [(val in intersect) for val in complement.tx_id_property.values]
+                ]
+                mask = np.zeros(complement.vertices.shape[0], dtype=bool)
+                mask[complement.cells[cell_mask, :]] = True
+                tx_ids = complement.tx_id_property.values[cell_mask]
+
+            new_complement = super(Curve, complement).copy(  # type: ignore
+                parent=parent,
+                omit_list=omit_list,
+                copy_children=copy_children,
+                clear_cache=clear_cache,
+                mask=mask,
+                cell_mask=cell_mask,
+            )
+
+            if isinstance(self, GroundTEMReceiversLargeLoop):
+                new_entity.transmitters = new_complement
+            else:
+                new_entity.receivers = new_complement
+
+            if (
+                new_complement.tx_id_property is None
+                and complement.tx_id_property is not None
+            ):
+                new_complement.tx_id_property = tx_ids
+
+                # Re-number the tx_id_property
+                value_map = {
+                    val: ind
+                    for ind, val in enumerate(
+                        np.r_[
+                            0, np.unique(new_entity.transmitters.tx_id_property.values)
+                        ]
+                    )
+                }
+                new_map = {
+                    val: new_entity.transmitters.tx_id_property.value_map.map[val]
+                    for val in value_map.values()
+                }
+                new_complement.tx_id_property.values = np.asarray(
+                    [value_map[val] for val in new_complement.tx_id_property.values]
+                )
+                new_entity.tx_id_property.values = np.asarray(
+                    [value_map[val] for val in new_entity.tx_id_property.values]
+                )
+                new_entity.tx_id_property.value_map.map = new_map
+
+        return new_entity
 
     @property
     def default_metadata(self) -> dict:
@@ -69,6 +214,63 @@ class BaseGroundTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
         """
         return GroundTEMTransmittersLargeLoop
 
+    @property
+    def tx_id_property(self) -> ReferencedData | None:
+        """
+        Default channel units for time or frequency defined on the child class.
+        """
+        if self._tx_id_property is None:
+            if "Tx ID property" in self.metadata["EM Dataset"]:
+                data = self.get_data(self.metadata["EM Dataset"]["Tx ID property"])
+
+                if any(data) and isinstance(data[0], ReferencedData):
+                    self._tx_id_property = data[0]
+
+        return self._tx_id_property
+
+    @tx_id_property.setter
+    def tx_id_property(self, value: uuid.UUID | ReferencedData | np.ndarray | None):
+        if isinstance(value, uuid.UUID):
+            value = self.get_data(value)[0]
+
+        if isinstance(value, np.ndarray):
+            complement: GroundTEMTransmittersLargeLoop | GroundTEMReceiversLargeLoop = (
+                self.transmitters  # type: ignore
+                if isinstance(self, GroundTEMReceiversLargeLoop)
+                else self.receivers
+            )
+
+            if complement is not None and complement.tx_id_property is not None:
+                entity_type = complement.tx_id_property.entity_type
+            else:
+                value_map = {
+                    ind: f"Loop {ind}" for ind in np.unique(value.astype(np.int32))
+                }
+                value_map[0] = "Unknown"
+                entity_type = {  # type: ignore
+                    "primitive_type": "REFERENCED",
+                    "value_map": value_map,
+                }
+
+            value = self.add_data(
+                {
+                    "Transmitter ID": {
+                        "values": value,
+                        "entity_type": entity_type,
+                        "type": "referenced",
+                    }
+                }
+            )
+
+        if not isinstance(value, (ReferencedData, type(None))):
+            raise TypeError(
+                "Input value for 'tx_id_property' should be of type uuid.UUID, "
+                "ReferencedData, np.ndarray or None.)"
+            )
+
+        self._tx_id_property = value
+        self.edit_metadata({"Tx ID property": getattr(value, "uid", None)})
+
 
 class GroundTEMReceiversLargeLoop(BaseGroundTEM):  # pylint: disable=too-many-ancestors
     """
@@ -81,8 +283,6 @@ class GroundTEMReceiversLargeLoop(BaseGroundTEM):  # pylint: disable=too-many-an
     _transmitters: GroundTEMTransmittersLargeLoop | None = None
 
     def __init__(self, object_type: ObjectType, name="Ground TEM Rx", **kwargs):
-        self._tx_id_property: ReferencedData | None = None
-
         super().__init__(object_type, name=name, **kwargs)
 
     @classmethod
@@ -98,51 +298,6 @@ class GroundTEMReceiversLargeLoop(BaseGroundTEM):  # pylint: disable=too-many-an
         :return: Transmitter class
         """
         return GroundTEMTransmittersLargeLoop
-
-    @property
-    def tx_id_property(self) -> ReferencedData | None:
-        """
-        Default channel units for time or frequency defined on the child class.
-        """
-        if self._tx_id_property is None:
-            if "Tx ID property" in self.metadata["EM Dataset"]:
-                data = self.get_data(self.metadata["EM Dataset"]["Tx ID property"])[0]
-
-                if isinstance(data, ReferencedData):
-                    self._tx_id_property = data
-
-        return self._tx_id_property
-
-    @tx_id_property.setter
-    def tx_id_property(self, value: uuid.UUID | ReferencedData | np.ndarray | None):
-        if isinstance(value, uuid.UUID):
-            value = self.get_data(value)[0]
-
-        if isinstance(value, np.ndarray):
-            if self.transmitters is None or self.transmitters.tx_id_property is None:
-                raise AttributeError(
-                    "Setting property 'tx_id_property' requires a `transmitters` "
-                    "with `tx_id_property` set."
-                )
-
-            value = self.add_data(
-                {
-                    "Transmitter ID": {
-                        "values": value,
-                        "value_map": self.transmitters.tx_id_property.entity_type.value_map.map,
-                        "type": "referenced",
-                    }
-                }
-            )
-
-        if not isinstance(value, (ReferencedData, type(None))):
-            raise TypeError(
-                "Input value for 'tx_id_property' should be of type uuid.UUID, "
-                "ReferencedData, np.ndarray or None.)"
-            )
-
-        self._tx_id_property = value
-        self.edit_metadata({"Tx ID property": getattr(value, "uid", None)})
 
     @property
     def type(self):
@@ -163,8 +318,6 @@ class GroundTEMTransmittersLargeLoop(
     _receivers: GroundTEMReceiversLargeLoop | None = None
 
     def __init__(self, object_type: ObjectType, name="Ground TEM Tx", **kwargs):
-        self._tx_id_property: ReferencedData | None = None
-
         super().__init__(object_type, name=name, **kwargs)
 
     @classmethod
@@ -181,44 +334,44 @@ class GroundTEMTransmittersLargeLoop(
         """
         return GroundTEMReceiversLargeLoop
 
-    @property
-    def tx_id_property(self) -> ReferencedData | None:
-        """
-        Default channel units for time or frequency defined on the child class.
-        """
-        if self._tx_id_property is None:
-            data = self.get_data("Transmitter ID")[0]
-
-            if isinstance(data, ReferencedData):
-                self._tx_id_property = data
-
-        return self._tx_id_property
-
-    @tx_id_property.setter
-    def tx_id_property(self, values: np.ndarray | ReferencedData):
-        if isinstance(values, np.ndarray):
-            values = self.add_data(
-                {
-                    "Transmitter ID": {
-                        "values": values.astype(np.int32),
-                        "value_map": {
-                            ind: f"Loop {ind}"
-                            for ind in np.unique(values.astype(np.int32))
-                        },
-                        "type": "referenced",
-                    }
-                }
-            )
-        elif isinstance(values, ReferencedData):
-            if values.parent is not None and values.parent.uid != self.uid:
-                values = values.copy(parent=self)
-
-        else:
-            raise TypeError(
-                "Input value for 'tx_id_property' should be a np.ndarray or ReferenceData.)"
-            )
-
-        self._tx_id_property = values
+    # @property
+    # def tx_id_property(self) -> ReferencedData | None:
+    #     """
+    #     Default channel units for time or frequency defined on the child class.
+    #     """
+    #     if self._tx_id_property is None:
+    #         data = self.get_data("Transmitter ID")[0]
+    #
+    #         if isinstance(data, ReferencedData):
+    #             self._tx_id_property = data
+    #
+    #     return self._tx_id_property
+    #
+    # @tx_id_property.setter
+    # def tx_id_property(self, values: np.ndarray | ReferencedData):
+    #     if isinstance(values, np.ndarray):
+    #         values = self.add_data(
+    #             {
+    #                 "Transmitter ID": {
+    #                     "values": values.astype(np.int32),
+    #                     "value_map": {
+    #                         ind: f"Loop {ind}"
+    #                         for ind in np.unique(values.astype(np.int32))
+    #                     },
+    #                     "type": "referenced",
+    #                 }
+    #             }
+    #         )
+    #     elif isinstance(values, ReferencedData):
+    #         if values.parent is not None and values.parent.uid != self.uid:
+    #             values = values.copy(parent=self)
+    #
+    #     else:
+    #         raise TypeError(
+    #             "Input value for 'tx_id_property' should be a np.ndarray or ReferenceData.)"
+    #         )
+    #
+    #     self._tx_id_property = values
 
     @property
     def type(self):
