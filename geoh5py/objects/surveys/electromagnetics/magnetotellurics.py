@@ -51,6 +51,7 @@ class MTReceivers(BaseEMSurvey, Points):
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
+        cell_mask: np.ndarray | None = None,
         **kwargs,
     ):
         """
@@ -61,6 +62,7 @@ class MTReceivers(BaseEMSurvey, Points):
         :param copy_children: (Optional) Create copies of all children entities along with it.
         :param clear_cache: Clear array attributes after copy.
         :param mask: Array of indices to sub-sample the input entity.
+        :param cell_mask: Array of indices to sub-sample the input entity cells.
         :param kwargs: Additional keyword arguments.
 
         :return: New copy of the input entity.
