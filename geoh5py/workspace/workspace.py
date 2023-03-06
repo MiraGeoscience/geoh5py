@@ -241,7 +241,8 @@ class Workspace(AbstractContextManager):
         """
         entity_kwargs = get_attributes(
             entity,
-            omit_list=["_uid", "_entity_type", "_on_file"] + list(omit_list),
+            omit_list=["_uid", "_entity_type", "_on_file", "_centroids", "_extent"]
+            + list(omit_list),
             attributes={"uid": None, "parent": None},
         )
 

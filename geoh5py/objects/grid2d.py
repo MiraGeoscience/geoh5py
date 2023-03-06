@@ -182,9 +182,9 @@ class Grid2D(GridObject):
         origin = np.r_[self.origin["x"], self.origin["y"], self.origin["z"]].astype(
             float
         )
+        extent[:, :2] -= origin[:2]
         if self.rotation != 0.0:
             rot = xy_rotation_matrix(-np.deg2rad(self.rotation))
-            extent[:, :2] -= origin[:2]
             extent = np.dot(rot, extent.T).T
 
         u_ind = (self.cell_center_u <= np.max(extent[:, 0])) & (

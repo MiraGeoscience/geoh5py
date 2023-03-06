@@ -109,7 +109,12 @@ class Group(Entity):
 
         if copy_children:
             for child in self.children:
-                child.copy(parent=new_entity, copy_children=True, mask=mask)
+                child.copy(
+                    parent=new_entity,
+                    copy_children=True,
+                    clear_cache=clear_cache,
+                    mask=mask,
+                )
 
         return new_entity
 
@@ -135,6 +140,7 @@ class Group(Entity):
         """
         copy_group = self.copy(
             parent=parent,
+            clear_cache=clear_cache,
             copy_children=False,
             **kwargs,
         )
