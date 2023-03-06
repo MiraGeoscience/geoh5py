@@ -29,7 +29,8 @@ def test_copy_extent_grid_2d(tmp_path):
 
     # Generate a 2D array
     n_x, n_y = 10, 15
-    values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
+    x_val, y_val = np.meshgrid(np.linspace(0, 9, n_x), np.linspace(100, 1500, n_y))
+    values = x_val + y_val
     h5file_path = tmp_path / r"test2Grid.geoh5"
 
     # Create a workspace
@@ -42,6 +43,7 @@ def test_copy_extent_grid_2d(tmp_path):
         v_cell_size=30.0,
         u_count=n_x,
         v_count=n_y,
+        rotation=30,
         name=name,
         allow_move=False,
     )
@@ -49,7 +51,7 @@ def test_copy_extent_grid_2d(tmp_path):
     data = grid.add_data({"rando": {"values": values.flatten()}})
 
     new_grid = grid.copy_from_extent(np.r_[np.c_[50, 50, 0], np.c_[200, 200, 0]])
-
-    assert new_grid.n_cells == grid.n_cells
-    assert new_grid.children[0].values.shape == data.values.shape
-    assert np.isnan(new_grid.children[0].values).sum() == 110
+    data_intersect = np.intersect1d(data.values, new_grid.children[0].values)
+    assert new_grid.n_cells == 35
+    assert data_intersect.size == 35
+    assert (data_intersect.min() == 103) & (data_intersect.max() == 509)

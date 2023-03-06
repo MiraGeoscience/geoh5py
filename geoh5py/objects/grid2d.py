@@ -22,8 +22,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from .. import objects
+from ..objects import GeoImage
 from ..shared.conversion import Grid2DConversion
+from ..shared.utils import xy_rotation_matrix
 from .grid_object import GridObject
 
 if TYPE_CHECKING:
@@ -121,12 +122,7 @@ class Grid2D(GridObject):
             and self.n_cells is not None
             and self.origin is not None
         ):
-            angle = np.deg2rad(self.rotation)
-            rot = np.r_[
-                np.c_[np.cos(angle), -np.sin(angle), 0],
-                np.c_[np.sin(angle), np.cos(angle), 0],
-                np.c_[0, 0, 1],
-            ]
+            rot = xy_rotation_matrix(np.deg2rad(self.rotation))
             u_grid, v_grid = np.meshgrid(self.cell_center_u, self.cell_center_v)
 
             if self.vertical:
@@ -143,6 +139,90 @@ class Grid2D(GridObject):
             self._centroids = centroids
 
         return self._centroids
+
+    def copy_from_extent(
+        self,
+        extent: list[float] | np.ndarray,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        **kwargs,
+    ):
+        """
+        Function to copy an entity to a different parent entity.
+
+        :param extent: Extent of the copied entity.
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: (Optional) Create copies of all children entities along with it.
+        :param clear_cache: Clear array attributes after copy.
+        :param kwargs: Additional keyword arguments to pass to the copy constructor.
+
+        :return entity: Registered Entity to the workspace.
+        """
+        if isinstance(extent, list):
+            extent = np.vstack(extent)
+
+        if not isinstance(extent, np.ndarray):
+            raise TypeError("Expected a list or numpy array of extent values.")
+
+        if extent.shape[1] == 2:
+            extent = np.c_[extent, np.r_[-np.inf, np.inf]]
+
+        extent = extent.astype(float)
+        extent = np.vstack(
+            [
+                extent[0, :],
+                np.c_[extent[0, 0], extent[1, 1], extent[0, 2]],
+                extent[1, :],
+                np.c_[extent[1, 0], extent[0, 1], extent[1, 2]],
+            ]
+        )
+
+        origin = np.r_[self.origin["x"], self.origin["y"], self.origin["z"]].astype(
+            float
+        )
+        if self.rotation != 0.0:
+            rot = xy_rotation_matrix(-np.deg2rad(self.rotation))
+            extent[:, :2] -= origin[:2]
+            extent = np.dot(rot, extent.T).T
+
+        u_ind = (self.cell_center_u <= np.max(extent[:, 0])) & (
+            self.cell_center_u >= np.min(extent[:, 0])
+        )
+        v_ind = (self.cell_center_v <= np.max(extent[:, 1])) & (
+            self.cell_center_v >= np.min(extent[:, 1])
+        )
+
+        indices = np.kron(v_ind, u_ind).flatten()
+        if not np.any(indices):
+            return None
+
+        delta_orig = np.c_[
+            np.argmax(u_ind) * self.u_cell_size,
+            np.argmax(v_ind) * self.v_cell_size,
+            0.0,
+        ]
+        rot = rot = xy_rotation_matrix(np.deg2rad(self.rotation))
+        delta_orig = np.dot(rot, delta_orig.T).T
+        kwargs.update(
+            {
+                "origin": np.r_[
+                    origin[0] + delta_orig[0, 0],
+                    origin[1] + delta_orig[0, 1],
+                    origin[2],
+                ],
+                "u_count": np.sum(u_ind),
+                "v_count": np.sum(v_ind),
+            }
+        )
+        return super(GridObject, self).copy(
+            parent=parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            cell_mask=indices,
+            **kwargs,
+        )
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -306,7 +386,7 @@ class Grid2D(GridObject):
             self._vertical = value
             self.workspace.update_attribute(self, "attributes")
 
-    def to_geoimage(self, keys: list | str, **geoimage_kwargs) -> objects.GeoImage:
+    def to_geoimage(self, keys: list | str, **geoimage_kwargs) -> GeoImage:
         """
         Create a :obj:geoh5py.objects.geo_image.GeoImage object from the current Grid2D.
         :param keys: the list of the data name to pass as band in the image.

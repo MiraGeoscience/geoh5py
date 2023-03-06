@@ -427,3 +427,20 @@ def get_attributes(entity, omit_list=(), attributes=None):
             attributes[key] = attr
 
     return attributes
+
+
+def xy_rotation_matrix(angle: float) -> np.ndarray:
+    """
+    Rotation matrix about the z-axis.
+
+    :param angle: Rotation angle in radians.
+
+    :return rot: Rotation matrix.
+    """
+    return np.array(
+        [
+            [np.cos(angle), -np.sin(angle), 0.0],
+            [np.sin(angle), np.cos(angle), 0.0],
+            [0.0, 0.0, 1.0],
+        ]
+    )
