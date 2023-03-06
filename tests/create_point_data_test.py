@@ -109,3 +109,26 @@ def test_remove_point_data(tmp_path):
         assert (
             points.mask_by_extent([[1e6, 1e6], [2e6, 2e6]]) is None
         ), "Error masking points by extent."
+
+
+def test_copy_data(tmp_path):
+    values = np.random.randn(12)
+    h5file_path = tmp_path / r"testPoints.geoh5"
+    with Workspace(h5file_path) as workspace:
+        points = Points.create(workspace)
+        points.vertices = np.random.randn(12, 3)
+        data = points.add_data(
+            {"DataValues": {"association": "VERTEX", "values": values}}
+        )
+
+        with pytest.raises(ValueError, match="Mask must be a boolean array of shape"):
+            data.copy(mask=np.r_[1, 2, 3])
+
+        with pytest.raises(TypeError, match="Mask must be an array or None."):
+            data.copy(mask="abc")
+
+        mask = np.zeros(12, dtype=bool)
+        mask[:4] = True
+        copy_data = data.copy(mask=mask)
+
+        assert np.isnan(copy_data.values).sum() == 8, "Error copying data."
