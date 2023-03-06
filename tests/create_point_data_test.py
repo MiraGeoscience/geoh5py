@@ -105,3 +105,7 @@ def test_remove_point_data(tmp_path):
         points.remove_vertices([1, 2])
 
         assert len(data.values) == 10, "Error removing data values with vertices."
+
+        assert (
+            points.mask_by_extent([[1e6, 1e6], [2e6, 2e6]]) is None
+        ), "Error masking points by extent."

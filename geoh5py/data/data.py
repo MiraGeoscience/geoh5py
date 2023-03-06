@@ -73,7 +73,7 @@ class Data(Entity):
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: (Optional) Create copies of all children entities along with it.
         :param clear_cache: Clear array attributes after copy.
-        :param mask: Extent of the copied entity.
+        :param mask: Array of bool defining the values to keep.
         :param kwargs: Additional keyword arguments to pass to the copy constructor.
 
         :return entity: Registered Entity to the workspace.
@@ -81,8 +81,13 @@ class Data(Entity):
         if parent is None:
             parent = self.parent
 
-        if not isinstance(mask, (np.ndarray, type(None))):
-            raise ValueError("Mask must be an array or None.")
+        if isinstance(mask, np.ndarray):
+            if mask.dtype != np.bool or mask.shape != self.values.shape:
+                raise ValueError(
+                    f"Mask must be a boolean array of shape {self.values.shape}, not {mask.shape}"
+                )
+        elif mask is not None:
+            raise TypeError("Mask must be an array or None.")
 
         if (
             mask is not None
