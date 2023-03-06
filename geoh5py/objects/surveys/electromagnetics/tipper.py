@@ -203,9 +203,9 @@ class BaseTipper(BaseEMSurvey):
         )
 
         complement: TipperBaseStations | TipperReceivers = (
-            self.base_stations  # type: ignore
+            new_entity.base_stations  # type: ignore
             if isinstance(self, TipperReceivers)
-            else self.receivers
+            else new_entity.receivers
         )
 
         indices = complement.mask_by_extent(extent)

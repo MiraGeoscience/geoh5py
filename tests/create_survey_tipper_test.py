@@ -118,4 +118,10 @@ def test_create_survey_tipper(tmp_path):
             ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
         )
 
+        # Test copying receiver over through the base_stations with extent
+        base_stations_rec = base_stations.copy_from_extent(
+            [[0, -np.inf], [2000, np.inf]], new_workspace
+        )
+        assert base_stations_rec.receivers.n_vertices == 5
+
     workspace.close()
