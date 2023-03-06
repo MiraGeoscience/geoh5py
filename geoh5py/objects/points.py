@@ -44,20 +44,6 @@ class Points(ObjectBase):
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
 
-    def clip_by_extent(
-        self, bounds: np.ndarray, clear_cache: bool = False
-    ) -> Points | None:
-        """
-        Find indices of vertices within a rectangular bounds.
-
-        :param bounds: shape(2, 2) Bounding box defined by the South-West and
-            North-East coordinates. Extents can also be provided as 3D coordinates
-            with shape(2, 3) defining the top and bottom limits.
-        """
-        indices = mask_by_extent(self.vertices, bounds)
-        self.remove_vertices(~indices, clear_cache=clear_cache)
-        return self
-
     @property
     def extent(self) -> np.ndarray | None:
         """

@@ -20,7 +20,6 @@
 from __future__ import annotations
 
 import uuid
-import warnings
 from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -290,23 +289,6 @@ class ObjectBase(Entity):
             North-East coordinates. Extents can also be provided as 3D coordinates
             with shape(2, 3) defining the top and bottom limits.
         """
-
-    def clip_by_extent(self, bounds: np.ndarray) -> ObjectBase | None:
-        """
-        Find indices of cells within a rectangular bounds.
-
-        :param bounds: shape(2, 2) Bounding box defined by the South-West and
-            North-East coordinates. Extents can also be provided as 3D coordinates
-            with shape(2, 3) defining the top and bottom limits.
-        :param attributes: Dictionary of attributes to clip by extent.
-        """
-
-        # TODO Clip entity within bounds.
-        warnings.warn(
-            f"Method 'clip_by_extent' for entity {type(self)} not fully implemented. "
-            f"Bounds {bounds} ignored."
-        )
-        return self
 
     @property
     def entity_type(self) -> ObjectType:
