@@ -180,6 +180,9 @@ class Points(ObjectBase):
         :return: New copy of the input entity.
 
         """
+        if cell_mask is not None:
+            warnings.warn("Cell masking is not supported for Points objects.")
+
         if mask is not None and self.vertices is not None:
             if not isinstance(mask, np.ndarray) or mask.shape != (
                 self.vertices.shape[0],

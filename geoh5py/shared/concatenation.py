@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import re
 import uuid
+import warnings
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -199,7 +200,8 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
-        extent: list[float] | np.ndarray | None = None,
+        mask: list[float] | np.ndarray | None = None,
+        cell_mask: list[float] | np.ndarray | None = None,
         **kwargs,
     ):
         """
@@ -208,17 +210,17 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         :param parent: Target parent to copy the entity under. Copied to current
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: Create copies of all children entities along with it.
+        :param mask: Array of indices to sub-sample the input entity.
+        :param cell_mask: Array of indices to sub-sample the input entity cells.
         :param clear_cache: Clear array attributes after copy.
 
         :return entity: Registered Entity to the workspace.
         """
+        if mask is not None or cell_mask is not None:
+            warnings.warn("Masking is not supported for Concatenated objects.")
 
-        if parent is None:
-            parent = self.parent
-
-        new_entity = parent.workspace.copy_to_parent(
-            self,
-            parent,
+        new_entity = super().copy(
+            parent=parent,
             copy_children=False,
             clear_cache=clear_cache,
             **kwargs,

@@ -18,11 +18,11 @@ from __future__ import annotations
 
 import os
 import uuid
+import warnings
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
-from warnings import warn
 
 import numpy as np
 from PIL import Image
@@ -98,29 +98,15 @@ class GeoImage(ObjectBase):
         :param cell_mask: Array of indices to sub-sample the input entity cells.
         :param kwargs: Additional keyword arguments.
         """
+        if mask is not None or cell_mask is not None:
+            warnings.warn("Masking is not supported for GeoImage objects.")
 
-        if parent is None:
-            parent = self.parent
-
-        new_entity = parent.workspace.copy_to_parent(
-            self,
-            parent,
+        new_entity = super().copy(
+            parent=parent,
+            copy_children=copy_children,
             clear_cache=clear_cache,
             **kwargs,
         )
-        if copy_children:
-            children_map = {}
-            for child in self.children:
-                child_copy = child.copy(
-                    parent=new_entity, copy_children=True, clear_cache=clear_cache
-                )
-                children_map[child.uid] = child_copy.uid
-
-            if self.property_groups:
-                self.workspace.copy_property_groups(
-                    new_entity, self.property_groups, children_map
-                )
-                new_entity.workspace.update_attribute(new_entity, "property_groups")
 
         return new_entity
 
@@ -423,7 +409,7 @@ class GeoImage(ObjectBase):
             # georeference the raster
             self.georeference(reference, locations)
         except KeyError:
-            warn("The 'tif.' image has no referencing information")
+            warnings.warn("The 'tif.' image has no referencing information")
 
     @property
     def image_georeferenced(self) -> Image.Image | None:

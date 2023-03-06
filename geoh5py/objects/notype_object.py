@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 from typing import TYPE_CHECKING
 
 from .object_base import ObjectBase
@@ -63,27 +64,15 @@ class NoTypeObject(ObjectBase):
 
         :return: New copy of the input entity.
         """
-        if parent is None:
-            parent = self.parent
+        if mask is not None or cell_mask is not None:
+            warnings.warn("Masking is not supported for NoType objects.")
 
-        new_entity = parent.workspace.copy_to_parent(
-            self,
-            parent,
+        new_entity = super().copy(
+            parent=parent,
+            copy_children=copy_children,
             clear_cache=clear_cache,
             **kwargs,
         )
-
-        if copy_children:
-            children_map = {}
-            for child in self.children:
-                child_copy = child.copy(parent=new_entity, copy_children=True)
-                children_map[child.uid] = child_copy.uid
-
-            if self.property_groups:
-                self.workspace.copy_property_groups(
-                    new_entity, self.property_groups, children_map
-                )
-                new_entity.workspace.update_attribute(new_entity, "property_groups")
 
         return new_entity
 

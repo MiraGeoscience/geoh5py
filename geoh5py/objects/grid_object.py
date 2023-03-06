@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -70,6 +71,8 @@ class GridObject(ObjectBase, ABC):
 
         :return: New copy of the input entity.
         """
+        if cell_mask is not None:
+            warnings.warn("Cell masking is not supported for Grid objects.")
 
         if parent is None:
             parent = self.parent
