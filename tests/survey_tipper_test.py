@@ -71,6 +71,13 @@ def test_create_survey_tipper(tmp_path):
 
     receivers.base_stations = base_stations
 
+    with pytest.raises(ValueError, match="Mask must be an array of shape"):
+        receivers.copy(mask=np.r_[1, 2, 3])
+
+    assert (
+        receivers.copy_from_extent([[1000, 1000], [1001, 1001]]) is None
+    ), "Error returning None mask."
+
     new_workspace = Workspace(path)
     base_stations_rec = new_workspace.get_entity(base_stations.uid)[0]
     receivers_rec = new_workspace.get_entity(receivers.uid)[0]

@@ -299,6 +299,10 @@ def test_survey_airborne_tem_data(tmp_path):
     assert "Discretization" not in receivers.metadata["EM Dataset"]["Waveform"]
     receivers.timing_mark = 10**-3.1
     receivers.waveform = waveform
+
+    with pytest.raises(ValueError, match="Mask must be an array of shape"):
+        receivers.copy(mask=np.r_[1, 2, 3])
+
     workspace.close()
 
     # Test copying receiver over through the receivers
