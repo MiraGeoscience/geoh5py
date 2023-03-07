@@ -81,12 +81,19 @@ def test_remove_point_data(tmp_path):
         points = Points.create(workspace)
 
         with pytest.warns(UserWarning, match="No vertices to be removed."):
-            points.remove_vertices(12)
+            points.remove_vertices([12])
 
         with pytest.raises(ValueError, match="Array of vertices must be of shape"):
             points.vertices = np.r_[1, 2, 3]
 
         points.vertices = np.random.randn(12, 3)
+
+        assert (
+            points.mask_by_extent([[1000, 1000], [1001, 1001]]) is None
+        ), "Error returning None mask."
+
+        with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
+            points.remove_vertices("abc")
 
         data = points.add_data(
             {"DataValues": {"association": "VERTEX", "values": values}}
@@ -111,7 +118,7 @@ def test_remove_point_data(tmp_path):
         ), "Error masking points by extent."
 
 
-def test_copy_data(tmp_path):
+def test_copy_points_data(tmp_path):
     values = np.random.randn(12)
     h5file_path = tmp_path / r"testPoints.geoh5"
     with Workspace(h5file_path) as workspace:
@@ -120,6 +127,9 @@ def test_copy_data(tmp_path):
         data = points.add_data(
             {"DataValues": {"association": "VERTEX", "values": values}}
         )
+
+        with pytest.raises(ValueError, match="Mask must be an array of shape"):
+            points.copy(mask=np.r_[1, 2, 3])
 
         with pytest.raises(ValueError, match="Mask must be a boolean array of shape"):
             data.copy(mask=np.r_[1, 2, 3])

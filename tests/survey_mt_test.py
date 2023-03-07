@@ -52,6 +52,9 @@ def test_create_survey_mt(tmp_path):
         ):
             mt_survey.receivers = "123"
 
+        with pytest.raises(ValueError, match="Mask must be an array of shape"):
+            mt_survey.copy(mask=np.r_[1, 2, 3])
+
         for key, value in {
             "input_type": "Rx only",
             "survey_type": "Magnetotellurics",
