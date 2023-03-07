@@ -150,8 +150,9 @@ class GridObject(ObjectBase, ABC):
             North-East coordinates. Extents can also be provided as 3D coordinates
             with shape(2, 3) defining the top and bottom limits.
         """
-        if not any(mask_by_extent(extent, self.extent)) and not any(
-            mask_by_extent(self.extent, extent)
+        if self.extent is None or (
+            not any(mask_by_extent(extent, self.extent))
+            and not any(mask_by_extent(self.extent, extent))
         ):
             return None
 
