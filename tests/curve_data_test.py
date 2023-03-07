@@ -158,3 +158,32 @@ def test_remove_vertex_data(tmp_path):
 
         assert len(data.values) == 8, "Error removing data values with cells."
         assert len(curve.vertices) == 10, "Error removing vertices from cells."
+
+
+def test_copy_cells_data(tmp_path):
+    # Generate a random cloud of points
+    n_data = 12
+
+    with Workspace(tmp_path / r"testCurve.geoh5") as workspace:
+        curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
+        data = curve.add_data(
+            {
+                "cellValues": {
+                    "values": np.random.randn(curve.n_cells).astype(np.float64)
+                },
+            }
+        )
+
+        mask = np.zeros(11, dtype=bool)
+        mask[:4] = True
+        copy_data = data.copy(mask=mask)
+
+        assert np.isnan(copy_data.values).sum() == 7, "Error copying data."
+
+        ind_vert = np.all(curve.vertices[:, :2] > 0, axis=1) & np.all(
+            curve.vertices[:, :2] < 2, axis=1
+        )
+        ind = np.all(ind_vert[curve.cells], axis=1)
+        mask = data.mask_by_extent([[0, 0], [2, 2]])
+
+        assert np.all(mask == ind), "Error masking cell data by extent."
