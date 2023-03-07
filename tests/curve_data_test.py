@@ -126,6 +126,12 @@ def test_remove_cells_data(tmp_path):
         ):
             curve.cells = curve.cells[1:, :]
 
+        with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
+            curve.remove_cells("abc")
+
+        with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
+            curve.remove_vertices("abc")
+
         curve.remove_cells([0])
 
         assert len(data.values) == 10, "Error removing data values with cells."
@@ -173,6 +179,9 @@ def test_copy_cells_data(tmp_path):
                 },
             }
         )
+
+        with pytest.raises(ValueError, match="Mask must be an array of shape."):
+            curve.copy(mask=[1, 2, 3])
 
         mask = np.zeros(11, dtype=bool)
         mask[:4] = True
