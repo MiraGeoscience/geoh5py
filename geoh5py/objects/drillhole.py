@@ -115,7 +115,7 @@ class Drillhole(Points):
             self.workspace.update_attribute(self, "attributes")
 
         self._locations = None
-
+        self._extent = None
         if self.trace is not None:
             self._trace = None
             self._trace_depth = None
@@ -153,6 +153,25 @@ class Drillhole(Points):
         self.workspace.update_attribute(self, "attributes")
 
     @property
+    def extent(self) -> np.ndarray | None:
+        """
+        Geography bounding box of the object.
+
+        :return: shape(2, 3) Bounding box defined by the bottom South-West and
+            top North-East coordinates.
+        """
+        if self._extent is None and self.collar is not None:
+            self._extent = (
+                np.repeat(
+                    np.r_[[self.collar["x"], self.collar["y"], self.collar["z"]]], 2
+                )
+                .reshape((-1, 2))
+                .T
+            )
+
+        return self._extent
+
+    @property
     def locations(self) -> np.ndarray | None:
         """
         Lookup array of the well path in x, y, z coordinates.
@@ -185,7 +204,9 @@ class Drillhole(Points):
             return None
 
         if self.collar is not None:
-            return mask_by_extent(self.collar, extent)
+            return mask_by_extent(
+                np.c_[[self.collar["x"], self.collar["y"], self.collar["z"]]], extent
+            )
 
         return None
 
