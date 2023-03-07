@@ -132,3 +132,10 @@ def test_copy_data(tmp_path):
         copy_data = data.copy(mask=mask)
 
         assert np.isnan(copy_data.values).sum() == 8, "Error copying data."
+
+        ind = np.all(points.vertices[:, :2] > 0, axis=1) & np.all(
+            np.all(points.vertices[:, :2] < 2, axis=1)
+        )
+        mask = data.mask_by_extent([[0, 0], [2, 2]])
+
+        assert np.all(mask == ind), "Error masking data by extent."

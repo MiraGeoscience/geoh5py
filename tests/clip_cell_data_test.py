@@ -55,3 +55,8 @@ def test_copy_extent_grid_2d(tmp_path):
     assert new_grid.n_cells == 35
     assert data_intersect.size == 35
     assert (data_intersect.min() == 103) & (data_intersect.max() == 509)
+
+    ind = (grid.centroids[:, 0] > 75) & (grid.centroids[:, 1] < 60)
+    mask = data.mask_by_extent([[75, -100], [1000, 60]])
+
+    assert np.all(mask == ind), "Error masking data by extent."
