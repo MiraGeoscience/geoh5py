@@ -15,8 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=R0904, R0913, R0914
-# pylint: disable=C0302
+# pylint: disable=too-many-lines, too-many-public-methods, too-many-arguments, too-many-locals
 
 from __future__ import annotations
 
