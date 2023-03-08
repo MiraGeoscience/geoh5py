@@ -192,11 +192,9 @@ class Drillhole(Points):
         extent: np.ndarray,
     ) -> np.ndarray | None:
         """
-        Find indices of vertices or centroids within a rectangular extent.
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
 
-        :param extent: shape(2, 2) Bounding box defined by the South-West and
-            North-East coordinates. Extents can also be provided as 3D coordinates
-            with shape(2, 3) defining the top and bottom limits.
+        Uses the collar location only.
         """
         if not any(mask_by_extent(extent, self.extent)) and not any(
             mask_by_extent(self.extent, extent)

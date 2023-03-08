@@ -65,7 +65,7 @@ class Data(Entity):
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         **kwargs,
-    ):
+    ) -> Data:
         """
         Function to copy data to a different parent entity.
 
@@ -215,11 +215,9 @@ class Data(Entity):
         extent: np.ndarray,
     ) -> np.ndarray | None:
         """
-        Find indices of data vertices or centroids within a rectangular extent.
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
 
-        :param extent: shape(2, 2) Bounding box defined by the South-West and
-            North-East coordinates. Extents can also be provided as 3D coordinates
-            with shape(2, 3) defining the top and bottom limits.
+        Uses the parent object's vertices or centroids coordinates.
         """
         if self.association is DataAssociationEnum.VERTEX:
             return mask_by_extent(self.parent.vertices, extent)

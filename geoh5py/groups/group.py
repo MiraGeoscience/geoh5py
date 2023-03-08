@@ -74,11 +74,9 @@ class Group(Entity):
         else:
             self.comments.values = self.comments.values + [comment_dict]
 
-    def mask_by_extent(self, extent: list[float]):
+    def mask_by_extent(self, extent: np.ndarray) -> None:
         """
-        Mask data by extent.
-
-        :param extent: [xmin, ymin, xmax, ymax]
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
         """
 
         return None
@@ -88,7 +86,7 @@ class Group(Entity):
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
-        mask: list[float] | np.ndarray | None = None,
+        mask: list[int] | np.ndarray | None = None,
         **kwargs,
     ):
         """

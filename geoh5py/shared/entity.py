@@ -24,6 +24,8 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 from geoh5py.shared.utils import str2uuid
 
 if TYPE_CHECKING:
@@ -172,11 +174,18 @@ class Entity(ABC):
         return self._clipping_ids
 
     @abstractmethod
-    def mask_by_extent(self, extent: list[float]):
+    def mask_by_extent(self, extent: np.ndarray) -> np.ndarray | None:
         """
-        Mask data by extent.
+        Get a mask array from coordinate extent.
 
-        :param extent: [xmin, ymin, xmax, ymax]
+        :param extent: :Bounding box extent coordinates defined by either:
+            - obj:`numpy.ndarray` of shape (2, 3)
+                3D coordinate: [[west, south, bottom], [east, north, top]]
+            - obj:`numpy.ndarray` of shape (2, 2)
+                Horizontal coordinates: [[west, south], [east, north]].
+
+        :return: Array of bool defining the vertices or cell centers
+            within the mask extent, or None if no intersection.
         """
 
     @classmethod

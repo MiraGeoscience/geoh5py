@@ -382,9 +382,7 @@ def dict_mapper(
     return val
 
 
-def mask_by_extent(
-    locations: np.ndarray, extent: np.ndarray | list[list]
-) -> np.ndarray:
+def mask_by_extent(locations: np.ndarray, extent: np.ndarray) -> np.ndarray:
     """
     Find indices of locations within a rectangular extent.
 
@@ -393,14 +391,8 @@ def mask_by_extent(
         North-East corners. Extents can also be provided as 3D coordinates
         with shape(2, 3) defining the top and bottom limits.
     """
-    if isinstance(extent, list):
-        extent = np.vstack(extent)
-
     if not isinstance(extent, np.ndarray) or extent.ndim != 2:
         raise ValueError("Input 'extent' must be a 2D array-like.")
-
-    if isinstance(locations, list):
-        locations = np.vstack(locations)
 
     if not isinstance(locations, np.ndarray) or locations.ndim != 2:
         raise ValueError(

@@ -270,12 +270,9 @@ class GeoImage(ObjectBase):
         extent: np.ndarray,
     ) -> np.ndarray | None:
         """
-        Find indices of vertices within a rectangular extent.
-        Keep all if at least one corner falls within the extent.
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
 
-        :param extent: shape(2, 2) Bounding box defined by the South-West and
-            North-East coordinates. Extents can also be provided as 3D coordinates
-            with shape(2, 3) defining the top and bottom limits.
+        Uses the four corners of the image to determine overlap with the extent window.
         """
         if not any(mask_by_extent(extent, self.extent)) and not any(
             mask_by_extent(self.extent, extent)
