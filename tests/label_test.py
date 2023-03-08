@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 from geoh5py.objects import Label
@@ -32,7 +33,7 @@ def test_create_label(tmp_path):
     with Workspace(h5file_path) as workspace:
         label = Label.create(workspace, name="MyTestLabel")
 
-        assert label.copy_from_extent([[0, 0], [1, 1]]) is None
+        assert label.copy_from_extent(np.vstack([[0, 0], [1, 1]])) is None
 
         with pytest.warns(UserWarning):
             copy_label = label.copy(mask=[[0, 0], [1, 1]])

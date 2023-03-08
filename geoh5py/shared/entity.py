@@ -232,16 +232,17 @@ class Entity(ABC):
 
     def copy_from_extent(
         self,
-        extent: list[float] | ndarray,
+        extent: ndarray,
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
         **kwargs,
-    ):
+    ) -> Entity | None:
         """
         Function to copy an entity to a different parent entity.
 
-        :param extent: Extent of the copied entity.
+        :param extent: Bounding box extent requested for the input entity, as supplied for
+            :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
         :param parent: Target parent to copy the entity under. Copied to current
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: (Optional) Create copies of all children entities along with it.

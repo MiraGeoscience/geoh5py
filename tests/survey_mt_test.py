@@ -162,7 +162,7 @@ def test_create_survey_mt(tmp_path):
         with Workspace(tmp_path / r"testMT_copy.geoh5") as copy_workspace:
             mt_survey_rec.copy(copy_workspace)
             mt_survey_extent = mt_survey_rec.copy_from_extent(
-                [[-6.0, -1.0], [6.0, 6.0]], parent=copy_workspace
+                np.vstack([[-6.0, -1.0], [6.0, 6.0]]), parent=copy_workspace
             )
 
             assert mt_survey_extent.n_vertices == 6

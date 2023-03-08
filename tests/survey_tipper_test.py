@@ -75,7 +75,7 @@ def test_create_survey_tipper(tmp_path):
         receivers.copy(mask=np.r_[1, 2, 3])
 
     assert (
-        receivers.copy_from_extent([[1000, 1000], [1001, 1001]]) is None
+        receivers.copy_from_extent(np.vstack([[1000, 1000], [1001, 1001]])) is None
     ), "Error returning None mask."
 
     new_workspace = Workspace(path)
@@ -127,7 +127,7 @@ def test_create_survey_tipper(tmp_path):
 
         # Test copying receiver over through the base_stations with extent
         base_stations_rec = base_stations.copy_from_extent(
-            [[0, -np.inf], [2000, np.inf]], new_workspace
+            np.vstack([[0, -np.inf], [2000, np.inf]]), new_workspace
         )
         assert base_stations_rec.receivers.n_vertices == 5
 

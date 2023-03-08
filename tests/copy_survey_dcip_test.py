@@ -78,10 +78,10 @@ def test_copy_survey_dcip(tmp_path):
         path = tmp_path / r"testDC_copy_current.geoh5"
         with Workspace(path) as new_workspace:
             new_currents = currents.copy_from_extent(
-                [[5, 0], [8, 2]], parent=new_workspace
+                np.vstack([[5, 0], [8, 2]]), parent=new_workspace
             )
             new_potentials = potentials.copy_from_extent(
-                [[7, 0], [11, 2]], parent=new_workspace
+                np.vstack([[7, 0], [11, 2]]), parent=new_workspace
             )
 
             np.testing.assert_array_almost_equal(

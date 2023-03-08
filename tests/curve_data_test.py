@@ -193,6 +193,6 @@ def test_copy_cells_data(tmp_path):
             curve.vertices[:, :2] < 2, axis=1
         )
         ind = np.all(ind_vert[curve.cells], axis=1)
-        mask = data.mask_by_extent([[0, 0], [2, 2]])
+        mask = data.mask_by_extent(np.vstack([[0, 0], [2, 2]]))
 
         assert np.all(mask == ind), "Error masking cell data by extent."

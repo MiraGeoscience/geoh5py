@@ -320,7 +320,7 @@ def test_survey_airborne_tem_data(tmp_path):
 
         with Workspace(Path(tmp_path) / r"testATEM_copy_extent.geoh5") as new_workspace:
             receivers_rec = receivers_orig.copy_from_extent(
-                [[0, -5], [1500, 5]], parent=new_workspace
+                np.vstack([[0, -5], [1500, 5]]), parent=new_workspace
             )
             assert receivers_rec.n_vertices == receivers_rec.transmitters.n_vertices
             np.testing.assert_almost_equal(
@@ -404,7 +404,7 @@ def test_create_survey_ground_tem_large_loop(
     with Workspace(Path(tmp_path) / r"testGround_copy.geoh5") as new_workspace:
         receivers_orig = receivers.copy(new_workspace)
         transmitters_rec = receivers.transmitters.copy_from_extent(
-            [[-150, -150], [150, 150]], parent=new_workspace
+            np.vstack([[-150, -150], [150, 150]]), parent=new_workspace
         )
         assert transmitters_rec.receivers.n_vertices == receivers_orig.n_vertices / 2.0
         assert (

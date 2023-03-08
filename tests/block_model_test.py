@@ -72,7 +72,7 @@ def test_create_block_model_data(tmp_path):
             rotation=30,
             allow_move=False,
         )
-        assert grid.mask_by_extent([[-100, -100], [-1, -1]]) is None
+        assert grid.mask_by_extent(np.vstack([[-100, -100], [-1, -1]])) is None
 
         grid.u_cell_delimiters = (nodal_x,)
         data = grid.add_data(
@@ -88,7 +88,7 @@ def test_create_block_model_data(tmp_path):
             }
         )
 
-        assert grid.mask_by_extent([[-100, -100], [-1, -1]]) is None
+        assert grid.mask_by_extent(np.vstack([[-100, -100], [-1, -1]])) is None
         # Read the data back in from a fresh workspace
         with Workspace(h5file_path) as new_workspace:
             rec_obj = new_workspace.get_entity(name)[0]
@@ -106,7 +106,7 @@ def test_create_block_model_data(tmp_path):
         with pytest.warns(UserWarning):
             grid_copy = grid.copy(cell_mask="abc", rotation=0.0)
 
-        mask = grid_copy.mask_by_extent([[-100, -100], [1, 100]])
+        mask = grid_copy.mask_by_extent(np.vstack([[-100, -100], [1, 100]]))
         assert mask.sum() == np.prod(grid.shape[1:])
 
         grid_copy_copy = grid_copy.copy(cell_mask="abc", mask=mask)

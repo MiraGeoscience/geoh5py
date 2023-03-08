@@ -342,5 +342,5 @@ def test_mask_drillhole_data(tmp_path):
             collar=np.r_[0.0, 10.0, 10],
         )
 
-        assert well.mask_by_extent([[100, 100], [101, 101]]) is None
-        assert well.mask_by_extent([[-1, 9], [1, 11]]).sum() == 1
+        assert well.mask_by_extent(np.vstack([[100, 100], [101, 101]])) is None
+        assert well.mask_by_extent(np.vstack([[-1, 9], [1, 11]])).sum() == 1

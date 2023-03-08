@@ -89,7 +89,7 @@ def test_remove_point_data(tmp_path):
         points.vertices = np.random.randn(12, 3)
 
         assert (
-            points.mask_by_extent([[1000, 1000], [1001, 1001]]) is None
+            points.mask_by_extent(np.vstack([[1000, 1000], [1001, 1001]])) is None
         ), "Error returning None mask."
 
         with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
@@ -114,7 +114,7 @@ def test_remove_point_data(tmp_path):
         assert len(data.values) == 10, "Error removing data values with vertices."
 
         assert (
-            points.mask_by_extent([[1e6, 1e6], [2e6, 2e6]]) is None
+            points.mask_by_extent(np.vstack([[1e6, 1e6], [2e6, 2e6]])) is None
         ), "Error masking points by extent."
 
 
@@ -146,6 +146,6 @@ def test_copy_points_data(tmp_path):
         ind = np.all(points.vertices[:, :2] > 0, axis=1) & np.all(
             points.vertices[:, :2] < 2, axis=1
         )
-        mask = data.mask_by_extent([[0, 0], [2, 2]])
+        mask = data.mask_by_extent(np.vstack([[0, 0], [2, 2]]))
 
         assert np.all(mask == ind), "Error masking data by extent."
