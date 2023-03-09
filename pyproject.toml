@@ -32,6 +32,7 @@ numpy = "!=1.19.4, ^1.21.5"
 [tool.poetry.dev-dependencies]
 lockfile = "^0.12.2"
 poetry-publish = {git = "https://github.com/MiraGeoscience/poetry-publish.git", rev = "pending_fixes"}
+mypy = "*"
 pylint = "*"
 pytest = "*"
 pytest-cov = "*"
@@ -57,13 +58,25 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 line_length = 88
-# auto-updated by seed-isort-config
-
-known_third_party = ["Add2Build", "PIL", "StringIO", "autodoc", "edit_on_github", "environmentSetup", "h5py", "numpy", "poetry_publish", "pytest", "toml", "urllib2"]
-
 
 [tool.black]
 # defaults are just fine
+
+[tool.mypy]
+warn_unused_configs = true
+ignore_missing_imports = true
+scripts_are_modules = true
+show_error_context = true
+show_column_numbers = true
+check_untyped_defs = true
+exclude = [
+    'geoh5py/interfaces',
+    'geoh5py/handlers',
+    'tests'
+]
+plugins = [
+    'numpy.typing.mypy_plugin'
+]
 
 [build-system]
 requires = ["poetry-core>=1.0.0", "setuptools"]
