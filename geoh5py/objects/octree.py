@@ -286,14 +286,17 @@ class Octree(GridObject):
         return self._u_cell_size
 
     @u_cell_size.setter
-    def u_cell_size(self, value: float):
+    def u_cell_size(self, value: float | np.ndarray):
         if not isinstance(value, (float, np.ndarray)):
             raise TypeError("Attribute 'u_cell_size' must be type(float).")
 
-        self.workspace.update_attribute(self, "attributes")
         self._centroids = None
-
-        self._u_cell_size = np.r_[value].astype(float).item()
+        if isinstance(value, np.ndarray):
+            assert len(value) == 1, "u_cell_size must be a float of shape (1,)"
+            self._u_cell_size = np.r_[value].astype(float).item()
+        else:
+            self._u_cell_size = value
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def u_count(self) -> int | None:
@@ -320,13 +323,17 @@ class Octree(GridObject):
         return self._v_cell_size
 
     @v_cell_size.setter
-    def v_cell_size(self, value: float):
+    def v_cell_size(self, value: float | np.ndarray):
         if not isinstance(value, (float, np.ndarray)):
             raise TypeError("Attribute 'v_cell_size' must be type(float).")
-        self.workspace.update_attribute(self, "attributes")
         self._centroids = None
 
-        self._v_cell_size = np.r_[value].astype(float).item()
+        if isinstance(value, np.ndarray):
+            assert len(value) == 1, "v_cell_size must be a float of shape (1,)"
+            self._v_cell_size = np.r_[value].astype(float).item()
+        else:
+            self._v_cell_size = value
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def v_count(self) -> int | None:
@@ -351,13 +358,17 @@ class Octree(GridObject):
         return self._w_cell_size
 
     @w_cell_size.setter
-    def w_cell_size(self, value: float):
+    def w_cell_size(self, value: float | np.ndarray):
         if not isinstance(value, (float, np.ndarray)):
             raise TypeError("Attribute 'w_cell_size' must be type(float).")
-        self.workspace.update_attribute(self, "attributes")
         self._centroids = None
 
-        self._w_cell_size = np.r_[value].astype(float).item()
+        if isinstance(value, np.ndarray):
+            assert len(value) == 1, "w_cell_size must be a float of shape (1,)"
+            self._w_cell_size = np.r_[value].astype(float).item()
+        else:
+            self._w_cell_size = value
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def w_count(self) -> int | None:

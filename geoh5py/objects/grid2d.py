@@ -62,8 +62,8 @@ class Grid2D(GridObject):
 
     def __init__(self, object_type: ObjectType, **kwargs):
         self._origin = np.zeros(3)
-        self._u_cell_size: np.ndarray | None = None
-        self._v_cell_size: np.ndarray | None = None
+        self._u_cell_size: float | None = None
+        self._v_cell_size: float | None = None
         self._u_count: int | None = None
         self._v_count: int | None = None
         self._rotation: float = 0.0
@@ -295,21 +295,27 @@ class Grid2D(GridObject):
         return None
 
     @property
-    def u_cell_size(self) -> np.ndarray | None:
+    def u_cell_size(self) -> float | None:
         """
         :obj:`np.ndarray`: Cell size along the u-axis.
         """
         return self._u_cell_size
 
     @u_cell_size.setter
-    def u_cell_size(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "u_cell_size must be a float of shape (1,)"
+    def u_cell_size(self, value: float | np.ndarray):
+        if value is None:
+            return
 
-            self._centroids = None
-            self._u_cell_size = value.astype(float)
-            self.workspace.update_attribute(self, "attributes")
+        if not isinstance(value, (float, np.ndarray)):
+            raise TypeError("Attribute 'u_cell_size' must be type(float).")
+
+        self._centroids = None
+        if isinstance(value, np.ndarray):
+            assert len(value) == 1, "u_cell_size must be a float of shape (1,)"
+            self._u_cell_size = np.r_[value].astype(float).item()
+        else:
+            self._u_cell_size = value
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def u_count(self) -> int | None:
@@ -328,20 +334,27 @@ class Grid2D(GridObject):
             self.workspace.update_attribute(self, "attributes")
 
     @property
-    def v_cell_size(self) -> np.ndarray | None:
+    def v_cell_size(self) -> float | None:
         """
         :obj:`np.ndarray`: Cell size along the v-axis
         """
         return self._v_cell_size
 
     @v_cell_size.setter
-    def v_cell_size(self, value):
-        if value is not None:
-            value = np.r_[value]
+    def v_cell_size(self, value: float | np.ndarray):
+        if value is None:
+            return
+
+        if not isinstance(value, (float, np.ndarray)):
+            raise TypeError("Attribute 'v_cell_size' must be type(float).")
+
+        self._centroids = None
+        if isinstance(value, np.ndarray):
             assert len(value) == 1, "v_cell_size must be a float of shape (1,)"
-            self._centroids = None
-            self._v_cell_size = value.astype(float)
-            self.workspace.update_attribute(self, "attributes")
+            self._v_cell_size = np.r_[value].astype(float).item()
+        else:
+            self._v_cell_size = value
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def v_count(self) -> int | None:
