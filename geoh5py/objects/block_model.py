@@ -44,7 +44,7 @@ class BlockModel(GridObject):
     _attribute_map.update({"Origin": "origin", "Rotation": "rotation"})
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._origin: np.ndarray = np.array([0, 0, 0])
+        self._origin: np.ndarray = np.zeros(3)
         self._rotation: float = 0.0
         self._u_cell_delimiters: np.ndarray | None = None
         self._v_cell_delimiters: np.ndarray | None = None

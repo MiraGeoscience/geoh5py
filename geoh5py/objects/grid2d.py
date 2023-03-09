@@ -61,7 +61,7 @@ class Grid2D(GridObject):
     _converter = Grid2DConversion
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._origin = np.array([0, 0, 0])
+        self._origin = np.zeros(3)
         self._u_cell_size: np.ndarray | None = None
         self._v_cell_size: np.ndarray | None = None
         self._u_count: int | None = None
