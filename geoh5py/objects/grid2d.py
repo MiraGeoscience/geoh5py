@@ -61,14 +61,14 @@ class Grid2D(GridObject):
     _converter = Grid2DConversion
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._origin = np.array([0, 0, 0])
-        self._u_cell_size = None
-        self._v_cell_size = None
+        self._origin = np.zeros(3)
+        self._u_cell_size: float | None = None
+        self._v_cell_size: float | None = None
         self._u_count: int | None = None
         self._v_count: int | None = None
         self._rotation: float = 0.0
-        self._vertical = False
-        self._dip = 0.0
+        self._vertical: bool = False
+        self._dip: float = 0.0
 
         super().__init__(object_type, **kwargs)
 
@@ -186,12 +186,15 @@ class Grid2D(GridObject):
         if not np.any(indices):
             return None
 
+        assert self.u_cell_size is not None
+        assert self.v_cell_size is not None
+
         delta_orig = np.c_[
             np.argmax(u_ind) * self.u_cell_size,
             np.argmax(v_ind) * self.v_cell_size,
             0.0,
         ]
-        rot = rot = xy_rotation_matrix(np.deg2rad(self.rotation))
+        rot = xy_rotation_matrix(np.deg2rad(self.rotation))
         delta_orig = np.dot(rot, delta_orig.T).T
         kwargs.update(
             {
@@ -279,7 +282,7 @@ class Grid2D(GridObject):
             value = np.r_[value]
             assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
             self._centroids = None
-            self._rotation = value.astype(float)
+            self._rotation = value.astype(float).item()
             self.workspace.update_attribute(self, "attributes")
 
     @property
@@ -292,21 +295,24 @@ class Grid2D(GridObject):
         return None
 
     @property
-    def u_cell_size(self) -> np.ndarray | None:
+    def u_cell_size(self) -> float | None:
         """
         :obj:`np.ndarray`: Cell size along the u-axis.
         """
         return self._u_cell_size
 
     @u_cell_size.setter
-    def u_cell_size(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "u_cell_size must be a float of shape (1,)"
+    def u_cell_size(self, value: float | np.ndarray):
+        if not isinstance(value, (float, np.ndarray)):
+            raise TypeError("Attribute 'u_cell_size' must be type(float).")
 
-            self._centroids = None
-            self._u_cell_size = value.astype(float)
-            self.workspace.update_attribute(self, "attributes")
+        self._centroids = None
+        if isinstance(value, np.ndarray):
+            assert len(value) == 1, "u_cell_size must be a float of shape (1,)"
+            self._u_cell_size = np.r_[value].astype(float).item()
+        else:
+            self._u_cell_size = value
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def u_count(self) -> int | None:
@@ -325,20 +331,24 @@ class Grid2D(GridObject):
             self.workspace.update_attribute(self, "attributes")
 
     @property
-    def v_cell_size(self) -> np.ndarray | None:
+    def v_cell_size(self) -> float | None:
         """
         :obj:`np.ndarray`: Cell size along the v-axis
         """
         return self._v_cell_size
 
     @v_cell_size.setter
-    def v_cell_size(self, value):
-        if value is not None:
-            value = np.r_[value]
+    def v_cell_size(self, value: float | np.ndarray):
+        if not isinstance(value, (float, np.ndarray)):
+            raise TypeError("Attribute 'v_cell_size' must be type(float).")
+
+        self._centroids = None
+        if isinstance(value, np.ndarray):
             assert len(value) == 1, "v_cell_size must be a float of shape (1,)"
-            self._centroids = None
-            self._v_cell_size = value.astype(float)
-            self.workspace.update_attribute(self, "attributes")
+            self._v_cell_size = np.r_[value].astype(float).item()
+        else:
+            self._v_cell_size = value
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def v_count(self) -> int | None:
