@@ -22,8 +22,6 @@ concurrency:
 
 env:
   source_dir: geoh5py
-  POETRY_VIRTUALENVS_CREATE: true
-  POETRY_VIRTUALENVS_IN_PROJECT: true
 
 jobs:
   pylint:
@@ -32,6 +30,9 @@ jobs:
     defaults:
       run:
         shell: bash
+    env:
+      POETRY_VIRTUALENVS_CREATE: true
+      POETRY_VIRTUALENVS_IN_PROJECT: true
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python version
@@ -74,52 +75,3 @@ jobs:
       - name: Run pylint on all files
         if: github.event_name == 'push'
         run: poetry run pylint $source_dir tests
-
-  mypy:
-    name: mypy
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python version
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-      - name: Get full Python version
-        id: full-python-version
-        shell: bash
-        run: echo "version=$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")" >> $GITHUB_OUTPUT
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
-          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-      - name: Set up cache
-        uses: actions/cache@v3
-        id: cache
-        env:
-          # Increase this value to reset cache if poetry.lock has not changed
-          CACHE_NUMBER: 1
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-{{ env.CACHE_NUMBER }}
-      - name: Ensure cache is healthy
-        if: steps.cache.outputs.cache-hit == 'true'
-        shell: bash
-        run: timeout 10s poetry run pip --version || rm -rf .venv
-      - name: Install dependencies
-        run: poetry install -vvv
-      - name: capture modified files
-        if: github.event_name == 'pull_request'
-        run: >-
-          git fetch --deepen=500 origin ${{github.base_ref}}
-          && echo "FILES_PARAM=$(
-          git diff --diff-filter=AM --name-only refs/remotes/origin/${{github.base_ref}}... -- | grep -E "^(${source_dir}|tests)/.*\.py$" | xargs
-          )" >> $GITHUB_ENV
-      - name: Run mypy on modified files
-        if: github.event_name == 'pull_request' && env.FILES_PARAM
-        run: poetry run mypy $FILES_PARAM
-      - name: Run mypy on all files
-        if: github.event_name == 'push'
-        run: poetry run mypy $source_dir tests

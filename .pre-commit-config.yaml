@@ -6,7 +6,7 @@ default_stages: [commit,push]
 fail_fast: false
 
 ci:
-    skip: [pylint, mypy]
+    skip: [pylint]
 
 repos:
 -   repo: https://github.com/psf/black
@@ -19,7 +19,7 @@ repos:
     rev: 5.12.0
     hooks:
     -   id: isort
-        additional_dependencies: [toml] # to read config from pyproject.toml
+        additional_dependencies: [tomli] # to read config from pyproject.toml
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/humitos/mirrors-autoflake
@@ -41,15 +41,18 @@ repos:
         args: [--py37-plus]
         types: [text]
         types_or: [python, pyi]
--   repo: local
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.0.1
     hooks:
     -   id: mypy
-        name: mypy
-        entry: poetry run mypy
-        language: system
-        require_serial: true  # mypy does its own parallelism
-        types: [text]
-        types_or: [python, pyi]
+        additional_dependencies: [
+            types-toml,
+            tomli, # to read config from pyproject.toml
+#            'numpy>=1.23.5,<1.24.0'
+        ]
+        exclude: (geoh5py/interfaces/__init__\.py|geoh5py/handlers/__init__\.py|geoh5py/interfaces|geoh5py/handlers|tests)
+-   repo: local
+    hooks:
     -   id: pylint
         name: pylint
         entry: poetry run pylint

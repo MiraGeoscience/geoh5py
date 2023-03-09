@@ -32,7 +32,6 @@ numpy = "!=1.19.4, ~1.23.5"
 [tool.poetry.dev-dependencies]
 lockfile = "^0.12.2"
 poetry-publish = {git = "https://github.com/MiraGeoscience/poetry-publish.git", rev = "pending_fixes"}
-mypy = "*"
 pylint = "*"
 pytest = "*"
 pytest-cov = "*"
@@ -69,13 +68,9 @@ scripts_are_modules = true
 show_error_context = true
 show_column_numbers = true
 check_untyped_defs = true
-exclude = [
-    'geoh5py/interfaces',
-    'geoh5py/handlers',
-    'tests'
-]
+
 plugins = [
-    'numpy.typing.mypy_plugin'
+#    'numpy.typing.mypy_plugin'
 ]
 
 [build-system]
