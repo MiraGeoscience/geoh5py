@@ -62,13 +62,13 @@ class Grid2D(GridObject):
 
     def __init__(self, object_type: ObjectType, **kwargs):
         self._origin = np.array([0, 0, 0])
-        self._u_cell_size = None
-        self._v_cell_size = None
+        self._u_cell_size: np.ndarray | None = None
+        self._v_cell_size: np.ndarray | None = None
         self._u_count: int | None = None
         self._v_count: int | None = None
         self._rotation: float = 0.0
-        self._vertical = False
-        self._dip = 0.0
+        self._vertical: bool = False
+        self._dip: float = 0.0
 
         super().__init__(object_type, **kwargs)
 
@@ -186,12 +186,15 @@ class Grid2D(GridObject):
         if not np.any(indices):
             return None
 
+        assert self.u_cell_size is not None
+        assert self.v_cell_size is not None
+
         delta_orig = np.c_[
             np.argmax(u_ind) * self.u_cell_size,
             np.argmax(v_ind) * self.v_cell_size,
             0.0,
         ]
-        rot = rot = xy_rotation_matrix(np.deg2rad(self.rotation))
+        rot = xy_rotation_matrix(np.deg2rad(self.rotation))
         delta_orig = np.dot(rot, delta_orig.T).T
         kwargs.update(
             {
@@ -279,7 +282,7 @@ class Grid2D(GridObject):
             value = np.r_[value]
             assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
             self._centroids = None
-            self._rotation = value.astype(float)
+            self._rotation = value.astype(float).item()
             self.workspace.update_attribute(self, "attributes")
 
     @property

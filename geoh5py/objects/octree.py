@@ -53,15 +53,15 @@ class Octree(GridObject):
     )
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._origin = [0, 0, 0]
-        self._rotation = 0.0
-        self._u_count = None
-        self._v_count = None
-        self._w_count = None
-        self._u_cell_size = None
-        self._v_cell_size = None
-        self._w_cell_size = None
-        self._octree_cells = None
+        self._origin: np.ndarray = np.zeros(3)
+        self._rotation: float = 0.0
+        self._u_count: int = 0
+        self._v_count: int = 0
+        self._w_count: int = 0
+        self._u_cell_size: float | None = None
+        self._v_cell_size: float | None = None
+        self._w_cell_size: float | None = None
+        self._octree_cells: np.ndarray | None = None
 
         super().__init__(object_type, **kwargs)
 
@@ -75,6 +75,10 @@ class Octree(GridObject):
         assert (
             self._octree_cells is None
         ), "'base_refine' function only implemented if 'octree_cells' is None "
+
+        assert self.u_count is not None
+        assert self.v_count is not None
+        assert self.w_count is not None
 
         # Number of octree levels allowed on each dimension
         level_u = np.log2(self.u_count)
@@ -151,6 +155,7 @@ class Octree(GridObject):
             xyz = np.c_[u_grid, v_grid, w_grid]
 
             self._centroids = np.dot(rot, xyz.T).T
+            assert self._centroids is not None
 
             for ind, axis in enumerate(["x", "y", "z"]):
                 self._centroids[:, ind] += self.origin[axis]
@@ -257,7 +262,7 @@ class Octree(GridObject):
             value = np.r_[value]
             assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
             self._centroids = None
-            self._rotation = value.astype(float)
+            self._rotation = value.astype(float).item()
             self.workspace.update_attribute(self, "attributes")
 
     @property
@@ -288,7 +293,7 @@ class Octree(GridObject):
         self.workspace.update_attribute(self, "attributes")
         self._centroids = None
 
-        self._u_cell_size = np.r_[value].astype(float)
+        self._u_cell_size = np.r_[value].astype(float).item()
 
     @property
     def u_count(self) -> int | None:
@@ -304,7 +309,7 @@ class Octree(GridObject):
 
         self._centroids = None
 
-        self._u_count = np.int32(value)
+        self._u_count = np.int32(value).item()
         self.workspace.update_attribute(self, "attributes")
 
     @property
@@ -321,7 +326,7 @@ class Octree(GridObject):
         self.workspace.update_attribute(self, "attributes")
         self._centroids = None
 
-        self._v_cell_size = np.r_[value].astype(float)
+        self._v_cell_size = np.r_[value].astype(float).item()
 
     @property
     def v_count(self) -> int | None:
@@ -335,7 +340,7 @@ class Octree(GridObject):
         if not isinstance(value, (float, np.int32, int)) or np.log2(value) % 1.0 != 0:
             raise TypeError("Attribute 'v_count' must be type(int) in power of 2.")
         self._centroids = None
-        self._v_count = np.int32(value)
+        self._v_count = np.int32(value).item()
         self.workspace.update_attribute(self, "attributes")
 
     @property
@@ -352,7 +357,7 @@ class Octree(GridObject):
         self.workspace.update_attribute(self, "attributes")
         self._centroids = None
 
-        self._w_cell_size = np.r_[value].astype(float)
+        self._w_cell_size = np.r_[value].astype(float).item()
 
     @property
     def w_count(self) -> int | None:
@@ -366,5 +371,5 @@ class Octree(GridObject):
         if not isinstance(value, (float, np.int32, int)) or np.log2(value) % 1.0 != 0:
             raise TypeError("Attribute 'w_count' must be type(int) in power of 2.")
         self._centroids = None
-        self._w_count = np.int32(value)
+        self._w_count = np.int32(value).item()
         self.workspace.update_attribute(self, "attributes")

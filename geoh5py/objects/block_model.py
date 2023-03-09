@@ -44,11 +44,11 @@ class BlockModel(GridObject):
     _attribute_map.update({"Origin": "origin", "Rotation": "rotation"})
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._origin = np.array([0, 0, 0])
-        self._rotation = 0
-        self._u_cell_delimiters = None
-        self._v_cell_delimiters = None
-        self._z_cell_delimiters = None
+        self._origin: np.ndarray = np.array([0, 0, 0])
+        self._rotation: float = 0.0
+        self._u_cell_delimiters: np.ndarray | None = None
+        self._v_cell_delimiters: np.ndarray | None = None
+        self._z_cell_delimiters: np.ndarray | None = None
 
         super().__init__(object_type, **kwargs)
 
@@ -94,6 +94,7 @@ class BlockModel(GridObject):
             xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.ravel(z_grid)]
 
             self._centroids = np.dot(rot, xyz.T).T
+            assert self._centroids is not None
 
             for ind, axis in enumerate(["x", "y", "z"]):
                 self._centroids[:, ind] += self.origin[axis]
@@ -162,7 +163,7 @@ class BlockModel(GridObject):
             value = np.r_[value]
             assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
             self._centroids = None
-            self._rotation = value.astype(float)
+            self._rotation = value.astype(float).item()
             self.workspace.update_attribute(self, "attributes")
 
     @property
