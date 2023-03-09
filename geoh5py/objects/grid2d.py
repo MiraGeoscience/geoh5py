@@ -303,9 +303,6 @@ class Grid2D(GridObject):
 
     @u_cell_size.setter
     def u_cell_size(self, value: float | np.ndarray):
-        if value is None:
-            return
-
         if not isinstance(value, (float, np.ndarray)):
             raise TypeError("Attribute 'u_cell_size' must be type(float).")
 
@@ -342,9 +339,6 @@ class Grid2D(GridObject):
 
     @v_cell_size.setter
     def v_cell_size(self, value: float | np.ndarray):
-        if value is None:
-            return
-
         if not isinstance(value, (float, np.ndarray)):
             raise TypeError("Attribute 'v_cell_size' must be type(float).")
 
