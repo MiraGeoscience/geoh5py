@@ -52,10 +52,10 @@ class Points(ObjectBase):
         :return: shape(2, 3) Bounding box defined by the bottom South-West and
             top North-East coordinates.
         """
-        if self._extent is None and self.vertices is not None:
-            self._extent = np.c_[self.vertices.min(axis=0), self.vertices.max(axis=0)].T
+        if self.vertices is not None:
+            return np.c_[self.vertices.min(axis=0), self.vertices.max(axis=0)].T
 
-        return self._extent
+        return None
 
     def mask_by_extent(
         self,
@@ -106,7 +106,7 @@ class Points(ObjectBase):
                 dtype=[("x", "<f8"), ("y", "<f8"), ("z", "<f8")],
             )
         )
-        self._extent = None
+
         self.workspace.update_attribute(self, "vertices")
 
     def remove_vertices(

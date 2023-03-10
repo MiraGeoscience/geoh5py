@@ -59,7 +59,6 @@ class Entity(ABC):
         )
         self._name = name
         self._parent: Entity | None = None
-        self._extent: ndarray | None = None
         self._children: list = []
         self._allow_delete = True
         self._allow_move = True
