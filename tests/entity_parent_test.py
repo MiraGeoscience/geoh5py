@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+import numpy as np
+
 from geoh5py.groups import ContainerGroup
 from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
@@ -39,3 +41,30 @@ def test_create_point_data(tmp_path):
         points = Points.create(workspace, parent=group)
 
         assert points.parent == group, "Parent setter did not work."
+
+
+def test_parent_extent(tmp_path):
+    h5file_path = tmp_path / r"test.geoh5"
+
+    with Workspace(h5file_path) as workspace:
+        group = ContainerGroup.create(workspace, parent=None)
+
+        assert group.extent is None, "Extent should be None for empty group."
+
+        point_a = Points.create(
+            workspace, vertices=np.random.randn(12, 3), parent=group
+        )
+
+        assert np.allclose(
+            group.extent, point_a.extent
+        ), "Group extent should match child extent."
+
+        point_b = Points.create(
+            workspace, vertices=np.random.randn(12, 3), parent=group
+        )
+
+        lim_min = np.vstack((point_a.extent, point_b.extent)).min(axis=0)
+        lim_max = np.vstack((point_a.extent, point_b.extent)).max(axis=0)
+        assert np.allclose(
+            group.extent, np.vstack([lim_min, lim_max])
+        ), "Group extent should match child extent."

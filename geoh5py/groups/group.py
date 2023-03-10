@@ -88,7 +88,7 @@ class Group(Entity):
         clear_cache: bool = False,
         mask: list[int] | np.ndarray | None = None,
         **kwargs,
-    ):
+    ) -> Group:
         """
         Function to copy a group to a different parent entity.
 
@@ -145,7 +145,7 @@ class Group(Entity):
 
             if len(copy_group.children) == 0:
                 copy_group.workspace.remove_entity(copy_group)
-                copy_group = None
+                return None
 
         return copy_group
 
@@ -165,10 +165,27 @@ class Group(Entity):
         return self._entity_type
 
     @property
-    def extent(self):
+    def extent(self) -> np.ndarray | None:
         """
-        Bounding box 3D coordinates defining the limits of the entity.
+        Geography bounding box of the object.
+
+        :return: shape(2, 3) Bounding box defined by the bottom South-West and
+            top North-East coordinates.
         """
+        extents = []
+        for child in self.children:
+            if child.extent is not None:
+                extents.append(child.extent)
+
+        if len(extents) > 0:
+            extents = np.vstack(extents)
+            return np.vstack(
+                [
+                    np.min(extents, axis=0),
+                    np.max(extents, axis=0),
+                ]
+            )
+
         return None
 
     @classmethod
