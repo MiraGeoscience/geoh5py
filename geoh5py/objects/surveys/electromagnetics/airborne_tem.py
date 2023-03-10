@@ -55,7 +55,7 @@ class BaseAirborneTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancesto
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
-        cell_mask: list[float] | np.ndarray | None = None,
+        cell_mask: np.ndarray | None = None,
         **kwargs,
     ):
         """

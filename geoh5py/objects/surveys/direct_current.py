@@ -115,7 +115,7 @@ class BaseElectrode(Curve, ABC):
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
-        cell_mask: list[float] | np.ndarray | None = None,
+        cell_mask: np.ndarray | None = None,
         **kwargs,
     ):
         """
@@ -156,18 +156,17 @@ class BaseElectrode(Curve, ABC):
             **kwargs,
         )
 
-        if (
-            cell_mask is None
-            and self.cells is not None
-            and new_entity.ab_cell_id is None
-            and self.ab_cell_id is not None
-            and self.ab_cell_id.values is not None
-        ):
+        if cell_mask is None and self.cells is not None:
             if mask is not None:
                 cell_mask = np.all(mask[self.cells], axis=1)
             else:
                 cell_mask = np.ones(self.cells.shape[0], dtype=bool)
 
+        if (
+            cell_mask is not None
+            and self.ab_cell_id is not None
+            and self.ab_cell_id.values is not None
+        ):
             new_entity.ab_cell_id = self.ab_cell_id.values[cell_mask]
 
         complement: CurrentElectrode | PotentialElectrode = (

@@ -86,9 +86,9 @@ class Group(Entity):
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
-        mask: list[int] | np.ndarray | None = None,
+        mask: np.ndarray | None = None,
         **kwargs,
-    ) -> Group:
+    ):
         """
         Function to copy a group to a different parent entity.
 

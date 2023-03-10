@@ -121,8 +121,8 @@ class CellObject(Points, ABC):
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
-        mask: list[float] | np.ndarray | None = None,
-        cell_mask: list[float] | np.ndarray | None = None,
+        mask: np.ndarray | None = None,
+        cell_mask: np.ndarray | None = None,
         **kwargs,
     ):
         """

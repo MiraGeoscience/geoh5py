@@ -200,8 +200,8 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
-        mask: list[float] | np.ndarray | None = None,
-        cell_mask: list[float] | np.ndarray | None = None,
+        mask: np.ndarray | None = None,
+        cell_mask: np.ndarray | None = None,
         **kwargs,
     ):
         """
@@ -219,7 +219,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         if mask is not None or cell_mask is not None:
             warnings.warn("Masking is not supported for Concatenated objects.")
 
-        new_entity = super().copy(
+        new_entity: Concatenator = super().copy(  # mypy: ignore-errors
             parent=parent,
             copy_children=False,
             clear_cache=clear_cache,
