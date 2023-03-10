@@ -154,7 +154,7 @@ class Points(ObjectBase):
 
         :param parent: New parent for the copied object.
         :param copy_children: Copy children entities.
-        :param clear_cache: Clear cache of data values.
+        :param clear_cache: Clear cache of entity attributes.
         :param mask: Array of indices to sub-sample the input entity.
         :param cell_mask: Array of indices to sub-sample the input entity cells.
         :param kwargs: Additional keyword arguments.

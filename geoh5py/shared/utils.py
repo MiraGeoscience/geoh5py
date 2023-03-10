@@ -163,7 +163,7 @@ def merge_arrays(
 
 def clear_array_attributes(entity: Entity, recursive: bool = False):
     """
-    Clear all attributes from an entity.
+    Clear all stashed values of attributes from an entity to free up memory.
 
     :param entity: Entity to clear attributes from.
     :param recursive: Clear attributes from children entities.

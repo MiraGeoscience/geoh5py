@@ -334,45 +334,6 @@ class GroundTEMTransmittersLargeLoop(
         """
         return GroundTEMReceiversLargeLoop
 
-    # @property
-    # def tx_id_property(self) -> ReferencedData | None:
-    #     """
-    #     Default channel units for time or frequency defined on the child class.
-    #     """
-    #     if self._tx_id_property is None:
-    #         data = self.get_data("Transmitter ID")[0]
-    #
-    #         if isinstance(data, ReferencedData):
-    #             self._tx_id_property = data
-    #
-    #     return self._tx_id_property
-    #
-    # @tx_id_property.setter
-    # def tx_id_property(self, values: np.ndarray | ReferencedData):
-    #     if isinstance(values, np.ndarray):
-    #         values = self.add_data(
-    #             {
-    #                 "Transmitter ID": {
-    #                     "values": values.astype(np.int32),
-    #                     "value_map": {
-    #                         ind: f"Loop {ind}"
-    #                         for ind in np.unique(values.astype(np.int32))
-    #                     },
-    #                     "type": "referenced",
-    #                 }
-    #             }
-    #         )
-    #     elif isinstance(values, ReferencedData):
-    #         if values.parent is not None and values.parent.uid != self.uid:
-    #             values = values.copy(parent=self)
-    #
-    #     else:
-    #         raise TypeError(
-    #             "Input value for 'tx_id_property' should be a np.ndarray or ReferenceData.)"
-    #         )
-    #
-    #     self._tx_id_property = values
-
     @property
     def type(self):
         """Survey element type"""
