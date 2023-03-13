@@ -251,10 +251,16 @@ class ObjectBase(Entity):
                     if child.name in ["A-B Cell ID", "Transmitter ID"]:
                         continue
 
+                    child_mask = None
+                    if child.association is DataAssociationEnum.CELL:
+                        child_mask = cell_mask
+                    elif child.association is DataAssociationEnum.VERTEX:
+                        child_mask = mask
+
                     child_copy = child.copy(
                         parent=new_object,
                         clear_cache=clear_cache,
-                        mask=cell_mask if child.association.name == "CELL" else mask,
+                        mask=child_mask,
                     )
                 else:
                     child_copy = self.workspace.copy_to_parent(

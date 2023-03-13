@@ -33,6 +33,8 @@ def test_clip_point_data(tmp_path):
         np.percentile(vertices, 25, axis=0), np.percentile(vertices, 75, axis=0)
     ].T
 
+    np.savetxt(tmp_path / r"numpy_array.txt", vertices)
+
     clippings = np.all(
         np.c_[
             np.all(vertices >= extent[0, :], axis=1),
@@ -44,13 +46,18 @@ def test_clip_point_data(tmp_path):
     with Workspace(h5file_path) as workspace:
         points = Points.create(workspace, vertices=vertices, allow_move=False)
         data = points.add_data(
-            {"DataValues": {"association": "VERTEX", "values": values}}
+            {
+                "DataValues": {"association": "VERTEX", "values": values},
+                "TextValues": {"association": "OBJECT", "values": "abc"},
+            }
         )
+        points.add_file(tmp_path / "numpy_array.txt")
+
         with Workspace(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
             clipped_pts = points.copy_from_extent(parent=new_workspace, extent=extent)
             clipped_d = clipped_pts.get_data("DataValues")[0]
             assert clipped_pts.n_vertices == clippings.sum()
-            assert np.all(clipped_d.values == data.values[clippings])
+            assert np.all(clipped_d.values == data[0].values[clippings])
 
 
 def test_clip_curve_data(tmp_path):
