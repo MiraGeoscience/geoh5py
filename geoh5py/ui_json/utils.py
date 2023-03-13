@@ -25,9 +25,9 @@ from typing import Any
 
 import numpy as np
 
+from geoh5py import Workspace
 from geoh5py.groups import ContainerGroup
 from geoh5py.objects import ObjectBase
-from geoh5py.workspace import Workspace
 
 
 def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:

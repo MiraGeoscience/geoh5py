@@ -15,4 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# flake8: noqa
+
 __version__ = "0.7.0-alpha.1"
+
+from geoh5py.workspace import Workspace
