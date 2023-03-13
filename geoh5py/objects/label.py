@@ -58,7 +58,6 @@ class Label(ObjectBase):
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: ndarray | None = None,
-        cell_mask: ndarray | None = None,
         **kwargs,
     ):
         """
@@ -69,12 +68,11 @@ class Label(ObjectBase):
         :param copy_children: (Optional) Create copies of all children entities along with it.
         :param clear_cache: Clear array attributes after copy.
         :param mask: (Optional) Indices of vertices to copy.
-        :param cell_mask: Array of indices to sub-sample the input entity cells.
         :param kwargs: Additional keyword arguments.
 
         :return: New copy of the input entity.
         """
-        if mask is not None or cell_mask is not None:
+        if mask is not None:
             warnings.warn("Masking is not supported for Label objects.")
 
         new_entity = super().copy(

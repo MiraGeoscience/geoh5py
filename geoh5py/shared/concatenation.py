@@ -201,7 +201,6 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
-        cell_mask: np.ndarray | None = None,
         **kwargs,
     ):
         """
@@ -211,12 +210,11 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: Create copies of all children entities along with it.
         :param mask: Array of indices to sub-sample the input entity.
-        :param cell_mask: Array of indices to sub-sample the input entity cells.
         :param clear_cache: Clear array attributes after copy.
 
         :return entity: Registered Entity to the workspace.
         """
-        if mask is not None or cell_mask is not None:
+        if mask is not None:
             warnings.warn("Masking is not supported for Concatenated objects.")
 
         new_entity: Concatenator = super().copy(  # mypy: ignore-errors

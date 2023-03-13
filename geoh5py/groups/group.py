@@ -95,7 +95,10 @@ class Group(Entity):
         :param parent: Target parent to copy the entity under. Copied to current
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: (Optional) Create copies of all children entities along with it.
+        :param clear_cache: Clear array attributes after copy.
+        :param mask: Array of bool defining the values to keep.
         :param kwargs: Additional keyword arguments to pass to the copy constructor.
+
         :return entity: Registered Entity to the workspace.
         """
         if parent is None:

@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from ..data import Data, DataAssociationEnum
 from .points import Points
 
 if TYPE_CHECKING:
@@ -126,16 +127,10 @@ class CellObject(Points, ABC):
         **kwargs,
     ):
         """
-        Function to copy an entity to a different parent entity.
+        Sub-class extension of :func:`~geoh5py.objects.points.Points.copy`.
 
-        :param parent: New parent for the copied object.
-        :param copy_children: Copy children entities.
-        :param clear_cache: Clear cache of data values.
-        :param mask: Array of indices to sub-sample the input entity.
-        :param cell_mask: Array of indices to sub-sample the input entity cells.
-        :param kwargs: Additional keyword arguments.
-
-        :return: New copy of the input entity.
+        Additions:
+            cell_mask: Array of indices to sub-sample the input entity cells.
         """
         if mask is not None and self.vertices is not None:
             if not isinstance(mask, np.ndarray) or mask.shape != (
@@ -145,28 +140,63 @@ class CellObject(Points, ABC):
 
             kwargs.update({"vertices": self.vertices[mask, :]})
 
-        if self.cells is not None and mask is not None:
+        new_cells = getattr(self, "cells", None)
+        if mask is not None:
+            new_id = np.ones_like(mask, dtype=int)
+            new_id[mask] = np.arange(np.sum(mask))
+
             if cell_mask is None:
                 cell_mask = np.all(mask[self.cells], axis=1)
 
-            new_id = np.ones_like(mask, dtype=int)
-            new_id[mask] = np.arange(np.sum(mask))
             new_cells = new_id[self.cells]
+
+        if cell_mask is not None and new_cells is not None:
             new_cells = new_cells[cell_mask, :]
             kwargs.update(
                 {
                     "cells": new_cells,
                 }
             )
-        else:
-            cell_mask = None
 
         new_object = super().copy(
             parent=parent,
-            copy_children=copy_children,
+            copy_children=False,
             clear_cache=clear_cache,
             mask=mask,
-            cell_mask=cell_mask,
             **kwargs,
         )
+
+        if copy_children:
+            children_map = {}
+            for child in self.children:
+                if isinstance(child, Data):
+                    if child.name in ["A-B Cell ID", "Transmitter ID"]:
+                        continue
+
+                    child_mask = mask
+                    if (
+                        child.association is DataAssociationEnum.CELL
+                        and cell_mask is not None
+                    ):
+                        child_mask = cell_mask
+                    elif child.association is not DataAssociationEnum.VERTEX:
+                        child_mask = None
+
+                    child_copy = child.copy(
+                        parent=new_object,
+                        clear_cache=clear_cache,
+                        mask=child_mask,
+                    )
+                else:
+                    child_copy = self.workspace.copy_to_parent(
+                        child, new_object, clear_cache=clear_cache
+                    )
+                children_map[child.uid] = child_copy.uid
+
+            if self.property_groups:
+                self.workspace.copy_property_groups(
+                    new_object, self.property_groups, children_map
+                )
+                new_object.workspace.update_attribute(new_object, "property_groups")
+
         return new_object

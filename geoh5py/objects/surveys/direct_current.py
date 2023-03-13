@@ -119,17 +119,7 @@ class BaseElectrode(Curve, ABC):
         **kwargs,
     ):
         """
-        Function to copy a survey to a different parent entity.
-
-        :param parent: Target parent to copy the entity under. Copied to current
-            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: Create copies of all children entities along with it.
-        :param clear_cache: Clear array attributes after copy.
-        :param mask: Array of indices to sub-sample the input entity.
-        :param cell_mask: Array of indices to sub-sample the input entity cells.
-        :param kwargs: Additional keyword arguments.
-
-        :return: New copy of the input entity.
+        Sub-class extension of :func:`~geoh5py.objects.cell_object.CellObject.copy`.
         """
         if parent is None:
             parent = self.parent
@@ -140,34 +130,24 @@ class BaseElectrode(Curve, ABC):
             "_potential_electrodes",
             "_current_electrodes",
         ]
-
-        if mask is not None and self.vertices is not None:
-            if not isinstance(mask, np.ndarray) or mask.shape != (
-                self.vertices.shape[0],
-            ):
-                raise ValueError("Mask must be an array of shape (n_vertices,).")
-
         new_entity = super().copy(
             parent=parent,
             clear_cache=clear_cache,
             copy_children=copy_children,
             mask=mask,
+            cell_mask=cell_mask,
             omit_list=omit_list,
             **kwargs,
         )
 
-        if cell_mask is None and self.cells is not None:
+        if self.cells is not None:
             if mask is not None:
                 cell_mask = np.all(mask[self.cells], axis=1)
             else:
                 cell_mask = np.ones(self.cells.shape[0], dtype=bool)
 
-        if (
-            cell_mask is not None
-            and self.ab_cell_id is not None
-            and self.ab_cell_id.values is not None
-        ):
-            new_entity.ab_cell_id = self.ab_cell_id.values[cell_mask]
+            if self.ab_cell_id is not None and self.ab_cell_id.values is not None:
+                new_entity.ab_cell_id = self.ab_cell_id.values[cell_mask]
 
         complement: CurrentElectrode | PotentialElectrode = (
             self.current_electrodes

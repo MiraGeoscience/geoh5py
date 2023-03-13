@@ -218,7 +218,6 @@ class ObjectBase(Entity):
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
-        cell_mask: np.ndarray | None = None,
         **kwargs,
     ):
         """
@@ -228,7 +227,6 @@ class ObjectBase(Entity):
         :param copy_children: Copy children entities.
         :param clear_cache: Clear cache of data values.
         :param mask: Array of indices to sub-sample the input entity.
-        :param cell_mask: Array of indices to sub-sample the input entity cells.
         :param kwargs: Additional keyword arguments.
 
         :return: New copy of the input entity.
@@ -247,20 +245,24 @@ class ObjectBase(Entity):
         if copy_children:
             children_map = {}
             for child in self.children:
-                if isinstance(child, Data) and child.association is not None:
-                    if child.name in ["A-B Cell ID", "Transmitter ID"]:
-                        continue
-
-                    child_mask = None
-                    if child.association is DataAssociationEnum.CELL:
-                        child_mask = cell_mask
-                    elif child.association is DataAssociationEnum.VERTEX:
-                        child_mask = mask
+                if isinstance(child, Data) and child.association in (
+                    DataAssociationEnum.VERTEX,
+                    DataAssociationEnum.CELL,
+                ):
+                    # if child.name in ["A-B Cell ID", "Transmitter ID"]:
+                    #     continue
+                    #
+                    # child_mask = mask
+                    # if child.association is DataAssociationEnum.CELL:
+                    #     if self.cells is not None and mask is not None:
+                    #         child_mask = np.all(mask[self.cells], axis=1)
+                    # elif child.association is not DataAssociationEnum.VERTEX:
+                    #     child_mask = None
 
                     child_copy = child.copy(
                         parent=new_object,
                         clear_cache=clear_cache,
-                        mask=child_mask,
+                        mask=mask,
                     )
                 else:
                     child_copy = self.workspace.copy_to_parent(

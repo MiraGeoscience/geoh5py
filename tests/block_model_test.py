@@ -103,8 +103,7 @@ def test_create_block_model_data(tmp_path):
         # mask = np.ones(grid.n_cells, dtype=bool)
         # mask[-2:] = False
 
-        with pytest.warns(UserWarning):
-            grid_copy = grid.copy(cell_mask="abc", rotation=0.0)
+        grid_copy = grid.copy(rotation=0.0)
 
         mask = grid_copy.mask_by_extent(np.vstack([[-100, -100], [1, 100]]))
         assert mask.sum() == np.prod(grid.shape[1:])

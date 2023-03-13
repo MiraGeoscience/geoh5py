@@ -211,7 +211,7 @@ class Grid2D(GridObject):
             parent=parent,
             copy_children=copy_children,
             clear_cache=clear_cache,
-            cell_mask=indices,
+            mask=indices,
             **kwargs,
         )
 

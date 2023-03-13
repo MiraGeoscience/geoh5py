@@ -37,6 +37,7 @@ def test_create_label(tmp_path):
 
         with pytest.warns(UserWarning):
             copy_label = label.copy(mask=[[0, 0], [1, 1]])
+
         compare_entities(
             label, copy_label, ignore=["target_position", "label_position", "_uid"]
         )

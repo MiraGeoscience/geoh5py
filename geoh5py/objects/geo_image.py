@@ -85,7 +85,6 @@ class GeoImage(ObjectBase):
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
-        cell_mask: np.ndarray | None = None,
         **kwargs,
     ):
         """
@@ -95,10 +94,9 @@ class GeoImage(ObjectBase):
         :param copy_children: Copy children entities.
         :param clear_cache: Clear cache of data values.
         :param mask: Array of indices to sub-sample the input entity.
-        :param cell_mask: Array of indices to sub-sample the input entity cells.
         :param kwargs: Additional keyword arguments.
         """
-        if mask is not None or cell_mask is not None:
+        if mask is not None:
             warnings.warn("Masking is not supported for GeoImage objects.")
 
         new_entity = super().copy(

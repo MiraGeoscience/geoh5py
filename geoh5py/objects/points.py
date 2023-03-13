@@ -146,25 +146,11 @@ class Points(ObjectBase):
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
-        cell_mask: np.ndarray | None = None,
         **kwargs,
     ):
         """
-        Function to copy an entity to a different parent entity.
-
-        :param parent: New parent for the copied object.
-        :param copy_children: Copy children entities.
-        :param clear_cache: Clear cache of entity attributes.
-        :param mask: Array of indices to sub-sample the input entity.
-        :param cell_mask: Array of indices to sub-sample the input entity cells.
-        :param kwargs: Additional keyword arguments.
-
-        :return: New copy of the input entity.
-
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy`.
         """
-        if cell_mask is not None:
-            warnings.warn("Cell masking is not supported for Points objects.")
-
         if mask is not None and self.vertices is not None:
             if not isinstance(mask, np.ndarray) or mask.shape != (
                 self.vertices.shape[0],
@@ -178,7 +164,6 @@ class Points(ObjectBase):
             copy_children=copy_children,
             clear_cache=clear_cache,
             mask=mask,
-            cell_mask=cell_mask,
             **kwargs,
         )
 
