@@ -249,16 +249,6 @@ class ObjectBase(Entity):
                     DataAssociationEnum.VERTEX,
                     DataAssociationEnum.CELL,
                 ):
-                    # if child.name in ["A-B Cell ID", "Transmitter ID"]:
-                    #     continue
-                    #
-                    # child_mask = mask
-                    # if child.association is DataAssociationEnum.CELL:
-                    #     if self.cells is not None and mask is not None:
-                    #         child_mask = np.all(mask[self.cells], axis=1)
-                    # elif child.association is not DataAssociationEnum.VERTEX:
-                    #     child_mask = None
-
                     child_copy = child.copy(
                         parent=new_object,
                         clear_cache=clear_cache,
