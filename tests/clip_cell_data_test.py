@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from geoh5py.objects import Grid2D
 from geoh5py.workspace import Workspace
@@ -50,7 +51,15 @@ def test_copy_extent_grid_2d(tmp_path):
 
     data = grid.add_data({"rando": {"values": values.flatten()}})
 
-    new_grid = grid.copy_from_extent(np.r_[np.c_[50, 50, 0], np.c_[200, 200, 0]])
+    with pytest.raises(TypeError, match="Expected a numpy array of extent values."):
+        grid.copy_from_extent(data)
+
+    assert (
+        grid.copy_from_extent(np.r_[np.c_[-2000.0, -2000.0], np.c_[-1000.0, -1000.0]])
+        is None
+    )
+
+    new_grid = grid.copy_from_extent(np.r_[np.c_[50, 50], np.c_[200, 200]])
     data_intersect = np.intersect1d(data.values, new_grid.children[0].values)
     assert new_grid.n_cells == 35
     assert data_intersect.size == 35

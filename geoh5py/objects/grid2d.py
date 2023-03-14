@@ -152,7 +152,7 @@ class Grid2D(GridObject):
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy_from_extent`.
         """
         if not isinstance(extent, np.ndarray):
-            raise TypeError("Expected a list or numpy array of extent values.")
+            raise TypeError("Expected a numpy array of extent values.")
 
         if extent.shape[1] == 2:
             extent = np.c_[extent, np.r_[-np.inf, np.inf]]
@@ -166,14 +166,16 @@ class Grid2D(GridObject):
                 np.c_[extent[1, 0], extent[0, 1], extent[1, 2]],
             ]
         )
-
+        z_extent = extent[:, 2]
         origin = np.r_[self.origin["x"], self.origin["y"], self.origin["z"]].astype(
             float
         )
         extent[:, :2] -= origin[:2]
         if self.rotation != 0.0:
+            extent[:, 2] = 0
             rot = xy_rotation_matrix(-np.deg2rad(self.rotation))
             extent = np.dot(rot, extent.T).T
+            extent[:, 2] = z_extent
 
         u_ind = (self.cell_center_u <= np.max(extent[:, 0])) & (
             self.cell_center_u >= np.min(extent[:, 0])

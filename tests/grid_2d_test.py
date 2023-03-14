@@ -20,6 +20,8 @@
 
 from __future__ import annotations
 
+import re
+
 import numpy as np
 import pytest
 
@@ -34,7 +36,6 @@ def test_create_grid_2d_data(tmp_path):
 
     # Generate a 2D array
     n_x, n_y = 10, 15
-    values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
     h5file_path = tmp_path / r"test2Grid.geoh5"
 
     # Create a workspace
@@ -48,48 +49,49 @@ def test_create_grid_2d_data(tmp_path):
         with pytest.raises(AttributeError, match="The Grid2D has no origin."):
             converter.grid_to_tag(grid)
 
-        assert grid.cell_center_u is None
+        for axis in ["u", "v"]:
+            assert getattr(grid, f"cell_center_{axis}", None) is None
 
-        assert grid.cell_center_v is None
+            with pytest.raises(
+                TypeError,
+                match=re.escape(f"Attribute '{axis}_cell_size' must be type(float)."),
+            ):
+                setattr(grid, f"{axis}_cell_size", "rando")
 
         assert grid.n_cells is None
-
         assert grid.shape is None
 
+        grid.origin = [0, 0, 0]
         grid.u_cell_size = 20.0
-        grid.v_cell_size = 20.0
-
-        grid = Grid2D.create(
-            workspace_context,
-            origin=[0, 0, 0],
-            u_cell_size=20.0,
-            v_cell_size=30.0,
-            name=name,
-            allow_move=False,
-        )
+        grid.v_cell_size = 30.0
+        grid.name = name
 
         with pytest.raises(AttributeError, match="The Grid2D has no number of cells."):
             converter.grid_to_tag(grid)
 
         workspace_context.remove_entity(grid)
 
-        grid = Grid2D.create(
-            workspace_context,
-            origin=[0, 0, 0],
-            u_cell_size=20.0,
-            v_cell_size=30.0,
-            u_count=n_x,
-            v_count=n_y,
-            name=name,
-            allow_move=False,
-        )
-
+        grid.u_count = n_x
+        grid.v_count = n_y
+        grid.u_cell_size = np.r_[20.0]
+        grid.v_cell_size = np.r_[30.0]
         grid.vertical = True
 
         assert isinstance(grid.centroids, np.ndarray)
 
-        workspace_context.remove_entity(grid)
 
+def test_grid2d_to_geoimage(tmp_path):
+    name = "MyTestGrid2D"
+
+    # Generate a 2D array
+    n_x, n_y = 10, 15
+    values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
+    h5file_path = tmp_path / r"test2Grid.geoh5"
+
+    # Create a workspace
+    workspace = Workspace(h5file_path)
+    converter = Grid2DConversion
+    with workspace.open("r+") as workspace_context:
         grid = Grid2D.create(
             workspace_context,
             origin=[0, 0, 0],
@@ -129,9 +131,6 @@ def test_create_grid_2d_data(tmp_path):
 
         with pytest.raises(IndexError, match="Only 1, 3, or 4 layers can be selected"):
             grid.to_geoimage(["DataValues", "DataValues"])
-
-        # with pytest.raises(UserWarning, match="Cannot assign tag for rotated Grid2D."):
-        #     geoimage = grid.to_geoimage(["DataValues"])
 
         grid.rotation = 0.0
         geoimage = grid.to_geoimage(["DataValues"])
