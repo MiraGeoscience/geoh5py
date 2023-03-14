@@ -81,12 +81,19 @@ def test_remove_point_data(tmp_path):
         points = Points.create(workspace)
 
         with pytest.warns(UserWarning, match="No vertices to be removed."):
-            points.remove_vertices(12)
+            points.remove_vertices([12])
 
         with pytest.raises(ValueError, match="Array of vertices must be of shape"):
             points.vertices = np.r_[1, 2, 3]
 
         points.vertices = np.random.randn(12, 3)
+
+        assert (
+            points.mask_by_extent(np.vstack([[1000, 1000], [1001, 1001]])) is None
+        ), "Error returning None mask."
+
+        with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
+            points.remove_vertices("abc")
 
         data = points.add_data(
             {"DataValues": {"association": "VERTEX", "values": values}}
@@ -100,8 +107,45 @@ def test_remove_point_data(tmp_path):
         with pytest.raises(
             ValueError, match="Found indices larger than the number of vertices."
         ):
-            points.remove_vertices(12)
+            points.remove_vertices([12])
 
         points.remove_vertices([1, 2])
 
         assert len(data.values) == 10, "Error removing data values with vertices."
+
+        assert (
+            points.mask_by_extent(np.vstack([[1e6, 1e6], [2e6, 2e6]])) is None
+        ), "Error masking points by extent."
+
+
+def test_copy_points_data(tmp_path):
+    values = np.random.randn(12)
+    h5file_path = tmp_path / r"testPoints.geoh5"
+    with Workspace(h5file_path) as workspace:
+        points = Points.create(workspace)
+        points.vertices = np.random.randn(12, 3)
+        data = points.add_data(
+            {"DataValues": {"association": "VERTEX", "values": values}}
+        )
+
+        with pytest.raises(ValueError, match="Mask must be an array of shape"):
+            points.copy(mask=np.r_[1, 2, 3])
+
+        with pytest.raises(ValueError, match="Mask must be a boolean array of shape"):
+            data.copy(mask=np.r_[1, 2, 3])
+
+        with pytest.raises(TypeError, match="Mask must be an array or None."):
+            data.copy(mask="abc")
+
+        mask = np.zeros(12, dtype=bool)
+        mask[:4] = True
+        copy_data = data.copy(mask=mask)
+
+        assert np.isnan(copy_data.values).sum() == 8, "Error copying data."
+
+        ind = np.all(points.vertices[:, :2] > 0, axis=1) & np.all(
+            points.vertices[:, :2] < 2, axis=1
+        )
+        mask = data.mask_by_extent(np.vstack([[0, 0], [2, 2]]))
+
+        assert np.all(mask == ind), "Error masking data by extent."

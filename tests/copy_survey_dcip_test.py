@@ -24,7 +24,6 @@ import numpy as np
 import pytest
 
 from geoh5py.objects import CurrentElectrode, PotentialElectrode
-from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
@@ -61,7 +60,7 @@ def test_copy_survey_dcip(tmp_path):
 
                 if (
                     any(dipole_ids > (potentials.n_vertices - 1))
-                    or len(np.unique(parts[dipole_ids])) > 1
+                    or len(np.unique(parts[np.r_[cell_id, dipole_ids]])) > 1
                 ):
                     continue
 
@@ -77,40 +76,14 @@ def test_copy_survey_dcip(tmp_path):
 
         # Copy the survey to a new workspace
         path = tmp_path / r"testDC_copy_current.geoh5"
-        new_workspace = Workspace(path)
-        currents.copy(parent=new_workspace)
-        new_workspace.close()
+        with Workspace(path) as new_workspace:
+            new_currents = currents.copy_from_extent(
+                np.vstack([[5, 0], [8, 2]]), parent=new_workspace
+            )
+            new_potentials = potentials.copy_from_extent(
+                np.vstack([[7, 0], [11, 2]]), parent=new_workspace
+            )
 
-        # Re-open the workspace and read data back in
-        new_workspace = Workspace(path)
-        currents_rec = new_workspace.get_entity(name)[0]
-        potentials_rec = new_workspace.get_entity(name + "_rx")[0]
-
-        # Check entities
-        compare_entities(
-            currents, currents_rec, ignore=["_potential_electrodes", "_parent"]
-        )
-        compare_entities(
-            potentials, potentials_rec, ignore=["_current_electrodes", "_parent"]
-        )
-
-        new_workspace.close()
-        # Repeat with potential entity
-        path = tmp_path / r"testDC_copy_potential.geoh5"
-        new_workspace = Workspace(path)
-        potentials.copy(parent=new_workspace)
-        new_workspace.close()
-
-        # Re-open the workspace and read data back in
-        new_workspace = Workspace(path)
-        currents_rec = new_workspace.get_entity(name)[0]
-        potentials_rec = new_workspace.get_entity(name + "_rx")[0]
-
-        # Check entities
-        compare_entities(
-            currents, currents_rec, ignore=["_potential_electrodes", "_parent"]
-        )
-        compare_entities(
-            potentials, potentials_rec, ignore=["_current_electrodes", "_parent"]
-        )
-        new_workspace.close()
+            np.testing.assert_array_almost_equal(
+                new_currents.potential_electrodes.vertices, new_potentials.vertices
+            )

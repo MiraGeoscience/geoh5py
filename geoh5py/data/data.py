@@ -20,7 +20,10 @@ from __future__ import annotations
 import uuid
 from abc import abstractmethod
 
+import numpy as np
+
 from ..shared import Entity
+from ..shared.utils import mask_by_extent
 from .data_association_enum import DataAssociationEnum
 from .data_type import DataType
 from .primitive_type_enum import PrimitiveTypeEnum
@@ -54,6 +57,63 @@ class Data(Entity):
             self.entity_type.name = self.name
 
         data_type.workspace._register_data(self)
+
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ) -> Data:
+        """
+        Function to copy data to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: (Optional) Create copies of all children entities along with it.
+        :param clear_cache: Clear array attributes after copy.
+        :param mask: Array of bool defining the values to keep.
+        :param kwargs: Additional keyword arguments to pass to the copy constructor.
+
+        :return entity: Registered Entity to the workspace.
+        """
+        if parent is None:
+            parent = self.parent
+
+        if isinstance(mask, np.ndarray):
+            if mask.dtype != np.bool or mask.shape != self.values.shape:
+                raise ValueError(
+                    f"Mask must be a boolean array of shape {self.values.shape}, not {mask.shape}"
+                )
+        elif mask is not None:
+            raise TypeError("Mask must be an array or None.")
+
+        if (
+            mask is not None
+            and self.values is not None
+            and mask.shape == self.values.shape
+        ):
+            kwargs.update({"values": self.values[mask]})
+
+        new_entity = parent.workspace.copy_to_parent(
+            self,
+            parent,
+            clear_cache=clear_cache,
+            **kwargs,
+        )
+
+        return new_entity
+
+    @property
+    def extent(self) -> np.ndarray | None:
+        """
+        Geography bounding box of the parent object.
+
+        :return: shape(2, 3) Bounding box defined by the bottom South-West and
+            top North-East coordinates.
+        """
+        return self.parent.extent
 
     @property
     def n_values(self) -> int | None:
@@ -149,6 +209,30 @@ class Data(Entity):
         """
         Remove self from a property group.
         """
+
+    def mask_by_extent(
+        self,
+        extent: np.ndarray,
+    ) -> np.ndarray | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
+
+        Uses the parent object's vertices or centroids coordinates.
+        """
+        if self.association is DataAssociationEnum.VERTEX:
+            return mask_by_extent(self.parent.vertices, extent)
+
+        if self.association is DataAssociationEnum.CELL:
+            if getattr(self.parent, "centroids", None) is not None:
+                return mask_by_extent(self.parent.centroids, extent)
+
+            indices = mask_by_extent(self.parent.vertices, extent)
+            if indices is not None:
+                indices = np.all(indices[self.parent.cells], axis=1)
+
+            return indices
+
+        return np.ones_like(self.values, dtype=bool)
 
     def __call__(self):
         return self.values

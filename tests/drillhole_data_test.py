@@ -56,6 +56,9 @@ def test_create_drillhole_data(tmp_path):
             np.linspace(-89, -75, n_data),
         ]
 
+        with pytest.raises(ValueError, match="Origin must be a list or numpy array"):
+            well.collar = [1.0, 10]
+
         value_map = {}
         for ref in range(8):
             value_map[ref] = "".join(
@@ -328,3 +331,16 @@ def test_insert_drillhole_data(tmp_path):
         assert (
             np.where(well.depths.values == new_depths[0])[0] == insert[0]
         ), "Depth insertion error"
+
+
+def test_mask_drillhole_data(tmp_path):
+    h5file_path = tmp_path / r"testCurve.geoh5"
+
+    with Workspace(h5file_path, version=1.0) as workspace:
+        well = Drillhole.create(
+            workspace,
+            collar=np.r_[0.0, 10.0, 10],
+        )
+
+        assert well.mask_by_extent(np.vstack([[100, 100], [101, 101]])) is None
+        assert well.mask_by_extent(np.vstack([[-1, 9], [1, 11]])).sum() == 1

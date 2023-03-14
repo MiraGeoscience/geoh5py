@@ -21,6 +21,7 @@ from copy import deepcopy
 from typing import Any, cast
 from uuid import UUID
 
+from geoh5py import Workspace
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import RequiredValidationError
@@ -37,7 +38,6 @@ from geoh5py.shared.validators import (
     ValueValidator,
 )
 from geoh5py.ui_json.utils import requires_value
-from geoh5py.workspace import Workspace
 
 
 class InputValidation:

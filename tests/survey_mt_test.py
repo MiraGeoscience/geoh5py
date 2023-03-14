@@ -33,15 +33,10 @@ from geoh5py.workspace import Workspace
 
 def test_create_survey_mt(tmp_path):
     name = "TestMT"
-    n_data = 12
     h5file_path = tmp_path / r"testMT.geoh5"
 
     with Workspace(h5file_path) as workspace:
-        # Create sources along line
-        x_loc, y_loc = np.meshgrid(np.arange(n_data), np.arange(-1, 3))
-        vertices = np.c_[x_loc.ravel(), y_loc.ravel(), np.zeros_like(x_loc).ravel()]
-
-        # Define the receiver locations on 2 lines, 60 m apart
+        # Define the receiver locations on a grid
         x_loc, y_loc = np.meshgrid(np.linspace(-5, 5, 2), np.linspace(0.0, 20.0, 9))
         vertices = np.c_[x_loc.ravel(), y_loc.ravel(), np.zeros_like(x_loc).ravel()]
 
@@ -56,6 +51,9 @@ def test_create_survey_mt(tmp_path):
             ),
         ):
             mt_survey.receivers = "123"
+
+        with pytest.raises(ValueError, match="Mask must be an array of shape"):
+            mt_survey.copy(mask=np.r_[1, 2, 3])
 
         for key, value in {
             "input_type": "Rx only",
@@ -160,3 +158,15 @@ def test_create_survey_mt(tmp_path):
             mt_survey_rec,
             ignore=["_receivers", "_parent", "_property_groups"],
         )
+
+        with Workspace(tmp_path / r"testMT_copy.geoh5") as copy_workspace:
+            mt_survey_rec.copy(copy_workspace)
+            mt_survey_extent = mt_survey_rec.copy_from_extent(
+                np.vstack([[-6.0, -1.0], [6.0, 6.0]]), parent=copy_workspace
+            )
+
+            assert mt_survey_extent.n_vertices == 6
+            for child_a, child_b in zip(
+                mt_survey_extent.children, mt_survey_rec.children
+            ):
+                np.testing.assert_array_almost_equal(child_a.values, child_b.values[:6])

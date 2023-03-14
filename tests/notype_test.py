@@ -18,24 +18,23 @@
 
 from __future__ import annotations
 
-from geoh5py.groups import ContainerGroup
-from geoh5py.objects import Points
+import numpy as np
+import pytest
+
+from geoh5py.objects import NoTypeObject
+from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_point_data(tmp_path):
-    h5file_path = tmp_path / r"test.geoh5"
+def test_create_notype(tmp_path):
+    h5file_path = tmp_path / r"testNoType.geoh5"
+
+    # Create a workspace
     with Workspace(h5file_path) as workspace:
-        group = ContainerGroup.create(workspace, parent=None)
-        assert (
-            group.parent == workspace.root
-        ), "Assigned parent=None should default to Root."
+        label = NoTypeObject.create(workspace, name="MyTestLabel")
 
-        group = ContainerGroup.create(workspace)
-        assert (
-            group.parent == workspace.root
-        ), "Creation without parent should default to Root."
+        assert label.copy_from_extent(np.vstack([[0, 0], [1, 1]])) is None
 
-        points = Points.create(workspace, parent=group)
-
-        assert points.parent == group, "Parent setter did not work."
+        with pytest.warns(UserWarning):
+            copy_label = label.copy(mask=[[0, 0], [1, 1]])
+        compare_entities(label, copy_label, ignore=["_uid"])

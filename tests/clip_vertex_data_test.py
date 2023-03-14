@@ -33,6 +33,8 @@ def test_clip_point_data(tmp_path):
         np.percentile(vertices, 25, axis=0), np.percentile(vertices, 75, axis=0)
     ].T
 
+    np.savetxt(tmp_path / r"numpy_array.txt", vertices)
+
     clippings = np.all(
         np.c_[
             np.all(vertices >= extent[0, :], axis=1),
@@ -44,13 +46,18 @@ def test_clip_point_data(tmp_path):
     with Workspace(h5file_path) as workspace:
         points = Points.create(workspace, vertices=vertices, allow_move=False)
         data = points.add_data(
-            {"DataValues": {"association": "VERTEX", "values": values}}
+            {
+                "DataValues": {"association": "VERTEX", "values": values},
+                "TextValues": {"association": "OBJECT", "values": "abc"},
+            }
         )
+        points.add_file(tmp_path / "numpy_array.txt")
+
         with Workspace(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
-            clipped_pts = points.copy_from_extent(extent, parent=new_workspace)
+            clipped_pts = points.copy_from_extent(parent=new_workspace, extent=extent)
             clipped_d = clipped_pts.get_data("DataValues")[0]
             assert clipped_pts.n_vertices == clippings.sum()
-            assert np.all(clipped_d.values == data.values[clippings])
+            assert np.all(clipped_d.values == data[0].values[clippings])
 
 
 def test_clip_curve_data(tmp_path):
@@ -83,7 +90,7 @@ def test_clip_curve_data(tmp_path):
             }
         )
         with Workspace(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
-            clipped_pts = curve.copy_from_extent(extent, parent=new_workspace)
+            clipped_pts = curve.copy_from_extent(parent=new_workspace, extent=extent)
             clipped_d = clipped_pts.get_data("VertexValues")[0]
             clipped_c = clipped_pts.get_data("CellValues")[0]
             assert clipped_pts.n_vertices == clippings.sum()
@@ -101,7 +108,7 @@ def test_clip_curve_data(tmp_path):
     )
     with workspace.open():
         with Workspace(tmp_path / r"testClipPoints_copy2D.geoh5") as new_workspace:
-            clipped_pts = curve.copy_from_extent(extent, parent=new_workspace)
+            clipped_pts = curve.copy_from_extent(parent=new_workspace, extent=extent)
             clipped_d = clipped_pts.get_data("VertexValues")[0]
             clipped_c = clipped_pts.get_data("CellValues")[0]
             assert clipped_pts.n_vertices == clippings.sum()
@@ -116,8 +123,8 @@ def test_clip_groups(tmp_path):
     ].T
     h5file_path = tmp_path / r"testClipGroup.geoh5"
     with Workspace(h5file_path) as workspace:
-        group_a = ContainerGroup.create(workspace, name="GroupA")
-        group_b = ContainerGroup.create(workspace, name="GroupB", parent=group_a)
+        group_a = ContainerGroup.create(workspace, name="Group A")
+        group_b = ContainerGroup.create(workspace, name="Group B", parent=group_a)
         curve_a = Curve.create(workspace, vertices=vertices, parent=group_a)
         curve_b = Curve.create(
             workspace, vertices=np.c_[1000.0, 1000.0, 0.0], parent=group_b
@@ -136,10 +143,16 @@ def test_clip_groups(tmp_path):
                 },
             }
         )
+
         with Workspace(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
-            group_a.copy_from_extent(extent, parent=new_workspace)
+            group_a.copy_from_extent(
+                parent=new_workspace, clear_cache=True, extent=extent
+            )
 
             assert (
                 len(new_workspace.objects) == 1
             ), "Error removing curve without nodes."
             assert len(new_workspace.groups) == 2, "Error removing empty group."
+            assert (
+                getattr(new_workspace.groups[0].children[0], "_vertices", None) is None
+            )

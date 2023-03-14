@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from geoh5py.objects import BlockModel
 from geoh5py.shared.utils import compare_entities
@@ -29,15 +30,14 @@ def test_create_block_model_data(tmp_path):
     name = "MyTestBlockModel"
     h5file_path = tmp_path / r"block_model.geoh5"
     # Generate a 3D array
-    n_x, n_y, n_z = 8, 9, 10
 
     nodal_x = np.r_[
         0,
         np.cumsum(
             np.r_[
-                np.pi / n_x * 1.5 ** np.arange(3)[::-1],
-                np.ones(n_x) * np.pi / n_x,
-                np.pi / n_x * 1.5 ** np.arange(4),
+                np.pi / 8 * 1.5 ** np.arange(3)[::-1],
+                np.ones(8) * np.pi / 8,
+                np.pi / 8 * 1.5 ** np.arange(4),
             ]
         ),
     ]
@@ -45,9 +45,9 @@ def test_create_block_model_data(tmp_path):
         0,
         np.cumsum(
             np.r_[
-                np.pi / n_y * 1.5 ** np.arange(5)[::-1],
-                np.ones(n_y) * np.pi / n_y,
-                np.pi / n_y * 1.5 ** np.arange(6),
+                np.pi / 9 * 1.5 ** np.arange(5)[::-1],
+                np.ones(9) * np.pi / 9,
+                np.pi / 9 * 1.5 ** np.arange(6),
             ]
         ),
     ]
@@ -55,9 +55,9 @@ def test_create_block_model_data(tmp_path):
         0,
         np.cumsum(
             np.r_[
-                np.pi / n_z * 1.5 ** np.arange(7)[::-1],
-                np.ones(n_z) * np.pi / n_z,
-                np.pi / n_z * 1.5 ** np.arange(8),
+                np.pi / 10 * 1.5 ** np.arange(7)[::-1],
+                np.ones(10) * np.pi / 10,
+                np.pi / 10 * 1.5 ** np.arange(8),
             ]
         ),
     ]
@@ -66,14 +66,15 @@ def test_create_block_model_data(tmp_path):
         grid = BlockModel.create(
             workspace,
             origin=[0, 0, 0],
-            u_cell_delimiters=nodal_x,
             v_cell_delimiters=nodal_y,
             z_cell_delimiters=nodal_z,
             name=name,
             rotation=30,
             allow_move=False,
         )
+        assert grid.mask_by_extent(np.vstack([[-100, -100], [-1, -1]])) is None
 
+        grid.u_cell_delimiters = (nodal_x,)
         data = grid.add_data(
             {
                 "DataValues": {
@@ -87,11 +88,26 @@ def test_create_block_model_data(tmp_path):
             }
         )
 
+        assert grid.mask_by_extent(np.vstack([[-100, -100], [-1, -1]])) is None
         # Read the data back in from a fresh workspace
-        new_workspace = Workspace(h5file_path)
+        with Workspace(h5file_path) as new_workspace:
+            rec_obj = new_workspace.get_entity(name)[0]
+            rec_data = new_workspace.get_entity("DataValues")[0]
 
-        rec_obj = new_workspace.get_entity(name)[0]
-        rec_data = new_workspace.get_entity("DataValues")[0]
+            compare_entities(grid, rec_obj)
+            compare_entities(data, rec_data)
 
-        compare_entities(grid, rec_obj)
-        compare_entities(data, rec_data)
+        with pytest.raises(ValueError, match="Mask must be an array of shape"):
+            grid.copy(mask="abc")
+
+        # mask = np.ones(grid.n_cells, dtype=bool)
+        # mask[-2:] = False
+
+        grid_copy = grid.copy(rotation=0.0)
+
+        mask = grid_copy.mask_by_extent(np.vstack([[-100, -100], [1, 100]]))
+        assert mask.sum() == np.prod(grid.shape[1:])
+
+        grid_copy_copy = grid_copy.copy(cell_mask="abc", mask=mask)
+        assert grid_copy.n_cells == grid.n_cells
+        assert np.all(~np.isnan(grid_copy_copy.children[0].values) == mask)

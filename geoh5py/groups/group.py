@@ -74,29 +74,83 @@ class Group(Entity):
         else:
             self.comments.values = self.comments.values + [comment_dict]
 
-    def copy_from_extent(
-        self, bounds: np.ndarray, parent=None, copy_children: bool = True
-    ) -> Group | None:
+    def mask_by_extent(self, extent: np.ndarray) -> None:
         """
-        Find indices of vertices within a rectangular bounds.
-
-        :param bounds: shape(2, 2) Bounding box defined by the South-West and
-            North-East coordinates. Extents can also be provided as 3D coordinates
-            with shape(2, 3) defining the top and bottom limits.
-        :param attributes: Dictionary of attributes to clip by extent.
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
         """
-        new_entity = self.copy(parent=parent, copy_children=False)
-        for child in self.children:
-            child.copy_from_extent(
-                bounds, parent=new_entity, copy_children=copy_children
-            )
 
-        if len(new_entity.children) == 0:
-            new_entity.workspace.remove_entity(new_entity)
-            del new_entity
-            return None
+        return None
+
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Function to copy a group to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: (Optional) Create copies of all children entities along with it.
+        :param clear_cache: Clear array attributes after copy.
+        :param mask: Array of bool defining the values to keep.
+        :param kwargs: Additional keyword arguments to pass to the copy constructor.
+
+        :return entity: Registered Entity to the workspace.
+        """
+        if parent is None:
+            parent = self.parent
+
+        new_entity = parent.workspace.copy_to_parent(
+            self, parent, copy_children=False, **kwargs
+        )
+
+        if copy_children:
+            for child in self.children:
+                child.copy(
+                    parent=new_entity,
+                    copy_children=True,
+                    clear_cache=clear_cache,
+                    mask=mask,
+                )
 
         return new_entity
+
+    def copy_from_extent(
+        self,
+        extent: np.ndarray,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        **kwargs,
+    ) -> Group | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy_from_extent`.
+        """
+        copy_group = self.copy(
+            parent=parent,
+            clear_cache=clear_cache,
+            copy_children=False,
+            **kwargs,
+        )
+
+        if copy_children:
+            for child in self.children:
+                child.copy_from_extent(
+                    extent,
+                    parent=copy_group,
+                    copy_children=True,
+                    clear_cache=clear_cache,
+                )
+
+            if len(copy_group.children) == 0:
+                copy_group.workspace.remove_entity(copy_group)
+                return None
+
+        return copy_group
 
     @property
     def comments(self):
@@ -114,10 +168,27 @@ class Group(Entity):
         return self._entity_type
 
     @property
-    def extent(self):
+    def extent(self) -> np.ndarray | None:
         """
-        Bounding box 3D coordinates defining the limits of the entity.
+        Geography bounding box of the object.
+
+        :return: shape(2, 3) Bounding box defined by the bottom South-West and
+            top North-East coordinates.
         """
+        extents = []
+        for child in self.children:
+            if child.extent is not None:
+                extents.append(child.extent)
+
+        if len(extents) > 0:
+            extents = np.vstack(extents)
+            return np.vstack(
+                [
+                    np.min(extents, axis=0),
+                    np.max(extents, axis=0),
+                ]
+            )
+
         return None
 
     @classmethod

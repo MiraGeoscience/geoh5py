@@ -161,6 +161,22 @@ def merge_arrays(
     return np.r_[head, tail]
 
 
+def clear_array_attributes(entity: Entity, recursive: bool = False):
+    """
+    Clear all stashed values of attributes from an entity to free up memory.
+
+    :param entity: Entity to clear attributes from.
+    :param recursive: Clear attributes from children entities.
+    """
+    for attribute in ["vertices", "cells", "values", "prisms", "layers"]:
+        if hasattr(entity, attribute):
+            setattr(entity, f"_{attribute}", None)
+
+    if recursive:
+        for child in entity.children:
+            clear_array_attributes(child, recursive=recursive)
+
+
 def compare_entities(
     object_a, object_b, ignore: list | None = None, decimal: int = 6
 ) -> None:
@@ -366,9 +382,7 @@ def dict_mapper(
     return val
 
 
-def mask_by_extent(
-    locations: np.ndarray, extent: np.ndarray | list[list]
-) -> np.ndarray:
+def mask_by_extent(locations: np.ndarray, extent: np.ndarray) -> np.ndarray:
     """
     Find indices of locations within a rectangular extent.
 
@@ -377,14 +391,8 @@ def mask_by_extent(
         North-East corners. Extents can also be provided as 3D coordinates
         with shape(2, 3) defining the top and bottom limits.
     """
-    if isinstance(extent, list):
-        extent = np.vstack(extent)
-
     if not isinstance(extent, np.ndarray) or extent.ndim != 2:
         raise ValueError("Input 'extent' must be a 2D array-like.")
-
-    if isinstance(locations, list):
-        locations = np.vstack(locations)
 
     if not isinstance(locations, np.ndarray) or locations.ndim != 2:
         raise ValueError(
@@ -407,17 +415,24 @@ def get_attributes(entity, omit_list=(), attributes=None):
             if key[0] == "_":
                 key = key[1:]
 
-            attributes[key] = getattr(entity, key)
+            attr = getattr(entity, key)
+            attributes[key] = attr
+
     return attributes
 
 
-def overwrite_kwargs(to_overwrite: dict, kwargs_to_add: dict) -> dict:
+def xy_rotation_matrix(angle: float) -> np.ndarray:
     """
-    Overwrite kwargs with overwrite.
-    :param to_overwrite: Dictionary of kwargs to overwrite.
-    :param kwargs_to_add: Dictionary of kwargs to modify to_overwrite.
+    Rotation matrix about the z-axis.
+
+    :param angle: Rotation angle in radians.
+
+    :return rot: Rotation matrix.
     """
-    for key, value in kwargs_to_add.items():
-        if key in to_overwrite:
-            to_overwrite[key] = value
-    return to_overwrite
+    return np.array(
+        [
+            [np.cos(angle), -np.sin(angle), 0.0],
+            [np.sin(angle), np.cos(angle), 0.0],
+            [0.0, 0.0, 1.0],
+        ]
+    )

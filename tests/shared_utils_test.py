@@ -19,14 +19,10 @@ from __future__ import annotations
 
 import re
 
+import numpy as np
 import pytest
 
-from geoh5py.shared.utils import (
-    iterable,
-    iterable_message,
-    mask_by_extent,
-    overwrite_kwargs,
-)
+from geoh5py.shared.utils import iterable, iterable_message, mask_by_extent
 
 
 def test_iterable():
@@ -53,17 +49,10 @@ def test_mask_by_extent():
 
     with pytest.raises(
         ValueError,
-        match=re.escape("Input 'locations' must be an array-like"),
+        match=re.escape("Input 'extent' must be a 2D array-like"),
     ):
         mask_by_extent("abc", corners)
 
-    assert not mask_by_extent([points], corners[:2]), "Point should have been outside."
-
-
-def test_overwrite_kwargs():
-    kwargs = {"test": 8}
-    kwargs_to_overwrite = {"test": 9}
-
-    new_kwargs = overwrite_kwargs(kwargs, kwargs_to_overwrite)
-
-    assert new_kwargs["test"] == kwargs_to_overwrite["test"]
+    assert not mask_by_extent(
+        np.vstack([points]), np.vstack(corners[:2])
+    ), "Point should have been outside."

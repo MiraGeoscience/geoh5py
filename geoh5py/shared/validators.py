@@ -28,6 +28,7 @@ from uuid import UUID
 
 import numpy as np
 
+from geoh5py import Workspace
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
@@ -42,7 +43,6 @@ from geoh5py.shared.exceptions import (
     ValueValidationError,
 )
 from geoh5py.shared.utils import iterable
-from geoh5py.workspace import Workspace
 
 
 class BaseValidator(ABC):

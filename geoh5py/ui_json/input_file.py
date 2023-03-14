@@ -14,10 +14,10 @@ from copy import deepcopy
 from typing import Any
 from uuid import UUID
 
+from geoh5py import Workspace
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
 from geoh5py.shared.validators import AssociationValidator
-from geoh5py.workspace import Workspace
 
 from ..shared.utils import (
     as_str_if_uuid,

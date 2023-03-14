@@ -26,7 +26,7 @@ import numpy as np
 
 from ..data import Data, FloatData, NumericData
 from ..groups import PropertyGroup
-from ..shared.utils import merge_arrays
+from ..shared.utils import mask_by_extent, merge_arrays
 from .object_base import ObjectType
 from .points import Points
 
@@ -153,6 +153,25 @@ class Drillhole(Points):
         self.workspace.update_attribute(self, "attributes")
 
     @property
+    def extent(self) -> np.ndarray | None:
+        """
+        Geography bounding box of the object.
+
+        :return: shape(2, 3) Bounding box defined by the bottom South-West and
+            top North-East coordinates.
+        """
+        if self.collar is not None:
+            return (
+                np.repeat(
+                    np.r_[[self.collar["x"], self.collar["y"], self.collar["z"]]], 2
+                )
+                .reshape((-1, 2))
+                .T
+            )
+
+        return None
+
+    @property
     def locations(self) -> np.ndarray | None:
         """
         Lookup array of the well path in x, y, z coordinates.
@@ -167,6 +186,27 @@ class Drillhole(Points):
             ]
 
         return self._locations
+
+    def mask_by_extent(
+        self,
+        extent: np.ndarray,
+    ) -> np.ndarray | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
+
+        Uses the collar location only.
+        """
+        if not any(mask_by_extent(extent, self.extent)) and not any(
+            mask_by_extent(self.extent, extent)
+        ):
+            return None
+
+        if self.collar is not None:
+            return mask_by_extent(
+                np.c_[[self.collar["x"], self.collar["y"], self.collar["z"]]], extent
+            )
+
+        return None
 
     @property
     def planning(self) -> str:
