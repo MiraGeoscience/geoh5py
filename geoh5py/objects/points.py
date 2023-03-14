@@ -64,15 +64,15 @@ class Points(ObjectBase):
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
         """
+        if self.vertices is None:
+            return None
+
         if not any(mask_by_extent(extent, self.extent)) and not any(
             mask_by_extent(self.extent, extent)
         ):
             return None
 
-        if self.vertices is not None:
-            return mask_by_extent(self.vertices, extent)
-
-        return None
+        return mask_by_extent(self.vertices, extent)
 
     @property
     def vertices(self) -> np.ndarray | None:
