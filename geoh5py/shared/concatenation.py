@@ -19,7 +19,6 @@
 
 from __future__ import annotations
 
-import re
 import uuid
 import warnings
 from typing import TYPE_CHECKING
@@ -137,13 +136,8 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         """String identifier for the concatenated attributes."""
         if self._concat_attr_str is None:
             self._concat_attr_str = "Attributes"
-            if (
-                self.workspace.ga_version is not None
-                and "4." in self.workspace.ga_version
-            ):
-                version = re.findall(r"\d+\.\d+", self.workspace.ga_version)
-                if version and float(version[0]) >= 4.2:
-                    self._concat_attr_str = "Attributes Jsons"
+            if self.workspace.version is not None and self.workspace.version > 2.0:
+                self._concat_attr_str = "Attributes Jsons"
         return self._concat_attr_str
 
     @property

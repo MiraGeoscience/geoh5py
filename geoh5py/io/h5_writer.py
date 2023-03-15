@@ -536,16 +536,18 @@ class H5Writer:
             if entity_handle is None:
                 return
 
+            name_map = KEY_MAP[attribute]
             if isinstance(entity, Concatenator):
                 entity_handle = entity_handle["Concatenated Data"]
+
                 if (
                     attribute == "concatenated_attributes"
                     and entity.concat_attr_str == "Attributes Jsons"
                 ):
-                    KEY_MAP[attribute] = entity.concat_attr_str
+                    name_map = entity.concat_attr_str
 
-            if KEY_MAP[attribute] in entity_handle:
-                del entity_handle[KEY_MAP[attribute]]
+            if name_map in entity_handle:
+                del entity_handle[name_map]
                 entity.workspace.repack = True
 
             if values is None:
@@ -570,7 +572,7 @@ class H5Writer:
                 values = dict_mapper(values, [as_str_if_uuid])
 
                 entity_handle.create_dataset(
-                    KEY_MAP[attribute],
+                    name_map,
                     data=json.dumps(values, indent=4),
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
@@ -582,7 +584,7 @@ class H5Writer:
 
             elif isinstance(values, str):
                 entity_handle.create_dataset(
-                    KEY_MAP[attribute],
+                    name_map,
                     data=values,
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
@@ -601,7 +603,7 @@ class H5Writer:
                     out_values[np.isnan(out_values)] = entity.ndv
 
                 entity_handle.create_dataset(
-                    KEY_MAP[attribute],
+                    name_map,
                     data=out_values,
                     compression="gzip",
                     compression_opts=9,

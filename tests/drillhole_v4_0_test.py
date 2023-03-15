@@ -439,12 +439,19 @@ def test_remove_drillhole_data(tmp_path):
 
 
 def test_create_drillhole_data_v4_2(tmp_path):
-    h5file_path = tmp_path / r"test_create_concatenated_v4_2.geoh5"
-    dh_group, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
+    h5file_path = tmp_path / r"test_create_concatenated_v4_2_v2_1.geoh5"
+    dh_group, workspace = create_drillholes(h5file_path, version=2.1, ga_version="4.2")
 
     with workspace.open():
         assert dh_group.workspace.ga_version == "4.2"
         assert dh_group.concat_attr_str == "Attributes Jsons"
+
+    h5file_path = tmp_path / r"test_create_concatenated_v4_2_v2_0.geoh5"
+    dh_group, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
+    with workspace.open():
+        assert dh_group.workspace.ga_version == "4.2"
+        assert dh_group.workspace.version == 2.0
+        assert dh_group.concat_attr_str == "Attributes"
 
 
 def test_copy_drillhole_group(tmp_path):
