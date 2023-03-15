@@ -382,6 +382,34 @@ def dict_mapper(
     return val
 
 
+def box_intersect(
+    extent_a: np.ndarray, extent_b: np.ndarray, return_array=False
+) -> bool | np.ndarray:
+    """
+    Compute the intersection of two axis-aligned bounding extents defined by their
+    bottom south-west corner and top north-east corner.
+
+    :param extent_a: First extent
+    :param extent_b: Second extent
+    :param return_array: Return the intersection extent
+
+    :return: True if the box extents intersect,
+        or intersection extent coordinates if `return_array` is True.
+    """
+    min_ext = []
+    max_ext = []
+    for comp_a, comp_b in zip(extent_a.T, extent_b.T):
+        min_ext.append(max(min(comp_a[0], comp_a[1]), min(comp_b[0], comp_b[1])))
+        max_ext.append(min(max(comp_a[0], comp_a[1]), max(comp_b[0], comp_b[1])))
+
+    overlap = np.array([min_ext, max_ext])
+
+    if return_array:
+        return overlap
+
+    return not (np.diff(overlap, axis=0) < 0).any()
+
+
 def mask_by_extent(locations: np.ndarray, extent: np.ndarray) -> np.ndarray:
     """
     Find indices of locations within a rectangular extent.

@@ -26,7 +26,7 @@ import numpy as np
 
 from ..data import Data, FloatData, NumericData
 from ..groups import PropertyGroup
-from ..shared.utils import mask_by_extent, merge_arrays
+from ..shared.utils import box_intersect, mask_by_extent, merge_arrays
 from .object_base import ObjectType
 from .points import Points
 
@@ -196,9 +196,7 @@ class Drillhole(Points):
 
         Uses the collar location only.
         """
-        if not any(mask_by_extent(extent, self.extent)) and not any(
-            mask_by_extent(self.extent, extent)
-        ):
+        if self.extent is None or not box_intersect(self.extent, extent):
             return None
 
         if self.collar is not None:

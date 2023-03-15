@@ -22,7 +22,12 @@ import re
 import numpy as np
 import pytest
 
-from geoh5py.shared.utils import iterable, iterable_message, mask_by_extent
+from geoh5py.shared.utils import (
+    box_intersect,
+    iterable,
+    iterable_message,
+    mask_by_extent,
+)
 
 
 def test_iterable():
@@ -56,3 +61,36 @@ def test_mask_by_extent():
     assert not mask_by_extent(
         np.vstack([points]), np.vstack(corners[:2])
     ), "Point should have been outside."
+
+
+def test_box_intersect():
+    box_a = np.vstack([[-2, -2, -2], [2, 2, 2]])
+    # One corner inside
+    box_b = np.vstack([[0, 0, 0], [4, 4, 4]])
+    intersect = box_intersect(box_a, box_b, return_array=True)
+    np.testing.assert_array_almost_equal(intersect, np.vstack([[0, 0, 0], [2, 2, 2]]))
+    assert (np.diff(intersect, axis=0) > 0).all()
+    # One face inside
+    box_b = np.vstack([[-1, -1, 0], [1, 1, 4]])
+    intersect = box_intersect(box_a, box_b, return_array=True)
+    np.testing.assert_array_almost_equal(intersect, np.vstack([[-1, -1, 0], [1, 1, 2]]))
+    assert (np.diff(intersect, axis=0) > 0).all()
+    # All inside
+    box_b = np.vstack([[-1, -1, -1], [1, 1, 1]])
+    intersect = box_intersect(box_a, box_b, return_array=True)
+    np.testing.assert_array_almost_equal(
+        intersect, np.vstack([[-1, -1, -1], [1, 1, 1]])
+    )
+    assert (np.diff(intersect, axis=0) > 0).all()
+    # All outside
+    box_b = np.vstack([[1, 1, 4], [2, 2, 5]])
+    intersect = box_intersect(box_a, box_b)
+    assert not intersect
+
+    # Repeat in 2D
+    box_a = np.vstack([[-2, -2], [2, 2]])
+    # One corner inside
+    box_b = np.vstack([[0, 0], [4, 4]])
+    intersect = box_intersect(box_a, box_b, return_array=True)
+    np.testing.assert_array_almost_equal(intersect, np.vstack([[0, 0], [2, 2]]))
+    assert (np.diff(intersect, axis=0) > 0).all()

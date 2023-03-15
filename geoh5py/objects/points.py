@@ -22,7 +22,7 @@ import warnings
 
 import numpy as np
 
-from ..shared.utils import mask_by_extent
+from ..shared.utils import box_intersect, mask_by_extent
 from .object_base import ObjectBase, ObjectType
 
 
@@ -64,12 +64,7 @@ class Points(ObjectBase):
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
         """
-        if self.vertices is None:
-            return None
-
-        if not any(mask_by_extent(extent, self.extent)) and not any(
-            mask_by_extent(self.extent, extent)
-        ):
+        if self.extent is None or not box_intersect(self.extent, extent):
             return None
 
         return mask_by_extent(self.vertices, extent)
