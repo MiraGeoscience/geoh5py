@@ -403,10 +403,10 @@ def box_intersect(extent_a: np.ndarray, extent_b: np.ndarray) -> bool:
             )
 
     for comp_a, comp_b in zip(extent_a.T, extent_b.T):
-        min_ext = max(min(comp_a[0], comp_a[1]), min(comp_b[0], comp_b[1]))
-        max_ext = min(max(comp_a[0], comp_a[1]), max(comp_b[0], comp_b[1]))
+        min_ext = max(comp_a[0], comp_b[0])
+        max_ext = min(comp_a[1], comp_b[1])
 
-        if (max_ext - min_ext) < 0:
+        if min_ext > max_ext:
             return False
 
     return True
