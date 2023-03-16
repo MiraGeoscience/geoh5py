@@ -31,7 +31,7 @@ from PIL.TiffImagePlugin import TiffImageFile
 from .. import objects
 from ..data import FilenameData
 from ..shared.conversion import GeoImageConversion
-from ..shared.utils import mask_by_extent
+from ..shared.utils import box_intersect
 from .object_base import ObjectBase, ObjectType
 
 
@@ -277,9 +277,7 @@ class GeoImage(ObjectBase):
 
         Uses the four corners of the image to determine overlap with the extent window.
         """
-        if not any(mask_by_extent(extent, self.extent)) and not any(
-            mask_by_extent(self.extent, extent)
-        ):
+        if self.extent is None or not box_intersect(self.extent, extent):
             return None
 
         if self.vertices is not None:

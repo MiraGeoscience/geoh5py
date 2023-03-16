@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..shared.utils import mask_by_extent
+from ..shared.utils import box_intersect, mask_by_extent
 from .object_base import ObjectBase
 
 if TYPE_CHECKING:
@@ -140,10 +140,7 @@ class GridObject(ObjectBase, ABC):
 
         Applied to object's centroids.
         """
-        if self.extent is None or (
-            not any(mask_by_extent(extent, self.extent))
-            and not any(mask_by_extent(self.extent, extent))
-        ):
+        if self.extent is None or not box_intersect(self.extent, extent):
             return None
 
         if self.centroids is not None:

@@ -382,6 +382,36 @@ def dict_mapper(
     return val
 
 
+def box_intersect(extent_a: np.ndarray, extent_b: np.ndarray) -> bool:
+    """
+    Compute the intersection of two axis-aligned bounding extents defined by their
+    arrays of minimum and maximum bounds in N-D space.
+
+    :param extent_a: First extent or shape (2, N)
+    :param extent_b: Second extent or shape (2, N)
+
+    :return: Logic if the box extents intersect along all dimensions.
+    """
+    for extent in [extent_a, extent_b]:
+        if not isinstance(extent, np.ndarray) or extent.ndim != 2:
+            raise TypeError("Input extents must be 2D numpy.ndarrays.")
+
+        if extent.shape[0] != 2 or not np.all(extent[0, :] <= extent[1, :]):
+            raise ValueError(
+                "Extents must be of shape (2, N) containing the minimum and maximum "
+                "bounds in nd-space on the first and second row respectively."
+            )
+
+    for comp_a, comp_b in zip(extent_a.T, extent_b.T):
+        min_ext = max(comp_a[0], comp_b[0])
+        max_ext = min(comp_a[1], comp_b[1])
+
+        if min_ext > max_ext:
+            return False
+
+    return True
+
+
 def mask_by_extent(locations: np.ndarray, extent: np.ndarray) -> np.ndarray:
     """
     Find indices of locations within a rectangular extent.
