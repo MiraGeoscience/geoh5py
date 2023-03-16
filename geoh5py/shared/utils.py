@@ -387,15 +387,25 @@ def box_intersect(
 ) -> bool | np.ndarray:
     """
     Compute the intersection of two axis-aligned bounding extents defined by their
-    bottom south-west corner and top north-east corner.
+    arrays of minimum and maximum bounds in ND-space.
 
-    :param extent_a: First extent
-    :param extent_b: Second extent
+    :param extent_a: First extent or shape (2, N)
+    :param extent_b: Second extent or shape (2, N)
     :param return_array: Return the intersection extent
 
-    :return: True if the box extents intersect,
-        or intersection extent coordinates if `return_array` is True.
+    :return: True if the box extents intersect, or if `return_array` is True
+        returns the intersection extent array with same shape as the input extents.
     """
+    for extent in [extent_a, extent_b]:
+        if not isinstance(extent, np.ndarray) or extent.ndim != 2:
+            raise TypeError("Input extents must be a 2D numpy.ndarray.")
+
+        if extent.shape[0] != 2 or not np.all(extent[0, :] <= extent[1, :]):
+            raise ValueError(
+                "Extents must be of shape (2, N) containing the minimum and maximum "
+                "bounds in nd-space on the first and second row respectively."
+            )
+
     min_ext = []
     max_ext = []
     for comp_a, comp_b in zip(extent_a.T, extent_b.T):

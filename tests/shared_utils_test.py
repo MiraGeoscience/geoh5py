@@ -67,6 +67,19 @@ def test_box_intersect():
     box_a = np.vstack([[-2, -2, -2], [2, 2, 2]])
     # One corner inside
     box_b = np.vstack([[0, 0, 0], [4, 4, 4]])
+
+    with pytest.raises(
+        TypeError,
+        match=re.escape("Input extents must be a 2D numpy.ndarray."),
+    ):
+        box_intersect(np.r_[1], box_b)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Extents must be of shape (2, N) containing the minimum and"),
+    ):
+        box_intersect(box_a, box_b[::-1, :])
+
     intersect = box_intersect(box_a, box_b, return_array=True)
     np.testing.assert_array_almost_equal(intersect, np.vstack([[0, 0, 0], [2, 2, 2]]))
     assert (np.diff(intersect, axis=0) > 0).all()
