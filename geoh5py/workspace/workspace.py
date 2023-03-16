@@ -103,7 +103,7 @@ class Workspace(AbstractContextManager):
         self._mode = mode
         self._distance_unit = "meter"
         self._ga_version = "1"
-        self._version = 2.0
+        self._version = 2.1
         self._name = "GEOSCIENCE"
         self._types: dict[uuid.UUID, ReferenceType[EntityType]] = {}
         self._groups: dict[uuid.UUID, ReferenceType[group.Group]] = {}
