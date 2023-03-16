@@ -382,23 +382,19 @@ def dict_mapper(
     return val
 
 
-def box_intersect(
-    extent_a: np.ndarray, extent_b: np.ndarray, return_array=False
-) -> bool | np.ndarray:
+def box_intersect(extent_a: np.ndarray, extent_b: np.ndarray) -> bool:
     """
     Compute the intersection of two axis-aligned bounding extents defined by their
-    arrays of minimum and maximum bounds in ND-space.
+    arrays of minimum and maximum bounds in N-D space.
 
     :param extent_a: First extent or shape (2, N)
     :param extent_b: Second extent or shape (2, N)
-    :param return_array: Return the intersection extent
 
-    :return: True if the box extents intersect, or if `return_array` is True
-        returns the intersection extent array with same shape as the input extents.
+    :return: Logic if the box extents intersect along all dimensions.
     """
     for extent in [extent_a, extent_b]:
         if not isinstance(extent, np.ndarray) or extent.ndim != 2:
-            raise TypeError("Input extents must be a 2D numpy.ndarray.")
+            raise TypeError("Input extents must be 2D numpy.ndarrays.")
 
         if extent.shape[0] != 2 or not np.all(extent[0, :] <= extent[1, :]):
             raise ValueError(
@@ -406,18 +402,14 @@ def box_intersect(
                 "bounds in nd-space on the first and second row respectively."
             )
 
-    min_ext = []
-    max_ext = []
     for comp_a, comp_b in zip(extent_a.T, extent_b.T):
-        min_ext.append(max(min(comp_a[0], comp_a[1]), min(comp_b[0], comp_b[1])))
-        max_ext.append(min(max(comp_a[0], comp_a[1]), max(comp_b[0], comp_b[1])))
+        min_ext = max(min(comp_a[0], comp_a[1]), min(comp_b[0], comp_b[1]))
+        max_ext = min(max(comp_a[0], comp_a[1]), max(comp_b[0], comp_b[1]))
 
-    overlap = np.array([min_ext, max_ext])
+        if (max_ext - min_ext) < 0:
+            return False
 
-    if return_array:
-        return overlap
-
-    return not (np.diff(overlap, axis=0) < 0).any()
+    return True
 
 
 def mask_by_extent(locations: np.ndarray, extent: np.ndarray) -> np.ndarray:

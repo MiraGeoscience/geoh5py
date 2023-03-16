@@ -63,47 +63,63 @@ def test_mask_by_extent():
     ), "Point should have been outside."
 
 
-def test_box_intersect():
+@pytest.mark.parametrize(
+    "box_a, box_b",
+    [
+        (np.vstack([[-2, -2, -2], [2, 2, 2]]), np.vstack([[0, 0, 0], [4, 4, 4]])),
+        (np.vstack([[-2, -2], [2, 2]]), np.vstack([[0, 0], [4, 4]])),
+    ],
+)
+def test_box_intersect_corner(box_a, box_b):
+    assert box_intersect(box_a, box_b)
+
+
+@pytest.mark.parametrize(
+    "box_a, box_b",
+    [
+        (np.vstack([[-2, -2, -2], [2, 2, 2]]), np.vstack([[-1, -1, 0], [1, 1, 4]])),
+        (np.vstack([[-2, -2], [2, 2]]), np.vstack([[-1, -1], [1, 1]])),
+    ],
+)
+def test_box_intersect_face(box_a, box_b):
+    assert box_intersect(box_a, box_b)
+
+
+@pytest.mark.parametrize(
+    "box_a, box_b",
+    [
+        (np.vstack([[-2, -2, -2], [2, 2, 2]]), np.vstack([[-1, -1, -1], [1, 1, 1]])),
+        (np.vstack([[-2, -2], [2, 2]]), np.vstack([[-1, -1], [1, 1]])),
+    ],
+)
+def test_box_intersect_inside(box_a, box_b):
+    assert box_intersect(box_a, box_b)
+
+
+@pytest.mark.parametrize(
+    "box_a, box_b",
+    [
+        (np.vstack([[-2, -2, -2], [2, 2, 2]]), np.vstack([[1, 1, 4], [2, 2, 5]])),
+        (np.vstack([[-2, -2], [2, 2]]), np.vstack([[1, 4], [2, 5]])),
+    ],
+)
+def test_box_intersect_disjoint(box_a, box_b):
+    assert not box_intersect(box_a, box_b)
+
+
+def test_box_intersect_input():
     box_a = np.vstack([[-2, -2, -2], [2, 2, 2]])
     # One corner inside
     box_b = np.vstack([[0, 0, 0], [4, 4, 4]])
 
     with pytest.raises(
         TypeError,
-        match=re.escape("Input extents must be a 2D numpy.ndarray."),
+        match=re.escape("Input extents must be 2D numpy.ndarrays."),
     ):
         box_intersect(np.r_[1], box_b)
 
     with pytest.raises(
         ValueError,
-        match=re.escape("Extents must be of shape (2, N) containing the minimum and"),
+        match=re.escape("Extents must be of shape (2, N) containing the minimum"),
     ):
         box_intersect(box_a, box_b[::-1, :])
-
-    intersect = box_intersect(box_a, box_b, return_array=True)
-    np.testing.assert_array_almost_equal(intersect, np.vstack([[0, 0, 0], [2, 2, 2]]))
-    assert (np.diff(intersect, axis=0) > 0).all()
-    # One face inside
-    box_b = np.vstack([[-1, -1, 0], [1, 1, 4]])
-    intersect = box_intersect(box_a, box_b, return_array=True)
-    np.testing.assert_array_almost_equal(intersect, np.vstack([[-1, -1, 0], [1, 1, 2]]))
-    assert (np.diff(intersect, axis=0) > 0).all()
-    # All inside
-    box_b = np.vstack([[-1, -1, -1], [1, 1, 1]])
-    intersect = box_intersect(box_a, box_b, return_array=True)
-    np.testing.assert_array_almost_equal(
-        intersect, np.vstack([[-1, -1, -1], [1, 1, 1]])
-    )
-    assert (np.diff(intersect, axis=0) > 0).all()
-    # All outside
-    box_b = np.vstack([[1, 1, 4], [2, 2, 5]])
-    intersect = box_intersect(box_a, box_b)
-    assert not intersect
-
-    # Repeat in 2D
-    box_a = np.vstack([[-2, -2], [2, 2]])
-    # One corner inside
-    box_b = np.vstack([[0, 0], [4, 4]])
-    intersect = box_intersect(box_a, box_b, return_array=True)
-    np.testing.assert_array_almost_equal(intersect, np.vstack([[0, 0], [2, 2]]))
-    assert (np.diff(intersect, axis=0) > 0).all()
