@@ -173,15 +173,18 @@ class Entity(ABC):
         return self._clipping_ids
 
     @abstractmethod
-    def mask_by_extent(self, extent: np.ndarray) -> np.ndarray | None:
+    def mask_by_extent(
+        self, extent: np.ndarray, inverse: bool = False
+    ) -> np.ndarray | None:
         """
         Get a mask array from coordinate extent.
 
-        :param extent: :Bounding box extent coordinates defined by either:
+        :param extent: Bounding box extent coordinates defined by either:
             - obj:`numpy.ndarray` of shape (2, 3)
                 3D coordinate: [[west, south, bottom], [east, north, top]]
             - obj:`numpy.ndarray` of shape (2, 2)
                 Horizontal coordinates: [[west, south], [east, north]].
+        :param inverse: Return the complement of the mask extent. Default to False
 
         :return: Array of bool defining the vertices or cell centers
             within the mask extent, or None if no intersection.
@@ -238,6 +241,7 @@ class Entity(ABC):
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
+        inverse: bool = False,
         **kwargs,
     ) -> Entity | None:
         """
@@ -249,11 +253,12 @@ class Entity(ABC):
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: (Optional) Create copies of all children entities along with it.
         :param clear_cache: Clear array attributes after copy.
+        :param inverse: Keep the inverse (clip) of the extent selection.
         :param kwargs: Additional keyword arguments to pass to the copy constructor.
 
         :return entity: Registered Entity to the workspace.
         """
-        indices = self.mask_by_extent(extent)
+        indices = self.mask_by_extent(extent, inverse=inverse)
         if indices is None:
             return None
 

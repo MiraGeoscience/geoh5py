@@ -188,8 +188,7 @@ class Drillhole(Points):
         return self._locations
 
     def mask_by_extent(
-        self,
-        extent: np.ndarray,
+        self, extent: np.ndarray, inverse: bool = False
     ) -> np.ndarray | None:
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
@@ -201,7 +200,9 @@ class Drillhole(Points):
 
         if self.collar is not None:
             return mask_by_extent(
-                np.c_[[self.collar["x"], self.collar["y"], self.collar["z"]]], extent
+                np.c_[[self.collar["x"], self.collar["y"], self.collar["z"]]],
+                extent,
+                inverse=inverse,
             )
 
         return None

@@ -146,6 +146,7 @@ class Grid2D(GridObject):
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
+        inverse: bool = False,
         **kwargs,
     ) -> Grid2D | None:
         """
@@ -185,6 +186,10 @@ class Grid2D(GridObject):
         )
 
         indices = np.kron(v_ind, u_ind).flatten()
+
+        if inverse:
+            indices = ~indices
+
         if not np.any(indices):
             return None
 

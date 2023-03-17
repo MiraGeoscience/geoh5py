@@ -74,7 +74,7 @@ class Group(Entity):
         else:
             self.comments.values = self.comments.values + [comment_dict]
 
-    def mask_by_extent(self, extent: np.ndarray) -> None:
+    def mask_by_extent(self, extent: np.ndarray, inverse: bool = False) -> None:
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
         """
@@ -125,6 +125,7 @@ class Group(Entity):
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
+        inverse: bool = False,
         **kwargs,
     ) -> Group | None:
         """
@@ -144,6 +145,7 @@ class Group(Entity):
                     parent=copy_group,
                     copy_children=True,
                     clear_cache=clear_cache,
+                    inverse=inverse,
                 )
 
             if len(copy_group.children) == 0:

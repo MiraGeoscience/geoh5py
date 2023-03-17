@@ -58,8 +58,7 @@ class Points(ObjectBase):
         return None
 
     def mask_by_extent(
-        self,
-        extent: np.ndarray,
+        self, extent: np.ndarray, inverse: bool = False
     ) -> np.ndarray | None:
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
@@ -67,7 +66,7 @@ class Points(ObjectBase):
         if self.extent is None or not box_intersect(self.extent, extent):
             return None
 
-        return mask_by_extent(self.vertices, extent)
+        return mask_by_extent(self.vertices, extent, inverse=inverse)
 
     @property
     def vertices(self) -> np.ndarray | None:

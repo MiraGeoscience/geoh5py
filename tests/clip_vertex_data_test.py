@@ -21,7 +21,7 @@ from __future__ import annotations
 import numpy as np
 
 from geoh5py.groups import ContainerGroup
-from geoh5py.objects import Curve, Points
+from geoh5py.objects import Curve, Points, Surface
 from geoh5py.workspace import Workspace
 
 
@@ -62,10 +62,12 @@ def test_clip_point_data(tmp_path):
 
 def test_clip_curve_data(tmp_path):
     # Generate a random cloud of points
-    vertices = np.random.randn(100, 3)
-    extent = np.c_[
-        np.percentile(vertices, 10, axis=0), np.percentile(vertices, 90, axis=0)
-    ].T
+    x_loc = np.arange(0, 100)
+    y_loc = np.random.randn(100)
+    z_loc = np.random.randn(100)
+    vertices = np.c_[x_loc, y_loc, z_loc]
+
+    extent = np.vstack([[9.5, -100, -100], [97.5, 100, 100]])
 
     clippings = np.all(
         np.c_[
@@ -74,6 +76,7 @@ def test_clip_curve_data(tmp_path):
         ],
         axis=1,
     )
+
     h5file_path = tmp_path / r"testClipCurve.geoh5"
     with Workspace(h5file_path) as workspace:
         curve = Curve.create(workspace, vertices=vertices, allow_move=False)
@@ -97,8 +100,8 @@ def test_clip_curve_data(tmp_path):
             assert np.all(clipped_d.values == data[0].values[clippings])
             assert len(clipped_c.values) == clipped_pts.n_cells
 
-    # Repeat with 2D bounds
-    extent = extent[:, :2]
+    # Repeat with 2D bounds - single point left
+    extent = np.vstack([[-1, -100], [0.5, 100]])
     clippings = np.all(
         np.c_[
             np.all(vertices >= np.r_[extent[0, :], -np.inf], axis=1),
@@ -109,11 +112,42 @@ def test_clip_curve_data(tmp_path):
     with workspace.open():
         with Workspace(tmp_path / r"testClipPoints_copy2D.geoh5") as new_workspace:
             clipped_pts = curve.copy_from_extent(parent=new_workspace, extent=extent)
-            clipped_d = clipped_pts.get_data("VertexValues")[0]
-            clipped_c = clipped_pts.get_data("CellValues")[0]
-            assert clipped_pts.n_vertices == clippings.sum()
-            assert np.all(clipped_d.values == data[0].values[clippings])
-            assert len(clipped_c.values) == clipped_pts.n_cells
+            assert clipped_pts is None
+
+
+def test_clip_surface(tmp_path):
+    vertices = np.vstack(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [1.0, 1.0, 0.0],
+            [2.0, 0.0, 0.0],
+        ]
+    )
+    cells = np.vstack(
+        [
+            [0, 1, 2],
+            [1, 3, 2],
+        ]
+    )
+    h5file_path = tmp_path / r"testClipSurface.geoh5"
+    with Workspace(h5file_path) as workspace:
+        surf = Surface.create(workspace, vertices=vertices, cells=cells)
+
+        # Clip center point, no cells left
+        surf_copy = surf.copy_from_extent(
+            parent=workspace, extent=np.array([[0.5, -0.5], [1.5, 0.5]]), inverse=True
+        )
+
+        assert surf_copy is None
+
+        # Clip one point of triangle, one cell left
+        surf_copy = surf.copy_from_extent(
+            parent=workspace, extent=np.array([[-0.5, -0.5], [0.5, 0.5]]), inverse=True
+        )
+
+        assert len(surf_copy.cells) == 1
+        assert np.sum(surf_copy.vertices - vertices[1:, :]) == 0
 
 
 def test_clip_groups(tmp_path):

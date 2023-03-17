@@ -52,7 +52,7 @@ class CellObject(Points, ABC):
     def mask_by_extent(
         self,
         extent: np.ndarray,
-        invert: bool = False,
+        inverse: bool = False,
     ) -> np.ndarray | None:
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
@@ -60,7 +60,7 @@ class CellObject(Points, ABC):
         if self.extent is None or not box_intersect(self.extent, extent):
             return None
 
-        vert_mask = mask_by_extent(self.vertices, extent, invert=invert)
+        vert_mask = mask_by_extent(self.vertices, extent, inverse=inverse)
 
         # Check for orphan vertices
         if self.cells is not None:
