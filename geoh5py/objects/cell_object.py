@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..data import Data, DataAssociationEnum
+from ..shared.utils import box_intersect, mask_by_extent
 from .points import Points
 
 if TYPE_CHECKING:
@@ -47,6 +48,31 @@ class CellObject(Points, ABC):
     @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:
         """Default type uid."""
+
+    def mask_by_extent(
+        self,
+        extent: np.ndarray,
+        invert: bool = False,
+    ) -> np.ndarray | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
+        """
+        if self.extent is None or not box_intersect(self.extent, extent):
+            return None
+
+        vert_mask = mask_by_extent(self.vertices, extent, invert=invert)
+
+        # Check for orphan vertices
+        if self.cells is not None:
+            cell_mask = np.all(vert_mask[self.cells], axis=1)
+            orphan_mask = np.zeros_like(vert_mask, dtype=bool)
+            orphan_mask[self.cells[cell_mask].flatten()] = True
+            vert_mask &= orphan_mask
+
+        if ~np.any(vert_mask):
+            return None
+
+        return vert_mask
 
     def remove_cells(self, indices: list[int] | np.ndarray, clear_cache: bool = False):
         """
