@@ -94,7 +94,18 @@ class Data(Entity):
             and self.values is not None
             and mask.shape == self.values.shape
         ):
-            kwargs.update({"values": self.values[mask]})
+            n_values = (
+                parent.n_cells
+                if self.association is DataAssociationEnum.CELL
+                else parent.n_vertices
+            )
+
+            if n_values < self.values.shape[0]:
+                kwargs.update({"values": self.values[mask]})
+            else:
+                values = np.ones_like(self.values) * np.nan
+                values[mask] = self.values[mask]
+                kwargs.update({"values": values})
 
         new_entity = parent.workspace.copy_to_parent(
             self,

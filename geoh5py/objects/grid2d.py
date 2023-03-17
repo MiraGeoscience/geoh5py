@@ -187,33 +187,34 @@ class Grid2D(GridObject):
 
         indices = np.kron(v_ind, u_ind).flatten()
 
-        if inverse:
-            indices = ~indices
-
         if not np.any(indices):
             return None
 
-        assert self.u_cell_size is not None
-        assert self.v_cell_size is not None
+        if not inverse:
+            assert self.u_cell_size is not None
+            assert self.v_cell_size is not None
 
-        delta_orig = np.c_[
-            np.argmax(u_ind) * self.u_cell_size,
-            np.argmax(v_ind) * self.v_cell_size,
-            0.0,
-        ]
-        rot = xy_rotation_matrix(np.deg2rad(self.rotation))
-        delta_orig = np.dot(rot, delta_orig.T).T
-        kwargs.update(
-            {
-                "origin": np.r_[
-                    origin[0] + delta_orig[0, 0],
-                    origin[1] + delta_orig[0, 1],
-                    origin[2],
-                ],
-                "u_count": np.sum(u_ind),
-                "v_count": np.sum(v_ind),
-            }
-        )
+            delta_orig = np.c_[
+                np.argmax(u_ind) * self.u_cell_size,
+                np.argmax(v_ind) * self.v_cell_size,
+                0.0,
+            ]
+            rot = xy_rotation_matrix(np.deg2rad(self.rotation))
+            delta_orig = np.dot(rot, delta_orig.T).T
+            kwargs.update(
+                {
+                    "origin": np.r_[
+                        origin[0] + delta_orig[0, 0],
+                        origin[1] + delta_orig[0, 1],
+                        origin[2],
+                    ],
+                    "u_count": np.sum(u_ind),
+                    "v_count": np.sum(v_ind),
+                }
+            )
+        else:
+            indices = ~indices
+
         return super(GridObject, self).copy(
             parent=parent,
             copy_children=copy_children,
