@@ -22,7 +22,7 @@ import warnings
 
 import numpy as np
 
-from ..shared.utils import mask_by_extent
+from ..shared.utils import box_intersect, mask_by_extent
 from .object_base import ObjectBase, ObjectType
 
 
@@ -44,17 +44,30 @@ class Points(ObjectBase):
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
 
-    def clip_by_extent(self, bounds: np.ndarray) -> Points | None:
+    @property
+    def extent(self) -> np.ndarray | None:
         """
-        Find indices of vertices within a rectangular bounds.
+        Geography bounding box of the object.
 
-        :param bounds: shape(2, 2) Bounding box defined by the South-West and
-            North-East coordinates. Extents can also be provided as 3D coordinates
-            with shape(2, 3) defining the top and bottom limits.
+        :return: shape(2, 3) Bounding box defined by the bottom South-West and
+            top North-East coordinates.
         """
-        indices = mask_by_extent(self.vertices, bounds)
-        self.remove_vertices(~indices)
-        return self
+        if self.vertices is not None:
+            return np.c_[self.vertices.min(axis=0), self.vertices.max(axis=0)].T
+
+        return None
+
+    def mask_by_extent(
+        self,
+        extent: np.ndarray,
+    ) -> np.ndarray | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
+        """
+        if self.extent is None or not box_intersect(self.extent, extent):
+            return None
+
+        return mask_by_extent(self.vertices, extent)
 
     @property
     def vertices(self) -> np.ndarray | None:
@@ -88,15 +101,28 @@ class Points(ObjectBase):
                 dtype=[("x", "<f8"), ("y", "<f8"), ("z", "<f8")],
             )
         )
-        self._extent = None
+
         self.workspace.update_attribute(self, "vertices")
 
-    def remove_vertices(self, indices: list[int]):
-        """Safely remove vertices and corresponding data entries."""
+    def remove_vertices(
+        self, indices: list[int] | np.ndarray, clear_cache: bool = False
+    ):
+        """
+        Safely remove vertices and corresponding data entries.
+
+        :param indices: Indices of vertices to remove.
+        :param clear_cache: Clear cached data and attributes.
+        """
 
         if self._vertices is None:
             warnings.warn("No vertices to be removed.", UserWarning)
             return
+
+        if isinstance(indices, list):
+            indices = np.array(indices)
+
+        if not isinstance(indices, np.ndarray):
+            raise TypeError("Indices must be a list or numpy array.")
 
         if (
             isinstance(self.vertices, np.ndarray)
@@ -107,4 +133,33 @@ class Points(ObjectBase):
         vertices = np.delete(self.vertices, indices, axis=0)
         self._vertices = None
         self.vertices = vertices
-        self.remove_children_values(indices, "VERTEX")
+        self.remove_children_values(indices, "VERTEX", clear_cache=clear_cache)
+
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy`.
+        """
+        if mask is not None and self.vertices is not None:
+            if not isinstance(mask, np.ndarray) or mask.shape != (
+                self.vertices.shape[0],
+            ):
+                raise ValueError("Mask must be an array of shape (n_vertices,).")
+
+            kwargs.update({"vertices": self.vertices[mask]})
+
+        new_entity = super().copy(
+            parent=parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            mask=mask,
+            **kwargs,
+        )
+
+        return new_entity

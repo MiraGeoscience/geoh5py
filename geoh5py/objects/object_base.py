@@ -20,7 +20,6 @@
 from __future__ import annotations
 
 import uuid
-import warnings
 from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -33,7 +32,7 @@ from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
 from ..shared.conversion import BaseConversion
-from ..shared.utils import mask_by_extent
+from ..shared.utils import clear_array_attributes
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
@@ -55,7 +54,6 @@ class ObjectBase(Entity):
         assert object_type is not None
         self._comments = None
         self._entity_type = object_type
-        self._extent = None
         self._last_focus = "None"
         self._property_groups: list[PropertyGroup] | None = None
         # self._clipping_ids: list[uuid.UUID] = []
@@ -214,46 +212,77 @@ class ObjectBase(Entity):
 
         return None
 
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Function to copy an entity to a different parent entity.
+
+        :param parent: New parent for the copied object.
+        :param copy_children: Copy children entities.
+        :param clear_cache: Clear cache of data values.
+        :param mask: Array of indices to sub-sample the input entity.
+        :param kwargs: Additional keyword arguments.
+
+        :return: New copy of the input entity.
+        """
+
+        if parent is None:
+            parent = self.parent
+
+        new_object = self.workspace.copy_to_parent(
+            self,
+            parent,
+            clear_cache=clear_cache,
+            **kwargs,
+        )
+
+        if copy_children:
+            children_map = {}
+            for child in self.children:
+                if isinstance(child, Data) and child.association in (
+                    DataAssociationEnum.VERTEX,
+                    DataAssociationEnum.CELL,
+                ):
+                    child_copy = child.copy(
+                        parent=new_object,
+                        clear_cache=clear_cache,
+                        mask=mask,
+                    )
+                else:
+                    child_copy = self.workspace.copy_to_parent(
+                        child, new_object, clear_cache=clear_cache
+                    )
+                children_map[child.uid] = child_copy.uid
+
+            if self.property_groups:
+                self.workspace.copy_property_groups(
+                    new_object, self.property_groups, children_map
+                )
+                new_object.workspace.update_attribute(new_object, "property_groups")
+
+        return new_object
+
     @classmethod
     @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:
-        ...
-
-    def copy_from_extent(
-        self, bounds: np.ndarray, parent=None, copy_children: bool = True
-    ) -> ObjectBase | None:
         """
-        Find indices of vertices within a rectangular bounds.
-
-        :param bounds: shape(2, 2) Bounding box defined by the South-West and
-            North-East coordinates. Extents can also be provided as 3D coordinates
-            with shape(2, 3) defining the top and bottom limits.
-        :param attributes: Dictionary of attributes to clip by extent.
-        """
-        if not any(mask_by_extent(bounds, self.extent)) and not any(
-            mask_by_extent(self.extent, bounds)
-        ):
-            return None
-
-        new_entity = self.copy(parent=parent, copy_children=copy_children)
-        return new_entity.clip_by_extent(bounds)
-
-    def clip_by_extent(self, bounds: np.ndarray) -> ObjectBase | None:
-        """
-        Find indices of cells within a rectangular bounds.
-
-        :param bounds: shape(2, 2) Bounding box defined by the South-West and
-            North-East coordinates. Extents can also be provided as 3D coordinates
-            with shape(2, 3) defining the top and bottom limits.
-        :param attributes: Dictionary of attributes to clip by extent.
+        Default entity type unique identifier
         """
 
-        # TODO Clip entity within bounds.
-        warnings.warn(
-            f"Method 'clip_by_extent' for entity {type(self)} not fully implemented. "
-            f"Bounds {bounds} ignored."
-        )
-        return self
+    @abstractmethod
+    def mask_by_extent(
+        self,
+        extent: np.ndarray,
+    ) -> np.ndarray | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
+        """
 
     @property
     def entity_type(self) -> ObjectType:
@@ -263,20 +292,18 @@ class ObjectBase(Entity):
         return self._entity_type
 
     @property
+    @abstractmethod
     def extent(self):
-        if self._extent is None:
-            locations = getattr(self, "vertices", None)
-            if locations is None:
-                locations = getattr(self, "centroids", None)
+        """
+        Geography bounding box of the object.
 
-            if locations is not None:
-                self._extent = np.c_[locations.min(axis=0), locations.max(axis=0)].T
-
-        return self._extent
+        :return: shape(2, 3) Bounding box defined by the bottom South-West and
+            top North-East coordinates.
+        """
 
     @property
     def faces(self):
-        ...
+        """Object faces."""
 
     @classmethod
     def find_or_create_type(
@@ -411,7 +438,18 @@ class ObjectBase(Entity):
 
         self.workspace.update_attribute(self, "property_groups")
 
-    def remove_children_values(self, indices: list[int], association: str):
+    def remove_children_values(
+        self,
+        indices: list[int] | np.ndarray,
+        association: str,
+        clear_cache: bool = False,
+    ):
+        if isinstance(indices, list):
+            indices = np.array(indices)
+
+        if not isinstance(indices, np.ndarray):
+            raise TypeError("Indices must be a list or numpy array.")
+
         for child in self.children:
             if (
                 getattr(child, "values", None) is not None
@@ -419,6 +457,8 @@ class ObjectBase(Entity):
                 and child.association.name == association
             ):
                 child.values = np.delete(child.values, indices, axis=0)
+                if clear_cache:
+                    clear_array_attributes(child)
 
     @property
     def vertices(self):

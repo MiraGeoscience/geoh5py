@@ -100,7 +100,6 @@ def test_create_curve_data(tmp_path):
 
                 compare_entities(obj_rec, obj)
                 compare_entities(data_vert_rec, data_vertex)
-                ws2.close()
 
 
 def test_remove_cells_data(tmp_path):
@@ -120,12 +119,18 @@ def test_remove_cells_data(tmp_path):
         with pytest.raises(
             ValueError, match="Found indices larger than the number of cells."
         ):
-            curve.remove_cells(12)
+            curve.remove_cells([12])
 
         with pytest.raises(
             ValueError, match="Attempting to assign 'cells' with fewer values."
         ):
             curve.cells = curve.cells[1:, :]
+
+        with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
+            curve.remove_cells("abc")
+
+        with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
+            curve.remove_vertices("abc")
 
         curve.remove_cells([0])
 
@@ -153,9 +158,41 @@ def test_remove_vertex_data(tmp_path):
         with pytest.raises(
             ValueError, match="Found indices larger than the number of vertices."
         ):
-            curve.remove_vertices(12)
+            curve.remove_vertices([12])
 
         curve.remove_vertices([0, 3])
 
         assert len(data.values) == 8, "Error removing data values with cells."
         assert len(curve.vertices) == 10, "Error removing vertices from cells."
+
+
+def test_copy_cells_data(tmp_path):
+    # Generate a random cloud of points
+    n_data = 12
+
+    with Workspace(tmp_path / r"testCurve.geoh5") as workspace:
+        curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
+        data = curve.add_data(
+            {
+                "cellValues": {
+                    "values": np.random.randn(curve.n_cells).astype(np.float64)
+                },
+            }
+        )
+
+        with pytest.raises(ValueError, match="Mask must be an array of shape."):
+            curve.copy(mask=[1, 2, 3])
+
+        mask = np.zeros(11, dtype=bool)
+        mask[:4] = True
+        copy_data = data.copy(mask=mask)
+
+        assert np.isnan(copy_data.values).sum() == 7, "Error copying data."
+
+        ind_vert = np.all(curve.vertices[:, :2] > 0, axis=1) & np.all(
+            curve.vertices[:, :2] < 2, axis=1
+        )
+        ind = np.all(ind_vert[curve.cells], axis=1)
+        mask = data.mask_by_extent(np.vstack([[0, 0], [2, 2]]))
+
+        assert np.all(mask == ind), "Error masking cell data by extent."

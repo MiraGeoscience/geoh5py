@@ -19,8 +19,8 @@
 
 from __future__ import annotations
 
-import re
 import uuid
+import warnings
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -136,13 +136,8 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         """String identifier for the concatenated attributes."""
         if self._concat_attr_str is None:
             self._concat_attr_str = "Attributes"
-            if (
-                self.workspace.ga_version is not None
-                and "4." in self.workspace.ga_version
-            ):
-                version = re.findall(r"\d+\.\d+", self.workspace.ga_version)
-                if version and float(version[0]) >= 4.2:
-                    self._concat_attr_str = "Attributes Jsons"
+            if self.workspace.version is not None and self.workspace.version > 2.0:
+                self._concat_attr_str = "Attributes Jsons"
         return self._concat_attr_str
 
     @property
@@ -194,22 +189,33 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         self._concatenated_object_ids = object_ids
         self.workspace.update_attribute(self, "concatenated_object_ids")
 
-    def copy(self, parent=None, copy_children: bool = True, **kwargs):
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ):
         """
         Function to copy an entity to a different parent entity.
 
         :param parent: Target parent to copy the entity under. Copied to current
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: Create copies of all children entities along with it.
+        :param mask: Array of indices to sub-sample the input entity.
+        :param clear_cache: Clear array attributes after copy.
 
         :return entity: Registered Entity to the workspace.
         """
+        if mask is not None:
+            warnings.warn("Masking is not supported for Concatenated objects.")
 
-        if parent is None:
-            parent = self.parent
-
-        new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=False, **kwargs
+        new_entity: Concatenator = super().copy(  # mypy: ignore-errors
+            parent=parent,
+            copy_children=False,
+            clear_cache=clear_cache,
+            **kwargs,
         )
 
         if self.concatenated_attributes is None:
