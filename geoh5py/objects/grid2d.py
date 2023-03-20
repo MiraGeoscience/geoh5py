@@ -155,6 +155,9 @@ class Grid2D(GridObject):
         if not isinstance(extent, np.ndarray):
             raise TypeError("Expected a numpy array of extent values.")
 
+        if self.u_cell_size is None or self.v_cell_size is None:
+            raise AttributeError("Cell sizes are not defined.")
+
         if extent.shape[1] == 2:
             extent = np.c_[extent, np.r_[-np.inf, np.inf]]
 
@@ -191,9 +194,6 @@ class Grid2D(GridObject):
             return None
 
         if not inverse:
-            assert self.u_cell_size is not None
-            assert self.v_cell_size is not None
-
             delta_orig = np.c_[
                 np.argmax(u_ind) * self.u_cell_size,
                 np.argmax(v_ind) * self.v_cell_size,
