@@ -242,7 +242,7 @@ class Data(Entity):
 
             return indices
 
-        return np.ones_like(self.values, dtype=bool)
+        return None
 
     def __call__(self):
         return self.values
