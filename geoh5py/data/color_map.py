@@ -103,7 +103,7 @@ class ColorMap:
 
     @name.setter
     def name(self, value: str):
-        self._name = value
+        self._name = str(value)
         self.parent.modified_attributes = "color_map"
 
     @property
