@@ -22,6 +22,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from .data import Data, PrimitiveTypeEnum
+from .data_association_enum import DataAssociationEnum
 
 
 class NumericData(Data, ABC):
@@ -47,14 +48,18 @@ class NumericData(Data, ABC):
             values = self.workspace.fetch_values(self)
 
             if isinstance(values, (np.ndarray, type(None))):
-                self._values = self.check_vector_length(values)
+                if self.association not in [DataAssociationEnum.OBJECT]:
+                    values = self.check_vector_length(values)
+
+                self._values = values
 
         return self._values
 
     @values.setter
     def values(self, values: np.ndarray | None):
         if isinstance(values, (np.ndarray, type(None))):
-            values = self.check_vector_length(values)
+            if self.association not in [DataAssociationEnum.OBJECT]:
+                values = self.check_vector_length(values)
 
         else:
             raise ValueError(
