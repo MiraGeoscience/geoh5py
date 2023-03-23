@@ -66,9 +66,7 @@ def test_clip_curve_data(tmp_path):
     y_loc = np.random.randn(100)
     z_loc = np.random.randn(100)
     vertices = np.c_[x_loc, y_loc, z_loc]
-
     extent = np.vstack([[9.5, -100, -100], [97.5, 100, 100]])
-
     clippings = np.all(
         np.c_[
             np.all(vertices >= extent[0, :], axis=1),
@@ -92,23 +90,29 @@ def test_clip_curve_data(tmp_path):
                 },
             }
         )
-        with Workspace(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
+        with Workspace(tmp_path / r"testClipCurve_copy.geoh5") as new_workspace:
             clipped_pts = curve.copy_from_extent(parent=new_workspace, extent=extent)
-            clipped_d = clipped_pts.get_data("VertexValues")[0]
-            clipped_c = clipped_pts.get_data("CellValues")[0]
-            assert clipped_pts.n_vertices == clippings.sum()
-            assert np.all(clipped_d.values == data[0].values[clippings])
-            assert len(clipped_c.values) == clipped_pts.n_cells
+            assert clipped_pts.get_data("VertexValues")[0].n_vertices == clippings.sum()
+            assert np.all(
+                clipped_pts.get_data("CellValues")[0].values
+                == data[0].values[clippings]
+            )
+            assert (
+                len(clipped_pts.get_data("CellValues")[0].values) == clipped_pts.n_cells
+            )
+
+            clipping_inverse = curve.copy_from_extent(
+                parent=new_workspace, extent=extent, inverse=True
+            )
+            assert clipping_inverse.n_vertices == curve.n_vertices - clippings.sum()
+            assert clipping_inverse.n_cells == 10
+            assert np.all(
+                clipping_inverse.get_data("CellValues")[0].values
+                == np.r_[data[1].values[0:9], data[1].values[-1]]
+            )
 
     # Repeat with 2D bounds - single point left
     extent = np.vstack([[-1, -100], [0.5, 100]])
-    clippings = np.all(
-        np.c_[
-            np.all(vertices >= np.r_[extent[0, :], -np.inf], axis=1),
-            np.all(vertices <= np.r_[extent[1, :], np.inf], axis=1),
-        ],
-        axis=1,
-    )
     with workspace.open():
         with Workspace(tmp_path / r"testClipPoints_copy2D.geoh5") as new_workspace:
             clipped_pts = curve.copy_from_extent(parent=new_workspace, extent=extent)
@@ -148,6 +152,20 @@ def test_clip_surface(tmp_path):
 
         assert len(surf_copy.cells) == 1
         assert np.sum(surf_copy.vertices - vertices[1:, :]) == 0
+
+        # Keep three points of triangle, one cell left
+        surf_copy = surf.copy_from_extent(
+            parent=workspace, extent=np.array([[-0.5, -0.5], [1.5, 1.5]])
+        )
+
+        assert len(surf_copy.cells) == 1
+
+        # Keep two points of triangle, no object
+        surf_copy = surf.copy_from_extent(
+            parent=workspace, extent=np.array([[0.5, -0.5], [1.5, 1.5]])
+        )
+
+        assert surf_copy is None
 
 
 def test_clip_groups(tmp_path):
