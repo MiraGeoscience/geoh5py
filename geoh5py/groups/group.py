@@ -108,6 +108,9 @@ class Group(Entity):
             self, parent, copy_children=False, **kwargs
         )
 
+        if new_entity is None:
+            return None
+
         if copy_children:
             for child in self.children:
                 child.copy(
@@ -137,6 +140,9 @@ class Group(Entity):
             copy_children=False,
             **kwargs,
         )
+
+        if copy_group is None:
+            return None
 
         if copy_children:
             for child in self.children:
