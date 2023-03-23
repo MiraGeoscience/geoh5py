@@ -106,8 +106,18 @@ def test_create_block_model_data(tmp_path):
         grid_copy = grid.copy(rotation=0.0)
 
         mask = grid_copy.mask_by_extent(np.vstack([[-100, -100], [1, 100]]))
+
+        grid_copy_copy = grid_copy.copy_from_extent(
+            extent=np.vstack([[-100, -100], [1, 100]])
+        )
+
+        assert np.all(~np.isnan(grid_copy_copy.children[0].values) == mask)
         assert mask.sum() == np.prod(grid.shape[1:])
 
         grid_copy_copy = grid_copy.copy(cell_mask="abc", mask=mask)
         assert grid_copy.n_cells == grid.n_cells
         assert np.all(~np.isnan(grid_copy_copy.children[0].values) == mask)
+        assert np.all(
+            grid_copy.mask_by_extent(np.vstack([[-100, -100], [1, 100]]), inverse=True)
+            == ~mask
+        )

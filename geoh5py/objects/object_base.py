@@ -277,8 +277,7 @@ class ObjectBase(Entity):
 
     @abstractmethod
     def mask_by_extent(
-        self,
-        extent: np.ndarray,
+        self, extent: np.ndarray, inverse: bool = False
     ) -> np.ndarray | None:
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.

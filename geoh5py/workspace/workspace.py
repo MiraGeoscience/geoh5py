@@ -540,7 +540,7 @@ class Workspace(AbstractContextManager):
                 "being removed. Please revise."
             )
 
-        if not isinstance(entity, Concatenator):
+        if not isinstance(entity, Concatenated):
             self.workspace.remove_recursively(entity)
 
         if isinstance(entity, Concatenated):
