@@ -92,9 +92,11 @@ def test_clip_curve_data(tmp_path):
         )
         with Workspace(tmp_path / r"testClipCurve_copy.geoh5") as new_workspace:
             clipped_pts = curve.copy_from_extent(parent=new_workspace, extent=extent)
-            assert clipped_pts.get_data("VertexValues")[0].n_vertices == clippings.sum()
+            assert (
+                len(clipped_pts.get_data("VertexValues")[0].values) == clippings.sum()
+            )
             assert np.all(
-                clipped_pts.get_data("CellValues")[0].values
+                clipped_pts.get_data("VertexValues")[0].values
                 == data[0].values[clippings]
             )
             assert (
