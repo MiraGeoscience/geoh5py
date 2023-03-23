@@ -73,6 +73,24 @@ plugins = [
 #    'numpy.typing.mypy_plugin'
 ]
 
+[tool.coverage.run]
+branch = true
+source = "geoh5py"
+omit = [
+    "geoh5py/handlers/*",
+    "geoh5py/interfaces/*"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "raise NotImplementedError",
+    "pass",
+    "if TYPE_CHECKING",
+    "pragma: no cover"
+]
+
+fail_under = 80
+
 [build-system]
 requires = ["poetry-core>=1.0.0", "setuptools"]
 build-backend = "poetry.core.masonry.api"
