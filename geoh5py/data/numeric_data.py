@@ -82,7 +82,7 @@ class NumericData(Data, ABC):
                 full_vector[: len(np.ravel(values))] = np.ravel(values)
                 return full_vector
 
-            if len(values) > self.n_values:
+            if len(values) > self.n_values or values.ndim > 1:
                 raise ValueError(
                     f"Input 'values' of shape({self.n_values},) expected. "
                     f"Array of shape{values.shape} provided.)"
