@@ -154,8 +154,14 @@ def test_create_drillhole_data(tmp_path):
         singleton = Drillhole.create(
             workspace,
         )
-        with pytest.raises(TypeError, match="Expected a Concatenated object"):
+        with pytest.warns(match="Expected a Concatenated object"):
             singleton.parent = dh_group
+
+        assert len(dh_group.children) == 1
+
+        dh_group.add_comment("This is a comment")
+
+        assert len(dh_group.children) == 2
 
         with pytest.raises(UserWarning, match="does not have a property or values"):
             dh_group.update_array_attribute(well, "abc")

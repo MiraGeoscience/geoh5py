@@ -104,9 +104,10 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                     in (DataAssociationEnum.OBJECT, DataAssociationEnum.GROUP)
                 )
             ):
-                raise TypeError(
+                warnings.warn(
                     f"Expected a Concatenated object, not {type(child).__name__}"
                 )
+                continue
 
             if child not in self._children:
                 self._children.append(child)

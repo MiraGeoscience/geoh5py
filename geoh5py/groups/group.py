@@ -64,9 +64,9 @@ class Group(Entity):
                 Data,
                 entity={
                     "name": "UserComments",
+                    "association": "OBJECT",
                     "values": [comment_dict],
                     "parent": self,
-                    "association": "OBJECT",
                 },
                 entity_type={"primitive_type": "TEXT"},
             )
