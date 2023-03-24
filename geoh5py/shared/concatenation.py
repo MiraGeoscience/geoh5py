@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from h5py import special_dtype
 
-from geoh5py.data import Data, DataType, FilenameData
+from geoh5py.data import Data, DataAssociationEnum, DataType
 from geoh5py.groups import Group, PropertyGroup
 from geoh5py.objects import ObjectBase
 from geoh5py.shared.entity import Entity
@@ -96,10 +96,18 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             :obj:`~geoh5py.shared.entity.Entity.children`
         """
         for child in children:
-            if not isinstance(child, (Concatenated, FilenameData)):
-                raise TypeError(
+            if not (
+                isinstance(child, Concatenated)
+                or (
+                    isinstance(child, Data)
+                    and child.association
+                    in (DataAssociationEnum.OBJECT, DataAssociationEnum.GROUP)
+                )
+            ):
+                warnings.warn(
                     f"Expected a Concatenated object, not {type(child).__name__}"
                 )
+                continue
 
             if child not in self._children:
                 self._children.append(child)
