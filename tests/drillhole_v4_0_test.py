@@ -451,6 +451,9 @@ def test_create_drillhole_data_v4_2(tmp_path):
     with workspace.open():
         assert dh_group.workspace.ga_version == "4.2"
         assert dh_group.concat_attr_str == "Attributes Jsons"
+        assert (
+            len(workspace.fetch_children(dh_group, recursively=True)) == 3
+        ), "Issue with fetching children recursively"
 
     h5file_path = tmp_path / r"test_create_concatenated_v4_2_v2_0.geoh5"
     dh_group, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
