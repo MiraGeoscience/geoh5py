@@ -11,6 +11,7 @@ import json
 import os
 import warnings
 from copy import deepcopy
+from pathlib import Path
 from typing import Any
 from uuid import UUID
 
@@ -172,13 +173,17 @@ class InputFile:
         return None
 
     @staticmethod
-    def read_ui_json(json_file: str, **kwargs):
+    def read_ui_json(json_file: str | Path, **kwargs):
         """
         Read and create an InputFile from ui.json
         """
+        if isinstance(json_file, Path):
+            json_file = str(json_file)
 
-        if "ui.json" not in json_file:
-            raise ValueError("Input file should have the extension *.ui.json")
+        if not isinstance(json_file, str) or not json_file.endswith(".ui.json"):
+            raise ValueError(
+                "Input file should be a str or Path with extension *.ui.json"
+            )
 
         input_file = InputFile(**kwargs)
         input_file.path = os.path.dirname(os.path.abspath(json_file))
@@ -377,7 +382,7 @@ class InputFile:
             representations in json format.
         """
         for key, value in var.items():
-            exclude = ["choiceList", "meshType", "dataType", "association"]
+            exclude = ["choiceList", "meshType", "dataType", "groupType", "association"]
             mappers = (
                 [list2str, inf2str, as_str_if_uuid, none2str]
                 if key not in exclude
