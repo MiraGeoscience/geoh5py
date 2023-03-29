@@ -161,12 +161,14 @@ class BaseTipper(BaseEMSurvey):
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
+        inverse: bool = False,
         **kwargs,
     ) -> TipperReceivers | TipperBaseStations | None:
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy_from_extent`.
         """
-        indices = self.mask_by_extent(extent)
+        indices = self.mask_by_extent(extent, inverse=inverse)
+
         if indices is None:
             return None
 

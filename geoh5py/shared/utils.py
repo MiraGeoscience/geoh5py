@@ -412,7 +412,9 @@ def box_intersect(extent_a: np.ndarray, extent_b: np.ndarray) -> bool:
     return True
 
 
-def mask_by_extent(locations: np.ndarray, extent: np.ndarray) -> np.ndarray:
+def mask_by_extent(
+    locations: np.ndarray, extent: np.ndarray, inverse: bool = False
+) -> np.ndarray:
     """
     Find indices of locations within a rectangular extent.
 
@@ -420,6 +422,9 @@ def mask_by_extent(locations: np.ndarray, extent: np.ndarray) -> np.ndarray:
     :param extent: shape(2, 2) Limits defined by the South-West and
         North-East corners. Extents can also be provided as 3D coordinates
         with shape(2, 3) defining the top and bottom limits.
+    :param inverse: Return the complement of the mask extent.
+
+    :returns: Array of bool for the locations inside or outside the box extent.
     """
     if not isinstance(extent, np.ndarray) or extent.ndim != 2:
         raise ValueError("Input 'extent' must be a 2D array-like.")
@@ -432,6 +437,9 @@ def mask_by_extent(locations: np.ndarray, extent: np.ndarray) -> np.ndarray:
     indices = np.ones(locations.shape[0], dtype=bool)
     for loc, lim in zip(locations.T, extent.T):
         indices &= (lim[0] <= loc) & (loc <= lim[1])
+
+    if inverse:
+        return ~indices
 
     return indices
 

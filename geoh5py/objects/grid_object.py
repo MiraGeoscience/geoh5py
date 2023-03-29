@@ -132,8 +132,7 @@ class GridObject(ObjectBase, ABC):
         return None
 
     def mask_by_extent(
-        self,
-        extent: np.ndarray,
+        self, extent: np.ndarray, inverse: bool = False
     ) -> np.ndarray | None:
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
@@ -144,6 +143,6 @@ class GridObject(ObjectBase, ABC):
             return None
 
         if self.centroids is not None:
-            return mask_by_extent(self.centroids, extent)
+            return mask_by_extent(self.centroids, extent, inverse=inverse)
 
         return None

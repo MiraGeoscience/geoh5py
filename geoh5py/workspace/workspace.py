@@ -540,7 +540,7 @@ class Workspace(AbstractContextManager):
                 "being removed. Please revise."
             )
 
-        if not isinstance(entity, Concatenator):
+        if not isinstance(entity, Concatenated):
             self.workspace.remove_recursively(entity)
 
         if isinstance(entity, Concatenated):
@@ -638,12 +638,11 @@ class Workspace(AbstractContextManager):
         if entity is None or isinstance(entity, ConcatenatedData):
             return []
 
+        entity_type = "data"
         if isinstance(entity, Group):
             entity_type = "group"
         elif isinstance(entity, ObjectBase):
             entity_type = "object"
-        else:
-            entity_type = "data"
 
         if isinstance(entity, RootGroup) and not entity.on_file:
             children_list = {child.uid: "" for child in entity.children}
@@ -653,6 +652,9 @@ class Workspace(AbstractContextManager):
             )
 
         if isinstance(entity, Concatenator):
+            if any(entity.children):
+                return entity.children
+
             cat_children = entity.fetch_concatenated_objects()
             children_list.update(
                 {
