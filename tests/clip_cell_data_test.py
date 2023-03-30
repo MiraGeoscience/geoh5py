@@ -65,6 +65,13 @@ def test_copy_extent_grid_2d(tmp_path):
     assert data_intersect.size == 35
     assert (data_intersect.min() == 103) & (data_intersect.max() == 509)
 
+    # Repeat with inverse flag
+    new_grid = grid.copy_from_extent(
+        np.r_[np.c_[50, 50], np.c_[200, 200]], inverse=True
+    )
+    assert new_grid.n_cells == grid.n_cells
+    assert np.isnan(new_grid.children[0].values).sum() == len(data_intersect)
+
     ind = (grid.centroids[:, 0] > 75) & (grid.centroids[:, 1] < 60)
     mask = data.mask_by_extent(np.vstack([[75, -100], [1000, 60]]))
 

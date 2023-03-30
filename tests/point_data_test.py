@@ -43,6 +43,9 @@ def test_create_point_data(tmp_path):
     with pytest.raises(TypeError, match="Association must be of type"):
         points.add_data({"test": {"association": Points, "values": values}})
 
+    with pytest.raises(ValueError, match="Input 'values' of shape"):
+        points.add_data({"test": {"values": values.reshape(-1, 1)}})
+
     tag = points.add_data(
         {"my_comment": {"association": "OBJECT", "values": "hello_world"}}
     )

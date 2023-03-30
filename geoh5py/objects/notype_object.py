@@ -85,10 +85,7 @@ class NoTypeObject(ObjectBase):
         """
         return None
 
-    def mask_by_extent(
-        self,
-        extent: ndarray,
-    ) -> None:
+    def mask_by_extent(self, extent: ndarray, inverse: bool = False) -> None:
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
         """

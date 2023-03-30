@@ -154,8 +154,14 @@ def test_create_drillhole_data(tmp_path):
         singleton = Drillhole.create(
             workspace,
         )
-        with pytest.raises(TypeError, match="Expected a Concatenated object"):
+        with pytest.warns(match="Expected a Concatenated object"):
             singleton.parent = dh_group
+
+        assert len(dh_group.children) == 1
+
+        dh_group.add_comment("This is a comment")
+
+        assert len(dh_group.children) == 2
 
         with pytest.raises(UserWarning, match="does not have a property or values"):
             dh_group.update_array_attribute(well, "abc")
@@ -445,6 +451,9 @@ def test_create_drillhole_data_v4_2(tmp_path):
     with workspace.open():
         assert dh_group.workspace.ga_version == "4.2"
         assert dh_group.concat_attr_str == "Attributes Jsons"
+        assert (
+            len(workspace.fetch_children(dh_group, recursively=True)) == 3
+        ), "Issue with fetching children recursively"
 
     h5file_path = tmp_path / r"test_create_concatenated_v4_2_v2_0.geoh5"
     dh_group, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
@@ -457,9 +466,18 @@ def test_create_drillhole_data_v4_2(tmp_path):
 def test_copy_drillhole_group(tmp_path):
     h5file_path = tmp_path / r"test_copy_concatenated.geoh5"
 
-    dh_group, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
+    _, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
 
     with workspace.open():
+        dh_group = workspace.get_entity("DH_group")[0]
+        dh_group_copy = dh_group.copy(workspace)
+
+        for child_a, child_b in zip(dh_group.children, dh_group_copy.children):
+            assert child_a.name == child_b.name
+            assert child_a.collar == child_b.collar
+            np.testing.assert_array_almost_equal(child_a.surveys, child_b.surveys)
+            assert child_a.get_data_list() == child_b.get_data_list()
+
         with Workspace(
             tmp_path / r"test_copy_concatenated_copy.geoh5",
             version=2.0,
@@ -469,5 +487,23 @@ def test_copy_drillhole_group(tmp_path):
             compare_entities(
                 dh_group_copy,
                 dh_group,
-                ignore=["_metadata", "_parent"],
+                ignore=["_metadata", "_parent", "_data", "_index"],
             )
+
+
+def test_copy_from_extent_drillhole_group(tmp_path):
+    h5file_path = tmp_path / r"test_copy_concatenated.geoh5"
+
+    _, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
+
+    with workspace.open():
+        dh_group = workspace.get_entity("DH_group")[0]
+        dh_group_copy = dh_group.copy_from_extent(extent=np.asarray([[0, 0], [15, 15]]))
+
+        assert len(dh_group_copy.children) == 2
+        for child_a in dh_group_copy.children:
+            child_b = dh_group.get_entity(child_a.name)[0]
+            assert child_a.name == child_b.name
+            assert child_a.collar == child_b.collar
+            np.testing.assert_array_almost_equal(child_a.surveys, child_b.surveys)
+            assert child_a.get_data_list() == child_b.get_data_list()

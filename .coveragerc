@@ -1,9 +1,0 @@
-[run]
-omit =
-    geoh5py/handlers/*
-    geoh5py/interfaces/*
-[report]
-exclude_lines =
-    raise NotImplementedError
-    pragma: no cover
-    if TYPE_CHECKING

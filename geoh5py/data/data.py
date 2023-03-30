@@ -94,7 +94,18 @@ class Data(Entity):
             and self.values is not None
             and mask.shape == self.values.shape
         ):
-            kwargs.update({"values": self.values[mask]})
+            n_values = (
+                parent.n_cells
+                if self.association is DataAssociationEnum.CELL
+                else parent.n_vertices
+            )
+
+            if n_values < self.values.shape[0]:
+                kwargs.update({"values": self.values[mask]})
+            else:
+                values = np.ones_like(self.values) * np.nan
+                values[mask] = self.values[mask]
+                kwargs.update({"values": values})
 
         new_entity = parent.workspace.copy_to_parent(
             self,
@@ -211,8 +222,7 @@ class Data(Entity):
         """
 
     def mask_by_extent(
-        self,
-        extent: np.ndarray,
+        self, extent: np.ndarray, inverse: bool = False
     ) -> np.ndarray | None:
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
@@ -220,19 +230,19 @@ class Data(Entity):
         Uses the parent object's vertices or centroids coordinates.
         """
         if self.association is DataAssociationEnum.VERTEX:
-            return mask_by_extent(self.parent.vertices, extent)
+            return mask_by_extent(self.parent.vertices, extent, inverse=inverse)
 
         if self.association is DataAssociationEnum.CELL:
             if getattr(self.parent, "centroids", None) is not None:
-                return mask_by_extent(self.parent.centroids, extent)
+                return mask_by_extent(self.parent.centroids, extent, inverse=inverse)
 
-            indices = mask_by_extent(self.parent.vertices, extent)
+            indices = mask_by_extent(self.parent.vertices, extent, inverse=inverse)
             if indices is not None:
                 indices = np.all(indices[self.parent.cells], axis=1)
 
             return indices
 
-        return np.ones_like(self.values, dtype=bool)
+        return None
 
     def __call__(self):
         return self.values
