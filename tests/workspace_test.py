@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -22,6 +22,7 @@ import pytest
 from h5py import File
 
 from geoh5py.objects import Points
+from geoh5py.shared.utils import fetch_active_workspace
 from geoh5py.workspace import Workspace
 
 
@@ -121,3 +122,16 @@ def test_read_bytes(tmp_path):
         file_objects = file_ws.objects
 
     assert len(byte_objects) == len(file_objects)
+
+
+def test_reopening_mode(tmp_path):
+    with Workspace(tmp_path / r"test.geoh5") as workspace:
+        pass
+
+    with workspace.open(mode="r") as workspace:
+        with fetch_active_workspace(workspace, mode="r") as re_open:
+            assert re_open.geoh5.mode == "r"
+
+        with pytest.warns(UserWarning, match="Closing the workspace in mode 'r'"):
+            with fetch_active_workspace(workspace, mode="r+"):
+                assert workspace.geoh5.mode == "r+"

@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -24,9 +24,9 @@ import uuid
 
 import numpy as np
 
-from ..data import Data, FloatData
+from ..data import Data, FloatData, NumericData
 from ..groups import PropertyGroup
-from ..shared.utils import merge_arrays
+from ..shared.utils import box_intersect, mask_by_extent, merge_arrays
 from .object_base import ObjectType
 from .points import Points
 
@@ -97,15 +97,16 @@ class Drillhole(Points):
         return self._collar
 
     @collar.setter
-    def collar(self, value):
+    def collar(self, value: list | np.ndarray | None):
         if value is not None:
             if isinstance(value, np.ndarray):
                 value = value.tolist()
 
             if isinstance(value, str):
-                value = [float(n) for n in re.findall(r"\d+\.\d+", value)]
+                value = [float(n) for n in re.findall(r"-?\d+\.\d+", value)]
 
-            assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
+            if len(value) != 3:
+                raise ValueError("Origin must be a list or numpy array of len (3,).")
 
             value = np.asarray(
                 tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
@@ -152,26 +153,61 @@ class Drillhole(Points):
         self.workspace.update_attribute(self, "attributes")
 
     @property
+    def extent(self) -> np.ndarray | None:
+        """
+        Geography bounding box of the object.
+
+        :return: shape(2, 3) Bounding box defined by the bottom South-West and
+            top North-East coordinates.
+        """
+        if self.collar is not None:
+            return (
+                np.repeat(
+                    np.r_[[self.collar["x"], self.collar["y"], self.collar["z"]]], 2
+                )
+                .reshape((-1, 2))
+                .T
+            )
+
+        return None
+
+    @property
     def locations(self) -> np.ndarray | None:
         """
         Lookup array of the well path in x, y, z coordinates.
         """
-        if (
-            getattr(self, "_locations", None) is None
-            and self.collar is not None
-            and self.surveys is not None
-        ):
-            lengths = self.surveys[1:, 0] - self.surveys[:-1, 0]
-            deviation_x = compute_deviation(self.surveys, "x")
-            deviation_y = compute_deviation(self.surveys, "y")
-            deviation_z = compute_deviation(self.surveys, "z")
+        if getattr(self, "_locations", None) is None and self.collar is not None:
+            surveys = np.vstack([self.surveys[0, :], self.surveys])
+            surveys[0, 0] = 0.0
+            lengths = surveys[1:, 0] - surveys[:-1, 0]
+            deviation = compute_deviation(surveys)
             self._locations = np.c_[
-                self.collar["x"] + np.cumsum(np.r_[0.0, lengths * deviation_x]),
-                self.collar["y"] + np.cumsum(np.r_[0.0, lengths * deviation_y]),
-                self.collar["z"] + np.cumsum(np.r_[0.0, lengths * deviation_z]),
+                self.collar["x"] + np.cumsum(np.r_[0.0, lengths * deviation[:, 0]]),
+                self.collar["y"] + np.cumsum(np.r_[0.0, lengths * deviation[:, 1]]),
+                self.collar["z"] + np.cumsum(np.r_[0.0, lengths * deviation[:, 2]]),
             ]
 
         return self._locations
+
+    def mask_by_extent(
+        self, extent: np.ndarray, inverse: bool = False
+    ) -> np.ndarray | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
+
+        Uses the collar location only.
+        """
+        if self.extent is None or not box_intersect(self.extent, extent):
+            return None
+
+        if self.collar is not None:
+            return mask_by_extent(
+                np.c_[[self.collar["x"], self.collar["y"], self.collar["z"]]].T,
+                extent,
+                inverse=inverse,
+            )
+
+        return None
 
     @property
     def planning(self) -> str:
@@ -206,10 +242,6 @@ class Drillhole(Points):
 
         else:
             surveys = np.c_[0, 0, -90]
-
-        # Repeat first survey point at surface for de-survey interpolation
-        surveys = np.vstack([surveys[0, :], surveys])
-        surveys[0, 0] = 0.0
 
         return surveys.astype(float)
 
@@ -411,30 +443,32 @@ class Drillhole(Points):
         """
         Function to return x, y, z coordinates from depth.
         """
-        assert (
-            self.surveys is not None and self.collar is not None
-        ), "'surveys' and 'collar' attributes required for desurvey operation"
+        if self.locations is None:
+            raise AttributeError(
+                "The 'desurvey' operation requires the 'locations' "
+                "attribute to be defined."
+            )
 
         if isinstance(depths, list):
             depths = np.asarray(depths)
 
+        # Repeat first survey point at surface for de-survey interpolation
+        surveys = np.vstack([self.surveys[0, :], self.surveys])
+        surveys[0, 0] = 0.0
+
         ind_loc = np.maximum(
-            np.searchsorted(self.surveys[:, 0], depths, side="left") - 1,
+            np.searchsorted(surveys[:, 0], depths, side="left") - 1,
             0,
         )
-
-        deviation_x = compute_deviation(self.surveys, "x")
-        deviation_y = compute_deviation(self.surveys, "y")
-        deviation_z = compute_deviation(self.surveys, "z")
-
-        ind_dev = np.minimum(ind_loc, deviation_x.shape[0] - 1)
+        deviation = compute_deviation(surveys)
+        ind_dev = np.minimum(ind_loc, deviation.shape[0] - 1)
         locations = (
             self.locations[ind_loc, :]
-            + (depths - self.surveys[ind_loc, 0])[:, None]
+            + np.r_[depths - surveys[ind_loc, 0]][:, None]
             * np.c_[
-                deviation_x[ind_dev],
-                deviation_y[ind_dev],
-                deviation_z[ind_dev],
+                deviation[ind_dev, 0],
+                deviation[ind_dev, 1],
+                deviation[ind_dev, 2],
             ]
         )
         return locations
@@ -444,11 +478,11 @@ class Drillhole(Points):
         Function to add vertices to the drillhole
         """
         indices = np.arange(xyz.shape[0])
-        if self.n_vertices is None:
-            self.vertices = xyz
-        else:
+        if isinstance(self.vertices, np.ndarray):
             indices += self.vertices.shape[0]
             self.vertices = np.vstack([self.vertices, xyz])
+        else:
+            self.vertices = xyz
 
         return indices.astype("uint32")
 
@@ -637,12 +671,19 @@ class Drillhole(Points):
         """
         if self.get_data("DEPTH"):
             data_obj = self.get_data("DEPTH")[0]
-            depths = data_obj.check_vector_length(data_obj.values)
+
+            depths = data_obj.values
+            if isinstance(data_obj, NumericData):
+                depths = data_obj.check_vector_length(depths)
+
             if not np.all(np.diff(depths) >= 0):
                 sort_ind = np.argsort(depths)
 
                 for child in self.children:
-                    if isinstance(child, Data) and child.association.name == "VERTEX":
+                    if (
+                        isinstance(child, NumericData)
+                        and getattr(child.association, "name", None) == "VERTEX"
+                    ):
                         child.values = child.check_vector_length(child.values)[sort_ind]
 
                 if self.vertices is not None:
@@ -653,35 +694,59 @@ class Drillhole(Points):
                     self.cells = key_map.reshape((-1, 2)).astype("uint32")
 
 
-def compute_deviation(surveys: np.ndarray, axis: str) -> np.ndarray | None:
-    """Compute deviation from survey parameters"""
+def compute_deviation(surveys: np.ndarray) -> np.ndarray:
+    """
+    Compute deviation distances from survey parameters.
+
+    :param surveys: Array of azimuth, dip and depth values.
+    """
     if surveys is None:
-        return None
+        raise AttributeError(
+            "Cannot compute deviation coordinates without `survey` attribute."
+        )
 
     lengths = surveys[1:, 0] - surveys[:-1, 0]
-    if axis == "x":
-        dl_in = np.cos(np.deg2rad(450.0 - surveys[:-1, 1] % 360.0)) * np.cos(
-            np.deg2rad(surveys[:-1, 2])
-        )
-        dl_out = np.cos(np.deg2rad(450.0 - surveys[1:, 1] % 360.0)) * np.cos(
-            np.deg2rad(surveys[1:, 2])
-        )
-        ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
 
-    elif axis == "y":
-        dl_in = np.sin(np.deg2rad(450.0 - surveys[:-1, 1] % 360.0)) * np.cos(
-            np.deg2rad(surveys[:-1, 2])
-        )
-        dl_out = np.sin(np.deg2rad(450.0 - surveys[1:, 1] % 360.0)) * np.cos(
-            np.deg2rad(surveys[1:, 2])
-        )
+    deviation = []
+    for component in [deviation_x, deviation_y, deviation_z]:
+        dl_in = component(surveys[:-1, 1], surveys[:-1, 2])
+        dl_out = component(surveys[1:, 1], surveys[1:, 2])
         ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
+        deviation += [dl_in + lengths * ddl / 2.0]
 
-    elif axis == "z":
-        dl_in = np.sin(np.deg2rad(surveys[:-1, 2]))
-        dl_out = np.sin(np.deg2rad(surveys[1:, 2]))
-        ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
+    return np.vstack(deviation).T
 
-    else:
-        raise ValueError("Input 'axis' must be 'x', 'y' and 'z'.")
-    return dl_in + lengths * ddl / 2.0
+
+def deviation_x(azimuth, dip):
+    """
+    Compute the easting deviation.
+
+    :param azimuth: Degree angle clockwise from North
+    :param dip: Degree angle positive down from horizontal
+
+    :return deviation: Change in easting distance.
+    """
+    return np.cos(np.deg2rad(450.0 - azimuth % 360.0)) * np.cos(np.deg2rad(dip))
+
+
+def deviation_y(azimuth, dip):
+    """
+    Compute the northing deviation.
+
+    :param azimuth: Degree angle clockwise from North
+    :param dip: Degree angle positive down from horizontal
+
+    :return deviation: Change in northing distance.
+    """
+    return np.sin(np.deg2rad(450.0 - azimuth % 360.0)) * np.cos(np.deg2rad(dip))
+
+
+def deviation_z(_, dip):
+    """
+    Compute the vertical deviation.
+
+    :param dip: Degree angle positive down from horizontal
+
+    :return deviation: Change in vertical distance.
+    """
+    return np.sin(np.deg2rad(dip))

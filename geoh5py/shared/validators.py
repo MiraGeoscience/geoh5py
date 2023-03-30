@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -29,6 +29,7 @@ from uuid import UUID
 
 import numpy as np
 
+from geoh5py import Workspace
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
@@ -43,7 +44,6 @@ from geoh5py.shared.exceptions import (
     ValueValidationError,
 )
 from geoh5py.shared.utils import iterable
-from geoh5py.workspace import Workspace
 
 
 class BaseValidator(ABC):
@@ -70,7 +70,7 @@ class BaseValidator(ABC):
 
     @property
     @abstractmethod
-    def validator_type(self):
+    def validator_type(self) -> str:
         """
         Validation type identifier.
         """
@@ -158,13 +158,11 @@ class PropertyGroupValidator(BaseValidator):
 
     @classmethod
     def validate(cls, name: str, value: PropertyGroup, valid: str) -> None:
-
         if (value is not None) and (value.property_group_type != valid):
             raise PropertyGroupValidationError(name, value, valid)
 
 
 class AtLeastOneValidator(BaseValidator):
-
     validator_type = "one_of"
 
     @classmethod

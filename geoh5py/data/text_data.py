@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -26,7 +26,6 @@ from .primitive_type_enum import PrimitiveTypeEnum
 
 
 class TextData(Data):
-
     _values: np.ndarray | str | None
 
     @classmethod
@@ -110,7 +109,6 @@ class CommentsData(Data):
 
 
 class MultiTextData(Data):
-
     _values: np.ndarray | str | None
 
     @classmethod

@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -77,7 +77,6 @@ def test_validation_types():
 
 
 def test_association_validator(tmp_path):
-
     workspace = Workspace(tmp_path / r"test.geoh5")
     workspace2 = Workspace(tmp_path / r"test2.geoh5")
     points = Points.create(workspace, vertices=np.array([[1, 2, 3], [4, 5, 6]]))
@@ -109,7 +108,6 @@ def test_association_validator(tmp_path):
 
 
 def test_property_group_validator(tmp_path):
-
     workspace = Workspace(tmp_path / r"test.geoh5")
     points = Points.create(
         workspace, vertices=np.array([[1, 2, 3], [4, 5, 6]]), name="test_points"
@@ -126,7 +124,6 @@ def test_property_group_validator(tmp_path):
 
 
 def test_required_validator():
-
     validator = RequiredValidator()
     with pytest.raises(RequiredValidationError) as excinfo:
         validator("test", None, True)
@@ -134,7 +131,6 @@ def test_required_validator():
 
 
 def test_shape_validator():
-
     validator = ShapeValidator()
     with pytest.raises(ShapeValidationError) as excinfo:
         validator("test", [[1, 2, 3], [4, 5, 6]], (3, 2))
@@ -145,7 +141,6 @@ def test_shape_validator():
 
 
 def test_type_validator():
-
     validator = TypeValidator()
 
     with pytest.raises(
@@ -186,7 +181,6 @@ def test_type_validator():
 
 
 def test_uuid_validator():
-
     validator = UUIDValidator()
 
     # Test bad uid string
@@ -199,7 +193,6 @@ def test_uuid_validator():
 
 
 def test_value_validator():
-
     validator = ValueValidator()
     with pytest.raises(ValueValidationError) as excinfo:
         validator("test", "blah", ["nope", "not here"])

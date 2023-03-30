@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -22,6 +22,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from .data import Data, PrimitiveTypeEnum
+from .data_association_enum import DataAssociationEnum
 
 
 class NumericData(Data, ABC):
@@ -47,14 +48,18 @@ class NumericData(Data, ABC):
             values = self.workspace.fetch_values(self)
 
             if isinstance(values, (np.ndarray, type(None))):
-                self._values = self.check_vector_length(values)
+                if self.association not in [DataAssociationEnum.OBJECT]:
+                    values = self.check_vector_length(values)
+
+                self._values = values
 
         return self._values
 
     @values.setter
     def values(self, values: np.ndarray | None):
         if isinstance(values, (np.ndarray, type(None))):
-            values = self.check_vector_length(values)
+            if self.association not in [DataAssociationEnum.OBJECT]:
+                values = self.check_vector_length(values)
 
         else:
             raise ValueError(
@@ -73,15 +78,11 @@ class NumericData(Data, ABC):
         if self.n_values is not None:
             if values is None or len(values) < self.n_values:
                 full_vector = np.ones(self.n_values, dtype=type(self.ndv))
-                if isinstance(self.ndv, float):
-                    full_vector *= np.nan
-                else:
-                    full_vector *= self.ndv
-
+                full_vector *= np.nan if isinstance(self.ndv, float) else self.ndv
                 full_vector[: len(np.ravel(values))] = np.ravel(values)
                 return full_vector
 
-            if len(values) > self.n_values:
+            if len(values) > self.n_values or values.ndim > 1:
                 raise ValueError(
                     f"Input 'values' of shape({self.n_values},) expected. "
                     f"Array of shape{values.shape} provided.)"

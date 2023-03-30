@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING
 from geoh5py.data import DataAssociationEnum
 
 if TYPE_CHECKING:
+    from geoh5py.objects import ObjectBase
     from geoh5py.shared import Entity
 
 
@@ -41,14 +42,13 @@ class PropertyGroup(ABC):
         "Property Group Type": "property_group_type",
     }
 
-    def __init__(self, **kwargs):
-
+    def __init__(self, parent: ObjectBase, **kwargs):
         self._name = "prop_group"
         self._uid = uuid.uuid4()
         self._association: DataAssociationEnum = DataAssociationEnum.VERTEX
         self._properties: list[uuid.UUID] = []
         self._property_group_type = "Multi-element"
-        self._parent = None
+        self._parent: ObjectBase = parent
 
         for attr, item in kwargs.items():
             try:
@@ -102,10 +102,6 @@ class PropertyGroup(ABC):
         """
         return self._parent
 
-    @parent.setter
-    def parent(self, parent: Entity):
-        self._parent = parent
-
     @property
     def properties(self) -> list[uuid.UUID]:
         """
@@ -116,7 +112,6 @@ class PropertyGroup(ABC):
 
     @properties.setter
     def properties(self, uids: list[str | uuid.UUID]):
-
         properties = []
         for uid in uids:
             if isinstance(uid, str):

@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,10 +15,13 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=bad-super-call
+
 from __future__ import annotations
 
 import uuid
-import warnings
+
+import numpy as np
 
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_type import ObjectType
@@ -40,6 +43,7 @@ class BaseTipper(BaseEMSurvey):
     ]
     __INPUT_TYPE = ["Rx and base stations"]
     _base_stations = None
+    _receivers = None
 
     def __init__(
         self,
@@ -70,17 +74,13 @@ class BaseTipper(BaseEMSurvey):
 
                 if isinstance(base_station_entity, TipperBaseStations):
                     self._base_stations = base_station_entity
-                else:
-                    warnings.warn(
-                        "Associated `base_stations` entity not set.", UserWarning
-                    )
 
         return self._base_stations
 
     @base_stations.setter
     def base_stations(self, base: TipperBaseStations):
         if not isinstance(base, (TipperBaseStations, type(None))):
-            raise AttributeError(
+            raise TypeError(
                 f"Input `base_stations` must be of type '{TipperBaseStations}' or None"
             )
 
@@ -97,10 +97,119 @@ class BaseTipper(BaseEMSurvey):
         self._base_stations = base
         self.edit_metadata({"Base stations": base.uid})
 
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        cell_mask: np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Sub-class extension of :func:`~geoh5py.objects.cell_object.CellObject.copy`.
+        """
+        if parent is None:
+            parent = self.parent
+
+        omit_list = [
+            "_metadata",
+            "_receivers",
+            "_base_stations",
+        ]
+        metadata = self.metadata.copy()
+        new_entity = super().copy(
+            parent=parent,
+            clear_cache=clear_cache,
+            copy_children=copy_children,
+            mask=mask,
+            cell_mask=cell_mask,
+            omit_list=omit_list,
+            **kwargs,
+        )
+
+        metadata["EM Dataset"][new_entity.type] = new_entity.uid
+
+        complement: TipperBaseStations | TipperReceivers = (
+            self.base_stations  # type: ignore
+            if isinstance(self, TipperReceivers)
+            else self.receivers
+        )
+        base_class: type[Points] | type[Curve] = (
+            Points if isinstance(self, TipperReceivers) else Curve  # type: ignore
+        )
+
+        if complement is not None:
+            # Reset mask
+            new_complement = super(base_class, complement).copy(  # type: ignore
+                parent=parent,
+                omit_list=omit_list,
+                copy_children=copy_children,
+                clear_cache=clear_cache,
+            )
+
+            setattr(new_entity, complement.type, new_complement)
+            metadata["EM Dataset"][complement.type] = new_complement.uid
+            new_complement.metadata = metadata
+
+        new_entity.metadata = metadata
+        return new_entity
+
+    def copy_from_extent(
+        self,
+        extent: np.ndarray,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        inverse: bool = False,
+        **kwargs,
+    ) -> TipperReceivers | TipperBaseStations | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy_from_extent`.
+        """
+        indices = self.mask_by_extent(extent, inverse=inverse)
+
+        if indices is None:
+            return None
+
+        new_entity = self.copy(
+            parent=parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            mask=indices,
+            **kwargs,
+        )
+
+        complement: TipperBaseStations | TipperReceivers = (
+            new_entity.base_stations  # type: ignore
+            if isinstance(self, TipperReceivers)
+            else new_entity.receivers
+        )
+
+        indices = complement.mask_by_extent(extent)
+        if indices is not None:
+            complement.remove_vertices(indices)
+
+        return new_entity
+
     @property
     def default_input_types(self) -> list[str]:
-        """Input types. Must be 'Rx and base stations'"""
+        """Choice of survey creation types."""
         return self.__INPUT_TYPE
+
+    @property
+    def default_receiver_type(self):
+        """
+        :return: Transmitter class
+        """
+        return TipperReceivers
+
+    @property
+    def default_transmitter_type(self):
+        """
+        :return: Transmitter class
+        """
+        return type(None)
 
     @property
     def default_metadata(self) -> dict:
@@ -127,7 +236,7 @@ class BaseTipper(BaseEMSurvey):
         return self.__UNITS
 
 
-class TipperReceivers(BaseTipper, Curve):
+class TipperReceivers(BaseTipper, Curve):  # pylint: disable=too-many-ancestors
     """
     A z-tipper EM survey object.
     """
@@ -135,10 +244,10 @@ class TipperReceivers(BaseTipper, Curve):
     __TYPE_UID = uuid.UUID("{0b639533-f35b-44d8-92a8-f70ecff3fd26}")
     __TYPE = "Receivers"
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, object_type: ObjectType, name="Tipper rx", **kwargs):
         self._base_stations: TipperBaseStations | None = None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(object_type, name=name, **kwargs)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -161,9 +270,8 @@ class TipperBaseStations(BaseTipper, Points):
     __TYPE_UID = uuid.UUID("{f495cd13-f09b-4a97-9212-2ea392aeb375}")
     __TYPE = "Base stations"
 
-    def __init__(self, object_type: ObjectType, **kwargs):
-
-        super().__init__(object_type, **kwargs)
+    def __init__(self, object_type: ObjectType, name="Tipper base", **kwargs):
+        super().__init__(object_type, name=name, **kwargs)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -171,13 +279,6 @@ class TipperBaseStations(BaseTipper, Points):
         :return: Default unique identifier
         """
         return cls.__TYPE_UID
-
-    @property
-    def default_receiver_type(self):
-        """
-        :return: Receiver class
-        """
-        return TipperReceivers
 
     @property
     def type(self):

@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -30,7 +30,6 @@ EntityTypeT = TypeVar("EntityTypeT", bound="EntityType")
 
 
 class EntityType(ABC):
-
     _attribute_map = {"Description": "description", "ID": "uid", "Name": "name"}
 
     def __init__(self, workspace: ws.Workspace, uid: uuid.UUID | None = None, **kwargs):
@@ -68,6 +67,17 @@ class EntityType(ABC):
         self._description = description
         self.workspace.update_attribute(self, "attributes")
 
+    @classmethod
+    def find(
+        cls: type[EntityTypeT], workspace: ws.Workspace, type_uid: uuid.UUID
+    ) -> EntityTypeT | None:
+        """Finds in the given Workspace the EntityType with the given UUID for
+        this specific EntityType implementation class.
+
+        :return: EntityType of None
+        """
+        return cast(EntityTypeT, workspace.find_type(type_uid, cls))
+
     @property
     def on_file(self) -> bool:
         """
@@ -79,17 +89,6 @@ class EntityType(ABC):
     @on_file.setter
     def on_file(self, value: bool):
         self._on_file = value
-
-    @classmethod
-    def find(
-        cls: type[EntityTypeT], workspace: ws.Workspace, type_uid: uuid.UUID
-    ) -> EntityTypeT | None:
-        """Finds in the given Workspace the EntityType with the given UUID for
-        this specific EntityType implementation class.
-
-        :return: EntityType of None
-        """
-        return cast(EntityTypeT, workspace.find_type(type_uid, cls))
 
     @staticmethod
     @abstractmethod

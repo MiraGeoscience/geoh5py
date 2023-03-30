@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -26,7 +26,7 @@ from uuid import uuid4
 import numpy as np
 import pytest
 
-from geoh5py.groups import ContainerGroup, PropertyGroup
+from geoh5py.groups import ContainerGroup, DrillholeGroup, PropertyGroup
 from geoh5py.objects import Points
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
@@ -47,11 +47,11 @@ from geoh5py.workspace import Workspace
 
 
 def get_workspace(directory):
-
     workspace = Workspace(path.join(directory, "..", "testPoints.geoh5"))
     if len(workspace.objects) == 0:
         xyz = np.random.randn(12, 3)
         group = ContainerGroup.create(workspace)
+        DrillholeGroup.create(workspace, parent=group)
         points = Points.create(workspace, vertices=xyz, parent=group, name="Points_A")
         data = points.add_data(
             {
@@ -69,7 +69,6 @@ def get_workspace(directory):
 
 
 def test_input_file_json():
-
     # Test missing required ui_json parameter
     with pytest.raises(
         ValueError, match="Input 'ui_json' must be of type dict or None"
@@ -146,7 +145,6 @@ def test_optional_parameter():
 
 
 def test_bool_parameter():
-
     ui_json = deepcopy(default_ui_json)
     ui_json["logic"] = templates.bool_parameter()
     ui_json["logic"]["value"] = True
@@ -159,7 +157,6 @@ def test_bool_parameter():
 
 
 def test_integer_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -193,7 +190,6 @@ def test_integer_parameter(tmp_path):
 
 
 def test_float_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -224,7 +220,6 @@ def test_float_parameter(tmp_path):
 
 
 def test_string_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -255,7 +250,6 @@ def test_string_parameter(tmp_path):
 
 
 def test_choice_string_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -288,7 +282,6 @@ def test_choice_string_parameter(tmp_path):
 
 
 def test_multi_choice_string_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -340,7 +333,6 @@ def test_file_parameter():
 
 
 def test_shape_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["data"] = templates.string_parameter(value="2,5,6,7")
@@ -355,7 +347,6 @@ def test_shape_parameter(tmp_path):
 
 
 def test_missing_required_field(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["object"] = templates.object_parameter(optional="enabled")
@@ -384,13 +375,44 @@ def test_object_promotion(tmp_path):
     ui_json["object"]["meshType"] = [points.entity_type.uid]
 
     in_file = InputFile(ui_json=ui_json)
+    in_file.write_ui_json("test.ui.json", path=tmp_path)
 
+    # Read back in
+    new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
     assert (
-        in_file.data["object"] == points
+        new_in_file.data["object"].uid == points.uid
     ), "Promotion of entity from uuid string failed."
 
-    with pytest.raises(ValueError, match="Input 'data' must be of type dict or None."):
-        in_file.data = 123
+    with pytest.raises(ValueError) as excinfo:
+        new_in_file.data = 123
+    assert "Input 'data' must be of type dict or None." in str(excinfo)
+
+
+def test_group_promotion(tmp_path):
+    workspace = get_workspace(tmp_path)
+    group = workspace.get_entity("Entity")[0]
+    dh_group = workspace.get_entity("Drillholes Group")[0]
+    ui_json = deepcopy(default_ui_json)
+    ui_json["object"] = templates.group_parameter()
+    ui_json["geoh5"] = workspace
+    ui_json["object"]["value"] = str(group.uid)
+    ui_json["object"]["groupType"] = [group.entity_type.uid]
+
+    ui_json["dh"] = templates.group_parameter()
+    ui_json["dh"]["value"] = str(dh_group.uid)
+    ui_json["dh"]["groupType"] = [dh_group.entity_type.uid]
+
+    in_file = InputFile(ui_json=ui_json)
+    in_file.write_ui_json("test.ui.json", path=tmp_path)
+
+    new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
+    assert (
+        new_in_file.data["object"].uid == group.uid
+    ), "Promotion of entity from uuid string failed."
+
+    assert (
+        new_in_file.data["dh"].uid == dh_group.uid
+    ), "Promotion of entity from uuid string failed."
 
 
 def test_invalid_uuid_string(tmp_path):
@@ -500,10 +522,8 @@ def test_input_file(tmp_path):
     in_file = InputFile(ui_json=ui_json)
     out_file = in_file.write_ui_json(path=tmp_path)
 
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(ValueError, match="Input file should be a str or Path"):
         InputFile.read_ui_json("somefile.json")
-
-    assert "Input file should have the extension *.ui.json" in str(error)
 
     # Load the input back in
     reload_input = InputFile.read_ui_json(out_file)
@@ -559,7 +579,6 @@ def test_data_value_parameter_a(tmp_path):
 
 # @pytest.mark.skip(reason="Failing on github for unknown reason")
 def test_data_value_parameter_b(tmp_path):
-
     workspace = get_workspace(tmp_path)
     points_a = workspace.get_entity("Points_A")[0]
     data_b = points_a.children[0]
@@ -586,7 +605,6 @@ def test_data_value_parameter_b(tmp_path):
 
 
 def test_multi_object_value_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     points_a = workspace.get_entity("Points_A")[0]
     points_b = workspace.get_entity("Points_B")[0]

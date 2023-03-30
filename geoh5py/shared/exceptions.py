@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -24,9 +24,9 @@ from uuid import UUID
 from geoh5py.shared.utils import iterable_message
 
 if TYPE_CHECKING:
+    from geoh5py import Workspace
     from geoh5py.groups import PropertyGroup
     from geoh5py.shared import Entity
-    from geoh5py.workspace import Workspace
 
 
 class Geoh5FileClosedError(ABC, Exception):
@@ -129,7 +129,6 @@ class TypeValidationError(BaseValidationError):
     """Error on type validation."""
 
     def __init__(self, name: str, value: str, validation: str | list[str]):
-
         super().__init__(TypeValidationError.message(name, value, validation))
 
     @staticmethod
@@ -154,7 +153,6 @@ class ValueValidationError(BaseValidationError):
     """Error on value validation."""
 
     def __init__(self, name: str, value: Any, validation: list[Any]):
-
         super().__init__(ValueValidationError.message(name, value, validation))
 
     @staticmethod

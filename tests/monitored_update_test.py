@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -43,7 +43,6 @@ def test_monitored_directory_copy(tmp_path):
         ), "Parental group should not have been copied."
 
         for entity in workspace.objects:
-
             # Read the data back in from a fresh workspace
             rec_entity = new_workspace.get_entity(entity.uid)[0]
             rec_data = new_workspace.get_entity(entity.children[0].uid)[0]

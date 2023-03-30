@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -23,7 +23,7 @@ import pytest
 
 from geoh5py import objects
 from geoh5py.groups import GroupType
-from geoh5py.objects import ObjectBase, ObjectType
+from geoh5py.objects import CellObject, ObjectBase, ObjectType
 from geoh5py.workspace import Workspace
 
 
@@ -32,7 +32,7 @@ def all_object_types():
         if (
             inspect.isclass(obj)
             and issubclass(obj, ObjectBase)
-            and obj is not ObjectBase
+            and obj not in (ObjectBase, CellObject)
         ):
             yield obj
 

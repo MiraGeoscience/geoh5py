@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -21,10 +21,11 @@ import uuid
 
 import numpy as np
 
-from .object_base import ObjectBase, ObjectType
+from .grid_object import GridObject
+from .object_base import ObjectType
 
 
-class DrapeModel(ObjectBase):
+class DrapeModel(GridObject):
     """
     Drape (curtain) model object made up of layers and prisms.
     """
@@ -34,7 +35,6 @@ class DrapeModel(ObjectBase):
     def __init__(self, object_type: ObjectType, **kwargs):
         self._layers: np.ndarray | None = None
         self._prisms: np.ndarray | None = None
-        self._centroids: np.ndarray | None = None
 
         super().__init__(object_type, **kwargs)
 
@@ -117,7 +117,7 @@ class DrapeModel(ObjectBase):
 
     @property
     def n_cells(self):
-        if self.prisms is not None:
+        if self._prisms is not None:
             return int(self._prisms["Layer count"].sum())
         return None
 

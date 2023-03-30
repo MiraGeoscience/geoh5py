@@ -1,7 +1,44 @@
 Release Notes
 =============
 
-Release 0.4.0 - 2022/08/26
+Release 0.7.0 (2023-03-26)
+--------------------------
+
+GEOPY-857, 877: Add and improve function to copy entities from extent.
+GEOPY-537: Throw user warning if change mode to "r+" to "r"
+GEOPY-667, 668, 723, 848: Fixes on drillhole copy and data selection
+GEOPY-851: Fix NDV not recognized on concatenated data
+GEOPY-862: Add measure of maintainability with code climate
+GEOPY-876: Handle geoh5 conversion from 4.2 (geoh5 v2.1) saved as 4.1 (geoh5 v2.0) format.
+
+
+Release 0.6.1 (2023-02-09)
+--------------------------
+
+GEOPY-848: Fix the issue of copying drill holes with DateTime.
+GEOPY-847: Fix the issue with clipping by extent with 2d coordinates
+GEOPY-537: Add a convenience method to get an active workspace in a different mode "fetch_active_workspace".
+
+
+Release 0.6.0 (2023/01/26)
+--------------------------
+
+- GEOPY-700, 701, 721, 726: Add functionality to convert between Grid2D and GeoImages.
+- GEOPY-843: Update drillhole group compatibility with ANALYST v4.2
+- GEOPY-746: Implement ground TEM (large-loop) survey type.
+
+
+Release 0.5.0 (2022/10/26)
+--------------------------
+
+- GEOPY-624: Add functionality to remove vertices and cells
+- GEOPY-644: Functionality to copy object within box extent. Only implemented for vertex-based object.
+- Bug fixes:
+    - GEOPY-650: Deal with INTEGRATOR text data in byte format.
+    - GEOPY-615: Fix de-survey method for older geoh5 v1 format.
+
+
+Release 0.4.0 (2022/08/26)
 --------------------------
 
 Major release adding new classes and fixing issues with the DrillholeGroup class.
@@ -16,7 +53,7 @@ Major release adding new classes and fixing issues with the DrillholeGroup class
 
 
 
-Release 0.3.1 - 2022/08/26
+Release 0.3.1 (2022/08/26)
 --------------------------
 
 This release addresses issues encountered after the 0.3.0 release.
@@ -27,7 +64,7 @@ This release addresses issues encountered after the 0.3.0 release.
 - GEOPY-575: Improve ui.json documentation.
 
 
-Release 0.3.0 - 2022/06/30
+Release 0.3.0 (2022/06/30)
 --------------------------
 
 This release addresses changes introduced by the geoh5 v2.0 standard.
@@ -37,7 +74,7 @@ This release addresses changes introduced by the geoh5 v2.0 standard.
 - Implementation of a SimPEGGroup entity.
 
 
-Release 0.2.0 - 2022/04/18
+Release 0.2.0 (2022/04/18)
 --------------------------
 
 - Add MT, tipper and airborne time-domain survey objects.
@@ -45,7 +82,7 @@ Release 0.2.0 - 2022/04/18
 - Bug fixes and documentation.
 
 
-Release 0.1.6 - 2021/12/09
+Release 0.1.6 (2021/12/09)
 --------------------------
 
 - Fix StatsCache on value changes.
@@ -53,14 +90,14 @@ Release 0.1.6 - 2021/12/09
 - Clean up for linters
 
 
-Release 0.1.5 - 2021/11/05
+Release 0.1.5 (2021/11/05)
 --------------------------
 
 - Fix for copying of direct-current survey.
 - Fix documentation.
 
 
-Release 0.1.4 - 2021/08/31
+Release 0.1.4 (2021/08/31)
 --------------------------
 
 - Add direct_current survey type and related documentation.

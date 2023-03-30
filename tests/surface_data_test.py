@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -78,7 +78,7 @@ def test_remove_cells_surface_data(tmp_path):
         with pytest.raises(
             ValueError, match="Found indices larger than the number of cells."
         ):
-            surface.remove_cells(101)
+            surface.remove_cells([101])
 
         with pytest.raises(
             ValueError, match="Attempting to assign 'cells' with fewer values."
@@ -90,3 +90,31 @@ def test_remove_cells_surface_data(tmp_path):
         assert (
             len(surface.children[0].values) == 99
         ), "Error removing data values with cells."
+
+
+def test_remove_vertices_surface_data(tmp_path):
+    h5file_path = tmp_path / r"../test_create_surface_data0/testSurface.geoh5"
+
+    with Workspace(h5file_path) as workspace:
+        surface = workspace.objects[0].copy()
+
+        data = surface.add_data(
+            {
+                "cellValues": {
+                    "values": np.random.randn(surface.n_cells).astype(np.float64)
+                },
+            }
+        )
+
+        with pytest.raises(
+            ValueError, match="Found indices larger than the number of vertices."
+        ):
+            surface.remove_vertices([1001])
+
+        logic = np.ones(surface.n_vertices)
+        logic[[0, 3]] = False
+        expected = np.all(logic[surface.cells], axis=1).sum()
+        surface.remove_vertices([0, 3])
+
+        assert len(data.values) == expected, "Error removing data values with cells."
+        assert len(surface.vertices) == 98, "Error removing vertices from cells."

@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,25 +18,23 @@
 from __future__ import annotations
 
 import uuid
-import warnings
 
 import numpy as np
 
+from ..shared.utils import str2uuid
+from .cell_object import CellObject
 from .object_base import ObjectType
-from .points import Points
 
 
-class Curve(Points):
+class Curve(CellObject):
     """
     Curve object defined by a series of line segments (:obj:`~geoh5py.objects.curve.Curve.cells`)
     connecting :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
     """
 
-    _attribute_map = Points._attribute_map.copy()
+    _attribute_map: dict = CellObject._attribute_map.copy()
     _attribute_map.update(
         {
-            "Last focus": "last_focus",
-            "PropertyGroups": "property_groups",
             "Current line property ID": "current_line_id",
         }
     )
@@ -45,11 +43,10 @@ class Curve(Points):
         fields=(0x6A057FDC, 0xB355, 0x11E3, 0x95, 0xBE, 0xFD84A7FFCB88)
     )
 
-    def __init__(self, object_type: ObjectType, **kwargs):
-
-        self._cells: np.ndarray | None = None
+    def __init__(self, object_type: ObjectType, name="Curve", **kwargs):
+        self._current_line_id: uuid.UUID | None = None
         self._parts: np.ndarray | None = None
-        super().__init__(object_type, **kwargs)
+        super().__init__(object_type, name=name, **kwargs)
 
     @property
     def cells(self) -> np.ndarray | None:
@@ -69,7 +66,7 @@ class Curve(Points):
             elif self.on_file:
                 self._cells = self.workspace.fetch_array_attribute(self)
 
-            elif self.vertices is not None:
+            if self._cells is None and self.vertices is not None:
                 n_segments = self.vertices.shape[0]
                 self.cells = np.c_[
                     np.arange(0, n_segments - 1), np.arange(1, n_segments)
@@ -101,23 +98,21 @@ class Curve(Points):
         self.workspace.update_attribute(self, "cells")
 
     @property
-    def current_line_id(self):
-
+    def current_line_id(self) -> uuid.UUID | None:
         if getattr(self, "_current_line_id", None) is None:
             self._current_line_id = uuid.uuid4()
 
         return self._current_line_id
 
     @current_line_id.setter
-    def current_line_id(self, value: uuid.UUID):
+    def current_line_id(self, value: uuid.UUID | None):
+        value = str2uuid(value)
 
-        if isinstance(value, str):
-            value = uuid.UUID(value)
-
-        assert isinstance(value, uuid.UUID), (
-            f"Input current_line_id value should be of type {uuid.UUID}."
-            f" {type(value)} provided"
-        )
+        if not isinstance(value, (uuid.UUID, type(None))):
+            raise TypeError(
+                f"Input current_line_id value should be of type {uuid.UUID}."
+                f" {type(value)} provided"
+            )
 
         self._current_line_id = value
         self.workspace.update_attribute(self, "attributes")
@@ -139,13 +134,15 @@ class Curve(Points):
         property. The definition of the :obj:`~geoh5py.objects.curve.Curve.cells`
         property get modified by the setting of parts.
         """
-        if getattr(self, "_parts", None) is None and self.cells is not None:
-
+        if (
+            getattr(self, "_parts", None) is None
+            and self.cells is not None
+            and self.vertices is not None
+        ):
             cells = self.cells
             parts = np.zeros(self.vertices.shape[0], dtype="int")
             count = 0
             for ind in range(1, cells.shape[0]):
-
                 if cells[ind, 0] != cells[ind - 1, 1]:
                     count += 1
 
@@ -170,25 +167,6 @@ class Curve(Points):
             self._cells = None
             self.workspace.update_attribute(self, "cells")
 
-    def remove_cells(self, indices: list[int]):
-        """Safely remove cells and corresponding data entries."""
-
-        if self._cells is None:
-            warnings.warn("No cells to be removed.", UserWarning)
-            return
-
-        if (
-            isinstance(self.cells, np.ndarray)
-            and np.max(indices) > self.cells.shape[0] - 1
-        ):
-            raise ValueError("Found indices larger than the number of cells.")
-
-        cells = np.delete(self.cells, indices, axis=0)
-        self._cells = None
-        self.cells = cells
-
-        self.remove_children_values(indices, "CELL")
-
     @property
     def unique_parts(self):
         """
@@ -196,7 +174,6 @@ class Curve(Points):
         identifiers.
         """
         if self.parts is not None:
-
             return np.unique(self.parts).tolist()
 
         return None

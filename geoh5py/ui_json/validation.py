@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -21,6 +21,7 @@ from copy import deepcopy
 from typing import Any, cast
 from uuid import UUID
 
+from geoh5py import Workspace
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import RequiredValidationError
@@ -37,7 +38,6 @@ from geoh5py.shared.validators import (
     ValueValidator,
 )
 from geoh5py.ui_json.utils import requires_value
-from geoh5py.workspace import Workspace
 
 
 class InputValidation:
@@ -58,9 +58,9 @@ class InputValidation:
 
     def __init__(
         self,
-        validators: dict[str, BaseValidator] = None,
+        validators: dict[str, BaseValidator] | None = None,
         validations: dict[str, Any] | None = None,
-        workspace: Workspace = None,
+        workspace: Workspace | None = None,
         ui_json: dict[str, Any] | None = None,
         validation_options: dict[str, Any] | None = None,
     ):
@@ -120,7 +120,8 @@ class InputValidation:
     def _required_validators(validations):
         """Returns dictionary of validators required by validations."""
         unique_validators = InputValidation._unique_validators(validations)
-        all_validators = {k.validator_type: k() for k in BaseValidator.__subclasses__()}
+        sub_classes: list[BaseValidator] = getattr(BaseValidator, "__subclasses__")()
+        all_validators: dict[str, Any] = {k.validator_type: k() for k in sub_classes}
         val = {}
         for k in unique_validators:
             if k not in all_validators:
@@ -172,7 +173,6 @@ class InputValidation:
                     validations[key]["property_group_type"] = item["dataGroupType"]
                     validations[key]["types"] = [str, UUID, PropertyGroup]
             elif "value" in item:
-
                 check_type = str
                 if item["value"] is not None:
                     check_type = cast(Any, type(item["value"]))
@@ -225,7 +225,9 @@ class InputValidation:
                     out[key].update(val)
         return out
 
-    def validate(self, name: str, value: Any, validations: dict[str, Any] = None):
+    def validate(
+        self, name: str, value: Any, validations: dict[str, Any] | None = None
+    ):
         """
         Run validations on a given key and value.
 
@@ -270,7 +272,6 @@ class InputValidation:
         one_of_validations: dict[str, Any] = {}
         local_validations = self.validations.copy()
         for param, validations in local_validations.items():
-
             if param not in data.keys():
                 if "required" in validations and not self.ignore_requirements:
                     raise RequiredValidationError(param)

@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,6 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# mypy: ignore-errors
 
 from __future__ import annotations
 
@@ -27,8 +28,7 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_survey_tipper(tmp_path):
-
-    path = tmp_path / r"../testTipper.geoh5"
+    path = tmp_path / r"test_Tipper.geoh5"
 
     workspace = Workspace(path)
     xlocs = np.linspace(-1000, 1000, 10)
@@ -43,51 +43,40 @@ def test_create_survey_tipper(tmp_path):
         base_stations, TipperBaseStations
     ), "Entity type TipperBaseStations failed to create."
 
-    with pytest.warns(UserWarning) as warn:
-        print(receivers.base_stations)
-
-    assert "Associated `base_stations` entity not set." in str(warn[0])
-
-    with pytest.raises(AttributeError) as error:
+    with pytest.raises(TypeError, match=f"{TipperBaseStations}"):
         receivers.base_stations = "123"
 
-    assert f"{TipperBaseStations}" in str(
-        error
-    ), "Missed raising error on 'base stations' change."
-
-    with pytest.raises(AttributeError) as error:
+    with pytest.raises(
+        TypeError, match=f"Provided receivers must be of type {type(receivers)}."
+    ):
         receivers.receivers = base_stations
 
-    assert (
-        f"The 'receivers' attribute cannot be set on class {type(receivers)}."
-        in str(error)
-    ), ("Missed raising AttributeError on setting 'receivers' on self.")
-
-    with pytest.raises(AttributeError) as error:
+    with pytest.raises(TypeError, match=f"{TipperBaseStations}"):
         base_stations.base_stations = receivers
 
-    assert f"{TipperBaseStations}" in str(
-        error
-    ), "Missed raising AttributeError on setting 'base_stations' from receiver class."
-
-    with pytest.raises(AttributeError) as error:
+    with pytest.raises(
+        AttributeError,
+        match=f"The 'base_station' attribute cannot be set on class {TipperBaseStations}.",
+    ):
         base_stations.base_stations = base_stations
-
-    assert (
-        f"The 'base_station' attribute cannot be set on class {TipperBaseStations}."
-        in str(error)
-    ), "Missed raising AttributeError on setting 'base_stations' on self."
 
     assert base_stations.base_stations == base_stations
 
     base_stations_test = TipperBaseStations.create(workspace, vertices=vertices[1:, :])
 
-    with pytest.raises(AttributeError) as error:
+    with pytest.raises(
+        AttributeError, match="The input 'base_stations' should have n_vertices"
+    ):
         receivers.base_stations = base_stations_test
 
-    assert "The input 'base_stations' should have n_vertices" in str(error)
-
     receivers.base_stations = base_stations
+
+    with pytest.raises(ValueError, match="Mask must be an array of shape"):
+        receivers.copy(mask=np.r_[1, 2, 3])
+
+    assert (
+        receivers.copy_from_extent(np.vstack([[1000, 1000], [1001, 1001]])) is None
+    ), "Error returning None mask."
 
     new_workspace = Workspace(path)
     base_stations_rec = new_workspace.get_entity(base_stations.uid)[0]
@@ -109,29 +98,37 @@ def test_create_survey_tipper(tmp_path):
 
     # Test copying receiver over through the receivers
     # Create a workspace
-    receivers.copy(Workspace(tmp_path / r"testATEM_copy.geoh5"))
-    new_workspace = Workspace(tmp_path / r"testATEM_copy.geoh5")
-    receivers_rec = new_workspace.get_entity("TipperReceivers")[0]
-    compare_entities(
-        receivers, receivers_rec, ignore=["_receivers", "_base_stations", "_parent"]
-    )
-    compare_entities(
-        base_stations,
-        receivers_rec.base_stations,
-        ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
-    )
+    receivers.copy(Workspace(tmp_path / r"test_Tipper_copy.geoh5"))
+    with Workspace(tmp_path / r"test_Tipper_copy.geoh5") as new_workspace:
+        receivers_rec = new_workspace.get_entity("Tipper rx")[0]
+        compare_entities(
+            receivers, receivers_rec, ignore=["_receivers", "_base_stations", "_parent"]
+        )
+        compare_entities(
+            base_stations,
+            receivers_rec.base_stations,
+            ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
+        )
 
     # Test copying receiver over through the base_stations
     # Create a workspace
-    new_workspace = Workspace(tmp_path / r"testATEM_copy2.geoh5")
-    base_stations_rec = base_stations.copy(new_workspace)
-    compare_entities(
-        receivers,
-        base_stations_rec.receivers,
-        ignore=["_receivers", "_base_stations", "_parent"],
-    )
-    compare_entities(
-        base_stations,
-        base_stations_rec,
-        ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
-    )
+    with Workspace(tmp_path / r"test_Tipper_copy2.geoh5") as new_workspace:
+        base_stations_rec = base_stations.copy(new_workspace)
+        compare_entities(
+            receivers,
+            base_stations_rec.receivers,
+            ignore=["_receivers", "_base_stations", "_parent"],
+        )
+        compare_entities(
+            base_stations,
+            base_stations_rec,
+            ignore=["_receivers", "_base_stations", "_parent", "_property_groups"],
+        )
+
+        # Test copying receiver over through the base_stations with extent
+        base_stations_rec = base_stations.copy_from_extent(
+            np.vstack([[0, -np.inf], [2000, np.inf]]), new_workspace
+        )
+        assert base_stations_rec.receivers.n_vertices == 5
+
+    workspace.close()

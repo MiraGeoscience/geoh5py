@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -22,12 +22,18 @@ from __future__ import annotations
 import inspect
 from uuid import UUID
 
-from .. import objects
+from .. import groups, objects
 from ..shared import Entity
 
-known_types = [
+known_object_types = [
     member.default_type_uid()
     for _, member in inspect.getmembers(objects)
+    if hasattr(member, "default_type_uid") and member.default_type_uid() is not None
+]
+
+known_group_types = [
+    member.default_type_uid()
+    for _, member in inspect.getmembers(groups)
     if hasattr(member, "default_type_uid") and member.default_type_uid() is not None
 ]
 
@@ -230,12 +236,38 @@ def file_parameter(
     return form
 
 
+def group_parameter(
+    main: bool = True,
+    label: str = "Object",
+    group_type: tuple = tuple(known_group_types),
+    value: str | None = None,
+    optional: str | None = None,
+) -> dict:
+    """
+    Dropdown menu of groups of specific types.
+
+    :param main: Show form in main.
+    :param label: Label identifier.
+    :param value: Input value.
+    :param group_type: Type of selectable groups.
+    :param optional: Make optional if not None. Initial state provided by not None
+        value.  Can be either 'enabled' or 'disabled'.
+
+    :returns: Ui_json compliant dictionary.
+    """
+    form = {"main": main, "label": label, "value": value, "groupType": group_type}
+
+    if optional is not None:
+        form.update(optional_parameter(optional))
+    return form
+
+
 def object_parameter(
     main: bool = True,
     label: str = "Object",
+    mesh_type: tuple = tuple(known_object_types),
     multi_select: bool = False,
-    mesh_type: tuple = tuple(known_types),
-    value: str = None,
+    value: str | None = None,
     optional: str | None = None,
 ) -> dict:
     """
@@ -269,9 +301,10 @@ def data_parameter(
     label: str = "Data channel",
     association: str = "Vertex",
     data_type: str = "Float",
-    data_group_type: str = None,
+    data_group_type: str | None = None,
     parent: str = "",
     value: str = "",
+    multi_select: bool = False,
     optional: str | None = None,
 ) -> dict:
     """
@@ -287,6 +320,7 @@ def data_parameter(
         'Dip direction & dip',
         'Strike & dip',
         or 'Multi-element'.
+    :param multi_select: Option to select multiple choices.
     :param parent: Parameter name corresponding to the parent object.
     :param optional: Make optional if not None. Initial state provided by not None
         value.  Can be either 'enabled' or 'disabled'.
@@ -298,6 +332,7 @@ def data_parameter(
         "association": association,
         "dataType": data_type,
         "label": label,
+        "multiSelect": multi_select,
         "parent": parent,
         "value": value,
     }

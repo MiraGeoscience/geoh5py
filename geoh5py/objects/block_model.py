@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,13 +18,17 @@
 from __future__ import annotations
 
 import uuid
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from .object_base import ObjectBase, ObjectType
+from .grid_object import GridObject
+
+if TYPE_CHECKING:
+    from geoh5py.objects import ObjectType
 
 
-class BlockModel(ObjectBase):
+class BlockModel(GridObject):
     """
     Rectilinear 3D tensor mesh defined by three perpendicular axes.
     Each axis is divided into discrete intervals that define the cell dimensions.
@@ -36,22 +40,22 @@ class BlockModel(ObjectBase):
     __TYPE_UID = uuid.UUID(
         fields=(0xB020A277, 0x90E2, 0x4CD7, 0x84, 0xD6, 0x612EE3F25051)
     )
-    _attribute_map = ObjectBase._attribute_map.copy()
+    _attribute_map = GridObject._attribute_map.copy()
     _attribute_map.update({"Origin": "origin", "Rotation": "rotation"})
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._origin = np.array([0, 0, 0])
-        self._rotation = 0
-        self._u_cell_delimiters = None
-        self._v_cell_delimiters = None
-        self._z_cell_delimiters = None
-        self._centroids = None
+        self._origin: np.ndarray = np.zeros(3)
+        self._rotation: float = 0.0
+        self._u_cell_delimiters: np.ndarray | None = None
+        self._v_cell_delimiters: np.ndarray | None = None
+        self._z_cell_delimiters: np.ndarray | None = None
+
         super().__init__(object_type, **kwargs)
 
         object_type.workspace._register_object(self)
 
     @property
-    def centroids(self):
+    def centroids(self) -> np.ndarray | None:
         """
         :obj:`numpy.array`,
         shape (:obj:`~geoh5py.objects.block_model.BlockModel.n_cells`, 3):
@@ -65,8 +69,13 @@ class BlockModel(ObjectBase):
                 [x_N, y_N, z_N]
             ]
         """
-        if getattr(self, "_centroids", None) is None:
-
+        if (
+            getattr(self, "_centroids", None) is None
+            and self.u_cells is not None
+            and self.v_cells is not None
+            and self.z_cells is not None
+            and self.origin is not None
+        ):
             cell_center_u = np.cumsum(self.u_cells) - self.u_cells / 2.0
             cell_center_v = np.cumsum(self.v_cells) - self.v_cells / 2.0
             cell_center_z = np.cumsum(self.z_cells) - self.z_cells / 2.0
@@ -85,6 +94,7 @@ class BlockModel(ObjectBase):
             xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.ravel(z_grid)]
 
             self._centroids = np.dot(rot, xyz.T).T
+            assert self._centroids is not None
 
             for ind, axis in enumerate(["x", "y", "z"]):
                 self._centroids[:, ind] += self.origin[axis]
@@ -153,7 +163,7 @@ class BlockModel(ObjectBase):
             value = np.r_[value]
             assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
             self._centroids = None
-            self._rotation = value.astype(float)
+            self._rotation = value.astype(float).item()
             self.workspace.update_attribute(self, "attributes")
 
     @property

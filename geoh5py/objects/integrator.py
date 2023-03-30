@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -31,7 +31,6 @@ class IntegratorPoints(Points):
     __TYPE_UID = uuid.UUID("{6832ACF3-78AA-44D3-8506-9574A3510C44}")
 
     def __init__(self, object_type: ObjectType, **kwargs):
-
         super().__init__(object_type, **kwargs)
 
         self.entity_type.name = "Geoscience INTEGRATOR Points"
@@ -50,7 +49,6 @@ class NeighbourhoodSurface(Surface):
     __TYPE_UID = uuid.UUID("{88087FB8-76AE-445B-9CDF-68DBCE530404}")
 
     def __init__(self, object_type: ObjectType, **kwargs):
-
         super().__init__(object_type, **kwargs)
 
         self.entity_type.name = "Neighbourhood Surface"

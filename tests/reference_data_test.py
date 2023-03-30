@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -28,7 +28,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_reference_data(tmp_path):
-
     name = "MyTestPointset"
     h5file_path = tmp_path / r"testPoints.geoh5"
     # Generate a random cloud of points with reference values

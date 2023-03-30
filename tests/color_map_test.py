@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -28,7 +28,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_color_map(tmp_path):
-
     name = "Grid2D_Colormap"
 
     # Generate a 2D array

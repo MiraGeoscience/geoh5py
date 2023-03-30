@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,24 +18,26 @@
 
 from __future__ import annotations
 
-from geoh5py.objects.surveys.electromagnetics.base import BaseEMSurvey
+import numpy as np
+import pytest
+
+from geoh5py.objects import Label
+from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_survey_tem(tmp_path):
-    h5file_path = tmp_path / r"testATEM.geoh5"
+def test_create_label(tmp_path):
+    h5file_path = tmp_path / r"testGroup.geoh5"
 
+    # Create a workspace
     with Workspace(h5file_path) as workspace:
-        survey = BaseEMSurvey(workspace)
+        label = Label.create(workspace, name="MyTestLabel")
 
-        for attr in [
-            "default_input_types",
-            "default_units",
-            "receivers",
-            "transmitters",
-            "unit",
-            "survey_type",
-        ]:
-            assert (
-                getattr(survey, attr, None) is None
-            ), f"Attribute {attr} of the BaseEMSurvey should be None."
+        assert label.copy_from_extent(np.vstack([[0, 0], [1, 1]])) is None
+
+        with pytest.warns(UserWarning):
+            copy_label = label.copy(mask=[[0, 0], [1, 1]])
+
+        compare_entities(
+            label, copy_label, ignore=["target_position", "label_position", "_uid"]
+        )
