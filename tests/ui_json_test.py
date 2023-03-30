@@ -25,7 +25,7 @@ from uuid import uuid4
 import numpy as np
 import pytest
 
-from geoh5py.groups import ContainerGroup, PropertyGroup
+from geoh5py.groups import ContainerGroup, DrillholeGroup, PropertyGroup
 from geoh5py.objects import Points
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
@@ -50,6 +50,7 @@ def get_workspace(directory):
     if len(workspace.objects) == 0:
         xyz = np.random.randn(12, 3)
         group = ContainerGroup.create(workspace)
+        DrillholeGroup.create(workspace, parent=group)
         points = Points.create(workspace, vertices=xyz, parent=group, name="Points_A")
         data = points.add_data(
             {
@@ -329,14 +330,44 @@ def test_object_promotion(tmp_path):
     ui_json["object"]["meshType"] = [points.entity_type.uid]
 
     in_file = InputFile(ui_json=ui_json)
+    in_file.write_ui_json("test.ui.json", path=tmp_path)
 
+    # Read back in
+    new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
     assert (
-        in_file.data["object"] == points
+        new_in_file.data["object"].uid == points.uid
     ), "Promotion of entity from uuid string failed."
 
     with pytest.raises(ValueError) as excinfo:
-        in_file.data = 123
+        new_in_file.data = 123
     assert "Input 'data' must be of type dict or None." in str(excinfo)
+
+
+def test_group_promotion(tmp_path):
+    workspace = get_workspace(tmp_path)
+    group = workspace.get_entity("Entity")[0]
+    dh_group = workspace.get_entity("Drillholes Group")[0]
+    ui_json = deepcopy(default_ui_json)
+    ui_json["object"] = templates.group_parameter()
+    ui_json["geoh5"] = workspace
+    ui_json["object"]["value"] = str(group.uid)
+    ui_json["object"]["groupType"] = [group.entity_type.uid]
+
+    ui_json["dh"] = templates.group_parameter()
+    ui_json["dh"]["value"] = str(dh_group.uid)
+    ui_json["dh"]["groupType"] = [dh_group.entity_type.uid]
+
+    in_file = InputFile(ui_json=ui_json)
+    in_file.write_ui_json("test.ui.json", path=tmp_path)
+
+    new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
+    assert (
+        new_in_file.data["object"].uid == group.uid
+    ), "Promotion of entity from uuid string failed."
+
+    assert (
+        new_in_file.data["dh"].uid == dh_group.uid
+    ), "Promotion of entity from uuid string failed."
 
 
 def test_invalid_uuid_string(tmp_path):
@@ -443,10 +474,8 @@ def test_input_file(tmp_path):
     in_file = InputFile(ui_json=ui_json)
     out_file = in_file.write_ui_json(path=tmp_path)
 
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(ValueError, match="Input file should be a str or Path"):
         InputFile.read_ui_json("somefile.json")
-
-    assert "Input file should have the extension *.ui.json" in str(error)
 
     # Load the input back in
     reload_input = InputFile.read_ui_json(out_file)
