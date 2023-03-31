@@ -81,8 +81,8 @@ def integer_parameter(
     main: bool = True,
     label: str = "Integer data",
     value: int = 1,
-    vmin: int = None,
-    vmax: int = None,
+    vmin: int | None = None,
+    vmax: int | None = None,
     optional: str | None = None,
 ) -> dict:
     """
@@ -114,8 +114,8 @@ def float_parameter(
     main: bool = True,
     label: str = "Float data",
     value: float = 1.0,
-    vmin: float = None,
-    vmax: float = None,
+    vmin: float | None = None,
+    vmax: float | None = None,
     precision: int = 2,
     line_edit: bool = True,
     optional: str | None = None,
