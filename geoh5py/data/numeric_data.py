@@ -76,10 +76,14 @@ class NumericData(Data, ABC):
         stored and the expected number of cells or vertices.
         """
         if self.n_values is not None:
-            if values is None or len(values) < self.n_values:
+            if values is None:
+                return values
+
+            if len(values) < self.n_values:
                 full_vector = np.ones(self.n_values, dtype=type(self.ndv))
                 full_vector *= np.nan if isinstance(self.ndv, float) else self.ndv
-                full_vector[: len(np.ravel(values))] = np.ravel(values)
+                if values is not None:
+                    full_vector[: len(np.ravel(values))] = np.ravel(values)
                 return full_vector
 
             if len(values) > self.n_values or values.ndim > 1:

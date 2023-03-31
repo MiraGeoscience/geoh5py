@@ -81,19 +81,15 @@ class Data(Entity):
         if parent is None:
             parent = self.parent
 
-        if isinstance(mask, np.ndarray):
+        if self.values is not None and mask is not None:
+            if not isinstance(mask, np.ndarray):
+                raise TypeError("Mask must be an array or None.")
+
             if mask.dtype != np.bool or mask.shape != self.values.shape:
                 raise ValueError(
                     f"Mask must be a boolean array of shape {self.values.shape}, not {mask.shape}"
                 )
-        elif mask is not None:
-            raise TypeError("Mask must be an array or None.")
 
-        if (
-            mask is not None
-            and self.values is not None
-            and mask.shape == self.values.shape
-        ):
             n_values = (
                 parent.n_cells
                 if self.association is DataAssociationEnum.CELL
