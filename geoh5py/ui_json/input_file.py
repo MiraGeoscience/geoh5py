@@ -117,7 +117,7 @@ class InputFile:
             if self.workspace is None and "geoh5" in value:
                 self.workspace = value["geoh5"]
 
-            value = self._promote(value)
+            value = self.promote(value)
 
             if self.validators is not None and not self.validation_options.get(
                 "disabled", False
@@ -367,12 +367,12 @@ class InputFile:
             self.update_ui_values(self.data, none_map=none_map)
 
         with open(self.path_name, "w", encoding="utf-8") as file:
-            json.dump(self._stringify(self._demote(self.ui_json)), file, indent=4)
+            json.dump(self.stringify(self.demote(self.ui_json)), file, indent=4)
 
         return self.path_name
 
     @staticmethod
-    def _stringify(var: dict[str, Any]) -> dict[str, Any]:
+    def stringify(var: dict[str, Any]) -> dict[str, Any]:
         """
         Convert inf, none, and list types to strings within a dictionary
 
@@ -431,12 +431,13 @@ class InputFile:
 
         return ui_json
 
-    def _demote(self, var: dict[str, Any]) -> dict[str, str]:
+    @classmethod
+    def demote(cls, var: dict[str, Any]) -> dict[str, str]:
         """Converts promoted parameter values to their string representations."""
         mappers = [entity2uuid, as_str_if_uuid, workspace2path, container_group2name]
         for key, value in var.items():
             if isinstance(value, dict):
-                var[key] = self._demote(value)
+                var[key] = cls.demote(value)
             elif isinstance(value, (list, tuple)):
                 var[key] = [dict_mapper(val, mappers) for val in value]
             else:
@@ -444,14 +445,14 @@ class InputFile:
 
         return var
 
-    def _promote(self, var: dict[str, Any]) -> dict[str, Any]:
+    def promote(self, var: dict[str, Any]) -> dict[str, Any]:
         """Convert uuids to entities from the workspace."""
         if self.workspace is None:
             return var
 
         for key, value in var.items():
             if isinstance(value, dict):
-                var[key] = self._promote(value)
+                var[key] = self.promote(value)
             elif isinstance(value, UUID):
                 self.association_validator(key, value, self.workspace)
                 var[key] = uuid2entity(value, self.workspace)
