@@ -337,7 +337,7 @@ class InputFile:
         self,
         name: str | None = None,
         none_map: dict[str, Any] | None = None,
-        path: str | None = None,
+        path: str | Path | None = None,
     ):
         """
         Writes a formatted ui.json file from InputFile data
