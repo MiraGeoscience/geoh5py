@@ -81,8 +81,8 @@ def integer_parameter(
     main: bool = True,
     label: str = "Integer data",
     value: int = 1,
-    vmin: int = 0,
-    vmax: int = 100,
+    vmin: int | None = None,
+    vmax: int | None = None,
     optional: str | None = None,
 ) -> dict:
     """
@@ -99,7 +99,12 @@ def integer_parameter(
 
     :returns: Ui_json compliant dictionary.
     """
-    form = {"main": main, "label": label, "value": value, "min": vmin, "max": vmax}
+    form = {"main": main, "label": label, "value": value}
+
+    for prop, val in {"vmin": vmin, "vmax": vmax}.items():
+        if val is not None:
+            form[prop] = val
+
     if optional is not None:
         form.update(optional_parameter(optional))
     return form
@@ -109,8 +114,8 @@ def float_parameter(
     main: bool = True,
     label: str = "Float data",
     value: float = 1.0,
-    vmin: float = 0.0,
-    vmax: float = 100.0,
+    vmin: float | None = None,
+    vmax: float | None = None,
     precision: int = 2,
     line_edit: bool = True,
     optional: str | None = None,
@@ -133,14 +138,17 @@ def float_parameter(
         "main": main,
         "label": label,
         "value": value,
-        "min": vmin,
         "precision": precision,
         "lineEdit": line_edit,
-        "max": vmax,
     }
+
+    for prop, val in {"vmin": vmin, "vmax": vmax}.items():
+        if val is not None:
+            form[prop] = val
 
     if optional is not None:
         form.update(optional_parameter(optional))
+
     return form
 
 
