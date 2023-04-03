@@ -49,10 +49,11 @@ from geoh5py.workspace import Workspace
 def get_workspace(directory):
     workspace = Workspace(path.join(directory, "..", "testPoints.geoh5"))
     if len(workspace.objects) == 0:
-        xyz = np.random.randn(12, 3)
         group = ContainerGroup.create(workspace)
         DrillholeGroup.create(workspace, parent=group)
-        points = Points.create(workspace, vertices=xyz, parent=group, name="Points_A")
+        points = Points.create(
+            workspace, vertices=np.random.randn(12, 3), parent=group, name="Points_A"
+        )
         data = points.add_data(
             {
                 "values A": {"values": np.random.randn(12)},
@@ -291,15 +292,6 @@ def test_multi_choice_string_parameter(tmp_path):
     ui_json["choice_string_parameter"]["enabled"] = False
     ui_json["choice_string_parameter"]["value"] = ""
     in_file = InputFile(ui_json=ui_json)
-
-    with pytest.raises(
-        TypeValidationError,
-        match=TypeValidationError.message(
-            "choice_string_parameter", "NoneType", ["list"]
-        ),
-    ):
-        getattr(in_file, "data")
-
     ui_json["choice_string_parameter"]["enabled"] = True
     ui_json["choice_string_parameter"]["value"] = []
     in_file = InputFile(ui_json=ui_json)
@@ -383,9 +375,8 @@ def test_object_promotion(tmp_path):
         new_in_file.data["object"].uid == points.uid
     ), "Promotion of entity from uuid string failed."
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ValueError, match="Input 'data' must be of type dict or None."):
         new_in_file.data = 123
-    assert "Input 'data' must be of type dict or None." in str(excinfo)
 
 
 def test_group_promotion(tmp_path):
@@ -627,12 +618,6 @@ def test_multi_object_value_parameter(tmp_path):
     in_file = InputFile(ui_json=ui_json)
     data = in_file.data
     data["object"] = points_b.uid
-
-    with pytest.raises(
-        TypeValidationError,
-        match=TypeValidationError.message("object", "Points", ["list"]),
-    ):
-        in_file.data = data
 
     data["object"] = [points_b.uid]
     in_file.data = data

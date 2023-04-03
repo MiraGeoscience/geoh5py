@@ -304,7 +304,6 @@ def data_parameter(
     data_group_type: str | None = None,
     parent: str = "",
     value: str = "",
-    multi_select: bool = False,
     optional: str | None = None,
 ) -> dict:
     """
@@ -332,7 +331,6 @@ def data_parameter(
         "association": association,
         "dataType": data_type,
         "label": label,
-        "multiSelect": multi_select,
         "parent": parent,
         "value": value,
     }

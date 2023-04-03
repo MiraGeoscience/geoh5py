@@ -235,10 +235,6 @@ class TypeValidator(BaseValidator):
         if not isinstance(valid, list):
             raise TypeError("Input `valid` options must be a type or list of types.")
 
-        if list in valid:  # Assumes a multi element value.
-            if not isinstance(value, list):
-                raise TypeValidationError(name, type(value).__name__, ["list"])
-
         if not iterable(value):
             value = (value,)
 
