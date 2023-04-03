@@ -70,13 +70,20 @@ class NumericData(Data, ABC):
 
         self.workspace.update_attribute(self, "values")
 
-    def check_vector_length(self, values) -> np.ndarray:
+    def check_vector_length(self, values: np.ndarray | None) -> np.ndarray:
         """
         Check for possible mismatch between the length of values
         stored and the expected number of cells or vertices.
+
+        :param values: Array of values to check
+
+        :returns: values: An array of float values of length n_values or None
         """
         if self.n_values is not None:
-            if values is None or len(values) < self.n_values:
+            if values is None:
+                return values
+
+            if len(values) < self.n_values:
                 full_vector = np.ones(self.n_values, dtype=type(self.ndv))
                 full_vector *= np.nan if isinstance(self.ndv, float) else self.ndv
                 full_vector[: len(np.ravel(values))] = np.ravel(values)
