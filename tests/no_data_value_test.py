@@ -52,14 +52,14 @@ def test_no_data_values(tmp_path):
         )
         data_objs[-1].values = None  # Reset all values to nan
 
-    # Read the data back in from a fresh workspace
-    with Workspace(h5file_path) as new_workspace:
-        for data in data_objs:
-            rec_data = new_workspace.get_entity(data.name)[0]
+        # Read the data back in from a fresh workspace
+        with Workspace(h5file_path) as new_workspace:
+            for data in data_objs:
+                rec_data = new_workspace.get_entity(data.name)[0]
 
-            if data.values is None:
-                assert rec_data.values is None, "Data 'values' saved should None"
-            else:
-                assert all(
-                    np.isnan(rec_data.values) == np.isnan(data.values)
-                ), "Mismatch between input and recovered data values"
+                if data.values is None:
+                    assert rec_data.values is None, "Data 'values' saved should None"
+                else:
+                    assert all(
+                        np.isnan(rec_data.values) == np.isnan(data.values)
+                    ), "Mismatch between input and recovered data values"
