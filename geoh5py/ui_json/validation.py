@@ -173,21 +173,24 @@ class InputValidation:
                     validations[key]["property_group_type"] = item["dataGroupType"]
                     validations[key]["types"] = [str, UUID, PropertyGroup]
             elif "value" in item:
-                if item["value"] is None:
-                    check_type = str
-                else:
+                check_type = str
+                if item["value"] is not None:
                     check_type = cast(Any, type(item["value"]))
 
                 validations[key] = {
-                    "types": [check_type],
+                    "types": [check_type, Entity]
+                    if check_type is UUID
+                    else [check_type],
                 }
-                if check_type is UUID:
-                    validations[key]["types"].append(Entity)
 
             validations[key].update({"optional": not requires_value(ui_json, key)})
 
-            if not requires_value(ui_json, key) and "types" in validations[key]:
-                validations[key]["types"].append(type(None))
+            if "types" in validations[key]:
+                if not requires_value(ui_json, key):
+                    validations[key]["types"] += [type(None)]
+
+                if item.get("multiSelect", False):
+                    validations[key]["types"] += [list]
 
         return validations
 
@@ -242,8 +245,8 @@ class InputValidation:
             RequiredValidator,
             AtLeastOneValidator,
             OptionalValidator,
-            UUIDValidator,
             TypeValidator,
+            UUIDValidator,
             AssociationValidator,
             PropertyGroupValidator,
             ValueValidator,
@@ -284,8 +287,9 @@ class InputValidation:
                     one_of_validations[one_of_group] = val
 
             if "association" in validations and validations["association"] in data:
-                validations["association"] = data[validations["association"]]
-                self.validate(param, data[param], validations)
+                valid = validations.copy()
+                valid["association"] = data[validations["association"]]
+                self.validate(param, data[param], valid)
             else:
                 self.validate(param, data.get(param, None), validations)
 
