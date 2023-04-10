@@ -24,13 +24,14 @@ import pytest
 from geoh5py.data import FloatData, data_type
 from geoh5py.groups import ContainerGroup, DrillholeGroup, Group
 from geoh5py.objects import Drillhole, ObjectBase
+from geoh5py.shared import fetch_h5_handle
 from geoh5py.shared.concatenation import (
     ConcatenatedData,
     ConcatenatedObject,
     ConcatenatedPropertyGroup,
     Concatenator,
 )
-from geoh5py.shared.utils import compare_entities
+from geoh5py.shared.utils import as_str_if_uuid, compare_entities
 from geoh5py.workspace import Workspace
 
 
@@ -191,21 +192,28 @@ def test_create_drillhole_data(tmp_path):
                 },
             )
 
-        values = np.random.randn(30)
-        values[0] = np.nan
-        values[-1] = np.nan
+        test_values = np.random.randn(30)
+        test_values[0] = np.nan
+        test_values[-1] = np.nan
         well.add_data(
             {
                 "my_log_values/": {
                     "depth": np.arange(0, 50.0),
-                    "values": values.astype(np.float32),
+                    "values": np.random.randn(50),
                 },
                 "log_wt_tolerance": {
                     "depth": np.arange(0.01, 50.01),
-                    "values": np.random.randn(50),
+                    "values": test_values.astype(np.float32),
                 },
             }
         )
+
+        with fetch_h5_handle(h5file_path) as h5file:
+            name = list(h5file)[0]
+            group = h5file[name]["Groups"][as_str_if_uuid(dh_group.uid)][
+                "Concatenated Data"
+            ]
+            assert np.all(~np.isnan(group["Data"]["log_wt_tolerance"][:]))
 
         assert len(well.get_data("my_log_values/")) == 1
         assert len(well.get_data("my_log_values/")[0].values) == 50
