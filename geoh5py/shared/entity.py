@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -24,9 +24,13 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 from geoh5py.shared.utils import str2uuid
 
 if TYPE_CHECKING:
+    from numpy import ndarray
+
     from .. import shared
     from ..workspace import Workspace
 
@@ -49,11 +53,11 @@ class Entity(ABC):
     }
     _visible = True
 
-    def __init__(self, uid: uuid.UUID | None = None, **kwargs):
+    def __init__(self, uid: uuid.UUID | None = None, name="Entity", **kwargs):
         self._uid = (
             str2uuid(uid) if isinstance(str2uuid(uid), uuid.UUID) else uuid.uuid4()
         )
-        self._name = "Entity"
+        self._name = name
         self._parent: Entity | None = None
         self._children: list = []
         self._allow_delete = True
@@ -168,25 +172,23 @@ class Entity(ABC):
         """
         return self._clipping_ids
 
-    def copy(self, parent=None, copy_children: bool = True):
+    @abstractmethod
+    def mask_by_extent(
+        self, extent: np.ndarray, inverse: bool = False
+    ) -> np.ndarray | None:
         """
-        Function to copy an entity to a different parent entity.
+        Get a mask array from coordinate extent.
 
-        :param parent: Target parent to copy the entity under. Copied to current
-            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: (Optional) Create copies of all children entities along with it.
+        :param extent: Bounding box extent coordinates defined by either:
+            - obj:`numpy.ndarray` of shape (2, 3)
+                3D coordinate: [[west, south, bottom], [east, north, top]]
+            - obj:`numpy.ndarray` of shape (2, 2)
+                Horizontal coordinates: [[west, south], [east, north]].
+        :param inverse: Return the complement of the mask extent. Default to False
 
-        :return entity: Registered Entity to the workspace.
+        :return: Array of bool defining the vertices or cell centers
+            within the mask extent, or None if no intersection.
         """
-
-        if parent is None:
-            parent = self.parent
-
-        new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children
-        )
-
-        return new_entity
 
     @classmethod
     def create(cls, workspace, **kwargs):
@@ -209,6 +211,64 @@ class Entity(ABC):
             **{**entity_kwargs, **entity_type_kwargs},
         )
         return new_object
+
+    @abstractmethod
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Function to copy an entity to a different parent entity.
+
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: (Optional) Create copies of all children entities along with it.
+        :param clear_cache: Clear array attributes after copy to minimize the
+            memory footprint of the workspace.
+        :param mask: Array of indices to sub-sample the input entity.
+        :param kwargs: Additional keyword arguments to pass to the copy constructor.
+
+        :return entity: Registered Entity to the workspace.
+        """
+
+    def copy_from_extent(
+        self,
+        extent: ndarray,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        inverse: bool = False,
+        **kwargs,
+    ) -> Entity | None:
+        """
+        Function to copy an entity to a different parent entity.
+
+        :param extent: Bounding box extent requested for the input entity, as supplied for
+            :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param copy_children: (Optional) Create copies of all children entities along with it.
+        :param clear_cache: Clear array attributes after copy.
+        :param inverse: Keep the inverse (clip) of the extent selection.
+        :param kwargs: Additional keyword arguments to pass to the copy constructor.
+
+        :return entity: Registered Entity to the workspace.
+        """
+        indices = self.mask_by_extent(extent, inverse=inverse)
+        if indices is None:
+            return None
+
+        return self.copy(
+            parent=parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            mask=indices,
+            **kwargs,
+        )
 
     @property
     @abstractmethod
@@ -302,12 +362,11 @@ class Entity(ABC):
 
     @parent.setter
     def parent(self, parent: shared.Entity):
-
         current_parent = self._parent
 
         if parent is not None:
+            parent.add_children([self])
             self._parent = parent
-            self._parent.add_children([self])
 
             if current_parent is not None and current_parent != self._parent:
                 current_parent.remove_children([self])
@@ -375,7 +434,7 @@ class Entity(ABC):
         self.workspace.remove_children(self, children)
 
     def remove_data_from_group(
-        self, data: list | Entity | uuid.UUID | str, name: str = None
+        self, data: list | Entity | uuid.UUID | str, name: str | None = None
     ) -> None:
         """
         Remove data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
@@ -388,7 +447,6 @@ class Entity(ABC):
             A new group is created if none exist with the given name.
         """
         if getattr(self, "property_groups", None) is not None:
-
             if isinstance(data, list):
                 uids = []
                 for datum in data:

@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoapps.
 #
@@ -11,13 +11,14 @@ import json
 import os
 import warnings
 from copy import deepcopy
+from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+from geoh5py import Workspace
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
 from geoh5py.shared.validators import AssociationValidator
-from geoh5py.workspace import Workspace
 
 from ..shared.utils import (
     as_str_if_uuid,
@@ -37,7 +38,6 @@ from .utils import (
     path2workspace,
     set_enabled,
     str2inf,
-    str2list,
     str2none,
     workspace2path,
 )
@@ -66,21 +66,24 @@ class InputFile:
 
     _path: str | None = None
     _name: str | None = None
+    _data: dict[str, Any] | None
+    _ui_json: dict[str, Any] | None
     _ui_validators: InputValidation = InputValidation(
         validations=ui_validations,
         validation_options={"ignore_list": ("value",)},
     )
     _validate = True
     _validators = None
+    _validations: dict | None
     association_validator = AssociationValidator()
 
     def __init__(
         self,
-        data: dict[str, Any] = None,
-        ui_json: dict[str, Any] = None,
+        data: dict[str, Any] | None = None,
+        ui_json: dict[str, Any] | None = None,
         validate: bool = True,
-        validations: dict = None,
-        validation_options: dict = None,
+        validations: dict | None = None,
+        validation_options: dict | None = None,
     ):
         self._workspace = None
         self._validation_options = validation_options
@@ -91,10 +94,7 @@ class InputFile:
 
     @property
     def data(self):
-        if (
-            getattr(self, "_data", None) is None
-            and getattr(self, "_ui_json", None) is not None
-        ):
+        if getattr(self, "_data", None) is None and self.ui_json is not None:
             self.data = flatten(self.ui_json)
 
         return self._data
@@ -176,14 +176,21 @@ class InputFile:
         return None
 
     @staticmethod
-    def read_ui_json(json_file: str, **kwargs):
+    def read_ui_json(json_file: str | Path, **kwargs):
         """
         Read and create an InputFile from ui.json
         """
-        input_file = InputFile(**kwargs)
+        if isinstance(json_file, Path):
+            json_file = str(json_file)
 
-        if "ui.json" not in json_file:
-            raise ValueError("Input file should have the extension *.ui.json")
+        if not isinstance(json_file, str) or not json_file.endswith(".ui.json"):
+            raise ValueError(
+                "Input file should be a str or Path with extension *.ui.json"
+            )
+
+        input_file = InputFile(**kwargs)
+        input_file.path = os.path.dirname(os.path.abspath(json_file))
+        input_file.name = os.path.basename(json_file)
 
         with open(json_file, encoding="utf-8") as file:
             input_file.load(json.load(file))
@@ -202,8 +209,7 @@ class InputFile:
 
     @ui_json.setter
     def ui_json(self, value: dict[str, Any]):
-        if value is not None:
-
+        if value is not None and self.validations is not None:
             if not isinstance(value, dict):
                 raise ValueError("Input 'ui_json' must be of type dict or None.")
 
@@ -212,7 +218,7 @@ class InputFile:
             for key, validations in default_validations.items():
                 if key in self.validations:
                     validations = {**validations, **self.validations[key]}
-                self._validations[key] = validations
+                self.validations[key] = validations
         else:
             self._ui_json = None
         self._validators = None
@@ -290,7 +296,7 @@ class InputFile:
         return self._validation_options
 
     @property
-    def validations(self):
+    def validations(self) -> dict | None:
         if getattr(self, "_validations", None) is None:
             self._validations = deepcopy(base_validations)
 
@@ -345,9 +351,9 @@ class InputFile:
 
     def write_ui_json(
         self,
-        name: str = None,
-        none_map: dict[str, Any] = None,
-        path: str = None,
+        name: str | None = None,
+        none_map: dict[str, Any] | None = None,
+        path: str | Path | None = None,
     ):
         """
         Writes a formatted ui.json file from InputFile data
@@ -356,11 +362,12 @@ class InputFile:
         :param none_map: Map parameter None values to non-null numeric types.
         :param path: Directory to write the ui.json to.
         """
+
         if name is not None:
             self.name = name
 
         if path is not None:
-            self.path = path
+            self.path = os.path.abspath(path)
 
         if self.path_name is None:
             raise AttributeError(
@@ -391,7 +398,7 @@ class InputFile:
             representations in json format.
         """
         for key, value in var.items():
-            exclude = ["choiceList", "meshType", "dataType", "association"]
+            exclude = ["choiceList", "meshType", "dataType", "groupType", "association"]
             mappers = (
                 [list2str, inf2str, as_str_if_uuid, none2str]
                 if key not in exclude
@@ -431,22 +438,19 @@ class InputFile:
 
                 value = cls.numify(value)
 
-            mappers = (
-                [str2none, str2inf, str2uuid, path2workspace]
-                if key == "ignore_values"
-                else [str2list, str2none, str2inf, str2uuid, path2workspace]
-            )
+            mappers = [str2none, str2inf, str2uuid, path2workspace]
             ui_json[key] = dict_mapper(value, mappers)
 
         return ui_json
 
-    def demote(self, var: dict[str, Any]) -> dict[str, str]:
+    @classmethod
+    def demote(cls, var: dict[str, Any]) -> dict[str, str]:
         """Converts promoted parameter values to their string representations."""
         mappers = [entity2uuid, as_str_if_uuid, workspace2path, container_group2name]
         for key, value in var.items():
-
             if isinstance(value, dict):
-                var[key] = self.demote(value)
+                var[key] = cls.demote(value)
+
             elif isinstance(value, (list, tuple)):
                 var[key] = [dict_mapper(val, mappers) for val in value]
             else:
@@ -460,11 +464,22 @@ class InputFile:
             return var
 
         for key, value in var.items():
-
             if isinstance(value, dict):
                 var[key] = self.promote(value)
-            elif isinstance(value, UUID):
-                self.association_validator(key, value, self.workspace)
-                var[key] = uuid2entity(value, self.workspace)
+            else:
+                if isinstance(value, list):
+                    var[key] = [self._uid_promotion(key, val) for val in value]
+                else:
+                    var[key] = self._uid_promotion(key, value)
 
         return var
+
+    def _uid_promotion(self, key, value):
+        """
+        Check if the value needs to be promoted.
+        """
+        if isinstance(value, UUID):
+            self.association_validator(key, value, self.workspace)
+            value = uuid2entity(value, self.workspace)
+
+        return value

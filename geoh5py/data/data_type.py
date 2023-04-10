@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -89,7 +89,6 @@ class DataType(EntityType):
 
     @color_map.setter
     def color_map(self, color_map: ColorMap | dict | np.ndarray):
-
         if isinstance(color_map, dict):
             color_map = ColorMap(**color_map)
 

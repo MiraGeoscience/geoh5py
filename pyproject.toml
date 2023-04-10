@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "geoh5py"
-version = "0.5.0"
+version = "0.8.0-alpha.1"
 license = "LGPL-3.0-or-later"
 description = "Python API for geoh5, an open file format for geoscientific data"
 authors = ["Mira Geoscience <support@mirageoscience.com>"]
@@ -23,10 +23,10 @@ classifiers = [
 exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
 
 [tool.poetry.dependencies]
-python = "^3.7.2,<3.11"
+python = "^3.8,<3.11"
 Pillow = ">=8.0.1,<10.0.0"
 h5py = "^3.2.1"
-numpy = "!=1.19.4, ^1.21.5"
+numpy = "!=1.19.4, ~1.23.5"
 
 
 [tool.poetry.dev-dependencies]
@@ -57,13 +57,39 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 line_length = 88
-# auto-updated by seed-isort-config
-
-known_third_party = ["Add2Build", "PIL", "StringIO", "autodoc", "edit_on_github", "environmentSetup", "h5py", "numpy", "poetry_publish", "pytest", "toml", "urllib2"]
-
 
 [tool.black]
 # defaults are just fine
+
+[tool.mypy]
+warn_unused_configs = true
+ignore_missing_imports = true
+scripts_are_modules = true
+show_error_context = true
+show_column_numbers = true
+check_untyped_defs = true
+
+plugins = [
+#    'numpy.typing.mypy_plugin'
+]
+
+[tool.coverage.run]
+branch = true
+source = "geoh5py"
+omit = [
+    "geoh5py/handlers/*",
+    "geoh5py/interfaces/*"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "raise NotImplementedError",
+    "pass",
+    "if TYPE_CHECKING",
+    "pragma: no cover"
+]
+
+fail_under = 80
 
 [build-system]
 requires = ["poetry-core>=1.0.0", "setuptools"]

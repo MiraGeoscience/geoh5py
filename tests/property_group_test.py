@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -82,7 +82,11 @@ def test_create_property_group(tmp_path):
             new_curve.property_groups is None
         ), "Property_groups not properly removed on copy without children."
 
-        rec_object.property_groups = None
+        #
+        rec_object.remove_property_groups(rec_prop_group)
+        assert len(rec_object.property_groups) == 1, "Failed to remove property group"
+
+        rec_object.remove_property_groups(rec_object.property_groups)
 
     with Workspace(h5file_path) as workspace:
         rec_object = workspace.get_entity(curve.uid)[0]

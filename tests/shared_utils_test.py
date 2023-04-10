@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -19,9 +19,15 @@ from __future__ import annotations
 
 import re
 
+import numpy as np
 import pytest
 
-from geoh5py.shared.utils import iterable, iterable_message, mask_by_extent
+from geoh5py.shared.utils import (
+    box_intersect,
+    iterable,
+    iterable_message,
+    mask_by_extent,
+)
 
 
 def test_iterable():
@@ -48,14 +54,72 @@ def test_mask_by_extent():
 
     with pytest.raises(
         ValueError,
-        match=re.escape("Input 'extent' must be an array-like of shape(2, 3)."),
+        match=re.escape("Input 'extent' must be a 2D array-like"),
     ):
-        mask_by_extent(points, corners)
+        mask_by_extent("abc", corners)
+
+    assert not mask_by_extent(
+        np.vstack([points]), np.vstack(corners[:2])
+    ), "Point should have been outside."
+
+
+@pytest.mark.parametrize(
+    "box_a, box_b",
+    [
+        (np.vstack([[-2, -2, -2], [2, 2, 2]]), np.vstack([[0, 0, 0], [4, 4, 4]])),
+        (np.vstack([[-2, -2], [2, 2]]), np.vstack([[0, 0], [4, 4]])),
+    ],
+)
+def test_box_intersect_corner(box_a, box_b):
+    assert box_intersect(box_a, box_b)
+
+
+@pytest.mark.parametrize(
+    "box_a, box_b",
+    [
+        (np.vstack([[-2, -2, -2], [2, 2, 2]]), np.vstack([[-1, -1, 0], [1, 1, 4]])),
+        (np.vstack([[-2, -2], [2, 2]]), np.vstack([[-1, -1], [1, 1]])),
+    ],
+)
+def test_box_intersect_face(box_a, box_b):
+    assert box_intersect(box_a, box_b)
+
+
+@pytest.mark.parametrize(
+    "box_a, box_b",
+    [
+        (np.vstack([[-2, -2, -2], [2, 2, 2]]), np.vstack([[-1, -1, -1], [1, 1, 1]])),
+        (np.vstack([[-2, -2], [2, 2]]), np.vstack([[-1, -1], [1, 1]])),
+    ],
+)
+def test_box_intersect_inside(box_a, box_b):
+    assert box_intersect(box_a, box_b)
+
+
+@pytest.mark.parametrize(
+    "box_a, box_b",
+    [
+        (np.vstack([[-2, -2, -2], [2, 2, 2]]), np.vstack([[1, 1, 4], [2, 2, 5]])),
+        (np.vstack([[-2, -2], [2, 2]]), np.vstack([[1, 4], [2, 5]])),
+    ],
+)
+def test_box_intersect_disjoint(box_a, box_b):
+    assert not box_intersect(box_a, box_b)
+
+
+def test_box_intersect_input():
+    box_a = np.vstack([[-2, -2, -2], [2, 2, 2]])
+    # One corner inside
+    box_b = np.vstack([[0, 0, 0], [4, 4, 4]])
+
+    with pytest.raises(
+        TypeError,
+        match=re.escape("Input extents must be 2D numpy.ndarrays."),
+    ):
+        box_intersect(np.r_[1], box_b)
 
     with pytest.raises(
         ValueError,
-        match=re.escape("Input 'locations' must be an array-like of shape(*, 3)."),
+        match=re.escape("Extents must be of shape (2, N) containing the minimum"),
     ):
-        mask_by_extent(points, corners[:2])
-
-    assert not mask_by_extent([points], corners[:2]), "Point should have been outside."
+        box_intersect(box_a, box_b[::-1, :])

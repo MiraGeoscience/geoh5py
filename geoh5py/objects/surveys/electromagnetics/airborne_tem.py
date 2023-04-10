@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -22,12 +22,14 @@ import uuid
 import numpy as np
 
 from geoh5py.objects.curve import Curve
+from geoh5py.objects.object_base import ObjectType
 
-from .base import BaseEMSurvey
+from .base import BaseTEMSurvey
 
 
-class BaseAirborneTEM(BaseEMSurvey, Curve):
-    __MAP = {
+class BaseAirborneTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
+    __INPUT_TYPE = ["Rx", "Tx", "Tx and Rx"]
+    _PROPERTY_MAP = {
         "crossline_offset": "Crossline offset",
         "inline_offset": "Inline offset",
         "pitch": "Pitch",
@@ -35,18 +37,72 @@ class BaseAirborneTEM(BaseEMSurvey, Curve):
         "vertical_offset": "Vertical offset",
         "yaw": "Yaw",
     }
-    __UNITS = [
-        "Seconds (s)",
-        "Milliseconds (ms)",
-        "Microseconds (us)",
-        "Nanoseconds (ns)",
-    ]
-    __INPUT_TYPE = ["Rx", "Tx", "Tx and Rx"]
 
     @property
-    def default_input_types(self) -> list[str]:
-        """Input types. Must be one of 'Rx', 'Tx', 'Tx and Rx'."""
-        return self.__INPUT_TYPE
+    def crossline_offset(self) -> float | uuid.UUID | None:
+        """
+        Numeric value or property UUID for the crossline offset between receiver and transmitter.
+        """
+        return self.fetch_metadata("crossline_offset")
+
+    @crossline_offset.setter
+    def crossline_offset(self, value: float | uuid.UUID | None):
+        self.set_metadata("crossline_offset", value)
+
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        cell_mask: np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Sub-class extension of :func:`~geoh5py.objects.cell_object.CellObject.copy`.
+        """
+        if parent is None:
+            parent = self.parent
+
+        omit_list = [
+            "_metadata",
+            "_receivers",
+            "_transmitters",
+        ]
+        metadata = self.metadata.copy()
+        new_entity = super().copy(
+            parent=parent,
+            clear_cache=clear_cache,
+            copy_children=copy_children,
+            mask=mask,
+            cell_mask=cell_mask,
+            omit_list=omit_list,
+            **kwargs,
+        )
+
+        metadata["EM Dataset"][new_entity.type] = new_entity.uid
+
+        complement: AirborneTEMTransmitters | AirborneTEMReceivers = (
+            self.transmitters  # type: ignore
+            if isinstance(self, AirborneTEMReceivers)
+            else self.receivers
+        )
+        if complement is not None:
+            new_complement = super(Curve, complement).copy(  # type: ignore
+                parent=parent,
+                omit_list=omit_list,
+                copy_children=copy_children,
+                clear_cache=clear_cache,
+                mask=mask,
+            )
+
+            setattr(new_entity, complement.type, new_complement)
+            metadata["EM Dataset"][complement.type] = new_complement.uid
+            new_complement.metadata = metadata
+
+        new_entity.metadata = metadata
+
+        return new_entity
 
     @property
     def default_metadata(self) -> dict:
@@ -62,37 +118,55 @@ class BaseAirborneTEM(BaseEMSurvey, Curve):
                 "Survey type": "Airborne TEM",
                 "Transmitters": None,
                 "Unit": "Milliseconds (ms)",
+                "Waveform": {"Timing mark": 0.0},
             }
         }
 
     @property
-    def default_units(self) -> list[str]:
-        """Accepted time units. Must be one of "Seconds (s)",
-        "Milliseconds (ms)", "Microseconds (us)" or "Nanoseconds (ns)"
+    def default_input_types(self) -> list[str]:
+        """Choice of survey creation types."""
+        return self.__INPUT_TYPE
+
+    @property
+    def default_receiver_type(self):
         """
-        return self.__UNITS
+        :return: Transmitter class
+        """
+        return AirborneTEMReceivers
+
+    @property
+    def default_transmitter_type(self):
+        """
+        :return: Transmitter class
+        """
+        return AirborneTEMTransmitters
 
     def fetch_metadata(self, key: str) -> float | uuid.UUID | None:
         """
         Fetch entry from the metadata.
         """
-        field = self.__MAP[key]
+        field = self._PROPERTY_MAP.get(key, "")
         if field + " value" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"][field + " value"]
         if field + " property" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"][field + " property"]
         return None
 
-    @property
-    def crossline_offset(self) -> float | uuid.UUID | None:
-        """
-        Numeric value or property UUID for the crossline offset between receiver and transmitter.
-        """
-        return self.fetch_metadata("crossline_offset")
+    def set_metadata(self, key: str, value: float | uuid.UUID | None):
+        if key not in self._PROPERTY_MAP:
+            raise ValueError(f"No property map found for key metadata '{key}'.")
 
-    @crossline_offset.setter
-    def crossline_offset(self, value: float | uuid.UUID | None):
-        self.set_metadata("crossline_offset", value)
+        field = self._PROPERTY_MAP[key]
+        if isinstance(value, float):
+            self.edit_metadata({field + " value": value, field + " property": None})
+        elif isinstance(value, uuid.UUID):
+            self.edit_metadata({field + " value": None, field + " property": value})
+        elif value is None:
+            self.edit_metadata({field + " value": None, field + " property": None})
+        else:
+            raise TypeError(
+                f"Input '{key}' must be one of type float, uuid.UUID or None"
+            )
 
     @property
     def inline_offset(self) -> float | uuid.UUID | None:
@@ -149,52 +223,6 @@ class BaseAirborneTEM(BaseEMSurvey, Curve):
     def roll(self, value: float | uuid.UUID | None):
         self.set_metadata("roll", value)
 
-    def set_metadata(self, key: str, value: float | uuid.UUID | None):
-        field = self.__MAP[key]
-        if isinstance(value, float):
-            self.edit_metadata({field + " value": value, field + " property": None})
-        elif isinstance(value, uuid.UUID):
-            self.edit_metadata({field + " value": None, field + " property": value})
-        elif value is None:
-            self.edit_metadata({field + " value": None, field + " property": None})
-        else:
-            raise TypeError(
-                f"Input '{key}' must be one of type float, uuid.UUID or None"
-            )
-
-    @property
-    def timing_mark(self) -> float | None:
-        """
-        Timing mark from the beginning of the discrete :attr:`waveform`.
-        Generally used as the reference (time=0.0) for the provided
-        (-) on-time an (+) off-time :attr:`channels`.
-        """
-        if (
-            "Waveform" in self.metadata["EM Dataset"]
-            and "Timing mark" in self.metadata["EM Dataset"]["Waveform"]
-        ):
-            timing_mark = self.metadata["EM Dataset"]["Waveform"]["Timing mark"]
-            return timing_mark
-
-        return None
-
-    @timing_mark.setter
-    def timing_mark(self, timing_mark: float | None):
-        if not isinstance(timing_mark, (float, type(None))):
-            raise ValueError("Input timing_mark must be a float or None.")
-
-        if self.waveform is not None:
-            value = self.metadata["EM Dataset"]["Waveform"]
-        else:
-            value = {}
-
-        if timing_mark is None and "Timing mark" in value:
-            del value["Timing mark"]
-        else:
-            value["Timing mark"] = timing_mark
-
-        self.edit_metadata({"Waveform": value})
-
     @property
     def vertical_offset(self) -> float | uuid.UUID | None:
         """
@@ -205,59 +233,6 @@ class BaseAirborneTEM(BaseEMSurvey, Curve):
     @vertical_offset.setter
     def vertical_offset(self, value: float | uuid.UUID | None):
         self.set_metadata("vertical_offset", value)
-
-    @property
-    def waveform(self) -> np.ndarray | None:
-        """
-        Discrete waveform of the TEM source provided as
-        :obj:`numpy.array` of type :obj:`float`, shape(n, 2)
-
-        .. code-block:: python
-
-            waveform = [
-                [time_1, current_1],
-                [time_2, current_2],
-                ...
-            ]
-
-        """
-        if (
-            "Waveform" in self.metadata["EM Dataset"]
-            and "Discretization" in self.metadata["EM Dataset"]["Waveform"]
-        ):
-            waveform = np.vstack(
-                [
-                    [row["time"], row["current"]]
-                    for row in self.metadata["EM Dataset"]["Waveform"]["Discretization"]
-                ]
-            )
-            return waveform
-        return None
-
-    @waveform.setter
-    def waveform(self, waveform: np.ndarray | None):
-        if not isinstance(waveform, (np.ndarray, type(None))):
-            raise TypeError("Input waveform must be a numpy.ndarray or None.")
-
-        if isinstance(waveform, np.ndarray):
-            if waveform.ndim != 2 or waveform.shape[1] != 2:
-                raise ValueError(
-                    "Input waveform must be a numpy.ndarray of shape (*, 2)."
-                )
-
-            if self.timing_mark is not None:
-                value = self.metadata["EM Dataset"]["Waveform"]
-            else:
-                value = {}
-
-            value["Discretization"] = [
-                {"current": row[1], "time": row[0]} for row in waveform
-            ]
-
-        else:
-            value = waveform
-
-        self.edit_metadata({"Waveform": value})
 
     @property
     def yaw(self) -> float | uuid.UUID | None:
@@ -279,19 +254,15 @@ class AirborneTEMReceivers(BaseAirborneTEM):  # pylint: disable=too-many-ancesto
     __TYPE_UID = uuid.UUID("{19730589-fd28-4649-9de0-ad47249d9aba}")
     __TYPE = "Receivers"
 
+    def __init__(self, object_type: ObjectType, name="Airborne TEM Rx", **kwargs):
+        super().__init__(object_type, name=name, **kwargs)
+
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         """
         :return: Default unique identifier
         """
         return cls.__TYPE_UID
-
-    @property
-    def default_transmitter_type(self):
-        """
-        :return: Transmitter class
-        """
-        return AirborneTEMTransmitters
 
     @property
     def type(self):
@@ -307,19 +278,15 @@ class AirborneTEMTransmitters(BaseAirborneTEM):  # pylint: disable=too-many-ance
     __TYPE_UID = uuid.UUID("{58c4849f-41e2-4e09-b69b-01cf4286cded}")
     __TYPE = "Transmitters"
 
+    def __init__(self, object_type: ObjectType, name="Airborne TEM Tx", **kwargs):
+        super().__init__(object_type, name=name, **kwargs)
+
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         """
         :return: Default unique identifier
         """
         return cls.__TYPE_UID
-
-    @property
-    def default_receiver_type(self):
-        """
-        :return: Transmitter class
-        """
-        return AirborneTEMReceivers
 
     @property
     def type(self):

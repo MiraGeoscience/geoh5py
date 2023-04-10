@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,17 +15,20 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=too-many-lines
 
 from __future__ import annotations
 
 import uuid
+import warnings
 from typing import TYPE_CHECKING
 
 import numpy as np
 from h5py import special_dtype
 
-from geoh5py.data import Data, DataType
+from geoh5py.data import Data, DataAssociationEnum, DataType
 from geoh5py.groups import Group, PropertyGroup
+from geoh5py.objects import ObjectBase
 from geoh5py.shared.entity import Entity
 from geoh5py.shared.utils import (
     INV_KEY_MAP,
@@ -48,7 +51,7 @@ PROPERTY_KWARGS = {
 }
 
 
-class Concatenator(Group):
+class Concatenator(Group):  # pylint: disable=too-many-public-methods
     """
     Class modifier for concatenation of objects and data.
     """
@@ -56,18 +59,18 @@ class Concatenator(Group):
     _concatenated_attributes: dict | None = None
     _attributes_keys: list[uuid.UUID] | None = None
     _concatenated_object_ids: list[bytes] | None = None
+    _concat_attr_str: str | None = None
     _data: dict
     _index: dict
     _property_group_ids: np.ndarray | None = None
     _property_groups: list | None = None
 
     def __init__(self, group_type: GroupType, **kwargs):
-
         super().__init__(group_type, **kwargs)
 
         getattr(self, "_attribute_map").update(
             {
-                "Attributes": "concatenated_attributes",
+                self.concat_attr_str: "concatenated_attributes",
                 "Property Groups IDs": "property_group_ids",
                 "Concatenated object IDs": "concatenated_object_ids",
             }
@@ -86,6 +89,28 @@ class Concatenator(Group):
             self._attributes_keys = attributes_keys
 
         return self._attributes_keys
+
+    def add_children(self, children: list[Entity]):
+        """
+        :param children: Add a list of entities as
+            :obj:`~geoh5py.shared.entity.Entity.children`
+        """
+        for child in children:
+            if not (
+                isinstance(child, Concatenated)
+                or (
+                    isinstance(child, Data)
+                    and child.association
+                    in (DataAssociationEnum.OBJECT, DataAssociationEnum.GROUP)
+                )
+            ):
+                warnings.warn(
+                    f"Expected a Concatenated object, not {type(child).__name__}"
+                )
+                continue
+
+            if child not in self._children:
+                self._children.append(child)
 
     def add_save_concatenated(self, child) -> None:
         """
@@ -113,6 +138,15 @@ class Concatenator(Group):
             self.update_array_attribute(child, "trace")
 
         child.on_file = True
+
+    @property
+    def concat_attr_str(self) -> str:
+        """String identifier for the concatenated attributes."""
+        if self._concat_attr_str is None:
+            self._concat_attr_str = "Attributes"
+            if self.workspace.version is not None and self.workspace.version > 2.0:
+                self._concat_attr_str = "Attributes Jsons"
+        return self._concat_attr_str
 
     @property
     def concatenated_attributes(self) -> dict | None:
@@ -163,35 +197,61 @@ class Concatenator(Group):
         self._concatenated_object_ids = object_ids
         self.workspace.update_attribute(self, "concatenated_object_ids")
 
-    def copy(self, parent=None, copy_children: bool = True):
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ):
         """
         Function to copy an entity to a different parent entity.
 
         :param parent: Target parent to copy the entity under. Copied to current
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: Create copies of all children entities along with it.
+        :param mask: Array of indices to sub-sample the input entity.
+        :param clear_cache: Clear array attributes after copy.
 
         :return entity: Registered Entity to the workspace.
         """
+        if mask is not None:
+            warnings.warn("Masking is not supported for Concatenated objects.")
 
-        if parent is None:
-            parent = self.parent
+        new_entity: Concatenator = super().copy(  # mypy: ignore-errors
+            parent=parent,
+            copy_children=False,
+            clear_cache=clear_cache,
+            omit_list=[
+                "_concatenated_object_ids",
+                "_concatenated_attributes",
+                "_data",
+                "_index",
+                "_property_group_ids",
+            ],
+            **kwargs,
+        )
 
-        new_entity = parent.workspace.copy_to_parent(self, parent, copy_children=False)
-
-        if self.concatenated_attributes is None:
+        if not copy_children or self.concatenated_attributes is None:
             return new_entity
 
-        for field in self.index:
-            values = self.workspace.fetch_concatenated_values(self, field)
-            if isinstance(values, tuple):
-                new_entity.data[field], new_entity.index[field] = values
+        if (
+            mask is None and new_entity.workspace != self.workspace
+        ):  # Fast copy to new workspace
+            new_entity.concatenated_attributes = self.concatenated_attributes
+            new_entity.concatenated_object_ids = self.concatenated_object_ids
 
-            new_entity.save_attribute(field)
+            for field in self.index:
+                values = self.workspace.fetch_concatenated_values(self, field)
+                if isinstance(values, tuple):
+                    new_entity.data[field], new_entity.index[field] = values
 
-            # Copy over the data type
+                new_entity.save_attribute(field)
+
+                # Copy over the data type
             for elem in self.concatenated_attributes["Attributes"]:
-                if "Name" in elem and elem["Name"] == field and "Type ID" in elem:
+                if "Name" in elem and "Type ID" in elem:
                     attr_type = self.workspace.fetch_type(
                         uuid.UUID(elem["Type ID"]), "Data"
                     )
@@ -200,7 +260,12 @@ class Concatenator(Group):
                     )
                     new_entity.workspace.save_entity_type(data_type)
 
-        new_entity.workspace.fetch_children(new_entity)
+            new_entity.workspace.fetch_children(new_entity)
+        else:
+            for child in self.children:
+                child.copy(
+                    parent=new_entity, clear_cache=clear_cache, omit_list=["_uid"]
+                )
 
         return new_entity
 
@@ -396,7 +461,6 @@ class Concatenator(Group):
             name = entity.name
             del parent_attr[f"Property:{name}"]
         elif isinstance(entity, ConcatenatedObject):
-
             if entity.property_groups is not None:
                 self.update_array_attribute(entity, "property_groups", remove=True)
 
@@ -410,6 +474,8 @@ class Concatenator(Group):
             attr_handle = self.get_concatenated_attributes(entity.uid)
             self.concatenated_attributes["Attributes"].remove(attr_handle)
             self.workspace.repack = True
+
+        entity.parent._children.remove(entity)  # pylint: disable=protected-access
 
     def save_attribute(self, field: str):
         """
@@ -559,6 +625,7 @@ class Concatenated(Entity):
     """
 
     _parent: Concatenated | Concatenator
+    _concat_attr_str: str = "Attributes"
 
     def __init__(self, entity_type, **kwargs):
         attribute_map = getattr(self, "_attribute_map", {})
@@ -567,6 +634,11 @@ class Concatenated(Entity):
             attr[attribute_map.get(key, key)] = value
 
         super().__init__(entity_type, **attr)
+
+    @property
+    def concat_attr_str(self) -> str:
+        """String identifier for the concatenated attributes."""
+        return self._concat_attr_str
 
     @property
     def concatenator(self) -> Concatenator:
@@ -580,11 +652,11 @@ class Concatenated(Entity):
 
 
 class ConcatenatedData(Concatenated):
-    _parent: Concatenated
+    _parent: ConcatenatedObject
 
     def __init__(self, entity_type, **kwargs):
         if kwargs.get("parent") is None or not isinstance(
-            kwargs.get("parent"), Concatenated
+            kwargs.get("parent"), ConcatenatedObject
         ):
             raise UserWarning(
                 "Creating a concatenated data must have a parent "
@@ -606,12 +678,12 @@ class ConcatenatedData(Concatenated):
         return None
 
     @property
-    def parent(self) -> Concatenated:
+    def parent(self) -> ConcatenatedObject:
         return self._parent
 
     @parent.setter
     def parent(self, parent):
-        if not isinstance(parent, Concatenated):
+        if not isinstance(parent, ConcatenatedObject):
             raise AttributeError(
                 "The 'parent' of a concatenated Data must be of type 'Concatenated'."
             )
@@ -625,18 +697,16 @@ class ConcatenatedData(Concatenated):
 
 
 class ConcatenatedPropertyGroup(PropertyGroup):
-    _parent: Concatenated
+    _parent: ConcatenatedObject
 
-    def __init__(self, **kwargs):
-        if kwargs.get("parent") is None or not isinstance(
-            kwargs.get("parent"), Concatenated
-        ):
+    def __init__(self, parent: ConcatenatedObject, **kwargs):
+        if not isinstance(parent, ConcatenatedObject):
             raise UserWarning(
                 "Creating a concatenated data must have a parent "
                 "of type Concatenated."
             )
 
-        super().__init__(**kwargs)
+        super().__init__(parent, **kwargs)
 
     @property
     def from_(self):
@@ -669,22 +739,21 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         return None
 
     @property
-    def parent(self) -> Concatenated:
+    def parent(self):
         return self._parent
 
     @parent.setter
     def parent(self, parent):
-        if not isinstance(parent, Concatenated):
+        if not isinstance(parent, ConcatenatedObject):
             raise AttributeError(
                 "The 'parent' of a concatenated Data must be of type 'Concatenated'."
             )
         self._parent = parent
 
 
-class ConcatenatedObject(Concatenated):
-
+class ConcatenatedObject(Concatenated, ObjectBase):
     _parent: Concatenator
-    _property_groups: list[ConcatenatedPropertyGroup] | None = None
+    _property_groups: list | None = None
 
     def __init__(self, entity_type, **kwargs):
         if kwargs.get("parent") is None or not isinstance(
@@ -696,6 +765,37 @@ class ConcatenatedObject(Concatenated):
             )
 
         super().__init__(entity_type, **kwargs)
+
+    def find_or_create_property_group(self, **kwargs) -> ConcatenatedPropertyGroup:
+        """
+        Find or create :obj:`~geoh5py.groups.property_group.PropertyGroup`
+        from given name and properties.
+
+        :param kwargs: Any arguments taken by the
+            :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
+
+        :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
+        """
+        property_groups = []
+        if self._property_groups is not None:
+            property_groups = self._property_groups
+
+        if "name" in kwargs and any(
+            pg.name == kwargs["name"] for pg in property_groups
+        ):
+            prop_group = [pg for pg in property_groups if pg.name == kwargs["name"]][0]
+        else:
+            if (
+                "property_group_type" not in kwargs
+                and "Property Group Type" not in kwargs
+            ):
+                kwargs["property_group_type"] = "Interval table"
+
+            prop_group = ConcatenatedPropertyGroup(self, **kwargs)
+            property_groups += [prop_group]
+
+        self._property_groups = property_groups
+        return prop_group
 
     def get_data(self, name: str | uuid.UUID) -> list[Data]:
         """
@@ -719,7 +819,6 @@ class ConcatenatedObject(Concatenated):
                     self.add_children([child_data])
 
         for child in getattr(self, "children"):
-
             if (
                 isinstance(name, str) and hasattr(child, "name") and child.name == name
             ) or (
@@ -731,7 +830,7 @@ class ConcatenatedObject(Concatenated):
 
         return entity_list
 
-    def get_data_list(self):
+    def get_data_list(self, attribute="name"):
         """
         Get list of data names.
         """
@@ -839,6 +938,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             del attributes["depth"]
 
         if "from-to" in attributes.keys():
+            values = attributes.get("values")
             attributes["association"] = "DEPTH"
             property_group = self.validate_interval_data(
                 attributes.get("name"),
@@ -847,6 +947,15 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                 property_group=property_group,
                 collocation_distance=collocation_distance,
             )
+            if (
+                isinstance(values, np.ndarray)
+                and values.shape[0] < property_group.from_.values.shape[0]
+            ):
+                attributes["values"] = np.pad(
+                    values,
+                    (0, property_group.from_.values.shape[0] - len(values)),
+                    constant_values=np.nan,
+                )
 
             del attributes["from-to"]
 

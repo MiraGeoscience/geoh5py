@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -28,7 +28,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_remove_root(tmp_path):
-
     # Generate a random cloud of points
     n_data = 12
     xyz = np.random.randn(n_data, 3)

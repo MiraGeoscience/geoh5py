@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -34,7 +34,6 @@ class ColorMap:
     _formats = ["<f8", "u1", "u1", "u1", "u1"]
 
     def __init__(self, **kwargs):
-
         self._values = np.empty((0, 5))
         self._name = "geoh5py_custom.TBL"
         self._parent = None
@@ -68,7 +67,6 @@ class ColorMap:
 
     @values.setter
     def values(self, values: np.ndarray):
-
         if not isinstance(values, np.ndarray):
             raise TypeError(f"Input 'values' of ColorMap must be of type {np.ndarray}.")
 
@@ -105,7 +103,7 @@ class ColorMap:
 
     @name.setter
     def name(self, value: str):
-        self._name = value
+        self._name = str(value)
         self.parent.modified_attributes = "color_map"
 
     @property

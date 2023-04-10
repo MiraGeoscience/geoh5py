@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -22,13 +22,17 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from geoh5py.objects import AirborneTEMReceivers, AirborneTEMTransmitters
+from geoh5py.objects import (
+    AirborneTEMReceivers,
+    AirborneTEMTransmitters,
+    GroundTEMReceiversLargeLoop,
+    GroundTEMTransmittersLargeLoop,
+)
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_survey_tem(tmp_path):
-
+def test_create_survey_airborne_tem(tmp_path):
     name = "Survey"
     path = Path(tmp_path) / r"../testATEM.geoh5"
 
@@ -43,42 +47,31 @@ def test_create_survey_tem(tmp_path):
         receivers, AirborneTEMReceivers
     ), "Entity type AirborneTEMReceivers failed to create."
     transmitters = AirborneTEMTransmitters.create(
-        workspace, vertices=vertices, name=name + "_tx"
+        workspace, vertices=vertices + 10.0, name=name + "_tx"
     )
     assert isinstance(
         transmitters, AirborneTEMTransmitters
     ), "Entity type AirborneTEMTransmitters failed to create."
 
-    with pytest.raises(TypeError) as error:
+    with pytest.raises(TypeError, match=f" must be of type {AirborneTEMTransmitters}"):
         receivers.transmitters = "123"
 
-    assert f" must be of type {AirborneTEMTransmitters}" in str(
-        error
-    ), "Missed raising error on 'transmitter' change."
-
-    with pytest.raises(AttributeError) as error:
+    with pytest.raises(
+        TypeError,
+        match=f"Provided receivers must be of type {type(receivers)}",
+    ):
         receivers.receivers = transmitters
 
-    assert f"The 'receivers' attribute cannot be set on class {type(receivers)}" in str(
-        error
-    ), "Missed raising AttributeError on setting 'receivers' on self."
-
-    with pytest.raises(AttributeError) as error:
+    with pytest.raises(
+        TypeError,
+        match=f"Provided transmitters must be of type {type(transmitters)}",
+    ):
         transmitters.transmitters = receivers
-
-    assert (
-        f"The 'transmitters' attribute cannot be set on class {type(transmitters)}"
-        in str(error)
-    ), "Missed raising AttributeError on setting 'transmitters' on self."
 
     receivers.transmitters = transmitters
 
-    with pytest.raises(TypeError) as error:
+    with pytest.raises(TypeError, match="Input 'loop_radius' must be of type 'float'"):
         receivers.loop_radius = "123"
-
-    assert "Input 'loop_radius' must be of type 'float'" in str(
-        error
-    ), "Failed TypeError on loop_radius."
 
     receivers.loop_radius = 123.0
     angles = receivers.add_data(
@@ -92,12 +85,11 @@ def test_create_survey_tem(tmp_path):
         "crossline_offset",
         "vertical_offset",
     ]:
-        with pytest.raises(TypeError) as error:
+        with pytest.raises(
+            TypeError,
+            match=f"Input '{key}' must be one of type float, uuid.UUID or None",
+        ):
             setattr(receivers, key, "abc")
-
-        assert f"Input '{key}' must be one of type float, uuid.UUID or None" in str(
-            error
-        ), f"Missed raising error on type of '{key}'."
 
         setattr(receivers, key, angles.uid)
         assert (
@@ -132,12 +124,10 @@ def test_create_survey_tem(tmp_path):
         getattr(receivers, "relative_to_bearing", None) is None
     ), "Default 'relative_to_bearing' should be None."
 
-    with pytest.raises(TypeError) as error:
+    with pytest.raises(
+        TypeError, match="Input 'relative_to_bearing' must be one of type 'bool'"
+    ):
         receivers.relative_to_bearing = "nan"
-
-    assert "Input 'relative_to_bearing' must be one of type 'bool'" in str(
-        error
-    ), "Failed TypeError."
 
     receivers.relative_to_bearing = True
 
@@ -190,8 +180,7 @@ def test_create_survey_tem(tmp_path):
     )
 
 
-def test_survey_tem_data(tmp_path):
-
+def test_survey_airborne_tem_data(tmp_path):
     name = "Survey"
     path = Path(tmp_path) / r"../testATEM.geoh5"
 
@@ -201,12 +190,10 @@ def test_survey_tem_data(tmp_path):
     transmitters = receivers.transmitters
 
     # Add channels
-    with pytest.raises(TypeError) as error:
+    with pytest.raises(
+        TypeError, match=f"Values provided as 'channels' must be a list of {float}"
+    ):
         receivers.channels = {"abc": 1, "dfg": 2}
-
-    assert f"Values provided as 'channels' must be a list of {float}" in str(
-        error
-    ), "Missed raising error on 'channels' change."
 
     channels = np.logspace(-3, -2, 10)
     receivers.channels = channels
@@ -223,12 +210,8 @@ def test_survey_tem_data(tmp_path):
         }
     )
 
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(ValueError, match="The number of channel values provided"):
         receivers.add_components_data({"time_data": data[1:]})
-
-    assert "The number of channel values provided" in str(
-        error
-    ), "Failed to check length of input"
 
     prop_group = receivers.add_components_data({"time_data": data})[0]
 
@@ -240,14 +223,11 @@ def test_survey_tem_data(tmp_path):
         "time_data": data
     }, "Property 'components' not accessing metadata."
 
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(
+        ValueError,
+        match="PropertyGroup named 'time_data' already exists on the survey entity.",
+    ):
         receivers.add_components_data({"time_data": data})
-
-    assert (
-        "PropertyGroup named 'time_data' already exists on the survey entity."
-    ) in str(
-        error
-    ), "Failed to protect against creation of PropertyGroup with same name."
 
     # Create another property group and assign by name
     prop_group = receivers.add_data_to_group(data, "NewGroup")
@@ -265,54 +245,40 @@ def test_survey_tem_data(tmp_path):
         len(receivers.metadata["EM Dataset"]["Property groups"]) == 0
     ), "Failed to remove property groups from the metadata."
 
-    with pytest.raises(TypeError) as error:
+    with pytest.raises(
+        TypeError, match="Input value for 'Property groups' must be a PropertyGroup"
+    ):
         receivers.edit_metadata({"Property groups": 1234})
 
-    assert "Input value for 'Property groups' must be a PropertyGroup" in str(
-        error
-    ), "Failed to detect property group type error."
-
-    with pytest.raises(TypeError) as error:
+    with pytest.raises(
+        TypeError,
+        match="List of values provided for component 'new_times' must be a list of ",
+    ):
         receivers.add_components_data(
             {"new_times": [["abc"]] * len(receivers.channels)}
         )
 
-    assert (
-        "List of values provided for component 'new_times' must be a list of "
-    ) in str(error), "Failed to protect against TypeError on add_components_data"
-
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(ValueError, match="Input 'unit' must be one of"):
         receivers.unit = "hello world"
-
-    assert "Input 'unit' must be one of" in str(
-        error
-    ), "Missed raising error on 'unit' change."
 
     receivers.unit = "Seconds (s)"
 
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(
+        ValueError, match="Input waveform must be a numpy.ndarray of shape."
+    ):
         receivers.waveform = np.ones(3)
 
-    assert "Input waveform must be a numpy.ndarray of shape (*, 2)." in str(
-        error
-    ), "Missed raising error shape of 'waveform'."
-
-    with pytest.raises(TypeError) as error:
+    with pytest.raises(
+        TypeError, match="Input waveform must be a numpy.ndarray or None."
+    ):
         receivers.waveform = [1, 2, 3]
-
-    assert "Input waveform must be a numpy.ndarray or None." in str(
-        error
-    ), "Missed raising error on type of 'waveform'."
 
     waveform = np.c_[np.logspace(-5, -1.9, 10), np.linspace(0, 1, 10)]
     receivers.waveform = waveform
 
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(ValueError, match="Input timing_mark must be a float or None."):
         receivers.timing_mark = "abc"
 
-    assert "Input timing_mark must be a float or None." in str(
-        error
-    ), "Missed raising error on type of 'timing_mark'."
     receivers.timing_mark = 10**-3.1
 
     assert (
@@ -330,19 +296,117 @@ def test_survey_tem_data(tmp_path):
 
     # Repeat with timing mark first.
     receivers.waveform = None
-    assert "Waveform" not in receivers.metadata["EM Dataset"]
+    assert "Discretization" not in receivers.metadata["EM Dataset"]["Waveform"]
     receivers.timing_mark = 10**-3.1
     receivers.waveform = waveform
 
-    new_workspace = Workspace(path)
+    with pytest.raises(ValueError, match="Mask must be an array of shape"):
+        receivers.copy(mask=np.r_[1, 2, 3])
 
-    receivers_rec = new_workspace.get_entity(name + "_rx")[0]
-    np.testing.assert_almost_equal(receivers_rec.waveform, waveform)
+    workspace.close()
 
-    new_workspace = Workspace(Path(tmp_path) / r"testATEM_copy2.geoh5")
-    receivers_rec = receivers.copy(new_workspace)
-    compare_entities(
-        receivers,
-        receivers_rec,
-        ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
+    # Test copying receiver over through the receivers
+    with Workspace(path) as workspace:
+        receivers_orig = workspace.get_entity(name + "_rx")[0]
+        np.testing.assert_almost_equal(receivers_orig.waveform, waveform)
+
+        with Workspace(Path(tmp_path) / r"testATEM_copy2.geoh5") as new_workspace:
+            receivers_rec = receivers_orig.copy(new_workspace)
+            compare_entities(
+                receivers_orig,
+                receivers_rec,
+                ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
+            )
+
+        with Workspace(Path(tmp_path) / r"testATEM_copy_extent.geoh5") as new_workspace:
+            receivers_rec = receivers_orig.copy_from_extent(
+                np.vstack([[0, -5], [1500, 5]]), parent=new_workspace
+            )
+            assert receivers_rec.n_vertices == receivers_rec.transmitters.n_vertices
+            np.testing.assert_almost_equal(
+                receivers_orig.vertices[5:, :], receivers_rec.vertices
+            )
+            for child_a, child_b in zip(
+                receivers_orig.children, receivers_rec.children
+            ):
+                np.testing.assert_almost_equal(child_a.values[5:], child_b.values)
+
+
+def test_create_survey_ground_tem_large_loop(
+    tmp_path,
+):  # pylint: disable=too-many-locals
+    path = Path(tmp_path) / r"groundTEM.geoh5"
+
+    # Create a workspace
+    workspace = Workspace(path)
+
+    vertices = []
+    tx_loops = []
+    tx_id = []
+    tx_cells = []
+    count = 0
+    for ind in range(2):
+        offset = 500.0 * ind
+        xlocs = np.linspace(-1000, 1000, 10)
+
+        vertices += [np.c_[xlocs, np.zeros_like(xlocs) + offset, np.zeros_like(xlocs)]]
+        tx_id += [np.ones_like(xlocs) * (ind + 1)]
+        tx_locs = np.r_[
+            np.c_[-100, -100],
+            np.c_[-100, 100],
+            np.c_[100, 100],
+            np.c_[100, -100],
+        ]
+        tx_loops += [np.c_[tx_locs[:, 0], tx_locs[:, 1] + offset, np.zeros(4)]]
+        tx_cells += [np.c_[np.arange(3) + count, np.arange(3) + count + 1]]
+        tx_cells += [np.c_[count + 3, count]]
+        count += 4
+
+    receivers = GroundTEMReceiversLargeLoop.create(
+        workspace, vertices=np.vstack(vertices)
     )
+    assert isinstance(
+        receivers, GroundTEMReceiversLargeLoop
+    ), "Entity type GroundTEMReceiversLargeLoop failed to create."
+
+    transmitters = GroundTEMTransmittersLargeLoop.create(
+        workspace,
+        vertices=np.vstack(tx_loops),
+        cells=np.vstack(tx_cells),
+    )
+    transmitters.tx_id_property = transmitters.parts + 1
+
+    assert isinstance(
+        transmitters, GroundTEMTransmittersLargeLoop
+    ), "Entity type GroundTEMTransmittersLargeLoop failed to create."
+
+    with pytest.raises(
+        TypeError, match=f" must be of type {GroundTEMTransmittersLargeLoop}"
+    ):
+        receivers.transmitters = "123"
+
+    with pytest.raises(
+        TypeError,
+        match=f"Provided receivers must be of type {type(receivers)}",
+    ):
+        receivers.receivers = transmitters
+
+    with pytest.raises(
+        TypeError,
+        match=f"Provided transmitters must be of type {type(transmitters)}",
+    ):
+        transmitters.transmitters = receivers
+
+    receivers.transmitters = transmitters
+
+    receivers.tx_id_property = np.hstack(tx_id)
+
+    with Workspace(Path(tmp_path) / r"testGround_copy.geoh5") as new_workspace:
+        receivers_orig = receivers.copy(new_workspace)
+        transmitters_rec = receivers.transmitters.copy_from_extent(
+            np.vstack([[-150, -150], [150, 150]]), parent=new_workspace
+        )
+        assert transmitters_rec.receivers.n_vertices == receivers_orig.n_vertices / 2.0
+        assert (
+            transmitters_rec.n_vertices == receivers_orig.transmitters.n_vertices / 2.0
+        )

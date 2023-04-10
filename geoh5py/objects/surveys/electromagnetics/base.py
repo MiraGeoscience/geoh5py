@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -17,7 +17,9 @@
 
 from __future__ import annotations
 
+import json
 import uuid
+from abc import ABC, abstractmethod
 from typing import Any
 
 import numpy as np
@@ -27,7 +29,7 @@ from geoh5py.groups.property_group import PropertyGroup
 from geoh5py.objects.object_base import ObjectBase
 
 
-class BaseEMSurvey(ObjectBase):
+class BaseEMSurvey(ObjectBase, ABC):
     """
     A base electromagnetics survey object.
     """
@@ -35,6 +37,7 @@ class BaseEMSurvey(ObjectBase):
     __INPUT_TYPE = None
     __TYPE = None
     __UNITS = None
+
     _receivers: BaseEMSurvey | None = None
     _transmitters: BaseEMSurvey | None = None
 
@@ -190,47 +193,10 @@ class BaseEMSurvey(ObjectBase):
 
         return None
 
-    def copy(self, parent=None, copy_children: bool = True) -> BaseEMSurvey:
-        """
-        Function to copy a AirborneTEMReceivers to a different parent entity.
-
-        :param parent: Target parent to copy the entity under. Copied to current
-            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: Create copies of AirborneTEMReceivers along with it.
-
-        :return entity: Registered AirborneTEMReceivers to the workspace.
-        """
-        if parent is None:
-            parent = self.parent
-
-        omit_list = ["_metadata", "_receivers", "_transmitters"]
-        metadata = self.metadata.copy()
-        new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children, omit_list=omit_list
-        )
-        metadata["EM Dataset"][new_entity.type] = new_entity.uid
-        for associate in ["transmitters", "receivers", "base_stations"]:
-            if getattr(self, associate, None) is not None and not isinstance(
-                getattr(self, associate), type(self)
-            ):
-                complement = parent.workspace.copy_to_parent(
-                    getattr(self, associate),
-                    parent,
-                    copy_children=copy_children,
-                    omit_list=omit_list,
-                )
-                setattr(new_entity, associate, complement)
-                metadata["EM Dataset"][complement.type] = complement.uid
-                complement.metadata = self.metadata
-
-        new_entity.metadata = metadata
-
-        return new_entity
-
     @property
+    @abstractmethod
     def default_input_types(self) -> list[str] | None:
         """Input types. Must be one of 'Rx', 'Tx', 'Tx and Rx'."""
-        return self.__INPUT_TYPE
 
     @property
     def default_metadata(self):
@@ -238,27 +204,30 @@ class BaseEMSurvey(ObjectBase):
         return {"EM Dataset": {}}
 
     @classmethod
+    @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:
         """Default unique identifier. Implemented on the child class."""
 
     @property
+    @abstractmethod
     def default_transmitter_type(self) -> type:
         """
         :return: Transmitters implemented on the child class.
         """
-        return type(None)
 
     @property
+    @abstractmethod
     def default_receiver_type(self) -> type:
         """
         :return: Receivers implemented on the child class.
         """
-        return type(None)
 
     @property
-    def default_units(self) -> list[str] | None:
-        """Accepted sampling units."""
-        return self.__UNITS
+    @abstractmethod
+    def default_units(self) -> list[str]:
+        """
+        List of accepted units.
+        """
 
     def edit_metadata(self, entries: dict[str, Any]):
         """
@@ -278,16 +247,9 @@ class BaseEMSurvey(ObjectBase):
             else:
                 self.metadata["EM Dataset"][key] = value
 
-        if getattr(self, "receivers", None) is not None:
-            getattr(self, "receivers").metadata = self.metadata
-
-        if getattr(self, "transmitters", None) is not None:
-            getattr(self, "transmitters").metadata = self.metadata
-
-        if getattr(self, "base_stations", None) is not None:
-            getattr(self, "base_stations").metadata = self.metadata
-
-        self.workspace.update_attribute(self, "metadata")
+        for dependent in ["receivers", "transmitters", "base_stations"]:
+            if getattr(self, dependent, None) is not None:
+                getattr(self, dependent).metadata = self.metadata
 
     def _edit_validate_property_groups(
         self, values: PropertyGroup | list[PropertyGroup] | None
@@ -387,6 +349,12 @@ class BaseEMSurvey(ObjectBase):
         self._metadata = values
         self.workspace.update_attribute(self, "metadata")
 
+        for elem in ["receivers", "transmitters", "base_stations"]:
+            dependent = getattr(self, elem, None)
+            if dependent is not None and dependent is not self:
+                setattr(dependent, "_metadata", values)
+                self.workspace.update_attribute(self, "metadata")
+
     @property
     def receivers(self) -> BaseEMSurvey | None:
         """
@@ -399,18 +367,11 @@ class BaseEMSurvey(ObjectBase):
 
                 if isinstance(receiver_entity, BaseEMSurvey):
                     self._receivers = receiver_entity
-                else:
-                    print("Associated receivers entity not found in Workspace.")
 
         return self._receivers
 
     @receivers.setter
     def receivers(self, receivers: BaseEMSurvey):
-        if isinstance(None, self.default_receiver_type):
-            raise AttributeError(
-                f"The 'receivers' attribute cannot be set on class {type(self)}."
-            )
-
         if not isinstance(receivers, self.default_receiver_type):
             raise TypeError(
                 f"Provided receivers must be of type {self.default_receiver_type}. "
@@ -428,7 +389,7 @@ class BaseEMSurvey(ObjectBase):
         return None
 
     @property
-    def transmitters(self) -> BaseEMSurvey | None:
+    def transmitters(self):
         """
         The associated TEM transmitters (sources).
         """
@@ -442,8 +403,6 @@ class BaseEMSurvey(ObjectBase):
 
                 if isinstance(transmitter_entity, BaseEMSurvey):
                     self._transmitters = transmitter_entity
-                else:
-                    print("Associated transmitters entity not found in Workspace.")
 
         return self._transmitters
 
@@ -463,19 +422,16 @@ class BaseEMSurvey(ObjectBase):
         self.edit_metadata({"Transmitters": transmitters.uid})
 
     @property
+    @abstractmethod
     def type(self):
         """Survey element type"""
-        return self.__TYPE
 
     @property
     def unit(self) -> float | None:
         """
         Default channel units for time or frequency defined on the child class.
         """
-        if "Unit" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"]["Unit"]
-
-        return None
+        return self.metadata["EM Dataset"].get("Unit")
 
     @unit.setter
     def unit(self, value: str):
@@ -483,3 +439,117 @@ class BaseEMSurvey(ObjectBase):
             if value not in self.default_units:
                 raise ValueError(f"Input 'unit' must be one of {self.default_units}")
             self.edit_metadata({"Unit": value})
+
+
+class BaseTEMSurvey(BaseEMSurvey, ABC):
+    __UNITS = [
+        "Seconds (s)",
+        "Milliseconds (ms)",
+        "Microseconds (us)",
+        "Nanoseconds (ns)",
+    ]
+
+    @property
+    @abstractmethod
+    def default_input_types(self) -> list[str]:
+        """Input types for the survey element."""
+
+    @property
+    def default_units(self) -> list[str]:
+        """Accepted time units. Must be one of "Seconds (s)",
+        "Milliseconds (ms)", "Microseconds (us)" or "Nanoseconds (ns)"
+        """
+        return self.__UNITS
+
+    @property
+    def timing_mark(self) -> float | None:
+        """
+        Timing mark from the beginning of the discrete :attr:`waveform`.
+        Generally used as the reference (time=0.0) for the provided
+        (-) on-time an (+) off-time :attr:`channels`.
+        """
+        if (
+            "Waveform" in self.metadata["EM Dataset"]
+            and "Timing mark" in self.metadata["EM Dataset"]["Waveform"]
+        ):
+            timing_mark = self.metadata["EM Dataset"]["Waveform"]["Timing mark"]
+            return timing_mark
+
+        return None
+
+    @timing_mark.setter
+    def timing_mark(self, timing_mark: float | None):
+        if not isinstance(timing_mark, (float, type(None))):
+            raise ValueError("Input timing_mark must be a float or None.")
+
+        if self.waveform is not None:
+            value = self.metadata["EM Dataset"]["Waveform"]
+        else:
+            value = {}
+
+        if timing_mark is None and "Timing mark" in value:
+            del value["Timing mark"]
+        else:
+            value["Timing mark"] = timing_mark
+
+        self.edit_metadata({"Waveform": value})
+
+    @property
+    def waveform(self) -> np.ndarray | None:
+        """
+        Discrete waveform of the TEM source provided as
+        :obj:`numpy.array` of type :obj:`float`, shape(n, 2)
+
+        .. code-block:: python
+
+            waveform = [
+                [time_1, current_1],
+                [time_2, current_2],
+                ...
+            ]
+
+        """
+        if (
+            "Waveform" in self.metadata["EM Dataset"]
+            and "Discretization" in self.metadata["EM Dataset"]["Waveform"]
+        ):
+            waveform = np.vstack(
+                [
+                    [row["time"], row["current"]]
+                    for row in self.metadata["EM Dataset"]["Waveform"]["Discretization"]
+                ]
+            )
+            return waveform
+        return None
+
+    @waveform.setter
+    def waveform(self, waveform: np.ndarray | None):
+        if not isinstance(waveform, (np.ndarray, type(None))):
+            raise TypeError("Input waveform must be a numpy.ndarray or None.")
+
+        if self.timing_mark is not None:
+            value = self.metadata["EM Dataset"]["Waveform"]
+        else:
+            value = {"Timing mark": 0.0}
+
+        if isinstance(waveform, np.ndarray):
+            if waveform.ndim != 2 or waveform.shape[1] != 2:
+                raise ValueError(
+                    "Input waveform must be a numpy.ndarray of shape (*, 2)."
+                )
+
+            value["Discretization"] = [
+                {"current": row[1], "time": row[0]} for row in waveform
+            ]
+
+        self.edit_metadata({"Waveform": value})
+
+    @property
+    def waveform_parameters(self) -> dict | None:
+        """Access the waveform parameters stored as a dictionary."""
+        waveform = self.get_data("_waveform_parameters")[0]
+
+        if waveform is not None:
+            return json.loads(waveform.values)
+
+        return None

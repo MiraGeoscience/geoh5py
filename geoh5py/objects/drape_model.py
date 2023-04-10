@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,14 +18,14 @@
 from __future__ import annotations
 
 import uuid
-import warnings
 
 import numpy as np
 
-from .object_base import ObjectBase, ObjectType
+from .grid_object import GridObject
+from .object_base import ObjectType
 
 
-class DrapeModel(ObjectBase):
+class DrapeModel(GridObject):
     """
     Drape (curtain) model object made up of layers and prisms.
     """
@@ -35,7 +35,6 @@ class DrapeModel(ObjectBase):
     def __init__(self, object_type: ObjectType, **kwargs):
         self._layers: np.ndarray | None = None
         self._prisms: np.ndarray | None = None
-        self._centroids: np.ndarray | None = None
 
         super().__init__(object_type, **kwargs)
 
@@ -90,23 +89,6 @@ class DrapeModel(ObjectBase):
 
         return self._centroids
 
-    def clip_by_extent(self, bounds: np.ndarray) -> ObjectBase | None:
-        """
-        Find indices of cells within a rectangular bounds.
-
-        :param bounds: shape(2, 2) Bounding box defined by the South-West and
-            North-East coordinates. Extents can also be provided as 3D coordinates
-            with shape(2, 3) defining the top and bottom limits.
-        :param attributes: Dictionary of attributes to clip by extent.
-        """
-
-        # TODO Clip entity within bounds.
-        warnings.warn(
-            f"Method 'clip_by_extent' for entity {type(self)} not fully implemented. "
-            f"Bounds ignored."
-        )
-        return self
-
     @property
     def layers(self) -> np.ndarray | None:
         """
@@ -135,7 +117,7 @@ class DrapeModel(ObjectBase):
 
     @property
     def n_cells(self):
-        if self.prisms is not None:
+        if self._prisms is not None:
             return int(self._prisms["Layer count"].sum())
         return None
 

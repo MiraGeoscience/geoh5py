@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -17,6 +17,8 @@
 
 
 from __future__ import annotations
+
+import re
 
 import numpy as np
 import pytest
@@ -75,7 +77,6 @@ def test_validation_types():
 
 
 def test_association_validator(tmp_path):
-
     workspace = Workspace(tmp_path / r"test.geoh5")
     workspace2 = Workspace(tmp_path / r"test2.geoh5")
     points = Points.create(workspace, vertices=np.array([[1, 2, 3], [4, 5, 6]]))
@@ -107,7 +108,6 @@ def test_association_validator(tmp_path):
 
 
 def test_property_group_validator(tmp_path):
-
     workspace = Workspace(tmp_path / r"test.geoh5")
     points = Points.create(
         workspace, vertices=np.array([[1, 2, 3], [4, 5, 6]]), name="test_points"
@@ -124,7 +124,6 @@ def test_property_group_validator(tmp_path):
 
 
 def test_required_validator():
-
     validator = RequiredValidator()
     with pytest.raises(RequiredValidationError) as excinfo:
         validator("test", None, True)
@@ -132,51 +131,56 @@ def test_required_validator():
 
 
 def test_shape_validator():
-
     validator = ShapeValidator()
     with pytest.raises(ShapeValidationError) as excinfo:
         validator("test", [[1, 2, 3], [4, 5, 6]], (3, 2))
-    assert ShapeValidationError.message("test", (2, 3), (3, 2)) == str(excinfo.value)
+    assert ShapeValidationError.message("test", (2,), (3, 2)) == str(excinfo.value)
 
     # No validation error for None
     validator("test", None, (3, 2))
 
 
 def test_type_validator():
-
     validator = TypeValidator()
 
+    with pytest.raises(
+        TypeError,
+        match=re.escape("Input `valid` options must be a type or list of types."),
+    ):
+        validator("test", 3, 123)
+
     # Test non-iterable value, single valid
-    with pytest.raises(TypeValidationError) as excinfo:
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message("test", int.__name__, [type({}).__name__]),
+    ):
         validator("test", 3, type({}))
-    assert TypeValidationError.message(
-        "test", int.__name__, [type({}).__name__]
-    ) == str(excinfo.value)
 
     # Test non-iterable value, more than one valid
-    with pytest.raises(TypeValidationError) as excinfo:
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message(
+            "test", int.__name__, [str.__name__, type({}).__name__]
+        ),
+    ):
         validator("test", 3, [str, type({})])
-    assert TypeValidationError.message(
-        "test", int.__name__, [str.__name__, type({}).__name__]
-    ) == str(excinfo.value)
 
     # Test iterable value single valid both invalid
-    with pytest.raises(TypeValidationError) as excinfo:
-        validator("test", [3, 2], type({}))
-    assert TypeValidationError.message(
-        "test", int.__name__, [type({}).__name__]
-    ) == str(excinfo.value)
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message("test", int.__name__, [type({}).__name__]),
+    ):
+        validator("test", [3, 2], [type({})])
 
     # Test iterable value single valid one valid, one invalid
-    with pytest.raises(TypeValidationError) as excinfo:
-        validator("test", [3, "a"], int)
-    assert TypeValidationError.message("test", str.__name__, [int.__name__]) == str(
-        excinfo.value
-    )
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message("test", str.__name__, [int.__name__]),
+    ):
+        validator("test", [3, "a"], [int])
 
 
 def test_uuid_validator():
-
     validator = UUIDValidator()
 
     # Test bad uid string
@@ -189,7 +193,6 @@ def test_uuid_validator():
 
 
 def test_value_validator():
-
     validator = ValueValidator()
     with pytest.raises(ValueValidationError) as excinfo:
         validator("test", "blah", ["nope", "not here"])

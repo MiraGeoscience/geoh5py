@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -26,7 +26,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_set_parent(tmp_path):
-
     # Generate a random cloud of points
     xyz = np.random.randn(2, 3)
     name = "test_points"

@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -22,12 +22,14 @@
 
 from __future__ import annotations
 
+import warnings
 from abc import ABC, abstractmethod
 from typing import Any
 from uuid import UUID
 
 import numpy as np
 
+from geoh5py import Workspace
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
@@ -42,7 +44,6 @@ from geoh5py.shared.exceptions import (
     ValueValidationError,
 )
 from geoh5py.shared.utils import iterable
-from geoh5py.workspace import Workspace
 
 
 class BaseValidator(ABC):
@@ -69,7 +70,7 @@ class BaseValidator(ABC):
 
     @property
     @abstractmethod
-    def validator_type(self):
+    def validator_type(self) -> str:
         """
         Validation type identifier.
         """
@@ -117,6 +118,12 @@ class AssociationValidator(BaseValidator):
         if valid is None:
             return
 
+        if isinstance(valid, list):
+            warnings.warn(
+                "Data associated with multiSelect dependent is not supported. Validation ignored."
+            )
+            return
+
         if not isinstance(valid, (Entity, Workspace)):
             raise ValueError(
                 "'AssociationValidator.validate' requires a 'valid'"
@@ -151,13 +158,11 @@ class PropertyGroupValidator(BaseValidator):
 
     @classmethod
     def validate(cls, name: str, value: PropertyGroup, valid: str) -> None:
-
         if (value is not None) and (value.property_group_type != valid):
             raise PropertyGroupValidationError(name, value, valid)
 
 
 class AtLeastOneValidator(BaseValidator):
-
     validator_type = "one_of"
 
     @classmethod
@@ -199,7 +204,13 @@ class ShapeValidator(BaseValidator):
         if value is None:
             return
 
-        pshape = np.array(value).shape
+        if isinstance(value, np.ndarray):
+            pshape = value.shape
+        elif isinstance(value, list):
+            pshape = (len(value),)
+        else:
+            pshape = (1,)
+
         if pshape != valid:
             raise ShapeValidationError(name, pshape, valid)
 
@@ -212,17 +223,19 @@ class TypeValidator(BaseValidator):
     validator_type = "types"
 
     @classmethod
-    def validate(cls, name: str, value: Any, valid: list[type] | type) -> None:
+    def validate(cls, name: str, value: Any, valid: type | list[type]) -> None:
         """
         :param name: Parameter identifier.
         :param value: Input parameter value.
         :param valid: List of accepted value types
         """
-
         if isinstance(valid, type):
             valid = [valid]
 
-        if not iterable(value) or list in valid:
+        if not isinstance(valid, list):
+            raise TypeError("Input `valid` options must be a type or list of types.")
+
+        if not iterable(value):
             value = (value,)
 
         for val in value:

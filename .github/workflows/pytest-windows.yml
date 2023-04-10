@@ -16,6 +16,10 @@ on:
       - feature/**
       - hotfix/**
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 env:
   source_dir: geoh5py
 
@@ -61,7 +65,7 @@ jobs:
       - name: Install dependencies
         run: poetry install -vvv
       - name: pytest
-        run: poetry run pytest --cov-report=xml --cov=${source_dir} --cov-branch --cov-fail-under=80
+        run: poetry run pytest --cov-report=xml
       - name: Codecov
         if: ${{ success() && matrix.python_ver == '3.10' }}
         uses: codecov/codecov-action@v3

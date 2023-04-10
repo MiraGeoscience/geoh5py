@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -35,7 +35,6 @@ class Surface(CellObject):
     )
 
     def __init__(self, object_type: ObjectType, **kwargs):
-
         self._cells: np.ndarray | None = None
 
         super().__init__(object_type, **kwargs)

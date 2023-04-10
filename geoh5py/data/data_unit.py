@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -26,7 +26,7 @@ class DataUnit:
     # TODO Use for data_type
     # Currently replaced by a string value
 
-    def __init__(self, unit_name: str = None):
+    def __init__(self, unit_name: str | None = None):
         self._rep = unit_name
 
     @property

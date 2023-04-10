@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -30,7 +30,6 @@ EntityTypeT = TypeVar("EntityTypeT", bound="EntityType")
 
 
 class EntityType(ABC):
-
     _attribute_map = {"Description": "description", "ID": "uid", "Name": "name"}
 
     def __init__(self, workspace: ws.Workspace, uid: uuid.UUID | None = None, **kwargs):

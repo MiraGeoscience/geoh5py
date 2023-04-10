@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -27,6 +27,7 @@ from geoh5py.workspace import Workspace
 
 
 def test_copy_entity(tmp_path):
+    # pylint: disable=R0914
 
     # Generate a random cloud of points
     n_data = 12
@@ -76,13 +77,23 @@ def test_copy_entity(tmp_path):
             excinfo.value
         )
 
+        with pytest.raises(ValueError, match="Input file '"):
+            entity.add_file("bidon.txt")
+
+        get_entity = entity.get_entity(entity.uid)
+        assert isinstance(get_entity, list)
+
+        with pytest.raises(AssertionError, match="Input metadata must be of type"):
+            entity.metadata = 0
+
+        _ = entity.save()
+
     workspace = Workspace(h5file_path)
     new_workspace = Workspace(tmp_path / r"testProject_2.geoh5")
     for entity in workspace.objects:
         entity.copy(parent=new_workspace)
 
     for entity in workspace.objects:
-
         # Read the data back in from a fresh workspace
         rec_entity = new_workspace.get_entity(entity.uid)[0]
         rec_data = new_workspace.get_entity(entity.children[0].uid)[0]

@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -17,10 +17,11 @@
 
 from __future__ import annotations
 
-from .data import Data, PrimitiveTypeEnum
+from .data import PrimitiveTypeEnum
+from .text_data import TextData
 
 
-class DatetimeData(Data):
+class DatetimeData(TextData):
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.DATETIME

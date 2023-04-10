@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import json
+import re
 from copy import deepcopy
 from os import path
 from uuid import uuid4
@@ -25,7 +26,7 @@ from uuid import uuid4
 import numpy as np
 import pytest
 
-from geoh5py.groups import ContainerGroup, PropertyGroup
+from geoh5py.groups import ContainerGroup, DrillholeGroup, PropertyGroup
 from geoh5py.objects import Points
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
@@ -46,12 +47,13 @@ from geoh5py.workspace import Workspace
 
 
 def get_workspace(directory):
-
     workspace = Workspace(path.join(directory, "..", "testPoints.geoh5"))
     if len(workspace.objects) == 0:
-        xyz = np.random.randn(12, 3)
         group = ContainerGroup.create(workspace)
-        points = Points.create(workspace, vertices=xyz, parent=group, name="Points_A")
+        DrillholeGroup.create(workspace, parent=group)
+        points = Points.create(
+            workspace, vertices=np.random.randn(12, 3), parent=group, name="Points_A"
+        )
         data = points.add_data(
             {
                 "values A": {"values": np.random.randn(12)},
@@ -68,43 +70,41 @@ def get_workspace(directory):
 
 
 def test_input_file_json():
-
     # Test missing required ui_json parameter
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(
+        ValueError, match="Input 'ui_json' must be of type dict or None"
+    ):
         InputFile(ui_json=123)
 
-    assert "Input 'ui_json' must be of type dict or None" in str(excinfo)
-
-    with pytest.raises(AttributeError) as excinfo:
+    with pytest.raises(
+        AttributeError, match="'ui_json' must be set before setting data."
+    ):
         InputFile().data = {"abc": 123}
 
-    assert "'ui_json' must be set before setting data." in str(excinfo)
-
-    with pytest.raises(UserWarning) as excinfo:
+    with pytest.raises(
+        UserWarning, match="InputFile requires a 'ui_json' to be defined."
+    ):
         InputFile().update_ui_values({"abc": 123})
-
-    assert "InputFile requires a 'ui_json' to be defined." in str(excinfo)
 
     ui_json = {"test": 4}
     in_file = InputFile(ui_json=ui_json)
 
-    with pytest.raises(RequiredValidationError) as excinfo:
+    with pytest.raises(
+        RequiredValidationError,
+        match=RequiredValidationError.message("title", None, None),
+    ):
         getattr(in_file, "data")
-
-    assert RequiredValidationError.message("title", None, None) == str(excinfo.value)
 
     # Test wrong type for core geoh5 parameter
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = 123
 
     in_file = InputFile(ui_json=ui_json)
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(
+        ValueError,
+        match="Input 'workspace' must be a valid :obj:`geoh5py.workspace.Workspace`",
+    ):
         getattr(in_file, "data")
-
-    assert (
-        "Input 'workspace' must be a valid :obj:`geoh5py.workspace.Workspace`"
-        in str(excinfo)
-    )
 
 
 def test_input_file_name_path(tmp_path):
@@ -124,18 +124,16 @@ def test_input_file_name_path(tmp_path):
     test.path = tmp_path
     assert test.path == tmp_path  # usual behaviour
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ValueError, match="'im/a/fake/path'"):
         test.path = "im/a/fake/path"
-    assert "'im/a/fake/path'" in str(excinfo.value)  # raises if not a dir
 
     # test path_name method
     assert test.path_name == str(tmp_path / r"Jarrod.ui.json")
     test = InputFile()
     assert test.path_name is None
 
-    with pytest.raises(AttributeError) as excinfo:
+    with pytest.raises(AttributeError, match="requires 'path' and 'name'"):
         test.write_ui_json()
-    assert "requires 'path' and 'name'" in str(excinfo.value)
 
 
 def test_optional_parameter():
@@ -148,20 +146,18 @@ def test_optional_parameter():
 
 
 def test_bool_parameter():
-
     ui_json = deepcopy(default_ui_json)
     ui_json["logic"] = templates.bool_parameter()
     ui_json["logic"]["value"] = True
     in_file = InputFile(ui_json=ui_json, validation_options={"disabled": False})
 
-    with pytest.raises(TypeValidationError) as excinfo:
+    with pytest.raises(
+        TypeValidationError, match=TypeValidationError.message("logic", "int", ["bool"])
+    ):
         in_file.validators.validate("logic", 1234)
-
-    assert TypeValidationError.message("logic", "int", ["bool"]) == str(excinfo.value)
 
 
 def test_integer_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -170,21 +166,18 @@ def test_integer_parameter(tmp_path):
     data = in_file.data
     data["integer"] = 4.0
 
-    with pytest.raises(TypeValidationError) as excinfo:
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message("integer", "float", ["int"]),
+    ):
         in_file.data = data
-    assert TypeValidationError.message("integer", "float", ["int"]) == str(
-        excinfo.value
-    )
 
     data.pop("integer")
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ValueError, match="The number of input values"):
         in_file.data = data
-
-    assert "The number of input values" in str(excinfo.value)  # raises if not a dir
 
     data["integer"] = 123
     in_file.data = data
-
     out_file = in_file.write_ui_json()
     reload_input = InputFile.read_ui_json(out_file)
 
@@ -198,7 +191,6 @@ def test_integer_parameter(tmp_path):
 
 
 def test_float_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -207,11 +199,11 @@ def test_float_parameter(tmp_path):
     data = in_file.data
     data["float_parameter"] = 4
 
-    with pytest.raises(TypeValidationError) as excinfo:
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message("float_parameter", "int", ["float"]),
+    ):
         in_file.data = data
-    assert TypeValidationError.message("float_parameter", "int", ["float"]) == str(
-        excinfo.value
-    )
 
     data["float_parameter"] = 123.0
     in_file.data = data
@@ -229,7 +221,6 @@ def test_float_parameter(tmp_path):
 
 
 def test_string_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -238,11 +229,11 @@ def test_string_parameter(tmp_path):
     data = in_file.data
     data["string_parameter"] = 4
 
-    with pytest.raises(TypeValidationError) as excinfo:
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message("string_parameter", "int", ["str"]),
+    ):
         in_file.data = data
-    assert TypeValidationError.message("string_parameter", "int", ["str"]) == str(
-        excinfo.value
-    )
 
     data["string_parameter"] = "goodtogo"
     in_file.data = data
@@ -260,7 +251,6 @@ def test_string_parameter(tmp_path):
 
 
 def test_choice_string_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -269,11 +259,13 @@ def test_choice_string_parameter(tmp_path):
     data = in_file.data
     data["choice_string_parameter"] = "Option C"
 
-    with pytest.raises(ValueValidationError) as excinfo:
+    with pytest.raises(
+        ValueValidationError,
+        match=ValueValidationError.message(
+            "choice_string_parameter", "Option C", ["Option A", "Option B"]
+        ),
+    ):
         in_file.data = data
-    assert ValueValidationError.message(
-        "choice_string_parameter", "Option C", ["Option A", "Option B"]
-    ) == str(excinfo.value)
 
     data["choice_string_parameter"] = "Option A"
     in_file.data = data
@@ -290,6 +282,42 @@ def test_choice_string_parameter(tmp_path):
     assert test["enabled"]
 
 
+def test_multi_choice_string_parameter(tmp_path):
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["choice_string_parameter"] = templates.choice_string_parameter()
+    ui_json["choice_string_parameter"]["multiSelect"] = True
+    ui_json["choice_string_parameter"]["optional"] = True
+    ui_json["choice_string_parameter"]["enabled"] = False
+    ui_json["choice_string_parameter"]["value"] = ""
+    in_file = InputFile(ui_json=ui_json)
+    ui_json["choice_string_parameter"]["enabled"] = True
+    ui_json["choice_string_parameter"]["value"] = []
+    in_file = InputFile(ui_json=ui_json)
+    data = in_file.data
+
+    data["choice_string_parameter"] = ["Option C"]
+
+    with pytest.raises(
+        ValueValidationError,
+        match=ValueValidationError.message(
+            "choice_string_parameter", "Option C", ["Option A", "Option B"]
+        ),
+    ):
+        in_file.data = data
+
+    data["choice_string_parameter"] = ["Option A"]
+    in_file.data = data
+
+    out_file = in_file.write_ui_json()
+    reload_input = InputFile.read_ui_json(out_file)
+
+    assert reload_input.data["choice_string_parameter"] == [
+        "Option A"
+    ], "IntegerParameter did not properly save to file."
+
+
 def test_file_parameter():
     test = templates.file_parameter(optional="enabled")
     assert test["optional"]
@@ -297,21 +325,20 @@ def test_file_parameter():
 
 
 def test_shape_parameter(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["data"] = templates.string_parameter(value="2,5,6,7")
     ui_json["geoh5"] = workspace
-    in_file = InputFile(ui_json=ui_json, validations={"data": {"shape": (3,)}})
+    in_file = InputFile(ui_json=ui_json, validations={"data": {"shape": (2,)}})
 
-    with pytest.raises(ShapeValidationError) as excinfo:
+    with pytest.raises(
+        ShapeValidationError,
+        match=re.escape(ShapeValidationError.message("data", (1,), (2,))),
+    ):
         getattr(in_file, "data")
-
-    assert ShapeValidationError.message("data", (4,), (3,)) == str(excinfo.value)
 
 
 def test_missing_required_field(tmp_path):
-
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["object"] = templates.object_parameter(optional="enabled")
@@ -320,11 +347,13 @@ def test_missing_required_field(tmp_path):
     ui_json["geoh5"] = workspace
 
     del ui_json["object"]["value"]
-    with pytest.raises(JSONParameterValidationError) as excinfo:
+    with pytest.raises(
+        JSONParameterValidationError,
+        match=JSONParameterValidationError.message(
+            "object", RequiredValidationError.message("value", None, None)
+        ),
+    ):
         InputFile(ui_json=ui_json)
-    assert JSONParameterValidationError.message(
-        "object", RequiredValidationError.message("value", None, None)
-    ) == str(excinfo.value)
 
 
 def test_object_promotion(tmp_path):
@@ -338,14 +367,43 @@ def test_object_promotion(tmp_path):
     ui_json["object"]["meshType"] = [points.entity_type.uid]
 
     in_file = InputFile(ui_json=ui_json)
+    in_file.write_ui_json("test.ui.json", path=tmp_path)
 
+    # Read back in
+    new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
     assert (
-        in_file.data["object"] == points
+        new_in_file.data["object"].uid == points.uid
     ), "Promotion of entity from uuid string failed."
 
-    with pytest.raises(ValueError) as excinfo:
-        in_file.data = 123
-    assert "Input 'data' must be of type dict or None." in str(excinfo)
+    with pytest.raises(ValueError, match="Input 'data' must be of type dict or None."):
+        new_in_file.data = 123
+
+
+def test_group_promotion(tmp_path):
+    workspace = get_workspace(tmp_path)
+    group = workspace.get_entity("Entity")[0]
+    dh_group = workspace.get_entity("Drillholes Group")[0]
+    ui_json = deepcopy(default_ui_json)
+    ui_json["object"] = templates.group_parameter()
+    ui_json["geoh5"] = workspace
+    ui_json["object"]["value"] = str(group.uid)
+    ui_json["object"]["groupType"] = [group.entity_type.uid]
+
+    ui_json["dh"] = templates.group_parameter()
+    ui_json["dh"]["value"] = str(dh_group.uid)
+    ui_json["dh"]["groupType"] = [dh_group.entity_type.uid]
+
+    in_file = InputFile(ui_json=ui_json)
+    in_file.write_ui_json("test.ui.json", path=tmp_path)
+
+    new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
+    assert (
+        new_in_file.data["object"].uid == group.uid
+    ), "Promotion of entity from uuid string failed."
+
+    assert (
+        new_in_file.data["dh"].uid == dh_group.uid
+    ), "Promotion of entity from uuid string failed."
 
 
 def test_invalid_uuid_string(tmp_path):
@@ -357,11 +415,11 @@ def test_invalid_uuid_string(tmp_path):
     ui_json["data"]["value"] = 4
     in_file = InputFile(ui_json=ui_json)
 
-    with pytest.raises(TypeValidationError) as excinfo:
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message("data", "int", ["str", "UUID", "Entity"]),
+    ):
         getattr(in_file, "data")
-    assert TypeValidationError.message("data", "int", ["str", "UUID", "Entity"]) == str(
-        excinfo.value
-    )
 
 
 def test_valid_uuid_in_workspace(tmp_path):
@@ -374,11 +432,11 @@ def test_valid_uuid_in_workspace(tmp_path):
     ui_json["data"]["value"] = bogus_uuid
     in_file = InputFile(ui_json=ui_json)
 
-    with pytest.raises(AssociationValidationError) as excinfo:
+    with pytest.raises(
+        AssociationValidationError,
+        match=AssociationValidationError.message("data", bogus_uuid, workspace),
+    ):
         getattr(in_file, "data")
-    assert AssociationValidationError.message("data", bogus_uuid, workspace) == str(
-        excinfo.value
-    )
 
 
 def test_data_with_wrong_parent(tmp_path):
@@ -396,11 +454,11 @@ def test_data_with_wrong_parent(tmp_path):
     ui_json["data"]["value"] = points_b.children[0].uid
     in_file = InputFile(ui_json=ui_json)
 
-    with pytest.raises(AssociationValidationError) as excinfo:
+    with pytest.raises(
+        AssociationValidationError,
+        match=AssociationValidationError.message("data", points_b.children[0], points),
+    ):
         getattr(in_file, "data")
-    assert AssociationValidationError.message(
-        "data", points_b.children[0], points
-    ) == str(excinfo.value)
 
 
 def test_property_group_with_wrong_type(tmp_path):
@@ -415,25 +473,28 @@ def test_property_group_with_wrong_type(tmp_path):
     ui_json["data"]["value"] = points.property_groups[0].uid
     ui_json["data"]["dataGroupType"] = "ABC"
 
-    with pytest.raises(JSONParameterValidationError) as excinfo:
-        InputFile(ui_json=ui_json)
-
-    assert JSONParameterValidationError.message(
-        "data",
-        ValueValidationError.message(
-            "dataGroupType", "ABC", ui_validations["dataGroupType"]["values"]
+    with pytest.raises(
+        JSONParameterValidationError,
+        match=JSONParameterValidationError.message(
+            "data",
+            ValueValidationError.message(
+                "dataGroupType", "ABC", ui_validations["dataGroupType"]["values"]
+            ),
         ),
-    ) == str(excinfo.value)
+    ):
+        InputFile(ui_json=ui_json)
 
     ui_json["data"]["dataGroupType"] = "3D vector"
     ui_json["data"]["value"] = points.property_groups[0]
     in_file = InputFile(ui_json=ui_json)
 
-    with pytest.raises(PropertyGroupValidationError) as excinfo:
+    with pytest.raises(
+        PropertyGroupValidationError,
+        match=PropertyGroupValidationError.message(
+            "data", points.property_groups[0], "3D vector"
+        ),
+    ):
         getattr(in_file, "data")
-    assert PropertyGroupValidationError.message(
-        "data", points.property_groups[0], "3D vector"
-    ) == str(excinfo.value)
 
 
 def test_input_file(tmp_path):
@@ -452,10 +513,8 @@ def test_input_file(tmp_path):
     in_file = InputFile(ui_json=ui_json)
     out_file = in_file.write_ui_json(path=tmp_path)
 
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(ValueError, match="Input file should be a str or Path"):
         InputFile.read_ui_json("somefile.json")
-
-    assert "Input file should have the extension *.ui.json" in str(error)
 
     # Load the input back in
     reload_input = InputFile.read_ui_json(out_file)
@@ -511,7 +570,6 @@ def test_data_value_parameter_a(tmp_path):
 
 # @pytest.mark.skip(reason="Failing on github for unknown reason")
 def test_data_value_parameter_b(tmp_path):
-
     workspace = get_workspace(tmp_path)
     points_a = workspace.get_entity("Points_A")[0]
     data_b = points_a.children[0]
@@ -535,6 +593,42 @@ def test_data_value_parameter_b(tmp_path):
     reload_input = InputFile.read_ui_json(out_file)
     assert reload_input.data["data"] == 123.0
     assert reload_input.ui_json["data"]["isValue"]
+
+
+def test_multi_object_value_parameter(tmp_path):
+    workspace = get_workspace(tmp_path)
+    points_a = workspace.get_entity("Points_A")[0]
+    points_b = workspace.get_entity("Points_B")[0]
+    data_b = points_a.children[0]
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["object"] = templates.object_parameter(value=[], multi_select=True)
+    ui_json["data"] = templates.data_value_parameter(
+        parent="object", is_value=False, prop=data_b.uid
+    )
+    in_file = InputFile(ui_json=ui_json)
+
+    with pytest.warns(
+        UserWarning,
+        match="Data associated with multiSelect dependent is not supported. Validation ignored.",
+    ):
+        getattr(in_file, "data")
+
+    ui_json.pop("data")
+    in_file = InputFile(ui_json=ui_json)
+    data = in_file.data
+    data["object"] = points_b.uid
+
+    data["object"] = [points_b.uid]
+    in_file.data = data
+
+    out_file = in_file.write_ui_json()
+    reload_input = InputFile.read_ui_json(out_file)
+    object_b = reload_input.workspace.get_entity("Points_B")
+
+    assert (
+        reload_input.data["object"] == object_b
+    ), "IntegerParameter did not properly save to file."
 
 
 def test_data_parameter(tmp_path):
