@@ -24,10 +24,10 @@ import numpy as np
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_base import ObjectType
 
-from .base import BaseTEMSurvey
+from .base import BaseAirborneEMSurvey
 
 
-class BaseAirborneTEMSurvey(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
+class BaseAirborneFEMSurvey(BaseAirborneEMSurvey, Curve):  # pylint: disable=too-many-ancestors
 
 
     def copy(
@@ -63,9 +63,9 @@ class BaseAirborneTEMSurvey(BaseTEMSurvey, Curve):  # pylint: disable=too-many-a
 
         metadata["EM Dataset"][new_entity.type] = new_entity.uid
 
-        complement: AirborneTEMTransmitters | AirborneTEMReceivers = (
+        complement: AirborneFEMTransmitters | AirborneFEMReceivers = (
             self.transmitters  # type: ignore
-            if isinstance(self, AirborneTEMReceivers)
+            if isinstance(self, AirborneFEMReceivers)
             else self.receivers
         )
         if complement is not None:
@@ -96,10 +96,9 @@ class BaseAirborneTEMSurvey(BaseTEMSurvey, Curve):  # pylint: disable=too-many-a
                 "Input type": "Rx",
                 "Property groups": [],
                 "Receivers": None,
-                "Survey type": "Airborne TEM",
+                "Survey type": "Airborne FEM",
                 "Transmitters": None,
-                "Unit": "Milliseconds (ms)",
-                "Waveform": {"Timing mark": 0.0},
+                "Unit": "Hertz (Hz)",
             }
         }
 
@@ -108,27 +107,27 @@ class BaseAirborneTEMSurvey(BaseTEMSurvey, Curve):  # pylint: disable=too-many-a
         """
         :return: Transmitter class
         """
-        return AirborneTEMReceivers
+        return AirborneFEMReceivers
 
     @property
     def default_transmitter_type(self):
         """
         :return: Transmitter class
         """
-        return AirborneTEMTransmitters
+        return AirborneFEMTransmitters
 
 
 
 
-class AirborneTEMReceivers(BaseAirborneTEMSurvey):  # pylint: disable=too-many-ancestors
+class AirborneFEMReceivers(BaseAirborneFEMSurvey):  # pylint: disable=too-many-ancestors
     """
-    Airborne time-domain electromagnetic receivers class.
+    Airborne frequency-domain electromagnetic receivers class.
     """
 
     __TYPE_UID = uuid.UUID("{19730589-fd28-4649-9de0-ad47249d9aba}")
     __TYPE = "Receivers"
 
-    def __init__(self, object_type: ObjectType, name="Airborne TEM Rx", **kwargs):
+    def __init__(self, object_type: ObjectType, name="Airborne FEM Rx", **kwargs):
         super().__init__(object_type, name=name, **kwargs)
 
     @classmethod
@@ -144,15 +143,15 @@ class AirborneTEMReceivers(BaseAirborneTEMSurvey):  # pylint: disable=too-many-a
         return self.__TYPE
 
 
-class AirborneTEMTransmitters(BaseAirborneTEMSurvey):  # pylint: disable=too-many-ancestors
+class AirborneFEMTransmitters(BaseAirborneFEMSurvey):  # pylint: disable=too-many-ancestors
     """
-    Airborne time-domain electromagnetic transmitters class.
+    Airborne frequency-domain electromagnetic transmitters class.
     """
 
     __TYPE_UID = uuid.UUID("{58c4849f-41e2-4e09-b69b-01cf4286cded}")
     __TYPE = "Transmitters"
 
-    def __init__(self, object_type: ObjectType, name="Airborne TEM Tx", **kwargs):
+    def __init__(self, object_type: ObjectType, name="Airborne FEM Tx", **kwargs):
         super().__init__(object_type, name=name, **kwargs)
 
     @classmethod
