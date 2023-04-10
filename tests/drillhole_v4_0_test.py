@@ -191,11 +191,14 @@ def test_create_drillhole_data(tmp_path):
                 },
             )
 
+        values = np.random.randn(30)
+        values[0] = np.nan
+        values[-1] = np.nan
         well.add_data(
             {
                 "my_log_values/": {
                     "depth": np.arange(0, 50.0),
-                    "values": np.random.randn(30),
+                    "values": values.astype(np.float32),
                 },
                 "log_wt_tolerance": {
                     "depth": np.arange(0.01, 50.01),
