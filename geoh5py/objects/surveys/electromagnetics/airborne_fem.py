@@ -24,71 +24,16 @@ import numpy as np
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_base import ObjectType
 
-from .base import BaseAirborneEMSurvey
+from .base import FEMSurvey, AirborneEMSurvey
 
 
-class BaseAirborneFEMSurvey(BaseAirborneEMSurvey, Curve):  # pylint: disable=too-many-ancestors
+class AirborneFEMSurvey(FEMSurvey, AirborneEMSurvey):  # pylint: disable=too-many-ancestors
 
-
-    def copy(
-        self,
-        parent=None,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: np.ndarray | None = None,
-        cell_mask: np.ndarray | None = None,
-        **kwargs,
-    ):
-        """
-        Sub-class extension of :func:`~geoh5py.objects.cell_object.CellObject.copy`.
-        """
-        if parent is None:
-            parent = self.parent
-
-        omit_list = [
-            "_metadata",
-            "_receivers",
-            "_transmitters",
-        ]
-        metadata = self.metadata.copy()
-        new_entity = super().copy(
-            parent=parent,
-            clear_cache=clear_cache,
-            copy_children=copy_children,
-            mask=mask,
-            cell_mask=cell_mask,
-            omit_list=omit_list,
-            **kwargs,
-        )
-
-        metadata["EM Dataset"][new_entity.type] = new_entity.uid
-
-        complement: AirborneFEMTransmitters | AirborneFEMReceivers = (
-            self.transmitters  # type: ignore
-            if isinstance(self, AirborneFEMReceivers)
-            else self.receivers
-        )
-        if complement is not None:
-            new_complement = super(Curve, complement).copy(  # type: ignore
-                parent=parent,
-                omit_list=omit_list,
-                copy_children=copy_children,
-                clear_cache=clear_cache,
-                mask=mask,
-            )
-
-            setattr(new_entity, complement.type, new_complement)
-            metadata["EM Dataset"][complement.type] = new_complement.uid
-            new_complement.metadata = metadata
-
-        new_entity.metadata = metadata
-
-        return new_entity
 
     @property
     def default_metadata(self) -> dict:
         """
-        Default dictionary of metadata for AirborneTEM entities.
+        Default dictionary of metadata for AirborneFEM entities.
         """
         return {
             "EM Dataset": {
@@ -119,7 +64,7 @@ class BaseAirborneFEMSurvey(BaseAirborneEMSurvey, Curve):  # pylint: disable=too
 
 
 
-class AirborneFEMReceivers(BaseAirborneFEMSurvey):  # pylint: disable=too-many-ancestors
+class AirborneFEMReceivers(AirborneFEMSurvey):  # pylint: disable=too-many-ancestors
     """
     Airborne frequency-domain electromagnetic receivers class.
     """
@@ -143,7 +88,7 @@ class AirborneFEMReceivers(BaseAirborneFEMSurvey):  # pylint: disable=too-many-a
         return self.__TYPE
 
 
-class AirborneFEMTransmitters(BaseAirborneFEMSurvey):  # pylint: disable=too-many-ancestors
+class AirborneFEMTransmitters(AirborneFEMSurvey):  # pylint: disable=too-many-ancestors
     """
     Airborne frequency-domain electromagnetic transmitters class.
     """

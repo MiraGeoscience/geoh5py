@@ -27,6 +27,7 @@ import numpy as np
 from geoh5py.data.float_data import FloatData
 from geoh5py.groups.property_group import PropertyGroup
 from geoh5py.objects.object_base import ObjectBase
+from geoh5py.objects import Curve
 
 
 class BaseEMSurvey(ObjectBase, ABC):
@@ -193,10 +194,73 @@ class BaseEMSurvey(ObjectBase, ABC):
 
         return None
 
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        cell_mask: np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Sub-class extension of :func:`~geoh5py.objects.cell_object.CellObject.copy`.
+        """
+        if parent is None:
+            parent = self.parent
+
+        omit_list = [
+            "_metadata",
+            "_receivers",
+            "_transmitters",
+        ]
+        metadata = self.metadata.copy()
+        new_entity = super().copy(
+            parent=parent,
+            clear_cache=clear_cache,
+            copy_children=copy_children,
+            mask=mask,
+            cell_mask=cell_mask,
+            omit_list=omit_list,
+            **kwargs,
+        )
+
+        metadata["EM Dataset"][new_entity.type] = new_entity.uid
+
+        complement = (
+            self.transmitters  # type: ignore
+            if isinstance(self, self.default_receiver_type)
+            else self.receivers
+        )
+        if complement is not None:
+            base_object = (
+                self.base_transmitter_type
+                if isinstance(self, self.default_receiver_type)
+                else self.base_receiver_type
+            )
+            new_complement = super(base_object, complement).copy(  # type: ignore
+                parent=parent,
+                omit_list=omit_list,
+                copy_children=copy_children,
+                clear_cache=clear_cache,
+                mask=mask,
+            )
+
+            setattr(new_entity, complement.type, new_complement)
+            metadata["EM Dataset"][complement.type] = new_complement.uid
+            new_complement.metadata = metadata
+
+        new_entity.metadata = metadata
+
+        return new_entity
+
     @property
     @abstractmethod
     def default_input_types(self) -> list[str] | None:
-        """Input types. Must be one of 'Rx', 'Tx', 'Tx and Rx'."""
+        """
+        Input types.
+
+        Must be one of 'Rx', 'Tx', 'Tx and Rx', 'Rx only', 'Rx and base stations'."""
 
     @property
     def default_metadata(self):
@@ -441,7 +505,9 @@ class BaseEMSurvey(ObjectBase, ABC):
             self.edit_metadata({"Unit": value})
 
 
-class BaseAirborneEMSurvey(BaseEMSurvey, ABC):
+class AirborneEMSurvey(BaseEMSurvey, Curve):
+
+
     __INPUT_TYPE = ["Rx", "Tx", "Tx and Rx"]
     _PROPERTY_MAP = {
         "crossline_offset": "Crossline offset",
@@ -574,9 +640,28 @@ class BaseAirborneEMSurvey(BaseEMSurvey, ABC):
     def yaw(self, value: float | uuid.UUID):
         self.set_metadata("yaw", value)
 
+class FEMSurvey(BaseEMSurvey):
 
+    __UNITS =     __UNITS = [
+        "Hertz (Hz)",
+        "KiloHertz (kHz)",
+        "MegaHertz (MHz)",
+        "Gigahertz (GHz)",
+    ]
 
-class BaseTEMSurvey(BaseEMSurvey, ABC):
+    @property
+    def default_units(self) -> list[str]:
+        """
+        Accepted frequency units.
+
+        Must be one of "Hertz (Hz)", "KiloHertz (kHz)", "MegaHertz (MHz)", or
+        "Gigahertz (GHz)",
+
+        :returns: List of acceptable units for frequency domain channels.
+        """
+        return self.__UNITS
+
+class TEMSurvey(BaseEMSurvey):
 
     __UNITS = [
         "Seconds (s)",
@@ -586,14 +671,14 @@ class BaseTEMSurvey(BaseEMSurvey, ABC):
     ]
 
     @property
-    @abstractmethod
-    def default_input_types(self) -> list[str]:
-        """Input types for the survey element."""
-
-    @property
     def default_units(self) -> list[str]:
-        """Accepted time units. Must be one of "Seconds (s)",
-        "Milliseconds (ms)", "Microseconds (us)" or "Nanoseconds (ns)"
+        """
+        Accepted time units.
+
+        Must be one of "Seconds (s)", "Milliseconds (ms)", "Microseconds (us)"
+        or "Nanoseconds (ns)"
+
+        :returns: List of acceptable units for time domain channels.
         """
         return self.__UNITS
 

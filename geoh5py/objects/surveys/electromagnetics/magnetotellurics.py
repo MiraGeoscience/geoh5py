@@ -22,22 +22,16 @@ import uuid
 from geoh5py.objects.object_base import ObjectType
 from geoh5py.objects.points import Points
 
-from .base import BaseEMSurvey
+from .base import FEMSurvey
 
 
-class MTReceivers(BaseEMSurvey, Points):
+class MTReceivers(FEMSurvey, Points):
     """
     A magnetotellurics survey object.
     """
 
     __TYPE_UID = uuid.UUID("{b99bd6e5-4fe1-45a5-bd2f-75fc31f91b38}")
     __TYPE = "Receivers"
-    __UNITS = [
-        "Hertz (Hz)",
-        "KiloHertz (kHz)",
-        "MegaHertz (MHz)",
-        "Gigahertz (GHz)",
-    ]
     __INPUT_TYPE = ["Rx only"]
 
     def __init__(self, object_type: ObjectType, name="Magnetotellurics rx", **kwargs):
@@ -84,13 +78,6 @@ class MTReceivers(BaseEMSurvey, Points):
         :return: Default unique identifier
         """
         return cls.__TYPE_UID
-
-    @property
-    def default_units(self) -> list[str]:
-        """Accepted time units. Must be one of "Seconds (s)",
-        "Milliseconds (ms)", "Microseconds (us)" or "Nanoseconds (ns)"
-        """
-        return self.__UNITS
 
     @property
     def type(self):
