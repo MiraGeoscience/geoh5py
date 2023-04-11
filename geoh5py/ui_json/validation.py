@@ -157,7 +157,7 @@ class InputValidation:
                 validations[key] = {
                     "types": [str],
                 }
-            elif "meshType" in item:
+            elif "meshType" in item or "groupType" in item:
                 validations[key] = {
                     "types": [str, UUID, Entity],
                     "association": "geoh5",
