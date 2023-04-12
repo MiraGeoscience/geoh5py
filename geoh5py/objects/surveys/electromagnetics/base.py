@@ -201,6 +201,7 @@ class BaseEMSurvey(ObjectBase, ABC):
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         cell_mask: np.ndarray | None = None,
+        apply_to_complement: bool = True,
         **kwargs,
     ):
         """
@@ -213,7 +214,10 @@ class BaseEMSurvey(ObjectBase, ABC):
             "_metadata",
             "_receivers",
             "_transmitters",
+            "_base_stations",
+            "_tx_id_property",
         ]
+        kwargs["omit_list"] = omit_list
         metadata = self.metadata.copy()
         new_entity = super().copy(
             parent=parent,
@@ -221,24 +225,18 @@ class BaseEMSurvey(ObjectBase, ABC):
             copy_children=copy_children,
             mask=mask,
             cell_mask=cell_mask,
-            omit_list=omit_list,
             **kwargs,
         )
 
         metadata["EM Dataset"][new_entity.type] = new_entity.uid
 
-        complement = (
-            self.transmitters  # type: ignore
-            if isinstance(self, self.default_receiver_type)
-            else self.receivers
-        )
-        if complement is not None:
+        if apply_to_complement and (getattr(self, "complement", None) is not None):
             base_object = (
                 self.base_transmitter_type
                 if isinstance(self, self.default_receiver_type)
                 else self.base_receiver_type
             )
-            new_complement = super(base_object, complement).copy(  # type: ignore
+            new_complement = super(base_object, self.complement).copy(  # type: ignore
                 parent=parent,
                 omit_list=omit_list,
                 copy_children=copy_children,
@@ -246,12 +244,11 @@ class BaseEMSurvey(ObjectBase, ABC):
                 mask=mask,
             )
 
-            setattr(new_entity, complement.type, new_complement)
-            metadata["EM Dataset"][complement.type] = new_complement.uid
+            setattr(new_entity, self.complement.type, new_complement)
+            metadata["EM Dataset"][self.complement.type] = new_complement.uid
             new_complement.metadata = metadata
 
         new_entity.metadata = metadata
-
         return new_entity
 
     @property

@@ -19,15 +19,13 @@ from __future__ import annotations
 
 import uuid
 
-import numpy as np
-
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_base import ObjectType
 
 from .base import TEMSurvey, AirborneEMSurvey
 
 
-class BaseAirborneTEMSurvey(TEMSurvey, AirborneEMSurvey):  # pylint: disable=too-many-ancestors
+class AirborneTEMSurvey(TEMSurvey, AirborneEMSurvey):  # pylint: disable=too-many-ancestors
 
 
     @property
@@ -77,9 +75,7 @@ class BaseAirborneTEMSurvey(TEMSurvey, AirborneEMSurvey):  # pylint: disable=too
         return Curve
 
 
-
-
-class AirborneTEMReceivers(BaseAirborneTEMSurvey):  # pylint: disable=too-many-ancestors
+class AirborneTEMReceivers(AirborneTEMSurvey):  # pylint: disable=too-many-ancestors
     """
     Airborne time-domain electromagnetic receivers class.
     """
@@ -89,6 +85,10 @@ class AirborneTEMReceivers(BaseAirborneTEMSurvey):  # pylint: disable=too-many-a
 
     def __init__(self, object_type: ObjectType, name="Airborne TEM Rx", **kwargs):
         super().__init__(object_type, name=name, **kwargs)
+
+    @property
+    def complement(self):
+        return self.transmitters
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -103,7 +103,7 @@ class AirborneTEMReceivers(BaseAirborneTEMSurvey):  # pylint: disable=too-many-a
         return self.__TYPE
 
 
-class AirborneTEMTransmitters(BaseAirborneTEMSurvey):  # pylint: disable=too-many-ancestors
+class AirborneTEMTransmitters(AirborneTEMSurvey):  # pylint: disable=too-many-ancestors
     """
     Airborne time-domain electromagnetic transmitters class.
     """
@@ -113,6 +113,10 @@ class AirborneTEMTransmitters(BaseAirborneTEMSurvey):  # pylint: disable=too-man
 
     def __init__(self, object_type: ObjectType, name="Airborne TEM Tx", **kwargs):
         super().__init__(object_type, name=name, **kwargs)
+
+    @property
+    def complement(self):
+        return self.receivers
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

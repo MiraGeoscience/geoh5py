@@ -72,6 +72,14 @@ class MTReceivers(FEMSurvey, Points):
         """
         return type(None)
 
+    @property
+    def base_receiver_type(self):
+        return Points
+
+    @property
+    def base_transmitter_type(self):
+        return type(None)
+
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         """
