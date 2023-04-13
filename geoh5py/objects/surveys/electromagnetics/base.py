@@ -194,7 +194,7 @@ class BaseEMSurvey(ObjectBase, ABC):
 
         return None
 
-    def copy(
+    def copy(  # pylint: disable=too-many-arguments
         self,
         parent=None,
         copy_children: bool = True,
@@ -232,11 +232,13 @@ class BaseEMSurvey(ObjectBase, ABC):
 
         if apply_to_complement and (getattr(self, "complement", None) is not None):
             base_object = (
-                self.base_transmitter_type
+                self.base_transmitter_type  # pylint: disable=no-member
                 if isinstance(self, self.default_receiver_type)
-                else self.base_receiver_type
+                else self.base_receiver_type  # pylint: disable=no-member
             )
-            new_complement = super(base_object, self.complement).copy(  # type: ignore
+            new_complement = super(  # pylint: disable=bad-super-call
+                base_object, self.complement  # pylint: disable=no-member
+            ).copy(
                 parent=parent,
                 omit_list=omit_list,
                 copy_children=copy_children,
@@ -244,8 +246,14 @@ class BaseEMSurvey(ObjectBase, ABC):
                 mask=mask,
             )
 
-            setattr(new_entity, self.complement.type, new_complement)
-            metadata["EM Dataset"][self.complement.type] = new_complement.uid
+            setattr(
+                new_entity,
+                self.complement.type,  # pylint: disable=no-member
+                new_complement
+            )
+            metadata["EM Dataset"][
+                self.complement.type  # pylint: disable=no-member
+            ] = new_complement.uid
             new_complement.metadata = metadata
 
         new_entity.metadata = metadata

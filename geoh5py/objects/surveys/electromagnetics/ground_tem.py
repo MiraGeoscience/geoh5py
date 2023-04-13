@@ -90,32 +90,34 @@ class GroundTEMSurvey(TEMSurvey, Curve):  # pylint: disable=too-many-ancestors
 
         if (
             new_entity.tx_id_property is not None
-            and self.complement is not None
-            and self.complement.tx_id_property is not None
-            and self.complement.tx_id_property.values is not None
-            and self.complement.vertices is not None
-            and self.complement.cells is not None
+            and self.complement is not None  # pylint: disable=no-member
+            and self.complement.tx_id_property is not None  # pylint: disable=no-member
+            and self.complement.tx_id_property.values is not None  # pylint: disable=no-member
+            and self.complement.vertices is not None  # pylint: disable=no-member
+            and self.complement.cells is not None  # pylint: disable=no-member
         ):
             intersect = np.intersect1d(
                 new_entity.tx_id_property.values,
-                self.complement.tx_id_property.values,
+                self.complement.tx_id_property.values,  # pylint: disable=no-member
             )
 
             # Convert cell indices to vertex indices
-            if isinstance(self.complement, GroundTEMReceiversLargeLoop):
+            if isinstance(
+                self.complement, GroundTEMReceiversLargeLoop  # pylint: disable=no-member
+            ):
                 mask = np.r_[
-                    [(val in intersect) for val in self.complement.tx_id_property.values]
+                    [(val in intersect) for val in self.complement.tx_id_property.values]  # pylint: disable=no-member
                 ]
                 tx_ids = self.complement.tx_id_property.values[mask]
             else:
                 cell_mask = np.r_[
-                    [(val in intersect) for val in self.complement.tx_id_property.values]
+                    [(val in intersect) for val in self.complement.tx_id_property.values]  # pylint: disable=no-member
                 ]
-                mask = np.zeros(self.complement.vertices.shape[0], dtype=bool)
-                mask[self.complement.cells[cell_mask, :]] = True
-                tx_ids = self.complement.tx_id_property.values[cell_mask]
+                mask = np.zeros(self.complement.vertices.shape[0], dtype=bool)  # pylint: disable=no-member
+                mask[self.complement.cells[cell_mask, :]] = True  # pylint: disable=no-member
+                tx_ids = self.complement.tx_id_property.values[cell_mask]  # pylint: disable=no-member
 
-            new_complement = super(Curve, self.complement).copy(  # type: ignore
+            new_complement = super(Curve, self.complement).copy(  # pylint: disable=no-member
                 parent=parent,
                 omit_list=omit_list,
                 copy_children=copy_children,
@@ -130,7 +132,7 @@ class GroundTEMSurvey(TEMSurvey, Curve):  # pylint: disable=too-many-ancestors
 
             if (
                 new_complement.tx_id_property is None
-                and self.complement.tx_id_property is not None
+                and self.complement.tx_id_property is not None  # pylint: disable=no-member
             ):
                 new_complement.tx_id_property = tx_ids
 
