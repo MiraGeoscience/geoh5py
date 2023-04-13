@@ -22,10 +22,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from geoh5py.objects import (
-    AirborneFEMReceivers,
-    AirborneFEMTransmitters,
-)
+from geoh5py.objects import AirborneFEMReceivers, AirborneFEMTransmitters
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -194,7 +191,7 @@ def test_survey_airborne_fem_data(tmp_path):
     ):
         receivers.channels = {"abc": 1, "dfg": 2}
 
-    channels = np.array([0.01, 1., 100.])
+    channels = np.array([0.01, 1.0, 100.0])
     receivers.channels = channels
 
     assert np.all(
@@ -262,11 +259,9 @@ def test_survey_airborne_fem_data(tmp_path):
 
     receivers.unit = "Hertz (Hz)"
 
-
     assert (
         receivers.metadata == transmitters.metadata
     ), "Error synchronizing the transmitters and receivers metadata."
-
 
     with pytest.raises(ValueError, match="Mask must be an array of shape"):
         receivers.copy(mask=np.r_[1, 2, 3])
@@ -297,4 +292,3 @@ def test_survey_airborne_fem_data(tmp_path):
                 receivers_orig.children, receivers_rec.children
             ):
                 np.testing.assert_almost_equal(child_a.values[5:], child_b.values)
-

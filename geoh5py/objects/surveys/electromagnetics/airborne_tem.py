@@ -22,12 +22,12 @@ import uuid
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_base import ObjectType
 
-from .base import TEMSurvey, AirborneEMSurvey
+from .base import AirborneEMSurvey, TEMSurvey
+
+# pylint: disable=too-many-ancestors
 
 
-class AirborneTEMSurvey(TEMSurvey, AirborneEMSurvey):  # pylint: disable=too-many-ancestors
-
-
+class AirborneTEMSurvey(TEMSurvey, AirborneEMSurvey):
     @property
     def default_metadata(self) -> dict:
         """
@@ -75,7 +75,7 @@ class AirborneTEMSurvey(TEMSurvey, AirborneEMSurvey):  # pylint: disable=too-man
         return Curve
 
 
-class AirborneTEMReceivers(AirborneTEMSurvey):  # pylint: disable=too-many-ancestors
+class AirborneTEMReceivers(AirborneTEMSurvey):
     """
     Airborne time-domain electromagnetic receivers class.
     """
@@ -103,7 +103,7 @@ class AirborneTEMReceivers(AirborneTEMSurvey):  # pylint: disable=too-many-ances
         return self.__TYPE
 
 
-class AirborneTEMTransmitters(AirborneTEMSurvey):  # pylint: disable=too-many-ancestors
+class AirborneTEMTransmitters(AirborneTEMSurvey):
     """
     Airborne time-domain electromagnetic transmitters class.
     """

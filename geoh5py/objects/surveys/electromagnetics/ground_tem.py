@@ -29,21 +29,22 @@ from geoh5py.objects.object_base import ObjectType
 
 from .base import TEMSurvey
 
+# pylint: disable=too-many-ancestors, no-member
+# mypy: disable-error-code="attr-defined"
 
-class GroundTEMSurvey(TEMSurvey, Curve):  # pylint: disable=too-many-ancestors
 
+class GroundTEMSurvey(TEMSurvey, Curve):
     __INPUT_TYPE = ["Tx and Rx"]
     _tx_id_property: ReferencedData | None = None
 
-
-
-    def copy(
+    def copy(  # pylint: disable=too-many-arguments
         self,
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         cell_mask: np.ndarray | None = None,
+        apply_to_complement: bool = True,
         **kwargs,
     ):
         """
@@ -90,34 +91,41 @@ class GroundTEMSurvey(TEMSurvey, Curve):  # pylint: disable=too-many-ancestors
 
         if (
             new_entity.tx_id_property is not None
-            and self.complement is not None  # pylint: disable=no-member
-            and self.complement.tx_id_property is not None  # pylint: disable=no-member
-            and self.complement.tx_id_property.values is not None  # pylint: disable=no-member
-            and self.complement.vertices is not None  # pylint: disable=no-member
-            and self.complement.cells is not None  # pylint: disable=no-member
+            and self.complement is not None
+            and self.complement.tx_id_property is not None
+            and self.complement.tx_id_property.values is not None
+            and self.complement.vertices is not None
+            and self.complement.cells is not None
         ):
             intersect = np.intersect1d(
                 new_entity.tx_id_property.values,
-                self.complement.tx_id_property.values,  # pylint: disable=no-member
+                self.complement.tx_id_property.values,
             )
 
             # Convert cell indices to vertex indices
             if isinstance(
-                self.complement, GroundTEMReceiversLargeLoop  # pylint: disable=no-member
+                self.complement,
+                GroundTEMReceiversLargeLoop,
             ):
                 mask = np.r_[
-                    [(val in intersect) for val in self.complement.tx_id_property.values]  # pylint: disable=no-member
+                    [
+                        (val in intersect)
+                        for val in self.complement.tx_id_property.values
+                    ]
                 ]
                 tx_ids = self.complement.tx_id_property.values[mask]
             else:
                 cell_mask = np.r_[
-                    [(val in intersect) for val in self.complement.tx_id_property.values]  # pylint: disable=no-member
+                    [
+                        (val in intersect)
+                        for val in self.complement.tx_id_property.values
+                    ]
                 ]
-                mask = np.zeros(self.complement.vertices.shape[0], dtype=bool)  # pylint: disable=no-member
-                mask[self.complement.cells[cell_mask, :]] = True  # pylint: disable=no-member
-                tx_ids = self.complement.tx_id_property.values[cell_mask]  # pylint: disable=no-member
+                mask = np.zeros(self.complement.vertices.shape[0], dtype=bool)
+                mask[self.complement.cells[cell_mask, :]] = True
+                tx_ids = self.complement.tx_id_property.values[cell_mask]
 
-            new_complement = super(Curve, self.complement).copy(  # pylint: disable=no-member
+            new_complement = super(Curve, self.complement).copy(
                 parent=parent,
                 omit_list=omit_list,
                 copy_children=copy_children,
@@ -132,7 +140,7 @@ class GroundTEMSurvey(TEMSurvey, Curve):  # pylint: disable=too-many-ancestors
 
             if (
                 new_complement.tx_id_property is None
-                and self.complement.tx_id_property is not None  # pylint: disable=no-member
+                and self.complement.tx_id_property is not None
             ):
                 new_complement.tx_id_property = tx_ids
 
@@ -263,7 +271,7 @@ class GroundTEMSurvey(TEMSurvey, Curve):  # pylint: disable=too-many-ancestors
         self.edit_metadata({"Tx ID property": getattr(value, "uid", None)})
 
 
-class GroundTEMReceiversLargeLoop(GroundTEMSurvey):  # pylint: disable=too-many-ancestors
+class GroundTEMReceiversLargeLoop(GroundTEMSurvey):
     """
     Ground time-domain electromagnetic receivers class.
     """
@@ -300,9 +308,7 @@ class GroundTEMReceiversLargeLoop(GroundTEMSurvey):  # pylint: disable=too-many-
         return self.__TYPE
 
 
-class GroundTEMTransmittersLargeLoop(
-    GroundTEMSurvey
-):  # pylint: disable=too-many-ancestors
+class GroundTEMTransmittersLargeLoop(GroundTEMSurvey):
     """
     Ground time-domain electromagnetic transmitters class.
     """
