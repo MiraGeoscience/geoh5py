@@ -125,7 +125,13 @@ class GroundTEMSurvey(TEMSurvey, Curve):
                 mask[self.complement.cells[cell_mask, :]] = True
                 tx_ids = self.complement.tx_id_property.values[cell_mask]
 
-            new_complement = super(Curve, self.complement).copy(
+            base_object = (
+                self.base_transmitter_type  # pylint: disable=no-member
+                if isinstance(self, self.default_receiver_type)
+                else self.base_receiver_type  # pylint: disable=no-member
+            )
+
+            new_complement = super(base_object, self.complement).copy(
                 parent=parent,
                 omit_list=omit_list,
                 copy_children=copy_children,

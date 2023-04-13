@@ -182,6 +182,11 @@ class BaseEMSurvey(ObjectBase, ABC):
         self.edit_metadata({"Channels": values})
 
     @property
+    def complement(self):
+        """Returns the complement object for self."""
+        return None
+
+    @property
     def components(self) -> dict | None:
         """
         Rapid access to the list of data entities for all components.
