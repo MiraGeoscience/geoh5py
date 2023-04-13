@@ -31,11 +31,8 @@ from .base import TEMSurvey
 
 
 class GroundTEMSurvey(TEMSurvey, Curve):  # pylint: disable=too-many-ancestors
-
     __INPUT_TYPE = ["Tx and Rx"]
     _tx_id_property: ReferencedData | None = None
-
-
 
     def copy(
         self,
@@ -104,12 +101,18 @@ class GroundTEMSurvey(TEMSurvey, Curve):  # pylint: disable=too-many-ancestors
             # Convert cell indices to vertex indices
             if isinstance(self.complement, GroundTEMReceiversLargeLoop):
                 mask = np.r_[
-                    [(val in intersect) for val in self.complement.tx_id_property.values]
+                    [
+                        (val in intersect)
+                        for val in self.complement.tx_id_property.values
+                    ]
                 ]
                 tx_ids = self.complement.tx_id_property.values[mask]
             else:
                 cell_mask = np.r_[
-                    [(val in intersect) for val in self.complement.tx_id_property.values]
+                    [
+                        (val in intersect)
+                        for val in self.complement.tx_id_property.values
+                    ]
                 ]
                 mask = np.zeros(self.complement.vertices.shape[0], dtype=bool)
                 mask[self.complement.cells[cell_mask, :]] = True
@@ -261,7 +264,9 @@ class GroundTEMSurvey(TEMSurvey, Curve):  # pylint: disable=too-many-ancestors
         self.edit_metadata({"Tx ID property": getattr(value, "uid", None)})
 
 
-class GroundTEMReceiversLargeLoop(GroundTEMSurvey):  # pylint: disable=too-many-ancestors
+class GroundTEMReceiversLargeLoop(
+    GroundTEMSurvey
+):  # pylint: disable=too-many-ancestors
     """
     Ground time-domain electromagnetic receivers class.
     """

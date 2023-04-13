@@ -22,12 +22,12 @@ import uuid
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_base import ObjectType
 
-from .base import TEMSurvey, AirborneEMSurvey
+from .base import AirborneEMSurvey, TEMSurvey
 
 
-class AirborneTEMSurvey(TEMSurvey, AirborneEMSurvey):  # pylint: disable=too-many-ancestors
-
-
+class AirborneTEMSurvey(
+    TEMSurvey, AirborneEMSurvey
+):  # pylint: disable=too-many-ancestors
     @property
     def default_metadata(self) -> dict:
         """

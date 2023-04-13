@@ -22,11 +22,12 @@ import uuid
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_base import ObjectType
 
-from .base import FEMSurvey, AirborneEMSurvey
+from .base import AirborneEMSurvey, FEMSurvey
 
 
-class AirborneFEMSurvey(FEMSurvey, AirborneEMSurvey):  # pylint: disable=too-many-ancestors
-
+class AirborneFEMSurvey(
+    FEMSurvey, AirborneEMSurvey
+):  # pylint: disable=too-many-ancestors
     @property
     def base_receiver_type(self):
         """

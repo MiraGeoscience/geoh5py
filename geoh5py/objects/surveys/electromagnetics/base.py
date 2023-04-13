@@ -26,8 +26,8 @@ import numpy as np
 
 from geoh5py.data.float_data import FloatData
 from geoh5py.groups.property_group import PropertyGroup
-from geoh5py.objects.object_base import ObjectBase
 from geoh5py.objects import Curve
+from geoh5py.objects.object_base import ObjectBase
 
 
 class BaseEMSurvey(ObjectBase, ABC):
@@ -503,8 +503,6 @@ class BaseEMSurvey(ObjectBase, ABC):
 
 
 class AirborneEMSurvey(BaseEMSurvey, Curve):
-
-
     __INPUT_TYPE = ["Rx", "Tx", "Tx and Rx"]
     _PROPERTY_MAP = {
         "crossline_offset": "Crossline offset",
@@ -526,7 +524,6 @@ class AirborneEMSurvey(BaseEMSurvey, Curve):
     def crossline_offset(self, value: float | uuid.UUID | None):
         self.set_metadata("crossline_offset", value)
 
-
     @property
     def default_input_types(self) -> list[str]:
         """Choice of survey creation types."""
@@ -542,7 +539,6 @@ class AirborneEMSurvey(BaseEMSurvey, Curve):
         if field + " property" in self.metadata["EM Dataset"]:
             return self.metadata["EM Dataset"][field + " property"]
         return None
-
 
     def set_metadata(self, key: str, value: float | uuid.UUID | None):
         if key not in self._PROPERTY_MAP:
@@ -637,9 +633,9 @@ class AirborneEMSurvey(BaseEMSurvey, Curve):
     def yaw(self, value: float | uuid.UUID):
         self.set_metadata("yaw", value)
 
-class FEMSurvey(BaseEMSurvey):
 
-    __UNITS =     __UNITS = [
+class FEMSurvey(BaseEMSurvey):
+    __UNITS = __UNITS = [
         "Hertz (Hz)",
         "KiloHertz (kHz)",
         "MegaHertz (MHz)",
@@ -658,8 +654,8 @@ class FEMSurvey(BaseEMSurvey):
         """
         return self.__UNITS
 
-class TEMSurvey(BaseEMSurvey):
 
+class TEMSurvey(BaseEMSurvey):
     __UNITS = [
         "Seconds (s)",
         "Milliseconds (ms)",

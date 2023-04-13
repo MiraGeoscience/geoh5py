@@ -27,14 +27,13 @@ from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_type import ObjectType
 from geoh5py.objects.points import Points
 
-from .base import FEMSurvey, AirborneEMSurvey
+from .base import AirborneEMSurvey, FEMSurvey
 
 
 class TipperSurvey(FEMSurvey, AirborneEMSurvey):  # pylint: disable=too-many-ancestors
     """
     Base tipper survey class.
     """
-
 
     __INPUT_TYPE = ["Rx and base stations"]
     _base_stations = None
