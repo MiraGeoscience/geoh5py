@@ -29,8 +29,10 @@ from geoh5py.objects.points import Points
 
 from .base import AirborneEMSurvey, FEMSurvey
 
+# pylint: disable=too-many-ancestors
 
-class TipperSurvey(FEMSurvey, AirborneEMSurvey):  # pylint: disable=too-many-ancestors
+
+class TipperSurvey(FEMSurvey, AirborneEMSurvey):
     """
     Base tipper survey class.
     """
