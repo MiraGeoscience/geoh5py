@@ -29,7 +29,6 @@ from geoh5py.objects import Curve
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
-
 def test_add_file(tmp_path):
     workspace = Workspace(tmp_path / r"testProject.geoh5")
     workspace_copy = Workspace(tmp_path / r"testProject_B.geoh5")

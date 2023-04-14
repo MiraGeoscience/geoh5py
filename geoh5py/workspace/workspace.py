@@ -41,6 +41,8 @@ import numpy as np
 
 from .. import data, groups, objects
 from ..data import CommentsData, Data, DataType
+from ..data.text_data import TextData
+from ..data.visual_parameters import VisualParameters
 from ..groups import (
     CustomGroup,
     DrillholeGroup,
@@ -391,6 +393,9 @@ class Workspace(AbstractContextManager):
                     entity_kwargs["parent"], ConcatenatedObject
                 ):
                     member = type(name + "Concatenated", (ConcatenatedData, member), {})
+
+                if member is TextData and entity_kwargs["name"] == "Visual Parameters":
+                    member = VisualParameters
 
                 created_entity = member(data_type, **entity_kwargs)
                 return created_entity

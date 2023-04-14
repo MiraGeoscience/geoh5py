@@ -32,12 +32,12 @@ from ..data.data_association_enum import DataAssociationEnum
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity
-from ..shared.conversion import BaseConversion
 from ..shared.utils import mask_by_extent
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
     from .. import workspace
+    from ..shared.conversion import BaseConversion
 
 
 class ObjectBase(Entity):
@@ -271,6 +271,7 @@ class ObjectBase(Entity):
 
             if locations is not None:
                 self._extent = np.c_[locations.min(axis=0), locations.max(axis=0)].T
+                self._extent = np.c_[locations.min(axis=0), locations.max(axis=0)].T
 
         return self._extent
 
@@ -459,6 +460,7 @@ class ObjectBase(Entity):
         """
         Get a dictionary of attributes and validate the type of data.
         """
+
         entity_type = attribute_dict.get("entity_type")
         if entity_type is None:
             primitive_type = attribute_dict.get("type")
