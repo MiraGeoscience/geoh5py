@@ -24,10 +24,10 @@ from geoh5py.objects.object_base import ObjectType
 
 from .base import AirborneEMSurvey, FEMSurvey
 
+# pylint: disable=too-many-ancestors
 
-class AirborneFEMSurvey(
-    FEMSurvey, AirborneEMSurvey
-):  # pylint: disable=too-many-ancestors
+
+class AirborneFEMSurvey(FEMSurvey, AirborneEMSurvey):
     @property
     def base_receiver_type(self):
         """
