@@ -265,17 +265,19 @@ class H5Writer:
 
             if channel in dict_values:
                 values = dict_values[channel]
-                if isinstance(values, np.ndarray) and values.dtype == np.float64:
+                if isinstance(values, np.ndarray) and values.dtype in (
+                    np.float64,
+                    np.float32,
+                ):
                     values[np.isnan(values)] = FLOAT_NDV
                     values = values.astype(np.float32)
 
-                if len(values) > 0:
-                    attr_handle.create_dataset(
-                        name,
-                        data=values,
-                        compression="gzip",
-                        compression_opts=9,
-                    )
+                attr_handle.create_dataset(
+                    name,
+                    data=values,
+                    compression="gzip",
+                    compression_opts=9,
+                )
 
     @classmethod
     def update_field(
