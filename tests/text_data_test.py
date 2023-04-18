@@ -36,6 +36,7 @@ def test_create_text_data(tmp_path):
             for jj in range(12)
         ]
     )
+
     h5file_path = tmp_path / r"testTextData.geoh5"
 
     with Workspace(h5file_path) as workspace:

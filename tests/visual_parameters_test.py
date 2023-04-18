@@ -63,7 +63,7 @@ def test_visual_parameters(tmp_path):
     h5file_path = tmp_path / r"testTextData.geoh5"
 
     with Workspace(h5file_path) as workspace:
-        with Workspace(tmp_path / r"testTextData_copy.geoh5") as new_workspace:
+        with Workspace(tmp_path / r"testTextData_copy.geoh5"):
             points = Points.create(
                 workspace,
                 vertices=np.random.randn(n_data, 3),
@@ -82,3 +82,9 @@ def test_visual_parameters(tmp_path):
             )
 
             assert isinstance(data, VisualParameters)
+
+            assert data.colour == "4288806783"
+
+            data.colour = "2385641541"
+
+            assert data.colour == "2385641541"
