@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from geoh5py.data.visual_parameters import VisualParameters
 from geoh5py.objects import Points
@@ -88,3 +89,33 @@ def test_visual_parameters(tmp_path):
             data.colour = "2385641541"
 
             assert data.colour == "2385641541"
+
+            with pytest.raises(TypeError, match="Input 'values' for"):
+                data.xml = np.array([0])
+
+            with pytest.raises(ValueError, match="Input 'values' for"):
+                data.xml = "bidon"
+
+            with pytest.raises(TypeError, match="Input 'values' for"):
+                data.colour = 42
+
+            with pytest.raises(TypeError, match="Input 'values' for"):
+                data.modify_xml("bidon")
+
+            assert data.check_child("Bidon", {"bidon": "bidon"}) is False
+
+            assert data.check_child("Colour", {"bidon": "bidon"}) is False
+
+            assert data.get_child("bidon", "text") is None
+
+            data.xml = """
+            <IParameterList Version="1.0">
+            <Transparency>0</Transparency>
+            <Lighting>true</Lighting>
+            </IParameterList>
+            """
+            assert data.check_child("Colour", {"bidon": "bidon"}) is False
+
+            setattr(data, "_xml", None)
+            setattr(data, "values", None)
+            assert data.check_child("Colour", {"bidon": "bidon"}) is False
