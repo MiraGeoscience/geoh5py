@@ -26,7 +26,11 @@ import numpy as np
 
 from geoh5py.data.float_data import FloatData
 from geoh5py.groups.property_group import PropertyGroup
+from geoh5py.objects import Curve
 from geoh5py.objects.object_base import ObjectBase
+
+#  pylint: disable=no-member
+# mypy: disable-error-code="attr-defined"
 
 
 class BaseEMSurvey(ObjectBase, ABC):
@@ -178,6 +182,11 @@ class BaseEMSurvey(ObjectBase, ABC):
         self.edit_metadata({"Channels": values})
 
     @property
+    def complement(self):
+        """Returns the complement object for self."""
+        return None
+
+    @property
     def components(self) -> dict | None:
         """
         Rapid access to the list of data entities for all components.
@@ -193,10 +202,78 @@ class BaseEMSurvey(ObjectBase, ABC):
 
         return None
 
+    def copy(  # pylint: disable=too-many-arguments
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        cell_mask: np.ndarray | None = None,
+        apply_to_complement: bool = True,
+        **kwargs,
+    ):
+        """
+        Sub-class extension of :func:`~geoh5py.objects.cell_object.CellObject.copy`.
+        """
+        if parent is None:
+            parent = self.parent
+
+        omit_list = [
+            "_metadata",
+            "_receivers",
+            "_transmitters",
+            "_base_stations",
+            "_tx_id_property",
+        ]
+        kwargs["omit_list"] = omit_list
+        metadata = self.metadata.copy()
+        new_entity = super().copy(
+            parent=parent,
+            clear_cache=clear_cache,
+            copy_children=copy_children,
+            mask=mask,
+            cell_mask=cell_mask,
+            **kwargs,
+        )
+
+        metadata["EM Dataset"][new_entity.type] = new_entity.uid
+
+        if apply_to_complement and (getattr(self, "complement", None) is not None):
+            base_object = (
+                self.base_transmitter_type  # pylint: disable=no-member
+                if isinstance(self, self.default_receiver_type)
+                else self.base_receiver_type  # pylint: disable=no-member
+            )
+            new_complement = super(  # pylint: disable=bad-super-call
+                base_object, self.complement  # pylint: disable=no-member
+            ).copy(
+                parent=parent,
+                omit_list=omit_list,
+                copy_children=copy_children,
+                clear_cache=clear_cache,
+                mask=mask,
+            )
+
+            setattr(
+                new_entity,
+                self.complement.type,  # pylint: disable=no-member
+                new_complement,
+            )
+            metadata["EM Dataset"][
+                self.complement.type  # pylint: disable=no-member
+            ] = new_complement.uid
+            new_complement.metadata = metadata
+
+        new_entity.metadata = metadata
+        return new_entity
+
     @property
     @abstractmethod
     def default_input_types(self) -> list[str] | None:
-        """Input types. Must be one of 'Rx', 'Tx', 'Tx and Rx'."""
+        """
+        Input types.
+
+        Must be one of 'Rx', 'Tx', 'Tx and Rx', 'Rx only', 'Rx and base stations'."""
 
     @property
     def default_metadata(self):
@@ -441,7 +518,160 @@ class BaseEMSurvey(ObjectBase, ABC):
             self.edit_metadata({"Unit": value})
 
 
-class BaseTEMSurvey(BaseEMSurvey, ABC):
+class AirborneEMSurvey(BaseEMSurvey, Curve):
+    __INPUT_TYPE = ["Rx", "Tx", "Tx and Rx"]
+    _PROPERTY_MAP = {
+        "crossline_offset": "Crossline offset",
+        "inline_offset": "Inline offset",
+        "pitch": "Pitch",
+        "roll": "Roll",
+        "vertical_offset": "Vertical offset",
+        "yaw": "Yaw",
+    }
+
+    @property
+    def crossline_offset(self) -> float | uuid.UUID | None:
+        """
+        Numeric value or property UUID for the crossline offset between receiver and transmitter.
+        """
+        return self.fetch_metadata("crossline_offset")
+
+    @crossline_offset.setter
+    def crossline_offset(self, value: float | uuid.UUID | None):
+        self.set_metadata("crossline_offset", value)
+
+    @property
+    def default_input_types(self) -> list[str]:
+        """Choice of survey creation types."""
+        return self.__INPUT_TYPE
+
+    def fetch_metadata(self, key: str) -> float | uuid.UUID | None:
+        """
+        Fetch entry from the metadata.
+        """
+        field = self._PROPERTY_MAP.get(key, "")
+        if field + " value" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"][field + " value"]
+        if field + " property" in self.metadata["EM Dataset"]:
+            return self.metadata["EM Dataset"][field + " property"]
+        return None
+
+    def set_metadata(self, key: str, value: float | uuid.UUID | None):
+        if key not in self._PROPERTY_MAP:
+            raise ValueError(f"No property map found for key metadata '{key}'.")
+
+        field = self._PROPERTY_MAP[key]
+        if isinstance(value, float):
+            self.edit_metadata({field + " value": value, field + " property": None})
+        elif isinstance(value, uuid.UUID):
+            self.edit_metadata({field + " value": None, field + " property": value})
+        elif value is None:
+            self.edit_metadata({field + " value": None, field + " property": None})
+        else:
+            raise TypeError(
+                f"Input '{key}' must be one of type float, uuid.UUID or None"
+            )
+
+    @property
+    def inline_offset(self) -> float | uuid.UUID | None:
+        """
+        Numeric value or property UUID for the inline offset between receiver and transmitter.
+        """
+        return self.fetch_metadata("inline_offset")
+
+    @inline_offset.setter
+    def inline_offset(self, value: float | uuid.UUID):
+        self.set_metadata("inline_offset", value)
+
+    @property
+    def loop_radius(self) -> float | None:
+        """Transmitter loop radius"""
+        return self.metadata["EM Dataset"].get("Loop radius", None)
+
+    @loop_radius.setter
+    def loop_radius(self, value: float | None):
+        if not isinstance(value, (float, type(None))):
+            raise TypeError("Input 'loop_radius' must be of type 'float'")
+        self.edit_metadata({"Loop radius": value})
+
+    @property
+    def pitch(self) -> float | uuid.UUID | None:
+        """
+        Numeric value or property UUID for the pitch angle of the transmitter loop.
+        """
+        return self.fetch_metadata("pitch")
+
+    @pitch.setter
+    def pitch(self, value: float | uuid.UUID | None):
+        self.set_metadata("pitch", value)
+
+    @property
+    def relative_to_bearing(self) -> bool | None:
+        """Data relative_to_bearing"""
+        return self.metadata["EM Dataset"].get("Angles relative to bearing", None)
+
+    @relative_to_bearing.setter
+    def relative_to_bearing(self, value: bool | None):
+        if not isinstance(value, (bool, type(None))):
+            raise TypeError("Input 'relative_to_bearing' must be one of type 'bool'")
+        self.edit_metadata({"Angles relative to bearing": value})
+
+    @property
+    def roll(self) -> float | uuid.UUID | None:
+        """
+        Numeric value or property UUID for the roll angle of the transmitter loop.
+        """
+        return self.fetch_metadata("roll")
+
+    @roll.setter
+    def roll(self, value: float | uuid.UUID | None):
+        self.set_metadata("roll", value)
+
+    @property
+    def vertical_offset(self) -> float | uuid.UUID | None:
+        """
+        Numeric value or property UUID for the vertical offset between receiver and transmitter.
+        """
+        return self.fetch_metadata("vertical_offset")
+
+    @vertical_offset.setter
+    def vertical_offset(self, value: float | uuid.UUID | None):
+        self.set_metadata("vertical_offset", value)
+
+    @property
+    def yaw(self) -> float | uuid.UUID | None:
+        """
+        Numeric value or property UUID for the yaw angle of the transmitter loop.
+        """
+        return self.fetch_metadata("yaw")
+
+    @yaw.setter
+    def yaw(self, value: float | uuid.UUID):
+        self.set_metadata("yaw", value)
+
+
+class FEMSurvey(BaseEMSurvey):
+    __UNITS = __UNITS = [
+        "Hertz (Hz)",
+        "KiloHertz (kHz)",
+        "MegaHertz (MHz)",
+        "Gigahertz (GHz)",
+    ]
+
+    @property
+    def default_units(self) -> list[str]:
+        """
+        Accepted frequency units.
+
+        Must be one of "Hertz (Hz)", "KiloHertz (kHz)", "MegaHertz (MHz)", or
+        "Gigahertz (GHz)",
+
+        :returns: List of acceptable units for frequency domain channels.
+        """
+        return self.__UNITS
+
+
+class TEMSurvey(BaseEMSurvey):
     __UNITS = [
         "Seconds (s)",
         "Milliseconds (ms)",
@@ -450,14 +680,14 @@ class BaseTEMSurvey(BaseEMSurvey, ABC):
     ]
 
     @property
-    @abstractmethod
-    def default_input_types(self) -> list[str]:
-        """Input types for the survey element."""
-
-    @property
     def default_units(self) -> list[str]:
-        """Accepted time units. Must be one of "Seconds (s)",
-        "Milliseconds (ms)", "Microseconds (us)" or "Nanoseconds (ns)"
+        """
+        Accepted time units.
+
+        Must be one of "Seconds (s)", "Milliseconds (ms)", "Microseconds (us)"
+        or "Nanoseconds (ns)"
+
+        :returns: List of acceptable units for time domain channels.
         """
         return self.__UNITS
 
