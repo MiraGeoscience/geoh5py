@@ -27,6 +27,8 @@ from geoh5py.objects import (
     AirborneTEMTransmitters,
     LargeLoopGroundTEMReceivers,
     LargeLoopGroundTEMTransmitters,
+    MovingLoopGroundTEMReceivers,
+    MovingLoopGroundTEMTransmitters,
 )
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
@@ -410,3 +412,93 @@ def test_create_survey_ground_tem_large_loop(
         assert (
             transmitters_rec.n_vertices == receivers_orig.transmitters.n_vertices / 2.0
         )
+
+
+def test_create_survey_ground_fem(tmp_path):
+    name = "Survey"
+    path = Path(tmp_path) / r"../testGTEM.geoh5"
+
+    # Create a workspace
+    workspace = Workspace(path)
+    xlocs = np.linspace(-1000, 1000, 10)
+    vertices = np.c_[xlocs, np.random.randn(xlocs.shape[0], 2)]
+    receivers = MovingLoopGroundTEMReceivers.create(
+        workspace, vertices=vertices, name=name + "_rx"
+    )
+    assert isinstance(
+        receivers, MovingLoopGroundTEMReceivers
+    ), "Entity type MovingLoopGroundTEMReceivers failed to create."
+    transmitters = MovingLoopGroundTEMTransmitters.create(
+        workspace, vertices=vertices + 10.0, name=name + "_tx"
+    )
+    assert isinstance(
+        transmitters, MovingLoopGroundTEMTransmitters
+    ), "Entity type MovingLoopGroundTEMTransmitters failed to create."
+
+    with pytest.raises(
+        TypeError, match=f" must be of type {MovingLoopGroundTEMTransmitters}"
+    ):
+        receivers.transmitters = "123"
+
+    with pytest.raises(
+        TypeError,
+        match=f"Provided receivers must be of type {type(receivers)}",
+    ):
+        receivers.receivers = transmitters
+
+    with pytest.raises(
+        TypeError,
+        match=f"Provided transmitters must be of type {type(transmitters)}",
+    ):
+        transmitters.transmitters = receivers
+
+    receivers.transmitters = transmitters
+
+    with pytest.raises(TypeError, match="Input 'loop_radius' must be of type 'float'"):
+        receivers.loop_radius = "123"
+
+    receivers.loop_radius = 123.0
+
+    new_workspace = Workspace(path)
+    transmitters_rec = new_workspace.get_entity(name + "_tx")[0]
+    receivers_rec = new_workspace.get_entity(name + "_rx")[0]
+
+    # Check entities
+    compare_entities(
+        transmitters,
+        transmitters_rec,
+        ignore=["_receivers", "_transmitters", "_parent"],
+    )
+    compare_entities(
+        receivers,
+        receivers_rec,
+        ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
+    )
+
+    # Test copying receiver over through the receivers
+    # Create a workspace
+    new_workspace = Workspace(Path(tmp_path) / r"testGTEM_copy.geoh5")
+    receivers_rec = receivers.copy(new_workspace)
+    compare_entities(
+        receivers, receivers_rec, ignore=["_receivers", "_transmitters", "_parent"]
+    )
+    compare_entities(
+        transmitters,
+        receivers_rec.transmitters,
+        ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
+    )
+
+    # Test copying receiver over through the transmitters
+    # Create a workspace
+    new_workspace = Workspace(Path(tmp_path) / r"testGTEM_copy2.geoh5")
+    transmitters_rec = transmitters.copy(new_workspace)
+    compare_entities(
+        receivers,
+        transmitters_rec.receivers,
+        ignore=["_receivers", "_transmitters", "_parent"],
+    )
+    compare_entities(
+        transmitters,
+        transmitters_rec,
+        ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
+    )

@@ -23,13 +23,13 @@ import uuid
 
 from geoh5py.objects.object_base import ObjectType
 
-from .base import LargeLoopGroundEMSurvey, TEMSurvey
+from .base import LargeLoopGroundEMSurvey, MovingLoopGroundEMSurvey, TEMSurvey
 
 # pylint: disable=too-many-ancestors, no-member
 # mypy: disable-error-code="attr-defined"
 
 
-class MovingLoopGroundTEMSurvey(TEMSurvey):
+class MovingLoopGroundTEMSurvey(TEMSurvey, MovingLoopGroundEMSurvey):
     @property
     def default_metadata(self) -> dict:
         """

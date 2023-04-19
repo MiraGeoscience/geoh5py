@@ -30,7 +30,7 @@ from geoh5py.groups.property_group import PropertyGroup
 from geoh5py.objects import Curve
 from geoh5py.objects.object_base import ObjectBase
 
-#  pylint: disable=no-member
+#  pylint: disable=no-member, too-many-lines
 # mypy: disable-error-code="attr-defined"
 
 
@@ -517,6 +517,34 @@ class BaseEMSurvey(ObjectBase, ABC):
             if value not in self.default_units:
                 raise ValueError(f"Input 'unit' must be one of {self.default_units}")
             self.edit_metadata({"Unit": value})
+
+
+class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve):
+    __INPUT_TYPE = ["Rx"]
+
+    @property
+    def base_receiver_type(self):
+        return Curve
+
+    @property
+    def base_transmitter_type(self):
+        return Curve
+
+    @property
+    def default_input_types(self) -> list[str]:
+        """Choice of survey creation types."""
+        return self.__INPUT_TYPE
+
+    @property
+    def loop_radius(self) -> float | None:
+        """Transmitter loop radius"""
+        return self.metadata["EM Dataset"].get("Loop radius", None)
+
+    @loop_radius.setter
+    def loop_radius(self, value: float | None):
+        if not isinstance(value, (float, type(None))):
+            raise TypeError("Input 'loop_radius' must be of type 'float'")
+        self.edit_metadata({"Loop radius": value})
 
 
 class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):

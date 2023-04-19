@@ -21,12 +21,17 @@ import uuid
 
 from geoh5py.objects.object_base import ObjectType
 
-from .base import FEMSurvey, LargeLoopGroundEMSurvey
+from .base import FEMSurvey, LargeLoopGroundEMSurvey, MovingLoopGroundEMSurvey
 
 # pylint: disable=too-many-ancestors
 
 
-class MovingLoopGroundFEMSurvey(FEMSurvey):
+class MovingLoopGroundFEMSurvey(FEMSurvey, MovingLoopGroundEMSurvey):
+    @property
+    def default_input_types(self) -> list[str]:
+        """Choice of survey creation types."""
+        return self.__INPUT_TYPE
+
     @property
     def default_metadata(self) -> dict:
         """
