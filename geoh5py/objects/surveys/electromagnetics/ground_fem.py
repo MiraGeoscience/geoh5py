@@ -15,39 +15,33 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=too-many-locals, too-many-branches
-
 from __future__ import annotations
 
 import uuid
 
-from geoh5py.objects import Curve
 from geoh5py.objects.object_base import ObjectType
 
-from .base import LargeLoopGroundEMSurvey, TEMSurvey
+from .base import FEMSurvey, LargeLoopGroundEMSurvey
 
-# pylint: disable=too-many-ancestors, no-member
-# mypy: disable-error-code="attr-defined"
+# pylint: disable=too-many-ancestors
 
 
-class MovingLoopGroundTEMSurvey(TEMSurvey):
+class MovingLoopGroundFEMSurvey(FEMSurvey):
     @property
     def default_metadata(self) -> dict:
         """
-        Default dictionary of metadata for AirborneTEM entities.
+        Default dictionary of metadata for MovingLoopGroundFEMSurvey entities.
         """
         return {
             "EM Dataset": {
                 "Channels": [],
-                "Input type": "Tx and Rx",
+                "Input type": "TX and Rx",
                 "Loop radius": 1,
                 "Property groups": [],
                 "Receivers": None,
-                "Survey type": "Ground TEM",
+                "Survey type": "Ground FEM",
                 "Transmitters": None,
-                "Tx ID property": None,
-                "Unit": "Milliseconds (ms)",
-                "Waveform": {"Timing mark": 0.0},
+                "Unit": "Hertz (Hz)",
             }
         }
 
@@ -56,29 +50,29 @@ class MovingLoopGroundTEMSurvey(TEMSurvey):
         """
         :return: Transmitter class
         """
-        return MovingLoopGroundTEMReceivers
+        return MovingLoopGroundFEMReceivers
 
     @property
     def default_transmitter_type(self):
         """
         :return: Transmitter class
         """
-        return MovingLoopGroundTEMTransmitters
+        return MovingLoopGroundFEMTransmitters
 
 
-class MovingLoopGroundTEMReceivers(
-    MovingLoopGroundTEMSurvey
+class MovingLoopGroundFEMReceivers(
+    MovingLoopGroundFEMSurvey
 ):  # pylint: disable=too-many-ancestors
     """
-    Airborne time-domain electromagnetic receivers class.
+    Airborne frequency-domain electromagnetic receivers class.
     """
 
-    __TYPE_UID = uuid.UUID("{41018a45-01a0-4c61-a7cb-9f32d8159df4}")
+    __TYPE_UID = uuid.UUID("{a81c6b0a-f290-4bc8-b72d-60e59964bfe8}")
     __TYPE = "Receivers"
 
-    _transmitters: MovingLoopGroundTEMTransmitters | None = None
+    _transmitters: MovingLoopGroundFEMTransmitters | None = None
 
-    def __init__(self, object_type: ObjectType, name="Airborne TEM Rx", **kwargs):
+    def __init__(self, object_type: ObjectType, name="Airborne FEM Rx", **kwargs):
         super().__init__(object_type, name=name, **kwargs)
 
     @property
@@ -97,7 +91,7 @@ class MovingLoopGroundTEMReceivers(
         """
         :return: Transmitter class
         """
-        return MovingLoopGroundTEMTransmitters
+        return MovingLoopGroundFEMTransmitters
 
     @property
     def type(self):
@@ -105,17 +99,17 @@ class MovingLoopGroundTEMReceivers(
         return self.__TYPE
 
 
-class MovingLoopGroundTEMTransmitters(
-    MovingLoopGroundTEMSurvey
+class MovingLoopGroundFEMTransmitters(
+    MovingLoopGroundFEMSurvey
 ):  # pylint: disable=too-many-ancestors
     """
     Airborne frequency-domain electromagnetic transmitters class.
     """
 
-    __TYPE_UID = uuid.UUID("{98a96d44-6144-4adb-afbe-0d5e757c9dfc}")
+    __TYPE_UID = uuid.UUID("{f59d5a1c-5e63-4297-b5bc-43898cb4f5f8}")
     __TYPE = "Transmitters"
 
-    def __init__(self, object_type: ObjectType, name="Ground TEM Tx", **kwargs):
+    def __init__(self, object_type: ObjectType, name="Ground FEM Tx", **kwargs):
         super().__init__(object_type, name=name, **kwargs)
 
     @property
@@ -134,7 +128,7 @@ class MovingLoopGroundTEMTransmitters(
         """
         :return: Transmitter class
         """
-        return MovingLoopGroundTEMReceivers
+        return MovingLoopGroundFEMReceivers
 
     @property
     def type(self):
@@ -142,23 +136,21 @@ class MovingLoopGroundTEMTransmitters(
         return self.__TYPE
 
 
-class LargeLoopGroundTEMSurvey(LargeLoopGroundEMSurvey, Curve):
+class LargeLoopGroundFEMSurvey(FEMSurvey, LargeLoopGroundEMSurvey):
     @property
     def default_metadata(self) -> dict:
         """
-        Default dictionary of metadata for AirborneTEM entities.
+        Default dictionary of metadata for AirborneFEM entities.
         """
         return {
             "EM Dataset": {
                 "Channels": [],
-                "Input type": "Tx and Rx",
+                "Input type": "TX and Rx",
                 "Property groups": [],
                 "Receivers": None,
-                "Survey type": "Ground TEM (large-loop)",
+                "Survey type": "Ground FEM (large-loop)",
                 "Transmitters": None,
-                "Tx ID property": None,
-                "Unit": "Milliseconds (ms)",
-                "Waveform": {"Timing mark": 0.0},
+                "Unit": "Hertz (Hz)",
             }
         }
 
@@ -167,27 +159,30 @@ class LargeLoopGroundTEMSurvey(LargeLoopGroundEMSurvey, Curve):
         """
         :return: Transmitter class
         """
-        return LargeLoopGroundTEMReceivers
+        return LargeLoopGroundFEMReceivers
 
     @property
     def default_transmitter_type(self):
         """
         :return: Transmitter class
         """
-        return LargeLoopGroundTEMTransmitters
+        return LargeLoopGroundFEMTransmitters
 
 
-class LargeLoopGroundTEMReceivers(LargeLoopGroundTEMSurvey):
+class LargeLoopGroundFEMReceivers(
+    LargeLoopGroundFEMSurvey
+):  # pylint: disable=too-many-ancestors
     """
-    Ground time-domain electromagnetic receivers class.
+    Airborne frequency-domain electromagnetic receivers class.
     """
 
-    __TYPE_UID = uuid.UUID("{deebe11a-b57b-4a03-99d6-8f27b25eb2a8}")
+    # TODO update uuid here (not in geoh5py readthedocs)
+    __TYPE_UID = uuid.UUID("{b3a47539-0301-4b27-922e-1dde9d882c60}")
     __TYPE = "Receivers"
 
-    _transmitters: LargeLoopGroundTEMTransmitters | None = None
+    _transmitters: LargeLoopGroundFEMTransmitters | None = None
 
-    def __init__(self, object_type: ObjectType, name="Ground TEM Rx", **kwargs):
+    def __init__(self, object_type: ObjectType, name="Airborne FEM Rx", **kwargs):
         super().__init__(object_type, name=name, **kwargs)
 
     @property
@@ -206,7 +201,7 @@ class LargeLoopGroundTEMReceivers(LargeLoopGroundTEMSurvey):
         """
         :return: Transmitter class
         """
-        return LargeLoopGroundTEMTransmitters
+        return LargeLoopGroundFEMTransmitters
 
     @property
     def type(self):
@@ -214,17 +209,18 @@ class LargeLoopGroundTEMReceivers(LargeLoopGroundTEMSurvey):
         return self.__TYPE
 
 
-class LargeLoopGroundTEMTransmitters(LargeLoopGroundTEMSurvey):
+class LargeLoopGroundFEMTransmitters(
+    LargeLoopGroundFEMSurvey
+):  # pylint: disable=too-many-ancestors
     """
-    Ground time-domain electromagnetic transmitters class.
+    Airborne frequency-domain electromagnetic transmitters class.
     """
 
-    __TYPE_UID = uuid.UUID("{17dbbfbb-3ee4-461c-9f1d-1755144aac90}")
+    # TODO update uuid here (not in geoh5py readthedocs)
+    __TYPE_UID = uuid.UUID("{a006cf3e-e24a-4c02-b904-2e57b9b5916d}")
     __TYPE = "Transmitters"
 
-    _receivers: LargeLoopGroundTEMReceivers | None = None
-
-    def __init__(self, object_type: ObjectType, name="Ground TEM Tx", **kwargs):
+    def __init__(self, object_type: ObjectType, name="Ground FEM Tx", **kwargs):
         super().__init__(object_type, name=name, **kwargs)
 
     @property
@@ -243,7 +239,7 @@ class LargeLoopGroundTEMTransmitters(LargeLoopGroundTEMSurvey):
         """
         :return: Transmitter class
         """
-        return LargeLoopGroundTEMReceivers
+        return LargeLoopGroundFEMReceivers
 
     @property
     def type(self):
