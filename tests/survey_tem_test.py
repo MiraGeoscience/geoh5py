@@ -377,11 +377,11 @@ def test_create_survey_ground_tem_large_loop(
     transmitters.tx_id_property = transmitters.parts + 1
 
     assert isinstance(
-        transmitters, GroundTEMTransmittersLargeLoop
+        transmitters, LargeLoopGroundTEMTransmitters
     ), "Entity type GroundTEMTransmittersLargeLoop failed to create."
 
     with pytest.raises(
-        TypeError, match=f" must be of type {GroundTEMTransmittersLargeLoop}"
+        TypeError, match=f" must be of type {LargeLoopGroundTEMTransmitters}"
     ):
         receivers.transmitters = "123"
 

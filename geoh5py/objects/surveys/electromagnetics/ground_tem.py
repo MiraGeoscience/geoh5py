@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import uuid
 
-from geoh5py.objects import Curve
 from geoh5py.objects.object_base import ObjectType
 
 from .base import LargeLoopGroundEMSurvey, TEMSurvey
@@ -142,7 +141,7 @@ class MovingLoopGroundTEMTransmitters(
         return self.__TYPE
 
 
-class LargeLoopGroundTEMSurvey(LargeLoopGroundEMSurvey, Curve):
+class LargeLoopGroundTEMSurvey(TEMSurvey, LargeLoopGroundEMSurvey):
     @property
     def default_metadata(self) -> dict:
         """
