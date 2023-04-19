@@ -27,20 +27,16 @@ from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_type import ObjectType
 from geoh5py.objects.points import Points
 
-from .base import BaseEMSurvey
+from .base import AirborneEMSurvey, FEMSurvey
+
+# pylint: disable=too-many-ancestors
 
 
-class BaseTipper(BaseEMSurvey):
+class TipperSurvey(FEMSurvey, AirborneEMSurvey):
     """
     Base tipper survey class.
     """
 
-    __UNITS = [
-        "Hertz (Hz)",
-        "KiloHertz (kHz)",
-        "MegaHertz (MHz)",
-        "Gigahertz (GHz)",
-    ]
     __INPUT_TYPE = ["Rx and base stations"]
     _base_stations = None
     _receivers = None
@@ -97,64 +93,6 @@ class BaseTipper(BaseEMSurvey):
         self._base_stations = base
         self.edit_metadata({"Base stations": base.uid})
 
-    def copy(
-        self,
-        parent=None,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: np.ndarray | None = None,
-        cell_mask: np.ndarray | None = None,
-        **kwargs,
-    ):
-        """
-        Sub-class extension of :func:`~geoh5py.objects.cell_object.CellObject.copy`.
-        """
-        if parent is None:
-            parent = self.parent
-
-        omit_list = [
-            "_metadata",
-            "_receivers",
-            "_base_stations",
-        ]
-        metadata = self.metadata.copy()
-        new_entity = super().copy(
-            parent=parent,
-            clear_cache=clear_cache,
-            copy_children=copy_children,
-            mask=mask,
-            cell_mask=cell_mask,
-            omit_list=omit_list,
-            **kwargs,
-        )
-
-        metadata["EM Dataset"][new_entity.type] = new_entity.uid
-
-        complement: TipperBaseStations | TipperReceivers = (
-            self.base_stations  # type: ignore
-            if isinstance(self, TipperReceivers)
-            else self.receivers
-        )
-        base_class: type[Points] | type[Curve] = (
-            Points if isinstance(self, TipperReceivers) else Curve  # type: ignore
-        )
-
-        if complement is not None:
-            # Reset mask
-            new_complement = super(base_class, complement).copy(  # type: ignore
-                parent=parent,
-                omit_list=omit_list,
-                copy_children=copy_children,
-                clear_cache=clear_cache,
-            )
-
-            setattr(new_entity, complement.type, new_complement)
-            metadata["EM Dataset"][complement.type] = new_complement.uid
-            new_complement.metadata = metadata
-
-        new_entity.metadata = metadata
-        return new_entity
-
     def copy_from_extent(
         self,
         extent: np.ndarray,
@@ -180,16 +118,6 @@ class BaseTipper(BaseEMSurvey):
             **kwargs,
         )
 
-        complement: TipperBaseStations | TipperReceivers = (
-            new_entity.base_stations  # type: ignore
-            if isinstance(self, TipperReceivers)
-            else new_entity.receivers
-        )
-
-        indices = complement.mask_by_extent(extent)
-        if indices is not None:
-            complement.remove_vertices(indices)
-
         return new_entity
 
     @property
@@ -210,6 +138,14 @@ class BaseTipper(BaseEMSurvey):
         :return: Transmitter class
         """
         return type(None)
+
+    @property
+    def base_receiver_type(self):
+        return Curve
+
+    @property
+    def base_transmitter_type(self):
+        return Points
 
     @property
     def default_metadata(self) -> dict:
@@ -236,7 +172,7 @@ class BaseTipper(BaseEMSurvey):
         return self.__UNITS
 
 
-class TipperReceivers(BaseTipper, Curve):  # pylint: disable=too-many-ancestors
+class TipperReceivers(TipperSurvey, Curve):  # pylint: disable=too-many-ancestors
     """
     A z-tipper EM survey object.
     """
@@ -248,6 +184,10 @@ class TipperReceivers(BaseTipper, Curve):  # pylint: disable=too-many-ancestors
         self._base_stations: TipperBaseStations | None = None
 
         super().__init__(object_type, name=name, **kwargs)
+
+    @property
+    def complement(self):
+        return self.base_stations
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -262,7 +202,7 @@ class TipperReceivers(BaseTipper, Curve):  # pylint: disable=too-many-ancestors
         return self.__TYPE
 
 
-class TipperBaseStations(BaseTipper, Points):
+class TipperBaseStations(TipperSurvey, Points):
     """
     A z-tipper EM survey object.
     """
@@ -272,6 +212,10 @@ class TipperBaseStations(BaseTipper, Points):
 
     def __init__(self, object_type: ObjectType, name="Tipper base", **kwargs):
         super().__init__(object_type, name=name, **kwargs)
+
+    @property
+    def complement(self):
+        return self.receivers
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
