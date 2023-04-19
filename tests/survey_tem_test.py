@@ -25,8 +25,8 @@ import pytest
 from geoh5py.objects import (
     AirborneTEMReceivers,
     AirborneTEMTransmitters,
-    GroundTEMReceiversLargeLoop,
-    GroundTEMTransmittersLargeLoop,
+    LargeLoopGroundTEMReceivers,
+    LargeLoopGroundTEMTransmitters,
 )
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
@@ -362,14 +362,14 @@ def test_create_survey_ground_tem_large_loop(
         tx_cells += [np.c_[count + 3, count]]
         count += 4
 
-    receivers = GroundTEMReceiversLargeLoop.create(
+    receivers = LargeLoopGroundTEMReceivers.create(
         workspace, vertices=np.vstack(vertices)
     )
     assert isinstance(
-        receivers, GroundTEMReceiversLargeLoop
+        receivers, LargeLoopGroundTEMReceivers
     ), "Entity type GroundTEMReceiversLargeLoop failed to create."
 
-    transmitters = GroundTEMTransmittersLargeLoop.create(
+    transmitters = LargeLoopGroundTEMTransmitters.create(
         workspace,
         vertices=np.vstack(tx_loops),
         cells=np.vstack(tx_cells),

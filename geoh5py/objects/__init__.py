@@ -43,8 +43,8 @@ from .surveys.electromagnetics.airborne_tem import (
     AirborneTEMTransmitters,
 )
 from .surveys.electromagnetics.ground_tem import (
-    GroundTEMReceiversLargeLoop,
-    GroundTEMTransmittersLargeLoop,
+    LargeLoopGroundTEMReceivers,
+    LargeLoopGroundTEMTransmitters,
 )
 from .surveys.electromagnetics.magnetotellurics import MTReceivers
 from .surveys.electromagnetics.tipper import TipperBaseStations, TipperReceivers
