@@ -42,6 +42,8 @@ from .utils import (
 )
 from .validation import InputValidation
 
+# pylint: disable=simplifiable-if-expression
+
 
 class InputFile:
     """
@@ -238,8 +240,8 @@ class InputFile:
         for key, value in data.items():
             if isinstance(self.ui_json[key], dict):
                 enabled = self.ui_json[key].get("enabled", True)
-                if self.validation_options.get("update_enabled", False):
-                    force_enabled = not value
+                if self.validation_options.get("update_enabled", True):
+                    force_enabled = False if value is None else True
                     if force_enabled != enabled:
                         msg = f"Forcing 'enabled' {force_enabled} for 'key' with value: {value}"
                         warnings.warn(msg)
