@@ -42,6 +42,8 @@ from .utils import (
 )
 from .validation import InputValidation
 
+# pylint: disable=simplifiable-if-expression
+
 
 class InputFile:
     """
@@ -224,29 +226,26 @@ class InputFile:
         """Validation of the ui_json forms"""
         cls._ui_validators(ui_json)
 
-    def update_ui_values(self, data: dict, none_map=None):
+    def update_ui_values(self, data: dict):
         """
         Update the ui.json values and enabled status from input data.
 
         :param data: Key and value pairs expected by the ui_json.
-        :param none_map: Map parameter 'None' values to non-null numeric types.
-            The parameters in the dictionary are mapped to optional and disabled.
 
-        :raises UserWarning: If attempting to set None value to non-optional parameter.
+        :raises AttributeError: If attempting to set None value to non-optional parameter.
         """
         if self.ui_json is None:
-            raise UserWarning("InputFile requires a 'ui_json' to be defined.")
-
-        if none_map is None:
-            none_map = {}
+            raise AttributeError("InputFile requires a 'ui_json' to be defined.")
 
         for key, value in data.items():
             if isinstance(self.ui_json[key], dict):
-                if value is None:
-                    value = none_map.get(key, None)
-                    enabled = False
-                else:
-                    enabled = True
+                enabled = self.ui_json[key].get("enabled", True)
+                if self.validation_options.get("update_enabled", True):
+                    force_enabled = False if value is None else True
+                    if force_enabled != enabled:
+                        msg = f"Forcing 'enabled' {force_enabled} for 'key' with value: {value}"
+                        warnings.warn(msg)
+                    enabled = force_enabled
 
                 was_group_enabled = set_enabled(self.ui_json, key, enabled)
                 if was_group_enabled:
@@ -335,14 +334,12 @@ class InputFile:
     def write_ui_json(
         self,
         name: str | None = None,
-        none_map: dict[str, Any] | None = None,
         path: str | Path | None = None,
     ):
         """
         Writes a formatted ui.json file from InputFile data
 
         :param name: Name of the file
-        :param none_map: Map parameter None values to non-null numeric types.
         :param path: Directory to write the ui.json to.
         """
 
@@ -363,7 +360,7 @@ class InputFile:
             )
 
         if self.data is not None:
-            self.update_ui_values(self.data, none_map=none_map)
+            self.update_ui_values(self.data)
 
         with open(self.path_name, "w", encoding="utf-8") as file:
             json.dump(self.stringify(self.demote(self.ui_json)), file, indent=4)
