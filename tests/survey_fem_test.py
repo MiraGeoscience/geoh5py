@@ -22,7 +22,14 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from geoh5py.objects import AirborneFEMReceivers, AirborneFEMTransmitters
+from geoh5py.objects import (
+    AirborneFEMReceivers,
+    AirborneFEMTransmitters,
+    LargeLoopGroundFEMReceivers,
+    LargeLoopGroundFEMTransmitters,
+    MovingLoopGroundFEMReceivers,
+    MovingLoopGroundFEMTransmitters,
+)
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -292,3 +299,173 @@ def test_survey_airborne_fem_data(tmp_path):
                 receivers_orig.children, receivers_rec.children
             ):
                 np.testing.assert_almost_equal(child_a.values[5:], child_b.values)
+
+
+def test_create_survey_ground_fem_large_loop(
+    tmp_path,
+):  # pylint: disable=too-many-locals
+    path = Path(tmp_path) / r"groundFEM.geoh5"
+
+    # Create a workspace
+    workspace = Workspace(path)
+
+    vertices = []
+    tx_loops = []
+    tx_id = []
+    tx_cells = []
+    count = 0
+    for ind in range(2):
+        offset = 500.0 * ind
+        xlocs = np.linspace(-1000, 1000, 10)
+
+        vertices += [np.c_[xlocs, np.zeros_like(xlocs) + offset, np.zeros_like(xlocs)]]
+        tx_id += [np.ones_like(xlocs) * (ind + 1)]
+        tx_locs = np.r_[
+            np.c_[-100, -100],
+            np.c_[-100, 100],
+            np.c_[100, 100],
+            np.c_[100, -100],
+        ]
+        tx_loops += [np.c_[tx_locs[:, 0], tx_locs[:, 1] + offset, np.zeros(4)]]
+        tx_cells += [np.c_[np.arange(3) + count, np.arange(3) + count + 1]]
+        tx_cells += [np.c_[count + 3, count]]
+        count += 4
+
+    receivers = LargeLoopGroundFEMReceivers.create(
+        workspace, vertices=np.vstack(vertices)
+    )
+    assert isinstance(
+        receivers, LargeLoopGroundFEMReceivers
+    ), "Entity type GroundFEMReceiversLargeLoop failed to create."
+
+    transmitters = LargeLoopGroundFEMTransmitters.create(
+        workspace,
+        vertices=np.vstack(tx_loops),
+        cells=np.vstack(tx_cells),
+    )
+    transmitters.tx_id_property = transmitters.parts + 1
+
+    assert isinstance(
+        transmitters, LargeLoopGroundFEMTransmitters
+    ), "Entity type GroundFEMTransmittersLargeLoop failed to create."
+
+    with pytest.raises(
+        TypeError, match=f" must be of type {LargeLoopGroundFEMTransmitters}"
+    ):
+        receivers.transmitters = "123"
+
+    with pytest.raises(
+        TypeError,
+        match=f"Provided receivers must be of type {type(receivers)}",
+    ):
+        receivers.receivers = transmitters
+
+    with pytest.raises(
+        TypeError,
+        match=f"Provided transmitters must be of type {type(transmitters)}",
+    ):
+        transmitters.transmitters = receivers
+
+    receivers.transmitters = transmitters
+
+    receivers.tx_id_property = np.hstack(tx_id)
+
+    with Workspace(Path(tmp_path) / r"testGround_copy.geoh5") as new_workspace:
+        receivers_orig = receivers.copy(new_workspace)
+        transmitters_rec = receivers.transmitters.copy_from_extent(
+            np.vstack([[-150, -150], [150, 150]]), parent=new_workspace
+        )
+        assert transmitters_rec.receivers.n_vertices == receivers_orig.n_vertices / 2.0
+        assert (
+            transmitters_rec.n_vertices == receivers_orig.transmitters.n_vertices / 2.0
+        )
+
+
+def test_create_survey_ground_fem(tmp_path):
+    name = "Survey"
+    path = Path(tmp_path) / r"../testGFEM.geoh5"
+
+    # Create a workspace
+    workspace = Workspace(path)
+    xlocs = np.linspace(-1000, 1000, 10)
+    vertices = np.c_[xlocs, np.random.randn(xlocs.shape[0], 2)]
+    receivers = MovingLoopGroundFEMReceivers.create(
+        workspace, vertices=vertices, name=name + "_rx"
+    )
+    assert isinstance(
+        receivers, MovingLoopGroundFEMReceivers
+    ), "Entity type MovingLoopGroundFEMReceivers failed to create."
+    transmitters = MovingLoopGroundFEMTransmitters.create(
+        workspace, vertices=vertices + 10.0, name=name + "_tx"
+    )
+    assert isinstance(
+        transmitters, MovingLoopGroundFEMTransmitters
+    ), "Entity type MovingLoopGroundFEMTransmitters failed to create."
+
+    with pytest.raises(
+        TypeError, match=f" must be of type {MovingLoopGroundFEMTransmitters}"
+    ):
+        receivers.transmitters = "123"
+
+    with pytest.raises(
+        TypeError,
+        match=f"Provided receivers must be of type {type(receivers)}",
+    ):
+        receivers.receivers = transmitters
+
+    with pytest.raises(
+        TypeError,
+        match=f"Provided transmitters must be of type {type(transmitters)}",
+    ):
+        transmitters.transmitters = receivers
+
+    receivers.transmitters = transmitters
+
+    with pytest.raises(TypeError, match="Input 'loop_radius' must be of type 'float'"):
+        receivers.loop_radius = "123"
+
+    receivers.loop_radius = 123.0
+
+    new_workspace = Workspace(path)
+    transmitters_rec = new_workspace.get_entity(name + "_tx")[0]
+    receivers_rec = new_workspace.get_entity(name + "_rx")[0]
+
+    # Check entities
+    compare_entities(
+        transmitters,
+        transmitters_rec,
+        ignore=["_receivers", "_transmitters", "_parent"],
+    )
+    compare_entities(
+        receivers,
+        receivers_rec,
+        ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
+    )
+
+    # Test copying receiver over through the receivers
+    # Create a workspace
+    new_workspace = Workspace(Path(tmp_path) / r"testGFEM_copy.geoh5")
+    receivers_rec = receivers.copy(new_workspace)
+    compare_entities(
+        receivers, receivers_rec, ignore=["_receivers", "_transmitters", "_parent"]
+    )
+    compare_entities(
+        transmitters,
+        receivers_rec.transmitters,
+        ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
+    )
+
+    # Test copying receiver over through the transmitters
+    # Create a workspace
+    new_workspace = Workspace(Path(tmp_path) / r"testGFEM_copy2.geoh5")
+    transmitters_rec = transmitters.copy(new_workspace)
+    compare_entities(
+        receivers,
+        transmitters_rec.receivers,
+        ignore=["_receivers", "_transmitters", "_parent"],
+    )
+    compare_entities(
+        transmitters,
+        transmitters_rec,
+        ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
+    )
