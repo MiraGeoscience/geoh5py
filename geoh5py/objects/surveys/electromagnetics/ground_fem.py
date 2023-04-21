@@ -181,8 +181,7 @@ class LargeLoopGroundFEMReceivers(
     Airborne frequency-domain electromagnetic receivers class.
     """
 
-    # TODO update uuid here (not in geoh5py readthedocs)
-    __TYPE_UID = uuid.UUID("{b3a47539-0301-4b27-922e-1dde9d882c60}")
+    __TYPE_UID = uuid.UUID("{30928322-cf2c-4230-b393-4dc629259b64}")
     __TYPE = "Receivers"
 
     _transmitters: LargeLoopGroundFEMTransmitters | None = None
@@ -221,8 +220,7 @@ class LargeLoopGroundFEMTransmitters(
     Airborne frequency-domain electromagnetic transmitters class.
     """
 
-    # TODO update uuid here (not in geoh5py readthedocs)
-    __TYPE_UID = uuid.UUID("{a006cf3e-e24a-4c02-b904-2e57b9b5916d}")
+    __TYPE_UID = uuid.UUID("{fe1a240a-9189-49ff-aa7e-6067405b6e0a}")
     __TYPE = "Transmitters"
 
     def __init__(self, object_type: ObjectType, name="Ground FEM Tx", **kwargs):
