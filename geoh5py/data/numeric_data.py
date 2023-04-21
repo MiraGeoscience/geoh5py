@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from warnings import warn
 
 import numpy as np
 
@@ -83,13 +84,17 @@ class NumericData(Data, ABC):
             if values is None:
                 return values
 
+            if values.ndim > 1:
+                values = np.ravel(values)
+                warn("Input 'values' converted to a 1D array.")
+
             if len(values) < self.n_values:
                 full_vector = np.ones(self.n_values, dtype=type(self.ndv))
                 full_vector *= np.nan if isinstance(self.ndv, float) else self.ndv
                 full_vector[: len(np.ravel(values))] = np.ravel(values)
                 return full_vector
 
-            if len(values) > self.n_values or values.ndim > 1:
+            if len(values) > self.n_values:
                 raise ValueError(
                     f"Input 'values' of shape({self.n_values},) expected. "
                     f"Array of shape{values.shape} provided.)"

@@ -82,7 +82,7 @@ def test_input_file_json():
         InputFile().data = {"abc": 123}
 
     with pytest.raises(
-        UserWarning, match="InputFile requires a 'ui_json' to be defined."
+        AttributeError, match="InputFile requires a 'ui_json' to be defined."
     ):
         InputFile().update_ui_values({"abc": 123})
 
@@ -654,9 +654,9 @@ def test_stringify(tmp_path):
     in_file.ui_json["test"]["optional"] = True
     in_file.ui_json["test"]["enabled"] = True
 
-    in_file.update_ui_values({"test": None}, none_map={"test": 4})
+    in_file.update_ui_values({"test": None})
 
-    assert in_file.ui_json["test"]["value"] == 4
+    assert in_file.ui_json["test"]["value"] is None
     assert not in_file.ui_json["test"]["enabled"]
 
     ui_json["test_group"] = templates.string_parameter(optional="enabled")
@@ -668,10 +668,13 @@ def test_stringify(tmp_path):
     in_file = InputFile(ui_json=ui_json, validations={"test": {"types": [int]}})
 
     with pytest.warns(UserWarning) as warn:
-        in_file.update_ui_values({"test": None}, none_map={"test": 4})
+        in_file.update_ui_values({"test": None})
 
-    assert "Setting all member of group: test_group to enabled" in str(warn[0])
-    assert in_file.ui_json["test"]["value"] == 4
+    assert any(
+        "Setting all member of group: test_group to enabled" in str(w)
+        for w in warn.list
+    )
+    assert in_file.ui_json["test"]["value"] is None
     assert not in_file.ui_json["test"]["enabled"]
     assert not in_file.ui_json["test_group"]["enabled"]
     assert "optional" not in in_file.ui_json["test"]
@@ -685,7 +688,7 @@ def test_stringify(tmp_path):
     in_file = InputFile(
         ui_json=ui_json, validations={"test": {"types": [int, type(None)]}}
     )
-    in_file.update_ui_values({"test": 2}, none_map={"test": 4})
+    in_file.update_ui_values({"test": 2})
     assert in_file.ui_json["test"]["value"] == 2
     assert in_file.ui_json["test"]["enabled"]
 

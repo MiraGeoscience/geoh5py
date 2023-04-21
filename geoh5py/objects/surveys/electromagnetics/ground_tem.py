@@ -27,20 +27,24 @@ from geoh5py.data import ReferencedData
 from geoh5py.objects import Curve
 from geoh5py.objects.object_base import ObjectType
 
-from .base import BaseTEMSurvey
+from .base import TEMSurvey
+
+# pylint: disable=too-many-ancestors, no-member
+# mypy: disable-error-code="attr-defined"
 
 
-class BaseGroundTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
+class GroundTEMSurvey(TEMSurvey, Curve):
     __INPUT_TYPE = ["Tx and Rx"]
     _tx_id_property: ReferencedData | None = None
 
-    def copy(
+    def copy(  # pylint: disable=too-many-arguments
         self,
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         cell_mask: np.ndarray | None = None,
+        apply_to_complement: bool = True,
         **kwargs,
     ):
         """
@@ -56,6 +60,7 @@ class BaseGroundTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
             "_base_stations",
             "_tx_id_property",
         ]
+        kwargs["omit_list"] = omit_list
         metadata = self.metadata.copy()
         new_entity = super().copy(
             parent=parent,
@@ -63,7 +68,7 @@ class BaseGroundTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
             copy_children=copy_children,
             mask=mask,
             cell_mask=cell_mask,
-            omit_list=omit_list,
+            apply_to_complement=False,
             **kwargs,
         )
 
@@ -83,40 +88,50 @@ class BaseGroundTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
 
             new_entity.tx_id_property = self.tx_id_property.values[cell_mask]
         metadata["EM Dataset"][new_entity.type] = new_entity.uid
-        complement: GroundTEMTransmittersLargeLoop | GroundTEMReceiversLargeLoop = (
-            self.transmitters  # type: ignore
-            if isinstance(self, GroundTEMReceiversLargeLoop)
-            else self.receivers
-        )
 
         if (
             new_entity.tx_id_property is not None
-            and complement is not None
-            and complement.tx_id_property is not None
-            and complement.tx_id_property.values is not None
-            and complement.vertices is not None
-            and complement.cells is not None
+            and self.complement is not None
+            and self.complement.tx_id_property is not None
+            and self.complement.tx_id_property.values is not None
+            and self.complement.vertices is not None
+            and self.complement.cells is not None
         ):
             intersect = np.intersect1d(
                 new_entity.tx_id_property.values,
-                complement.tx_id_property.values,
+                self.complement.tx_id_property.values,
             )
 
             # Convert cell indices to vertex indices
-            if isinstance(complement, GroundTEMReceiversLargeLoop):
+            if isinstance(
+                self.complement,
+                GroundTEMReceiversLargeLoop,
+            ):
                 mask = np.r_[
-                    [(val in intersect) for val in complement.tx_id_property.values]
+                    [
+                        (val in intersect)
+                        for val in self.complement.tx_id_property.values
+                    ]
                 ]
-                tx_ids = complement.tx_id_property.values[mask]
+                tx_ids = self.complement.tx_id_property.values[mask]
             else:
                 cell_mask = np.r_[
-                    [(val in intersect) for val in complement.tx_id_property.values]
+                    [
+                        (val in intersect)
+                        for val in self.complement.tx_id_property.values
+                    ]
                 ]
-                mask = np.zeros(complement.vertices.shape[0], dtype=bool)
-                mask[complement.cells[cell_mask, :]] = True
-                tx_ids = complement.tx_id_property.values[cell_mask]
+                mask = np.zeros(self.complement.vertices.shape[0], dtype=bool)
+                mask[self.complement.cells[cell_mask, :]] = True
+                tx_ids = self.complement.tx_id_property.values[cell_mask]
 
-            new_complement = super(Curve, complement).copy(  # type: ignore
+            base_object = (
+                self.base_transmitter_type  # pylint: disable=no-member
+                if isinstance(self, self.default_receiver_type)
+                else self.base_receiver_type  # pylint: disable=no-member
+            )
+
+            new_complement = super(base_object, self.complement).copy(
                 parent=parent,
                 omit_list=omit_list,
                 copy_children=copy_children,
@@ -131,7 +146,7 @@ class BaseGroundTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
 
             if (
                 new_complement.tx_id_property is None
-                and complement.tx_id_property is not None
+                and self.complement.tx_id_property is not None
             ):
                 new_complement.tx_id_property = tx_ids
 
@@ -197,6 +212,14 @@ class BaseGroundTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
         return GroundTEMTransmittersLargeLoop
 
     @property
+    def base_receiver_type(self):
+        return Curve
+
+    @property
+    def base_transmitter_type(self):
+        return Curve
+
+    @property
     def tx_id_property(self) -> ReferencedData | None:
         """
         Default channel units for time or frequency defined on the child class.
@@ -254,7 +277,7 @@ class BaseGroundTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
         self.edit_metadata({"Tx ID property": getattr(value, "uid", None)})
 
 
-class GroundTEMReceiversLargeLoop(BaseGroundTEM):  # pylint: disable=too-many-ancestors
+class GroundTEMReceiversLargeLoop(GroundTEMSurvey):
     """
     Ground time-domain electromagnetic receivers class.
     """
@@ -266,6 +289,10 @@ class GroundTEMReceiversLargeLoop(BaseGroundTEM):  # pylint: disable=too-many-an
 
     def __init__(self, object_type: ObjectType, name="Ground TEM Rx", **kwargs):
         super().__init__(object_type, name=name, **kwargs)
+
+    @property
+    def complement(self):
+        return self.transmitters
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -287,9 +314,7 @@ class GroundTEMReceiversLargeLoop(BaseGroundTEM):  # pylint: disable=too-many-an
         return self.__TYPE
 
 
-class GroundTEMTransmittersLargeLoop(
-    BaseGroundTEM
-):  # pylint: disable=too-many-ancestors
+class GroundTEMTransmittersLargeLoop(GroundTEMSurvey):
     """
     Ground time-domain electromagnetic transmitters class.
     """
@@ -301,6 +326,10 @@ class GroundTEMTransmittersLargeLoop(
 
     def __init__(self, object_type: ObjectType, name="Ground TEM Tx", **kwargs):
         super().__init__(object_type, name=name, **kwargs)
+
+    @property
+    def complement(self):
+        return self.receivers
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
