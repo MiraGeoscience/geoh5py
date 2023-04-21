@@ -40,7 +40,7 @@ class MovingLoopGroundFEMSurvey(FEMSurvey, MovingLoopGroundEMSurvey):
         return {
             "EM Dataset": {
                 "Channels": [],
-                "Input type": "TX and Rx",
+                "Input type": "Tx and Rx",
                 "Loop radius": 1,
                 "Property groups": [],
                 "Receivers": None,
@@ -150,7 +150,7 @@ class LargeLoopGroundFEMSurvey(FEMSurvey, LargeLoopGroundEMSurvey):
         return {
             "EM Dataset": {
                 "Channels": [],
-                "Input type": "TX and Rx",
+                "Input type": "Tx and Rx",
                 "Property groups": [],
                 "Receivers": None,
                 "Survey type": "Ground FEM (large-loop)",
