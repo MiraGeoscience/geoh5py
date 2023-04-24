@@ -43,7 +43,7 @@ from .utils import (
 )
 from .validation import InputValidation
 
-# pylint: disable=simplifiable-if-expression
+# pylint: disable=simplifiable-if-expression, too-many-public-methods
 
 
 class InputFile:
@@ -87,7 +87,7 @@ class InputFile:
         validations: dict | None = None,
         validation_options: dict | None = None,
     ):
-        self._workspace = None
+        self._geoh5 = None
         self._validation_options = validation_options
         self.validate = validate
         self.validations = validations
@@ -116,11 +116,11 @@ class InputFile:
                     "equal the number of parameters in 'ui_json'."
                 )
 
-            if self.workspace is None and "geoh5" in value:
-                self.workspace = value["geoh5"]
+            if self.geoh5 is None and "geoh5" in value:
+                self.geoh5 = value["geoh5"]
 
-            if self.workspace is not None:
-                with fetch_active_workspace(self.workspace):
+            if self.geoh5 is not None:
+                with fetch_active_workspace(self.geoh5):
                     value = self.promote(value)
 
                     if self.validators is not None and self.validate:
@@ -128,6 +128,8 @@ class InputFile:
 
             elif self.validators is not None and self.validate:
                 self.validators.validate_data(value)
+
+            self.update_ui_values(value)
 
         self._data = value
 
@@ -158,8 +160,8 @@ class InputFile:
         """
         Directory for the input/output ui.json file.
         """
-        if getattr(self, "_path", None) is None and self.workspace is not None:
-            self.path = os.path.dirname(self.workspace.h5file)
+        if getattr(self, "_path", None) is None and self.geoh5 is not None:
+            self.path = os.path.dirname(self.geoh5.h5file)
 
         return self._path
 
@@ -326,27 +328,27 @@ class InputFile:
         return self._validators
 
     @property
-    def workspace(self):
-        return self._workspace
+    def geoh5(self):
+        return self._geoh5
 
-    @workspace.setter
-    def workspace(self, workspace: Workspace | None):
-        if workspace is not None:
-            if self._workspace is not None:
+    @geoh5.setter
+    def geoh5(self, geoh5: Workspace | None):
+        if geoh5 is not None:
+            if self._geoh5 is not None:
                 raise UserWarning(
-                    "Attribute 'workspace' already set. "
+                    "Attribute 'geoh5' already set. "
                     "Consider creating a new InputFile from arguments."
                 )
 
-            if not isinstance(workspace, Workspace):
+            if not isinstance(geoh5, Workspace):
                 raise ValueError(
-                    "Input 'workspace' must be a valid :obj:`geoh5py.workspace.Workspace`."
+                    "Input 'geoh5' must be a valid :obj:`geoh5py.workspace.Workspace`."
                 )
 
-        self._workspace = workspace
+        self._geoh5 = geoh5
 
         if self.validators is not None:
-            self.validators.workspace = workspace
+            self.validators.geoh5 = geoh5
 
     def write_ui_json(
         self,
@@ -383,6 +385,37 @@ class InputFile:
             json.dump(self.stringify(self.demote(self.ui_json)), file, indent=4)
 
         return self.path_name
+
+    def set_data_value(self, data: dict):
+        """
+        Set the data and json form values from a dictionary.
+
+        :param data: Dictionary of key, value pairs.
+        """
+        for key, value in data.items():
+            if (
+                self.validate
+                and self.validations is not None
+                and key in self.validations
+            ):
+                if "association" in self.validations[key]:
+                    validations = deepcopy(self.validations[key])
+                    parent = self.data[self.validations[key]["association"]]
+                    if isinstance(parent, UUID):
+                        parent = self.geoh5.get_entity(parent)[0]
+                    validations["association"] = parent
+                else:
+                    validations = self.validations[key]
+
+                validations = {k: v for k, v in validations.items() if k != "one_of"}
+                self.validators.validate(key, value, validations)
+
+            self.data[key] = value
+
+            if key == "geoh5":
+                self.geoh5 = value
+
+        self.update_ui_values(data)
 
     @staticmethod
     def stringify(var: dict[str, Any]) -> dict[str, Any]:
@@ -457,7 +490,7 @@ class InputFile:
 
     def promote(self, var: dict[str, Any]) -> dict[str, Any]:
         """Convert uuids to entities from the workspace."""
-        if self.workspace is None:
+        if self.geoh5 is None:
             return var
 
         for key, value in var.items():
@@ -476,7 +509,26 @@ class InputFile:
         Check if the value needs to be promoted.
         """
         if isinstance(value, UUID):
-            self.association_validator(key, value, self.workspace)
-            value = uuid2entity(value, self.workspace)
+            self.association_validator(key, value, self.geoh5)
+            value = uuid2entity(value, self.geoh5)
 
         return value
+
+    @property
+    def workspace(self) -> Workspace | None:
+        """Return the workspace associated with the input file."""
+
+        warnings.warn(
+            "The 'workspace' property is deprecated. Use 'geoh5' instead.",
+            DeprecationWarning,
+        )
+
+        return self._geoh5
+
+    @workspace.setter
+    def workspace(self, value):
+        warnings.warn(
+            "The 'workspace' property is deprecated. Use 'geoh5' instead.",
+            DeprecationWarning,
+        )
+        self.geoh5 = value
