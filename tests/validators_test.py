@@ -237,4 +237,4 @@ def test_validate_data(tmp_path):
     ui_json["param_1"].update({"enabled": True})
 
     with pytest.raises(OptionalValidationError, match="Cannot set a None"):
-        InputFile(ui_json=ui_json, validations=validations)
+        getattr(InputFile(ui_json=ui_json, validations=validations), "data")
