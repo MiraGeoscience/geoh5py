@@ -232,7 +232,7 @@ def test_validate_data(tmp_path):
     with pytest.raises(
         AtLeastOneValidationError, match="at least one sad little parameter"
     ):
-        InputFile(ui_json=ui_json, validations=validations)
+        getattr(InputFile(ui_json=ui_json, validations=validations), "data")
 
     ui_json["param_1"].update({"enabled": True})
 

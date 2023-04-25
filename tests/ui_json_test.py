@@ -92,7 +92,7 @@ def test_input_file_json():
         RequiredValidationError,
         match=RequiredValidationError.message("title", None, None),
     ):
-        InputFile(ui_json=ui_json)
+        getattr(InputFile(ui_json=ui_json), "data")
 
     # Test wrong type for core geoh5 parameter
     ui_json = deepcopy(default_ui_json)
@@ -102,7 +102,7 @@ def test_input_file_json():
         ValueError,
         match="Input 'geoh5' must be a valid :obj:`geoh5py.workspace.Workspace`",
     ):
-        InputFile(ui_json=ui_json)
+        getattr(InputFile(ui_json=ui_json), "data")
 
 
 def test_input_file_name_path(tmp_path):
@@ -341,7 +341,9 @@ def test_shape_parameter(tmp_path):
         ShapeValidationError,
         match=re.escape(ShapeValidationError.message("data", (1,), (2,))),
     ):
-        InputFile(ui_json=ui_json, validations={"data": {"shape": (2,)}})
+        getattr(
+            InputFile(ui_json=ui_json, validations={"data": {"shape": (2,)}}), "data"
+        )
 
 
 def test_missing_required_field(tmp_path):
@@ -359,7 +361,7 @@ def test_missing_required_field(tmp_path):
             "object", RequiredValidationError.message("value", None, None)
         ),
     ):
-        InputFile(ui_json=ui_json)
+        getattr(InputFile(ui_json=ui_json), "data")
 
 
 def test_object_promotion(tmp_path):
@@ -424,7 +426,7 @@ def test_invalid_uuid_string(tmp_path):
         TypeValidationError,
         match=TypeValidationError.message("data", "int", ["str", "UUID", "Entity"]),
     ):
-        InputFile(ui_json=ui_json)
+        getattr(InputFile(ui_json=ui_json), "data")
 
 
 def test_valid_uuid_in_workspace(tmp_path):
@@ -440,7 +442,7 @@ def test_valid_uuid_in_workspace(tmp_path):
         AssociationValidationError,
         match=AssociationValidationError.message("data", bogus_uuid, workspace),
     ):
-        InputFile(ui_json=ui_json)
+        getattr(InputFile(ui_json=ui_json), "data")
 
 
 def test_data_with_wrong_parent(tmp_path):
@@ -461,7 +463,7 @@ def test_data_with_wrong_parent(tmp_path):
         AssociationValidationError,
         match=AssociationValidationError.message("data", points_b.children[0], points),
     ):
-        InputFile(ui_json=ui_json)
+        getattr(InputFile(ui_json=ui_json), "data")
 
 
 def test_property_group_with_wrong_type(tmp_path):
@@ -485,7 +487,7 @@ def test_property_group_with_wrong_type(tmp_path):
             ),
         ),
     ):
-        InputFile(ui_json=ui_json)
+        getattr(InputFile(ui_json=ui_json), "data")
 
     ui_json["data"]["dataGroupType"] = "3D vector"
     ui_json["data"]["value"] = points.property_groups[0]
@@ -496,7 +498,7 @@ def test_property_group_with_wrong_type(tmp_path):
             "data", points.property_groups[0], "3D vector"
         ),
     ):
-        InputFile(ui_json=ui_json)
+        getattr(InputFile(ui_json=ui_json), "data")
 
 
 def test_input_file(tmp_path):
@@ -626,7 +628,7 @@ def test_multi_object_value_parameter(tmp_path):
 
     out_file = in_file.write_ui_json()
     reload_input = InputFile.read_ui_json(out_file)
-    object_b = reload_input.workspace.get_entity("Points_B")
+    object_b = reload_input.geoh5.get_entity("Points_B")
 
     assert (
         reload_input.data["object"] == object_b
@@ -664,9 +666,8 @@ def test_stringify(tmp_path):
     ui_json["test_group"] = templates.string_parameter(optional="enabled")
     ui_json["test_group"]["group"] = "test_group"
     ui_json["test_group"]["groupOptional"] = True
-    ui_json["test"] = templates.integer_parameter(value=1)
+    ui_json["test"] = templates.integer_parameter(value=1, optional="enabled")
     ui_json["test"]["group"] = "test_group"
-
     in_file = InputFile(ui_json=ui_json, validations={"test": {"types": [int]}})
 
     with pytest.warns(UserWarning) as warn:
@@ -679,7 +680,7 @@ def test_stringify(tmp_path):
     assert in_file.ui_json["test"]["value"] is not None
     assert not in_file.ui_json["test"]["enabled"]
     assert not in_file.ui_json["test_group"]["enabled"]
-    assert "optional" not in in_file.ui_json["test"]
+    assert "optional" in in_file.ui_json["test"]
 
     ui_json["test_group"] = templates.string_parameter(optional="enabled")
     ui_json["test_group"]["group"] = "test_group"

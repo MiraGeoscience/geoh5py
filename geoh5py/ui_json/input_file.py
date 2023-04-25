@@ -116,10 +116,10 @@ class InputFile:
                     "equal the number of parameters in 'ui_json'."
                 )
 
-            if self.geoh5 is None and "geoh5" in value:
+            if self._geoh5 is None and "geoh5" in value:
                 self.geoh5 = value["geoh5"]
 
-            with fetch_active_workspace(self.geoh5):
+            with fetch_active_workspace(self._geoh5):
                 value = self.promote(value)
 
                 if self.validators is not None and self.validate:
@@ -219,8 +219,6 @@ class InputFile:
                     validations = {**validations, **self.validations[key]}
                 self.validations[key] = validations
 
-            self.data = flatten(self._ui_json)
-
         else:
             self._ui_json = None
             self._validations = None
@@ -245,20 +243,17 @@ class InputFile:
 
         for key, value in data.items():
             if isinstance(self.ui_json[key], dict):
-                enabled = self.ui_json[key].get("enabled", True)
-                if self.validation_options.get("update_enabled", True):
-                    force_enabled = False if value is None else True
-                    if force_enabled != enabled:
-                        msg = f"Forcing 'enabled' {force_enabled} for 'key' with value: {value}"
-                        warnings.warn(msg)
-                    enabled = force_enabled
+                enabled = self.ui_json[key].get("enabled", None)
+                if enabled is not None:
+                    if self.validation_options.get("update_enabled", True):
+                        enabled = False if value is None else True
 
-                was_group_enabled = set_enabled(self.ui_json, key, enabled)
-                if was_group_enabled:
-                    warnings.warn(
-                        f"Setting all member of group: {self.ui_json[key]['group']} "
-                        f"to enabled: {enabled}."
-                    )
+                    was_group_enabled = set_enabled(self.ui_json, key, enabled)
+                    if was_group_enabled:
+                        warnings.warn(
+                            f"Setting all member of group: {self.ui_json[key]['group']} "
+                            f"to enabled: {enabled}."
+                        )
 
                 member = "value"
                 if "isValue" in self.ui_json[key]:
@@ -330,6 +325,9 @@ class InputFile:
 
     @property
     def geoh5(self):
+        """Geoh5 workspace."""
+        if self._geoh5 is None and self.data is not None:
+            self._geoh5 = self.data["geoh5"]
         return self._geoh5
 
     @geoh5.setter
@@ -491,7 +489,7 @@ class InputFile:
 
     def promote(self, var: dict[str, Any]) -> dict[str, Any]:
         """Convert uuids to entities from the workspace."""
-        if self.geoh5 is None:
+        if self._geoh5 is None:
             return var
 
         for key, value in var.items():
@@ -509,9 +507,9 @@ class InputFile:
         """
         Check if the value needs to be promoted.
         """
-        if isinstance(value, UUID):
-            self.association_validator(key, value, self.geoh5)
-            value = uuid2entity(value, self.geoh5)
+        if isinstance(value, UUID) and self._geoh5 is not None:
+            self.association_validator(key, value, self._geoh5)
+            value = uuid2entity(value, self._geoh5)
 
         return value
 
