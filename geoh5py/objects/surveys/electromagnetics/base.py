@@ -24,12 +24,13 @@ from typing import Any
 
 import numpy as np
 
+from geoh5py.data import ReferencedData
 from geoh5py.data.float_data import FloatData
 from geoh5py.groups.property_group import PropertyGroup
 from geoh5py.objects import Curve
 from geoh5py.objects.object_base import ObjectBase
 
-#  pylint: disable=no-member
+#  pylint: disable=no-member, too-many-lines
 # mypy: disable-error-code="attr-defined"
 
 
@@ -516,6 +517,242 @@ class BaseEMSurvey(ObjectBase, ABC):
             if value not in self.default_units:
                 raise ValueError(f"Input 'unit' must be one of {self.default_units}")
             self.edit_metadata({"Unit": value})
+
+
+class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve):
+    __INPUT_TYPE = ["Rx"]
+
+    @property
+    def base_receiver_type(self):
+        return Curve
+
+    @property
+    def base_transmitter_type(self):
+        return Curve
+
+    @property
+    def default_input_types(self) -> list[str]:
+        """Choice of survey creation types."""
+        return self.__INPUT_TYPE
+
+    @property
+    def loop_radius(self) -> float | None:
+        """Transmitter loop radius"""
+        return self.metadata["EM Dataset"].get("Loop radius", None)
+
+    @loop_radius.setter
+    def loop_radius(self, value: float | None):
+        if not isinstance(value, (float, type(None))):
+            raise TypeError("Input 'loop_radius' must be of type 'float'")
+        self.edit_metadata({"Loop radius": value})
+
+
+class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
+    __INPUT_TYPE = ["Tx and Rx"]
+    _tx_id_property: ReferencedData | None = None
+
+    @property
+    def base_receiver_type(self):
+        return Curve
+
+    @property
+    def base_transmitter_type(self):
+        return Curve
+
+    def copy(  # pylint: disable=too-many-arguments, too-many-locals
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        cell_mask: np.ndarray | None = None,
+        apply_to_complement: bool = True,
+        **kwargs,
+    ):
+        """
+        Sub-class extension of :func:`~geoh5py.objects.cell_object.CellObject.copy`.
+        """
+        if parent is None:
+            parent = self.parent
+
+        omit_list = [
+            "_metadata",
+            "_receivers",
+            "_transmitters",
+            "_base_stations",
+            "_tx_id_property",
+        ]
+        kwargs["omit_list"] = omit_list
+        metadata = self.metadata.copy()
+        new_entity = super().copy(
+            parent=parent,
+            clear_cache=clear_cache,
+            copy_children=copy_children,
+            mask=mask,
+            cell_mask=cell_mask,
+            apply_to_complement=False,
+            **kwargs,
+        )
+
+        if (
+            self.cells is not None
+            and new_entity.tx_id_property is None
+            and self.tx_id_property is not None
+            and self.tx_id_property.values is not None
+        ):
+            if mask is not None:
+                if isinstance(self, self.default_receiver_type):
+                    cell_mask = mask
+                else:
+                    cell_mask = np.all(mask[self.cells], axis=1)
+            else:
+                cell_mask = np.ones(self.tx_id_property.values.shape[0], dtype=bool)
+
+            new_entity.tx_id_property = self.tx_id_property.values[cell_mask]
+        metadata["EM Dataset"][new_entity.type] = new_entity.uid
+
+        if (
+            new_entity.tx_id_property is not None
+            and self.complement is not None
+            and self.complement.tx_id_property is not None
+            and self.complement.tx_id_property.values is not None
+            and self.complement.vertices is not None
+            and self.complement.cells is not None
+        ):
+            intersect = np.intersect1d(
+                new_entity.tx_id_property.values,
+                self.complement.tx_id_property.values,
+            )
+
+            # Convert cell indices to vertex indices
+            if isinstance(
+                self.complement,
+                self.default_receiver_type,
+            ):
+                mask = np.r_[
+                    [
+                        (val in intersect)
+                        for val in self.complement.tx_id_property.values
+                    ]
+                ]
+                tx_ids = self.complement.tx_id_property.values[mask]
+            else:
+                cell_mask = np.r_[
+                    [
+                        (val in intersect)
+                        for val in self.complement.tx_id_property.values
+                    ]
+                ]
+                mask = np.zeros(self.complement.vertices.shape[0], dtype=bool)
+                mask[self.complement.cells[cell_mask, :]] = True
+                tx_ids = self.complement.tx_id_property.values[cell_mask]
+
+            base_object = (
+                self.base_transmitter_type  # pylint: disable=no-member
+                if isinstance(self, self.default_receiver_type)
+                else self.base_receiver_type  # pylint: disable=no-member
+            )
+
+            new_complement = super(base_object, self.complement).copy(
+                parent=parent,
+                omit_list=omit_list,
+                copy_children=copy_children,
+                clear_cache=clear_cache,
+                mask=mask,
+            )
+
+            if isinstance(self, self.default_receiver_type):
+                new_entity.transmitters = new_complement
+            else:
+                new_entity.receivers = new_complement
+
+            if (
+                new_complement.tx_id_property is None
+                and self.complement.tx_id_property is not None
+            ):
+                new_complement.tx_id_property = tx_ids
+
+                # Re-number the tx_id_property
+                value_map = {
+                    val: ind
+                    for ind, val in enumerate(
+                        np.r_[
+                            0, np.unique(new_entity.transmitters.tx_id_property.values)
+                        ]
+                    )
+                }
+                new_map = {
+                    val: new_entity.transmitters.tx_id_property.value_map.map[val]
+                    for val in value_map.values()
+                }
+                new_complement.tx_id_property.values = np.asarray(
+                    [value_map[val] for val in new_complement.tx_id_property.values]
+                )
+                new_entity.tx_id_property.values = np.asarray(
+                    [value_map[val] for val in new_entity.tx_id_property.values]
+                )
+                new_entity.tx_id_property.value_map.map = new_map
+
+        return new_entity
+
+    @property
+    def default_input_types(self) -> list[str]:
+        """Choice of survey creation types."""
+        return self.__INPUT_TYPE
+
+    @property
+    def tx_id_property(self) -> ReferencedData | None:
+        """
+        Default channel units for time or frequency defined on the child class.
+        """
+        if self._tx_id_property is None:
+            if "Tx ID property" in self.metadata["EM Dataset"]:
+                data = self.get_data(self.metadata["EM Dataset"]["Tx ID property"])
+
+                if any(data) and isinstance(data[0], ReferencedData):
+                    self._tx_id_property = data[0]
+
+        return self._tx_id_property
+
+    @tx_id_property.setter
+    def tx_id_property(self, value: uuid.UUID | ReferencedData | np.ndarray | None):
+        if isinstance(value, uuid.UUID):
+            value = self.get_data(value)[0]
+
+        if isinstance(value, np.ndarray):
+            if (
+                self.complement is not None
+                and self.complement.tx_id_property is not None
+            ):
+                entity_type = self.complement.tx_id_property.entity_type
+            else:
+                value_map = {
+                    ind: f"Loop {ind}" for ind in np.unique(value.astype(np.int32))
+                }
+                value_map[0] = "Unknown"
+                entity_type = {  # type: ignore
+                    "primitive_type": "REFERENCED",
+                    "value_map": value_map,
+                }
+
+            value = self.add_data(
+                {
+                    "Transmitter ID": {
+                        "values": value,
+                        "entity_type": entity_type,
+                        "type": "referenced",
+                    }
+                }
+            )
+
+        if not isinstance(value, (ReferencedData, type(None))):
+            raise TypeError(
+                "Input value for 'tx_id_property' should be of type uuid.UUID, "
+                "ReferencedData, np.ndarray or None.)"
+            )
+
+        self._tx_id_property = value
+        self.edit_metadata({"Tx ID property": getattr(value, "uid", None)})
 
 
 class AirborneEMSurvey(BaseEMSurvey, Curve):
