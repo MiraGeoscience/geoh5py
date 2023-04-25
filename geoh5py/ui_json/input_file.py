@@ -43,7 +43,7 @@ from .utils import (
 )
 from .validation import InputValidation
 
-# pylint: disable=simplifiable-if-expression
+# pylint: disable=simplifiable-if-expression, too-many-instance-attributes
 
 
 class InputFile:
@@ -88,7 +88,7 @@ class InputFile:
         validation_options: dict | None = None,
     ):
         self._geoh5 = None
-        self._validation_options = validation_options
+        self.validation_options = validation_options
         self.validate = validate
         self.validations = validations
         self.ui_json = ui_json
@@ -285,11 +285,39 @@ class InputFile:
 
     @property
     def validation_options(self):
-        """Pass validation options to the validators."""
+        """
+        Pass validation options to the validators. The following parameters are
+        supporter:
+
+        - update_enabled: bool
+            If True, the enabled status of the ui_json will be updated based on the
+            value provided. Default is True.
+        - ignore_list: tuple
+            List of keys to ignore when validating the ui_json. Default is empty tuple.
+
+        """
         if self._validation_options is None:
-            return {}
+            return {
+                "update_enabled": True,
+                "ignore_list": (),
+            }
 
         return self._validation_options
+
+    @validation_options.setter
+    def validation_options(self, value: dict):
+        if not isinstance(value, (dict, type(None))):
+            raise ValueError("Input value for `validation_options` should be a dict.")
+
+        if value is not None:
+            for key in value:
+                if key not in self.validation_options:
+                    raise KeyError(
+                        f"Input key '{key}' not supported. "
+                        f"Supported keys: {list(self.validation_options.keys())}"
+                    )
+
+        self._validation_options = value
 
     @property
     def validations(self) -> dict | None:
