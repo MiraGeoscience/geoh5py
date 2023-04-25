@@ -250,8 +250,9 @@ class InputValidation:
 
     def validate_data(self, data: dict[str, Any]) -> None:
         """
-        Calls validate method on ui.json data structure for cross-dependencies,
-        then on individual keys for input values.
+        Calls validate method on ui.json data structure for cross-dependencies.
+
+        Individual key, value pairs are validated for expected type.
 
         :param data: Input data with known validations.
         """

@@ -286,8 +286,9 @@ class InputFile:
     @property
     def validation_options(self):
         """
-        Pass validation options to the validators. The following parameters are
-        supporter:
+        Pass validation options to the validators.
+
+        The following options are supported:
 
         - update_enabled: bool
             If True, the enabled status of the ui_json will be updated based on the
@@ -413,36 +414,32 @@ class InputFile:
 
         return self.path_name
 
-    def set_data_value(self, data: dict):
+    def set_data_value(self, key: str, value):
         """
         Set the data and json form values from a dictionary.
 
-        :param data: Dictionary of key, value pairs.
+        :param key: Parameter name to update.
+        :param value: Value to update with.
         """
-        for key, value in data.items():
-            if (
-                self.validate
-                and self.validations is not None
-                and key in self.validations
-            ):
-                if "association" in self.validations[key]:
-                    validations = deepcopy(self.validations[key])
-                    parent = self.data[self.validations[key]["association"]]
-                    if isinstance(parent, UUID):
-                        parent = self.geoh5.get_entity(parent)[0]
-                    validations["association"] = parent
-                else:
-                    validations = self.validations[key]
+        if self.validate and self.validations is not None and key in self.validations:
+            if "association" in self.validations[key]:
+                validations = deepcopy(self.validations[key])
+                parent = self.data[self.validations[key]["association"]]
+                if isinstance(parent, UUID):
+                    parent = self.geoh5.get_entity(parent)[0]
+                validations["association"] = parent
+            else:
+                validations = self.validations[key]
 
-                validations = {k: v for k, v in validations.items() if k != "one_of"}
-                self.validators.validate(key, value, validations)
+            validations = {k: v for k, v in validations.items() if k != "one_of"}
+            self.validators.validate(key, value, validations)
 
-            self.data[key] = value
+        self.data[key] = value
 
-            if key == "geoh5":
-                self.geoh5 = value
+        if key == "geoh5":
+            self.geoh5 = value
 
-        self.update_ui_values(data)
+        self.update_ui_values({key: value})
 
     @staticmethod
     def stringify(var: dict[str, Any]) -> dict[str, Any]:
