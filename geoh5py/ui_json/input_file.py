@@ -43,7 +43,7 @@ from .utils import (
 )
 from .validation import InputValidation
 
-# pylint: disable=simplifiable-if-expression, too-many-public-methods
+# pylint: disable=simplifiable-if-expression
 
 
 class InputFile:
@@ -119,15 +119,11 @@ class InputFile:
             if self.geoh5 is None and "geoh5" in value:
                 self.geoh5 = value["geoh5"]
 
-            if self.geoh5 is not None:
-                with fetch_active_workspace(self.geoh5):
-                    value = self.promote(value)
+            with fetch_active_workspace(self.geoh5):
+                value = self.promote(value)
 
-                    if self.validators is not None and self.validate:
-                        self.validators.validate_data(value)
-
-            elif self.validators is not None and self.validate:
-                self.validators.validate_data(value)
+                if self.validators is not None and self.validate:
+                    self.validators.validate_data(value)
 
             self.update_ui_values(value)
 
@@ -149,11 +145,6 @@ class InputFile:
             name += ".ui.json"
 
         self._name = name
-
-    def load(self, input_dict: dict[str, Any]):
-        """Load data from dictionary and validate."""
-        self.ui_json = input_dict
-        self.data = flatten(self.ui_json)
 
     @property
     def path(self) -> str | None:
@@ -197,10 +188,10 @@ class InputFile:
         input_file.name = os.path.basename(json_file)
 
         with open(json_file, encoding="utf-8") as file:
-            input_file.load(json.load(file))
+            input_file.ui_json = json.load(file)
 
-        if isinstance(input_file.workspace, Workspace):
-            input_file.workspace.close()
+        if isinstance(input_file.geoh5, Workspace):
+            input_file.geoh5.close()
 
         return input_file
 
@@ -213,18 +204,27 @@ class InputFile:
 
     @ui_json.setter
     def ui_json(self, value: dict[str, Any]):
-        if value is not None and self.validations is not None:
+        if value is not None:
             if not isinstance(value, dict):
                 raise ValueError("Input 'ui_json' must be of type dict or None.")
 
             self._ui_json = self.numify(value.copy())
-            default_validations = InputValidation.infer_validations(self._ui_json)
-            for key, validations in default_validations.items():
+            infered_validations = InputValidation.infer_validations(self._ui_json)
+
+            if self.validations is None:
+                self.validations = {}
+
+            for key, validations in infered_validations.items():
                 if key in self.validations:
                     validations = {**validations, **self.validations[key]}
                 self.validations[key] = validations
+
+            self.data = flatten(self._ui_json)
+
         else:
             self._ui_json = None
+            self._validations = None
+
         self._validators = None
 
     @classmethod
@@ -298,7 +298,8 @@ class InputFile:
 
     @property
     def validations(self) -> dict | None:
-        if getattr(self, "_validations", None) is None:
+        """Dictionary of validations for the ui_json."""
+        if self._validations is None:
             self._validations = deepcopy(base_validations)
 
         return self._validations
