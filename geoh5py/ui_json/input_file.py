@@ -77,6 +77,7 @@ class InputFile:
     _validate = True
     _validators = None
     _validations: dict | None
+    _validation_options: dict | None = None
     association_validator = AssociationValidator()
 
     def __init__(
