@@ -228,13 +228,13 @@ def test_validate_data(tmp_path):
         "param_1": {"one_of": "sad little parameter", "types": [str, type(None)]},
         "param_2": {"one_of": "sad little parameter", "types": [str, type(None)]},
     }
-    ifile = InputFile(ui_json=ui_json, validations=validations)
-    with pytest.raises(AtLeastOneValidationError) as excinfo:
-        ifile.validators.validate_data(ifile.data)
-    assert "at least one sad little parameter" in str(excinfo.value)
+
+    with pytest.raises(
+        AtLeastOneValidationError, match="at least one sad little parameter"
+    ):
+        getattr(InputFile(ui_json=ui_json, validations=validations), "data")
 
     ui_json["param_1"].update({"enabled": True})
-    ifile = InputFile(ui_json=ui_json, validations=validations)
-    with pytest.raises(OptionalValidationError) as excinfo:
-        ifile.validators.validate_data(ifile.data)
-    assert "Cannot set a None" in str(excinfo.value)
+
+    with pytest.raises(OptionalValidationError, match="Cannot set a None"):
+        getattr(InputFile(ui_json=ui_json, validations=validations), "data")

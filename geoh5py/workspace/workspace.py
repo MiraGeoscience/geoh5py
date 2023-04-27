@@ -109,7 +109,7 @@ class Workspace(AbstractContextManager):
         self._groups: dict[uuid.UUID, ReferenceType[group.Group]] = {}
         self._objects: dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
         self._data: dict[uuid.UUID, ReferenceType[data.Data]] = {}
-        self._geoh5: h5py.File | None = None
+        self._geoh5: h5py.File | bool = False
         self.h5file: str | Path | io.BytesIO = h5file
 
         for attr, item in kwargs.items():
@@ -176,7 +176,7 @@ class Workspace(AbstractContextManager):
         """
         Close the file and clear properties for future open.
         """
-        if self._geoh5 is None:
+        if not self._geoh5:
             return
 
         if self.geoh5.mode in ["r+", "a"]:
@@ -205,8 +205,6 @@ class Workspace(AbstractContextManager):
                 pass
 
             self.repack = False
-
-        self._geoh5 = None
 
     @property
     def contributors(self) -> np.ndarray:
@@ -926,7 +924,7 @@ class Workspace(AbstractContextManager):
         """
         Instance of h5py.File.
         """
-        if self._geoh5 is None:
+        if not self._geoh5:
             raise Geoh5FileClosedError
 
         return self._geoh5
@@ -1062,7 +1060,7 @@ class Workspace(AbstractContextManager):
         :param mode: Optional mode of h5py.File. Defaults to 'r+'.
         :return: `self`
         """
-        if isinstance(self._geoh5, h5py.File):
+        if isinstance(self._geoh5, h5py.File) and self._geoh5:
             warnings.warn(f"Workspace already opened in mode {self._geoh5.mode}.")
             return self
 
