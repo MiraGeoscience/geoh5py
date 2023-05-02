@@ -108,6 +108,47 @@ class GeoImage(ObjectBase):
 
         return new_entity
 
+    def copy_from_extent(
+        self,
+        extent: np.ndarray,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        inverse: bool = False,
+        **kwargs,
+    ) -> Grid2D | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy_from_extent`.
+        """
+        if not isinstance(extent, np.ndarray):
+            raise TypeError("Expected a numpy array of extent values.")
+
+        if self.vertices is None:
+            raise AttributeError("Vertices are not defined.")
+
+        if extent.shape[1] == 2:
+            extent = np.c_[extent, np.r_[-np.inf, np.inf]]
+
+        x_pixel = np.abs(self.extent[0, 0] - self.extent[1, 0]) / self.image.size[0]
+        y_pixel = np.abs(self.extent[0, 1] - self.extent[1, 1]) / self.image.size[1]
+        x_centers = np.arange(
+            self.extent[0, 0] + x_pixel / 2,
+            self.extent[1, 0],
+            x_pixel,
+        )
+        x_ind = x_centers >= np.min(extent[:, 0]) & x_centers <= np.max(extent[:, 0])
+        y_centers = np.linspace(
+            self.extent[0, 1] + y_pixel / 2,
+            self.extent[1, 1],
+            y_pixel,
+        )
+        y_ind = y_centers >= np.min(extent[:, 1]) & y_centers <= np.max(extent[:, 1])
+
+        if not np.any(x_ind) or not np.any(y_ind):
+            return None
+
+
+
     @property
     def default_vertices(self):
         """
