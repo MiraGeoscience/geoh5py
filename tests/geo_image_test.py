@@ -246,3 +246,18 @@ def test_georeference_image(tmp_path):
     geoimage.image = image
 
     geoimage.to_grid2d(new_name="CMYK", transform="CMYK")
+
+
+def test_clipping_image(tmp_path):
+    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+
+    # load image
+    geoimage = GeoImage.create(
+        workspace, name="test_area", image=np.random.randint(0, 255, (16, 16, 3))
+    )
+
+    copy_image = geoimage.copy_from_extent(np.vstack([[2, 4], [12, 12]]))
+
+    np.testing.assert_array_equal(
+        np.array(copy_image.image), np.array(geoimage.image)[5:12, 2:11, :]
+    )
