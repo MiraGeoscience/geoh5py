@@ -108,6 +108,93 @@ class GeoImage(ObjectBase):
 
         return new_entity
 
+    def copy_from_extent(  # pylint: disable=too-many-locals
+        self,
+        extent: np.ndarray,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        inverse: bool = False,
+        **kwargs,
+    ) -> GeoImage | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy_from_extent`.
+        """
+        if not isinstance(extent, np.ndarray):
+            raise TypeError("Expected a numpy array of extent values.")
+
+        if self.vertices is None or self.extent is None:
+            raise AttributeError("Vertices are not defined.")
+
+        if extent.shape[1] == 2:
+            extent = np.c_[extent, np.r_[-np.inf, np.inf]]
+
+        pixels = (
+            np.abs(self.extent[0, 0] - self.extent[1, 0]) / self.image.size[0],
+            np.abs(self.extent[0, 1] - self.extent[1, 1]) / self.image.size[1],
+        )
+        x_centers = np.arange(
+            self.extent[0, 0] + pixels[0] / 2,
+            self.extent[1, 0],
+            pixels[0],
+        )
+        x_ind = np.where(
+            (x_centers >= np.min(extent[:, 0])) & (x_centers <= np.max(extent[:, 0]))
+        )[0]
+        y_centers = np.arange(
+            self.extent[0, 1] + pixels[1] / 2,
+            self.extent[1, 1],
+            pixels[1],
+        )
+        y_ind = np.where(
+            (y_centers >= np.min(extent[:, 1])) & (y_centers <= np.max(extent[:, 1]))
+        )[0]
+
+        if not np.any(x_ind) or not np.any(y_ind):
+            return None
+
+        lim_x, lim_y = (x_ind[0], x_ind[-1]), (y_ind[0], y_ind[-1])
+        vertices = np.asarray(
+            [
+                [
+                    self.extent[0, 0] + lim_x[0] * pixels[0],
+                    self.extent[0, 1] + lim_y[1] * pixels[1],
+                    0,
+                ],
+                [
+                    self.extent[0, 0] + lim_x[1] * pixels[0],
+                    self.extent[0, 1] + lim_y[1] * pixels[1],
+                    0,
+                ],
+                [
+                    self.extent[0, 0] + lim_x[1] * pixels[0],
+                    self.extent[0, 1] + lim_y[0] * pixels[1],
+                    0,
+                ],
+                [
+                    self.extent[0, 0] + lim_x[0] * pixels[0],
+                    self.extent[0, 1] + lim_y[0] * pixels[1],
+                    0,
+                ],
+            ]
+        )
+        copy = super().copy(
+            parent=parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            vertices=vertices,
+        )
+        copy.image = self.image.crop(
+            (
+                lim_x[0],
+                self.image.size[1] - lim_y[1],
+                lim_x[1],
+                self.image.size[1] - lim_y[0],
+            )
+        )
+
+        return copy
+
     @property
     def default_vertices(self):
         """
