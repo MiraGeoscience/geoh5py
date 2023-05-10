@@ -120,11 +120,14 @@ def test_input_file_name_path(tmp_path: Path):
     test.workspace = Workspace(tmp_path / r"test.geoh5")
     assert test.path == str(tmp_path)  # pulled from workspace.h5file
     test.path = tmp_path
-    assert test.path == tmp_path  # usual behaviour
+    assert test.path == str(tmp_path)  # usual behaviour
+
+    with pytest.raises(FileNotFoundError):
+        test.path = str(tmp_path / "nonexisting")
 
     with pytest.raises(ValueError) as excinfo:
-        test.path = "im/a/fake/path"
-    assert "'im/a/fake/path'" in str(excinfo.value)  # raises if not a dir
+        test.path = str(tmp_path / "test.geoh5")
+        assert "is not a directory" in str(excinfo.value)  # raises if not a dir
 
     # test path_name method
     assert test.path_name == str(tmp_path / r"Jarrod.ui.json")

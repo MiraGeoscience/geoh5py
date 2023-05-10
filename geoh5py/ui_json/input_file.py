@@ -168,11 +168,12 @@ class InputFile:
         return self._path
 
     @path.setter
-    def path(self, path: str):
-        if not Path(path).is_dir():
-            raise ValueError(f"The specified path: '{path}' does not exist.")
+    def path(self, path: str | Path):
+        dir_path = Path(path).resolve(strict=True)
+        if not dir_path.is_dir():
+            raise ValueError(f"The specified path is not a directory: {path}")
 
-        self._path = path
+        self._path = str(dir_path)
 
     @property
     def path_name(self) -> str | None:
@@ -191,7 +192,7 @@ class InputFile:
             raise ValueError("Input file should have the extension *.ui.json")
 
         input_file = InputFile(**kwargs)
-        input_file.path = str(Path(json_file).absolute().parent)
+        input_file.path = str(Path(json_file).resolve(strict=True).parent)
         input_file.name = Path(json_file).name
 
         with open(json_file, encoding="utf-8") as file:
@@ -336,7 +337,8 @@ class InputFile:
             self._workspace = workspace
         else:
             raise ValueError(
-                "Input 'workspace' must be a string, a Path, or a :obj:`geoh5py.workspace.Workspace` object"
+                "Input 'workspace' must be a string, a Path, "
+                "or a :obj:`geoh5py.workspace.Workspace` object"
             )
 
         if self.validators is not None:
@@ -360,7 +362,7 @@ class InputFile:
             self.name = name
 
         if path is not None:
-            self.path = str(Path(path).absolute())
+            self.path = path
 
         if self.path_name is None:
             raise AttributeError(
