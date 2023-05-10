@@ -39,7 +39,7 @@ scipy = "^1.4.1"
 sphinx = "^3.0"
 sphinx-autodoc-typehints = "^1.10"
 sphinx-rtd-theme = "^0.4.3"
-toml = "*"
+tomli = "*"
 
 [tool.poetry.extras]
 
