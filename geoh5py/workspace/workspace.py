@@ -938,7 +938,7 @@ class Workspace(AbstractContextManager):
     @h5file.setter
     def h5file(self, file: str | Path | io.BytesIO):
         if isinstance(file, (str, Path)):
-            if not str(file).endswith("geoh5"):
+            if Path(file).suffix != ".geoh5":
                 raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
         elif not isinstance(file, io.BytesIO):
             raise ValueError(
