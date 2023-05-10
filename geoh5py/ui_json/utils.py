@@ -297,7 +297,7 @@ def str2inf(value):
 
 def workspace2path(value):
     if isinstance(value, Workspace):
-        return value.h5file
+        return str(value.h5file)
     return value
 
 

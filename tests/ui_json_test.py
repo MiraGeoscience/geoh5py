@@ -541,7 +541,7 @@ def test_stringify(tmp_path: Path):
     # pylint: disable=protected-access
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
-    ui_json["geoh5"] = workspace.h5file
+    ui_json["geoh5"] = workspace
     ui_json["test"] = templates.integer_parameter(value=None)
     in_file = InputFile(
         ui_json=ui_json, validations={"test": {"types": [int, type(None)]}}
