@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -74,7 +76,7 @@ def test_validation_types():
         assert err.validator_type == validation_types[i]
 
 
-def test_association_validator(tmp_path):
+def test_association_validator(tmp_path: Path):
     workspace = Workspace(tmp_path / r"test.geoh5")
     workspace2 = Workspace(tmp_path / r"test2.geoh5")
     points = Points.create(workspace, vertices=np.array([[1, 2, 3], [4, 5, 6]]))

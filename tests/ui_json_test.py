@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
-from os import path
+from pathlib import Path
 from uuid import uuid4
 
 import numpy as np
@@ -45,8 +45,8 @@ from geoh5py.ui_json.utils import collect
 from geoh5py.workspace import Workspace
 
 
-def get_workspace(directory):
-    workspace = Workspace(path.join(directory, "..", "testPoints.geoh5"))
+def get_workspace(directory: str | Path):
+    workspace = Workspace(Path(directory).parent / "testPoints.geoh5")
     if len(workspace.objects) == 0:
         xyz = np.random.randn(12, 3)
         group = ContainerGroup.create(workspace)
@@ -105,7 +105,7 @@ def test_input_file_json():
     )
 
 
-def test_input_file_name_path(tmp_path):
+def test_input_file_name_path(tmp_path: Path):
     # pylint: disable=protected-access
 
     # Test handling of name attribute
@@ -157,7 +157,7 @@ def test_bool_parameter():
     assert TypeValidationError.message("logic", "int", ["bool"]) == str(excinfo.value)
 
 
-def test_integer_parameter(tmp_path):
+def test_integer_parameter(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -193,7 +193,7 @@ def test_integer_parameter(tmp_path):
     assert test["enabled"]
 
 
-def test_float_parameter(tmp_path):
+def test_float_parameter(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -223,7 +223,7 @@ def test_float_parameter(tmp_path):
     assert test["enabled"]
 
 
-def test_string_parameter(tmp_path):
+def test_string_parameter(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -253,7 +253,7 @@ def test_string_parameter(tmp_path):
     assert test["enabled"]
 
 
-def test_choice_string_parameter(tmp_path):
+def test_choice_string_parameter(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -289,7 +289,7 @@ def test_file_parameter():
     assert test["enabled"]
 
 
-def test_shape_parameter(tmp_path):
+def test_shape_parameter(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["data"] = templates.string_parameter(value="2,5,6,7")
@@ -302,7 +302,7 @@ def test_shape_parameter(tmp_path):
     assert ShapeValidationError.message("data", (4,), (3,)) == str(excinfo.value)
 
 
-def test_missing_required_field(tmp_path):
+def test_missing_required_field(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["object"] = templates.object_parameter(optional="enabled")
@@ -318,7 +318,7 @@ def test_missing_required_field(tmp_path):
     ) == str(excinfo.value)
 
 
-def test_object_promotion(tmp_path):
+def test_object_promotion(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     points = workspace.get_entity("Points_A")[0]
 
@@ -339,7 +339,7 @@ def test_object_promotion(tmp_path):
     assert "Input 'data' must be of type dict or None." in str(excinfo)
 
 
-def test_invalid_uuid_string(tmp_path):
+def test_invalid_uuid_string(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -355,7 +355,7 @@ def test_invalid_uuid_string(tmp_path):
     )
 
 
-def test_valid_uuid_in_workspace(tmp_path):
+def test_valid_uuid_in_workspace(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -372,7 +372,7 @@ def test_valid_uuid_in_workspace(tmp_path):
     )
 
 
-def test_data_with_wrong_parent(tmp_path):
+def test_data_with_wrong_parent(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     points = workspace.get_entity("Points_A")[0]
     points_b = workspace.get_entity("Points_B")[0]
@@ -394,7 +394,7 @@ def test_data_with_wrong_parent(tmp_path):
     ) == str(excinfo.value)
 
 
-def test_property_group_with_wrong_type(tmp_path):
+def test_property_group_with_wrong_type(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     points = workspace.get_entity("Points_A")[0]
 
@@ -427,7 +427,7 @@ def test_property_group_with_wrong_type(tmp_path):
     ) == str(excinfo.value)
 
 
-def test_input_file(tmp_path):
+def test_input_file(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -467,7 +467,7 @@ def test_input_file(tmp_path):
             raise ValueError(f"Input '{key}' differs from the output.")
 
 
-def test_write_ui_json(tmp_path):
+def test_write_ui_json(tmp_path: Path):
     # Make sure that none2str is applied in dict_mapper
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
@@ -480,7 +480,7 @@ def test_write_ui_json(tmp_path):
         assert ui_json["test"]["value"] == 1.0
 
 
-def test_data_value_parameter_a(tmp_path):
+def test_data_value_parameter_a(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
@@ -501,7 +501,7 @@ def test_data_value_parameter_a(tmp_path):
 
 
 # @pytest.mark.skip(reason="Failing on github for unknown reason")
-def test_data_value_parameter_b(tmp_path):
+def test_data_value_parameter_b(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     points_a = workspace.get_entity("Points_A")[0]
     data_b = points_a.children[0]
@@ -527,7 +527,7 @@ def test_data_value_parameter_b(tmp_path):
     assert reload_input.ui_json["data"]["isValue"]
 
 
-def test_data_parameter(tmp_path):
+def test_data_parameter(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     points_b = workspace.get_entity("Points_B")[0]
 
@@ -537,7 +537,7 @@ def test_data_parameter(tmp_path):
     ui_json["data"] = templates.data_parameter(data_group_type="Multi-element")
 
 
-def test_stringify(tmp_path):
+def test_stringify(tmp_path: Path):
     # pylint: disable=protected-access
     workspace = get_workspace(tmp_path)
     ui_json = deepcopy(default_ui_json)

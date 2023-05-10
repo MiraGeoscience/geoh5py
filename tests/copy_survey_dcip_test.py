@@ -20,6 +20,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -27,7 +29,7 @@ from geoh5py.objects import CurrentElectrode, PotentialElectrode
 from geoh5py.workspace import Workspace
 
 
-def test_copy_survey_dcip(tmp_path):
+def test_copy_survey_dcip(tmp_path: Path):
     name = "TestCurrents"
     n_data = 12
     path = tmp_path / r"testDC.geoh5"

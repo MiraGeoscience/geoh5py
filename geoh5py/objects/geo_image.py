@@ -16,7 +16,6 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-import os
 import uuid
 import warnings
 from io import BytesIO
@@ -182,7 +181,7 @@ class GeoImage(ObjectBase):
             value = value.astype("uint8")
             image = Image.fromarray(value)
         elif isinstance(image, str):
-            if not os.path.exists(image):
+            if not Path(image).is_file():
                 raise ValueError(f"Input image file {image} does not exist.")
 
             image = Image.open(image)
@@ -204,15 +203,15 @@ class GeoImage(ObjectBase):
 
         with TemporaryDirectory() as tempdir:
             ext = getattr(image, "format")
-            temp_file = os.path.join(
-                tempdir, f"image.{ext.lower() if ext is not None else 'tiff'}"
+            temp_file = (
+                Path(tempdir) / f"image.{ext.lower() if ext is not None else 'tiff'}"
             )
             image.save(temp_file)
 
             if self.image_data is not None:
                 self.workspace.remove_entity(self.image_data)
 
-            image = self.add_file(temp_file)
+            image = self.add_file(str(temp_file))
             image.name = "GeoImageMesh_Image"
             image.entity_type.name = "GeoImageMesh_Image"
 
@@ -444,15 +443,15 @@ class GeoImage(ObjectBase):
             raise TypeError(
                 f"The 'path' has to be a string or a Path; a '{type(name)}' was entered instead"
             )
-        if path != "" and not os.path.isdir(path):
+        if path != "" and not Path(path).is_dir():
             raise FileNotFoundError(f"No such file or directory: {path}")
 
         if name.endswith((".tif", ".tiff")) and self.tag is not None:
             # save the image
             image: Image = self.image_georeferenced
-            image.save(os.path.join(path, name), exif=image.getexif())
+            image.save(Path(path) / name, exif=image.getexif())
         else:
-            self.image.save(os.path.join(path, name))
+            self.image.save(Path(path) / name)
 
     def to_grid2d(
         self,

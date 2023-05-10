@@ -8,9 +8,9 @@
 from __future__ import annotations
 
 import json
-import os
 import warnings
 from copy import deepcopy
+from pathlib import Path
 from typing import Any
 from uuid import UUID
 
@@ -153,13 +153,13 @@ class InputFile:
         Directory for the input/output ui.json file.
         """
         if getattr(self, "_path", None) is None and self.workspace is not None:
-            self.path = os.path.dirname(self.workspace.h5file)
+            self.path = str(Path(self.workspace.h5file).parent)
 
         return self._path
 
     @path.setter
     def path(self, path: str):
-        if not os.path.isdir(path):
+        if not Path(path).is_dir():
             raise ValueError(f"The specified path: '{path}' does not exist.")
 
         self._path = path
@@ -167,7 +167,7 @@ class InputFile:
     @property
     def path_name(self) -> str | None:
         if self.path is not None and self.name is not None:
-            return os.path.join(self.path, self.name)
+            return str(Path(self.path) / self.name)
 
         return None
 
@@ -181,8 +181,8 @@ class InputFile:
             raise ValueError("Input file should have the extension *.ui.json")
 
         input_file = InputFile(**kwargs)
-        input_file.path = os.path.dirname(os.path.abspath(json_file))
-        input_file.name = os.path.basename(json_file)
+        input_file.path = str(Path(json_file).absolute().parent)
+        input_file.name = Path(json_file).name
 
         with open(json_file, encoding="utf-8") as file:
             input_file.load(json.load(file))
@@ -332,7 +332,7 @@ class InputFile:
         self,
         name: str | None = None,
         none_map: dict[str, Any] | None = None,
-        path: str | None = None,
+        path: str | Path | None = None,
     ):
         """
         Writes a formatted ui.json file from InputFile data
@@ -346,7 +346,7 @@ class InputFile:
             self.name = name
 
         if path is not None:
-            self.path = os.path.abspath(path)
+            self.path = str(Path(path).absolute())
 
         if self.path_name is None:
             raise AttributeError(

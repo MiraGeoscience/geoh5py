@@ -18,7 +18,7 @@
 from __future__ import annotations
 
 import sys
-from os import path
+from pathlib import Path
 
 import h5py
 import numpy as np
@@ -58,10 +58,10 @@ def test_write_reread_non_ascii_filename(tmp_path):
     raises=UnicodeEncodeError,
     reason="H5 library version < 1.12 does not support non-ASCII filename",
 )
-def test_existing_non_ascii_filename(tmp_path):
+def test_existing_non_ascii_filename(tmp_path: Path):
     file_path = tmp_path / NON_ASCII_FILENAME
     with open(file_path, "w", encoding="utf-8"):
         pass
 
-    assert path.exists(file_path)
+    assert file_path.is_file()
     assert not h5py.is_hdf5(file_path)
