@@ -92,7 +92,7 @@ class InputFile:
             self.workspace.close()
 
     @property
-    def data(self):
+    def data(self) -> dict[str, Any]:
         if getattr(self, "_data", None) is None and self.ui_json is not None:
             self.data = flatten(self.ui_json)
 
@@ -310,23 +310,27 @@ class InputFile:
         return self._workspace
 
     @workspace.setter
-    def workspace(self, workspace: Workspace | None):
-        if workspace is not None:
-            if self._workspace is not None:
-                raise UserWarning(
-                    "Attribute 'workspace' already set. "
-                    "Consider creating a new InputFile from arguments."
-                )
+    def workspace(self, workspace: Workspace | str | Path | None):
+        if workspace is None:
+            return
 
-            if not isinstance(workspace, Workspace):
-                raise ValueError(
-                    "Input 'workspace' must be a valid :obj:`geoh5py.workspace.Workspace`."
-                )
+        if self._workspace is not None:
+            raise UserWarning(
+                "Attribute 'workspace' already set. "
+                "Consider creating a new InputFile from arguments."
+            )
 
-        self._workspace = workspace
+        if isinstance(workspace, (str, Path)):
+            self._workspace = Workspace(workspace, mode="r")
+        elif isinstance(workspace, Workspace):
+            self._workspace = workspace
+        else:
+            raise ValueError(
+                "Input 'workspace' must be a string, a Path, or a :obj:`geoh5py.workspace.Workspace` object"
+            )
 
         if self.validators is not None:
-            self.validators.workspace = workspace
+            self.validators.workspace = self._workspace
 
     def write_ui_json(
         self,
@@ -426,8 +430,12 @@ class InputFile:
 
         return ui_json
 
-    def _demote(self, var: dict[str, Any]) -> dict[str, str]:
-        """Converts promoted parameter values to their string representations."""
+    def _demote(self, var: dict[str, Any]) -> dict[str, Any]:
+        """
+        Converts promoted parameter values to their string representations.
+
+        Other parameters are left unchanged.
+        """
         mappers = [entity2uuid, as_str_if_uuid, workspace2path, container_group2name]
         for key, value in var.items():
             if isinstance(value, dict):

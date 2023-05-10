@@ -99,11 +99,10 @@ def test_input_file_json():
     in_file = InputFile(ui_json=ui_json)
     with pytest.raises(ValueError) as excinfo:
         getattr(in_file, "data")
-
-    assert (
-        "Input 'workspace' must be a valid :obj:`geoh5py.workspace.Workspace`"
-        in str(excinfo)
-    )
+        assert (
+            excinfo.value
+            == "Input 'workspace' must be a string, a Path, or a :obj:`geoh5py.workspace.Workspace`"
+        )
 
 
 def test_input_file_name_path(tmp_path: Path):
