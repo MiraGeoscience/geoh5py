@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import shutil
 import warnings
+from io import BytesIO
 from pathlib import Path
 from time import time
 from typing import Any
@@ -297,6 +298,8 @@ def str2inf(value):
 
 def workspace2path(value):
     if isinstance(value, Workspace):
+        if isinstance(value.h5file, BytesIO):
+            return "[in-memory]"
         return str(value.h5file)
     return value
 

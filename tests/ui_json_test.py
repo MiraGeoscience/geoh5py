@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
+from io import BytesIO
 from pathlib import Path
 from uuid import uuid4
 
@@ -477,6 +478,20 @@ def test_write_ui_json(tmp_path: Path):
     in_file.write_ui_json(name="test_write.ui.json", path=tmp_path)
     with open(tmp_path / r"test_write.ui.json", encoding="utf-8") as file:
         ui_json = json.load(file)
+        assert ui_json["geoh5"] == str(Path(workspace.h5file))
+        assert ui_json["test"]["value"] == 1.0
+
+
+def test_in_memory_geoh5(tmp_path: Path):
+    workspace = Workspace(BytesIO())
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["test"] = templates.float_parameter(optional="disabled")
+    in_file = InputFile(ui_json=ui_json)
+    in_file.write_ui_json(name="test_write.ui.json", path=tmp_path)
+    with open(tmp_path / r"test_write.ui.json", encoding="utf-8") as file:
+        ui_json = json.load(file)
+        assert ui_json["geoh5"] == "[in-memory]"
         assert ui_json["test"]["value"] == 1.0
 
 
