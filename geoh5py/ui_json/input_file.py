@@ -190,7 +190,7 @@ class InputFile:
         """
 
         json_file_path = Path(json_file).resolve()
-        if json_file_path.suffixes[-2:] != [".ui", ".json"]:
+        if ''.join(json_file_path.suffixes[-2:]) != ".ui.json":
             raise ValueError("Input file should have the extension *.ui.json")
 
         input_file = InputFile(**kwargs)
