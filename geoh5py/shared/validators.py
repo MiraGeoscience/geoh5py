@@ -121,7 +121,7 @@ class AssociationValidator(BaseValidator):
             raise ValueError(
                 "'AssociationValidator.validate' requires a 'valid'"
                 " input of type 'Entity', 'Workspace' or None. "
-                f"Provided '{valid}' or type {type(valid)} for parameter '{name}'"
+                f"Provided '{valid}' of type {type(valid)} for parameter '{name}'"
             )
 
         if isinstance(value, UUID):
