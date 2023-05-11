@@ -521,7 +521,9 @@ def test_input_file(tmp_path: Path):
     in_file = InputFile(ui_json=ui_json)
     out_file = in_file.write_ui_json(path=tmp_path)
 
-    with pytest.raises(ValueError, match="Input file should have the extension .ui.json"):
+    with pytest.raises(
+        ValueError, match="Input file should have the extension .ui.json"
+    ):
         InputFile.read_ui_json("somefile.json")
 
     with pytest.raises(TypeError, match="expected str, bytes or os.PathLike object"):
