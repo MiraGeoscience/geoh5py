@@ -98,7 +98,6 @@ class InputFile:
 
         return self._data
 
-
     @data.setter
     def data(self, value: dict[str, Any] | None):
         if value is not None:
@@ -190,7 +189,7 @@ class InputFile:
         """
 
         json_file_path = Path(json_file).resolve()
-        if ''.join(json_file_path.suffixes[-2:]) != ".ui.json":
+        if "".join(json_file_path.suffixes[-2:]) != ".ui.json":
             raise ValueError("Input file should have the extension *.ui.json")
 
         input_file = InputFile(**kwargs)
