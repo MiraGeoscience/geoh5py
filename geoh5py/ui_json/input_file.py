@@ -189,12 +189,13 @@ class InputFile:
         Read and create an InputFile from ui.json
         """
 
-        if "ui.json" not in json_file:
+        json_file_path = Path(json_file).resolve()
+        if json_file_path.suffixes[-2:] != [".ui", ".json"]:
             raise ValueError("Input file should have the extension *.ui.json")
 
         input_file = InputFile(**kwargs)
-        input_file.path = str(Path(json_file).resolve(strict=True).parent)
-        input_file.name = Path(json_file).name
+        input_file.path = str(json_file_path.parent)
+        input_file.name = json_file_path.name
 
         with open(json_file, encoding="utf-8") as file:
             input_file.load(json.load(file))
