@@ -96,7 +96,7 @@ class InputFile:
 
     @property
     def data(self) -> dict[str, Any] | None:
-        if getattr(self, "_data", None) is None and self.ui_json is not None:
+        if self._data is None and self.ui_json is not None:
             self.data = flatten(self.ui_json)
 
         return self._data
@@ -130,14 +130,15 @@ class InputFile:
         self._data = value
 
     @property
-    def plain_data(self) -> dict[str, Any]:
+    def plain_data(self) -> dict[str, Any] | None:
         """
         Returns data with promoted parameter values converted to their string representations.
         Other parameters are left unchanged.
 
         E.g. a Workspace is replaced by its path.
         """
-        return self._demote(self.data)
+        data = self.data
+        return None if data is None else self.demote(data)
 
     @property
     def name(self) -> str | None:
@@ -167,7 +168,7 @@ class InputFile:
         return self._path
 
     @path.setter
-    def path(self, path: str | Path):
+    def path(self, path: str):
         dir_path = Path(path).resolve(strict=True)
         if not dir_path.is_dir():
             raise ValueError(f"The specified path is not a directory: {path}")
@@ -407,7 +408,7 @@ class InputFile:
             self.name = name
 
         if path is not None:
-            self.path = path
+            self.path = str(path)
 
         if self.path_name is None:
             raise AttributeError(
@@ -434,6 +435,7 @@ class InputFile:
         :param key: Parameter name to update.
         :param value: Value to update with.
         """
+        assert self.data is not None
         if self.validate and self.validations is not None and key in self.validations:
             if "association" in self.validations[key]:
                 validations = deepcopy(self.validations[key])
@@ -511,7 +513,7 @@ class InputFile:
         return ui_json
 
     @classmethod
-    def demote(cls, var: dict[str, Any]) -> dict[str, str]:
+    def demote(cls, var: dict[str, Any]) -> dict[str, Any]:
         """
         Converts promoted parameter values to their string representations.
 
