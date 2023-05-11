@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import warnings
 from abc import ABC, abstractmethod
 from typing import Any
 from uuid import UUID
@@ -117,6 +118,12 @@ class AssociationValidator(BaseValidator):
         if valid is None:
             return
 
+        if isinstance(valid, list):
+            warnings.warn(
+                "Data associated with multiSelect dependent is not supported. Validation ignored."
+            )
+            return
+
         if not isinstance(valid, (Entity, Workspace)):
             raise ValueError(
                 "'AssociationValidator.validate' requires a 'valid'"
@@ -197,7 +204,13 @@ class ShapeValidator(BaseValidator):
         if value is None:
             return
 
-        pshape = np.array(value).shape
+        if isinstance(value, np.ndarray):
+            pshape = value.shape
+        elif isinstance(value, list):
+            pshape = (len(value),)
+        else:
+            pshape = (1,)
+
         if pshape != valid:
             raise ShapeValidationError(name, pshape, valid)
 
@@ -210,17 +223,19 @@ class TypeValidator(BaseValidator):
     validator_type = "types"
 
     @classmethod
-    def validate(cls, name: str, value: Any, valid: list[type] | type) -> None:
+    def validate(cls, name: str, value: Any, valid: type | list[type]) -> None:
         """
         :param name: Parameter identifier.
         :param value: Input parameter value.
         :param valid: List of accepted value types
         """
-
         if isinstance(valid, type):
             valid = [valid]
 
-        if not iterable(value) or list in valid:
+        if not isinstance(valid, list):
+            raise TypeError("Input `valid` options must be a type or list of types.")
+
+        if not iterable(value):
             value = (value,)
 
         for val in value:

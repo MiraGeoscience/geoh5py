@@ -36,6 +36,7 @@ if TYPE_CHECKING:
 def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
     """
     Open a workspace in the requested 'mode'.
+
     If receiving an opened Workspace instead, merely return the given workspace.
 
     :param workspace: A Workspace class
@@ -356,9 +357,7 @@ def as_str_if_utf8_bytes(value) -> str:
     return value
 
 
-def dict_mapper(
-    val, string_funcs: list[Callable], *args, omit: dict | None = None
-) -> dict:
+def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = None):
     """
     Recursion through nested dictionaries and applies mapping functions to values.
 
@@ -368,14 +367,23 @@ def dict_mapper(
 
     :return val: Transformed values
     """
-    if omit is None:
-        omit = {}
     if isinstance(val, dict):
         for key, values in val.items():
-            val[key] = dict_mapper(
-                values,
-                [fun for fun in string_funcs if fun not in omit.get(key, [])],
-            )
+            short_list = string_funcs.copy()
+            if omit is not None:
+                short_list = [
+                    fun for fun in string_funcs if fun not in omit.get(key, [])
+                ]
+
+            val[key] = dict_mapper(values, short_list)
+
+    if isinstance(val, list):
+        out = []
+        for elem in val:
+            for fun in string_funcs:
+                elem = fun(elem, *args)
+            out += [elem]
+        return out
 
     for fun in string_funcs:
         val = fun(val, *args)

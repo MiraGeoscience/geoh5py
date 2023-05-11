@@ -22,12 +22,18 @@ from __future__ import annotations
 import inspect
 from uuid import UUID
 
-from .. import objects
+from .. import groups, objects
 from ..shared import Entity
 
-known_types = [
+known_object_types = [
     member.default_type_uid()
     for _, member in inspect.getmembers(objects)
+    if hasattr(member, "default_type_uid") and member.default_type_uid() is not None
+]
+
+known_group_types = [
+    member.default_type_uid()
+    for _, member in inspect.getmembers(groups)
     if hasattr(member, "default_type_uid") and member.default_type_uid() is not None
 ]
 
@@ -75,8 +81,8 @@ def integer_parameter(
     main: bool = True,
     label: str = "Integer data",
     value: int = 1,
-    vmin: int = 0,
-    vmax: int = 100,
+    vmin: int | None = None,
+    vmax: int | None = None,
     optional: str | None = None,
 ) -> dict:
     """
@@ -93,7 +99,12 @@ def integer_parameter(
 
     :returns: Ui_json compliant dictionary.
     """
-    form = {"main": main, "label": label, "value": value, "min": vmin, "max": vmax}
+    form = {"main": main, "label": label, "value": value}
+
+    for prop, val in {"vmin": vmin, "vmax": vmax}.items():
+        if val is not None:
+            form[prop] = val
+
     if optional is not None:
         form.update(optional_parameter(optional))
     return form
@@ -103,8 +114,8 @@ def float_parameter(
     main: bool = True,
     label: str = "Float data",
     value: float = 1.0,
-    vmin: float = 0.0,
-    vmax: float = 100.0,
+    vmin: float | None = None,
+    vmax: float | None = None,
     precision: int = 2,
     line_edit: bool = True,
     optional: str | None = None,
@@ -127,14 +138,17 @@ def float_parameter(
         "main": main,
         "label": label,
         "value": value,
-        "min": vmin,
         "precision": precision,
         "lineEdit": line_edit,
-        "max": vmax,
     }
+
+    for prop, val in {"vmin": vmin, "vmax": vmax}.items():
+        if val is not None:
+            form[prop] = val
 
     if optional is not None:
         form.update(optional_parameter(optional))
+
     return form
 
 
@@ -163,25 +177,33 @@ def string_parameter(
 
 
 def choice_string_parameter(
-    main: bool = True,
-    label: str = "String data",
     choice_list: tuple = ("Option A", "Option B"),
-    value: str = "Option A",
+    label: str = "String data",
+    main: bool = True,
+    multi_select: bool = False,
     optional: str | None = None,
+    value: str = "Option A",
 ) -> dict:
     """
     Dropdown menu of string choices.
 
     :param main: Show form in main.
-    :param label: Label identifier.
-    :param value: Input value.
     :param choice_list: List of options.
+    :param label: Label identifier.
+    :param multi_select: Option to select multiple choices.
+    :param value: Input value.
     :param optional: Make optional if not None. Initial state provided by not None
         value.  Can be either 'enabled' or 'disabled'.
 
     :returns: Ui_json compliant dictionary.
     """
-    form = {"main": main, "label": label, "value": value, "choiceList": choice_list}
+    form = {
+        "main": main,
+        "multiSelect": multi_select,
+        "label": label,
+        "value": value,
+        "choiceList": choice_list,
+    }
 
     if optional is not None:
         form.update(optional_parameter(optional))
@@ -222,10 +244,37 @@ def file_parameter(
     return form
 
 
+def group_parameter(
+    main: bool = True,
+    label: str = "Object",
+    group_type: tuple = tuple(known_group_types),
+    value: str | None = None,
+    optional: str | None = None,
+) -> dict:
+    """
+    Dropdown menu of groups of specific types.
+
+    :param main: Show form in main.
+    :param label: Label identifier.
+    :param value: Input value.
+    :param group_type: Type of selectable groups.
+    :param optional: Make optional if not None. Initial state provided by not None
+        value.  Can be either 'enabled' or 'disabled'.
+
+    :returns: Ui_json compliant dictionary.
+    """
+    form = {"main": main, "label": label, "value": value, "groupType": group_type}
+
+    if optional is not None:
+        form.update(optional_parameter(optional))
+    return form
+
+
 def object_parameter(
     main: bool = True,
     label: str = "Object",
-    mesh_type: tuple = tuple(known_types),
+    mesh_type: tuple = tuple(known_object_types),
+    multi_select: bool = False,
     value: str | None = None,
     optional: str | None = None,
 ) -> dict:
@@ -235,13 +284,20 @@ def object_parameter(
     :param main: Show form in main.
     :param label: Label identifier.
     :param value: Input value.
+    :param multi_select: Option to select multiple choices.
     :param mesh_type: Type of selectable objects.
     :param optional: Make optional if not None. Initial state provided by not None
         value.  Can be either 'enabled' or 'disabled'.
 
     :returns: Ui_json compliant dictionary.
     """
-    form = {"main": main, "label": label, "value": value, "meshType": mesh_type}
+    form = {
+        "main": main,
+        "label": label,
+        "value": value,
+        "multiSelect": multi_select,
+        "meshType": mesh_type,
+    }
 
     if optional is not None:
         form.update(optional_parameter(optional))
@@ -271,6 +327,7 @@ def data_parameter(
         'Dip direction & dip',
         'Strike & dip',
         or 'Multi-element'.
+    :param multi_select: Option to select multiple choices.
     :param parent: Parameter name corresponding to the parent object.
     :param optional: Make optional if not None. Initial state provided by not None
         value.  Can be either 'enabled' or 'disabled'.

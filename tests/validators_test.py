@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 import numpy as np
 import pytest
@@ -134,7 +135,7 @@ def test_shape_validator():
     validator = ShapeValidator()
     with pytest.raises(ShapeValidationError) as excinfo:
         validator("test", [[1, 2, 3], [4, 5, 6]], (3, 2))
-    assert ShapeValidationError.message("test", (2, 3), (3, 2)) == str(excinfo.value)
+    assert ShapeValidationError.message("test", (2,), (3, 2)) == str(excinfo.value)
 
     # No validation error for None
     validator("test", None, (3, 2))
@@ -143,33 +144,41 @@ def test_shape_validator():
 def test_type_validator():
     validator = TypeValidator()
 
+    with pytest.raises(
+        TypeError,
+        match=re.escape("Input `valid` options must be a type or list of types."),
+    ):
+        validator("test", 3, 123)
+
     # Test non-iterable value, single valid
-    with pytest.raises(TypeValidationError) as excinfo:
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message("test", int.__name__, [type({}).__name__]),
+    ):
         validator("test", 3, type({}))
-    assert TypeValidationError.message(
-        "test", int.__name__, [type({}).__name__]
-    ) == str(excinfo.value)
 
     # Test non-iterable value, more than one valid
-    with pytest.raises(TypeValidationError) as excinfo:
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message(
+            "test", int.__name__, [str.__name__, type({}).__name__]
+        ),
+    ):
         validator("test", 3, [str, type({})])
-    assert TypeValidationError.message(
-        "test", int.__name__, [str.__name__, type({}).__name__]
-    ) == str(excinfo.value)
 
     # Test iterable value single valid both invalid
-    with pytest.raises(TypeValidationError) as excinfo:
-        validator("test", [3, 2], type({}))
-    assert TypeValidationError.message(
-        "test", int.__name__, [type({}).__name__]
-    ) == str(excinfo.value)
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message("test", int.__name__, [type({}).__name__]),
+    ):
+        validator("test", [3, 2], [type({})])
 
     # Test iterable value single valid one valid, one invalid
-    with pytest.raises(TypeValidationError) as excinfo:
-        validator("test", [3, "a"], int)
-    assert TypeValidationError.message("test", str.__name__, [int.__name__]) == str(
-        excinfo.value
-    )
+    with pytest.raises(
+        TypeValidationError,
+        match=TypeValidationError.message("test", str.__name__, [int.__name__]),
+    ):
+        validator("test", [3, "a"], [int])
 
 
 def test_uuid_validator():
@@ -220,13 +229,13 @@ def test_validate_data(tmp_path):
         "param_1": {"one_of": "sad little parameter", "types": [str, type(None)]},
         "param_2": {"one_of": "sad little parameter", "types": [str, type(None)]},
     }
-    ifile = InputFile(ui_json=ui_json, validations=validations)
-    with pytest.raises(AtLeastOneValidationError) as excinfo:
-        ifile.validators.validate_data(ifile.data)
-    assert "at least one sad little parameter" in str(excinfo.value)
+
+    with pytest.raises(
+        AtLeastOneValidationError, match="at least one sad little parameter"
+    ):
+        getattr(InputFile(ui_json=ui_json, validations=validations), "data")
 
     ui_json["param_1"].update({"enabled": True})
-    ifile = InputFile(ui_json=ui_json, validations=validations)
-    with pytest.raises(OptionalValidationError) as excinfo:
-        ifile.validators.validate_data(ifile.data)
-    assert "Cannot set a None" in str(excinfo.value)
+
+    with pytest.raises(OptionalValidationError, match="Cannot set a None"):
+        getattr(InputFile(ui_json=ui_json, validations=validations), "data")
