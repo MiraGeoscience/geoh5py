@@ -92,24 +92,15 @@ class InputFile:
             self.workspace.close()
 
     @property
-    def data(self) -> dict[str, Any]:
+    def data(self) -> dict[str, Any] | None:
         if getattr(self, "_data", None) is None and self.ui_json is not None:
             self.data = flatten(self.ui_json)
 
         return self._data
 
-    @property
-    def plain_data(self) -> dict[str, Any]:
-        """
-        Returns data with promoted parameter values converted to their string representations.
-        Other parameters are left unchanged.
-
-        E.g. a Workspace is replaced by its path.
-        """
-        return self._demote(self.data)
 
     @data.setter
-    def data(self, value: dict[str, Any]):
+    def data(self, value: dict[str, Any] | None):
         if value is not None:
             if not isinstance(value, dict):
                 raise ValueError("Input 'data' must be of type dict or None.")
@@ -134,6 +125,16 @@ class InputFile:
                 self.validators.validate_data(value)
 
         self._data = value
+
+    @property
+    def plain_data(self) -> dict[str, Any]:
+        """
+        Returns data with promoted parameter values converted to their string representations.
+        Other parameters are left unchanged.
+
+        E.g. a Workspace is replaced by its path.
+        """
+        return self._demote(self.data)
 
     @property
     def name(self) -> str | None:
