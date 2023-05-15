@@ -18,11 +18,11 @@ from __future__ import annotations
 
 import os
 import uuid
+import warnings
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
-from warnings import warn
 
 import numpy as np
 from PIL import Image
@@ -31,6 +31,7 @@ from PIL.TiffImagePlugin import TiffImageFile
 from .. import objects
 from ..data import FilenameData
 from ..shared.conversion import GeoImageConversion
+from ..shared.utils import box_intersect
 from .object_base import ObjectBase, ObjectType
 
 
@@ -65,7 +66,6 @@ class GeoImage(ObjectBase):
         :obj:`~geoh5py.objects.curve.Curve.parts` if set by the user.
         """
         if getattr(self, "_cells", None) is None:
-
             if self.on_file:
                 self._cells = self.workspace.fetch_array_attribute(self)
             else:
@@ -78,6 +78,35 @@ class GeoImage(ObjectBase):
         assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
         self._cells = indices
         self.workspace.update_attribute(self, "cells")
+
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Function to copy an entity to a different parent entity.
+
+        :param parent: New parent for the copied object.
+        :param copy_children: Copy children entities.
+        :param clear_cache: Clear cache of data values.
+        :param mask: Array of indices to sub-sample the input entity.
+        :param kwargs: Additional keyword arguments.
+        """
+        if mask is not None:
+            warnings.warn("Masking is not supported for GeoImage objects.")
+
+        new_entity = super().copy(
+            parent=parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            **kwargs,
+        )
+
+        return new_entity
 
     @property
     def default_vertices(self):
@@ -93,6 +122,19 @@ class GeoImage(ObjectBase):
                     [0, 0, 0],
                 ]
             )
+        return None
+
+    @property
+    def extent(self) -> np.ndarray | None:
+        """
+        Geography bounding box of the object.
+
+        :return: shape(2, 3) Bounding box defined by the bottom South-West and
+            top North-East coordinates.
+        """
+        if self.vertices is not None:
+            return np.c_[self.vertices.min(axis=0), self.vertices.max(axis=0)].T
+
         return None
 
     @classmethod
@@ -226,6 +268,22 @@ class GeoImage(ObjectBase):
 
         self.set_tag_from_vertices()
 
+    def mask_by_extent(
+        self, extent: np.ndarray, inverse: bool = False
+    ) -> np.ndarray | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
+
+        Uses the four corners of the image to determine overlap with the extent window.
+        """
+        if self.extent is None or not box_intersect(self.extent, extent):
+            return None
+
+        if self.vertices is not None:
+            return np.ones(self.vertices.shape[0], dtype=bool)
+
+        return None
+
     def set_tag_from_vertices(self):
         """
         If tag is None, set the basic tag values based on vertices
@@ -348,7 +406,7 @@ class GeoImage(ObjectBase):
             # georeference the raster
             self.georeference(reference, locations)
         except KeyError:
-            warn("The 'tif.' image has no referencing information")
+            warnings.warn("The 'tif.' image has no referencing information")
 
     @property
     def image_georeferenced(self) -> Image.Image | None:

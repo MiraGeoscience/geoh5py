@@ -35,7 +35,6 @@ class Surface(CellObject):
     )
 
     def __init__(self, object_type: ObjectType, **kwargs):
-
         self._cells: np.ndarray | None = None
 
         super().__init__(object_type, **kwargs)

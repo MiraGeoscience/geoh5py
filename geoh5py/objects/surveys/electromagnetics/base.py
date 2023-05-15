@@ -193,48 +193,6 @@ class BaseEMSurvey(ObjectBase, ABC):
 
         return None
 
-    def copy(self, parent=None, copy_children: bool = True, **kwargs) -> BaseEMSurvey:
-        """
-        Function to copy a AirborneTEMReceivers to a different parent entity.
-
-        :param parent: Target parent to copy the entity under. Copied to current
-            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: Create copies of AirborneTEMReceivers along with it.
-
-        :return entity: Registered AirborneTEMReceivers to the workspace.
-        """
-        if parent is None:
-            parent = self.parent
-
-        omit_list = ["_metadata", "_receivers", "_transmitters", "_base_stations"]
-        metadata = self.metadata.copy()
-        new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=copy_children, omit_list=omit_list, **kwargs
-        )
-        metadata["EM Dataset"][new_entity.type] = new_entity.uid
-        for associate in ["transmitters", "receivers", "base_stations"]:
-            if getattr(self, associate, None) is not None and not isinstance(
-                getattr(self, associate), type(self)
-            ):
-                complement = parent.workspace.copy_to_parent(
-                    getattr(self, associate),
-                    parent,
-                    copy_children=copy_children,
-                    omit_list=omit_list,
-                )
-                setattr(new_entity, associate, complement)
-                metadata["EM Dataset"][complement.type] = complement.uid
-                complement.metadata = metadata
-
-        if getattr(new_entity.receivers, "tx_id_property", None) is not None:
-            new_entity.receivers.tx_id_property = new_entity.get_data(
-                new_entity.receivers.tx_id_property.name
-            )[0]
-
-        new_entity.metadata = metadata
-
-        return new_entity
-
     @property
     @abstractmethod
     def default_input_types(self) -> list[str] | None:
@@ -484,7 +442,6 @@ class BaseEMSurvey(ObjectBase, ABC):
 
 
 class BaseTEMSurvey(BaseEMSurvey, ABC):
-
     __UNITS = [
         "Seconds (s)",
         "Milliseconds (ms)",

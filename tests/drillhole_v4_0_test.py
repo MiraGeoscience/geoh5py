@@ -35,7 +35,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_concatenator(tmp_path):
-
     h5file_path = tmp_path / r"test_Concatenator.geoh5"
 
     with Workspace(h5file_path, version=2.0) as workspace:
@@ -80,7 +79,6 @@ def test_concatenator(tmp_path):
 def test_concatenated_entities(tmp_path):
     h5file_path = tmp_path / r"test_concatenated_data.geoh5"
     with Workspace(h5file_path, version=2.0) as workspace:
-
         class_type = type("TestGroup", (Concatenator, ContainerGroup), {})
         entity_type = Group.find_or_create_type(workspace)
         concat = class_type(entity_type)
@@ -152,14 +150,27 @@ def test_create_drillhole_data(tmp_path):
             name=well_name,
         )
 
-        with pytest.raises(UserWarning) as error:
-            dh_group.update_array_attribute(well, "abc")
+        # Plain drillhole
+        singleton = Drillhole.create(
+            workspace,
+        )
+        with pytest.warns(match="Expected a Concatenated object"):
+            singleton.parent = dh_group
 
-        assert f"Input entity {well} does not have a property or values" in str(error)
+        assert len(dh_group.children) == 1
+
+        dh_group.add_comment("This is a comment")
+
+        assert len(dh_group.children) == 2
+
+        with pytest.raises(UserWarning, match="does not have a property or values"):
+            dh_group.update_array_attribute(well, "abc")
 
         # Add both set of log data with 0.5 m tolerance
         values = np.random.randn(50)
-        with pytest.raises(UserWarning) as error:
+        with pytest.raises(
+            UserWarning, match="Input depth 'collocation_distance' must be >0."
+        ):
             well.add_data(
                 {
                     "my_log_values/": {
@@ -170,10 +181,8 @@ def test_create_drillhole_data(tmp_path):
                 collocation_distance=-1.0,
             )
 
-        assert "Input depth 'collocation_distance' must be >0." in str(error)
-
         # Add both set of log data with 0.5 m tolerance
-        with pytest.raises(AttributeError) as error:
+        with pytest.raises(AttributeError, match="Input data dictionary must contain"):
             well.add_data(
                 {
                     "my_log_values/": {
@@ -182,13 +191,11 @@ def test_create_drillhole_data(tmp_path):
                 },
             )
 
-        assert "Input data dictionary must contain" in str(error)
-
         well.add_data(
             {
                 "my_log_values/": {
                     "depth": np.arange(0, 50.0),
-                    "values": np.random.randn(50),
+                    "values": np.random.randn(30),
                 },
                 "log_wt_tolerance": {
                     "depth": np.arange(0.01, 50.01),
@@ -198,8 +205,9 @@ def test_create_drillhole_data(tmp_path):
         )
 
         assert len(well.get_data("my_log_values/")) == 1
+        assert len(well.get_data("my_log_values/")[0].values) == 50
 
-        with pytest.raises(UserWarning) as error:
+        with pytest.raises(UserWarning, match="already present on the drillhole"):
             well.add_data(
                 {
                     "my_log_values/": {
@@ -208,8 +216,6 @@ def test_create_drillhole_data(tmp_path):
                     },
                 }
             )
-
-        assert "already present on the drillhole" in str(error)
 
         well_b = well.copy()
         well_b.name = "Number 2"
@@ -266,7 +272,9 @@ def test_create_drillhole_data(tmp_path):
 
         assert len(well.to_) == len(well.from_) == 3, "Should have only 3 from-to data."
 
-        with pytest.raises(UserWarning) as error:
+        with pytest.raises(
+            UserWarning, match="Data with name 'Depth Data' already present"
+        ):
             well_b.add_data(
                 {
                     "Depth Data": {
@@ -277,8 +285,6 @@ def test_create_drillhole_data(tmp_path):
                     },
                 }
             )
-
-        assert "Data with name 'Depth Data' already present" in str(error)
 
         well_b_data.values = np.random.randn(from_to_b.shape[0])
 
@@ -338,15 +344,15 @@ def test_create_drillhole_data(tmp_path):
             new_group = dh_group.copy(parent=new_workspace)
             well = new_group.children[0]
 
-            with pytest.raises(ValueError) as error:
+            with pytest.raises(
+                ValueError, match="Input values for 'new_data' with shape"
+            ):
                 well.add_data(
                     {
                         "new_data": {"values": np.random.randn(49).astype(np.float32)},
                     },
                     property_group=well.property_groups[0].name,
                 )
-
-            assert "Input values for 'new_data' with shape(49)" in str(error)
 
             well.add_data(
                 {
@@ -361,7 +367,6 @@ def test_create_drillhole_data(tmp_path):
 
 
 def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
-
     well_name = "well"
     n_data = 10
 
@@ -385,6 +390,8 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
         )
         from_to_b = np.vstack([from_to_a[0, :], [30.1, 55.5], [56.5, 80.2]])
 
+        values = np.random.randn(50)
+        values[0] = np.nan
         # Add both set of log data with 0.5 m tolerance
         well.add_data(
             {
@@ -394,7 +401,7 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
                 },
                 "log_wt_tolerance": {
                     "depth": np.arange(0.01, 50.01),
-                    "values": np.random.randn(50),
+                    "values": values,
                 },
             }
         )
@@ -429,6 +436,8 @@ def test_remove_drillhole_data(tmp_path):
         workspace.remove_entity(data)
         workspace.remove_entity(well_b)
 
+        assert np.isnan(well.get_data("log_wt_tolerance")[0].values).sum() == 1
+
     with Workspace(h5file_path, version=2.0) as workspace:
         well = workspace.get_entity("well")[0]
         assert "my_log_values/" not in well.get_entity_list()
@@ -436,20 +445,39 @@ def test_remove_drillhole_data(tmp_path):
 
 
 def test_create_drillhole_data_v4_2(tmp_path):
-    h5file_path = tmp_path / r"test_create_concatenated_v4_2.geoh5"
-    dh_group, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
+    h5file_path = tmp_path / r"test_create_concatenated_v4_2_v2_1.geoh5"
+    dh_group, workspace = create_drillholes(h5file_path, version=2.1, ga_version="4.2")
 
     with workspace.open():
         assert dh_group.workspace.ga_version == "4.2"
         assert dh_group.concat_attr_str == "Attributes Jsons"
+        assert (
+            len(workspace.fetch_children(dh_group, recursively=True)) == 3
+        ), "Issue with fetching children recursively"
+
+    h5file_path = tmp_path / r"test_create_concatenated_v4_2_v2_0.geoh5"
+    dh_group, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
+    with workspace.open():
+        assert dh_group.workspace.ga_version == "4.2"
+        assert dh_group.workspace.version == 2.0
+        assert dh_group.concat_attr_str == "Attributes"
 
 
 def test_copy_drillhole_group(tmp_path):
     h5file_path = tmp_path / r"test_copy_concatenated.geoh5"
 
-    dh_group, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
+    _, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
 
     with workspace.open():
+        dh_group = workspace.get_entity("DH_group")[0]
+        dh_group_copy = dh_group.copy(workspace)
+
+        for child_a, child_b in zip(dh_group.children, dh_group_copy.children):
+            assert child_a.name == child_b.name
+            assert child_a.collar == child_b.collar
+            np.testing.assert_array_almost_equal(child_a.surveys, child_b.surveys)
+            assert child_a.get_data_list() == child_b.get_data_list()
+
         with Workspace(
             tmp_path / r"test_copy_concatenated_copy.geoh5",
             version=2.0,
@@ -459,5 +487,23 @@ def test_copy_drillhole_group(tmp_path):
             compare_entities(
                 dh_group_copy,
                 dh_group,
-                ignore=["_metadata", "_parent"],
+                ignore=["_metadata", "_parent", "_data", "_index"],
             )
+
+
+def test_copy_from_extent_drillhole_group(tmp_path):
+    h5file_path = tmp_path / r"test_copy_concatenated.geoh5"
+
+    _, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
+
+    with workspace.open():
+        dh_group = workspace.get_entity("DH_group")[0]
+        dh_group_copy = dh_group.copy_from_extent(extent=np.asarray([[0, 0], [15, 15]]))
+
+        assert len(dh_group_copy.children) == 2
+        for child_a in dh_group_copy.children:
+            child_b = dh_group.get_entity(child_a.name)[0]
+            assert child_a.name == child_b.name
+            assert child_a.collar == child_b.collar
+            np.testing.assert_array_almost_equal(child_a.surveys, child_b.surveys)
+            assert child_a.get_data_list() == child_b.get_data_list()

@@ -15,8 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=R0904
-# pylint: disable=C0302
+# pylint: disable=too-many-lines, too-many-public-methods, too-many-arguments, too-many-locals
 
 from __future__ import annotations
 
@@ -63,8 +62,8 @@ from ..shared.entity import Entity
 from ..shared.exceptions import Geoh5FileClosedError
 from ..shared.utils import (
     as_str_if_utf8_bytes,
+    clear_array_attributes,
     get_attributes,
-    overwrite_kwargs,
     str2uuid,
 )
 
@@ -96,7 +95,6 @@ class Workspace(AbstractContextManager):
     def __init__(
         self, h5file: str | Path | io.BytesIO = "Analyst.geoh5", mode="a", **kwargs
     ):
-
         self._contributors = np.asarray(
             ["UserName"], dtype=h5py.special_dtype(vlen=str)
         )
@@ -105,7 +103,7 @@ class Workspace(AbstractContextManager):
         self._mode = mode
         self._distance_unit = "meter"
         self._ga_version = "1"
-        self._version = 2.0
+        self._version = 2.1
         self._name = "GEOSCIENCE"
         self._types: dict[uuid.UUID, ReferenceType[EntityType]] = {}
         self._groups: dict[uuid.UUID, ReferenceType[group.Group]] = {}
@@ -225,9 +223,8 @@ class Workspace(AbstractContextManager):
         self,
         entity,
         parent,
-        copy_children: bool = True,
         omit_list: tuple = (),
-        extent: np.ndarray | None = None,
+        clear_cache: bool = False,
         **kwargs,
     ):
         """
@@ -235,16 +232,16 @@ class Workspace(AbstractContextManager):
 
         :param entity: Entity to be copied.
         :param parent: Target parent to copy the entity under.
-        :param copy_children: Copy all children of the entity.
         :param omit_list: List of property names to omit on copy
-        :param extent: Clip object's copy by extent defined by a South-West and North-East corners.
+        :param clear_cache: Clear array attributes after copy.
         :param kwargs: Additional keyword arguments passed to the copy constructor.
 
         :return: The Entity registered to the workspace.
         """
         entity_kwargs = get_attributes(
             entity,
-            omit_list=["_uid", "_entity_type", "_on_file"] + list(omit_list),
+            omit_list=["_uid", "_entity_type", "_on_file", "_centroids", "_extent"]
+            + list(omit_list),
             attributes={"uid": None, "parent": None},
         )
 
@@ -257,8 +254,12 @@ class Workspace(AbstractContextManager):
         )
 
         # overwrite kwargs
-        entity_kwargs = overwrite_kwargs(entity_kwargs, kwargs)
-        entity_type_kwargs = overwrite_kwargs(entity_type_kwargs, kwargs)
+        entity_kwargs.update(
+            (k, kwargs[k]) for k in entity_kwargs.keys() & kwargs.keys()
+        )
+        entity_type_kwargs.update(
+            (k, kwargs[k]) for k in entity_type_kwargs.keys() & kwargs.keys()
+        )
 
         if not isinstance(parent, (ObjectBase, Group, Workspace)):
             raise ValueError(
@@ -278,29 +279,15 @@ class Workspace(AbstractContextManager):
         if isinstance(entity, Data):
             entity_type = Data
 
-        prop_groups = []
-        if "property_groups" in entity_kwargs:
-            if copy_children:
-                prop_groups = entity_kwargs["property_groups"]
-
-            del entity_kwargs["property_groups"]
+        entity_kwargs.pop("property_groups", None)
 
         new_object = parent.workspace.create_entity(
             entity_type, **{"entity": entity_kwargs, "entity_type": entity_type_kwargs}
         )
 
-        if copy_children:
-            children_map = {}
-            for child in entity.children:
-                new_child = self.copy_to_parent(
-                    child, new_object, copy_children=True, extent=extent
-                )
-                new_object.add_children([new_child])
-                children_map[child.uid] = new_child.uid
-
-            if prop_groups:
-                self.copy_property_groups(new_object, prop_groups, children_map)
-                self.workspace.update_attribute(new_object, "property_groups")
+        if clear_cache:
+            clear_array_attributes(entity)
+            clear_array_attributes(new_object)
 
         return new_object
 
@@ -536,7 +523,6 @@ class Workspace(AbstractContextManager):
         present on file.
         """
         for child in children:
-
             ref_type = self.str_from_type(child)
 
             if ref_type == "Data":
@@ -554,7 +540,7 @@ class Workspace(AbstractContextManager):
                 "being removed. Please revise."
             )
 
-        if not isinstance(entity, Concatenator):
+        if not isinstance(entity, Concatenated):
             self.workspace.remove_recursively(entity)
 
         if isinstance(entity, Concatenated):
@@ -581,7 +567,6 @@ class Workspace(AbstractContextManager):
         """
         rem_list: list = []
         for key, value in referents.items():
-
             if value() is None:
                 rem_list += [key]
                 self._io_call(
@@ -653,12 +638,11 @@ class Workspace(AbstractContextManager):
         if entity is None or isinstance(entity, ConcatenatedData):
             return []
 
+        entity_type = "data"
         if isinstance(entity, Group):
             entity_type = "group"
         elif isinstance(entity, ObjectBase):
             entity_type = "object"
-        else:
-            entity_type = "data"
 
         if isinstance(entity, RootGroup) and not entity.on_file:
             children_list = {child.uid: "" for child in entity.children}
@@ -668,6 +652,9 @@ class Workspace(AbstractContextManager):
             )
 
         if isinstance(entity, Concatenator):
+            if any(entity.children):
+                return entity.children
+
             cat_children = entity.fetch_concatenated_objects()
             children_list.update(
                 {
@@ -678,7 +665,6 @@ class Workspace(AbstractContextManager):
 
         family_tree = []
         for uid, child_type in children_list.items():
-
             recovered_object = self.get_entity(uid)[0]
             if recovered_object is None:
                 recovered_object = self.load_entity(uid, child_type, parent=entity)
@@ -954,7 +940,6 @@ class Workspace(AbstractContextManager):
 
     @h5file.setter
     def h5file(self, file: str | Path | io.BytesIO):
-
         if isinstance(file, (str, Path)):
             if not str(file).endswith("geoh5"):
                 raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")

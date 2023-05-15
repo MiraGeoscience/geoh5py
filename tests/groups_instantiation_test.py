@@ -89,7 +89,6 @@ def test_custom_group_instantiation(tmp_path):
 
     h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace(h5file_path) as workspace:
-
         group_type = GroupType.create_custom(
             workspace, name="test custom", description="test custom description"
         )

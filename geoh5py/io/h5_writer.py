@@ -30,7 +30,7 @@ import numpy as np
 from ..data import CommentsData, Data, DataType, FilenameData, IntegerData, TextData
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
-from ..shared import Entity, EntityType, fetch_h5_handle
+from ..shared import FLOAT_NDV, Entity, EntityType, fetch_h5_handle
 from ..shared.concatenation import Concatenator
 from ..shared.utils import KEY_MAP, as_str_if_uuid, dict_mapper
 
@@ -195,7 +195,6 @@ class H5Writer:
 
             # Check if already in the project
             if as_str_if_uuid(uid) in base_handle:
-
                 if return_parent:
                     return base_handle
 
@@ -267,6 +266,7 @@ class H5Writer:
             if channel in dict_values:
                 values = dict_values[channel]
                 if isinstance(values, np.ndarray) and values.dtype == np.float64:
+                    values[np.isnan(values)] = FLOAT_NDV
                     values = values.astype(np.float32)
 
                 if len(values) > 0:
@@ -348,7 +348,6 @@ class H5Writer:
                 return
 
             for key, attr in entity.attribute_map.items():
-
                 try:
                     value = getattr(entity, attr)
                 except AttributeError:
@@ -537,16 +536,18 @@ class H5Writer:
             if entity_handle is None:
                 return
 
+            name_map = KEY_MAP[attribute]
             if isinstance(entity, Concatenator):
                 entity_handle = entity_handle["Concatenated Data"]
+
                 if (
                     attribute == "concatenated_attributes"
                     and entity.concat_attr_str == "Attributes Jsons"
                 ):
-                    KEY_MAP[attribute] = entity.concat_attr_str
+                    name_map = entity.concat_attr_str
 
-            if KEY_MAP[attribute] in entity_handle:
-                del entity_handle[KEY_MAP[attribute]]
+            if name_map in entity_handle:
+                del entity_handle[name_map]
                 entity.workspace.repack = True
 
             if values is None:
@@ -571,7 +572,7 @@ class H5Writer:
                 values = dict_mapper(values, [as_str_if_uuid])
 
                 entity_handle.create_dataset(
-                    KEY_MAP[attribute],
+                    name_map,
                     data=json.dumps(values, indent=4),
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
@@ -583,7 +584,7 @@ class H5Writer:
 
             elif isinstance(values, str):
                 entity_handle.create_dataset(
-                    KEY_MAP[attribute],
+                    name_map,
                     data=values,
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
@@ -602,7 +603,7 @@ class H5Writer:
                     out_values[np.isnan(out_values)] = entity.ndv
 
                 entity_handle.create_dataset(
-                    KEY_MAP[attribute],
+                    name_map,
                     data=out_values,
                     compression="gzip",
                     compression_opts=9,
@@ -650,7 +651,6 @@ class H5Writer:
         :return entity: Pointer to the written entity. Active link if "close_file" is False.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-
             base = list(h5file)[0]
 
             if isinstance(entity, Data):
@@ -834,7 +834,6 @@ class H5Writer:
             ):
                 entity_handle.create_group("PropertyGroups")
                 for p_g in entity.property_groups:
-
                     uid = as_str_if_uuid(p_g.uid)
                     if uid in entity_handle["PropertyGroups"]:
                         del entity_handle["PropertyGroups"][uid]
@@ -845,7 +844,6 @@ class H5Writer:
                     group_handle = entity_handle["PropertyGroups"][uid]
 
                     for key, attr in p_g.attribute_map.items():
-
                         try:
                             value = getattr(p_g, attr)
                         except AttributeError:
@@ -880,7 +878,6 @@ class H5Writer:
             :obj:`~geoh5py.groups.root_group.RootGroup`.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-
             if isinstance(entity, RootGroup):
                 return
 

@@ -26,7 +26,7 @@ import numpy as np
 
 from ..data import Data, FloatData, NumericData
 from ..groups import PropertyGroup
-from ..shared.utils import merge_arrays
+from ..shared.utils import box_intersect, mask_by_extent, merge_arrays
 from .object_base import ObjectType
 from .points import Points
 
@@ -103,7 +103,7 @@ class Drillhole(Points):
                 value = value.tolist()
 
             if isinstance(value, str):
-                value = [float(n) for n in re.findall(r"\d+\.\d+", value)]
+                value = [float(n) for n in re.findall(r"-?\d+\.\d+", value)]
 
             if len(value) != 3:
                 raise ValueError("Origin must be a list or numpy array of len (3,).")
@@ -153,13 +153,34 @@ class Drillhole(Points):
         self.workspace.update_attribute(self, "attributes")
 
     @property
+    def extent(self) -> np.ndarray | None:
+        """
+        Geography bounding box of the object.
+
+        :return: shape(2, 3) Bounding box defined by the bottom South-West and
+            top North-East coordinates.
+        """
+        if self.collar is not None:
+            return (
+                np.repeat(
+                    np.r_[[self.collar["x"], self.collar["y"], self.collar["z"]]], 2
+                )
+                .reshape((-1, 2))
+                .T
+            )
+
+        return None
+
+    @property
     def locations(self) -> np.ndarray | None:
         """
         Lookup array of the well path in x, y, z coordinates.
         """
         if getattr(self, "_locations", None) is None and self.collar is not None:
-            lengths = self.surveys[1:, 0] - self.surveys[:-1, 0]
-            deviation = compute_deviation(self.surveys)
+            surveys = np.vstack([self.surveys[0, :], self.surveys])
+            surveys[0, 0] = 0.0
+            lengths = surveys[1:, 0] - surveys[:-1, 0]
+            deviation = compute_deviation(surveys)
             self._locations = np.c_[
                 self.collar["x"] + np.cumsum(np.r_[0.0, lengths * deviation[:, 0]]),
                 self.collar["y"] + np.cumsum(np.r_[0.0, lengths * deviation[:, 1]]),
@@ -167,6 +188,26 @@ class Drillhole(Points):
             ]
 
         return self._locations
+
+    def mask_by_extent(
+        self, extent: np.ndarray, inverse: bool = False
+    ) -> np.ndarray | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
+
+        Uses the collar location only.
+        """
+        if self.extent is None or not box_intersect(self.extent, extent):
+            return None
+
+        if self.collar is not None:
+            return mask_by_extent(
+                np.c_[[self.collar["x"], self.collar["y"], self.collar["z"]]].T,
+                extent,
+                inverse=inverse,
+            )
+
+        return None
 
     @property
     def planning(self) -> str:
@@ -201,10 +242,6 @@ class Drillhole(Points):
 
         else:
             surveys = np.c_[0, 0, -90]
-
-        # Repeat first survey point at surface for de-survey interpolation
-        surveys = np.vstack([surveys[0, :], surveys])
-        surveys[0, 0] = 0.0
 
         return surveys.astype(float)
 
@@ -415,15 +452,19 @@ class Drillhole(Points):
         if isinstance(depths, list):
             depths = np.asarray(depths)
 
+        # Repeat first survey point at surface for de-survey interpolation
+        surveys = np.vstack([self.surveys[0, :], self.surveys])
+        surveys[0, 0] = 0.0
+
         ind_loc = np.maximum(
-            np.searchsorted(self.surveys[:, 0], depths, side="left") - 1,
+            np.searchsorted(surveys[:, 0], depths, side="left") - 1,
             0,
         )
-        deviation = compute_deviation(self.surveys)
+        deviation = compute_deviation(surveys)
         ind_dev = np.minimum(ind_loc, deviation.shape[0] - 1)
         locations = (
             self.locations[ind_loc, :]
-            + np.r_[depths - self.surveys[ind_loc, 0]][:, None]
+            + np.r_[depths - surveys[ind_loc, 0]][:, None]
             * np.c_[
                 deviation[ind_dev, 0],
                 deviation[ind_dev, 1],

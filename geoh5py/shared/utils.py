@@ -161,10 +161,25 @@ def merge_arrays(
     return np.r_[head, tail]
 
 
+def clear_array_attributes(entity: Entity, recursive: bool = False):
+    """
+    Clear all stashed values of attributes from an entity to free up memory.
+
+    :param entity: Entity to clear attributes from.
+    :param recursive: Clear attributes from children entities.
+    """
+    for attribute in ["vertices", "cells", "values", "prisms", "layers"]:
+        if hasattr(entity, attribute):
+            setattr(entity, f"_{attribute}", None)
+
+    if recursive:
+        for child in entity.children:
+            clear_array_attributes(child, recursive=recursive)
+
+
 def compare_entities(
     object_a, object_b, ignore: list | None = None, decimal: int = 6
 ) -> None:
-
     ignore_list = ["_workspace", "_children"]
     if ignore is not None:
         for item in ignore:
@@ -178,7 +193,6 @@ def compare_entities(
                 getattr(object_a, attr[1:]), getattr(object_b, attr[1:]), ignore=ignore
             )
         else:
-
             if isinstance(getattr(object_a, attr[1:]), np.ndarray):
                 attr_a = getattr(object_a, attr[1:]).tolist()
                 if len(attr_a) > 0 and isinstance(attr_a[0], str):
@@ -368,8 +382,38 @@ def dict_mapper(
     return val
 
 
+def box_intersect(extent_a: np.ndarray, extent_b: np.ndarray) -> bool:
+    """
+    Compute the intersection of two axis-aligned bounding extents defined by their
+    arrays of minimum and maximum bounds in N-D space.
+
+    :param extent_a: First extent or shape (2, N)
+    :param extent_b: Second extent or shape (2, N)
+
+    :return: Logic if the box extents intersect along all dimensions.
+    """
+    for extent in [extent_a, extent_b]:
+        if not isinstance(extent, np.ndarray) or extent.ndim != 2:
+            raise TypeError("Input extents must be 2D numpy.ndarrays.")
+
+        if extent.shape[0] != 2 or not np.all(extent[0, :] <= extent[1, :]):
+            raise ValueError(
+                "Extents must be of shape (2, N) containing the minimum and maximum "
+                "bounds in nd-space on the first and second row respectively."
+            )
+
+    for comp_a, comp_b in zip(extent_a.T, extent_b.T):
+        min_ext = max(comp_a[0], comp_b[0])
+        max_ext = min(comp_a[1], comp_b[1])
+
+        if min_ext > max_ext:
+            return False
+
+    return True
+
+
 def mask_by_extent(
-    locations: np.ndarray, extent: np.ndarray | list[list]
+    locations: np.ndarray, extent: np.ndarray, inverse: bool = False
 ) -> np.ndarray:
     """
     Find indices of locations within a rectangular extent.
@@ -378,15 +422,12 @@ def mask_by_extent(
     :param extent: shape(2, 2) Limits defined by the South-West and
         North-East corners. Extents can also be provided as 3D coordinates
         with shape(2, 3) defining the top and bottom limits.
-    """
-    if isinstance(extent, list):
-        extent = np.vstack(extent)
+    :param inverse: Return the complement of the mask extent.
 
+    :returns: Array of bool for the locations inside or outside the box extent.
+    """
     if not isinstance(extent, np.ndarray) or extent.ndim != 2:
         raise ValueError("Input 'extent' must be a 2D array-like.")
-
-    if isinstance(locations, list):
-        locations = np.vstack(locations)
 
     if not isinstance(locations, np.ndarray) or locations.ndim != 2:
         raise ValueError(
@@ -396,6 +437,9 @@ def mask_by_extent(
     indices = np.ones(locations.shape[0], dtype=bool)
     for loc, lim in zip(locations.T, extent.T):
         indices &= (lim[0] <= loc) & (loc <= lim[1])
+
+    if inverse:
+        return ~indices
 
     return indices
 
@@ -409,17 +453,24 @@ def get_attributes(entity, omit_list=(), attributes=None):
             if key[0] == "_":
                 key = key[1:]
 
-            attributes[key] = getattr(entity, key)
+            attr = getattr(entity, key)
+            attributes[key] = attr
+
     return attributes
 
 
-def overwrite_kwargs(to_overwrite: dict, kwargs_to_add: dict) -> dict:
+def xy_rotation_matrix(angle: float) -> np.ndarray:
     """
-    Overwrite kwargs with overwrite.
-    :param to_overwrite: Dictionary of kwargs to overwrite.
-    :param kwargs_to_add: Dictionary of kwargs to modify to_overwrite.
+    Rotation matrix about the z-axis.
+
+    :param angle: Rotation angle in radians.
+
+    :return rot: Rotation matrix.
     """
-    for key, value in kwargs_to_add.items():
-        if key in to_overwrite:
-            to_overwrite[key] = value
-    return to_overwrite
+    return np.array(
+        [
+            [np.cos(angle), -np.sin(angle), 0.0],
+            [np.sin(angle), np.cos(angle), 0.0],
+            [0.0, 0.0, 1.0],
+        ]
+    )

@@ -15,9 +15,13 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=bad-super-call
+
 from __future__ import annotations
 
 import uuid
+
+import numpy as np
 
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_type import ObjectType
@@ -39,6 +43,7 @@ class BaseTipper(BaseEMSurvey):
     ]
     __INPUT_TYPE = ["Rx and base stations"]
     _base_stations = None
+    _receivers = None
 
     def __init__(
         self,
@@ -91,6 +96,101 @@ class BaseTipper(BaseEMSurvey):
 
         self._base_stations = base
         self.edit_metadata({"Base stations": base.uid})
+
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        cell_mask: np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Sub-class extension of :func:`~geoh5py.objects.cell_object.CellObject.copy`.
+        """
+        if parent is None:
+            parent = self.parent
+
+        omit_list = [
+            "_metadata",
+            "_receivers",
+            "_base_stations",
+        ]
+        metadata = self.metadata.copy()
+        new_entity = super().copy(
+            parent=parent,
+            clear_cache=clear_cache,
+            copy_children=copy_children,
+            mask=mask,
+            cell_mask=cell_mask,
+            omit_list=omit_list,
+            **kwargs,
+        )
+
+        metadata["EM Dataset"][new_entity.type] = new_entity.uid
+
+        complement: TipperBaseStations | TipperReceivers = (
+            self.base_stations  # type: ignore
+            if isinstance(self, TipperReceivers)
+            else self.receivers
+        )
+        base_class: type[Points] | type[Curve] = (
+            Points if isinstance(self, TipperReceivers) else Curve  # type: ignore
+        )
+
+        if complement is not None:
+            # Reset mask
+            new_complement = super(base_class, complement).copy(  # type: ignore
+                parent=parent,
+                omit_list=omit_list,
+                copy_children=copy_children,
+                clear_cache=clear_cache,
+            )
+
+            setattr(new_entity, complement.type, new_complement)
+            metadata["EM Dataset"][complement.type] = new_complement.uid
+            new_complement.metadata = metadata
+
+        new_entity.metadata = metadata
+        return new_entity
+
+    def copy_from_extent(
+        self,
+        extent: np.ndarray,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        inverse: bool = False,
+        **kwargs,
+    ) -> TipperReceivers | TipperBaseStations | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy_from_extent`.
+        """
+        indices = self.mask_by_extent(extent, inverse=inverse)
+
+        if indices is None:
+            return None
+
+        new_entity = self.copy(
+            parent=parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            mask=indices,
+            **kwargs,
+        )
+
+        complement: TipperBaseStations | TipperReceivers = (
+            new_entity.base_stations  # type: ignore
+            if isinstance(self, TipperReceivers)
+            else new_entity.receivers
+        )
+
+        indices = complement.mask_by_extent(extent)
+        if indices is not None:
+            complement.remove_vertices(indices)
+
+        return new_entity
 
     @property
     def default_input_types(self) -> list[str]:
@@ -171,7 +271,6 @@ class TipperBaseStations(BaseTipper, Points):
     __TYPE = "Base stations"
 
     def __init__(self, object_type: ObjectType, name="Tipper base", **kwargs):
-
         super().__init__(object_type, name=name, **kwargs)
 
     @classmethod

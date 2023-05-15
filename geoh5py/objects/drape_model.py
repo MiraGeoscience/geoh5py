@@ -18,14 +18,14 @@
 from __future__ import annotations
 
 import uuid
-import warnings
 
 import numpy as np
 
-from .object_base import ObjectBase, ObjectType
+from .grid_object import GridObject
+from .object_base import ObjectType
 
 
-class DrapeModel(ObjectBase):
+class DrapeModel(GridObject):
     """
     Drape (curtain) model object made up of layers and prisms.
     """
@@ -35,7 +35,6 @@ class DrapeModel(ObjectBase):
     def __init__(self, object_type: ObjectType, **kwargs):
         self._layers: np.ndarray | None = None
         self._prisms: np.ndarray | None = None
-        self._centroids: np.ndarray | None = None
 
         super().__init__(object_type, **kwargs)
 
@@ -89,23 +88,6 @@ class DrapeModel(ObjectBase):
             self._centroids[:, 2] = (tops + self.layers[:, 2]) / 2.0
 
         return self._centroids
-
-    def clip_by_extent(self, bounds: np.ndarray) -> ObjectBase | None:
-        """
-        Find indices of cells within a rectangular bounds.
-
-        :param bounds: shape(2, 2) Bounding box defined by the South-West and
-            North-East coordinates. Extents can also be provided as 3D coordinates
-            with shape(2, 3) defining the top and bottom limits.
-        :param attributes: Dictionary of attributes to clip by extent.
-        """
-
-        # TODO Clip entity within bounds.
-        warnings.warn(
-            f"Method 'clip_by_extent' for entity {type(self)} not fully implemented. "
-            f"Bounds ignored."
-        )
-        return self
 
     @property
     def layers(self) -> np.ndarray | None:

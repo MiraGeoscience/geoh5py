@@ -59,7 +59,6 @@ def test_write_reread_non_ascii_filename(tmp_path):
     reason="H5 library version < 1.12 does not support non-ASCII filename",
 )
 def test_existing_non_ascii_filename(tmp_path):
-
     file_path = tmp_path / NON_ASCII_FILENAME
     with open(file_path, "w", encoding="utf-8"):
         pass

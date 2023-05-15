@@ -14,10 +14,10 @@ from copy import deepcopy
 from typing import Any
 from uuid import UUID
 
+from geoh5py import Workspace
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
 from geoh5py.shared.validators import AssociationValidator
-from geoh5py.workspace import Workspace
 
 from ..shared.utils import (
     as_str_if_uuid,
@@ -202,7 +202,6 @@ class InputFile:
     @ui_json.setter
     def ui_json(self, value: dict[str, Any]):
         if value is not None and self.validations is not None:
-
             if not isinstance(value, dict):
                 raise ValueError("Input 'ui_json' must be of type dict or None.")
 
@@ -431,7 +430,6 @@ class InputFile:
         """Converts promoted parameter values to their string representations."""
         mappers = [entity2uuid, as_str_if_uuid, workspace2path, container_group2name]
         for key, value in var.items():
-
             if isinstance(value, dict):
                 var[key] = self._demote(value)
             elif isinstance(value, (list, tuple)):
@@ -447,7 +445,6 @@ class InputFile:
             return var
 
         for key, value in var.items():
-
             if isinstance(value, dict):
                 var[key] = self._promote(value)
             elif isinstance(value, UUID):

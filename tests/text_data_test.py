@@ -26,7 +26,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_text_data(tmp_path):
-
     name = "MyTestPointset"
 
     # Generate a random cloud of points with reference values

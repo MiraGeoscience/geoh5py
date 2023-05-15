@@ -28,7 +28,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_octree(tmp_path):
-
     name = "MyTestOctree"
     h5file_path = tmp_path / r"octree.geoh5"
 

@@ -22,6 +22,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from .data import Data, PrimitiveTypeEnum
+from .data_association_enum import DataAssociationEnum
 
 
 class NumericData(Data, ABC):
@@ -47,14 +48,18 @@ class NumericData(Data, ABC):
             values = self.workspace.fetch_values(self)
 
             if isinstance(values, (np.ndarray, type(None))):
-                self._values = self.check_vector_length(values)
+                if self.association not in [DataAssociationEnum.OBJECT]:
+                    values = self.check_vector_length(values)
+
+                self._values = values
 
         return self._values
 
     @values.setter
     def values(self, values: np.ndarray | None):
         if isinstance(values, (np.ndarray, type(None))):
-            values = self.check_vector_length(values)
+            if self.association not in [DataAssociationEnum.OBJECT]:
+                values = self.check_vector_length(values)
 
         else:
             raise ValueError(
@@ -65,23 +70,26 @@ class NumericData(Data, ABC):
 
         self.workspace.update_attribute(self, "values")
 
-    def check_vector_length(self, values) -> np.ndarray:
+    def check_vector_length(self, values: np.ndarray | None) -> np.ndarray:
         """
         Check for possible mismatch between the length of values
         stored and the expected number of cells or vertices.
+
+        :param values: Array of values to check
+
+        :returns: values: An array of float values of length n_values or None
         """
         if self.n_values is not None:
-            if values is None or len(values) < self.n_values:
-                full_vector = np.ones(self.n_values, dtype=type(self.ndv))
-                if isinstance(self.ndv, float):
-                    full_vector *= np.nan
-                else:
-                    full_vector *= self.ndv
+            if values is None:
+                return values
 
+            if len(values) < self.n_values:
+                full_vector = np.ones(self.n_values, dtype=type(self.ndv))
+                full_vector *= np.nan if isinstance(self.ndv, float) else self.ndv
                 full_vector[: len(np.ravel(values))] = np.ravel(values)
                 return full_vector
 
-            if len(values) > self.n_values:
+            if len(values) > self.n_values or values.ndim > 1:
                 raise ValueError(
                     f"Input 'values' of shape({self.n_values},) expected. "
                     f"Array of shape{values.shape} provided.)"

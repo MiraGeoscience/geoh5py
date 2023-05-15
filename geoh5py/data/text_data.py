@@ -26,7 +26,6 @@ from .primitive_type_enum import PrimitiveTypeEnum
 
 
 class TextData(Data):
-
     _values: np.ndarray | str | None
 
     @classmethod
@@ -110,7 +109,6 @@ class CommentsData(Data):
 
 
 class MultiTextData(Data):
-
     _values: np.ndarray | str | None
 
     @classmethod

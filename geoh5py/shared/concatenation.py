@@ -19,14 +19,14 @@
 
 from __future__ import annotations
 
-import re
 import uuid
+import warnings
 from typing import TYPE_CHECKING
 
 import numpy as np
 from h5py import special_dtype
 
-from geoh5py.data import Data, DataType
+from geoh5py.data import Data, DataAssociationEnum, DataType
 from geoh5py.groups import Group, PropertyGroup
 from geoh5py.objects import ObjectBase
 from geoh5py.shared.entity import Entity
@@ -66,7 +66,6 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
     _property_groups: list | None = None
 
     def __init__(self, group_type: GroupType, **kwargs):
-
         super().__init__(group_type, **kwargs)
 
         getattr(self, "_attribute_map").update(
@@ -90,6 +89,28 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             self._attributes_keys = attributes_keys
 
         return self._attributes_keys
+
+    def add_children(self, children: list[Entity]):
+        """
+        :param children: Add a list of entities as
+            :obj:`~geoh5py.shared.entity.Entity.children`
+        """
+        for child in children:
+            if not (
+                isinstance(child, Concatenated)
+                or (
+                    isinstance(child, Data)
+                    and child.association
+                    in (DataAssociationEnum.OBJECT, DataAssociationEnum.GROUP)
+                )
+            ):
+                warnings.warn(
+                    f"Expected a Concatenated object, not {type(child).__name__}"
+                )
+                continue
+
+            if child not in self._children:
+                self._children.append(child)
 
     def add_save_concatenated(self, child) -> None:
         """
@@ -123,13 +144,8 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         """String identifier for the concatenated attributes."""
         if self._concat_attr_str is None:
             self._concat_attr_str = "Attributes"
-            if (
-                self.workspace.ga_version is not None
-                and "4." in self.workspace.ga_version
-            ):
-                version = re.findall(r"\d+\.\d+", self.workspace.ga_version)
-                if version and float(version[0]) >= 4.2:
-                    self._concat_attr_str = "Attributes Jsons"
+            if self.workspace.version is not None and self.workspace.version > 2.0:
+                self._concat_attr_str = "Attributes Jsons"
         return self._concat_attr_str
 
     @property
@@ -181,45 +197,75 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         self._concatenated_object_ids = object_ids
         self.workspace.update_attribute(self, "concatenated_object_ids")
 
-    def copy(self, parent=None, copy_children: bool = True, **kwargs):
+    def copy(
+        self,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ):
         """
         Function to copy an entity to a different parent entity.
 
         :param parent: Target parent to copy the entity under. Copied to current
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: Create copies of all children entities along with it.
+        :param mask: Array of indices to sub-sample the input entity.
+        :param clear_cache: Clear array attributes after copy.
 
         :return entity: Registered Entity to the workspace.
         """
+        if mask is not None:
+            warnings.warn("Masking is not supported for Concatenated objects.")
 
-        if parent is None:
-            parent = self.parent
-
-        new_entity = parent.workspace.copy_to_parent(
-            self, parent, copy_children=False, **kwargs
+        new_entity: Concatenator = super().copy(  # mypy: ignore-errors
+            parent=parent,
+            copy_children=False,
+            clear_cache=clear_cache,
+            omit_list=[
+                "_concatenated_object_ids",
+                "_concatenated_attributes",
+                "_data",
+                "_index",
+                "_property_group_ids",
+            ],
+            **kwargs,
         )
 
-        if self.concatenated_attributes is None:
+        if not copy_children or self.concatenated_attributes is None:
             return new_entity
 
-        for field in self.index:
+        if (
+            mask is None and new_entity.workspace != self.workspace
+        ):  # Fast copy to new workspace
+            new_entity.concatenated_attributes = self.concatenated_attributes
+            new_entity.concatenated_object_ids = self.concatenated_object_ids
 
-            values = self.workspace.fetch_concatenated_values(self, field)
-            if isinstance(values, tuple):
-                new_entity.data[field], new_entity.index[field] = values
+            for field in self.index:
+                values = self.workspace.fetch_concatenated_values(self, field)
+                if isinstance(values, tuple):
+                    new_entity.data[field], new_entity.index[field] = values
 
-            new_entity.save_attribute(field)
+                new_entity.save_attribute(field)
 
-            # Copy over the data type
-        for elem in self.concatenated_attributes["Attributes"]:
-            if "Name" in elem and "Type ID" in elem:
-                attr_type = self.workspace.fetch_type(
-                    uuid.UUID(elem["Type ID"]), "Data"
+                # Copy over the data type
+            for elem in self.concatenated_attributes["Attributes"]:
+                if "Name" in elem and "Type ID" in elem:
+                    attr_type = self.workspace.fetch_type(
+                        uuid.UUID(elem["Type ID"]), "Data"
+                    )
+                    data_type = DataType.find_or_create(
+                        new_entity.workspace, **attr_type
+                    )
+                    new_entity.workspace.save_entity_type(data_type)
+
+            new_entity.workspace.fetch_children(new_entity)
+        else:
+            for child in self.children:
+                child.copy(
+                    parent=new_entity, clear_cache=clear_cache, omit_list=["_uid"]
                 )
-                data_type = DataType.find_or_create(new_entity.workspace, **attr_type)
-                new_entity.workspace.save_entity_type(data_type)
-
-        new_entity.workspace.fetch_children(new_entity)
 
         return new_entity
 
@@ -415,7 +461,6 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             name = entity.name
             del parent_attr[f"Property:{name}"]
         elif isinstance(entity, ConcatenatedObject):
-
             if entity.property_groups is not None:
                 self.update_array_attribute(entity, "property_groups", remove=True)
 
@@ -429,6 +474,8 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             attr_handle = self.get_concatenated_attributes(entity.uid)
             self.concatenated_attributes["Attributes"].remove(attr_handle)
             self.workspace.repack = True
+
+        entity.parent._children.remove(entity)  # pylint: disable=protected-access
 
     def save_attribute(self, field: str):
         """
@@ -608,7 +655,6 @@ class ConcatenatedData(Concatenated):
     _parent: ConcatenatedObject
 
     def __init__(self, entity_type, **kwargs):
-
         if kwargs.get("parent") is None or not isinstance(
             kwargs.get("parent"), ConcatenatedObject
         ):
@@ -706,7 +752,6 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
 
 class ConcatenatedObject(Concatenated, ObjectBase):
-
     _parent: Concatenator
     _property_groups: list | None = None
 
@@ -774,7 +819,6 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                     self.add_children([child_data])
 
         for child in getattr(self, "children"):
-
             if (
                 isinstance(name, str) and hasattr(child, "name") and child.name == name
             ) or (
@@ -894,6 +938,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             del attributes["depth"]
 
         if "from-to" in attributes.keys():
+            values = attributes.get("values")
             attributes["association"] = "DEPTH"
             property_group = self.validate_interval_data(
                 attributes.get("name"),
@@ -902,6 +947,15 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                 property_group=property_group,
                 collocation_distance=collocation_distance,
             )
+            if (
+                isinstance(values, np.ndarray)
+                and values.shape[0] < property_group.from_.values.shape[0]
+            ):
+                attributes["values"] = np.pad(
+                    values,
+                    (0, property_group.from_.values.shape[0] - len(values)),
+                    constant_values=np.nan,
+                )
 
             del attributes["from-to"]
 
