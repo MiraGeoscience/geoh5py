@@ -51,6 +51,11 @@ repos:
 #            'numpy>=1.23.5,<1.24.0'
         ]
         exclude: (geoh5py/interfaces/__init__\.py|geoh5py/handlers/__init__\.py|geoh5py/interfaces|geoh5py/handlers|tests)
+-   repo: https://github.com/codingjoe/relint
+    rev: 1.4.0
+    hooks:
+    -   id: relint
+        args: [-W]  # to fail on warnings
 -   repo: local
     hooks:
     -   id: pylint
