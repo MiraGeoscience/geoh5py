@@ -101,7 +101,7 @@ def test_input_file_json():
 
     with pytest.raises(
         ValueError,
-        match="Input 'geoh5' must be a valid :obj:`geoh5py.workspace.Workspace`."
+        match="Input 'geoh5' must be a valid :obj:`geoh5py.workspace.Workspace`.",
     ):
         getattr(InputFile(ui_json=ui_json), "data")
 
