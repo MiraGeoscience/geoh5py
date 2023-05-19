@@ -29,6 +29,7 @@ import numpy as np
 from geoh5py import Workspace
 from geoh5py.groups import ContainerGroup
 from geoh5py.objects import ObjectBase
+from geoh5py.shared.utils import fetch_active_workspace
 
 
 def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
@@ -334,11 +335,9 @@ def monitored_directory_copy(
 
     temp_geoh5 = f"temp{time():.3f}.geoh5"
 
-    if getattr(entity.workspace, "_geoh5") is None:
-        entity.workspace.open(mode="r")
-
-    with Workspace(working_path / temp_geoh5) as w_s:
-        entity.copy(parent=w_s, copy_children=copy_children)
+    with fetch_active_workspace(entity.workspace, mode="r") as w_s:
+        with Workspace(working_path / temp_geoh5) as w_s:
+            entity.copy(parent=w_s, copy_children=copy_children)
 
     shutil.move(
         working_path / temp_geoh5,
