@@ -101,7 +101,7 @@ def test_input_file_json():
 
     with pytest.raises(
         ValueError,
-        match="Input 'geoh5' must be a string, a Path, or a :obj:`geoh5py.workspace.Workspace`",
+        match="Input 'geoh5' must be a valid :obj:`geoh5py.workspace.Workspace`."
     ):
         getattr(InputFile(ui_json=ui_json), "data")
 
@@ -573,20 +573,6 @@ def test_in_memory_geoh5(tmp_path: Path):
         ui_json = json.load(file)
         assert ui_json["geoh5"] == "[in-memory]"
         assert ui_json["test"]["value"] == 1.0
-
-
-def test_plain_data(tmp_path: Path):
-    workspace = get_workspace(tmp_path)
-    ui_json = deepcopy(default_ui_json)
-    ui_json["geoh5"] = workspace
-    in_file = InputFile(ui_json=ui_json)
-    geoh5 = in_file.data["geoh5"]
-    assert isinstance(geoh5, Workspace)
-    assert geoh5 == workspace
-
-    plain_geoh5 = in_file.plain_data["geoh5"]
-    assert isinstance(plain_geoh5, str)
-    assert plain_geoh5 == str(workspace.h5file)
 
 
 def test_data_value_parameter_a(tmp_path: Path):

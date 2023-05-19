@@ -130,17 +130,6 @@ class InputFile:
         self._data = value
 
     @property
-    def plain_data(self) -> dict[str, Any] | None:
-        """
-        Returns data with promoted parameter values converted to their string representations.
-        Other parameters are left unchanged.
-
-        E.g. a Workspace is replaced by its path.
-        """
-        data = self.data
-        return None if data is None else self.demote(data)
-
-    @property
     def name(self) -> str | None:
         """
         Name of ui.json file.
@@ -369,7 +358,7 @@ class InputFile:
         return self._geoh5
 
     @geoh5.setter
-    def geoh5(self, geoh5: Workspace | str | Path | None):
+    def geoh5(self, geoh5: Workspace | None):
         if geoh5 is None:
             return
 
@@ -378,19 +367,13 @@ class InputFile:
                 "Attribute 'geoh5' already set. "
                 "Consider creating a new InputFile from arguments."
             )
-
-        if isinstance(geoh5, (str, Path)):
-            self._geoh5 = Workspace(geoh5, mode="r")
-        elif isinstance(geoh5, Workspace):
-            self._geoh5 = geoh5
-        else:
+        if not isinstance(geoh5, Workspace):
             raise ValueError(
-                "Input 'geoh5' must be a string, a Path, "
-                "or a :obj:`geoh5py.workspace.Workspace` object"
+                "Input 'geoh5' must be a valid :obj:`geoh5py.workspace.Workspace`."
             )
-
+        self._geoh5 = geoh5
         if self.validators is not None:
-            self.validators.geoh5 = self._geoh5
+            self.validators.geoh5 = self.geoh5
 
     def write_ui_json(
         self,
