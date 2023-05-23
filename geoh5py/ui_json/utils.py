@@ -17,9 +17,10 @@
 
 from __future__ import annotations
 
+import shutil
 import warnings
-from os import mkdir, path
-from shutil import move
+from io import BytesIO
+from pathlib import Path
 from time import time
 from typing import Any
 
@@ -28,6 +29,7 @@ import numpy as np
 from geoh5py import Workspace
 from geoh5py.groups import ContainerGroup
 from geoh5py.objects import ObjectBase
+from geoh5py.shared.utils import fetch_active_workspace
 
 
 def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
@@ -297,7 +299,9 @@ def str2inf(value):
 
 def workspace2path(value):
     if isinstance(value, Workspace):
-        return value.h5file
+        if isinstance(value.h5file, BytesIO):
+            return "[in-memory]"
+        return str(value.h5file)
     return value
 
 
@@ -317,7 +321,7 @@ def container_group2name(value):
 
 def monitored_directory_copy(
     directory: str, entity: ObjectBase, copy_children: bool = True
-):
+) -> str:
     """
     Create a temporary geoh5 file in the monitoring folder and export entity for update.
 
@@ -325,22 +329,19 @@ def monitored_directory_copy(
     :param entity: Entity to be updated
     :param copy_children: Option to copy children entities.
     """
-    working_path = path.join(directory, ".working")
-
-    if not path.exists(working_path):
-        mkdir(working_path)
+    directory_path = Path(directory)
+    working_path = directory_path / ".working"
+    working_path.mkdir(exist_ok=True)
 
     temp_geoh5 = f"temp{time():.3f}.geoh5"
 
-    if getattr(entity.workspace, "_geoh5") is None:
-        entity.workspace.open(mode="r")
+    with fetch_active_workspace(entity.workspace, mode="r"):
+        with Workspace(working_path / temp_geoh5) as w_s:
+            entity.copy(parent=w_s, copy_children=copy_children)
 
-    with Workspace(path.join(working_path, temp_geoh5)) as w_s:
-        entity.copy(parent=w_s, copy_children=copy_children)
-
-    move(
-        path.join(working_path, temp_geoh5),
-        path.join(directory, temp_geoh5),
+    shutil.move(
+        working_path / temp_geoh5,
+        directory_path / temp_geoh5,
     )
 
-    return path.join(directory, temp_geoh5)
+    return str(directory_path / temp_geoh5)

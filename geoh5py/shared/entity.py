@@ -19,9 +19,9 @@
 
 from __future__ import annotations
 
-import os
 import uuid
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -92,13 +92,13 @@ class Entity(ABC):
 
         :param file: File name with path to import.
         """
-        if not os.path.exists(file):
+        if not Path(file).is_file():
             raise ValueError(f"Input file '{file}' does not exist.")
 
         with open(file, "rb") as raw_binary:
             blob = raw_binary.read()
 
-        _, name = os.path.split(file)
+        name = Path(file).name
         attributes = {
             "name": name,
             "file_name": name,

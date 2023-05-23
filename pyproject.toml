@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "geoh5py"
-version = "0.8.0-alpha.1"
+version = "0.8.0-alpha.2"
 license = "LGPL-3.0-or-later"
 description = "Python API for geoh5, an open file format for geoscientific data"
 authors = ["Mira Geoscience <support@mirageoscience.com>"]
@@ -39,7 +39,7 @@ scipy = "^1.4.1"
 sphinx = "^3.0"
 sphinx-autodoc-typehints = "^1.10"
 sphinx-rtd-theme = "^0.4.3"
-toml = "*"
+tomli = "*"
 
 [tool.poetry.extras]
 

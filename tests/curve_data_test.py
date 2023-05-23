@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -26,7 +28,7 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_curve_data(tmp_path):
+def test_create_curve_data(tmp_path: Path):
     curve_name = "TestCurve"
     h5file_path = tmp_path / r"testCurve.geoh5"
     # Generate a random cloud of points
@@ -102,7 +104,7 @@ def test_create_curve_data(tmp_path):
                 compare_entities(data_vert_rec, data_vertex)
 
 
-def test_remove_cells_data(tmp_path):
+def test_remove_cells_data(tmp_path: Path):
     # Generate a random cloud of points
     n_data = 12
 
