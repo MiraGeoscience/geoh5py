@@ -29,7 +29,7 @@ h5py = "^3.2.1"
 numpy = "!=1.19.4, ~1.23.5"
 
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 lockfile = "^0.12.2"
 poetry-publish = {git = "https://github.com/MiraGeoscience/poetry-publish.git", rev = "pending_fixes"}
 pylint = "*"
