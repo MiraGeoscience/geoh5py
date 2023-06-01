@@ -14,21 +14,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
 
 from __future__ import annotations
 
@@ -101,7 +87,7 @@ class VisualParameters(TextData):
         :return: True if the child and attribute are valid.
         """
         if child not in PARAMETERS:
-            warn(f"{child} is not a valid parameter.")
+            warn(f"{child} is not a supported parameter. Must be one of {PARAMETERS}.")
             return False
 
         if not isinstance(self.xml, ET.Element):
