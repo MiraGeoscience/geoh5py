@@ -235,20 +235,13 @@ class TypeValidator(BaseValidator):
         if not isinstance(valid, list):
             raise TypeError("Input `valid` options must be a type or list of types.")
 
-        if not iterable(value):
+        if not iterable(value) or (type(value) is list and list in tuple(valid)):
             value = (value,)
 
-        if list not in tuple(valid):
-            for val in value:
-                if not isinstance(val, tuple(valid)):
-                    valid_names = [t.__name__ for t in valid if hasattr(t, "__name__")]
-                    type_name = type(val).__name__
-
-                    raise TypeValidationError(name, type_name, valid_names)
-        else:
-            if not isinstance(value, tuple(valid)):
+        for val in value:
+            if not isinstance(val, tuple(valid)):
                 valid_names = [t.__name__ for t in valid if hasattr(t, "__name__")]
-                type_name = type(value).__name__
+                type_name = type(val).__name__
 
                 raise TypeValidationError(name, type_name, valid_names)
 
