@@ -238,10 +238,17 @@ class TypeValidator(BaseValidator):
         if not iterable(value):
             value = (value,)
 
-        for val in value:
-            if not isinstance(val, tuple(valid)):
+        if list not in tuple(valid):
+            for val in value:
+                if not isinstance(val, tuple(valid)):
+                    valid_names = [t.__name__ for t in valid if hasattr(t, "__name__")]
+                    type_name = type(val).__name__
+
+                    raise TypeValidationError(name, type_name, valid_names)
+        else:
+            if not isinstance(value, tuple(valid)):
                 valid_names = [t.__name__ for t in valid if hasattr(t, "__name__")]
-                type_name = type(val).__name__
+                type_name = type(value).__name__
 
                 raise TypeValidationError(name, type_name, valid_names)
 
