@@ -54,7 +54,7 @@ def test_clip_point_data(tmp_path):
         points.add_file(tmp_path / "numpy_array.txt")
 
         with Workspace(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
-            clipped_pts = points.copy_from_extent(parent=new_workspace, extent=extent)
+            clipped_pts = points.copy_from_extent(extent, parent=new_workspace)
             clipped_d = clipped_pts.get_data("DataValues")[0]
             assert clipped_pts.n_vertices == clippings.sum()
             assert np.all(clipped_d.values == data[0].values[clippings])
@@ -104,7 +104,7 @@ def test_clip_curve_data(tmp_path):
             )
 
             clipping_inverse = curve.copy_from_extent(
-                parent=new_workspace, extent=extent, inverse=True
+                extent, parent=new_workspace, inverse=True
             )
             assert clipping_inverse.n_vertices == curve.n_vertices - clippings.sum()
             assert clipping_inverse.n_cells == 10
@@ -142,14 +142,14 @@ def test_clip_surface(tmp_path):
 
         # Clip center point, no cells left
         surf_copy = surf.copy_from_extent(
-            parent=workspace, extent=np.array([[0.5, -0.5], [1.5, 0.5]]), inverse=True
+            np.array([[0.5, -0.5], [1.5, 0.5]]), parent=workspace, inverse=True
         )
 
         assert surf_copy is None
 
         # Clip one point of triangle, one cell left
         surf_copy = surf.copy_from_extent(
-            parent=workspace, extent=np.array([[-0.5, -0.5], [0.5, 0.5]]), inverse=True
+            np.array([[-0.5, -0.5], [0.5, 0.5]]), parent=workspace, inverse=True
         )
 
         assert len(surf_copy.cells) == 1
@@ -157,14 +157,14 @@ def test_clip_surface(tmp_path):
 
         # Keep three points of triangle, one cell left
         surf_copy = surf.copy_from_extent(
-            parent=workspace, extent=np.array([[-0.5, -0.5], [1.5, 1.5]])
+            np.array([[-0.5, -0.5], [1.5, 1.5]]), parent=workspace
         )
 
         assert len(surf_copy.cells) == 1
 
         # Keep two points of triangle, no object
         surf_copy = surf.copy_from_extent(
-            parent=workspace, extent=np.array([[0.5, -0.5], [1.5, 1.5]])
+            np.array([[0.5, -0.5], [1.5, 1.5]]), parent=workspace
         )
 
         assert surf_copy is None
@@ -199,9 +199,7 @@ def test_clip_groups(tmp_path):
         )
 
         with Workspace(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
-            group_a.copy_from_extent(
-                parent=new_workspace, clear_cache=True, extent=extent
-            )
+            group_a.copy_from_extent(extent, parent=new_workspace, clear_cache=True)
 
             assert (
                 len(new_workspace.objects) == 1
