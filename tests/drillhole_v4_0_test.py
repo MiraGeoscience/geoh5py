@@ -507,16 +507,3 @@ def test_copy_from_extent_drillhole_group(tmp_path):
             assert child_a.collar == child_b.collar
             np.testing.assert_array_almost_equal(child_a.surveys, child_b.surveys)
             assert child_a.get_data_list() == child_b.get_data_list()
-
-
-def test_copy_file():
-    with Workspace(r"C:\Users\dominiquef\Downloads\largeflinflon.geoh5") as ws:
-        group = ws.get_entity("ddh_collars")[0]
-
-        with Workspace(r"C:\Users\dominiquef\Downloads\temp.geoh5") as out:
-            new_group = group.copy_from_extent(
-                np.asarray(
-                    [[314270.57, 6074926.66, -1098], [314781.61, 6075522.41, 9000]]
-                ),
-                parent=out,
-            )
