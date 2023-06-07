@@ -32,7 +32,6 @@ from .utils import (
     container_group2name,
     flatten,
     inf2str,
-    list2str,
     none2str,
     path2workspace,
     set_enabled,
@@ -446,19 +445,12 @@ class InputFile:
 
         :param var: Dictionary containing ui.json keys, values, fields
 
-        :return: Dictionary with inf, none and list types converted to string
+        :return: Dictionary with inf and none types converted to string
             representations in json format.
         """
         for key, value in var.items():
-            exclude = ["choiceList", "meshType", "dataType", "groupType", "association"]
-            mappers = (
-                [list2str, inf2str, as_str_if_uuid, none2str]
-                if key not in exclude
-                else [inf2str, as_str_if_uuid, none2str]
-            )
-            var[key] = dict_mapper(
-                value, mappers, omit={ex: [list2str] for ex in exclude}
-            )
+            mappers = [inf2str, as_str_if_uuid, none2str]
+            var[key] = dict_mapper(value, mappers)
 
         return var
 
