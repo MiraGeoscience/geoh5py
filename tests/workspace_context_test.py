@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import h5py
 import pytest
 
@@ -26,7 +28,7 @@ from geoh5py.shared.exceptions import Geoh5FileClosedError
 from geoh5py.workspace import Workspace, active_workspace
 
 
-def test_workspace_context(tmp_path):
+def test_workspace_context(tmp_path: Path):
     # TODO: no file on disk should be required for this test
     #       as workspace does not have to be saved
     with active_workspace(Workspace(tmp_path / r"w1.geoh5")) as ws1:
@@ -39,7 +41,7 @@ def test_workspace_context(tmp_path):
     assert "no active workspace" in str(error.value).lower()
 
 
-def test_write_context(tmp_path):
+def test_write_context(tmp_path: Path):
     with Workspace(tmp_path / r"test2.geoh5", mode="a") as w_s:
         points = Points.create(w_s)
 
@@ -61,7 +63,7 @@ def test_write_context(tmp_path):
         getattr(w_s, "geoh5")
 
 
-def test_read_only(tmp_path):
+def test_read_only(tmp_path: Path):
     with pytest.raises(FileNotFoundError) as error:
         with Workspace(tmp_path / r"test.geoh5", mode="r") as w_s:
             Points.create(w_s)

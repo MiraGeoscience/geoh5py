@@ -21,7 +21,6 @@ from copy import deepcopy
 from typing import Any, cast
 from uuid import UUID
 
-from geoh5py import Workspace
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import RequiredValidationError
@@ -47,7 +46,6 @@ class InputValidation:
     Attributes
     ----------
     validations : Validations dictionary with matching set of input parameter keys.
-    workspace (optional) : Workspace instance needed to validate uuid types.
     ignore_requirements (optional): Omit raising error on 'required' validator.
 
     Methods
@@ -60,13 +58,11 @@ class InputValidation:
         self,
         validators: dict[str, BaseValidator] | None = None,
         validations: dict[str, Any] | None = None,
-        workspace: Workspace | None = None,
         ui_json: dict[str, Any] | None = None,
         validation_options: dict[str, Any] | None = None,
     ):
         self.validations = self.infer_validations(ui_json, validations=validations)
         self.validators: dict[str, BaseValidator] = validators
-        self.workspace: Workspace | None = workspace
 
         if validation_options is None:
             validation_options = {}
@@ -100,16 +96,6 @@ class InputValidation:
             val = dict(required_validators, **val)
 
         self._validators = val
-
-    @property
-    def workspace(self):
-        return self._workspace
-
-    @workspace.setter
-    def workspace(self, value: Workspace | None):
-        if value is not None:
-            TypeValidator.validate("workspace", value, Workspace)
-        self._workspace = value
 
     @staticmethod
     def _unique_validators(validations: dict[str, Any]) -> list[str]:
@@ -157,7 +143,7 @@ class InputValidation:
                 validations[key] = {
                     "types": [str],
                 }
-            elif "meshType" in item:
+            elif "meshType" in item or "groupType" in item:
                 validations[key] = {
                     "types": [str, UUID, Entity],
                     "association": "geoh5",
@@ -264,7 +250,9 @@ class InputValidation:
 
     def validate_data(self, data: dict[str, Any]) -> None:
         """
-        Calls validate method on individual key/value pairs in input.
+        Calls validate method on ui.json data structure for cross-dependencies.
+
+        Individual key, value pairs are validated for expected type.
 
         :param data: Input data with known validations.
         """
