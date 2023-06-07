@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 from gc import collect
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -27,7 +28,7 @@ from geoh5py.objects import Curve
 from geoh5py.workspace import Workspace
 
 
-def test_delete_entities(tmp_path):
+def test_delete_entities(tmp_path: Path):
     h5file_path = tmp_path / r"testPoints.geoh5"
     xyz = np.random.randn(12, 3)
     values = np.random.randn(12)

@@ -140,7 +140,7 @@ class Grid2D(GridObject):
 
         return self._centroids
 
-    def copy_from_extent(
+    def copy_from_extent(  # pylint: disable=too-many-locals
         self,
         extent: np.ndarray,
         parent=None,
@@ -161,31 +161,31 @@ class Grid2D(GridObject):
         if extent.shape[1] == 2:
             extent = np.c_[extent, np.r_[-np.inf, np.inf]]
 
-        extent = extent.astype(float)
-        extent = np.vstack(
+        local_extent = extent.astype(float)
+        local_extent = np.vstack(
             [
-                extent[0, :],
-                np.c_[extent[0, 0], extent[1, 1], extent[0, 2]],
-                extent[1, :],
-                np.c_[extent[1, 0], extent[0, 1], extent[1, 2]],
+                local_extent[0, :],
+                np.c_[local_extent[0, 0], local_extent[1, 1], local_extent[0, 2]],
+                local_extent[1, :],
+                np.c_[local_extent[1, 0], local_extent[0, 1], local_extent[1, 2]],
             ]
         )
-        z_extent = extent[:, 2]
+        z_extent = local_extent[:, 2]
         origin = np.r_[self.origin["x"], self.origin["y"], self.origin["z"]].astype(
             float
         )
-        extent[:, :2] -= origin[:2]
+        local_extent[:, :2] -= origin[:2]
         if self.rotation != 0.0:
-            extent[:, 2] = 0
+            local_extent[:, 2] = 0
             rot = xy_rotation_matrix(-np.deg2rad(self.rotation))
-            extent = np.dot(rot, extent.T).T
-            extent[:, 2] = z_extent
+            local_extent = np.dot(rot, local_extent.T).T
+            local_extent[:, 2] = z_extent
 
-        u_ind = (self.cell_center_u <= np.max(extent[:, 0])) & (
-            self.cell_center_u >= np.min(extent[:, 0])
+        u_ind = (self.cell_center_u <= np.max(local_extent[:, 0])) & (
+            self.cell_center_u >= np.min(local_extent[:, 0])
         )
-        v_ind = (self.cell_center_v <= np.max(extent[:, 1])) & (
-            self.cell_center_v >= np.min(extent[:, 1])
+        v_ind = (self.cell_center_v <= np.max(local_extent[:, 1])) & (
+            self.cell_center_v >= np.min(local_extent[:, 1])
         )
 
         indices = np.kron(v_ind, u_ind).flatten()
@@ -213,15 +213,25 @@ class Grid2D(GridObject):
                 }
             )
         else:
-            indices = ~indices
+            indices = GridObject.mask_by_extent(self, extent, inverse=inverse)
 
-        return super(GridObject, self).copy(
+        copy = super(GridObject, self).copy(
             parent=parent,
             copy_children=copy_children,
             clear_cache=clear_cache,
             mask=indices,
             **kwargs,
         )
+
+        if not inverse:
+            for child in copy.children:
+                if isinstance(child.values, np.ndarray):
+                    indices = child.mask_by_extent(extent, inverse=inverse)
+                    values = child.values
+                    values[~indices] = np.nan
+                    child.values = values
+
+        return copy
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

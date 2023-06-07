@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import inspect
 import io
-import os
 import shutil
 import subprocess
 import tempfile
@@ -109,7 +108,7 @@ class Workspace(AbstractContextManager):
         self._groups: dict[uuid.UUID, ReferenceType[group.Group]] = {}
         self._objects: dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
         self._data: dict[uuid.UUID, ReferenceType[data.Data]] = {}
-        self._geoh5: h5py.File | None = None
+        self._geoh5: h5py.File | bool = False
         self.h5file: str | Path | io.BytesIO = h5file
 
         for attr, item in kwargs.items():
@@ -176,7 +175,7 @@ class Workspace(AbstractContextManager):
         """
         Close the file and clear properties for future open.
         """
-        if self._geoh5 is None:
+        if not self._geoh5:
             return
 
         if self.geoh5.mode in ["r+", "a"]:
@@ -189,9 +188,7 @@ class Workspace(AbstractContextManager):
         self.geoh5.close()
         self._data = {}
         if self.repack and not isinstance(self.h5file, io.BytesIO):
-            temp_file = os.path.join(
-                tempfile.gettempdir(), os.path.basename(self.h5file)
-            )
+            temp_file = Path(tempfile.gettempdir()) / Path(self.h5file).name
             try:
                 subprocess.run(
                     f'h5repack --native "{self.h5file}" "{temp_file}"',
@@ -199,14 +196,12 @@ class Workspace(AbstractContextManager):
                     shell=True,
                     stdout=subprocess.DEVNULL,
                 )
-                os.remove(self.h5file)
+                Path(self.h5file).unlink()
                 shutil.move(temp_file, self.h5file)
             except CalledProcessError:
                 pass
 
             self.repack = False
-
-        self._geoh5 = None
 
     @property
     def contributors(self) -> np.ndarray:
@@ -926,7 +921,7 @@ class Workspace(AbstractContextManager):
         """
         Instance of h5py.File.
         """
-        if self._geoh5 is None:
+        if not self._geoh5:
             raise Geoh5FileClosedError
 
         return self._geoh5
@@ -941,7 +936,7 @@ class Workspace(AbstractContextManager):
     @h5file.setter
     def h5file(self, file: str | Path | io.BytesIO):
         if isinstance(file, (str, Path)):
-            if not str(file).endswith("geoh5"):
+            if Path(file).suffix != ".geoh5":
                 raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
         elif not isinstance(file, io.BytesIO):
             raise ValueError(
@@ -1062,7 +1057,7 @@ class Workspace(AbstractContextManager):
         :param mode: Optional mode of h5py.File. Defaults to 'r+'.
         :return: `self`
         """
-        if isinstance(self._geoh5, h5py.File):
+        if isinstance(self._geoh5, h5py.File) and self._geoh5:
             warnings.warn(f"Workspace already opened in mode {self._geoh5.mode}.")
             return self
 

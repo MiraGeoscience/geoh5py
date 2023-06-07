@@ -58,10 +58,8 @@ class SimPEGGroup(Group):
 
     @options.setter
     def options(self, value: dict | None):
-        if value is not None:
-            assert isinstance(
-                value, dict
-            ), f"Input 'options' must be of type {dict} or None"
+        if not isinstance(value, (dict, type(None))):
+            raise ValueError(f"Input 'options' must be of type {dict} or None")
 
         self._options = value
         self.workspace.update_attribute(self, "options")

@@ -5,7 +5,7 @@ sidebar.
 Loosely based on https://github.com/astropy/astropy/pull/347
 """
 
-import os
+from pathlib import Path
 import warnings
 
 __licence__ = "BSD (3 clause)"
@@ -37,9 +37,9 @@ def html_page_context(app, pagename, templatename, context, doctree):
         warnings.warn("edit_on_github_project not specified")
         return
 
-    path = os.path.relpath(doctree.get("source"), app.builder.srcdir)
-    show_url = get_github_url(app, "blob", path)
-    edit_url = get_github_url(app, "edit", path)
+    path = Path(doctree.get("source")).relative(Path(app.builder.srcdir))
+    show_url = get_github_url(app, "blob", str(path))
+    edit_url = get_github_url(app, "edit", str(path))
 
     # context['show_on_github_url'] = show_url
     context["edit_on_github_url"] = edit_url

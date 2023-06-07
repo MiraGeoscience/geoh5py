@@ -2,9 +2,9 @@ from __future__ import print_function
 
 import datetime
 import json
-import os
+from pathlib import Path
 
-fName = os.path.realpath(__file__)
+fName = Path(__file__).resolve()
 # info_list = ['title', 'date', 'author', 'url', 'pdf', 'jupyter']
 pdf_root = "https://storage.googleapis.com/simpeg/eosc350lectures/"
 jupyter_root = "http://mybinder.org/repo/ubcgif/gpgLabs/notebooks/"
@@ -31,8 +31,8 @@ def make_lectures_page(fpath=None, fout=None):
     if fout is None:
         fout = lecture_path + "lectures.rst"
 
-    fpath = os.path.sep.join(fName.split(os.path.sep)[:-2] + [fpath])
-    fout = os.path.sep.join(fName.split(os.path.sep)[:-2] + [fout])
+    fpath = Path(fName).parents(2) / fpath
+    fout = Path(fName).parents(2) / fout
 
     fpath = open(fpath)  # file to write to
     lectures = json.load(fpath)  # lecture json
@@ -61,7 +61,7 @@ Lectures
         date = datetime.date(year=date[0], month=date[1], day=date[2])
 
         if "pdf" in lecture.keys():
-            pdf_name = lecture["pdf"].split(".")[0].split(os.path.sep)[-1]
+            pdf_name = Path(lecture["pdf"]).stem
             if "_" in pdf_name:
                 pdf_name = " ".join(pdf_name.split("_")[1:])
             lecture_slides = """

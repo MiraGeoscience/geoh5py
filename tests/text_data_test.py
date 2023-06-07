@@ -15,8 +15,11 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import random
 import string
+from pathlib import Path
 
 import numpy as np
 
@@ -25,7 +28,7 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_text_data(tmp_path):
+def test_create_text_data(tmp_path: Path):
     name = "MyTestPointset"
 
     # Generate a random cloud of points with reference values

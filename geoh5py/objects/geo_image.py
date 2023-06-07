@@ -16,7 +16,6 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-import os
 import uuid
 import warnings
 from io import BytesIO
@@ -108,6 +107,93 @@ class GeoImage(ObjectBase):
 
         return new_entity
 
+    def copy_from_extent(  # pylint: disable=too-many-locals
+        self,
+        extent: np.ndarray,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        inverse: bool = False,
+        **kwargs,
+    ) -> GeoImage | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy_from_extent`.
+        """
+        if not isinstance(extent, np.ndarray):
+            raise TypeError("Expected a numpy array of extent values.")
+
+        if self.vertices is None or self.extent is None:
+            raise AttributeError("Vertices are not defined.")
+
+        if extent.shape[1] == 2:
+            extent = np.c_[extent, np.r_[-np.inf, np.inf]]
+
+        pixels = (
+            np.abs(self.extent[0, 0] - self.extent[1, 0]) / self.image.size[0],
+            np.abs(self.extent[0, 1] - self.extent[1, 1]) / self.image.size[1],
+        )
+        x_centers = np.arange(
+            self.extent[0, 0] + pixels[0] / 2,
+            self.extent[1, 0],
+            pixels[0],
+        )
+        x_ind = np.where(
+            (x_centers >= np.min(extent[:, 0])) & (x_centers <= np.max(extent[:, 0]))
+        )[0]
+        y_centers = np.arange(
+            self.extent[0, 1] + pixels[1] / 2,
+            self.extent[1, 1],
+            pixels[1],
+        )
+        y_ind = np.where(
+            (y_centers >= np.min(extent[:, 1])) & (y_centers <= np.max(extent[:, 1]))
+        )[0]
+
+        if not np.any(x_ind) or not np.any(y_ind):
+            return None
+
+        lim_x, lim_y = (x_ind[0], x_ind[-1]), (y_ind[0], y_ind[-1])
+        vertices = np.asarray(
+            [
+                [
+                    self.extent[0, 0] + lim_x[0] * pixels[0],
+                    self.extent[0, 1] + lim_y[1] * pixels[1],
+                    0,
+                ],
+                [
+                    self.extent[0, 0] + lim_x[1] * pixels[0],
+                    self.extent[0, 1] + lim_y[1] * pixels[1],
+                    0,
+                ],
+                [
+                    self.extent[0, 0] + lim_x[1] * pixels[0],
+                    self.extent[0, 1] + lim_y[0] * pixels[1],
+                    0,
+                ],
+                [
+                    self.extent[0, 0] + lim_x[0] * pixels[0],
+                    self.extent[0, 1] + lim_y[0] * pixels[1],
+                    0,
+                ],
+            ]
+        )
+        copy = super().copy(
+            parent=parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            vertices=vertices,
+        )
+        copy.image = self.image.crop(
+            (
+                lim_x[0],
+                self.image.size[1] - lim_y[1],
+                lim_x[1],
+                self.image.size[1] - lim_y[0],
+            )
+        )
+
+        return copy
+
     @property
     def default_vertices(self):
         """
@@ -182,7 +268,7 @@ class GeoImage(ObjectBase):
             value = value.astype("uint8")
             image = Image.fromarray(value)
         elif isinstance(image, str):
-            if not os.path.exists(image):
+            if not Path(image).is_file():
                 raise ValueError(f"Input image file {image} does not exist.")
 
             image = Image.open(image)
@@ -204,15 +290,15 @@ class GeoImage(ObjectBase):
 
         with TemporaryDirectory() as tempdir:
             ext = getattr(image, "format")
-            temp_file = os.path.join(
-                tempdir, f"image.{ext.lower() if ext is not None else 'tiff'}"
+            temp_file = (
+                Path(tempdir) / f"image.{ext.lower() if ext is not None else 'tiff'}"
             )
             image.save(temp_file)
 
             if self.image_data is not None:
                 self.workspace.remove_entity(self.image_data)
 
-            image = self.add_file(temp_file)
+            image = self.add_file(str(temp_file))
             image.name = "GeoImageMesh_Image"
             image.entity_type.name = "GeoImageMesh_Image"
 
@@ -444,15 +530,15 @@ class GeoImage(ObjectBase):
             raise TypeError(
                 f"The 'path' has to be a string or a Path; a '{type(name)}' was entered instead"
             )
-        if path != "" and not os.path.isdir(path):
+        if path != "" and not Path(path).is_dir():
             raise FileNotFoundError(f"No such file or directory: {path}")
 
         if name.endswith((".tif", ".tiff")) and self.tag is not None:
             # save the image
             image: Image = self.image_georeferenced
-            image.save(os.path.join(path, name), exif=image.getexif())
+            image.save(Path(path) / name, exif=image.getexif())
         else:
-            self.image.save(os.path.join(path, name))
+            self.image.save(Path(path) / name)
 
     def to_grid2d(
         self,

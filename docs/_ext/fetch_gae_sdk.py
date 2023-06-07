@@ -22,9 +22,9 @@ Current releases are listed here:
 """
 
 import json
-import os
 import sys
 import zipfile
+from pathlib import Path
 
 import StringIO
 import urllib2
@@ -45,7 +45,7 @@ def get_gae_versions():
 
 
 def _version_tuple(v):
-    version_string = os.path.splitext(v["name"])[0].rpartition("_")[2]
+    version_string = Path(v["name"]).stem.rpartition("_")[2]
     return tuple(int(x) for x in version_string.split("."))
 
 
@@ -61,11 +61,10 @@ def main(argv):
     if len(argv) > 2:
         print("Usage: {} [<destination_dir>]".format(argv[0]))
         return 1
-    dest_dir = argv[1] if len(argv) > 1 else "."
-    if not os.path.exists(dest_dir):
-        os.makedirs(dest_dir)
+    dest_dir = Path(argv[1]) if len(argv) > 1 else Path()
+    dest_dir.mkdir(exist_ok=True)
 
-    if os.path.exists(os.path.join(dest_dir, "google_appengine")):
+    if (dest_dir / "google_appengine").exists():
         print(f"GAE SDK already installed at {dest_dir}, exiting.")
         return 0
 
