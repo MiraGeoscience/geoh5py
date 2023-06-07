@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import inspect
 import io
-import os
 import shutil
 import subprocess
 import tempfile
@@ -189,9 +188,7 @@ class Workspace(AbstractContextManager):
         self.geoh5.close()
         self._data = {}
         if self.repack and not isinstance(self.h5file, io.BytesIO):
-            temp_file = os.path.join(
-                tempfile.gettempdir(), os.path.basename(self.h5file)
-            )
+            temp_file = Path(tempfile.gettempdir()) / Path(self.h5file).name
             try:
                 subprocess.run(
                     f'h5repack --native "{self.h5file}" "{temp_file}"',
@@ -199,7 +196,7 @@ class Workspace(AbstractContextManager):
                     shell=True,
                     stdout=subprocess.DEVNULL,
                 )
-                os.remove(self.h5file)
+                Path(self.h5file).unlink()
                 shutil.move(temp_file, self.h5file)
             except CalledProcessError:
                 pass
@@ -939,7 +936,7 @@ class Workspace(AbstractContextManager):
     @h5file.setter
     def h5file(self, file: str | Path | io.BytesIO):
         if isinstance(file, (str, Path)):
-            if not str(file).endswith("geoh5"):
+            if Path(file).suffix != ".geoh5":
                 raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
         elif not isinstance(file, io.BytesIO):
             raise ValueError(

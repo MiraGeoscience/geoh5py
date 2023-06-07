@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from uuid import UUID
 
 from ..groups import PropertyGroup
@@ -74,9 +75,9 @@ base_validations = {
     "conda_environment_boolean": {
         "types": [bool],
     },
-    "geoh5": {"required": True, "types": [str, Workspace, type(None)]},
+    "geoh5": {"required": True, "types": [str, Path, Workspace, type(None)]},
     "monitoring_directory": {
-        "types": [str, type(None)],
+        "types": [str, Path, type(None)],
     },
     "run_command": {
         "types": [str, type(None)],
@@ -85,6 +86,6 @@ base_validations = {
         "types": [bool],
     },
     "workspace": {
-        "types": [str, Workspace, type(None)],
+        "types": [str, Path, Workspace, type(None)],
     },
 }

@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -26,7 +28,7 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_surface_data(tmp_path):
+def test_create_surface_data(tmp_path: Path):
     h5file_path = tmp_path / r"testSurface.geoh5"
 
     with Workspace(h5file_path) as workspace:
@@ -69,7 +71,7 @@ def test_create_surface_data(tmp_path):
         compare_entities(data, rec_data)
 
 
-def test_remove_cells_surface_data(tmp_path):
+def test_remove_cells_surface_data(tmp_path: Path):
     h5file_path = tmp_path / r"../test_create_surface_data0/testSurface.geoh5"
 
     with Workspace(h5file_path) as workspace:
@@ -92,7 +94,7 @@ def test_remove_cells_surface_data(tmp_path):
         ), "Error removing data values with cells."
 
 
-def test_remove_vertices_surface_data(tmp_path):
+def test_remove_vertices_surface_data(tmp_path: Path):
     h5file_path = tmp_path / r"../test_create_surface_data0/testSurface.geoh5"
 
     with Workspace(h5file_path) as workspace:
