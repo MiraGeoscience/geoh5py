@@ -81,11 +81,14 @@ class Grid2DConversion(CellObjectConversion):
         return tag
 
     @classmethod
-    def data_to_pil_format(cls, input_entity: Grid2D, data: np.ndarray) -> np.ndarray:
+    def data_to_pil_format(
+        cls, input_entity: Grid2D, data: np.ndarray, normalize: bool = True
+    ) -> np.ndarray:
         """
         Convert a numpy array with a format compatible with :obj:`PIL.Image` object.
         :param input_entity: the Grid2D object to convert.
         :param data: the data to convert.
+        :param normalize: if True, the data will be normalized between 0 and 255.
         :return: the data formatted with the right shape,
         between 0 and 255, as uint8.
         """
@@ -96,9 +99,10 @@ class Grid2DConversion(CellObjectConversion):
         data = np.where(data == FLOAT_NDV, np.nan, data)
 
         # normalize them
-        min_, max_ = np.nanmin(data), np.nanmax(data)
-        data = (data - min_) / (max_ - min_)
-        data *= 255
+        if normalize:
+            min_, max_ = np.nanmin(data), np.nanmax(data)
+            data = (data - min_) / (max_ - min_)
+            data *= 255
 
         return data.astype(np.uint8)
 
@@ -145,12 +149,16 @@ class Grid2DConversion(CellObjectConversion):
 
     @classmethod
     def data_from_keys(
-        cls, input_entity: Grid2D, keys: list | str | int | UUID | Data
+        cls,
+        input_entity: Grid2D,
+        keys: list | str | int | UUID | Data,
+        normalize: bool = True,
     ) -> np.ndarray:
         """
         Take a list of (or a unique) key to extract from the object,
         and create a :obj:'np.array' with those data.
         :param input_entity: the Grid2D object to convert.
+        :param normalize: if True, the data will be normalized between 0 and 255.
         :param keys: the list of the data to extract.
         :return data: the data extracted from the object.
         """
@@ -167,7 +175,9 @@ class Grid2DConversion(CellObjectConversion):
 
             for key in keys:
                 data_temp = cls.key_to_data(input_entity, key)
-                data_temp = cls.data_to_pil_format(input_entity, data_temp)
+
+                data_temp = cls.data_to_pil_format(input_entity, data_temp, normalize)
+
                 data = np.dstack((data, data_temp))
 
             return data
@@ -195,16 +205,73 @@ class Grid2DConversion(CellObjectConversion):
         raise IndexError("Only 1, 3, or 4 layers can be selected")
 
     @classmethod
+    def compute_vertices(cls, input_entity: Grid2D) -> np.ndarray:
+        """
+        Compute the vertices of the geoimage to create based on the
+        properties of the grid and its angle.
+        :param input_entity: The grid2D object to convert.
+        :return: A numpy array of 4 points in x,y,z.
+        """
+        # get the origin in x and y
+        origin_x = input_entity.origin["x"]
+        origin_y = input_entity.origin["y"]
+        origin_z = input_entity.origin["z"]
+
+        # get the length of the x and y axis
+        if (
+            input_entity.u_count is None
+            or input_entity.v_count is None
+            or input_entity.u_cell_size is None
+            or input_entity.v_cell_size is None
+        ):
+            raise AttributeError(
+                "The grid2D object must have the following properties"
+                ": u_count, v_count, u_cell_size, v_cell_size"
+            )
+
+        length_u = input_entity.u_count * input_entity.u_cell_size
+        length_v = input_entity.v_count * input_entity.v_cell_size
+
+        # get the rotation
+        orientation = input_entity.rotation
+
+        # Define the corners
+        corners = np.array([[0, length_v], [length_u, length_v], [length_u, 0], [0, 0]])
+
+        # Define the rotation matrix
+        angle_rad = -np.radians(orientation)
+        rotation_matrix = np.array(
+            [
+                [np.cos(angle_rad), -np.sin(angle_rad)],
+                [np.sin(angle_rad), np.cos(angle_rad)],
+            ]
+        )
+
+        # Rotate and shift the corners
+        rotated_corners = corners @ rotation_matrix
+        shifted_corners = rotated_corners + [origin_x, origin_y]
+
+        # Expand dimensions of origin_z to match with shifted_corners
+        origin_z_expanded = np.ones_like(shifted_corners[:, :1]) * origin_z
+
+        # Add origin_z to the shifted corners
+        shifted_corners = np.hstack((shifted_corners, origin_z_expanded))
+
+        return shifted_corners
+
+    @classmethod
     def to_geoimage(
         cls,
         input_entity: Grid2D,
         keys: list | str | int | UUID | Data,
+        normalize: bool = True,
         **geoimage_kwargs,
     ) -> GeoImage:
         """
         Convert the object to a :obj:'GeoImage' object.
         :param input_entity: the Grid2D object to convert.
         :param keys: the data to extract.
+        :param normalize: if True, the data will be normalized between 0 and 255.
         :param geoimage_kwargs: the kwargs to pass to the :obj:'GeoImage' object.
         """
 
@@ -215,13 +282,14 @@ class Grid2DConversion(CellObjectConversion):
         geoimage_kwargs["tag"] = cls.grid_to_tag(input_entity)
 
         # get the data
-        data = cls.data_from_keys(input_entity, keys)
+        data = cls.data_from_keys(input_entity, keys, normalize=normalize)
+
         geoimage_kwargs["image"] = cls.convert_to_pillow(data)
+
+        # define the vertices
+        geoimage_kwargs["vertices"] = cls.compute_vertices(input_entity)
 
         # create a geoimage
         output = objects.GeoImage.create(workspace, **geoimage_kwargs)
-
-        # georeference it
-        output.georeferencing_from_tiff()
 
         return output

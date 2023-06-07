@@ -248,16 +248,148 @@ def test_georeference_image(tmp_path):
     geoimage.to_grid2d(new_name="CMYK", transform="CMYK")
 
 
+def create_concentric_array(dims=(15, 15, 3)):
+    # Compute the center of the array
+    center = [(x - 1) / 2.0 for x in dims[:2]]
+
+    # Create a 15x15 grid of indices
+    x_indices, y_indices = np.indices(dims[:2])
+
+    x_val, y_val = np.meshgrid(np.arange(dims[0]), np.arange(dims[1]), indexing="ij")
+
+    # normalise x and y between 0 and 1
+    x_val = x_val / np.max(x_val)
+    y_val = y_val / np.max(y_val)
+
+    # Compute Euclidean distance from the center for each index
+    distances = np.sqrt((x_indices - center[0]) ** 2 + (y_indices - center[1]) ** 2)
+
+    # Normalize distances to range [0, 1]
+    distances = (distances - np.min(distances)) / (
+        np.max(distances) - np.min(distances)
+    )
+
+    # to an image
+    distances = (np.stack((distances, x_val, y_val), axis=2) * 255).astype(np.uint8)
+
+    return distances
+
+
+def test_converting_rotated_images(tmp_path):
+    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+
+    # create a grid
+    n_x, n_y = 10, 15
+    grid = Grid2D.create(
+        workspace,
+        origin=[0, 0, 0],
+        u_cell_size=20.0,
+        v_cell_size=30.0,
+        u_count=n_x,
+        v_count=n_y,
+        rotation=30,
+        name="MyTestGrid2D",
+        allow_move=False,
+    )
+
+    # add the data
+    x_val, y_val = np.meshgrid(np.linspace(100, 1000, n_x), np.linspace(100, 1500, n_y))
+    values = x_val + y_val
+    # normalize
+    values = (values - np.min(values)) / (np.max(values) - np.min(values))
+    values *= 255
+    values = values.astype(np.uint32)
+
+    _ = grid.add_data({"rando": {"values": values.flatten()}})
+
+    # convert to geoimage
+    geoimage = grid.to_geoimage("rando", normalize=False)
+
+    # convert to test
+    grid_test = geoimage.to_grid2d()
+
+    assert grid.rotation == geoimage.rotation
+    assert grid_test.u_cell_size == grid.u_cell_size
+    assert grid_test.v_cell_size == grid.v_cell_size
+    assert grid_test.u_count == grid.u_count
+    assert grid_test.v_count == grid.v_count
+    assert grid_test.origin == grid.origin
+    assert grid_test.rotation == grid.rotation
+
+    assert all(
+        grid_test.get_data("MyTestGrid2D_GRAY")[0].values
+        == grid.get_data("rando")[0].values
+    )
+
+
 def test_clipping_image(tmp_path):
     workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
 
     # load image
     geoimage = GeoImage.create(
-        workspace, name="test_area", image=np.random.randint(0, 255, (16, 16, 3))
+        workspace, name="test_area", image=create_concentric_array(dims=(16, 16, 3))
     )
 
     copy_image = geoimage.copy_from_extent(np.vstack([[2, 4], [12, 12]]))
 
     np.testing.assert_array_equal(
-        np.array(copy_image.image), np.array(geoimage.image)[5:12, 2:11, :]
+        np.array(copy_image.image), np.array(geoimage.image)[4:12, 2:12, :]
     )
+
+
+def test_clipping_rotated_image(tmp_path):
+    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+
+    # create a grid
+    n_x, n_y = 10, 15
+    grid = Grid2D.create(
+        workspace,
+        origin=[0, 0, 0],
+        u_cell_size=20.0,
+        v_cell_size=30.0,
+        u_count=n_x,
+        v_count=n_y,
+        rotation=30,
+        name="MyTestGrid2D",
+        allow_move=False,
+    )
+
+    # add the data
+    x_val, y_val = np.meshgrid(np.linspace(0, 909, n_x), np.linspace(100, 1500, n_y))
+    values = x_val + y_val
+    values = (values - np.min(values)) / (np.max(values) - np.min(values))
+    values *= 255
+    values = values.astype(np.uint32)
+
+    _ = grid.add_data({"rando": {"values": values.flatten()}})
+
+    # convert to geoimage
+    geoimage = grid.to_geoimage("rando", normalize=False)
+
+    # clip the image
+    copy_image = geoimage.copy_from_extent(np.r_[np.c_[50, 50], np.c_[200, 200]])
+
+    # check the image
+    copy_array = np.array(copy_image.image).flatten()
+
+    image_intersect = np.intersect1d(
+        np.where(copy_array == 0, np.nan, copy_array).flatten(),
+        np.array(geoimage.image).flatten(),
+    )
+
+    assert image_intersect.size == 10
+    assert (image_intersect.min() == 44) & (image_intersect.max() == 133)
+
+    new_grid = copy_image.to_grid2d()
+    assert new_grid.n_cells == 35
+
+    # Repeat with inverse flag
+    copy_image = geoimage.copy_from_extent(
+        np.r_[np.c_[50, 50], np.c_[200, 200]], inverse=True
+    )
+
+    # reconvert to grid
+    new_grid = copy_image.to_grid2d()
+
+    assert new_grid.n_cells == grid.n_cells
+    assert (new_grid.children[0].values == 0).sum() == 23

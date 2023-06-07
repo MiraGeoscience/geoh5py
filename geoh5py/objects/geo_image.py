@@ -53,6 +53,7 @@ class GeoImage(ObjectBase):
         self._vertices: None | np.ndarray = None
         self._cells = None
         self._tag: dict[int, Any] | None = None
+        self._rotation: None | float = None
 
         super().__init__(object_type, **kwargs)
 
@@ -120,80 +121,50 @@ class GeoImage(ObjectBase):
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy_from_extent`.
         """
-        if not isinstance(extent, np.ndarray):
-            raise TypeError("Expected a numpy array of extent values.")
-
-        if self.vertices is None or self.extent is None:
+        # todo: save the temp grid in a temp workspace?
+        if self.vertices is None:
             raise AttributeError("Vertices are not defined.")
 
-        if extent.shape[1] == 2:
-            extent = np.c_[extent, np.r_[-np.inf, np.inf]]
-
-        pixels = (
-            np.abs(self.extent[0, 0] - self.extent[1, 0]) / self.image.size[0],
-            np.abs(self.extent[0, 1] - self.extent[1, 1]) / self.image.size[1],
-        )
-        x_centers = np.arange(
-            self.extent[0, 0] + pixels[0] / 2,
-            self.extent[1, 0],
-            pixels[0],
-        )
-        x_ind = np.where(
-            (x_centers >= np.min(extent[:, 0])) & (x_centers <= np.max(extent[:, 0]))
-        )[0]
-        y_centers = np.arange(
-            self.extent[0, 1] + pixels[1] / 2,
-            self.extent[1, 1],
-            pixels[1],
-        )
-        y_ind = np.where(
-            (y_centers >= np.min(extent[:, 1])) & (y_centers <= np.max(extent[:, 1]))
-        )[0]
-
-        if not np.any(x_ind) or not np.any(y_ind):
+        if self.image is None:
+            warnings.warn("Image is not defined.")
             return None
 
-        lim_x, lim_y = (x_ind[0], x_ind[-1]), (y_ind[0], y_ind[-1])
-        vertices = np.asarray(
-            [
-                [
-                    self.extent[0, 0] + lim_x[0] * pixels[0],
-                    self.extent[0, 1] + lim_y[1] * pixels[1],
-                    0,
-                ],
-                [
-                    self.extent[0, 0] + lim_x[1] * pixels[0],
-                    self.extent[0, 1] + lim_y[1] * pixels[1],
-                    0,
-                ],
-                [
-                    self.extent[0, 0] + lim_x[1] * pixels[0],
-                    self.extent[0, 1] + lim_y[0] * pixels[1],
-                    0,
-                ],
-                [
-                    self.extent[0, 0] + lim_x[0] * pixels[0],
-                    self.extent[0, 1] + lim_y[0] * pixels[1],
-                    0,
-                ],
-            ]
-        )
-        copy = super().copy(
+        # define the type of the image
+        n_channel = len(self.image.mode)
+        if n_channel == 1:
+            transform = "GRAY"
+        elif n_channel == 3:
+            transform = "RGB"
+        elif n_channel == 4:
+            transform = "CMYK"
+        else:
+            warnings.warn(f"Image mode not supported (channels: {n_channel}).")
+            return None
+
+        # transform the image to a grid
+        grid = self.to_grid2d(transform=transform)
+
+        # transform the image
+        grid_transformed = grid.copy_from_extent(
+            extent=extent,
             parent=parent,
             copy_children=copy_children,
             clear_cache=clear_cache,
-            vertices=vertices,
-        )
-        copy.image = self.image.crop(
-            (
-                lim_x[0],
-                self.image.size[1] - lim_y[1],
-                lim_x[1],
-                self.image.size[1] - lim_y[0],
-            )
+            inverse=inverse,
+            from_image=True,
+            **kwargs,
         )
 
-        return copy
+        if grid_transformed is None:
+            warnings.warn("Image could not be cropped.")
+            return None
+
+        # transform the grid back to an image
+        image_transformed = grid_transformed.to_geoimage(
+            keys=grid_transformed.get_data_list(), normalize=False
+        )
+
+        return image_transformed
 
     @property
     def default_vertices(self):
@@ -263,10 +234,12 @@ class GeoImage(ObjectBase):
                     "Shape of the 'image' must be a 2D or "
                     "a 3D array with shape(*,*, 3) representing 'RGB' values."
                 )
-            value = image.astype(float)
-            value -= value.min()
-            value *= 255.0 / value.max()
-            value = value.astype("uint8")
+            value = image
+            if image.min() < 0 or image.max() > 255 or image.dtype != "uint8":
+                value = image.astype(float)
+                value -= value.min()
+                value *= 255.0 / value.max()
+                value = value.astype("uint8")
             image = Image.fromarray(value)
         elif isinstance(image, str):
             if not os.path.exists(image):
@@ -553,3 +526,80 @@ class GeoImage(ObjectBase):
         :return: the new created :obj:`geoh5py.objects.grid2d.Grid2D`.
         """
         return self.converter.to_grid2d(self, transform, **grid2d_kwargs)
+
+    @property
+    def rotation(self) -> float | None:
+        """
+        The rotation of the image in degrees
+        :return: the rotation angle.
+        """
+        if self._rotation is None and self._vertices is not None:
+            # Get the x and y values of the first and second corners
+            corner_1_x = self._vertices["x"][0]
+            corner_1_y = self._vertices["y"][0]
+            corner_2_x = self._vertices["x"][1]
+            corner_2_y = self._vertices["y"][1]
+
+            # Form them into numpy arrays
+            corner_1 = np.array([corner_1_x, corner_1_y])
+            corner_2 = np.array([corner_2_x, corner_2_y])
+
+            # Get the vector from corner_1 to corner_2
+            delta = corner_2 - corner_1
+
+            # Reference direction (the x-axis)
+            reference = np.array([1, 0])
+
+            # Calculate the angle between the reference direction and the vector
+            rotation_rad = np.arctan2(
+                np.cross(reference, delta), np.dot(reference, delta)
+            )
+
+            # Convert to degrees
+            rotation_deg = np.rad2deg(rotation_rad)
+
+            # Adjust the angle to lie between [0, 360)
+            if rotation_deg < 0:
+                rotation_deg = 360 + rotation_deg
+
+            self._rotation = round(rotation_deg, 2)
+
+        return self._rotation
+
+    @rotation.setter
+    def rotation(self, new_rotation):
+        if new_rotation != 0 and self.vertices is not None:
+            # Compute current rotation
+            current_rotation = self.rotation
+            if current_rotation is None:
+                current_rotation = 0
+
+            # Compute rotation angle in degrees
+            rotation_angle_deg = new_rotation - current_rotation
+
+            # Use the origin vertex (vertices[3]) as the center of rotation
+            center = np.array([self.vertices["x"][3], self.vertices["y"][3]])
+
+            # Move vertices so that center is at origin
+            vertices_centered_x = self.vertices["x"] - center[0]
+            vertices_centered_y = self.vertices["y"] - center[1]
+            vertices_centered = np.array([vertices_centered_x, vertices_centered_y]).T
+
+            # Compute rotation matrix using numpy
+            rotation_rad = np.radians(rotation_angle_deg)
+            rotation_matrix = np.array(
+                [
+                    [np.cos(rotation_rad), -np.sin(rotation_rad)],
+                    [np.sin(rotation_rad), np.cos(rotation_rad)],
+                ]
+            )
+
+            # Apply rotation
+            rotated_vertices_centered = vertices_centered @ rotation_matrix
+
+            # Move vertices back so that center is at original location
+            self.vertices["x"] = rotated_vertices_centered[:, 0] + center[0]
+            self.vertices["y"] = rotated_vertices_centered[:, 1] + center[1]
+
+            # Update the stored rotation
+            self._rotation = new_rotation

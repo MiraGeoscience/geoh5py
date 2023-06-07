@@ -61,7 +61,9 @@ class Grid2D(GridObject):
     _converter = Grid2DConversion
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._origin: np.ndarray = np.zeros(3)
+        self._origin: np.ndarray = np.asarray(
+            tuple(np.zeros(3)), dtype=[("x", float), ("y", float), ("z", float)]
+        )
         self._u_cell_size: float | None = None
         self._v_cell_size: float | None = None
         self._u_count: int | None = None
@@ -140,13 +142,14 @@ class Grid2D(GridObject):
 
         return self._centroids
 
-    def copy_from_extent(  # pylint: disable=too-many-locals
+    def copy_from_extent(  # pylint: disable=too-many-locals disable=too-many-arguments
         self,
         extent: np.ndarray,
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
         inverse: bool = False,
+        from_image: bool = False,
         **kwargs,
     ) -> Grid2D | None:
         """
@@ -171,10 +174,13 @@ class Grid2D(GridObject):
             ]
         )
         z_extent = local_extent[:, 2]
+
         origin = np.r_[self.origin["x"], self.origin["y"], self.origin["z"]].astype(
             float
         )
+
         local_extent[:, :2] -= origin[:2]
+
         if self.rotation != 0.0:
             local_extent[:, 2] = 0
             rot = xy_rotation_matrix(-np.deg2rad(self.rotation))
@@ -225,10 +231,13 @@ class Grid2D(GridObject):
 
         if not inverse:
             for child in copy.children:
+                nan_value = np.nan
+                if from_image:
+                    nan_value = 0
                 if isinstance(child.values, np.ndarray):
                     indices = child.mask_by_extent(extent, inverse=inverse)
-                    values = child.values
-                    values[~indices] = np.nan
+                    values = child.values.astype(float)
+                    values[~indices] = nan_value
                     child.values = values
 
         return copy
@@ -284,6 +293,7 @@ class Grid2D(GridObject):
             value = np.asarray(
                 tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
             )
+
             self._origin = value
             self.workspace.update_attribute(self, "attributes")
 

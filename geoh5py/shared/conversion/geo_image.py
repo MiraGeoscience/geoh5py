@@ -46,20 +46,32 @@ class GeoImageConversion(BaseConversion):
             raise AttributeError("GeoImage has no vertices")
 
         # get geographic information
-        grid2d_attributes["u_origin"] = input_entity.vertices[0, 0]
-        grid2d_attributes["v_origin"] = input_entity.vertices[2, 1]
+        grid2d_attributes["origin"] = np.asarray(
+            tuple(input_entity.vertices[3]),
+            dtype=[("x", float), ("y", float), ("z", float)],
+        )
+
         grid2d_attributes["u_count"] = input_entity.default_vertices[1, 0]
         grid2d_attributes["v_count"] = input_entity.default_vertices[0, 1]
 
-        grid2d_attributes["u_cell_size"] = (
-            abs(grid2d_attributes["u_origin"] - input_entity.vertices[1, 0])
-            / grid2d_attributes["u_count"]
-        )
-        grid2d_attributes["v_cell_size"] = (
-            abs(grid2d_attributes["v_origin"] - input_entity.vertices[0, 1])
-            / grid2d_attributes["v_count"]
-        )
+        # define the points
+        point1 = np.array([input_entity.vertices[3, 0], input_entity.vertices[3, 1]])
+        point2 = np.array([input_entity.vertices[2, 0], input_entity.vertices[2, 1]])
+        point3 = np.array([input_entity.vertices[0, 0], input_entity.vertices[0, 1]])
+
+        # Compute the distances
+        distance_u = np.linalg.norm(point2 - point1)
+        distance_v = np.linalg.norm(point3 - point1)
+
+        # Now compute the cell sizes
+        grid2d_attributes["u_cell_size"] = distance_u / grid2d_attributes["u_count"]
+        grid2d_attributes["v_cell_size"] = distance_v / grid2d_attributes["v_count"]
+
         grid2d_attributes["elevation"] = grid2d_attributes.get("elevation", 0)
+
+        if input_entity.rotation is not None:
+            grid2d_attributes["rotation"] = input_entity.rotation
+
         return grid2d_attributes
 
     @classmethod
@@ -96,15 +108,15 @@ class GeoImageConversion(BaseConversion):
 
         output.add_data(
             data={
-                f"{name}_R": {
+                f"{name}_0R": {
                     "values": np.array(value).astype(np.uint32)[::-1, :, 0],
                     "association": "CELL",
                 },
-                f"{name}_G": {
+                f"{name}_1G": {
                     "values": np.array(value).astype(np.uint32)[::-1, :, 1],
                     "association": "CELL",
                 },
-                f"{name}_B": {
+                f"{name}_2B": {
                     "values": np.array(value).astype(np.uint32)[::-1, :, 2],
                     "association": "CELL",
                 },
@@ -126,19 +138,19 @@ class GeoImageConversion(BaseConversion):
 
         output.add_data(
             data={
-                f"{name}_C": {
+                f"{name}_0C": {
                     "values": np.array(value).astype(np.uint32)[::-1, :, 0],
                     "association": "CELL",
                 },
-                f"{name}_M": {
+                f"{name}_1M": {
                     "values": np.array(value).astype(np.uint32)[::-1, :, 1],
                     "association": "CELL",
                 },
-                f"{name}_Y": {
+                f"{name}_2Y": {
                     "values": np.array(value).astype(np.uint32)[::-1, :, 2],
                     "association": "CELL",
                 },
-                f"{name}_K": {
+                f"{name}_3K": {
                     "values": np.array(value).astype(np.uint32)[::-1, :, 3],
                     "association": "CELL",
                 },
