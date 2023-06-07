@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import io
+from pathlib import Path
 
 import pytest
 from h5py import File
@@ -26,7 +27,7 @@ from geoh5py.shared.utils import fetch_active_workspace
 from geoh5py.workspace import Workspace
 
 
-def test_workspace_from_kwargs(tmp_path):
+def test_workspace_from_kwargs(tmp_path: Path):
     h5file_tmp = tmp_path / r"test.geoh5"
 
     attr = {

@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 from h5py import File
 
@@ -27,7 +29,7 @@ from geoh5py.shared.utils import as_str_if_uuid, compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_remove_root(tmp_path):
+def test_remove_root(tmp_path: Path):
     # Generate a random cloud of points
     n_data = 12
     xyz = np.random.randn(n_data, 3)

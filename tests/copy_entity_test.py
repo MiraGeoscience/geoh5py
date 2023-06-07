@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -26,7 +28,7 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_copy_entity(tmp_path):
+def test_copy_entity(tmp_path: Path):
     # pylint: disable=R0914
 
     # Generate a random cloud of points

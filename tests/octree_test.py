@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
 import pytest
 
@@ -27,7 +28,7 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_octree(tmp_path):
+def test_octree(tmp_path: Path):
     name = "MyTestOctree"
     h5file_path = tmp_path / r"octree.geoh5"
 

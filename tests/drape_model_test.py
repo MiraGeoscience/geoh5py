@@ -15,7 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+from __future__ import annotations
+
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -25,9 +27,8 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_drape_model(tmp_path):
-    # pass
-    h5file_path = os.path.join(tmp_path, "drapedmodel.geoh5")
+def test_create_drape_model(tmp_path: Path):
+    h5file_path = tmp_path / "drapedmodel.geoh5"
     with Workspace(h5file_path) as workspace:
         #
         # drape_model = workspace.get_entity("draped_models_line_id_1")[0]
@@ -67,9 +68,9 @@ def test_create_drape_model(tmp_path):
             }
         )
 
-        with Workspace(os.path.join(tmp_path, "tester.geoh5")) as new_workspace:
+        with Workspace(tmp_path / "tester.geoh5") as new_workspace:
             drape.copy(parent=new_workspace)
 
-        with Workspace(os.path.join(tmp_path, "tester.geoh5")) as new_workspace:
+        with Workspace(tmp_path / "tester.geoh5") as new_workspace:
             rec_drape = new_workspace.objects[0]
             compare_entities(drape, rec_drape, ignore=["_parent"])

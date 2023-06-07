@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import json
-import os
 import warnings
 from copy import deepcopy
 from pathlib import Path
@@ -96,14 +95,14 @@ class InputFile:
         self.data = data
 
     @property
-    def data(self):
-        if getattr(self, "_data", None) is None and self.ui_json is not None:
+    def data(self) -> dict[str, Any] | None:
+        if self._data is None and self.ui_json is not None:
             self.data = flatten(self.ui_json)
 
         return self._data
 
     @data.setter
-    def data(self, value: dict[str, Any]):
+    def data(self, value: dict[str, Any] | None):
         if value is not None:
             if not isinstance(value, dict):
                 raise ValueError("Input 'data' must be of type dict or None.")
@@ -153,21 +152,22 @@ class InputFile:
         Directory for the input/output ui.json file.
         """
         if getattr(self, "_path", None) is None and self.geoh5 is not None:
-            self.path = os.path.dirname(self.geoh5.h5file)
+            self.path = str(Path(self.geoh5.h5file).parent)
 
         return self._path
 
     @path.setter
     def path(self, path: str):
-        if not os.path.isdir(path):
-            raise ValueError(f"The specified path: '{path}' does not exist.")
+        dir_path = Path(path).resolve(strict=True)
+        if not dir_path.is_dir():
+            raise ValueError(f"The specified path is not a directory: {path}")
 
-        self._path = path
+        self._path = str(dir_path)
 
     @property
     def path_name(self) -> str | None:
         if self.path is not None and self.name is not None:
-            return os.path.join(self.path, self.name)
+            return str(Path(self.path) / self.name)
 
         return None
 
@@ -176,17 +176,14 @@ class InputFile:
         """
         Read and create an InputFile from ui.json
         """
-        if isinstance(json_file, Path):
-            json_file = str(json_file)
 
-        if not isinstance(json_file, str) or not json_file.endswith(".ui.json"):
-            raise ValueError(
-                "Input file should be a str or Path with extension *.ui.json"
-            )
+        json_file_path = Path(json_file).resolve()
+        if "".join(json_file_path.suffixes[-2:]) != ".ui.json":
+            raise ValueError("Input file should have the extension .ui.json")
 
         input_file = InputFile(**kwargs)
-        input_file.path = os.path.dirname(os.path.abspath(json_file))
-        input_file.name = os.path.basename(json_file)
+        input_file.path = str(json_file_path.parent)
+        input_file.name = json_file_path.name
 
         with open(json_file, encoding="utf-8") as file:
             input_file.ui_json = json.load(file)
@@ -362,22 +359,21 @@ class InputFile:
 
     @geoh5.setter
     def geoh5(self, geoh5: Workspace | None):
-        if geoh5 is not None:
-            if self._geoh5 is not None:
-                raise UserWarning(
-                    "Attribute 'geoh5' already set. "
-                    "Consider creating a new InputFile from arguments."
-                )
+        if geoh5 is None:
+            return
 
-            if not isinstance(geoh5, Workspace):
-                raise ValueError(
-                    "Input 'geoh5' must be a valid :obj:`geoh5py.workspace.Workspace`."
-                )
-
+        if self._geoh5 is not None:
+            raise UserWarning(
+                "Attribute 'geoh5' already set. "
+                "Consider creating a new InputFile from arguments."
+            )
+        if not isinstance(geoh5, Workspace):
+            raise ValueError(
+                "Input 'geoh5' must be a valid :obj:`geoh5py.workspace.Workspace`."
+            )
         self._geoh5 = geoh5
-
         if self.validators is not None:
-            self.validators.geoh5 = geoh5
+            self.validators.geoh5 = self.geoh5
 
     def write_ui_json(
         self,
@@ -395,7 +391,7 @@ class InputFile:
             self.name = name
 
         if path is not None:
-            self.path = os.path.abspath(path)
+            self.path = str(path)
 
         if self.path_name is None:
             raise AttributeError(
@@ -422,6 +418,7 @@ class InputFile:
         :param key: Parameter name to update.
         :param value: Value to update with.
         """
+        assert self.data is not None
         if self.validate and self.validations is not None and key in self.validations:
             if "association" in self.validations[key]:
                 validations = deepcopy(self.validations[key])
@@ -499,8 +496,12 @@ class InputFile:
         return ui_json
 
     @classmethod
-    def demote(cls, var: dict[str, Any]) -> dict[str, str]:
-        """Converts promoted parameter values to their string representations."""
+    def demote(cls, var: dict[str, Any]) -> dict[str, Any]:
+        """
+        Converts promoted parameter values to their string representations.
+
+        Other parameters are left unchanged.
+        """
         mappers = [entity2uuid, as_str_if_uuid, workspace2path, container_group2name]
         for key, value in var.items():
             if isinstance(value, dict):
