@@ -60,7 +60,10 @@ def test_create_copy_geoimage(tmp_path):
         np.c_[10.0, 10.0, 3],
     ]
 
-    geoimage: GeoImage = GeoImage.create(workspace, name="MyGeoImage")
+    geoimage = GeoImage.create(workspace, name="MyGeoImage")
+
+    if geoimage is None:
+        raise Exception("GeoImage not created")
 
     assert geoimage.default_vertices is None
 
