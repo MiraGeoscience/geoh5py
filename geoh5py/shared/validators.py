@@ -235,7 +235,7 @@ class TypeValidator(BaseValidator):
         if not isinstance(valid, list):
             raise TypeError("Input `valid` options must be a type or list of types.")
 
-        if not iterable(value):
+        if not iterable(value) or (isinstance(value, list) and list in tuple(valid)):
             value = (value,)
 
         for val in value:
