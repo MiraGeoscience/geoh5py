@@ -126,5 +126,3 @@ def test_file():
     ws = Workspace(file)
     obj = ws.objects[7]
     print(obj)
-
-
