@@ -60,12 +60,17 @@ class VisualParameters(TextData):
         return self.get_child("Colour", "text")
 
     @colour.setter
-    def colour(self, values: str):
-        # todo: check if values has the right format: what is this format???
-        if not isinstance(values, str):
-            raise TypeError(f"Input 'values' for {self} must be of type {str}.")
+    def colour(self, argb: list):
+        if not isinstance(values, list) or len(values) != 4 or not all(np.isnumeric(val)):
+            raise TypeError(f"Input 'colour' values must be a list of 4 integers.")
 
-        self.modify_xml({"tag": "Colour", "attrib": {}, "text": values})
+        byte_string = ""
+        for val in argb:
+            byte_string += bytes.fromhex(hex(val)[2:])
+
+        value = int.from_bytes(byte_string, 'little')
+
+        self.modify_xml({"tag": "Colour", "attrib": {}, "text": value})
 
     def modify_xml(self, values: dict):
         """

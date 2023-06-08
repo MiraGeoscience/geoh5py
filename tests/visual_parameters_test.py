@@ -119,3 +119,12 @@ def test_visual_parameters(tmp_path):
             setattr(data, "_xml", None)
             setattr(data, "values", None)
             assert data.check_child("Colour", {"bidon": "bidon"}) is False
+
+
+def test_file():
+    file = r"C:\Users\dominiquef\Desktop\test.ui.geoh5"
+    ws = Workspace(file)
+    obj = ws.objects[7]
+    print(obj)
+
+
