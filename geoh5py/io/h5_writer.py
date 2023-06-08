@@ -269,13 +269,12 @@ class H5Writer:
                     values[np.isnan(values)] = FLOAT_NDV
                     values = values.astype(np.float32)
 
-                if len(values) > 0:
-                    attr_handle.create_dataset(
-                        name,
-                        data=values,
-                        compression="gzip",
-                        compression_opts=9,
-                    )
+                attr_handle.create_dataset(
+                    name,
+                    data=values,
+                    compression="gzip",
+                    compression_opts=9,
+                )
 
     @classmethod
     def update_field(

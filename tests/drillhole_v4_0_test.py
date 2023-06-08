@@ -498,7 +498,7 @@ def test_copy_from_extent_drillhole_group(tmp_path):
 
     with workspace.open():
         dh_group = workspace.get_entity("DH_group")[0]
-        dh_group_copy = dh_group.copy_from_extent(extent=np.asarray([[0, 0], [15, 15]]))
+        dh_group_copy = dh_group.copy_from_extent(np.asarray([[0, 0], [15, 15]]))
 
         assert len(dh_group_copy.children) == 2
         for child_a in dh_group_copy.children:

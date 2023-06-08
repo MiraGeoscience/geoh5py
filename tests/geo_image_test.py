@@ -59,8 +59,9 @@ def test_create_copy_geoimage(tmp_path):
         np.c_[5.0, 10.0, 3],
         np.c_[10.0, 10.0, 3],
     ]
-
     geoimage = GeoImage.create(workspace, name="MyGeoImage")
+
+    assert geoimage is not None
 
     assert geoimage.default_vertices is None
 
@@ -155,7 +156,7 @@ def test_create_copy_geoimage(tmp_path):
     geoimage.vertices = geoimage.vertices
 
     # Test copy from extent that clips one corner
-    new_image = geoimage.copy(extent=[[9, 9], [10, 10]])
+    new_image = geoimage.copy_from_extent(np.vstack([[9, 9], [10, 10]]))
     assert new_image is not None, "Error copying from extent."
 
     new_image = geoimage.copy_from_extent(np.vstack([[100, 100], [200, 200]]))
