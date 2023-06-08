@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Release 0.7.1 (2023-06-08)
+--------------------------
+
+GEOPY-967: Fix issue with copying drillholes from extent.
+
+
 Release 0.7.0 (2023-03-26)
 --------------------------
 
