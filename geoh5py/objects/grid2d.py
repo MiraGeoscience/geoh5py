@@ -178,7 +178,6 @@ class Grid2D(GridObject):
         origin = np.r_[self.origin["x"], self.origin["y"], self.origin["z"]].astype(
             float
         )
-
         local_extent[:, :2] -= origin[:2]
 
         if self.rotation != 0.0:
