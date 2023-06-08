@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..data import CommentsData, Data
+from ..data import CommentsData, Data, VisualParameters
 from ..data.data_association_enum import DataAssociationEnum
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
@@ -57,6 +57,7 @@ class ObjectBase(Entity):
         self._last_focus = "None"
         self._property_groups: list[PropertyGroup] | None = None
         # self._clipping_ids: list[uuid.UUID] = []
+        self._visual_parameters: VisualParameters | None = None
 
         if not any(key for key in kwargs if key in ["name", "Name"]):
             kwargs["name"] = type(self).__name__
@@ -525,3 +526,27 @@ class ObjectBase(Entity):
                     )
 
         return entity_type
+
+    @property
+    def visual_parameters(self):
+        """
+        Access the visual parameters of the object.
+        """
+        if self._visual_parameters is None:
+            self._visual_parameters = self.workspace.create_entity(  # type: ignore
+                Data,
+                save_on_creation=True,
+                **{
+                    "entity": {"name": "Visual Parameters", "parent": self},
+                    "entity_type": {"primitive_type": "TEXT"},
+                },
+            )
+
+        return self._visual_parameters
+
+    @visual_parameters.setter
+    def visual_parameters(self, value):
+        if not isinstance(value, VisualParameters):
+            raise TypeError("visual_parameters must be a VisualParameters object.")
+
+        self._visual_parameters = value

@@ -19,8 +19,10 @@
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from warnings import warn
 
+import numpy as np
+
+from .data_association_enum import DataAssociationEnum
 from .text_data import TextData
 
 PARAMETERS = ["Colour"]
@@ -29,109 +31,95 @@ ATTRIBUTES = ["tag", "text", "attrib"]
 
 class VisualParameters(TextData):
     _xml: ET.Element | None = None
+    _association = DataAssociationEnum.OBJECT
 
     @property
-    def xml(self) -> ET.Element | None:
+    def xml(self) -> ET.Element:
         """
         :obj:`str` XML string.
         """
-        if self._xml is None and isinstance(self.values, str):
-            self.xml = self.values  # type: ignore
+        if self._xml is None:
+            if isinstance(self.values, str):
+                str_xml = self.values
+            else:
+                str_xml = """
+                    <IParameterList Version="1.0">
+                    </IParameterList>
+                """
+
+            self._xml = ET.fromstring(str_xml)
 
         return self._xml
 
-    @xml.setter
-    def xml(self, values: str):
-        if not isinstance(values, str):
-            raise TypeError(f"Input 'values' for {self} must be of type {str}.")
+    @property
+    def values(self):
+        if self._xml is not None:
+            self._values = ET.tostring(self._xml, encoding="unicode")
 
-        try:
-            self._xml = ET.fromstring(values)
-        except ET.ParseError as exception:
-            raise ValueError(
-                f"Input 'values' for {self} must be a valid XML string ({exception})."
-            ) from exception
+        elif (getattr(self, "_values", None) is None) and self.on_file:
+            values = self.workspace.fetch_values(self)
+            if isinstance(values, (np.ndarray, str, type(None))):
+                self._values = values
+
+        return self._values
+
+    @values.setter
+    def values(self, values) -> int | None:
+        raise UserWarning(
+            "Cannot set values for VisualParameters. Set supported attributes instead."
+        )
 
     @property
-    def colour(self) -> None | str | dict:
+    def colour(self) -> None | str:
         """
         :obj:`dict` the Colour dictionary.
         """
-        return self.get_child("Colour", "text")
+        element = self.get_tag("Colour")
+        return getattr(element, "text", None)
 
     @colour.setter
-    def colour(self, argb: list):
-        if not isinstance(values, list) or len(values) != 4 or not all(np.isnumeric(val)):
-            raise TypeError(f"Input 'colour' values must be a list of 4 integers.")
+    def colour(self, argb: list | tuple | np.ndarray):
+        if (
+            not isinstance(argb, (list, tuple, np.ndarray))
+            or len(argb) != 4
+            or not all(isinstance(val, int) for val in argb)
+        ):
+            raise TypeError("Input 'colour' values must be a list of 4 integers.")
 
-        byte_string = ""
+        byte_string = b""
         for val in argb:
             byte_string += bytes.fromhex(hex(val)[2:])
 
-        value = int.from_bytes(byte_string, 'little')
+        value = int.from_bytes(byte_string, "little")
 
-        self.modify_xml({"tag": "Colour", "attrib": {}, "text": value})
+        self.set_tag("Colour", str(value))
 
-    def modify_xml(self, values: dict):
+    def get_tag(self, tag: str) -> None | ET.Element:
         """
-        Modify the XML Element with a dictionary.
-        :param values: a dictionary of the values to modify
-        that must contains 'tag', 'attrib' and 'text' keys.
+        Check if the tag is a valid parameter.
+        :param tag: the key of the tag to check.
+        :return: True if the tag is a valid parameter.
         """
-        if not isinstance(values, dict):
-            raise TypeError(f"Input 'values' for {self} must be of type {dict}.")
+        element = self.xml.find(tag)
+        return element  # type: ignore
 
-        self.set_child(values["tag"], "text", values["text"])
-        self.set_child(values["tag"], "attrib", values["attrib"])
-
-    def check_child(self, child: str, attribute: str) -> bool:
+    def set_tag(self, tag: str, value: str):
         """
-        Check if the child is a valid parameter.
-        :param child: the key of the child to check.
-        :param attribute: the attribute to check.
-        :return: True if the child and attribute are valid.
-        """
-        if child not in PARAMETERS:
-            warn(f"{child} is not a supported parameter. Must be one of {PARAMETERS}.")
-            return False
-
-        if not isinstance(self.xml, ET.Element):
-            warn(f"XML is not set for {self}.")
-            return False
-
-        if self.xml.find(child) is None:
-            warn(f"{child} is not present in the XML.")
-            return False
-
-        if not all(
-            hasattr(self.xml.find(child), attribute_) for attribute_ in ATTRIBUTES
-        ):
-            warn(f"{child} does not have the required attributes ({ATTRIBUTES}).")
-            return False
-
-        if attribute not in ATTRIBUTES:
-            warn(f"Input 'attribute' for {self} must be in {ATTRIBUTES}.")
-            return False
-
-        return True
-
-    def get_child(self, child: str, attribute: str) -> None | str | dict:
-        """
-        Check if the child is a valid parameter.
-        :param child: the key of the child to check.
-        :param attribute: the attribute to check.
-        :return: True if the child is a valid parameter.
-        """
-        if self.check_child(child, attribute):
-            return getattr(self.xml.find(child), attribute)  # type: ignore
-        return None
-
-    def set_child(self, child: str, attribute: str, value: str | dict):
-        """
-        Check if the child is a valid parameter.
-        :param child: the key of the child to check.
-        :param attribute: the attribute to check.
+        Check if the tag is a valid parameter.
+        :param tag: the key of the tag to check.
         :param value: the value to set.
         """
-        if self.check_child(child, attribute):
-            setattr(self.xml.find(child), attribute, value)  # type: ignore
+
+        if not isinstance(value, str):
+            raise TypeError(
+                f"Input 'value' for VisualParameters.{tag} must be of type {str}."
+            )
+
+        if self.xml.find(tag) is None:
+            ET.SubElement(self.xml, tag)
+
+        element = self.get_tag(tag)
+
+        if element is not None:
+            element.text = value
+            self.workspace.update_attribute(self, "values")
