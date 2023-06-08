@@ -392,6 +392,7 @@ class GeoImage(ObjectBase):
             else:
                 self.vertices = self.default_vertices
 
+        # todo: change the call from vertices to vertices_xyz in the code
         if self._vertices is not None:
             return self._vertices.view("<f8").reshape((-1, 3)).astype(float)
 
@@ -532,7 +533,10 @@ class GeoImage(ObjectBase):
         The rotation of the image in degrees
         :return: the rotation angle.
         """
-        if self._rotation is None and self._vertices is not None:
+        if self._rotation is None and self.vertices is not None:
+            if self._vertices is None:
+                raise AttributeError("The image has no vertices")
+
             # Get the x and y values of the first and second corners
             corner_1_x = self._vertices["x"][0]
             corner_1_y = self._vertices["y"][0]
@@ -567,7 +571,10 @@ class GeoImage(ObjectBase):
 
     @rotation.setter
     def rotation(self, new_rotation):
-        if new_rotation != 0 and self.vertices is not None:
+        if self.rotation is not None:
+            if self._vertices is None:
+                raise AttributeError("The image has no vertices")
+
             # Compute current rotation
             current_rotation = self.rotation
             if current_rotation is None:
@@ -577,11 +584,11 @@ class GeoImage(ObjectBase):
             rotation_angle_deg = new_rotation - current_rotation
 
             # Use the origin vertex (vertices[3]) as the center of rotation
-            center = np.array([self.vertices["x"][3], self.vertices["y"][3]])
+            center = np.array([self._vertices["x"][3], self._vertices["y"][3]])
 
             # Move vertices so that center is at origin
-            vertices_centered_x = self.vertices["x"] - center[0]
-            vertices_centered_y = self.vertices["y"] - center[1]
+            vertices_centered_x = self._vertices["x"] - center[0]
+            vertices_centered_y = self._vertices["y"] - center[1]
             vertices_centered = np.array([vertices_centered_x, vertices_centered_y]).T
 
             # Compute rotation matrix using numpy
@@ -597,8 +604,8 @@ class GeoImage(ObjectBase):
             rotated_vertices_centered = vertices_centered @ rotation_matrix
 
             # Move vertices back so that center is at original location
-            self.vertices["x"] = rotated_vertices_centered[:, 0] + center[0]
-            self.vertices["y"] = rotated_vertices_centered[:, 1] + center[1]
+            self._vertices["x"] = rotated_vertices_centered[:, 0] + center[0]
+            self._vertices["y"] = rotated_vertices_centered[:, 1] + center[1]
 
             # Update the stored rotation
             self._rotation = new_rotation

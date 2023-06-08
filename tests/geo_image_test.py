@@ -248,31 +248,33 @@ def test_georeference_image(tmp_path):
     geoimage.to_grid2d(new_name="CMYK", transform="CMYK")
 
 
-def create_concentric_array(dims=(15, 15, 3)):
-    # Compute the center of the array
-    center = [(x - 1) / 2.0 for x in dims[:2]]
+def test_rotation_setter(tmp_path):
+    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
 
-    # Create a 15x15 grid of indices
-    x_indices, y_indices = np.indices(dims[:2])
+    # add the data
+    x_val, y_val = np.meshgrid(np.linspace(100, 1000, 16), np.linspace(100, 1500, 16))
+    values = x_val + y_val
+    values = (values - np.min(values)) / (np.max(values) - np.min(values))
+    values *= 255
+    values = np.repeat(values.astype(np.uint32)[:, :, np.newaxis], 3, axis=2)
 
-    x_val, y_val = np.meshgrid(np.arange(dims[0]), np.arange(dims[1]), indexing="ij")
+    # load image
+    geoimage = GeoImage.create(workspace, name="test_area", image=values)
 
-    # normalise x and y between 0 and 1
-    x_val = x_val / np.max(x_val)
-    y_val = y_val / np.max(y_val)
+    rotated = geoimage.copy()
 
-    # Compute Euclidean distance from the center for each index
-    distances = np.sqrt((x_indices - center[0]) ** 2 + (y_indices - center[1]) ** 2)
+    assert geoimage.rotation == 0
 
-    # Normalize distances to range [0, 1]
-    distances = (distances - np.min(distances)) / (
-        np.max(distances) - np.min(distances)
-    )
+    rotated.rotation = 45
 
-    # to an image
-    distances = (np.stack((distances, x_val, y_val), axis=2) * 255).astype(np.uint8)
+    assert rotated.rotation == 45
 
-    return distances
+    rotated.rotation = 0
+
+    assert rotated.rotation == 0
+
+    assert np.allclose(geoimage.vertices, rotated.vertices)
+    assert geoimage.image == rotated.image
 
 
 def test_converting_rotated_images(tmp_path):
@@ -295,7 +297,6 @@ def test_converting_rotated_images(tmp_path):
     # add the data
     x_val, y_val = np.meshgrid(np.linspace(100, 1000, n_x), np.linspace(100, 1500, n_y))
     values = x_val + y_val
-    # normalize
     values = (values - np.min(values)) / (np.max(values) - np.min(values))
     values *= 255
     values = values.astype(np.uint32)
@@ -325,10 +326,15 @@ def test_converting_rotated_images(tmp_path):
 def test_clipping_image(tmp_path):
     workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
 
+    # add the data
+    x_val, y_val = np.meshgrid(np.linspace(100, 1000, 16), np.linspace(100, 1500, 16))
+    values = x_val + y_val
+    values = (values - np.min(values)) / (np.max(values) - np.min(values))
+    values *= 255
+    values = np.repeat(values.astype(np.uint32)[:, :, np.newaxis], 3, axis=2)
+
     # load image
-    geoimage = GeoImage.create(
-        workspace, name="test_area", image=create_concentric_array(dims=(16, 16, 3))
-    )
+    geoimage = GeoImage.create(workspace, name="test_area", image=values)
 
     copy_image = geoimage.copy_from_extent(np.vstack([[2, 4], [12, 12]]))
 
