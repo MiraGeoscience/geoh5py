@@ -128,5 +128,3 @@ def test_file():
         obj = ws.objects[0]
         obj.visual_parameters.colour = [255, 255, 255, 255]
         print(obj.visual_parameters)
-
-
