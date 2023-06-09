@@ -92,12 +92,23 @@ class VisualParameters(TextData):
         )
 
     @property
-    def colour(self) -> None | str:
+    def colour(self) -> None | list:
         """
-        :obj:`dict` the Colour dictionary.
+        Colour of the object in [Alpha, Red, Green, Blue] format.
+
+        Each value is an integer between 0 and 255.
+        The colour value is stored as a single integer converted from
+        a byte string of the form 'BBGGRR00' where 'BB' is the blue value,
+        'GG' is the green value, 'RR' is the red converted from hexadecimal format.
         """
         element = self.get_tag("Colour")
-        return getattr(element, "text", None)
+
+        if element is None or not element.text:
+            return None
+
+        c_string = (int(element.text)).to_bytes(4, byteorder="little").hex()
+
+        return [int(c_string[i : i + 2], 16) for i in range(0, 8, 2)]
 
     @colour.setter
     def colour(self, argb: list | tuple | np.ndarray):
@@ -108,11 +119,11 @@ class VisualParameters(TextData):
         ):
             raise TypeError("Input 'colour' values must be a list of 4 integers.")
 
-        byte_string = b""
+        byte_string = ""
         for val in argb:
-            byte_string += bytes.fromhex(hex(val)[2:])
+            byte_string += f"{val:02x}"
 
-        value = int.from_bytes(byte_string, "little")
+        value = int.from_bytes(bytes.fromhex(byte_string), "little")
 
         self.set_tag("Colour", str(value))
 

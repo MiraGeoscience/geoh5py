@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from geoh5py.data.visual_parameters import VisualParameters
 from geoh5py.objects import Points
@@ -30,103 +29,19 @@ def test_visual_parameters(tmp_path):
 
     # Generate a random cloud of points with reference values
     n_data = 12
-    # values = """
-    # <IParameterList Version="1.0">
-    #     <Colour>4288806783</Colour>
-    #     <Transparency>0</Transparency>
-    #     <Lighting>true</Lighting>
-    #     <Showcage>true</Showcage>
-    #     <Showgrid>false</Showgrid>
-    #     <Showaxis>false</Showaxis>
-    #     <Smooth>false</Smooth>
-    #     <Originelevation>0</Originelevation>
-    #     <Deformbydata toggled="false"></Deformbydata>
-    #     <Distancefromplane>100</Distancefromplane>
-    #     <Orientation toggled="false">{
-    #                                   "DataGroup": "",
-    #                                   "ManualWidth": false,
-    #                                   "Scale": false,
-    #                                   "ScaleLog": false,
-    #                                   "Size": 30,
-    #                                   "Symbol": "2D arrow",
-    #                                   "Width": 7\n}\n</Orientation>
-    #     <Contours toggled="false">{
-    #                                "Anchor Parameter": "0",
-    #                                "Colour Picker": "4294967040",
-    #                                "Disable on Incompatible": false,
-    #                                "Interval Parameter": "0",
-    #                                "Maximum Contours Parameter": "20",
-    #                                "Property Picker": ""}
-    #     </Contours>
-    # </IParameterList>
-    # """
-
     h5file_path = tmp_path / r"testTextData.geoh5"
 
     with Workspace(h5file_path) as workspace:
-        with Workspace(tmp_path / r"testTextData_copy.geoh5"):
-            points = Points.create(
-                workspace,
-                vertices=np.random.randn(n_data, 3),
-                name=name,
-                allow_move=False,
-            )
+        points = Points.create(
+            workspace,
+            vertices=np.random.randn(n_data, 3),
+            name=name,
+            allow_move=False,
+        )
+        assert isinstance(points.visual_parameters, VisualParameters)
 
-            # data = points.add_data(
-            #     {
-            #         "Visual Parameters": {
-            #             "type": "text",
-            #             "values": values,
-            #             "association": "OBJECT",
-            #         }
-            #     }
-            # )
+        # Test the round color transform
+        new_colour = np.random.randint(0, 255, (4,)).tolist()
+        points.visual_parameters.colour = new_colour
 
-            assert isinstance(points.visual_parameters, VisualParameters)
-
-            points.visual_parameters.colour = [100, 200, 250, 255]
-
-            print(points.visual_parameters.colour)
-            # assert points.visual_parameters.colour == "4288806783"
-            #
-            # points.visual_parameters.colour = "2385641541"
-            #
-            # assert points.visual_parameters.colour == "2385641541"
-            #
-            # with pytest.raises(TypeError, match="Input 'values' for"):
-            #     points.visual_parameters.xml = np.array([0])
-            #
-            # with pytest.raises(ValueError, match="Input 'values' for"):
-            #     points.visual_parameters.xml = "bidon"
-            #
-            # with pytest.raises(TypeError, match="Input 'values' for"):
-            #     points.visual_parameters.colour = 42
-            #
-            # with pytest.raises(TypeError, match="Input 'values' for"):
-            #     points.visual_parameters.modify_xml("bidon")
-            #
-            # assert points.visual_parameters.check_child("Bidon", {"bidon": "bidon"}) is False
-            #
-            # assert points.visual_parameters.check_child("Colour", {"bidon": "bidon"}) is False
-            #
-            # assert points.visual_parameters.get_child("bidon", "text") is None
-            #
-            # points.visual_parameters.xml = """
-            # <IParameterList Version="1.0">
-            # <Transparency>0</Transparency>
-            # <Lighting>true</Lighting>
-            # </IParameterList>
-            # """
-            # assert points.visual_parameters.check_child("Colour", {"bidon": "bidon"}) is False
-            #
-            # assert points.visual_parameters.check_child("Colour", {"bidon": "bidon"}) is False
-
-
-def test_file():
-    file = r"C:\Users\dominiquef\Desktop\res2d - Copy.geoh5"
-    with Workspace(file) as ws:
-        obj = ws.objects[0]
-        obj.visual_parameters.colour = [255, 255, 255, 255]
-        print(obj.visual_parameters)
-
-
+        assert points.visual_parameters.colour == new_colour
