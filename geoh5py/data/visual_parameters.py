@@ -23,7 +23,6 @@ import xml.etree.ElementTree as ET
 import numpy as np
 
 from .data_association_enum import DataAssociationEnum
-from .data_type import DataType
 from .text_data import TextData
 
 PARAMETERS = ["Colour"]
@@ -33,24 +32,6 @@ ATTRIBUTES = ["tag", "text", "attrib"]
 class VisualParameters(TextData):
     _xml: ET.Element | None = None
     _association = DataAssociationEnum.OBJECT
-
-    def __init__(
-        self,
-        data_type: DataType,
-        **kwargs,
-    ):
-        if (
-            not isinstance(data_type, DataType)
-            or data_type.primitive_type != self.primitive_type()
-        ):
-            raise TypeError(
-                "Input 'data_type' must be a DataType object of primitive_type 'TEXT'."
-            )
-
-        super().__init__(data_type, **kwargs)
-
-        if self.entity_type.name == "Entity":
-            self.entity_type.name = self.name
 
     @property
     def xml(self) -> ET.Element:
