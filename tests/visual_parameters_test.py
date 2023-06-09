@@ -40,8 +40,13 @@ def test_visual_parameters(tmp_path):
         )
         assert isinstance(points.visual_parameters, VisualParameters)
 
-        # Test the round color transform
+        # Test color setter and round-trip transform
         new_colour = np.random.randint(0, 255, (4,)).tolist()
         points.visual_parameters.colour = new_colour
 
         assert points.visual_parameters.colour == new_colour
+
+        # Test copying object with visual parameters
+        copy = points.copy()
+
+        assert copy.visual_parameters.colour == new_colour

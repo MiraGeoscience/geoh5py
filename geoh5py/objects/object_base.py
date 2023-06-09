@@ -542,7 +542,7 @@ class ObjectBase(Entity):
                         "parent": self,
                         "association": "OBJECT",
                     },
-                    "entity_type": {"primitive_type": "TEXT"},
+                    "entity_type": {"name": "XmlData", "primitive_type": "TEXT"},
                 },
             )
 

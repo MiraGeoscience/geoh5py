@@ -237,7 +237,14 @@ class Workspace(AbstractContextManager):
         """
         entity_kwargs = get_attributes(
             entity,
-            omit_list=["_uid", "_entity_type", "_on_file", "_centroids", "_extent"]
+            omit_list=[
+                "_uid",
+                "_entity_type",
+                "_on_file",
+                "_centroids",
+                "_extent",
+                "_visual_parameters",
+            ]
             + list(omit_list),
             attributes={"uid": None, "parent": None},
         )
@@ -376,7 +383,10 @@ class Workspace(AbstractContextManager):
                 ):
                     member = type(name + "Concatenated", (ConcatenatedData, member), {})
 
-                if "Visual Parameters" in entity_kwargs.values() and member is TextData:
+                if (
+                    entity_kwargs.get("name") == "Visual Parameters"
+                    and member is TextData
+                ):
                     member = VisualParameters
 
                 created_entity = member(data_type, **entity_kwargs)
@@ -407,7 +417,7 @@ class Workspace(AbstractContextManager):
             entity_kwargs["parent"] = self.root
 
         created_entity: Data | Group | ObjectBase | None = None
-        if issubclass(entity_class, Data) or entity_class is None:
+        if entity_class is None or issubclass(entity_class, Data):
             created_entity = self.create_data(Data, entity_kwargs, entity_type_kwargs)
 
             if isinstance(created_entity, VisualParameters):

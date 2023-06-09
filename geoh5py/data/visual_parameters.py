@@ -47,9 +47,6 @@ class VisualParameters(TextData):
                 "Input 'data_type' must be a DataType object of primitive_type 'TEXT'."
             )
 
-        data_type.name = "XmlData"
-        data_type.description = "XML format text data"
-
         super().__init__(data_type, **kwargs)
 
         if self.entity_type.name == "Entity":
@@ -86,10 +83,15 @@ class VisualParameters(TextData):
         return self._values
 
     @values.setter
-    def values(self, values) -> int | None:
-        raise UserWarning(
-            "Cannot set values for VisualParameters. Set supported attributes instead."
-        )
+    def values(self, values: np.ndarray | str | None):
+        self._values = values
+
+        if not isinstance(values, (np.ndarray, str, type(None))):
+            raise ValueError(
+                f"Input 'values' for {self} must be of type {np.ndarray}  str or None."
+            )
+
+        self.workspace.update_attribute(self, "values")
 
     @property
     def colour(self) -> None | list:
