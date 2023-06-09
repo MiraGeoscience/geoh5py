@@ -537,7 +537,11 @@ class ObjectBase(Entity):
                 Data,
                 save_on_creation=True,
                 **{
-                    "entity": {"name": "Visual Parameters", "parent": self},
+                    "entity": {
+                        "name": "Visual Parameters",
+                        "parent": self,
+                        "association": "OBJECT",
+                    },
                     "entity_type": {"primitive_type": "TEXT"},
                 },
             )

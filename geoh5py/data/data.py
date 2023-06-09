@@ -46,8 +46,15 @@ class Data(Entity):
         self._association = None
         self._on_file = False
         self._modifiable = True
-        assert data_type is not None
-        assert data_type.primitive_type == self.primitive_type()
+
+        if (
+            not isinstance(data_type, DataType)
+            or data_type.primitive_type != self.primitive_type()
+        ):
+            raise TypeError(
+                "Input 'data_type' must be a DataType object of primitive_type 'TEXT'."
+            )
+
         self.entity_type = data_type
         self._values = None
 
