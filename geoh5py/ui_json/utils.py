@@ -336,7 +336,7 @@ def monitored_directory_copy(
     temp_geoh5 = f"temp{time():.3f}.geoh5"
 
     with fetch_active_workspace(entity.workspace, mode="r"):
-        with Workspace(working_path / temp_geoh5) as w_s:
+        with Workspace.create_geoh5(working_path / temp_geoh5) as w_s:
             entity.copy(parent=w_s, copy_children=copy_children)
 
     shutil.move(

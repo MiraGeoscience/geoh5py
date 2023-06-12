@@ -124,7 +124,8 @@ class Workspace(AbstractContextManager):
             else:
                 setattr(self, attr, item)
 
-        self.open()
+        if not isinstance(self._h5file, io.BytesIO) and Path(self._h5file).is_file():
+            self.open()
 
     def activate(self):
         """Makes this workspace the active one.
@@ -331,6 +332,28 @@ class Workspace(AbstractContextManager):
             recovered_entity.entity_type.on_file = True
 
         return recovered_entity
+
+    @staticmethod
+    def create_geoh5(
+        h5file: str | Path | io.BytesIO = "Analyst.geoh5", **kwargs
+    ) -> Workspace:
+        """
+        Create a new workspace from a file.
+
+        :param h5file: Path to the file.
+        :param kwargs: Additional keyword arguments passed to the constructor.
+
+        :return: The newly created workspace.
+        """
+        if not isinstance(h5file, io.BytesIO) and Path(h5file).is_file():
+            raise UserWarning("File already exists. Consider re-opening instead.")
+
+        workspace = Workspace(h5file, **kwargs)
+        setattr(workspace, "_geoh5", h5py.File(h5file, "a"))
+        H5Writer.create_geoh5(workspace.h5file, workspace)
+        workspace.fetch_or_create_root()
+
+        return workspace
 
     def create_data(
         self,
@@ -1057,6 +1080,14 @@ class Workspace(AbstractContextManager):
         :param mode: Optional mode of h5py.File. Defaults to 'r+'.
         :return: `self`
         """
+        if (
+            not isinstance(self._h5file, io.BytesIO)
+            and not Path(self._h5file).is_file()
+        ):
+            raise FileNotFoundError(
+                f"File {self._h5file} does not exist. Consider creating it with Workspace.create()"
+            )
+
         if isinstance(self._geoh5, h5py.File) and self._geoh5:
             warnings.warn(f"Workspace already opened in mode {self._geoh5.mode}.")
             return self
@@ -1075,14 +1106,10 @@ class Workspace(AbstractContextManager):
         self._groups = {}
         self._types = {}
 
-        try:
-            proj_attributes = self._io_call(H5Reader.fetch_project_attributes, mode="r")
+        proj_attributes = self._io_call(H5Reader.fetch_project_attributes, mode="r")
 
-            for key, attr in proj_attributes.items():
-                setattr(self, self._attribute_map[key], attr)
-
-        except FileNotFoundError:
-            self._io_call(H5Writer.create_geoh5, self, mode="a")
+        for key, attr in proj_attributes.items():
+            setattr(self, self._attribute_map[key], attr)
 
         self.fetch_or_create_root()
 
@@ -1233,6 +1260,13 @@ class Workspace(AbstractContextManager):
             return fun(self.geoh5, *args, **kwargs)
 
         except Geoh5FileClosedError as error:
+            if not Path(str(self.h5file)).is_file():
+                raise FileNotFoundError(
+                    f"Error performing {fun}. "
+                    "The geoh5 file does not exist."
+                    "Consider creating the geoh5 with `Workspace.create_geoh5()'"
+                ) from error
+
             raise Geoh5FileClosedError(
                 f"Error executing {fun}. "
                 + "Consider re-opening with `Workspace.open()' "
