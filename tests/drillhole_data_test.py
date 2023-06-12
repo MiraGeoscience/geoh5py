@@ -35,7 +35,7 @@ def test_create_drillhole_data(tmp_path):
     well_name = "bullseye"
     n_data = 10
 
-    with Workspace(h5file_path, version=1.0) as workspace:
+    with Workspace.create_geoh5(h5file_path, version=1.0) as workspace:
         # Create a workspace
         max_depth = 100
         well = Drillhole.create(
@@ -210,7 +210,7 @@ def test_create_drillhole_data(tmp_path):
 def test_no_survey(tmp_path):
     collar = np.r_[0.0, 10.0, 10.0]
     h5file_path = tmp_path / r"testCurve.geoh5"
-    with Workspace(h5file_path, version=1.0) as workspace:
+    with Workspace.create_geoh5(h5file_path, version=1.0) as workspace:
         well = Drillhole.create(workspace, collar=collar)
         depths = [0.0, 1.0, 1000.0]
         locations = well.desurvey(depths)
@@ -228,7 +228,7 @@ def test_single_survey(tmp_path):
 
     collar = np.r_[0.0, 10.0, 10.0]
     h5file_path = tmp_path / r"testCurve.geoh5"
-    with Workspace(h5file_path, version=1.0) as workspace:
+    with Workspace.create_geoh5(h5file_path, version=1.0) as workspace:
         well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, azm, dip])
         depths = [0.0, 1.0, 1000.0]
         locations = well.desurvey(depths)
@@ -256,7 +256,7 @@ def test_outside_survey(tmp_path):
 
     collar = np.r_[0.0, 10.0, 10.0]
     h5file_path = tmp_path / r"testCurve.geoh5"
-    with Workspace(h5file_path, version=1.0) as workspace:
+    with Workspace.create_geoh5(h5file_path, version=1.0) as workspace:
         well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, azm, dip])
         depths = [0.0, 1000.0]
         locations = well.desurvey(depths)
@@ -282,7 +282,7 @@ def test_insert_drillhole_data(tmp_path):
     collocation = 1e-5
     h5file_path = tmp_path / r"testCurve.geoh5"
 
-    with Workspace(h5file_path, version=1.0) as workspace:
+    with Workspace.create_geoh5(h5file_path, version=1.0) as workspace:
         max_depth = 100
         well = Drillhole.create(
             workspace,
@@ -336,7 +336,7 @@ def test_insert_drillhole_data(tmp_path):
 def test_mask_drillhole_data(tmp_path):
     h5file_path = tmp_path / r"testCurve.geoh5"
 
-    with Workspace(h5file_path, version=1.0) as workspace:
+    with Workspace.create_geoh5(h5file_path, version=1.0) as workspace:
         well = Drillhole.create(
             workspace,
             collar=np.r_[0.0, 10.0, 10],

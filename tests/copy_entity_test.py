@@ -62,7 +62,7 @@ def test_copy_entity(tmp_path: Path):
     h5file_path = tmp_path / r"testProject.geoh5"
 
     # Create a workspace
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create_geoh5(h5file_path) as workspace:
         for obj, kwargs in objects.items():
             entity = obj.create(workspace, **kwargs)
 
@@ -91,7 +91,7 @@ def test_copy_entity(tmp_path: Path):
         _ = entity.save()
 
     workspace = Workspace(h5file_path)
-    new_workspace = Workspace(tmp_path / r"testProject_2.geoh5")
+    new_workspace = Workspace.create_geoh5(tmp_path / r"testProject_2.geoh5")
     for entity in workspace.objects:
         entity.copy(parent=new_workspace)
 

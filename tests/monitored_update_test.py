@@ -33,7 +33,7 @@ def test_monitored_directory_copy(tmp_path: Path):
     xyz = np.random.randn(12, 3)
     values = np.random.randn(12)
     h5file_path = tmp_path / r"testPoints.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create_geoh5(h5file_path) as workspace:
         group = ContainerGroup.create(workspace, name="groupee")
         points = Points.create(workspace, parent=group, vertices=xyz, allow_move=False)
         points.add_data({"DataValues": {"association": "VERTEX", "values": values}})

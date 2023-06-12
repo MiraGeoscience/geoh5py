@@ -48,7 +48,13 @@ from geoh5py.workspace import Workspace
 
 
 def get_workspace(directory: str | Path):
-    workspace = Workspace(Path(directory).parent / "testPoints.geoh5")
+    file = Path(directory).parent / "testPoints.geoh5"
+
+    if file.exists():
+        workspace = Workspace(file)
+    else:
+        workspace = Workspace.create_geoh5(file)
+
     if len(workspace.objects) == 0:
         group = ContainerGroup.create(workspace)
         DrillholeGroup.create(workspace, parent=group)
@@ -124,7 +130,7 @@ def test_input_file_name_path(tmp_path: Path):
         DeprecationWarning,
         match="The 'workspace' property is deprecated. Use 'geoh5' instead.",
     ):
-        test.workspace = Workspace(tmp_path / r"test.geoh5")
+        test.workspace = Workspace.create_geoh5(tmp_path / r"test.geoh5")
 
     assert test.path == str(tmp_path)  # pulled from workspace.h5file
     test.path = tmp_path
@@ -563,7 +569,7 @@ def test_write_ui_json(tmp_path: Path):
 
 
 def test_in_memory_geoh5(tmp_path: Path):
-    workspace = Workspace(BytesIO())
+    workspace = Workspace.create_geoh5(BytesIO())
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
     ui_json["test"] = templates.float_parameter(optional="disabled")

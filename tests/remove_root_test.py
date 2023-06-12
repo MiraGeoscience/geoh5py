@@ -35,7 +35,7 @@ def test_remove_root(tmp_path: Path):
     xyz = np.random.randn(n_data, 3)
     h5file_path = tmp_path / r"testProject.geoh5"
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create_geoh5(h5file_path) as workspace:
         group = ContainerGroup.create(workspace)
         points = Points.create(workspace, vertices=xyz, parent=group)
         data = points.add_data(

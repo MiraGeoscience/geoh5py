@@ -36,14 +36,18 @@ def test_workspace_from_kwargs(tmp_path: Path):
         "hello": "world",
     }
 
-    with pytest.warns(UserWarning) as warning:
+    with pytest.warns(
+        UserWarning, match="Argument hello with value world is not a valid attribute"
+    ):
         workspace = Workspace(h5file_tmp, **attr)
 
-    assert (
-        "UserWarning('Argument hello with value world is not a valid attribute"
-        in str(warning[0])
-    )
-    assert workspace.geoh5.mode == "r+"
+    with pytest.raises(
+        FileNotFoundError,
+        match="does not exist. Consider creating it with Workspace.create()",
+    ):
+        workspace.open()
+
+    workspace = Workspace.create_geoh5(h5file_tmp, **attr)
 
     # Test re-opening in read-only - stays in r+"
     with pytest.warns(UserWarning) as warning:
@@ -66,7 +70,7 @@ def test_workspace_from_kwargs(tmp_path: Path):
 
 
 def test_empty_workspace(tmp_path):
-    Workspace(
+    Workspace.create_geoh5(
         tmp_path / r"test.geoh5",
     ).close()
 
@@ -88,7 +92,7 @@ def test_empty_workspace(tmp_path):
 
 
 def test_missing_type(tmp_path):
-    Workspace(
+    Workspace.create_geoh5(
         tmp_path / r"test.geoh5",
     ).close()
     with File(tmp_path / r"test.geoh5", "r+") as file:
@@ -110,7 +114,7 @@ def test_bad_extension(tmp_path):
 
 
 def test_read_bytes(tmp_path):
-    with Workspace(tmp_path / r"test.geoh5") as workspace:
+    with Workspace.create_geoh5(tmp_path / r"test.geoh5") as workspace:
         workspace.create_entity(Points)
 
     with open(tmp_path / r"test.geoh5", "rb") as in_file:
@@ -126,7 +130,7 @@ def test_read_bytes(tmp_path):
 
 
 def test_reopening_mode(tmp_path):
-    with Workspace(tmp_path / r"test.geoh5") as workspace:
+    with Workspace.create_geoh5(tmp_path / r"test.geoh5") as workspace:
         pass
 
     with workspace.open(mode="r") as workspace:

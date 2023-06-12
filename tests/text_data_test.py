@@ -41,8 +41,10 @@ def test_create_text_data(tmp_path: Path):
     )
     h5file_path = tmp_path / r"testTextData.geoh5"
 
-    with Workspace(h5file_path) as workspace:
-        with Workspace(tmp_path / r"testTextData_copy.geoh5") as new_workspace:
+    with Workspace.create_geoh5(h5file_path) as workspace:
+        with Workspace.create_geoh5(
+            tmp_path / r"testTextData_copy.geoh5"
+        ) as new_workspace:
             points = Points.create(
                 workspace,
                 vertices=np.random.randn(n_data, 3),
