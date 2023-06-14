@@ -39,6 +39,8 @@ import numpy as np
 
 from .. import data, groups, objects
 from ..data import CommentsData, Data, DataType
+from ..data.text_data import TextData
+from ..data.visual_parameters import VisualParameters
 from ..groups import (
     CustomGroup,
     DrillholeGroup,
@@ -235,7 +237,14 @@ class Workspace(AbstractContextManager):
         """
         entity_kwargs = get_attributes(
             entity,
-            omit_list=["_uid", "_entity_type", "_on_file", "_centroids", "_extent"]
+            omit_list=[
+                "_uid",
+                "_entity_type",
+                "_on_file",
+                "_centroids",
+                "_extent",
+                "_visual_parameters",
+            ]
             + list(omit_list),
             attributes={"uid": None, "parent": None},
         )
@@ -374,6 +383,12 @@ class Workspace(AbstractContextManager):
                 ):
                     member = type(name + "Concatenated", (ConcatenatedData, member), {})
 
+                if (
+                    entity_kwargs.get("name") == "Visual Parameters"
+                    and member is TextData
+                ):
+                    member = VisualParameters
+
                 created_entity = member(data_type, **entity_kwargs)
                 return created_entity
 
@@ -402,8 +417,11 @@ class Workspace(AbstractContextManager):
             entity_kwargs["parent"] = self.root
 
         created_entity: Data | Group | ObjectBase | None = None
-        if entity_class is Data or entity_class is None:
+        if entity_class is None or issubclass(entity_class, Data):
             created_entity = self.create_data(Data, entity_kwargs, entity_type_kwargs)
+
+            if isinstance(created_entity, VisualParameters):
+                entity_kwargs["parent"].visual_parameters = created_entity
 
         elif entity_class is RootGroup:
             created_entity = RootGroup(

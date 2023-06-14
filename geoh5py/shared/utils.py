@@ -181,7 +181,7 @@ def clear_array_attributes(entity: Entity, recursive: bool = False):
 def compare_entities(
     object_a, object_b, ignore: list | None = None, decimal: int = 6
 ) -> None:
-    ignore_list = ["_workspace", "_children"]
+    ignore_list = ["_workspace", "_children", "_visual_parameters"]
     if ignore is not None:
         for item in ignore:
             ignore_list.append(item)
