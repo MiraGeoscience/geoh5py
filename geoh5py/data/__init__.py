@@ -34,3 +34,4 @@ from .reference_value_map import ReferenceValueMap
 from .referenced_data import ReferencedData
 from .text_data import CommentsData, MultiTextData, TextData
 from .unknown_data import UnknownData
+from .visual_parameters import VisualParameters
