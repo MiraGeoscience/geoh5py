@@ -112,17 +112,20 @@ class VisualParameters(TextData):
 
     def get_tag(self, tag: str) -> None | ET.Element:
         """
-        Check if the tag is a valid parameter.
-        :param tag: the key of the tag to check.
-        :return: True if the tag is a valid parameter.
+        Recover the tag element.
+
+        :param tag: The name of the tag.
+
+        :return: The xml element.
         """
         element = self.xml.find(tag)
         return element  # type: ignore
 
     def set_tag(self, tag: str, value: str):
         """
-        Check if the tag is a valid parameter.
-        :param tag: the key of the tag to check.
+        Set the value for the tag.
+
+        :param tag: The name of the tag.
         :param value: the value to set.
         """
 

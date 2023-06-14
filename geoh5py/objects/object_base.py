@@ -528,7 +528,7 @@ class ObjectBase(Entity):
         return entity_type
 
     @property
-    def visual_parameters(self):
+    def visual_parameters(self) -> VisualParameters | None:
         """
         Access the visual parameters of the object.
         """
@@ -549,7 +549,7 @@ class ObjectBase(Entity):
         return self._visual_parameters
 
     @visual_parameters.setter
-    def visual_parameters(self, value):
+    def visual_parameters(self, value: VisualParameters):
         if not isinstance(value, VisualParameters):
             raise TypeError("visual_parameters must be a VisualParameters object.")
 
