@@ -77,11 +77,11 @@ class VisualParameters(TextData):
     @property
     def colour(self) -> None | list:
         """
-        Colour of the object in [Alpha, Red, Green, Blue] format.
+        Colour of the object in [Red, Green, Blue] format.
 
         Each value is an integer between 0 and 255.
         The colour value is stored as a single integer converted from
-        a byte string of the form 'BBGGRR00' where 'BB' is the blue value,
+        a byte string of the form 'RRGGBB' where 'BB' is the blue value,
         'GG' is the green value, 'RR' is the red converted from hexadecimal format.
         """
         element = self.get_tag("Colour")
@@ -91,21 +91,22 @@ class VisualParameters(TextData):
 
         c_string = (int(element.text)).to_bytes(4, byteorder="little").hex()
 
-        return [int(c_string[i : i + 2], 16) for i in range(0, 8, 2)]
+        return [int(c_string[i : i + 2], 16) for i in range(0, 8, 2)][:3]
 
     @colour.setter
-    def colour(self, argb: list | tuple | np.ndarray):
+    def colour(self, rgb: list | tuple | np.ndarray):
         if (
-            not isinstance(argb, (list, tuple, np.ndarray))
-            or len(argb) != 4
-            or not all(isinstance(val, int) for val in argb)
+            not isinstance(rgb, (list, tuple, np.ndarray))
+            or len(rgb) != 3
+            or not all(isinstance(val, int) for val in rgb)
         ):
-            raise TypeError("Input 'colour' values must be a list of 4 integers.")
+            raise TypeError("Input 'colour' values must be a list of 3 integers.")
 
         byte_string = ""
-        for val in argb:
+        for val in rgb:
             byte_string += f"{val:02x}"
 
+        byte_string += f"{255:02x}"  # alpha value
         value = int.from_bytes(bytes.fromhex(byte_string), "little")
 
         self.set_tag("Colour", str(value))
