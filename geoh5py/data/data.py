@@ -127,7 +127,7 @@ class Data(Entity):
         :return: shape(2, 3) Bounding box defined by the bottom South-West and
             top North-East coordinates.
         """
-        return self.parent.extent
+        return None
 
     @property
     def n_values(self) -> int | None:
