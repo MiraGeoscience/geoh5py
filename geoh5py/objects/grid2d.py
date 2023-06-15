@@ -292,7 +292,6 @@ class Grid2D(GridObject):
             value = np.asarray(
                 tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
             )
-
             self._origin = value
             self.workspace.update_attribute(self, "attributes")
 
