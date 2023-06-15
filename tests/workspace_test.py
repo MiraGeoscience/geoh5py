@@ -19,11 +19,12 @@ from __future__ import annotations
 import io
 from pathlib import Path
 
+import numpy as np
 import pytest
 from h5py import File
 
 from geoh5py.objects import Points
-from geoh5py.shared.utils import fetch_active_workspace
+from geoh5py.shared.utils import compare_entities, fetch_active_workspace
 from geoh5py.workspace import Workspace
 
 
@@ -31,23 +32,13 @@ def test_workspace_from_kwargs(tmp_path: Path):
     h5file_tmp = tmp_path / r"test.geoh5"
 
     attr = {
-        "Contributors": "TARS",
         "distance_unit": "feet",
-        "hello": "world",
     }
 
-    with pytest.warns(
-        UserWarning, match="Argument hello with value world is not a valid attribute"
-    ):
-        workspace = Workspace(h5file_tmp, **attr)
-
-    with pytest.raises(
-        FileNotFoundError,
-        match="does not exist. Consider creating it with Workspace.create()",
-    ):
-        workspace.open()
-
-    workspace = Workspace.create_geoh5(h5file_tmp, **attr)
+    # with pytest.warns(
+    #     UserWarning, match="Argument hello with value world is not a valid attribute"
+    # ):
+    workspace = Workspace(h5file_tmp, **attr)
 
     # Test re-opening in read-only - stays in r+"
     with pytest.warns(UserWarning) as warning:
@@ -70,7 +61,7 @@ def test_workspace_from_kwargs(tmp_path: Path):
 
 
 def test_empty_workspace(tmp_path):
-    Workspace.create_geoh5(
+    Workspace(
         tmp_path / r"test.geoh5",
     ).close()
 
@@ -92,7 +83,7 @@ def test_empty_workspace(tmp_path):
 
 
 def test_missing_type(tmp_path):
-    Workspace.create_geoh5(
+    Workspace(
         tmp_path / r"test.geoh5",
     ).close()
     with File(tmp_path / r"test.geoh5", "r+") as file:
@@ -114,7 +105,12 @@ def test_bad_extension(tmp_path):
 
 
 def test_read_bytes(tmp_path):
-    with Workspace.create_geoh5(tmp_path / r"test.geoh5") as workspace:
+    with pytest.warns(UserWarning, match=""):
+        workspace = Workspace(tmp_path / r"test_warning.geoh5")
+
+    assert workspace.h5file.is_file()
+
+    with Workspace() as workspace:
         workspace.create_entity(Points)
 
     with open(tmp_path / r"test.geoh5", "rb") as in_file:
@@ -130,7 +126,7 @@ def test_read_bytes(tmp_path):
 
 
 def test_reopening_mode(tmp_path):
-    with Workspace.create_geoh5(tmp_path / r"test.geoh5") as workspace:
+    with Workspace(tmp_path / r"test.geoh5") as workspace:
         pass
 
     with workspace.open(mode="r") as workspace:
@@ -140,3 +136,27 @@ def test_reopening_mode(tmp_path):
         with pytest.warns(UserWarning, match="Closing the workspace in mode 'r'"):
             with fetch_active_workspace(workspace, mode="r+"):
                 assert workspace.geoh5.mode == "r+"
+
+
+def test_in_memory_to_disk():
+    workspace = Workspace()
+    points = Points.create(workspace, vertices=np.random.randn(12, 3), name="Points_A")
+
+    with Workspace() as out_workspace:
+        new_points = points.copy(parent=out_workspace)
+
+    compare_entities(points, new_points, ignore=["_parent"])
+
+    workspace.close()
+
+    # with pytest.raises(
+    #     UserWarning, match="File already exists. Consider re-opening instead."
+    # ):
+    #     workspace(tmp_path / "test_B.geoh5")
+    #
+    # with pytest.raises(
+    #     UserWarning, match="File already exists. Consider re-opening instead."
+    # ):
+    #     workspace(tmp_path / "test_A.geoh5")
+    #
+    # assert workspace.h5file.is_file()

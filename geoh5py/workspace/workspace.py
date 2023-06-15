@@ -20,7 +20,6 @@
 from __future__ import annotations
 
 import inspect
-import io
 import shutil
 import subprocess
 import tempfile
@@ -29,6 +28,8 @@ import warnings
 import weakref
 from contextlib import AbstractContextManager, contextmanager
 from gc import collect
+from io import BytesIO
+from os import getlogin
 from pathlib import Path
 from subprocess import CalledProcessError
 from typing import TYPE_CHECKING, ClassVar, cast
@@ -94,40 +95,35 @@ class Workspace(AbstractContextManager):
     }
 
     def __init__(
-        self, h5file: str | Path | io.BytesIO = "Analyst.geoh5", mode="a", **kwargs
+        self,
+        h5file: str | Path | BytesIO | None = None,
+        contributors: list[str] | str = getlogin(),
+        distance_unit: str = "meter",
+        ga_version: str = "1",
+        mode="a",
+        name: str = "GEOSCIENCE",
+        repack: bool = False,
+        version: float = 2.1,
     ):
-        self._contributors = np.asarray(
-            ["UserName"], dtype=h5py.special_dtype(vlen=str)
-        )
-        self._root: Entity | None = None
-        self._repack: bool = False
-        self._mode = mode
-        self._distance_unit = "meter"
-        self._ga_version = "1"
-        self._version = 2.1
-        self._name = "GEOSCIENCE"
-        self._types: dict[uuid.UUID, ReferenceType[EntityType]] = {}
-        self._groups: dict[uuid.UUID, ReferenceType[group.Group]] = {}
-        self._objects: dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
         self._data: dict[uuid.UUID, ReferenceType[data.Data]] = {}
+        self._distance_unit: str = distance_unit
+        self._contributors: list[str] = np.asarray(
+            tuple(contributors), dtype=h5py.special_dtype(vlen=str)
+        )
+        self._ga_version: str = ga_version
         self._geoh5: h5py.File | bool = False
-        self.h5file: str | Path | io.BytesIO = h5file
+        self._groups: dict[uuid.UUID, ReferenceType[group.Group]] = {}
+        self._h5file: str | Path | BytesIO | None = None
+        self._mode: str = mode
+        self._name: str = name
+        self._objects: dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
+        self._repack: bool = repack
+        self._root: Entity | None = None
+        self._types: dict[uuid.UUID, ReferenceType[EntityType]] = {}
+        self._version: float = version
 
-        for attr, item in kwargs.items():
-            if attr in self._attribute_map:
-                attr = self._attribute_map[attr]
-
-            if getattr(self, attr, None) is None:
-                warnings.warn(
-                    f"Argument {attr} with value {item} is not a valid attribute of workspace. "
-                    f"Argument ignored.",
-                    UserWarning,
-                )
-            else:
-                setattr(self, attr, item)
-
-        if not isinstance(self._h5file, io.BytesIO) and Path(self._h5file).is_file():
-            self.open()
+        self.h5file = h5file
+        self.open()
 
     def activate(self):
         """Makes this workspace the active one.
@@ -190,17 +186,21 @@ class Workspace(AbstractContextManager):
 
         self.geoh5.close()
         self._data = {}
-        if self.repack and not isinstance(self.h5file, io.BytesIO):
-            temp_file = Path(tempfile.gettempdir()) / Path(self.h5file).name
+        if (
+            self.repack
+            and not isinstance(self._h5file, BytesIO)
+            and self._h5file is not None
+        ):
+            temp_file = Path(tempfile.gettempdir()) / Path(self._h5file).name
             try:
                 subprocess.run(
-                    f'h5repack --native "{self.h5file}" "{temp_file}"',
+                    f'h5repack --native "{self._h5file}" "{temp_file}"',
                     check=True,
                     shell=True,
                     stdout=subprocess.DEVNULL,
                 )
-                Path(self.h5file).unlink()
-                shutil.move(temp_file, self.h5file)
+                Path(self._h5file).unlink()
+                shutil.move(temp_file, self._h5file)
             except CalledProcessError:
                 pass
 
@@ -342,27 +342,19 @@ class Workspace(AbstractContextManager):
 
         return recovered_entity
 
-    @staticmethod
-    def create_geoh5(
-        h5file: str | Path | io.BytesIO = "Analyst.geoh5", **kwargs
+    def create(
+        self,
     ) -> Workspace:
         """
-        Create a new workspace from a file.
-
-        :param h5file: Path to the file.
-        :param kwargs: Additional keyword arguments passed to the constructor.
+        Create a new workspace in memory.
 
         :return: The newly created workspace.
         """
-        if not isinstance(h5file, io.BytesIO) and Path(h5file).is_file():
-            raise UserWarning("File already exists. Consider re-opening instead.")
+        self._geoh5 = h5py.File(self.h5file, "a")
+        self._root = self.create_entity(RootGroup, save_on_creation=False)
+        H5Writer.create_project(self.geoh5, self)
 
-        workspace = Workspace(h5file, **kwargs)
-        setattr(workspace, "_geoh5", h5py.File(h5file, "a"))
-        H5Writer.create_geoh5(workspace.h5file, workspace)
-        workspace.fetch_or_create_root()
-
-        return workspace
+        return self
 
     def create_data(
         self,
@@ -457,7 +449,7 @@ class Workspace(AbstractContextManager):
                 entity_class, entity_kwargs, entity_type_kwargs
             )
 
-        if created_entity is not None and save_on_creation:
+        if created_entity is not None and save_on_creation and self.h5file is not None:
             self.save_entity(created_entity)
 
         return created_entity
@@ -968,18 +960,27 @@ class Workspace(AbstractContextManager):
         return self._geoh5
 
     @property
-    def h5file(self) -> str | Path | io.BytesIO:
+    def h5file(self) -> str | Path | BytesIO | None:
         """
         :str: Target *geoh5* file name with path.
         """
         return self._h5file
 
     @h5file.setter
-    def h5file(self, file: str | Path | io.BytesIO):
+    def h5file(self, file: str | Path | BytesIO | None):
+        if self._h5file is not None:
+            raise ValueError(
+                "The 'h5file' attribute cannot be changed once it has been set."
+            )
+
         if isinstance(file, (str, Path)):
             if Path(file).suffix != ".geoh5":
                 raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
-        elif not isinstance(file, io.BytesIO):
+
+        elif isinstance(file, type(None)):
+            file = BytesIO()
+
+        elif not isinstance(file, BytesIO):
             raise ValueError(
                 "The 'h5file' attribute must be a str, "
                 "pathlib.Path or bytes to the target geoh5 file. "
@@ -1098,14 +1099,6 @@ class Workspace(AbstractContextManager):
         :param mode: Optional mode of h5py.File. Defaults to 'r+'.
         :return: `self`
         """
-        if (
-            not isinstance(self._h5file, io.BytesIO)
-            and not Path(self._h5file).is_file()
-        ):
-            raise FileNotFoundError(
-                f"File {self._h5file} does not exist. Consider creating it with Workspace.create()"
-            )
-
         if isinstance(self._geoh5, h5py.File) and self._geoh5:
             warnings.warn(f"Workspace already opened in mode {self._geoh5.mode}.")
             return self
@@ -1113,11 +1106,22 @@ class Workspace(AbstractContextManager):
         if mode is None:
             mode = self._mode
 
-        try:
-            self._geoh5 = h5py.File(self._h5file, mode)
-        except OSError:
-            mode = "r"
-            self._geoh5 = h5py.File(self._h5file, mode)
+        if not isinstance(self.h5file, (str, Path)) or not Path(self.h5file).is_file():
+            self.create()
+
+            if isinstance(self.h5file, (str, Path)):
+                warnings.warn(
+                    "From version 0.8.0, the 'h5file' attribute must be a string"
+                    "or path to an existing file, or user must call the 'create' "
+                    "method. We will attempt to create the file for you, but this "
+                    "behaviour will be removed in future releases."
+                )
+                self.save(self.h5file)
+        else:
+            try:
+                self._geoh5 = h5py.File(self.h5file, self._mode)
+            except OSError:
+                self._geoh5 = h5py.File(self.h5file, "r")
 
         self._data = {}
         self._objects = {}
@@ -1162,6 +1166,28 @@ class Workspace(AbstractContextManager):
     @repack.setter
     def repack(self, value: bool):
         self._repack = value
+
+    def save(self, filepath: str | Path) -> None:
+        """
+        Save the workspace to disk.
+        """
+        if self._geoh5 is None:
+            raise ValueError("Workspace not opened.")
+
+        filepath = Path(filepath)
+
+        if filepath.suffix != ".geoh5":
+            raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
+
+        self.close()
+
+        if isinstance(self.h5file, BytesIO):
+            with open(filepath, "wb") as file:
+                file.write(self.h5file.getbuffer())
+
+            self._h5file = filepath
+
+        self.open()
 
     def save_entity(
         self,
@@ -1267,6 +1293,9 @@ class Workspace(AbstractContextManager):
         Run a H5Writer or H5Reader function with validation of target geoh5
         """
         try:
+            if self._geoh5 is None:
+                return None
+
             if mode in ["r+", "a"] and self.geoh5.mode == "r":
                 raise UserWarning(
                     f"Error performing {fun}. "
@@ -1282,7 +1311,7 @@ class Workspace(AbstractContextManager):
                 raise FileNotFoundError(
                     f"Error performing {fun}. "
                     "The geoh5 file does not exist."
-                    "Consider creating the geoh5 with `Workspace.create_geoh5()'"
+                    "Consider creating the geoh5 with `Workspace.create()'"
                 ) from error
 
             raise Geoh5FileClosedError(

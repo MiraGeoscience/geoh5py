@@ -46,7 +46,7 @@ class H5Writer:
     str_type = h5py.special_dtype(vlen=str)
 
     @classmethod
-    def create_geoh5(
+    def create_project(
         cls,
         file: str | h5py.File,
         workspace: workspace.Workspace,
@@ -223,10 +223,9 @@ class H5Writer:
             if add_children:
                 # Write children entities and add to current parent
                 for child in entity.children:
-                    H5Writer.write_entity(h5file, child)
-                    H5Writer.write_to_parent(h5file, child, recursively=False)
+                    H5Writer.save_entity(h5file, child)
 
-            H5Writer.write_to_parent(h5file, entity)
+            H5Writer.write_to_parent(h5file, entity, recursively=False)
 
         return new_entity
 
