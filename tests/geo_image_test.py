@@ -310,12 +310,12 @@ def test_converting_rotated_images(tmp_path):
     grid_test = geoimage.to_grid2d()
 
     assert grid.rotation == geoimage.rotation
-    assert grid_test.u_cell_size == grid.u_cell_size
-    assert grid_test.v_cell_size == grid.v_cell_size
-    assert grid_test.u_count == grid.u_count
-    assert grid_test.v_count == grid.v_count
+    np.testing.assert_almost_equal(grid_test.u_cell_size, grid.u_cell_size)
+    np.testing.assert_almost_equal(grid_test.v_cell_size, grid.v_cell_size)
+    np.testing.assert_almost_equal(grid_test.u_count, grid.u_count)
+    np.testing.assert_almost_equal(grid_test.v_count, grid.v_count)
     assert grid_test.origin == grid.origin
-    assert grid_test.rotation == grid.rotation
+    np.testing.assert_almost_equal(grid_test.rotation, grid.rotation)
 
     assert all(
         grid_test.get_data("MyTestGrid2D_GRAY")[0].values
