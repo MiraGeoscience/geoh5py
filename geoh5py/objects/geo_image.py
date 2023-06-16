@@ -537,35 +537,12 @@ class GeoImage(ObjectBase):
             if self._vertices is None:
                 raise AttributeError("The image has no vertices")
 
-            # Get the x and y values of the first and second corners
-            corner_1_x = self._vertices["x"][0]
-            corner_1_y = self._vertices["y"][0]
-            corner_2_x = self._vertices["x"][1]
-            corner_2_y = self._vertices["y"][1]
-
-            # Form them into numpy arrays
-            corner_1 = np.array([corner_1_x, corner_1_y])
-            corner_2 = np.array([corner_2_x, corner_2_y])
-
-            # Get the vector from corner_1 to corner_2
-            delta = corner_2 - corner_1
-
-            # Reference direction (the x-axis)
-            reference = np.array([1, 0])
-
-            # Calculate the angle between the reference direction and the vector
-            rotation_rad = np.arctan2(
-                np.cross(reference, delta), np.dot(reference, delta)
-            )
-
-            # Convert to degrees
-            rotation_deg = np.rad2deg(rotation_rad)
-
-            # Adjust the angle to lie between [0, 360)
-            if rotation_deg < 0:
-                rotation_deg = 360 + rotation_deg
-
-            self._rotation = round(rotation_deg, 2)
+            dxy = np.r_[
+                np.diff(self._vertices["x"][:2]), np.diff(self._vertices["y"][:2])
+            ]
+            dxy /= np.linalg.norm(dxy)
+            rotation_rad = np.arctan2(dxy[1], dxy[0])
+            self._rotation = np.rad2deg(rotation_rad)
 
         return self._rotation
 
