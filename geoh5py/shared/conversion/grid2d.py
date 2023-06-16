@@ -188,21 +188,25 @@ class Grid2DConversion(CellObjectConversion):
         )
 
     @classmethod
-    def convert_to_pillow(cls, data: np.ndarray) -> Image:
+    def convert_to_pillow(cls, data: np.ndarray, mode: str | None = None) -> Image:
         """
         Convert the data from :obj:'np.array' to :obj:'PIL.Image' format.
         """
         if not isinstance(data, np.ndarray):
             raise AttributeError("No data is selected.")
 
-        if data.shape[-1] == 1:
-            return Image.fromarray(data[:, :, 0], mode="L")
-        if data.shape[-1] == 3:
-            return Image.fromarray(data, mode="RGB")
-        if data.shape[-1] == 4:
-            return Image.fromarray(data, mode="CMYK")
+        if mode is None:
+            if data.shape[-1] == 1:
+                mode = "L"
+            elif data.shape[-1] == 3:
+                mode = "RGB"
+            elif data.shape[-1] == 4:
+                mode = "RGBA"
+            else:
+                raise IndexError("Only 1, 3, or 4 layers can be selected")
 
-        raise IndexError("Only 1, 3, or 4 layers can be selected")
+        Image.fromarray(data[:, :, 0], mode=mode)
+
 
     @classmethod
     def compute_vertices(cls, input_entity: Grid2D) -> np.ndarray:
@@ -274,7 +278,6 @@ class Grid2DConversion(CellObjectConversion):
         :param normalize: if True, the data will be normalized between 0 and 255.
         :param geoimage_kwargs: the kwargs to pass to the :obj:'GeoImage' object.
         """
-
         workspace = cls.validate_workspace(input_entity, **geoimage_kwargs)
         geoimage_kwargs = cls.verify_kwargs(input_entity, **geoimage_kwargs)
 

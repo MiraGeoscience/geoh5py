@@ -128,20 +128,8 @@ class GeoImage(ObjectBase):
             warnings.warn("Image is not defined.")
             return None
 
-        # define the type of the image
-        n_channel = len(self.image.mode)
-        if n_channel == 1:
-            transform = "GRAY"
-        elif n_channel == 3:
-            transform = "RGB"
-        elif n_channel == 4:
-            transform = "CMYK"
-        else:
-            warnings.warn(f"Image mode not supported (channels: {n_channel}).")
-            return None
-
         # transform the image to a grid
-        grid = self.to_grid2d(transform=transform)
+        grid = self.to_grid2d(parent=parent)
 
         # transform the image
         grid_transformed = grid.copy_from_extent(
@@ -160,8 +148,12 @@ class GeoImage(ObjectBase):
 
         # transform the grid back to an image
         image_transformed = grid_transformed.to_geoimage(
-            keys=grid_transformed.get_data_list(), normalize=False
+            keys=grid_transformed.get_data_list(),
+            mode=self.image.mode,
+            normalize=False
         )
+        self.workspace.remove_entity(grid)
+        self.workspace.remove_entity(grid_transformed)
 
         return image_transformed
 
@@ -516,7 +508,7 @@ class GeoImage(ObjectBase):
 
     def to_grid2d(
         self,
-        transform: str = "GRAY",
+        transform: str | None = None,
         **grid2d_kwargs,
     ) -> objects.Grid2D:
         """

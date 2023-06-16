@@ -75,91 +75,49 @@ class GeoImageConversion(BaseConversion):
         return grid2d_attributes
 
     @classmethod
-    def add_gray_data(cls, input_entity: GeoImage, output: Grid2D, name: str):
+    def add_gray_data(cls, values: np.ndarray, output: Grid2D, name: str):
         """
         Send the image as gray in the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        :param input_entity: :obj:'geoh5py.objects.geo_image.GeoImage' object.
+        :param values: Input image values as an array of int.
         :param output: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         :param name: the name of the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
-        value = Image.open(BytesIO(input_entity.image_data.values))
+        if values.ndim > 1:
+            values = np.asarray(Image.fromarray(values).convert("L"))
 
         output.add_data(
             data={
-                f"{name}_GRAY": {
-                    "values": np.array(value.convert("L")).astype(np.uint32)[::-1],
+                f"{name}_0": {
+                    "values": values.astype(np.uint32)[::-1],
                     "association": "CELL",
                 }
             }
         )
 
     @classmethod
-    def add_rgb_data(cls, input_entity: GeoImage, output: Grid2D, name: str):
+    def add_color_data(cls, values: np.ndarray, output: Grid2D, name: str):
         """
         Send the image as rgb in the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        :param input_entity: :obj:'geoh5py.objects.geo_image.GeoImage' object.
+        :param values: Input image values as an array of int.
         :param output: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         :param name: the name of the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
-        value = Image.open(BytesIO(input_entity.image_data.values))
+        if values.ndim != 3:
+            raise IndexError("To export to color image, the array must be 3d.")
 
-        if np.array(value).shape[-1] != 3:
-            raise IndexError("To export to RGB the image has to have 3 bands")
-
-        output.add_data(
-            data={
-                f"{name}_0R": {
-                    "values": np.array(value).astype(np.uint32)[::-1, :, 0],
-                    "association": "CELL",
-                },
-                f"{name}_1G": {
-                    "values": np.array(value).astype(np.uint32)[::-1, :, 1],
-                    "association": "CELL",
-                },
-                f"{name}_2B": {
-                    "values": np.array(value).astype(np.uint32)[::-1, :, 2],
-                    "association": "CELL",
-                },
-            }
-        )
-
-    @classmethod
-    def add_cmyk_data(cls, input_entity: GeoImage, output: Grid2D, name: str):
-        """
-        Send the image as cmyk in the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        :param input_entity: :obj:'geoh5py.objects.geo_image.GeoImage' object.
-        :param output: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        :param name: the name of the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        """
-        value = Image.open(BytesIO(input_entity.image_data.values))
-
-        if np.array(value).shape[-1] != 4:
-            raise IndexError("To export to CMYK the image has to have 4 bands")
-
-        output.add_data(
-            data={
-                f"{name}_0C": {
-                    "values": np.array(value).astype(np.uint32)[::-1, :, 0],
-                    "association": "CELL",
-                },
-                f"{name}_1M": {
-                    "values": np.array(value).astype(np.uint32)[::-1, :, 1],
-                    "association": "CELL",
-                },
-                f"{name}_2Y": {
-                    "values": np.array(value).astype(np.uint32)[::-1, :, 2],
-                    "association": "CELL",
-                },
-                f"{name}_3K": {
-                    "values": np.array(value).astype(np.uint32)[::-1, :, 3],
-                    "association": "CELL",
-                },
-            }
-        )
+        for ind in range(values.shape[2]):
+            output.add_data(
+                {
+                    f"{name}_{ind}": {
+                        "values": values.astype(np.uint32)[::-1, :, ind],
+                        "association": "CELL",
+                    }
+                }
+            )
 
     @classmethod
     def add_data_2dgrid(
-        cls, input_entity: GeoImage, output: Grid2D, transform: str, name: str
+        cls, input_entity: GeoImage, output: Grid2D, transform: str | None, name: str
     ):
         """
         Select the type of the image transformation.
@@ -169,16 +127,12 @@ class GeoImageConversion(BaseConversion):
         :param name: the name of the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
         # add the data to the 2dgrid
-        if transform == "GRAY":
-            cls.add_gray_data(input_entity, output, name)
-        elif transform == "RGB":
-            cls.add_rgb_data(input_entity, output, name)
-        elif transform == "CMYK":
-            cls.add_cmyk_data(input_entity, output, name)
+        values = np.asarray(Image.open(BytesIO(input_entity.image_data.values)))
+
+        if values.ndim == 2 or transform == "GRAY":
+            cls.add_gray_data(values, output, name)
         else:
-            raise KeyError(
-                f"'transform' has to be 'GRAY', 'CMYK' or 'RGB', you entered {transform} instead."
-            )
+            cls.add_color_data(values, output, name)
 
     @classmethod
     def to_grid2d(
