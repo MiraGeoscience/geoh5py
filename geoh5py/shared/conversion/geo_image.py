@@ -126,6 +126,8 @@ class GeoImageConversion(BaseConversion):
         :param transform: the type of the image transformation.
         :param name: the name of the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
+        if transform is not None and transform not in ["GRAY"]:
+            raise ValueError(f"Transform can only be 'GRAY', not {transform}.")
         # add the data to the 2dgrid
         values = np.asarray(Image.open(BytesIO(input_entity.image_data.values)))
 
@@ -136,7 +138,11 @@ class GeoImageConversion(BaseConversion):
 
     @classmethod
     def to_grid2d(
-        cls, input_entity: GeoImage, transform: str, copy_children=True, **grid2d_kwargs
+        cls,
+        input_entity: GeoImage,
+        transform: str | None,
+        copy_children=True,
+        **grid2d_kwargs,
     ) -> Grid2D:
         """
         Transform the :obj:'geoh5py.objects.image.Image' to a :obj:'geoh5py.objects.grid2d.Grid2D'.

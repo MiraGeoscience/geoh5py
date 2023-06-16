@@ -198,15 +198,17 @@ class Grid2DConversion(CellObjectConversion):
         if mode is None:
             if data.shape[-1] == 1:
                 mode = "L"
-            elif data.shape[-1] == 3:
+                data = data[:, :, 0]
+
+            if data.shape[-1] == 3:
                 mode = "RGB"
             elif data.shape[-1] == 4:
                 mode = "RGBA"
-            else:
+
+            if mode is None:
                 raise IndexError("Only 1, 3, or 4 layers can be selected")
 
-        Image.fromarray(data[:, :, 0], mode=mode)
-
+        return Image.fromarray(data, mode=mode)
 
     @classmethod
     def compute_vertices(cls, input_entity: Grid2D) -> np.ndarray:
@@ -268,6 +270,7 @@ class Grid2DConversion(CellObjectConversion):
         cls,
         input_entity: Grid2D,
         keys: list | str | int | UUID | Data,
+        mode: str | None = None,
         normalize: bool = True,
         **geoimage_kwargs,
     ) -> GeoImage:
@@ -275,6 +278,7 @@ class Grid2DConversion(CellObjectConversion):
         Convert the object to a :obj:'GeoImage' object.
         :param input_entity: the Grid2D object to convert.
         :param keys: the data to extract.
+        :param mode: the mode of the image to create.
         :param normalize: if True, the data will be normalized between 0 and 255.
         :param geoimage_kwargs: the kwargs to pass to the :obj:'GeoImage' object.
         """
@@ -287,7 +291,7 @@ class Grid2DConversion(CellObjectConversion):
         # get the data
         data = cls.data_from_keys(input_entity, keys, normalize=normalize)
 
-        geoimage_kwargs["image"] = cls.convert_to_pillow(data)
+        geoimage_kwargs["image"] = cls.convert_to_pillow(data, mode=mode)
 
         # define the vertices
         geoimage_kwargs["vertices"] = cls.compute_vertices(input_entity)
