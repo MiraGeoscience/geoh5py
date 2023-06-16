@@ -174,7 +174,6 @@ class Grid2D(GridObject):
             ]
         )
         z_extent = local_extent[:, 2]
-
         origin = np.r_[self.origin["x"], self.origin["y"], self.origin["z"]].astype(
             float
         )
@@ -292,7 +291,6 @@ class Grid2D(GridObject):
             value = np.asarray(
                 tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
             )
-
             self._origin = value
             self.workspace.update_attribute(self, "attributes")
 
