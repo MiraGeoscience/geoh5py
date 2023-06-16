@@ -148,9 +148,7 @@ class GeoImage(ObjectBase):
 
         # transform the grid back to an image
         image_transformed = grid_transformed.to_geoimage(
-            keys=grid_transformed.get_data_list(),
-            mode=self.image.mode,
-            normalize=False
+            keys=grid_transformed.get_data_list(), mode=self.image.mode, normalize=False
         )
         self.workspace.remove_entity(grid)
         self.workspace.remove_entity(grid_transformed)
