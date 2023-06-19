@@ -39,8 +39,8 @@ class GeoImageConversion(BaseConversion):
         """
         Extract the geographic information from the entity.
         """
-        if geoimage.vertices is None:
-            raise AttributeError("GeoImage has no vertices")
+        if geoimage.vertices is None or geoimage.default_vertices is None:
+            raise AttributeError("GeoImage has no vertices.")
 
         # get geographic information
         grid2d_attributes["origin"] = np.asarray(
