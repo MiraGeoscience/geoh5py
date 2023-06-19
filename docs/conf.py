@@ -17,8 +17,8 @@ import sys
 
 from pathlib import Path
 
-sys.path.append(Path("_ext").resolve())
-sys.path.append(Path().parent.resolve())
+sys.path.append(str(Path("_ext").resolve()))
+sys.path.append(str(Path().parent.resolve()))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -160,6 +160,11 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 # html_logo = 'images/geoh5py.png'
 
 check_meta = False
+
+html_theme_options = {
+    "navigation_depth": 5,
+    "collapse_navigation": False,
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
@@ -347,7 +352,7 @@ def clean_state():
             for filename in fileList:
                 filepath = Path(root) / filename
                 if filepath.suffix == ".ipynb":
-                    os.system(f"nbstripout {filepath}")
+                    os.system("nbstripout " + str(filepath))
                 if filepath.suffix == ".geoh5":
                     filepath.unlink()
 
@@ -366,6 +371,7 @@ clean_state()
 #         str(dirpath / "content" / "api" / "index.rst"),
 #     ]
 # )
+
 
 # TODO: build the source
 # sphinx-apidoc --templatedir templates/ -o content/api/ ../geoh5py

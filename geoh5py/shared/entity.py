@@ -181,9 +181,9 @@ class Entity(ABC):
 
         :param extent: Bounding box extent coordinates defined by either:
             - obj:`numpy.ndarray` of shape (2, 3)
-                3D coordinate: [[west, south, bottom], [east, north, top]]
+            3D coordinate: [[west, south, bottom], [east, north, top]]
             - obj:`numpy.ndarray` of shape (2, 2)
-                Horizontal coordinates: [[west, south], [east, north]].
+            Horizontal coordinates: [[west, south], [east, north]].
         :param inverse: Return the complement of the mask extent. Default to False
 
         :return: Array of bool defining the vertices or cell centers
