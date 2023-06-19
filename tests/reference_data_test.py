@@ -40,7 +40,7 @@ def test_create_reference_data(tmp_path):
             random.choice(string.ascii_lowercase) for i in range(8)
         )
 
-    with Workspace.create_geoh5(h5file_path) as workspace:
+    with Workspace(h5file_path) as workspace:
         points = Points.create(
             workspace, vertices=np.random.randn(n_data, 3), name=name, allow_move=False
         )

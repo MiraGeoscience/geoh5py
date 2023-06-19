@@ -32,7 +32,7 @@ def test_create_label(tmp_path: Path):
     h5file_path = tmp_path / r"testGroup.geoh5"
 
     # Create a workspace
-    with Workspace.create_geoh5(h5file_path) as workspace:
+    with Workspace(h5file_path) as workspace:
         label = Label.create(workspace, name="MyTestLabel")
 
         assert label.copy_from_extent(np.vstack([[0, 0], [1, 1]])) is None

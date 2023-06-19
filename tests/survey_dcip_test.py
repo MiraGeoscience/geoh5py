@@ -36,7 +36,7 @@ def test_create_survey_dcip(tmp_path):
     path = tmp_path / r"testDC.geoh5"
 
     # Create a workspace
-    workspace = Workspace.create_geoh5(path)
+    workspace = Workspace(path)
 
     # Create sources along line
     x_loc, y_loc = np.meshgrid(np.arange(n_data), np.arange(-1, 3))

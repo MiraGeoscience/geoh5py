@@ -39,7 +39,7 @@ def test_create_survey_airborne_fem(tmp_path):
     path = Path(tmp_path) / r"../testAFEM.geoh5"
 
     # Create a workspace
-    workspace = Workspace.create_geoh5(path)
+    workspace = Workspace(path)
     xlocs = np.linspace(-1000, 1000, 10)
     vertices = np.c_[xlocs, np.random.randn(xlocs.shape[0], 2)]
     receivers = AirborneFEMReceivers.create(
@@ -155,7 +155,7 @@ def test_create_survey_airborne_fem(tmp_path):
 
     # Test copying receiver over through the receivers
     # Create a workspace
-    new_workspace = Workspace.create_geoh5(Path(tmp_path) / r"testAFEM_copy.geoh5")
+    new_workspace = Workspace(Path(tmp_path) / r"testAFEM_copy.geoh5")
     receivers_rec = receivers.copy(new_workspace)
     compare_entities(
         receivers, receivers_rec, ignore=["_receivers", "_transmitters", "_parent"]
@@ -168,7 +168,7 @@ def test_create_survey_airborne_fem(tmp_path):
 
     # Test copying receiver over through the transmitters
     # Create a workspace
-    new_workspace = Workspace.create_geoh5(Path(tmp_path) / r"testAFEM_copy2.geoh5")
+    new_workspace = Workspace(Path(tmp_path) / r"testAFEM_copy2.geoh5")
     transmitters_rec = transmitters.copy(new_workspace)
     compare_entities(
         receivers,
@@ -279,9 +279,7 @@ def test_survey_airborne_fem_data(tmp_path):
     with Workspace(path) as workspace:
         receivers_orig = workspace.get_entity(name + "_rx")[0]
 
-        with Workspace.create_geoh5(
-            Path(tmp_path) / r"testAFEM_copy2.geoh5"
-        ) as new_workspace:
+        with Workspace(Path(tmp_path) / r"testAFEM_copy2.geoh5") as new_workspace:
             receivers_rec = receivers_orig.copy(new_workspace)
             compare_entities(
                 receivers_orig,
@@ -289,9 +287,7 @@ def test_survey_airborne_fem_data(tmp_path):
                 ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
             )
 
-        with Workspace.create_geoh5(
-            Path(tmp_path) / r"testAFEM_copy_extent.geoh5"
-        ) as new_workspace:
+        with Workspace(Path(tmp_path) / r"testAFEM_copy_extent.geoh5") as new_workspace:
             receivers_rec = receivers_orig.copy_from_extent(
                 np.vstack([[0, -5], [1500, 5]]), parent=new_workspace
             )
@@ -311,7 +307,7 @@ def test_create_survey_ground_fem_large_loop(
     path = Path(tmp_path) / r"groundFEM.geoh5"
 
     # Create a workspace
-    workspace = Workspace.create_geoh5(path)
+    workspace = Workspace(path)
 
     vertices = []
     tx_loops = []
@@ -374,9 +370,7 @@ def test_create_survey_ground_fem_large_loop(
 
     receivers.tx_id_property = np.hstack(tx_id)
 
-    with Workspace.create_geoh5(
-        Path(tmp_path) / r"testGround_copy.geoh5"
-    ) as new_workspace:
+    with Workspace(Path(tmp_path) / r"testGround_copy.geoh5") as new_workspace:
         receivers_orig = receivers.copy(new_workspace)
         transmitters_rec = receivers.transmitters.copy_from_extent(
             np.vstack([[-150, -150], [150, 150]]), parent=new_workspace
@@ -392,7 +386,7 @@ def test_create_survey_ground_fem(tmp_path):
     path = Path(tmp_path) / r"../testGFEM.geoh5"
 
     # Create a workspace
-    workspace = Workspace.create_geoh5(path)
+    workspace = Workspace(path)
     xlocs = np.linspace(-1000, 1000, 10)
     vertices = np.c_[xlocs, np.random.randn(xlocs.shape[0], 2)]
     receivers = MovingLoopGroundFEMReceivers.create(
@@ -450,7 +444,7 @@ def test_create_survey_ground_fem(tmp_path):
 
     # Test copying receiver over through the receivers
     # Create a workspace
-    new_workspace = Workspace.create_geoh5(Path(tmp_path) / r"testGFEM_copy.geoh5")
+    new_workspace = Workspace(Path(tmp_path) / r"testGFEM_copy.geoh5")
     receivers_rec = receivers.copy(new_workspace)
     compare_entities(
         receivers, receivers_rec, ignore=["_receivers", "_transmitters", "_parent"]
@@ -463,7 +457,7 @@ def test_create_survey_ground_fem(tmp_path):
 
     # Test copying receiver over through the transmitters
     # Create a workspace
-    new_workspace = Workspace.create_geoh5(Path(tmp_path) / r"testGFEM_copy2.geoh5")
+    new_workspace = Workspace(Path(tmp_path) / r"testGFEM_copy2.geoh5")
     transmitters_rec = transmitters.copy(new_workspace)
     compare_entities(
         receivers,

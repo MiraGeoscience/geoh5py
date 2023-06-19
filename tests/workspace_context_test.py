@@ -31,9 +31,9 @@ from geoh5py.workspace import Workspace, active_workspace
 def test_workspace_context(tmp_path: Path):
     # TODO: no file on disk should be required for this test
     #       as workspace does not have to be saved
-    with active_workspace(Workspace.create_geoh5(tmp_path / r"w1.geoh5")) as ws1:
+    with active_workspace(Workspace(tmp_path / r"w1.geoh5")) as ws1:
         assert Workspace.active() == ws1
-        with active_workspace(Workspace.create_geoh5(tmp_path / r"w2.geoh5")) as ws2:
+        with active_workspace(Workspace(tmp_path / r"w2.geoh5")) as ws2:
             assert Workspace.active() == ws2
         assert Workspace.active() == ws1
     with pytest.raises(RuntimeError) as error:
@@ -42,7 +42,7 @@ def test_workspace_context(tmp_path: Path):
 
 
 def test_write_context(tmp_path: Path):
-    with Workspace.create_geoh5(tmp_path / r"test2.geoh5", mode="a") as w_s:
+    with Workspace(tmp_path / r"test2.geoh5", mode="a") as w_s:
         points = Points.create(w_s)
 
     with pytest.raises(Geoh5FileClosedError) as error:
@@ -71,7 +71,7 @@ def test_read_only(tmp_path: Path):
         workspace.open()
 
     with pytest.raises(UserWarning, match="geoh5 file in read-only mode"):
-        workspace = Workspace.create_geoh5(tmp_path / r"test.geoh5")
+        workspace = Workspace(tmp_path / r"test.geoh5")
         workspace.close()
 
         with workspace.open(mode="r"):

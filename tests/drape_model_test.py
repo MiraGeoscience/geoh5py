@@ -29,7 +29,7 @@ from geoh5py.workspace import Workspace
 
 def test_create_drape_model(tmp_path: Path):
     h5file_path = tmp_path / "drapedmodel.geoh5"
-    with Workspace.create_geoh5(h5file_path) as workspace:
+    with Workspace(h5file_path) as workspace:
         #
         # drape_model = workspace.get_entity("draped_models_line_id_1")[0]
         n_col, n_row = 64, 32
@@ -68,7 +68,7 @@ def test_create_drape_model(tmp_path: Path):
             }
         )
 
-        with Workspace.create_geoh5(tmp_path / "tester.geoh5") as new_workspace:
+        with Workspace(tmp_path / "tester.geoh5") as new_workspace:
             drape.copy(parent=new_workspace)
 
         with Workspace(tmp_path / "tester.geoh5") as new_workspace:

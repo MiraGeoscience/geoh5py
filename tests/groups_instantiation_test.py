@@ -41,7 +41,7 @@ def all_group_types():
 @pytest.mark.parametrize("group_class", all_group_types())
 def test_group_instantiation(group_class, tmp_path):
     h5file_path = tmp_path / f"{__name__}.geoh5"
-    with Workspace.create_geoh5(h5file_path) as workspace:
+    with Workspace(h5file_path) as workspace:
         group_type = group_class.find_or_create_type(workspace)
         isinstance(group_type, GroupType)
         assert group_type.workspace is workspace
@@ -88,7 +88,7 @@ def test_custom_group_instantiation(tmp_path):
     assert CustomGroup.default_type_uid() is None
 
     h5file_path = tmp_path / f"{__name__}.geoh5"
-    with Workspace.create_geoh5(h5file_path) as workspace:
+    with Workspace(h5file_path) as workspace:
         group_type = GroupType.create_custom(
             workspace, name="test custom", description="test custom description"
         )

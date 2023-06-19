@@ -31,7 +31,7 @@ def test_set_parent(tmp_path):
     name = "test_points"
     h5file_path = tmp_path / r"testProject.geoh5"
 
-    with Workspace.create_geoh5(h5file_path) as workspace:
+    with Workspace(h5file_path) as workspace:
         group_a = ContainerGroup.create(workspace)
         entity = Points.create(workspace, vertices=xyz, name=name, parent=group_a)
         entity.add_data({"random": {"values": np.random.randn(xyz.shape[0])}})
