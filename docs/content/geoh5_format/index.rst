@@ -47,7 +47,11 @@ The following sections define the structure and components making up the GEOH5 f
 .. toctree::
    :maxdepth: 1
 
-   hierarchy.rst
+   hierarchy/workspace
+   hierarchy/groups
+   hierarchy/objects
+   hierarchy/data
+   hierarchy/types
 
 
 Standards
