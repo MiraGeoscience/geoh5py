@@ -43,7 +43,6 @@ class Grid2D(GridObject):
     __TYPE_UID = uuid.UUID(
         fields=(0x48F5054A, 0x1C5C, 0x4CA4, 0x90, 0x48, 0x80F36DC60A06)
     )
-
     _attribute_map = GridObject._attribute_map.copy()
     _attribute_map.update(
         {
@@ -57,8 +56,7 @@ class Grid2D(GridObject):
             "Vertical": "vertical",
         }
     )
-
-    _converter = Grid2DConversion
+    _converter: type[Grid2DConversion] = Grid2DConversion
 
     def __init__(self, object_type: ObjectType, **kwargs):
         self._origin: np.ndarray = np.asarray(

@@ -46,7 +46,7 @@ class GeoImage(ObjectBase):
         fields=(0x77AC043C, 0xFE8D, 0x4D14, 0x81, 0x67, 0x75E300FB835A)
     )
 
-    _converter = GeoImageConversion
+    _converter: type[GeoImageConversion] = GeoImageConversion
 
     def __init__(self, object_type: ObjectType, **kwargs):
         self._vertices: None | np.ndarray = None
