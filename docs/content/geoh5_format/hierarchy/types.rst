@@ -14,8 +14,7 @@ This type is shared among any number of entities (groups/objects/data sets).
 Group Types
 -----------
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Name: ``str``
     Name of the group displayed in the project tree.
@@ -37,8 +36,7 @@ Object Types
 
 Objects are containers for data values with spatial information.
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Name: ``str``
     Name of the object displayed in the project tree.
@@ -61,8 +59,7 @@ type identifiers can also be reserved as a means of identifying a
 specific kind of data.
 
 
-Attributes
-^^^^^^^^^^
+**Attributes**
 
 :Name: ``str``
     Name of the object displayed in the project tree.

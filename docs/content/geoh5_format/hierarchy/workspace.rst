@@ -29,8 +29,7 @@ traversals. There is no data duplication, merely multiple references (pointers) 
 the data storage on file. Types are shared (and thus generally written to file first). All
 groups, objects and data must include a hard link to their type.
 
-Attributes
-----------
+**Attributes**
 
 :Version: ``double``
     Version of specification used by this file

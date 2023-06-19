@@ -11,8 +11,7 @@ single-value data with the ``Object`` association (in which case it is a
 1D array of length 1).
 See the :ref:`Data Types <data_types>` section for the list of supported data types.
 
-Attributes
-----------
+**Attributes**
 
 :Association: ``str``
     Describes which part the property is tied to. Must be one of:

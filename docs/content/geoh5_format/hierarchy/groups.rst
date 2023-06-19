@@ -9,8 +9,8 @@ Groups are simple container for other groups and objects. They are often used to
 special meanings to a collection of entities or to create specialized software
 functionality.
 
-Attributes
-----------
+**Attributes**
+
 :Name: ``str``
     Name of the object displayed in the project tree.
 :ID: ``str``, *UUID*

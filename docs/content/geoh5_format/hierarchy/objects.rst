@@ -12,8 +12,7 @@ segments). The exact requirements and interpretation depends on the
 type.
 
 
-Attributes
-----------
+**Attributes**
 
 :Name: ``str``
     Name of the object displayed in the project tree.
