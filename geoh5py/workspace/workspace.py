@@ -353,6 +353,7 @@ class Workspace(AbstractContextManager):
         self._geoh5 = h5py.File(self.h5file, "a")
         self._root = self.create_entity(RootGroup, save_on_creation=False)
         H5Writer.create_project(self.geoh5, self)
+        self._geoh5.close()
 
         return self
 
@@ -973,21 +974,35 @@ class Workspace(AbstractContextManager):
                 "The 'h5file' attribute cannot be changed once it has been set."
             )
 
+        if not isinstance(file, (str, Path, BytesIO, type(None))):
+            raise ValueError(
+                "The 'h5file' attribute must be a str, "
+                "pathlib.Path to the target geoh5 file or BytesIO. "
+                f"Provided {file} of type({type(file)})"
+            )
+
+        if isinstance(file, type(None)) or (
+            isinstance(file, (str, Path)) and not Path(file).is_file()
+        ):
+            self._h5file = BytesIO()
+            self.create()
+        elif isinstance(file, BytesIO):
+            self._h5file = file
+
         if isinstance(file, (str, Path)):
             if Path(file).suffix != ".geoh5":
                 raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
 
-        elif isinstance(file, type(None)):
-            file = BytesIO()
-
-        elif not isinstance(file, BytesIO):
-            raise ValueError(
-                "The 'h5file' attribute must be a str, "
-                "pathlib.Path or bytes to the target geoh5 file. "
-                f"Provided {file} of type({type(file)})"
-            )
-
-        self._h5file = file
+            if not Path(file).is_file():
+                warnings.warn(
+                    "From version 0.8.0, the 'h5file' attribute must be a string"
+                    "or path to an existing file, or user must call the 'create' "
+                    "method. We will attempt to create the file for you, but this "
+                    "behaviour will be removed in future releases."
+                )
+                self.save(file)
+            else:
+                self._h5file = file
 
     @property
     def list_data_name(self) -> dict[uuid.UUID, str]:
@@ -1106,22 +1121,10 @@ class Workspace(AbstractContextManager):
         if mode is None:
             mode = self._mode
 
-        if not isinstance(self.h5file, (str, Path)) or not Path(self.h5file).is_file():
-            self.create()
-
-            if isinstance(self.h5file, (str, Path)):
-                warnings.warn(
-                    "From version 0.8.0, the 'h5file' attribute must be a string"
-                    "or path to an existing file, or user must call the 'create' "
-                    "method. We will attempt to create the file for you, but this "
-                    "behaviour will be removed in future releases."
-                )
-                self.save(self.h5file)
-        else:
-            try:
-                self._geoh5 = h5py.File(self.h5file, self._mode)
-            except OSError:
-                self._geoh5 = h5py.File(self.h5file, "r")
+        try:
+            self._geoh5 = h5py.File(self.h5file, self._mode)
+        except OSError:
+            self._geoh5 = h5py.File(self.h5file, "r")
 
         self._data = {}
         self._objects = {}
@@ -1167,7 +1170,7 @@ class Workspace(AbstractContextManager):
     def repack(self, value: bool):
         self._repack = value
 
-    def save(self, filepath: str | Path) -> None:
+    def save(self, filepath: str | Path) -> Workspace:
         """
         Save the workspace to disk.
         """
@@ -1188,6 +1191,8 @@ class Workspace(AbstractContextManager):
             self._h5file = filepath
 
         self.open()
+
+        return self
 
     def save_entity(
         self,
