@@ -35,7 +35,7 @@ repos:
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v3.6.0
+    rev: v3.7.0
     hooks:
     -   id: pyupgrade
         args: [--py37-plus]
@@ -75,7 +75,7 @@ repos:
         types_or: [python, pyi]
         exclude: ^(devtools/|docs/|setup.py)
 -   repo: https://github.com/codespell-project/codespell
-    rev: v2.2.4
+    rev: v2.2.5
     hooks:
     -   id: codespell
         exclude: (\.ipynb$|^\.github/workflows/issue_to_jira.yml$)
