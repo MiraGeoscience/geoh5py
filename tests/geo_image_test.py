@@ -23,6 +23,7 @@ import pytest
 from PIL import Image
 from PIL.TiffImagePlugin import TiffImageFile
 
+from geoh5py.data import IntegerData
 from geoh5py.objects import GeoImage, Grid2D
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
@@ -192,18 +193,22 @@ def test_georeference_image(tmp_path):
     geoimage = GeoImage.create(workspace, name="test_area", image=image)
 
     # create Gray grid2d
-    grid2d_gray = geoimage.to_grid2d(transform="GRAY")
+    grid2d_gray = geoimage.to_grid2d(mode="GRAY")
 
     # create RGB grid2d
     grid2d_rgb = geoimage.to_grid2d(new_name="RGB")
 
     assert isinstance(grid2d_gray, Grid2D)
+    assert (
+        len([child for child in grid2d_gray.children if isinstance(child, IntegerData)])
+        == 1
+    )
     assert isinstance(grid2d_rgb, Grid2D)
     assert isinstance(geoimage.image_georeferenced, Image.Image)
 
     # test grid2d errors
-    with pytest.raises(ValueError, match="only be 'GRAY'"):
-        geoimage.to_grid2d(new_name="RGB", transform="bidon")
+    with pytest.raises(ValueError, match="conversion from RGB to bidon not supported"):
+        geoimage.to_grid2d(new_name="RGB", mode="bidon")
 
     # test save_as
     with pytest.raises(TypeError, match="has to be a string"):
@@ -310,12 +315,11 @@ def test_converting_rotated_images(tmp_path):
     np.testing.assert_almost_equal(grid_test.rotation, grid.rotation)
 
     assert all(
-        grid_test.get_data("MyTestGrid2D_0")[0].values
-        == grid.get_data("rando_r")[0].values
+        grid_test.get_data("band[0]")[0].values == grid.get_data("rando_r")[0].values
     )
 
-    grid_test = geoimage.to_grid2d(transform="GRAY")
-    assert "MyTestGrid2D_0" in grid_test.get_data_list()
+    grid_test = geoimage.to_grid2d(mode="GRAY")
+    assert "band[0]" in grid_test.get_data_list()
 
 
 def test_clipping_image(tmp_path):
@@ -334,8 +338,23 @@ def test_clipping_image(tmp_path):
     copy_image = geoimage.copy_from_extent(np.vstack([[2, 4], [12, 12]]))
 
     np.testing.assert_array_equal(
-        np.array(copy_image.image), np.array(geoimage.image)[4:12, 2:12, :]
+        np.array(copy_image.image),
+        np.c_[
+            np.array(geoimage.image)[4:12, 2:12, :],
+            np.ones((8, 10, 1), dtype=np.uint8) * 255,
+        ],
     )
+
+
+def test_clipping_gray_image(tmp_path):
+    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+
+    # Repeat with gray scale image
+    image = Image.fromarray(np.random.randint(0, 255, (128, 128)).astype("uint8"), "L")
+    geoimage = GeoImage.create(workspace, name="test_area", image=image)
+
+    crop = geoimage.copy_from_extent(np.vstack([[2, 4], [12, 12]]))
+    assert crop.image.mode == "RGBA"
 
 
 def test_clipping_rotated_image(tmp_path):
@@ -374,7 +393,7 @@ def test_clipping_rotated_image(tmp_path):
 
         # convert to geoimage
         geoimage = grid.to_geoimage(
-            ["rando_c", "rando_m", "rando_y", "rando_k"], normalize=False
+            ["rando_c", "rando_m", "rando_y", "rando_k"], mode="CMYK", normalize=False
         )
 
         # clip the image

@@ -129,7 +129,7 @@ class GeoImage(ObjectBase):
             return None
 
         # transform the image to a grid
-        grid = self.to_grid2d(parent=parent)
+        grid = self.to_grid2d(parent=parent, mode="RGBA")
 
         # transform the image
         grid_transformed = grid.copy_from_extent(
@@ -148,9 +148,7 @@ class GeoImage(ObjectBase):
 
         # transform the grid back to an image
         image_transformed = grid_transformed.to_geoimage(
-            keys=grid_transformed.get_data_list(),
-            mode=self.image.mode,
-            normalize=False
+            keys=grid_transformed.get_data_list(), mode="RGBA", normalize=False
         )
         self.workspace.remove_entity(grid)
         self.workspace.remove_entity(grid_transformed)
@@ -508,16 +506,19 @@ class GeoImage(ObjectBase):
 
     def to_grid2d(
         self,
-        transform: str | None = None,
+        mode: str | None = None,
         **grid2d_kwargs,
     ) -> objects.Grid2D:
         """
         Create a geoh5py :obj:geoh5py.objects.grid2d.Grid2D from the geoimage in the same workspace.
-        :param transform: the type of transform ; if "GRAY" convert the image to grayscale ;
-        if "RGB" every band is sent to a data of a grid.
+        :param mode: The output image mode, defaults to the incoming image.mode.
+            If "GRAY" convert the image to grayscale.
+        :param grid2d_kwargs: Keyword arguments to pass to the
+            :obj:`geoh5py.objects.grid2d.Grid2D` constructor.
+
         :return: the new created :obj:`geoh5py.objects.grid2d.Grid2D`.
         """
-        return self.converter.to_grid2d(self, transform, **grid2d_kwargs)
+        return self.converter.to_grid2d(self, mode, **grid2d_kwargs)
 
     @property
     def rotation(self) -> float | None:

@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-from io import BytesIO
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -36,28 +35,26 @@ class GeoImageConversion(BaseConversion):
     """
 
     @classmethod
-    def convert_to_grid2d_reference(
-        cls, input_entity: GeoImage, grid2d_attributes
-    ) -> dict:
+    def convert_to_grid2d_reference(cls, geoimage: GeoImage, grid2d_attributes) -> dict:
         """
         Extract the geographic information from the entity.
         """
-        if input_entity.vertices is None:
+        if geoimage.vertices is None:
             raise AttributeError("GeoImage has no vertices")
 
         # get geographic information
         grid2d_attributes["origin"] = np.asarray(
-            tuple(input_entity.vertices[3]),
+            tuple(geoimage.vertices[3]),
             dtype=[("x", float), ("y", float), ("z", float)],
         )
 
-        grid2d_attributes["u_count"] = input_entity.default_vertices[1, 0]
-        grid2d_attributes["v_count"] = input_entity.default_vertices[0, 1]
+        grid2d_attributes["u_count"] = geoimage.default_vertices[1, 0]
+        grid2d_attributes["v_count"] = geoimage.default_vertices[0, 1]
 
         # define the points
-        point1 = np.array([input_entity.vertices[3, 0], input_entity.vertices[3, 1]])
-        point2 = np.array([input_entity.vertices[2, 0], input_entity.vertices[2, 1]])
-        point3 = np.array([input_entity.vertices[0, 0], input_entity.vertices[0, 1]])
+        point1 = np.array([geoimage.vertices[3, 0], geoimage.vertices[3, 1]])
+        point2 = np.array([geoimage.vertices[2, 0], geoimage.vertices[2, 1]])
+        point3 = np.array([geoimage.vertices[0, 0], geoimage.vertices[0, 1]])
 
         # Compute the distances
         distance_u = np.linalg.norm(point2 - point1)
@@ -69,25 +66,24 @@ class GeoImageConversion(BaseConversion):
 
         grid2d_attributes["elevation"] = grid2d_attributes.get("elevation", 0)
 
-        if input_entity.rotation is not None:
-            grid2d_attributes["rotation"] = input_entity.rotation
+        if geoimage.rotation is not None:
+            grid2d_attributes["rotation"] = geoimage.rotation
 
         return grid2d_attributes
 
     @classmethod
-    def add_gray_data(cls, values: np.ndarray, output: Grid2D, name: str):
+    def add_gray_data(cls, values: np.ndarray, output: Grid2D):
         """
         Send the image as gray in the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         :param values: Input image values as an array of int.
         :param output: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        :param name: the name of the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
         if values.ndim > 1:
             values = np.asarray(Image.fromarray(values).convert("L"))
 
         output.add_data(
             data={
-                f"{name}_0": {
+                "band[0]": {
                     "values": values.astype(np.uint32)[::-1],
                     "association": "CELL",
                 }
@@ -95,12 +91,12 @@ class GeoImageConversion(BaseConversion):
         )
 
     @classmethod
-    def add_color_data(cls, values: np.ndarray, output: Grid2D, name: str):
+    def add_color_data(cls, values: np.ndarray, output: Grid2D):
         """
-        Send the image as rgb in the new :obj:'geoh5py.objects.grid2d.Grid2D'.
+        Send the image color bands to :obj:'geoh5py.data.integer_data.IntegerData'.
+
         :param values: Input image values as an array of int.
         :param output: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        :param name: the name of the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
         if values.ndim != 3:
             raise IndexError("To export to color image, the array must be 3d.")
@@ -108,7 +104,7 @@ class GeoImageConversion(BaseConversion):
         for ind in range(values.shape[2]):
             output.add_data(
                 {
-                    f"{name}_{ind}": {
+                    f"band[{ind}]": {
                         "values": values.astype(np.uint32)[::-1, :, ind],
                         "association": "CELL",
                     }
@@ -116,49 +112,48 @@ class GeoImageConversion(BaseConversion):
             )
 
     @classmethod
-    def add_data_2dgrid(
-        cls, input_entity: GeoImage, output: Grid2D, transform: str | None, name: str
-    ):
+    def add_data_2dgrid(cls, geoimage: Image, output: Grid2D):
         """
         Select the type of the image transformation.
-        :param input_entity: :obj:'geoh5py.objects.geo_image.GeoImage' object.
+        :param geoimage: :obj:'geoh5py.objects.geo_image.GeoImage' object.
         :param output: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        :param transform: the type of the image transformation.
-        :param name: the name of the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
-        if transform is not None and transform not in ["GRAY"]:
-            raise ValueError(f"Transform can only be 'GRAY', not {transform}.")
-        # add the data to the 2dgrid
-        values = np.asarray(Image.open(BytesIO(input_entity.image_data.values)))
+        values = np.asarray(geoimage)
 
-        if values.ndim == 2 or transform == "GRAY":
-            cls.add_gray_data(values, output, name)
+        if values.ndim == 2:
+            cls.add_gray_data(values, output)
         else:
-            cls.add_color_data(values, output, name)
+            cls.add_color_data(values, output)
 
     @classmethod
     def to_grid2d(
         cls,
-        input_entity: GeoImage,
-        transform: str | None,
+        geoimage: GeoImage,
+        mode: str | None,
         copy_children=True,
         **grid2d_kwargs,
     ) -> Grid2D:
         """
         Transform the :obj:'geoh5py.objects.image.Image' to a :obj:'geoh5py.objects.grid2d.Grid2D'.
-        :param input_entity: :obj:'geoh5py.objects.geo_image.GeoImage' object.
-        :param transform: the transforming type option.
+        :param geoimage: :obj:'geoh5py.objects.geo_image.GeoImage' object.
+        :param mode: The outgoing image mode option.
+
         :return: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
-        workspace = cls.validate_workspace(input_entity, **grid2d_kwargs)
-        grid2d_kwargs = cls.verify_kwargs(input_entity, **grid2d_kwargs)
-        grid2d_kwargs = cls.convert_to_grid2d_reference(input_entity, grid2d_kwargs)
+        workspace = cls.validate_workspace(geoimage, **grid2d_kwargs)
+        grid2d_kwargs = cls.verify_kwargs(geoimage, **grid2d_kwargs)
+        grid2d_kwargs = cls.convert_to_grid2d_reference(geoimage, grid2d_kwargs)
         output = objects.Grid2D.create(
             workspace,
             **grid2d_kwargs,
         )
 
+        image = geoimage.image.copy()
+
+        if mode is not None and mode != image.mode:
+            image = image.convert(mode if mode != "GRAY" else "L")
+
         if copy_children:
-            cls.add_data_2dgrid(input_entity, output, transform, output.name)
+            cls.add_data_2dgrid(image, output)
 
         return output
