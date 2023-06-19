@@ -220,7 +220,7 @@ class H5Writer:
         with fetch_h5_handle(file, mode="r+") as h5file:
             new_entity = H5Writer.write_entity(h5file, entity)
 
-            if add_children:
+            if add_children and not isinstance(entity, Concatenator):
                 # Write children entities and add to current parent
                 for child in entity.children:
                     H5Writer.save_entity(h5file, child)
