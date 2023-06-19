@@ -383,9 +383,9 @@ class Workspace(AbstractContextManager):
                 ):
                     member = type(name + "Concatenated", (ConcatenatedData, member), {})
 
-                if (
-                    entity_kwargs.get("name") == "Visual Parameters"
-                    and member is TextData
+                if member is TextData and any(
+                    isinstance(val, str) and "Visual Parameters" == val
+                    for val in entity_kwargs.values()
                 ):
                     member = VisualParameters
 

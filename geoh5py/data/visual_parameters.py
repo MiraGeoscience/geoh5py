@@ -52,7 +52,7 @@ class VisualParameters(TextData):
         return self._xml
 
     @property
-    def values(self):
+    def values(self) -> str | None:
         if self._xml is not None:
             self._values = ET.tostring(self._xml, encoding="unicode")
 
