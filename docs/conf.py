@@ -356,6 +356,7 @@ def clean_state():
                 if filepath.suffix == ".geoh5":
                     filepath.unlink()
 
+
 clean_state()
 # # Build the API
 # dirpath = Path(__file__).parent.resolve()
