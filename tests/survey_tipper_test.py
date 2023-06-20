@@ -30,7 +30,7 @@ from geoh5py.workspace import Workspace
 def test_create_survey_tipper(tmp_path):
     path = tmp_path / r"test_Tipper.geoh5"
 
-    workspace = Workspace(path)
+    workspace = Workspace().save(path)
     xlocs = np.linspace(-1000, 1000, 10)
     vertices = np.c_[xlocs, np.random.randn(xlocs.shape[0], 2)]
     receivers = TipperReceivers.create(workspace, vertices=vertices)
@@ -98,7 +98,7 @@ def test_create_survey_tipper(tmp_path):
 
     # Test copying receiver over through the receivers
     # Create a workspace
-    receivers.copy(Workspace(tmp_path / r"test_Tipper_copy.geoh5"))
+    receivers.copy(Workspace().save(tmp_path / r"test_Tipper_copy.geoh5"))
     with Workspace(tmp_path / r"test_Tipper_copy.geoh5") as new_workspace:
         receivers_rec = new_workspace.get_entity("Tipper rx")[0]
         compare_entities(
@@ -112,7 +112,7 @@ def test_create_survey_tipper(tmp_path):
 
     # Test copying receiver over through the base_stations
     # Create a workspace
-    with Workspace(tmp_path / r"test_Tipper_copy2.geoh5") as new_workspace:
+    with Workspace().save(tmp_path / r"test_Tipper_copy2.geoh5") as new_workspace:
         base_stations_rec = base_stations.copy(new_workspace)
         compare_entities(
             receivers,

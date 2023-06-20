@@ -62,7 +62,7 @@ def test_create_block_model_data(tmp_path):
         ),
     ]
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace().save(h5file_path) as workspace:
         grid = BlockModel.create(
             workspace,
             origin=[0, 0, 0],

@@ -29,7 +29,7 @@ from geoh5py.workspace import Workspace
 
 def test_create_point_data(tmp_path: Path):
     h5file_path = tmp_path / r"test.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace().save(h5file_path) as workspace:
         group = ContainerGroup.create(workspace, parent=None)
         assert (
             group.parent == workspace.root
@@ -48,7 +48,7 @@ def test_create_point_data(tmp_path: Path):
 def test_parent_extent(tmp_path: Path):
     h5file_path = tmp_path / r"test.geoh5"
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace().save(h5file_path) as workspace:
         group = ContainerGroup.create(workspace, parent=None)
 
         assert group.extent is None, "Extent should be None for empty group."

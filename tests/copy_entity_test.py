@@ -90,8 +90,8 @@ def test_copy_entity(tmp_path: Path):
 
         _ = entity.save()
 
-    workspace = Workspace(h5file_path)
-    new_workspace = Workspace(tmp_path / r"testProject_2.geoh5")
+    workspace = Workspace().save(h5file_path)
+    new_workspace = Workspace().save(tmp_path / r"testProject_2.geoh5")
     for entity in workspace.objects:
         entity.copy(parent=new_workspace)
 

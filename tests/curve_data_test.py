@@ -34,7 +34,7 @@ def test_create_curve_data(tmp_path: Path):
     # Generate a random cloud of points
     n_data = 12
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace().save(h5file_path) as workspace:
         curve = Curve.create(
             workspace, vertices=np.random.randn(n_data, 3), name=curve_name
         )
@@ -108,7 +108,7 @@ def test_remove_cells_data(tmp_path: Path):
     # Generate a random cloud of points
     n_data = 12
 
-    with Workspace(tmp_path / r"testCurve.geoh5") as workspace:
+    with Workspace().save(tmp_path / r"testCurve.geoh5") as workspace:
         curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
         data = curve.add_data(
             {
@@ -143,7 +143,7 @@ def test_remove_vertex_data(tmp_path):
     # Generate a random cloud of points
     n_data = 12
 
-    with Workspace(tmp_path / r"testCurve.geoh5") as workspace:
+    with Workspace().save(tmp_path / r"testCurve.geoh5") as workspace:
         curve = Curve.create(workspace)
         with pytest.warns(UserWarning, match="No vertices to be removed."):
             curve.remove_vertices(12)
@@ -172,7 +172,7 @@ def test_copy_cells_data(tmp_path):
     # Generate a random cloud of points
     n_data = 12
 
-    with Workspace(tmp_path / r"testCurve.geoh5") as workspace:
+    with Workspace().save(tmp_path / r"testCurve.geoh5") as workspace:
         curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
         data = curve.add_data(
             {

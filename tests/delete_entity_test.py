@@ -33,7 +33,7 @@ def test_delete_entities(tmp_path: Path):
     xyz = np.random.randn(12, 3)
     values = np.random.randn(12)
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace().save(h5file_path) as workspace:
         group = ContainerGroup.create(workspace)
         curve_1 = Curve.create(workspace, vertices=xyz, parent=group)
         curve_1.add_data({"DataValues": {"association": "VERTEX", "values": values}})

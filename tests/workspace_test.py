@@ -24,6 +24,7 @@ import pytest
 from h5py import File
 
 from geoh5py.objects import Points
+from geoh5py.shared.exceptions import Geoh5FileClosedError
 from geoh5py.shared.utils import compare_entities, fetch_active_workspace
 from geoh5py.workspace import Workspace
 
@@ -35,10 +36,7 @@ def test_workspace_from_kwargs(tmp_path: Path):
         "distance_unit": "feet",
     }
 
-    # with pytest.warns(
-    #     UserWarning, match="Argument hello with value world is not a valid attribute"
-    # ):
-    workspace = Workspace(h5file_tmp, **attr)
+    workspace = Workspace(**attr).save(h5file_tmp)
 
     # Test re-opening in read-only - stays in r+"
     with pytest.warns(UserWarning) as warning:
@@ -110,7 +108,7 @@ def test_read_bytes(tmp_path):
 
     assert workspace.h5file.is_file()
 
-    with Workspace() as workspace:
+    with Workspace().save(tmp_path / r"test.geoh5") as workspace:
         workspace.create_entity(Points)
 
     with open(tmp_path / r"test.geoh5", "rb") as in_file:
@@ -126,7 +124,7 @@ def test_read_bytes(tmp_path):
 
 
 def test_reopening_mode(tmp_path):
-    with Workspace(tmp_path / r"test.geoh5") as workspace:
+    with Workspace().save(tmp_path / r"test.geoh5") as workspace:
         pass
 
     with workspace.open(mode="r") as workspace:
@@ -145,7 +143,11 @@ def test_in_memory_to_disk():
     with Workspace() as out_workspace:
         new_points = points.copy(parent=out_workspace)
 
-    compare_entities(points, new_points, ignore=["_parent"])
+    with pytest.raises(Geoh5FileClosedError):
+        compare_entities(points, new_points, ignore=["_parent"])
+
+    with out_workspace.open():
+        compare_entities(points, new_points, ignore=["_parent"])
 
     workspace.close()
 

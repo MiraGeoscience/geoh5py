@@ -31,7 +31,7 @@ from geoh5py.workspace import Workspace
 def test_create_surface_data(tmp_path: Path):
     h5file_path = tmp_path / r"testSurface.geoh5"
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace().save(h5file_path) as workspace:
         # Create a grid of points and triangulate
         x, y = np.meshgrid(np.arange(10), np.arange(10))
         x, y = x.ravel(), y.ravel()

@@ -42,7 +42,7 @@ def test_is_uuid():
 
 
 def test_entity2uuid(tmp_path):
-    w_s = Workspace(tmp_path / r"test.geoh5")
+    w_s = Workspace().save(tmp_path / r"test.geoh5")
     xyz = np.array([[1, 2, 3], [4, 5, 6]])
     points = Points.create(w_s, vertices=xyz, name="test_points")
     group = ContainerGroup.create(w_s)
@@ -51,7 +51,7 @@ def test_entity2uuid(tmp_path):
 
 
 def test_uuid2entity(tmp_path):
-    w_s = Workspace(tmp_path / r"test.geoh5")
+    w_s = Workspace().save(tmp_path / r"test.geoh5")
     xyz = np.array([[1, 2, 3], [4, 5, 6]])
     points = Points.create(w_s, vertices=xyz, name="test_points")
     assert points.uid == uuid2entity(points.uid, w_s).uid

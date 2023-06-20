@@ -35,7 +35,7 @@ def test_copy_extent_grid_2d(tmp_path):
     h5file_path = tmp_path / r"test2Grid.geoh5"
 
     # Create a workspace
-    workspace = Workspace(h5file_path)
+    workspace = Workspace().save(h5file_path)
 
     grid = Grid2D.create(
         workspace,

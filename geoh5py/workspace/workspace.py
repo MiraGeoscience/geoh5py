@@ -97,10 +97,10 @@ class Workspace(AbstractContextManager):
     def __init__(
         self,
         h5file: str | Path | BytesIO | None = None,
-        contributors: list[str] | str = getlogin(),
+        contributors: tuple[str] = (getlogin(),),
         distance_unit: str = "meter",
         ga_version: str = "1",
-        mode="a",
+        mode="r+",
         name: str = "GEOSCIENCE",
         repack: bool = False,
         version: float = 2.1,
@@ -108,7 +108,7 @@ class Workspace(AbstractContextManager):
         self._data: dict[uuid.UUID, ReferenceType[data.Data]] = {}
         self._distance_unit: str = distance_unit
         self._contributors: list[str] = np.asarray(
-            tuple(contributors), dtype=h5py.special_dtype(vlen=str)
+            contributors, dtype=h5py.special_dtype(vlen=str)
         )
         self._ga_version: str = ga_version
         self._geoh5: h5py.File | bool = False
@@ -868,7 +868,8 @@ class Workspace(AbstractContextManager):
         warnings.warn(
             "The 'finalize' method will be deprecated in future versions of geoh5py in"
             " favor of `workspace.close()`. "
-            "Please update your code to suppress this warning."
+            "Please update your code to suppress this warning.",
+            DeprecationWarning,
         )
         self.close()
 
@@ -995,10 +996,11 @@ class Workspace(AbstractContextManager):
 
             if not Path(file).is_file():
                 warnings.warn(
-                    "From version 0.8.0, the 'h5file' attribute must be a string"
+                    "From version 0.8.0, the 'h5file' attribute must be a string "
                     "or path to an existing file, or user must call the 'create' "
                     "method. We will attempt to create the file for you, but this "
-                    "behaviour will be removed in future releases."
+                    "behaviour will be removed in future releases.",
+                    DeprecationWarning,
                 )
                 self.save(file)
             else:
@@ -1122,7 +1124,7 @@ class Workspace(AbstractContextManager):
             mode = self._mode
 
         try:
-            self._geoh5 = h5py.File(self.h5file, self._mode)
+            self._geoh5 = h5py.File(self.h5file, mode)
         except OSError:
             self._geoh5 = h5py.File(self.h5file, "r")
 
@@ -1174,15 +1176,13 @@ class Workspace(AbstractContextManager):
         """
         Save the workspace to disk.
         """
-        if self._geoh5 is None:
-            raise ValueError("Workspace not opened.")
+        if self._geoh5 is not None:
+            self.close()
 
         filepath = Path(filepath)
 
         if filepath.suffix != ".geoh5":
             raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
-
-        self.close()
 
         if isinstance(self.h5file, BytesIO):
             with open(filepath, "wb") as file:
@@ -1312,11 +1312,13 @@ class Workspace(AbstractContextManager):
             return fun(self.geoh5, *args, **kwargs)
 
         except Geoh5FileClosedError as error:
-            if not Path(str(self.h5file)).is_file():
+            if not Path(str(self.h5file)).is_file() and not isinstance(
+                self.h5file, BytesIO
+            ):
                 raise FileNotFoundError(
                     f"Error performing {fun}. "
                     "The geoh5 file does not exist."
-                    "Consider creating the geoh5 with `Workspace.create()'"
+                    r"Consider creating the geoh5 with Workspace().save('PATH\*.geoh5)'"
                 ) from error
 
             raise Geoh5FileClosedError(

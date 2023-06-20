@@ -31,9 +31,8 @@ from geoh5py.workspace import Workspace
 def test_create_grid_2d_data(tmp_path):
     # Create a workspace
     h5file_path = tmp_path / r"test2Grid.geoh5"
-    workspace = Workspace(h5file_path)
 
-    with workspace.open("r+") as workspace_context:
+    with Workspace().save(h5file_path) as workspace_context:
         # test base converter
         n_x, n_y, name = 10, 15, "test"
         grid = Grid2D.create(
