@@ -48,7 +48,7 @@ def test_visual_parameters(tmp_path):
         assert points.visual_parameters.colour == new_colour
 
         # Test copying object with visual parameters
-        copy = points.copy()
+        copy = points.copy(name="CopyOfPoints")
 
         assert copy.visual_parameters.colour == viz_params.colour
 
