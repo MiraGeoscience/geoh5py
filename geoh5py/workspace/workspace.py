@@ -28,8 +28,8 @@ import warnings
 import weakref
 from contextlib import AbstractContextManager, contextmanager
 from gc import collect
+from getpass import getuser
 from io import BytesIO
-from os import getlogin
 from pathlib import Path
 from subprocess import CalledProcessError
 from typing import TYPE_CHECKING, ClassVar, cast
@@ -97,7 +97,7 @@ class Workspace(AbstractContextManager):
     def __init__(
         self,
         h5file: str | Path | BytesIO | None = None,
-        contributors: tuple[str] = (getlogin(),),
+        contributors: tuple[str] = (getuser(),),
         distance_unit: str = "meter",
         ga_version: str = "1",
         mode="r+",
