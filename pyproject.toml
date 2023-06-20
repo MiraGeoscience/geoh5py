@@ -31,7 +31,6 @@ numpy = "!=1.19.4, ~1.23.5"
 
 [tool.poetry.group.dev.dependencies]
 lockfile = "^0.12.2"
-poetry-publish = {git = "https://github.com/MiraGeoscience/poetry-publish.git", rev = "pending_fixes"}
 pylint = "*"
 pytest = "*"
 pytest-cov = "*"
@@ -42,9 +41,6 @@ sphinx-rtd-theme = "^0.4.3"
 tomli = "*"
 
 [tool.poetry.extras]
-
-[tool.poetry.scripts]
-publish = 'devtools.publish:publish'
 
 [tool.isort]
 # settings for compatibility between ``isort`` and ``black`` formatting
