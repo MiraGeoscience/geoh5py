@@ -342,21 +342,6 @@ class Workspace(AbstractContextManager):
 
         return recovered_entity
 
-    def create(
-        self,
-    ) -> Workspace:
-        """
-        Create a new workspace in memory.
-
-        :return: The newly created workspace.
-        """
-        self._geoh5 = h5py.File(self.h5file, "a")
-        self._root = self.create_entity(RootGroup, save_on_creation=False)
-        H5Writer.create_project(self.geoh5, self)
-        self._geoh5.close()
-
-        return self
-
     def create_data(
         self,
         entity_class,
@@ -986,7 +971,12 @@ class Workspace(AbstractContextManager):
             isinstance(file, (str, Path)) and not Path(file).is_file()
         ):
             self._h5file = BytesIO()
-            self.create()
+            self._geoh5 = h5py.File(self.h5file, "a")
+
+            with self._geoh5:
+                self._root = self.create_entity(RootGroup, save_on_creation=False)
+                H5Writer.create_project(self.geoh5, self)
+
         elif isinstance(file, BytesIO):
             self._h5file = file
 
