@@ -124,7 +124,10 @@ class Workspace(AbstractContextManager):
 
         self.h5file = h5file
         self.open()
-
+@classmethod
+def create(cls, path: str | Path, **kwargs) -> Workspace:
+"""Create a named blank workspace and save to disk."""
+    return cls(**kwargs).save(path)
     def activate(self):
         """Makes this workspace the active one.
 
