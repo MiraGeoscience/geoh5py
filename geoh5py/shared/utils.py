@@ -20,6 +20,7 @@ from __future__ import annotations
 import warnings
 from abc import ABC
 from contextlib import contextmanager
+from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 from uuid import UUID
@@ -169,6 +170,9 @@ def clear_array_attributes(entity: Entity, recursive: bool = False):
     :param entity: Entity to clear attributes from.
     :param recursive: Clear attributes from children entities.
     """
+    if isinstance(entity.workspace.h5file, BytesIO):
+        return
+
     for attribute in ["vertices", "cells", "values", "prisms", "layers"]:
         if hasattr(entity, attribute):
             setattr(entity, f"_{attribute}", None)

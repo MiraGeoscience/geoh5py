@@ -40,7 +40,7 @@ from geoh5py.workspace import Workspace
 def test_concatenator(tmp_path):
     h5file_path = tmp_path / r"test_Concatenator.geoh5"
 
-    with Workspace(h5file_path, version=2.0) as workspace:
+    with Workspace(version=2.0).save(h5file_path) as workspace:
         # Create a workspace
         dh_group = DrillholeGroup.create(workspace)
 
@@ -81,7 +81,7 @@ def test_concatenator(tmp_path):
 
 def test_concatenated_entities(tmp_path):
     h5file_path = tmp_path / r"test_concatenated_data.geoh5"
-    with Workspace(h5file_path, version=2.0) as workspace:
+    with Workspace(version=2.0).save(h5file_path) as workspace:
         class_type = type("TestGroup", (Concatenator, ContainerGroup), {})
         entity_type = Group.find_or_create_type(workspace)
         concat = class_type(entity_type)
@@ -137,7 +137,7 @@ def test_create_drillhole_data(tmp_path):
     well_name = "bullseye/"
     n_data = 10
 
-    with Workspace(h5file_path, version=2.0) as workspace:
+    with Workspace(version=2.0).save(h5file_path) as workspace:
         # Create a workspace
         dh_group = DrillholeGroup.create(workspace)
 
@@ -383,7 +383,9 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
     well_name = "well"
     n_data = 10
 
-    with Workspace(h5file_path, version=version, ga_version=ga_version) as workspace:
+    with Workspace(version=version, ga_version=ga_version).save(
+        h5file_path
+    ) as workspace:
         # Create a workspace
         dh_group = DrillholeGroup.create(workspace, name="DH_group")
         well = Drillhole.create(

@@ -47,7 +47,7 @@ tag = {
 
 
 def test_create_copy_geoimage(tmp_path):
-    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+    workspace = Workspace.create(tmp_path / r"geo_image_test.geoh5")
 
     pixels = np.r_[
         np.c_[32, 0],
@@ -142,8 +142,8 @@ def test_create_copy_geoimage(tmp_path):
         geoimage_file.image == geoimage.image
     ), "Error writing and re-loading the image file."
 
-    new_workspace = Workspace(tmp_path / r"geo_image_test2.geoh5")
-    geoimage.copy(parent=new_workspace)
+    with Workspace.create(tmp_path / r"geo_image_test2.geoh5") as new_workspace:
+        geoimage.copy(parent=new_workspace)
 
     new_workspace = Workspace(tmp_path / r"geo_image_test2.geoh5")
     rec_image = new_workspace.get_entity("MyGeoImage")[0]
@@ -163,7 +163,7 @@ def test_create_copy_geoimage(tmp_path):
 
 
 def test_georeference_image(tmp_path):
-    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+    workspace = Workspace.create(tmp_path / r"geo_image_test.geoh5")
 
     # create and save a tiff
     image = Image.fromarray(
@@ -323,7 +323,7 @@ def test_converting_rotated_images(tmp_path):
 
 
 def test_clipping_image(tmp_path):
-    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+    workspace = Workspace.create(tmp_path / r"geo_image_test.geoh5")
 
     # add the data
     x_val, y_val = np.meshgrid(np.linspace(100, 1000, 16), np.linspace(100, 1500, 16))

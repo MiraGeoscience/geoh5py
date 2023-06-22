@@ -26,7 +26,7 @@ from geoh5py.workspace import Workspace
 def test_user_comments(tmp_path):
     h5file_path = tmp_path / r"group_object_comment.geoh5"
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         object_base = Points.create(workspace, name="myObject")
         object_comment = "object text comment"
         author = "John Doe"

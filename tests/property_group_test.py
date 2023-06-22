@@ -27,7 +27,7 @@ from geoh5py.workspace import Workspace
 def test_create_property_group(tmp_path):
     h5file_path = tmp_path / r"prop_group_test.geoh5"
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         curve = Curve.create(
             workspace,
             vertices=np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)],
@@ -98,7 +98,7 @@ def test_create_property_group(tmp_path):
 def test_copy_property_group(tmp_path):
     h5file_path = tmp_path / r"prop_group_test.geoh5"
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         curve = Curve.create(
             workspace,
             vertices=np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)],
