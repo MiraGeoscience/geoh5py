@@ -46,7 +46,7 @@ class H5Writer:
     str_type = h5py.special_dtype(vlen=str)
 
     @classmethod
-    def create_project(
+    def init_geoh5(
         cls,
         file: str | h5py.File,
         workspace: workspace.Workspace,
