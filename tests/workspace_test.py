@@ -150,15 +150,3 @@ def test_in_memory_to_disk():
         compare_entities(points, new_points, ignore=["_parent"])
 
     workspace.close()
-
-    # with pytest.raises(
-    #     UserWarning, match="File already exists. Consider re-opening instead."
-    # ):
-    #     workspace(tmp_path / "test_B.geoh5")
-    #
-    # with pytest.raises(
-    #     UserWarning, match="File already exists. Consider re-opening instead."
-    # ):
-    #     workspace(tmp_path / "test_A.geoh5")
-    #
-    # assert workspace.h5file.is_file()
