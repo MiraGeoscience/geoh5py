@@ -980,7 +980,7 @@ class Workspace(AbstractContextManager):
 
             with self._geoh5:
                 self._root = self.create_entity(RootGroup, save_on_creation=False)
-                H5Writer.create_project(self.geoh5, self)
+                H5Writer.init_geoh5(self.geoh5, self)
 
         elif isinstance(file, BytesIO):
             self._h5file = file
