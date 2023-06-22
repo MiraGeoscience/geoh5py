@@ -31,7 +31,7 @@ def test_visual_parameters(tmp_path):
     n_data = 12
     h5file_path = tmp_path / r"testTextData.geoh5"
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         points = Points.create(
             workspace,
             vertices=np.random.randn(n_data, 3),

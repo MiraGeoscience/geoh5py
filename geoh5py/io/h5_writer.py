@@ -46,7 +46,7 @@ class H5Writer:
     str_type = h5py.special_dtype(vlen=str)
 
     @classmethod
-    def create_geoh5(
+    def init_geoh5(
         cls,
         file: str | h5py.File,
         workspace: workspace.Workspace,
@@ -210,8 +210,8 @@ class H5Writer:
         add_children: bool = True,
     ) -> h5py.Group:
         """
-        Write an :obj:`~geoh5py.shared.entity.Entity` to geoh5 with its
-        :obj:`~geoh5py.shared.entity.Entity.children`.
+        Save a :obj:`~geoh5py.shared.entity.Entity` to geoh5 with its
+        :obj:`~geoh5py.shared.entity.Entity.children` recursively.
 
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
@@ -220,13 +220,12 @@ class H5Writer:
         with fetch_h5_handle(file, mode="r+") as h5file:
             new_entity = H5Writer.write_entity(h5file, entity)
 
-            if add_children:
+            if add_children and not isinstance(entity, Concatenator):
                 # Write children entities and add to current parent
                 for child in entity.children:
-                    H5Writer.write_entity(h5file, child)
-                    H5Writer.write_to_parent(h5file, child, recursively=False)
+                    H5Writer.save_entity(h5file, child)
 
-            H5Writer.write_to_parent(h5file, entity)
+            H5Writer.write_to_parent(h5file, entity, recursively=False)
 
         return new_entity
 

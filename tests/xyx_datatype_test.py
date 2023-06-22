@@ -26,7 +26,7 @@ from geoh5py.workspace import Workspace
 
 def test_xyz_dataype(tmp_path: Path):
     h5file_path = tmp_path / f"{__name__}.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         x_datatype = DataType.for_x_data(workspace)
         assert x_datatype.uid == GeometricDataConstants.x_datatype_uid()
         assert (
