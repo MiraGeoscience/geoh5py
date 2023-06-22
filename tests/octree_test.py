@@ -32,7 +32,7 @@ def test_octree(tmp_path: Path):
     name = "MyTestOctree"
     h5file_path = tmp_path / r"octree.geoh5"
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         # Create an octree mesh with variable dimensions
 
         mesh = Octree.create(

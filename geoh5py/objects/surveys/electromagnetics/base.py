@@ -583,7 +583,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
             "_tx_id_property",
         ]
         kwargs["omit_list"] = omit_list
-        metadata = self.metadata.copy()
+
         new_entity = super().copy(
             parent=parent,
             clear_cache=clear_cache,
@@ -609,7 +609,6 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
                 cell_mask = np.ones(self.tx_id_property.values.shape[0], dtype=bool)
 
             new_entity.tx_id_property = self.tx_id_property.values[cell_mask]
-        metadata["EM Dataset"][new_entity.type] = new_entity.uid
 
         if (
             new_entity.tx_id_property is not None
@@ -652,7 +651,6 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
                 if isinstance(self, self.default_receiver_type)
                 else self.base_receiver_type  # pylint: disable=no-member
             )
-
             new_complement = super(base_object, self.complement).copy(
                 parent=parent,
                 omit_list=omit_list,
@@ -706,11 +704,9 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
         Default channel units for time or frequency defined on the child class.
         """
         if self._tx_id_property is None:
-            if "Tx ID property" in self.metadata["EM Dataset"]:
-                data = self.get_data(self.metadata["EM Dataset"]["Tx ID property"])
-
-                if any(data) and isinstance(data[0], ReferencedData):
-                    self._tx_id_property = data[0]
+            data = self.get_data("Transmitter ID")
+            if any(data) and isinstance(data[0], ReferencedData):
+                self._tx_id_property = data[0]
 
         return self._tx_id_property
 
@@ -738,7 +734,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
             value = self.add_data(
                 {
                     "Transmitter ID": {
-                        "values": value,
+                        "values": value.astype(np.int32),
                         "entity_type": entity_type,
                         "type": "referenced",
                     }
@@ -752,7 +748,9 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
             )
 
         self._tx_id_property = value
-        self.edit_metadata({"Tx ID property": getattr(value, "uid", None)})
+
+        if self.type == "Receivers":
+            self.edit_metadata({"Tx ID property": getattr(value, "uid", None)})
 
 
 class AirborneEMSurvey(BaseEMSurvey, Curve):

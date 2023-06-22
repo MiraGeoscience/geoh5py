@@ -30,7 +30,7 @@ def test_create_notype(tmp_path):
     h5file_path = tmp_path / r"testNoType.geoh5"
 
     # Create a workspace
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         label = NoTypeObject.create(workspace, name="MyTestLabel")
 
         assert label.copy_from_extent(np.vstack([[0, 0], [1, 1]])) is None
