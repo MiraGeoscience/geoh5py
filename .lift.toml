@@ -1,0 +1,6 @@
+ignoreFiles = """
+    tests/
+    docs/
+    examples/
+    devtools/
+"""
