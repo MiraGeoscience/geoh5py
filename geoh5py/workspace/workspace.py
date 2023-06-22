@@ -20,7 +20,6 @@
 from __future__ import annotations
 
 import inspect
-import io
 import shutil
 import subprocess
 import tempfile
@@ -29,6 +28,8 @@ import warnings
 import weakref
 from contextlib import AbstractContextManager, contextmanager
 from gc import collect
+from getpass import getuser
+from io import BytesIO
 from pathlib import Path
 from subprocess import CalledProcessError
 from typing import TYPE_CHECKING, ClassVar, cast
@@ -76,12 +77,20 @@ if TYPE_CHECKING:
 
 class Workspace(AbstractContextManager):
     """
-    The Workspace class manages all Entities created or imported from the *geoh5* structure.
+    The Workspace class manages all Entities created or imported from the
+    *geoh5* structure.
 
     The basic requirements needed to create a Workspace are:
 
-    :param geoh5: File name of the target *geoh5* file.
-        A new project is created if the target file cannot by found on disk.
+    :param h5file: Path to the *geoh5* file or :obj:`oi.BytesIO` representation
+        of a geoh5 structure.
+    :param contributors: List of contributors to the project.
+    :param distance_unit: Distance unit used in the project.
+    :param ga_version: Version of the *geoh5* file format.
+    :param mode: Mode in which the *geoh5* file is opened.
+    :param name: Name of the project.
+    :param repack: Repack the *geoh5* file after closing.
+    :param version: Version of the project.
     """
 
     _active_ref: ClassVar[ReferenceType[Workspace]] | type(None) = type(None)  # type: ignore
@@ -94,38 +103,34 @@ class Workspace(AbstractContextManager):
     }
 
     def __init__(
-        self, h5file: str | Path | io.BytesIO = "Analyst.geoh5", mode="a", **kwargs
+        self,
+        h5file: str | Path | BytesIO | None = None,
+        contributors: tuple[str] = (getuser(),),
+        distance_unit: str = "meter",
+        ga_version: str = "1",
+        mode="r+",
+        name: str = "GEOSCIENCE",
+        repack: bool = False,
+        version: float = 2.1,
     ):
-        self._contributors = np.asarray(
-            ["UserName"], dtype=h5py.special_dtype(vlen=str)
-        )
-        self._root: Entity | None = None
-        self._repack: bool = False
-        self._mode = mode
-        self._distance_unit = "meter"
-        self._ga_version = "1"
-        self._version = 2.1
-        self._name = "GEOSCIENCE"
-        self._types: dict[uuid.UUID, ReferenceType[EntityType]] = {}
-        self._groups: dict[uuid.UUID, ReferenceType[group.Group]] = {}
-        self._objects: dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
         self._data: dict[uuid.UUID, ReferenceType[data.Data]] = {}
+        self._distance_unit: str = distance_unit
+        self._contributors: list[str] = np.asarray(
+            contributors, dtype=h5py.special_dtype(vlen=str)
+        )
+        self._ga_version: str = ga_version
         self._geoh5: h5py.File | bool = False
-        self.h5file: str | Path | io.BytesIO = h5file
+        self._groups: dict[uuid.UUID, ReferenceType[group.Group]] = {}
+        self._h5file: str | Path | BytesIO | None = None
+        self._mode: str = mode
+        self._name: str = name
+        self._objects: dict[uuid.UUID, ReferenceType[object_base.ObjectBase]] = {}
+        self._repack: bool = repack
+        self._root: Entity | None = None
+        self._types: dict[uuid.UUID, ReferenceType[EntityType]] = {}
+        self._version: float = version
 
-        for attr, item in kwargs.items():
-            if attr in self._attribute_map:
-                attr = self._attribute_map[attr]
-
-            if getattr(self, attr, None) is None:
-                warnings.warn(
-                    f"Argument {attr} with value {item} is not a valid attribute of workspace. "
-                    f"Argument ignored.",
-                    UserWarning,
-                )
-            else:
-                setattr(self, attr, item)
-
+        self.h5file = h5file
         self.open()
 
     def activate(self):
@@ -189,17 +194,21 @@ class Workspace(AbstractContextManager):
 
         self.geoh5.close()
         self._data = {}
-        if self.repack and not isinstance(self.h5file, io.BytesIO):
-            temp_file = Path(tempfile.gettempdir()) / Path(self.h5file).name
+        if (
+            self.repack
+            and not isinstance(self._h5file, BytesIO)
+            and self._h5file is not None
+        ):
+            temp_file = Path(tempfile.gettempdir()) / Path(self._h5file).name
             try:
                 subprocess.run(
-                    f'h5repack --native "{self.h5file}" "{temp_file}"',
+                    f'h5repack --native "{self._h5file}" "{temp_file}"',
                     check=True,
                     shell=True,
                     stdout=subprocess.DEVNULL,
                 )
-                Path(self.h5file).unlink()
-                shutil.move(temp_file, self.h5file)
+                Path(self._h5file).unlink()
+                shutil.move(temp_file, self._h5file)
             except CalledProcessError:
                 pass
 
@@ -308,6 +317,11 @@ class Workspace(AbstractContextManager):
                 }
             )
             new_group.properties = [data_map[uid] for uid in prop_group.properties]
+
+    @classmethod
+    def create(cls, path: str | Path, **kwargs) -> Workspace:
+        """Create a named blank workspace and save to disk."""
+        return cls(**kwargs).save(path)
 
     def create_from_concatenation(self, attributes):
         if "Name" in attributes:
@@ -434,7 +448,7 @@ class Workspace(AbstractContextManager):
                 entity_class, entity_kwargs, entity_type_kwargs
             )
 
-        if created_entity is not None and save_on_creation:
+        if created_entity is not None and save_on_creation and self.h5file is not None:
             self.save_entity(created_entity)
 
         return created_entity
@@ -852,7 +866,8 @@ class Workspace(AbstractContextManager):
         warnings.warn(
             "The 'finalize' method will be deprecated in future versions of geoh5py in"
             " favor of `workspace.close()`. "
-            "Please update your code to suppress this warning."
+            "Please update your code to suppress this warning.",
+            DeprecationWarning,
         )
         self.close()
 
@@ -945,25 +960,57 @@ class Workspace(AbstractContextManager):
         return self._geoh5
 
     @property
-    def h5file(self) -> str | Path | io.BytesIO:
+    def h5file(self) -> str | Path | BytesIO | None:
         """
-        :str: Target *geoh5* file name with path.
+        Target *geoh5* file name with path or BytesIO object representation.
+
+        On :func:`geoh5py.workspace.Workspace.save`, the BytesIO representation
+        gets replaced by a Path to a file on disk.
         """
         return self._h5file
 
     @h5file.setter
-    def h5file(self, file: str | Path | io.BytesIO):
-        if isinstance(file, (str, Path)):
-            if Path(file).suffix != ".geoh5":
-                raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
-        elif not isinstance(file, io.BytesIO):
+    def h5file(self, file: str | Path | BytesIO | None):
+        if self._h5file is not None:
+            raise ValueError(
+                "The 'h5file' attribute cannot be changed once it has been set."
+            )
+
+        if not isinstance(file, (str, Path, BytesIO, type(None))):
             raise ValueError(
                 "The 'h5file' attribute must be a str, "
-                "pathlib.Path or bytes to the target geoh5 file. "
+                "pathlib.Path to the target geoh5 file or BytesIO. "
                 f"Provided {file} of type({type(file)})"
             )
 
-        self._h5file = file
+        if isinstance(file, type(None)) or (
+            isinstance(file, (str, Path)) and not Path(file).is_file()
+        ):
+            self._h5file = BytesIO()
+            self._geoh5 = h5py.File(self.h5file, "a")
+
+            with self._geoh5:
+                self._root = self.create_entity(RootGroup, save_on_creation=False)
+                H5Writer.init_geoh5(self.geoh5, self)
+
+        elif isinstance(file, BytesIO):
+            self._h5file = file
+
+        if isinstance(file, (str, Path)):
+            if Path(file).suffix != ".geoh5":
+                raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
+
+            if not Path(file).is_file():
+                warnings.warn(
+                    "From version 0.8.0, the 'h5file' attribute must be a string "
+                    "or path to an existing file, or user must call the 'create' "
+                    "method. We will attempt to create the file for you, but this "
+                    "behaviour will be removed in future releases.",
+                    DeprecationWarning,
+                )
+                self.save(file)
+            else:
+                self._h5file = file
 
     @property
     def list_data_name(self) -> dict[uuid.UUID, str]:
@@ -1083,24 +1130,19 @@ class Workspace(AbstractContextManager):
             mode = self._mode
 
         try:
-            self._geoh5 = h5py.File(self._h5file, mode)
+            self._geoh5 = h5py.File(self.h5file, mode)
         except OSError:
-            mode = "r"
-            self._geoh5 = h5py.File(self._h5file, mode)
+            self._geoh5 = h5py.File(self.h5file, "r")
 
         self._data = {}
         self._objects = {}
         self._groups = {}
         self._types = {}
 
-        try:
-            proj_attributes = self._io_call(H5Reader.fetch_project_attributes, mode="r")
+        proj_attributes = self._io_call(H5Reader.fetch_project_attributes, mode="r")
 
-            for key, attr in proj_attributes.items():
-                setattr(self, self._attribute_map[key], attr)
-
-        except FileNotFoundError:
-            self._io_call(H5Writer.create_geoh5, self, mode="a")
+        for key, attr in proj_attributes.items():
+            setattr(self, self._attribute_map[key], attr)
 
         self.fetch_or_create_root()
 
@@ -1135,6 +1177,28 @@ class Workspace(AbstractContextManager):
     @repack.setter
     def repack(self, value: bool):
         self._repack = value
+
+    def save(self, filepath: str | Path) -> Workspace:
+        """
+        Save the workspace to disk.
+        """
+        if self._geoh5 is not None:
+            self.close()
+
+        filepath = Path(filepath)
+
+        if filepath.suffix != ".geoh5":
+            raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
+
+        if isinstance(self.h5file, BytesIO):
+            with open(filepath, "wb") as file:
+                file.write(self.h5file.getbuffer())
+
+            self._h5file = filepath
+
+        self.open()
+
+        return self
 
     def save_entity(
         self,
@@ -1240,6 +1304,9 @@ class Workspace(AbstractContextManager):
         Run a H5Writer or H5Reader function with validation of target geoh5
         """
         try:
+            if self._geoh5 is None:
+                return None
+
             if mode in ["r+", "a"] and self.geoh5.mode == "r":
                 raise UserWarning(
                     f"Error performing {fun}. "
@@ -1251,6 +1318,15 @@ class Workspace(AbstractContextManager):
             return fun(self.geoh5, *args, **kwargs)
 
         except Geoh5FileClosedError as error:
+            if not Path(str(self.h5file)).is_file() and not isinstance(
+                self.h5file, BytesIO
+            ):
+                raise FileNotFoundError(
+                    f"Error performing {fun}. "
+                    "The geoh5 file does not exist."
+                    r"Consider creating the geoh5 with Workspace().save('PATH\*.geoh5)'"
+                ) from error
+
             raise Geoh5FileClosedError(
                 f"Error executing {fun}. "
                 + "Consider re-opening with `Workspace.open()' "

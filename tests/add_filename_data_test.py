@@ -31,8 +31,8 @@ from geoh5py.workspace import Workspace
 
 
 def test_add_file(tmp_path: Path):
-    workspace = Workspace(tmp_path / r"testProject.geoh5")
-    workspace_copy = Workspace(tmp_path / r"testProject_B.geoh5")
+    workspace = Workspace()
+    workspace_copy = Workspace()
     curve = Curve.create(workspace)
     group = ContainerGroup.create(workspace)
     data = curve.add_data({"ABC": {"values": "axs"}})
