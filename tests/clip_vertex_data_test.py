@@ -53,7 +53,7 @@ def test_clip_point_data(tmp_path):
         )
         points.add_file(tmp_path / "numpy_array.txt")
 
-        with Workspace().save(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
+        with Workspace.create(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
             clipped_pts = points.copy_from_extent(parent=new_workspace, extent=extent)
             clipped_d = clipped_pts.get_data("DataValues")[0]
             assert clipped_pts.n_vertices == clippings.sum()
@@ -90,7 +90,7 @@ def test_clip_curve_data(tmp_path):
                 },
             }
         )
-        with Workspace().save(tmp_path / r"testClipCurve_copy.geoh5") as new_workspace:
+        with Workspace.create(tmp_path / r"testClipCurve_copy.geoh5") as new_workspace:
             clipped_pts = curve.copy_from_extent(parent=new_workspace, extent=extent)
             assert (
                 len(clipped_pts.get_data("VertexValues")[0].values) == clippings.sum()
@@ -116,7 +116,7 @@ def test_clip_curve_data(tmp_path):
     # Repeat with 2D bounds - single point left
     extent = np.vstack([[-1, -100], [0.5, 100]])
     with workspace.open():
-        with Workspace().save(
+        with Workspace.create(
             tmp_path / r"testClipPoints_copy2D.geoh5"
         ) as new_workspace:
             clipped_pts = curve.copy_from_extent(parent=new_workspace, extent=extent)
@@ -200,7 +200,7 @@ def test_clip_groups(tmp_path):
             }
         )
 
-        with Workspace().save(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
+        with Workspace.create(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
             group_a.copy_from_extent(
                 parent=new_workspace, clear_cache=True, extent=extent
             )

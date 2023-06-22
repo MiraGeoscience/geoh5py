@@ -33,7 +33,7 @@ def test_create_point_data(tmp_path):
     # Generate a random cloud of points
     values = np.random.randn(12)
     h5file_path = tmp_path / r"testPoints.geoh5"
-    workspace = Workspace().save(h5file_path)
+    workspace = Workspace.create(h5file_path)
     points = Points.create(workspace, vertices=np.random.randn(12, 3), allow_move=False)
     data = points.add_data({"DataValues": {"association": "VERTEX", "values": values}})
 
@@ -80,7 +80,7 @@ def test_remove_point_data(tmp_path):
     # Generate a random cloud of points
     values = np.random.randn(12)
     h5file_path = tmp_path / r"testPoints.geoh5"
-    with Workspace().save(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         points = Points.create(workspace)
 
         with pytest.warns(UserWarning, match="No vertices to be removed."):
@@ -124,7 +124,7 @@ def test_remove_point_data(tmp_path):
 def test_copy_points_data(tmp_path):
     values = np.random.randn(12)
     h5file_path = tmp_path / r"testPoints.geoh5"
-    with Workspace().save(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         points = Points.create(workspace)
         points.vertices = np.random.randn(12, 3)
         data = points.add_data(

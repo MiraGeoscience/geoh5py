@@ -37,7 +37,7 @@ def test_no_data_values(tmp_path):
     all_nan = np.ones(n_data)
     h5file_path = tmp_path / r"testProject.geoh5"
 
-    with Workspace().save(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         points = Points.create(workspace, vertices=xyz)
         data_objs = points.add_data(
             {

@@ -108,7 +108,7 @@ def test_read_bytes(tmp_path):
 
     assert workspace.h5file.is_file()
 
-    with Workspace().save(tmp_path / r"test.geoh5") as workspace:
+    with Workspace.create(tmp_path / r"test.geoh5") as workspace:
         workspace.create_entity(Points)
 
     with open(tmp_path / r"test.geoh5", "rb") as in_file:
@@ -124,7 +124,7 @@ def test_read_bytes(tmp_path):
 
 
 def test_reopening_mode(tmp_path):
-    with Workspace().save(tmp_path / r"test.geoh5") as workspace:
+    with Workspace.create(tmp_path / r"test.geoh5") as workspace:
         pass
 
     with workspace.open(mode="r") as workspace:

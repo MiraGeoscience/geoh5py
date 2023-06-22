@@ -37,7 +37,7 @@ def test_create_color_map(tmp_path):
     h5file_path = tmp_path / r"test_color_map.geoh5"
 
     # Create a workspace
-    workspace = Workspace().save(h5file_path)
+    workspace = Workspace.create(h5file_path)
     grid = Grid2D.create(
         workspace,
         origin=[0, 0, 0],
@@ -102,7 +102,7 @@ def test_create_color_map(tmp_path):
         rec_data.entity_type.color_map, data.entity_type.color_map, ignore=["_parent"]
     )
 
-    new_workspace = Workspace().save(tmp_path / r"test_color_map_copy.geoh5")
+    new_workspace = Workspace.create(tmp_path / r"test_color_map_copy.geoh5")
 
     workspace.open(mode="r")
     data.copy(parent=new_workspace)

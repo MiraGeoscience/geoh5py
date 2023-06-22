@@ -37,7 +37,7 @@ def test_save_modified_properties(
     h5file_path = tmp_path / r"testPoints.geoh5"
 
     # Create a workspace
-    with Workspace().save(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         points = Points.create(workspace)
 
         assert write_attributes.called, f"{write_attributes} was not called."

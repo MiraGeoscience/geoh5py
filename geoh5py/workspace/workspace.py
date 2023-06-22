@@ -125,11 +125,6 @@ class Workspace(AbstractContextManager):
         self.h5file = h5file
         self.open()
 
-    @classmethod
-    def create(cls, path: str | Path, **kwargs) -> Workspace:
-        """Create a named blank workspace and save to disk."""
-        return cls(**kwargs).save(path)
-
     def activate(self):
         """Makes this workspace the active one.
 
@@ -314,6 +309,11 @@ class Workspace(AbstractContextManager):
                 }
             )
             new_group.properties = [data_map[uid] for uid in prop_group.properties]
+
+    @classmethod
+    def create(cls, path: str | Path, **kwargs) -> Workspace:
+        """Create a named blank workspace and save to disk."""
+        return cls(**kwargs).save(path)
 
     def create_from_concatenation(self, attributes):
         if "Name" in attributes:

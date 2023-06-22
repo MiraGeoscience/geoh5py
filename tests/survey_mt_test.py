@@ -35,7 +35,7 @@ def test_create_survey_mt(tmp_path):
     name = "TestMT"
     h5file_path = tmp_path / r"testMT.geoh5"
 
-    with Workspace().save(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         # Define the receiver locations on a grid
         x_loc, y_loc = np.meshgrid(np.linspace(-5, 5, 2), np.linspace(0.0, 20.0, 9))
         vertices = np.c_[x_loc.ravel(), y_loc.ravel(), np.zeros_like(x_loc).ravel()]
@@ -159,7 +159,7 @@ def test_create_survey_mt(tmp_path):
             ignore=["_receivers", "_parent", "_property_groups"],
         )
 
-        with Workspace().save(tmp_path / r"testMT_copy.geoh5") as copy_workspace:
+        with Workspace.create(tmp_path / r"testMT_copy.geoh5") as copy_workspace:
             mt_survey_rec.copy(copy_workspace)
             mt_survey_extent = mt_survey_rec.copy_from_extent(
                 np.vstack([[-6.0, -1.0], [6.0, 6.0]]), parent=copy_workspace

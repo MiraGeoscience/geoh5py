@@ -129,7 +129,7 @@ def test_input_file_name_path(tmp_path: Path):
         DeprecationWarning,
         match="The 'workspace' property is deprecated. Use 'geoh5' instead.",
     ):
-        test.workspace = Workspace().save(tmp_path / r"test.geoh5")
+        test.workspace = Workspace.create(tmp_path / r"test.geoh5")
 
     assert test.path == str(tmp_path)  # pulled from workspace.h5file
     test.path = tmp_path
