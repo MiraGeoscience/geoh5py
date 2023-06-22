@@ -77,12 +77,20 @@ if TYPE_CHECKING:
 
 class Workspace(AbstractContextManager):
     """
-    The Workspace class manages all Entities created or imported from the *geoh5* structure.
+    The Workspace class manages all Entities created or imported from the
+    *geoh5* structure.
 
     The basic requirements needed to create a Workspace are:
 
-    :param geoh5: File name of the target *geoh5* file.
-        A new project is created if the target file cannot by found on disk.
+    :param h5file: Path to the *geoh5* file or :obj:`oi.BytesIO` representation
+        of a geoh5 structure.
+    :param contributors: List of contributors to the project.
+    :param distance_unit: Distance unit used in the project.
+    :param ga_version: Version of the *geoh5* file format.
+    :param mode: Mode in which the *geoh5* file is opened.
+    :param name: Name of the project.
+    :param repack: Repack the *geoh5* file after closing.
+    :param version: Version of the project.
     """
 
     _active_ref: ClassVar[ReferenceType[Workspace]] | type(None) = type(None)  # type: ignore
@@ -954,7 +962,10 @@ class Workspace(AbstractContextManager):
     @property
     def h5file(self) -> str | Path | BytesIO | None:
         """
-        :str: Target *geoh5* file name with path.
+        Target *geoh5* file name with path or BytesIO object representation.
+
+        On :func:`geoh5py.workspace.Workspace.save`, the BytesIO representation
+        gets replaced by a Path to a file on disk.
         """
         return self._h5file
 

@@ -210,8 +210,8 @@ class H5Writer:
         add_children: bool = True,
     ) -> h5py.Group:
         """
-        Write an :obj:`~geoh5py.shared.entity.Entity` to geoh5 with its
-        :obj:`~geoh5py.shared.entity.Entity.children`.
+        Save a :obj:`~geoh5py.shared.entity.Entity` to geoh5 with its
+        :obj:`~geoh5py.shared.entity.Entity.children` recursively.
 
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
