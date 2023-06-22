@@ -734,7 +734,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
             value = self.add_data(
                 {
                     "Transmitter ID": {
-                        "values": value,
+                        "values": value.astype(np.int32),
                         "entity_type": entity_type,
                         "type": "referenced",
                     }
