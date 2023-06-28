@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import numpy as np
 
-from geoh5py.data.visual_parameters import VisualParameters
 from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
@@ -38,15 +37,24 @@ def test_visual_parameters(tmp_path):
             name=name,
             allow_move=False,
         )
-        assert isinstance(points.visual_parameters, VisualParameters)
+        assert isinstance(points.visual_parameters, type(None))
+
+        viz_params = points.add_default_visual_parameters()
 
         # Test color setter and round-trip transform
         new_colour = np.random.randint(0, 255, (3,)).tolist()
-        points.visual_parameters.colour = new_colour
+        viz_params.colour = new_colour
 
         assert points.visual_parameters.colour == new_colour
 
         # Test copying object with visual parameters
-        copy = points.copy()
+        copy = points.copy(name="CopyOfPoints")
 
-        assert copy.visual_parameters.colour == points.visual_parameters.colour
+        assert copy.visual_parameters.colour == viz_params.colour
+
+        # Repeat with known color
+        points.visual_parameters.colour = [0, 255, 0]
+
+    with Workspace(h5file_path) as workspace:
+        points = workspace.get_entity(name)[0]
+        assert points.visual_parameters.colour == [0, 255, 0]

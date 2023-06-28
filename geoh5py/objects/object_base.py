@@ -527,24 +527,38 @@ class ObjectBase(Entity):
 
         return entity_type
 
+    def add_default_visual_parameters(self):
+        """
+        Add default visual parameters to the object.
+        """
+        if self.visual_parameters is not None:
+            raise UserWarning("Visual parameters already exist.")
+
+        self.workspace.create_entity(  # type: ignore
+            Data,
+            save_on_creation=True,
+            **{
+                "entity": {
+                    "name": "Visual Parameters",
+                    "parent": self,
+                    "association": "OBJECT",
+                },
+                "entity_type": {"name": "XmlData", "primitive_type": "TEXT"},
+            },
+        )
+
+        return self._visual_parameters
+
     @property
     def visual_parameters(self) -> VisualParameters | None:
         """
         Access the visual parameters of the object.
         """
         if self._visual_parameters is None:
-            self._visual_parameters = self.workspace.create_entity(  # type: ignore
-                Data,
-                save_on_creation=True,
-                **{
-                    "entity": {
-                        "name": "Visual Parameters",
-                        "parent": self,
-                        "association": "OBJECT",
-                    },
-                    "entity_type": {"name": "XmlData", "primitive_type": "TEXT"},
-                },
-            )
+            for child in self.children:
+                if isinstance(child, VisualParameters):
+                    self._visual_parameters = child
+                    break
 
         return self._visual_parameters
 
