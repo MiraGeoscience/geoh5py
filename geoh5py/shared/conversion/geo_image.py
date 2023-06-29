@@ -34,8 +34,8 @@ class GeoImageConversion(BaseConversion):
     Convert a :obj:'geoh5py.objects.geo_image.GeoImage' object.
     """
 
-    @classmethod
-    def convert_to_grid2d_reference(cls, geoimage: GeoImage, grid2d_attributes) -> dict:
+    @staticmethod
+    def convert_to_grid2d_reference(geoimage: GeoImage, grid2d_attributes) -> dict:
         """
         Extract the geographic information from the entity.
         """
@@ -71,8 +71,8 @@ class GeoImageConversion(BaseConversion):
 
         return grid2d_attributes
 
-    @classmethod
-    def add_gray_data(cls, values: np.ndarray, output: Grid2D):
+    @staticmethod
+    def add_gray_data(values: np.ndarray, output: Grid2D):
         """
         Send the image as gray in the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         :param values: Input image values as an array of int.
@@ -90,8 +90,8 @@ class GeoImageConversion(BaseConversion):
             }
         )
 
-    @classmethod
-    def add_color_data(cls, values: np.ndarray, output: Grid2D):
+    @staticmethod
+    def add_color_data(values: np.ndarray, output: Grid2D):
         """
         Send the image color bands to :obj:'geoh5py.data.integer_data.IntegerData'.
 

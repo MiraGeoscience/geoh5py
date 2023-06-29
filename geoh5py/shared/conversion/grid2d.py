@@ -40,8 +40,8 @@ class Grid2DConversion(CellObjectConversion):
 
     # convert to geoimage
 
-    @classmethod
-    def grid_to_tag(cls, input_entity: Grid2D) -> dict:
+    @staticmethod
+    def grid_to_tag(input_entity: Grid2D) -> dict:
         """
         Compute the tag dictionary of the :obj:'geoh5py.objects.geo_image.Grid2D'
         as required by the :obj:'geoh5py.objects.geo_image.GeoImage' object.
@@ -80,9 +80,9 @@ class Grid2DConversion(CellObjectConversion):
 
         return tag
 
-    @classmethod
+    @staticmethod
     def data_to_pil_format(
-        cls, input_entity: Grid2D, data: np.ndarray, normalize: bool = True
+        input_entity: Grid2D, data: np.ndarray, normalize: bool = True
     ) -> np.ndarray:
         """
         Convert a numpy array with a format compatible with :obj:`PIL.Image` object.
@@ -106,10 +106,8 @@ class Grid2DConversion(CellObjectConversion):
 
         return data.astype(np.uint8)
 
-    @classmethod
-    def key_to_data(
-        cls, input_entity: Grid2D, key: str | int | UUID | Data
-    ) -> np.ndarray:
+    @staticmethod
+    def key_to_data(input_entity: Grid2D, key: str | int | UUID | Data) -> np.ndarray:
         """
         Extract the data from the entity in :obj:'np.array' format;
         The data can be of type: ':obj:str', ':obj:int', ':obj:UUID', or ':obj:Data'.
@@ -187,8 +185,8 @@ class Grid2DConversion(CellObjectConversion):
             f"but you entered a {type(keys)} ",
         )
 
-    @classmethod
-    def convert_to_pillow(cls, data: np.ndarray, mode: str | None = None) -> Image:
+    @staticmethod
+    def convert_to_pillow(data: np.ndarray, mode: str | None = None) -> Image:
         """
         Convert the data from :obj:'np.array' to :obj:'PIL.Image' format.
         """
@@ -210,8 +208,8 @@ class Grid2DConversion(CellObjectConversion):
 
         return Image.fromarray(data, mode=mode)
 
-    @classmethod
-    def compute_vertices(cls, input_entity: Grid2D) -> np.ndarray:
+    @staticmethod
+    def compute_vertices(input_entity: Grid2D) -> np.ndarray:
         """
         Compute the vertices of the geoimage to create based on the
         properties of the grid and its angle.
