@@ -227,9 +227,8 @@ class Grid2D(GridObject):
 
         if not inverse:
             for child in copy.children:
-                nan_value = np.nan
-                if from_image:
-                    nan_value = 0
+                nan_value = 0 if from_image else np.nan
+
                 if isinstance(child.values, np.ndarray):
                     indices = child.mask_by_extent(extent, inverse=inverse)
                     values = child.values.astype(float)
