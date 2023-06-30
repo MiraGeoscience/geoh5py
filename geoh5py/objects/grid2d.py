@@ -43,7 +43,6 @@ class Grid2D(GridObject):
     __TYPE_UID = uuid.UUID(
         fields=(0x48F5054A, 0x1C5C, 0x4CA4, 0x90, 0x48, 0x80F36DC60A06)
     )
-
     _attribute_map = GridObject._attribute_map.copy()
     _attribute_map.update(
         {
@@ -57,11 +56,12 @@ class Grid2D(GridObject):
             "Vertical": "vertical",
         }
     )
-
-    _converter = Grid2DConversion
+    _converter: type[Grid2DConversion] = Grid2DConversion
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._origin: np.ndarray = np.zeros(3)
+        self._origin: np.ndarray = np.asarray(
+            tuple(np.zeros(3)), dtype=[("x", float), ("y", float), ("z", float)]
+        )
         self._u_cell_size: float | None = None
         self._v_cell_size: float | None = None
         self._u_count: int | None = None
@@ -140,13 +140,14 @@ class Grid2D(GridObject):
 
         return self._centroids
 
-    def copy_from_extent(  # pylint: disable=too-many-locals
+    def copy_from_extent(  # pylint: disable=too-many-locals disable=too-many-arguments
         self,
         extent: np.ndarray,
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
         inverse: bool = False,
+        from_image: bool = False,
         **kwargs,
     ) -> Grid2D | None:
         """
@@ -175,6 +176,7 @@ class Grid2D(GridObject):
             float
         )
         local_extent[:, :2] -= origin[:2]
+
         if self.rotation != 0.0:
             local_extent[:, 2] = 0
             rot = xy_rotation_matrix(-np.deg2rad(self.rotation))
@@ -225,10 +227,12 @@ class Grid2D(GridObject):
 
         if not inverse:
             for child in copy.children:
+                nan_value = 0 if from_image else np.nan
+
                 if isinstance(child.values, np.ndarray):
                     indices = child.mask_by_extent(extent, inverse=inverse)
-                    values = child.values
-                    values[~indices] = np.nan
+                    values = child.values.astype(float)
+                    values[~indices] = nan_value
                     child.values = values
 
         return copy
@@ -402,11 +406,14 @@ class Grid2D(GridObject):
             self._vertical = value
             self.workspace.update_attribute(self, "attributes")
 
-    def to_geoimage(self, keys: list | str, **geoimage_kwargs) -> GeoImage:
+    def to_geoimage(
+        self, keys: list | str, mode: str | None = None, **geoimage_kwargs
+    ) -> GeoImage:
         """
         Create a :obj:geoh5py.objects.geo_image.GeoImage object from the current Grid2D.
         :param keys: the list of the data name to pass as band in the image.
-        Warning: The len of the list can only be 1, 3, 4 (Pillow restrictions).
+            Warning: The len of the list can only be 1, 3, 4 (Pillow restrictions).
+        :param mode: The mode of the image. One of 'GRAY', 'RGB', 'RGBA' or 'CMYK'.
         :return: a new georeferenced :obj:`geoh5py.objects.geo_image.GeoImage`.
         """
-        return self.converter.to_geoimage(self, keys, **geoimage_kwargs)
+        return self.converter.to_geoimage(self, keys, mode=mode, **geoimage_kwargs)

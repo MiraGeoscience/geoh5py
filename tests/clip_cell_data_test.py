@@ -30,7 +30,7 @@ def test_copy_extent_grid_2d(tmp_path):
 
     # Generate a 2D array
     n_x, n_y = 10, 15
-    x_val, y_val = np.meshgrid(np.linspace(0, 9, n_x), np.linspace(100, 1500, n_y))
+    x_val, y_val = np.meshgrid(np.linspace(0, 909, n_x), np.linspace(100, 1500, n_y))
     values = x_val + y_val
     h5file_path = tmp_path / r"test2Grid.geoh5"
 
@@ -60,10 +60,11 @@ def test_copy_extent_grid_2d(tmp_path):
     )
 
     new_grid = grid.copy_from_extent(np.r_[np.c_[50, 50], np.c_[200, 200]])
+
     data_intersect = np.intersect1d(data.values, new_grid.children[0].values)
     assert new_grid.n_cells == 35
     assert data_intersect.size == 22
-    assert (data_intersect.min() == 104) & (data_intersect.max() == 507)
+    assert (data_intersect.min() == 504) & (data_intersect.max() == 1309)
 
     # Repeat with inverse flag
     new_grid = grid.copy_from_extent(

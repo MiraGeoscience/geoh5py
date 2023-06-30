@@ -23,8 +23,8 @@ import pytest
 from PIL import Image
 from PIL.TiffImagePlugin import TiffImageFile
 
+from geoh5py.data import IntegerData
 from geoh5py.objects import GeoImage, Grid2D
-from geoh5py.shared.conversion import GeoImageConversion
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -193,18 +193,22 @@ def test_georeference_image(tmp_path):
     geoimage = GeoImage.create(workspace, name="test_area", image=image)
 
     # create Gray grid2d
-    grid2d_gray = geoimage.to_grid2d()
+    grid2d_gray = geoimage.to_grid2d(mode="GRAY")
 
     # create RGB grid2d
-    grid2d_rgb = geoimage.to_grid2d(new_name="RGB", transform="RGB")
+    grid2d_rgb = geoimage.to_grid2d(new_name="RGB")
 
     assert isinstance(grid2d_gray, Grid2D)
+    assert (
+        len([child for child in grid2d_gray.children if isinstance(child, IntegerData)])
+        == 1
+    )
     assert isinstance(grid2d_rgb, Grid2D)
     assert isinstance(geoimage.image_georeferenced, Image.Image)
 
     # test grid2d errors
-    with pytest.raises(KeyError, match="has to be 'GRAY"):
-        geoimage.to_grid2d(new_name="RGB", transform="bidon")
+    with pytest.raises(ValueError, match="conversion from RGB to bidon not supported"):
+        geoimage.to_grid2d(new_name="RGB", mode="bidon")
 
     # test save_as
     with pytest.raises(TypeError, match="has to be a string"):
@@ -226,38 +230,184 @@ def test_georeference_image(tmp_path):
     image = Image.open(f"{str(tmp_path)}/testtif.tif").convert("L")
     geoimage = GeoImage.create(workspace, name="test_area", image=image)
 
-    # test grid2d errors
-    with pytest.raises(IndexError, match="have 3 bands"):
-        geoimage.to_grid2d(new_name="RGB", transform="RGB")
-
-    # extensive test conversion
-    # with pytest.raises(TypeError, match="Entity must be a 'GeoImage'"):
-    #     _ = GeoImageConversion(["bidon"])
-
-    converter = GeoImageConversion
-    # geoimage.conversion_type.to_grid2d(geomiage)
-    with pytest.raises(IndexError, match="To export to CMYK the image"):
-        converter.add_cmyk_data(geoimage, grid2d_gray, "bidon")
-
     image = Image.fromarray(
         np.random.randint(0, 255, (128, 128, 4)).astype("uint8"), "CMYK"
     )
 
     geoimage.image = image
 
-    geoimage.to_grid2d(new_name="CMYK", transform="CMYK")
+    geoimage.to_grid2d(name="CMYK")
+
+
+def test_rotation_setter(tmp_path):
+    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+
+    # add the data
+    x_val, y_val = np.meshgrid(np.linspace(100, 1000, 16), np.linspace(100, 1500, 16))
+    values = x_val + y_val
+    values = (values - np.min(values)) / (np.max(values) - np.min(values))
+    values *= 255
+    values = np.repeat(values.astype(np.uint32)[:, :, np.newaxis], 3, axis=2)
+
+    # load image
+    geoimage = GeoImage.create(workspace, name="test_area", image=values)
+
+    rotated = geoimage.copy()
+
+    assert geoimage.rotation == 0
+
+    rotated.rotation = 45
+
+    assert rotated.rotation == 45
+
+    rotated.rotation = 0
+
+    assert rotated.rotation == 0
+
+    assert np.allclose(geoimage.vertices, rotated.vertices)
+    assert geoimage.image == rotated.image
+
+
+def test_converting_rotated_images(tmp_path):
+    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+
+    # create a grid
+    n_x, n_y = 10, 15
+    grid = Grid2D.create(
+        workspace,
+        origin=[0, 0, 0],
+        u_cell_size=20.0,
+        v_cell_size=30.0,
+        u_count=n_x,
+        v_count=n_y,
+        rotation=30,
+        name="MyTestGrid2D",
+        allow_move=False,
+    )
+
+    # add the data
+    x_val, y_val = np.meshgrid(np.linspace(100, 1000, n_x), np.linspace(100, 1500, n_y))
+    values = x_val + y_val
+    values = (values - np.min(values)) / (np.max(values) - np.min(values))
+    values *= 255
+    values = values.astype(np.uint32)
+
+    _ = grid.add_data(
+        {
+            "rando_r": {"values": values.flatten()},
+            "rando_g": {"values": values.flatten()[::-1]},
+            "rando_b": {"values": values.flatten()},
+        }
+    )
+
+    # convert to geoimage
+    geoimage = grid.to_geoimage(["rando_r", "rando_g", "rando_b"], normalize=False)
+
+    # convert to test
+    grid_test = geoimage.to_grid2d()
+
+    np.testing.assert_almost_equal(grid.rotation, geoimage.rotation)
+    np.testing.assert_almost_equal(grid_test.u_cell_size, grid.u_cell_size)
+    np.testing.assert_almost_equal(grid_test.v_cell_size, grid.v_cell_size)
+    np.testing.assert_almost_equal(grid_test.u_count, grid.u_count)
+    np.testing.assert_almost_equal(grid_test.v_count, grid.v_count)
+    assert grid_test.origin == grid.origin
+    np.testing.assert_almost_equal(grid_test.rotation, grid.rotation)
+
+    assert all(
+        grid_test.get_data("band[0]")[0].values == grid.get_data("rando_r")[0].values
+    )
+
+    grid_test = geoimage.to_grid2d(mode="GRAY")
+    assert "band[0]" in grid_test.get_data_list()
 
 
 def test_clipping_image(tmp_path):
     workspace = Workspace.create(tmp_path / r"geo_image_test.geoh5")
 
+    # add the data
+    x_val, y_val = np.meshgrid(np.linspace(100, 1000, 16), np.linspace(100, 1500, 16))
+    values = x_val + y_val
+    values = (values - np.min(values)) / (np.max(values) - np.min(values))
+    values *= 255
+    values = np.repeat(values.astype(np.uint32)[:, :, np.newaxis], 3, axis=2)
+
     # load image
-    geoimage = GeoImage.create(
-        workspace, name="test_area", image=np.random.randint(0, 255, (16, 16, 3))
-    )
+    geoimage = GeoImage.create(workspace, name="test_area", image=values)
 
     copy_image = geoimage.copy_from_extent(np.vstack([[2, 4], [12, 12]]))
 
     np.testing.assert_array_equal(
-        np.array(copy_image.image), np.array(geoimage.image)[5:12, 2:11, :]
+        np.array(copy_image.image),
+        np.c_[
+            np.array(geoimage.image)[4:12, 2:12, :],
+            np.ones((8, 10, 1), dtype=np.uint8) * 255,
+        ],
     )
+
+
+def test_clipping_gray_image(tmp_path):
+    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+
+    # Repeat with gray scale image
+    image = Image.fromarray(np.random.randint(0, 255, (128, 128)).astype("uint8"), "L")
+    geoimage = GeoImage.create(workspace, name="test_area", image=image)
+
+    crop = geoimage.copy_from_extent(np.vstack([[2, 4], [12, 12]]))
+    assert crop.image.mode == "RGBA"
+
+
+def test_clipping_rotated_image(tmp_path):
+    with Workspace(tmp_path / r"geo_image_test.geoh5") as workspace:
+        # create a grid
+        n_x, n_y = 10, 15
+        grid = Grid2D.create(
+            workspace,
+            origin=[0, 0, 0],
+            u_cell_size=20.0,
+            v_cell_size=30.0,
+            u_count=n_x,
+            v_count=n_y,
+            rotation=30,
+            name="MyTestGrid2D",
+            allow_move=False,
+        )
+
+        # add the data
+        x_val, y_val = np.meshgrid(
+            np.linspace(0, 909, n_x), np.linspace(100, 1500, n_y)
+        )
+        values = x_val + y_val
+        values = (values - np.min(values)) / (np.max(values) - np.min(values))
+        values *= 255
+        values = values.astype(np.uint32)
+
+        _ = grid.add_data(
+            {
+                "rando_c": {"values": values.flatten()},
+                "rando_m": {"values": values.flatten()[::-1]},
+                "rando_y": {"values": values.flatten()},
+                "rando_k": {"values": np.zeros_like(values.flatten())},
+            }
+        )
+
+        # convert to geoimage
+        geoimage = grid.to_geoimage(
+            ["rando_c", "rando_m", "rando_y", "rando_k"], mode="CMYK", normalize=False
+        )
+
+        # clip the image
+        copy_image = geoimage.copy_from_extent(np.r_[np.c_[50, 50], np.c_[200, 200]])
+        assert np.all(np.asarray(copy_image.image) == 0, axis=2).sum() == 13
+        assert np.asarray(copy_image.image).shape == (5, 7, 4)
+
+        # Repeat with inverse flag
+        copy_image_inverse = geoimage.copy_from_extent(
+            np.r_[np.c_[50, 50], np.c_[200, 200]], inverse=True
+        )
+        assert np.all(np.asarray(copy_image_inverse.image) == 0, axis=2).sum() == 22
+        assert np.asarray(copy_image_inverse.image).shape == (
+            grid.v_count,
+            grid.u_count,
+            4,
+        )
