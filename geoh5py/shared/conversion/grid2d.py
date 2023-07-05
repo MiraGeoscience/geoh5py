@@ -40,8 +40,8 @@ class Grid2DConversion(CellObjectConversion):
 
     # convert to geoimage
 
-    @classmethod
-    def grid_to_tag(cls, input_entity: Grid2D) -> dict:
+    @staticmethod
+    def grid_to_tag(input_entity: Grid2D) -> dict:
         """
         Compute the tag dictionary of the :obj:'geoh5py.objects.geo_image.Grid2D'
         as required by the :obj:'geoh5py.objects.geo_image.GeoImage' object.
@@ -80,9 +80,9 @@ class Grid2DConversion(CellObjectConversion):
 
         return tag
 
-    @classmethod
+    @staticmethod
     def data_to_pil_format(
-        cls, input_entity: Grid2D, data: np.ndarray, normalize: bool = True
+        input_entity: Grid2D, data: np.ndarray, normalize: bool = True
     ) -> np.ndarray:
         """
         Convert a numpy array with a format compatible with :obj:`PIL.Image` object.
@@ -106,10 +106,8 @@ class Grid2DConversion(CellObjectConversion):
 
         return data.astype(np.uint8)
 
-    @classmethod
-    def key_to_data(
-        cls, input_entity: Grid2D, key: str | int | UUID | Data
-    ) -> np.ndarray:
+    @staticmethod
+    def key_to_data(input_entity: Grid2D, key: str | int | UUID | Data) -> np.ndarray:
         """
         Extract the data from the entity in :obj:'np.array' format;
         The data can be of type: ':obj:str', ':obj:int', ':obj:UUID', or ':obj:Data'.
@@ -147,9 +145,8 @@ class Grid2DConversion(CellObjectConversion):
 
         return data.values  # type: ignore
 
-    @classmethod
+    @staticmethod
     def data_from_keys(
-        cls,
         input_entity: Grid2D,
         keys: list | str | int | UUID | Data,
         normalize: bool = True,
@@ -174,9 +171,11 @@ class Grid2DConversion(CellObjectConversion):
             )
 
             for key in keys:
-                data_temp = cls.key_to_data(input_entity, key)
+                data_temp = Grid2DConversion.key_to_data(input_entity, key)
 
-                data_temp = cls.data_to_pil_format(input_entity, data_temp, normalize)
+                data_temp = Grid2DConversion.data_to_pil_format(
+                    input_entity, data_temp, normalize
+                )
 
                 data = np.dstack((data, data_temp))
 
@@ -187,8 +186,8 @@ class Grid2DConversion(CellObjectConversion):
             f"but you entered a {type(keys)} ",
         )
 
-    @classmethod
-    def convert_to_pillow(cls, data: np.ndarray, mode: str | None = None) -> Image:
+    @staticmethod
+    def convert_to_pillow(data: np.ndarray, mode: str | None = None) -> Image:
         """
         Convert the data from :obj:'np.array' to :obj:'PIL.Image' format.
         """
@@ -210,8 +209,8 @@ class Grid2DConversion(CellObjectConversion):
 
         return Image.fromarray(data, mode=mode)
 
-    @classmethod
-    def compute_vertices(cls, input_entity: Grid2D) -> np.ndarray:
+    @staticmethod
+    def compute_vertices(input_entity: Grid2D) -> np.ndarray:
         """
         Compute the vertices of the geoimage to create based on the
         properties of the grid and its angle.
@@ -265,9 +264,8 @@ class Grid2DConversion(CellObjectConversion):
 
         return shifted_corners
 
-    @classmethod
+    @staticmethod
     def to_geoimage(
-        cls,
         input_entity: Grid2D,
         keys: list | str | int | UUID | Data,
         mode: str | None = None,
@@ -282,19 +280,21 @@ class Grid2DConversion(CellObjectConversion):
         :param normalize: if True, the data will be normalized between 0 and 255.
         :param geoimage_kwargs: the kwargs to pass to the :obj:'GeoImage' object.
         """
-        workspace = cls.validate_workspace(input_entity, **geoimage_kwargs)
-        geoimage_kwargs = cls.verify_kwargs(input_entity, **geoimage_kwargs)
+        workspace = Grid2DConversion.validate_workspace(input_entity, **geoimage_kwargs)
+        geoimage_kwargs = Grid2DConversion.verify_kwargs(
+            input_entity, **geoimage_kwargs
+        )
 
         # get the tag of the data
-        geoimage_kwargs["tag"] = cls.grid_to_tag(input_entity)
+        geoimage_kwargs["tag"] = Grid2DConversion.grid_to_tag(input_entity)
 
         # get the data
-        data = cls.data_from_keys(input_entity, keys, normalize=normalize)
+        data = Grid2DConversion.data_from_keys(input_entity, keys, normalize=normalize)
 
-        geoimage_kwargs["image"] = cls.convert_to_pillow(data, mode=mode)
+        geoimage_kwargs["image"] = Grid2DConversion.convert_to_pillow(data, mode=mode)
 
         # define the vertices
-        geoimage_kwargs["vertices"] = cls.compute_vertices(input_entity)
+        geoimage_kwargs["vertices"] = Grid2DConversion.compute_vertices(input_entity)
 
         # create a geoimage
         output = objects.GeoImage.create(workspace, **geoimage_kwargs)
