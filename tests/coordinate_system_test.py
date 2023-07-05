@@ -68,10 +68,20 @@ def test_georeference_image(tmp_path):
 
     # set reference coordinate system
     coordinate_system = {
-        "Code": "EPSG:32634",
         "Name": "WGS 84 / UTM zone 34N",
+        "Code": "EPSG:32634",
     }
 
     grid2d_rgb.coordinate_reference_system = coordinate_system
 
     assert grid2d_rgb.coordinate_reference_system == coordinate_system
+
+    grid2 = grid2d_rgb.copy()
+
+    # set reference coordinate system
+    coordinate_system = {
+        "Code": "bidon",
+        "Name": "mais vraiment bidon",
+    }
+
+    grid2.coordinate_reference_system = coordinate_system
