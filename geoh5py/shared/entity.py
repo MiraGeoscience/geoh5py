@@ -34,6 +34,8 @@ if TYPE_CHECKING:
     from .. import shared
     from ..workspace import Workspace
 
+DEFAULT_CRS = {"Code": "Unknown", "Name": "Unknown"}
+
 
 class Entity(ABC):
     """
@@ -211,6 +213,49 @@ class Entity(ABC):
             **{**entity_kwargs, **entity_type_kwargs},
         )
         return new_object
+
+    @property
+    def coordinate_reference_system(self) -> dict | None:
+        """
+        Coordinate reference system attached to the entity.
+        """
+        coordinate_reference_system = DEFAULT_CRS
+
+        if (
+            self._metadata is not None
+            and "Coordinate Reference System" in self._metadata
+        ):
+            coordinate_reference_system = self._metadata[
+                "Coordinate Reference System"
+            ].get("Current", DEFAULT_CRS)
+
+        return coordinate_reference_system
+
+    @coordinate_reference_system.setter
+    def coordinate_reference_system(self, value: dict):
+        # assert value is a dictionary containing "Code" and "Name" keys
+        if not isinstance(value, dict):
+            raise TypeError("Input coordinate reference system must be a dictionary")
+
+        if value.keys() != {"Code", "Name"}:
+            raise KeyError(
+                "Input coordinate reference system must only contain a 'Code' and 'Name' keys"
+            )
+
+        # get the actual coordinate reference system
+        coordinate_reference_system = {
+            "Current": value,
+            "Previous": self.coordinate_reference_system,
+        }
+
+        # update the metadata
+        metadata = self.metadata
+        if isinstance(metadata, dict):
+            metadata["Coordinate Reference System"] = coordinate_reference_system
+        else:
+            metadata = {"Coordinate Reference System": coordinate_reference_system}
+
+        self.metadata = metadata
 
     @abstractmethod
     def copy(
