@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 from PIL import Image
 
 from geoh5py.objects import GeoImage
@@ -85,3 +86,14 @@ def test_georeference_image(tmp_path):
     }
 
     grid2.coordinate_reference_system = coordinate_system
+
+    with pytest.raises(
+        TypeError, match="Input coordinate reference system must be a dictionary"
+    ):
+        grid2.coordinate_reference_system = "bidon"
+
+    with pytest.raises(
+        KeyError,
+        match="Input coordinate reference system must only contain a 'Code' and 'Name' keys",
+    ):
+        grid2.coordinate_reference_system = {"Bidon": "bidon"}

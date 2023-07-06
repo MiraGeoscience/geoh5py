@@ -219,20 +219,15 @@ class Entity(ABC):
         """
         Coordinate reference system attached to the entity.
         """
-        coordinate_reference_system = None
+        coordinate_reference_system = DEFAULT_CRS
 
-        if self._metadata is not None:
-            coordinate_reference_system = self._metadata.get(
-                "Coordinate Reference System", None
-            )
-
-            if coordinate_reference_system is not None:
-                coordinate_reference_system = coordinate_reference_system.get(
-                    "Current", None
-                )
-
-        if coordinate_reference_system is None:
-            coordinate_reference_system = DEFAULT_CRS
+        if (
+            self._metadata is not None
+            and "Coordinate Reference System" in self._metadata
+        ):
+            coordinate_reference_system = self._metadata[
+                "Coordinate Reference System"
+            ].get("Current", DEFAULT_CRS)
 
         return coordinate_reference_system
 
@@ -241,6 +236,7 @@ class Entity(ABC):
         # assert value is a dictionary containing "Code" and "Name" keys
         if not isinstance(value, dict):
             raise TypeError("Input coordinate reference system must be a dictionary")
+
         if value.keys() != {"Code", "Name"}:
             raise KeyError(
                 "Input coordinate reference system must only contain a 'Code' and 'Name' keys"
