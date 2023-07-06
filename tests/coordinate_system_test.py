@@ -44,7 +44,7 @@ tag = {
 DEFAULT_CRS = {"Code": "Unknown", "Name": "Unknown"}
 
 
-def test_georeference_image(tmp_path):
+def test_coordinate_system(tmp_path):
     workspace = Workspace.create(tmp_path / r"geo_image_test.geoh5")
 
     # create and save a tiff
