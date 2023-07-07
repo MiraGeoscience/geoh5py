@@ -104,9 +104,14 @@ class DrapeModel(GridObject):
 
     @layers.setter
     def layers(self, xyz: np.ndarray):
-        assert (
-            xyz.shape[1] == 3
-        ), f"Array of layers must be of shape (*, 3). Array of shape {xyz.shape} provided."
+        if any(np.diff(np.unique(xyz[:,])) != 1):
+            msg = "Prism index (first column) must be monotonically increasing."
+            raise ValueError(msg)
+
+        if xyz.shape[1] != 3:
+            msg = f"Array of layers must be of shape (*, 3). Array of shape {xyz.shape} provided."
+            raise ValueError(msg)
+
         self._layers = np.asarray(
             np.core.records.fromarrays(
                 xyz.T.tolist(),
