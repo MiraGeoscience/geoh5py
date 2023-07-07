@@ -104,7 +104,7 @@ class DrapeModel(GridObject):
 
     @layers.setter
     def layers(self, xyz: np.ndarray):
-        if any(np.diff(np.unique(xyz[:,])) != 1):
+        if any(np.diff(np.unique(xyz[:, 0])) != 1):
             msg = "Prism index (first column) must be monotonically increasing."
             raise ValueError(msg)
 
