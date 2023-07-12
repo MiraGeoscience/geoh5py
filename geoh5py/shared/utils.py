@@ -214,6 +214,13 @@ def compare_entities(
                         decimal=decimal,
                         err_msg=f"Error comparing attribute '{attr}'.",
                     )
+            elif isinstance(getattr(object_a, attr[1:]), float):
+                np.testing.assert_almost_equal(
+                    getattr(object_a, attr[1:]),
+                    getattr(object_b, attr[1:]),
+                    decimal=decimal,
+                    err_msg=f"Error comparing attribute '{attr}'.",
+                )
             else:
                 assert np.all(
                     getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
@@ -486,3 +493,43 @@ def xy_rotation_matrix(angle: float) -> np.ndarray:
             [0.0, 0.0, 1.0],
         ]
     )
+
+
+def yz_rotation_matrix(angle: float) -> np.ndarray:
+    """
+    Rotation matrix about the x-axis.
+    :param angle: Rotation angle in radians.
+    :return: rot: Rotation matrix.
+    """
+
+    return np.array(
+        [
+            [1, 0, 0],
+            [0, np.cos(angle), -np.sin(angle)],
+            [0, np.sin(angle), np.cos(angle)],
+        ]
+    )
+
+
+def dip_points(points: np.ndarray, dip: float, rotation: float = 0) -> np.ndarray:
+    """
+    Rotate points about the x-axis by the dip angle and then about the z-axis by the rotation angle.
+    :param points: an array of points to rotate
+    :param dip: the dip angle in radians
+    :param rotation: the rotation angle in radians
+    :return: the rotated points
+    """
+    # Assert points is a numpy array containing 3D points
+    if not isinstance(points, np.ndarray) and points.ndim != 2 and points.shape[1] != 3:
+        raise TypeError("Input points must be a 2D numpy array of shape (N, 3).")
+
+    # rotate the points about the z-axis by the inverse rotation angle
+    points = points @ xy_rotation_matrix(-rotation)
+
+    # Rotate points with the dip angle
+    points = points @ yz_rotation_matrix(dip)
+
+    # Rotate back the points to initial orientation
+    points = points @ xy_rotation_matrix(rotation)
+
+    return points

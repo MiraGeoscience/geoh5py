@@ -411,3 +411,25 @@ def test_clipping_rotated_image(tmp_path):
             grid.u_count,
             4,
         )
+
+
+def test_image_rotation(tmp_path):
+    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+
+    # Repeat with gray scale image
+    image = Image.fromarray(np.random.randint(0, 255, (128, 128)).astype("uint8"), "L")
+    geoimage = GeoImage.create(workspace, name="test_area", image=image)
+
+    assert geoimage.rotation == 0
+    assert geoimage.dip == 0
+
+    geoimage2 = geoimage.copy()
+    geoimage2.rotation = 66
+
+    assert geoimage2.rotation == 66
+
+    geoimage3 = geoimage.copy()
+
+    geoimage3.dip = 44
+
+    assert geoimage3.dip == 44
