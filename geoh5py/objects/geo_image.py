@@ -155,6 +155,10 @@ class GeoImage(ObjectBase):
 
         return image_transformed
 
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID
+
     @property
     def default_vertices(self):
         """
@@ -184,19 +188,103 @@ class GeoImage(ObjectBase):
 
         return None
 
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
+    def georeference(self, reference: np.ndarray | list, locations: np.ndarray | list):
+        """
+        Georeference the image vertices (corners) based on input reference and
+        corresponding world coordinates.
 
-    @property
-    def image_data(self):
+        :param reference: Array of integers representing the reference used as reference points.
+        :param locations: Array of floats for the corresponding world coordinates
+            for each input pixel.
+
+        :return vertices: Corners (vertices) in world coordinates.
         """
-        Get the FilenameData entity holding the image.
+        reference = np.asarray(reference)
+        locations = np.asarray(locations)
+        if self.image is None:
+            raise AttributeError("An 'image' must be set before georeferencing.")
+
+        if reference.ndim != 2 or reference.shape[0] < 3 or reference.shape[1] != 2:
+            raise ValueError(
+                "Input reference points must be a 2D array of shape(*, 2) "
+                "with at least 3 control points."
+            )
+
+        if (
+            locations.ndim != 2
+            or reference.shape[0] != locations.shape[0]
+            or locations.shape[1] != 3
+        ):
+            raise ValueError(
+                "Input 'locations' must be a 2D array of shape(*, 3) "
+                "with the same number of rows as the control points."
+            )
+        constant = np.ones(reference.shape[0])
+        param_x, _, _, _ = np.linalg.lstsq(
+            np.c_[constant, reference], locations[:, 0], rcond=None
+        )
+        param_y, _, _, _ = np.linalg.lstsq(
+            np.c_[constant, reference], locations[:, 1], rcond=None
+        )
+        param_z, _, _, _ = np.linalg.lstsq(
+            np.c_[constant, reference], locations[:, 2], rcond=None
+        )
+
+        corners = self.default_vertices[:, :2]
+
+        self.vertices = np.c_[
+            param_x[0] + np.dot(corners, param_x[1:]),
+            param_y[0] + np.dot(corners, param_y[1:]),
+            param_z[0] + np.dot(corners, param_z[1:]),
+        ]
+
+        self.set_tag_from_vertices()
+
+    def georeferencing_from_image(self):
         """
-        for child in self.children:
-            if isinstance(child, FilenameData) and child.name == "GeoImageMesh_Image":
-                return child
-        return None
+        Georeferencing the GeoImage from the image.
+        """
+        if self.image is not None:
+            if self.tag is not None:
+                self.vertices = self.default_vertices
+                self.georeferencing_from_tiff()
+            else:
+                self.vertices = self.default_vertices
+
+    def georeferencing_from_tiff(self):
+        """
+        Get the geographic information from the PIL Image to georeference it.
+        Run the georeference() method of the object.
+        """
+        if self.tag is None:
+            raise AttributeError("The image is not georeferenced")
+
+        try:
+            # get geographic information
+            u_origin = float(self.tag[33922][3])
+            v_origin = float(self.tag[33922][4])
+            u_cell_size = float(self.tag[33550][0])
+            v_cell_size = float(self.tag[33550][1])
+            u_count = float(self.tag[256][0])
+            v_count = float(self.tag[257][0])
+            u_oposite = float(u_origin + u_cell_size * u_count)
+            v_oposite = float(v_origin - v_cell_size * v_count)
+
+            # prepare georeferencing
+            reference = np.array([[0.0, v_count], [u_count, v_count], [u_count, 0.0]])
+
+            locations = np.array(
+                [
+                    [u_origin, v_origin, 0.0],
+                    [u_oposite, v_origin, 0.0],
+                    [u_oposite, v_oposite, 0.0],
+                ]
+            )
+
+            # georeference the raster
+            self.georeference(reference, locations)
+        except KeyError:
+            warnings.warn("The 'tif.' image has no referencing information")
 
     @property
     def image(self):
@@ -265,198 +353,19 @@ class GeoImage(ObjectBase):
             image.name = "GeoImageMesh_Image"
             image.entity_type.name = "GeoImageMesh_Image"
 
-    def georeference(self, reference: np.ndarray | list, locations: np.ndarray | list):
-        """
-        Georeference the image vertices (corners) based on input reference and
-        corresponding world coordinates.
-
-        :param reference: Array of integers representing the reference used as reference points.
-        :param locations: Array of floats for the corresponding world coordinates
-            for each input pixel.
-
-        :return vertices: Corners (vertices) in world coordinates.
-        """
-        reference = np.asarray(reference)
-        locations = np.asarray(locations)
-        if self.image is None:
-            raise AttributeError("An 'image' must be set before georeferencing.")
-
-        if reference.ndim != 2 or reference.shape[0] < 3 or reference.shape[1] != 2:
-            raise ValueError(
-                "Input reference points must be a 2D array of shape(*, 2) "
-                "with at least 3 control points."
-            )
-
-        if (
-            locations.ndim != 2
-            or reference.shape[0] != locations.shape[0]
-            or locations.shape[1] != 3
-        ):
-            raise ValueError(
-                "Input 'locations' must be a 2D array of shape(*, 3) "
-                "with the same number of rows as the control points."
-            )
-        constant = np.ones(reference.shape[0])
-        param_x, _, _, _ = np.linalg.lstsq(
-            np.c_[constant, reference], locations[:, 0], rcond=None
-        )
-        param_y, _, _, _ = np.linalg.lstsq(
-            np.c_[constant, reference], locations[:, 1], rcond=None
-        )
-        param_z, _, _, _ = np.linalg.lstsq(
-            np.c_[constant, reference], locations[:, 2], rcond=None
-        )
-
-        corners = self.default_vertices[:, :2]
-
-        self.vertices = np.c_[
-            param_x[0] + np.dot(corners, param_x[1:]),
-            param_y[0] + np.dot(corners, param_y[1:]),
-            param_z[0] + np.dot(corners, param_z[1:]),
-        ]
-
-        self.set_tag_from_vertices()
-
-    def mask_by_extent(
-        self, extent: np.ndarray, inverse: bool = False
-    ) -> np.ndarray | None:
-        """
-        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
-
-        Uses the four corners of the image to determine overlap with the extent window.
-        """
-        if self.extent is None or not box_intersect(self.extent, extent):
-            return None
-
-        if self.vertices is not None:
-            return np.ones(self.vertices.shape[0], dtype=bool)
-
-        return None
-
-    def set_tag_from_vertices(self):
-        """
-        If tag is None, set the basic tag values based on vertices
-        in order to export as a georeferenced .tiff.
-        WARNING: this function must be used after georeference().
-        """
-
-        if self.image is None:
-            raise AttributeError("There is no image to reference")
-
-        if not isinstance(self.vertices, np.ndarray):
-            raise AttributeError("Vertices must be set before setting tag")
-
-        if self._tag is None:
-            self._tag = {}
-
-        width, height = self.image.size
-        self._tag[256] = (width,)
-        self._tag[257] = (height,)
-        self._tag[33922] = (
-            0.0,
-            0.0,
-            0.0,
-            self.vertices[0, 0],
-            self.vertices[0, 1],
-            self.vertices[0, 2],
-        )
-        self._tag[33550] = (
-            abs(self.vertices[1, 0] - self.vertices[0, 0]) / width,
-            abs(self.vertices[0, 1] - self.vertices[2, 1]) / height,
-            0.0,
-        )
+        # set the vertices to the image if it's not set
+        if self._vertices is None:
+            self.georeferencing_from_image()
 
     @property
-    def vertices(self) -> np.ndarray | None:
+    def image_data(self):
         """
-        :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`:
-        Defines the four corners of the geo_image
+        Get the FilenameData entity holding the image.
         """
-        if (getattr(self, "_vertices", None) is None) and self.on_file:
-            self._vertices = self.workspace.fetch_array_attribute(self, "vertices")
-
-        if self._vertices is None and self.image is not None:
-            if self.tag is not None:
-                self.vertices = self.default_vertices
-                self.georeferencing_from_tiff()
-            else:
-                self.vertices = self.default_vertices
-
-        # todo: change the call from vertices to vertices_xyz in the code
-        if self._vertices is not None:
-            return self._vertices.view("<f8").reshape((-1, 3)).astype(float)
-
-        return self._vertices
-
-    @vertices.setter
-    def vertices(self, xyz: np.ndarray | list):
-        if isinstance(xyz, list):
-            xyz = np.asarray(xyz)
-
-        if not isinstance(xyz, np.ndarray) or xyz.shape != (4, 3):
-            raise ValueError("Input 'vertices' must be a numpy array of shape (4, 3)")
-
-        xyz = np.asarray(
-            np.core.records.fromarrays(xyz.T, names="x, y, z", formats="<f8, <f8, <f8")
-        )
-        self._vertices = xyz
-        self.workspace.update_attribute(self, "vertices")
-
-    @property
-    def tag(self) -> dict | None:
-        """
-        Georeferencing information of a tiff image stored in the header.
-        :return: a dictionary containing the PIL.Image.tag information.
-        """
-        if self._tag:
-            return self._tag.copy()
+        for child in self.children:
+            if isinstance(child, FilenameData) and child.name == "GeoImageMesh_Image":
+                return child
         return None
-
-    @tag.setter
-    def tag(self, image: Image.Image | dict | None):
-        if isinstance(image, (Image.Image, TiffImageFile)):
-            self._tag = dict(image.tag)
-        elif isinstance(image, dict):
-            self._tag = image
-        elif image is None:
-            self._tag = None
-        else:
-            raise ValueError("Input 'tag' must be a PIL.Image")
-
-    def georeferencing_from_tiff(self):
-        """
-        Get the geographic information from the PIL Image to georeference it.
-        Run the georeference() method of the object.
-        """
-        if self.tag is None:
-            raise AttributeError("The image is not georeferenced")
-
-        try:
-            # get geographic information
-            u_origin = float(self.tag[33922][3])
-            v_origin = float(self.tag[33922][4])
-            u_cell_size = float(self.tag[33550][0])
-            v_cell_size = float(self.tag[33550][1])
-            u_count = float(self.tag[256][0])
-            v_count = float(self.tag[257][0])
-            u_oposite = float(u_origin + u_cell_size * u_count)
-            v_oposite = float(v_origin - v_cell_size * v_count)
-
-            # prepare georeferencing
-            reference = np.array([[0.0, v_count], [u_count, v_count], [u_count, 0.0]])
-
-            locations = np.array(
-                [
-                    [u_origin, v_origin, 0.0],
-                    [u_oposite, v_origin, 0.0],
-                    [u_oposite, v_oposite, 0.0],
-                ]
-            )
-
-            # georeference the raster
-            self.georeference(reference, locations)
-        except KeyError:
-            warnings.warn("The 'tif.' image has no referencing information")
 
     @property
     def image_georeferenced(self) -> Image.Image | None:
@@ -474,51 +383,21 @@ class GeoImage(ObjectBase):
 
         return None
 
-    def save_as(self, name: str, path: str | Path = ""):
+    def mask_by_extent(
+        self, extent: np.ndarray, inverse: bool = False
+    ) -> np.ndarray | None:
         """
-        Function to save the geoimage into an image file.
-        It the name ends by '.tif' or '.tiff' and the tag is not None
-        then the image is saved as georeferenced tiff image ;
-        else, the image is save with PIL.Image's save function.
-        :param name: the name to give to the image.
-        :param path: the path of the file of the image, default: ''.
-        """
-        # verifications
-        if self.image is None:
-            raise AttributeError("The object contains no image data")
-        if not isinstance(name, str):
-            raise TypeError(
-                f"The 'name' has to be a string; a '{type(name)}' was entered instead"
-            )
-        if not isinstance(path, (str, Path)):
-            raise TypeError(
-                f"The 'path' has to be a string or a Path; a '{type(name)}' was entered instead"
-            )
-        if path != "" and not Path(path).is_dir():
-            raise FileNotFoundError(f"No such file or directory: {path}")
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
 
-        if name.endswith((".tif", ".tiff")) and self.tag is not None:
-            # save the image
-            image: Image = self.image_georeferenced
-            image.save(Path(path) / name, exif=image.getexif())
-        else:
-            self.image.save(Path(path) / name)
-
-    def to_grid2d(
-        self,
-        mode: str | None = None,
-        **grid2d_kwargs,
-    ) -> objects.Grid2D:
+        Uses the four corners of the image to determine overlap with the extent window.
         """
-        Create a geoh5py :obj:geoh5py.objects.grid2d.Grid2D from the geoimage in the same workspace.
-        :param mode: The output image mode, defaults to the incoming image.mode.
-            If "GRAY" convert the image to grayscale.
-        :param grid2d_kwargs: Keyword arguments to pass to the
-            :obj:`geoh5py.objects.grid2d.Grid2D` constructor.
+        if self.extent is None or not box_intersect(self.extent, extent):
+            return None
 
-        :return: the new created :obj:`geoh5py.objects.grid2d.Grid2D`.
-        """
-        return self.converter.to_grid2d(self, mode, **grid2d_kwargs)
+        if self.vertices is not None:
+            return np.ones(self.vertices.shape[0], dtype=bool)
+
+        return None
 
     @property
     def rotation(self) -> float | None:
@@ -579,3 +458,135 @@ class GeoImage(ObjectBase):
 
             # Update the stored rotation
             self._rotation = new_rotation
+
+    def save_as(self, name: str, path: str | Path = ""):
+        """
+        Function to save the geoimage into an image file.
+        It the name ends by '.tif' or '.tiff' and the tag is not None
+        then the image is saved as georeferenced tiff image ;
+        else, the image is save with PIL.Image's save function.
+        :param name: the name to give to the image.
+        :param path: the path of the file of the image, default: ''.
+        """
+        # verifications
+        if self.image is None:
+            raise AttributeError("The object contains no image data")
+        if not isinstance(name, str):
+            raise TypeError(
+                f"The 'name' has to be a string; a '{type(name)}' was entered instead"
+            )
+        if not isinstance(path, (str, Path)):
+            raise TypeError(
+                f"The 'path' has to be a string or a Path; a '{type(name)}' was entered instead"
+            )
+        if path != "" and not Path(path).is_dir():
+            raise FileNotFoundError(f"No such file or directory: {path}")
+
+        if name.endswith((".tif", ".tiff")) and self.tag is not None:
+            # save the image
+            image: Image = self.image_georeferenced
+            image.save(Path(path) / name, exif=image.getexif())
+        else:
+            self.image.save(Path(path) / name)
+
+    def set_tag_from_vertices(self):
+        """
+        If tag is None, set the basic tag values based on vertices
+        in order to export as a georeferenced .tiff.
+        WARNING: this function must be used after georeference().
+        """
+
+        if self.image is None:
+            raise AttributeError("There is no image to reference")
+
+        if not isinstance(self.vertices, np.ndarray):
+            raise AttributeError("Vertices must be set before setting tag")
+
+        if self._tag is None:
+            self._tag = {}
+
+        width, height = self.image.size
+        self._tag[256] = (width,)
+        self._tag[257] = (height,)
+        self._tag[33922] = (
+            0.0,
+            0.0,
+            0.0,
+            self.vertices[0, 0],
+            self.vertices[0, 1],
+            self.vertices[0, 2],
+        )
+        self._tag[33550] = (
+            abs(self.vertices[1, 0] - self.vertices[0, 0]) / width,
+            abs(self.vertices[0, 1] - self.vertices[2, 1]) / height,
+            0.0,
+        )
+
+    @property
+    def tag(self) -> dict | None:
+        """
+        Georeferencing information of a tiff image stored in the header.
+        :return: a dictionary containing the PIL.Image.tag information.
+        """
+        if self._tag:
+            return self._tag.copy()
+        return None
+
+    @tag.setter
+    def tag(self, image: Image.Image | dict | None):
+        if isinstance(image, (Image.Image, TiffImageFile)):
+            self._tag = dict(image.tag)
+        elif isinstance(image, dict):
+            self._tag = image
+        elif image is None:
+            self._tag = None
+        else:
+            raise ValueError("Input 'tag' must be a PIL.Image")
+
+    def to_grid2d(
+        self,
+        mode: str | None = None,
+        **grid2d_kwargs,
+    ) -> objects.Grid2D:
+        """
+        Create a geoh5py :obj:geoh5py.objects.grid2d.Grid2D from the geoimage in the same workspace.
+        :param mode: The output image mode, defaults to the incoming image.mode.
+            If "GRAY" convert the image to grayscale.
+        :param grid2d_kwargs: Keyword arguments to pass to the
+            :obj:`geoh5py.objects.grid2d.Grid2D` constructor.
+
+        :return: the new created :obj:`geoh5py.objects.grid2d.Grid2D`.
+        """
+        return self.converter.to_grid2d(self, mode, **grid2d_kwargs)
+
+    @property
+    def vertices(self) -> np.ndarray | None:
+        """
+        :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`:
+        Defines the four corners of the geo_image
+        """
+        if (getattr(self, "_vertices", None) is None) and self.on_file:
+            self._vertices = self.workspace.fetch_array_attribute(self, "vertices")
+
+        if self._vertices is None:
+            self.georeferencing_from_image()
+
+        # todo: change the call from vertices to vertices_xyz in the code
+        if self._vertices is not None:
+            return self._vertices.view("<f8").reshape((-1, 3)).astype(float)
+
+        return self._vertices
+
+    @vertices.setter
+    def vertices(self, xyz: np.ndarray | list):
+        if isinstance(xyz, list):
+            xyz = np.asarray(xyz)
+
+        if not isinstance(xyz, np.ndarray) or xyz.shape != (4, 3):
+            raise ValueError("Input 'vertices' must be a numpy array of shape (4, 3)")
+
+        xyz = np.asarray(
+            np.core.records.fromarrays(xyz.T, names="x, y, z", formats="<f8, <f8, <f8")
+        )
+        self._vertices = xyz
+        self.workspace.update_attribute(self, "vertices")
