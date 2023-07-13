@@ -432,7 +432,7 @@ def test_image_rotation(tmp_path):
 
     geoimage3.dip = 44
 
-    np.testing.assert_array_almost_equal(geoimage3, 44)
+    np.testing.assert_array_almost_equal(geoimage3.dip, 44)
 
     geoimage4 = geoimage.copy()
 
