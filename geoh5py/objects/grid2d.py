@@ -275,7 +275,7 @@ class Grid2D(GridObject):
         if not isinstance(value, (float, int)):
             raise TypeError("Dip angle must be a float.")
         self._centroids = None
-        self._dip = value
+        self._dip = float(value)
         if abs(self._dip) == 90:
             self._vertical = True
         self.workspace.update_attribute(self, "attributes")
