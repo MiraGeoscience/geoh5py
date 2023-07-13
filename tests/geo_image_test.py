@@ -258,11 +258,11 @@ def test_rotation_setter(tmp_path):
 
     rotated.rotation = 45
 
-    assert rotated.rotation == 45
+    np.testing.assert_array_almost_equal(rotated.rotation, 45)
 
     rotated.rotation = 0
 
-    assert rotated.rotation == 0
+    np.testing.assert_array_almost_equal(rotated.rotation, 0)
 
     assert np.allclose(geoimage.vertices, rotated.vertices)
     assert geoimage.image == rotated.image
@@ -420,16 +420,24 @@ def test_image_rotation(tmp_path):
     image = Image.fromarray(np.random.randint(0, 255, (128, 128)).astype("uint8"), "L")
     geoimage = GeoImage.create(workspace, name="test_area", image=image)
 
-    assert geoimage.rotation == 0
-    assert geoimage.dip == 0
+    np.testing.assert_array_almost_equal(geoimage.rotation, 0)
+    np.testing.assert_array_almost_equal(geoimage.dip, 0)
 
     geoimage2 = geoimage.copy()
     geoimage2.rotation = 66
 
-    assert geoimage2.rotation == 66
+    np.testing.assert_array_almost_equal(geoimage2.rotation, 66)
 
     geoimage3 = geoimage.copy()
 
     geoimage3.dip = 44
 
-    assert geoimage3.dip == 44
+    np.testing.assert_array_almost_equal(geoimage3.dip, 44)
+
+    geoimage4 = geoimage.copy()
+
+    geoimage4.dip = 44
+    geoimage4.rotation = 66
+
+    np.testing.assert_array_almost_equal(geoimage4.dip, 44)
+    np.testing.assert_array_almost_equal(geoimage4.rotation, 66)
