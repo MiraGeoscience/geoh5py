@@ -30,8 +30,6 @@ from geoh5py.workspace import Workspace
 def test_create_drape_model(tmp_path: Path):
     h5file_path = tmp_path / "drapedmodel.geoh5"
     with Workspace.create(h5file_path) as workspace:
-        #
-        # drape_model = workspace.get_entity("draped_models_line_id_1")[0]
         n_col, n_row = 64, 32
         j, i = np.meshgrid(np.arange(n_row), np.arange(n_col))
         bottom = (
@@ -48,16 +46,22 @@ def test_create_drape_model(tmp_path: Path):
 
         assert "Attribute 'layers'" in str(error)
 
-        drape.layers = np.c_[i.flatten(), j.flatten(), bottom.flatten()]
+        layers = np.c_[i.flatten(), j.flatten(), bottom.flatten()]
+        drape.layers = layers
+
+        with pytest.raises(ValueError, match="Prism index"):
+            layers[-32:, 0] = 64
+            drape.layers = layers
 
         with pytest.raises(AttributeError) as error:
             getattr(drape, "centroids")
 
         assert "Attribute 'prisms'" in str(error)
 
-        drape.prisms = np.c_[
+        prisms = np.c_[
             x, y, top, np.arange(0, i.flatten().shape[0], n_row), np.tile(n_row, n_col)
         ]
+        drape.prisms = prisms
 
         drape.add_data(
             {
