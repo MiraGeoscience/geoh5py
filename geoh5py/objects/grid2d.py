@@ -24,7 +24,7 @@ import numpy as np
 
 from ..objects import GeoImage
 from ..shared.conversion import Grid2DConversion
-from ..shared.utils import xy_rotation_matrix
+from ..shared.utils import xy_rotation_matrix, yz_rotation_matrix
 from .grid_object import GridObject
 
 if TYPE_CHECKING:
@@ -122,16 +122,14 @@ class Grid2D(GridObject):
             and self.n_cells is not None
             and self.origin is not None
         ):
-            rot = xy_rotation_matrix(np.deg2rad(self.rotation))
+            rotation_matrix = xy_rotation_matrix(np.deg2rad(self.rotation))
+            dip_matrix = yz_rotation_matrix(np.deg2rad(self.dip))
+
             u_grid, v_grid = np.meshgrid(self.cell_center_u, self.cell_center_v)
+            xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.zeros(self.n_cells)]
 
-            if self.vertical:
-                xyz = np.c_[np.ravel(u_grid), np.zeros(self.n_cells), np.ravel(v_grid)]
-
-            else:
-                xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.zeros(self.n_cells)]
-
-            centroids = np.asarray(np.dot(rot, xyz.T).T)
+            xyz_dipped = np.dot(dip_matrix, xyz.T).T
+            centroids = np.dot(rotation_matrix, xyz_dipped.T).T
 
             for ind, axis in enumerate(["x", "y", "z"]):
                 centroids[:, ind] += self.origin[axis]
@@ -156,11 +154,22 @@ class Grid2D(GridObject):
         if not isinstance(extent, np.ndarray):
             raise TypeError("Expected a numpy array of extent values.")
 
+        if not extent.ndim == 2 and 3 < extent.shape[1] < 2:
+            raise TypeError("Expected a 2D numpy array with 2 or 3 columns")
+
         if self.u_cell_size is None or self.v_cell_size is None:
             raise AttributeError("Cell sizes are not defined.")
 
+        if self.centroids is None:
+            raise AttributeError("Centroids are not defined.")
+
+        centroids = self.centroids
+
         if extent.shape[1] == 2:
-            extent = np.c_[extent, np.r_[-np.inf, np.inf]]
+            extent = np.c_[
+                extent,
+                np.r_[np.min(centroids[:, 2]) - 1e6, np.max(centroids[:, 2]) + 1e6],
+            ]
 
         local_extent = extent.astype(float)
         local_extent = np.vstack(
@@ -171,17 +180,18 @@ class Grid2D(GridObject):
                 np.c_[local_extent[1, 0], local_extent[0, 1], local_extent[1, 2]],
             ]
         )
-        z_extent = local_extent[:, 2]
-        origin = np.r_[self.origin["x"], self.origin["y"], self.origin["z"]].astype(
-            float
-        )
-        local_extent[:, :2] -= origin[:2]
 
-        if self.rotation != 0.0:
-            local_extent[:, 2] = 0
-            rot = xy_rotation_matrix(-np.deg2rad(self.rotation))
-            local_extent = np.dot(rot, local_extent.T).T
-            local_extent[:, 2] = z_extent
+        local_extent -= np.array(self.origin.tolist())
+
+        # do the inverse rotation
+        if self.rotation != 0:
+            rotation_matrix = xy_rotation_matrix(-np.deg2rad(self.rotation))
+            local_extent = np.dot(rotation_matrix, local_extent.T).T
+
+        # do the inverse dip rotation
+        if self.dip != 0:
+            dip_matrix = yz_rotation_matrix(-np.deg2rad(self.dip))
+            local_extent = np.dot(dip_matrix, local_extent.T).T
 
         u_ind = (self.cell_center_u <= np.max(local_extent[:, 0])) & (
             self.cell_center_u >= np.min(local_extent[:, 0])
@@ -201,19 +211,24 @@ class Grid2D(GridObject):
                 np.argmax(v_ind) * self.v_cell_size,
                 0.0,
             ]
-            rot = xy_rotation_matrix(np.deg2rad(self.rotation))
-            delta_orig = np.dot(rot, delta_orig.T).T
+            dip_matrix = yz_rotation_matrix(np.deg2rad(self.dip))
+            delta_orig = np.dot(dip_matrix, delta_orig.T).T
+
+            rotation_matrix = xy_rotation_matrix(np.deg2rad(self.rotation))
+            delta_orig = np.dot(rotation_matrix, delta_orig.T).T
+
             kwargs.update(
                 {
                     "origin": np.r_[
-                        origin[0] + delta_orig[0, 0],
-                        origin[1] + delta_orig[0, 1],
-                        origin[2],
+                        self.origin["x"] + delta_orig[0, 0],
+                        self.origin["y"] + delta_orig[0, 1],
+                        self.origin["z"] + delta_orig[0, 2],
                     ],
                     "u_count": np.sum(u_ind),
                     "v_count": np.sum(v_ind),
                 }
             )
+
         else:
             indices = GridObject.mask_by_extent(self, extent, inverse=inverse)
 
@@ -249,15 +264,21 @@ class Grid2D(GridObject):
         """
         :obj:`float`: Dip angle from horizontal (positive down) in degrees.
         """
+        if self.vertical:
+            self._dip = 90
+            return self._dip
+
         return self._dip
 
     @dip.setter
     def dip(self, value):
-        if value is not None:
-            assert isinstance(value, float), "Dip angle must be a float"
-            self._centroids = None
-            self._dip = value
-            self.workspace.update_attribute(self, "attributes")
+        if not isinstance(value, (float, int)):
+            raise TypeError("Dip angle must be a float.")
+        self._centroids = None
+        self._dip = value
+        if abs(self._dip) == 90:
+            self._vertical = True
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def n_cells(self) -> int | None:
@@ -299,13 +320,12 @@ class Grid2D(GridObject):
         return self._rotation
 
     @rotation.setter
-    def rotation(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
-            self._centroids = None
-            self._rotation = value.astype(float).item()
-            self.workspace.update_attribute(self, "attributes")
+    def rotation(self, value: float | int):
+        if not isinstance(value, (float, int)):
+            raise TypeError("Rotation angle must be a float.")
+        self._centroids = None
+        self._rotation = float(value)
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def shape(self) -> tuple | None:
@@ -404,6 +424,8 @@ class Grid2D(GridObject):
             ], "vertical must be of type 'bool'"
             self._centroids = None
             self._vertical = value
+            if abs(self.dip) != 90 and value is True:
+                self._dip = 90
             self.workspace.update_attribute(self, "attributes")
 
     def to_geoimage(

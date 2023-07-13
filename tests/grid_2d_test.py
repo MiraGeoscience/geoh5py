@@ -75,6 +75,9 @@ def test_create_grid_2d_data(tmp_path):
         grid.v_count = n_y
         grid.u_cell_size = np.r_[20.0]
         grid.v_cell_size = np.r_[30.0]
+
+        grid2 = grid.copy()
+        grid2.dip = 33.0
         grid.vertical = True
 
         assert isinstance(grid.centroids, np.ndarray)
