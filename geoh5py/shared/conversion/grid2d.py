@@ -26,6 +26,7 @@ from PIL import Image
 from ... import objects
 from ...data import Data
 from ...shared import FLOAT_NDV
+from ...shared.utils import xy_rotation_matrix, yz_rotation_matrix
 from .base import CellObjectConversion
 
 if TYPE_CHECKING:
@@ -217,11 +218,6 @@ class Grid2DConversion(CellObjectConversion):
         :param input_entity: The grid2D object to convert.
         :return: A numpy array of 4 points in x,y,z.
         """
-        # get the origin in x and y
-        origin_x = input_entity.origin["x"]
-        origin_y = input_entity.origin["y"]
-        origin_z = input_entity.origin["z"]
-
         # get the length of the x and y axis
         if (
             input_entity.u_count is None
@@ -237,30 +233,21 @@ class Grid2DConversion(CellObjectConversion):
         length_u = input_entity.u_count * input_entity.u_cell_size
         length_v = input_entity.v_count * input_entity.v_cell_size
 
-        # get the rotation
-        orientation = input_entity.rotation
-
         # Define the corners
-        corners = np.array([[0, length_v], [length_u, length_v], [length_u, 0], [0, 0]])
-
-        # Define the rotation matrix
-        angle_rad = -np.radians(orientation)
-        rotation_matrix = np.array(
-            [
-                [np.cos(angle_rad), -np.sin(angle_rad)],
-                [np.sin(angle_rad), np.cos(angle_rad)],
-            ]
+        corners = np.array(
+            [[0, length_v, 0], [length_u, length_v, 0], [length_u, 0, 0], [0, 0, 0]]
         )
 
-        # Rotate and shift the corners
-        rotated_corners = corners @ rotation_matrix
-        shifted_corners = rotated_corners + [origin_x, origin_y]
+        # rotate by the dip
+        dip_matrix = yz_rotation_matrix(np.deg2rad(input_entity.dip))
+        dipped_corners = np.dot(dip_matrix, corners.T).T
 
-        # Expand dimensions of origin_z to match with shifted_corners
-        origin_z_expanded = np.ones_like(shifted_corners[:, :1]) * origin_z
+        # rotate by the rotation
+        rotation_matrix = xy_rotation_matrix(np.deg2rad(input_entity.rotation))
+        rotated_corners = np.dot(rotation_matrix, dipped_corners.T).T
 
-        # Add origin_z to the shifted corners
-        shifted_corners = np.hstack((shifted_corners, origin_z_expanded))
+        # add the origin
+        shifted_corners = rotated_corners + np.array(input_entity.origin.tolist())
 
         return shifted_corners
 
@@ -291,6 +278,7 @@ class Grid2DConversion(CellObjectConversion):
         # get the data
         data = Grid2DConversion.data_from_keys(input_entity, keys, normalize=normalize)
 
+        # define the image
         geoimage_kwargs["image"] = Grid2DConversion.convert_to_pillow(data, mode=mode)
 
         # define the vertices
