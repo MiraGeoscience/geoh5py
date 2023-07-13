@@ -265,7 +265,7 @@ class Grid2D(GridObject):
         :obj:`float`: Dip angle from horizontal (positive down) in degrees.
         """
         if self.vertical:
-            self._dip = 90
+            self._dip = 90.0
             return self._dip
 
         return self._dip
@@ -425,7 +425,7 @@ class Grid2D(GridObject):
             self._centroids = None
             self._vertical = value
             if abs(self.dip) != 90 and value is True:
-                self._dip = 90
+                self._dip = 90.0
             self.workspace.update_attribute(self, "attributes")
 
     def to_geoimage(
