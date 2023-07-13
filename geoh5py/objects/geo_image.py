@@ -187,10 +187,10 @@ class GeoImage(ObjectBase):
         rotation_matrix = xy_rotation_matrix(np.deg2rad(-self.rotation))
 
         # Rotate the vertices
-        rotated_vertices = np.dot(self.vertices, rotation_matrix.T).T
+        rotated_vertices = np.dot(rotation_matrix, self.vertices.T).T
 
         # Calculate the vector perpendicular to the rotation
-        delta_xyz = rotated_vertices[:, 0] - rotated_vertices[:, 3]
+        delta_xyz = rotated_vertices[0] - rotated_vertices[3]
 
         # Compute dip in degrees
         dip = np.rad2deg(
@@ -441,16 +441,14 @@ class GeoImage(ObjectBase):
         :return: an array of the origin of the image in x, y, z.
         """
         if self.vertices is not None:
-            return np.array(
-                [self.vertices[3, 0], self.vertices[3, 1], self.vertices[3, 2]]
-            )
+            return self.vertices[3, :]
 
         return None
 
     @property
     def rotation(self) -> float | None:
         """
-        The rotation of the image in degrees
+        The rotation of the image in degrees, counter-clockwise.
         :return: the rotation angle.
         """
         if self.vertices is None:
