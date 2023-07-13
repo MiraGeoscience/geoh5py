@@ -258,7 +258,7 @@ def test_rotation_setter(tmp_path):
 
     rotated.rotation = 45
 
-    assert rotated.rotation == 45
+    np.testing.assert_array_almost_equal(rotated.rotation, 45)
 
     rotated.rotation = 0
 
