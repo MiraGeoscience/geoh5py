@@ -26,6 +26,8 @@ from geoh5py.objects import DrapeModel
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
+# pylint: disable=too-many-locals
+
 
 def test_create_drape_model(tmp_path: Path):
     h5file_path = tmp_path / "drapedmodel.geoh5"
