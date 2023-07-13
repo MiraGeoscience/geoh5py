@@ -52,8 +52,6 @@ class GeoImage(ObjectBase):
         self._vertices: None | np.ndarray = None
         self._cells = None
         self._tag: dict[int, Any] | None = None
-        self._rotation: None | float = None
-        self._dip: None | float = None
 
         super().__init__(object_type, **kwargs)
 
@@ -179,35 +177,27 @@ class GeoImage(ObjectBase):
     @property
     def dip(self) -> float:
         """
-        The dip of the image in degrees
+        Calculated dip of the image in degrees from the vertices position.
         :return: the dip angle.
         """
-        if self.vertices is None:
+        if self.vertices is None or self.rotation is None:
             raise AttributeError("The image has no vertices")
 
-        if self._dip is None:
-            # Get rotation in radians
-            rotation_radians = np.deg2rad(self.rotation)
+        # Get rotation matrix
+        rotation_matrix = xy_rotation_matrix(np.deg2rad(-self.rotation))
 
-            # Compute unit vector perpendicular to direction of rotation
-            perpendicular_vector = np.array(
-                [-np.sin(rotation_radians), np.cos(rotation_radians)]
-            )
+        # Rotate the vertices
+        rotated_vertices = np.dot(self.vertices, rotation_matrix.T).T
 
-            # Calculate the displacement in the direction perpendicular to the rotation
-            delta_xy_vector = np.r_[
-                np.diff(self.vertices[:2, 0]), np.diff(self.vertices[:2, 1])
-            ]
+        # Calculate the vector perpendicular to the rotation
+        delta_xyz = rotated_vertices[:, 0] - rotated_vertices[:, 3]
 
-            delta_xy = np.dot(delta_xy_vector, perpendicular_vector)
+        # Compute dip in degrees
+        dip = np.rad2deg(
+            np.arctan2(delta_xyz[2], np.sqrt(delta_xyz[0] ** 2 + delta_xyz[1] ** 2))
+        )
 
-            # Compute dz using the z coordinates of the vertices
-            delta_z = self.vertices[3, 2] - self.vertices[0, 2]
-
-            # Compute dip in degrees
-            self._dip = np.rad2deg(np.arctan2(delta_z, delta_xy))
-
-        return self._dip
+        return dip
 
     @dip.setter
     def dip(self, new_dip):
@@ -218,13 +208,11 @@ class GeoImage(ObjectBase):
         self.vertices = (
             dip_points(
                 self.vertices - self.origin,
-                np.deg2rad(new_dip) - np.deg2rad(self.dip),
+                np.deg2rad(new_dip - self.dip),
                 np.deg2rad(self.rotation),
             )
             + self.origin
         )
-
-        self._dip = new_dip
 
     @property
     def extent(self) -> np.ndarray | None:
@@ -290,6 +278,17 @@ class GeoImage(ObjectBase):
         ]
 
         self.set_tag_from_vertices()
+
+    def georeferencing_from_image(self):
+        """
+        Georeferencing the GeoImage from the image.
+        """
+        if self.image is not None:
+            if self.tag is not None:
+                self.vertices = self.default_vertices
+                self.georeferencing_from_tiff()
+            else:
+                self.vertices = self.default_vertices
 
     def georeferencing_from_tiff(self):
         """
@@ -457,13 +456,11 @@ class GeoImage(ObjectBase):
         if self.vertices is None:
             raise AttributeError("The image has no vertices")
 
-        if self._rotation is None:
-            dxy = np.r_[np.diff(self.vertices[:2, 0]), np.diff(self.vertices[:2, 1])]
-            dxy /= np.linalg.norm(dxy)
-            rotation_rad = np.arctan2(dxy[1], dxy[0])
-            self._rotation = np.rad2deg(rotation_rad)
+        dxy = np.r_[np.diff(self.vertices[:2, 0]), np.diff(self.vertices[:2, 1])]
+        dxy /= np.linalg.norm(dxy)
+        rotation_rad = np.arctan2(dxy[1], dxy[0])
 
-        return self._rotation
+        return np.rad2deg(rotation_rad)
 
     @rotation.setter
     def rotation(self, new_rotation):
@@ -477,13 +474,10 @@ class GeoImage(ObjectBase):
         vertices = self.vertices - self.origin
 
         # get the rotation matrix
-        vertices = vertices @ rotation_matrix
+        vertices = np.dot(rotation_matrix, vertices.T).T
 
         # save the vertices
         self.vertices = vertices + self.origin
-
-        # Update the stored rotation
-        self._rotation = new_rotation
 
     def save_as(self, name: str, path: str | Path = ""):
         """
@@ -618,5 +612,6 @@ class GeoImage(ObjectBase):
         xyz = np.asarray(
             np.core.records.fromarrays(xyz.T, names="x, y, z", formats="<f8, <f8, <f8")
         )
+
         self._vertices = xyz
         self.workspace.update_attribute(self, "vertices")

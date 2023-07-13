@@ -524,12 +524,12 @@ def dip_points(points: np.ndarray, dip: float, rotation: float = 0) -> np.ndarra
         raise TypeError("Input points must be a 2D numpy array of shape (N, 3).")
 
     # rotate the points about the z-axis by the inverse rotation angle
-    points = points @ xy_rotation_matrix(-rotation)
+    points = np.dot(xy_rotation_matrix(-rotation), points.T).T
 
     # Rotate points with the dip angle
-    points = points @ yz_rotation_matrix(dip)
+    points = np.dot(yz_rotation_matrix(dip), points.T).T
 
     # Rotate back the points to initial orientation
-    points = points @ xy_rotation_matrix(rotation)
+    points = np.dot(xy_rotation_matrix(rotation), points.T).T
 
     return points
