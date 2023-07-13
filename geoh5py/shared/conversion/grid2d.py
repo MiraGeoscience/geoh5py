@@ -141,7 +141,10 @@ class Grid2DConversion(CellObjectConversion):
         # verify if data exists
         if isinstance(data, list):
             if len(data) != 1:
-                raise KeyError(f"the key '{key}' you entered does not exists.")
+                raise KeyError(
+                    f"The key '{key}' you entered does not exists;"
+                    f"Valid keys are: {input_entity.get_data_list()}."
+                )
             data = data[0]  # type: ignore
 
         return data.values  # type: ignore

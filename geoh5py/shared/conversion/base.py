@@ -32,7 +32,6 @@ CORE_PROPERTIES = [
     "allow_rename",
     "allow_move",
     "allow_delete",
-    "coordinate_reference_system",
 ]
 
 
