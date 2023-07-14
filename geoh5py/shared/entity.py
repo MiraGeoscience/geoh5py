@@ -221,11 +221,8 @@ class Entity(ABC):
         """
         coordinate_reference_system = DEFAULT_CRS
 
-        if (
-            self._metadata is not None
-            and "Coordinate Reference System" in self._metadata
-        ):
-            coordinate_reference_system = self._metadata[
+        if self.metadata is not None and "Coordinate Reference System" in self.metadata:
+            coordinate_reference_system = self.metadata[
                 "Coordinate Reference System"
             ].get("Current", DEFAULT_CRS)
 
