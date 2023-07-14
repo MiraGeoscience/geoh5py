@@ -79,3 +79,60 @@ def test_copy_extent_grid_2d(tmp_path):
     mask = data.mask_by_extent(np.vstack([[75, -100], [1000, 60]]))
 
     assert np.all(mask == ind), "Error masking data by extent."
+
+
+def test_crop_image_rotated_dip(tmp_path):
+    """
+    Crop an image based on the rotation and dip of the grid.
+    """
+    name = "MyTestGrid2D"
+
+    # Generate a 2D array
+    n_x, n_y = 10, 15
+    x_val, y_val = np.meshgrid(np.linspace(0, 909, n_x), np.linspace(100, 1500, n_y))
+    values = x_val + y_val
+    h5file_path = tmp_path / r"test2Grid.geoh5"
+
+    # Create a workspace
+    workspace = Workspace.create(h5file_path)
+
+    grid = Grid2D.create(
+        workspace,
+        origin=[0, 0, 0],
+        u_cell_size=20.0,
+        v_cell_size=30.0,
+        u_count=n_x,
+        v_count=n_y,
+        rotation=30,
+        name=name,
+        allow_move=False,
+        dip=28,
+    )
+
+    grid.add_data({"rando": {"values": values.flatten()}})
+
+    new_grid = grid.copy_from_extent(np.r_[np.c_[20, 20, 20], np.c_[200, 200, 40]])
+
+    assert new_grid.rotation == 30
+    assert new_grid.dip == 28
+
+    origin = [10, 20, 30]
+
+    grid = Grid2D.create(
+        workspace,
+        origin=origin,
+        u_cell_size=20.0,
+        v_cell_size=30.0,
+        u_count=n_x,
+        v_count=n_y,
+        rotation=30,
+        name=name,
+        allow_move=False,
+        dip=28,
+    )
+
+    grid.add_data({"rando": {"values": values.flatten()}})
+
+    _ = grid.copy_from_extent(
+        np.r_[np.c_[20, 20, 20], np.c_[200, 200, 40]] + np.array(origin)
+    )

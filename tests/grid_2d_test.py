@@ -153,31 +153,3 @@ def test_grid2d_to_geoimage(tmp_path):
 
         with pytest.raises(TypeError, match="The dtype of the keys must be"):
             converter.key_to_data(grid, [0, 1])
-
-
-def test_grid2d_dip(tmp_path):
-    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
-
-    grid = Grid2D.create(
-        workspace,
-        origin=[0, 0, 0],
-        u_cell_size=20.0,
-        v_cell_size=30.0,
-        u_count=20,
-        v_count=30,
-        name="test",
-        allow_move=False,
-    )
-
-    grid1 = grid.copy()
-
-    grid1.rotation = 66
-
-    grid2 = grid.copy()
-
-    grid2.dip = 90
-
-    grid3 = grid.copy()
-
-    grid3.rotation = 66
-    grid3.dip = 44
