@@ -441,3 +441,25 @@ def test_image_rotation(tmp_path):
 
     np.testing.assert_array_almost_equal(geoimage4.dip, 44)
     np.testing.assert_array_almost_equal(geoimage4.rotation, 66)
+
+
+def test_image_grid_rotation_conversion(tmp_path):
+    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+
+    # Repeat with gray scale image
+    image = Image.fromarray(np.random.randint(0, 255, (128, 128)).astype("uint8"), "L")
+    geoimage = GeoImage.create(workspace, name="test_area", image=image)
+    geoimage.set_tag_from_vertices()
+
+    # convert to grid2d
+    grid2d = geoimage.to_grid2d(mode="GRAY")
+
+    # change dip and rotation
+    grid2d.rotation = 66
+    grid2d.dip = 44
+    geoimage.rotation = 66
+    geoimage.dip = 44
+
+    geoimage2 = grid2d.to_geoimage(0, normalize=False, ignore=["tag"])
+
+    compare_entities(geoimage, geoimage2, ignore=["_uid"])

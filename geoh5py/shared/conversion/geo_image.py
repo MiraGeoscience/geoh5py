@@ -69,6 +69,9 @@ class GeoImageConversion(BaseConversion):
         if geoimage.rotation is not None:
             grid2d_attributes["rotation"] = geoimage.rotation
 
+        if geoimage.dip is not None:
+            grid2d_attributes["dip"] = geoimage.dip
+
         return grid2d_attributes
 
     @staticmethod
