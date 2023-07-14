@@ -61,8 +61,10 @@ def test_copy_extent_grid_2d(tmp_path):
 
     new_grid = grid.copy_from_extent(np.r_[np.c_[50, 50], np.c_[200, 200]])
 
-    data_intersect = np.intersect1d(data.values, new_grid.children[0].values)
     assert new_grid.n_cells == 35
+
+    data_intersect = np.intersect1d(data.values, new_grid.children[0].values)
+
     assert data_intersect.size == 22
     assert (data_intersect.min() == 504) & (data_intersect.max() == 1309)
 

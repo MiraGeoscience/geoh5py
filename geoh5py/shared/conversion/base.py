@@ -27,7 +27,12 @@ if TYPE_CHECKING:
     from ...objects import ObjectBase
     from ...workspace import Workspace
 
-CORE_PROPERTIES = ["name", "allow_rename", "allow_move", "allow_delete"]
+CORE_PROPERTIES = [
+    "name",
+    "allow_rename",
+    "allow_move",
+    "allow_delete",
+]
 
 
 class BaseConversion(ABC):

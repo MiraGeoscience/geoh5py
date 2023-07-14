@@ -25,11 +25,7 @@ from PIL.TiffImagePlugin import TiffImageFile
 
 from geoh5py.data import IntegerData
 from geoh5py.objects import GeoImage, Grid2D
-from geoh5py.shared.utils import (
-    compare_entities,
-    xy_rotation_matrix,
-    yz_rotation_matrix,
-)
+from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 # test tag
@@ -446,15 +442,24 @@ def test_image_rotation(tmp_path):
     np.testing.assert_array_almost_equal(geoimage4.dip, 44)
     np.testing.assert_array_almost_equal(geoimage4.rotation, 66)
 
-    vertices = geoimage.vertices - geoimage.origin
 
-    rotation_matrix = xy_rotation_matrix(np.deg2rad(66))
-    dip_matrix = yz_rotation_matrix(np.deg2rad(44))
+def test_image_grid_rotation_conversion(tmp_path):
+    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
 
-    rotated_vertices = np.dot(rotation_matrix, vertices.T).T
-    dipped_vertices = np.dot(dip_matrix, vertices.T).T
-    rotated_dipped_vertices = np.dot(rotation_matrix, dipped_vertices.T).T
+    # Repeat with gray scale image
+    image = Image.fromarray(np.random.randint(0, 255, (128, 128)).astype("uint8"), "L")
+    geoimage = GeoImage.create(workspace, name="test_area", image=image)
+    geoimage.set_tag_from_vertices()
 
-    assert np.allclose(geoimage2.vertices, rotated_vertices + geoimage.origin)
-    assert np.allclose(geoimage3.vertices, dipped_vertices + geoimage.origin)
-    assert np.allclose(geoimage4.vertices, rotated_dipped_vertices + geoimage.origin)
+    # convert to grid2d
+    grid2d = geoimage.to_grid2d(mode="GRAY")
+
+    # change dip and rotation
+    grid2d.rotation = 66
+    grid2d.dip = 44
+    geoimage.rotation = 66
+    geoimage.dip = 44
+
+    geoimage2 = grid2d.to_geoimage(0, normalize=False, ignore=["tag"])
+
+    compare_entities(geoimage, geoimage2, ignore=["_uid"])
