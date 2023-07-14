@@ -158,18 +158,6 @@ def test_grid2d_to_geoimage(tmp_path):
 def test_grid2d_dip(tmp_path):
     workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
 
-    _ = Grid2D.create(
-        workspace,
-        origin=[0, 0, 0],
-        u_cell_size=20.0,
-        v_cell_size=30.0,
-        u_count=20,
-        v_count=30,
-        name="test",
-        allow_move=False,
-        dip=60,
-    )
-
     grid = Grid2D.create(
         workspace,
         origin=[0, 0, 0],
