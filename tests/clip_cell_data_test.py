@@ -61,7 +61,7 @@ def test_copy_extent_grid_2d(tmp_path):
 
     new_grid = grid.copy_from_extent(np.r_[np.c_[50, 50], np.c_[200, 200]])
 
-    assert new_grid.n_cells == 35
+    assert new_grid.n_cells == 30
 
     data_intersect = np.intersect1d(data.values, new_grid.children[0].values)
 
@@ -115,6 +115,9 @@ def test_crop_image_rotated_dip(tmp_path):
 
     assert new_grid.rotation == 30
     assert new_grid.dip == 28
+    assert new_grid.n_cells == 16
+    assert new_grid.u_count == 8
+    assert new_grid.v_count == 2
 
     origin = [10, 20, 30]
 
@@ -133,6 +136,10 @@ def test_crop_image_rotated_dip(tmp_path):
 
     grid.add_data({"rando": {"values": values.flatten()}})
 
-    _ = grid.copy_from_extent(
+    new_grid2 = grid.copy_from_extent(
         np.r_[np.c_[20, 20, 20], np.c_[200, 200, 40]] + np.array(origin)
     )
+
+    assert new_grid2.n_cells == 16
+    assert new_grid2.u_count == 8
+    assert new_grid2.v_count == 2

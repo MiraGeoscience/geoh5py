@@ -24,7 +24,7 @@ import numpy as np
 
 from ..objects import GeoImage
 from ..shared.conversion import Grid2DConversion
-from ..shared.utils import xy_rotation_matrix, yz_rotation_matrix
+from ..shared.utils import mask_by_extent, xy_rotation_matrix, yz_rotation_matrix
 from .grid_object import GridObject
 
 if TYPE_CHECKING:
@@ -163,42 +163,13 @@ class Grid2D(GridObject):
         if self.centroids is None:
             raise AttributeError("Centroids are not defined.")
 
-        centroids = self.centroids
+        # get the centroids
+        selected_centroids = mask_by_extent(
+            self.centroids, extent, inverse=inverse
+        ).reshape((self.v_count, self.u_count))
 
-        if extent.shape[1] == 2:
-            extent = np.c_[
-                extent,
-                np.r_[np.min(centroids[:, 2]) - 1e6, np.max(centroids[:, 2]) + 1e6],
-            ]
-
-        local_extent = extent.astype(float)
-        local_extent = np.vstack(
-            [
-                local_extent[0, :],
-                np.c_[local_extent[0, 0], local_extent[1, 1], local_extent[0, 2]],
-                local_extent[1, :],
-                np.c_[local_extent[1, 0], local_extent[0, 1], local_extent[1, 2]],
-            ]
-        )
-
-        local_extent -= np.array(self.origin.tolist())
-
-        # do the inverse rotation
-        if self.rotation != 0:
-            rotation_matrix = xy_rotation_matrix(-np.deg2rad(self.rotation))
-            local_extent = np.dot(rotation_matrix, local_extent.T).T
-
-        # do the inverse dip rotation
-        if self.dip != 0:
-            dip_matrix = yz_rotation_matrix(-np.deg2rad(self.dip))
-            local_extent = np.dot(dip_matrix, local_extent.T).T
-
-        u_ind = (self.cell_center_u <= np.max(local_extent[:, 0])) & (
-            self.cell_center_u >= np.min(local_extent[:, 0])
-        )
-        v_ind = (self.cell_center_v <= np.max(local_extent[:, 1])) & (
-            self.cell_center_v >= np.min(local_extent[:, 1])
-        )
+        v_ind = np.any(selected_centroids, axis=1)
+        u_ind = np.any(selected_centroids, axis=0)
 
         indices = np.kron(v_ind, u_ind).flatten()
 

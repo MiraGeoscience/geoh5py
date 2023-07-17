@@ -402,8 +402,8 @@ def test_clipping_rotated_image(tmp_path):
 
         # clip the image
         copy_image = geoimage.copy_from_extent(np.r_[np.c_[50, 50], np.c_[200, 200]])
-        assert np.all(np.asarray(copy_image.image) == 0, axis=2).sum() == 13
-        assert np.asarray(copy_image.image).shape == (5, 7, 4)
+        assert np.all(np.asarray(copy_image.image) == 0, axis=2).sum() == 8
+        assert np.asarray(copy_image.image).shape == (5, 6, 4)
 
         # Repeat with inverse flag
         copy_image_inverse = geoimage.copy_from_extent(
