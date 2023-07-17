@@ -243,14 +243,14 @@ class Grid2DConversion(CellObjectConversion):
 
         # rotate by the dip
         dip_matrix = yz_rotation_matrix(np.deg2rad(input_entity.dip))
-        dipped_corners = np.dot(dip_matrix, corners.T).T
+        dipped_corners = dip_matrix @ corners.T
 
         # rotate by the rotation
         rotation_matrix = xy_rotation_matrix(np.deg2rad(input_entity.rotation))
-        rotated_corners = np.dot(rotation_matrix, dipped_corners.T).T
+        rotated_corners = rotation_matrix @ dipped_corners
 
         # add the origin
-        shifted_corners = rotated_corners + np.array(input_entity.origin.tolist())
+        shifted_corners = rotated_corners.T + np.array(input_entity.origin.tolist())
 
         return shifted_corners
 

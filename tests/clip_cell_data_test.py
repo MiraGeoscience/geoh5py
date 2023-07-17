@@ -143,3 +143,32 @@ def test_crop_image_rotated_dip(tmp_path):
     assert new_grid2.n_cells == 16
     assert new_grid2.u_count == 8
     assert new_grid2.v_count == 2
+    assert (~np.isnan(new_grid2.children[0].values)).sum() == 15
+
+    # Generate a 2D array
+    n_x, n_y = 10, 15
+    x_val, y_val = np.meshgrid(np.linspace(0, 909, n_x), np.linspace(100, 1500, n_y))
+    values = x_val + y_val
+
+    # doint the inverse
+    grid = Grid2D.create(
+        workspace,
+        origin=[0, 0, 0],
+        u_cell_size=20.0,
+        v_cell_size=30.0,
+        u_count=n_x,
+        v_count=n_y,
+        rotation=30,
+        name=f"invert{name}",
+        allow_move=False,
+        dip=28,
+    )
+
+    grid.add_data({"rando": {"values": values.flatten()}})
+
+    new_grid = grid.copy_from_extent(
+        np.r_[np.c_[20, 20, 20], np.c_[200, 200, 40]], inverse=True
+    )
+
+    assert new_grid.n_cells == grid.n_cells
+    assert np.isnan(new_grid.children[0].values).sum() == 15

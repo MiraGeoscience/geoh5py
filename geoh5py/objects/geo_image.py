@@ -187,7 +187,7 @@ class GeoImage(ObjectBase):
         rotation_matrix = xy_rotation_matrix(np.deg2rad(-self.rotation))
 
         # Rotate the vertices
-        rotated_vertices = np.dot(rotation_matrix, self.vertices.T).T
+        rotated_vertices = (rotation_matrix @ self.vertices.T).T
 
         # Calculate the vector perpendicular to the rotation
         delta_xyz = rotated_vertices[0] - rotated_vertices[3]
@@ -272,9 +272,9 @@ class GeoImage(ObjectBase):
         corners = self.default_vertices[:, :2]
 
         self.vertices = np.c_[
-            param_x[0] + np.dot(corners, param_x[1:]),
-            param_y[0] + np.dot(corners, param_y[1:]),
-            param_z[0] + np.dot(corners, param_z[1:]),
+            param_x[0] + corners @ param_x[1:],
+            param_y[0] + corners @ param_y[1:],
+            param_z[0] + corners @ param_z[1:],
         ]
 
         self.set_tag_from_vertices()
@@ -472,10 +472,10 @@ class GeoImage(ObjectBase):
         vertices = self.vertices - self.origin
 
         # get the rotation matrix
-        vertices = np.dot(rotation_matrix, vertices.T).T
+        vertices = rotation_matrix @ vertices.T
 
         # save the vertices
-        self.vertices = vertices + self.origin
+        self.vertices = vertices.T + self.origin
 
     def save_as(self, name: str, path: str | Path = ""):
         """

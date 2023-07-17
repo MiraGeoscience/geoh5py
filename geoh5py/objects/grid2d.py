@@ -128,8 +128,8 @@ class Grid2D(GridObject):
             u_grid, v_grid = np.meshgrid(self.cell_center_u, self.cell_center_v)
             xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.zeros(self.n_cells)]
 
-            xyz_dipped = np.dot(dip_matrix, xyz.T).T
-            centroids = np.dot(rotation_matrix, xyz_dipped.T).T
+            xyz_dipped = dip_matrix @ xyz.T
+            centroids = (rotation_matrix @ xyz_dipped).T
 
             for ind, axis in enumerate(["x", "y", "z"]):
                 centroids[:, ind] += self.origin[axis]
@@ -181,12 +181,12 @@ class Grid2D(GridObject):
                 np.argmax(u_ind) * self.u_cell_size,
                 np.argmax(v_ind) * self.v_cell_size,
                 0.0,
-            ]
+            ].T
             dip_matrix = yz_rotation_matrix(np.deg2rad(self.dip))
-            delta_orig = np.dot(dip_matrix, delta_orig.T).T
+            delta_orig = dip_matrix @ delta_orig
 
             rotation_matrix = xy_rotation_matrix(np.deg2rad(self.rotation))
-            delta_orig = np.dot(rotation_matrix, delta_orig.T).T
+            delta_orig = (rotation_matrix @ delta_orig).T
 
             kwargs.update(
                 {
