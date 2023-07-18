@@ -130,6 +130,8 @@ class GeoImage(ObjectBase):
         # transform the image to a grid
         grid = self.to_grid2d(parent=parent, mode="RGBA")
 
+        print("grid1_centroids :", grid.centroids)
+
         # transform the image
         grid_transformed = grid.copy_from_extent(
             extent=extent,
