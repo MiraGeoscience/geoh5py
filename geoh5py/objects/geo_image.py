@@ -142,6 +142,7 @@ class GeoImage(ObjectBase):
         )
 
         if grid_transformed is None:
+            self.workspace.remove_entity(grid)
             warnings.warn("Image could not be cropped.")
             return None
 

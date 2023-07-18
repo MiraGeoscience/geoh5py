@@ -168,8 +168,8 @@ class Grid2D(GridObject):
             self.centroids, extent, inverse=inverse
         ).reshape((self.v_count, self.u_count))
 
-        v_ind = np.any(selected_centroids, axis=1)
         u_ind = np.any(selected_centroids, axis=0)
+        v_ind = np.any(selected_centroids, axis=1)
 
         indices = np.kron(v_ind, u_ind).flatten()
 
@@ -182,6 +182,7 @@ class Grid2D(GridObject):
                 np.argmax(v_ind) * self.v_cell_size,
                 0.0,
             ].T
+
             dip_matrix = yz_rotation_matrix(np.deg2rad(self.dip))
             delta_orig = dip_matrix @ delta_orig
 

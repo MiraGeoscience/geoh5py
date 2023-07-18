@@ -51,14 +51,9 @@ class GeoImageConversion(BaseConversion):
         grid2d_attributes["u_count"] = geoimage.default_vertices[1, 0]
         grid2d_attributes["v_count"] = geoimage.default_vertices[0, 1]
 
-        # define the points
-        point1 = np.array([geoimage.vertices[3, 0], geoimage.vertices[3, 1]])
-        point2 = np.array([geoimage.vertices[2, 0], geoimage.vertices[2, 1]])
-        point3 = np.array([geoimage.vertices[0, 0], geoimage.vertices[0, 1]])
-
         # Compute the distances
-        distance_u = np.linalg.norm(point2 - point1)
-        distance_v = np.linalg.norm(point3 - point1)
+        distance_u = np.linalg.norm(geoimage.vertices[2] - geoimage.vertices[3])
+        distance_v = np.linalg.norm(geoimage.vertices[0] - geoimage.vertices[3])
 
         # Now compute the cell sizes
         grid2d_attributes["u_cell_size"] = distance_u / grid2d_attributes["u_count"]
