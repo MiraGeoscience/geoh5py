@@ -119,6 +119,21 @@ def test_crop_image_rotated_dip(tmp_path):
     assert new_grid.u_count == 8
     assert new_grid.v_count == 2
 
+
+def test_crop_image_rotated_dip_not_null_origin(tmp_path):
+    """
+    Crop an image based on the rotation and dip of the grid.
+    """
+    name = "MyTestGrid2D"
+
+    # Generate a 2D array
+    n_x, n_y = 10, 15
+    x_val, y_val = np.meshgrid(np.linspace(0, 909, n_x), np.linspace(100, 1500, n_y))
+    values = x_val + y_val
+    h5file_path = tmp_path / r"test2Grid.geoh5"
+
+    # Create a workspace
+    workspace = Workspace.create(h5file_path)
     origin = [10, 20, 30]
 
     grid = Grid2D.create(
