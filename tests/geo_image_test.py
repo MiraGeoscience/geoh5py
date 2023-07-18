@@ -480,3 +480,41 @@ def test_image_grid_rotation_conversion(tmp_path):
     geoimage2 = grid2d.to_geoimage(0, normalize=False, ignore=["tag"])
 
     compare_entities(geoimage, geoimage2, ignore=["_uid"])
+
+
+def test_copy_from_extent_geoimage(tmp_path):
+    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+
+    image = Image.fromarray(np.random.randint(0, 255, (128, 128)).astype("uint8"), "L")
+
+    vertices = np.array(
+        [
+            [459600, 6353450, 140],
+            [459700, 6353450, 140],
+            [459700, 6353480, 140],
+            [459600, 6353480, 140],
+        ]
+    )
+
+    geoimage = GeoImage.create(
+        workspace, name="test_area", image=image, vertices=vertices
+    )
+
+    geoimage.rotation = -72
+    geoimage.dip = 90
+    geoimage2 = geoimage.copy_from_extent(
+        np.vstack([[459613, 6353400, 115], [459625, 6353440, 130]])
+    )
+
+    np.testing.assert_array_almost_equal(
+        geoimage2.vertices,
+        np.array(
+            [
+                [4.59613037e05, 6.35343988e06, 1.14921875e02],
+                [4.59625108e05, 6.35340273e06, 1.14921875e02],
+                [4.59625108e05, 6.35340273e06, 1.29921875e02],
+                [4.59613037e05, 6.35343988e06, 1.29921875e02],
+            ]
+        ),
+        decimal=2,
+    )
