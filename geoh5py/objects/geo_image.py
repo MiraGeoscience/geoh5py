@@ -30,7 +30,7 @@ from PIL.TiffImagePlugin import TiffImageFile
 from .. import objects
 from ..data import FilenameData
 from ..shared.conversion import GeoImageConversion
-from ..shared.utils import box_intersect
+from ..shared.utils import box_intersect, dip_points, xy_rotation_matrix
 from .object_base import ObjectBase, ObjectType
 
 
@@ -52,7 +52,6 @@ class GeoImage(ObjectBase):
         self._vertices: None | np.ndarray = None
         self._cells = None
         self._tag: dict[int, Any] | None = None
-        self._rotation: None | float = None
 
         super().__init__(object_type, **kwargs)
 
@@ -143,6 +142,7 @@ class GeoImage(ObjectBase):
         )
 
         if grid_transformed is None:
+            grid.workspace.remove_entity(grid)
             warnings.warn("Image could not be cropped.")
             return None
 
@@ -150,8 +150,9 @@ class GeoImage(ObjectBase):
         image_transformed = grid_transformed.to_geoimage(
             keys=grid_transformed.get_data_list(), mode="RGBA", normalize=False
         )
-        self.workspace.remove_entity(grid)
-        self.workspace.remove_entity(grid_transformed)
+
+        grid.workspace.remove_entity(grid_transformed)
+        grid.workspace.remove_entity(grid)
 
         return image_transformed
 
@@ -174,6 +175,46 @@ class GeoImage(ObjectBase):
                 ]
             )
         return None
+
+    @property
+    def dip(self) -> float:
+        """
+        Calculated dip of the image in degrees from the vertices position.
+        :return: the dip angle.
+        """
+        if self.vertices is None or self.rotation is None:
+            raise AttributeError("The image has no vertices")
+
+        # Get rotation matrix
+        rotation_matrix = xy_rotation_matrix(np.deg2rad(-self.rotation))
+
+        # Rotate the vertices
+        rotated_vertices = (rotation_matrix @ self.vertices.T).T
+
+        # Calculate the vector perpendicular to the rotation
+        delta_xyz = rotated_vertices[0] - rotated_vertices[3]
+
+        # Compute dip in degrees
+        dip = np.rad2deg(
+            np.arctan2(delta_xyz[2], np.sqrt(delta_xyz[0] ** 2 + delta_xyz[1] ** 2))
+        )
+
+        return dip
+
+    @dip.setter
+    def dip(self, new_dip):
+        if self.vertices is None:
+            raise AttributeError("The image has no vertices")
+
+        # Transform the vertices to a plane
+        self.vertices = (
+            dip_points(
+                self.vertices - self.origin,
+                np.deg2rad(new_dip - self.dip),
+                np.deg2rad(self.rotation),
+            )
+            + self.origin
+        )
 
     @property
     def extent(self) -> np.ndarray | None:
@@ -233,9 +274,9 @@ class GeoImage(ObjectBase):
         corners = self.default_vertices[:, :2]
 
         self.vertices = np.c_[
-            param_x[0] + np.dot(corners, param_x[1:]),
-            param_y[0] + np.dot(corners, param_y[1:]),
-            param_z[0] + np.dot(corners, param_z[1:]),
+            param_x[0] + corners @ param_x[1:],
+            param_y[0] + corners @ param_y[1:],
+            param_z[0] + corners @ param_z[1:],
         ]
 
         self.set_tag_from_vertices()
@@ -353,10 +394,6 @@ class GeoImage(ObjectBase):
             image.name = "GeoImageMesh_Image"
             image.entity_type.name = "GeoImageMesh_Image"
 
-        # set the vertices to the image if it's not set
-        if self._vertices is None:
-            self.georeferencing_from_image()
-
     @property
     def image_data(self):
         """
@@ -400,64 +437,47 @@ class GeoImage(ObjectBase):
         return None
 
     @property
+    def origin(self) -> np.array | None:
+        """
+        The origin of the image.
+        :return: an array of the origin of the image in x, y, z.
+        """
+        if self.vertices is not None:
+            return self.vertices[3, :]
+
+        return None
+
+    @property
     def rotation(self) -> float | None:
         """
-        The rotation of the image in degrees
+        The rotation of the image in degrees, counter-clockwise.
         :return: the rotation angle.
         """
-        if self._rotation is None and self.vertices is not None:
-            if self._vertices is None:
-                raise AttributeError("The image has no vertices")
+        if self.vertices is None:
+            raise AttributeError("The image has no vertices")
 
-            dxy = np.r_[
-                np.diff(self._vertices["x"][:2]), np.diff(self._vertices["y"][:2])
-            ]
-            dxy /= np.linalg.norm(dxy)
-            rotation_rad = np.arctan2(dxy[1], dxy[0])
-            self._rotation = np.rad2deg(rotation_rad)
+        dxy = np.r_[np.diff(self.vertices[:2, 0]), np.diff(self.vertices[:2, 1])]
+        dxy /= np.linalg.norm(dxy)
+        rotation_rad = np.arctan2(dxy[1], dxy[0])
 
-        return self._rotation
+        return np.rad2deg(rotation_rad)
 
     @rotation.setter
     def rotation(self, new_rotation):
-        if self.rotation is not None:
-            if self._vertices is None:
-                raise AttributeError("The image has no vertices")
+        if self.vertices is None:
+            raise AttributeError("The image has no vertices")
 
-            # Compute current rotation
-            current_rotation = self.rotation
-            if current_rotation is None:
-                current_rotation = 0
+        # Compute rotation matrix
+        rotation_matrix = xy_rotation_matrix(np.deg2rad(new_rotation - self.rotation))
 
-            # Compute rotation angle in degrees
-            rotation_angle_deg = new_rotation - current_rotation
+        # get the vertices without the origin
+        vertices = self.vertices - self.origin
 
-            # Use the origin vertex (vertices[3]) as the center of rotation
-            center = np.array([self._vertices["x"][3], self._vertices["y"][3]])
+        # get the rotation matrix
+        vertices = rotation_matrix @ vertices.T
 
-            # Move vertices so that center is at origin
-            vertices_centered_x = self._vertices["x"] - center[0]
-            vertices_centered_y = self._vertices["y"] - center[1]
-            vertices_centered = np.array([vertices_centered_x, vertices_centered_y]).T
-
-            # Compute rotation matrix using numpy
-            rotation_rad = np.radians(rotation_angle_deg)
-            rotation_matrix = np.array(
-                [
-                    [np.cos(rotation_rad), -np.sin(rotation_rad)],
-                    [np.sin(rotation_rad), np.cos(rotation_rad)],
-                ]
-            )
-
-            # Apply rotation
-            rotated_vertices_centered = vertices_centered @ rotation_matrix
-
-            # Move vertices back so that center is at original location
-            self._vertices["x"] = rotated_vertices_centered[:, 0] + center[0]
-            self._vertices["y"] = rotated_vertices_centered[:, 1] + center[1]
-
-            # Update the stored rotation
-            self._rotation = new_rotation
+        # save the vertices
+        self.vertices = vertices.T + self.origin
 
     def save_as(self, name: str, path: str | Path = ""):
         """
@@ -568,8 +588,12 @@ class GeoImage(ObjectBase):
         if (getattr(self, "_vertices", None) is None) and self.on_file:
             self._vertices = self.workspace.fetch_array_attribute(self, "vertices")
 
-        if self._vertices is None:
-            self.georeferencing_from_image()
+        if self._vertices is None and self.image is not None:
+            if self.tag is not None:
+                self.vertices = self.default_vertices
+                self.georeferencing_from_tiff()
+            else:
+                self.vertices = self.default_vertices
 
         # todo: change the call from vertices to vertices_xyz in the code
         if self._vertices is not None:
@@ -588,5 +612,6 @@ class GeoImage(ObjectBase):
         xyz = np.asarray(
             np.core.records.fromarrays(xyz.T, names="x, y, z", formats="<f8, <f8, <f8")
         )
+
         self._vertices = xyz
         self.workspace.update_attribute(self, "vertices")

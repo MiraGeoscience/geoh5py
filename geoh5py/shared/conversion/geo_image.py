@@ -51,14 +51,9 @@ class GeoImageConversion(BaseConversion):
         grid2d_attributes["u_count"] = geoimage.default_vertices[1, 0]
         grid2d_attributes["v_count"] = geoimage.default_vertices[0, 1]
 
-        # define the points
-        point1 = np.array([geoimage.vertices[3, 0], geoimage.vertices[3, 1]])
-        point2 = np.array([geoimage.vertices[2, 0], geoimage.vertices[2, 1]])
-        point3 = np.array([geoimage.vertices[0, 0], geoimage.vertices[0, 1]])
-
         # Compute the distances
-        distance_u = np.linalg.norm(point2 - point1)
-        distance_v = np.linalg.norm(point3 - point1)
+        distance_u = np.linalg.norm(geoimage.vertices[2] - geoimage.vertices[3])
+        distance_v = np.linalg.norm(geoimage.vertices[0] - geoimage.vertices[3])
 
         # Now compute the cell sizes
         grid2d_attributes["u_cell_size"] = distance_u / grid2d_attributes["u_count"]
@@ -68,6 +63,9 @@ class GeoImageConversion(BaseConversion):
 
         if geoimage.rotation is not None:
             grid2d_attributes["rotation"] = geoimage.rotation
+
+        if geoimage.dip is not None:
+            grid2d_attributes["dip"] = geoimage.dip
 
         return grid2d_attributes
 
@@ -139,11 +137,15 @@ class GeoImageConversion(BaseConversion):
 
         :return: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
-        workspace = GeoImageConversion.validate_workspace(geoimage, **grid2d_kwargs)
+
+        workspace, grid2d_kwargs = GeoImageConversion.validate_workspace(
+            geoimage, **grid2d_kwargs
+        )
         grid2d_kwargs = GeoImageConversion.verify_kwargs(geoimage, **grid2d_kwargs)
         grid2d_kwargs = GeoImageConversion.convert_to_grid2d_reference(
             geoimage, grid2d_kwargs
         )
+
         output = objects.Grid2D.create(
             workspace,
             **grid2d_kwargs,

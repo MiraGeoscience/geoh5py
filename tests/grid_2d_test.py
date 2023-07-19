@@ -75,6 +75,8 @@ def test_create_grid_2d_data(tmp_path):
         grid.v_count = n_y
         grid.u_cell_size = np.r_[20.0]
         grid.v_cell_size = np.r_[30.0]
+
+        grid.dip = 33.0
         grid.vertical = True
 
         assert isinstance(grid.centroids, np.ndarray)
@@ -115,7 +117,7 @@ def test_grid2d_to_geoimage(tmp_path):
         ):
             grid.to_geoimage(1000)
 
-        data = grid.add_data({"DataValues": {"values": values}})
+        data = grid.add_data({"DataValues": {"values": values.flatten()}})
         grid.rotation = 45.0
 
         # Read the data back in from a fresh workspace
