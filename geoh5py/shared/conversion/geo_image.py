@@ -137,11 +137,15 @@ class GeoImageConversion(BaseConversion):
 
         :return: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
+        print("geoimage dip: ", geoimage.dip)
+
         workspace = GeoImageConversion.validate_workspace(geoimage, **grid2d_kwargs)
         grid2d_kwargs = GeoImageConversion.verify_kwargs(geoimage, **grid2d_kwargs)
         grid2d_kwargs = GeoImageConversion.convert_to_grid2d_reference(
             geoimage, grid2d_kwargs
         )
+        print("kwargs dip: ", grid2d_kwargs["dip"])
+
         output = objects.Grid2D.create(
             workspace,
             **grid2d_kwargs,

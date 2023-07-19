@@ -131,15 +131,8 @@ class Grid2D(GridObject):
             xyz_dipped = dip_matrix @ xyz.T
             centroids = (rotation_matrix @ xyz_dipped).T
 
-            print(f"rotation : {self.rotation} \n {rotation_matrix}\n")
-            print(f"dip : {self.dip} \n {dip_matrix}\n")
-            print(u_grid.shape, v_grid.shape)
-            print("centroids1:", centroids)
-
             for ind, axis in enumerate(["x", "y", "z"]):
                 centroids[:, ind] += self.origin[axis]
-
-            print("centroids1:", centroids)
 
             self._centroids = centroids
 
@@ -254,9 +247,11 @@ class Grid2D(GridObject):
         if not isinstance(value, (float, int)):
             raise TypeError("Dip angle must be a float.")
         self._centroids = None
+        print(value)
         self._dip = float(value)
-        if abs(self._dip) == 90:
+        if self._dip == 90:
             self._vertical = True
+        print(self._dip)
         self.workspace.update_attribute(self, "attributes")
 
     @property
@@ -403,7 +398,7 @@ class Grid2D(GridObject):
             ], "vertical must be of type 'bool'"
             self._centroids = None
             self._vertical = value
-            if abs(self.dip) != 90 and value is True:
+            if self.dip != 90 and value is True:
                 self._dip = 90.0
             self.workspace.update_attribute(self, "attributes")
 
