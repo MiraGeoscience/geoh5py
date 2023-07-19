@@ -51,318 +51,333 @@ tag = {
 
 
 def test_create_copy_geoimage(tmp_path):
-    workspace = Workspace.create(tmp_path / r"geo_image_test.geoh5")
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+        pixels = np.r_[
+            np.c_[32, 0],
+            np.c_[32, 64],
+            np.c_[64, 64],
+        ]
+        points = np.r_[
+            np.c_[5.0, 5.0, 0],
+            np.c_[5.0, 10.0, 3],
+            np.c_[10.0, 10.0, 3],
+        ]
 
-    pixels = np.r_[
-        np.c_[32, 0],
-        np.c_[32, 64],
-        np.c_[64, 64],
-    ]
-    points = np.r_[
-        np.c_[5.0, 5.0, 0],
-        np.c_[5.0, 10.0, 3],
-        np.c_[10.0, 10.0, 3],
-    ]
+        geoimage = GeoImage.create(workspace, name="MyGeoImage")
 
-    geoimage = GeoImage.create(workspace, name="MyGeoImage")
+        assert geoimage.default_vertices is None
 
-    assert geoimage.default_vertices is None
+        assert geoimage.image_georeferenced is None
 
-    assert geoimage.image_georeferenced is None
+        with pytest.raises(AttributeError, match="The object contains no image data"):
+            geoimage.save_as("test")
 
-    with pytest.raises(AttributeError, match="The object contains no image data"):
-        geoimage.save_as("test")
+        with pytest.raises(AttributeError, match="An 'image' must be set be"):
+            geoimage.georeference(pixels[0, :], points)
 
-    with pytest.raises(AttributeError, match="An 'image' must be set be"):
-        geoimage.georeference(pixels[0, :], points)
+        with pytest.raises(ValueError, match="Input 'vertices' must be"):
+            geoimage.vertices = [1, 2, 3]
 
-    with pytest.raises(ValueError, match="Input 'vertices' must be"):
-        geoimage.vertices = [1, 2, 3]
+        with pytest.raises(
+            ValueError,
+            match="Input 'value' for the 'image' property must be a 2D or 3D numpy.ndarray",
+        ):
+            geoimage.image = np.random.randn(12)
 
-    with pytest.raises(
-        ValueError,
-        match="Input 'value' for the 'image' property must be a 2D or 3D numpy.ndarray",
-    ):
-        geoimage.image = np.random.randn(12)
+        with pytest.raises(ValueError, match="Shape of the 'image' must be a 2D or "):
+            geoimage.image = np.random.randn(12, 12, 4)
 
-    with pytest.raises(ValueError, match="Shape of the 'image' must be a 2D or "):
-        geoimage.image = np.random.randn(12, 12, 4)
+        with pytest.raises(AttributeError, match="GeoImage has no vertices"):
+            geoimage.to_grid2d()
 
-    with pytest.raises(AttributeError, match="GeoImage has no vertices"):
+        assert geoimage.image is None
+
+        with pytest.raises(AttributeError, match="There is no image to"):
+            geoimage.set_tag_from_vertices()
+
+        with pytest.raises(AttributeError, match="The image is not georeferenced"):
+            geoimage.georeferencing_from_tiff()
+
+        geoimage.image = np.random.randint(0, 255, (128, 128))
+
+        # with pytest.raises(AttributeError, match="Vertices must be set for referencing"):
+        #     geoimage.set_tag_from_vertices()
+
+        with pytest.raises(
+            ValueError, match="Input reference points must be a 2D array"
+        ):
+            geoimage.georeference(pixels[0, :], points)
+
+        with pytest.raises(
+            ValueError, match="Input 'locations' must be a 2D array of shape"
+        ):
+            geoimage.georeference(pixels, points[0, :])
+
+        geoimage.image = np.random.randint(0, 255, (128, 64, 3))
+        geoimage.georeference(pixels, points)
+        np.testing.assert_almost_equal(
+            geoimage.vertices,
+            np.asarray([[0, 15, 6], [10, 15, 6], [10, 5, 0], [0, 5, 0]]),
+            err_msg="Issue geo-referencing the coordinates.",
+        )
+
         geoimage.to_grid2d()
+        geoimage.save_as("testtif.tif", str(tmp_path))
 
-    assert geoimage.image is None
+        geoimage_copy = GeoImage.create(workspace, name="MyGeoImageTwin")
+        geoimage.image_data.copy(parent=geoimage_copy)
 
-    with pytest.raises(AttributeError, match="There is no image to"):
-        geoimage.set_tag_from_vertices()
+        np.testing.assert_almost_equal(
+            geoimage_copy.vertices, geoimage.default_vertices
+        )
 
-    with pytest.raises(AttributeError, match="The image is not georeferenced"):
-        geoimage.georeferencing_from_tiff()
+        # Setting image from byte
+        geoimage_copy = GeoImage.create(workspace, name="MyGeoImageTwin")
+        geoimage_copy.image = geoimage.image_data.values
+        assert geoimage_copy.image == geoimage.image, "Error setting image from bytes."
 
-    geoimage.image = np.random.randint(0, 255, (128, 128))
+        # Re-load from file
+        geoimage.image.save(tmp_path / r"test.tiff")
+        geoimage_file = GeoImage.create(workspace, name="MyGeoImage")
 
-    # with pytest.raises(AttributeError, match="Vertices must be set for referencing"):
-    #     geoimage.set_tag_from_vertices()
+        with pytest.raises(ValueError, match="does not exist"):
+            geoimage_file.image = str(tmp_path / r"abc.tiff")
 
-    with pytest.raises(ValueError, match="Input reference points must be a 2D array"):
-        geoimage.georeference(pixels[0, :], points)
+        geoimage_file.image = str(tmp_path / r"test.tiff")
 
-    with pytest.raises(
-        ValueError, match="Input 'locations' must be a 2D array of shape"
-    ):
-        geoimage.georeference(pixels, points[0, :])
+        assert (
+            geoimage_file.image == geoimage.image
+        ), "Error writing and re-loading the image file."
 
-    geoimage.image = np.random.randint(0, 255, (128, 64, 3))
-    geoimage.georeference(pixels, points)
-    np.testing.assert_almost_equal(
-        geoimage.vertices,
-        np.asarray([[0, 15, 6], [10, 15, 6], [10, 5, 0], [0, 5, 0]]),
-        err_msg="Issue geo-referencing the coordinates.",
-    )
+        with Workspace.create(tmp_path / r"geo_image_test2.geoh5") as new_workspace:
+            geoimage.copy(parent=new_workspace)
 
-    geoimage.to_grid2d()
-    geoimage.save_as("testtif.tif", str(tmp_path))
+        new_workspace = Workspace(tmp_path / r"geo_image_test2.geoh5")
+        rec_image = new_workspace.get_entity("MyGeoImage")[0]
 
-    geoimage_copy = GeoImage.create(workspace, name="MyGeoImageTwin")
-    geoimage.image_data.copy(parent=geoimage_copy)
+        compare_entities(geoimage, rec_image, ignore=["_parent", "_image", "_tag"])
 
-    np.testing.assert_almost_equal(geoimage_copy.vertices, geoimage.default_vertices)
+        assert rec_image.image == geoimage.image, "Error copying the bytes image data."
 
-    # Setting image from byte
-    geoimage_copy = GeoImage.create(workspace, name="MyGeoImageTwin")
-    geoimage_copy.image = geoimage.image_data.values
-    assert geoimage_copy.image == geoimage.image, "Error setting image from bytes."
+        geoimage.vertices = geoimage.vertices
 
-    # Re-load from file
-    geoimage.image.save(tmp_path / r"test.tiff")
-    geoimage_file = GeoImage.create(workspace, name="MyGeoImage")
+        # Test copy from extent that clips one corner
+        new_image = geoimage.copy(extent=[[9, 9], [10, 10]])
+        assert new_image is not None, "Error copying from extent."
 
-    with pytest.raises(ValueError, match="does not exist"):
-        geoimage_file.image = str(tmp_path / r"abc.tiff")
-
-    geoimage_file.image = str(tmp_path / r"test.tiff")
-
-    assert (
-        geoimage_file.image == geoimage.image
-    ), "Error writing and re-loading the image file."
-
-    with Workspace.create(tmp_path / r"geo_image_test2.geoh5") as new_workspace:
-        geoimage.copy(parent=new_workspace)
-
-    new_workspace = Workspace(tmp_path / r"geo_image_test2.geoh5")
-    rec_image = new_workspace.get_entity("MyGeoImage")[0]
-
-    compare_entities(geoimage, rec_image, ignore=["_parent", "_image", "_tag"])
-
-    assert rec_image.image == geoimage.image, "Error copying the bytes image data."
-
-    geoimage.vertices = geoimage.vertices
-
-    # Test copy from extent that clips one corner
-    new_image = geoimage.copy(extent=[[9, 9], [10, 10]])
-    assert new_image is not None, "Error copying from extent."
-
-    new_image = geoimage.copy_from_extent(np.vstack([[100, 100], [200, 200]]))
-    assert new_image is None, "Error copying from extent that is out of bounds."
+        new_image = geoimage.copy_from_extent(np.vstack([[100, 100], [200, 200]]))
+        assert new_image is None, "Error copying from extent that is out of bounds."
 
 
 def test_georeference_image(tmp_path):
-    workspace = Workspace.create(tmp_path / r"geo_image_test.geoh5")
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+        # create and save a tiff
+        image = Image.fromarray(
+            np.random.randint(0, 255, (128, 128, 3)).astype("uint8"), "RGB"
+        )
+        for id_ in tag.items():
+            image.getexif()[id_[0]] = id_[1]
+        image.save(tmp_path / r"testtif.tif", exif=image.getexif())
 
-    # create and save a tiff
-    image = Image.fromarray(
-        np.random.randint(0, 255, (128, 128, 3)).astype("uint8"), "RGB"
-    )
-    for id_ in tag.items():
-        image.getexif()[id_[0]] = id_[1]
-    image.save(tmp_path / r"testtif.tif", exif=image.getexif())
+        # load image
+        geoimage = GeoImage.create(
+            workspace, name="test_area", image=f"{str(tmp_path)}/testtif.tif"
+        )
 
-    # load image
-    geoimage = GeoImage.create(
-        workspace, name="test_area", image=f"{str(tmp_path)}/testtif.tif"
-    )
+        geoimage.tag = None
 
-    geoimage.tag = None
+        # test grid2d errors
+        with pytest.raises(ValueError, match="Input 'tag' must"):
+            geoimage.tag = 42
 
-    # test grid2d errors
-    with pytest.raises(ValueError, match="Input 'tag' must"):
-        geoimage.tag = 42
+        # image = Image.open(tmp_path / r"testtif.tif")
+        geoimage.tag = {"test": 3}
+        geoimage.georeferencing_from_tiff()
 
-    # image = Image.open(tmp_path / r"testtif.tif")
-    geoimage.tag = {"test": 3}
-    geoimage.georeferencing_from_tiff()
+        image = Image.open(f"{str(tmp_path)}/testtif.tif")
 
-    image = Image.open(f"{str(tmp_path)}/testtif.tif")
+        geoimage = GeoImage.create(workspace, name="test_area", image=image)
 
-    geoimage = GeoImage.create(workspace, name="test_area", image=image)
+        # create Gray grid2d
+        grid2d_gray = geoimage.to_grid2d(mode="GRAY")
 
-    # create Gray grid2d
-    grid2d_gray = geoimage.to_grid2d(mode="GRAY")
+        # create RGB grid2d
+        grid2d_rgb = geoimage.to_grid2d(new_name="RGB")
 
-    # create RGB grid2d
-    grid2d_rgb = geoimage.to_grid2d(new_name="RGB")
+        assert isinstance(grid2d_gray, Grid2D)
+        assert (
+            len(
+                [
+                    child
+                    for child in grid2d_gray.children
+                    if isinstance(child, IntegerData)
+                ]
+            )
+            == 1
+        )
+        assert isinstance(grid2d_rgb, Grid2D)
+        assert isinstance(geoimage.image_georeferenced, Image.Image)
 
-    assert isinstance(grid2d_gray, Grid2D)
-    assert (
-        len([child for child in grid2d_gray.children if isinstance(child, IntegerData)])
-        == 1
-    )
-    assert isinstance(grid2d_rgb, Grid2D)
-    assert isinstance(geoimage.image_georeferenced, Image.Image)
+        # test grid2d errors
+        with pytest.raises(
+            ValueError, match="conversion from RGB to bidon not supported"
+        ):
+            geoimage.to_grid2d(new_name="RGB", mode="bidon")
 
-    # test grid2d errors
-    with pytest.raises(ValueError, match="conversion from RGB to bidon not supported"):
-        geoimage.to_grid2d(new_name="RGB", mode="bidon")
+        # test save_as
+        with pytest.raises(TypeError, match="has to be a string"):
+            geoimage.save_as(0)
 
-    # test save_as
-    with pytest.raises(TypeError, match="has to be a string"):
-        geoimage.save_as(0)
+        with pytest.raises(TypeError, match="has to be a string"):
+            geoimage.save_as("test", 0)
 
-    with pytest.raises(TypeError, match="has to be a string"):
-        geoimage.save_as("test", 0)
+        with pytest.raises(FileNotFoundError, match="No such file or directory"):
+            geoimage.save_as("test", "path/bidon")
 
-    with pytest.raises(FileNotFoundError, match="No such file or directory"):
-        geoimage.save_as("test", "path/bidon")
+        geoimage.save_as("saved_tif.tif", str(tmp_path))
+        image = Image.open(tmp_path / r"saved_tif.tif")
 
-    geoimage.save_as("saved_tif.tif", str(tmp_path))
-    image = Image.open(tmp_path / r"saved_tif.tif")
+        assert isinstance(image, TiffImageFile)
 
-    assert isinstance(image, TiffImageFile)
+        geoimage.save_as("saved_tif.png", str(tmp_path))
 
-    geoimage.save_as("saved_tif.png", str(tmp_path))
+        image = Image.open(f"{str(tmp_path)}/testtif.tif").convert("L")
+        geoimage = GeoImage.create(workspace, name="test_area", image=image)
 
-    image = Image.open(f"{str(tmp_path)}/testtif.tif").convert("L")
-    geoimage = GeoImage.create(workspace, name="test_area", image=image)
+        image = Image.fromarray(
+            np.random.randint(0, 255, (128, 128, 4)).astype("uint8"), "CMYK"
+        )
 
-    image = Image.fromarray(
-        np.random.randint(0, 255, (128, 128, 4)).astype("uint8"), "CMYK"
-    )
+        geoimage.image = image
 
-    geoimage.image = image
-
-    geoimage.to_grid2d(name="CMYK")
+        geoimage.to_grid2d(name="CMYK")
 
 
 def test_rotation_setter(tmp_path):
-    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+        # add the data
+        x_val, y_val = np.meshgrid(
+            np.linspace(100, 1000, 16), np.linspace(100, 1500, 16)
+        )
+        values = x_val + y_val
+        values = (values - np.min(values)) / (np.max(values) - np.min(values))
+        values *= 255
+        values = np.repeat(values.astype(np.uint32)[:, :, np.newaxis], 3, axis=2)
 
-    # add the data
-    x_val, y_val = np.meshgrid(np.linspace(100, 1000, 16), np.linspace(100, 1500, 16))
-    values = x_val + y_val
-    values = (values - np.min(values)) / (np.max(values) - np.min(values))
-    values *= 255
-    values = np.repeat(values.astype(np.uint32)[:, :, np.newaxis], 3, axis=2)
+        # load image
+        geoimage = GeoImage.create(workspace, name="test_area", image=values)
 
-    # load image
-    geoimage = GeoImage.create(workspace, name="test_area", image=values)
+        rotated = geoimage.copy()
 
-    rotated = geoimage.copy()
+        assert geoimage.rotation == 0
 
-    assert geoimage.rotation == 0
+        rotated.rotation = 45
 
-    rotated.rotation = 45
+        np.testing.assert_array_almost_equal(rotated.rotation, 45)
 
-    np.testing.assert_array_almost_equal(rotated.rotation, 45)
+        rotated.rotation = 0
 
-    rotated.rotation = 0
+        np.testing.assert_array_almost_equal(rotated.rotation, 0)
 
-    np.testing.assert_array_almost_equal(rotated.rotation, 0)
-
-    assert np.allclose(geoimage.vertices, rotated.vertices)
-    assert geoimage.image == rotated.image
+        assert np.allclose(geoimage.vertices, rotated.vertices)
+        assert geoimage.image == rotated.image
 
 
 def test_converting_rotated_images(tmp_path):
-    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+        # create a grid
+        n_x, n_y = 10, 15
+        grid = Grid2D.create(
+            workspace,
+            origin=[0, 0, 0],
+            u_cell_size=20.0,
+            v_cell_size=30.0,
+            u_count=n_x,
+            v_count=n_y,
+            rotation=30,
+            name="MyTestGrid2D",
+            allow_move=False,
+        )
 
-    # create a grid
-    n_x, n_y = 10, 15
-    grid = Grid2D.create(
-        workspace,
-        origin=[0, 0, 0],
-        u_cell_size=20.0,
-        v_cell_size=30.0,
-        u_count=n_x,
-        v_count=n_y,
-        rotation=30,
-        name="MyTestGrid2D",
-        allow_move=False,
-    )
+        # add the data
+        x_val, y_val = np.meshgrid(
+            np.linspace(100, 1000, n_x), np.linspace(100, 1500, n_y)
+        )
+        values = x_val + y_val
+        values = (values - np.min(values)) / (np.max(values) - np.min(values))
+        values *= 255
+        values = values.astype(np.uint32)
 
-    # add the data
-    x_val, y_val = np.meshgrid(np.linspace(100, 1000, n_x), np.linspace(100, 1500, n_y))
-    values = x_val + y_val
-    values = (values - np.min(values)) / (np.max(values) - np.min(values))
-    values *= 255
-    values = values.astype(np.uint32)
+        _ = grid.add_data(
+            {
+                "rando_r": {"values": values.flatten()},
+                "rando_g": {"values": values.flatten()[::-1]},
+                "rando_b": {"values": values.flatten()},
+            }
+        )
 
-    _ = grid.add_data(
-        {
-            "rando_r": {"values": values.flatten()},
-            "rando_g": {"values": values.flatten()[::-1]},
-            "rando_b": {"values": values.flatten()},
-        }
-    )
+        # convert to geoimage
+        geoimage = grid.to_geoimage(["rando_r", "rando_g", "rando_b"], normalize=False)
 
-    # convert to geoimage
-    geoimage = grid.to_geoimage(["rando_r", "rando_g", "rando_b"], normalize=False)
+        # convert to test
+        grid_test = geoimage.to_grid2d()
 
-    # convert to test
-    grid_test = geoimage.to_grid2d()
+        np.testing.assert_almost_equal(grid.rotation, geoimage.rotation)
+        np.testing.assert_almost_equal(grid_test.u_cell_size, grid.u_cell_size)
+        np.testing.assert_almost_equal(grid_test.v_cell_size, grid.v_cell_size)
+        np.testing.assert_almost_equal(grid_test.u_count, grid.u_count)
+        np.testing.assert_almost_equal(grid_test.v_count, grid.v_count)
+        assert grid_test.origin == grid.origin
+        np.testing.assert_almost_equal(grid_test.rotation, grid.rotation)
 
-    np.testing.assert_almost_equal(grid.rotation, geoimage.rotation)
-    np.testing.assert_almost_equal(grid_test.u_cell_size, grid.u_cell_size)
-    np.testing.assert_almost_equal(grid_test.v_cell_size, grid.v_cell_size)
-    np.testing.assert_almost_equal(grid_test.u_count, grid.u_count)
-    np.testing.assert_almost_equal(grid_test.v_count, grid.v_count)
-    assert grid_test.origin == grid.origin
-    np.testing.assert_almost_equal(grid_test.rotation, grid.rotation)
+        assert all(
+            grid_test.get_data("band[0]")[0].values
+            == grid.get_data("rando_r")[0].values
+        )
 
-    assert all(
-        grid_test.get_data("band[0]")[0].values == grid.get_data("rando_r")[0].values
-    )
-
-    grid_test = geoimage.to_grid2d(mode="GRAY")
-    assert "band[0]" in grid_test.get_data_list()
+        grid_test = geoimage.to_grid2d(mode="GRAY")
+        assert "band[0]" in grid_test.get_data_list()
 
 
 def test_clipping_image(tmp_path):
-    workspace = Workspace.create(tmp_path / r"geo_image_test.geoh5")
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+        # add the data
+        x_val, y_val = np.meshgrid(
+            np.linspace(100, 1000, 16), np.linspace(100, 1500, 16)
+        )
+        values = x_val + y_val
+        values = (values - np.min(values)) / (np.max(values) - np.min(values))
+        values *= 255
+        values = np.repeat(values.astype(np.uint32)[:, :, np.newaxis], 3, axis=2)
 
-    # add the data
-    x_val, y_val = np.meshgrid(np.linspace(100, 1000, 16), np.linspace(100, 1500, 16))
-    values = x_val + y_val
-    values = (values - np.min(values)) / (np.max(values) - np.min(values))
-    values *= 255
-    values = np.repeat(values.astype(np.uint32)[:, :, np.newaxis], 3, axis=2)
+        # load image
+        geoimage = GeoImage.create(workspace, name="test_area", image=values)
 
-    # load image
-    geoimage = GeoImage.create(workspace, name="test_area", image=values)
+        copy_image = geoimage.copy_from_extent(np.vstack([[2, 4], [12, 12]]))
 
-    copy_image = geoimage.copy_from_extent(np.vstack([[2, 4], [12, 12]]))
-
-    np.testing.assert_array_equal(
-        np.array(copy_image.image),
-        np.c_[
-            np.array(geoimage.image)[4:12, 2:12, :],
-            np.ones((8, 10, 1), dtype=np.uint8) * 255,
-        ],
-    )
+        np.testing.assert_array_equal(
+            np.array(copy_image.image),
+            np.c_[
+                np.array(geoimage.image)[4:12, 2:12, :],
+                np.ones((8, 10, 1), dtype=np.uint8) * 255,
+            ],
+        )
 
 
 def test_clipping_gray_image(tmp_path):
-    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+        # Repeat with gray scale image
+        image = Image.fromarray(
+            np.random.randint(0, 255, (128, 128)).astype("uint8"), "L"
+        )
+        geoimage = GeoImage.create(workspace, name="test_area", image=image)
 
-    # Repeat with gray scale image
-    image = Image.fromarray(np.random.randint(0, 255, (128, 128)).astype("uint8"), "L")
-    geoimage = GeoImage.create(workspace, name="test_area", image=image)
-
-    crop = geoimage.copy_from_extent(np.vstack([[2, 4], [12, 12]]))
-    assert crop.image.mode == "RGBA"
+        crop = geoimage.copy_from_extent(np.vstack([[2, 4], [12, 12]]))
+        assert crop.image.mode == "RGBA"
 
 
 def test_clipping_rotated_image(tmp_path):
-    with Workspace(tmp_path / r"geo_image_test.geoh5") as workspace:
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
         # create a grid
         n_x, n_y = 10, 15
         grid = Grid2D.create(
@@ -418,104 +433,109 @@ def test_clipping_rotated_image(tmp_path):
 
 
 def test_image_rotation(tmp_path):
-    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+        # Repeat with gray scale image
+        image = Image.fromarray(
+            np.random.randint(0, 255, (128, 128)).astype("uint8"), "L"
+        )
+        geoimage = GeoImage.create(workspace, name="test_area", image=image)
 
-    # Repeat with gray scale image
-    image = Image.fromarray(np.random.randint(0, 255, (128, 128)).astype("uint8"), "L")
-    geoimage = GeoImage.create(workspace, name="test_area", image=image)
+        np.testing.assert_array_almost_equal(geoimage.rotation, 0)
+        np.testing.assert_array_almost_equal(geoimage.dip, 0)
 
-    np.testing.assert_array_almost_equal(geoimage.rotation, 0)
-    np.testing.assert_array_almost_equal(geoimage.dip, 0)
+        geoimage2 = geoimage.copy()
+        geoimage2.rotation = 66
 
-    geoimage2 = geoimage.copy()
-    geoimage2.rotation = 66
+        np.testing.assert_array_almost_equal(geoimage2.rotation, 66)
 
-    np.testing.assert_array_almost_equal(geoimage2.rotation, 66)
+        geoimage3 = geoimage.copy()
 
-    geoimage3 = geoimage.copy()
+        geoimage3.dip = 44
 
-    geoimage3.dip = 44
+        np.testing.assert_array_almost_equal(geoimage3.dip, 44)
 
-    np.testing.assert_array_almost_equal(geoimage3.dip, 44)
+        geoimage4 = geoimage.copy()
 
-    geoimage4 = geoimage.copy()
+        geoimage4.dip = 44
+        geoimage4.rotation = 66
 
-    geoimage4.dip = 44
-    geoimage4.rotation = 66
+        np.testing.assert_array_almost_equal(geoimage4.dip, 44)
+        np.testing.assert_array_almost_equal(geoimage4.rotation, 66)
 
-    np.testing.assert_array_almost_equal(geoimage4.dip, 44)
-    np.testing.assert_array_almost_equal(geoimage4.rotation, 66)
+        vertices = geoimage.vertices - geoimage.origin
 
-    vertices = geoimage.vertices - geoimage.origin
+        rotation_matrix = xy_rotation_matrix(np.deg2rad(66))
+        dip_matrix = yz_rotation_matrix(np.deg2rad(44))
 
-    rotation_matrix = xy_rotation_matrix(np.deg2rad(66))
-    dip_matrix = yz_rotation_matrix(np.deg2rad(44))
+        rotated_vertices = np.dot(rotation_matrix, vertices.T).T
+        dipped_vertices = np.dot(dip_matrix, vertices.T).T
+        rotated_dipped_vertices = np.dot(rotation_matrix, dipped_vertices.T).T
 
-    rotated_vertices = np.dot(rotation_matrix, vertices.T).T
-    dipped_vertices = np.dot(dip_matrix, vertices.T).T
-    rotated_dipped_vertices = np.dot(rotation_matrix, dipped_vertices.T).T
-
-    assert np.allclose(geoimage2.vertices, rotated_vertices + geoimage.origin)
-    assert np.allclose(geoimage3.vertices, dipped_vertices + geoimage.origin)
-    assert np.allclose(geoimage4.vertices, rotated_dipped_vertices + geoimage.origin)
+        assert np.allclose(geoimage2.vertices, rotated_vertices + geoimage.origin)
+        assert np.allclose(geoimage3.vertices, dipped_vertices + geoimage.origin)
+        assert np.allclose(
+            geoimage4.vertices, rotated_dipped_vertices + geoimage.origin
+        )
 
 
 def test_image_grid_rotation_conversion(tmp_path):
-    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+        # Repeat with gray scale image
+        image = Image.fromarray(
+            np.random.randint(0, 255, (128, 128)).astype("uint8"), "L"
+        )
+        geoimage = GeoImage.create(workspace, name="test_area", image=image)
+        geoimage.set_tag_from_vertices()
 
-    # Repeat with gray scale image
-    image = Image.fromarray(np.random.randint(0, 255, (128, 128)).astype("uint8"), "L")
-    geoimage = GeoImage.create(workspace, name="test_area", image=image)
-    geoimage.set_tag_from_vertices()
+        # convert to grid2d
+        grid2d = geoimage.to_grid2d(mode="GRAY")
 
-    # convert to grid2d
-    grid2d = geoimage.to_grid2d(mode="GRAY")
+        # change dip and rotation
+        grid2d.rotation = 66
+        grid2d.dip = 44
+        geoimage.rotation = 66
+        geoimage.dip = 44
 
-    # change dip and rotation
-    grid2d.rotation = 66
-    grid2d.dip = 44
-    geoimage.rotation = 66
-    geoimage.dip = 44
+        geoimage2 = grid2d.to_geoimage(0, normalize=False, ignore=["tag"])
 
-    geoimage2 = grid2d.to_geoimage(0, normalize=False, ignore=["tag"])
-
-    compare_entities(geoimage, geoimage2, ignore=["_uid"])
+        compare_entities(geoimage, geoimage2, ignore=["_uid"])
 
 
 def test_copy_from_extent_geoimage(tmp_path):
-    workspace = Workspace(tmp_path / r"geo_image_test.geoh5")
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+        image = Image.fromarray(
+            np.random.randint(0, 255, (128, 128)).astype("uint8"), "L"
+        )
 
-    image = Image.fromarray(np.random.randint(0, 255, (128, 128)).astype("uint8"), "L")
-
-    vertices = np.array(
-        [
-            [459600, 6353450, 140],
-            [459700, 6353450, 140],
-            [459700, 6353480, 140],
-            [459600, 6353480, 140],
-        ]
-    )
-
-    geoimage = GeoImage.create(
-        workspace, name="test_area", image=image, vertices=vertices
-    )
-
-    geoimage.rotation = -72
-    geoimage.dip = 90
-
-    geoimage2 = geoimage.copy_from_extent(
-        np.vstack([[459613, 6353400, 115], [459625, 6353440, 130]])
-    )
-
-    np.testing.assert_array_almost_equal(
-        geoimage2.vertices,
-        np.array(
+        vertices = np.array(
             [
-                [459613.037, 6353439.88, 114.921875],
-                [459625.108, 6353402.73, 114.921875],
-                [459625.108, 6353402.73, 129.921875],
-                [459613.037, 6353439.88, 129.921875],
+                [459600, 6353450, 140],
+                [459700, 6353450, 140],
+                [459700, 6353480, 140],
+                [459600, 6353480, 140],
             ]
-        ),
-        decimal=2,
-    )
+        )
+
+        geoimage = GeoImage.create(
+            workspace, name="test_area", image=image, vertices=vertices
+        )
+
+        geoimage.rotation = -72
+        geoimage.dip = 90
+
+        geoimage2 = geoimage.copy_from_extent(
+            np.vstack([[459613, 6353400, 115], [459625, 6353440, 130]])
+        )
+
+        np.testing.assert_array_almost_equal(
+            geoimage2.vertices,
+            np.array(
+                [
+                    [459613.037, 6353439.88, 114.921875],
+                    [459625.108, 6353402.73, 114.921875],
+                    [459625.108, 6353402.73, 129.921875],
+                    [459613.037, 6353439.88, 129.921875],
+                ]
+            ),
+            decimal=2,
+        )

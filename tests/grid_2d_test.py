@@ -117,7 +117,7 @@ def test_grid2d_to_geoimage(tmp_path):
         ):
             grid.to_geoimage(1000)
 
-        data = grid.add_data({"DataValues": {"values": values}})
+        data = grid.add_data({"DataValues": {"values": values.flatten()}})
         grid.rotation = 45.0
 
         # Read the data back in from a fresh workspace
