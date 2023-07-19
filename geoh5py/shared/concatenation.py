@@ -709,6 +709,20 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         super().__init__(parent, **kwargs)
 
     @property
+    def depth(self):
+        if self.properties is None or len(self.properties) < 1:
+            return None
+
+        data = self.parent.get_data(  # pylint: disable=no-value-for-parameter
+            self.properties[0]
+        )[0]
+
+        if isinstance(data, Data) and "depth" in data.name.lower():
+            return data
+
+        return None
+
+    @property
     def from_(self):
         """Return the data entities definind the 'from' depth intervals."""
         if self.properties is None or len(self.properties) < 1:
@@ -874,6 +888,18 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
 class ConcatenatedDrillhole(ConcatenatedObject):
     @property
+    def depth(self) -> list[Data]:
+        obj_list = []
+        for prop_group in (
+            self.property_groups if self.property_groups is not None else []
+        ):
+            data = [self.get_data(child)[0] for child in prop_group.properties]
+            if data and "depth" in data[0].name.lower():
+                obj_list.append(data[0])
+
+        return obj_list
+
+    @property
     def from_(self) -> list[Data]:
         """
         Depth data corresponding to the tops of the interval values.
@@ -931,9 +957,25 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             attributes["from-to"] = None
 
         if "depth" in attributes.keys():
-            attributes["from-to"] = np.c_[
-                attributes["depth"], attributes["depth"] + collocation_distance
-            ]
+            values = attributes.get("values")
+            attributes["association"] = "DEPTH"
+            property_group = self.validate_depth_data(
+                attributes.get("name"),
+                attributes.get("depth"),
+                values,
+                property_group=property_group,
+                collocation_distance=collocation_distance,
+            )
+
+            if (
+                isinstance(values, np.ndarray)
+                and values.shape[0] < property_group.depth.values.shape[0]
+            ):
+                attributes["values"] = np.pad(
+                    values,
+                    (0, property_group.depth.values.shape[0] - len(values)),
+                    constant_values=np.nan,
+                )
 
             del attributes["depth"]
 
@@ -960,6 +1002,94 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             del attributes["from-to"]
 
         return attributes, property_group
+
+    def validate_depth_data(
+        self,
+        name: str | None,
+        depth: list | np.ndarray | None,
+        values: np.ndarray,
+        property_group: str | ConcatenatedPropertyGroup | None = None,
+        collocation_distance: float | None = None,
+    ) -> ConcatenatedPropertyGroup:
+        """
+        :param name: Data name.
+        :param depth: Sampling depths.
+        :param values: Data samples to depths.
+        :param property_group: Group for possibly collocated data.
+        :param collocation_distance: Tolerance to determine collocated data for
+            property group assignment
+
+        :return: Augmented property group with name/values added for collocated data
+            otherwise newly created property group with name/depth/values added.
+        """
+        if depth is not None:
+            if isinstance(depth, list):
+                depth = np.vstack(depth)
+
+            if len(depth) < len(values):
+                msg = f"Mismatch between input 'depth' shape{depth.shape} "
+                msg += f"and 'values' shape{values.shape}"
+                raise ValueError(msg)
+
+        if (
+            depth is not None
+            and property_group is None
+            and self.property_groups is not None
+        ):
+            for group in self.property_groups:
+                if (
+                    group.depth is not None
+                    and group.depth.values.shape[0] == depth.shape[0]
+                    and np.allclose(
+                        group.depth.values, depth, atol=collocation_distance
+                    )
+                ):
+                    return group
+
+        ind = 0
+        label = ""
+        if len(self.depth) > 0:
+            ind = len(self.depth)
+            label = f"({ind})"
+
+        if property_group is None:
+            property_group = f"depth_{ind}"
+
+        if isinstance(property_group, str):
+            out_group: ConcatenatedPropertyGroup = getattr(
+                self, "find_or_create_property_group"
+            )(
+                name=property_group,
+                association="DEPTH",
+                property_group_type="Depth table",
+            )
+        else:
+            out_group = property_group
+
+        if out_group.depth is not None:
+            if out_group.depth.values.shape[0] != values.shape[0]:
+                raise ValueError(
+                    f"Input values for '{name}' with shape({values.shape[0]}) "
+                    f"do not match the depths of the group '{out_group}' "
+                    f"with shape({out_group.depth.values.shape[0]}). Check values or "
+                    "assign to a new property group"
+                )
+            return out_group
+
+        depth = getattr(self, "add_data")(
+            {
+                f"DEPTH{label}": {
+                    "association": "DEPTH",
+                    "values": depth,
+                    "entity_type": {"primitive_type": "FLOAT"},
+                    "parent": self,
+                    "allow_move": False,
+                    "allow_delete": False,
+                },
+            },
+            out_group,
+        )
+        return out_group
 
     def validate_interval_data(
         self,
@@ -996,10 +1126,14 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             and self.property_groups is not None
         ):
             for p_g in self.property_groups:
-                if p_g.from_.values.shape[0] == from_to.shape[0] and np.allclose(
-                    np.c_[p_g.from_.values, p_g.to_.values],
-                    from_to,
-                    atol=collocation_distance,
+                if (
+                    p_g.from_ is not None
+                    and p_g.from_.values.shape[0] == from_to.shape[0]
+                    and np.allclose(
+                        np.c_[p_g.from_.values, p_g.to_.values],
+                        from_to,
+                        atol=collocation_distance,
+                    )
                 ):
                     return p_g
 
