@@ -500,12 +500,8 @@ def test_copy_from_extent_geoimage(tmp_path):
         workspace, name="test_area", image=image, vertices=vertices
     )
 
-    print(geoimage.vertices)
-
     geoimage.rotation = -72
     geoimage.dip = 90
-
-    print(geoimage.vertices)
 
     geoimage2 = geoimage.copy_from_extent(
         np.vstack([[459613, 6353400, 115], [459625, 6353440, 130]])

@@ -67,6 +67,8 @@ class GeoImageConversion(BaseConversion):
         if geoimage.dip is not None:
             grid2d_attributes["dip"] = geoimage.dip
 
+        print(grid2d_attributes)
+
         return grid2d_attributes
 
     @staticmethod
