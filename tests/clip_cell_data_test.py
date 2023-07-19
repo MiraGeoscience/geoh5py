@@ -120,7 +120,7 @@ def test_crop_image_rotated_dip(tmp_path):
     assert new_grid.v_count == 2
 
 
-def test_crop_image_rotated_dip_not_null_origin(tmp_path):
+def test_crop_grid2d_rotated_dip_not_null_origin(tmp_path):
     """
     Crop an image based on the rotation and dip of the grid.
     """
