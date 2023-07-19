@@ -270,7 +270,10 @@ class Grid2DConversion(CellObjectConversion):
         :param normalize: if True, the data will be normalized between 0 and 255.
         :param geoimage_kwargs: the kwargs to pass to the :obj:'GeoImage' object.
         """
-        workspace = Grid2DConversion.validate_workspace(input_entity, **geoimage_kwargs)
+        workspace, geoimage_kwargs = Grid2DConversion.validate_workspace(
+            input_entity, **geoimage_kwargs
+        )
+
         geoimage_kwargs = Grid2DConversion.verify_kwargs(
             input_entity, **geoimage_kwargs
         )

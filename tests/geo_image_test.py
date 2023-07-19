@@ -502,7 +502,12 @@ def test_image_grid_rotation_conversion(tmp_path):
 
 
 def test_copy_from_extent_geoimage(tmp_path):
-    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+    workspace2 = Workspace.create(tmp_path / r"geo_image_test2.geoh5")
+    workspace2.open("r+")
+
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r") as workspace:
+        print(f"workspaces {workspace} {workspace2} \n")
+
         image = Image.fromarray(
             np.random.randint(0, 255, (128, 128)).astype("uint8"), "L"
         )
@@ -524,7 +529,8 @@ def test_copy_from_extent_geoimage(tmp_path):
         geoimage.dip = 90
 
         geoimage2 = geoimage.copy_from_extent(
-            np.vstack([[459613, 6353400, 115], [459625, 6353440, 130]])
+            np.vstack([[459613, 6353400, 115], [459625, 6353440, 130]]),
+            parent=workspace2,
         )
 
         np.testing.assert_array_almost_equal(

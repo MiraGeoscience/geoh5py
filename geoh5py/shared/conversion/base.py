@@ -74,7 +74,9 @@ class BaseConversion(ABC):
         return output_properties
 
     @classmethod
-    def validate_workspace(cls, input_entity: ObjectBase, **kwargs) -> Workspace:
+    def validate_workspace(
+        cls, input_entity: ObjectBase, **kwargs
+    ) -> tuple[Workspace, dict]:
         """
         Define the parent of the converter class if the parent is defined in the kwargs;
         and the workspace to use.
@@ -84,12 +86,14 @@ class BaseConversion(ABC):
         # pylint: disable=R1715
         if "parent" in kwargs and kwargs["parent"] is not None:
             workspace = kwargs["parent"].workspace
+            kwargs.pop("parent")
         elif "workspace" in kwargs:
             workspace = kwargs["workspace"]
+            kwargs.pop("workspace")
         else:
             workspace = input_entity.workspace
 
-        return workspace
+        return workspace, kwargs
 
 
 class CellObjectConversion(BaseConversion):
@@ -115,7 +119,7 @@ class CellObjectConversion(BaseConversion):
                 "Input entity for `GridObject` conversion must have centroids."
             )
 
-        workspace = cls.validate_workspace(input_entity, **kwargs)
+        workspace, kwargs = cls.validate_workspace(input_entity, **kwargs)
 
         # get the properties
         kwargs = cls.verify_kwargs(input_entity, **kwargs)
