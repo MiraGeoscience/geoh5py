@@ -131,8 +131,15 @@ class Grid2D(GridObject):
             xyz_dipped = dip_matrix @ xyz.T
             centroids = (rotation_matrix @ xyz_dipped).T
 
+            print(f"rotation : {rotation_matrix}\n")
+            print(f"dip : {dip_matrix}\n")
+            print(u_grid.shape, v_grid.shape)
+            print("centroids1:", centroids)
+
             for ind, axis in enumerate(["x", "y", "z"]):
                 centroids[:, ind] += self.origin[axis]
+
+            print("centroids1:", centroids)
 
             self._centroids = centroids
 

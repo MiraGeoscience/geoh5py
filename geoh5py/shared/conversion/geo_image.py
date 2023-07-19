@@ -137,8 +137,6 @@ class GeoImageConversion(BaseConversion):
 
         :return: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
-        print(geoimage.vertices)
-
         workspace = GeoImageConversion.validate_workspace(geoimage, **grid2d_kwargs)
         grid2d_kwargs = GeoImageConversion.verify_kwargs(geoimage, **grid2d_kwargs)
         grid2d_kwargs = GeoImageConversion.convert_to_grid2d_reference(
@@ -148,9 +146,6 @@ class GeoImageConversion(BaseConversion):
             workspace,
             **grid2d_kwargs,
         )
-
-        print(grid2d_kwargs)
-        print(output.centroids)
 
         image = geoimage.image.copy()
 
