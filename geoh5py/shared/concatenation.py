@@ -709,7 +709,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         super().__init__(parent, **kwargs)
 
     @property
-    def depth(self):
+    def depth_(self):
         if self.properties is None or len(self.properties) < 1:
             return None
 
@@ -724,7 +724,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
     @property
     def from_(self):
-        """Return the data entities definind the 'from' depth intervals."""
+        """Return the data entities defined the 'from' depth intervals."""
         if self.properties is None or len(self.properties) < 1:
             return None
 
@@ -739,7 +739,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
     @property
     def to_(self):
-        """Return the data entities definind the 'to' depth intervals."""
+        """Return the data entities defined the 'to' depth intervals."""
         if self.properties is None or len(self.properties) < 2:
             return None
 
@@ -888,7 +888,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
 class ConcatenatedDrillhole(ConcatenatedObject):
     @property
-    def depth(self) -> list[Data]:
+    def depth_(self) -> list[Data]:
         obj_list = []
         for prop_group in (
             self.property_groups if self.property_groups is not None else []
@@ -969,11 +969,11 @@ class ConcatenatedDrillhole(ConcatenatedObject):
 
             if (
                 isinstance(values, np.ndarray)
-                and values.shape[0] < property_group.depth.values.shape[0]
+                and values.shape[0] < property_group.depth_.values.shape[0]
             ):
                 attributes["values"] = np.pad(
                     values,
-                    (0, property_group.depth.values.shape[0] - len(values)),
+                    (0, property_group.depth_.values.shape[0] - len(values)),
                     constant_values=np.nan,
                 )
 
@@ -1038,18 +1038,18 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         ):
             for group in self.property_groups:
                 if (
-                    group.depth is not None
-                    and group.depth.values.shape[0] == depth.shape[0]
+                    group.depth_ is not None
+                    and group.depth_.values.shape[0] == depth.shape[0]
                     and np.allclose(
-                        group.depth.values, depth, atol=collocation_distance
+                        group.depth_.values, depth, atol=collocation_distance
                     )
                 ):
                     return group
 
         ind = 0
         label = ""
-        if len(self.depth) > 0:
-            ind = len(self.depth)
+        if len(self.depth_) > 0:
+            ind = len(self.depth_)
             label = f"({ind})"
 
         if property_group is None:
@@ -1066,12 +1066,12 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         else:
             out_group = property_group
 
-        if out_group.depth is not None:
-            if out_group.depth.values.shape[0] != values.shape[0]:
+        if out_group.depth_ is not None:
+            if out_group.depth_.values.shape[0] != values.shape[0]:
                 raise ValueError(
                     f"Input values for '{name}' with shape({values.shape[0]}) "
                     f"do not match the depths of the group '{out_group}' "
-                    f"with shape({out_group.depth.values.shape[0]}). Check values or "
+                    f"with shape({out_group.depth_.values.shape[0]}). Check values or "
                     "assign to a new property group"
                 )
             return out_group
