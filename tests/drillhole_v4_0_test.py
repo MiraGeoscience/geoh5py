@@ -356,8 +356,8 @@ def test_create_drillhole_data(tmp_path):
 
         with Workspace(new_path, version=2.0) as new_workspace:
             new_group = dh_group.copy(parent=new_workspace)
-            well = new_group.children[0]
-
+            well = [k for k in new_group.children if k.name == "Number 2"][0]
+            prop_group = [k for k in well.property_groups if k.name == "Interval_0"][0]
             with pytest.raises(
                 ValueError, match="Input values for 'new_data' with shape"
             ):
@@ -365,14 +365,14 @@ def test_create_drillhole_data(tmp_path):
                     {
                         "new_data": {"values": np.random.randn(49).astype(np.float32)},
                     },
-                    property_group=well.property_groups[0].name,
+                    property_group=prop_group.name,
                 )
 
             well.add_data(
                 {
                     "new_data": {"values": np.random.randn(50).astype(np.float32)},
                 },
-                property_group=well.property_groups[0].name,
+                property_group=prop_group.name,
             )
 
         assert (
