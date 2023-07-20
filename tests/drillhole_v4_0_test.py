@@ -283,7 +283,7 @@ def test_create_drillhole_data(tmp_path):
             "'interval_values' on well_b should be the second entry.",
         )
 
-        assert len(well.to_) == len(well.from_) == 3, "Should have only 3 from-to data."
+        assert len(well.to_) == len(well.from_) == 2, "Should have only 2 from-to data."
 
         with pytest.raises(
             UserWarning, match="Data with name 'Depth Data' already present"
