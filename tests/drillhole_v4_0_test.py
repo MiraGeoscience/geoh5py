@@ -340,6 +340,7 @@ def test_create_drillhole_data(tmp_path):
                 "_metadata",
                 "_default_collocation_distance",
                 "_property_groups",
+                "_uid",
             ],
         )
         compare_entities(
