@@ -265,7 +265,9 @@ class BaseEMSurvey(ObjectBase, ABC):
             ] = new_complement.uid
             new_complement.metadata = metadata
 
-        new_entity.metadata = metadata
+        for key, value in metadata["EM Dataset"].items():
+            if not isinstance(value, uuid.UUID):
+                new_entity.metadata["EM Dataset"][key] = value
         return new_entity
 
     @property
