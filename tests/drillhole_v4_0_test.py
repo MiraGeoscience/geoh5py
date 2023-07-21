@@ -210,6 +210,23 @@ def test_create_drillhole_data(tmp_path):
             }
         )
 
+        log_data = well.get_data("my_log_values/")[0]
+        assert log_data.parent.name == "bullseye/"
+        assert (
+            log_data.parent.depth_
+            and not log_data.parent.from_
+            and not log_data.parent.to_
+        )
+        assert log_data.parent.depth_[0].name == "DEPTH"
+        assert not log_data.parent.get_data("FROM")
+        assert not log_data.parent.get_data("TO")
+        assert log_data.property_group.name == "depth_0"
+        assert log_data.property_group.depth_.name == "DEPTH"
+        assert (
+            len(log_data.parent.property_groups[0].properties) == 3
+        ), "Should only have 3 properties (my_log_values, log_wt_tolerance, DEPTH)"
+        assert log_data.property_group.property_group_type == "Depth table"
+
         with fetch_h5_handle(h5file_path) as h5file:
             name = list(h5file)[0]
             group = h5file[name]["Groups"][as_str_if_uuid(dh_group.uid)][
@@ -260,6 +277,18 @@ def test_create_drillhole_data(tmp_path):
             }
         )
 
+        interval_data = data_objects[0]
+        assert interval_data.property_group.name == "Interval_0"
+        assert interval_data.parent.get_data("FROM")
+        assert interval_data.parent.get_data("FROM(1)")
+        assert interval_data.parent.get_data("TO")
+        assert interval_data.parent.get_data("TO(1)")
+        assert (
+            (interval_data.property_group.depth_ is None)
+            and (interval_data.property_group.from_ is not None)
+            and (interval_data.property_group.to_ is not None)
+        )
+        assert interval_data.property_group.property_group_type == "Interval table"
         assert data_objects[1].property_group == data_objects[2].property_group
 
         well_b_data = well_b.add_data(
@@ -356,27 +385,27 @@ def test_create_drillhole_data(tmp_path):
 
         with Workspace(new_path, version=2.0) as new_workspace:
             new_group = dh_group.copy(parent=new_workspace)
-            well = [k for k in new_group.children if k.name == "Number 2"][0]
+            well = [k for k in new_group.children if k.name == "bullseye/"][0]
             prop_group = [k for k in well.property_groups if k.name == "Interval_0"][0]
             with pytest.raises(
                 ValueError, match="Input values for 'new_data' with shape"
             ):
                 well.add_data(
                     {
-                        "new_data": {"values": np.random.randn(49).astype(np.float32)},
+                        "new_data": {"values": np.random.randn(24).astype(np.float32)},
                     },
                     property_group=prop_group.name,
                 )
 
             well.add_data(
                 {
-                    "new_data": {"values": np.random.randn(50).astype(np.float32)},
+                    "new_data": {"values": np.random.randn(25).astype(np.float32)},
                 },
                 property_group=prop_group.name,
             )
 
         assert (
-            len(well.property_groups[0].properties) == 5
+            len(well.property_groups[0].properties) == 3
         ), "Issue adding data to interval."
 
 
