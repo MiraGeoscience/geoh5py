@@ -33,6 +33,19 @@ from geoh5py.objects.object_base import ObjectBase
 #  pylint: disable=no-member, too-many-lines
 # mypy: disable-error-code="attr-defined"
 
+TYPE_MAP = {
+    "Transmitters": "transmitters",
+    "Receivers": "receivers",
+    "Base stations": "base_stations",
+}
+OMIT_LIST = [
+    "_receivers",
+    "_transmitters",
+    "_base_stations",
+    "_tx_id_property",
+    "_metadata",
+]
+
 
 class BaseEMSurvey(ObjectBase, ABC):
     """
@@ -210,7 +223,6 @@ class BaseEMSurvey(ObjectBase, ABC):
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         cell_mask: np.ndarray | None = None,
-        apply_to_complement: bool = True,
         **kwargs,
     ):
         """
@@ -219,56 +231,60 @@ class BaseEMSurvey(ObjectBase, ABC):
         if parent is None:
             parent = self.parent
 
-        omit_list = [
-            "_metadata",
-            "_receivers",
-            "_transmitters",
-            "_base_stations",
-            "_tx_id_property",
-        ]
-        kwargs["omit_list"] = omit_list
-        metadata = self.metadata.copy()
         new_entity = super().copy(
             parent=parent,
             clear_cache=clear_cache,
             copy_children=copy_children,
             mask=mask,
             cell_mask=cell_mask,
+            omit_list=OMIT_LIST,
             **kwargs,
         )
 
-        metadata["EM Dataset"][new_entity.type] = new_entity.uid
+        for key, value in self.metadata["EM Dataset"].items():
+            if not isinstance(value, (uuid.UUID, type(None))):
+                new_entity.edit_metadata({key: value})
 
-        if apply_to_complement and (getattr(self, "complement", None) is not None):
-            base_object = (
-                self.base_transmitter_type  # pylint: disable=no-member
-                if isinstance(self, self.default_receiver_type)
-                else self.base_receiver_type  # pylint: disable=no-member
-            )
-            new_complement = super(  # pylint: disable=bad-super-call
-                base_object, self.complement  # pylint: disable=no-member
-            ).copy(
+        if self.complement is not None:
+            self.copy_complement(
+                new_entity,
                 parent=parent,
-                omit_list=omit_list,
                 copy_children=copy_children,
                 clear_cache=clear_cache,
                 mask=mask,
             )
 
-            setattr(
-                new_entity,
-                self.complement.type,  # pylint: disable=no-member
-                new_complement,
-            )
-            metadata["EM Dataset"][
-                self.complement.type  # pylint: disable=no-member
-            ] = new_complement.uid
-            new_complement.metadata = metadata
-
-        for key, value in metadata["EM Dataset"].items():
-            if not isinstance(value, uuid.UUID):
-                new_entity.metadata["EM Dataset"][key] = value
         return new_entity
+
+    def copy_complement(
+        self,
+        new_entity,
+        parent=None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+    ):
+        base_object = (
+            self.base_transmitter_type  # pylint: disable=no-member
+            if isinstance(self, self.default_receiver_type)
+            else self.base_receiver_type  # pylint: disable=no-member
+        )
+        new_complement = super(  # pylint: disable=bad-super-call
+            base_object, self.complement  # pylint: disable=no-member
+        ).copy(
+            parent=parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            mask=mask,
+            omit_list=OMIT_LIST,
+        )
+
+        setattr(
+            new_entity,
+            TYPE_MAP[self.complement.type],  # pylint: disable=no-member
+            new_complement,
+        )
+        return new_complement
 
     @property
     @abstractmethod
@@ -316,45 +332,56 @@ class BaseEMSurvey(ObjectBase, ABC):
 
         :param entries: Metadata key value pairs.
         """
+        metadata = self.metadata.copy()
         for key, value in entries.items():
             if key == "Property groups":
                 self._edit_validate_property_groups(value)
 
             elif value is None:
-                if key in self.metadata["EM Dataset"]:
-                    del self.metadata["EM Dataset"][key]
+                if key in metadata["EM Dataset"]:
+                    del metadata["EM Dataset"][key]
 
             else:
-                self.metadata["EM Dataset"][key] = value
+                metadata["EM Dataset"][key] = value
 
-        for dependent in ["receivers", "transmitters", "base_stations"]:
-            if getattr(self, dependent, None) is not None:
-                getattr(self, dependent).metadata = self.metadata
+        self.metadata = metadata
 
     def _edit_validate_property_groups(
-        self, values: PropertyGroup | list[PropertyGroup] | None
+        self, values: PropertyGroup | list[PropertyGroup] | list[str] | None
     ):
         """
         Add or append property groups to the metadata.
 
         :param value:
         """
-        if not isinstance(values, (PropertyGroup, type(None))):
-            raise TypeError(
-                "Input value for 'Property groups' must be a PropertyGroup, "
-                "list of PropertyGroup or None."
-            )
-
-        if values is None:
+        if not values:
             self.metadata["EM Dataset"]["Property groups"] = []
             return
 
         if not isinstance(values, list):
             values = [values]
 
+        groups = (
+            {group.name: group for group in self.property_groups}
+            if self.property_groups
+            else {}
+        )
+
         for value in values:
-            if self.property_groups is not None and value not in self.property_groups:
+            if self.property_groups is None:
+                continue
+
+            if not isinstance(value, (PropertyGroup, str)):
+                raise TypeError(
+                    "Input value for 'Property groups' must be a PropertyGroup, "
+                    "list of PropertyGroup or None."
+                )
+
+            if (value not in groups) and (value not in groups.values()):
                 raise ValueError("Property group must be an existing PropertyGroup.")
+
+            if isinstance(value, str):
+                value = groups[value]
 
             if len(value.properties) != len(self.channels):
                 raise ValueError(
@@ -433,7 +460,7 @@ class BaseEMSurvey(ObjectBase, ABC):
             dependent = getattr(self, elem, None)
             if dependent is not None and dependent is not self:
                 setattr(dependent, "_metadata", values)
-                self.workspace.update_attribute(self, "metadata")
+                self.workspace.update_attribute(dependent, "metadata")
 
     @property
     def receivers(self) -> BaseEMSurvey | None:
@@ -561,41 +588,14 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
     def base_transmitter_type(self):
         return Curve
 
-    def copy(  # pylint: disable=too-many-arguments, too-many-locals
+    def copy_complement(
         self,
+        new_entity,
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
-        cell_mask: np.ndarray | None = None,
-        apply_to_complement: bool = True,
-        **kwargs,
     ):
-        """
-        Sub-class extension of :func:`~geoh5py.objects.cell_object.CellObject.copy`.
-        """
-        if parent is None:
-            parent = self.parent
-
-        omit_list = [
-            "_metadata",
-            "_receivers",
-            "_transmitters",
-            "_base_stations",
-            "_tx_id_property",
-        ]
-        kwargs["omit_list"] = omit_list
-
-        new_entity = super().copy(
-            parent=parent,
-            clear_cache=clear_cache,
-            copy_children=copy_children,
-            mask=mask,
-            cell_mask=cell_mask,
-            apply_to_complement=False,
-            **kwargs,
-        )
-
         if (
             self.cells is not None
             and new_entity.tx_id_property is None
@@ -612,7 +612,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
 
             new_entity.tx_id_property = self.tx_id_property.values[cell_mask]
 
-        if (
+        if not (
             new_entity.tx_id_property is not None
             and self.complement is not None
             and self.complement.tx_id_property is not None
@@ -620,80 +620,74 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
             and self.complement.vertices is not None
             and self.complement.cells is not None
         ):
-            intersect = np.intersect1d(
-                new_entity.tx_id_property.values,
-                self.complement.tx_id_property.values,
-            )
+            return None
 
-            # Convert cell indices to vertex indices
-            if isinstance(
-                self.complement,
-                self.default_receiver_type,
-            ):
-                mask = np.r_[
-                    [
-                        (val in intersect)
-                        for val in self.complement.tx_id_property.values
-                    ]
-                ]
-                tx_ids = self.complement.tx_id_property.values[mask]
-            else:
-                cell_mask = np.r_[
-                    [
-                        (val in intersect)
-                        for val in self.complement.tx_id_property.values
-                    ]
-                ]
-                mask = np.zeros(self.complement.vertices.shape[0], dtype=bool)
-                mask[self.complement.cells[cell_mask, :]] = True
-                tx_ids = self.complement.tx_id_property.values[cell_mask]
+        intersect = np.intersect1d(
+            new_entity.tx_id_property.values,
+            self.complement.tx_id_property.values,
+        )
 
-            base_object = (
-                self.base_transmitter_type  # pylint: disable=no-member
-                if isinstance(self, self.default_receiver_type)
-                else self.base_receiver_type  # pylint: disable=no-member
-            )
-            new_complement = super(base_object, self.complement).copy(
-                parent=parent,
-                omit_list=omit_list,
-                copy_children=copy_children,
-                clear_cache=clear_cache,
-                mask=mask,
-            )
+        # Convert cell indices to vertex indices
+        if isinstance(
+            self.complement,
+            self.default_receiver_type,
+        ):
+            mask = np.r_[
+                [(val in intersect) for val in self.complement.tx_id_property.values]
+            ]
+            tx_ids = self.complement.tx_id_property.values[mask]
+        else:
+            cell_mask = np.r_[
+                [(val in intersect) for val in self.complement.tx_id_property.values]
+            ]
+            mask = np.zeros(self.complement.vertices.shape[0], dtype=bool)
+            mask[self.complement.cells[cell_mask, :]] = True
+            tx_ids = self.complement.tx_id_property.values[cell_mask]
 
-            if isinstance(self, self.default_receiver_type):
-                new_entity.transmitters = new_complement
-            else:
-                new_entity.receivers = new_complement
+        base_object = (
+            self.base_transmitter_type  # pylint: disable=no-member
+            if isinstance(self, self.default_receiver_type)
+            else self.base_receiver_type  # pylint: disable=no-member
+        )
+        new_complement = super(base_object, self.complement).copy(
+            parent=parent,
+            omit_list=OMIT_LIST,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            mask=mask,
+        )
 
-            if (
-                new_complement.tx_id_property is None
-                and self.complement.tx_id_property is not None
-            ):
-                new_complement.tx_id_property = tx_ids
+        if isinstance(self, self.default_receiver_type):
+            new_entity.transmitters = new_complement
+        else:
+            new_entity.receivers = new_complement
 
-                # Re-number the tx_id_property
-                value_map = {
-                    val: ind
-                    for ind, val in enumerate(
-                        np.r_[
-                            0, np.unique(new_entity.transmitters.tx_id_property.values)
-                        ]
-                    )
-                }
-                new_map = {
-                    val: new_entity.transmitters.tx_id_property.value_map.map[val]
-                    for val in value_map.values()
-                }
-                new_complement.tx_id_property.values = np.asarray(
-                    [value_map[val] for val in new_complement.tx_id_property.values]
+        if (
+            new_complement.tx_id_property is None
+            and self.complement.tx_id_property is not None
+        ):
+            new_complement.tx_id_property = tx_ids
+
+            # Re-number the tx_id_property
+            value_map = {
+                val: ind
+                for ind, val in enumerate(
+                    np.r_[0, np.unique(new_entity.transmitters.tx_id_property.values)]
                 )
-                new_entity.tx_id_property.values = np.asarray(
-                    [value_map[val] for val in new_entity.tx_id_property.values]
-                )
-                new_entity.tx_id_property.value_map.map = new_map
+            }
+            new_map = {
+                val: new_entity.transmitters.tx_id_property.value_map.map[val]
+                for val in value_map.values()
+            }
+            new_complement.tx_id_property.values = np.asarray(
+                [value_map[val] for val in new_complement.tx_id_property.values]
+            )
+            new_entity.tx_id_property.values = np.asarray(
+                [value_map[val] for val in new_entity.tx_id_property.values]
+            )
+            new_entity.tx_id_property.value_map.map = new_map
 
-        return new_entity
+        return new_complement
 
     @property
     def default_input_types(self) -> list[str]:
