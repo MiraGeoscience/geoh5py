@@ -92,7 +92,7 @@ class Data(Entity):
             if not isinstance(mask, np.ndarray):
                 raise TypeError("Mask must be an array or None.")
 
-            if mask.dtype != np.bool or mask.shape != self.values.shape:
+            if mask.dtype != bool or mask.shape != self.values.shape:
                 raise ValueError(
                     f"Mask must be a boolean array of shape {self.values.shape}, not {mask.shape}"
                 )
