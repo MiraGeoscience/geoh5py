@@ -435,7 +435,7 @@ def test_create_survey_ground_tem_large_loop(
         )
 
 
-def test_create_survey_ground_fem(tmp_path):
+def test_create_survey_ground_tem(tmp_path):
     name = "Survey"
     path = Path(tmp_path) / r"../testGTEM.geoh5"
 

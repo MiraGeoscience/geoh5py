@@ -75,8 +75,6 @@ def test_create_survey_mt(tmp_path):
         ):
             mt_survey.metadata = {"EM Dataset": {}}
 
-        mt_survey.metadata = mt_survey.default_metadata
-
         assert mt_survey.type == "Receivers"
 
         with pytest.raises(
