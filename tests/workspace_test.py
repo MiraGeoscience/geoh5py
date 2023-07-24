@@ -59,7 +59,7 @@ def test_workspace_from_kwargs(tmp_path: Path):
 
 
 def test_empty_workspace(tmp_path):
-    Workspace(
+    Workspace.create(
         tmp_path / r"test.geoh5",
     ).close()
 
@@ -81,7 +81,7 @@ def test_empty_workspace(tmp_path):
 
 
 def test_missing_type(tmp_path):
-    Workspace(
+    Workspace.create(
         tmp_path / r"test.geoh5",
     ).close()
     with File(tmp_path / r"test.geoh5", "r+") as file:
@@ -100,6 +100,13 @@ def test_bad_extension(tmp_path):
         )
 
     assert "Input 'h5file' file must have a 'geoh5' extension." in str(error)
+
+
+def test_file_not_found(tmp_path):
+    with pytest.warns(UserWarning, match="We will attempt to `save` the file for you"):
+        Workspace(
+            tmp_path / r"test.geoh5",
+        )
 
 
 def test_read_bytes(tmp_path):
