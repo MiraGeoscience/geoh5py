@@ -1004,11 +1004,11 @@ class Workspace(AbstractContextManager):
                 warnings.warn(
                     "From version 0.8.0, the 'h5file' attribute must be a string "
                     "or path to an existing file, or user must call the 'create' "
-                    "method. We will attempt to create the file for you, but this "
+                    "method. We will attempt to `save` the file for you, but this "
                     "behaviour will be removed in future releases.",
-                    DeprecationWarning,
                 )
                 self.save(file)
+                self.close()
             else:
                 self._h5file = Path(file)
 
