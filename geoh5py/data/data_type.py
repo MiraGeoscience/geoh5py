@@ -259,10 +259,12 @@ class DataType(EntityType):
                     uid = uuid.UUID(val)
 
         entity_type = cls.find(workspace, uid)
+
         if entity_type is not None:
             return entity_type
 
         kwargs["uid"] = uid
+
         return cls(workspace, **kwargs)
 
     @classmethod

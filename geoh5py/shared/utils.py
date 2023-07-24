@@ -284,6 +284,7 @@ KEY_MAP = {
     "INTEGER": "Integer",
     "FLOAT": "Float",
     "TEXT": "Text",
+    "BOOLEAN": "Boolean",
     "REFERENCED": "Referenced",
     "FILENAME": "Filename",
     "BLOB": "Blob",
