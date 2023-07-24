@@ -199,6 +199,10 @@ def compare_entities(
             )
         else:
             if isinstance(getattr(object_a, attr[1:]), np.ndarray):
+                if getattr(object_b, attr[1:]) is None:
+                    raise ValueError(
+                        f"attr {attr[1:]} is None for object {object_b.name}"
+                    )
                 attr_a = getattr(object_a, attr[1:]).tolist()
                 if len(attr_a) > 0 and isinstance(attr_a[0], str):
                     assert all(
@@ -298,7 +302,6 @@ KEY_MAP = {
     "VERTEX": "Vertex",
     "FACE": "Face",
     "GROUP": "Group",
-    "DEPTH": "Depth",
 }
 INV_KEY_MAP = {value: key for key, value in KEY_MAP.items()}
 
