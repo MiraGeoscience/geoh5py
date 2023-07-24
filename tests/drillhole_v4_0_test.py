@@ -131,7 +131,7 @@ def test_concatenated_entities(tmp_path):
         assert prop_group.from_ is None
 
 
-def test_create_drillhole_data(tmp_path):
+def test_create_drillhole_data(tmp_path):  # pylint R0915
     h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
     new_path = tmp_path / r"test_drillholeGroup2.geoh5"
     well_name = "bullseye/"
