@@ -18,34 +18,44 @@
 
 import numpy as np
 
+from geoh5py.data import PrimitiveTypeEnum
 from geoh5py.objects.grid2d import Grid2D
 from geoh5py.workspace import Workspace
 
 
 def test_data_boolean(tmp_path):
     h5file_path = tmp_path / r"testbool.geoh5"
+    h5file_path2 = tmp_path / r"testbool2.geoh5"
 
     with Workspace.create(h5file_path) as workspace_context:
-        grid = Grid2D.create(
-            workspace_context,
-            origin=[0, 0, 0],
-            u_cell_size=20.0,
-            v_cell_size=30.0,
-            u_count=10,
-            v_count=10,
-            name="masking",
-            allow_move=False,
-        )
+        with Workspace.create(h5file_path2) as workspace_context2:
+            grid = Grid2D.create(
+                workspace_context,
+                origin=[0, 0, 0],
+                u_cell_size=20.0,
+                v_cell_size=30.0,
+                u_count=10,
+                v_count=10,
+                name="masking",
+                allow_move=False,
+            )
 
-        values = np.zeros(grid.shape, dtype=bool)
-        values[3:-3, 3:-3] = 1
-        values = values.astype(bool)
+            values = np.zeros(grid.shape, dtype=bool)
+            values[3:-3, 3:-3] = 1
+            values = values.astype(bool)
 
-        grid.add_data(
-            {
-                "my_boolean": {
-                    "association": "CELL",
-                    "values": values,
+            grid.add_data(
+                {
+                    "my_boolean": {
+                        "association": "CELL",
+                        "values": values,
+                    }
                 }
-            }
-        )
+            )
+
+            grid2 = grid.copy(workspace=workspace_context2)
+
+            # save the grid in a new workspace
+            data2 = grid2.get_data("my_boolean")[0]
+
+            assert data2.entity_type.primitive_type == PrimitiveTypeEnum.BOOLEAN
