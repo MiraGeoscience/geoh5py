@@ -90,3 +90,6 @@ def test_non_ascii_path_geoh5(tmp_path: Path):
             new_read.data["geoh5"].h5file.parts, workspace.h5file.parts
         )
     )
+
+    with Workspace(str(path / "test.geoh5")) as workspace:
+        assert workspace.h5file == path / "test.geoh5"
