@@ -29,7 +29,7 @@ class BooleanData(IntegerData):
     """
     Data class for logical (bool) values.
     """
-    
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.BOOLEAN
