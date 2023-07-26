@@ -19,6 +19,7 @@
 # flake8: noqa
 
 from .blob_data import BlobData
+from .boolean_data import BooleanData
 from .data import Data
 from .data_association_enum import DataAssociationEnum
 from .data_type import DataType

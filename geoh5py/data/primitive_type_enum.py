@@ -38,3 +38,4 @@ class PrimitiveTypeEnum(Enum):
     DATETIME = 8
     GEOMETRIC = 9
     MULTI_TEXT = 10
+    BOOLEAN = 11
