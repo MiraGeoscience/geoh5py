@@ -57,6 +57,7 @@ def test_data_boolean(tmp_path):
             values = np.ones(grid.shape)
             values[3:-3, 3:-3] = 0
             values[:1, :1] = np.nan
+            values = values.astype(int)
 
             grid.add_data(
                 {

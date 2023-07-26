@@ -62,9 +62,7 @@ class BooleanData(ReferencedData):
                 f"Input 'values' for {self} must be of type {np.ndarray} or None."
             )
 
-        if not isinstance(values, np.ndarray) and np.issubdtype(
-            values.dtype, np.integer
-        ):
+        if not (np.issubdtype(values.dtype, np.integer) or values.dtype == bool):
             raise TypeError(
                 f"Input 'values' dtype must be of an integer or a boolean, find {values.dtype}."
             )
