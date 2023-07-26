@@ -17,8 +17,6 @@
 
 from __future__ import annotations
 
-import warnings
-
 import numpy as np
 
 from .data import PrimitiveTypeEnum
@@ -64,23 +62,18 @@ class BooleanData(ReferencedData):
                 f"Input 'values' for {self} must be of type {np.ndarray} or None."
             )
 
+        if not isinstance(values, np.ndarray) and np.issubdtype(
+            values.dtype, np.integer
+        ):
+            raise TypeError(
+                f"Input 'values' dtype must be of an integer or a boolean, find {values.dtype}."
+            )
+
         # removing no data values from the array and replace them by "False"
         values[np.isnan(values)] = self.ndv
         values = np.where(values == self.ndv, 0, values)
 
-        if isinstance(values, np.ndarray) and values.dtype not in [
-            np.uint32,
-            np.int32,
-            bool,
-        ]:
-            warnings.warn(
-                f"Values provided in {values.dtype} are converted to int for "
-                f"{self.primitive_type()} data '{self.name}.'"
-            )
-
-        values = values.astype(np.int32)
-
-        if set(np.unique(values)) - {0, 1} != set():
+        if set(values) - {0, 1} != set():
             raise ValueError(
                 f"Values provided by {self.name} are not containing only 0 or 1"
             )
