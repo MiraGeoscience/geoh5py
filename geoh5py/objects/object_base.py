@@ -520,9 +520,12 @@ class ObjectBase(Entity):
                     entity_type = {"primitive_type": "INTEGER"}
                 elif isinstance(values, str):
                     entity_type = {"primitive_type": "TEXT"}
+                elif isinstance(values, np.ndarray) and (values.dtype == bool):
+                    entity_type = {"primitive_type": "BOOLEAN"}
                 else:
                     raise NotImplementedError(
-                        "Only add_data values of type FLOAT, INTEGER and TEXT have been implemented"
+                        "Only add_data values of type FLOAT, INTEGER,"
+                        "BOOLEAN and TEXT have been implemented"
                     )
 
         return entity_type
