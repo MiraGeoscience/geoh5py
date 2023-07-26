@@ -22,13 +22,20 @@ import warnings
 import numpy as np
 
 from .data import PrimitiveTypeEnum
-from .integer_data import IntegerData
+from .data_type import DataType
+from .reference_value_map import ReferenceValueMap
+from .referenced_data import ReferencedData
 
 
-class BooleanData(IntegerData):
+class BooleanData(ReferencedData):
     """
     Data class for logical (bool) values.
     """
+
+    def __init__(self, data_type: DataType, **kwargs):
+        super().__init__(data_type, **kwargs)
+
+        self.entity_type.value_map = ReferenceValueMap({0: "False", 1: "True"})
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
@@ -78,6 +85,6 @@ class BooleanData(IntegerData):
                 f"Values provided by {self.name} are not containing only 0 or 1"
             )
 
-        self._values = values
+        self._values = values.astype(bool)
 
         self.workspace.update_attribute(self, "values")

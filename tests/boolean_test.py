@@ -78,4 +78,6 @@ def test_data_boolean(tmp_path):
             # save the grid in a new workspace
             data2 = grid2.get_data("my_boolean")[0]
 
+            assert all(data2.values == grid.get_data("my_boolean")[0].values)
+
             assert data2.entity_type.primitive_type == PrimitiveTypeEnum.BOOLEAN
