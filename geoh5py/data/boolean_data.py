@@ -57,6 +57,10 @@ class BooleanData(IntegerData):
                 f"Input 'values' for {self} must be of type {np.ndarray} or None."
             )
 
+        # removing no data values from the array and replace them by "False"
+        values[np.isnan(values)] = self.ndv
+        values = np.where(values == self.ndv, 0, values)
+
         if isinstance(values, np.ndarray) and values.dtype not in [
             np.uint32,
             np.int32,
@@ -66,16 +70,14 @@ class BooleanData(IntegerData):
                 f"Values provided in {values.dtype} are converted to int for "
                 f"{self.primitive_type()} data '{self.name}.'"
             )
-            values[np.isnan(values)] = self.ndv
 
         values = values.astype(np.int32)
 
         if set(np.unique(values)) - {0, 1} != set():
             raise ValueError(
-                f"Values provided in {values.dtype} are converted to int for "
-                f"{self.primitive_type()} data '{self.name}.'"
+                f"Values provided by {self.name} are not containing only 0 or 1"
             )
 
-        self._values = values.astype(bool)
+        self._values = values
 
         self.workspace.update_attribute(self, "values")

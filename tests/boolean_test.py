@@ -42,6 +42,7 @@ def test_data_boolean(tmp_path):
 
             values = np.zeros(grid.shape, dtype=bool)
             values[3:-3, 3:-3] = 1
+
             values = values.astype(bool)
 
             grid.add_data(
@@ -51,6 +52,25 @@ def test_data_boolean(tmp_path):
                         "values": values,
                     }
                 }
+            )
+
+            values = np.ones(grid.shape)
+            values[3:-3, 3:-3] = 0
+            values[:1, :1] = np.nan
+
+            grid.add_data(
+                {
+                    "my_boolean2": {
+                        "association": "CELL",
+                        "values": values,
+                        "entity_type": grid.get_data("my_boolean")[0].entity_type,
+                    }
+                }
+            )
+
+            assert (
+                grid.get_data("my_boolean")[0].entity_type.primitive_type
+                == PrimitiveTypeEnum.BOOLEAN
             )
 
             grid2 = grid.copy(workspace=workspace_context2)
