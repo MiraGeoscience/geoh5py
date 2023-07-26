@@ -1010,7 +1010,7 @@ class Workspace(AbstractContextManager):
                 self.save(file)
                 self.close()
             else:
-                self._h5file = file
+                self._h5file = Path(file)
 
     @property
     def list_data_name(self) -> dict[uuid.UUID, str]:
