@@ -71,6 +71,8 @@ class BooleanData(ReferencedData):
         values[np.isnan(values)] = self.ndv
         values = np.where(values == self.ndv, 0, values)
 
+        print(set(values))
+
         if set(values) - {0, 1} != set():
             raise ValueError(
                 f"Values provided by {self.name} are not containing only 0 or 1"
