@@ -1208,8 +1208,12 @@ class Workspace(AbstractContextManager):
         if isinstance(self.h5file, BytesIO):
             with open(filepath, "wb") as file:
                 file.write(self.h5file.getbuffer())
+        elif self.h5file is None:
+            raise ValueError("Input 'h5file' file must be specified.")
+        else:
+            shutil.copy(self.h5file, filepath)
 
-            self._h5file = filepath
+        self._h5file = filepath
 
         self.open()
 
