@@ -29,8 +29,6 @@ import numpy as np
 
 from geoh5py.shared.utils import str2uuid
 
-# from geoh5py.workspace import Workspace
-
 if TYPE_CHECKING:
     from numpy import ndarray
 
