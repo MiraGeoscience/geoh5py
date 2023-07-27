@@ -527,20 +527,6 @@ class Entity(ABC):
         )
         return self.workspace.save_entity(self, add_children=add_children)
 
-    # todo: circular import if creating a new workspace
-    # def save_as(self, filepath: str, add_children: bool = True) -> Entity:
-    #     """
-    #     Save the entity in a new created workspace.
-    #     :param filepath: The path of the new workspace.
-    #     :param add_children: Option to also save the children.
-    #     :return: the entity in the new workspace
-    #     """
-    #     # create a new workspace
-    #     workspace = Workspace.create(filepath)
-    #
-    #     # save the entity in the new workspace
-    #     return workspace.save_entity(self, add_children=add_children)
-
     @property
     def uid(self) -> uuid.UUID:
         return self._uid
