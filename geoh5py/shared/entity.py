@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -27,6 +28,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from geoh5py.shared.utils import str2uuid
+
+# from geoh5py.workspace import Workspace
 
 if TYPE_CHECKING:
     from numpy import ndarray
@@ -515,10 +518,28 @@ class Entity(ABC):
     def save(self, add_children: bool = True):
         """
         Alias method of :func:`~geoh5py.workspace.Workspace.save_entity`.
-
+        WILL BE DEPRECATED AS ENTITIES ARE ALWAYS AUTOMATICALLY UPDATED.
         :param add_children: Option to also save the children.
         """
+        warnings.warn(
+            "Entity.save() is deprecated and will be removed in next versions.",
+            DeprecationWarning,
+        )
         return self.workspace.save_entity(self, add_children=add_children)
+
+    # todo: circular import if creating a new workspace
+    # def save_as(self, filepath: str, add_children: bool = True) -> Entity:
+    #     """
+    #     Save the entity in a new created workspace.
+    #     :param filepath: The path of the new workspace.
+    #     :param add_children: Option to also save the children.
+    #     :return: the entity in the new workspace
+    #     """
+    #     # create a new workspace
+    #     workspace = Workspace.create(filepath)
+    #
+    #     # save the entity in the new workspace
+    #     return workspace.save_entity(self, add_children=add_children)
 
     @property
     def uid(self) -> uuid.UUID:

@@ -88,9 +88,14 @@ def test_copy_entity(tmp_path: Path):
         with pytest.raises(AssertionError, match="Input metadata must be of type"):
             entity.metadata = 0
 
-        _ = entity.save()
+        # _ = entity.save_as(tmp_path / r"testProject2.geoh5")
 
+    with pytest.raises(FileExistsError, match="File "):
+        _ = Workspace.create(h5file_path)
+
+    h5file_path = tmp_path / r"testProject2.geoh5"
     workspace = Workspace.create(h5file_path)
+
     new_workspace = Workspace.create(tmp_path / r"testProject_2.geoh5")
     for entity in workspace.objects:
         entity.copy(parent=new_workspace)

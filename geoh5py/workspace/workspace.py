@@ -321,7 +321,7 @@ class Workspace(AbstractContextManager):
     @classmethod
     def create(cls, path: str | Path, **kwargs) -> Workspace:
         """Create a named blank workspace and save to disk."""
-        return cls(**kwargs).save(path)
+        return cls(**kwargs).save_as(path)
 
     def create_from_concatenation(self, attributes):
         if "Name" in attributes:
@@ -1007,7 +1007,7 @@ class Workspace(AbstractContextManager):
                     "method. We will attempt to `save` the file for you, but this "
                     "behaviour will be removed in future releases.",
                 )
-                self.save(file)
+                self.save_as(file)
                 self.close()
             else:
                 self._h5file = Path(file)
@@ -1179,6 +1179,15 @@ class Workspace(AbstractContextManager):
         self._repack = value
 
     def save(self, filepath: str | Path) -> Workspace:
+        warnings.warn(
+            "Workspace.save is deprecated and will be remove in future versions,"
+            "use Workspace.save_as instead.",
+            DeprecationWarning,
+        )
+
+        return self.save_as(filepath)
+
+    def save_as(self, filepath: str | Path) -> Workspace:
         """
         Save the workspace to disk.
         """
@@ -1187,8 +1196,14 @@ class Workspace(AbstractContextManager):
 
         filepath = Path(filepath)
 
+        if filepath.suffix == "":
+            filepath = filepath.with_suffix(".geoh5")
+
         if filepath.suffix != ".geoh5":
             raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
+
+        if filepath.exists():
+            raise FileExistsError(f"File {filepath} already exists.")
 
         if isinstance(self.h5file, BytesIO):
             with open(filepath, "wb") as file:
