@@ -88,7 +88,6 @@ def test_copy_entity(tmp_path: Path):
         with pytest.raises(AssertionError, match="Input metadata must be of type"):
             entity.metadata = 0
 
-
     with pytest.raises(FileExistsError, match="File "):
         _ = Workspace.create(h5file_path)
 
