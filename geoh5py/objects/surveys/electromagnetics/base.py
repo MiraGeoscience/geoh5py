@@ -391,8 +391,8 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
 
             if not isinstance(value, (PropertyGroup, str)):
                 raise TypeError(
-                    "Input value for 'Property groups' must be a PropertyGroup, "
-                    "list of PropertyGroup or None."
+                    "Input value for 'Property groups' must be a PropertyGroup or "
+                    "name of an existing PropertyGroup."
                 )
 
             if not (value in groups or value in groups.values()):
