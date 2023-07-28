@@ -177,27 +177,6 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
 
         return prop_group
 
-    def base_copy(
-        self,
-        parent: Group | Workspace | None = None,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: np.ndarray | None = None,
-        **kwargs,
-    ):
-        """
-        Call the super().copy of the class.
-
-        :return: New copy of the input entity.
-        """
-        return super().copy(
-            parent=parent,
-            copy_children=copy_children,
-            clear_cache=clear_cache,
-            mask=mask,
-            **kwargs,
-        )
-
     @property
     def channels(self):
         """
@@ -365,52 +344,6 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
 
         self.metadata = metadata
 
-    def _edit_validate_property_groups(
-        self, values: PropertyGroup | list[PropertyGroup] | list[str] | None
-    ):
-        """
-        Add or append property groups to the metadata.
-
-        :param value:
-        """
-        if not values:
-            self.metadata["EM Dataset"]["Property groups"] = []
-            return
-
-        if not isinstance(values, list):
-            values = [values]
-
-        groups = (
-            {group.name: group for group in self.property_groups}
-            if self.property_groups
-            else {}
-        )
-
-        for value in values:
-            if self.property_groups is None:
-                continue
-
-            if not isinstance(value, (PropertyGroup, str)):
-                raise TypeError(
-                    "Input value for 'Property groups' must be a PropertyGroup or "
-                    "name of an existing PropertyGroup."
-                )
-
-            if not (value in groups or value in groups.values()):
-                raise ValueError("Property group must be an existing PropertyGroup.")
-
-            if isinstance(value, str):
-                value = groups[value]
-
-            if len(value.properties) != len(self.channels):
-                raise ValueError(
-                    f"Number of properties in group '{value.name}' "
-                    + "differ from the number of 'channels'."
-                )
-
-            if value.name not in self.metadata["EM Dataset"]["Property groups"]:
-                self.metadata["EM Dataset"]["Property groups"].append(value.name)
-
     @property
     def input_type(self) -> str | None:
         """Data input type. Must be one of 'Rx', 'Tx' or 'Tx and Rx'"""
@@ -565,6 +498,73 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             if value not in self.default_units:
                 raise ValueError(f"Input 'unit' must be one of {self.default_units}")
             self.edit_metadata({"Unit": value})
+
+    def _edit_validate_property_groups(
+        self, values: PropertyGroup | list[PropertyGroup] | list[str] | None
+    ):
+        """
+        Add or append property groups to the metadata.
+
+        :param value:
+        """
+        if not values:
+            self.metadata["EM Dataset"]["Property groups"] = []
+            return
+
+        if not isinstance(values, list):
+            values = [values]
+
+        groups = (
+            {group.name: group for group in self.property_groups}
+            if self.property_groups
+            else {}
+        )
+
+        for value in values:
+            if self.property_groups is None:
+                continue
+
+            if not isinstance(value, (PropertyGroup, str)):
+                raise TypeError(
+                    "Input value for 'Property groups' must be a PropertyGroup or "
+                    "name of an existing PropertyGroup."
+                )
+
+            if not (value in groups or value in groups.values()):
+                raise ValueError("Property group must be an existing PropertyGroup.")
+
+            if isinstance(value, str):
+                value = groups[value]
+
+            if len(value.properties) != len(self.channels):
+                raise ValueError(
+                    f"Number of properties in group '{value.name}' "
+                    + "differ from the number of 'channels'."
+                )
+
+            if value.name not in self.metadata["EM Dataset"]["Property groups"]:
+                self.metadata["EM Dataset"]["Property groups"].append(value.name)
+
+    def _super_copy(
+        self,
+        parent: Group | Workspace | None = None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Call the super().copy of the class in copy_complement method.
+
+        :return: New copy of the input entity.
+        """
+        return super().copy(
+            parent=parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            mask=mask,
+            **kwargs,
+        )
 
 
 class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve):
