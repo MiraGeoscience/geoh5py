@@ -266,6 +266,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             **kwargs,
         )
 
+        # Copy metadata except reference to entities UUID
         for key, value in self.metadata["EM Dataset"].items():
             if not isinstance(value, (uuid.UUID, type(None))):
                 new_entity.edit_metadata({key: value})
