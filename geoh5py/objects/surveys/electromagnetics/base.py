@@ -269,12 +269,14 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
     ):
-        new_complement = self.complement.base_copy(
-            parent=parent,
-            copy_children=copy_children,
-            clear_cache=clear_cache,
-            mask=mask,
-            omit_list=OMIT_LIST,
+        new_complement = (
+            self.complement._super_copy(  # pylint: disable=protected-access
+                parent=parent,
+                copy_children=copy_children,
+                clear_cache=clear_cache,
+                mask=mask,
+                omit_list=OMIT_LIST,
+            )
         )
 
         setattr(
@@ -663,12 +665,14 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
             mask[self.complement.cells[cell_mask, :]] = True
             tx_ids = self.complement.tx_id_property.values[cell_mask]
 
-        new_complement = self.complement.base_copy(
-            parent=parent,
-            omit_list=OMIT_LIST,
-            copy_children=copy_children,
-            clear_cache=clear_cache,
-            mask=mask,
+        new_complement = (
+            self.complement._super_copy(  # pylint: disable=protected-access
+                parent=parent,
+                omit_list=OMIT_LIST,
+                copy_children=copy_children,
+                clear_cache=clear_cache,
+                mask=mask,
+            )
         )
 
         if isinstance(self, self.default_receiver_type):
