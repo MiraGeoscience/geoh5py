@@ -98,7 +98,9 @@ def test_create_survey_tipper(tmp_path):
 
     # Test copying receiver over through the receivers
     # Create a workspace
-    receivers.copy(Workspace.create(tmp_path / r"test_Tipper_copy.geoh5"))
+    with Workspace.create(tmp_path / r"test_Tipper_copy.geoh5") as out_workspace:
+        receivers.copy(out_workspace)
+
     with Workspace(tmp_path / r"test_Tipper_copy.geoh5") as new_workspace:
         receivers_rec = new_workspace.get_entity("Tipper rx")[0]
         compare_entities(
