@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -515,9 +516,13 @@ class Entity(ABC):
     def save(self, add_children: bool = True):
         """
         Alias method of :func:`~geoh5py.workspace.Workspace.save_entity`.
-
+        WILL BE DEPRECATED AS ENTITIES ARE ALWAYS AUTOMATICALLY UPDATED.
         :param add_children: Option to also save the children.
         """
+        warnings.warn(
+            "Entity.save() is deprecated and will be removed in next versions.",
+            DeprecationWarning,
+        )
         return self.workspace.save_entity(self, add_children=add_children)
 
     @property

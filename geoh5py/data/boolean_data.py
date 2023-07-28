@@ -48,7 +48,7 @@ class BooleanData(ReferencedData):
             values = self.workspace.fetch_values(self)
 
             if isinstance(values, (np.ndarray, type(None))):
-                self._values = self.check_vector_length(values)
+                self._values = self.check_vector_length(values).astype(bool)
 
         return self._values
 
