@@ -395,7 +395,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
                     "list of PropertyGroup or None."
                 )
 
-            if (value not in groups) and (value not in groups.values()):
+            if not (value in groups or value in groups.values()):
                 raise ValueError("Property group must be an existing PropertyGroup.")
 
             if isinstance(value, str):
