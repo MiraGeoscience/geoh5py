@@ -15,12 +15,15 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=no-member, too-many-lines
+# mypy: disable-error-code="attr-defined"
+
 from __future__ import annotations
 
 import json
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -30,8 +33,9 @@ from geoh5py.groups.property_group import PropertyGroup
 from geoh5py.objects import Curve
 from geoh5py.objects.object_base import ObjectBase
 
-#  pylint: disable=no-member, too-many-lines
-# mypy: disable-error-code="attr-defined"
+if TYPE_CHECKING:
+    from geoh5py.groups import Group
+    from geoh5py.workspace import Workspace
 
 TYPE_MAP = {
     "Transmitters": "transmitters",
@@ -47,7 +51,7 @@ OMIT_LIST = [
 ]
 
 
-class BaseEMSurvey(ObjectBase, ABC):
+class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
     """
     A base electromagnetics survey object.
     """
@@ -173,6 +177,27 @@ class BaseEMSurvey(ObjectBase, ABC):
 
         return prop_group
 
+    def base_copy(
+        self,
+        parent: Group | Workspace | None = None,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ):
+        """
+        Call the super().copy of the class.
+
+        :return: New copy of the input entity.
+        """
+        return super().copy(
+            parent=parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            mask=mask,
+            **kwargs,
+        )
+
     @property
     def channels(self):
         """
@@ -218,7 +243,7 @@ class BaseEMSurvey(ObjectBase, ABC):
 
     def copy(  # pylint: disable=too-many-arguments
         self,
-        parent=None,
+        parent: Group | Workspace | None = None,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
@@ -259,19 +284,12 @@ class BaseEMSurvey(ObjectBase, ABC):
     def copy_complement(
         self,
         new_entity,
-        parent=None,
+        parent: Group | Workspace | None = None,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
     ):
-        base_object = (
-            self.base_transmitter_type  # pylint: disable=no-member
-            if isinstance(self, self.default_receiver_type)
-            else self.base_receiver_type  # pylint: disable=no-member
-        )
-        new_complement = super(  # pylint: disable=bad-super-call
-            base_object, self.complement  # pylint: disable=no-member
-        ).copy(
+        new_complement = self.complement.base_copy(
             parent=parent,
             copy_children=copy_children,
             clear_cache=clear_cache,
@@ -591,7 +609,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
     def copy_complement(
         self,
         new_entity,
-        parent=None,
+        parent: Group | Workspace | None = None,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
@@ -644,12 +662,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
             mask[self.complement.cells[cell_mask, :]] = True
             tx_ids = self.complement.tx_id_property.values[cell_mask]
 
-        base_object = (
-            self.base_transmitter_type  # pylint: disable=no-member
-            if isinstance(self, self.default_receiver_type)
-            else self.base_receiver_type  # pylint: disable=no-member
-        )
-        new_complement = super(base_object, self.complement).copy(
+        new_complement = self.complement.base_copy(
             parent=parent,
             omit_list=OMIT_LIST,
             copy_children=copy_children,
