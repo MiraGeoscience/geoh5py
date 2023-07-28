@@ -68,8 +68,7 @@ class BooleanData(ReferencedData):
             )
 
         # removing no data values from the array and replace them by "False"
-        values[np.isnan(values)] = self.ndv
-        values = np.where(values <= self.ndv, 0, values)
+        values = values.astype(np.uint8)
 
         if set(values) - {0, 1} != set():
             raise ValueError(

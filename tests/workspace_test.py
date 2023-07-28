@@ -36,7 +36,7 @@ def test_workspace_from_kwargs(tmp_path: Path):
         "distance_unit": "feet",
     }
 
-    workspace = Workspace(**attr).save(h5file_tmp)
+    workspace = Workspace(**attr).save_as(h5file_tmp)
 
     # Test re-opening in read-only - stays in r+"
     with pytest.warns(UserWarning) as warning:
