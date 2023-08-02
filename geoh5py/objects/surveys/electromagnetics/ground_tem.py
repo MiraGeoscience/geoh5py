@@ -44,7 +44,6 @@ class MovingLoopGroundTEMSurvey(TEMSurvey, MovingLoopGroundEMSurvey):
                 "Receivers": None,
                 "Survey type": "Ground TEM",
                 "Transmitters": None,
-                "Tx ID property": None,
                 "Unit": "Milliseconds (ms)",
                 "Waveform": {"Timing mark": 0.0},
             }
@@ -155,7 +154,6 @@ class LargeLoopGroundTEMSurvey(TEMSurvey, LargeLoopGroundEMSurvey):
                 "Receivers": None,
                 "Survey type": "Ground TEM (large-loop)",
                 "Transmitters": None,
-                "Tx ID property": None,
                 "Unit": "Milliseconds (ms)",
                 "Waveform": {"Timing mark": 0.0},
             }
