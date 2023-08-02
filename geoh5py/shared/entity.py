@@ -215,7 +215,7 @@ class Entity(ABC):
         return new_object
 
     @property
-    def coordinate_reference_system(self) -> dict | None:
+    def coordinate_reference_system(self) -> dict:
         """
         Coordinate reference system attached to the entity.
         """
@@ -327,7 +327,7 @@ class Entity(ABC):
         #  (possibly it has to be abstract with different implementations per Entity type)
         return name
 
-    def get_entity(self, name: str | uuid.UUID) -> list[Entity]:
+    def get_entity(self, name: str | uuid.UUID) -> list[Entity | None]:
         """
         Get a child :obj:`~geoh5py.data.data.Data` by name.
 
@@ -340,6 +340,9 @@ class Entity(ABC):
             entity_list = [child for child in self.children if child.uid == name]
         else:
             entity_list = [child for child in self.children if child.name == name]
+
+        if not entity_list:
+            return [None]
 
         return entity_list
 
