@@ -419,6 +419,11 @@ class Drillhole(Points):
                     continue
                 kwargs[key] = val
 
+            if "values" in kwargs:
+                kwargs["values"] = Data.convert_to_primitive_type(
+                    kwargs["values"], entity_type["primitive_type"]
+                )
+
             data_object = self.workspace.create_entity(
                 Data, entity=kwargs, entity_type=entity_type
             )

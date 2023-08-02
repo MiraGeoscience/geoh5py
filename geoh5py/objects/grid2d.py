@@ -145,7 +145,6 @@ class Grid2D(GridObject):
         copy_children: bool = True,
         clear_cache: bool = False,
         inverse: bool = False,
-        from_image: bool = False,
         **kwargs,
     ) -> Grid2D | None:
         """
@@ -214,12 +213,10 @@ class Grid2D(GridObject):
 
         if not inverse:
             for child in copy.children:
-                nan_value = 0 if from_image else np.nan
-
                 if isinstance(child.values, np.ndarray):
                     indices = child.mask_by_extent(extent, inverse=inverse)
-                    values = child.values.astype(float)
-                    values[~indices] = nan_value
+                    values = child.values
+                    values[~indices] = child.nan_value
                     child.values = values
 
         return copy

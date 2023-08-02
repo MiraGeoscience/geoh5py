@@ -17,8 +17,6 @@
 
 from __future__ import annotations
 
-import warnings
-
 import numpy as np
 
 from ..shared import INTEGER_NDV
@@ -30,6 +28,13 @@ class IntegerData(NumericData):
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.INTEGER
+
+    @property
+    def nan_value(self):
+        """
+        Nan-Data-Value
+        """
+        return self.ndv
 
     @property
     def ndv(self) -> int:
@@ -61,11 +66,12 @@ class IntegerData(NumericData):
                 f"Input 'values' for {self} must be of type {np.ndarray} or None."
             )
 
-        if isinstance(values, np.ndarray) and values.dtype not in [np.uint32, np.int32]:
-            warnings.warn(
-                f"Values provided in {values.dtype} are converted to int32 for "
-                f"{self.primitive_type()} data '{self.name}.'"
-            )
+        if isinstance(values, np.ndarray):
+            if not np.issubdtype(values.dtype, np.integer):
+                raise TypeError(
+                    f"Values provided in must be integers, found {values.dtype}."
+                )
+
             values[np.isnan(values)] = self.ndv
             values = values.astype(np.int32)
 

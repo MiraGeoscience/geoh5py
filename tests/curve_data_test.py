@@ -92,7 +92,14 @@ def test_create_curve_data(tmp_path: Path):
 
             # Modify and write
             obj_rec.vertices = np.random.randn(n_data, 3)
-            data_vert_rec.values = np.random.randn(n_data)
+
+            with pytest.raises(
+                TypeError, match="Values provided in must be integers, found float64."
+            ):
+                data_vert_rec.values = np.random.randn(n_data)  # warning here
+            data_vert_rec.values = np.random.randint(
+                0, curve.n_vertices, curve.n_vertices
+            ).astype(np.uint32)
 
         # Read back and compare
         with ws2.open():

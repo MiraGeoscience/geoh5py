@@ -508,8 +508,6 @@ def test_copy_from_extent_geoimage(tmp_path):
     workspace2.open("r+")
 
     with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r") as workspace:
-        print(f"workspaces {workspace} {workspace2} \n")
-
         image = Image.fromarray(
             np.random.randint(0, 255, (128, 128)).astype("uint8"), "L"
         )

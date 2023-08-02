@@ -22,7 +22,7 @@ from abc import abstractmethod
 
 import numpy as np
 
-from ..shared import Entity
+from ..shared import INTEGER_NDV, Entity
 from ..shared.utils import mask_by_extent
 from .data_association_enum import DataAssociationEnum
 from .data_type import DataType
@@ -106,8 +106,9 @@ class Data(Entity):
             if n_values < self.values.shape[0]:
                 kwargs.update({"values": self.values[mask]})
             else:
-                values = np.ones_like(self.values) * np.nan
+                values = np.ones_like(self.values) * self.nan_value
                 values[mask] = self.values[mask]
+
                 kwargs.update({"values": values})
 
         new_entity = parent.workspace.copy_to_parent(
@@ -146,6 +147,13 @@ class Data(Entity):
         if self.association is DataAssociationEnum.OBJECT:
             return 1
 
+        return None
+
+    @property
+    def nan_value(self) -> None:
+        """
+        Value used to represent missing data.
+        """
         return None
 
     @property
@@ -249,3 +257,24 @@ class Data(Entity):
 
     def __call__(self):
         return self.values
+
+    @staticmethod
+    def convert_to_primitive_type(data: np.ndarray, primitive_type: str) -> np.ndarray:
+        """
+        Convert a numpy array to a primitive type.
+
+        :param data: numpy array to convert
+        :param primitive_type: type to convert to
+
+        :return: numpy array of primitive type
+        """
+        if isinstance(data, np.ndarray):
+            data_copy = data.copy()
+            if primitive_type in ["INTEGER", "REFERENCED"]:
+                data_copy[np.isnan(data_copy)] = INTEGER_NDV
+                return data_copy.astype(np.int32)
+            if primitive_type == "BOOLEAN":
+                data_copy[np.isnan(data_copy)] = 0
+                return data_copy.astype(bool)
+
+        return data
