@@ -211,6 +211,9 @@ class Grid2DConversion(CellObjectConversion):
             if mode is None:
                 raise IndexError("Only 1, 3, or 4 layers can be selected")
 
+        if mode not in ["L", "RGB", "RGBA"]:
+            raise IndexError("Only 'L', 'RGB', or 'RGBA' modes are supported")
+
         return Image.fromarray(data, mode=mode)
 
     @staticmethod

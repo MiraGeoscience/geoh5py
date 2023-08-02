@@ -358,7 +358,9 @@ class GeoImage(ObjectBase):
                 value -= value.min()
                 value *= 255.0 / value.max()
                 value = value.astype("uint8")
+
             image = Image.fromarray(value)
+
         elif isinstance(image, str):
             if not Path(image).is_file():
                 raise ValueError(f"Input image file {image} does not exist.")
@@ -380,12 +382,16 @@ class GeoImage(ObjectBase):
                 f"Get type {type(image)} instead."
             )
 
-        with TemporaryDirectory() as tempdir:
-            ext = getattr(image, "format")
-            temp_file = (
-                Path(tempdir) / f"image.{ext.lower() if ext is not None else 'tiff'}"
+        if image.mode not in ["RGBA", "RGB", "L"]:
+            raise TypeError(
+                f"Image mode {image.mode} is not supported. "
+                "Only 'RGBA', 'RGB', 'L' are supported."
             )
-            image.save(temp_file)
+
+        with TemporaryDirectory() as tempdir:
+            temp_file = Path(tempdir) / "image.png"
+
+            image.save(temp_file, compress_level=9)
 
             if self.image_data is not None:
                 self.workspace.remove_entity(self.image_data)
