@@ -67,7 +67,7 @@ plugins = [
 
 [tool.coverage.run]
 branch = true
-source = "geoh5py"
+source = ["geoh5py"]
 omit = [
     "geoh5py/handlers/*",
     "geoh5py/interfaces/*"
