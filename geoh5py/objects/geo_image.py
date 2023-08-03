@@ -30,7 +30,12 @@ from PIL.TiffImagePlugin import TiffImageFile
 from .. import objects
 from ..data import FilenameData
 from ..shared.conversion import GeoImageConversion
-from ..shared.utils import box_intersect, dip_points, xy_rotation_matrix
+from ..shared.utils import (
+    box_intersect,
+    dip_points,
+    pillow_mode_dictionary,
+    xy_rotation_matrix,
+)
 from .object_base import ObjectBase, ObjectType
 
 
@@ -382,16 +387,14 @@ class GeoImage(ObjectBase):
                 f"Get type {type(image)} instead."
             )
 
-        if image.mode not in ["RGBA", "RGB", "L"]:
-            raise TypeError(
-                f"Image mode {image.mode} is not supported. "
-                "Only 'RGBA', 'RGB', 'L' are supported."
-            )
-
         with TemporaryDirectory() as tempdir:
-            temp_file = Path(tempdir) / "image.png"
+            if image.mode not in pillow_mode_dictionary:
+                raise NotImplementedError(
+                    f"The mode {image.mode} of the image is not supported."
+                )
 
-            image.save(temp_file, compress_level=9)
+            temp_file = Path(tempdir) / "image"
+            image.save(temp_file, **pillow_mode_dictionary[image.mode])
 
             if self.image_data is not None:
                 self.workspace.remove_entity(self.image_data)
