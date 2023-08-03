@@ -25,6 +25,7 @@ import uuid
 import numpy as np
 
 from ..data import Data, FloatData, NumericData
+from ..data.primitive_type_enum import convert_to_primitive_type
 from ..groups import PropertyGroup
 from ..shared.utils import box_intersect, mask_by_extent, merge_arrays
 from .object_base import ObjectType
@@ -420,7 +421,7 @@ class Drillhole(Points):
                 kwargs[key] = val
 
             if "values" in kwargs:
-                kwargs["values"] = Data.convert_to_primitive_type(
+                kwargs["values"] = convert_to_primitive_type(
                     kwargs["values"], entity_type["primitive_type"]
                 )
 

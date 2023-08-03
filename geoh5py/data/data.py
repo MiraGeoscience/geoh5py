@@ -22,7 +22,7 @@ from abc import abstractmethod
 
 import numpy as np
 
-from ..shared import INTEGER_NDV, Entity
+from ..shared import Entity
 from ..shared.utils import mask_by_extent
 from .data_association_enum import DataAssociationEnum
 from .data_type import DataType
@@ -152,7 +152,7 @@ class Data(Entity):
     @property
     def nan_value(self) -> None:
         """
-        Value used to represent missing data.
+        Value used to represent missing data in python.
         """
         return None
 
@@ -257,24 +257,3 @@ class Data(Entity):
 
     def __call__(self):
         return self.values
-
-    @staticmethod
-    def convert_to_primitive_type(data: np.ndarray, primitive_type: str) -> np.ndarray:
-        """
-        Convert a numpy array to a primitive type.
-
-        :param data: numpy array to convert
-        :param primitive_type: type to convert to
-
-        :return: numpy array of primitive type
-        """
-        if isinstance(data, np.ndarray):
-            data_copy = data.copy()
-            if primitive_type in ["INTEGER", "REFERENCED"]:
-                data_copy[np.isnan(data_copy)] = INTEGER_NDV
-                return data_copy.astype(np.int32)
-            if primitive_type == "BOOLEAN":
-                data_copy[np.isnan(data_copy)] = 0
-                return data_copy.astype(bool)
-
-        return data

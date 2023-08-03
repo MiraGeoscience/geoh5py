@@ -41,13 +41,6 @@ class NumericData(Data, ABC):
         """No-data-value"""
 
     @property
-    @abstractmethod
-    def nan_value(self):
-        """
-        Nan-Data-Value
-        """
-
-    @property
     def values(self) -> np.ndarray | None:
         """
         :return: values: An array of float values
