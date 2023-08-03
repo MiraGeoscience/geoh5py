@@ -24,6 +24,10 @@ import h5py
 import numpy as np
 import pytest
 
+from geoh5py import Workspace
+from geoh5py.ui_json.constants import default_ui_json
+from geoh5py.ui_json.input_file import InputFile
+
 NON_ASCII_FILENAME = (
     r"éèçàù¨ẫäêëîïôöûü"
     + r"ὦშข้าእግᚾᚩᚱᚦᚹ⠎⠁⠹ ⠹ ∀x∈ℝ ٩(-̮̮̃-̃)۶ ٩(●̮̮̃•̃)۶ ٩(͡๏̯͡๏)۶ ٩(-̮̮̃•̃).h5"
@@ -65,3 +69,27 @@ def test_existing_non_ascii_filename(tmp_path: Path):
 
     assert file_path.is_file()
     assert not h5py.is_hdf5(file_path)
+
+
+def test_non_ascii_path_geoh5(tmp_path: Path):
+    path = tmp_path / NON_ASCII_FILENAME
+    path.mkdir(parents=True, exist_ok=True)
+    workspace = Workspace.create(path / "test.geoh5")
+    workspace.close()
+
+    ifile = InputFile(ui_json=default_ui_json)
+    ifile.update_ui_values({"geoh5": workspace})
+    ifile.write_ui_json("test.ui.json", path)
+
+    # Read file back
+    new_read = InputFile.read_ui_json(path / "test.ui.json")
+
+    assert all(
+        part_a == part_b
+        for part_a, part_b in zip(
+            new_read.data["geoh5"].h5file.parts, workspace.h5file.parts
+        )
+    )
+
+    with Workspace(str(path / "test.geoh5")) as workspace:
+        assert workspace.h5file == path / "test.geoh5"

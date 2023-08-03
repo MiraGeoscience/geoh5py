@@ -27,7 +27,15 @@ from typing import TYPE_CHECKING
 import h5py
 import numpy as np
 
-from ..data import CommentsData, Data, DataType, FilenameData, IntegerData, TextData
+from ..data import (
+    BooleanData,
+    CommentsData,
+    Data,
+    DataType,
+    FilenameData,
+    IntegerData,
+    TextData,
+)
 from ..groups import Group, GroupType, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import FLOAT_NDV, Entity, EntityType, fetch_h5_handle
@@ -594,7 +602,10 @@ class H5Writer:
 
             else:
                 out_values = deepcopy(values)
-                if isinstance(entity, IntegerData):
+                if isinstance(entity, BooleanData):
+                    out_values = np.round(out_values).astype("int8")
+
+                elif isinstance(entity, IntegerData):
                     out_values = np.round(out_values).astype("int32")
 
                 elif isinstance(entity, TextData) and not isinstance(values[0], bytes):

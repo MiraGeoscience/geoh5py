@@ -50,7 +50,7 @@ ui_validations = {
             "Strike & dip",
         ],
     },
-    "dataType": {"values": ["Float", "Text", "Integer", "Referenced"]},
+    "dataType": {"values": ["Float", "Text", "Integer", "Referenced", "Boolean"]},
     "dependency": {"types": [str, type(None)]},
     "dependencyType": {"values": ["enabled", "disabled"]},
     "enabled": {"types": [bool, type(None)]},
