@@ -33,6 +33,64 @@ if TYPE_CHECKING:
     from .entity import Entity
 
 
+KEY_MAP = {
+    "cells": "Cells",
+    "color_map": "Color map",
+    "concatenated_attributes": "Attributes",
+    "concatenated_object_ids": "Concatenated object IDs",
+    "layers": "Layers",
+    "metadata": "Metadata",
+    "octree_cells": "Octree Cells",
+    "options": "options",
+    "prisms": "Prisms",
+    "property_groups": "PropertyGroups",
+    "property_group_ids": "Property Group IDs",
+    "surveys": "Surveys",
+    "trace": "Trace",
+    "trace_depth": "TraceDepth",
+    "u_cell_delimiters": "U cell delimiters",
+    "v_cell_delimiters": "V cell delimiters",
+    "values": "Data",
+    "vertices": "Vertices",
+    "z_cell_delimiters": "Z cell delimiters",
+    "INVALID": "Invalid",
+    "INTEGER": "Integer",
+    "FLOAT": "Float",
+    "TEXT": "Text",
+    "BOOLEAN": "Boolean",
+    "REFERENCED": "Referenced",
+    "FILENAME": "Filename",
+    "BLOB": "Blob",
+    "VECTOR": "Vector",
+    "DATETIME": "DateTime",
+    "GEOMETRIC": "Geometric",
+    "MULTI_TEXT": "Multi-Text",
+    "UNKNOWN": "Unknown",
+    "OBJECT": "Object",
+    "CELL": "Cell",
+    "VERTEX": "Vertex",
+    "FACE": "Face",
+    "GROUP": "Group",
+}
+INV_KEY_MAP = {value: key for key, value in KEY_MAP.items()}
+
+png_kwargs = {"format": "PNG", "compress_level": 9}
+jpg_kwargs = {"format": "JPEG", "quality": 85}
+tif_kwargs = {"format": "TIFF"}
+
+pillow_mode_dictionary = {
+    "1": png_kwargs,
+    "L": png_kwargs,
+    "P": png_kwargs,
+    "RGB": png_kwargs,
+    "RGBA": png_kwargs,
+    "CMYK": jpg_kwargs,
+    "YCbCr": jpg_kwargs,
+    "I": tif_kwargs,
+    "F": tif_kwargs,
+}
+
+
 @contextmanager
 def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
     """
@@ -262,48 +320,6 @@ def iterable_message(valid: list[Any] | None) -> str:
         msg = f" Must be: '{valid[0]}'."
 
     return msg
-
-
-KEY_MAP = {
-    "cells": "Cells",
-    "color_map": "Color map",
-    "concatenated_attributes": "Attributes",
-    "concatenated_object_ids": "Concatenated object IDs",
-    "layers": "Layers",
-    "metadata": "Metadata",
-    "octree_cells": "Octree Cells",
-    "options": "options",
-    "prisms": "Prisms",
-    "property_groups": "PropertyGroups",
-    "property_group_ids": "Property Group IDs",
-    "surveys": "Surveys",
-    "trace": "Trace",
-    "trace_depth": "TraceDepth",
-    "u_cell_delimiters": "U cell delimiters",
-    "v_cell_delimiters": "V cell delimiters",
-    "values": "Data",
-    "vertices": "Vertices",
-    "z_cell_delimiters": "Z cell delimiters",
-    "INVALID": "Invalid",
-    "INTEGER": "Integer",
-    "FLOAT": "Float",
-    "TEXT": "Text",
-    "BOOLEAN": "Boolean",
-    "REFERENCED": "Referenced",
-    "FILENAME": "Filename",
-    "BLOB": "Blob",
-    "VECTOR": "Vector",
-    "DATETIME": "DateTime",
-    "GEOMETRIC": "Geometric",
-    "MULTI_TEXT": "Multi-Text",
-    "UNKNOWN": "Unknown",
-    "OBJECT": "Object",
-    "CELL": "Cell",
-    "VERTEX": "Vertex",
-    "FACE": "Face",
-    "GROUP": "Group",
-}
-INV_KEY_MAP = {value: key for key, value in KEY_MAP.items()}
 
 
 def is_uuid(value: str) -> bool:
