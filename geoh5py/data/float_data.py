@@ -29,6 +29,18 @@ class FloatData(NumericData):
     Data container for floats values
     """
 
+    def check_type(self, values: np.ndarray):
+        """
+        Check if the type of values is valid
+        :param values: An array of float values.
+        """
+        if not isinstance(values, np.ndarray):
+            raise TypeError("Values must be a numpy array.")
+        if not np.issubdtype(values.dtype, np.number):
+            raise TypeError("Values must be a numpy array of numeric values.")
+
+        return values.astype(np.float32)
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.FLOAT

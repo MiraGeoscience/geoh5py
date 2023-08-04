@@ -25,7 +25,6 @@ import uuid
 import numpy as np
 
 from ..data import Data, FloatData, NumericData
-from ..data.primitive_type_enum import convert_to_primitive_type
 from ..groups import PropertyGroup
 from ..shared.utils import box_intersect, mask_by_extent, merge_arrays
 from .object_base import ObjectType
@@ -420,11 +419,6 @@ class Drillhole(Points):
                     continue
                 kwargs[key] = val
 
-            if "values" in kwargs:
-                kwargs["values"] = convert_to_primitive_type(
-                    kwargs["values"], entity_type["primitive_type"]
-                )
-
             data_object = self.workspace.create_entity(
                 Data, entity=kwargs, entity_type=entity_type
             )
@@ -680,7 +674,7 @@ class Drillhole(Points):
 
             depths = data_obj.values
             if isinstance(data_obj, NumericData):
-                depths = data_obj.check_vector_length(depths)
+                depths = data_obj.format_values(depths)
 
             if not np.all(np.diff(depths) >= 0):
                 sort_ind = np.argsort(depths)
@@ -690,7 +684,7 @@ class Drillhole(Points):
                         isinstance(child, NumericData)
                         and getattr(child.association, "name", None) == "VERTEX"
                     ):
-                        child.values = child.check_vector_length(child.values)[sort_ind]
+                        child.values = child.format_values(child.values)[sort_ind]
 
                 if self.vertices is not None:
                     self.vertices = self.vertices[sort_ind, :]

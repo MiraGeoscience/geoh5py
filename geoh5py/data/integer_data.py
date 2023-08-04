@@ -25,6 +25,17 @@ from .numeric_data import NumericData
 
 
 class IntegerData(NumericData):
+    def check_type(self, values: np.ndarray):
+        """
+        Check if the type of values is valid
+        :param values: numpy array"""
+        if not isinstance(values, np.ndarray):
+            raise TypeError("Values must be a numpy array")
+        if np.sum(values - values.astype(np.int32)) != 0:
+            raise TypeError("Values cannot have decimal points.")
+
+        return values.astype(np.int32)
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.INTEGER
@@ -42,39 +53,3 @@ class IntegerData(NumericData):
         No-Data-Value
         """
         return INTEGER_NDV
-
-    @property
-    def values(self) -> np.ndarray | None:
-        """
-        :return: values: An array of integer values
-        """
-        if getattr(self, "_values", None) is None:
-            values = self.workspace.fetch_values(self)
-
-            if isinstance(values, (np.ndarray, type(None))):
-                self._values = self.check_vector_length(values)
-
-        return self._values
-
-    @values.setter
-    def values(self, values: np.ndarray | None):
-        if isinstance(values, (np.ndarray, type(None))):
-            values = self.check_vector_length(values)
-
-        else:
-            raise ValueError(
-                f"Input 'values' for {self} must be of type {np.ndarray} or None."
-            )
-
-        if isinstance(values, np.ndarray):
-            if not np.issubdtype(values.dtype, np.integer):
-                raise TypeError(
-                    f"Values provided in must be integers, found {values.dtype}."
-                )
-
-            values[np.isnan(values)] = self.ndv
-            values = values.astype(np.int32)
-
-        self._values = values
-
-        self.workspace.update_attribute(self, "values")

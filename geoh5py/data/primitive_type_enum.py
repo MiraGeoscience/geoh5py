@@ -19,10 +19,6 @@ from __future__ import annotations
 
 from enum import Enum
 
-import numpy as np
-
-from ..shared import INTEGER_NDV
-
 
 class PrimitiveTypeEnum(Enum):
     """
@@ -43,23 +39,3 @@ class PrimitiveTypeEnum(Enum):
     GEOMETRIC = 9
     MULTI_TEXT = 10
     BOOLEAN = 11
-
-
-def convert_to_primitive_type(data: np.ndarray, primitive_type: str) -> np.ndarray:
-    """
-    Convert a numpy array to a primitive type.
-
-    :param data: numpy array to convert
-    :param primitive_type: type to convert to
-
-    :return: numpy array of primitive type
-    """
-    if isinstance(data, np.ndarray):
-        if primitive_type in ["INTEGER", "REFERENCED"]:
-            data[np.isnan(data)] = INTEGER_NDV
-            return data.astype(np.int32)
-        if primitive_type == "BOOLEAN":
-            data[np.isnan(data)] = 0
-            return data.astype(bool)
-
-    return data

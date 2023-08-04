@@ -93,9 +93,7 @@ def test_create_curve_data(tmp_path: Path):
             # Modify and write
             obj_rec.vertices = np.random.randn(n_data, 3)
 
-            with pytest.raises(
-                TypeError, match="Values provided in must be integers, found float64."
-            ):
+            with pytest.raises(TypeError, match="Values cannot have decimal points."):
                 data_vert_rec.values = np.random.randn(n_data)  # warning here
             data_vert_rec.values = np.random.randint(
                 0, curve.n_vertices, curve.n_vertices

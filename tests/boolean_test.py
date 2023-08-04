@@ -58,7 +58,6 @@ def test_data_boolean(tmp_path):
             values = np.ones(grid.shape)
             values[3:-3, 3:-3] = 0
             values[:1, :1] = np.nan
-            values = values.astype(int)
 
             grid.add_data(
                 {
@@ -85,8 +84,8 @@ def test_data_boolean(tmp_path):
             assert data2.entity_type.primitive_type == PrimitiveTypeEnum.BOOLEAN
 
             with pytest.raises(
-                TypeError,
-                match="Input 'values' dtype must be of an integer or a boolean,",
+                ValueError,
+                match="Values provided by my_boolean are not containing only 0 or 1",
             ):
                 data2.values = np.array([1.1, 0.2, 1.1])
 
