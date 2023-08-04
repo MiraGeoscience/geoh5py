@@ -26,7 +26,11 @@ from PIL import Image
 from ... import objects
 from ...data import Data
 from ...shared import FLOAT_NDV
-from ...shared.utils import xy_rotation_matrix, yz_rotation_matrix
+from ...shared.utils import (
+    pillow_mode_dictionary,
+    xy_rotation_matrix,
+    yz_rotation_matrix,
+)
 from .base import CellObjectConversion
 
 if TYPE_CHECKING:
@@ -207,9 +211,15 @@ class Grid2DConversion(CellObjectConversion):
                 mode = "RGB"
             elif data.shape[-1] == 4:
                 mode = "RGBA"
+                # todo: I do not like RGBA as default, rather CMYK.
+                #  crop image by extent should return the same format,
+                #  not RGBA, and 0 for nan values.
 
             if mode is None:
                 raise IndexError("Only 1, 3, or 4 layers can be selected")
+
+        if mode not in pillow_mode_dictionary:
+            raise NotImplementedError(f"The mode {mode} is not actually supported.")
 
         return Image.fromarray(data, mode=mode)
 

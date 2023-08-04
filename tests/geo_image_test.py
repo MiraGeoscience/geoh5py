@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+from io import BytesIO
+
 import numpy as np
 import pytest
 from PIL import Image
@@ -245,7 +247,7 @@ def test_georeference_image(tmp_path):
         geoimage = GeoImage.create(workspace, name="test_area", image=image)
 
         image = Image.fromarray(
-            np.random.randint(0, 255, (128, 128, 4)).astype("uint8"), "CMYK"
+            np.random.randint(0, 255, (128, 128, 4)).astype("uint8"), "RGBA"
         )
 
         geoimage.image = image
@@ -412,7 +414,7 @@ def test_clipping_rotated_image(tmp_path):
 
         # convert to geoimage
         geoimage = grid.to_geoimage(
-            ["rando_c", "rando_m", "rando_y", "rando_k"], mode="CMYK", normalize=False
+            ["rando_c", "rando_m", "rando_y", "rando_k"], mode="RGBA", normalize=False
         )
 
         # clip the image
@@ -544,4 +546,10 @@ def test_copy_from_extent_geoimage(tmp_path):
                 ]
             ),
             decimal=2,
+        )
+
+        # test the size of the cropped image
+        assert (
+            BytesIO(geoimage.image_data.values).getbuffer().nbytes
+            > BytesIO(geoimage2.image_data.values).getbuffer().nbytes
         )
