@@ -694,8 +694,8 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
                 )
             }
             new_map = {
-                val: new_entity.transmitters.tx_id_property.value_map.map[val]
-                for val in value_map.values()
+                val: new_entity.transmitters.tx_id_property.value_map.map[ind]
+                for ind, val in value_map.items()
             }
             new_complement.tx_id_property.values = np.asarray(
                 [value_map[val] for val in new_complement.tx_id_property.values]
