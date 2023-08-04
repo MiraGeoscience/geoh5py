@@ -40,6 +40,11 @@ class BooleanData(ReferencedData):
         return PrimitiveTypeEnum.BOOLEAN
 
     @property
+    def nan_value(self):
+        """No-data-value"""
+        return False
+
+    @property
     def values(self) -> np.ndarray | None:
         """
         :return: values: An array of integer values
