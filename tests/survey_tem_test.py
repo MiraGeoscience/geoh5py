@@ -421,7 +421,7 @@ def test_create_survey_ground_tem_large_loop(
     with Workspace(Path(tmp_path) / r"testGround_copy.geoh5") as new_workspace:
         receivers_orig = receivers.copy(new_workspace)
         transmitters_rec = receivers.transmitters.copy_from_extent(
-            np.vstack([[-150, 300], [150, 450]]), parent=new_workspace
+            np.vstack([[-150, 300], [150, 600]]), parent=new_workspace
         )
         assert transmitters_rec.receivers.n_vertices == receivers_orig.n_vertices / 2.0
         assert (
