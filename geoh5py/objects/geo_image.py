@@ -31,9 +31,9 @@ from .. import objects
 from ..data import FilenameData
 from ..shared.conversion import GeoImageConversion
 from ..shared.utils import (
+    PILLOW_ARGUMENTS,
     box_intersect,
     dip_points,
-    pillow_mode_dictionary,
     xy_rotation_matrix,
 )
 from .object_base import ObjectBase, ObjectType
@@ -388,13 +388,13 @@ class GeoImage(ObjectBase):
             )
 
         with TemporaryDirectory() as tempdir:
-            if image.mode not in pillow_mode_dictionary:
+            if image.mode not in PILLOW_ARGUMENTS:
                 raise NotImplementedError(
                     f"The mode {image.mode} of the image is not supported."
                 )
 
             temp_file = Path(tempdir) / "image"
-            image.save(temp_file, **pillow_mode_dictionary[image.mode])
+            image.save(temp_file, **PILLOW_ARGUMENTS[image.mode])
 
             if self.image_data is not None:
                 self.workspace.remove_entity(self.image_data)
