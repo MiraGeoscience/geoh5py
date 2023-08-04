@@ -89,8 +89,8 @@ class NumericData(Data, ABC):
                 warn("Input 'values' converted to a 1D array.")
 
             if len(values) < self.n_values:
-                full_vector = np.ones(self.n_values, dtype=type(self.ndv))
-                full_vector *= np.nan if isinstance(self.ndv, float) else self.ndv
+                full_vector = np.ones(self.n_values, dtype=values.dtype)
+                full_vector *= self.nan_value
                 full_vector[: len(np.ravel(values))] = np.ravel(values)
                 return full_vector
 

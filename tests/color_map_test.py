@@ -114,3 +114,5 @@ def test_create_color_map(tmp_path):
         == getattr(data.entity_type.color_map, key)
         for key in ["name", "values"]
     ), "Issue copying the ColorMap."
+
+    assert len(rec_data.entity_type.color_map) == 10

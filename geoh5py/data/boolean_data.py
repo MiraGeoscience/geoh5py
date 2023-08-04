@@ -58,7 +58,7 @@ class BooleanData(ReferencedData):
             values = self.check_vector_length(values)
 
         else:
-            raise ValueError(
+            raise TypeError(
                 f"Input 'values' for {self} must be of type {np.ndarray} or None."
             )
 

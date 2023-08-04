@@ -52,7 +52,7 @@ tag = {
 }
 
 
-def test_create_copy_geoimage(tmp_path):
+def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
     with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
         pixels = np.r_[
             np.c_[32, 0],
@@ -66,6 +66,17 @@ def test_create_copy_geoimage(tmp_path):
         ]
 
         geoimage = GeoImage.create(workspace, name="MyGeoImage")
+
+        with pytest.raises(AttributeError, match="Vertices are not defined"):
+            geoimage.copy_from_extent(np.vstack(([125, 145], [125, 145])))
+
+        with pytest.raises(AttributeError, match="The image has no vertices"):
+            _ = geoimage.dip
+
+        with pytest.raises(AttributeError, match="The image has no vertices"):
+            geoimage.dip = 66
+
+        assert geoimage.extent is None
 
         assert geoimage.default_vertices is None
 
@@ -101,6 +112,12 @@ def test_create_copy_geoimage(tmp_path):
             geoimage.georeferencing_from_tiff()
 
         geoimage.image = np.random.randint(0, 255, (128, 128))
+
+        assert (
+            geoimage.extent == np.array([[0.0, 0.0, 0.0], [128.0, 128.0, 0.0]])
+        ).all()
+
+        geoimage.georeferencing_from_image()
 
         # with pytest.raises(AttributeError, match="Vertices must be set for referencing"):
         #     geoimage.set_tag_from_vertices()
@@ -510,6 +527,17 @@ def test_image_grid_rotation_conversion(tmp_path):
         geoimage2 = grid2d.to_geoimage(0, normalize=False, ignore=["tag"])
 
         compare_entities(geoimage, geoimage2, ignore=["_uid"])
+
+        geoimage.georeferencing_from_image()
+
+        with pytest.raises(NotImplementedError):
+            GeoImage.create(
+                workspace,
+                name="test_area",
+                image=Image.fromarray(
+                    np.random.randint(0, 255, (128, 128, 2)).astype("uint8"), "LA"
+                ),
+            )
 
 
 def test_copy_from_extent_geoimage(tmp_path):
