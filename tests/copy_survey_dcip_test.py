@@ -35,7 +35,7 @@ def test_copy_survey_dcip(tmp_path: Path):
     path = tmp_path / r"testDC.geoh5"
 
     # Create a workspace
-    with Workspace(path) as workspace:
+    with Workspace.create(path) as workspace:
         # Create sources along line
         x_loc, y_loc = np.meshgrid(np.arange(n_data), np.arange(-1, 3))
         vertices = np.c_[x_loc.ravel(), y_loc.ravel(), np.zeros_like(x_loc).ravel()]
@@ -78,7 +78,7 @@ def test_copy_survey_dcip(tmp_path: Path):
 
         # Copy the survey to a new workspace
         path = tmp_path / r"testDC_copy_current.geoh5"
-        with Workspace(path) as new_workspace:
+        with Workspace.create(path) as new_workspace:
             new_currents = currents.copy_from_extent(
                 np.vstack([[5, 0], [8, 2]]), parent=new_workspace
             )

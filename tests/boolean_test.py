@@ -49,7 +49,7 @@ def test_data_boolean(tmp_path):
                 {
                     "my_boolean": {
                         "association": "CELL",
-                        "values": values,
+                        "values": values.flatten(),
                     }
                 }
             )
@@ -63,7 +63,7 @@ def test_data_boolean(tmp_path):
                 {
                     "my_boolean2": {
                         "association": "CELL",
-                        "values": values,
+                        "values": values.flatten(),
                         "entity_type": grid.get_data("my_boolean")[0].entity_type,
                     }
                 }

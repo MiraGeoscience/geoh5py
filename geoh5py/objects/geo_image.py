@@ -330,7 +330,7 @@ class GeoImage(ObjectBase):
             # georeference the raster
             self.georeference(reference, locations)
         except KeyError:
-            warnings.warn("The 'tif.' image has no referencing information")
+            warnings.warn("The 'tif.' image has no referencing information.")
 
     @property
     def image(self):
