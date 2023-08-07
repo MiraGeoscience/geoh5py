@@ -25,6 +25,7 @@ import string
 import numpy as np
 import pytest
 
+from geoh5py.data import BooleanData, FloatData, ReferencedData
 from geoh5py.objects import Drillhole
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
@@ -168,6 +169,8 @@ def test_create_drillhole_data(tmp_path):
             )
         ]
 
+        assert isinstance(data_objects[-1], ReferencedData)
+
         well.add_data(
             {
                 "label": {
@@ -194,6 +197,8 @@ def test_create_drillhole_data(tmp_path):
             )
         ]
 
+        assert isinstance(data_objects[-1], BooleanData)
+
         # Add log-data
         data_objects += [
             well.add_data(
@@ -206,6 +211,8 @@ def test_create_drillhole_data(tmp_path):
                 }
             )
         ]
+
+        assert isinstance(data_objects[-1], FloatData)
 
         # Re-open the workspace and read data back in
         new_workspace = Workspace(h5file_path, version=1.0)
@@ -338,6 +345,7 @@ def test_insert_drillhole_data(tmp_path):
         new_depths = old_depths[insert]
         new_depths[0] -= 2e-6  # Out of tolerance
         new_depths[1] -= 5e-7  # Within tolerance
+
         well.add_data(
             {
                 "match_depth": {

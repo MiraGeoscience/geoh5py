@@ -40,8 +40,12 @@ class NumericData(Data, ABC):
         """No-data-value"""
 
     @abstractmethod
-    def check_type(self, values: np.ndarray):
-        """Check if the type of values is valid"""
+    def format_type(self, values: np.ndarray) -> np.ndarray:
+        """
+        Check if the type of values is valid and convert it to right dtype.
+        :param values: numpy array to modify.
+        :return: the formatted values.
+        """
 
     @property
     def values(self) -> np.ndarray | None:
@@ -66,6 +70,28 @@ class NumericData(Data, ABC):
         self._values = self.format_values(values)
         self.workspace.update_attribute(self, "values")
 
+    def format_lenght(self, values: np.ndarray) -> np.ndarray:
+        """
+        Check for possible mismatch between the length of values
+        :param values: the values to check.
+        :return: the values with the right length.
+        """
+        if self.n_values is not None:
+            if len(values) < self.n_values:
+                full_vector = (
+                    np.ones(self.n_values, dtype=values.dtype) * self.nan_value
+                )
+                full_vector[: len(np.ravel(values))] = np.ravel(values)
+                return full_vector
+
+            if len(values) > self.n_values:
+                raise ValueError(
+                    f"Input 'values' of shape({self.n_values},) expected. "
+                    f"Array of shape{values.shape} provided.)"
+                )
+
+        return values
+
     def format_values(self, values: np.ndarray | None) -> np.ndarray:
         """
         Check for possible mismatch between the length of values
@@ -75,34 +101,24 @@ class NumericData(Data, ABC):
 
         :returns: values: An array of float values of length n_values or None
         """
-        if self.n_values is not None:
-            if values is None:
-                return values
 
-            if values.ndim > 1:
-                values = np.ravel(values)
-                warn("Input 'values' converted to a 1D array.")
+        if values is None:
+            return values
 
-            if not isinstance(values, np.ndarray):
-                raise TypeError("Input 'values' must be a numpy array.")
+        if not isinstance(values, np.ndarray):
+            raise TypeError("Input 'values' must be a numpy array.")
 
-            # change nan values to nan_value
-            values[np.isnan(values)] = self.nan_value
+        if values.ndim > 1:
+            values = np.ravel(values)
+            warn("Input 'values' converted to a 1D array.")
 
-            if len(values) < self.n_values:
-                full_vector = (
-                    np.ones(self.n_values, dtype=values.dtype) * self.nan_value
-                )
-                full_vector[: len(np.ravel(values))] = np.ravel(values)
-                values = full_vector
+        # change nan values to nan_value
+        values[np.isnan(values)] = self.nan_value
 
-            # check the value type
-            values = self.check_type(values)
+        # check the length of the values
+        values = self.format_lenght(values)
 
-            if len(values) > self.n_values:
-                raise ValueError(
-                    f"Input 'values' of shape({self.n_values},) expected. "
-                    f"Array of shape{values.shape} provided.)"
-                )
+        # check the value type
+        values = self.format_type(values)
 
         return values

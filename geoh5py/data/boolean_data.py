@@ -35,10 +35,11 @@ class BooleanData(ReferencedData):
 
         self.entity_type.value_map = ReferenceValueMap({0: "False", 1: "True"})
 
-    def check_type(self, values: np.ndarray):
+    def format_type(self, values: np.ndarray):
         """
-        Check if the type of values is valid
-        :param values: An array of float values.
+        Check if the type of values is valid and convert it to right dtype.
+        :param values: numpy array to modify.
+        :return: the formatted values.
         """
         if not isinstance(values, np.ndarray):
             raise TypeError("Values must be a numpy array")

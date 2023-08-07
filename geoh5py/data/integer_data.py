@@ -25,13 +25,15 @@ from .numeric_data import NumericData
 
 
 class IntegerData(NumericData):
-    def check_type(self, values: np.ndarray):
+    def format_type(self, values: np.ndarray) -> np.ndarray:
         """
-        Check if the type of values is valid
-        :param values: numpy array"""
+        Check if the type of values is valid and convert it to right dtype.
+        :param values: numpy array to modify.
+        :return: the formatted values.
+        """
         if not isinstance(values, np.ndarray):
             raise TypeError("Values must be a numpy array")
-        if np.sum(values - values.astype(np.int32)) != 0:
+        if np.any(np.modf(values)[0] != 0):
             raise TypeError("Values cannot have decimal points.")
 
         return values.astype(np.int32)
