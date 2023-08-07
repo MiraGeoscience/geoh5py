@@ -35,8 +35,6 @@ class FloatData(NumericData):
         :param values: numpy array to modify.
         :return: the formatted values.
         """
-        if not isinstance(values, np.ndarray):
-            raise TypeError("Values must be a numpy array.")
         if not np.issubdtype(values.dtype, np.number):
             raise TypeError("Values must be a numpy array of numeric values.")
 
