@@ -70,7 +70,7 @@ class NumericData(Data, ABC):
         self._values = self.format_values(values)
         self.workspace.update_attribute(self, "values")
 
-    def format_lenght(self, values: np.ndarray) -> np.ndarray:
+    def format_length(self, values: np.ndarray) -> np.ndarray:
         """
         Check for possible mismatch between the length of values
         :param values: the values to check.
