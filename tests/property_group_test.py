@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from geoh5py.groups import PropertyGroup
 from geoh5py.objects import Curve
 from geoh5py.workspace import Workspace
 
@@ -59,8 +60,14 @@ def test_create_property_group(tmp_path):
             workspace.find_data(single_data_group.properties[0]).name == f"Period{1}"
         ), "Failed at creating a property group by data name"
 
+        # get property group
+        property_group_test = workspace.get_entity("myGroup")[0]
+        assert isinstance(property_group_test, PropertyGroup)
+
     # Re-open the workspace
     with Workspace(h5file_path) as workspace:
+        assert workspace.get_entity("myGroup")[0].uid == property_group_test.uid
+
         rec_object = workspace.get_entity(curve.uid)[0]
         # Read the property_group back in
         rec_prop_group = rec_object.find_or_create_property_group(name="myGroup")

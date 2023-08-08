@@ -90,4 +90,4 @@ def test_remove_root(tmp_path: Path):
     points.workspace.close()
 
     with Workspace(h5file_path) as new_workspace:
-        assert len(new_workspace.list_entities_name) == 5, "Issue re-building the Root."
+        assert len(new_workspace.list_entities_name) == 6, "Issue re-building the Root."

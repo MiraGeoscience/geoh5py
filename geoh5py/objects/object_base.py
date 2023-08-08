@@ -343,7 +343,9 @@ class ObjectBase(Entity):
             ):
                 kwargs["property_group_type"] = "Multi-element"
 
-            prop_group = PropertyGroup(self, **kwargs)
+            prop_group = self.workspace.create_property_group(
+                PropertyGroup(self, **kwargs)
+            )
 
             property_groups += [prop_group]
 
