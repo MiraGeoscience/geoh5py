@@ -37,7 +37,7 @@ class BooleanData(ReferencedData):
 
     def format_type(self, values: np.ndarray):
         """
-        Check if the type of values is valid and convert it to right dtype.
+        Check if the type of values is valid and coerse to type bool.
         :param values: numpy array to modify.
         :return: the formatted values.
         """

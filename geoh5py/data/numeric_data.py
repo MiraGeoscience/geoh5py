@@ -50,7 +50,7 @@ class NumericData(Data, ABC):
     @property
     def values(self) -> np.ndarray | None:
         """
-        :return: values: An array of integer values
+        :return: values: An array of values
         """
         if getattr(self, "_values", None) is None:
             values = self.workspace.fetch_values(self)
@@ -70,7 +70,7 @@ class NumericData(Data, ABC):
         self._values = self.format_values(values)
         self.workspace.update_attribute(self, "values")
 
-    def format_lenght(self, values: np.ndarray) -> np.ndarray:
+    def format_length(self, values: np.ndarray) -> np.ndarray:
         """
         Check for possible mismatch between the length of values
         :param values: the values to check.
@@ -116,7 +116,7 @@ class NumericData(Data, ABC):
         values[np.isnan(values)] = self.nan_value
 
         # check the length of the values
-        values = self.format_lenght(values)
+        values = self.format_length(values)
 
         # check the value type
         values = self.format_type(values)
