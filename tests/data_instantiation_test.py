@@ -19,11 +19,13 @@ from __future__ import annotations
 
 import inspect
 
+import numpy as np
 import pytest
 
 from geoh5py import data
 from geoh5py.data import Data, DataAssociationEnum, DataType, NumericData
 from geoh5py.objects import ObjectType
+from geoh5py.shared import FLOAT_NDV, INTEGER_NDV
 from geoh5py.workspace import Workspace
 
 
@@ -56,12 +58,15 @@ def test_data_instantiation(data_class, tmp_path):
         created_data = data_class(
             data_type, association=DataAssociationEnum.VERTEX, name="test"
         )
+
         assert created_data.uid is not None
         assert created_data.uid.int != 0
         assert created_data.name == "test"
         assert created_data.association == DataAssociationEnum.VERTEX
 
         _can_find(workspace, created_data)
+
+        assert created_data.nan_value in [None, 0, np.nan, INTEGER_NDV, FLOAT_NDV]
 
         # now, make sure that unused data and types do not remain reference in the workspace
         data_type_uid = data_type.uid

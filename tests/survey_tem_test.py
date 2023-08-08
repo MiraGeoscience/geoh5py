@@ -312,7 +312,9 @@ def test_survey_airborne_tem_data(tmp_path):
         receivers_orig = workspace.get_entity(name + "_rx")[0]
         np.testing.assert_almost_equal(receivers_orig.waveform, waveform)
 
-        with Workspace(Path(tmp_path) / r"testATEM_copy2.geoh5") as new_workspace:
+        with Workspace.create(
+            Path(tmp_path) / r"testATEM_copy2.geoh5"
+        ) as new_workspace:
             receivers_rec = receivers_orig.copy(new_workspace)
             compare_entities(
                 receivers_orig,
@@ -320,7 +322,9 @@ def test_survey_airborne_tem_data(tmp_path):
                 ignore=["_receivers", "_transmitters", "_parent", "_property_groups"],
             )
 
-        with Workspace(Path(tmp_path) / r"testATEM_copy_extent.geoh5") as new_workspace:
+        with Workspace.create(
+            Path(tmp_path) / r"testATEM_copy_extent.geoh5"
+        ) as new_workspace:
             receivers_rec = receivers_orig.copy_from_extent(
                 np.vstack([[0, -5], [1500, 5]]), parent=new_workspace
             )
@@ -418,7 +422,7 @@ def test_create_survey_ground_tem_large_loop(
 
     receivers.tx_id_property = np.hstack(tx_id)
 
-    with Workspace(Path(tmp_path) / r"testGround_copy.geoh5") as new_workspace:
+    with Workspace.create(Path(tmp_path) / r"testGround_copy.geoh5") as new_workspace:
         receivers_orig = receivers.copy(new_workspace)
         transmitters_rec = receivers.transmitters.copy_from_extent(
             np.vstack([[-150, 300], [150, 600]]), parent=new_workspace
@@ -440,7 +444,7 @@ def test_create_survey_ground_tem(tmp_path):
     path = Path(tmp_path) / r"../testGTEM.geoh5"
 
     # Create a workspace
-    workspace = Workspace(path)
+    workspace = Workspace.create(path)
     xlocs = np.linspace(-1000, 1000, 10)
     vertices = np.c_[xlocs, np.random.randn(xlocs.shape[0], 2)]
     receivers = MovingLoopGroundTEMReceivers.create(
@@ -498,7 +502,7 @@ def test_create_survey_ground_tem(tmp_path):
 
     # Test copying receiver over through the receivers
     # Create a workspace
-    new_workspace = Workspace(Path(tmp_path) / r"testGTEM_copy.geoh5")
+    new_workspace = Workspace.create(Path(tmp_path) / r"testGTEM_copy.geoh5")
     receivers_rec = receivers.copy(new_workspace)
     compare_entities(
         receivers, receivers_rec, ignore=["_receivers", "_transmitters", "_parent"]
@@ -511,7 +515,7 @@ def test_create_survey_ground_tem(tmp_path):
 
     # Test copying receiver over through the transmitters
     # Create a workspace
-    new_workspace = Workspace(Path(tmp_path) / r"testGTEM_copy2.geoh5")
+    new_workspace = Workspace.create(Path(tmp_path) / r"testGTEM_copy2.geoh5")
     transmitters_rec = transmitters.copy(new_workspace)
     compare_entities(
         receivers,

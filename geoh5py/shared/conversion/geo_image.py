@@ -82,7 +82,7 @@ class GeoImageConversion(BaseConversion):
         output.add_data(
             data={
                 "band[0]": {
-                    "values": values.astype(np.uint32)[::-1],
+                    "values": values.astype(np.uint32)[::-1].flatten(),
                     "association": "CELL",
                 }
             }
@@ -103,7 +103,7 @@ class GeoImageConversion(BaseConversion):
             output.add_data(
                 {
                     f"band[{ind}]": {
-                        "values": values.astype(np.uint32)[::-1, :, ind],
+                        "values": values.astype(np.uint32)[::-1, :, ind].flatten(),
                         "association": "CELL",
                     }
                 }

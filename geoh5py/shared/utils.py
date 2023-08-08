@@ -74,20 +74,20 @@ KEY_MAP = {
 }
 INV_KEY_MAP = {value: key for key, value in KEY_MAP.items()}
 
-png_kwargs = {"format": "PNG", "compress_level": 9}
-jpg_kwargs = {"format": "JPEG", "quality": 85}
-tif_kwargs = {"format": "TIFF"}
+PNG_KWARGS = {"format": "PNG", "compress_level": 9}
+JPG_KWARGS = {"format": "JPEG", "quality": 85}
+TIF_KWARGS = {"format": "TIFF"}
 
-pillow_mode_dictionary = {
-    "1": png_kwargs,
-    "L": png_kwargs,
-    "P": png_kwargs,
-    "RGB": png_kwargs,
-    "RGBA": png_kwargs,
-    "CMYK": jpg_kwargs,
-    "YCbCr": jpg_kwargs,
-    "I": tif_kwargs,
-    "F": tif_kwargs,
+PILLOW_ARGUMENTS = {
+    "1": PNG_KWARGS,
+    "L": PNG_KWARGS,
+    "P": PNG_KWARGS,
+    "RGB": PNG_KWARGS,
+    "RGBA": PNG_KWARGS,
+    "CMYK": JPG_KWARGS,
+    "YCbCr": JPG_KWARGS,
+    "I": TIF_KWARGS,
+    "F": TIF_KWARGS,
 }
 
 

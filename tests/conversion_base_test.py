@@ -49,7 +49,9 @@ def test_create_grid_2d_data(tmp_path):
         converter = CellObjectConversion
 
         values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
-        grid.add_data(data={"DataValues": {"values": values, "association": "CELL"}})
+        grid.add_data(
+            data={"DataValues": {"values": values.flatten(), "association": "CELL"}}
+        )
 
         points = converter.to_points(grid)
 

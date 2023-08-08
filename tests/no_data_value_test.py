@@ -44,7 +44,7 @@ def test_no_data_values(tmp_path):
                 "DataFloatValues": {"association": "VERTEX", "values": float_values},
                 "DataIntValues": {
                     "values": int_values,
-                    "type": "INTEGER",
+                    "type": "FLOAT",
                 },
                 "NoValues": {"association": "VERTEX"},
                 "AllNanValues": {"association": "VERTEX", "values": all_nan},

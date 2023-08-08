@@ -43,7 +43,7 @@ def test_clip_point_data(tmp_path):
         axis=1,
     )
     h5file_path = tmp_path / r"testClipPoints.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         points = Points.create(workspace, vertices=vertices, allow_move=False)
         data = points.add_data(
             {
@@ -76,7 +76,7 @@ def test_clip_curve_data(tmp_path):
     )
 
     h5file_path = tmp_path / r"testClipCurve.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         curve = Curve.create(workspace, vertices=vertices, allow_move=False)
         data = curve.add_data(
             {
@@ -139,7 +139,7 @@ def test_clip_surface(tmp_path):
         ]
     )
     h5file_path = tmp_path / r"testClipSurface.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         surf = Surface.create(workspace, vertices=vertices, cells=cells)
 
         # Clip center point, no cells left
@@ -178,7 +178,7 @@ def test_clip_groups(tmp_path):
         np.percentile(vertices, 10, axis=0), np.percentile(vertices, 90, axis=0)
     ].T
     h5file_path = tmp_path / r"testClipGroup.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         group_a = ContainerGroup.create(workspace, name="Group A")
         group_b = ContainerGroup.create(workspace, name="Group B", parent=group_a)
         curve_a = Curve.create(workspace, vertices=vertices, parent=group_a)

@@ -17,6 +17,8 @@
 
 from __future__ import annotations
 
+import numpy as np
+
 from ..shared import FLOAT_NDV
 from .data import PrimitiveTypeEnum
 from .numeric_data import NumericData
@@ -27,9 +29,27 @@ class FloatData(NumericData):
     Data container for floats values
     """
 
+    def format_type(self, values: np.ndarray) -> np.ndarray:
+        """
+        Check if the type of values is valid and coerse to type float64.
+        :param values: numpy array to modify.
+        :return: the formatted values.
+        """
+        if not np.issubdtype(values.dtype, np.number):
+            raise TypeError("Values must be a numpy array of numeric values.")
+
+        return values.astype(np.float64)
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.FLOAT
+
+    @property
+    def nan_value(self):
+        """
+        Nan-Data-Value
+        """
+        return np.nan
 
     @property
     def ndv(self) -> float:

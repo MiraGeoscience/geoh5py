@@ -52,7 +52,7 @@ def get_workspace(directory: str | Path):
     if file.exists():
         workspace = Workspace(file)
     else:
-        workspace = Workspace(file)
+        workspace = Workspace.create(file)
 
     if len(workspace.objects) == 0:
         group = ContainerGroup.create(workspace)

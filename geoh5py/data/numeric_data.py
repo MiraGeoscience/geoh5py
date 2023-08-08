@@ -23,7 +23,6 @@ from warnings import warn
 import numpy as np
 
 from .data import Data, PrimitiveTypeEnum
-from .data_association_enum import DataAssociationEnum
 
 
 class NumericData(Data, ABC):
@@ -40,57 +39,48 @@ class NumericData(Data, ABC):
     def ndv(self):
         """No-data-value"""
 
+    @abstractmethod
+    def format_type(self, values: np.ndarray) -> np.ndarray:
+        """
+        Check if the type of values is valid and convert it to right dtype.
+        :param values: numpy array to modify.
+        :return: the formatted values.
+        """
+
     @property
     def values(self) -> np.ndarray | None:
         """
-        :return: values: An array of float values
+        :return: values: An array of values
         """
         if getattr(self, "_values", None) is None:
             values = self.workspace.fetch_values(self)
 
             if isinstance(values, (np.ndarray, type(None))):
-                if self.association not in [DataAssociationEnum.OBJECT]:
-                    values = self.check_vector_length(values)
-
-                self._values = values
+                self._values = self.format_values(values)
 
         return self._values
 
     @values.setter
     def values(self, values: np.ndarray | None):
-        if isinstance(values, (np.ndarray, type(None))):
-            if self.association not in [DataAssociationEnum.OBJECT]:
-                values = self.check_vector_length(values)
-
-        else:
-            raise ValueError(
+        if not isinstance(values, (np.ndarray, type(None))):
+            raise TypeError(
                 f"Input 'values' for {self} must be of type {np.ndarray} or None."
             )
 
-        self._values = values
-
+        self._values = self.format_values(values)
         self.workspace.update_attribute(self, "values")
 
-    def check_vector_length(self, values: np.ndarray | None) -> np.ndarray:
+    def format_length(self, values: np.ndarray) -> np.ndarray:
         """
         Check for possible mismatch between the length of values
-        stored and the expected number of cells or vertices.
-
-        :param values: Array of values to check
-
-        :returns: values: An array of float values of length n_values or None
+        :param values: the values to check.
+        :return: the values with the right length.
         """
         if self.n_values is not None:
-            if values is None:
-                return values
-
-            if values.ndim > 1:
-                values = np.ravel(values)
-                warn("Input 'values' converted to a 1D array.")
-
             if len(values) < self.n_values:
-                full_vector = np.ones(self.n_values, dtype=type(self.ndv))
-                full_vector *= np.nan if isinstance(self.ndv, float) else self.ndv
+                full_vector = (
+                    np.ones(self.n_values, dtype=values.dtype) * self.nan_value
+                )
                 full_vector[: len(np.ravel(values))] = np.ravel(values)
                 return full_vector
 
@@ -99,4 +89,36 @@ class NumericData(Data, ABC):
                     f"Input 'values' of shape({self.n_values},) expected. "
                     f"Array of shape{values.shape} provided.)"
                 )
+
+        return values
+
+    def format_values(self, values: np.ndarray | None) -> np.ndarray:
+        """
+        Check for possible mismatch between the length of values
+        stored and the expected number of cells or vertices.
+
+        :param values: Array of values to check
+
+        :returns: values: An array of float values of length n_values or None
+        """
+
+        if values is None:
+            return values
+
+        if not isinstance(values, np.ndarray):
+            raise TypeError("Input 'values' must be a numpy array.")
+
+        if values.ndim > 1:
+            values = np.ravel(values)
+            warn("Input 'values' converted to a 1D array.")
+
+        # change nan values to nan_value
+        values[np.isnan(values)] = self.nan_value
+
+        # check the length of the values
+        values = self.format_length(values)
+
+        # check the value type
+        values = self.format_type(values)
+
         return values

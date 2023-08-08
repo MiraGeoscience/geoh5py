@@ -38,10 +38,7 @@ def test_create_grid_2d_data(tmp_path):
     n_x, n_y = 10, 15
     h5file_path = tmp_path / r"test2Grid.geoh5"
 
-    # Create a workspace
-    workspace = Workspace.create(h5file_path)
-
-    with workspace.open("r+") as workspace_context:
+    with Workspace.create(h5file_path) as workspace_context:
         grid = Grid2D.create(workspace_context)
 
         converter = Grid2DConversion
