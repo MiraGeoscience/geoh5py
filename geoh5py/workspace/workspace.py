@@ -710,7 +710,7 @@ class Workspace(AbstractContextManager):
         family_tree = []
         for uid, child_type in children_list.items():
             recovered_object = self.get_entity(uid)[0]
-            if recovered_object is None:
+            if recovered_object is None and not isinstance(entity, PropertyGroup):
                 recovered_object = self.load_entity(uid, child_type, parent=entity)
             if not (
                 recovered_object is None or isinstance(recovered_object, PropertyGroup)
@@ -1097,8 +1097,8 @@ class Workspace(AbstractContextManager):
         self,
         uid: uuid.UUID,
         entity_type: str,
-        parent: Entity | PropertyGroup | None = None,
-    ) -> Entity | None | PropertyGroup:
+        parent: Entity | None = None,
+    ) -> Entity | PropertyGroup | None:
         """
         Recover an entity from geoh5.
         :param uid: Unique identifier of entity
@@ -1106,16 +1106,17 @@ class Workspace(AbstractContextManager):
         :param parent: Parent entity.
         :return entity: Entity loaded from geoh5
         """
-        if isinstance(self.get_entity(uid)[0], Entity):
-            return self.get_entity(uid)[0]
+        get_entity_ = self.get_entity(uid)[0]
+        if isinstance(get_entity_, (Entity, PropertyGroup)):
+            return get_entity_
 
         base_classes = {
             "group": Group,
             "object": ObjectBase,
             "data": Data,
-            "property_group": PropertyGroup,
             "root": RootGroup,
         }
+
         attributes = self._io_call(
             H5Reader.fetch_attributes, uid, entity_type, mode="r"
         )
@@ -1132,6 +1133,7 @@ class Workspace(AbstractContextManager):
             **{**attributes[0], **attributes[1]},
         )
 
+        # Get property groups (key 2) from object attributes
         if isinstance(entity, ObjectBase) and len(attributes[2]) > 0:
             for kwargs in attributes[2].values():
                 entity.find_or_create_property_group(**kwargs)
