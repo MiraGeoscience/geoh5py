@@ -116,7 +116,7 @@ class NumericData(Data, ABC):
         values[np.isnan(values)] = self.nan_value
 
         # check the length of the values
-        values = self.format_lenght(values)
+        values = self.format_length(values)
 
         # check the value type
         values = self.format_type(values)
