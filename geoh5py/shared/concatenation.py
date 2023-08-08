@@ -829,7 +829,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                     ).copy()
                     attributes["parent"] = self
                     self.workspace.create_from_concatenation(attributes)
-                else:
+                elif not isinstance(child_data, PropertyGroup):
                     self.add_children([child_data])
 
         for child in getattr(self, "children"):
