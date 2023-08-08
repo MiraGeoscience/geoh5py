@@ -50,7 +50,7 @@ class NumericData(Data, ABC):
     @property
     def values(self) -> np.ndarray | None:
         """
-        :return: values: An array of integer values
+        :return: values: An array of values
         """
         if getattr(self, "_values", None) is None:
             values = self.workspace.fetch_values(self)
