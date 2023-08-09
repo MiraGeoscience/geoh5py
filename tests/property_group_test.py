@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from geoh5py.groups import PropertyGroup
 from geoh5py.objects import Curve
@@ -63,6 +64,13 @@ def test_create_property_group(tmp_path):
         # get property group
         property_group_test = workspace.get_entity("myGroup")[0]
         assert isinstance(property_group_test, PropertyGroup)
+
+        assert isinstance(workspace.property_groups, list)
+
+        with pytest.raises(
+            TypeError, match="property_group must be a PropertyGroup instance"
+        ):
+            workspace.create_property_group("bidon")
 
     # Re-open the workspace
     with Workspace(h5file_path) as workspace:
