@@ -77,10 +77,7 @@ class NumericData(Data, ABC):
         :return: the values with the right length.
         """
 
-        if (
-            not any(k in self.name for k in ["DEPTH", "FROM", "TO"])
-            and self.n_values is not None
-        ):
+        if self.n_values is not None:
             if len(values) < self.n_values:
                 full_vector = (
                     np.ones(self.n_values, dtype=values.dtype) * self.nan_value

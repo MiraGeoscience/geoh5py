@@ -701,10 +701,10 @@ class ConcatenatedData(Concatenated):
 
         n_values = None
         depths = getattr(self.property_group, "depth_", None)
-        if depths:
+        if depths and depths is not self:
             n_values = len(depths.values)
         intervals = getattr(self.property_group, "from_", None)
-        if intervals:
+        if intervals and intervals is not self:
             n_values = len(intervals.values)
 
         return n_values
