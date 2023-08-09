@@ -77,19 +77,19 @@ class NumericData(Data, ABC):
         :return: the values with the right length.
         """
 
-        if self.n_values is not None:
-            if len(values) < self.n_values:
-                full_vector = (
-                    np.ones(self.n_values, dtype=values.dtype) * self.nan_value
-                )
-                full_vector[: len(np.ravel(values))] = np.ravel(values)
-                return full_vector
+        if self.n_values is None:
+            return values
 
-            if len(values) > self.n_values:
-                raise ValueError(
-                    f"Input 'values' of shape({self.n_values},) expected. "
-                    f"Array of shape{values.shape} provided.)"
-                )
+        if len(values) < self.n_values:
+            full_vector = np.ones(self.n_values, dtype=values.dtype) * self.nan_value
+            full_vector[: len(np.ravel(values))] = np.ravel(values)
+            return full_vector
+
+        if len(values) > self.n_values:
+            raise ValueError(
+                f"Input 'values' of shape({self.n_values},) expected. "
+                f"Array of shape{values.shape} provided.)"
+            )
 
         return values
 
