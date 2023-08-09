@@ -543,7 +543,7 @@ class Workspace(AbstractContextManager):
 
     def fetch_or_create_root(self):
         root = self.load_entity(uuid.uuid4(), "root")
-        if root is not None and not isinstance(self._root, PropertyGroup):
+        if root is not None and not isinstance(root, PropertyGroup):
             self._root = root
             self._root.on_file = True
             self._root.entity_type.on_file = True
