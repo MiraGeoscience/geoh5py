@@ -545,9 +545,8 @@ class Workspace(AbstractContextManager):
         root = self.load_entity(uuid.uuid4(), "root")
         if root is not None and not isinstance(self._root, PropertyGroup):
             self._root = root
-            if not isinstance(self._root, PropertyGroup):
-                self._root.on_file = True
-                self._root.entity_type.on_file = True
+            self._root.on_file = True
+            self._root.entity_type.on_file = True
             self.fetch_children(self._root, recursively=True)
         else:
             self._root = self.create_entity(RootGroup, save_on_creation=False)
