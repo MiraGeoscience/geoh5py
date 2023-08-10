@@ -20,7 +20,7 @@
 from __future__ import annotations
 
 import uuid
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -350,6 +350,7 @@ class ObjectBase(Entity):
             property_groups += [prop_group]
 
         self._property_groups = property_groups
+
         return prop_group
 
     def get_data(self, name: str | uuid.UUID) -> list[Data]:
@@ -381,6 +382,43 @@ class ObjectBase(Entity):
         for child in self.children:
             if isinstance(child, Data):
                 name_list.append(getattr(child, attribute))
+        return sorted(name_list)
+
+    def get_entity(self, name: str | uuid.UUID) -> list[Entity | None]:
+        """
+        Get a child :obj:`~geoh5py.data.data.Data` by name.
+
+        :param name: Name of the target child data
+        :param entity_type: Sub-select entities based on type.
+        :return: A list of children Data objects
+        """
+        entity_list = self.get_property_group(name)
+
+        entity_list += super().get_entity(name)
+
+        if len(entity_list) > 1:
+            entity_list = [entity for entity in entity_list if entity is not None]
+
+        return entity_list
+
+    def get_entity_list(self, entity_type=ABC) -> list[str]:
+        """
+        Get a list of names of all children :obj:`~geoh5py.data.data.Data`.
+
+        :param entity_type: Option to sub-select based on type.
+        :return: List of names of data associated with the object.
+        """
+        name_list = [
+            child.name for child in self.children if isinstance(child, entity_type)
+        ]
+
+        if self.property_groups is not None:
+            name_list += [
+                group.name
+                for group in self.property_groups
+                if isinstance(group, entity_type)
+            ]
+
         return sorted(name_list)
 
     @property
@@ -417,6 +455,8 @@ class ObjectBase(Entity):
         """
         List of :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         """
+        if self._property_groups is None:
+            return None
         return self._property_groups
 
     def remove_property_groups(
@@ -439,6 +479,25 @@ class ObjectBase(Entity):
             self._property_groups = keepers
 
         self.workspace.update_attribute(self, "property_groups")
+
+    def get_property_group(self, name: uuid.UUID | str) -> list:
+        """
+        Get a child :obj:`~geoh5py.groups.property_group.PropertyGroup` by name.
+        :param name: the reference of the property group to get.
+        :return: A list of children Data objects
+        """
+        if self.property_groups is None:
+            return [None]
+
+        entities = []
+
+        for child in self.property_groups:
+            if (
+                isinstance(name, uuid.UUID) and child.uid == name
+            ) or child.name == name:
+                entities.append(child)
+
+        return entities
 
     def remove_children_values(
         self,

@@ -27,6 +27,8 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_property_group(tmp_path):
+    #  pylint: disable=too-many-locals
+
     h5file_path = tmp_path / r"prop_group_test.geoh5"
 
     with Workspace.create(h5file_path) as workspace:
@@ -71,6 +73,10 @@ def test_create_property_group(tmp_path):
             TypeError, match="property_group must be a PropertyGroup instance"
         ):
             workspace.create_property_group("bidon")
+
+        property_group_from_object = curve.get_entity("myGroup")[0]
+
+        assert property_group_from_object == property_group_test
 
     # Re-open the workspace
     with Workspace(h5file_path) as workspace:
