@@ -695,6 +695,20 @@ class ConcatenatedData(Concatenated):
         if f"Property:{self.name}" not in parental_attr:
             parental_attr[f"Property:{self.name}"] = as_str_if_uuid(self.uid)
 
+    @property
+    def n_values(self) -> np.ndarray:
+        """Number of values in the data."""
+
+        n_values = None
+        depths = getattr(self.property_group, "depth_", None)
+        if depths and depths is not self:
+            n_values = len(depths.values)
+        intervals = getattr(self.property_group, "from_", None)
+        if intervals and intervals is not self:
+            n_values = len(intervals.values)
+
+        return n_values
+
 
 class ConcatenatedPropertyGroup(PropertyGroup):
     _parent: ConcatenatedObject

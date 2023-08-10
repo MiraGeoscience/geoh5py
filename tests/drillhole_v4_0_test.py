@@ -302,8 +302,8 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         depth_data = well_b.add_data(
             {
                 "Depth Data": {
-                    "values": np.random.randn(10),
                     "depth": np.sort(np.random.uniform(low=0.05, high=100, size=(10,))),
+                    "values": np.random.randn(8),
                 },
             }
         )
