@@ -116,6 +116,9 @@ def test_remove_vertices_surface_data(tmp_path: Path):
         logic = np.ones(surface.n_vertices)
         logic[[0, 3]] = False
         expected = np.all(logic[surface.cells], axis=1).sum()
+
+        print(surface.vertices)
+
         surface.remove_vertices([0, 3])
 
         assert len(data.values) == expected, "Error removing data values with cells."
