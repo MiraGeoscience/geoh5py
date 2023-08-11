@@ -845,6 +845,8 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                     self.workspace.create_from_concatenation(attributes)
                 elif not isinstance(child_data, PropertyGroup):
                     self.add_children([child_data])
+                else:
+                    warnings.warn(f"Failed: '{name}' is a property group, not a Data.")
 
         for child in getattr(self, "children"):
             if (

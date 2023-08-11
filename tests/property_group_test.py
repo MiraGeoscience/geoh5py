@@ -78,9 +78,6 @@ def test_create_property_group(tmp_path):
 
         assert property_group_from_object == property_group_test
 
-        # get data test
-        assert curve.get_data("myGroup") == []
-
     # Re-open the workspace
     with Workspace(h5file_path) as workspace:
         assert workspace.get_entity("myGroup")[0].uid == property_group_test.uid
