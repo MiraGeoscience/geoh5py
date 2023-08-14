@@ -102,6 +102,7 @@ class ObjectBase(Entity):
         Create :obj:`~geoh5py.data.data.Data` from dictionary of name and arguments.
         The provided arguments can be any property of the target Data class.
 
+        :param property_group: Name or :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         :param data: Dictionary of data to be added to the object, e.g.
 
         .. code-block:: python
@@ -318,25 +319,39 @@ class ObjectBase(Entity):
         """
         return ObjectType.find_or_create(workspace, cls, **kwargs)
 
-    def find_or_create_property_group(self, **kwargs) -> PropertyGroup:
+    def get_property_group(self, name: uuid.UUID | str) -> list:
         """
-        Find or create :obj:`~geoh5py.groups.property_group.PropertyGroup`
-        from given name and properties.
+        Get a child :obj:`~geoh5py.groups.property_group.PropertyGroup` by name.
+        :param name: the reference of the property group to get.
+        :return: A list of children Data objects
+        """
+        if self.property_groups is None:
+            return [None]
 
+        entities = []
+
+        for child in self.property_groups:
+            if (
+                isinstance(name, uuid.UUID) and child.uid == name
+            ) or child.name == name:
+                entities.append(child)
+
+        return entities
+
+    def create_property_group(self, **kwargs):
+        """
+        Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
-
-        :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
+        :return: A new :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
         property_groups = []
         if self._property_groups is not None:
             property_groups = self._property_groups
 
-        if "name" in kwargs and any(
+        if "name" in kwargs and not any(
             pg.name == kwargs["name"] for pg in property_groups
         ):
-            prop_group = [pg for pg in property_groups if pg.name == kwargs["name"]][0]
-        else:
             if (
                 "property_group_type" not in kwargs
                 and "Property Group Type" not in kwargs
@@ -351,7 +366,34 @@ class ObjectBase(Entity):
 
         self._property_groups = property_groups
 
+        # self.add_children(property_groups)
+
         return prop_group
+
+    def find_or_create_property_group(self, **kwargs) -> PropertyGroup:
+        """
+        Find or create :obj:`~geoh5py.groups.property_group.PropertyGroup`
+        from given name and properties.
+
+        :param kwargs: Any arguments taken by the
+            :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
+
+        :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
+        """
+
+        prop_group = []
+        if "name" in kwargs:
+            prop_group = self.get_property_group(kwargs["name"])
+
+        if len(prop_group) == 0:
+            return self.create_property_group(**kwargs)
+
+        if len(prop_group) > 1:
+            raise KeyError(
+                f"More than one property group with name {kwargs['name']} found."
+            )
+
+        return prop_group[0]
 
     def get_data(self, name: str | uuid.UUID) -> list[Data]:
         """
@@ -479,25 +521,6 @@ class ObjectBase(Entity):
             self._property_groups = keepers
 
         self.workspace.update_attribute(self, "property_groups")
-
-    def get_property_group(self, name: uuid.UUID | str) -> list:
-        """
-        Get a child :obj:`~geoh5py.groups.property_group.PropertyGroup` by name.
-        :param name: the reference of the property group to get.
-        :return: A list of children Data objects
-        """
-        if self.property_groups is None:
-            return [None]
-
-        entities = []
-
-        for child in self.property_groups:
-            if (
-                isinstance(name, uuid.UUID) and child.uid == name
-            ) or child.name == name:
-                entities.append(child)
-
-        return entities
 
     def remove_children_values(
         self,

@@ -63,6 +63,7 @@ def test_delete_entities(tmp_path: Path):
         uid_out = curve_2.children[1].uid
 
         workspace.remove_entity(curve_2.children[0])
+
         workspace.remove_entity(curve_2.children[0])
 
         assert (
