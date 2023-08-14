@@ -1105,9 +1105,9 @@ class Workspace(AbstractContextManager):
         :param parent: Parent entity.
         :return entity: Entity loaded from geoh5
         """
-        get_entity_ = self.get_entity(uid)[0]
-        if isinstance(get_entity_, (Entity, PropertyGroup)):
-            return get_entity_
+        child = self.get_entity(uid)[0]
+        if isinstance(child, (Entity, PropertyGroup)):
+            return child
 
         base_classes = {
             "group": Group,
