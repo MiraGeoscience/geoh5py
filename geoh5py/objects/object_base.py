@@ -20,7 +20,7 @@
 from __future__ import annotations
 
 import uuid
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -247,6 +247,8 @@ class ObjectBase(Entity):
         if copy_children:
             children_map = {}
             for child in self.children:
+                if isinstance(child, PropertyGroup):
+                    continue
                 if isinstance(child, Data) and child.association in (
                     DataAssociationEnum.VERTEX,
                     DataAssociationEnum.CELL,
@@ -365,7 +367,7 @@ class ObjectBase(Entity):
 
         self._property_groups = property_groups
 
-        # self.add_children(property_groups)
+        self.add_children(property_groups)
 
         return prop_group
 
@@ -384,10 +386,8 @@ class ObjectBase(Entity):
         if "name" in kwargs:
             prop_group = self.get_property_group(kwargs["name"])
 
-        print("prop_group1:", prop_group)
         if len(prop_group) == 0 or prop_group == [None]:
             temp = self.create_property_group(**kwargs)
-            print("prop_group2:", temp)
             return temp
 
         if len(prop_group) > 1:
@@ -428,43 +428,6 @@ class ObjectBase(Entity):
                 name_list.append(getattr(child, attribute))
         return sorted(name_list)
 
-    def get_entity(self, name: str | uuid.UUID) -> list[Entity | None]:
-        """
-        Get a child :obj:`~geoh5py.data.data.Data` by name.
-
-        :param name: Name of the target child data
-        :param entity_type: Sub-select entities based on type.
-        :return: A list of children Data objects
-        """
-        entity_list = self.get_property_group(name)
-
-        entity_list += super().get_entity(name)
-
-        if len(entity_list) > 1:
-            entity_list = [entity for entity in entity_list if entity is not None]
-
-        return entity_list
-
-    def get_entity_list(self, entity_type=ABC) -> list[str]:
-        """
-        Get a list of names of all children :obj:`~geoh5py.data.data.Data`.
-
-        :param entity_type: Option to sub-select based on type.
-        :return: List of names of data associated with the object.
-        """
-        name_list = [
-            child.name for child in self.children if isinstance(child, entity_type)
-        ]
-
-        if self.property_groups is not None:
-            name_list += [
-                group.name
-                for group in self.property_groups
-                if isinstance(group, entity_type)
-            ]
-
-        return sorted(name_list)
-
     @property
     def last_focus(self) -> str:
         """
@@ -499,8 +462,15 @@ class ObjectBase(Entity):
         """
         List of :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         """
-        if self._property_groups is None:
-            return None
+        property_groups = [
+            child for child in self.children if isinstance(child, PropertyGroup)
+        ]
+
+        if self._property_groups is not None:
+            self._property_groups = list(set(self._property_groups + property_groups))
+        elif len(property_groups) > 0:
+            self._property_groups = property_groups
+
         return self._property_groups
 
     def remove_property_groups(
@@ -517,10 +487,14 @@ class ObjectBase(Entity):
             if property_group not in property_groups:
                 keepers += [property_group]
 
+        suppressed = list(set(self.property_groups) - set(keepers))
+
         if not keepers:
             self._property_groups = None
         else:
             self._property_groups = keepers
+
+        self.remove_children(suppressed)
 
         self.workspace.update_attribute(self, "property_groups")
 

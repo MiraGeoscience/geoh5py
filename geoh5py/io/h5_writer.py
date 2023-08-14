@@ -36,7 +36,7 @@ from ..data import (
     IntegerData,
     TextData,
 )
-from ..groups import Group, GroupType, RootGroup
+from ..groups import Group, GroupType, PropertyGroup, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import FLOAT_NDV, Entity, EntityType, fetch_h5_handle
 from ..shared.concatenation import Concatenator
@@ -231,7 +231,8 @@ class H5Writer:
             if add_children and not isinstance(entity, Concatenator):
                 # Write children entities and add to current parent
                 for child in entity.children:
-                    H5Writer.save_entity(h5file, child)
+                    if not isinstance(child, PropertyGroup):
+                        H5Writer.save_entity(h5file, child)
 
             H5Writer.write_to_parent(h5file, entity, recursively=False)
 

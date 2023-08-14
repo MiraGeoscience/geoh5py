@@ -26,6 +26,7 @@ import re
 import numpy as np
 import pytest
 
+from geoh5py.groups import PropertyGroup
 from geoh5py.objects import AirborneTEMTransmitters, MTReceivers
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
@@ -165,6 +166,15 @@ def test_create_survey_mt(tmp_path):
 
             assert mt_survey_extent.n_vertices == 6
             for child_a, child_b in zip(
-                mt_survey_extent.children, mt_survey_rec.children
+                [
+                    child
+                    for child in mt_survey_extent.children
+                    if not isinstance(child, PropertyGroup)
+                ],
+                [
+                    child
+                    for child in mt_survey_rec.children
+                    if not isinstance(child, PropertyGroup)
+                ],
             ):
                 np.testing.assert_array_almost_equal(child_a.values, child_b.values[:6])

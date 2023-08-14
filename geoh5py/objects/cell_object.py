@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..data import Data, DataAssociationEnum
+from ..groups import PropertyGroup
 from ..shared.utils import box_intersect, mask_by_extent
 from .points import Points
 
@@ -143,7 +144,7 @@ class CellObject(Points, ABC):
         self.remove_cells(np.where(~np.all(vert_index[self.cells], axis=1)))
         setattr(self, "cells", new_index[self.cells])
 
-    def copy(
+    def copy(  # pylint: disable=too-many-branches
         self,
         parent=None,
         copy_children: bool = True,
@@ -195,6 +196,8 @@ class CellObject(Points, ABC):
         if copy_children:
             children_map = {}
             for child in self.children:
+                if isinstance(child, PropertyGroup):
+                    continue
                 if isinstance(child, Data):
                     if child.name in ["A-B Cell ID", "Transmitter ID"]:
                         continue

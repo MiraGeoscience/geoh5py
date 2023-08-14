@@ -49,6 +49,7 @@ def test_create_property_group(tmp_path):
 
         # Property group object should have been created
         prop_group = curve.find_or_create_property_group(name="myGroup")
+
         # Create a new group by data name
         single_data_group = curve.add_data_to_group(f"Period{1}", "Singleton")
 

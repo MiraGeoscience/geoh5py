@@ -45,6 +45,7 @@ class PropertyGroup(ABC):
     def __init__(self, parent: ObjectBase, **kwargs):
         self._name = "prop_group"
         self._uid = uuid.uuid4()
+        self._allow_delete = True
         self._association: DataAssociationEnum = DataAssociationEnum.VERTEX
         self._properties: list[uuid.UUID] = []
         self._property_group_type = "Multi-element"
@@ -57,6 +58,19 @@ class PropertyGroup(ABC):
                 setattr(self, attr, item)
             except AttributeError:
                 continue
+
+    @property
+    def allow_delete(self) -> bool:
+        """
+        :obj:`bool` Allow deleting the group
+        """
+        return True
+
+    @allow_delete.setter
+    def allow_delete(self, value: bool):
+        if not isinstance(value, bool):
+            raise TypeError("allow_delete must be a boolean")
+        self._allow_delete = value
 
     @property
     def association(self) -> DataAssociationEnum:
@@ -101,6 +115,16 @@ class PropertyGroup(ABC):
         The parent :obj:`~geoh5py.objects.object_base.ObjectBase`
         """
         return self._parent
+
+    @parent.setter
+    def parent(self, parent: Entity):
+        if self._parent is not None:
+            raise AssertionError("Cannot change parent of a property group.")
+
+        parent.add_children([self])
+        self._parent = parent
+
+        parent.add_children([self])
 
     @property
     def properties(self) -> list[uuid.UUID]:

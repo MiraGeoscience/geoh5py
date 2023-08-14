@@ -64,18 +64,20 @@ def test_delete_entities(tmp_path: Path):
 
         workspace.remove_entity(curve_2.children[0])
 
-        workspace.remove_entity(curve_2.children[0])
-
         assert (
             uid_out
             not in curve_2.find_or_create_property_group(name="myGroup").properties
         ), "Data uid was not removed from the property_group"
+
+        workspace.remove_entity(curve_2.children[0])
+        workspace.remove_entity(curve_2.children[0])
+
         assert (
             len(workspace.data) == 3
         ), "Data were not fully removed from the workspace."
         assert (
             len(curve_2.children) == 2
-        ), "Data were not fully removed from the parent object."
+        ), f"Data were not fully removed from the parent object. {curve_2.children}"
         assert (
             len(workspace.types) == 6
         ), "Data types were not properly removed from the workspace."
