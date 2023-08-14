@@ -338,7 +338,7 @@ class ObjectBase(Entity):
 
         return entities
 
-    def create_property_group(self, **kwargs):
+    def create_property_group(self, **kwargs) -> PropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         :param kwargs: Any arguments taken by the
@@ -349,20 +349,19 @@ class ObjectBase(Entity):
         if self._property_groups is not None:
             property_groups = self._property_groups
 
-        if "name" in kwargs and not any(
+        if "name" in kwargs and any(
             pg.name == kwargs["name"] for pg in property_groups
         ):
-            if (
-                "property_group_type" not in kwargs
-                and "Property Group Type" not in kwargs
-            ):
-                kwargs["property_group_type"] = "Multi-element"
-
-            prop_group = self.workspace.create_property_group(
-                PropertyGroup(self, **kwargs)
+            raise KeyError(
+                f"A Property Group with name {kwargs['name']} already exists."
             )
 
-            property_groups += [prop_group]
+        if "property_group_type" not in kwargs and "Property Group Type" not in kwargs:
+            kwargs["property_group_type"] = "Multi-element"
+
+        prop_group = self.workspace.create_property_group(PropertyGroup(self, **kwargs))
+
+        property_groups += [prop_group]
 
         self._property_groups = property_groups
 
@@ -385,8 +384,11 @@ class ObjectBase(Entity):
         if "name" in kwargs:
             prop_group = self.get_property_group(kwargs["name"])
 
-        if len(prop_group) == 0:
-            return self.create_property_group(**kwargs)
+        print("prop_group1:", prop_group)
+        if len(prop_group) == 0 or prop_group == [None]:
+            temp = self.create_property_group(**kwargs)
+            print("prop_group2:", temp)
+            return temp
 
         if len(prop_group) > 1:
             raise KeyError(
