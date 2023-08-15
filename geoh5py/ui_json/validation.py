@@ -18,12 +18,16 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, cast
+from typing import Any, TypeAlias, cast
 from uuid import UUID
 
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
-from geoh5py.shared.exceptions import RequiredValidationError
+from geoh5py.shared.exceptions import (
+    AggregateValidationError,
+    BaseValidationError,
+    RequiredValidationError,
+)
 from geoh5py.shared.validators import (
     AssociationValidator,
     AtLeastOneValidator,
@@ -37,6 +41,64 @@ from geoh5py.shared.validators import (
     ValueValidator,
 )
 from geoh5py.ui_json.utils import requires_value
+
+Validation: TypeAlias = dict[str, Any]
+
+
+class Validations:
+    def __init__(self, validations):
+        self._validations: Validation = validations
+        self._validators: list[BaseValidator] | None = None
+
+    @property
+    def validations(self) -> Validation:
+        return self._validations
+
+    @validations.setter
+    def validations(self, val):
+        if not isinstance(val, dict):
+            raise TypeError("Validations must be a dictionary.")
+
+        self._validators = []
+        self._validations = val
+
+    @property
+    def validators(self) -> list[BaseValidator]:
+        if self._validators is None:
+            self._update_validators(self.validations)
+        elif len(self._validators) != len(self.validations):
+            self._update_validators(self.validations)
+
+        return self._validators  # type: ignore
+
+    def validate(self, name: str, value: Any):
+        error_list = []
+        for validator in self.validators:
+            try:
+                validator.validate(name, value, self.validations[validator.type])
+            except BaseValidationError as err:
+                error_list.append(err)
+
+        if error_list:
+            if len(error_list) > 1:
+                raise AggregateValidationError(name, error_list)
+            raise error_list.pop()
+
+    def _update_validators(self, validations: Validation):
+        """
+        Update list of validators from a dictionary of validations.
+
+        :param validations: Dictionary of validations.
+        """
+
+        if self._validators is None:
+            self._validators = []
+
+        for validation in validations:
+            for validator in BaseValidator.__subclasses__():
+                if validator.type == validation and validator not in self._validators:
+                    self._validators.append(validator)  # type: ignore
+                    break
 
 
 class InputValidation:
@@ -107,7 +169,7 @@ class InputValidation:
         """Returns dictionary of validators required by validations."""
         unique_validators = InputValidation._unique_validators(validations)
         sub_classes: list[BaseValidator] = getattr(BaseValidator, "__subclasses__")()
-        all_validators: dict[str, Any] = {k.validator_type: k() for k in sub_classes}
+        all_validators: dict[str, Any] = {k.type: k() for k in sub_classes}
         val = {}
         for k in unique_validators:
             if k not in all_validators:
@@ -238,7 +300,7 @@ class InputValidation:
             ValueValidator,
             ShapeValidator,
         ]:
-            val = str(validator.validator_type)
+            val = str(validator.type)
             if (
                 val not in validations
                 or (val == "required" and self.ignore_requirements)

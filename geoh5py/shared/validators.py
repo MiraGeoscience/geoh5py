@@ -70,17 +70,15 @@ class BaseValidator(ABC):
 
     @property
     @abstractmethod
-    def validator_type(self) -> str:
-        """
-        Validation type identifier.
-        """
-        raise NotImplementedError("Must implement the validator_type property.")
+    def type(self):
+        """Validation type identifier."""
+        raise NotImplementedError("Must implement the type property.")
 
 
 class OptionalValidator(BaseValidator):
     """Validate that forms contain optional parameter if None value is given."""
 
-    validator_type = "optional"
+    type = "optional"
 
     @classmethod
     def validate(
@@ -101,7 +99,7 @@ class OptionalValidator(BaseValidator):
 class AssociationValidator(BaseValidator):
     """Validate the association between data and parent object."""
 
-    validator_type = "association"
+    type = "association"
 
     @classmethod
     def validate(
@@ -154,7 +152,7 @@ class AssociationValidator(BaseValidator):
 class PropertyGroupValidator(BaseValidator):
     """Validate property_group from parent entity."""
 
-    validator_type = "property_group_type"
+    type = "property_group_type"
 
     @classmethod
     def validate(cls, name: str, value: PropertyGroup, valid: str) -> None:
@@ -163,7 +161,7 @@ class PropertyGroupValidator(BaseValidator):
 
 
 class AtLeastOneValidator(BaseValidator):
-    validator_type = "one_of"
+    type = "one_of"
 
     @classmethod
     def validate(cls, name, value, valid):
@@ -176,7 +174,7 @@ class RequiredValidator(BaseValidator):
     Validate that required keys are present in parameter.
     """
 
-    validator_type = "required"
+    type = "required"
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: bool) -> None:
@@ -192,10 +190,10 @@ class RequiredValidator(BaseValidator):
 class ShapeValidator(BaseValidator):
     """Validate the shape of provided value."""
 
-    validator_type = "shape"
+    type = "shape"
 
     @classmethod
-    def validate(cls, name: str, value: Any, valid: tuple[int]) -> None:
+    def validate(cls, name: str, value: Any, valid: tuple[int, ...]) -> None:
         """
         :param name: Parameter identifier.
         :param value: Input parameter value.
@@ -220,10 +218,10 @@ class TypeValidator(BaseValidator):
     Validate the value type from a list of valid types.
     """
 
-    validator_type = "types"
+    type = "types"
 
     @classmethod
-    def validate(cls, name: str, value: Any, valid: type | list[type]) -> None:
+    def validate(cls, name: str, value: Any, valid) -> None:
         """
         :param name: Parameter identifier.
         :param value: Input parameter value.
@@ -249,7 +247,7 @@ class TypeValidator(BaseValidator):
 class UUIDValidator(BaseValidator):
     """Validate a uuui.UUID value or uuid string."""
 
-    validator_type = "uuid"
+    type = "uuid"
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: None = None) -> None:
@@ -271,7 +269,7 @@ class ValueValidator(BaseValidator):
     Validator that ensures that values are valid entries.
     """
 
-    validator_type = "values"
+    type = "values"
 
     @classmethod
     def validate(cls, name: str, value: Any, valid: list[float | str]) -> None:
