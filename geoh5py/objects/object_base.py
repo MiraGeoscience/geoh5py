@@ -385,24 +385,14 @@ class ObjectBase(Entity):
         :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
 
-        prop_group: list[None] | list[PropertyGroup] = [None]
+        prop_group = None
         if "name" in kwargs:
-            prop_group = self.get_property_group(kwargs["name"])
+            prop_group = self.get_property_group(kwargs["name"])[0]
 
-        if prop_group == [None]:
-            prop_group = [self.create_property_group(**kwargs)]
+        if prop_group is None:
+            prop_group = self.create_property_group(**kwargs)
 
-        if len(prop_group) != 1:
-            raise KeyError(
-                f"More than one property group with name {kwargs['name']} found."
-            )
-
-        if not isinstance(prop_group[0], PropertyGroup):
-            raise TypeError(
-                f"Property group has type: {type(prop_group)} instead of 'Property Group'."
-            )
-
-        return prop_group[0]
+        return prop_group
 
     def get_data(self, name: str | uuid.UUID) -> list[Data]:
         """
