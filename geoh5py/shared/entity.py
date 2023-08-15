@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     from numpy import ndarray
 
     from .. import shared
+    from ..groups import PropertyGroup
     from ..workspace import Workspace
 
 DEFAULT_CRS = {"Code": "Unknown", "Name": "Unknown"}
@@ -80,7 +81,7 @@ class Entity(ABC):
             except AttributeError:
                 continue
 
-    def add_children(self, children: list[shared.Entity]):
+    def add_children(self, children: list[shared.Entity] | list[PropertyGroup]):
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
@@ -443,7 +444,9 @@ class Entity(ABC):
         self._public = value
         self.workspace.update_attribute(self, "attributes")
 
-    def reference_to_uid(self, value: Entity | str | uuid.UUID) -> list[uuid.UUID]:
+    def reference_to_uid(
+        self, value: Entity | PropertyGroup | str | uuid.UUID
+    ) -> list[uuid.UUID]:
         """
         General entity reference translation.
 
@@ -452,7 +455,7 @@ class Entity(ABC):
         :return: List of unique identifier associated with the input reference.
         """
         children_uid = [child.uid for child in self.children]
-        if isinstance(value, Entity):
+        if hasattr(value, "uid"):
             uid = [value.uid]
         elif isinstance(value, str):
             uid = [
@@ -462,9 +465,10 @@ class Entity(ABC):
             ]
         elif isinstance(value, uuid.UUID):
             uid = [value]
+
         return uid
 
-    def remove_children(self, children: list[shared.Entity]):
+    def remove_children(self, children: list[shared.Entity] | list[PropertyGroup]):
         """
         Remove children from the list of children entities.
 

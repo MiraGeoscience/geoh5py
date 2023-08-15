@@ -90,7 +90,9 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return self._attributes_keys
 
-    def add_children(self, children: list[Entity]):
+    def add_children(
+        self, children: list[ConcatenatedObject] | list[Entity] | list[PropertyGroup]
+    ) -> None:
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
@@ -688,7 +690,7 @@ class ConcatenatedData(Concatenated):
                 "The 'parent' of a concatenated Data must be of type 'Concatenated'."
             )
         self._parent = parent
-        self._parent.add_children([self])
+        self._parent.add_children([self])  # type: ignore
 
         parental_attr = self.concatenator.get_concatenated_attributes(self.parent.uid)
 

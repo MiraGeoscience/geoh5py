@@ -571,6 +571,10 @@ class Workspace(AbstractContextManager):
         for child in children:
             ref_type = self.str_from_type(child)
 
+            if isinstance(child, PropertyGroup):
+                parent.remove_property_groups(child)
+                continue
+
             if ref_type == "Data":
                 parent.remove_data_from_group(child)
 
@@ -585,6 +589,14 @@ class Workspace(AbstractContextManager):
                 f"The 'allow_delete' property of entity {entity} prevents it from "
                 "being removed. Please revise."
             )
+
+        if isinstance(entity, PropertyGroup):
+            parent = entity.parent
+            if isinstance(parent, ObjectBase):
+                parent.remove_property_groups(entity)
+            del self._property_groups[entity.uid]
+            del entity
+            return
 
         if not isinstance(entity, Concatenated):
             self.workspace.remove_recursively(entity)
