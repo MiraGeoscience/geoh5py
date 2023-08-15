@@ -50,6 +50,22 @@ def test_create_property_group(tmp_path):
         # Property group object should have been created
         prop_group = curve.find_or_create_property_group(name="myGroup")
 
+        with pytest.raises(KeyError, match="A Property Group with name"):
+            curve.create_property_group(name="myGroup")
+
+        # test error for allow delete
+        with pytest.raises(TypeError, match="allow_delete must be a boolean"):
+            prop_group.allow_delete = "bidon"
+
+        prop_group.allow_delete = False
+        assert prop_group.allow_delete is False
+
+        # set parent
+        assert prop_group.parent == curve
+
+        with pytest.raises(AssertionError, match="Cannot change parent"):
+            prop_group.parent = curve
+
         # Create a new group by data name
         single_data_group = curve.add_data_to_group(f"Period{1}", "Singleton")
 

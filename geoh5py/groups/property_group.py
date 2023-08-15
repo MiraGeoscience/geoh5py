@@ -64,7 +64,7 @@ class PropertyGroup(ABC):
         """
         :obj:`bool` Allow deleting the group
         """
-        return True
+        return self._allow_delete
 
     @allow_delete.setter
     def allow_delete(self, value: bool):
