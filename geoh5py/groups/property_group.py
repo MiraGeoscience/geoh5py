@@ -124,8 +124,6 @@ class PropertyGroup(ABC):
         parent.add_children([self])
         self._parent = parent
 
-        parent.add_children([self])
-
     @property
     def properties(self) -> list[uuid.UUID]:
         """
