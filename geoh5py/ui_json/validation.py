@@ -75,7 +75,9 @@ class Validations:
         error_list = []
         for validator in self.validators:
             try:
-                validator.validate(name, value, self.validations[validator.type])
+                validator.validate(
+                    name, value, self.validations[validator.validator_type]
+                )
             except BaseValidationError as err:
                 error_list.append(err)
 
@@ -96,7 +98,10 @@ class Validations:
 
         for validation in validations:
             for validator in BaseValidator.__subclasses__():
-                if validator.type == validation and validator not in self._validators:
+                if (
+                    validator.validator_type == validation
+                    and validator not in self._validators
+                ):
                     self._validators.append(validator)  # type: ignore
                     break
 
@@ -169,7 +174,7 @@ class InputValidation:
         """Returns dictionary of validators required by validations."""
         unique_validators = InputValidation._unique_validators(validations)
         sub_classes: list[BaseValidator] = getattr(BaseValidator, "__subclasses__")()
-        all_validators: dict[str, Any] = {k.type: k() for k in sub_classes}
+        all_validators: dict[str, Any] = {k.validator_type: k() for k in sub_classes}
         val = {}
         for k in unique_validators:
             if k not in all_validators:
@@ -300,7 +305,7 @@ class InputValidation:
             ValueValidator,
             ShapeValidator,
         ]:
-            val = str(validator.type)
+            val = str(validator.validator_type)
             if (
                 val not in validations
                 or (val == "required" and self.ignore_requirements)
