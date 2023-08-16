@@ -459,14 +459,12 @@ class ObjectBase(Entity):
         """
         List of :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         """
-        property_groups = [
-            child for child in self.children if isinstance(child, PropertyGroup)
-        ]
-
-        if self._property_groups is not None:
-            self._property_groups = list(set(self._property_groups + property_groups))
-        elif len(property_groups) > 0:
-            self._property_groups = property_groups
+        if self._property_groups is None:
+            property_groups = [
+                child for child in self.children if isinstance(child, PropertyGroup)
+            ]
+            if len(property_groups) > 0:
+                self._property_groups = property_groups
 
         return self._property_groups
 
