@@ -43,13 +43,14 @@ class PropertyGroup(ABC):
     }
 
     def __init__(self, parent: ObjectBase, **kwargs):
+        self._parent: Entity | None = None
         self._name = "prop_group"
         self._uid = uuid.uuid4()
         self._allow_delete = True
         self._association: DataAssociationEnum = DataAssociationEnum.VERTEX
         self._properties: list[uuid.UUID] = []
         self._property_group_type = "Multi-element"
-        self._parent: ObjectBase = parent
+        self.parent: ObjectBase = parent
 
         for attr, item in kwargs.items():
             try:
@@ -110,7 +111,7 @@ class PropertyGroup(ABC):
         self._name = new_name
 
     @property
-    def parent(self) -> Entity:
+    def parent(self) -> Entity | None:
         """
         The parent :obj:`~geoh5py.objects.object_base.ObjectBase`
         """
@@ -119,9 +120,15 @@ class PropertyGroup(ABC):
     @parent.setter
     def parent(self, parent: Entity):
         if self._parent is not None:
-            raise AssertionError("Cannot change parent of a property group.")
+            raise AttributeError("Cannot change parent of a property group.")
+
+        if not hasattr(parent, "_property_groups"):
+            raise AttributeError(
+                f"Parent {parent} must have a 'property_groups' attribute"
+            )
 
         parent.add_children([self])
+        parent.workspace.create_property_group(self)
         self._parent = parent
 
     @property

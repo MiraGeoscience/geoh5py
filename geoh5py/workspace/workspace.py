@@ -572,7 +572,6 @@ class Workspace(AbstractContextManager):
             ref_type = self.str_from_type(child)
 
             if isinstance(child, PropertyGroup):
-                parent.remove_property_groups(child)
                 continue
 
             if ref_type == "Data":

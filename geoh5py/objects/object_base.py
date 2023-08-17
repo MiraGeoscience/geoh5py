@@ -67,6 +67,14 @@ class ObjectBase(Entity):
         if self.entity_type.name == "Entity":
             self.entity_type.name = type(self).__name__
 
+    def add_children(self, children: list[Entity] | list[PropertyGroup]):
+        """
+        :param children: Add a list of entities as
+            :obj:`~geoh5py.shared.entity.Entity.children`
+        """
+        super().add_children(children)
+        self._property_groups = None
+
     def add_comment(self, comment: str, author: str | None = None):
         """
         Add text comment to an object.
@@ -350,12 +358,10 @@ class ObjectBase(Entity):
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
         :return: A new :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        property_groups = []
-        if self._property_groups is not None:
-            property_groups = self._property_groups
-
-        if "name" in kwargs and any(
-            pg.name == kwargs["name"] for pg in property_groups
+        if (
+            "name" in kwargs
+            and self.property_groups is not None
+            and any(pg.name == kwargs["name"] for pg in self.property_groups)
         ):
             raise KeyError(
                 f"A Property Group with name {kwargs['name']} already exists."
@@ -364,13 +370,7 @@ class ObjectBase(Entity):
         if "property_group_type" not in kwargs and "Property Group Type" not in kwargs:
             kwargs["property_group_type"] = "Multi-element"
 
-        prop_group = self.workspace.create_property_group(PropertyGroup(self, **kwargs))
-
-        property_groups += [prop_group]
-
-        self._property_groups = property_groups
-
-        self.add_children(property_groups)
+        prop_group = PropertyGroup(self, **kwargs)
 
         return prop_group
 
@@ -477,21 +477,23 @@ class ObjectBase(Entity):
         if isinstance(property_groups, PropertyGroup):
             property_groups = [property_groups]
 
-        keepers = []
-        for property_group in self.property_groups:
-            if property_group not in property_groups:
-                keepers += [property_group]
-
-        suppressed = list(set(self.property_groups) - set(keepers))
-
-        if not keepers:
-            self._property_groups = None
-        else:
-            self._property_groups = keepers
-
-        self.remove_children(suppressed)
-
+        self.remove_children(property_groups)
         self.workspace.update_attribute(self, "property_groups")
+
+    def remove_children(self, children: list[Entity] | list[PropertyGroup]):
+        """
+        Remove children from the list of children entities.
+
+        :param children: List of entities
+
+        .. warning::
+            Removing a child entity without re-assigning it to a different
+            parent may cause it to become inactive. Inactive entities are removed
+            from the workspace by
+            :func:`~geoh5py.shared.weakref_utils.remove_none_referents`.
+        """
+        super().remove_children(children)
+        self._property_groups = None
 
     def remove_children_values(
         self,
