@@ -782,3 +782,27 @@ def test_merge_validations():
         validations, {"integer_parameter": {"shape": (3, 2)}}
     )
     assert all(k in validations["integer_parameter"] for k in ["types", "shape"])
+
+
+def test_dependency_enabling(tmp_path: Path):
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["parameter_a"] = templates.float_parameter(optional="enabled")
+
+    ui_json["parameter_b"] = templates.float_parameter()
+    ui_json["parameter_b"]["dependency"] = "parameter_a"
+    ui_json["parameter_b"]["dependencyType"] = "enabled"
+    ui_json["parameter_b"]["enabled"] = True
+
+    in_file = InputFile(ui_json=ui_json)
+
+    # TODO This operation should raise an error instead of a warning
+    # as the parent dependency is enabled
+    with pytest.warns(UserWarning, match="Non-option parameter"):
+        in_file.update_ui_values({"parameter_b": None})
+
+    in_file.ui_json["parameter_a"]["enabled"] = False
+    in_file.ui_json["parameter_b"]["enabled"] = False
+
+    in_file.update_ui_values({"parameter_b": None})
