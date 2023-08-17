@@ -46,17 +46,17 @@ Validation: TypeAlias = dict[str, Any]
 
 
 class Validations:
-    def __init__(self, validations):
-        self._validations: Validation = validations
+    def __init__(self, validations=None):
+        self._validations: Validation | None = validations
         self._validators: list[BaseValidator] | None = None
 
     @property
-    def validations(self) -> Validation:
+    def validations(self) -> Validation | None:
         return self._validations
 
     @validations.setter
     def validations(self, val):
-        if not isinstance(val, dict):
+        if not isinstance(val, (type(None), dict)):
             raise TypeError("Validations must be a dictionary.")
 
         self._validators = []
@@ -66,12 +66,17 @@ class Validations:
     def validators(self) -> list[BaseValidator]:
         if self._validators is None:
             self._update_validators(self.validations)
-        elif len(self._validators) != len(self.validations):
+        elif self.validations is not None and len(self._validators) != len(
+            self.validations
+        ):
             self._update_validators(self.validations)
 
         return self._validators  # type: ignore
 
     def validate(self, name: str, value: Any):
+        if self.validations is None:
+            raise AttributeError("Must set validations before calling validate.")
+
         error_list = []
         for validator in self.validators:
             try:
@@ -86,7 +91,7 @@ class Validations:
                 raise AggregateValidationError(name, error_list)
             raise error_list.pop()
 
-    def _update_validators(self, validations: Validation):
+    def _update_validators(self, validations: Validation | None):
         """
         Update list of validators from a dictionary of validations.
 
@@ -95,6 +100,9 @@ class Validations:
 
         if self._validators is None:
             self._validators = []
+
+        if validations is None:
+            return
 
         for validation in validations:
             for validator in BaseValidator.__subclasses__():

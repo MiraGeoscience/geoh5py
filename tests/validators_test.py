@@ -53,14 +53,16 @@ from geoh5py.workspace import Workspace
 
 
 def test_validations():
-    validations = Validations(
-        {
-            "types": [str],
-            "values": [
-                "goodvalue",
-            ],
-        },
-    )
+    validns = {
+        "types": [str],
+        "values": [
+            "goodvalue",
+        ],
+    }
+    validations = Validations()
+    validations.validation = validns
+
+    validations = Validations(validns)
 
     # Validators are generated from the validations dictionary
     assert len(validations.validators) == 2

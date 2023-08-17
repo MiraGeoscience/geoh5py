@@ -31,35 +31,20 @@ Validation: TypeAlias = dict[str, Any]
 
 
 class Parameter:
-    def __init__(self, name, value, validations=None):
+    def __init__(self, name, value=None, validations: Validation | None = None):
         self.name: str = name
         self.value: Any = value
-        self._validations: Validations | None = (
-            Validations(validations) if isinstance(validations, dict) else validations
-        )
+        self._validations: Validations = Validations(validations)
 
     @property
     def validations(self) -> Validation | None:
-        if self._validations is None:
-            out = None
-        else:
-            out = self._validations.validations
-
-        return out
+        return self._validations.validations
 
     @validations.setter
     def validations(self, val):
-        if val is None:
-            self._validations = None
-        else:
-            self._validations = (
-                val if isinstance(val, Validations) else Validations(val)
-            )
+        self._validations.validations = val
 
     def validate(self):
-        if self._validations is None:
-            msg = "Must set validations before calling validate()."
-            raise AttributeError(msg)
         self._validations.validate(self.name, self.value)
 
     def __str__(self):
@@ -84,35 +69,35 @@ class FormParameter:
     valid_members: list[str] = list(form_validations.keys())
     identifier_members: list[str] = []
 
-    def __init__(self, name, form, validations: Validations | Validation | None = None):
+    def __init__(
+        self,
+        name: str,
+        form: dict[str, Any] | None = None,
+        validations: Validation | None = None,
+    ):
         self.name: str = name
-        self._form: dict[str, Any] = form
-        self._update_attrs(form)
-
-        self.validations: Validation | Validations | None = (
-            Validations(validations)  # type: ignore
-            if isinstance(validations, dict)
-            else validations
-        )
+        if form is not None:
+            self._active_members = list(form)
+            self._update_members(form)
+        self._value._validations = Validations(validations)
 
     @property
     def validations(self) -> Validation | None:
-        if self._value.validations is None:
-            out = None
-        else:
-            out = self._value.validations
-
-        return out
+        return self._value.validations
 
     @validations.setter
     def validations(self, val):
-        if val is None:
-            self._validations = None
-        elif self._value.validations is not None and isinstance(self.validations, dict):
-            val = val if isinstance(val, dict) else val.validations
-            self._value.validations = dict(self.validations, **val)
-        else:
-            self._value.validations = val
+        self._value.validations = val
+
+    @property
+    def form(self):
+        form = {}
+        for member in self._active_members:
+            if member == "value":
+                form[member] = self.value
+            else:
+                form[member] = self.members[member].value
+        return form
 
     @property
     def value(self) -> Any:
@@ -120,28 +105,7 @@ class FormParameter:
 
     @value.setter
     def value(self, val):
-        self._value = Parameter("value", val, self.validations)
-
-    @property
-    def form(self) -> dict[str, Any]:
-        form_assembly = {}
-        for name in self.valid_members:
-            if name == "value":
-                member = self._value.value
-            else:
-                member = getattr(self, name).value
-
-            is_required = self.form_validations[name].get("required", False)
-            if member is None and not is_required:
-                continue
-
-            form_assembly[name] = member
-
-        return form_assembly
-
-    @form.setter
-    def form(self, val: dict[str, Any]):
-        self._update_attrs(val)
+        self._value.value = val
 
     def validate(self, level: str = "form"):
         if level == "form":
@@ -167,23 +131,28 @@ class FormParameter:
         self._value.validate()
 
     def _validate_form(self):
-        for member in [k for k in self.valid_members if k != "value"]:
+        for parameter in self.members.values():
             try:
-                getattr(self, member).validate()
+                parameter.validate()
             except BaseValidationError as err:
                 raise UIJsonFormatError(self.name, str(err)) from err
 
-    def _update_attrs(self, form: dict[str, Any]):
+    def _update_members(self, form: dict[str, Any]):
+        members = {}
         for member in self.valid_members:
             if member == "value":
                 self._value = Parameter("value", form.get("value", None))
             else:
                 value = form.get(member, None)
-                setattr(
-                    self,
-                    member,
-                    Parameter(member, value, self.form_validations[member]),
+                members[member] = Parameter(
+                    member, value, self.form_validations[member]
                 )
+
+        unrecognized_members = [k for k in form if k not in self.valid_members]
+        for member in unrecognized_members:
+            members[member] = Parameter(member, form[member])
+
+        self.members = members
 
     @classmethod
     def is_form(cls, form: dict[str, Any]) -> bool:
@@ -192,6 +161,16 @@ class FormParameter:
 
     def __str__(self):
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
+
+    def __getattr__(self, name):
+        if name in self.valid_members:
+            ret = self.members[name].value
+        elif name in self.__dict__:
+            ret = self.__dict__[name]
+        else:
+            raise AttributeError(f"Attribute '{name}' not a valid attribute.")
+
+        return ret.value if isinstance(ret, Parameter) else ret
 
 
 class StringParameter(FormParameter):
@@ -405,31 +384,29 @@ class DataValueParameter(FormParameter):
 
     @property
     def value(self):
-        val = self.property.value
-        if self.isValue.value:
+        val = self.property
+        if self.isValue:
             val = self._value.value
         return val
 
     @value.setter
     def value(self, val):
         if isinstance(val, (int, float)):
-            self.property = Parameter("property", val, self.validations)
-            self.isValue = Parameter(  # pylint: disable=invalid-name
-                "isValue", False, self.form_validations["isValue"]
-            )
+            self._value.value = val
+            self.isValue = True
         else:
-            self._value = Parameter("value", val, self.validations)
-            self.isValue = Parameter("isValue", True, self.form_validations["isValue"])
+            self.property = val
+            self.isValue = False
 
     def _validate_value(self):
         if self.isValue:
             self._value.validate()
         else:
-            self.property.validate()
+            self.members["property"].validate()
 
     def _validate_form(self):
-        for member in [k for k in self.valid_members if k not in ["value", "property"]]:
+        for parameter in self.members.values():
             try:
-                getattr(self, member).validate()
+                parameter.validate()
             except BaseValidationError as err:
                 raise UIJsonFormatError(self.name, str(err)) from err

@@ -44,6 +44,12 @@ from geoh5py.ui_json.validation import Validations
 
 
 def test_parameter():
+    # Validations can be instantiated with just a name
+    param = Parameter("param")
+    assert param.name == "param"
+    assert param.value is None
+    assert param.validations is None
+
     # Validations can be instantiated with a name and value
     param = Parameter("param", "test")
     assert param.name == "param"
@@ -60,6 +66,9 @@ def test_parameter():
     assert param._validations.validators == [ValueValidator]
     assert isinstance(param.validations, dict)
     param.validate()
+
+    # parameter validations are the same as the underlying Validations
+    assert id(param.validations) == id(param._validations.validations)
 
     # validations setter overwrites existing validations
     param.validations = {"types": [str]}
@@ -103,6 +112,19 @@ def test_validation_update():
     assert param.validations["types"] == [str]
 
 
+def test_form_parameter_roundtrip():
+    form = {"label": "my param", "value": 1, "extra": "stuff", "name": "danger!"}
+    param = FormParameter("param", form)
+    assert param.name == "param"
+    assert param.label == "my param"
+    assert all(
+        k in list(param.members)
+        for k in param.valid_members + ["extra"]
+        if k != "value"
+    )
+    assert param.form == form
+
+
 def test_form_parameter_validate():
     param = FormParameter(
         "param", {"label": "my param", "value": 1}, validations={"types": [int]}
@@ -110,15 +132,10 @@ def test_form_parameter_validate():
     assert param.name == "param"
     assert len(param.form) == 2
     assert all(k in param.form for k in ["label", "value"])
-    assert param.label.value == "my param"
+    assert param.label == "my param"
     assert param.value == 1
-    assert all(
-        [
-            isinstance(getattr(param, k), Parameter)
-            for k in FormParameter.valid_members
-            if k != "value"
-        ]
-    )
+    assert all(hasattr(param, k) for k in param.valid_members)
+
     param.validate("form")
     param.validate("value")
     param.validate("all")
@@ -256,7 +273,7 @@ def test_data_value_parameter():
         },
     )
     assert param.value == 1.0
-    param.isValue.value = False
+    param.isValue = False
     assert param.value is None
 
     assert "types" in param.validations
@@ -355,3 +372,42 @@ def test_uijson():
     }
     ui_json = UIJson(parameters)
     ui_json.validate()
+
+
+def test_params_design():
+    parameters = {
+        "param_1": FormParameter(
+            "param_1",
+            {"label": "first parameter", "value": "toocool"},
+            {"types": [str]},
+        ),
+        "param_2": FormParameter(
+            "param_2", {"label": "second parameter", "value": 2}, {"types": [int]}
+        ),
+        "param_3": Parameter("param_3", 2, {"types": [int]}),
+    }
+    ui_json = UIJson(parameters)
+
+    class Params:
+        def __init__(self, p1, ui_json):
+            self.p1 = p1
+            self.ui_json = ui_json
+
+        def __getattr__(self, name):
+            if name in self.ui_json.parameters:
+                return self.ui_json.parameters[name].value
+            else:
+                return self.__dict__[f"_{name}"]
+
+        def __setattr(self, name, value):
+            if name in self.ui_json.parameters:
+                self.ui_json.parameters[name].value = value
+            else:
+                self.__dict__[f"_{name}"] = value
+
+    params = Params("hi there", ui_json)
+
+    assert params.param_1 == "toocool"
+    assert params.param_2 == 2
+    assert params.param_3 == 2
+    assert params.p1 == "hi there"

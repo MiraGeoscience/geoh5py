@@ -119,7 +119,7 @@ class UIJson:
             else:
                 for candidate in possibilities:
                     try:
-                        obj = candidate("test", parameter, {})
+                        obj = candidate("test", parameter)
                         obj.validate("value")
                         winner = candidate
                     except BaseValidationError:
