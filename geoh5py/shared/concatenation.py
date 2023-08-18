@@ -807,8 +807,8 @@ class ConcatenatedObject(Concatenated, ObjectBase):
         :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
         property_groups = []
-        if self._property_groups is not None:
-            property_groups = self._property_groups
+        if self.property_groups is not None:
+            property_groups = self.property_groups
 
         if "name" in kwargs and any(
             pg.name == kwargs["name"] for pg in property_groups
@@ -822,9 +822,9 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                 kwargs["property_group_type"] = "Interval table"
 
             prop_group = ConcatenatedPropertyGroup(self, **kwargs)
-            property_groups += [prop_group]
+            self.concatenator.add_save_concatenated(prop_group)
+            self.concatenator.update_array_attribute(self, "property_groups")
 
-        self._property_groups = property_groups
         return prop_group
 
     def get_data(self, name: str | uuid.UUID) -> list[Data]:
@@ -897,7 +897,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                 return None
 
             for key in prop_groups:
-                getattr(self, "find_or_create_property_group")(
+                self.find_or_create_property_group(
                     **self.concatenator.get_concatenated_attributes(key)
                 )
 
@@ -1074,9 +1074,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             property_group = f"depth_{ind}"
 
         if isinstance(property_group, str):
-            out_group: ConcatenatedPropertyGroup = getattr(
-                self, "find_or_create_property_group"
-            )(
+            out_group: ConcatenatedPropertyGroup = self.find_or_create_property_group(
                 name=property_group,
                 association="DEPTH",
                 property_group_type="Depth table",
