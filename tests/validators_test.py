@@ -76,7 +76,7 @@ def test_validations():
     assert validations.validators == [RequiredValidator]
 
     # Updates on the validations dictionary are reflected in the validators
-    validations.update(validns)
+    validations.validations.update(validns)
     assert len(validations.validations) == 3
     assert all(
         k in validations.validators
