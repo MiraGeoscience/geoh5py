@@ -182,7 +182,6 @@ class PropertyGroup(ABC):
             raise TypeError("All uids must be of type uuid.UUID")
 
         self._properties = properties
-        self.parent.workspace.add_or_update_property_group(self)
 
     @property
     def property_group_type(self) -> str:
