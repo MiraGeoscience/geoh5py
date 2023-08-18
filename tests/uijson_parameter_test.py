@@ -360,12 +360,36 @@ def test_uijson():
             {"label": "first parameter", "value": "toocool"},
             {"types": [str]},
         ),
-        "param_2": FormParameter(
-            "param_2", {"label": "second parameter", "value": 2}, {"types": [int]}
+        "param_2": StringParameter(
+            "param_2", {"label": "second parameter", "value": "ohyeah"}
         ),
         "param_3": Parameter("param_3", 2, {"types": [int]}),
+        "param_4": {"label": "fourth parameter", "value": 2},
     }
     ui_json = UIJson(parameters)
+    p1 = ui_json.parameters["param_1"]
+    assert isinstance(p1, FormParameter)
+    assert p1.name == "param_1"
+    assert p1.label == "first parameter"
+    assert p1.value == "toocool"
+    assert p1.validations == {"types": [str]}
+    p2 = ui_json.parameters["param_2"]
+    assert isinstance(p2, StringParameter)
+    assert p2.name == "param_2"
+    assert p2.label == "second parameter"
+    assert p2.value == "ohyeah"
+    assert p2.validations == {"types": [str]}
+    p3 = ui_json.parameters["param_3"]
+    assert isinstance(p3, Parameter)
+    assert p3.name == "param_3"
+    assert p3.value == 2
+    assert p3.validations == {"types": [int]}
+    p4 = ui_json.parameters["param_4"]
+    assert isinstance(p4, IntegerParameter)
+    assert p4.name == "param_4"
+    assert p4.label == "fourth parameter"
+    assert p4.value == 2
+    assert p4.validations == {"types": [int]}
     ui_json.validate()
 
 

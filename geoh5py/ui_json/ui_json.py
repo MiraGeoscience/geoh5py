@@ -17,7 +17,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TypeAlias
 
 from geoh5py.shared.exceptions import AggregateValidationError, BaseValidationError
 from geoh5py.ui_json.parameters import (
@@ -29,13 +29,15 @@ from geoh5py.ui_json.parameters import (
     StringParameter,
 )
 
+Parameters: TypeAlias = dict[str, Parameter | FormParameter]
+
 
 class UIJson:
-    def __init__(self, parameters, validations=None):
+    def __init__(
+        self, parameters: Parameters | dict[str, dict[str, Any]], validations=None
+    ):
         self.validations = {} if validations is None else validations
-        self.parameters: dict[
-            str, Parameter | FormParameter | dict[str, Any]
-        ] = parameters
+        self.update(parameters)
 
     @property
     def parameters(self):
@@ -43,16 +45,7 @@ class UIJson:
 
     @parameters.setter
     def parameters(self, val):
-        for name, value in val.items():
-            if isinstance(value, (Parameter, FormParameter)):
-                continue
-            if isinstance(value, dict):
-                parameter_class = UIJson.identify(value)
-                val[name] = parameter_class(name, value, self.validations.get(name, {}))
-            else:
-                val[name] = Parameter(name, value, self.validations.get(name, {}))
-
-        self._parameters = val
+        self.update(val)
 
     @property
     def values(self):
@@ -67,6 +60,23 @@ class UIJson:
             else:
                 val[name] = parameter.form
         return val
+
+    def update(self, parameters: Parameters | dict[str, dict[str, Any]]):
+        parameter_update = {}
+        for name, value in parameters.items():
+            if isinstance(value, (Parameter, FormParameter)):
+                parameter_update[name] = value
+            elif isinstance(value, dict):
+                parameter_class = UIJson.identify(value)
+                parameter_update[name] = parameter_class(
+                    name, value, self.validations.get(name, {})
+                )
+            else:
+                parameter_update[name] = Parameter(
+                    name, value, self.validations.get(name, {})
+                )
+
+        self._parameters = parameter_update
 
     def validate(self, level="form"):
         error_list = []
