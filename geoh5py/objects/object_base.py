@@ -184,33 +184,28 @@ class ObjectBase(Entity):
 
         :return: The target property group.
         """
-        if isinstance(data, list):
-            uids = []
-            for datum in data:
-                uids += self.reference_to_uid(datum)
-        else:
-            uids = self.reference_to_uid(data)
+        if not isinstance(data, list):
+            data = [data]
 
-        association = None
-        template = self.workspace.get_entity(uids[0])[0]
-        if isinstance(template, Data):
-            association = template.association
+        children = []
+        associations = []
+        for entity in data:
+            if isinstance(entity, (uuid.UUID, str)):
+                entity = self.get_entity(entity)[0]
+            children.append(entity)
+            associations.append(entity.association)
+
+        associations = list(set(associations))
+        if len(associations) > 1:
+            raise ValueError("All data must have the same association.")
 
         if isinstance(property_group, str):
             property_group = self.find_or_create_property_group(
                 name=property_group,
-                association=association,
+                association=associations[0],
             )
 
-        properties = property_group.properties or []
-        for uid in uids:
-            assert uid in [
-                child.uid for child in self.children
-            ], f"Given data with uuid {uid} does not match any known children"
-            if uid not in properties:
-                properties.append(uid)
-
-        property_group.properties = properties
+        property_group.add_properties(children)
 
         return property_group
 
@@ -633,7 +628,7 @@ class ObjectBase(Entity):
             return
 
         for property_group in self.property_groups:
-            property_group.remove_data(data)
+            property_group.remove_properties(data)
 
     @property
     def visual_parameters(self) -> VisualParameters | None:

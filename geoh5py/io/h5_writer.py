@@ -888,6 +888,9 @@ class H5Writer:
                     value = value.name.capitalize()
 
                 elif key == "Properties":
+                    if value is None:
+                        continue
+
                     value = np.asarray([as_str_if_uuid(val) for val in value])
 
                 elif key == "ID":

@@ -43,15 +43,21 @@ class PropertyGroup(ABC):
     }
 
     def __init__(self, parent: ObjectBase, on_file=False, **kwargs):
-        self._parent: Entity
         self._name = "prop_group"
         self._uid = uuid.uuid4()
         self._allow_delete = True
         self.on_file = on_file
         self._association: DataAssociationEnum = DataAssociationEnum.VERTEX
-        self._properties: list[uuid.UUID] = []
+        self._properties: list[uuid.UUID] | None = None
         self._property_group_type = "Multi-element"
-        self.parent: ObjectBase = parent
+
+        if not hasattr(parent, "_property_groups"):
+            raise AttributeError(
+                f"Parent {parent} must have a 'property_groups' attribute"
+            )
+
+        parent.add_children([self])
+        self._parent = parent
 
         for attr, item in kwargs.items():
             try:
@@ -62,6 +68,22 @@ class PropertyGroup(ABC):
                 continue
 
         self.parent.workspace.register_property_group(self)
+
+    def add_properties(self, data: Data | list[Data]):
+        """
+        Remove data from the properties.
+        """
+        if isinstance(data, Data):
+            data = [data]
+
+        properties = self._properties or []
+        for entity in data:
+            if entity.uid not in properties and entity in self.parent.children:
+                properties.append(entity.uid)
+
+        if properties:
+            self._properties = properties
+            self.parent.workspace.add_or_update_property_group(self)
 
     @property
     def allow_delete(self) -> bool:
@@ -134,21 +156,8 @@ class PropertyGroup(ABC):
         """
         return self._parent
 
-    @parent.setter
-    def parent(self, parent: Entity):
-        if self._parent is not None:
-            raise AttributeError("Cannot change parent of a property group.")
-
-        if not hasattr(parent, "_property_groups"):
-            raise AttributeError(
-                f"Parent {parent} must have a 'property_groups' attribute"
-            )
-
-        parent.add_children([self])
-        self._parent = parent
-
     @property
-    def properties(self) -> list[uuid.UUID]:
+    def properties(self) -> list[uuid.UUID] | None:
         """
         List of unique identifiers for the :obj:`~geoh5py.data.data.Data`
         contained in the property group.
@@ -157,11 +166,21 @@ class PropertyGroup(ABC):
 
     @properties.setter
     def properties(self, uids: list[str | uuid.UUID]):
+        if self._properties is not None:
+            raise UserWarning(
+                "Cannot modify properties of an existing property group. "
+                "Consider using 'add_properties'."
+            )
+
         properties = []
         for uid in uids:
             if isinstance(uid, str):
                 uid = uuid.UUID(uid)
             properties.append(uid)
+
+        if not all(isinstance(uid, uuid.UUID) for uid in properties):
+            raise TypeError("All uids must be of type uuid.UUID")
+
         self._properties = properties
         self.parent.workspace.add_or_update_property_group(self)
 
@@ -173,7 +192,7 @@ class PropertyGroup(ABC):
     def property_group_type(self, group_type: str):
         self._property_group_type = group_type
 
-    def remove_data(self, data: Data | list[Data]):
+    def remove_properties(self, data: Data | list[Data]):
         """
         Remove data from the properties.
         """

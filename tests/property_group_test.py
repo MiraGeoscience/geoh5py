@@ -63,7 +63,7 @@ def test_create_property_group(tmp_path):
         # set parent
         assert prop_group.parent == curve
 
-        with pytest.raises(AttributeError, match="Cannot change parent"):
+        with pytest.raises(AttributeError, match="can't set attribute 'parent'"):
             prop_group.parent = curve
 
         # Create a new group by data name
