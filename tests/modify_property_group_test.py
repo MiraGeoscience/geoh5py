@@ -68,8 +68,8 @@ def test_modify_property_group(tmp_path):
         prop_group = curve.find_or_create_property_group(name="myGroup")
 
         # Remove on props from the list
-        curve.remove_data_from_group(children_list[0], name="myGroup")
-        curve.remove_data_from_group(props[-2:], name="myGroup")
+        prop_group.remove_data(curve.children[0])
+        prop_group.remove_data(props[-2:])
 
         assert len(prop_group.properties) == 1, "Error removing a property_group"
 

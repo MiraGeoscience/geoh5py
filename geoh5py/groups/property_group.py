@@ -21,7 +21,7 @@ import uuid
 from abc import ABC
 from typing import TYPE_CHECKING
 
-from geoh5py.data import DataAssociationEnum
+from geoh5py.data import Data, DataAssociationEnum
 
 if TYPE_CHECKING:
     from geoh5py.objects import ObjectBase
@@ -42,11 +42,12 @@ class PropertyGroup(ABC):
         "Property Group Type": "property_group_type",
     }
 
-    def __init__(self, parent: ObjectBase, **kwargs):
-        self._parent: Entity | None = None
+    def __init__(self, parent: ObjectBase, on_file=False, **kwargs):
+        self._parent: Entity
         self._name = "prop_group"
         self._uid = uuid.uuid4()
         self._allow_delete = True
+        self.on_file = on_file
         self._association: DataAssociationEnum = DataAssociationEnum.VERTEX
         self._properties: list[uuid.UUID] = []
         self._property_group_type = "Multi-element"
@@ -59,6 +60,8 @@ class PropertyGroup(ABC):
                 setattr(self, attr, item)
             except AttributeError:
                 continue
+
+        self.parent.workspace.register_property_group(self)
 
     @property
     def allow_delete(self) -> bool:
@@ -111,7 +114,21 @@ class PropertyGroup(ABC):
         self._name = new_name
 
     @property
-    def parent(self) -> Entity | None:
+    def on_file(self):
+        """
+        Property group is on geoh5 file.
+        """
+        return self._on_file
+
+    @on_file.setter
+    def on_file(self, value: bool):
+        if not isinstance(value, bool):
+            raise TypeError("Attribute 'on_file' must be a boolean.")
+
+        self._on_file = value
+
+    @property
+    def parent(self) -> Entity:
         """
         The parent :obj:`~geoh5py.objects.object_base.ObjectBase`
         """
@@ -128,7 +145,6 @@ class PropertyGroup(ABC):
             )
 
         parent.add_children([self])
-        parent.workspace.create_property_group(self)
         self._parent = parent
 
     @property
@@ -147,6 +163,7 @@ class PropertyGroup(ABC):
                 uid = uuid.UUID(uid)
             properties.append(uid)
         self._properties = properties
+        self.parent.workspace.add_or_update_property_group(self)
 
     @property
     def property_group_type(self) -> str:
@@ -155,6 +172,22 @@ class PropertyGroup(ABC):
     @property_group_type.setter
     def property_group_type(self, group_type: str):
         self._property_group_type = group_type
+
+    def remove_data(self, data: Data | list[Data]):
+        """
+        Remove data from the properties.
+        """
+        if isinstance(data, Data):
+            data = [data]
+
+        if self._properties is None:
+            return
+
+        for entity in data:
+            if entity.uid in self._properties:
+                self._properties.remove(entity.uid)
+
+        self.parent.workspace.add_or_update_property_group(self)
 
     @property
     def uid(self) -> uuid.UUID:

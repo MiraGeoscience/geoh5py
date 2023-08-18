@@ -480,45 +480,11 @@ class Entity(ABC):
             from the workspace by
             :func:`~geoh5py.shared.weakref_utils.remove_none_referents`.
         """
+        if not isinstance(children, list):
+            children = [children]
+
         self._children = [child for child in self._children if child not in children]
         self.workspace.remove_children(self, children)
-
-    def remove_data_from_group(
-        self, data: list | Entity | uuid.UUID | str, name: str | None = None
-    ) -> None:
-        """
-        Remove data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
-        All given data must be children of the parent object.
-
-        :param data: :obj:`~geoh5py.data.data.Data` object,
-            :obj:`~geoh5py.shared.entity.Entity.uid` or
-            :obj:`~geoh5py.shared.entity.Entity.name` of data.
-        :param name: Name of a :obj:`~geoh5py.groups.property_group.PropertyGroup`.
-            A new group is created if none exist with the given name.
-        """
-        if getattr(self, "property_groups", None) is not None:
-            if isinstance(data, list):
-                uids = []
-                for datum in data:
-                    uids += self.reference_to_uid(datum)
-            else:
-                uids = self.reference_to_uid(data)
-
-            if name is not None:
-                prop_groups = [
-                    prop_group
-                    for prop_group in getattr(self, "property_groups")
-                    if prop_group.name == name
-                ]
-            else:
-                prop_groups = getattr(self, "property_groups")
-
-            for prop_group in prop_groups:
-                for uid in uids:
-                    if uid in prop_group.properties:
-                        prop_group.properties.remove(uid)
-
-            self.workspace.update_attribute(self, "property_groups")
 
     def save(self, add_children: bool = True):
         """

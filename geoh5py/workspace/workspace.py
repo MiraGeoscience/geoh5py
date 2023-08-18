@@ -460,7 +460,7 @@ class Workspace(AbstractContextManager):
 
         return created_entity
 
-    def create_property_group(self, property_group: PropertyGroup) -> PropertyGroup:
+    def register_property_group(self, property_group: PropertyGroup) -> PropertyGroup:
         """
         Create a new PropertyGroup entity with attributes.
         :param property_group: :obj:`~geoh5py.objects.property.property_group.PropertyGroup` class.
@@ -471,7 +471,23 @@ class Workspace(AbstractContextManager):
 
         self._register_property_group(property_group)
 
+        if not property_group.on_file:
+            self.add_or_update_property_group(property_group)
+
         return property_group
+
+    def add_or_update_property_group(
+        self, property_group: PropertyGroup, remove: bool = False
+    ):
+        """
+        Add or update a property group to the workspace.
+        """
+        self._io_call(
+            H5Writer.add_or_update_property_group,
+            property_group,
+            remove=remove,
+            mode="r+",
+        )
 
     def create_object_or_group(
         self, entity_class, entity_kwargs: dict, entity_type_kwargs: dict
@@ -569,15 +585,15 @@ class Workspace(AbstractContextManager):
         present on file.
         """
         for child in children:
-            ref_type = self.str_from_type(child)
-
             if isinstance(child, PropertyGroup):
-                continue
-
-            if ref_type == "Data":
-                parent.remove_data_from_group(child)
-
-            self._io_call(H5Writer.remove_child, child.uid, ref_type, parent, mode="r+")
+                self._io_call(
+                    H5Writer.add_or_update_property_group, child, remove=True, mode="r+"
+                )
+            else:
+                ref_type = self.str_from_type(child)
+                self._io_call(
+                    H5Writer.remove_child, child.uid, ref_type, parent, mode="r+"
+                )
 
     def remove_entity(self, entity: Entity):
         """
@@ -588,14 +604,6 @@ class Workspace(AbstractContextManager):
                 f"The 'allow_delete' property of entity {entity} prevents it from "
                 "being removed. Please revise."
             )
-
-        if isinstance(entity, PropertyGroup):
-            parent = entity.parent
-            if isinstance(parent, ObjectBase):
-                parent.remove_property_groups(entity)
-            del self._property_groups[entity.uid]
-            del entity
-            return
 
         if not isinstance(entity, Concatenated):
             self.workspace.remove_recursively(entity)
@@ -636,10 +644,12 @@ class Workspace(AbstractContextManager):
     def remove_recursively(self, entity: Entity):
         """Delete an entity and its children from the workspace and geoh5 recursively"""
         parent = entity.parent
-        for child in entity.children:
-            self.remove_entity(child)
 
-        parent.remove_children([entity])
+        if hasattr(entity, "children"):
+            for child in entity.children:
+                self.remove_entity(child)
+
+        parent.remove_children(entity)
 
     def deactivate(self):
         """Deactivate this workspace if it was the active one, else does nothing."""
@@ -1146,7 +1156,7 @@ class Workspace(AbstractContextManager):
         # Get property groups (key 2) from object attributes
         if isinstance(entity, ObjectBase) and len(attributes[2]) > 0:
             for kwargs in attributes[2].values():
-                entity.find_or_create_property_group(**kwargs)
+                entity.create_property_group(on_file=True, **kwargs)
 
         return entity
 

@@ -63,7 +63,7 @@ def test_create_property_group(tmp_path):
         # set parent
         assert prop_group.parent == curve
 
-        with pytest.raises(AssertionError, match="Cannot change parent"):
+        with pytest.raises(AttributeError, match="Cannot change parent"):
             prop_group.parent = curve
 
         # Create a new group by data name
@@ -89,7 +89,7 @@ def test_create_property_group(tmp_path):
         with pytest.raises(
             TypeError, match="property_group must be a PropertyGroup instance"
         ):
-            workspace.create_property_group("bidon")
+            workspace.register_property_group("bidon")
 
         property_group_from_object = curve.get_entity("myGroup")[0]
 
@@ -121,10 +121,10 @@ def test_create_property_group(tmp_path):
         ), "Property_groups not properly removed on copy without children."
 
         #
-        rec_object.remove_property_groups(rec_prop_group)
+        rec_object.remove_children(rec_prop_group)
         assert len(rec_object.property_groups) == 1, "Failed to remove property group"
 
-        rec_object.remove_property_groups(rec_object.property_groups)
+        rec_object.remove_children(rec_object.property_groups[0])
 
     with Workspace(h5file_path) as workspace:
         rec_object = workspace.get_entity(curve.uid)[0]
