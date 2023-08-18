@@ -37,15 +37,15 @@ class Parameter:
         self._validations: Validations = Validations(validations)
 
     @property
-    def validations(self) -> Validation | None:
-        return self._validations.validations
+    def validations(self):
+        return self._validations
 
     @validations.setter
     def validations(self, val):
-        self._validations.validations = val
+        self._validations = Validations(val)
 
     def validate(self):
-        self._validations.validate(self.name, self.value)
+        self.validations.validate(self.name, self.value)
 
     def __str__(self):
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"

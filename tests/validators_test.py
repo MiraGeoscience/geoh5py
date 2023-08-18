@@ -60,33 +60,25 @@ def test_validations():
         ],
     }
 
-    # Blank validations results in None validations, empty validators
+    # Empty validations, empty validators
     validations = Validations()
-    assert validations.validations is None
-    assert validations.validators is None
+    assert not validations
+    assert not validations.validators
 
     # Validations can be set post-construction
-    validations.validations = validns
-    assert validations.validations == validns
+    validations.update(validns)
+    assert validations == validns
     assert validations.validators == [TypeValidator, ValueValidator]
 
-    # Validations are overwritten through the setter
-    validations.validations = {"required": True}
-    assert validations.validations == {"required": True}
-    assert validations.validators == [RequiredValidator]
+    # Validations can be set and retrieved through __set/getitem__
+    validations["required"] = True
+    assert len(validations) == 3
 
     # Updates on the validations dictionary are reflected in the validators
-    validations.validations.update(validns)
-    assert len(validations.validations) == 3
     assert all(
         k in validations.validators
         for k in [RequiredValidator, TypeValidator, ValueValidator]
     )
-
-    # Validators are generated from the validations dictionary
-    validations = Validations(validns)
-    assert len(validations.validators) == 2
-    assert all(k in validations.validators for k in [TypeValidator, ValueValidator])
 
     # Valid data passes validation
     validations.validate("param1", "goodvalue")
@@ -102,11 +94,6 @@ def test_validations():
 
     assert "0. Type 'int' provided for 'param1' is invalid." in str(excinfo.value)
     assert "1. Value '1' provided for 'param1' is invalid." in str(excinfo.value)
-
-    # Validations can be updated
-    validations.validations = {"required": True}
-    assert len(validations.validators) == 1
-    validations.validate("param1", "goodvalue")
 
 
 def test_validation_types():

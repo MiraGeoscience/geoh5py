@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+from collections import UserDict
 from copy import deepcopy
 from typing import Any, TypeAlias, cast
 from uuid import UUID
@@ -45,43 +46,24 @@ from geoh5py.ui_json.utils import requires_value
 Validation: TypeAlias = dict[str, Any]
 
 
-class Validations:
-    def __init__(self, validations=None):
-        self._validations: Validation | None = validations
-
-    @property
-    def validations(self) -> Validation | None:
-        return self._validations
-
-    @validations.setter
-    def validations(self, val):
-        if not isinstance(val, (type(None), dict)):
-            raise TypeError("Validations must be a dictionary.")
-
-        self._validations = val
-
+class Validations(UserDict):
     @property
     def validators(self) -> list[BaseValidator] | None:
-        if self.validations is None:
-            validators = None
-        else:
-            validators = []
-            for validator in BaseValidator.__subclasses__():
-                if validator.validator_type in self.validations:
-                    validators.append(validator)
+        validators = []
+        for validator in BaseValidator.__subclasses__():
+            if validator.validator_type in self.data:
+                validators.append(validator)
 
         return validators  # type: ignore
 
     def validate(self, name: str, value: Any):
-        if self.validations is None:
+        if not self.data:
             raise AttributeError("Must set validations before calling validate.")
 
         error_list = []
         for validator in self.validators:  # type: ignore
             try:
-                validator.validate(
-                    name, value, self.validations[validator.validator_type]
-                )
+                validator.validate(name, value, self.data[validator.validator_type])
             except BaseValidationError as err:
                 error_list.append(err)
 
@@ -89,15 +71,6 @@ class Validations:
             if len(error_list) > 1:
                 raise AggregateValidationError(name, error_list)
             raise error_list.pop()
-
-    def update(self, validations: Validation):
-        if self.validations is None:
-            self.validations = validations
-        else:
-            self.validations.update(validations)
-
-
-# type: ignore
 
 
 class InputValidation:

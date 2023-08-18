@@ -44,36 +44,31 @@ from geoh5py.ui_json.validation import Validations
 
 
 def test_parameter():
-    # Validations can be instantiated with just a name
+    # Parameters can be instantiated with just a name
     param = Parameter("param")
     assert param.name == "param"
     assert param.value is None
-    assert param.validations is None
+    assert not param.validations
 
-    # Validations can be instantiated with a name and value
+    # Parameters can be instantiated with a name and value
     param = Parameter("param", "test")
     assert param.name == "param"
     assert param.value == "test"
-    assert param.validations is None
+    assert not param.validations
 
-    # validations default to None but cannot validate until set
+    # Validations are empty by default and cannot validate until set
     with pytest.raises(AttributeError, match="Must set validations"):
         param.validate()
 
     # set validations and validate should pass
-    param.validations = {"values": ["test"]}
-    assert isinstance(param._validations, Validations)
-    assert param._validations.validators == [ValueValidator]
-    assert isinstance(param.validations, dict)
+    param.validations.update({"values": ["test"]})
+    assert isinstance(param.validations, Validations)
+    assert param.validations.validators == [ValueValidator]
     param.validate()
 
-    # parameter validations are the same as the underlying Validations
-    assert id(param.validations) == id(param._validations.validations)
-
-    # validations setter overwrites existing validations
+    # validations setter promotes dictionaries to Validations
     param.validations = {"types": [str]}
-    assert isinstance(param._validations, Validations)
-    assert isinstance(param.validations, dict)
+    assert isinstance(param.validations, Validations)
     assert "types" in param.validations
     param.validate()
 
