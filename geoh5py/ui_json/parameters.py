@@ -393,7 +393,7 @@ class DataValueParameter(FormParameter):
     def value(self, val):
         if isinstance(val, (int, float)):
             self._value.value = val
-            self.isValue = True
+            self.isValue = True  # pylint: disable=invalid-name
         else:
             self.property = val
             self.isValue = False

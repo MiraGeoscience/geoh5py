@@ -59,12 +59,32 @@ def test_validations():
             "goodvalue",
         ],
     }
-    validations = Validations()
-    validations.validation = validns
 
-    validations = Validations(validns)
+    # Blank validations results in None validations, empty validators
+    validations = Validations()
+    assert validations.validations is None
+    assert validations.validators is None
+
+    # Validations can be set post-construction
+    validations.validations = validns
+    assert validations.validations == validns
+    assert validations.validators == [TypeValidator, ValueValidator]
+
+    # Validations are overwritten through the setter
+    validations.validations = {"required": True}
+    assert validations.validations == {"required": True}
+    assert validations.validators == [RequiredValidator]
+
+    # Updates on the validations dictionary are reflected in the validators
+    validations.update(validns)
+    assert len(validations.validations) == 3
+    assert all(
+        k in validations.validators
+        for k in [RequiredValidator, TypeValidator, ValueValidator]
+    )
 
     # Validators are generated from the validations dictionary
+    validations = Validations(validns)
     assert len(validations.validators) == 2
     assert all(k in validations.validators for k in [TypeValidator, ValueValidator])
 

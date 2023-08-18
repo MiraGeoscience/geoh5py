@@ -59,26 +59,22 @@ class Validations:
         if not isinstance(val, (type(None), dict)):
             raise TypeError("Validations must be a dictionary.")
 
-        self._validators = []
         self._validations = val
+        self._validators = None  # to be populated on next validators access
 
     @property
-    def validators(self) -> list[BaseValidator]:
-        if self._validators is None:
-            self._update_validators(self.validations)
-        elif self.validations is not None and len(self._validators) != len(
-            self.validations
-        ):
+    def validators(self) -> list[BaseValidator] | None:
+        if self._validators is None and self.validations is not None:
             self._update_validators(self.validations)
 
-        return self._validators  # type: ignore
+        return self._validators
 
     def validate(self, name: str, value: Any):
         if self.validations is None:
             raise AttributeError("Must set validations before calling validate.")
 
         error_list = []
-        for validator in self.validators:
+        for validator in self.validators:  # type: ignore
             try:
                 validator.validate(
                     name, value, self.validations[validator.validator_type]
@@ -91,27 +87,27 @@ class Validations:
                 raise AggregateValidationError(name, error_list)
             raise error_list.pop()
 
-    def _update_validators(self, validations: Validation | None):
+    def update(self, validations: Validation):
+        if self.validations is None:
+            self.validations = validations
+        else:
+            self.validations.update(validations)
+
+        self._update_validators(self.validations)
+
+    def _update_validators(self, validations: Validation):
         """
         Update list of validators from a dictionary of validations.
 
         :param validations: Dictionary of validations.
         """
 
-        if self._validators is None:
-            self._validators = []
+        validators = []
+        for validator in BaseValidator.__subclasses__():
+            if validator.validator_type in validations:
+                validators.append(validator)
 
-        if validations is None:
-            return
-
-        for validation in validations:
-            for validator in BaseValidator.__subclasses__():
-                if (
-                    validator.validator_type == validation
-                    and validator not in self._validators
-                ):
-                    self._validators.append(validator)  # type: ignore
-                    break
+        self._validators = validators  # type: ignore
 
 
 class InputValidation:
