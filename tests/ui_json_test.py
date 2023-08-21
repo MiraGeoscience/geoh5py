@@ -802,7 +802,14 @@ def test_dependency_enabling(tmp_path: Path):
     with pytest.warns(UserWarning, match="Non-option parameter"):
         in_file.update_ui_values({"parameter_b": None})
 
+    # Test disabled
     in_file.ui_json["parameter_a"]["enabled"] = False
-    in_file.ui_json["parameter_b"]["enabled"] = False
+    ui_json["parameter_b"]["dependencyType"] = "disabled"
+    ui_json["parameter_b"]["enabled"] = True
+    ui_json["parameter_b"]["value"] = 123.0
+    in_file = InputFile(ui_json=ui_json)
 
-    in_file.update_ui_values({"parameter_b": None})
+    in_file.write_ui_json(path=tmp_path, name="test.ui.json")
+
+    with pytest.warns(UserWarning, match="Non-option parameter"):
+        in_file.update_ui_values({"parameter_b": None})
