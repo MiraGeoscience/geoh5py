@@ -63,7 +63,6 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
     _data: dict
     _index: dict
     _property_group_ids: np.ndarray | None = None
-    _property_groups: list | None = None
 
     def __init__(self, group_type: GroupType, **kwargs):
         super().__init__(group_type, **kwargs)
@@ -90,18 +89,14 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return self._attributes_keys
 
-    def add_children(
-        self, children: list[ConcatenatedObject] | list[Entity] | list[PropertyGroup]
-    ) -> None:
+    def add_children(self, children: list[ConcatenatedObject] | list[Entity]) -> None:
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
         """
-        self._property_groups = None
-
         for child in children:
             if not (
-                isinstance(child, (Concatenated, ConcatenatedPropertyGroup))
+                isinstance(child, Concatenated)
                 or (
                     isinstance(child, Data)
                     and child.association
@@ -903,7 +898,9 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                 )
 
             property_groups = [
-                child for child in self.children if isinstance(child, PropertyGroup)
+                child
+                for child in self.children
+                if isinstance(child, ConcatenatedPropertyGroup)
             ]
 
             if len(property_groups) > 0:

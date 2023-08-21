@@ -81,7 +81,7 @@ class Entity(ABC):
             except AttributeError:
                 continue
 
-    def add_children(self, children: list[shared.Entity] | list[PropertyGroup]):
+    def add_children(self, children: list[shared.Entity]):
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
