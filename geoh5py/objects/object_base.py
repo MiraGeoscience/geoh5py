@@ -341,12 +341,12 @@ class ObjectBase(Entity):
         :param name: the reference of the property group to get.
         :return: A list of children Data objects
         """
-        if self.property_groups is None:
+        if self._property_groups is None:
             return [None]
 
         entities = []
 
-        for child in self.property_groups:
+        for child in self._property_groups:
             if (
                 isinstance(name, uuid.UUID) and child.uid == name
             ) or child.name == name:

@@ -58,6 +58,7 @@ from ..shared.concatenation import (
     ConcatenatedData,
     ConcatenatedDrillhole,
     ConcatenatedObject,
+    ConcatenatedPropertyGroup,
     Concatenator,
 )
 from ..shared.entity import Entity
@@ -322,7 +323,8 @@ class Workspace(AbstractContextManager):
                     "property_group_type": prop_group.property_group_type,
                 }
             )
-            new_group.properties = [data_map[uid] for uid in prop_group.properties]
+            if prop_group.properties is not None:
+                new_group.properties = [data_map[uid] for uid in prop_group.properties]
 
     @classmethod
     def create(cls, path: str | Path, **kwargs) -> Workspace:
@@ -482,12 +484,16 @@ class Workspace(AbstractContextManager):
         """
         Add or update a property group to the workspace.
         """
-        self._io_call(
-            H5Writer.add_or_update_property_group,
-            property_group,
-            remove=remove,
-            mode="r+",
-        )
+        if isinstance(property_group, ConcatenatedPropertyGroup):
+            parent = property_group.parent
+            parent.concatenator.update_attributes(parent, "property_groups")
+        else:
+            self._io_call(
+                H5Writer.add_or_update_property_group,
+                property_group,
+                remove=remove,
+                mode="r+",
+            )
 
     def create_object_or_group(
         self, entity_class, entity_kwargs: dict, entity_type_kwargs: dict

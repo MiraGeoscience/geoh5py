@@ -674,6 +674,9 @@ class ConcatenatedData(Concatenated):
             return None
 
         for prop_group in self.parent.property_groups:
+            if prop_group.properties is None:
+                continue
+
             if self.uid in prop_group.properties:
                 return prop_group
 
@@ -796,34 +799,28 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
         super().__init__(entity_type, **kwargs)
 
-    def find_or_create_property_group(self, **kwargs) -> ConcatenatedPropertyGroup:
+    def create_property_group(
+        self, on_file=False, **kwargs
+    ) -> ConcatenatedPropertyGroup:
         """
-        Find or create :obj:`~geoh5py.groups.property_group.PropertyGroup`
-        from given name and properties.
-
+        Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
-
-        :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
+        :return: A new :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        property_groups = []
-        if self.property_groups is not None:
-            property_groups = self.property_groups
-
-        if "name" in kwargs and any(
-            pg.name == kwargs["name"] for pg in property_groups
+        if (
+            "name" in kwargs
+            and self._property_groups is not None
+            and any(pg.name == kwargs["name"] for pg in self._property_groups)
         ):
-            prop_group = [pg for pg in property_groups if pg.name == kwargs["name"]][0]
-        else:
-            if (
-                "property_group_type" not in kwargs
-                and "Property Group Type" not in kwargs
-            ):
-                kwargs["property_group_type"] = "Interval table"
+            raise KeyError(
+                f"A Property Group with name {kwargs['name']} already exists."
+            )
 
-            prop_group = ConcatenatedPropertyGroup(self, **kwargs)
-            self.concatenator.add_save_concatenated(prop_group)
-            self.concatenator.update_array_attribute(self, "property_groups")
+        if "property_group_type" not in kwargs and "Property Group Type" not in kwargs:
+            kwargs["property_group_type"] = "Interval table"
+
+        prop_group = ConcatenatedPropertyGroup(self, **kwargs)
 
         return prop_group
 
@@ -1074,10 +1071,12 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             property_group = f"depth_{ind}"
 
         if isinstance(property_group, str):
-            out_group: ConcatenatedPropertyGroup = self.find_or_create_property_group(
-                name=property_group,
-                association="DEPTH",
-                property_group_type="Depth table",
+            out_group: ConcatenatedPropertyGroup = (
+                self.find_or_create_property_group(  # type: ignore
+                    name=property_group,
+                    association="DEPTH",
+                    property_group_type="Depth table",
+                )
             )
         else:
             out_group = property_group
