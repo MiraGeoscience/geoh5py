@@ -357,30 +357,30 @@ class ObjectBase(Entity):
 
         return entities
 
-    def create_property_group(self, on_file=False, **kwargs) -> PropertyGroup:
+    def create_property_group(
+        self, name=None, on_file=False, **kwargs
+    ) -> PropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
         :return: A new :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        if (
-            "name" in kwargs
-            and self.property_groups is not None
-            and any(pg.name == kwargs["name"] for pg in self.property_groups)
-        ):
-            raise KeyError(
-                f"A Property Group with name {kwargs['name']} already exists."
-            )
+        if self._property_groups is not None and name in [
+            pg.name for pg in self._property_groups
+        ]:
+            raise KeyError(f"A Property Group with name '{name}' already exists.")
 
         if "property_group_type" not in kwargs and "Property Group Type" not in kwargs:
             kwargs["property_group_type"] = "Multi-element"
 
-        prop_group = PropertyGroup(self, on_file=on_file, **kwargs)
+        prop_group = PropertyGroup(self, name=name, on_file=on_file, **kwargs)
 
         return prop_group
 
-    def find_or_create_property_group(self, **kwargs) -> PropertyGroup:
+    def find_or_create_property_group(
+        self, name=None, uid=None, **kwargs
+    ) -> PropertyGroup:
         """
         Find or create :obj:`~geoh5py.groups.property_group.PropertyGroup`
         from given name and properties.
@@ -392,11 +392,11 @@ class ObjectBase(Entity):
         """
 
         prop_group = None
-        if "name" in kwargs:
-            prop_group = self.get_property_group(kwargs["name"])[0]
+        if name is not None or uid is not None:
+            prop_group = self.get_property_group(name or uid)[0]
 
         if prop_group is None:
-            prop_group = self.create_property_group(**kwargs)
+            prop_group = self.create_property_group(name=name, **kwargs)
 
         return prop_group
 

@@ -808,7 +808,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
         super().__init__(entity_type, **kwargs)
 
     def create_property_group(
-        self, on_file=False, **kwargs
+        self, name=None, on_file=False, **kwargs
     ) -> ConcatenatedPropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
@@ -816,19 +816,15 @@ class ConcatenatedObject(Concatenated, ObjectBase):
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
         :return: A new :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        if (
-            "name" in kwargs
-            and self._property_groups is not None
-            and any(pg.name == kwargs["name"] for pg in self._property_groups)
-        ):
-            raise KeyError(
-                f"A Property Group with name {kwargs['name']} already exists."
-            )
+        if self._property_groups is not None and name in [
+            pg.name for pg in self._property_groups
+        ]:
+            raise KeyError(f"A Property Group with name '{name}' already exists.")
 
         if "property_group_type" not in kwargs and "Property Group Type" not in kwargs:
             kwargs["property_group_type"] = "Interval table"
 
-        prop_group = ConcatenatedPropertyGroup(self, **kwargs)
+        prop_group = ConcatenatedPropertyGroup(self, name=name, **kwargs)
 
         return prop_group
 

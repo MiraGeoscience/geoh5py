@@ -41,10 +41,14 @@ class PropertyGroup(ABC):
         "Properties": "properties",
         "Property Group Type": "property_group_type",
     }
+    _name: str
+    _uid: uuid.UUID
 
-    def __init__(self, parent: ObjectBase, on_file=False, **kwargs):
-        self._name = "prop_group"
-        self._uid = uuid.uuid4()
+    def __init__(
+        self, parent: ObjectBase, name=None, on_file=False, uid=None, **kwargs
+    ):
+        self.name = name or "property_group"
+        self.uid = uid or uuid.uuid4()
         self._allow_delete = True
         self.on_file = on_file
         self._association: DataAssociationEnum = DataAssociationEnum.VERTEX
@@ -133,6 +137,9 @@ class PropertyGroup(ABC):
 
     @name.setter
     def name(self, new_name: str):
+        if not isinstance(new_name, str):
+            raise TypeError("Name must be a string")
+
         self._name = new_name
 
     @property
@@ -219,7 +226,7 @@ class PropertyGroup(ABC):
         if isinstance(uid, str):
             uid = uuid.UUID(uid)
 
-        assert isinstance(
-            uid, uuid.UUID
-        ), f"Could not convert input uid {uid} to type uuid.UUID"
+        if not isinstance(uid, uuid.UUID):
+            raise TypeError(f"Could not convert input uid {uid} to type uuid.UUID")
+
         self._uid = uid

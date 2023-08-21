@@ -32,6 +32,7 @@ from geoh5py.data.float_data import FloatData
 from geoh5py.groups.property_group import PropertyGroup
 from geoh5py.objects import Curve
 from geoh5py.objects.object_base import ObjectBase
+from geoh5py.shared.utils import is_uuid
 
 if TYPE_CHECKING:
     from geoh5py.groups import Group
@@ -213,6 +214,10 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             components = {}
             for name in self.metadata["EM Dataset"]["Property groups"]:
                 prop_group = self.find_or_create_property_group(name=name)
+
+                if prop_group.properties is None:
+                    continue
+
                 components[name] = [
                     self.workspace.get_entity(uid)[0] for uid in prop_group.properties
                 ]
@@ -378,6 +383,19 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
                     metadata["EM Dataset"][self.type] = self.uid
                 self.metadata = metadata
             else:
+                if "Property groups" in metadata["EM Dataset"]:
+                    prop_groups = []
+                    for value in metadata["EM Dataset"]["Property groups"]:
+                        if is_uuid(value):
+                            value = uuid.UUID(value)
+
+                        prop_group = self.get_property_group(value)[0]
+
+                        if isinstance(prop_group, PropertyGroup):
+                            prop_groups.append(prop_group.name)
+
+                    metadata["EM Dataset"]["Property groups"] = prop_groups
+
                 self._metadata = metadata
 
         return self._metadata
@@ -538,7 +556,9 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             if isinstance(value, str):
                 value = groups[value]
 
-            if len(value.properties) != len(self.channels):
+            if value.properties is not None and len(value.properties) != len(
+                self.channels
+            ):
                 raise ValueError(
                     f"Number of properties in group '{value.name}' "
                     + "differ from the number of 'channels'."
