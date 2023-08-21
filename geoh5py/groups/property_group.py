@@ -42,7 +42,9 @@ class PropertyGroup(ABC):
         "Property Group Type": "property_group_type",
     }
 
+
     def __init__(self, parent: ObjectBase, on_file=False, **kwargs):
+
         self._name = "prop_group"
         self._uid = uuid.uuid4()
         self._allow_delete = True
@@ -58,6 +60,7 @@ class PropertyGroup(ABC):
 
         parent.add_children([self])
         self._parent = parent
+
 
         for attr, item in kwargs.items():
             try:

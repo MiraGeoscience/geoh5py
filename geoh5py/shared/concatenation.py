@@ -97,9 +97,11 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
         """
+        self._property_groups = None
+
         for child in children:
             if not (
-                isinstance(child, Concatenated)
+                isinstance(child, (Concatenated, ConcatenatedPropertyGroup))
                 or (
                     isinstance(child, Data)
                     and child.association
@@ -535,6 +537,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         :param entity: Concatenated entity with attributes.
         """
         target_attributes = self.get_concatenated_attributes(entity.uid)
+
         for key, attr in entity.attribute_map.items():
             val = getattr(entity, attr, None)
 
@@ -777,10 +780,15 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
     @parent.setter
     def parent(self, parent):
+        if self._parent is not None:
+            raise AttributeError("Cannot change parent of a property group.")
+
         if not isinstance(parent, ConcatenatedObject):
             raise AttributeError(
                 "The 'parent' of a concatenated Data must be of type 'Concatenated'."
             )
+        parent.add_children([self])
+        parent.workspace.create_property_group(self)
         self._parent = parent
 
 
@@ -888,15 +896,22 @@ class ConcatenatedObject(Concatenated, ObjectBase):
     @property
     def property_groups(self) -> list | None:
         if self._property_groups is None:
-            prop_groups = self.concatenator.fetch_values(self, "property_group_ids")
+            property_groups = self.concatenator.fetch_values(self, "property_group_ids")
 
-            if prop_groups is None or isinstance(self, Data):
-                return None
+            if property_groups is None or isinstance(self, Data):
+                property_groups = []
 
             for key in prop_groups:
                 self.find_or_create_property_group(
                     **self.concatenator.get_concatenated_attributes(key)
                 )
+
+            property_groups = [
+                child for child in self.children if isinstance(child, PropertyGroup)
+            ]
+
+            if len(property_groups) > 0:
+                self._property_groups = property_groups
 
         return self._property_groups
 
@@ -1104,6 +1119,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             },
             out_group,
         )
+
         return out_group
 
     def validate_interval_data(
@@ -1155,7 +1171,10 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         ind = 0
         label = ""
         if len(self.from_) > 0:
-            ind = len(self.from_)
+            print(self.from_)
+            ind = len(
+                list(set(self.from_))
+            )  # todo: from_ return the same value x time why?
             label = f"({ind})"
 
         if property_group is None:

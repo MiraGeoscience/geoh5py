@@ -119,13 +119,10 @@ def test_concatenated_entities(tmp_path):
 
         prop_group = ConcatenatedPropertyGroup(parent=concat_object)
 
-        with pytest.raises(AttributeError) as error:
+        with pytest.raises(
+            AttributeError, match="Cannot change parent of a property group."
+        ):
             prop_group.parent = Drillhole
-
-        assert (
-            "The 'parent' of a concatenated Data must be of type 'Concatenated'"
-            in str(error)
-        )
 
         assert prop_group.to_ is None
         assert prop_group.from_ is None
@@ -197,6 +194,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         test_values = np.random.randn(30)
         test_values[0] = np.nan
         test_values[-1] = np.nan
+
         well.add_data(
             {
                 "my_log_values/": {
@@ -280,6 +278,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         interval_data = data_objects[0]
         assert interval_data.property_group.name == "Interval_0"
         assert interval_data.parent.get_data("FROM")
+
         assert interval_data.parent.get_data("FROM(1)")
         assert interval_data.parent.get_data("TO")
         assert interval_data.parent.get_data("TO(1)")
@@ -386,6 +385,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         with Workspace.create(new_path, version=2.0) as new_workspace:
             new_group = dh_group.copy(parent=new_workspace)
             well = [k for k in new_group.children if k.name == "bullseye/"][0]
+
             prop_group = [k for k in well.property_groups if k.name == "Interval_0"][0]
             with pytest.raises(
                 ValueError, match="Input values for 'new_data' with shape"

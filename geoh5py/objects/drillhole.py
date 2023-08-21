@@ -407,6 +407,7 @@ class Drillhole(Points):
             attributes, new_property_group = self.validate_data(
                 attributes, property_group, collocation_distance=collocation_distance
             )
+
             entity_type = self.validate_data_type(attributes)
             kwargs = {
                 "name": None,
