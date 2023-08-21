@@ -897,7 +897,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
             if property_groups is None or isinstance(self, Data):
                 property_groups = []
 
-            for key in prop_groups:
+            for key in property_groups:
                 self.find_or_create_property_group(
                     **self.concatenator.get_concatenated_attributes(key)
                 )
