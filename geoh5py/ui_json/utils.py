@@ -196,6 +196,10 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
                 enabled_change |= form.get("enabled", True) != value
                 form["enabled"] = value
 
+    if not is_group_optional and "dependency" in ui_json[parameter]:
+        is_group_optional = not dependency_requires_value(ui_json, parameter)
+        enabled_change = False
+
     if (not value) and not (
         ui_json[parameter].get("optional", False) or is_group_optional
     ):
