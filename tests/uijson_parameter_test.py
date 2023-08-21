@@ -106,12 +106,12 @@ def test_validation_update():
     assert param.validations["required"]
     assert param.validations["types"] == [str]
 
-
 def test_form_parameter_roundtrip():
     form = {"label": "my param", "value": 1, "extra": "stuff", "name": "danger!"}
     param = FormParameter("param", form)
     assert param.name == "param"
     assert param.label == "my param"
+    assert not hasattr(param, "extra")
     assert all(
         k in list(param.members)
         for k in param.valid_members + ["extra"]

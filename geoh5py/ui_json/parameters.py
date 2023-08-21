@@ -75,10 +75,10 @@ class FormParameter:
         form: dict[str, Any] | None = None,
         validations: Validation | None = None,
     ):
-        self.name: str = name
+        self.name= name
         if form is not None:
             self._active_members = list(form)
-            self._update_members(form)
+            self.members = self._members(form)
         self._value._validations = Validations(validations)
 
     @property
@@ -137,7 +137,7 @@ class FormParameter:
             except BaseValidationError as err:
                 raise UIJsonFormatError(self.name, str(err)) from err
 
-    def _update_members(self, form: dict[str, Any]):
+    def _members(self, form: dict[str, Any]):
         members = {}
         for member in self.valid_members:
             if member == "value":
@@ -152,7 +152,7 @@ class FormParameter:
         for member in unrecognized_members:
             members[member] = Parameter(member, form[member])
 
-        self.members = members
+        return members
 
     @classmethod
     def is_form(cls, form: dict[str, Any]) -> bool:
