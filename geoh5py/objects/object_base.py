@@ -472,7 +472,7 @@ class ObjectBase(Entity):
         Remove children from the list of children entities.
 
         :param children: List of entities
-        
+
         .. warning::
             Removing a child entity without re-assigning it to a different
             parent may cause it to become inactive. Inactive entities are removed
