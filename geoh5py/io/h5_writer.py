@@ -846,35 +846,61 @@ class H5Writer:
             if hasattr(entity, "property_groups") and isinstance(
                 entity.property_groups, list
             ):
-                entity_handle.create_group("PropertyGroups")
                 for p_g in entity.property_groups:
-                    uid = as_str_if_uuid(p_g.uid)
-                    if uid in entity_handle["PropertyGroups"]:
-                        del entity_handle["PropertyGroups"][uid]
-                        entity.workspace.repack = True
+                    cls.add_or_update_property_group(h5file, entity, p_g)
 
-                    entity_handle["PropertyGroups"].create_group(uid)
+    @classmethod
+    def add_or_update_property_group(cls, file, property_group, remove=False):
+        """
+        Update a :obj:`~geoh5py.groups.property_group.PropertyGroup` associated with
+        an :obj:`~geoh5py.shared.entity.Entity`.
 
-                    group_handle = entity_handle["PropertyGroups"][uid]
+        :param file: Name or handle to a geoh5 file.
+        :param property_group: Target PropertyGroup
+        """
+        with fetch_h5_handle(file, mode="r+") as h5file:
+            entity_handle = H5Writer.fetch_handle(h5file, property_group.parent)
 
-                    for key, attr in p_g.attribute_map.items():
-                        try:
-                            value = getattr(p_g, attr)
-                        except AttributeError:
-                            continue
+            if entity_handle is None:
+                return
 
-                        if key == "Association":
-                            value = value.name.capitalize()
+            if "PropertyGroups" not in entity_handle:
+                entity_handle.create_group("PropertyGroups")
 
-                        elif key == "Properties":
-                            value = np.asarray([as_str_if_uuid(val) for val in value])
+            uid = as_str_if_uuid(property_group.uid)
+            if uid in entity_handle["PropertyGroups"]:
+                del entity_handle["PropertyGroups"][uid]
+                property_group.parent.workspace.repack = True
 
-                        elif key == "ID":
-                            value = as_str_if_uuid(value)
+            if remove:
+                return
 
-                        group_handle.attrs.create(
-                            key, value, dtype=h5py.special_dtype(vlen=str)
-                        )
+            entity_handle["PropertyGroups"].create_group(uid)
+            group_handle = entity_handle["PropertyGroups"][uid]
+
+            for key, attr in property_group.attribute_map.items():
+                try:
+                    value = getattr(property_group, attr)
+                except AttributeError:
+                    continue
+
+                if key == "Association":
+                    value = value.name.capitalize()
+
+                elif key == "Properties":
+                    if value is None:
+                        continue
+
+                    value = np.asarray([as_str_if_uuid(val) for val in value])
+
+                elif key == "ID":
+                    value = as_str_if_uuid(value)
+
+                group_handle.attrs.create(
+                    key, value, dtype=h5py.special_dtype(vlen=str)
+                )
+
+            property_group.on_file = True
 
     @classmethod
     def write_to_parent(

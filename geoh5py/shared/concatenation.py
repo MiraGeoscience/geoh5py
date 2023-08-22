@@ -63,7 +63,6 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
     _data: dict
     _index: dict
     _property_group_ids: np.ndarray | None = None
-    _property_groups: list | None = None
 
     def __init__(self, group_type: GroupType, **kwargs):
         super().__init__(group_type, **kwargs)
@@ -90,18 +89,14 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return self._attributes_keys
 
-    def add_children(
-        self, children: list[ConcatenatedObject] | list[Entity] | list[PropertyGroup]
-    ) -> None:
+    def add_children(self, children: list[ConcatenatedObject] | list[Entity]) -> None:
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
         """
-        self._property_groups = None
-
         for child in children:
             if not (
-                isinstance(child, (Concatenated, ConcatenatedPropertyGroup))
+                isinstance(child, Concatenated)
                 or (
                     isinstance(child, Data)
                     and child.association
@@ -677,6 +672,9 @@ class ConcatenatedData(Concatenated):
             return None
 
         for prop_group in self.parent.property_groups:
+            if prop_group.properties is None:
+                continue
+
             if self.uid in prop_group.properties:
                 return prop_group
 
@@ -804,28 +802,24 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
         super().__init__(entity_type, **kwargs)
 
-    def create_property_group(self, **kwargs) -> ConcatenatedPropertyGroup:
+    def create_property_group(
+        self, name=None, on_file=False, **kwargs
+    ) -> ConcatenatedPropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
         :return: A new :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        property_groups = [
-            child for child in self.children if isinstance(child, PropertyGroup)
-        ]
-
-        if "name" in kwargs and any(
-            pg.name == kwargs["name"] for pg in property_groups
-        ):
-            raise KeyError(
-                f"A Property Group with name {kwargs['name']} already exists."
-            )
+        if self._property_groups is not None and name in [
+            pg.name for pg in self._property_groups
+        ]:
+            raise KeyError(f"A Property Group with name '{name}' already exists.")
 
         if "property_group_type" not in kwargs and "Property Group Type" not in kwargs:
             kwargs["property_group_type"] = "Interval table"
 
-        prop_group = ConcatenatedPropertyGroup(self, **kwargs)
+        prop_group = ConcatenatedPropertyGroup(self, name=name, **kwargs)
 
         return prop_group
 
@@ -899,12 +893,14 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                 property_groups = []
 
             for key in property_groups:
-                getattr(self, "find_or_create_property_group")(
+                self.find_or_create_property_group(
                     **self.concatenator.get_concatenated_attributes(key)
                 )
 
             property_groups = [
-                child for child in self.children if isinstance(child, PropertyGroup)
+                child
+                for child in self.children
+                if isinstance(child, ConcatenatedPropertyGroup)
             ]
 
             if len(property_groups) > 0:
@@ -1083,12 +1079,12 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             property_group = f"depth_{ind}"
 
         if isinstance(property_group, str):
-            out_group: ConcatenatedPropertyGroup = getattr(
-                self, "find_or_create_property_group"
-            )(
-                name=property_group,
-                association="DEPTH",
-                property_group_type="Depth table",
+            out_group: ConcatenatedPropertyGroup = (
+                self.find_or_create_property_group(  # type: ignore
+                    name=property_group,
+                    association="DEPTH",
+                    property_group_type="Depth table",
+                )
             )
         else:
             out_group = property_group
