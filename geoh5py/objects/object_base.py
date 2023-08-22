@@ -630,10 +630,10 @@ class ObjectBase(Entity):
         if not isinstance(data, list):
             data = [data]
 
-        if not self.property_groups:
+        if not self._property_groups:
             return
 
-        for property_group in self.property_groups:
+        for property_group in self._property_groups:
             property_group.remove_properties(data)
 
     @property
