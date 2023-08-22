@@ -170,7 +170,9 @@ class ObjectBase(Entity):
         return data_objects
 
     def add_data_to_group(
-        self, data: list | Data | uuid.UUID, property_group: str | PropertyGroup
+        self,
+        data: list[Data | uuid.UUID] | Data | uuid.UUID,
+        property_group: str | PropertyGroup,
     ) -> PropertyGroup:
         """
         Append data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
@@ -184,16 +186,18 @@ class ObjectBase(Entity):
 
         :return: The target property group.
         """
-        if not isinstance(data, list):
+        if isinstance(data, (Data, uuid.UUID)):
             data = [data]
 
-        children = []
         associations = []
-        for entity in data:
-            if isinstance(entity, (uuid.UUID, str)):
-                entity = self.get_entity(entity)[0]
-            children.append(entity)
-            associations.append(entity.association)
+        for elem in data:
+            if isinstance(elem, (uuid.UUID, str)):
+                entity = self.get_entity(elem)[0]
+            else:
+                entity = elem
+
+            if isinstance(entity, Data):
+                associations.append(entity.association)
 
         associations = list(set(associations))
         if len(associations) > 1:
@@ -205,7 +209,7 @@ class ObjectBase(Entity):
                 association=associations[0],
             )
 
-        property_group.add_properties(children)
+        property_group.add_properties(data)
 
         return property_group
 
