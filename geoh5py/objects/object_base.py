@@ -397,7 +397,7 @@ class ObjectBase(Entity):
 
         prop_group = None
         if name is not None or uid is not None:
-            prop_group = self.get_property_group(name or uid)[0]
+            prop_group = self.get_property_group(uid or name)[0]
 
         if prop_group is None:
             prop_group = self.create_property_group(name=name, **kwargs)
