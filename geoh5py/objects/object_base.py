@@ -204,10 +204,12 @@ class ObjectBase(Entity):
             raise ValueError("All data must have the same association.")
 
         if isinstance(property_group, str):
-            property_group = self.find_or_create_property_group(
-                name=property_group,
-                association=associations[0],
-            )
+            if len(associations) == 1:
+                property_group = self.find_or_create_property_group(
+                    name=property_group, association=associations[0]
+                )
+            else:
+                property_group = self.find_or_create_property_group(name=property_group)
 
         property_group.add_properties(data)
 
