@@ -75,7 +75,7 @@ class ObjectBase(Entity):
         property_groups = self._property_groups or []
 
         for child in children:
-            if child not in self._children:
+            if child not in self._children and isinstance(child, (Data, PropertyGroup)):
                 self._children.append(child)
 
             if isinstance(child, PropertyGroup) and child not in property_groups:
@@ -612,7 +612,9 @@ class ObjectBase(Entity):
 
         return self._visual_parameters
 
-    def remove_data_from_groups(self, data: list[Data] | Data) -> None:
+    def remove_data_from_groups(
+        self, data: list[Data | uuid.UUID] | Data | uuid.UUID
+    ) -> None:
         """
         Remove data children to all
         :obj:`~geoh5py.groups.property_group.PropertyGroup` of the object.
