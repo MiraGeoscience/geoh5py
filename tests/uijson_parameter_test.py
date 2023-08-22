@@ -105,23 +105,38 @@ def test_validation_update():
     assert param.validations["values"] == ["you"]
     assert param.validations["required"]
     assert param.validations["types"] == [str]
+def test_dataclass():
+    from dataclasses import dataclass, KW_ONLY
+    from typing import Any, ClassVar
+    @dataclass
+    class MyClass:
+        valid_members: ClassVar[list[str]] = ["name", "label", "value"]
+        name: str
+        _: KW_ONLY
+        label: int | None = None
+        value: Any | None = None
+        enabled: bool = True
+        optional: bool = False
+        validations: dict[str, Any] = None
 
+        def __post_init__(self, **kwargs):
+            self._active_members = list(kwargs)
+
+    MyClass("param1", label="my param", value=1)
 def test_form_parameter_roundtrip():
-    form = {"label": "my param", "value": 1, "extra": "stuff", "name": "danger!"}
-    param = FormParameter("param", form)
+    form = {"label": "my param", "value": 1, "extra": "stuff"}
+    param = FormParameter("param", **form)
     assert param.name == "param"
     assert param.label == "my param"
+    # assert param.validations  is None
     assert not hasattr(param, "extra")
-    assert all(
-        k in list(param.members)
-        for k in param.valid_members + ["extra"]
-        if k != "value"
-    )
+    assert param._extra_members["extra"] == "stuff"
+    assert all(hasattr(param, k) for k in param.valid_members)
     assert param.form == form
 
 
 def test_form_parameter_validate():
-    param = FormParameter(
+    param = FormParameter.from_dict(
         "param", {"label": "my param", "value": 1}, validations={"types": [int]}
     )
     assert param.name == "param"
@@ -131,9 +146,19 @@ def test_form_parameter_validate():
     assert param.value == 1
     assert all(hasattr(param, k) for k in param.valid_members)
 
-    param.validate("form")
-    param.validate("value")
-    param.validate("all")
+    # Form validations should pass
+    param.validate()
+
+    # Form validation should fail when form is invalid
+    param.enabled = "uh-oh"
+    with pytest.raises(
+            UIJsonFormatError, match="Invalid UIJson format for parameter 'param'."
+    ):
+        param.validate()
+
+    # Value validations should pass as is and when setting a valid value
+    param._value.validate()
+    param.value = 2
 
     param = FormParameter(
         "param",
