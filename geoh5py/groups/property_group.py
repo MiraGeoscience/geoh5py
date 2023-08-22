@@ -52,16 +52,17 @@ class PropertyGroup(ABC):
         self._allow_delete = True
         self.on_file = on_file
         self._association: DataAssociationEnum = DataAssociationEnum.VERTEX
-        self._properties: list[uuid.UUID] | None = None
-        self._property_group_type = "Multi-element"
 
         if not hasattr(parent, "_property_groups"):
             raise AttributeError(
                 f"Parent {parent} must have a 'property_groups' attribute"
             )
 
+        self._parent: ObjectBase = parent
+        self._properties: list[uuid.UUID] | None = None
+        self._property_group_type = "Multi-element"
+
         parent.add_children([self])
-        self._parent = parent
 
         for attr, item in kwargs.items():
             try:
