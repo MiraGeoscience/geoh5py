@@ -74,16 +74,21 @@ class PropertyGroup(ABC):
 
         self.parent.workspace.register_property_group(self)
 
-    def add_properties(self, data: Data | list[Data]):
+    def add_properties(self, data: Data | list[Data | uuid.UUID] | uuid.UUID):
         """
         Remove data from the properties.
         """
-        if isinstance(data, Data):
+        if isinstance(data, (Data, uuid.UUID)):
             data = [data]
 
         properties = self._properties or []
-        for entity in data:
-            if entity.uid not in properties and entity in self.parent.children:
+        for elem in data:
+            if isinstance(elem, uuid.UUID):
+                entity = self.parent.get_entity(elem)[0]
+            else:
+                entity = elem
+
+            if isinstance(entity, Data) and entity.uid not in properties:
                 properties.append(entity.uid)
 
         if properties:
@@ -199,18 +204,23 @@ class PropertyGroup(ABC):
     def property_group_type(self, group_type: str):
         self._property_group_type = group_type
 
-    def remove_properties(self, data: Data | list[Data]):
+    def remove_properties(self, data: Data | list[Data | uuid.UUID] | uuid.UUID):
         """
         Remove data from the properties.
         """
-        if isinstance(data, Data):
+        if isinstance(data, (Data, uuid.UUID)):
             data = [data]
 
         if self._properties is None:
             return
 
-        for entity in data:
-            if entity.uid in self._properties:
+        for elem in data:
+            if isinstance(elem, uuid.UUID):
+                entity = self.parent.get_entity(elem)[0]
+            else:
+                entity = elem
+
+            if entity is not None and entity.uid in self._properties:
                 self._properties.remove(entity.uid)
 
         self.parent.workspace.add_or_update_property_group(self)

@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+from uuid import uuid4
+
 import numpy as np
 import pytest
 
@@ -73,12 +75,31 @@ def test_create_property_group(tmp_path):
             workspace.find_data(single_data_group.properties[0]).name == f"Period{1}"
         ), "Failed at creating a property group by data name"
 
-        # Create a new group by data uid
+        # Add data to group by uid
         single_data_group = curve.add_data_to_group(props[1].uid, "Singleton")
 
         assert (
-            workspace.find_data(single_data_group.properties[0]).name == f"Period{1}"
-        ), "Failed at creating a property group by data name"
+            len(single_data_group.properties) == 2
+        ), "Failed adding data to property group."
+
+        # Add data to group by uid
+        single_data_group.add_properties(props[2].uid)
+
+        assert (
+            len(single_data_group.properties) == 3
+        ), "Failed adding data to property group."
+
+        # Try adding bogus data on group
+        single_data_group.add_properties(uuid4())
+        assert len(single_data_group.properties) == 3
+
+        # Remove data from group by data
+        single_data_group.remove_properties(props[2])
+        assert len(single_data_group.properties) == 2
+
+        # Remove bogus data from uuid
+        single_data_group.remove_properties(uuid4())
+        assert len(single_data_group.properties) == 2
 
         # get property group
         property_group_test = workspace.get_entity("myGroup")[0]
