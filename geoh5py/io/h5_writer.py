@@ -847,7 +847,7 @@ class H5Writer:
                 entity.property_groups, list
             ):
                 for p_g in entity.property_groups:
-                    cls.add_or_update_property_group(h5file, entity, p_g)
+                    cls.add_or_update_property_group(h5file, p_g)
 
     @classmethod
     def add_or_update_property_group(cls, file, property_group, remove=False):

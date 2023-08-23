@@ -226,6 +226,5 @@ class CellObject(Points, ABC):
                 self.workspace.copy_property_groups(
                     new_object, self.property_groups, children_map
                 )
-                new_object.workspace.update_attribute(new_object, "property_groups")
 
         return new_object

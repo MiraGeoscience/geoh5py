@@ -316,15 +316,18 @@ class Workspace(AbstractContextManager):
         cls, entity: ObjectBase, propery_groups: list[PropertyGroup], data_map: dict
     ):
         for prop_group in propery_groups:
-            new_group = entity.find_or_create_property_group(
+            properties = None
+            if prop_group.properties is not None:
+                properties = [data_map[uid] for uid in prop_group.properties]
+
+            entity.find_or_create_property_group(
                 **{
                     "association": prop_group.association,
                     "name": prop_group.name,
                     "property_group_type": prop_group.property_group_type,
+                    "properties": properties,
                 }
             )
-            if prop_group.properties is not None:
-                new_group.properties = [data_map[uid] for uid in prop_group.properties]
 
     @classmethod
     def create(cls, path: str | Path, **kwargs) -> Workspace:
