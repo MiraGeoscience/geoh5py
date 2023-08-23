@@ -49,8 +49,29 @@ def test_create_property_group(tmp_path):
                 )
             ]
 
+        with pytest.raises(TypeError, match="Name must be"):
+            _ = PropertyGroup(parent="bidon", name=42)
+
+        with pytest.raises(AttributeError, match="Parent bidon"):
+            _ = PropertyGroup(parent="bidon")
+
         # Property group object should have been created
         prop_group = curve.find_or_create_property_group(name="myGroup")
+
+        # test properties group
+        curve2 = curve.copy()
+        prop_group2 = curve2.find_or_create_property_group(name="myGroup2")
+
+        assert prop_group2.remove_properties("bidon") is None
+
+        with pytest.raises(TypeError, match="All uids must be of type"):
+            prop_group2.properties = [123]
+
+        with pytest.raises(TypeError, match="Could not convert input uid"):
+            prop_group2.uid = 123
+
+        with pytest.raises(TypeError, match="Attribute 'on_file' must be a boolean"):
+            prop_group.on_file = "bidon"
 
         with pytest.raises(KeyError, match="A Property Group with name"):
             curve.create_property_group(name="myGroup")
@@ -87,6 +108,9 @@ def test_create_property_group(tmp_path):
         assert (
             len(single_data_group.properties) == 2  # 3
         ), "Failed adding data to property group."
+
+        with pytest.raises(UserWarning, match="Cannot modify"):
+            single_data_group.properties = "bidon"
 
         # Try adding bogus data on group
         single_data_group.add_properties(uuid4())
