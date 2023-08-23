@@ -83,18 +83,17 @@ def test_parameter():
         param.validate()
 
     # Bad type triggers TypeValidationError
-    param = Parameter("param", "nogood", {"types": [int, float]})
     with pytest.raises(TypeValidationError):
-        param.validate()
+        param = Parameter("param", "nogood", {"types": [int, float]})
 
     # Bad type and value triggers AggregateValidationError
-    param = Parameter(
-        "param", "nogood", {"values": ["onlythis"], "types": [int, float]}
-    )
     with pytest.raises(AggregateValidationError):
-        param.validate()
+        param = Parameter(
+            "param", "nogood", {"values": ["onlythis"], "types": [int, float]}
+        )
 
-    assert param.__str__() == "<Parameter> : 'param' -> nogood"
+
+    assert param.__str__() == "<Parameter> : 'param' -> test"
 
 
 def test_validation_update():
@@ -105,30 +104,12 @@ def test_validation_update():
     assert param.validations["values"] == ["you"]
     assert param.validations["required"]
     assert param.validations["types"] == [str]
-def test_dataclass():
-    from dataclasses import dataclass, KW_ONLY
-    from typing import Any, ClassVar
-    @dataclass
-    class MyClass:
-        valid_members: ClassVar[list[str]] = ["name", "label", "value"]
-        name: str
-        _: KW_ONLY
-        label: int | None = None
-        value: Any | None = None
-        enabled: bool = True
-        optional: bool = False
-        validations: dict[str, Any] = None
-
-        def __post_init__(self, **kwargs):
-            self._active_members = list(kwargs)
-
-    MyClass("param1", label="my param", value=1)
 def test_form_parameter_roundtrip():
     form = {"label": "my param", "value": 1, "extra": "stuff"}
     param = FormParameter("param", **form)
     assert param.name == "param"
     assert param.label == "my param"
-    # assert param.validations  is None
+    assert param.validations  == {}
     assert not hasattr(param, "extra")
     assert param._extra_members["extra"] == "stuff"
     assert all(hasattr(param, k) for k in param.valid_members)
@@ -150,17 +131,18 @@ def test_form_parameter_validate():
     param.validate()
 
     # Form validation should fail when form is invalid
-    param.enabled = "uh-oh"
     with pytest.raises(
-            UIJsonFormatError, match="Invalid UIJson format for parameter 'param'."
+            TypeValidationError,
+            match="Type 'str' provided for 'enabled' is invalid"
     ):
-        param.validate()
+        param.enabled = "uh-oh"
+
 
     # Value validations should pass as is and when setting a valid value
-    param._value.validate()
+    param.validate()
     param.value = 2
 
-    param = FormParameter(
+    param = FormParameter.from_dict(
         "param",
         {"label": "my param", "value": 1, "optional": "whoops"},
         {"types": [str]},

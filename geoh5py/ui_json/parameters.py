@@ -43,7 +43,7 @@ class Parameter:
     @value.setter
     def value(self, val):
         self._value = val
-        if self.validations.validations is not None:
+        if self.validations:
             self.validate()
     @property
     def validations(self):
@@ -93,36 +93,48 @@ class FormParameter:
 
     def __init__(self, name: str, validations: Validation | None = None, **kwargs):
         self.name: str = name
-        self._value = Parameter("value", kwargs.get("value", None), validations)
-        self._label: str  | None = self._register("label", kwargs)
-        self._enabled: bool = self._register("enabled", kwargs, default=True)
-        self._optional: bool = self._register("optional", kwargs, default=False)
-        self._groupOptional: bool = self._register("groupOptional", kwargs, default=False)
-        self._main: bool = self._register("main", kwargs, default=True)
-        self._group: str | None = self._register("group", kwargs)
-        self._dependency: str | None = self._register("dependency", kwargs)
-        self._dependencyType: str | None = self._register("dependencyType", kwargs)
-        self._groupDependency: str | None = self._register("groupDependency", kwargs)
-        self._groupDependencyType: str | None = self._register("groupDependencyType", kwargs)
-        self._tooltip: str | None = self._register("tooltip", kwargs)
-        self._extra_members = {k: v for k, v in kwargs.items() if k not in self.valid_members}
-        self._active = list(kwargs)
+        self._value = Parameter("value", kwargs.pop("value", None), validations)
+        self._label: str  | None = None
+        self._enabled: bool = True
+        self._optional: bool = False
+        self._groupOptional: bool = False
+        self._main: bool = True
+        self._group: str | None = None
+        self._dependency: str | None = None
+        self._dependencyType: str | None = None
+        self._groupDependency: str | None = None
+        self._groupDependencyType: str | None = None
+        self._tooltip: str | None = None
+        self._extra_members: dict[str, Any] = {}
+        self.register(kwargs)
         self.validations: Validations = Validations(validations)
 
     @classmethod
     def from_dict(cls, name: str, form: dict[str, Any], validations: dict | None = None):
         return cls(name, validations, **form)
 
-    def _register(self, name: str, kwargs: dict[str, Any], default=None):
-        """Set parameters from form members with default or incoming values."""
-        value = kwargs.get(name, default)
-        if name in [k for k in self.valid_members if name != "value"]:
-            param =  Parameter(name, value, self.form_validations[name])
-        else:
-            msg = f"Cannot register parameter '{name}'.  Not a valid member."
-            raise AttributeError(msg)
+    def register(self, members: dict[str, Any]) -> dict[str, Any]:
+        """
+        Set parameters from form members with default or incoming values.
 
-        return param
+        :param members: Dictionary of form members and associated values.
+
+        :return: Dictionary of unrecognized members.
+        """
+        error_list = []
+        for k in list(members):
+            if k in self.valid_members:
+                val = members.pop(k)
+                try:
+                    setattr(self, f"_{k}", Parameter(k, val, self.form_validations[k]))
+                except BaseValidationError as err:
+                    error_list.append(err)
+
+        if error_list:
+            raise AggregateValidationError(error_list)
+
+        self._extra_members.update(members)
+
     @property
     def validations(self) -> Validation | None:
         return self._value.validations
@@ -132,9 +144,13 @@ class FormParameter:
         self._value.validations = val
 
     @property
+    def active(self):
+        active = [k[1:] for k, v in self.__dict__.items() if isinstance(v, Parameter)]
+        return active + list(self._extra_members)
+    @property
     def form(self):
         form = {}
-        for member in self._active:
+        for member in self.active:
             if member in self._extra_members:
                 form[member] = self._extra_members[member]
             else:
@@ -142,9 +158,8 @@ class FormParameter:
 
         return form
 
-
     def validate(self):
-        for member in self.valid_members:
+        for member in self.active:
             try:
                 getattr(self, f"_{member}").validate()
             except BaseValidationError as err:
@@ -174,7 +189,9 @@ class FormParameter:
 
     def __setattr__(self, name, value):
         if name in self.valid_members:
-            self.__dict__[f"_{name}"].value = value
+            self.__dict__[f"_{name}"] = Parameter(
+                name, value, self.form_validations[name]
+            )
         elif name == "validations":
             self.__dict__["_value"].validations = value
         else:
