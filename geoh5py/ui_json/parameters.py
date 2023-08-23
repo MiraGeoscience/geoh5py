@@ -17,7 +17,7 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeAlias, ClassVar
+from typing import Any, TypeAlias
 from uuid import UUID
 
 from geoh5py.shared.exceptions import (
@@ -45,6 +45,7 @@ class Parameter:
         self._value = val
         if self.validations:
             self.validate()
+
     @property
     def validations(self):
         return self._validations
@@ -74,6 +75,7 @@ class FormParameter:
     :note: Standardized form members (in valid_members list) will be
         accessible through the __get_attr__ method, but not __set_attr__.
     """
+
     form_validations: dict[str, Validation] = {
         "label": {"required": True, "types": [str]},
         "value": {"required": True},
@@ -81,39 +83,47 @@ class FormParameter:
         "optional": {"types": [bool, type(None)]},
         "main": {"types": [bool, type(None)]},
         "group": {"types": [str, type(None)]},
-        "groupOptional": {"types": [bool, type(None)]},
+        "group_optional": {"types": [bool, type(None)]},
         "dependency": {"types": [str, type(None)]},
-        "dependencyType": {"values": ["enabled", "disabled", "show", "hide"]},
-        "groupDependency": {"types": [str, type(None)]},
-        "groupDependencyType": {"values": ["enabled", "disabled", "show", "hide"]},
+        "dependency_type": {"values": ["enabled", "disabled", "show", "hide"]},
+        "group_dependency": {"types": [str, type(None)]},
+        "group_dependency_type": {"values": ["enabled", "disabled", "show", "hide"]},
         "tooltip": {"types": [str, type(None)]},
     }
-    valid_members = list(form_validations.keys())
-    identifier_members = []
+    valid_members: list[str] = list(form_validations.keys())
+    identifier_members: list[str] = []
+    key_map = {
+        "groupOptional": "group_optional",
+        "dependencyType": "dependency_type",
+        "groupDependency": "group_dependency",
+        "groupDependencyType": "group_dependency_type",
+    }
 
     def __init__(self, name: str, validations: Validation | None = None, **kwargs):
         self.name: str = name
-        self._value = Parameter("value", kwargs.pop("value", None), validations)
-        self._label: str  | None = None
+        self._value = Parameter("value", None)
+        self._label: str | None = None
         self._enabled: bool = True
         self._optional: bool = False
-        self._groupOptional: bool = False
+        self._group_optional: bool = False
         self._main: bool = True
         self._group: str | None = None
         self._dependency: str | None = None
-        self._dependencyType: str | None = None
-        self._groupDependency: str | None = None
-        self._groupDependencyType: str | None = None
+        self._dependency_type: str | None = None
+        self._group_dependency: str | None = None
+        self._group_dependency_type: str | None = None
         self._tooltip: str | None = None
         self._extra_members: dict[str, Any] = {}
+        self.validations: Validations = Validations(validations)  # type: ignore
         self.register(kwargs)
-        self.validations: Validations = Validations(validations)
 
     @classmethod
-    def from_dict(cls, name: str, form: dict[str, Any], validations: dict | None = None):
+    def from_dict(
+        cls, name: str, form: dict[str, Any], validations: dict | None = None
+    ):
         return cls(name, validations, **form)
 
-    def register(self, members: dict[str, Any]) -> dict[str, Any]:
+    def register(self, members: dict[str, Any]):
         """
         Set parameters from form members with default or incoming values.
 
@@ -121,17 +131,34 @@ class FormParameter:
 
         :return: Dictionary of unrecognized members.
         """
+
+        if members:
+            members = {self.key_map.get(k, k): v for k, v in members.items()}
+            members = dict(
+                {k: getattr(self, f"_{k}") for k in self.required}, **members
+            )
+            members = {
+                k: v.value if isinstance(v, Parameter) else v
+                for k, v in members.items()
+            }
+
         error_list = []
         for k in list(members):
             if k in self.valid_members:
                 val = members.pop(k)
                 try:
-                    setattr(self, f"_{k}", Parameter(k, val, self.form_validations[k]))
+                    validations = (
+                        self.validations if k == "value" else self.form_validations[k]
+                    )
+                    setattr(self, f"_{k}", Parameter(k, val, validations))
                 except BaseValidationError as err:
                     error_list.append(err)
 
         if error_list:
-            raise AggregateValidationError(error_list)
+            if len(error_list) == 1:
+                raise error_list.pop()
+
+            raise AggregateValidationError(self.name, error_list)
 
         self._extra_members.update(members)
 
@@ -147,6 +174,11 @@ class FormParameter:
     def active(self):
         active = [k[1:] for k, v in self.__dict__.items() if isinstance(v, Parameter)]
         return active + list(self._extra_members)
+
+    @property
+    def required(self):
+        return [k for k, v in self.form_validations.items() if v.get("required", False)]
+
     @property
     def form(self):
         form = {}
@@ -159,7 +191,7 @@ class FormParameter:
         return form
 
     def validate(self):
-        for member in self.active:
+        for member in set(self.active + self.required):
             try:
                 getattr(self, f"_{member}").validate()
             except BaseValidationError as err:
@@ -168,13 +200,13 @@ class FormParameter:
     @classmethod
     def is_form(cls, form: dict[str, Any]) -> bool:
         id_members = cls.identifier_members
-        return any(k in form for k in id_members)
+        form_members = [cls.key_map.get(k, k) for k in form]
+        return any(k in form_members for k in id_members)
 
     def __str__(self):
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
 
     def __getattr__(self, name):
-
         if f"_{name}" in self.__dict__:
             member = self.__dict__[f"_{name}"]
         elif name == "validations":
@@ -201,25 +233,25 @@ class FormParameter:
 class StringParameter(FormParameter):
     base_validations: Validation = {"types": [str]}
 
-    def __init__(self, name, form, validations=None):
+    def __init__(self, name, validations=None, **kwargs):
         validations = (
             dict(self.base_validations, **validations)
             if validations
             else self.base_validations
         )
-        super().__init__(name, form, validations)
+        super().__init__(name, validations=validations, **kwargs)
 
 
 class BoolParameter(FormParameter):
     base_validations: Validation = {"types": [bool]}
 
-    def __init__(self, name, form, validations=None):
+    def __init__(self, name, validations=None, **kwargs):
         validations = (
             dict(self.base_validations, **validations)
             if validations
             else self.base_validations
         )
-        super().__init__(name, form, validations)
+        super().__init__(name, validations=validations, **kwargs)
 
 
 class IntegerParameter(FormParameter):
@@ -234,13 +266,15 @@ class IntegerParameter(FormParameter):
     valid_members: list[str] = list(form_validations.keys())
     identifier_members: list[str] = []
 
-    def __init__(self, name, form, validations=None):
+    def __init__(self, name, validations=None, **kwargs):
+        self._min: int | None = None
+        self._max: int | None = None
         validations = (
             dict(self.base_validations, **validations)
             if validations
             else self.base_validations
         )
-        super().__init__(name, form, validations)
+        super().__init__(name, validations=validations, **kwargs)
 
 
 class FloatParameter(FormParameter):
@@ -249,49 +283,56 @@ class FloatParameter(FormParameter):
         "min": {"types": [float, type(None)]},
         "max": {"types": [float, type(None)]},
         "precision": {"types": [int, type(None)]},
-        "lineEdit": {"types": [bool, type(None)]},
+        "line_edit": {"types": [bool, type(None)]},
     }
     form_validations: dict[str, Validation] = dict(
         FormParameter.form_validations, **float_validations
     )
     valid_members: list[str] = list(form_validations.keys())
-    identifier_members: list[str] = ["precision", "lineEdit"]
+    identifier_members: list[str] = ["precision", "line_edit"]
+    FormParameter.key_map.update({"lineEdit": "line_edit"})
 
-    def __init__(self, name, form, validations=None):
+    def __init__(self, name, validations=None, **kwargs):
+        self._min: float | None = None
+        self._max: float | None = None
+        self._precision: int | None = None
+        self._line_edit: bool | None = None
         validations = (
             dict(self.base_validations, **validations)
             if validations
             else self.base_validations
         )
-        super().__init__(name, form, validations)
+        super().__init__(name, validations=validations, **kwargs)
 
 
 class ChoiceStringParameter(FormParameter):
     base_validations: Validation = {"types": [str]}
     choice_string_validations: dict[str, Validation] = {
-        "choiceList": {"required": True, "types": [list]}
+        "choice_list": {"required": True, "types": [list]}
     }
     form_validations: dict[str, Validation] = dict(
         FormParameter.form_validations, **choice_string_validations
     )
     valid_members: list[str] = list(form_validations.keys())
-    identifier_members: list[str] = ["choiceList"]
+    identifier_members: list[str] = ["choice_list"]
+    FormParameter.key_map.update({"choiceList": "choice_list"})
 
-    def __init__(self, name, form, validations=None):
+    def __init__(self, name, validations=None, **kwargs):
+        self._choice_list: list | None = None
         validations = (
             dict(self.base_validations, **validations)
             if validations
             else self.base_validations
         )
-        super().__init__(name, form, validations)
+        super().__init__(name, validations=validations, **kwargs)
 
     @property
-    def choiceList(self):  # pylint: disable=invalid-name
-        return self._choiceList
+    def choice_list(self):  # pylint: disable=invalid-name
+        return self._choice_list
 
-    @choiceList.setter
-    def choiceList(self, val):  # pylint: disable=invalid-name
-        self._choiceList = val  # pylint: disable=invalid-name
+    @choice_list.setter
+    def choice_list(self, val):  # pylint: disable=invalid-name
+        self._choice_list = val  # pylint: disable=invalid-name
 
         if isinstance(val, Parameter):
             val = val.value
@@ -305,62 +346,67 @@ class ChoiceStringParameter(FormParameter):
 class FileParameter(FormParameter):
     base_validations: Validation = {"types": [str]}
     file_validations: dict[str, Validation] = {
-        "fileDescription": {"required": True, "types": [str, tuple, list]},
-        "fileType": {"required": True, "types": [str, tuple, list]},
-        "fileMulti": {"types": [bool, type(None)]},
+        "file_description": {"required": True, "types": [str, tuple, list]},
+        "file_type": {"required": True, "types": [str, tuple, list]},
+        "file_multi": {"types": [bool]},
     }
     form_validations: dict[str, Validation] = dict(
         FormParameter.form_validations, **file_validations
     )
     valid_members: list[str] = list(form_validations.keys())
-    identifier_members: list[str] = ["fileDescription", "fileType", "fileMulti"]
+    identifier_members: list[str] = ["file_description", "file_type", "file_multi"]
+    FormParameter.key_map.update(
+        {
+            "fileDescription": "file_description",
+            "fileType": "file_type",
+            "fileMulti": "file_multi",
+        }
+    )
 
-    def __init__(self, name, form, validations=None):
+    def __init__(self, name, validations=None, **kwargs):
+        self._file_description: str | tuple | list | None = None
+        self._file_type: str | tuple | list | None = None
+        self._file_multi: bool = False
         validations = (
             dict(self.base_validations, **validations)
             if validations
             else self.base_validations
         )
-        super().__init__(name, form, validations)
+        super().__init__(name, validations=validations, **kwargs)
 
 
 class ObjectParameter(FormParameter):
     base_validations: Validation = {"types": [str, UUID]}
     object_validations: dict[str, Validation] = {
-        "meshType": {
+        "mesh_type": {
             "required": True,
-            "values": [
-                "{202C5DB1-A56D-4004-9CAD-BAAFD8899406}",
-                "{6A057FDC-B355-11E3-95BE-FD84A7FFCB88}",
-                "{F26FEBA3-ADED-494B-B9E9-B2BBCBE298E1}",
-                "{48F5054A-1C5C-4CA4-9048-80F36DC60A06}",
-                "{b020a277-90e2-4cd7-84d6-612ee3f25051}",
-                "{4ea87376-3ece-438b-bf12-3479733ded46}",
-            ],
+            "types": [str, UUID, list],
         }
     }
     form_validations: dict[str, Validation] = dict(
         FormParameter.form_validations, **object_validations
     )
     valid_members: list[str] = list(form_validations.keys())
-    identifier_members: list[str] = ["meshType"]
+    identifier_members: list[str] = ["mesh_type"]
+    FormParameter.key_map.update({"meshType": "mesh_type"})
 
-    def __init__(self, name, form, validations=None):
+    def __init__(self, name, validations=None, **kwargs):
+        self._mesh_type: list = []
         validations = (
             dict(self.base_validations, **validations)
             if validations
             else self.base_validations
         )
-        super().__init__(name, form, validations)
+        super().__init__(name, validations=validations, **kwargs)
 
 
 class DataParameter(FormParameter):
     base_validations: Validation = {"types": [str, UUID, type(None)]}
     data_validations: dict[str, Validation] = {
-        "parent": {"required": True, "types": [str]},
+        "parent": {"required": True, "types": [str, UUID]},
         "association": {"required": True, "values": ["Vertex", "Cell"]},
-        "dataType": {"required": True, "values": ["Float", "Integer", "Reference"]},
-        "dataGroupType": {
+        "data_type": {"required": True, "values": ["Float", "Integer", "Reference"]},
+        "data_group_type": {
             "values": [
                 "3D vector",
                 "Dip direction & dip",
@@ -373,44 +419,65 @@ class DataParameter(FormParameter):
         FormParameter.form_validations, **data_validations
     )
     valid_members: list[str] = list(form_validations.keys())
-    identifier_members: list[str] = ["dataGroupType"]
+    identifier_members: list[str] = ["data_group_type"]
+    FormParameter.key_map.update(
+        {
+            "dataType": "data_type",
+            "dataGroupType": "data_group_type",
+        }
+    )
 
-    def __init__(self, name, form, validations=None):
+    def __init__(self, name, validations=None, **kwargs):
+        self._parent: str | UUID | None = None
+        self._association: str | None = None
+        self._data_type: str | None = None
+        self._data_group_type: str | None = None
         validations = (
             dict(self.base_validations, **validations)
             if validations
             else self.base_validations
         )
-        super().__init__(name, form, validations)
+        super().__init__(name, validations=validations, **kwargs)
 
 
 class DataValueParameter(FormParameter):
     base_validations: Validation = {"types": [int, float]}
     data_value_validations: dict[str, Validation] = {
-        "parent": {"required": True, "types": [str]},
+        "parent": {"required": True, "types": [str, UUID]},
         "association": {"required": True, "values": ["Vertex", "Cell"]},
-        "dataType": {"required": True, "values": ["Float", "Integer", "Reference"]},
-        "isValue": {"required": True, "types": [bool]},
-        "property": {"required": True, "types": [str, UUID, type(None)]},
+        "data_type": {"required": True, "values": ["Float", "Integer", "Reference"]},
+        "is_value": {"required": True, "types": [bool]},
+        "property": {"required": True, "types": [str, UUID]},
     }
     form_validations: dict[str, Validation] = dict(
         FormParameter.form_validations, **data_value_validations
     )
     valid_members: list[str] = list(form_validations.keys())
-    identifier_members: list[str] = ["isValue", "property"]
+    identifier_members: list[str] = ["is_value", "property"]
+    FormParameter.key_map.update(
+        {
+            "dataType": "data_type",
+            "isValue": "is_value",
+        }
+    )
 
-    def __init__(self, name, form, validations=None):
+    def __init__(self, name, validations=None, **kwargs):
+        self._parent: str | UUID | None = None
+        self._association: str | None = None
+        self._data_type: str | None = None
+        self._is_value: bool | None = None
+        self._property: str | UUID | None = None
         validations = (
             dict(self.base_validations, **validations)
             if validations
             else self.base_validations
         )
-        super().__init__(name, form, validations)
+        super().__init__(name, validations=validations, **kwargs)
 
     @property
     def value(self):
         val = self.property
-        if self.isValue:
+        if self.is_value:
             val = self._value.value
         return val
 
@@ -418,20 +485,7 @@ class DataValueParameter(FormParameter):
     def value(self, val):
         if isinstance(val, (int, float)):
             self._value.value = val
-            self.isValue = True  # pylint: disable=invalid-name
+            self.is_value = True  # pylint: disable=invalid-name
         else:
             self.property = val
-            self.isValue = False
-
-    def _validate_value(self):
-        if self.isValue:
-            self._value.validate()
-        else:
-            self.members["property"].validate()
-
-    def _validate_form(self):
-        for parameter in self.members.values():
-            try:
-                parameter.validate()
-            except BaseValidationError as err:
-                raise UIJsonFormatError(self.name, str(err)) from err
+            self.is_value = False

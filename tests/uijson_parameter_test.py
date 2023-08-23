@@ -22,7 +22,6 @@ import pytest
 from geoh5py.shared.exceptions import (
     AggregateValidationError,
     TypeValidationError,
-    UIJsonFormatError,
     ValueValidationError,
 )
 from geoh5py.shared.validators import ValueValidator
@@ -92,7 +91,6 @@ def test_parameter():
             "param", "nogood", {"values": ["onlythis"], "types": [int, float]}
         )
 
-
     assert param.__str__() == "<Parameter> : 'param' -> test"
 
 
@@ -104,12 +102,14 @@ def test_validation_update():
     assert param.validations["values"] == ["you"]
     assert param.validations["required"]
     assert param.validations["types"] == [str]
+
+
 def test_form_parameter_roundtrip():
     form = {"label": "my param", "value": 1, "extra": "stuff"}
     param = FormParameter("param", **form)
     assert param.name == "param"
     assert param.label == "my param"
-    assert param.validations  == {}
+    assert param.validations == {}
     assert not hasattr(param, "extra")
     assert param._extra_members["extra"] == "stuff"
     assert all(hasattr(param, k) for k in param.valid_members)
@@ -117,6 +117,23 @@ def test_form_parameter_roundtrip():
 
 
 def test_form_parameter_validate():
+    # Blank initialization shouldn't crash, register should pass
+    # with valid data and fail with invalid data
+    param = FormParameter("param")
+    param.register({"label": "my param", "value": 1})
+    with pytest.raises(
+        TypeValidationError, match="Type 'str' provided for 'optional' is invalid"
+    ):
+        param.register({"optional": "whoops"})
+
+    # should raise aggregated error with register of bad value and member
+    param.validations = {"types": [str]}
+    with pytest.raises(
+        AggregateValidationError, match="Validation of 'param' collected 2 errors:"
+    ):
+        param.register({"optional": "whoops", "value": 1})
+
+    # Form validations run on instantiation should pass
     param = FormParameter.from_dict(
         "param", {"label": "my param", "value": 1}, validations={"types": [int]}
     )
@@ -127,91 +144,65 @@ def test_form_parameter_validate():
     assert param.value == 1
     assert all(hasattr(param, k) for k in param.valid_members)
 
-    # Form validations should pass
-    param.validate()
-
     # Form validation should fail when form is invalid
     with pytest.raises(
-            TypeValidationError,
-            match="Type 'str' provided for 'enabled' is invalid"
+        TypeValidationError, match="Type 'str' provided for 'enabled' is invalid"
     ):
         param.enabled = "uh-oh"
 
-
-    # Value validations should pass as is and when setting a valid value
-    param.validate()
-    param.value = 2
-
-    param = FormParameter.from_dict(
-        "param",
-        {"label": "my param", "value": 1, "optional": "whoops"},
-        {"types": [str]},
-    )
-
-    # Test form validations
-    with pytest.raises(UIJsonFormatError) as excinfo:
-        param.validate()
-    assert all(n in str(excinfo.value) for n in ["'param'", "'str'", "'optional'"])
-
-    # Test value validation
-    with pytest.raises(TypeValidationError) as excinfo:
-        param.validate(level="value")
-    assert all(n in str(excinfo.value) for n in ["'int'", "'value'", "'str'"])
-
-    param.validations["values"] = [2, 3]
-    # Aggregate form and value validations
-    with pytest.raises(AggregateValidationError) as excinfo:
-        param.validate(level="all")
-    assert all(
-        n in str(excinfo.value)
-        for n in ["'param'", "2 error", "0. Type 'int'", "1. Invalid UIJson"]
-    )
+    # Multiple form (member and value) errors are aggregated
+    with pytest.raises(
+        AggregateValidationError, match="Validation of 'param' collected 2 errors:"
+    ):
+        param = FormParameter.from_dict(
+            "param",
+            {"label": "my param", "value": 1, "optional": "whoops"},
+            {"types": [str]},
+        )
 
 
 def test_string_parameter():
-    param = StringParameter(
+    param = StringParameter.from_dict(
         "inversion_type",
         {"label": "inversion type", "value": "gravity"},
     )
     assert len(param.validations) == 1
     assert "types" in param.validations
-    param.validate("all")
 
 
 def test_bool_parameter():
-    param = BoolParameter(
+    param = BoolParameter.from_dict(
         "gz_channel_bool",
         {"label": "gz", "value": True},
     )
     assert len(param.validations) == 1
     assert "types" in param.validations
-    param.validate("all")
 
 
 def test_float_parameter():
     # FloatFormParameter should add the "types": [float] validations
     # and min/max form_validations by default.
-    param = FloatParameter(
-        "param", {"label": "my param", "value": 1}, {"required": True}
+    param = FloatParameter.from_dict(
+        "param", {"label": "my param", "value": 1.0}, {"required": True}
     )
     assert all(k in param.validations for k in ["types", "required"])
     assert all(
-        k in param.form_validations for k in ["min", "max", "precision", "lineEdit"]
+        k in param.form_validations for k in ["min", "max", "precision", "line_edit"]
     )
-    param.validate("all")
 
 
 def test_choice_string_parameter():
-    param = ChoiceStringParameter(
+    param = ChoiceStringParameter.from_dict(
         "param", {"label": "methods", "choiceList": ["cg", "ssor"], "value": "cg"}
     )
     assert all(k in param.validations for k in ["types"])
-    assert "choiceList" in param.form_validations
-    param.validate("all")
+    assert "choice_list" in param.form_validations
+    reqd = ["label", "value", "choice_list"]
+    assert all(k in param.required for k in reqd)
 
 
 def test_file_parameter():
-    param = FileParameter(
+    param = FileParameter.from_dict(
         "param",
         {
             "label": "path",
@@ -224,13 +215,14 @@ def test_file_parameter():
     assert all(k in param.validations for k in ["types", "required"])
     assert all(
         k in param.form_validations
-        for k in ["fileDescription", "fileType", "fileMulti"]
+        for k in ["file_description", "file_type", "file_multi"]
     )
-    param.validate("all")
+    reqd = ["label", "value", "file_description", "file_type"]
+    assert all(k in param.required for k in reqd)
 
 
 def test_object_parameter():
-    param = ObjectParameter(
+    param = ObjectParameter.from_dict(
         "param",
         {
             "label": "mesh",
@@ -239,12 +231,13 @@ def test_object_parameter():
         },
     )
     assert all(k in param.validations for k in ["types"])
-    assert "meshType" in param.form_validations
-    param.validate("all")
+    assert "mesh_type" in param.form_validations
+    reqd = ["label", "value", "mesh_type"]
+    assert all(k in param.required for k in reqd)
 
 
 def test_data_parameter():
-    param = DataParameter(
+    param = DataParameter.from_dict(
         "param",
         {
             "label": "gz_channel",
@@ -256,45 +249,48 @@ def test_data_parameter():
     assert all(k in param.validations for k in ["types"])
     assert all(
         k in param.form_validations
-        for k in ["parent", "association", "dataType", "dataGroupType"]
+        for k in ["parent", "association", "data_type", "data_group_type"]
     )
-    param.validate("all")
+    reqd = ["label", "value", "parent", "association", "data_type"]
+    assert all(k in param.required for k in reqd)
 
 
 def test_data_value_parameter():
-    param = DataValueParameter(
+    param = DataValueParameter.from_dict(
         "param",
         {
             "association": "Vertex",
             "dataType": "Float",
             "isValue": True,
-            "property": None,
+            "property": "",
             "parent": "other_param",
             "label": "my param",
             "value": 1.0,
         },
     )
     assert param.value == 1.0
-    param.isValue = False
-    assert param.value is None
+    param.is_value = False
+    assert param.value == ""
+    reqd = ["label", "value", "parent", "association", "data_type", "is_value"]
+    assert all(k in param.required for k in reqd)
 
     assert "types" in param.validations
     assert all(
         k in param.form_validations
-        for k in ["parent", "association", "dataType", "isValue", "property"]
+        for k in ["parent", "association", "data_type", "is_value", "property"]
     )
-    # param.validate("all")
 
     # incomplete form results in UIJsonFormatError
-    param = DataValueParameter(
-        "param",
-        {
-            "label": "my param",
-            "value": 1.0,
-        },
-    )
-    with pytest.raises(UIJsonFormatError):
-        param.validate()
+    with pytest.raises(
+        AggregateValidationError, match="Validation of 'param' collected 5 errors:"
+    ):
+        param = DataValueParameter.from_dict(
+            "param",
+            {
+                "label": "my param",
+                "value": 1.0,
+            },
+        )
 
 
 def test_parameter_class():
@@ -362,12 +358,12 @@ def test_identify():
 
 def test_uijson():
     parameters = {
-        "param_1": FormParameter(
+        "param_1": FormParameter.from_dict(
             "param_1",
             {"label": "first parameter", "value": "toocool"},
             {"types": [str]},
         ),
-        "param_2": StringParameter(
+        "param_2": StringParameter.from_dict(
             "param_2", {"label": "second parameter", "value": "ohyeah"}
         ),
         "param_3": Parameter("param_3", 2, {"types": [int]}),
@@ -398,42 +394,3 @@ def test_uijson():
     assert p4.value == 2
     assert p4.validations == {"types": [int]}
     ui_json.validate()
-
-
-def test_params_design():
-    parameters = {
-        "param_1": FormParameter(
-            "param_1",
-            {"label": "first parameter", "value": "toocool"},
-            {"types": [str]},
-        ),
-        "param_2": FormParameter(
-            "param_2", {"label": "second parameter", "value": 2}, {"types": [int]}
-        ),
-        "param_3": Parameter("param_3", 2, {"types": [int]}),
-    }
-    ui_json = UIJson(parameters)
-
-    class Params:
-        def __init__(self, p1, ui_json):
-            self.p1 = p1
-            self.ui_json = ui_json
-
-        def __getattr__(self, name):
-            if name in self.ui_json.parameters:
-                return self.ui_json.parameters[name].value
-            else:
-                return self.__dict__[f"_{name}"]
-
-        def __setattr(self, name, value):
-            if name in self.ui_json.parameters:
-                self.ui_json.parameters[name].value = value
-            else:
-                self.__dict__[f"_{name}"] = value
-
-    params = Params("hi there", ui_json)
-
-    assert params.param_1 == "toocool"
-    assert params.param_2 == 2
-    assert params.param_3 == 2
-    assert params.p1 == "hi there"

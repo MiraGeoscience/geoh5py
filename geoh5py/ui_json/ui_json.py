@@ -22,6 +22,7 @@ from typing import Any, TypeAlias
 from geoh5py.shared.exceptions import AggregateValidationError, BaseValidationError
 from geoh5py.ui_json.parameters import (
     BoolParameter,
+    DataParameter,
     FloatParameter,
     FormParameter,
     IntegerParameter,
@@ -68,7 +69,7 @@ class UIJson:
                 parameter_update[name] = value
             elif isinstance(value, dict):
                 parameter_class = UIJson.identify(value)
-                parameter_update[name] = parameter_class(
+                parameter_update[name] = parameter_class.from_dict(
                     name, value, self.validations.get(name, {})
                 )
             else:
@@ -78,12 +79,11 @@ class UIJson:
 
         self._parameters = parameter_update
 
-    def validate(self, level="form"):
+    def validate(self):
         error_list = []
         for parameter in self.parameters.values():
-            kwargs = {} if isinstance(parameter, Parameter) else {"level": level}
             try:
-                parameter.validate(**kwargs)
+                parameter.validate()
             except BaseValidationError as err:
                 error_list.append(err)
 
@@ -114,7 +114,7 @@ class UIJson:
         base_members = FormParameter.valid_members
         for candidate in candidates:
             possible_members = set(candidate.valid_members).difference(base_members)
-            if any(k in possible_members for k in parameter):
+            if any(candidate.key_map.get(k, k) in possible_members for k in parameter):
                 filtered_candidates.append(candidate)
         return filtered_candidates if filtered_candidates else basic_candidates
 
@@ -129,10 +129,14 @@ class UIJson:
             else:
                 for candidate in possibilities:
                     try:
-                        obj = candidate("test", parameter)
-                        obj.validate("value")
+                        _ = candidate.from_dict("test", parameter)
                         winner = candidate
                     except BaseValidationError:
                         pass
+
+                if winner == FormParameter and any(
+                    k in parameter for k in ["parent", "association", "dataType"]
+                ):
+                    winner = DataParameter
 
         return winner
