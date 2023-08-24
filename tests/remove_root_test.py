@@ -111,3 +111,19 @@ def test_remove_root(tmp_path: Path):
         setattr(points2, "_property_groups", None)
 
         assert points2.remove_data_from_groups(data2) is None
+
+        assert points2.reference_to_uid(points2.children[0]) == [
+            points2.children[0].uid
+        ]
+
+        assert points2.reference_to_uid(points2.children[0].name) == [
+            points2.children[0].uid
+        ]
+
+        assert points2.reference_to_uid(points2.children[0].uid) == [
+            points2.children[0].uid
+        ]
+
+        # will be deprecated
+        with pytest.warns(DeprecationWarning, match="Entity.save()"):
+            points2.save()

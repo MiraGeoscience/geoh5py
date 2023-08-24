@@ -1164,7 +1164,6 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         ind = 0
         label = ""
         if len(self.from_) > 0:
-            print(self.from_)
             ind = len(
                 list(set(self.from_))
             )  # todo: from_ return the same value x time why?
