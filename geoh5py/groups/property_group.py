@@ -180,12 +180,15 @@ class PropertyGroup(ABC):
         return self._properties
 
     @properties.setter
-    def properties(self, uids: list[str | uuid.UUID]):
+    def properties(self, uids: list[str | uuid.UUID] | None):
         if self._properties is not None:
             raise UserWarning(
                 "Cannot modify properties of an existing property group. "
                 "Consider using 'add_properties'."
             )
+
+        if uids is None:
+            return
 
         properties = []
         for uid in uids:
