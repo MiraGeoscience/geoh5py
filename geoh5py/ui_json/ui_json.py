@@ -30,7 +30,7 @@ from geoh5py.ui_json.parameters import (
     StringParameter,
 )
 
-Parameters = dict[str, Parameter | FormParameter]
+Parameters = Dict[str, Parameter | FormParameter]
 
 
 class UIJson:
