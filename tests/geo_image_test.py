@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+from io import BytesIO
+
 import numpy as np
 import pytest
 from PIL import Image
@@ -50,8 +52,8 @@ tag = {
 }
 
 
-def test_create_copy_geoimage(tmp_path):
-    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
         pixels = np.r_[
             np.c_[32, 0],
             np.c_[32, 64],
@@ -64,6 +66,17 @@ def test_create_copy_geoimage(tmp_path):
         ]
 
         geoimage = GeoImage.create(workspace, name="MyGeoImage")
+
+        with pytest.raises(AttributeError, match="Vertices are not defined"):
+            geoimage.copy_from_extent(np.vstack(([125, 145], [125, 145])))
+
+        with pytest.raises(AttributeError, match="The image has no vertices"):
+            _ = geoimage.dip
+
+        with pytest.raises(AttributeError, match="The image has no vertices"):
+            geoimage.dip = 66
+
+        assert geoimage.extent is None
 
         assert geoimage.default_vertices is None
 
@@ -99,6 +112,12 @@ def test_create_copy_geoimage(tmp_path):
             geoimage.georeferencing_from_tiff()
 
         geoimage.image = np.random.randint(0, 255, (128, 128))
+
+        assert (
+            geoimage.extent == np.array([[0.0, 0.0, 0.0], [128.0, 128.0, 0.0]])
+        ).all()
+
+        geoimage.georeferencing_from_image()
 
         # with pytest.raises(AttributeError, match="Vertices must be set for referencing"):
         #     geoimage.set_tag_from_vertices()
@@ -152,25 +171,30 @@ def test_create_copy_geoimage(tmp_path):
         with Workspace.create(tmp_path / r"geo_image_test2.geoh5") as new_workspace:
             geoimage.copy(parent=new_workspace)
 
-        new_workspace = Workspace(tmp_path / r"geo_image_test2.geoh5")
-        rec_image = new_workspace.get_entity("MyGeoImage")[0]
+            rec_image = new_workspace.get_entity("MyGeoImage")[0]
 
-        compare_entities(geoimage, rec_image, ignore=["_parent", "_image", "_tag"])
+            compare_entities(geoimage, rec_image, ignore=["_parent", "_image", "_tag"])
 
-        assert rec_image.image == geoimage.image, "Error copying the bytes image data."
+            assert (
+                rec_image.image == geoimage.image
+            ), "Error copying the bytes image data."
 
-        geoimage.vertices = geoimage.vertices
+            geoimage.vertices = geoimage.vertices
 
-        # Test copy from extent that clips one corner
-        new_image = geoimage.copy(extent=[[9, 9], [10, 10]])
-        assert new_image is not None, "Error copying from extent."
+            # Test copy from extent that clips one corner
+            new_image = geoimage.copy(extent=[[9, 9], [10, 10]])
+            assert new_image is not None, "Error copying from extent."
 
-        new_image = geoimage.copy_from_extent(np.vstack([[100, 100], [200, 200]]))
-        assert new_image is None, "Error copying from extent that is out of bounds."
+            with pytest.warns(UserWarning, match="Image could not be cropped."):
+                new_image = geoimage.copy_from_extent(
+                    np.vstack([[100, 100], [200, 200]])
+                )
+
+            assert new_image is None, "Error copying from extent that is out of bounds."
 
 
 def test_georeference_image(tmp_path):
-    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
         # create and save a tiff
         image = Image.fromarray(
             np.random.randint(0, 255, (128, 128, 3)).astype("uint8"), "RGB"
@@ -192,7 +216,11 @@ def test_georeference_image(tmp_path):
 
         # image = Image.open(tmp_path / r"testtif.tif")
         geoimage.tag = {"test": 3}
-        geoimage.georeferencing_from_tiff()
+
+        with pytest.warns(
+            UserWarning, match="The 'tif.' image has no referencing information."
+        ):
+            geoimage.georeferencing_from_tiff()
 
         image = Image.open(f"{str(tmp_path)}/testtif.tif")
 
@@ -245,7 +273,7 @@ def test_georeference_image(tmp_path):
         geoimage = GeoImage.create(workspace, name="test_area", image=image)
 
         image = Image.fromarray(
-            np.random.randint(0, 255, (128, 128, 4)).astype("uint8"), "CMYK"
+            np.random.randint(0, 255, (128, 128, 4)).astype("uint8"), "RGBA"
         )
 
         geoimage.image = image
@@ -254,7 +282,7 @@ def test_georeference_image(tmp_path):
 
 
 def test_rotation_setter(tmp_path):
-    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
         # add the data
         x_val, y_val = np.meshgrid(
             np.linspace(100, 1000, 16), np.linspace(100, 1500, 16)
@@ -284,7 +312,7 @@ def test_rotation_setter(tmp_path):
 
 
 def test_converting_rotated_images(tmp_path):
-    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
         # create a grid
         n_x, n_y = 10, 15
         grid = Grid2D.create(
@@ -340,7 +368,7 @@ def test_converting_rotated_images(tmp_path):
 
 
 def test_clipping_image(tmp_path):
-    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
         # add the data
         x_val, y_val = np.meshgrid(
             np.linspace(100, 1000, 16), np.linspace(100, 1500, 16)
@@ -365,7 +393,7 @@ def test_clipping_image(tmp_path):
 
 
 def test_clipping_gray_image(tmp_path):
-    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
         # Repeat with gray scale image
         image = Image.fromarray(
             np.random.randint(0, 255, (128, 128)).astype("uint8"), "L"
@@ -377,7 +405,7 @@ def test_clipping_gray_image(tmp_path):
 
 
 def test_clipping_rotated_image(tmp_path):
-    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
         # create a grid
         n_x, n_y = 10, 15
         grid = Grid2D.create(
@@ -412,7 +440,7 @@ def test_clipping_rotated_image(tmp_path):
 
         # convert to geoimage
         geoimage = grid.to_geoimage(
-            ["rando_c", "rando_m", "rando_y", "rando_k"], mode="CMYK", normalize=False
+            ["rando_c", "rando_m", "rando_y", "rando_k"], mode="RGBA", normalize=False
         )
 
         # clip the image
@@ -433,7 +461,7 @@ def test_clipping_rotated_image(tmp_path):
 
 
 def test_image_rotation(tmp_path):
-    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
         # Repeat with gray scale image
         image = Image.fromarray(
             np.random.randint(0, 255, (128, 128)).astype("uint8"), "L"
@@ -479,7 +507,7 @@ def test_image_rotation(tmp_path):
 
 
 def test_image_grid_rotation_conversion(tmp_path):
-    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r+") as workspace:
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
         # Repeat with gray scale image
         image = Image.fromarray(
             np.random.randint(0, 255, (128, 128)).astype("uint8"), "L"
@@ -500,48 +528,61 @@ def test_image_grid_rotation_conversion(tmp_path):
 
         compare_entities(geoimage, geoimage2, ignore=["_uid"])
 
+        geoimage.georeferencing_from_image()
+
+        with pytest.raises(NotImplementedError):
+            GeoImage.create(
+                workspace,
+                name="test_area",
+                image=Image.fromarray(
+                    np.random.randint(0, 255, (128, 128, 2)).astype("uint8"), "LA"
+                ),
+            )
+
 
 def test_copy_from_extent_geoimage(tmp_path):
-    workspace2 = Workspace.create(tmp_path / r"geo_image_test2.geoh5")
-    workspace2.open("r+")
+    with Workspace.create(tmp_path / r"geo_image_test2.geoh5") as workspace2:
+        with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
+            image = Image.fromarray(
+                np.random.randint(0, 255, (128, 128)).astype("uint8"), "L"
+            )
 
-    with Workspace.create(tmp_path / r"geo_image_test.geoh5").open("r") as workspace:
-        print(f"workspaces {workspace} {workspace2} \n")
-
-        image = Image.fromarray(
-            np.random.randint(0, 255, (128, 128)).astype("uint8"), "L"
-        )
-
-        vertices = np.array(
-            [
-                [459600, 6353450, 140],
-                [459700, 6353450, 140],
-                [459700, 6353480, 140],
-                [459600, 6353480, 140],
-            ]
-        )
-
-        geoimage = GeoImage.create(
-            workspace, name="test_area", image=image, vertices=vertices
-        )
-
-        geoimage.rotation = -72
-        geoimage.dip = 90
-
-        geoimage2 = geoimage.copy_from_extent(
-            np.vstack([[459613, 6353400, 115], [459625, 6353440, 130]]),
-            parent=workspace2,
-        )
-
-        np.testing.assert_array_almost_equal(
-            geoimage2.vertices,
-            np.array(
+            vertices = np.array(
                 [
-                    [459613.037, 6353439.88, 114.921875],
-                    [459625.108, 6353402.73, 114.921875],
-                    [459625.108, 6353402.73, 129.921875],
-                    [459613.037, 6353439.88, 129.921875],
+                    [459600, 6353450, 140],
+                    [459700, 6353450, 140],
+                    [459700, 6353480, 140],
+                    [459600, 6353480, 140],
                 ]
-            ),
-            decimal=2,
-        )
+            )
+
+            geoimage = GeoImage.create(
+                workspace, name="test_area", image=image, vertices=vertices
+            )
+
+            geoimage.rotation = -72
+            geoimage.dip = 90
+
+            geoimage2 = geoimage.copy_from_extent(
+                np.vstack([[459613, 6353400, 115], [459625, 6353440, 130]]),
+                parent=workspace2,
+            )
+
+            np.testing.assert_array_almost_equal(
+                geoimage2.vertices,
+                np.array(
+                    [
+                        [459613.037, 6353439.88, 114.921875],
+                        [459625.108, 6353402.73, 114.921875],
+                        [459625.108, 6353402.73, 129.921875],
+                        [459613.037, 6353439.88, 129.921875],
+                    ]
+                ),
+                decimal=2,
+            )
+
+            # test the size of the cropped image
+            assert (
+                BytesIO(geoimage.image_data.values).getbuffer().nbytes
+                > BytesIO(geoimage2.image_data.values).getbuffer().nbytes
+            )

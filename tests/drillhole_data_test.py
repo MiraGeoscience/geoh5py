@@ -25,6 +25,7 @@ import string
 import numpy as np
 import pytest
 
+from geoh5py.data import BooleanData, FloatData, ReferencedData
 from geoh5py.objects import Drillhole
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
@@ -158,7 +159,7 @@ def test_create_drillhole_data(tmp_path):
         data_objects += [
             well.add_data(
                 {
-                    "log_values": {
+                    "log_int": {
                         "depth": np.sort(np.random.rand(n_data) * max_depth),
                         "type": "referenced",
                         "values": np.random.randint(1, high=8, size=n_data),
@@ -167,6 +168,8 @@ def test_create_drillhole_data(tmp_path):
                 }
             )
         ]
+
+        assert isinstance(data_objects[-1], ReferencedData)
 
         well.add_data(
             {
@@ -180,6 +183,37 @@ def test_create_drillhole_data(tmp_path):
         assert well.n_vertices == (
             new_count
         ), "Error with new number of vertices on log data creation."
+
+        # Add other data for tests
+        data_objects += [
+            well.add_data(
+                {
+                    "log_bool": {
+                        "depth": np.sort(np.random.rand(n_data) * max_depth),
+                        "type": "boolean",
+                        "values": np.random.choice([True, False], size=n_data),
+                    }
+                }
+            )
+        ]
+
+        assert isinstance(data_objects[-1], BooleanData)
+
+        # Add log-data
+        data_objects += [
+            well.add_data(
+                {
+                    "log_float": {
+                        "depth": np.sort(np.random.rand(n_data) * max_depth),
+                        "type": "FLOAT",
+                        "values": np.random.rand(n_data).astype(float),
+                    }
+                }
+            )
+        ]
+
+        assert isinstance(data_objects[-1], FloatData)
+
         # Re-open the workspace and read data back in
         new_workspace = Workspace(h5file_path, version=1.0)
         # Check entities
@@ -202,7 +236,7 @@ def test_create_drillhole_data(tmp_path):
         )
         compare_entities(
             data_objects[2],
-            new_workspace.get_entity("log_values")[0],
+            new_workspace.get_entity("log_int")[0],
             ignore=["_parent"],
         )
 
@@ -311,6 +345,7 @@ def test_insert_drillhole_data(tmp_path):
         new_depths = old_depths[insert]
         new_depths[0] -= 2e-6  # Out of tolerance
         new_depths[1] -= 5e-7  # Within tolerance
+
         well.add_data(
             {
                 "match_depth": {

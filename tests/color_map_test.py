@@ -49,7 +49,7 @@ def test_create_color_map(tmp_path):
         allow_move=False,
     )
 
-    data = grid.add_data({"DataValues": {"values": values}})
+    data = grid.add_data({"DataValues": {"values": values.flatten()}})
 
     n_c = 10
     rgba = np.vstack(
@@ -114,3 +114,5 @@ def test_create_color_map(tmp_path):
         == getattr(data.entity_type.color_map, key)
         for key in ["name", "values"]
     ), "Issue copying the ColorMap."
+
+    assert len(rec_data.entity_type.color_map) == 10

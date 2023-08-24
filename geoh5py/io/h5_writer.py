@@ -271,7 +271,8 @@ class H5Writer:
             dict_values = getattr(entity, attribute)
 
             if channel in dict_values:
-                values = dict_values[channel]
+                values = dict_values[channel].copy()
+
                 if isinstance(values, np.ndarray) and values.dtype in (
                     np.float64,
                     np.float32,

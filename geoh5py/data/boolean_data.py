@@ -35,46 +35,26 @@ class BooleanData(ReferencedData):
 
         self.entity_type.value_map = ReferenceValueMap({0: "False", 1: "True"})
 
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.BOOLEAN
-
-    @property
-    def values(self) -> np.ndarray | None:
+    def format_type(self, values: np.ndarray):
         """
-        :return: values: An array of integer values
+        Check if the type of values is valid and coerse to type bool.
+        :param values: numpy array to modify.
+        :return: the formatted values.
         """
-        if getattr(self, "_values", None) is None:
-            values = self.workspace.fetch_values(self)
-
-            if isinstance(values, (np.ndarray, type(None))):
-                self._values = self.check_vector_length(values).astype(bool)
-
-        return self._values
-
-    @values.setter
-    def values(self, values: np.ndarray | None):
-        if isinstance(values, (np.ndarray, type(None))):
-            values = self.check_vector_length(values)
-
-        else:
-            raise ValueError(
-                f"Input 'values' for {self} must be of type {np.ndarray} or None."
-            )
-
-        if not (np.issubdtype(values.dtype, np.integer) or values.dtype == bool):
-            raise TypeError(
-                f"Input 'values' dtype must be of an integer or a boolean, find {values.dtype}."
-            )
-
-        # removing no data values from the array and replace them by "False"
-        values = values.astype(np.uint8)
-
         if set(values) - {0, 1} != set():
             raise ValueError(
                 f"Values provided by {self.name} are not containing only 0 or 1"
             )
 
-        self._values = values.astype(bool)
+        return values.astype(bool)
 
-        self.workspace.update_attribute(self, "values")
+    @classmethod
+    def primitive_type(cls) -> PrimitiveTypeEnum:
+        return PrimitiveTypeEnum.BOOLEAN
+
+    @property
+    def ndv(self) -> int:
+        """
+        No-Data-Value
+        """
+        return 0

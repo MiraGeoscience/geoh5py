@@ -404,6 +404,7 @@ class Workspace(AbstractContextManager):
                     member = VisualParameters
 
                 created_entity = member(data_type, **entity_kwargs)
+
                 return created_entity
 
         return None

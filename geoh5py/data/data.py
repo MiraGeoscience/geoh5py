@@ -106,8 +106,9 @@ class Data(Entity):
             if n_values < self.values.shape[0]:
                 kwargs.update({"values": self.values[mask]})
             else:
-                values = np.ones_like(self.values) * np.nan
+                values = np.ones_like(self.values) * self.nan_value
                 values[mask] = self.values[mask]
+
                 kwargs.update({"values": values})
 
         new_entity = parent.workspace.copy_to_parent(
@@ -146,6 +147,13 @@ class Data(Entity):
         if self.association is DataAssociationEnum.OBJECT:
             return 1
 
+        return None
+
+    @property
+    def nan_value(self) -> None:
+        """
+        Value used to represent missing data in python.
+        """
         return None
 
     @property

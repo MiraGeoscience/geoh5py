@@ -40,7 +40,7 @@ from geoh5py.workspace import Workspace
 def test_concatenator(tmp_path):
     h5file_path = tmp_path / r"test_Concatenator.geoh5"
 
-    with Workspace(version=2.0).save_as(h5file_path) as workspace:
+    with Workspace.create(h5file_path, version=2.0) as workspace:
         # Create a workspace
         dh_group = DrillholeGroup.create(workspace)
 
@@ -81,7 +81,7 @@ def test_concatenator(tmp_path):
 
 def test_concatenated_entities(tmp_path):
     h5file_path = tmp_path / r"test_concatenated_data.geoh5"
-    with Workspace(version=2.0).save_as(h5file_path) as workspace:
+    with Workspace.create(h5file_path, version=2.0) as workspace:
         class_type = type("TestGroup", (Concatenator, ContainerGroup), {})
         entity_type = Group.find_or_create_type(workspace)
         concat = class_type(entity_type)
@@ -137,7 +137,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
     well_name = "bullseye/"
     n_data = 10
 
-    with Workspace(version=2.0).save_as(h5file_path) as workspace:
+    with Workspace.create(h5file_path, version=2.0) as workspace:
         # Create a workspace
         dh_group = DrillholeGroup.create(workspace)
 
@@ -302,8 +302,8 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         depth_data = well_b.add_data(
             {
                 "Depth Data": {
-                    "values": np.random.randn(10),
                     "depth": np.sort(np.random.uniform(low=0.05, high=100, size=(10,))),
+                    "values": np.random.randn(8),
                 },
             }
         )
@@ -383,7 +383,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
             == well_b.get_data_list()
         )
 
-        with Workspace(new_path, version=2.0) as new_workspace:
+        with Workspace.create(new_path, version=2.0) as new_workspace:
             new_group = dh_group.copy(parent=new_workspace)
             well = [k for k in new_group.children if k.name == "bullseye/"][0]
             prop_group = [k for k in well.property_groups if k.name == "Interval_0"][0]
@@ -413,8 +413,8 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
     well_name = "well"
     n_data = 10
 
-    with Workspace(version=version, ga_version=ga_version).save_as(
-        h5file_path
+    with Workspace.create(
+        h5file_path, version=version, ga_version=ga_version
     ) as workspace:
         # Create a workspace
         dh_group = DrillholeGroup.create(workspace, name="DH_group")
@@ -523,7 +523,7 @@ def test_copy_drillhole_group(tmp_path):
             np.testing.assert_array_almost_equal(child_a.surveys, child_b.surveys)
             assert child_a.get_data_list() == child_b.get_data_list()
 
-        with Workspace(
+        with Workspace.create(
             tmp_path / r"test_copy_concatenated_copy.geoh5",
             version=2.0,
             ga_version="4.2",

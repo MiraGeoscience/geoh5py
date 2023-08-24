@@ -26,7 +26,7 @@ from PIL import Image
 from ... import objects
 from ...data import Data
 from ...shared import FLOAT_NDV
-from ...shared.utils import xy_rotation_matrix, yz_rotation_matrix
+from ...shared.utils import PILLOW_ARGUMENTS, xy_rotation_matrix, yz_rotation_matrix
 from .base import CellObjectConversion
 
 if TYPE_CHECKING:
@@ -210,6 +210,9 @@ class Grid2DConversion(CellObjectConversion):
 
             if mode is None:
                 raise IndexError("Only 1, 3, or 4 layers can be selected")
+
+        if mode not in PILLOW_ARGUMENTS:
+            raise NotImplementedError(f"The mode {mode} is not actually supported.")
 
         return Image.fromarray(data, mode=mode)
 

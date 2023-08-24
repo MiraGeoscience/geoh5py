@@ -17,6 +17,7 @@
 # import pytest
 
 import numpy as np
+import pytest
 
 from geoh5py.data import PrimitiveTypeEnum
 from geoh5py.objects.grid2d import Grid2D
@@ -49,7 +50,7 @@ def test_data_boolean(tmp_path):
                 {
                     "my_boolean": {
                         "association": "CELL",
-                        "values": values,
+                        "values": values.flatten(),
                     }
                 }
             )
@@ -57,13 +58,12 @@ def test_data_boolean(tmp_path):
             values = np.ones(grid.shape)
             values[3:-3, 3:-3] = 0
             values[:1, :1] = np.nan
-            values = values.astype(int)
 
             grid.add_data(
                 {
                     "my_boolean2": {
                         "association": "CELL",
-                        "values": values,
+                        "values": values.flatten(),
                         "entity_type": grid.get_data("my_boolean")[0].entity_type,
                     }
                 }
@@ -74,7 +74,7 @@ def test_data_boolean(tmp_path):
                 == PrimitiveTypeEnum.BOOLEAN
             )
 
-            grid2 = grid.copy(workspace=workspace_context2)
+            grid2 = grid.copy(parent=workspace_context2)
 
             # save the grid in a new workspace
             data2 = grid2.get_data("my_boolean")[0]
@@ -82,3 +82,21 @@ def test_data_boolean(tmp_path):
             assert all(data2.values == grid.get_data("my_boolean")[0].values)
 
             assert data2.entity_type.primitive_type == PrimitiveTypeEnum.BOOLEAN
+
+            with pytest.raises(
+                ValueError,
+                match="Values provided by my_boolean are not containing only 0 or 1",
+            ):
+                data2.values = np.array([1.1, 0.2, 1.1])
+
+            with pytest.raises(ValueError, match="Values provided by "):
+                data2.values = np.array([0, 2, 1])
+
+            with pytest.raises(TypeError, match="Input 'values' for "):
+                data2.values = "bidon"
+
+    with Workspace(h5file_path) as workspace:
+        grid2 = workspace.get_entity("masking")[0]
+        data2 = grid2.get_data("my_boolean")[0]
+        assert all(data2.values == grid.get_data("my_boolean")[0].values)
+        assert data2.entity_type.primitive_type == PrimitiveTypeEnum.BOOLEAN

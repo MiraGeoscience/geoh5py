@@ -30,7 +30,12 @@ from PIL.TiffImagePlugin import TiffImageFile
 from .. import objects
 from ..data import FilenameData
 from ..shared.conversion import GeoImageConversion
-from ..shared.utils import box_intersect, dip_points, xy_rotation_matrix
+from ..shared.utils import (
+    PILLOW_ARGUMENTS,
+    box_intersect,
+    dip_points,
+    xy_rotation_matrix,
+)
 from .object_base import ObjectBase, ObjectType
 
 
@@ -325,7 +330,7 @@ class GeoImage(ObjectBase):
             # georeference the raster
             self.georeference(reference, locations)
         except KeyError:
-            warnings.warn("The 'tif.' image has no referencing information")
+            warnings.warn("The 'tif.' image has no referencing information.")
 
     @property
     def image(self):
@@ -358,7 +363,9 @@ class GeoImage(ObjectBase):
                 value -= value.min()
                 value *= 255.0 / value.max()
                 value = value.astype("uint8")
+
             image = Image.fromarray(value)
+
         elif isinstance(image, str):
             if not Path(image).is_file():
                 raise ValueError(f"Input image file {image} does not exist.")
@@ -381,11 +388,13 @@ class GeoImage(ObjectBase):
             )
 
         with TemporaryDirectory() as tempdir:
-            ext = getattr(image, "format")
-            temp_file = (
-                Path(tempdir) / f"image.{ext.lower() if ext is not None else 'tiff'}"
-            )
-            image.save(temp_file)
+            if image.mode not in PILLOW_ARGUMENTS:
+                raise NotImplementedError(
+                    f"The mode {image.mode} of the image is not supported."
+                )
+
+            temp_file = Path(tempdir) / "image"
+            image.save(temp_file, **PILLOW_ARGUMENTS[image.mode])
 
             if self.image_data is not None:
                 self.workspace.remove_entity(self.image_data)

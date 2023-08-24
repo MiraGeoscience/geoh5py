@@ -62,7 +62,7 @@ def test_copy_entity(tmp_path: Path):
     h5file_path = tmp_path / r"testProject.geoh5"
 
     # Create a workspace
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         for obj, kwargs in objects.items():
             entity = obj.create(workspace, **kwargs)
 
