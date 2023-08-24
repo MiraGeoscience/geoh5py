@@ -327,12 +327,12 @@ class ChoiceStringParameter(FormParameter):
         super().__init__(name, validations=validations, **kwargs)
 
     @property
-    def choice_list(self):  # pylint: disable=invalid-name
+    def choice_list(self):
         return self._choice_list
 
     @choice_list.setter
-    def choice_list(self, val):  # pylint: disable=invalid-name
-        self._choice_list = val  # pylint: disable=invalid-name
+    def choice_list(self, val):
+        self._choice_list = val
 
         if isinstance(val, Parameter):
             val = val.value
@@ -485,7 +485,7 @@ class DataValueParameter(FormParameter):
     def value(self, val):
         if isinstance(val, (int, float)):
             self._value.value = val
-            self.is_value = True  # pylint: disable=invalid-name
+            self.is_value = True
         else:
             self.property = val
             self.is_value = False
