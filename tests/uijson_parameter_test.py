@@ -130,6 +130,7 @@ def test_form_parameter_validate():
 
     # should raise aggregated error with register of bad value and member
     param.validations = {"types": [str]}
+    assert param._value.validations == {"types": [str]}
     with pytest.raises(
         AggregateValidationError, match="Validation of 'param' collected 2 errors:"
     ):
@@ -170,6 +171,7 @@ def test_string_parameter():
     )
     assert len(param.validations) == 1
     assert "types" in param.validations
+    assert str(param) == "<StringParameter> : 'inversion_type' -> gravity"
 
 
 def test_bool_parameter():
@@ -179,6 +181,7 @@ def test_bool_parameter():
     )
     assert len(param.validations) == 1
     assert "types" in param.validations
+    assert str(param) == "<BoolParameter> : 'gz_channel_bool' -> True"
 
 
 def test_float_parameter():
@@ -191,6 +194,7 @@ def test_float_parameter():
     assert all(
         k in param.form_validations for k in ["min", "max", "precision", "line_edit"]
     )
+    assert str(param) == "<FloatParameter> : 'param' -> 1.0"
 
 
 def test_choice_string_parameter():
@@ -201,6 +205,7 @@ def test_choice_string_parameter():
     assert "choice_list" in param.form_validations
     reqd = ["label", "value", "choice_list"]
     assert all(k in param.required for k in reqd)
+    assert str(param) == "<ChoiceStringParameter> : 'param' -> cg"
 
 
 def test_file_parameter():
@@ -221,29 +226,33 @@ def test_file_parameter():
     )
     reqd = ["label", "value", "file_description", "file_type"]
     assert all(k in param.required for k in reqd)
+    assert str(param) == "<FileParameter> : 'param' -> test.csv"
 
 
 def test_object_parameter():
+    uid = uuid.uuid4()
     param = ObjectParameter.from_dict(
         "param",
         {
             "label": "mesh",
             "meshType": "{202C5DB1-A56D-4004-9CAD-BAAFD8899406}",
-            "value": uuid.uuid4(),
+            "value": uid,
         },
     )
     assert all(k in param.validations for k in ["types"])
     assert "mesh_type" in param.form_validations
     reqd = ["label", "value", "mesh_type"]
     assert all(k in param.required for k in reqd)
+    assert str(param) == f"<ObjectParameter> : 'param' -> {uid}"
 
 
 def test_data_parameter():
+    uid = uuid.uuid4()
     param = DataParameter.from_dict(
         "param",
         {
             "label": "gz_channel",
-            "parent": uuid.uuid4(),
+            "parent": uid,
             "association": "Vertex",
             "dataType": "Float",
         },
@@ -255,6 +264,7 @@ def test_data_parameter():
     )
     reqd = ["label", "value", "parent", "association", "data_type"]
     assert all(k in param.required for k in reqd)
+    assert str(param) == "<DataParameter> : 'param' -> None"
 
 
 def test_data_value_parameter():
@@ -293,6 +303,7 @@ def test_data_value_parameter():
                 "value": 1.0,
             },
         )
+    assert str(param) == "<DataValueParameter> : 'param' -> "
 
 
 def test_parameter_class():
