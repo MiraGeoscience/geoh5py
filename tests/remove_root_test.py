@@ -105,7 +105,9 @@ def test_remove_root(tmp_path: Path):
             }
         )
 
-        with pytest.raises(ValueError, match="All data must have"):
+        with pytest.raises(
+            ValueError, match="All input 'data' must have the same association"
+        ):
             points2.add_data_to_group(data2, "bidon")
 
         setattr(points2, "_property_groups", None)
