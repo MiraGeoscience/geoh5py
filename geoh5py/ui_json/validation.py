@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from collections import UserDict
 from copy import deepcopy
-from typing import Any, TypeAlias, cast
+from typing import Any, cast
 from uuid import UUID
 
 from geoh5py.groups import PropertyGroup
@@ -43,7 +43,7 @@ from geoh5py.shared.validators import (
 )
 from geoh5py.ui_json.utils import requires_value
 
-Validation: TypeAlias = dict[str, Any]
+Validation = dict[str, Any]
 
 
 class Validations(UserDict):

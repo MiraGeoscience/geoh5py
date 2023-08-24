@@ -17,7 +17,7 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeAlias
+from typing import Any
 from uuid import UUID
 
 from geoh5py.shared.exceptions import (
@@ -27,7 +27,7 @@ from geoh5py.shared.exceptions import (
 )
 from geoh5py.ui_json.validation import Validations
 
-Validation: TypeAlias = dict[str, Any]
+Validation = dict[str, Any]
 
 
 class Parameter:
