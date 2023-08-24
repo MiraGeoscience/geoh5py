@@ -41,7 +41,7 @@ from geoh5py.ui_json.parameters import (
 from geoh5py.ui_json.ui_json import UIJson
 from geoh5py.ui_json.validation import Validations
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access, invalid-name
 
 
 def test_parameter():
