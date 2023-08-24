@@ -15,12 +15,12 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-
 from __future__ import annotations
 
 from pathlib import Path
 
 import numpy as np
+import pytest
 from h5py import File
 
 from geoh5py.groups import ContainerGroup
@@ -29,6 +29,7 @@ from geoh5py.shared.utils import as_str_if_uuid, compare_entities
 from geoh5py.workspace import Workspace
 
 
+#  pylint: disable=too-many-locals
 def test_remove_root(tmp_path: Path):
     # Generate a random cloud of points
     n_data = 12
@@ -52,6 +53,7 @@ def test_remove_root(tmp_path: Path):
         )
 
         group_name = "SomeGroup"
+
         data_group = points.add_data_to_group(data, group_name)
 
         # Check no crash loading existing entity
@@ -90,4 +92,40 @@ def test_remove_root(tmp_path: Path):
     points.workspace.close()
 
     with Workspace(h5file_path) as new_workspace:
-        assert len(new_workspace.list_entities_name) == 5, "Issue re-building the Root."
+        assert len(new_workspace.list_entities_name) == 6, "Issue re-building the Root."
+
+        points2 = Points.create(new_workspace, vertices=xyz, parent=group)
+        data2 = points2.add_data(
+            {
+                "DataValuesb": {
+                    "association": "VERTEX",
+                    "values": np.random.randn(n_data),
+                },
+                "DataValues2b": {"values": "bidon", "association": "OBJECT"},
+            }
+        )
+
+        with pytest.raises(
+            ValueError, match="All input 'data' must have the same association"
+        ):
+            points2.add_data_to_group(data2, "bidon")
+
+        setattr(points2, "_property_groups", None)
+
+        assert points2.remove_data_from_groups(data2) is None
+
+        assert points2.reference_to_uid(points2.children[0]) == [
+            points2.children[0].uid
+        ]
+
+        assert points2.reference_to_uid(points2.children[0].name) == [
+            points2.children[0].uid
+        ]
+
+        assert points2.reference_to_uid(points2.children[0].uid) == [
+            points2.children[0].uid
+        ]
+
+        # will be deprecated
+        with pytest.warns(DeprecationWarning, match="Entity.save()"):
+            points2.save()

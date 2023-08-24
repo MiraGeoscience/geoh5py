@@ -22,6 +22,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from geoh5py.groups import PropertyGroup
 from geoh5py.objects import (
     AirborneTEMReceivers,
     AirborneTEMTransmitters,
@@ -333,7 +334,16 @@ def test_survey_airborne_tem_data(tmp_path):
                 receivers_orig.vertices[5:, :], receivers_rec.vertices
             )
             for child_a, child_b in zip(
-                receivers_orig.children, receivers_rec.children
+                [
+                    child
+                    for child in receivers_orig.children
+                    if not isinstance(child, PropertyGroup)
+                ],
+                [
+                    child
+                    for child in receivers_rec.children
+                    if not isinstance(child, PropertyGroup)
+                ],
             ):
                 np.testing.assert_almost_equal(child_a.values[5:], child_b.values)
 
