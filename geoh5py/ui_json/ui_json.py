@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict
 
 from geoh5py.shared.exceptions import AggregateValidationError, BaseValidationError
 from geoh5py.ui_json.parameters import (
@@ -30,12 +29,9 @@ from geoh5py.ui_json.parameters import (
     StringParameter,
 )
 
+
 class UIJson:
-    def __init__(
-        self,
-            parameters,
-            validations=None
-    ):
+    def __init__(self, parameters, validations=None):
         self.validations = {} if validations is None else validations
         self.update(parameters)
 
