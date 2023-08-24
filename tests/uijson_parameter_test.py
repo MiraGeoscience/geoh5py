@@ -41,6 +41,8 @@ from geoh5py.ui_json.parameters import (
 from geoh5py.ui_json.ui_json import UIJson
 from geoh5py.ui_json.validation import Validations
 
+# pylint: disable=protected-access
+
 
 def test_parameter():
     # Parameters can be instantiated with just a name
@@ -91,7 +93,7 @@ def test_parameter():
             "param", "nogood", {"values": ["onlythis"], "types": [int, float]}
         )
 
-    assert param.__str__() == "<Parameter> : 'param' -> test"
+    assert str(param) == "<Parameter> : 'param' -> test"
 
 
 def test_validation_update():
