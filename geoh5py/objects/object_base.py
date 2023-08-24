@@ -189,27 +189,24 @@ class ObjectBase(Entity):
         if isinstance(data, (Data, uuid.UUID)):
             data = [data]
 
-        associations = []
-        for elem in data:
-            if isinstance(elem, (uuid.UUID, str)):
-                entity = self.get_entity(elem)[0]
-            else:
-                entity = elem
-
-            if isinstance(entity, Data):
-                associations.append(entity.association)
-
-        associations = list(set(associations))
-        if len(associations) > 1:
-            raise ValueError("All data must have the same association.")
-
         if isinstance(property_group, str):
-            if len(associations) == 1:
-                property_group = self.find_or_create_property_group(
-                    name=property_group, association=associations[0]
-                )
-            else:
-                property_group = self.find_or_create_property_group(name=property_group)
+            associations = []
+            for elem in data:
+                if isinstance(elem, (uuid.UUID, str)):
+                    entity = self.get_entity(elem)[0]
+                else:
+                    entity = elem
+
+                if isinstance(entity, Data):
+                    associations.append(entity.association)
+
+            associations = list(set(associations))
+            if len(associations) > 1:
+                raise ValueError("All data must have the same association.")
+
+            property_group = self.find_or_create_property_group(
+                name=property_group, association=associations[0]
+            )
 
         property_group.add_properties(data)
 
