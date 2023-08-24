@@ -194,8 +194,10 @@ class ObjectBase(Entity):
             for elem in data:
                 if isinstance(elem, uuid.UUID):
                     entity = self.get_entity(elem)[0]
-                else:
+                elif elem in self.children:
                     entity = elem
+                else:
+                    continue
 
                 if isinstance(entity, Data):
                     associations.append(entity.association)
