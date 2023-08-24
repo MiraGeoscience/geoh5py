@@ -17,7 +17,7 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeAlias
+from typing import Any
 
 from geoh5py.shared.exceptions import AggregateValidationError, BaseValidationError
 from geoh5py.ui_json.parameters import (
@@ -30,7 +30,7 @@ from geoh5py.ui_json.parameters import (
     StringParameter,
 )
 
-Parameters: TypeAlias = dict[str, Parameter | FormParameter]
+Parameters = dict[str, Parameter | FormParameter]
 
 
 class UIJson:
