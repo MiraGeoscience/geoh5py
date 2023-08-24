@@ -85,8 +85,10 @@ class PropertyGroup(ABC):
         for elem in data:
             if isinstance(elem, uuid.UUID):
                 entity = self.parent.get_entity(elem)[0]
-            else:
+            elif isinstance(elem, Data) and elem in self.parent.children:
                 entity = elem
+            else:
+                continue
 
             if isinstance(entity, Data) and entity.uid not in properties:
                 properties.append(entity.uid)
@@ -217,8 +219,10 @@ class PropertyGroup(ABC):
         for elem in data:
             if isinstance(elem, uuid.UUID):
                 entity = self.parent.get_entity(elem)[0]
-            else:
+            elif isinstance(elem, Data) and elem in self.parent.children:
                 entity = elem
+            else:
+                continue
 
             if entity is not None and entity.uid in self._properties:
                 self._properties.remove(entity.uid)

@@ -86,17 +86,8 @@ def test_create_property_group(tmp_path):
         # set parent
         assert prop_group.parent == curve
 
-        # todo: this isn't possible as data is not a uuid or a PropertyGroup
-        #  is this what we're expecting?
-        # Create a new group by data name
-        # single_data_group = curve.add_data_to_group(f"Period{1}", "Singleton")
-
-        # assert (
-        #     workspace.find_data(single_data_group.properties[0]).name == f"Period{1}"
-        # ), "Failed at creating a property group by data name"
-
-        # Add data to group by uid
-        single_data_group = curve.add_data_to_group(props[1].uid, "Singleton")
+        # Add data to group as object
+        single_data_group = curve.add_data_to_group(props[1], "Singleton")
 
         assert (
             len(single_data_group.properties) == 1  # 2
@@ -116,12 +107,20 @@ def test_create_property_group(tmp_path):
         single_data_group.add_properties(uuid4())
         assert len(single_data_group.properties) == 2  # 3
 
+        # Try adding a data that doesn't belong
+        single_data_group.add_properties(curve2.children[0])
+        assert len(single_data_group.properties) == 2
+
         # Remove data from group by data
         single_data_group.remove_properties(props[2])
         assert len(single_data_group.properties) == 1  # 2
 
         # Remove bogus data from uuid
         single_data_group.remove_properties(uuid4())
+        assert len(single_data_group.properties) == 1  # 2
+
+        # Remove data that doesn't belong
+        single_data_group.remove_properties(curve2.children[0])
         assert len(single_data_group.properties) == 1  # 2
 
         # get property group
