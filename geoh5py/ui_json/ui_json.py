@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-
 from geoh5py.shared.exceptions import AggregateValidationError, BaseValidationError
 from geoh5py.ui_json.parameters import (
     BoolParameter,
