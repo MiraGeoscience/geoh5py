@@ -30,12 +30,11 @@ from geoh5py.ui_json.parameters import (
     StringParameter,
 )
 
-Parameters = Dict[str, Parameter | FormParameter]
-
-
 class UIJson:
     def __init__(
-        self, parameters: Parameters | dict[str, dict[str, Any]], validations=None
+        self,
+            parameters,
+            validations=None
     ):
         self.validations = {} if validations is None else validations
         self.update(parameters)
@@ -62,7 +61,7 @@ class UIJson:
                 val[name] = parameter.form
         return val
 
-    def update(self, parameters: Parameters | dict[str, dict[str, Any]]):
+    def update(self, parameters):
         parameter_update = {}
         for name, value in parameters.items():
             if isinstance(value, (Parameter, FormParameter)):
