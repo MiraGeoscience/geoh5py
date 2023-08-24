@@ -783,8 +783,8 @@ class ConcatenatedPropertyGroup(PropertyGroup):
                 "The 'parent' of a concatenated Data must be of type 'Concatenated'."
             )
         parent.add_children([self])
-        parent.workspace.create_property_group(self)
         self._parent = parent
+        parent.workspace.add_or_update_property_group(self)
 
 
 class ConcatenatedObject(Concatenated, ObjectBase):

@@ -127,6 +127,20 @@ def test_concatenated_entities(tmp_path):
         assert prop_group.to_ is None
         assert prop_group.from_ is None
 
+        setattr(prop_group, "_parent", None)
+
+        with pytest.raises(
+            AttributeError, match="The 'parent' of a concatenated Data must be of type"
+        ):
+            prop_group.parent = "bidon"
+
+        prop_group.parent = concat_object
+
+        assert prop_group.parent == concat_object
+
+        with pytest.raises(KeyError, match="A Property Group"):
+            concat_object.create_property_group(name="property_group")
+
 
 def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
     h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
