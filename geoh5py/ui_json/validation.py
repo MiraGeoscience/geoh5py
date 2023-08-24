@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from collections import UserDict
 from copy import deepcopy
-from typing import Any, cast, Dict
+from typing import Any, Dict, cast
 from uuid import UUID
 
 from geoh5py.groups import PropertyGroup
