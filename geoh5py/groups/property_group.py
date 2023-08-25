@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import uuid
 from abc import ABC
+from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 from geoh5py.data import Data, DataAssociationEnum
@@ -180,14 +181,14 @@ class PropertyGroup(ABC):
         return self._properties
 
     @properties.setter
-    def properties(self, uids: list[str | uuid.UUID] | None):
+    def properties(self, uids: list[str | uuid.UUID]):
         if self._properties is not None:
             raise UserWarning(
                 "Cannot modify properties of an existing property group. "
                 "Consider using 'add_properties'."
             )
 
-        if uids is None:
+        if not isinstance(uids, Iterable):
             return
 
         properties = []
