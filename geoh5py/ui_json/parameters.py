@@ -25,7 +25,6 @@ import numpy as np
 from geoh5py.shared.exceptions import (
     AggregateValidationError,
     BaseValidationError,
-    UIJsonFormatError,
 )
 from geoh5py.ui_json.validation import Validations
 
@@ -33,6 +32,14 @@ Validation = Dict[str, Any]
 
 
 class Parameter:
+    """
+    Basic parameter to store key/value data with validation capabilities.
+
+    :param name: Parameter name.
+    :param value: The parameters value.
+    :param validations: Parameter validations
+    """
+
     def __init__(self, name, value=None, validations: Validation | None = None):
         self._validations: Validations = Validations(validations)
         self.name: str = name
@@ -64,17 +71,21 @@ class Parameter:
 
 
 class ValueAccess:
-    """Descriptor to elevate underlying member values within 'FormParameter'."""
+    """
+    Descriptor to elevate underlying member values within 'FormParameter'.
 
-    def __init__(self, parameter):
-        self.parameter = parameter
+    :param private: Name of private attribute.
+    """
+
+    def __init__(self, private: str):
+        self.private = private
 
     def __get__(self, obj, objtype=None):
-        return getattr(obj, self.parameter).value
+        return getattr(obj, self.private).value
 
     def __set__(self, obj, value):
-        setattr(getattr(obj, self.parameter), "value", value)
-        obj._active_members.append(self.parameter[1:])
+        setattr(getattr(obj, self.private), "value", value)
+        obj._active_members.append(self.private[1:])
 
 
 class FormParameter:
@@ -86,10 +97,19 @@ class FormParameter:
     :param validations: Parameter validations
     :param form_validations: Parameter's form validations
     :param form: dictionary specifying visual characteristics of a ui element.
+    :param active: list of form members to include in form.
+    :param required: list of form members that must be included to create a
+        valid form.
 
+    :note: Can be constructed from keyword arguments of through the
+        'from_dict' constructor.
 
-    :note: Standardized form members (in valid_members list) will be
-        accessible through the __get_attr__ method, but not __set_attr__.
+    :note: The form members may be updated with a dictionary of members and
+        associated data through the 'register' method.
+
+    :note: Standardized form members (in valid_members list) will also
+        be accessible through a descriptor that sets/gets the underlying
+        values attribute of the private Parameter object.
     """
 
     form_validations: dict[str, Validation] = {
@@ -152,9 +172,9 @@ class FormParameter:
         """
         Set parameters from form members with default or incoming values.
 
-        :param members: Dictionary of form members and associated values.
+        :param members: Dictionary of form members and associated data.
 
-        :return: Dictionary of unrecognized members.
+        :return: Dictionary of unrecognized members and data.
         """
 
         members = {self.key_map.get(k, k): v for k, v in members.items()}
@@ -203,16 +223,28 @@ class FormParameter:
 
     @property
     def active(self) -> list[str]:
+        """
+        Returns names of active form members.
+
+        :return: List of active form members.  These will include any members
+            that were:
+                1. Provided during construction.
+                2. Updated through the 'register' method.
+                3. Updated through member setters.
+                4. Defined as 'required' by the validations.
+        """
         active = self._active_members + list(self._extra_members)
         active_unique, ind = np.unique(active, return_index=True)
         return list(active_unique[ind])  # Preserve order after unique
 
     @property
     def required(self):
+        """Returns list of members required by their validations."""
         return [k for k, v in self.form_validations.items() if v.get("required", False)]
 
     @property
     def form(self):
+        """Returns dictionary of active form members and their values."""
         form = {}
         for member in self.active:
             if member in self._extra_members:
@@ -222,15 +254,9 @@ class FormParameter:
 
         return form
 
-    def validate(self):
-        for member in set(self.active + self.required):
-            try:
-                getattr(self, f"_{member}").validate()
-            except BaseValidationError as err:
-                raise UIJsonFormatError(self.name, str(err)) from err
-
     @classmethod
     def is_form(cls, form: dict[str, Any]) -> bool:
+        """Returns True if form contains any identifier members."""
         id_members = cls.identifier_members
         form_members = [cls.key_map.get(k, k) for k in form]
         return any(k in form_members for k in id_members)
@@ -240,6 +266,8 @@ class FormParameter:
 
 
 class StringParameter(FormParameter):
+    """String parameter type."""
+
     base_validations: Validation = {"types": [str]}
 
     def __init__(self, name, validations=None, **kwargs):
@@ -252,6 +280,8 @@ class StringParameter(FormParameter):
 
 
 class BoolParameter(FormParameter):
+    """Boolean parameter type."""
+
     base_validations: Validation = {"types": [bool]}
 
     def __init__(self, name, validations=None, **kwargs):
@@ -264,6 +294,8 @@ class BoolParameter(FormParameter):
 
 
 class IntegerParameter(FormParameter):
+    """Integer parameter type."""
+
     base_validations: Validation = {"types": [int]}
     integer_form_validations: dict[str, Validation] = {
         "min": {"types": [int, type(None)]},
@@ -287,6 +319,8 @@ class IntegerParameter(FormParameter):
 
 
 class FloatParameter(FormParameter):
+    """Float parameter type."""
+
     base_validations: Validation = {"types": [float]}
     float_validations: dict[str, Validation] = {
         "min": {"types": [float, type(None)]},
@@ -315,6 +349,8 @@ class FloatParameter(FormParameter):
 
 
 class ChoiceStringParameter(FormParameter):
+    """Choice string parameter type."""
+
     base_validations: Validation = {"types": [str]}
     choice_string_validations: dict[str, Validation] = {
         "choice_list": {"required": True, "types": [list]}
@@ -353,6 +389,8 @@ class ChoiceStringParameter(FormParameter):
 
 
 class FileParameter(FormParameter):
+    """File parameter type."""
+
     base_validations: Validation = {"types": [str]}
     file_validations: dict[str, Validation] = {
         "file_description": {"required": True, "types": [str, tuple, list]},
@@ -385,6 +423,8 @@ class FileParameter(FormParameter):
 
 
 class ObjectParameter(FormParameter):
+    """Object parameter type."""
+
     base_validations: Validation = {"types": [str, UUID]}
     object_validations: dict[str, Validation] = {
         "mesh_type": {
@@ -410,6 +450,8 @@ class ObjectParameter(FormParameter):
 
 
 class DataParameter(FormParameter):
+    """Data parameter type."""
+
     base_validations: Validation = {"types": [str, UUID, type(None)]}
     data_validations: dict[str, Validation] = {
         "parent": {"required": True, "types": [str, UUID]},
@@ -450,6 +492,8 @@ class DataParameter(FormParameter):
 
 
 class DataValueParameter(FormParameter):
+    """Data value parameter type."""
+
     base_validations: Validation = {"types": [int, float]}
     data_value_validations: dict[str, Validation] = {
         "parent": {"required": True, "types": [str, UUID]},
