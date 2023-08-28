@@ -22,10 +22,7 @@ from uuid import UUID
 
 import numpy as np
 
-from geoh5py.shared.exceptions import (
-    AggregateValidationError,
-    BaseValidationError,
-)
+from geoh5py.shared.exceptions import AggregateValidationError, BaseValidationError
 from geoh5py.ui_json.validation import Validations
 
 Validation = Dict[str, Any]
