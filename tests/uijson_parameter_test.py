@@ -117,6 +117,8 @@ def test_form_parameter_roundtrip():
     param.enabled = True
     param.enabled = False  # unique in active def prevents double entry
     assert param.form == dict(form, **{"enabled": False})
+    param.register({})
+    assert param.form == dict(form, **{"enabled": False})
 
 
 def test_form_parameter_validate():
@@ -146,6 +148,9 @@ def test_form_parameter_validate():
             {"label": "my param", "value": 1, "optional": "whoops"},
             {"types": [str]},
         )
+
+    with pytest.raises(TypeError, match="Input 'members' must be a dictionary."):
+        param.register(2)
 
 
 def test_string_parameter():

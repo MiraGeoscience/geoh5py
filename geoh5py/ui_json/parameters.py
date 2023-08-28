@@ -22,10 +22,7 @@ from uuid import UUID
 
 import numpy as np
 
-from geoh5py.shared.exceptions import (
-    AggregateValidationError,
-    BaseValidationError,
-)
+from geoh5py.shared.exceptions import AggregateValidationError, BaseValidationError
 from geoh5py.ui_json.validation import Validations
 
 Validation = Dict[str, Any]
@@ -176,6 +173,12 @@ class FormParameter:
 
         :return: Dictionary of unrecognized members and data.
         """
+
+        if not members:
+            return
+
+        if not isinstance(members, dict):
+            raise TypeError("Input 'members' must be a dictionary.")
 
         members = {self.key_map.get(k, k): v for k, v in members.items()}
         error_list = []
