@@ -33,12 +33,10 @@ from geoh5py.ui_json.parameters import (
     FileParameter,
     FloatParameter,
     FormParameter,
-    IntegerParameter,
     ObjectParameter,
     Parameter,
     StringParameter,
 )
-from geoh5py.ui_json.ui_json import UIJson
 from geoh5py.ui_json.validation import Validations
 
 # pylint: disable=protected-access, invalid-name
@@ -290,106 +288,3 @@ def test_data_value_parameter():
             },
         )
     assert str(param) == "<DataValueParameter> : 'param' -> "
-
-
-def test_parameter_class():
-    assert UIJson._parameter_class({"label": "lsdfkj"}) == FormParameter
-    assert UIJson._parameter_class({"choiceList": ["lsdkfj"]}) == ChoiceStringParameter
-    assert UIJson._parameter_class({"fileDescription": "lskdjf"}) == FileParameter
-    assert UIJson._parameter_class({"fileType": "sldkjf"}) == FileParameter
-    assert UIJson._parameter_class({"meshType": "lsdkjf"}) == ObjectParameter
-    assert UIJson._parameter_class({"dataGroupType": "Multi-element"}) == DataParameter
-    assert UIJson._parameter_class({"isValue": True}) == DataValueParameter
-    assert UIJson._parameter_class({"property": "lskdjf"}) == DataValueParameter
-
-
-def test_possible_parameter_classes():
-    possibilities = UIJson._possible_parameter_classes({"label": "test", "value": 2})
-    assert all(k in FormParameter.__subclasses__() for k in possibilities)
-    possibilities = UIJson._possible_parameter_classes({"min"})
-    assert all(k in [IntegerParameter, FloatParameter] for k in possibilities)
-    possibilities = UIJson._possible_parameter_classes({"max"})
-    assert all(k in [IntegerParameter, FloatParameter] for k in possibilities)
-    possibilities = UIJson._possible_parameter_classes({"precision"})
-    assert all(k in [FloatParameter] for k in possibilities)
-    possibilities = UIJson._possible_parameter_classes({"lineEdit"})
-    assert all(k in [FloatParameter] for k in possibilities)
-    possibilities = UIJson._possible_parameter_classes({"fileMulti"})
-    assert all(k in [FileParameter] for k in possibilities)
-    possibilities = UIJson._possible_parameter_classes({"parent"})
-    assert all(k in [DataParameter, DataValueParameter] for k in possibilities)
-    possibilities = UIJson._possible_parameter_classes({"association"})
-    assert all(k in [DataParameter, DataValueParameter] for k in possibilities)
-    possibilities = UIJson._possible_parameter_classes({"dataType"})
-    assert all(k in [DataParameter, DataValueParameter] for k in possibilities)
-
-
-def test_identify():
-    assert UIJson.identify({"label": "test", "value": "lsdkjf"}) == StringParameter
-    assert UIJson.identify({"label": "test", "value": 2}) == IntegerParameter
-    assert UIJson.identify({"label": "test", "value": 2.0}) == FloatParameter
-    assert UIJson.identify({"precision": 2}) == FloatParameter
-    assert UIJson.identify({"lineEdit": True}) == FloatParameter
-    assert (
-        UIJson.identify(
-            {
-                "choiceList": [
-                    2,
-                ]
-            }
-        )
-        == ChoiceStringParameter
-    )
-    assert UIJson.identify({"fileDescription": "lskdjf"}) == FileParameter
-    assert UIJson.identify({"fileType": "lskdjf"}) == FileParameter
-    assert UIJson.identify({"fileMulti": True}) == FileParameter
-    assert UIJson.identify({"meshType": "lsdkfj"}) == ObjectParameter
-    assert UIJson.identify({"parent": "sldkfj", "dataType": "Vertex"}) == DataParameter
-    assert (
-        UIJson.identify({"association": "Vertex", "dataType": "Vertex"})
-        == DataParameter
-    )
-    assert UIJson.identify({"dataType": "Float"}) == DataParameter
-    assert UIJson.identify({"dataGroupType": "Multi-element"}) == DataParameter
-    assert UIJson.identify({"isValue": True}) == DataValueParameter
-    assert UIJson.identify({"property": None}) == DataValueParameter
-
-
-def test_uijson():
-    parameters = {
-        "param_1": FormParameter.from_dict(
-            "param_1",
-            {"label": "first parameter", "value": "toocool"},
-            {"types": [str]},
-        ),
-        "param_2": StringParameter.from_dict(
-            "param_2", {"label": "second parameter", "value": "ohyeah"}
-        ),
-        "param_3": Parameter("param_3", 2, {"types": [int]}),
-        "param_4": {"label": "fourth parameter", "value": 2},
-    }
-    ui_json = UIJson(parameters)
-    p1 = ui_json.parameters["param_1"]
-    assert isinstance(p1, FormParameter)
-    assert p1.name == "param_1"
-    assert p1.label == "first parameter"
-    assert p1.value == "toocool"
-    assert p1.validations == {"types": [str]}
-    p2 = ui_json.parameters["param_2"]
-    assert isinstance(p2, StringParameter)
-    assert p2.name == "param_2"
-    assert p2.label == "second parameter"
-    assert p2.value == "ohyeah"
-    assert p2.validations == {"types": [str]}
-    p3 = ui_json.parameters["param_3"]
-    assert isinstance(p3, Parameter)
-    assert p3.name == "param_3"
-    assert p3.value == 2
-    assert p3.validations == {"types": [int]}
-    p4 = ui_json.parameters["param_4"]
-    assert isinstance(p4, IntegerParameter)
-    assert p4.name == "param_4"
-    assert p4.label == "fourth parameter"
-    assert p4.value == 2
-    assert p4.validations == {"types": [int]}
-    ui_json.validate()
