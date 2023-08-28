@@ -34,7 +34,7 @@ Validation = Dict[str, Any]
 
 class Parameter:
     def __init__(self, name, value=None, validations: Validation | None = None):
-        self.validations = validations
+        self._validations: Validations = Validations(validations)
         self.name: str = name
         self.value: Any = value
 
@@ -49,7 +49,7 @@ class Parameter:
             self.validate()
 
     @property
-    def validations(self):
+    def validations(self) -> Validations:
         return self._validations
 
     @validations.setter
@@ -165,7 +165,9 @@ class FormParameter:
             )
             if member in members:
                 try:
-                    param = Parameter(member, members.pop(member), validations)
+                    param = Parameter(
+                        member, members.pop(member), validations  # type: ignore
+                    )
                 except BaseValidationError as err:
                     error_list.append(err)
             else:
@@ -173,11 +175,11 @@ class FormParameter:
                 val = val.value if isinstance(val, Parameter) else val
                 if member in self.required:
                     try:
-                        param = Parameter(member, val, validations)
+                        param = Parameter(member, val, validations)  # type: ignore
                     except BaseValidationError as err:
                         error_list.append(err)
                 else:
-                    param = Parameter(member, validations=validations)
+                    param = Parameter(member, validations=validations)  # type: ignore
 
             setattr(self, f"_{member}", param)
             if member not in dir(self):  # do not override pre-defined properties
@@ -192,7 +194,7 @@ class FormParameter:
         self._extra_members.update(members)
 
     @property
-    def validations(self) -> Validation | None:
+    def validations(self) -> Validations:
         return self._value.validations
 
     @validations.setter
@@ -200,10 +202,10 @@ class FormParameter:
         self._value.validations = val
 
     @property
-    def active(self):
+    def active(self) -> list[str]:
         active = self._active_members + list(self._extra_members)
-        active, ind = np.unique(active, return_index=True)
-        return active[ind]  # Preserve order after unique
+        active_unique, ind = np.unique(active, return_index=True)
+        return list(active_unique[ind])  # Preserve order after unique
 
     @property
     def required(self):
@@ -347,7 +349,7 @@ class ChoiceStringParameter(FormParameter):
         if self.validations:
             self.validations.update({"values": val})
         else:
-            self.validations = {"values": val}
+            self.validations = {"values": val}  # type: ignore
 
 
 class FileParameter(FormParameter):
