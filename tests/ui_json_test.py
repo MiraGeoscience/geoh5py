@@ -70,7 +70,12 @@ def get_workspace(directory: str | Path):
 
         points_b = points.copy(copy_children=True)
         points_b.name = "Points_B"
-        points_b.add_data_to_group(points_b.children, "My group2")
+
+        no_property_child = [
+            child for child in points_b.children if not isinstance(child, PropertyGroup)
+        ]
+
+        points_b.add_data_to_group(no_property_child, "My group2")
 
     return workspace
 
@@ -454,27 +459,6 @@ def test_valid_uuid_in_workspace(tmp_path: Path):
         getattr(InputFile(ui_json=ui_json), "data")
 
 
-def test_data_with_wrong_parent(tmp_path: Path):
-    workspace = get_workspace(tmp_path)
-    points = workspace.get_entity("Points_A")[0]
-    points_b = workspace.get_entity("Points_B")[0]
-
-    ui_json = deepcopy(default_ui_json)
-    ui_json["geoh5"] = workspace
-    ui_json["object"] = templates.object_parameter()
-    ui_json["object"]["value"] = str(points.uid)
-    ui_json["object"]["meshType"] = [points.entity_type.uid]
-    ui_json["data"] = templates.data_parameter()
-    ui_json["data"]["parent"] = "object"
-    ui_json["data"]["value"] = points_b.children[0].uid
-
-    with pytest.raises(
-        AssociationValidationError,
-        match=AssociationValidationError.message("data", points_b.children[0], points),
-    ):
-        getattr(InputFile(ui_json=ui_json), "data")
-
-
 def test_property_group_with_wrong_type(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     points = workspace.get_entity("Points_A")[0]
@@ -506,6 +490,31 @@ def test_property_group_with_wrong_type(tmp_path: Path):
         match=PropertyGroupValidationError.message(
             "data", points.property_groups[0], "3D vector"
         ),
+    ):
+        getattr(InputFile(ui_json=ui_json), "data")
+
+
+def test_data_with_wrong_parent(tmp_path: Path):
+    workspace = get_workspace(tmp_path)
+    points = workspace.get_entity("Points_A")[0]
+    points_b = workspace.get_entity("Points_B")[0]
+
+    no_property_child = [
+        child for child in points_b.children if not isinstance(child, PropertyGroup)
+    ]
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["object"] = templates.object_parameter()
+    ui_json["object"]["value"] = str(points.uid)
+    ui_json["object"]["meshType"] = [points.entity_type.uid]
+    ui_json["data"] = templates.data_parameter()
+    ui_json["data"]["parent"] = "object"
+    ui_json["data"]["value"] = no_property_child[0].uid
+
+    with pytest.raises(
+        AssociationValidationError,
+        match=AssociationValidationError.message("data", no_property_child[0], points),
     ):
         getattr(InputFile(ui_json=ui_json), "data")
 
@@ -604,7 +613,11 @@ def test_data_value_parameter_a(tmp_path: Path):
 def test_data_value_parameter_b(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     points_a = workspace.get_entity("Points_A")[0]
-    data_b = points_a.children[0]
+    no_property_child = [
+        child for child in points_a.children if not isinstance(child, PropertyGroup)
+    ]
+
+    data_b = no_property_child[0]
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
     ui_json["object"] = templates.object_parameter(value=points_a.uid)
@@ -613,6 +626,7 @@ def test_data_value_parameter_b(tmp_path: Path):
     )
 
     in_file = InputFile(ui_json=ui_json)
+
     out_file = in_file.write_ui_json(name="test.ui.json", path=tmp_path)
     reload_input = InputFile.read_ui_json(out_file)
 
@@ -631,7 +645,12 @@ def test_multi_object_value_parameter(tmp_path: Path):
     workspace = get_workspace(tmp_path)
     points_a = workspace.get_entity("Points_A")[0]
     points_b = workspace.get_entity("Points_B")[0]
-    data_b = points_a.children[0]
+
+    no_property_child = [
+        child for child in points_a.children if not isinstance(child, PropertyGroup)
+    ]
+
+    data_b = no_property_child[0]
     ui_json = deepcopy(default_ui_json)
     ui_json["geoh5"] = workspace
     ui_json["object"] = templates.object_parameter(value=[], multi_select=True)
