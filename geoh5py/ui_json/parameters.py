@@ -20,6 +20,8 @@ from __future__ import annotations
 from typing import Any, Dict
 from uuid import UUID
 
+import numpy as np
+
 from geoh5py.shared.exceptions import (
     AggregateValidationError,
     BaseValidationError,
@@ -59,6 +61,20 @@ class Parameter:
 
     def __str__(self):
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
+
+
+class ValueAccess:
+    """Descriptor to elevate underlying member values within 'FormParameter'."""
+
+    def __init__(self, parameter):
+        self.parameter = parameter
+
+    def __get__(self, obj, objtype=None):
+        return getattr(obj, self.parameter).value
+
+    def __set__(self, obj, value):
+        setattr(getattr(obj, self.parameter), "value", value)
+        obj._active_members.append(self.parameter[1:])
 
 
 class FormParameter:
@@ -114,6 +130,7 @@ class FormParameter:
         self._group_dependency_type: str | None = None
         self._tooltip: str | None = None
         self._extra_members: dict[str, Any] = {}
+        self._active_members: list[str] = list(kwargs)
         self.validations: Validations = Validations(validations)  # type: ignore
         self.register(kwargs)
 
@@ -122,6 +139,14 @@ class FormParameter:
         cls, name: str, form: dict[str, Any], validations: dict | None = None
     ):
         return cls(name, validations, **form)
+
+    @property
+    def value(self):
+        return self._value.value
+
+    @value.setter
+    def value(self, val):
+        self._value.value = val
 
     def register(self, members: dict[str, Any]):
         """
@@ -132,27 +157,31 @@ class FormParameter:
         :return: Dictionary of unrecognized members.
         """
 
-        if members:
-            members = {self.key_map.get(k, k): v for k, v in members.items()}
-            members = dict(
-                {k: getattr(self, f"_{k}") for k in self.required}, **members
-            )
-            members = {
-                k: v.value if isinstance(v, Parameter) else v
-                for k, v in members.items()
-            }
-
+        members = {self.key_map.get(k, k): v for k, v in members.items()}
         error_list = []
-        for k in list(members):
-            if k in self.valid_members:
-                val = members.pop(k)
+        for member in self.valid_members:
+            validations = (
+                self.validations if member == "value" else self.form_validations[member]
+            )
+            if member in members:
                 try:
-                    validations = (
-                        self.validations if k == "value" else self.form_validations[k]
-                    )
-                    setattr(self, f"_{k}", Parameter(k, val, validations))
+                    param = Parameter(member, members.pop(member), validations)
                 except BaseValidationError as err:
                     error_list.append(err)
+            else:
+                val = getattr(self, f"_{member}")
+                val = val.value if isinstance(val, Parameter) else val
+                if member in self.required:
+                    try:
+                        param = Parameter(member, val, validations)
+                    except BaseValidationError as err:
+                        error_list.append(err)
+                else:
+                    param = Parameter(member, validations=validations)
+
+            setattr(self, f"_{member}", param)
+            if member not in dir(self):  # do not override pre-defined properties
+                setattr(self.__class__, member, ValueAccess(f"_{member}"))
 
         if error_list:
             if len(error_list) == 1:
@@ -172,8 +201,9 @@ class FormParameter:
 
     @property
     def active(self):
-        active = [k[1:] for k, v in self.__dict__.items() if isinstance(v, Parameter)]
-        return active + list(self._extra_members)
+        active = self._active_members + list(self._extra_members)
+        active, ind = np.unique(active, return_index=True)
+        return active[ind]  # Preserve order after unique
 
     @property
     def required(self):
@@ -205,29 +235,6 @@ class FormParameter:
 
     def __str__(self):
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
-
-    def __getattr__(self, name):
-        if f"_{name}" in self.__dict__:
-            member = self.__dict__[f"_{name}"]
-        elif name == "validations":
-            member = self.__dict__["_value"].validations
-        else:
-            try:
-                member = self.__dict__[name]
-            except KeyError as err:
-                raise AttributeError(f"'{name}' attribute doesn't exist.") from err
-
-        return member.value if isinstance(member, Parameter) else member
-
-    def __setattr__(self, name, value):
-        if name in self.valid_members:
-            self.__dict__[f"_{name}"] = Parameter(
-                name, value, self.form_validations[name]
-            )
-        elif name == "validations":
-            self.__dict__["_value"].validations = value
-        else:
-            self.__dict__[name] = value
 
 
 class StringParameter(FormParameter):
@@ -348,7 +355,7 @@ class FileParameter(FormParameter):
     file_validations: dict[str, Validation] = {
         "file_description": {"required": True, "types": [str, tuple, list]},
         "file_type": {"required": True, "types": [str, tuple, list]},
-        "file_multi": {"types": [bool]},
+        "file_multi": {"types": [bool, type(None)]},
     }
     form_validations: dict[str, Validation] = dict(
         FormParameter.form_validations, **file_validations

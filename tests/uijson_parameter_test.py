@@ -107,7 +107,7 @@ def test_validation_update():
 
 
 def test_form_parameter_roundtrip():
-    form = {"label": "my param", "value": 1, "extra": "stuff"}
+    form = {"label": "my param", "value": 1, "enabled": False, "extra": "stuff"}
     param = FormParameter("param", **form)
     assert param.name == "param"
     assert param.label == "my param"
@@ -116,26 +116,12 @@ def test_form_parameter_roundtrip():
     assert param._extra_members["extra"] == "stuff"
     assert all(hasattr(param, k) for k in param.valid_members)
     assert param.form == form
+    param.enabled = True
+    param.enabled = False  # unique in active def prevents double entry
+    assert param.form == dict(form, **{"enabled": False})
 
 
 def test_form_parameter_validate():
-    # Blank initialization shouldn't crash, register should pass
-    # with valid data and fail with invalid data
-    param = FormParameter("param")
-    param.register({"label": "my param", "value": 1})
-    with pytest.raises(
-        TypeValidationError, match="Type 'str' provided for 'optional' is invalid"
-    ):
-        param.register({"optional": "whoops"})
-
-    # should raise aggregated error with register of bad value and member
-    param.validations = {"types": [str]}
-    assert param._value.validations == {"types": [str]}
-    with pytest.raises(
-        AggregateValidationError, match="Validation of 'param' collected 2 errors:"
-    ):
-        param.register({"optional": "whoops", "value": 1})
-
     # Form validations run on instantiation should pass
     param = FormParameter.from_dict(
         "param", {"label": "my param", "value": 1}, validations={"types": [int]}
