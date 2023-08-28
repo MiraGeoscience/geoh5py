@@ -108,8 +108,8 @@ def test_form_parameter_roundtrip():
     form = {"label": "my param", "value": 1, "enabled": False, "extra": "stuff"}
     param = FormParameter("param", **form)
     assert param.name == "param"
-    assert param.label == "my param"
-    assert param.validations == {}
+    assert param.label == "my param"  # pylint: disable=no-member
+    assert param.validations == {}  # pylint: disable=no-member
     assert not hasattr(param, "extra")
     assert param._extra_members["extra"] == "stuff"
     assert all(hasattr(param, k) for k in param.valid_members)
@@ -127,7 +127,7 @@ def test_form_parameter_validate():
     assert param.name == "param"
     assert len(param.form) == 2
     assert all(k in param.form for k in ["label", "value"])
-    assert param.label == "my param"
+    assert param.label == "my param"  # pylint: disable=no-member
     assert param.value == 1
     assert all(hasattr(param, k) for k in param.valid_members)
 
