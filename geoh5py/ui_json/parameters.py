@@ -27,6 +27,23 @@ from geoh5py.ui_json.validation import Validations
 
 Validation = Dict[str, Any]
 
+KEY_MAP = {
+    "groupOptional": "group_optional",
+    "dependencyType": "dependency_type",
+    "groupDependency": "group_dependency",
+    "groupDependencyType": "group_dependency_type",
+    "lineEdit": "line_edit",
+    "choiceList": "choice_list",
+    "fileDescription": "file_description",
+    "fileType": "file_type",
+    "fileMulti": "file_multi",
+    "meshType": "mesh_type",
+    "dataType": "data_type",
+    "dataGroupType": "data_group_type",
+    "dataType": "data_type",
+    "isValue": "is_value",
+}
+
 
 class Parameter:
     """
@@ -125,12 +142,6 @@ class FormParameter:
     }
     valid_members: list[str] = list(form_validations.keys())
     identifier_members: list[str] = []
-    key_map = {
-        "groupOptional": "group_optional",
-        "dependencyType": "dependency_type",
-        "groupDependency": "group_dependency",
-        "groupDependencyType": "group_dependency_type",
-    }
 
     def __init__(self, name: str, validations: Validation | None = None, **kwargs):
         self.name: str = name
@@ -180,7 +191,7 @@ class FormParameter:
         if not isinstance(members, dict):
             raise TypeError("Input 'members' must be a dictionary.")
 
-        members = {self.key_map.get(k, k): v for k, v in members.items()}
+        members = {KEY_MAP.get(k, k): v for k, v in members.items()}
         error_list = []
         for member in self.valid_members:
             validations = (
@@ -253,7 +264,7 @@ class FormParameter:
     def is_form(cls, form: dict[str, Any]) -> bool:
         """Returns True if form contains any identifier members."""
         id_members = cls.identifier_members
-        form_members = [cls.key_map.get(k, k) for k in form]
+        form_members = [KEY_MAP.get(k, k) for k in form]
         return any(k in form_members for k in id_members)
 
     def __str__(self):
@@ -328,7 +339,6 @@ class FloatParameter(FormParameter):
     )
     valid_members: list[str] = list(form_validations.keys())
     identifier_members: list[str] = ["precision", "line_edit"]
-    FormParameter.key_map.update({"lineEdit": "line_edit"})
 
     def __init__(self, name, validations=None, **kwargs):
         self._min: float | None = None
@@ -355,7 +365,6 @@ class ChoiceStringParameter(FormParameter):
     )
     valid_members: list[str] = list(form_validations.keys())
     identifier_members: list[str] = ["choice_list"]
-    FormParameter.key_map.update({"choiceList": "choice_list"})
 
     def __init__(self, name, validations=None, **kwargs):
         self._choice_list: list | None = None
@@ -397,13 +406,6 @@ class FileParameter(FormParameter):
     )
     valid_members: list[str] = list(form_validations.keys())
     identifier_members: list[str] = ["file_description", "file_type", "file_multi"]
-    FormParameter.key_map.update(
-        {
-            "fileDescription": "file_description",
-            "fileType": "file_type",
-            "fileMulti": "file_multi",
-        }
-    )
 
     def __init__(self, name, validations=None, **kwargs):
         self._file_description: str | tuple | list | None = None
@@ -432,7 +434,6 @@ class ObjectParameter(FormParameter):
     )
     valid_members: list[str] = list(form_validations.keys())
     identifier_members: list[str] = ["mesh_type"]
-    FormParameter.key_map.update({"meshType": "mesh_type"})
 
     def __init__(self, name, validations=None, **kwargs):
         self._mesh_type: list = []
@@ -466,12 +467,6 @@ class DataParameter(FormParameter):
     )
     valid_members: list[str] = list(form_validations.keys())
     identifier_members: list[str] = ["data_group_type"]
-    FormParameter.key_map.update(
-        {
-            "dataType": "data_type",
-            "dataGroupType": "data_group_type",
-        }
-    )
 
     def __init__(self, name, validations=None, **kwargs):
         self._parent: str | UUID | None = None
@@ -502,12 +497,6 @@ class DataValueParameter(FormParameter):
     )
     valid_members: list[str] = list(form_validations.keys())
     identifier_members: list[str] = ["is_value", "property"]
-    FormParameter.key_map.update(
-        {
-            "dataType": "data_type",
-            "isValue": "is_value",
-        }
-    )
 
     def __init__(self, name, validations=None, **kwargs):
         self._parent: str | UUID | None = None
