@@ -40,7 +40,7 @@ class Parameter:
     def __init__(self, name, value=None, validations: Validation | None = None):
         self._validations: Validations = Validations(validations)
         self.name: str = name
-        self.value: Any = value
+        setattr(self, "_value" if value is None else "value", value)
 
     @property
     def value(self):
@@ -148,7 +148,7 @@ class FormParameter:
         self._tooltip: str | None = None
         self._extra_members: dict[str, Any] = {}
         self._active_members: list[str] = list(kwargs)
-        self.validations: Validations = Validations(validations)  # type: ignore
+        self.validations: Validations = Validations(validations)
         self.register(kwargs)
 
     @classmethod
@@ -194,15 +194,7 @@ class FormParameter:
                 except BaseValidationError as err:
                     error_list.append(err)
             else:
-                val = getattr(self, f"_{member}")
-                val = val.value if isinstance(val, Parameter) else val
-                if member in self.required:
-                    try:
-                        param = Parameter(member, val, validations)  # type: ignore
-                    except BaseValidationError as err:
-                        error_list.append(err)
-                else:
-                    param = Parameter(member, validations=validations)  # type: ignore
+                param = Parameter(member, validations=validations)  # type: ignore
 
             setattr(self, f"_{member}", param)
             if member not in dir(self):  # do not override pre-defined properties

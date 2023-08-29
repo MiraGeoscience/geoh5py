@@ -280,16 +280,3 @@ def test_data_value_parameter():
         k in param.form_validations
         for k in ["parent", "association", "data_type", "is_value", "property"]
     )
-
-    # incomplete form results in UIJsonFormatError
-    with pytest.raises(
-        AggregateValidationError, match="Validation of 'param' collected 5 errors:"
-    ):
-        param = DataValueParameter.from_dict(
-            "param",
-            {
-                "label": "my param",
-                "value": 1.0,
-            },
-        )
-    assert str(param) == "<DataValueParameter> : 'param' -> "
