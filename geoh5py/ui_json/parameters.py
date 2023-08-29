@@ -40,7 +40,6 @@ KEY_MAP = {
     "meshType": "mesh_type",
     "dataType": "data_type",
     "dataGroupType": "data_group_type",
-    "dataType": "data_type",
     "isValue": "is_value",
 }
 
@@ -112,7 +111,6 @@ class FormParameter:
     :param form_validations: Parameter's form validations
     :param form: dictionary specifying visual characteristics of a ui element.
     :param active: list of form members to include in form.
-    :param required: list of form members that must be included to create a
         valid form.
 
     :note: Can be constructed from keyword arguments of through the
@@ -244,11 +242,6 @@ class FormParameter:
         return list(active_unique[ind])  # Preserve order after unique
 
     @property
-    def required(self):
-        """Returns list of members required by their validations."""
-        return [k for k, v in self.form_validations.items() if v.get("required", False)]
-
-    @property
     def form(self):
         """Returns dictionary of active form members and their values."""
         form = {}
@@ -300,7 +293,12 @@ class BoolParameter(FormParameter):
 
 
 class IntegerParameter(FormParameter):
-    """Integer parameter type."""
+    """
+    Integer parameter type.
+
+    :param min: Minimum value for ui element.
+    :param max: Maximum value for ui element.
+    """
 
     base_validations: Validation = {"types": [int]}
     integer_form_validations: dict[str, Validation] = {
@@ -325,7 +323,14 @@ class IntegerParameter(FormParameter):
 
 
 class FloatParameter(FormParameter):
-    """Float parameter type."""
+    """
+    Float parameter type.
+
+    :param min: Minimum value for ui element.
+    :param max: Maximum value for ui element.
+    :param precision: Number of decimal places to display in ui element.
+    :param line_edit: If False, the ui element incluces a spinbox.
+    """
 
     base_validations: Validation = {"types": [float]}
     float_validations: dict[str, Validation] = {
@@ -354,7 +359,11 @@ class FloatParameter(FormParameter):
 
 
 class ChoiceStringParameter(FormParameter):
-    """Choice string parameter type."""
+    """
+    Choice string parameter type.
+
+    :param choice_list: List of choices for ui dropdown.
+    """
 
     base_validations: Validation = {"types": [str]}
     choice_string_validations: dict[str, Validation] = {
@@ -393,7 +402,13 @@ class ChoiceStringParameter(FormParameter):
 
 
 class FileParameter(FormParameter):
-    """File parameter type."""
+    """
+    File parameter type.
+
+    :param file_description: list of file descriptions for each file type.
+    :param file_type: list of file extensions to filter directory on.
+    :param file_multi: Allow multiple files to be selected from dropdown.
+    """
 
     base_validations: Validation = {"types": [str]}
     file_validations: dict[str, Validation] = {
@@ -420,7 +435,12 @@ class FileParameter(FormParameter):
 
 
 class ObjectParameter(FormParameter):
-    """Object parameter type."""
+    """
+    Object parameter type.
+
+    :param mesh_type: list of object types (uid) that will be available in the
+        dropdown.  Empty list will reveal all objects in geoh5.
+    """
 
     base_validations: Validation = {"types": [str, UUID]}
     object_validations: dict[str, Validation] = {
@@ -446,7 +466,14 @@ class ObjectParameter(FormParameter):
 
 
 class DataParameter(FormParameter):
-    """Data parameter type."""
+    """
+    Data parameter type.
+
+    :param parent: Name of parent object.
+    :param association: Filters data to those living on vertices or cells.
+    :param data_type: Filters data type.
+    :param data_group_type: Filters data group type.
+    """
 
     base_validations: Validation = {"types": [str, UUID, type(None)]}
     data_validations: dict[str, Validation] = {
@@ -482,7 +509,16 @@ class DataParameter(FormParameter):
 
 
 class DataValueParameter(FormParameter):
-    """Data value parameter type."""
+    """
+    Data value parameter type.
+
+    :param parent: Name of parent object.
+    :param association: Filters data to those living on vertices or cells.
+    :param data_type: Filters data type.
+    :param is_value: Gives ui element a button to switch between value box
+        and dropdown of available properties.
+    :param property: Name of property.
+    """
 
     base_validations: Validation = {"types": [int, float]}
     data_value_validations: dict[str, Validation] = {
