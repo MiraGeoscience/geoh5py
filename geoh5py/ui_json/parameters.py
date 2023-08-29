@@ -301,12 +301,12 @@ class IntegerParameter(FormParameter):
     """
 
     base_validations: Validation = {"types": [int]}
-    integer_form_validations: dict[str, Validation] = {
-        "min": {"types": [int, type(None)]},
-        "max": {"types": [int, type(None)]},
-    }
     form_validations: dict[str, Validation] = dict(
-        FormParameter.form_validations, **integer_form_validations
+        FormParameter.form_validations,
+        **{
+            "min": {"types": [int, type(None)]},
+            "max": {"types": [int, type(None)]},
+        },
     )
     valid_members: list[str] = list(form_validations.keys())
     identifier_members: list[str] = []
@@ -333,14 +333,14 @@ class FloatParameter(FormParameter):
     """
 
     base_validations: Validation = {"types": [float]}
-    float_validations: dict[str, Validation] = {
-        "min": {"types": [float, type(None)]},
-        "max": {"types": [float, type(None)]},
-        "precision": {"types": [int, type(None)]},
-        "line_edit": {"types": [bool, type(None)]},
-    }
     form_validations: dict[str, Validation] = dict(
-        FormParameter.form_validations, **float_validations
+        FormParameter.form_validations,
+        **{
+            "min": {"types": [float, type(None)]},
+            "max": {"types": [float, type(None)]},
+            "precision": {"types": [int, type(None)]},
+            "line_edit": {"types": [bool, type(None)]},
+        },
     )
     valid_members: list[str] = list(form_validations.keys())
     identifier_members: list[str] = ["precision", "line_edit"]
@@ -366,11 +366,9 @@ class ChoiceStringParameter(FormParameter):
     """
 
     base_validations: Validation = {"types": [str]}
-    choice_string_validations: dict[str, Validation] = {
-        "choice_list": {"required": True, "types": [list]}
-    }
     form_validations: dict[str, Validation] = dict(
-        FormParameter.form_validations, **choice_string_validations
+        FormParameter.form_validations,
+        **{"choice_list": {"required": True, "types": [list]}},
     )
     valid_members: list[str] = list(form_validations.keys())
     identifier_members: list[str] = ["choice_list"]
@@ -411,13 +409,13 @@ class FileParameter(FormParameter):
     """
 
     base_validations: Validation = {"types": [str]}
-    file_validations: dict[str, Validation] = {
-        "file_description": {"required": True, "types": [str, tuple, list]},
-        "file_type": {"required": True, "types": [str, tuple, list]},
-        "file_multi": {"types": [bool, type(None)]},
-    }
     form_validations: dict[str, Validation] = dict(
-        FormParameter.form_validations, **file_validations
+        FormParameter.form_validations,
+        **{
+            "file_description": {"required": True, "types": [str, tuple, list]},
+            "file_type": {"required": True, "types": [str, tuple, list]},
+            "file_multi": {"types": [bool, type(None)]},
+        },
     )
     valid_members: list[str] = list(form_validations.keys())
     identifier_members: list[str] = ["file_description", "file_type", "file_multi"]
@@ -443,14 +441,14 @@ class ObjectParameter(FormParameter):
     """
 
     base_validations: Validation = {"types": [str, UUID]}
-    object_validations: dict[str, Validation] = {
-        "mesh_type": {
-            "required": True,
-            "types": [str, UUID, list],
-        }
-    }
     form_validations: dict[str, Validation] = dict(
-        FormParameter.form_validations, **object_validations
+        FormParameter.form_validations,
+        **{
+            "mesh_type": {
+                "required": True,
+                "types": [str, UUID, list],
+            }
+        },
     )
     valid_members: list[str] = list(form_validations.keys())
     identifier_members: list[str] = ["mesh_type"]
@@ -476,21 +474,24 @@ class DataParameter(FormParameter):
     """
 
     base_validations: Validation = {"types": [str, UUID, type(None)]}
-    data_validations: dict[str, Validation] = {
-        "parent": {"required": True, "types": [str, UUID]},
-        "association": {"required": True, "values": ["Vertex", "Cell"]},
-        "data_type": {"required": True, "values": ["Float", "Integer", "Reference"]},
-        "data_group_type": {
-            "values": [
-                "3D vector",
-                "Dip direction & dip",
-                "Strike & dip",
-                "Multi-element",
-            ]
-        },
-    }
     form_validations: dict[str, Validation] = dict(
-        FormParameter.form_validations, **data_validations
+        FormParameter.form_validations,
+        **{
+            "parent": {"required": True, "types": [str, UUID]},
+            "association": {"required": True, "values": ["Vertex", "Cell"]},
+            "data_type": {
+                "required": True,
+                "values": ["Float", "Integer", "Reference"],
+            },
+            "data_group_type": {
+                "values": [
+                    "3D vector",
+                    "Dip direction & dip",
+                    "Strike & dip",
+                    "Multi-element",
+                ]
+            },
+        },
     )
     valid_members: list[str] = list(form_validations.keys())
     identifier_members: list[str] = ["data_group_type"]
@@ -521,15 +522,18 @@ class DataValueParameter(FormParameter):
     """
 
     base_validations: Validation = {"types": [int, float]}
-    data_value_validations: dict[str, Validation] = {
-        "parent": {"required": True, "types": [str, UUID]},
-        "association": {"required": True, "values": ["Vertex", "Cell"]},
-        "data_type": {"required": True, "values": ["Float", "Integer", "Reference"]},
-        "is_value": {"required": True, "types": [bool]},
-        "property": {"required": True, "types": [str, UUID]},
-    }
     form_validations: dict[str, Validation] = dict(
-        FormParameter.form_validations, **data_value_validations
+        FormParameter.form_validations,
+        **{
+            "parent": {"required": True, "types": [str, UUID]},
+            "association": {"required": True, "values": ["Vertex", "Cell"]},
+            "data_type": {
+                "required": True,
+                "values": ["Float", "Integer", "Reference"],
+            },
+            "is_value": {"required": True, "types": [bool]},
+            "property": {"required": True, "types": [str, UUID]},
+        },
     )
     valid_members: list[str] = list(form_validations.keys())
     identifier_members: list[str] = ["is_value", "property"]

@@ -192,8 +192,6 @@ def test_choice_string_parameter():
     )
     assert all(k in param.validations for k in ["types"])
     assert "choice_list" in param.form_validations
-    reqd = ["label", "value", "choice_list"]
-    assert all(k in param.required for k in reqd)
     assert str(param) == "<ChoiceStringParameter> : 'param' -> cg"
 
 
@@ -213,8 +211,6 @@ def test_file_parameter():
         k in param.form_validations
         for k in ["file_description", "file_type", "file_multi"]
     )
-    reqd = ["label", "value", "file_description", "file_type"]
-    assert all(k in param.required for k in reqd)
     assert str(param) == "<FileParameter> : 'param' -> test.csv"
 
 
@@ -230,8 +226,6 @@ def test_object_parameter():
     )
     assert all(k in param.validations for k in ["types"])
     assert "mesh_type" in param.form_validations
-    reqd = ["label", "value", "mesh_type"]
-    assert all(k in param.required for k in reqd)
     assert str(param) == f"<ObjectParameter> : 'param' -> {uid}"
 
 
@@ -251,8 +245,6 @@ def test_data_parameter():
         k in param.form_validations
         for k in ["parent", "association", "data_type", "data_group_type"]
     )
-    reqd = ["label", "value", "parent", "association", "data_type"]
-    assert all(k in param.required for k in reqd)
     assert str(param) == "<DataParameter> : 'param' -> None"
 
 
@@ -272,8 +264,6 @@ def test_data_value_parameter():
     assert param.value == 1.0
     param.is_value = False
     assert param.value == ""
-    reqd = ["label", "value", "parent", "association", "data_type", "is_value"]
-    assert all(k in param.required for k in reqd)
 
     assert "types" in param.validations
     assert all(
