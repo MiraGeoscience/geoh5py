@@ -1316,7 +1316,11 @@ class Workspace(AbstractContextManager):
 
         else:
             self._io_call(
-                H5Writer.save_entity, entity, add_children=add_children, mode="r+", compression=compression
+                H5Writer.save_entity,
+                entity,
+                add_children=add_children,
+                mode="r+",
+                compression=compression
             )
 
     def save_entity_type(self, entity_type: EntityType) -> None:
