@@ -142,6 +142,17 @@ def test_concatenated_entities(tmp_path):
             concat_object.create_property_group(name="property_group")
 
 
+def test_empty_concatenated_property_group():
+    workspace = Workspace()
+    dh_group = DrillholeGroup.create(workspace)
+    well = Drillhole.create(
+        workspace,
+        parent=dh_group,
+    )
+    ConcatenatedPropertyGroup(parent=well)
+    assert not well.from_
+
+
 def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
     h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
     new_path = tmp_path / r"test_drillholeGroup2.geoh5"
