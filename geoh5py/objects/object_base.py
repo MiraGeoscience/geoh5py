@@ -609,7 +609,7 @@ class ObjectBase(Entity):
         self.workspace.create_entity(  # type: ignore
             Data,
             save_on_creation=True,
-            **{
+            **{  # type: ignore
                 "entity": {
                     "name": "Visual Parameters",
                     "parent": self,
