@@ -916,7 +916,8 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         for prop_group in (
             self.property_groups if self.property_groups is not None else []
         ):
-            data = [self.get_data(child)[0] for child in prop_group.properties]
+            properties = [] if prop_group.properties is None else prop_group.properties
+            data = [self.get_data(child)[0] for child in properties]
             if data and "depth" in data[0].name.lower():
                 obj_list.append(data[0])
 
@@ -931,7 +932,8 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         for prop_group in (
             self.property_groups if self.property_groups is not None else []
         ):
-            data = [self.get_data(child)[0] for child in prop_group.properties]
+            properties = [] if prop_group.properties is None else prop_group.properties
+            data = [self.get_data(child)[0] for child in properties]
             if len(data) > 0 and "from" in data[0].name.lower():
                 obj_list.append(data[0])
         return obj_list
