@@ -965,4 +965,9 @@ class H5Writer:
                 parent_handle[entity_type][as_str_if_uuid(uid)] = entity_handle
 
             if recursively:
-                H5Writer.write_to_parent(h5file, entity.parent, recursively=True)
+                H5Writer.write_to_parent(
+                    h5file,
+                    entity.parent,
+                    compression=compression,
+                    recursively=True
+                )
