@@ -113,14 +113,18 @@ class ObjectBase(Entity):
             self.comments.values = self.comments.values + [comment_dict]
 
     def add_data(
-        self, data: dict, property_group: str | PropertyGroup | None = None
+        self,
+        data: dict,
+        property_group: str | PropertyGroup | None = None,
+        compression: int = 5,
     ) -> Data | list[Data]:
         """
         Create :obj:`~geoh5py.data.data.Data` from dictionary of name and arguments.
         The provided arguments can be any property of the target Data class.
 
-        :param property_group: Name or :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         :param data: Dictionary of data to be added to the object, e.g.
+        :param property_group: Name or :obj:`~geoh5py.groups.property_group.PropertyGroup`.
+        :param compression: Compression level for data.
 
         .. code-block:: python
 
@@ -153,7 +157,7 @@ class ObjectBase(Entity):
                 kwargs[key] = val
 
             data_object = self.workspace.create_entity(
-                Data, entity=kwargs, entity_type=entity_type
+                Data, entity=kwargs, entity_type=entity_type, compression=compression
             )
 
             if not isinstance(data_object, Data):
@@ -605,7 +609,7 @@ class ObjectBase(Entity):
         self.workspace.create_entity(  # type: ignore
             Data,
             save_on_creation=True,
-            **{
+            **{  # type: ignore
                 "entity": {
                     "name": "Visual Parameters",
                     "parent": self,
