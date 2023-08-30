@@ -424,6 +424,7 @@ class Workspace(AbstractContextManager):
         self,
         entity_class,
         save_on_creation: bool = True,
+        compression: int = 5,
         **kwargs,
     ) -> Entity | None:
         """
@@ -431,6 +432,7 @@ class Workspace(AbstractContextManager):
 
         :param entity_class: Type of entity to be created
         :param save_on_creation: Save the entity to geoh5 immediately
+        :param compression: Compression level for data.
 
         :return entity: Newly created entity registered to the workspace
         """
@@ -461,7 +463,7 @@ class Workspace(AbstractContextManager):
             )
 
         if created_entity is not None and save_on_creation and self.h5file is not None:
-            self.save_entity(created_entity)
+            self.save_entity(created_entity, compression=compression)
 
         return created_entity
 
@@ -1298,11 +1300,13 @@ class Workspace(AbstractContextManager):
         self,
         entity: Entity,
         add_children: bool = True,
+        compression: int = 5,
     ) -> None:
         """
         Save or update an entity to geoh5.
         :param entity: Entity to be written to geoh5.
         :param add_children: Add children entities to geoh5.
+        :param compression: Compression level for data.
         """
         if isinstance(entity, Concatenated):
             entity.concatenator.add_save_concatenated(entity)
@@ -1312,7 +1316,7 @@ class Workspace(AbstractContextManager):
 
         else:
             self._io_call(
-                H5Writer.save_entity, entity, add_children=add_children, mode="r+"
+                H5Writer.save_entity, entity, add_children=add_children, mode="r+", compression=compression
             )
 
     def save_entity_type(self, entity_type: EntityType) -> None:

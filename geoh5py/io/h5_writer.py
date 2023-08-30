@@ -215,6 +215,7 @@ class H5Writer:
         cls,
         file: str | h5py.File,
         entity,
+        compression: int = 5,
         add_children: bool = True,
     ) -> h5py.Group:
         """
@@ -223,18 +224,19 @@ class H5Writer:
 
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
+        :param compression: Compression level for the data.
         :param add_children: Add :obj:`~geoh5py.shared.entity.Entity.children`.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-            new_entity = H5Writer.write_entity(h5file, entity)
+            new_entity = H5Writer.write_entity(h5file, entity, compression)
 
             if add_children and not isinstance(entity, Concatenator):
                 # Write children entities and add to current parent
                 for child in entity.children:
                     if not isinstance(child, PropertyGroup):
-                        H5Writer.save_entity(h5file, child)
+                        H5Writer.save_entity(h5file, child, compression)
 
-            H5Writer.write_to_parent(h5file, entity, recursively=False)
+            H5Writer.write_to_parent(h5file, entity, compression=compression, recursively=False)
 
         return new_entity
 
@@ -290,7 +292,12 @@ class H5Writer:
 
     @classmethod
     def update_field(
-        cls, file: str | h5py.File, entity, attribute: str, **kwargs
+        cls,
+        file: str | h5py.File,
+        entity,
+        attribute: str,
+        compression: int = 5,
+        **kwargs
     ) -> None:
         """
         Update the attributes of an :obj:`~geoh5py.shared.entity.Entity`.
@@ -298,6 +305,7 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
         :param attribute: Name of the attribute to get updated.
+        :param compression: Compression level for the data.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
@@ -312,7 +320,7 @@ class H5Writer:
                 "trace_depth",
                 "values",
             ]:
-                cls.write_data_values(h5file, entity, attribute, **kwargs)
+                cls.write_data_values(h5file, entity, attribute, compression, **kwargs)
             elif attribute in [
                 "cells",
                 "concatenated_object_ids",
@@ -532,7 +540,13 @@ class H5Writer:
 
     @classmethod
     def write_data_values(  # pylint: disable=too-many-branches
-        cls, file: str | h5py.File, entity, attribute, values=None, **kwargs
+        cls,
+        file: str | h5py.File,
+        entity,
+        attribute,
+        compression: int,
+        values=None,
+        **kwargs
     ) -> None:
         """
         Add data :obj:`~geoh5py.data.data.Data.values`.
@@ -540,6 +554,8 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file.
         :param entity: Target entity.
         :param attribute: Name of the attribute to be written to geoh5
+        :param compression: Compression level for the data.
+        :param values: Data values.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
@@ -620,7 +636,7 @@ class H5Writer:
                     name_map,
                     data=out_values,
                     compression="gzip",
-                    compression_opts=9,
+                    compression_opts=compression,
                     **kwargs,
                 )
 
@@ -654,6 +670,7 @@ class H5Writer:
         cls,
         file: str | h5py.File,
         entity,
+        compression: int,
     ) -> h5py.Group:
         """
         Add an :obj:`~geoh5py.shared.entity.Entity` and its attributes to geoh5.
@@ -661,6 +678,7 @@ class H5Writer:
 
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
+        :param compression: Compression level for data.
 
         :return entity: Pointer to the written entity. Active link if "close_file" is False.
         """
@@ -704,7 +722,7 @@ class H5Writer:
             entity_handle["Type"] = new_type
             entity.entity_type.on_file = True
 
-            cls.write_properties(h5file, entity)
+            cls.write_properties(h5file, entity, compression)
             entity.on_file = True
 
             if isinstance(entity, RootGroup):
@@ -805,19 +823,21 @@ class H5Writer:
         cls,
         file: str | h5py.File,
         entity: Entity,
+        compression: int,
     ) -> None:
         """
         Add properties of an :obj:`~geoh5py.shared.entity.Entity`.
 
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
+        :param compression: Compression level for data.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-            H5Writer.update_field(h5file, entity, "attributes")
+            H5Writer.update_field(h5file, entity, "attributes", compression)
 
             for attribute in KEY_MAP:
                 if getattr(entity, attribute, None) is not None:
-                    H5Writer.update_field(h5file, entity, attribute)
+                    H5Writer.update_field(h5file, entity, attribute, compression)
 
     @classmethod
     def write_property_groups(
@@ -907,13 +927,15 @@ class H5Writer:
         cls,
         file: str | h5py.File,
         entity: Entity,
-        recursively=False,
+        compression: int,
+        recursively: bool = False,
     ) -> None:
         """
         Add/create an :obj:`~geoh5py.shared.entity.Entity` and add it to its parent.
 
         :param file: Name or handle to a geoh5 file.
         :param entity: Entity to be added or linked to a parent in geoh5.
+        :param compression: Compression level for data.
         :param recursively: Add parents recursively until reaching the
             :obj:`~geoh5py.groups.root_group.RootGroup`.
         """
@@ -922,8 +944,8 @@ class H5Writer:
                 return
 
             uid = entity.uid
-            entity_handle = H5Writer.write_entity(h5file, entity)
-            parent_handle = H5Writer.write_entity(h5file, entity.parent)
+            entity_handle = H5Writer.write_entity(h5file, entity, compression)
+            parent_handle = H5Writer.write_entity(h5file, entity.parent, compression)
 
             if isinstance(entity, Data):
                 entity_type = "Data"
