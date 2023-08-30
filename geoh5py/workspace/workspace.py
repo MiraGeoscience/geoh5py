@@ -1320,7 +1320,7 @@ class Workspace(AbstractContextManager):
                 entity,
                 add_children=add_children,
                 mode="r+",
-                compression=compression
+                compression=compression,
             )
 
     def save_entity_type(self, entity_type: EntityType) -> None:

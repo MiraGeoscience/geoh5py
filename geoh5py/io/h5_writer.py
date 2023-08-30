@@ -236,7 +236,9 @@ class H5Writer:
                     if not isinstance(child, PropertyGroup):
                         H5Writer.save_entity(h5file, child, compression)
 
-            H5Writer.write_to_parent(h5file, entity, compression=compression, recursively=False)
+            H5Writer.write_to_parent(
+                h5file, entity, compression=compression, recursively=False
+            )
 
         return new_entity
 
@@ -297,7 +299,7 @@ class H5Writer:
         entity,
         attribute: str,
         compression: int = 5,
-        **kwargs
+        **kwargs,
     ) -> None:
         """
         Update the attributes of an :obj:`~geoh5py.shared.entity.Entity`.
@@ -546,7 +548,7 @@ class H5Writer:
         attribute,
         compression: int,
         values=None,
-        **kwargs
+        **kwargs,
     ) -> None:
         """
         Add data :obj:`~geoh5py.data.data.Data.values`.
@@ -966,8 +968,5 @@ class H5Writer:
 
             if recursively:
                 H5Writer.write_to_parent(
-                    h5file,
-                    entity.parent,
-                    compression=compression,
-                    recursively=True
+                    h5file, entity.parent, compression=compression, recursively=True
                 )
