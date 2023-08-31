@@ -26,6 +26,7 @@ import pytest
 
 from geoh5py.objects import Points
 from geoh5py.shared.exceptions import (
+    AggregateValidationError,
     AssociationValidationError,
     AtLeastOneValidationError,
     OptionalValidationError,
@@ -47,7 +48,52 @@ from geoh5py.shared.validators import (
     ValueValidator,
 )
 from geoh5py.ui_json import InputFile
+from geoh5py.ui_json.validation import Validations
 from geoh5py.workspace import Workspace
+
+
+def test_validations():
+    validns = {
+        "types": [str],
+        "values": [
+            "goodvalue",
+        ],
+    }
+
+    # Empty validations, empty validators
+    validations = Validations()
+    assert not validations
+    assert not validations.validators
+
+    # Validations can be set post-construction
+    validations.update(validns)
+    assert validations == validns
+    assert validations.validators == [TypeValidator, ValueValidator]
+
+    # Validations can be set and retrieved through __set/getitem__
+    validations["required"] = True
+    assert len(validations) == 3
+
+    # Updates on the validations dictionary are reflected in the validators
+    assert all(
+        k in validations.validators
+        for k in [RequiredValidator, TypeValidator, ValueValidator]
+    )
+
+    # Valid data passes validation
+    validations.validate("param1", "goodvalue")
+
+    # Invalid value raises ValueValidationError
+    with pytest.raises(ValueValidationError, match="Value 'badvalue"):
+        validations.validate("param1", "badvalue")
+
+    # Invalid type raises both TypeValidationError and ValueValidationError
+    # whose messages are aggregated by the AggregateValidationError
+    with pytest.raises(AggregateValidationError) as excinfo:
+        validations.validate("param1", 1)
+
+    assert "0. Type 'int' provided for 'param1' is invalid." in str(excinfo.value)
+    assert "1. Value '1' provided for 'param1' is invalid." in str(excinfo.value)
 
 
 def test_validation_types():

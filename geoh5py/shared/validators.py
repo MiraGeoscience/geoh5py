@@ -14,11 +14,6 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
-#
-#  This file is part of geoapps.
-#
-#  geoapps is distributed under the terms and conditions of the MIT License
-#  (see LICENSE file at the root of this source code package).
 
 from __future__ import annotations
 
@@ -70,11 +65,9 @@ class BaseValidator(ABC):
 
     @property
     @abstractmethod
-    def validator_type(self) -> str:
-        """
-        Validation type identifier.
-        """
-        raise NotImplementedError("Must implement the validator_type property.")
+    def validator_type(self):
+        """Validation type identifier."""
+        raise NotImplementedError("Must implement the type property.")
 
 
 class OptionalValidator(BaseValidator):
@@ -195,7 +188,7 @@ class ShapeValidator(BaseValidator):
     validator_type = "shape"
 
     @classmethod
-    def validate(cls, name: str, value: Any, valid: tuple[int]) -> None:
+    def validate(cls, name: str, value: Any, valid: tuple[int, ...]) -> None:
         """
         :param name: Parameter identifier.
         :param value: Input parameter value.
