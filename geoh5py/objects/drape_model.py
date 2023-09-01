@@ -149,16 +149,18 @@ class DrapeModel(GridObject):
         """
         :obj:`numpy.array`, shape(*, 5) detailing the assembly of :obj:
         `geoh5py.objects.drape_model.Drapemodel.layers` within the trace
-        of the drape model.  Columns: Easting, Northing, Elevation (top),
+        of the drape model.
+
+        Columns: Easting, Northing, Elevation (top),
         layer index (first), layer count.
 
         .. code-block:: python
 
-        prisms = [
-            [e_1, n_1, z_1, l_1, c_1],
-            ...,
-            [e_N, n_N, z_N, l_N, c_N]
-        ]
+            prisms = [
+                [e_1, n_1, z_1, l_1, c_1],
+                ...,
+                [e_N, n_N, z_N, l_N, c_N]
+            ]
 
         """
         if self._prisms is None and self.on_file:
