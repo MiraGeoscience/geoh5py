@@ -113,12 +113,12 @@ def test_form_parameter_roundtrip():
     assert not hasattr(param, "extra")
     assert param._extra_members["extra"] == "stuff"
     assert all(hasattr(param, k) for k in param.valid_members)
-    assert param.form == form
+    assert param.form() == form
     param.enabled = True
     param.enabled = False  # unique in active def prevents double entry
-    assert param.form == dict(form, **{"enabled": False})
+    assert param.form() == dict(form, **{"enabled": False})
     param.register({})
-    assert param.form == dict(form, **{"enabled": False})
+    assert param.form() == dict(form, **{"enabled": False})
 
 
 def test_form_parameter_validate():
@@ -127,8 +127,8 @@ def test_form_parameter_validate():
         "param", {"label": "my param", "value": 1}, validations={"types": [int]}
     )
     assert param.name == "param"
-    assert len(param.form) == 2
-    assert all(k in param.form for k in ["label", "value"])
+    assert len(param.form()) == 2
+    assert all(k in param.form() for k in ["label", "value"])
     assert param.label == "my param"  # pylint: disable=no-member
     assert param.value == 1
     assert all(hasattr(param, k) for k in param.valid_members)

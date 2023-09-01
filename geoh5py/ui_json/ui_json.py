@@ -28,10 +28,19 @@ class UIJson:
     def __init__(self, parameters):
         self.parameters: Parameters = parameters
 
-    def to_dict(self):
-        """Returns a dictionary of key and value/form for each parameter."""
+    def to_dict(self, naming="snake"):
+        """
+        Returns a dictionary of key and value/form for each parameter.
+
+        :param naming: Uses KEY_MAP to convert python names to camel case
+            for writing to file.
+        """
 
         def get_data(param):
-            return param.value if isinstance(param, Parameter) else param.form
+            return param.value if isinstance(param, Parameter) else param.form(naming)
 
-        return {k.name: get_data(k) for k in self.parameters}
+        out = {}
+        for param in self.parameters:
+            out[param.name] = get_data(param)
+
+        return out

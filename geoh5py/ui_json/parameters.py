@@ -241,8 +241,7 @@ class FormParameter:
         active_unique, ind = np.unique(active, return_index=True)
         return list(active_unique[ind])  # Preserve order after unique
 
-    @property
-    def form(self):
+    def form(self, naming="snake"):
         """Returns dictionary of active form members and their values."""
         form = {}
         for member in self.active:
@@ -250,6 +249,10 @@ class FormParameter:
                 form[member] = self._extra_members[member]
             else:
                 form[member] = getattr(self, member)
+
+        if naming == "camel":
+            snake_to_camel = {v: k for k, v in KEY_MAP.items()}
+            form = {snake_to_camel.get(k, k): v for k, v in form.items()}
 
         return form
 
@@ -374,7 +377,7 @@ class ChoiceStringParameter(FormParameter):
     identifier_members: list[str] = ["choice_list"]
 
     def __init__(self, name, validations=None, **kwargs):
-        self._choice_list: list | None = None
+        self._choice_list: Parameter | None = None
         validations = (
             dict(self.base_validations, **validations)
             if validations
@@ -384,14 +387,17 @@ class ChoiceStringParameter(FormParameter):
 
     @property
     def choice_list(self):
-        return self._choice_list
+        return None if self._choice_list is None else self._choice_list.value
 
     @choice_list.setter
     def choice_list(self, val):
-        self._choice_list = val
-
         if isinstance(val, Parameter):
+            self._choice_list = val
             val = val.value
+        else:
+            self._choice_list = Parameter(
+                "choice_list", val, self.form_validations["choice_list"]
+            )
 
         if self.validations:
             self.validations.update({"values": val})

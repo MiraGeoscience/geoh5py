@@ -112,9 +112,9 @@ def generate_sample_uijson(testpath):
     ]
     parameters = standard_uijson_parameters + custom_uijson_parameters
     uijson = UIJson(parameters)
-    template = uijson.to_dict()
+    template = uijson.to_dict(naming="camel")
     ifile = InputFile(ui_json=template, validate=False)
-    # ifile.write_ui_json("test.ui.json", testpath)
+    ifile.write_ui_json("test.ui.json", testpath)
 
     return uijson
 
