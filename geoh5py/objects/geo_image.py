@@ -579,6 +579,7 @@ class GeoImage(ObjectBase):
     ) -> objects.Grid2D:
         """
         Create a geoh5py :obj:geoh5py.objects.grid2d.Grid2D from the geoimage in the same workspace.
+
         :param mode: The output image mode, defaults to the incoming image.mode.
             If "GRAY" convert the image to grayscale.
         :param grid2d_kwargs: Keyword arguments to pass to the

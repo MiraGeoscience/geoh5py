@@ -159,6 +159,7 @@ class DrapeModel(GridObject):
             ...,
             [e_N, n_N, z_N, l_N, c_N]
         ]
+
         """
         if self._prisms is None and self.on_file:
             self._prisms = self.workspace.fetch_array_attribute(self, "prisms")
