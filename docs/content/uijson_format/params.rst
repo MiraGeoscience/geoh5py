@@ -5,7 +5,7 @@ The following members are available to all input parameters in the ui.json schem
 label ``str``
     Required string describing parameter. A colon will automatically be added within Geoscience ANALYST, so this should be omitted.
 value ``str``, ``int``, ``bool`` , or ``float``
-    This required member takes a different form, including the empty string '', depending on the :ref:`parameter type <json_param_examples>`. The value is updated when written from Geoscience ANALYST.
+    This required member takes a different form, including the empty string '', depending on the :ref:`parameter type <parameter_types>`. The value is updated when written from Geoscience ANALYST.
 main ``bool``
     If set to true, the parameter is shown in the first tab of the UI and will throw an error if not present (and not optional). Optional parameters may be set to main. When main is not given or is false, the parameter will be under the *Optional Parameters* tab.
 tooltip ``str``

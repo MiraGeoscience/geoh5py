@@ -404,9 +404,11 @@ class Grid2D(GridObject):
     ) -> GeoImage:
         """
         Create a :obj:geoh5py.objects.geo_image.GeoImage object from the current Grid2D.
+
         :param keys: the list of the data name to pass as band in the image.
             Warning: The len of the list can only be 1, 3, 4 (Pillow restrictions).
         :param mode: The mode of the image. One of 'GRAY', 'RGB', 'RGBA' or 'CMYK'.
+
         :return: a new georeferenced :obj:`geoh5py.objects.geo_image.GeoImage`.
         """
         return self.converter.to_geoimage(self, keys, mode=mode, **geoimage_kwargs)

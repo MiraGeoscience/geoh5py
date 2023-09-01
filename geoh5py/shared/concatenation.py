@@ -807,8 +807,10 @@ class ConcatenatedObject(Concatenated, ObjectBase):
     ) -> ConcatenatedPropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
+
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
+
         :return: A new :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
         if self._property_groups is not None and name in [
