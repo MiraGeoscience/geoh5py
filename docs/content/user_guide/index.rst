@@ -11,9 +11,9 @@ the creation of a Workspace_ to the creation and manipulation of Entities_
 .. toctree::
    :maxdepth: 2
 
-   workspace.ipynb
-   core_entities.ipynb
-   data.ipynb
+   a_workspace.ipynb
+   b_core_entities.ipynb
+   c_data.ipynb
    surveys
 
 .. _Workspace: workspace.ipynb
