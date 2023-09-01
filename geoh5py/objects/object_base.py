@@ -207,6 +207,12 @@ class ObjectBase(Entity):
                     associations.append(entity.association)
 
             associations = list(set(associations))
+            if not associations:
+                raise ValueError(
+                    "No children data found on the parent object. "
+                    "Verify that the list of data or uuid provided are children entities."
+                )
+
             if len(associations) != 1:
                 raise ValueError("All input 'data' must have the same association.")
 
@@ -371,8 +377,10 @@ class ObjectBase(Entity):
     ) -> PropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
+
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
+
         :return: A new :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
         if self._property_groups is not None and name in [
