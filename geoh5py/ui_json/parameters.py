@@ -27,21 +27,48 @@ from geoh5py.ui_json.validation import Validations
 
 Validation = Dict[str, Any]
 
-KEY_MAP = {
-    "groupOptional": "group_optional",
-    "dependencyType": "dependency_type",
-    "groupDependency": "group_dependency",
-    "groupDependencyType": "group_dependency_type",
-    "lineEdit": "line_edit",
-    "choiceList": "choice_list",
-    "fileDescription": "file_description",
-    "fileType": "file_type",
-    "fileMulti": "file_multi",
-    "meshType": "mesh_type",
-    "dataType": "data_type",
-    "dataGroupType": "data_group_type",
-    "isValue": "is_value",
-}
+
+class Keys:
+    """Converts in and out of camel (ui.json) and snake (python) case"""
+
+    camel_to_snake: dict[str, str] = {
+        "groupOptional": "group_optional",
+        "dependencyType": "dependency_type",
+        "groupDependency": "group_dependency",
+        "groupDependencyType": "group_dependency_type",
+        "lineEdit": "line_edit",
+        "choiceList": "choice_list",
+        "fileDescription": "file_description",
+        "fileType": "file_type",
+        "fileMulti": "file_multi",
+        "meshType": "mesh_type",
+        "dataType": "data_type",
+        "dataGroupType": "data_group_type",
+        "isValue": "is_value",
+    }
+
+    @property
+    def snake_to_camel(self) -> dict[str, str]:
+        return {v: k for k, v in self.camel_to_snake.items()}
+
+    def _map_single(self, key: str, convention: str = "snake"):
+        """Map a string from snake to camel or vice versa."""
+
+        if convention == "snake":
+            out = self.camel_to_snake.get(key, key)
+        elif convention == "camel":
+            out = self.snake_to_camel.get(key, key)
+        else:
+            raise ValueError("Convention must be 'snake' or 'camel'.")
+
+        return out
+
+    def map(self, collection: dict[str, Any], convention="snake"):
+        """Map a dictionary from snake to camel or vice versa."""
+        return {self._map_single(k, convention): v for k, v in collection.items()}
+
+
+KEYS = Keys()
 
 
 class Parameter:
@@ -189,7 +216,7 @@ class FormParameter:
         if not isinstance(members, dict):
             raise TypeError("Input 'members' must be a dictionary.")
 
-        members = {KEY_MAP.get(k, k): v for k, v in members.items()}
+        members = KEYS.map(members)
         error_list = []
         for member in self.valid_members:
             validations = (
@@ -241,7 +268,7 @@ class FormParameter:
         active_unique, ind = np.unique(active, return_index=True)
         return list(active_unique[ind])  # Preserve order after unique
 
-    def form(self, naming="snake"):
+    def form(self, use_camel=False):
         """Returns dictionary of active form members and their values."""
         form = {}
         for member in self.active:
@@ -250,9 +277,8 @@ class FormParameter:
             else:
                 form[member] = getattr(self, member)
 
-        if naming == "camel":
-            snake_to_camel = {v: k for k, v in KEY_MAP.items()}
-            form = {snake_to_camel.get(k, k): v for k, v in form.items()}
+        if use_camel:
+            form = KEYS.map(form, "camel")
 
         return form
 
@@ -260,7 +286,7 @@ class FormParameter:
     def is_form(cls, form: dict[str, Any]) -> bool:
         """Returns True if form contains any identifier members."""
         id_members = cls.identifier_members
-        form_members = [KEY_MAP.get(k, k) for k in form]
+        form_members = KEYS.map(form)
         return any(k in form_members for k in id_members)
 
     def __str__(self):
