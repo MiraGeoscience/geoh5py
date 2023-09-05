@@ -399,7 +399,7 @@ Datasets
     parameters stored under the "EM Dataset" key.
 
     - "Channels": ``list`` of ``double``
-        Time channels at which data are recorder.
+        Time channels at which data are recorded.
     - "Input type": ``string``
         Type of survey from "Rx", "Tx" or "Tx and Rx"
     - "Loop radius": ``double``
@@ -420,9 +420,6 @@ Datasets
         either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
     - "Inline offset property" ``uuid`` OR  "Crossline offset value" ``double``:
         Inline offset between the receivers and transmitters,
-        either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
-    - "Inline offset property" ``uuid`` OR  "Crossline offset value" ``double``:
-        Vertical offset between the receivers and transmitters,
         either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
     - "Yaw property" ``uuid`` OR  "Yaw value" ``double``:
         Rotation (angle) of the transmitter loop as measured on the UV-plane (+ clockwise),
@@ -483,7 +480,7 @@ Datasets
     parameters stored under the "EM Dataset" key.
 
     - "Channels": ``list`` of ``double``
-        Time channels at which data are recorder.
+        Time channels at which data are recorded.
     - "Input type": ``string``
         Type of survey from "Rx", "Tx" or "Tx and Rx"
     - "Loop radius": ``double``
@@ -546,7 +543,7 @@ Datasets
     parameters stored under the "EM Dataset" key.
 
     - "Channels": ``list`` of ``double``
-        Time channels at which data are recorder.
+        Time channels at which data are recorded.
     - "Input type": ``string``
         "Tx and Rx"
     - "Property groups": ``list`` of ``uuid``
@@ -614,7 +611,7 @@ Datasets
     parameters stored under the "EM Dataset" key.
 
     - "Channels": ``list`` of ``double``
-        Frequency channels at which data are recorder.
+        Frequency channels at which data are recorded.
     - "Input type": ``string``
         Type of survey from "Rx", "Tx" or "Tx and Rx"
     - "Loop radius": ``double``
@@ -635,9 +632,6 @@ Datasets
         either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
     - "Inline offset property" ``uuid`` OR  "Crossline offset value" ``double``:
         Inline offset between the receivers and transmitters,
-        either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
-    - "Inline offset property" ``uuid`` OR  "Crossline offset value" ``double``:
-        Vertical offset between the receivers and transmitters,
         either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
     - "Yaw property" ``uuid`` OR  "Yaw value" ``double``:
         Rotation (angle) of the transmitter loop as measured on the UV-plane (+ clockwise),
@@ -691,7 +685,7 @@ Datasets
     parameters stored under the "EM Dataset" key.
 
     - "Channels": ``list`` of ``double``
-        Frequency channels at which data are recorder.
+        Frequency channels at which data are recorded.
     - "Input type": ``string``
         Type of survey from "Rx", "Tx" or "Tx and Rx"
     - "Loop radius": ``double``
@@ -746,7 +740,7 @@ Datasets
     parameters stored under the "EM Dataset" key.
 
     - "Channels": ``list`` of ``double``
-        Frequency channels at which data are recorder.
+        Frequency channels at which data are recorded.
     - "Input type": ``string``
         "Tx and Rx"
     - "Property groups": ``list`` of ``uuid``
@@ -796,7 +790,7 @@ Magnetotellurics
     "EM Dataset" key.
 
     - "Channels": ``list`` of ``double``
-        Frequency channels at which data are recorder.
+        Frequency channels at which data are recorded.
     - "Input type": ``string``
         Static field set to "Rx only"
     - "Property groups": ``list`` of ``uuid``
@@ -824,7 +818,7 @@ Tipper Rx
     "EM Dataset" key.
 
     - "Channels": ``list`` of ``double``
-        Frequency channels at which data are recorder.
+        Frequency channels at which data are recorded.
     - "Input type": ``string``
         Static field set to "Rx and base stations"
     - "Property groups": ``list`` of ``uuid``
