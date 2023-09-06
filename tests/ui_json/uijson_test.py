@@ -20,18 +20,18 @@ import numpy as np
 from geoh5py import Workspace
 from geoh5py.objects import Points
 from geoh5py.ui_json import InputFile
-from geoh5py.ui_json.parameters import (
-    BoolParameter,
-    ChoiceStringParameter,
-    DataParameter,
-    DataValueParameter,
-    FileParameter,
-    FloatParameter,
-    IntegerParameter,
-    ObjectParameter,
-    Parameter,
-    StringParameter,
+from geoh5py.ui_json.forms import (
+    BoolFormParameter,
+    ChoiceStringFormParameter,
+    DataFormParameter,
+    DataValueFormParameter,
+    FileFormParameter,
+    FloatFormParameter,
+    IntegerFormParameter,
+    ObjectFormParameter,
+    StringFormParameter,
 )
+from geoh5py.ui_json.parameters import BoolParameter, StringParameter
 from geoh5py.ui_json.ui_json import UIJson
 
 
@@ -40,7 +40,7 @@ def generate_sample_uijson(testpath):
     workspace = Workspace(testpath / "test.geoh5")
     pts = np.random.random((10, 3))
     data_object = Points.create(workspace, name="survey", vertices=pts)
-    data = data_object.add_data(
+    _ = data_object.add_data(
         {
             "Bx": {"values": np.random.random(10)},
             "By": {"values": np.random.random(10)},
@@ -49,40 +49,42 @@ def generate_sample_uijson(testpath):
     )
 
     standard_uijson_parameters = [
-        Parameter("title", value="my application"),
-        Parameter("geoh5"),
-        Parameter("run_command"),
-        BoolParameter(
+        StringParameter("title", value="my application"),
+        StringParameter("geoh5"),
+        StringParameter("run_command"),
+        BoolFormParameter(
             "run_command_boolean",
             label="Run python module",
             value=False,
             tooltip="Warning: launches process to run python model on save",
             main=True,
         ),
-        Parameter("monitoring_directory"),
-        Parameter("conda_environment"),
-        Parameter("conda_environment_boolean", value=False),
-        Parameter("workspace"),
+        StringParameter("monitoring_directory"),
+        StringParameter("conda_environment"),
+        BoolParameter("conda_environment_boolean", value=False),
+        StringParameter("workspace"),
     ]
     custom_uijson_parameters = [
-        StringParameter("name", label="Name", value="test"),
-        BoolParameter(
+        StringFormParameter("name", label="Name", value="test"),
+        BoolFormParameter(
             "flip_sign",
             label="Flip sign",
             value=False,
         ),
-        IntegerParameter("number_of_iterations", label="Number of iterations", value=5),
-        FloatParameter("tolerance", label="Tolerance", value=1e-5),
-        ChoiceStringParameter(
+        IntegerFormParameter(
+            "number_of_iterations", label="Number of iterations", value=5
+        ),
+        FloatFormParameter("tolerance", label="Tolerance", value=1e-5),
+        ChoiceStringFormParameter(
             "method", label="Method", choice_list=["cg", "ssor", "jacobi"], value="cg"
         ),
-        ObjectParameter(
+        ObjectFormParameter(
             "data_object",
             label="Survey",
             mesh_type=["202c5db1-a56d-4004-9cad-baafd8899406"],
             value=None,
         ),
-        DataValueParameter(
+        DataValueFormParameter(
             "elevation",
             label="Elevation",
             parent="data_object",
@@ -92,7 +94,7 @@ def generate_sample_uijson(testpath):
             property=None,
             value=1000.0,
         ),
-        DataParameter(
+        DataFormParameter(
             "x_channel",
             label="Bx",
             parent="data_object",
@@ -100,7 +102,7 @@ def generate_sample_uijson(testpath):
             data_type="Float",
             value=None,
         ),
-        DataParameter(
+        DataFormParameter(
             "y_channel",
             label="By",
             parent="data_object",
@@ -108,7 +110,7 @@ def generate_sample_uijson(testpath):
             data_type="Float",
             value=None,
         ),
-        FileParameter("data_path", label="Data path", value=None),
+        FileFormParameter("data_path", label="Data path", value=None),
     ]
     parameters = standard_uijson_parameters + custom_uijson_parameters
     uijson = UIJson(parameters)

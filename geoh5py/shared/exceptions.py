@@ -171,7 +171,7 @@ class TypeValidationError(BaseValidationError):
 
     @staticmethod
     def message(name, value, validation):
-        return f"Type '{value}' provided for '{name}' is invalid. " + iterable_message(
+        return f"Type '{value}' provided for '{name}' is invalid." + iterable_message(
             validation
         )
 

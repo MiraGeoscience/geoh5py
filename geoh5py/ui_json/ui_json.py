@@ -17,16 +17,15 @@
 
 from __future__ import annotations
 
-from geoh5py.ui_json.parameters import FormParameter, Parameter
+from geoh5py.ui_json.forms import FormParameter
+from geoh5py.ui_json.parameters import Parameter
 
-Parameters = list[Parameter | FormParameter]
 
-
-class UIJson:
+class UIJson:  # pylint: disable=too-few-public-methods
     """Stores parameters and data for applications executed with ui.json files."""
 
     def __init__(self, parameters):
-        self.parameters: Parameters = parameters
+        self.parameters: list[Parameter | FormParameter] = parameters
 
     def to_dict(self, naming="snake"):
         """
@@ -37,7 +36,7 @@ class UIJson:
         """
 
         def get_data(param):
-            return param.value if isinstance(param, Parameter) else param.form(naming)
+            return param.form(naming) if hasattr(param, "form") else param.value
 
         out = {}
         for param in self.parameters:

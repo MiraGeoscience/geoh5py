@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-from collections import UserDict
 from copy import deepcopy
 from typing import Any, Dict, cast
 from uuid import UUID
@@ -41,36 +40,41 @@ from geoh5py.shared.validators import (
     UUIDValidator,
     ValueValidator,
 )
+from geoh5py.ui_json.enforcers import Enforcer
 from geoh5py.ui_json.utils import requires_value
 
 Validation = Dict[str, Any]
 
 
-class Validations(UserDict):
-    @property
-    def validators(self) -> list[BaseValidator] | None:
-        validators = []
-        for validator in BaseValidator.__subclasses__():
-            if validator.validator_type in self.data:
-                validators.append(validator)
+class Validations:  # pylint: disable=too-few-public-methods
+    """Validate data from a set of rule enforcers."""
 
-        return validators  # type: ignore
+    def __init__(self, name: str, enforcers: list[Enforcer]):
+        self.name: str = name
+        self.enforcers: list[Enforcer] = enforcers
+        self.errors: list[BaseValidationError] = []
 
-    def validate(self, name: str, value: Any):
-        if not self.data:
-            raise AttributeError("Must set validations before calling validate.")
+    def validate(self, value: Any):
+        """Validate value against all enforcers."""
 
-        error_list = []
-        for validator in self.validators:  # type: ignore
-            try:
-                validator.validate(name, value, self.data[validator.validator_type])
-            except BaseValidationError as err:
-                error_list.append(err)
+        for enforcer in self.enforcers:
+            self._capture_error(enforcer, value)
 
-        if error_list:
-            if len(error_list) > 1:
-                raise AggregateValidationError(name, error_list)
-            raise error_list.pop()
+        self._raise_errors()
+
+    def _capture_error(self, enforcer: Enforcer, value: Any):
+        """Catch 'BaseValidationError' and return error."""
+        try:
+            enforcer.enforce(self.name, value)
+        except BaseValidationError as err:
+            self.errors.append(err)
+
+    def _raise_errors(self):
+        """Raise errors if any exist, aggregate if more than one."""
+        if self.errors:
+            if len(self.errors) > 1:
+                raise AggregateValidationError(self.name, self.errors)
+            raise self.errors.pop()
 
 
 class InputValidation:
