@@ -10,7 +10,7 @@ This section provides information on how to create geophysical surveys programma
 .. toctree::
    :maxdepth: 1
 
-   airborne_tem.ipynb
-   direct_current.ipynb
-   magnetotelluric.ipynb
-   tipper.ipynb
+   d_airborne_tem.ipynb
+   e_direct_current.ipynb
+   f_magnetotelluric.ipynb
+   g_tipper.ipynb
