@@ -65,27 +65,34 @@ def generate_sample_uijson(testpath):
         StringParameter("workspace"),
     ]
     custom_uijson_parameters = [
-        StringFormParameter("name", label="Name", value="test"),
+        StringFormParameter("name", main=True, label="Name", value="test"),
         BoolFormParameter(
             "flip_sign",
+            main=True,
             label="Flip sign",
             value=False,
         ),
         IntegerFormParameter(
-            "number_of_iterations", label="Number of iterations", value=5
+            "number_of_iterations", main=True, label="Number of iterations", value=5
         ),
-        FloatFormParameter("tolerance", label="Tolerance", value=1e-5),
+        FloatFormParameter("tolerance", main=True, label="Tolerance", value=1e-5),
         ChoiceStringFormParameter(
-            "method", label="Method", choice_list=["cg", "ssor", "jacobi"], value="cg"
+            "method",
+            main=True,
+            label="Method",
+            choice_list=["cg", "ssor", "jacobi"],
+            value="cg",
         ),
         ObjectFormParameter(
             "data_object",
+            main=True,
             label="Survey",
             mesh_type=["202c5db1-a56d-4004-9cad-baafd8899406"],
             value=None,
         ),
         DataValueFormParameter(
             "elevation",
+            main=True,
             label="Elevation",
             parent="data_object",
             association="Vertex",
@@ -104,13 +111,14 @@ def generate_sample_uijson(testpath):
         ),
         DataFormParameter(
             "y_channel",
+            main=True,
             label="By",
             parent="data_object",
             association="Vertex",
             data_type="Float",
             value=None,
         ),
-        FileFormParameter("data_path", label="Data path", value=None),
+        FileFormParameter("data_path", main=True, label="Data path", value=None),
     ]
     parameters = standard_uijson_parameters + custom_uijson_parameters
     uijson = UIJson(parameters)
