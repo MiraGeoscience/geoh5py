@@ -144,7 +144,7 @@ def test_string_form_parameter_construction():
     assert param.name == "my_param"
     assert param.value == "this"
     assert param.label == "my param"
-    assert param._value.validations.enforcers == [TypeEnforcer(str)]
+    assert param._value._enforcers.enforcers == [TypeEnforcer(str)]
 
 
 def test_string_form_parameter_validation():
@@ -174,7 +174,7 @@ def test_bool_form_parameter_construction():
     assert param.name == "my_param"
     assert param.value
     assert param.label == "my param"
-    assert param._value.validations.enforcers == [TypeEnforcer(bool)]
+    assert param._value._enforcers.enforcers == [TypeEnforcer(bool)]
 
 
 def test_bool_form_parameter_validation():
@@ -195,7 +195,7 @@ def test_integer_form_parameter_construction():
     assert param.name == "my_param"
     assert param.value == 1
     assert param.label == "my param"
-    assert param._value.validations.enforcers == [TypeEnforcer(int)]
+    assert param._value._enforcers.enforcers == [TypeEnforcer(int)]
     assert param.min is None
     assert param.max is None
 
@@ -218,7 +218,7 @@ def test_float_form_parameter_construction():
     assert param.name == "my_param"
     assert param.value == 1
     assert param.label == "my param"
-    assert param._value.validations.enforcers == [TypeEnforcer(float)]
+    assert param._value._enforcers.enforcers == [TypeEnforcer(float)]
     assert param.min is None
     assert param.max is None
     assert param.precision is None
@@ -242,7 +242,7 @@ def test_choice_string_form_parameter_construction():
     assert param.value == "onlythis"
     assert param.label == "my param"
     assert all(
-        k in param._value.validations.enforcers
+        k in param._value._enforcers.enforcers
         for k in [ValueEnforcer(["onlythis"]), TypeEnforcer([list, str])]
     )
     assert param.choice_list == ["onlythis"]
@@ -250,10 +250,10 @@ def test_choice_string_form_parameter_construction():
 
 def test_choice_string_form_parameter_validation():
     msg = (
-        "Validation of 'choice_list' collected 2 errors:\n\t"
-        "0. Value '1' provided for 'choice_list' is invalid. "
+        "Validation of 'value' collected 2 errors:\n\t"
+        "0. Value '1' provided for 'value' is invalid. "
         "Must be: 'onlythis'.\n\t"
-        "1. Type 'int' provided for 'choice_list' is invalid. "
+        "1. Type 'int' provided for 'value' is invalid. "
         "Must be one of: 'list', 'str'."
     )
     with pytest.raises(AggregateValidationError, match=msg):
@@ -273,7 +273,7 @@ def test_file_form_parameter_construction():
     assert param.name == "my_param"
     assert param.value == "my_file"
     assert param.label == "my param"
-    assert param._value.validations.enforcers == [TypeEnforcer(str)]
+    assert param._value._enforcers.enforcers == [TypeEnforcer(str)]
     assert param.file_description is None
     assert param.file_type is None
     assert param.file_multi is None
@@ -298,7 +298,7 @@ def test_object_form_parameter_construction():
     assert param.name == "my_param"
     assert param.value == new_uuid
     assert param.label == "my param"
-    assert param._value.validations.enforcers == [
+    assert param._value._enforcers.enforcers == [
         TypeEnforcer([str, uuid.UUID]),
         UUIDEnforcer(),
     ]
@@ -324,7 +324,7 @@ def test_data_form_parameter_construction():
     assert param.name == "my_param"
     assert param.value == new_uuid
     assert param.label == "my param"
-    assert param._value.validations.enforcers == [
+    assert param._value._enforcers.enforcers == [
         TypeEnforcer([str, uuid.UUID]),
         UUIDEnforcer(),
     ]
@@ -351,11 +351,11 @@ def test_data_value_form_parameter_construction():
     assert param.name == "my_param"
     assert param.value == new_uuid
     assert param.label == "my param"
-    assert param._property.validations.enforcers == [
+    assert param._property._enforcers.enforcers == [
         TypeEnforcer([str, uuid.UUID, type(None)]),
         UUIDEnforcer("optional"),
     ]
-    assert param._value.validations.enforcers == [TypeEnforcer([int, float])]
+    assert param._value._enforcers.enforcers == [TypeEnforcer([int, float])]
     assert param.parent is None
     assert param.association is None
     assert param.data_type is None

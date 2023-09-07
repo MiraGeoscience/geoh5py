@@ -19,7 +19,7 @@
 import pytest
 
 from geoh5py.shared.exceptions import TypeValidationError, UUIDValidationError
-from geoh5py.ui_json.enforcers import TypeEnforcer, ValueEnforcer
+from geoh5py.ui_json.enforcers import EnforcerPool, TypeEnforcer, ValueEnforcer
 from geoh5py.ui_json.parameters import (
     BoolParameter,
     FloatParameter,
@@ -29,47 +29,43 @@ from geoh5py.ui_json.parameters import (
     StringParameter,
     UUIDParameter,
 )
-from geoh5py.ui_json.validation import Validations
 
 
 def test_no_overwriting_class_enforcers():
     param = StringParameter(
         "param",
-        validations=Validations(
-            "param", [TypeEnforcer(int), ValueEnforcer(["onlythis"])]
+        enforcers=EnforcerPool(
+            "param",
+            [TypeEnforcer(int), ValueEnforcer(["onlythis"])],
         ),
     )
-    assert TypeEnforcer(str) in param.validations.enforcers
-    assert ValueEnforcer(["onlythis"]) in param.validations.enforcers
+    assert param._enforcers.enforcers == [
+        TypeEnforcer(str),
+        ValueEnforcer(["onlythis"]),
+    ]
 
 
 def test_skip_validation_on_none_value():
-    validations = Validations("my_param", [TypeEnforcer(str)])
-    param = Parameter("my_param", None, validations=validations)
+    enforcers = EnforcerPool("my_param", [TypeEnforcer(str)])
+    param = Parameter("my_param", None, enforcers=enforcers)
     assert param.value is None
 
 
 def test_parameter_validations_on_construction():
-    validations = Validations("my_param", [TypeEnforcer(str)])
-    _ = Parameter("my_param", "me", validations=validations)
+    enforcers = EnforcerPool("my_param", [TypeEnforcer(str)])
+    _ = Parameter("my_param", "me", enforcers=enforcers)
     msg = "Type 'int' provided for 'my_param' is invalid. Must be: 'str'."
     with pytest.raises(TypeValidationError, match=msg):
-        _ = Parameter("my_param", 1, validations=validations)
+        _ = Parameter("my_param", 1, enforcers=enforcers)
 
 
 def test_parameter_validations_on_setting():
-    validations = Validations("my_param", [TypeEnforcer(str)])
-    param = Parameter("my_param", validations=validations)
+    enforcers = EnforcerPool("my_param", [TypeEnforcer(str)])
+    param = Parameter("my_param", enforcers=enforcers)
     param.value = "me"
     msg = "Type 'int' provided for 'my_param' is invalid. Must be: 'str'."
     with pytest.raises(TypeValidationError, match=msg):
         param.value = 1
-
-
-def test_raise_if_no_validations_on_validate():
-    param = Parameter("my_param")
-    with pytest.raises(AttributeError, match="Must set validations"):
-        param.validate()
 
 
 def test_parameter_str_representation():
@@ -86,7 +82,7 @@ def test_string_parameter_type_validation():
 
 def test_string_parameter_optional_validations():
     param = StringParameter("my_param", optional=True)
-    param.enforcers == [TypeEnforcer([str, type(None)])]
+    param.validations = {"types": [str]}
     param.value = None
     param.value = "this is ok"
     msg = (

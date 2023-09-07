@@ -20,11 +20,70 @@ import uuid
 import pytest
 
 from geoh5py.shared.exceptions import (
+    AggregateValidationError,
     TypeValidationError,
     UUIDValidationError,
     ValueValidationError,
 )
-from geoh5py.ui_json.enforcers import TypeEnforcer, UUIDEnforcer, ValueEnforcer
+from geoh5py.ui_json.enforcers import (
+    EnforcerPool,
+    TypeEnforcer,
+    UUIDEnforcer,
+    ValueEnforcer,
+)
+
+
+def test_enforcer_pool_construction():
+    pool = EnforcerPool("my_param")
+    assert pool.name == "my_param"
+    assert pool.enforcers == []
+    pool = EnforcerPool("my_param", [TypeEnforcer(str)])
+    assert pool.enforcers == [TypeEnforcer(str)]
+
+
+def test_enforcer_pool_update():
+    pool = EnforcerPool("my_param")
+    pool.update({"type": str, "value": "onlythis"})
+    assert pool.enforcers == [TypeEnforcer(str), ValueEnforcer("onlythis")]
+    pool.update({"type": int, "value": "nowonlythis"}, protected=["type"])
+    assert pool.enforcers == [TypeEnforcer(str), ValueEnforcer("nowonlythis")]
+
+
+def test_enforcer_pool_validations():
+    validations = {"type": [str], "value": "onlythis"}
+    pool = EnforcerPool.from_validations("my_param", validations)
+    assert pool.validations == validations
+
+
+def test_enforcer_pool_from_validations():
+    pool = EnforcerPool.from_validations("my_param", {"type": str})
+    assert pool.enforcers == [TypeEnforcer(str)]
+
+
+def test_enforcer_pool_raises_single_error():
+    enforcers = EnforcerPool("my_param", [TypeEnforcer(str)])
+    enforcers.validate("1")
+    msg = "Type 'int' provided for 'my_param' is invalid. " "Must be: 'str'."
+    with pytest.raises(TypeValidationError, match=msg):
+        enforcers.validate(1)
+
+
+def test_enforcer_pool_raises_aggregate_error():
+    enforcers = EnforcerPool(
+        "my_param", [TypeEnforcer(str), ValueEnforcer(["onlythis"])]
+    )
+    enforcers.validate("onlythis")
+    msg = (
+        "Validation of 'my_param' collected 2 errors:\n\t"
+        "0. Type 'int' provided for 'my_param' is invalid"
+    )
+    with pytest.raises(AggregateValidationError, match=msg):
+        enforcers.validate(1)
+
+
+def test_enforcer_str():
+    enforcer = TypeEnforcer(validations=str)
+    assert str(enforcer) == "<TypeEnforcer> : [<class 'str'>]"
 
 
 def test_type_enforcer():

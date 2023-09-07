@@ -17,11 +17,11 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any, Dict
 from uuid import UUID
 
-from geoh5py.ui_json.enforcers import Enforcer, TypeEnforcer, UUIDEnforcer
-from geoh5py.ui_json.validation import Validations
+from geoh5py.ui_json.enforcers import EnforcerPool
 
 Validation = Dict[str, Any]
 
@@ -35,31 +35,26 @@ class Parameter:
     :param validations: Parameter validations
     """
 
-    enforcers: list[Enforcer] = []
+    validations: dict[str, Any] = {}
 
-    def __init__(self, name, value=None, validations: Validations | None = None):
+    def __init__(
+        self, name: str, value: Any = None, enforcers: EnforcerPool | None = None
+    ):
         self.name: str = name
-        self._validations: Validations = self._setup_validations(validations)
+        self._enforcers: EnforcerPool = self._get_enforcer_pool(enforcers)
         setattr(self, "_value" if value is None else "value", value)
 
-    def _setup_validations(self, validations: Validations | None) -> Validations:
+    def _get_enforcer_pool(self, enforcers: EnforcerPool | None) -> EnforcerPool:
         """Updates validations enforcers with base enforcer instances."""
 
-        if validations is not None:
-            validations.enforcers = self._drop_class_enforcers(validations.enforcers)
-        elif self.enforcers:
-            validations = Validations(self.name, self.enforcers)
+        if enforcers is None:
+            out = EnforcerPool.from_validations(self.name, self.validations)
+        else:
+            out = EnforcerPool.from_validations(
+                self.name, dict(enforcers.validations, **self.validations)
+            )
 
-        return validations  # type: ignore
-
-    def _drop_class_enforcers(self, enforcers: list[Enforcer]) -> list[Enforcer]:
-        """Removes special 'class' enforcers from incoming enforcer list."""
-        types = tuple(type(k) for k in self.enforcers)
-        return [k for k in enforcers if not isinstance(k, types)] + self.enforcers
-
-    @property
-    def validations(self):
-        return self._validations
+        return out
 
     @property
     def value(self):
@@ -71,9 +66,7 @@ class Parameter:
         self.validate()
 
     def validate(self):
-        if self.validations is None:
-            raise AttributeError("Must set validations before calling validate.")
-        self.validations.validate(self.value)
+        self._enforcers.validate(self.value)
 
     def __str__(self):
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
@@ -86,59 +79,85 @@ class TypedParameter(Parameter):
         self,
         name,
         value=None,
-        validations: Validations | None = None,
+        enforcers: EnforcerPool | None = None,
         optional: bool = False,
     ):
-        if optional:
-            self._add_nonetype_enforcer()
+        self.optional = optional
 
-        super().__init__(name, value=value, validations=validations)
+        super().__init__(name, value=value, enforcers=enforcers)
 
-    def _add_nonetype_enforcer(self):
-        self.enforcers[0].validations.append(type(None))
+    def _get_enforcer_pool(self, enforcers: EnforcerPool | None) -> EnforcerPool:
+        """Updates validations enforcers with base enforcer instances."""
+
+        validations = deepcopy(self.validations)
+        if self.optional:
+            validations["type"] += [type(None)]
+
+        if enforcers is None:
+            out = EnforcerPool.from_validations(self.name, validations)
+        else:
+            out = EnforcerPool.from_validations(
+                self.name, dict(enforcers.validations, **validations)
+            )
+
+        return out
 
 
 class StringParameter(TypedParameter):
     """Parameter for string values."""
 
-    enforcers: list[Enforcer] = [TypeEnforcer(str)]
+    validations = {"type": [str]}
 
 
 class IntegerParameter(TypedParameter):
     """Parameter for integer values."""
 
-    enforcers: list[Enforcer] = [TypeEnforcer(int)]
+    validations = {"type": [int]}
 
 
 class FloatParameter(TypedParameter):
     """Parameter for float values."""
 
-    enforcers: list[Enforcer] = [TypeEnforcer(float)]
+    validations = {"type": [float]}
 
 
 class NumericParameter(TypedParameter):
     """Parameter for generic numeric values."""
 
-    enforcers: list[Enforcer] = [TypeEnforcer([int, float])]
+    validations = {"type": [int, float]}
 
 
 class BoolParameter(TypedParameter):
     """Parameter for boolean values."""
 
-    enforcers: list[Enforcer] = [TypeEnforcer(bool)]
+    validations = {"type": [bool]}
 
 
 class UUIDParameter(TypedParameter):
-    enforcers: list[Enforcer] = [TypeEnforcer([str, UUID]), UUIDEnforcer()]
+    validations = {"type": [str, UUID], "uuid": None}
 
-    def _add_nonetype_enforcer(self):
-        self.enforcers[0].validations.append(type(None))
-        self.enforcers[1] = UUIDEnforcer("optional")
+    def _get_enforcer_pool(self, enforcers: EnforcerPool | None) -> EnforcerPool:
+        """Updates validations enforcers with base enforcer instances."""
+
+        validations = deepcopy(self.validations)
+        if self.optional:
+            validations["type"] += [type(None)]
+            validations["uuid"] = "optional"
+
+        if enforcers is None:
+            out = EnforcerPool.from_validations(self.name, validations)
+        else:
+            out = EnforcerPool.from_validations(
+                self.name, dict(enforcers.validations, **validations)
+            )
+
+        return out
 
 
 class StringListParameter(TypedParameter):
     """Parameter for list of strings."""
 
-    enforcers: list[Enforcer] = [TypeEnforcer([list, str])]
+    validations = {"type": [list, str]}
+
     # TODO: introduce type alias handling so that TypeEnforcer(list[str], str)
     # is possible

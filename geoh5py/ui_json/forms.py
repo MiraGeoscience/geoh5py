@@ -21,7 +21,7 @@ from typing import Any
 
 from geoh5py.shared.exceptions import AggregateValidationError, BaseValidationError
 from geoh5py.ui_json import MEMBER_KEYS
-from geoh5py.ui_json.enforcers import ValueEnforcer
+from geoh5py.ui_json.enforcers import EnforcerPool, ValueEnforcer
 from geoh5py.ui_json.parameters import (
     BoolParameter,
     FloatParameter,
@@ -32,7 +32,6 @@ from geoh5py.ui_json.parameters import (
     StringParameter,
     UUIDParameter,
 )
-from geoh5py.ui_json.validation import Validations
 
 
 class ValueAccess:
@@ -260,21 +259,21 @@ class ChoiceStringFormParameter(FormParameter):
 
     def __init__(self, name, value=None, **kwargs):
         self._choice_list = StringListParameter("choice_list")
-        validations = None
+        enforcers = None
         if "choice_list" in kwargs:
-            validations = Validations(
+            enforcers = EnforcerPool(
                 "choice_list", [ValueEnforcer(kwargs["choice_list"])]
             )
-        value = StringListParameter("value", value=value, validations=validations)
+        value = StringListParameter("value", value=value, enforcers=enforcers)
         super().__init__(name, value=value, **kwargs)
 
-    def _add_value_enforcer(self, choice_list: list, validations: Validations | None):
-        if validations is not None:
-            validations.enforcers.append(ValueEnforcer(choice_list))
+    def _add_value_enforcer(self, choice_list: list, enforcers: EnforcerPool | None):
+        if enforcers is not None:
+            enforcers.enforcers.append(ValueEnforcer(choice_list))
         else:
-            validations = Validations(self.name, [ValueEnforcer(choice_list)])
+            enforcers = EnforcerPool(self.name, [ValueEnforcer(choice_list)])
 
-        return validations
+        return enforcers
 
 
 class FileFormParameter(FormParameter):
@@ -328,21 +327,21 @@ class DataFormParameter(FormParameter):
         self._parent = StringParameter("parent")
         self._association = StringParameter(
             "association",
-            validations=Validations(
+            enforcers=EnforcerPool(
                 "associations",
                 [ValueEnforcer(["Vertex", "Cell"])],
             ),
         )
         self._data_type = StringParameter(
             "data_type",
-            validations=Validations(
+            enforcers=EnforcerPool(
                 "data_type",
                 [ValueEnforcer(["Float", "Integer", "Reference"])],
             ),
         )
         self._data_group_type = StringParameter(
             "data_group_type",
-            validations=Validations(
+            enforcers=EnforcerPool(
                 "data_group_type",
                 [
                     ValueEnforcer(
@@ -378,14 +377,14 @@ class DataValueFormParameter(FormParameter):
         self._parent = StringParameter("parent")
         self._association = StringParameter(
             "association",
-            validations=Validations(
+            enforcers=EnforcerPool(
                 "associations",
                 [ValueEnforcer(["Vertex", "Cell"])],
             ),
         )
         self._data_type = StringParameter(
             "data_type",
-            validations=Validations(
+            enforcers=EnforcerPool(
                 "data_type",
                 [ValueEnforcer(["Float", "Integer", "Reference"])],
             ),

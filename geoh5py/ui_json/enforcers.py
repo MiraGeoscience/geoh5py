@@ -22,13 +22,82 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from geoh5py.shared.exceptions import (
+    AggregateValidationError,
+    BaseValidationError,
     TypeValidationError,
     UUIDValidationError,
     ValueValidationError,
 )
 
 
+class EnforcerPool:
+    def __init__(self, name: str, enforcers: list[Enforcer] | None = None):
+        self.name = name
+        self.enforcers = enforcers or []
+        self._errors: list[BaseValidationError] = []
+
+    @classmethod
+    def from_validations(
+        cls, name: str, validations: dict[str, Any], protected: list[str] | None = None
+    ):
+        """Create enforcers pool from validations."""
+        enforcers = cls(name)
+        enforcers.update(validations, protected)
+        return enforcers
+
+    def update(self, validations: dict[str, Any], protected: list[str] | None = None):
+        """Create enforcers pool from name/validation dictionary."""
+        protected = protected or []
+        enforcers = [k for k in self.enforcers if k.enforcer_type in protected]
+        for name, validation in validations.items():
+            if name not in protected:
+                enforcers.append(self._recruit_enforcer(name, validation))
+
+        self.enforcers = enforcers
+
+    @property
+    def validations(self) -> dict[str, Any]:
+        return {k.enforcer_type: k.validations for k in self.enforcers}
+
+    def _recruit_enforcer(self, enforcer_type: str, validation: Any) -> Enforcer:
+        """Create enforcer from validation dictionary."""
+        if enforcer_type == "type":
+            return TypeEnforcer(validation)
+        if enforcer_type == "value":
+            return ValueEnforcer(validation)
+        if enforcer_type == "uuid":
+            return UUIDEnforcer(validation)
+
+        raise ValueError(f"Invalid enforcer type: {validation['type']}")
+
+    def validate(self, value: Any):
+        """Validate value against all enforcers."""
+
+        for enforcer in self.enforcers:
+            self._capture_error(enforcer, value)
+
+        self._raise_errors()
+
+    def _capture_error(self, enforcer: Enforcer, value: Any):
+        """Catch 'BaseValidationError' and return error."""
+        try:
+            enforcer.enforce(self.name, value)
+        except BaseValidationError as err:
+            self._errors.append(err)
+
+    def _raise_errors(self):
+        """Raise errors if any exist, aggregate if more than one."""
+        if self._errors:
+            if len(self._errors) > 1:
+                raise AggregateValidationError(self.name, self._errors)
+            raise self._errors.pop()
+
+
 class Enforcer(ABC):
+    """Base class for enforcers."""
+
+    enforcer_type: str = ""
+
     def __init__(self, validations: Any | None = None):
         self._validations = validations
 
@@ -57,9 +126,14 @@ class Enforcer(ABC):
 
         return is_equal
 
+    def __str__(self):
+        return f"<{type(self).__name__}> : {self.validations}"
+
 
 class TypeEnforcer(Enforcer):
     """Enforces type validation."""
+
+    enforcer_type: str = "type"
 
     def enforce(self, name: str, value: Any):
         """Administers rule to enforce type validation."""
@@ -92,6 +166,8 @@ class TypeEnforcer(Enforcer):
 
 
 class ValueEnforcer(Enforcer):
+    enforcer_type = "value"
+
     def enforce(self, name: str, value: Any):
         """Administers rule to enforce value validation."""
         if not self.rule(value):
@@ -103,6 +179,8 @@ class ValueEnforcer(Enforcer):
 
 
 class UUIDEnforcer(Enforcer):
+    enforcer_type = "uuid"
+
     def enforce(self, name: str, value: Any):
         """Administers rule to check if valid uuid."""
         if not self.rule(value):
