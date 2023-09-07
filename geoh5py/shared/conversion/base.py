@@ -38,7 +38,7 @@ CORE_PROPERTIES = [
 class BaseConversion(ABC):
     def __init__(self):
         """
-        Converter class from an :obj:geoh5py.shared.entity.Entity to another..
+        Converter class from an :obj:geoh5py.shared.entity.Entity to another.
         """
 
     @classmethod
