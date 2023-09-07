@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from geoh5py.data import Data
 from geoh5py.objects import Points
 from geoh5py.shared.merging.points import PointsMerger
 from geoh5py.workspace import Workspace
@@ -97,4 +98,30 @@ def test_merge_point_data(tmp_path):
 
         test = PointsMerger.merge_objects(points)
 
-        print(test)
+        nan_array = np.empty(10)
+        nan_array[:] = np.nan
+
+        # sort the dictionary by its keys
+        merged_data = list(
+            dict(
+                sorted(
+                    {
+                        child.name: child.values
+                        for child in test.children
+                        if isinstance(child, Data)
+                    }.items()
+                )
+            ).values()
+        )
+
+        np.testing.assert_almost_equal(
+            merged_data[0], np.hstack((data[0].values, data[3].values))
+        )
+
+        np.testing.assert_almost_equal(
+            merged_data[1], np.hstack((data[1].values, nan_array))
+        )
+
+        np.testing.assert_almost_equal(
+            merged_data[2], np.hstack((data[2].values, nan_array))
+        )
