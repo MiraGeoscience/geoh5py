@@ -34,7 +34,7 @@ from geoh5py.ui_json.parameters import (
 )
 from geoh5py.ui_json.validation import Validations
 
-Validation = dict[str, Any]
+
 
 
 class ValueAccess:
