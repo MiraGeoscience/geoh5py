@@ -30,6 +30,8 @@ from geoh5py.ui_json.parameters import (
     UUIDParameter,
 )
 
+# pylint: disable=protected-access
+
 
 def test_no_overwriting_class_enforcers():
     param = StringParameter(
@@ -75,7 +77,8 @@ def test_parameter_str_representation():
 
 def test_string_parameter_type_validation():
     param = StringParameter("my_param")
-    msg = "Type 'int' provided for 'my_param' is invalid. " "Must be: 'str'."
+    msg = "Type 'int' provided for 'my_param' is invalid. "
+    msg += "Must be: 'str'."
     with pytest.raises(TypeValidationError, match=msg):
         param.value = 1
 
@@ -95,21 +98,24 @@ def test_string_parameter_optional_validations():
 
 def test_integer_parameter_type_validation():
     param = IntegerParameter("my_param")
-    msg = "Type 'str' provided for 'my_param' is invalid. " "Must be: 'int'."
+    msg = "Type 'str' provided for 'my_param' is invalid. "
+    msg += "Must be: 'int'."
     with pytest.raises(TypeValidationError, match=msg):
         param.value = "1"
 
 
 def test_float_parameter_type_validation():
     param = FloatParameter("my_param")
-    msg = "Type 'int' provided for 'my_param' is invalid. " "Must be: 'float'."
+    msg = "Type 'int' provided for 'my_param' is invalid. "
+    msg += "Must be: 'float'."
     with pytest.raises(TypeValidationError, match=msg):
         param.value = 1
 
 
 def test_bool_parameter_type_validation():
     param = BoolParameter("my_param")
-    msg = "Type 'str' provided for 'my_param' is invalid. " "Must be: 'bool'."
+    msg = "Type 'str' provided for 'my_param' is invalid. "
+    msg += "Must be: 'bool'."
     with pytest.raises(TypeValidationError, match=msg):
         param.value = "butwhy?"
 

@@ -36,6 +36,7 @@ from geoh5py.ui_json.forms import (
 from geoh5py.ui_json.parameters import IntegerParameter, StringParameter
 
 
+# pylint: disable=protected-access
 def test_form_parameter_construction_empty_value():
     param = FormParameter("my_param")
     assert param.value is None
@@ -77,12 +78,12 @@ def test_form_parameter_active():
 
 def test_form_parameter_defaults():
     param = FormParameter("my_param")
-    assert param.enabled
-    assert not param.optional
-    assert not param.group_optional
-    assert param.main
-    assert param.dependency_type == "enabled"
-    assert param.group_dependency_type == "enabled"
+    assert param.enabled  # pylint: disable=no-member
+    assert not param.optional  # pylint: disable=no-member
+    assert not param.group_optional  # pylint: disable=no-member
+    assert param.main  # pylint: disable=no-member
+    assert param.dependency_type == "enabled"  # pylint: disable=no-member
+    assert param.group_dependency_type == "enabled"  # pylint: disable=no-member
 
 
 def test_form_parameter_value_access():
@@ -97,7 +98,7 @@ def test_form_parameter_construction_with_kwargs():
         value=StringParameter("value", "this"),
         groupOptional=True,
     )
-    assert param.group_optional
+    assert param.group_optional  # pylint: disable=no-member
     assert param._active_members == ["group_optional"]
     assert param.active == ["value", "group_optional"]
 
@@ -126,7 +127,7 @@ def test_form_parameter_roundtrip():
     form = {"label": "my param", "enabled": False, "extra": "stuff"}
     param = FormParameter("param", IntegerParameter("value", 1), **form)
     assert param.name == "param"
-    assert param.label == "my param"
+    assert param.label == "my param"  # pylint: disable=no-member
     assert param.value == 1
     assert not param.enabled
     assert not hasattr(param, "extra")
@@ -143,7 +144,7 @@ def test_string_form_parameter_construction():
     )
     assert param.name == "my_param"
     assert param.value == "this"
-    assert param.label == "my param"
+    assert param.label == "my param"  # pylint: disable=no-member
     assert param._value._enforcers.enforcers == [TypeEnforcer(str)]
 
 
@@ -173,12 +174,13 @@ def test_bool_form_parameter_construction():
     )
     assert param.name == "my_param"
     assert param.value
-    assert param.label == "my param"
+    assert param.label == "my param"  # pylint: disable=no-member
     assert param._value._enforcers.enforcers == [TypeEnforcer(bool)]
 
 
 def test_bool_form_parameter_validation():
-    msg = "Type 'str' provided for 'value' is invalid. " "Must be: 'bool'."
+    msg = "Type 'str' provided for 'value' is invalid. "
+    msg += "Must be: 'bool'."
     with pytest.raises(TypeValidationError, match=msg):
         _ = BoolFormParameter(
             "my_param",
@@ -194,14 +196,15 @@ def test_integer_form_parameter_construction():
     )
     assert param.name == "my_param"
     assert param.value == 1
-    assert param.label == "my param"
+    assert param.label == "my param"  # pylint: disable=no-member
     assert param._value._enforcers.enforcers == [TypeEnforcer(int)]
-    assert param.min is None
-    assert param.max is None
+    assert param.min is None  # pylint: disable=no-member
+    assert param.max is None  # pylint: disable=no-member
 
 
 def test_integer_form_parameter_validation():
-    msg = "Type 'str' provided for 'value' is invalid. " "Must be: 'int'."
+    msg = "Type 'str' provided for 'value' is invalid. "
+    msg += "Must be: 'int'."
     with pytest.raises(TypeValidationError, match=msg):
         _ = IntegerFormParameter(
             "my_param",
@@ -217,16 +220,17 @@ def test_float_form_parameter_construction():
     )
     assert param.name == "my_param"
     assert param.value == 1
-    assert param.label == "my param"
+    assert param.label == "my param"  # pylint: disable=no-member
     assert param._value._enforcers.enforcers == [TypeEnforcer(float)]
-    assert param.min is None
-    assert param.max is None
-    assert param.precision is None
-    assert param.line_edit is None
+    assert param.min is None  # pylint: disable=no-member
+    assert param.max is None  # pylint: disable=no-member
+    assert param.precision is None  # pylint: disable=no-member
+    assert param.line_edit is None  # pylint: disable=no-member
 
 
 def test_float_form_parameter_validation():
-    msg = "Type 'str' provided for 'value' is invalid. " "Must be: 'float'."
+    msg = "Type 'str' provided for 'value' is invalid. "
+    msg += "Must be: 'float'."
     with pytest.raises(TypeValidationError, match=msg):
         _ = FloatFormParameter(
             "my_param",
@@ -240,12 +244,12 @@ def test_choice_string_form_parameter_construction():
     )
     assert param.name == "my_param"
     assert param.value == "onlythis"
-    assert param.label == "my param"
+    assert param.label == "my param"  # pylint: disable=no-member
     assert all(
         k in param._value._enforcers.enforcers
         for k in [ValueEnforcer(["onlythis"]), TypeEnforcer([list, str])]
     )
-    assert param.choice_list == ["onlythis"]
+    assert param.choice_list == ["onlythis"]  # pylint: disable=no-member
 
 
 def test_choice_string_form_parameter_validation():
@@ -272,15 +276,16 @@ def test_file_form_parameter_construction():
     )
     assert param.name == "my_param"
     assert param.value == "my_file"
-    assert param.label == "my param"
+    assert param.label == "my param"  # pylint: disable=no-member
     assert param._value._enforcers.enforcers == [TypeEnforcer(str)]
-    assert param.file_description is None
-    assert param.file_type is None
-    assert param.file_multi is None
+    assert param.file_description is None  # pylint: disable=no-member
+    assert param.file_type is None  # pylint: disable=no-member
+    assert param.file_multi is None  # pylint: disable=no-member
 
 
 def test_file_form_parameter_validation():
-    msg = "Type 'int' provided for 'value' is invalid. " "Must be: 'str'."
+    msg = "Type 'int' provided for 'value' is invalid. "
+    msg += "Must be: 'str'."
     with pytest.raises(TypeValidationError, match=msg):
         _ = FileFormParameter(
             "my_param",
@@ -297,12 +302,12 @@ def test_object_form_parameter_construction():
     )
     assert param.name == "my_param"
     assert param.value == new_uuid
-    assert param.label == "my param"
+    assert param.label == "my param"  # pylint: disable=no-member
     assert param._value._enforcers.enforcers == [
         TypeEnforcer([str, uuid.UUID]),
         UUIDEnforcer(),
     ]
-    assert param.mesh_type == []
+    assert param.mesh_type == []  # pylint: disable=no-member
 
 
 def test_object_form_parameter_validation():
@@ -323,15 +328,15 @@ def test_data_form_parameter_construction():
     )
     assert param.name == "my_param"
     assert param.value == new_uuid
-    assert param.label == "my param"
+    assert param.label == "my param"  # pylint: disable=no-member
     assert param._value._enforcers.enforcers == [
         TypeEnforcer([str, uuid.UUID]),
         UUIDEnforcer(),
     ]
-    assert param.parent is None
-    assert param.association is None
-    assert param.data_type is None
-    assert param.data_group_type is None
+    assert param.parent is None  # pylint: disable=no-member
+    assert param.association is None  # pylint: disable=no-member
+    assert param.data_type is None  # pylint: disable=no-member
+    assert param.data_group_type is None  # pylint: disable=no-member
 
 
 def test_data_form_parameter_validation():
@@ -350,15 +355,15 @@ def test_data_value_form_parameter_construction():
     )
     assert param.name == "my_param"
     assert param.value == new_uuid
-    assert param.label == "my param"
+    assert param.label == "my param"  # pylint: disable=no-member
     assert param._property._enforcers.enforcers == [
         TypeEnforcer([str, uuid.UUID, type(None)]),
         UUIDEnforcer("optional"),
     ]
     assert param._value._enforcers.enforcers == [TypeEnforcer([int, float])]
-    assert param.parent is None
-    assert param.association is None
-    assert param.data_type is None
+    assert param.parent is None  # pylint: disable=no-member
+    assert param.association is None  # pylint: disable=no-member
+    assert param.data_type is None  # pylint: disable=no-member
     assert not param.is_value
 
 

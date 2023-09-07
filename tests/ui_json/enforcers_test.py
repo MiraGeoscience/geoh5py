@@ -63,7 +63,8 @@ def test_enforcer_pool_from_validations():
 def test_enforcer_pool_raises_single_error():
     enforcers = EnforcerPool("my_param", [TypeEnforcer(str)])
     enforcers.validate("1")
-    msg = "Type 'int' provided for 'my_param' is invalid. " "Must be: 'str'."
+    msg = "Type 'int' provided for 'my_param' is invalid. "
+    msg += "Must be: 'str'."
     with pytest.raises(TypeValidationError, match=msg):
         enforcers.validate(1)
 
@@ -101,7 +102,8 @@ def test_type_enforcer():
 def test_value_enforcer():
     enforcer = ValueEnforcer(validations=[1, 2, 3])
     enforcer.enforce("test", 1)
-    msg = "Value '4' provided for 'test' is invalid. " "Must be one of: '1', '2', '3'."
+    msg = "Value '4' provided for 'test' is invalid. "
+    msg += "Must be one of: '1', '2', '3'."
     with pytest.raises(ValueValidationError, match=msg):
         enforcer.enforce("test", 4)
 
@@ -109,6 +111,7 @@ def test_value_enforcer():
 def test_uuid_enforcer():
     enforcer = UUIDEnforcer()
     enforcer.enforce("test", str(uuid.uuid4()))
-    msg = "Parameter 'test' with value 'notachance' " "is not a valid uuid string."
+    msg = "Parameter 'test' with value 'notachance' "
+    msg += "is not a valid uuid string."
     with pytest.raises(UUIDValidationError, match=msg):
         enforcer.enforce("test", "notachance")
