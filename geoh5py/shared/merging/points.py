@@ -21,3 +21,8 @@ from .base import BaseMerger
 
 class PointsMerger(BaseMerger):
     _type = Points
+
+    @classmethod
+    def validate_type(cls, input_entity):
+        if not isinstance(input_entity, cls._type):
+            raise TypeError("The input entities must be a list of geoh5py Points.")

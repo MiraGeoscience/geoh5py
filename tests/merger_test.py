@@ -34,6 +34,7 @@ def test_merge_point_data(tmp_path):
         points.append(
             Points.create(workspace, vertices=np.random.randn(10, 3), allow_move=False)
         )
+
         data.append(
             points[0].add_data(
                 {
@@ -44,10 +45,22 @@ def test_merge_point_data(tmp_path):
                 }
             )
         )
+
         data.append(
             points[0].add_data(
                 {
                     "DataValues1": {
+                        "association": "VERTEX",
+                        "values": np.random.randn(10),
+                    }
+                }
+            )
+        )
+
+        data.append(
+            points[0].add_data(
+                {
+                    "DataValues2": {
                         "association": "VERTEX",
                         "values": np.random.randn(10),
                     }
@@ -63,7 +76,7 @@ def test_merge_point_data(tmp_path):
         data.append(
             points[1].add_data(
                 {
-                    "DataValues2": {
+                    "DataValues3": {
                         "association": "VERTEX",
                         "values": np.random.randn(10),
                         "entity_type": entity_type,
@@ -74,7 +87,7 @@ def test_merge_point_data(tmp_path):
         data.append(
             points[1].add_data(
                 {
-                    "DataValues3": {
+                    "DataValues4": {
                         "association": "VERTEX",
                         "values": np.random.randn(10),
                     }
