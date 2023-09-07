@@ -35,8 +35,6 @@ from geoh5py.ui_json.parameters import (
 from geoh5py.ui_json.validation import Validations
 
 
-
-
 class ValueAccess:
     """
     Descriptor to elevate underlying member values within 'FormParameter'.
