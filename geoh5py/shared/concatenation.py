@@ -821,7 +821,9 @@ class ConcatenatedObject(Concatenated, ObjectBase):
         if "property_group_type" not in kwargs and "Property Group Type" not in kwargs:
             kwargs["property_group_type"] = "Interval table"
 
-        prop_group = ConcatenatedPropertyGroup(self, name=name, **kwargs)
+        prop_group = ConcatenatedPropertyGroup(
+            self, name=name, on_file=on_file, **kwargs
+        )
 
         return prop_group
 
@@ -896,7 +898,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
             for key in property_groups:
                 self.find_or_create_property_group(
-                    **self.concatenator.get_concatenated_attributes(key)
+                    **self.concatenator.get_concatenated_attributes(key), on_file=True
                 )
 
             property_groups = [
