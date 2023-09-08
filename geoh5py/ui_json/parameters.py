@@ -32,7 +32,9 @@ class Parameter:
 
     :param name: Parameter name.
     :param value: The parameters value.
-    :param validations: Parameter validations
+    :param enforcers: A collection of enforcers.
+    :param validations: Base enforcers encoded as an enforcer type and
+        validation key value dictionary.
     """
 
     validations: dict[str, Any] = {}
@@ -45,7 +47,7 @@ class Parameter:
         setattr(self, "_value" if value is None else "value", value)
 
     def _get_enforcer_pool(self, enforcers: EnforcerPool | None) -> EnforcerPool:
-        """Updates validations enforcers with base enforcer instances."""
+        """Updates incoming enforcers with base enforcer instances."""
 
         if enforcers is None:
             out = EnforcerPool.from_validations(self.name, self.validations)
@@ -66,6 +68,7 @@ class Parameter:
         self.validate()
 
     def validate(self):
+        """Validates data against the pool of enforcers."""
         self._enforcers.validate(self.value)
 
     def __str__(self):
@@ -87,7 +90,7 @@ class TypedParameter(Parameter):
         super().__init__(name, value=value, enforcers=enforcers)
 
     def _get_enforcer_pool(self, enforcers: EnforcerPool | None) -> EnforcerPool:
-        """Updates validations enforcers with base enforcer instances."""
+        """Updates incoming enforcers with base enforcer instances."""
 
         validations = deepcopy(self.validations)
         if self.optional:
@@ -137,7 +140,7 @@ class UUIDParameter(TypedParameter):
     validations = {"type": [str, UUID], "uuid": None}
 
     def _get_enforcer_pool(self, enforcers: EnforcerPool | None) -> EnforcerPool:
-        """Updates validations enforcers with base enforcer instances."""
+        """Updates incoming enforcers with base enforcer instances."""
 
         validations = deepcopy(self.validations)
         if self.optional:
