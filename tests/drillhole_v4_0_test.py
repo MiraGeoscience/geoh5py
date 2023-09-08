@@ -354,7 +354,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
 
         well_b_data.values = np.random.randn(from_to_b.shape[0])
 
-    with well.workspace.open() as workspace:
+    with well.workspace.open(mode="r") as workspace:
         # Check entities
         compare_entities(
             well,
