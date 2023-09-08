@@ -17,13 +17,18 @@
 
 from __future__ import annotations
 
+from collections import UserDict
 from copy import deepcopy
-from typing import Any, cast
+from typing import Any, Dict, cast
 from uuid import UUID
 
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
-from geoh5py.shared.exceptions import RequiredValidationError
+from geoh5py.shared.exceptions import (
+    AggregateValidationError,
+    BaseValidationError,
+    RequiredValidationError,
+)
 from geoh5py.shared.validators import (
     AssociationValidator,
     AtLeastOneValidator,
@@ -37,6 +42,35 @@ from geoh5py.shared.validators import (
     ValueValidator,
 )
 from geoh5py.ui_json.utils import requires_value
+
+Validation = Dict[str, Any]
+
+
+class Validations(UserDict):
+    @property
+    def validators(self) -> list[BaseValidator] | None:
+        validators = []
+        for validator in BaseValidator.__subclasses__():
+            if validator.validator_type in self.data:
+                validators.append(validator)
+
+        return validators  # type: ignore
+
+    def validate(self, name: str, value: Any):
+        if not self.data:
+            raise AttributeError("Must set validations before calling validate.")
+
+        error_list = []
+        for validator in self.validators:  # type: ignore
+            try:
+                validator.validate(name, value, self.data[validator.validator_type])
+            except BaseValidationError as err:
+                error_list.append(err)
+
+        if error_list:
+            if len(error_list) > 1:
+                raise AggregateValidationError(name, error_list)
+            raise error_list.pop()
 
 
 class InputValidation:

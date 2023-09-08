@@ -30,6 +30,7 @@ from geoh5py.workspace import Workspace
 
 def test_create_property_group(tmp_path):
     #  pylint: disable=too-many-locals
+    # pylint: disable=too-many-statements
 
     h5file_path = tmp_path / r"prop_group_test.geoh5"
 
@@ -60,7 +61,10 @@ def test_create_property_group(tmp_path):
 
         # test properties group
         curve2 = curve.copy()
+
         prop_group2 = curve2.find_or_create_property_group(name="myGroup2")
+
+        _ = curve2.copy()
 
         assert prop_group2.remove_properties("bidon") is None
 
@@ -144,6 +148,7 @@ def test_create_property_group(tmp_path):
         # assert workspace.get_entity("myGroup")[0].uid == property_group_test.uid
 
         rec_object = workspace.get_entity(curve.uid)[0]
+
         # Read the property_group back in
         rec_prop_group = rec_object.find_or_create_property_group(name="myGroup")
 
@@ -153,6 +158,7 @@ def test_create_property_group(tmp_path):
             for attr in attrs.values()
             if getattr(rec_prop_group, attr) != getattr(prop_group, attr)
         ]
+
         assert (
             len(check_list) == 0
         ), f"Attribute{check_list} of PropertyGroups in output differ from input"
