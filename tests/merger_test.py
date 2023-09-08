@@ -23,8 +23,8 @@ import pytest
 from geoh5py.data import Data
 from geoh5py.groups import PropertyGroup
 from geoh5py.objects import Points, Surface
+from geoh5py.shared.merging import PointsMerger
 from geoh5py.shared.merging.base import BaseMerger
-from geoh5py.shared.merging.points import PointsMerger
 from geoh5py.workspace import Workspace
 
 
