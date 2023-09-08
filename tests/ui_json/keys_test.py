@@ -15,7 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from geoh5py.ui_json import MemberKeys
+from geoh5py.ui_json.forms import MemberKeys
 
 
 def test_keys():
