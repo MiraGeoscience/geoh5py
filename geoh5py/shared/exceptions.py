@@ -43,6 +43,42 @@ class BaseValidationError(ABC, Exception):
         raise NotImplementedError()
 
 
+class JSONParameterValidationError(Exception):
+    """Error on uuid validation."""
+
+    def __init__(self, name: str, err: str):
+        super().__init__(JSONParameterValidationError.message(name, err))
+
+    @staticmethod
+    def message(name, err):
+        return f"Malformed ui.json dictionary for parameter '{name}'. {err}"
+
+
+class UIJsonFormatError(BaseValidationError):
+    def __init__(self, name, msg):
+        super().__init__(f"Invalid UIJson format for parameter '{name}'. {msg}")
+
+    @staticmethod
+    def message(name, value, validation):
+        pass
+
+
+class AggregateValidationError(BaseValidationError):
+    def __init__(
+        self,
+        name: str,
+        value: list[BaseValidationError],
+    ):
+        super().__init__(AggregateValidationError.message(name, value))
+
+    @staticmethod
+    def message(name, value, validation=None):
+        msg = f"\n\nValidation of '{name}' collected {len(value)} errors:\n"
+        for i, err in enumerate(value):
+            msg += f"\t{i}. {str(err)}\n"
+        return msg
+
+
 class OptionalValidationError(BaseValidationError):
     """Error if None value provided to non-optional parameter."""
 
@@ -114,7 +150,9 @@ class RequiredValidationError(BaseValidationError):
 class ShapeValidationError(BaseValidationError):
     """Error on shape validation."""
 
-    def __init__(self, name: str, value: tuple[int], validation: tuple[int] | str):
+    def __init__(
+        self, name: str, value: tuple[int, ...], validation: tuple[int, ...] | str
+    ):
         super().__init__(ShapeValidationError.message(name, value, validation))
 
     @staticmethod
@@ -160,14 +198,3 @@ class ValueValidationError(BaseValidationError):
         return f"Value '{value}' provided for '{name}' is invalid." + iterable_message(
             validation
         )
-
-
-class JSONParameterValidationError(Exception):
-    """Error on uuid validation."""
-
-    def __init__(self, name: str, err: str):
-        super().__init__(JSONParameterValidationError.message(name, err))
-
-    @staticmethod
-    def message(name, err):
-        return f"Malformed ui.json dictionary for parameter '{name}'. {err}"
