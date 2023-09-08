@@ -24,5 +24,6 @@ class PointsMerger(BaseMerger):
 
     @classmethod
     def validate_type(cls, input_entity):
-        if not isinstance(input_entity, cls._type):
+        # want to make sure that the input entities are Points, no subclasses
+        if type(input_entity) is not cls._type:  # pylint: disable=unidiomatic-typecheck
             raise TypeError("The input entities must be a list of geoh5py Points.")

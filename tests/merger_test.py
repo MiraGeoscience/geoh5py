@@ -18,16 +18,20 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from geoh5py.data import Data
-from geoh5py.objects import Points
+from geoh5py.groups import PropertyGroup
+from geoh5py.objects import Points, Surface
+from geoh5py.shared.merging.base import BaseMerger
 from geoh5py.shared.merging.points import PointsMerger
 from geoh5py.workspace import Workspace
 
-# import pytest
 
-
-def test_merge_point_data(tmp_path):
+def test_merge_point_data_unique_entity(tmp_path):
+    """
+    Test the optimal scenario where all the data entity type is unique in the objects.
+    """
     h5file_path = tmp_path / r"testPoints.geoh5"
     points = []
     data = []
@@ -35,6 +39,8 @@ def test_merge_point_data(tmp_path):
         points.append(
             Points.create(workspace, vertices=np.random.randn(10, 3), allow_move=False)
         )
+
+        test = PropertyGroup(parent=points[0], name="test")
 
         data.append(
             points[0].add_data(
@@ -58,17 +64,6 @@ def test_merge_point_data(tmp_path):
             )
         )
 
-        data.append(
-            points[0].add_data(
-                {
-                    "DataValues2": {
-                        "association": "VERTEX",
-                        "values": np.random.randn(10),
-                    }
-                }
-            )
-        )
-
         entity_type = data[0].entity_type
 
         points.append(
@@ -77,7 +72,7 @@ def test_merge_point_data(tmp_path):
         data.append(
             points[1].add_data(
                 {
-                    "DataValues3": {
+                    "DataValues2": {
                         "association": "VERTEX",
                         "values": np.random.randn(10),
                         "entity_type": entity_type,
@@ -88,7 +83,7 @@ def test_merge_point_data(tmp_path):
         data.append(
             points[1].add_data(
                 {
-                    "DataValues4": {
+                    "DataValues3": {
                         "association": "VERTEX",
                         "values": np.random.randn(10),
                     }
@@ -115,7 +110,7 @@ def test_merge_point_data(tmp_path):
         )
 
         np.testing.assert_almost_equal(
-            merged_data[0], np.hstack((data[0].values, data[3].values))
+            merged_data[0], np.hstack((data[0].values, data[2].values))
         )
 
         np.testing.assert_almost_equal(
@@ -123,5 +118,272 @@ def test_merge_point_data(tmp_path):
         )
 
         np.testing.assert_almost_equal(
-            merged_data[2], np.hstack((data[2].values, nan_array))
+            merged_data[2], np.hstack((nan_array, data[3].values))
         )
+
+
+def test_merge_point_data_unique_entity_name(tmp_path):
+    """
+    Test the suboptimal scenario where all the data pairs of entity type
+        and name is unique in the objects.
+    """
+    h5file_path = tmp_path / r"testPoints.geoh5"
+    points = []
+    data = []
+    with Workspace.create(h5file_path) as workspace:
+        points.append(
+            Points.create(workspace, vertices=np.random.randn(10, 3), allow_move=False)
+        )
+
+        data.append(
+            points[0].add_data(
+                {
+                    "DataValues": {
+                        "association": "VERTEX",
+                        "values": np.random.randn(10),
+                    }
+                }
+            )
+        )
+
+        entity_type = data[0].entity_type
+
+        data.append(
+            points[0].add_data(
+                {
+                    "DataValues1": {
+                        "association": "VERTEX",
+                        "values": np.random.randn(10),
+                        "entity_type": entity_type,
+                    }
+                }
+            )
+        )
+
+        points.append(
+            Points.create(workspace, vertices=np.random.randn(10, 3), allow_move=False)
+        )
+
+        data.append(
+            points[1].add_data(
+                {
+                    "DataValues": {
+                        "association": "VERTEX",
+                        "values": np.random.randn(10),
+                        "entity_type": entity_type,
+                    }
+                }
+            )
+        )
+        data.append(
+            points[1].add_data(
+                {
+                    "DataValues3": {
+                        "association": "VERTEX",
+                        "values": np.random.randn(10),
+                    }
+                }
+            )
+        )
+
+        test = PointsMerger.merge_objects(points)
+
+        nan_array = np.empty(10)
+        nan_array[:] = np.nan
+
+        # sort the dictionary by its keys
+        merged_data = list(
+            dict(
+                sorted(
+                    {
+                        child.name: child.values
+                        for child in test.children
+                        if isinstance(child, Data)
+                    }.items()
+                )
+            ).values()
+        )
+
+        np.testing.assert_almost_equal(
+            merged_data[1], np.hstack((data[0].values, data[2].values))
+        )
+
+        np.testing.assert_almost_equal(
+            merged_data[2], np.hstack((data[1].values, nan_array))
+        )
+
+        np.testing.assert_almost_equal(
+            merged_data[0], np.hstack((nan_array, data[3].values))
+        )
+
+
+def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
+    """
+    Test the wost case scenario where data inside objects are not uniques.
+    """
+    h5file_path = tmp_path / r"testPoints.geoh5"
+    points = []
+    data = []
+    with Workspace.create(h5file_path) as workspace:
+        points.append(
+            Points.create(workspace, vertices=np.random.randn(10, 3), allow_move=False)
+        )
+
+        data.append(
+            points[0].add_data(
+                {
+                    "DataValues": {
+                        "association": "VERTEX",
+                        "values": np.random.randn(10),
+                    }
+                }
+            )
+        )
+
+        entity_type = data[0].entity_type
+
+        data.append(
+            points[0].add_data(
+                {
+                    "DataValues": {
+                        "association": "VERTEX",
+                        "values": np.random.randn(10),
+                        "entity_type": entity_type,
+                    }
+                }
+            )
+        )
+
+        points.append(
+            Points.create(workspace, vertices=np.random.randn(10, 3), allow_move=False)
+        )
+
+        data.append(
+            points[1].add_data(
+                {
+                    "DataValues": {
+                        "association": "VERTEX",
+                        "values": np.random.randn(10),
+                        "entity_type": entity_type,
+                    }
+                }
+            )
+        )
+        data.append(
+            points[1].add_data(
+                {
+                    "DataValues3": {
+                        "association": "VERTEX",
+                        "values": np.random.randn(10),
+                    }
+                }
+            )
+        )
+
+        test = PointsMerger.merge_objects(points)
+
+        nan_array = np.empty(10)
+        nan_array[:] = np.nan
+
+        # sort the dictionary by its keys
+        merged_data = list(
+            dict(
+                sorted(
+                    {
+                        child.name: child.values
+                        for child in test.children
+                        if isinstance(child, Data)
+                    }.items()
+                )
+            ).values()
+        )
+
+        np.testing.assert_almost_equal(
+            merged_data[0], np.hstack((nan_array, data[3].values))
+        )
+
+        np.testing.assert_almost_equal(
+            merged_data[1], np.hstack((data[0].values, nan_array))
+        )
+
+        np.testing.assert_almost_equal(
+            merged_data[2], np.hstack((data[1].values, nan_array))
+        )
+
+        np.testing.assert_almost_equal(
+            merged_data[3], np.hstack((nan_array, data[2].values))
+        )
+
+
+def test_merge_attribute_error(tmp_path):
+    h5file_path = tmp_path / r"testPoints.geoh5"
+    points = []
+    data = []
+    with Workspace.create(h5file_path) as workspace:
+        points.append(
+            Points.create(workspace, vertices=np.random.randn(10, 3), allow_move=False)
+        )
+
+        data.append(
+            points[0].add_data(
+                {
+                    "DataValues": {
+                        "association": "VERTEX",
+                        "values": np.random.randn(10),
+                    }
+                }
+            )
+        )
+
+        entity_type = data[0].entity_type
+
+        points.append(
+            Points.create(workspace, vertices=np.random.randn(10, 3), allow_move=False)
+        )
+
+        data.append(
+            points[1].add_data(
+                {
+                    "DataValues": {
+                        "association": "CELL",
+                        "values": np.random.randn(10),
+                        "entity_type": entity_type,
+                    }
+                }
+            )
+        )
+
+        with pytest.raises(
+            ValueError, match="Cannot merge data with different associations"
+        ):
+            _ = PointsMerger.merge_objects(points)
+
+        with pytest.raises(TypeError, match="The input entities must be a list"):
+            _ = PointsMerger.merge_objects("bidon")
+
+        with pytest.raises(ValueError, match="Need more than one object"):
+            _ = PointsMerger.merge_objects([points[0]])
+
+        surface = Surface(
+            workspace,
+            vertices=np.random.randn(10, 3),
+        )
+
+        with pytest.raises(TypeError, match="All objects must be of"):
+            _ = PointsMerger.merge_objects([points[0], surface])
+
+        surface2 = Surface(
+            workspace,
+            vertices=np.random.randn(10, 3),
+        )
+
+        with pytest.raises(TypeError, match="The input entities must be a list"):
+            _ = PointsMerger.merge_objects([surface, surface2])
+
+        with pytest.raises(NotImplementedError, match="BaseMerger cannot be used"):
+            _ = BaseMerger.validate_type(surface)
+
+        points[0] = Points(workspace)
+
+        with pytest.raises(AttributeError, match="All entities must have vertices"):
+            _ = PointsMerger.merge_objects(points)

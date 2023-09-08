@@ -16,7 +16,7 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import ABC, abstractmethod
-from warnings import warn
+from typing import cast
 
 import numpy as np
 
@@ -42,13 +42,9 @@ class BaseMerger(ABC):
         """
 
         # extract the data from the input entities
-        previous, nb_keys, using_itself = 0, 1, False
+        id_, previous, nb_keys = 0, 0, 1
         all_data, unique_entity_types = [], []
         for input_entity in input_entities:
-            if not isinstance(input_entity.n_vertices, int):
-                warn(f"Entity '{input_entity.name}' has no vertices.")
-                continue
-
             entity_unique_entity_types = []
 
             for data in input_entity.children:
@@ -58,37 +54,37 @@ class BaseMerger(ABC):
                 all_data.append(
                     [
                         data.values,
-                        (data.entity_type, data.name),
+                        (data.entity_type, data.name, id_),
                         data.association,
                         previous,
-                        previous + input_entity.n_vertices,
+                        previous + cast(int, input_entity.n_vertices),
                     ]
                 )
                 entity_unique_entity_types.append((data.entity_type, data.name))
+                unique_entity_types.append((data.entity_type, data.name, id_))
+                id_ += 1
 
             # define how to define the entity_type
-            unique_entity_types.extend(entity_unique_entity_types)
-
-            if not using_itself and len(
+            if nb_keys != 3 and len(
                 list({unitype[:nb_keys] for unitype in entity_unique_entity_types})
             ) != len(entity_unique_entity_types):
+                nb_keys = 2
                 if len(list(set(entity_unique_entity_types))) != len(
                     entity_unique_entity_types
                 ):
-                    using_itself = True
-                nb_keys = 2
+                    nb_keys = 3
 
-            previous += input_entity.n_vertices
+            previous += cast(int, input_entity.n_vertices)
 
         # create an intermediate array
         all_data = np.array(all_data, dtype=object)
 
         # prepare the attributes
-        if not using_itself:
-            unique_entity_types = list(
-                {entity_type[:nb_keys] for entity_type in unique_entity_types}  # type: ignore
+        unique_entity_types = list(
+            dict.fromkeys(
+                [entity_type[:nb_keys] for entity_type in unique_entity_types]  # type: ignore
             )
-
+        )
         unique_associations: dict = {
             entity_type: [] for entity_type in unique_entity_types
         }
@@ -113,7 +109,15 @@ class BaseMerger(ABC):
                     f"Cannot merge data with different associations: {set(association)}"
                 )
 
-            add_data_dict[f"merged_{unique_entity_types[id_][0].name}"] = {
+            # define the name
+            if nb_keys == 3:
+                name = f"merged_{unique_entity_types[id_][0].name}_{id_}"
+            elif nb_keys == 2:
+                name = f"merged_{unique_entity_types[id_][0].name}_{unique_entity_types[id_][1]}"
+            else:
+                name = f"merged_{unique_entity_types[id_][0].name}"
+
+            add_data_dict[name] = {
                 "association": association[0],
                 "values": data,
                 "entity_type": unique_entity_types[id_][0],
@@ -180,10 +184,17 @@ class BaseMerger(ABC):
 
         # assert input entities are of the same type
         if not all(
-            isinstance(input_entity, type(input_entities[0]))
+            type(input_entity) is type(input_entities[0])
             for input_entity in input_entities
         ):
-            raise TypeError("The input entities must be of the same type.")
+            raise TypeError("All objects must be of the same type.")
 
         # assert input entities are of the same type
         cls.validate_type(input_entities[0])
+
+        # verify if the all input entities have vertices
+        if not all(
+            isinstance(input_entity.vertices, np.ndarray)
+            for input_entity in input_entities
+        ):
+            raise AttributeError("All entities must have vertices.")
