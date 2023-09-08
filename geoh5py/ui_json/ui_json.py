@@ -17,6 +17,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from geoh5py.ui_json.forms import FormParameter
 from geoh5py.ui_json.parameters import Parameter
 
@@ -27,15 +29,15 @@ class UIJson:  # pylint: disable=too-few-public-methods
     def __init__(self, parameters):
         self.parameters: list[Parameter | FormParameter] = parameters
 
-    def to_dict(self, naming="snake"):
+    def to_dict(self, naming: str = "snake") -> dict[str, Any]:
         """
-        Returns a dictionary of key and value/form for each parameter.
+        Returns a dictionary of name and value/form for each parameter.
 
         :param naming: Uses KEY_MAP to convert python names to camel case
             for writing to file.
         """
 
-        def get_data(param):
+        def get_data(param: Parameter | FormParameter):
             return param.form(naming) if hasattr(param, "form") else param.value
 
         out = {}
