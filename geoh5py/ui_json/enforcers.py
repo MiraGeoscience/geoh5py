@@ -31,6 +31,13 @@ from geoh5py.shared.exceptions import (
 
 
 class EnforcerPool:
+    """
+    Validate values on a collection of enforcers.
+
+    :param name: Name of parameter.
+    :param enforcers: List (pool) of enforcers.
+    """
+
     def __init__(self, name: str, enforcers: list[Enforcer] | None = None):
         self.name = name
         self.enforcers = enforcers or []
@@ -40,13 +47,26 @@ class EnforcerPool:
     def from_validations(
         cls, name: str, validations: dict[str, Any], protected: list[str] | None = None
     ):
-        """Create enforcers pool from validations."""
+        """
+        Create enforcers pool from validations.
+
+        :param name: Name of parameter.
+        :param validations: Encodes validations as enforcer type and
+            validation key value pairs.
+        """
         enforcers = cls(name)
         enforcers.update(validations, protected)
         return enforcers
 
     def update(self, validations: dict[str, Any], protected: list[str] | None = None):
-        """Create enforcers pool from name/validation dictionary."""
+        """
+        Create enforcers pool from name/validation dictionary.
+
+        :param validations: Encodes validations as enforcer type and
+            validation key value pairs.
+        :param protected: Excludes listed enforcer types from updating
+
+        """
         protected = protected or []
         enforcers = [k for k in self.enforcers if k.enforcer_type in protected]
         for name, validation in validations.items():

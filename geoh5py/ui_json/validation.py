@@ -23,11 +23,7 @@ from uuid import UUID
 
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
-from geoh5py.shared.exceptions import (
-    AggregateValidationError,
-    BaseValidationError,
-    RequiredValidationError,
-)
+from geoh5py.shared.exceptions import RequiredValidationError
 from geoh5py.shared.validators import (
     AssociationValidator,
     AtLeastOneValidator,
@@ -40,41 +36,9 @@ from geoh5py.shared.validators import (
     UUIDValidator,
     ValueValidator,
 )
-from geoh5py.ui_json.enforcers import Enforcer
 from geoh5py.ui_json.utils import requires_value
 
 Validation = Dict[str, Any]
-
-
-class Validations:  # pylint: disable=too-few-public-methods
-    """Validate data from a set of rule enforcers."""
-
-    def __init__(self, name: str, enforcers: list[Enforcer]):
-        self.name: str = name
-        self.enforcers: list[Enforcer] = enforcers
-        self.errors: list[BaseValidationError] = []
-
-    def validate(self, value: Any):
-        """Validate value against all enforcers."""
-
-        for enforcer in self.enforcers:
-            self._capture_error(enforcer, value)
-
-        self._raise_errors()
-
-    def _capture_error(self, enforcer: Enforcer, value: Any):
-        """Catch 'BaseValidationError' and return error."""
-        try:
-            enforcer.enforce(self.name, value)
-        except BaseValidationError as err:
-            self.errors.append(err)
-
-    def _raise_errors(self):
-        """Raise errors if any exist, aggregate if more than one."""
-        if self.errors:
-            if len(self.errors) > 1:
-                raise AggregateValidationError(self.name, self.errors)
-            raise self.errors.pop()
 
 
 class InputValidation:
