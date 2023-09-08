@@ -57,22 +57,32 @@ class FormParameter:
     Base class for parameters that create visual ui elements from a form.
 
     :param name: Parameter name.
-    :param value: The parameters value.
-    :param validations: Parameter validations
-    :param form_validations: Parameter's form validations
-    :param form: dictionary specifying visual characteristics of a ui element.
-    :param active: list of form members to include in form.
-        valid form.
+    :param label: Label for ui element.
+    :param value: The parameter's value.
+    :param enabled: If False, ui element is rendered grey and value is
+        treated as None.
+    :param optional: If True, ui element is rendered with a checkbox to
+        control the enabled state.
+    :param group_optional: If True, ui group is rendered with a checkbox
+        that control the enabled state of all group members.
+    :param main: Controls whether ui element will render in the general
+        parameters tab (True) or optional parameters (False).
+    :param group: Grouped ui elements will be rendered within a named
+        box.
+    :param dependency: Name of parameter that controls the enabled or
+        visible state of the ui element.
+    :param dependency_type: Controls whether the ui element is enabled
+        or visible when the dependency is enabled if optional or True
+        if a bool type.
+    :param group_dependency: Name of parameter that controls the enabled
+        or visible state of the ui group.
+    :param group_dependency_type: Controls whether the ui group is
+        enabled or visible when the group dependency is enabled if
+        optional or True if a bool type.
+    :param tooltip: String rendered on hover over ui element.
 
-    :note: Can be constructed from keyword arguments of through the
-        'from_dict' constructor.
-
-    :note: The form members may be updated with a dictionary of members and
-        associated data through the 'register' method.
-
-    :note: Standardized form members (in valid_members list) will also
-        be accessible through a descriptor that sets/gets the underlying
-        values attribute of the private Parameter object.
+    :note: Standardized form members are accessible through public namespace
+        by way of the ValueAccess descriptor.
     """
 
     identifier_members: list[str] = []
@@ -104,8 +114,12 @@ class FormParameter:
         if kwargs:
             self.register(kwargs)
 
-    def form(self, use_camel=False):
-        """Returns dictionary of active form members and their values."""
+    def form(self, use_camel=False) -> dict[str, Any]:
+        """
+        Returns dictionary of active form members and their values.
+
+        :param use_camel: If True, keys are converted to camel case.
+        """
         form = {}
         for member in self.active:
             if member in self._extra_members:
@@ -120,11 +134,9 @@ class FormParameter:
 
     def register(self, members: dict[str, Any]):
         """
-        Set parameters from form members with default or incoming values.
+        Update form members with incoming values.
 
         :param members: Dictionary of form members and associated data.
-
-        :return: Dictionary of unrecognized members and data.
         """
 
         error_list = []
@@ -145,6 +157,7 @@ class FormParameter:
 
     @property
     def valid_members(self) -> list[str]:
+        """Recognized form member names."""
         exclusions = ["_extra_members", "_active_members"]
         private_attrs = [k for k in self.__dict__ if k.startswith("_")]
         return [k[1:] for k in private_attrs if k not in exclusions]
@@ -174,7 +187,7 @@ class FormParameter:
     def value(self):
         return self._value.value
 
-    def _set_value_parameter(self, value):
+    def _set_value_parameter(self, value) -> Parameter:
         """Handles value argument as either a Parameter or a value."""
 
         if isinstance(value, Parameter):
@@ -186,6 +199,7 @@ class FormParameter:
         return out
 
     def _allow_values_access(self):
+        """Valid members public attr accesses underlying parameter value."""
         for member in self.valid_members:
             if member not in dir(self):
                 setattr(self.__class__, member, ValueAccess(f"_{member}"))
@@ -267,7 +281,15 @@ class ChoiceStringFormParameter(FormParameter):
         value = StringListParameter("value", value=value, enforcers=enforcers)
         super().__init__(name, value=value, **kwargs)
 
-    def _add_value_enforcer(self, choice_list: list, enforcers: EnforcerPool | None):
+    def _add_value_enforcer(
+        self, choice_list: list, enforcers: EnforcerPool | None
+    ) -> EnforcerPool:
+        """
+        Updates enforcer pool to ensure parameter value in choice_list.
+
+        :param choice_list: list of ui element choices used for validation.
+        :param enforcers: Existing enforcer pool to update.
+        """
         if enforcers is not None:
             enforcers.enforcers.append(ValueEnforcer(choice_list))
         else:
@@ -396,6 +418,7 @@ class DataValueFormParameter(FormParameter):
 
     @property
     def value(self):
+        """Form value is value of property when is_value is False."""
         val = self.property
         if self.is_value:
             val = self._value.value
