@@ -57,7 +57,7 @@ class MemberKeys:
         """Gives the inverse map to camel_to_snake."""
         return {v: k for k, v in self.camel_to_snake.items()}
 
-    def _map_single(self, key: str, convention: str = "snake"):
+    def map_key(self, key: str, convention: str = "snake"):
         """Map a string from snake to camel or vice versa."""
 
         if convention == "snake":
@@ -71,7 +71,7 @@ class MemberKeys:
 
     def map(self, collection: dict[str, Any], convention="snake"):
         """Map a dictionary from snake to camel or vice versa."""
-        return {self._map_single(k, convention): v for k, v in collection.items()}
+        return {self.map_key(k, convention): v for k, v in collection.items()}
 
 
 MEMBER_KEYS = MemberKeys()
@@ -249,6 +249,9 @@ class FormParameter:
 
     def __str__(self):
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
+
+    def __contains__(self, item):
+        return MEMBER_KEYS.map_key(item) in self.active
 
 
 class StringFormParameter(FormParameter):
