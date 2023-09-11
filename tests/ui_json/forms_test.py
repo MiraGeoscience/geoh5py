@@ -76,6 +76,18 @@ def test_form_parameter_active():
     assert param.active == ["value", "enabled"]
 
 
+def test_form_parameter_contains():
+    param = FormParameter(
+        "my_param", value=StringParameter("value", "this"), label="my param", extra=1
+    )
+    assert "value" in param
+    assert "label" in param
+    assert "extra" in param
+    assert "group" not in param
+    param.group = "my group"
+    assert "group" in param
+
+
 def test_form_parameter_defaults():
     param = FormParameter("my_param")
     assert param.enabled  # pylint: disable=no-member
