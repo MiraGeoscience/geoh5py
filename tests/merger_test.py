@@ -24,7 +24,6 @@ from geoh5py.data import Data
 from geoh5py.groups import PropertyGroup
 from geoh5py.objects import Points, Surface
 from geoh5py.shared.merging import PointsMerger
-from geoh5py.shared.merging.base import BaseMerger
 from geoh5py.workspace import Workspace
 
 
@@ -37,7 +36,12 @@ def test_merge_point_data_unique_entity(tmp_path):
     data = []
     with Workspace.create(h5file_path) as workspace:
         points.append(
-            Points.create(workspace, vertices=np.random.randn(10, 3), allow_move=False)
+            Points.create(
+                workspace,
+                name="points1",
+                vertices=np.random.randn(10, 3),
+                allow_move=False,
+            )
         )
 
         test = PropertyGroup(parent=points[0], name="test")
@@ -67,7 +71,12 @@ def test_merge_point_data_unique_entity(tmp_path):
         entity_type = data[0].entity_type
 
         points.append(
-            Points.create(workspace, vertices=np.random.randn(10, 3), allow_move=False)
+            Points.create(
+                workspace,
+                name="points2",
+                vertices=np.random.randn(10, 3),
+                allow_move=False,
+            )
         )
         data.append(
             points[1].add_data(
@@ -91,7 +100,7 @@ def test_merge_point_data_unique_entity(tmp_path):
             )
         )
 
-        test = PointsMerger.merge_objects(points)
+        test = PointsMerger.merge_objects(workspace, points)
 
         nan_array = np.empty(10)
         nan_array[:] = np.nan
@@ -186,7 +195,7 @@ def test_merge_point_data_unique_entity_name(tmp_path):
             )
         )
 
-        test = PointsMerger.merge_objects(points)
+        test = PointsMerger.merge_objects(workspace, points)
 
         nan_array = np.empty(10)
         nan_array[:] = np.nan
@@ -280,7 +289,7 @@ def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
             )
         )
 
-        test = PointsMerger.merge_objects(points)
+        test = PointsMerger.merge_objects(workspace, points)
 
         nan_array = np.empty(10)
         nan_array[:] = np.nan
@@ -356,13 +365,13 @@ def test_merge_attribute_error(tmp_path):
         with pytest.raises(
             ValueError, match="Cannot merge data with different associations"
         ):
-            _ = PointsMerger.merge_objects(points)
+            _ = PointsMerger.merge_objects(workspace, points)
 
         with pytest.raises(TypeError, match="The input entities must be a list"):
-            _ = PointsMerger.merge_objects("bidon")
+            _ = PointsMerger.merge_objects(workspace, "bidon")
 
         with pytest.raises(ValueError, match="Need more than one object"):
-            _ = PointsMerger.merge_objects([points[0]])
+            _ = PointsMerger.merge_objects(workspace, [points[0]])
 
         surface = Surface(
             workspace,
@@ -370,7 +379,7 @@ def test_merge_attribute_error(tmp_path):
         )
 
         with pytest.raises(TypeError, match="All objects must be of"):
-            _ = PointsMerger.merge_objects([points[0], surface])
+            _ = PointsMerger.merge_objects(workspace, [points[0], surface])
 
         surface2 = Surface(
             workspace,
@@ -378,12 +387,30 @@ def test_merge_attribute_error(tmp_path):
         )
 
         with pytest.raises(TypeError, match="The input entities must be a list"):
-            _ = PointsMerger.merge_objects([surface, surface2])
-
-        with pytest.raises(NotImplementedError, match="BaseMerger cannot be used"):
-            _ = BaseMerger.validate_type(surface)
+            _ = PointsMerger.merge_objects(workspace, [surface, surface2])
 
         points[0] = Points(workspace)
 
         with pytest.raises(AttributeError, match="All entities must have vertices"):
-            _ = PointsMerger.merge_objects(points)
+            _ = PointsMerger.merge_objects(workspace, points)
+
+        point = Points.create(
+            workspace,
+            vertices=np.random.randn(10, 3),
+            allow_move=False,
+            name="visual parameter",
+        )
+
+        point.add_data(
+            {
+                "Visual Parameters": {
+                    "association": "VERTEX",
+                    "values": np.random.randn(10),
+                }
+            }
+        )
+
+        res = PointsMerger.extract_data_information([point])
+
+        assert (res[0] == np.array([], dtype=object)).all()
+        assert res[1:] == ([], 10, 1)
