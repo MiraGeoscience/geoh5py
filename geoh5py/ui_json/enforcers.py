@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-import uuid
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -33,6 +32,7 @@ from geoh5py.shared.exceptions import (
     UUIDValidationError,
     ValueValidationError,
 )
+from geoh5py.shared.utils import is_uuid
 
 
 class EnforcerPool:
@@ -292,13 +292,7 @@ class UUIDEnforcer(Enforcer):
         if not isinstance(value, str):
             return False
 
-        try:
-            uuid.UUID(value)
-            is_uuid = True
-        except ValueError:
-            is_uuid = False
-
-        return is_uuid
+        return is_uuid(value)
 
 
 class RequiredEnforcer(Enforcer):
