@@ -150,7 +150,8 @@ class BaseMerger(ABC):
     def merge_data(cls, input_entities: list[ObjectBase]) -> dict[str, dict]:
         """
         Merge the data respecting the entity type, the values, and the association.
-        :param input_entities: the list of objects to merge the data from.
+       
+         :param input_entities: the list of objects to merge the data from.
         :return: a dictionary of data to add to the merged object.
         """
 
