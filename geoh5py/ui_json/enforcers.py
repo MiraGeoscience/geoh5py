@@ -239,7 +239,7 @@ class TypeEnforcer(Enforcer):
 
 class ValueEnforcer(Enforcer):
     """
-    Enforces restricted value choice.
+    Enforces restricted value choices.
 
     :param validations: Valid parameter value(s).
     :raises ValueValidationError: If value is not a valid value
@@ -303,7 +303,7 @@ class UUIDEnforcer(Enforcer):
 
 class RequiredEnforcer(Enforcer):
     """
-    Enforces required items exist in a collection.
+    Enforces required items in a collection.
 
     :param validations: items that are required in the
         collection.
