@@ -275,5 +275,6 @@ class BaseMerger(ABC):
     def validate_type(cls, input_entity: ObjectBase):
         """
         Validate the type of the input entity.
+
         :param input_entity: the input entity to validate.
         """
