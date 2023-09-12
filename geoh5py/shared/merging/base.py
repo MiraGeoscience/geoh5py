@@ -30,7 +30,7 @@ class BaseMerger(ABC):
     _type: type = ObjectBase
 
     @classmethod
-    def compute_nb_keys(cls, entity_unique_entity_types: list, nb_keys: int) -> int:
+    def number_of_keys(cls, type_list: list[entity_type], nb_keys: int) -> int:
         """
         Get the number of keys to use in the definition of the entity type.
         :param entity_unique_entity_types: the unique entity types generated
