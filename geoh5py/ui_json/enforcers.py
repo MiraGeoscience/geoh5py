@@ -127,8 +127,8 @@ class EnforcerPool:
 
         return enforcer
 
-    def validate(self, value: Any):
-        """Validate value against all enforcers."""
+    def enforce(self, value: Any):
+        """Enforce rules from all enforcers in the pool."""
 
         for enforcer in self.enforcers:
             self._capture_error(enforcer, value)
@@ -196,7 +196,7 @@ class Enforcer(ABC):
 
 class TypeEnforcer(Enforcer):
     """
-    Enforces type validation.
+    Enforces valid type(s).
 
     :param validations: Valid type(s) for parameter value.
     :raises TypeValidationError: If value is not a valid type.
@@ -239,7 +239,7 @@ class TypeEnforcer(Enforcer):
 
 class ValueEnforcer(Enforcer):
     """
-    Enforces value validation.
+    Enforces restricted value choice.
 
     :param validations: Valid parameter value(s).
     :raises ValueValidationError: If value is not a valid value
@@ -263,7 +263,7 @@ class ValueEnforcer(Enforcer):
 
 class UUIDEnforcer(Enforcer):
     """
-    Enforces uuid validation.
+    Enforces valid uuid string.
 
     :param validations: None is considered a valid uuid if
         validations is 'optional'.

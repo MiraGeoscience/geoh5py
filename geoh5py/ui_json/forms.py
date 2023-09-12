@@ -202,7 +202,7 @@ class FormParameter:
     def validate(self):
         """Validates data against the pool of enforcers."""
         enforcers = EnforcerPool.from_validations(self.name, self.validations)
-        enforcers.validate(self.form())
+        enforcers.enforce(self.form())
 
     @property
     def valid_members(self) -> list[str]:

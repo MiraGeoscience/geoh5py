@@ -67,7 +67,7 @@ class Parameter:
 
     def validate(self):
         """Validates data against the pool of enforcers."""
-        self._enforcers.validate(self.value)
+        self._enforcers.enforce(self.value)
 
     def __str__(self):
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
