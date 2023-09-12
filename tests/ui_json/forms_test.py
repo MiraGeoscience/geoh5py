@@ -19,7 +19,11 @@ import uuid
 
 import pytest
 
-from geoh5py.shared.exceptions import AggregateValidationError, TypeValidationError
+from geoh5py.shared.exceptions import (
+    AggregateValidationError,
+    RequiredFormMemberValidationError,
+    TypeValidationError,
+)
 from geoh5py.ui_json.enforcers import TypeEnforcer, UUIDEnforcer, ValueEnforcer
 from geoh5py.ui_json.forms import (
     BoolFormParameter,
@@ -135,6 +139,13 @@ def test_form_parameter_aggregate_member_validations():
         )
 
 
+def test_form_parameter_required_validations():
+    param = FormParameter("my_param")
+    msg = r"Form: 'my_param' is missing required member\(s\): \['label'\]."
+    with pytest.raises(RequiredFormMemberValidationError, match=msg):
+        param.validate()
+
+
 def test_form_parameter_roundtrip():
     form = {"label": "my param", "enabled": False, "extra": "stuff"}
     param = FormParameter("param", IntegerParameter("value", 1), **form)
@@ -184,6 +195,7 @@ def test_bool_form_parameter_construction():
         value=True,
         label="my param",
     )
+    param.validate()
     assert param.name == "my_param"
     assert param.value
     assert param.label == "my param"  # pylint: disable=no-member
@@ -280,6 +292,17 @@ def test_choice_string_form_parameter_validation():
         )
 
 
+def test_choice_string_form_required_members_validation():
+    param = ChoiceStringFormParameter(
+        "my_param",
+        label="my param",
+        value="onlythis",
+    )
+    msg = r"Form: 'my_param' is missing required member\(s\): \['choice_list'\]."
+    with pytest.raises(RequiredFormMemberValidationError, match=msg):
+        param.validate()
+
+
 def test_file_form_parameter_construction():
     param = FileFormParameter(
         "my_param",
@@ -303,6 +326,13 @@ def test_file_form_parameter_validation():
             "my_param",
             value=1,
         )
+
+
+def test_file_form_required_members_validation():
+    msg = r"Form: 'my_param' is missing required member\(s\): \['file_description', 'file_type'\]."
+    param = FileFormParameter("my_param", label="my param", value="my_file")
+    with pytest.raises(RequiredFormMemberValidationError, match=msg):
+        param.validate()
 
 
 def test_object_form_parameter_construction():
@@ -329,6 +359,18 @@ def test_object_form_parameter_validation():
             "my_param",
             value=1,
         )
+
+
+def test_object_form_required_members_validation():
+    new_uuid = str(uuid.uuid4())
+    param = ObjectFormParameter(
+        "my_param",
+        value=new_uuid,
+        label="my param",
+    )
+    msg = r"Form: 'my_param' is missing required member\(s\): \['mesh_type'\]."
+    with pytest.raises(RequiredFormMemberValidationError, match=msg):
+        param.validate()
 
 
 def test_data_form_parameter_construction():
@@ -360,6 +402,18 @@ def test_data_form_parameter_validation():
         )
 
 
+def test_data_form_required_member_validation():
+    new_uuid = str(uuid.uuid4())
+    param = DataFormParameter(
+        "my_param",
+        value=new_uuid,
+        label="my param",
+    )
+    msg = r"Form: 'my_param' is missing required member\(s\): \['parent', 'association', 'data_type'\]."
+    with pytest.raises(RequiredFormMemberValidationError, match=msg):
+        param.validate()
+
+
 def test_data_value_form_parameter_construction():
     new_uuid = str(uuid.uuid4())
     param = DataValueFormParameter(
@@ -384,3 +438,15 @@ def test_data_value_form_parameter_validation():
     msg += "Must be one of: 'int', 'float'."
     with pytest.raises(TypeValidationError, match=msg):
         _ = DataValueFormParameter("my_param", value="uh-oh", is_value=True)
+
+
+def test_data_value_form_required_member_validation():
+    param = DataValueFormParameter(
+        "my_param",
+        label="my param",
+        is_value=False,
+        value=1,
+    )
+    msg = r"Form: 'my_param' is missing required member\(s\): \['parent', 'association', 'data_type', 'property'\]."
+    with pytest.raises(RequiredFormMemberValidationError, match=msg):
+        param.validate()

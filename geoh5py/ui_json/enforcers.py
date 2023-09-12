@@ -24,6 +24,11 @@ from typing import Any
 from geoh5py.shared.exceptions import (
     AggregateValidationError,
     BaseValidationError,
+    InCollectionValidationError,
+    RequiredFormMemberValidationError,
+    RequiredObjectDataValidationError,
+    RequiredUIJsonParameterValidationError,
+    RequiredWorkspaceObjectValidationError,
     TypeValidationError,
     UUIDValidationError,
     ValueValidationError,
@@ -37,6 +42,17 @@ class EnforcerPool:
     :param name: Name of parameter.
     :param enforcers: List (pool) of enforcers.
     """
+
+    enforcer_types = [
+        "type",
+        "value",
+        "uuid",
+        "required",
+        "required_uijson_parameters",
+        "required_form_members",
+        "required_workspace_objects",
+        "required_object_data",
+    ]
 
     def __init__(self, name: str, enforcers: list[Enforcer] | None = None):
         self.name = name
@@ -88,14 +104,27 @@ class EnforcerPool:
         :param validation: Enforcer validation.
         """
 
-        if enforcer_type == "type":
-            return TypeEnforcer(validation)
-        if enforcer_type == "value":
-            return ValueEnforcer(validation)
-        if enforcer_type == "uuid":
-            return UUIDEnforcer(validation)
+        if enforcer_type not in self.enforcer_types:
+            raise ValueError(f"Invalid enforcer type: {validation['type']}")
 
-        raise ValueError(f"Invalid enforcer type: {validation['type']}")
+        if enforcer_type == "type":
+            enforcer = TypeEnforcer(validation)
+        if enforcer_type == "value":
+            enforcer = ValueEnforcer(validation)  # type: ignore
+        if enforcer_type == "uuid":
+            enforcer = UUIDEnforcer(validation)  # type: ignore
+        if enforcer_type == "required":
+            enforcer = RequiredEnforcer(validation)  # type: ignore
+        if enforcer_type == "required_uijson_parameters":
+            enforcer = RequiredUIJsonParameterEnforcer(validation)  # type: ignore
+        if enforcer_type == "required_form_members":
+            enforcer = RequiredFormMemberEnforcer(validation)  # type: ignore
+        if enforcer_type == "required_workspace_objects":
+            enforcer = RequiredWorkspaceObjectEnforcer(validation)  # type: ignore
+        if enforcer_type == "required_object_data":
+            enforcer = RequiredObjectDataEnforcer(validation)  # type: ignore
+
+        return enforcer
 
     def validate(self, value: Any):
         """Validate value against all enforcers."""
@@ -269,3 +298,52 @@ class UUIDEnforcer(Enforcer):
             is_uuid = False
 
         return is_uuid
+
+
+class RequiredEnforcer(Enforcer):
+    """
+    Enforces required items exist in a collection.
+
+    :param validations: items that are required in the
+        collection.
+    :raises InCollectionValidationError: If collection is missing one of
+        the required parameters/members.
+    """
+
+    enforcer_type = "required"
+    validation_error = InCollectionValidationError
+
+    def __init__(self, validations: list[str]):
+        super().__init__(validations)
+
+    def enforce(self, name: str, value: Any):
+        """Administers rule to check if valid uuid."""
+        if not self.rule(value):
+            raise self.validation_error(
+                name,
+                [k for k in self.validations if k not in value],
+            )
+
+    def rule(self, value: Any) -> bool:
+        """True if value is a valid uuid string."""
+        return all(k in value for k in self.validations)
+
+
+class RequiredUIJsonParameterEnforcer(RequiredEnforcer):
+    enforcer_type = "required_uijson_parameters"
+    validation_error = RequiredUIJsonParameterValidationError
+
+
+class RequiredFormMemberEnforcer(RequiredEnforcer):
+    enforcer_type = "required_form_members"
+    validation_error = RequiredFormMemberValidationError
+
+
+class RequiredWorkspaceObjectEnforcer(RequiredEnforcer):
+    enforcer_type = "required_workspace_objects"
+    validation_error = RequiredWorkspaceObjectValidationError
+
+
+class RequiredObjectDataEnforcer(RequiredEnforcer):
+    enforcer_type = "required_object_data"
+    validation_error = RequiredObjectDataValidationError

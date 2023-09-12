@@ -36,9 +36,9 @@ class Geoh5FileClosedError(ABC, Exception):
 class BaseValidationError(ABC, Exception):
     """Base class for custom exceptions."""
 
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def message(name, value, validation):
+    def message(cls, name, value, validation):
         """Builds custom error message."""
         raise NotImplementedError()
 
@@ -49,8 +49,8 @@ class JSONParameterValidationError(Exception):
     def __init__(self, name: str, err: str):
         super().__init__(JSONParameterValidationError.message(name, err))
 
-    @staticmethod
-    def message(name, err):
+    @classmethod
+    def message(cls, name, err):
         return f"Malformed ui.json dictionary for parameter '{name}'. {err}"
 
 
@@ -58,8 +58,8 @@ class UIJsonFormatError(BaseValidationError):
     def __init__(self, name, msg):
         super().__init__(f"Invalid UIJson format for parameter '{name}'. {msg}")
 
-    @staticmethod
-    def message(name, value, validation):
+    @classmethod
+    def message(cls, name, value, validation):
         pass
 
 
@@ -71,8 +71,8 @@ class AggregateValidationError(BaseValidationError):
     ):
         super().__init__(AggregateValidationError.message(name, value))
 
-    @staticmethod
-    def message(name, value, validation=None):
+    @classmethod
+    def message(cls, name, value, validation=None):
         msg = f"\n\nValidation of '{name}' collected {len(value)} errors:\n"
         for i, err in enumerate(value):
             msg += f"\t{i}. {str(err)}\n"
@@ -90,8 +90,8 @@ class OptionalValidationError(BaseValidationError):
     ):
         super().__init__(OptionalValidationError.message(name, value, validation))
 
-    @staticmethod
-    def message(name, value, validation):
+    @classmethod
+    def message(cls, name, value, validation):
         return f"Cannot set a None value to non-optional parameter: {name}."
 
 
@@ -106,8 +106,8 @@ class AssociationValidationError(BaseValidationError):
     ):
         super().__init__(AssociationValidationError.message(name, value, validation))
 
-    @staticmethod
-    def message(name, value, validation):
+    @classmethod
+    def message(cls, name, value, validation):
         return (
             f"Property '{name}' with value: '{value}' must be "
             f"a child entity of parent {validation}"
@@ -120,8 +120,8 @@ class PropertyGroupValidationError(BaseValidationError):
     def __init__(self, name: str, value: PropertyGroup, validation: str):
         super().__init__(PropertyGroupValidationError.message(name, value, validation))
 
-    @staticmethod
-    def message(name, value, validation):
+    @classmethod
+    def message(cls, name, value, validation):
         return (
             f"Property group for '{name}' must be of type '{validation}'. "
             f"Provided '{value.name}' of type '{value.property_group_type}'"
@@ -132,8 +132,8 @@ class AtLeastOneValidationError(BaseValidationError):
     def __init__(self, name: str, value: list[str]):
         super().__init__(AtLeastOneValidationError.message(name, value))
 
-    @staticmethod
-    def message(name, value, validation=None):
+    @classmethod
+    def message(cls, name, value, validation=None):
         opts = "'" + "', '".join(str(k) for k in value) + "'"
         return f"Must provide at least one {name}.  Options are: {opts}"
 
@@ -142,9 +142,45 @@ class RequiredValidationError(BaseValidationError):
     def __init__(self, name: str):
         super().__init__(RequiredValidationError.message(name))
 
-    @staticmethod
-    def message(name, value=None, validation=None):
+    @classmethod
+    def message(cls, name, value=None, validation=None):
         return f"Missing required parameter: '{name}'."
+
+
+class InCollectionValidationError(BaseValidationError):
+    collection = "Collection"
+    item = "data"
+
+    def __init__(self, name: str, value: list[str]):
+        super().__init__(self.message(name, value))
+
+    @classmethod
+    def message(cls, name, value, validation=None):
+        _ = validation
+        return (
+            f"{cls.collection}: '{name}' "
+            f"is missing required {cls.item}(s): {value}."
+        )
+
+
+class RequiredFormMemberValidationError(InCollectionValidationError):
+    collection = "Form"
+    item = "member"
+
+
+class RequiredUIJsonParameterValidationError(InCollectionValidationError):
+    collection = "UIJson"
+    item = "parameter"
+
+
+class RequiredWorkspaceObjectValidationError(InCollectionValidationError):
+    collection = "Workspace"
+    item = "object"
+
+
+class RequiredObjectDataValidationError(InCollectionValidationError):
+    collection = "Object"
+    item = "data"
 
 
 class ShapeValidationError(BaseValidationError):

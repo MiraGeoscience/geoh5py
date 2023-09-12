@@ -21,12 +21,16 @@ import pytest
 
 from geoh5py.shared.exceptions import (
     AggregateValidationError,
+    RequiredFormMemberValidationError,
+    RequiredUIJsonParameterValidationError,
     TypeValidationError,
     UUIDValidationError,
     ValueValidationError,
 )
 from geoh5py.ui_json.enforcers import (
     EnforcerPool,
+    RequiredFormMemberEnforcer,
+    RequiredUIJsonParameterEnforcer,
     TypeEnforcer,
     UUIDEnforcer,
     ValueEnforcer,
@@ -115,3 +119,17 @@ def test_uuid_enforcer():
     msg += "is not a valid uuid string."
     with pytest.raises(UUIDValidationError, match=msg):
         enforcer.enforce("test", "notachance")
+
+
+def test_required_uijson_parameter_enforcer():
+    enforcer = RequiredUIJsonParameterEnforcer(["my_param"])
+    msg = r"UIJson: 'my_param' is missing required parameter\(s\): \['my_param'\]."
+    with pytest.raises(RequiredUIJsonParameterValidationError, match=msg):
+        enforcer.enforce("my_param", {"label": "my param"})
+
+
+def test_required_form_member_enforcer():
+    enforcer = RequiredFormMemberEnforcer(["my_member"])
+    msg = r"Form: 'my_member' is missing required member\(s\): \['my_member'\]."
+    with pytest.raises(RequiredFormMemberValidationError, match=msg):
+        enforcer.enforce("my_member", {"label": "my member"})
