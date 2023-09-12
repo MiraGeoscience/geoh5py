@@ -182,6 +182,7 @@ class BaseMerger(ABC):
     ):
         """
         Merge a list of :obj:geoh5py.objects.ObjectBase of the same type.
+
         :param workspace: the workspace to use.
         :param input_entities: the list of objects to merge.
         :param add_data: if True, the data will be merged.
