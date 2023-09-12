@@ -299,7 +299,8 @@ class RequiredEnforcer(Enforcer):
     """
     Enforces required items in a collection.
 
-    :param validations: items that are required in the
+    :param validations: Items that are required in the
+
         collection.
     :raises InCollectionValidationError: If collection is missing one of
         the required parameters/members.
