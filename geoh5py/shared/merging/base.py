@@ -87,10 +87,7 @@ class BaseMerger(ABC):
                 values = data_dict[label].values
 
                 if isinstance(values, np.ndarray):
-                    values[
-                        data_count[association] : data_count[association]
-                        + data.n_values
-                    ] = data.values
+                    values[start:end] = data.values
                     data_dict[label].values = values
 
             data_count["VERTEX"] += (
