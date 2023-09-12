@@ -62,7 +62,7 @@ class BaseMerger(ABC):
     ):
         """
         Create the dictionary of data to add to the merged object.
-        
+
         :param data_array: the array containing the data to be merged.
         :param unique_entity_types: the unique entity types generated
         :param unique_associations: the unique associations generated
@@ -152,7 +152,7 @@ class BaseMerger(ABC):
     def merge_data(cls, input_entities: list[ObjectBase]) -> dict[str, dict]:
         """
         Merge the data respecting the entity type, the values, and the association.
-       
+
          :param input_entities: the list of objects to merge the data from.
         :return: a dictionary of data to add to the merged object.
         """
