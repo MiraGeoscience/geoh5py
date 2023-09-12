@@ -242,6 +242,7 @@ class BaseMerger(ABC):
     def validate_objects(cls, input_entities: list[ObjectBase]):
         """
         Validate the input entities types and raises error if incompatible.
+        
         :param input_entities: a list of :obj:geoh5py.objects.ObjectBase objects.
         """
         # assert input entities is a list of len superior to 1
