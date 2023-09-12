@@ -37,7 +37,7 @@ from geoh5py.shared.exceptions import (
 
 class EnforcerPool:
     """
-    Validate values on a collection of enforcers.
+    Validate data on a collection of enforcers.
 
     :param name: Name of parameter.
     :param enforcers: List (pool) of enforcers.

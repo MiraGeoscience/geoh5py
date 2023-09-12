@@ -409,7 +409,10 @@ def test_data_form_required_member_validation():
         value=new_uuid,
         label="my param",
     )
-    msg = r"Form: 'my_param' is missing required member\(s\): \['parent', 'association', 'data_type'\]."
+    msg = (
+        r"Form: 'my_param' is missing required member\(s\): "
+        r"\['parent', 'association', 'data_type'\]."
+    )
     with pytest.raises(RequiredFormMemberValidationError, match=msg):
         param.validate()
 
@@ -447,6 +450,9 @@ def test_data_value_form_required_member_validation():
         is_value=False,
         value=1,
     )
-    msg = r"Form: 'my_param' is missing required member\(s\): \['parent', 'association', 'data_type', 'property'\]."
+    msg = (
+        r"Form: 'my_param' is missing required member\(s\): "
+        r"\['parent', 'association', 'data_type', 'property'\]."
+    )
     with pytest.raises(RequiredFormMemberValidationError, match=msg):
         param.validate()
