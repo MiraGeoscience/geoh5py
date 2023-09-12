@@ -35,8 +35,7 @@ from geoh5py.ui_json.parameters import BoolParameter, StringParameter
 from geoh5py.ui_json.ui_json import UIJson
 
 
-def generate_sample_uijson(testpath):
-    """Returns a defaulted UIJson with all parameter types and valid data."""
+def generate_sample_uijson_data(testpath):
     workspace = Workspace(testpath / "test.geoh5")
     pts = np.random.random((10, 3))
     data_object = Points.create(workspace, name="survey", vertices=pts)
@@ -47,6 +46,11 @@ def generate_sample_uijson(testpath):
             "elevation": {"values": np.random.random(10)},
         }
     )
+    return workspace, data_object
+
+
+def generate_sample_uijson(testpath):
+    """Returns a defaulted UIJson with all parameter types and valid data."""
 
     standard_uijson_parameters = [
         StringParameter("title", value="my application"),
@@ -122,6 +126,14 @@ def generate_sample_uijson(testpath):
     ]
     parameters = standard_uijson_parameters + custom_uijson_parameters
     uijson = UIJson(parameters)
+
+    return uijson
+
+
+def write_sample_uijson(
+    testpath,
+):
+    uijson = generate_sample_uijson(testpath)
     template = uijson.to_dict(naming="camel")
     ifile = InputFile(ui_json=template, validate=False)
     ifile.write_ui_json("test.ui.json", testpath)
@@ -133,3 +145,9 @@ def test_uijson_construct_default_and_update(tmp_path):
     uijson = generate_sample_uijson(tmp_path)
     forms = uijson.to_dict()
     assert isinstance(forms, dict)
+
+
+def test_uijson_validations(tmp_path):
+    uijson = generate_sample_uijson(tmp_path)
+    uijson.parameters = uijson.parameters[1:]
+    uijson.validate()

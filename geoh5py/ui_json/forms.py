@@ -200,7 +200,7 @@ class FormParameter:
         self._extra_members.update(members)
 
     def validate(self):
-        """Validates data against the pool of enforcers."""
+        """Validates form data against the pool of enforcers."""
         enforcers = EnforcerPool.from_validations(self.name, self.validations)
         enforcers.validate(self.form())
 
