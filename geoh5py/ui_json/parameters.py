@@ -33,8 +33,6 @@ class Parameter:
     :param name: Parameter name.
     :param value: The parameters value.
     :param enforcers: A collection of enforcers.
-    :param validations: Base enforcers encoded as an enforcer type and
-        validation key value dictionary.
     """
 
     validations: dict[str, Any] = {}
@@ -50,13 +48,13 @@ class Parameter:
         """Updates incoming enforcers with base enforcer instances."""
 
         if enforcers is None:
-            out = EnforcerPool.from_validations(self.name, self.validations)
+            pool = EnforcerPool.from_validations(self.name, self.validations)
         else:
-            out = EnforcerPool.from_validations(
+            pool = EnforcerPool.from_validations(
                 self.name, dict(enforcers.validations, **self.validations)
             )
 
-        return out
+        return pool
 
     @property
     def value(self):
@@ -137,6 +135,8 @@ class BoolParameter(TypedParameter):
 
 
 class UUIDParameter(TypedParameter):
+    """Parameter for UUID values."""
+
     validations = {"type": [str, UUID], "uuid": None}
 
     def _get_enforcer_pool(self, enforcers: EnforcerPool | None) -> EnforcerPool:
@@ -148,13 +148,13 @@ class UUIDParameter(TypedParameter):
             validations["uuid"] = "optional"
 
         if enforcers is None:
-            out = EnforcerPool.from_validations(self.name, validations)
+            pool = EnforcerPool.from_validations(self.name, validations)
         else:
-            out = EnforcerPool.from_validations(
+            pool = EnforcerPool.from_validations(
                 self.name, dict(enforcers.validations, **validations)
             )
 
-        return out
+        return pool
 
 
 class StringListParameter(TypedParameter):

@@ -158,7 +158,7 @@ class FormParameter:
         if kwargs:
             self.register(kwargs)
 
-    def form(self, use_camel=False) -> dict[str, Any]:
+    def form(self, use_camel: bool = False) -> dict[str, Any]:
         """
         Returns dictionary of active form members and their values.
 

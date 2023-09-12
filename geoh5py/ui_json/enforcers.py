@@ -69,6 +69,7 @@ class EnforcerPool:
         :param name: Name of parameter.
         :param validations: Encodes validations as enforcer type and
             validation key value pairs.
+        :param protected: Excludes listed enforcer types from updating
         """
         enforcers = cls(name)
         enforcers.update(validations, protected)
@@ -180,7 +181,7 @@ class Enforcer(ABC):
     def validations(self):
         return self._validations
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         """Equal if same type and validations."""
 
         is_equal = False
@@ -317,7 +318,7 @@ class RequiredEnforcer(Enforcer):
         super().__init__(validations)
 
     def enforce(self, name: str, value: Any):
-        """Administers rule to check if valid uuid."""
+        """Administers rule to check if required items in collection."""
         if not self.rule(value):
             raise self.validation_error(
                 name,
@@ -325,7 +326,7 @@ class RequiredEnforcer(Enforcer):
             )
 
     def rule(self, value: Any) -> bool:
-        """True if value is a valid uuid string."""
+        """True if all required parameters are in 'value' collection."""
         return all(k in value for k in self.validations)
 
 

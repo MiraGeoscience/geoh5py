@@ -33,12 +33,14 @@ class UIJson:  # pylint: disable=too-few-public-methods
         """
         Returns a dictionary of name and value/form for each parameter.
 
-        :param naming: Uses KEY_MAP to convert python names to camel case
-            for writing to file.
+        :param naming: Uses MEMBER_KEYS.map to convert python names to
+            camel case for writing to file.
         """
 
+        use_camel = naming == "camel"
+
         def get_data(param: Parameter | FormParameter):
-            return param.form(naming) if hasattr(param, "form") else param.value
+            return param.form(use_camel) if hasattr(param, "form") else param.value
 
         out = {}
         for param in self.parameters:
