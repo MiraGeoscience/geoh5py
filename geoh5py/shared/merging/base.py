@@ -33,6 +33,7 @@ class BaseMerger(ABC):
     def number_of_keys(cls, type_list: list[entity_type], nb_keys: int) -> int:
         """
         Get the number of keys to use in the definition of the entity type.
+        
         :param entity_unique_entity_types: the unique entity types generated
             by extract_data_information().
         :param nb_keys: the number of keys to use to define the entity type.
