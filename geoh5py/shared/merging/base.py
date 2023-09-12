@@ -61,6 +61,7 @@ class BaseMerger(ABC):
     ):
         """
         Create the dictionary of data to add to the merged object.
+        
         :param data_array: the array containing the data to be merged.
         :param unique_entity_types: the unique entity types generated
         :param unique_associations: the unique associations generated
