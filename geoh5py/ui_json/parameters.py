@@ -101,6 +101,11 @@ class BoolParameter(Parameter):
 
     validations = {"type": [bool]}
 
+    def __init__(
+        self, name: str, value: bool = False, enforcers: EnforcerPool | None = None
+    ):
+        super().__init__(name, value, enforcers)
+
 
 class UUIDParameter(Parameter):
     """Parameter for UUID values."""

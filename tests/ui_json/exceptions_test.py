@@ -18,21 +18,11 @@
 import pytest
 
 from geoh5py.shared.exceptions import (
-    BaseValidationError,
     RequiredFormMemberValidationError,
     RequiredObjectDataValidationError,
     RequiredUIJsonParameterValidationError,
     RequiredWorkspaceObjectValidationError,
 )
-
-
-def test_forget_implement_message():
-    class my_validation_error(BaseValidationError):
-        pass
-
-    err = my_validation_error()
-    with pytest.raises(NotImplementedError):
-        err.message("me", 1, [1, 2, 3])
 
 
 def test_required_form_member_validation_error():

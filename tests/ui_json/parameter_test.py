@@ -109,6 +109,11 @@ def test_float_parameter_type_validation():
         param.value = 1
 
 
+def test_bool_parameter_default():
+    param = BoolParameter("my_param")
+    assert param.value is False
+
+
 def test_bool_parameter_type_validation():
     param = BoolParameter("my_param")
     msg = "Type 'str' provided for 'my_param' is invalid. "

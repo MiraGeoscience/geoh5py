@@ -189,6 +189,11 @@ def test_string_form_parameter_form_includes_value():
     assert param.form()["value"] == "this"
 
 
+def test_bool_form_parameter_default():
+    param = BoolFormParameter("my_param")
+    assert param.value is False
+
+
 def test_bool_form_parameter_construction():
     param = BoolFormParameter(
         "my_param",
@@ -249,7 +254,7 @@ def test_float_form_parameter_construction():
     assert param.min is None  # pylint: disable=no-member
     assert param.max is None  # pylint: disable=no-member
     assert param.precision is None  # pylint: disable=no-member
-    assert param.line_edit is None  # pylint: disable=no-member
+    assert param.line_edit  # pylint: disable=no-member
 
 
 def test_float_form_parameter_validation():
@@ -315,7 +320,7 @@ def test_file_form_parameter_construction():
     assert param._value._enforcers.enforcers == [TypeEnforcer(str)]
     assert param.file_description is None  # pylint: disable=no-member
     assert param.file_type is None  # pylint: disable=no-member
-    assert param.file_multi is None  # pylint: disable=no-member
+    assert not param.file_multi  # pylint: disable=no-member
 
 
 def test_file_form_parameter_validation():

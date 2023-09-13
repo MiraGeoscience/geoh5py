@@ -61,7 +61,7 @@ def generate_sample_uijson(testpath):
         ),
         StringParameter("monitoring_directory"),
         StringParameter("conda_environment"),
-        BoolParameter("conda_environment_boolean", value=False),
+        BoolParameter("conda_environment_boolean"),
         StringParameter("workspace"),
     ]
     custom_uijson_parameters = [
