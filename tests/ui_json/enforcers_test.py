@@ -55,7 +55,7 @@ def test_enforcer_pool_update():
 
 
 def test_enforcer_pool_validations():
-    validations = {"type": [str], "value": "onlythis"}
+    validations = {"type": [str], "value": ["onlythis"]}
     pool = EnforcerPool.from_validations("my_param", validations)
     assert pool.validations == validations
 
