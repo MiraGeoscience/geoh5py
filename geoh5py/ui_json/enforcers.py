@@ -166,16 +166,10 @@ class Enforcer(ABC):
     @abstractmethod
     def rule(self, value: Any):
         """True if 'value' adheres to enforcers rule."""
-        raise NotImplementedError(
-            "Enforcer is abstract. Must be implemented in subclass"
-        )
 
     @abstractmethod
     def enforce(self, name: str, value: Any):
         """Enforces rule on 'name' parameter's 'value'."""
-        raise NotImplementedError(
-            "Enforcer is abstract. Must be implemented in subclass"
-        )
 
     @property
     def validations(self):
