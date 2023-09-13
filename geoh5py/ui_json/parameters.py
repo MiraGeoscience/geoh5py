@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 from typing import Any, Dict
 from uuid import UUID
 
@@ -38,23 +37,13 @@ class Parameter:
     validations: dict[str, Any] = {}
 
     def __init__(
-        self, name: str, value: Any = None, enforcers: EnforcerPool | None = None
+        self, name: str, value: Any = None, validations: dict[str, Any] | None = None
     ):
         self.name: str = name
-        self._enforcers: EnforcerPool = self._get_enforcer_pool(enforcers)
+        self._enforcers: EnforcerPool = EnforcerPool.from_validations(
+            self.name, validations, self.validations
+        )
         setattr(self, "_value" if value is None else "value", value)
-
-    def _get_enforcer_pool(self, enforcers: EnforcerPool | None) -> EnforcerPool:
-        """Updates incoming enforcers with base enforcer instances."""
-
-        if enforcers is None:
-            pool = EnforcerPool.from_validations(self.name, self.validations)
-        else:
-            pool = EnforcerPool.from_validations(
-                self.name, dict(enforcers.validations, **self.validations)
-            )
-
-        return pool
 
     @property
     def value(self):
@@ -67,97 +56,54 @@ class Parameter:
 
     def validate(self):
         """Validates data against the pool of enforcers."""
-        self._enforcers.validate(self.value)
+        self._enforcers.enforce(self.value)
 
     def __str__(self):
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
 
 
-class TypedParameter(Parameter):
-    """Parameter for typed values."""
-
-    def __init__(
-        self,
-        name,
-        value=None,
-        enforcers: EnforcerPool | None = None,
-        optional: bool = False,
-    ):
-        self.optional = optional
-
-        super().__init__(name, value=value, enforcers=enforcers)
-
-    def _get_enforcer_pool(self, enforcers: EnforcerPool | None) -> EnforcerPool:
-        """Updates incoming enforcers with base enforcer instances."""
-
-        validations = deepcopy(self.validations)
-        if self.optional:
-            validations["type"] += [type(None)]
-
-        if enforcers is None:
-            out = EnforcerPool.from_validations(self.name, validations)
-        else:
-            out = EnforcerPool.from_validations(
-                self.name, dict(enforcers.validations, **validations)
-            )
-
-        return out
-
-
-class StringParameter(TypedParameter):
+class StringParameter(Parameter):
     """Parameter for string values."""
 
     validations = {"type": [str]}
 
 
-class IntegerParameter(TypedParameter):
+class IntegerParameter(Parameter):
     """Parameter for integer values."""
 
     validations = {"type": [int]}
 
 
-class FloatParameter(TypedParameter):
+class FloatParameter(Parameter):
     """Parameter for float values."""
 
     validations = {"type": [float]}
 
 
-class NumericParameter(TypedParameter):
+class NumericParameter(Parameter):
     """Parameter for generic numeric values."""
 
     validations = {"type": [int, float]}
 
 
-class BoolParameter(TypedParameter):
+class BoolParameter(Parameter):
     """Parameter for boolean values."""
 
     validations = {"type": [bool]}
 
+    def __init__(
+        self, name: str, value: bool = False, validations: dict[str, Any] | None = None
+    ):
+        super().__init__(name, value, validations)
 
-class UUIDParameter(TypedParameter):
+
+class UUIDParameter(Parameter):
     """Parameter for UUID values."""
 
     validations = {"type": [str, UUID], "uuid": None}
 
-    def _get_enforcer_pool(self, enforcers: EnforcerPool | None) -> EnforcerPool:
-        """Updates incoming enforcers with base enforcer instances."""
 
-        validations = deepcopy(self.validations)
-        if self.optional:
-            validations["type"] += [type(None)]
-            validations["uuid"] = "optional"
-
-        if enforcers is None:
-            pool = EnforcerPool.from_validations(self.name, validations)
-        else:
-            pool = EnforcerPool.from_validations(
-                self.name, dict(enforcers.validations, **validations)
-            )
-
-        return pool
-
-
-class StringListParameter(TypedParameter):
+class StringListParameter(Parameter):
     """Parameter for list of strings."""
 
     validations = {"type": [list, str]}

@@ -67,7 +67,7 @@ class UIJson:
 
         uijson = self.to_dict()
         enforcers = EnforcerPool.from_validations(self.name, self.validations)
-        enforcers.validate(uijson)
+        enforcers.enforce(uijson)
 
     @property
     def name(self) -> str:

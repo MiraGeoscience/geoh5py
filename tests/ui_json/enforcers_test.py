@@ -49,12 +49,13 @@ def test_enforcer_pool_update():
     pool = EnforcerPool("my_param")
     pool.update({"type": str, "value": "onlythis"})
     assert pool.enforcers == [TypeEnforcer(str), ValueEnforcer("onlythis")]
-    pool.update({"type": int, "value": "nowonlythis"}, protected=["type"])
+    pool._restricted = ["type"]  # pylint: disable=protected-access
+    pool.update({"type": int, "value": "nowonlythis"})
     assert pool.enforcers == [TypeEnforcer(str), ValueEnforcer("nowonlythis")]
 
 
 def test_enforcer_pool_validations():
-    validations = {"type": [str], "value": "onlythis"}
+    validations = {"type": [str], "value": ["onlythis"]}
     pool = EnforcerPool.from_validations("my_param", validations)
     assert pool.validations == validations
 
@@ -66,24 +67,24 @@ def test_enforcer_pool_from_validations():
 
 def test_enforcer_pool_raises_single_error():
     enforcers = EnforcerPool("my_param", [TypeEnforcer(str)])
-    enforcers.validate("1")
+    enforcers.enforce("1")
     msg = "Type 'int' provided for 'my_param' is invalid. "
     msg += "Must be: 'str'."
     with pytest.raises(TypeValidationError, match=msg):
-        enforcers.validate(1)
+        enforcers.enforce(1)
 
 
 def test_enforcer_pool_raises_aggregate_error():
     enforcers = EnforcerPool(
         "my_param", [TypeEnforcer(str), ValueEnforcer(["onlythis"])]
     )
-    enforcers.validate("onlythis")
+    enforcers.enforce("onlythis")
     msg = (
         "Validation of 'my_param' collected 2 errors:\n\t"
         "0. Type 'int' provided for 'my_param' is invalid"
     )
     with pytest.raises(AggregateValidationError, match=msg):
-        enforcers.validate(1)
+        enforcers.enforce(1)
 
 
 def test_enforcer_str():

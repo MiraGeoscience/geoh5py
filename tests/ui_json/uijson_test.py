@@ -49,7 +49,7 @@ def generate_sample_uijson_data(testpath):
     return workspace, data_object
 
 
-def generate_sample_uijson(testpath):
+def generate_sample_uijson():
     """Returns a defaulted UIJson with all parameter types and valid data."""
 
     standard_uijson_parameters = [
@@ -65,7 +65,7 @@ def generate_sample_uijson(testpath):
         ),
         StringParameter("monitoring_directory"),
         StringParameter("conda_environment"),
-        BoolParameter("conda_environment_boolean", value=False),
+        BoolParameter("conda_environment_boolean"),
         StringParameter("workspace"),
     ]
     custom_uijson_parameters = [

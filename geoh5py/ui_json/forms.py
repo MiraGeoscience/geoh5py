@@ -135,14 +135,15 @@ class FormParameter:
         self,
         name: str,
         value: Any | None = None,
+        validations: dict[str, Any] | None = None,
         **kwargs,
     ):
         self.name: str = name
         self._value: Parameter = self._set_value_parameter(value)
         self._label = StringParameter("label")
         self._enabled = BoolParameter("enabled", value=True)
-        self._optional = BoolParameter("optional", value=False)
-        self._group_optional = BoolParameter("group_optional", value=False)
+        self._optional = BoolParameter("optional")
+        self._group_optional = BoolParameter("group_optional")
         self._main = BoolParameter("main", value=True)
         self._group = StringParameter("group")
         self._dependency = StringParameter("dependency")
@@ -157,6 +158,9 @@ class FormParameter:
         self._active_members: list[str] = []
         if kwargs:
             self.register(kwargs)
+        self.enforcers = EnforcerPool.from_validations(
+            self.name, validations, self.validations
+        )
 
     def form(self, use_camel: bool = False) -> dict[str, Any]:
         """
@@ -201,8 +205,7 @@ class FormParameter:
 
     def validate(self):
         """Validates form data against the pool of enforcers."""
-        enforcers = EnforcerPool.from_validations(self.name, self.validations)
-        enforcers.validate(self.form())
+        self.enforcers.enforce(self.form())
 
     @property
     def valid_members(self) -> list[str]:
@@ -271,9 +274,9 @@ class StringFormParameter(FormParameter):
 class BoolFormParameter(FormParameter):
     """Boolean parameter type."""
 
-    def __init__(self, name, value=None, **kwargs):
-        value = BoolParameter("value", value=value)
-        super().__init__(name, value=value, **kwargs)
+    def __init__(self, name, value: bool = False, **kwargs):
+        param = BoolParameter("value", value=value)
+        super().__init__(name, value=param, **kwargs)
 
 
 class IntegerFormParameter(FormParameter):
@@ -309,7 +312,7 @@ class FloatFormParameter(FormParameter):
         self._min = FloatParameter("min")
         self._max = FloatParameter("max")
         self._precision = IntegerParameter("precision")
-        self._line_edit = BoolParameter("line_edit")
+        self._line_edit = BoolParameter("line_edit", value=True)
         value = FloatParameter("value", value=value)
         super().__init__(name, value=value, **kwargs)
 
@@ -326,12 +329,10 @@ class ChoiceStringFormParameter(FormParameter):
 
     def __init__(self, name, value=None, **kwargs):
         self._choice_list = StringListParameter("choice_list")
-        enforcers = None
+        validations = None
         if "choice_list" in kwargs:
-            enforcers = EnforcerPool(
-                "choice_list", [ValueEnforcer(kwargs["choice_list"])]
-            )
-        value = StringListParameter("value", value=value, enforcers=enforcers)
+            validations = {"value": kwargs["choice_list"]}
+        value = StringListParameter("value", value=value, validations=validations)
         super().__init__(name, value=value, **kwargs)
 
     def _add_value_enforcer(
@@ -404,35 +405,23 @@ class DataFormParameter(FormParameter):
     def __init__(self, name, value=None, **kwargs):
         self._parent = StringParameter("parent")
         self._association = StringParameter(
-            "association",
-            enforcers=EnforcerPool(
-                "associations",
-                [ValueEnforcer(["Vertex", "Cell"])],
-            ),
+            "association", validations={"value": ["Vertex", "Cell"]}
         )
         self._data_type = StringParameter(
-            "data_type",
-            enforcers=EnforcerPool(
-                "data_type",
-                [ValueEnforcer(["Float", "Integer", "Reference"])],
-            ),
+            "data_type", validations={"value": ["Float", "Integer", "Reference"]}
         )
         self._data_group_type = StringParameter(
             "data_group_type",
-            enforcers=EnforcerPool(
-                "data_group_type",
-                [
-                    ValueEnforcer(
-                        [
-                            "3D vector",
-                            "Dip direction & dip",
-                            "Strike & dip",
-                            "Multi-element",
-                        ]
-                    )
-                ],
-            ),
+            validations={
+                "value": [
+                    "3D vector",
+                    "Dip direction & dip",
+                    "Strike & dip",
+                    "Multi-element",
+                ]
+            },
         )
+
         value = UUIDParameter("value", value=value)
         super().__init__(name, value=value, **kwargs)
 
@@ -463,21 +452,13 @@ class DataValueFormParameter(FormParameter):
     def __init__(self, name, value=None, **kwargs):
         self._parent = StringParameter("parent")
         self._association = StringParameter(
-            "association",
-            enforcers=EnforcerPool(
-                "associations",
-                [ValueEnforcer(["Vertex", "Cell"])],
-            ),
+            "association", validations={"value": ["Vertex", "Cell"]}
         )
         self._data_type = StringParameter(
-            "data_type",
-            enforcers=EnforcerPool(
-                "data_type",
-                [ValueEnforcer(["Float", "Integer", "Reference"])],
-            ),
+            "data_type", validations={"value": ["Float", "Integer", "Reference"]}
         )
         self._is_value = BoolParameter("is_value")
-        self._property = UUIDParameter("property", optional=True)
+        self._property = UUIDParameter("property")
         value = NumericParameter("value", value=value)
         super().__init__(name, value=value, **kwargs)
 
