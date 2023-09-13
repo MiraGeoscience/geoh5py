@@ -216,7 +216,7 @@ class TypeEnforcer(Enforcer):
 
     def rule(self, value) -> bool:
         """True if value is one of the valid types."""
-        return any(isinstance(value, k) for k in self.validations)
+        return any(isinstance(value, k) for k in self.validations + [type(None)])
 
     @property
     def validations(self) -> list[type]:
@@ -286,11 +286,8 @@ class UUIDEnforcer(Enforcer):
     def rule(self, value: Any) -> bool:
         """True if value is a valid uuid string."""
 
-        if self.validations == "optional":
+        if value is None:
             return True
-
-        if not isinstance(value, str):
-            return False
 
         return is_uuid(value)
 

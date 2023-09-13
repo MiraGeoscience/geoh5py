@@ -426,8 +426,8 @@ def test_data_value_form_parameter_construction():
     assert param.value == new_uuid
     assert param.label == "my param"  # pylint: disable=no-member
     assert param._property._enforcers.enforcers == [
-        TypeEnforcer([str, uuid.UUID, type(None)]),
-        UUIDEnforcer("optional"),
+        TypeEnforcer([str, uuid.UUID]),
+        UUIDEnforcer(),
     ]
     assert param._value._enforcers.enforcers == [TypeEnforcer([int, float])]
     assert param.parent is None  # pylint: disable=no-member

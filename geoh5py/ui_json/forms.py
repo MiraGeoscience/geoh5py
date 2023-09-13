@@ -477,7 +477,7 @@ class DataValueFormParameter(FormParameter):
             ),
         )
         self._is_value = BoolParameter("is_value")
-        self._property = UUIDParameter("property", optional=True)
+        self._property = UUIDParameter("property")
         value = NumericParameter("value", value=value)
         super().__init__(name, value=value, **kwargs)
 

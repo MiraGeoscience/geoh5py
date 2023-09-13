@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 from typing import Any, Dict
 from uuid import UUID
 
@@ -73,91 +72,43 @@ class Parameter:
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
 
 
-class TypedParameter(Parameter):
-    """Parameter for typed values."""
-
-    def __init__(
-        self,
-        name,
-        value=None,
-        enforcers: EnforcerPool | None = None,
-        optional: bool = False,
-    ):
-        self.optional = optional
-
-        super().__init__(name, value=value, enforcers=enforcers)
-
-    def _get_enforcer_pool(self, enforcers: EnforcerPool | None) -> EnforcerPool:
-        """Updates incoming enforcers with base enforcer instances."""
-
-        validations = deepcopy(self.validations)
-        if self.optional:
-            validations["type"] += [type(None)]
-
-        if enforcers is None:
-            out = EnforcerPool.from_validations(self.name, validations)
-        else:
-            out = EnforcerPool.from_validations(
-                self.name, dict(enforcers.validations, **validations)
-            )
-
-        return out
-
-
-class StringParameter(TypedParameter):
+class StringParameter(Parameter):
     """Parameter for string values."""
 
     validations = {"type": [str]}
 
 
-class IntegerParameter(TypedParameter):
+class IntegerParameter(Parameter):
     """Parameter for integer values."""
 
     validations = {"type": [int]}
 
 
-class FloatParameter(TypedParameter):
+class FloatParameter(Parameter):
     """Parameter for float values."""
 
     validations = {"type": [float]}
 
 
-class NumericParameter(TypedParameter):
+class NumericParameter(Parameter):
     """Parameter for generic numeric values."""
 
     validations = {"type": [int, float]}
 
 
-class BoolParameter(TypedParameter):
+class BoolParameter(Parameter):
     """Parameter for boolean values."""
 
     validations = {"type": [bool]}
 
 
-class UUIDParameter(TypedParameter):
+class UUIDParameter(Parameter):
     """Parameter for UUID values."""
 
     validations = {"type": [str, UUID], "uuid": None}
 
-    def _get_enforcer_pool(self, enforcers: EnforcerPool | None) -> EnforcerPool:
-        """Updates incoming enforcers with base enforcer instances."""
 
-        validations = deepcopy(self.validations)
-        if self.optional:
-            validations["type"] += [type(None)]
-            validations["uuid"] = "optional"
-
-        if enforcers is None:
-            pool = EnforcerPool.from_validations(self.name, validations)
-        else:
-            pool = EnforcerPool.from_validations(
-                self.name, dict(enforcers.validations, **validations)
-            )
-
-        return pool
-
-
-class StringListParameter(TypedParameter):
+class StringListParameter(Parameter):
     """Parameter for list of strings."""
 
     validations = {"type": [list, str]}

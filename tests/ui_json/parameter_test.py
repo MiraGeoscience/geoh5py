@@ -84,14 +84,11 @@ def test_string_parameter_type_validation():
 
 
 def test_string_parameter_optional_validations():
-    param = StringParameter("my_param", optional=True)
+    param = StringParameter("my_param")
     param.validations = {"types": [str]}
     param.value = None
     param.value = "this is ok"
-    msg = (
-        "Type 'int' provided for 'my_param' is invalid. "
-        "Must be one of: 'str', 'NoneType'."
-    )
+    msg = "Type 'int' provided for 'my_param' is invalid. " "Must be: 'str'."
     with pytest.raises(TypeValidationError, match=msg):
         param.value = 1
 
