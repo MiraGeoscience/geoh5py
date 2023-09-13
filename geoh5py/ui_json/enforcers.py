@@ -56,12 +56,16 @@ class EnforcerPool:
 
     def __init__(self, name: str, enforcers: list[Enforcer] | None = None):
         self.name = name
-        self.enforcers = enforcers or []
+        self.enforcers: list[Enforcer] = enforcers or []
+        self._restricted: list[str] = []
         self._errors: list[BaseValidationError] = []
 
     @classmethod
     def from_validations(
-        cls, name: str, validations: dict[str, Any], protected: list[str] | None = None
+        cls,
+        name: str,
+        validations: dict[str, Any] | None = None,
+        restricted_validations: dict[str, Any] | None = None,
     ) -> EnforcerPool:
         """
         Create enforcers pool from validations.
@@ -69,28 +73,44 @@ class EnforcerPool:
         :param name: Name of parameter.
         :param validations: Encodes validations as enforcer type and
             validation key value pairs.
-        :param protected: Excludes listed enforcer types from updating
+        :param restricted_validations: 0.
+
         """
+
+        def none_2_dict(target) -> dict:
+            return {} if target is None else target
+
+        validations = none_2_dict(validations)
+        restricted_validations = none_2_dict(restricted_validations)
+        validations.update(restricted_validations)
+
         enforcers = cls(name)
-        enforcers.update(validations, protected)
+        enforcers.update(validations)
+        enforcers._restricted += list(restricted_validations)
+
         return enforcers
 
-    def update(self, validations: dict[str, Any], protected: list[str] | None = None):
+    def update(self, validations: dict[str, Any]):
         """
         Create enforcers pool from name/validation dictionary.
 
         :param validations: Encodes validations as enforcer type and
             validation key value pairs.
-        :param protected: Excludes listed enforcer types from updating
 
+        :note: Restricted enforcers are prevented from update.
         """
-        protected = protected or []
-        enforcers = [k for k in self.enforcers if k.enforcer_type in protected]
-        for name, validation in validations.items():
-            if name not in protected:
-                enforcers.append(self._recruit_enforcer(name, validation))
 
-        self.enforcers = enforcers
+        existing_enforcers = {k.enforcer_type: k for k in self.enforcers}
+        for enforcer_type, validation in validations.items():
+            if enforcer_type in self._restricted:
+                continue
+
+            if enforcer_type in existing_enforcers:
+                existing_enforcers[enforcer_type].validations = validation
+
+            else:
+                enforcer = self._recruit_enforcer(enforcer_type, validation)
+                self.enforcers.append(enforcer)
 
     @property
     def validations(self) -> dict[str, Any]:
@@ -106,7 +126,7 @@ class EnforcerPool:
         """
 
         if enforcer_type not in self.enforcer_types:
-            raise ValueError(f"Invalid enforcer type: {validation['type']}")
+            raise ValueError(f"Invalid enforcer type: {enforcer_type}.")
 
         if enforcer_type == "type":
             enforcer = TypeEnforcer(validation)
@@ -161,7 +181,7 @@ class Enforcer(ABC):
     enforcer_type: str = ""
 
     def __init__(self, validations: Any | None = None):
-        self._validations = validations
+        self.validations = validations
 
     @abstractmethod
     def rule(self, value: Any):
@@ -172,8 +192,17 @@ class Enforcer(ABC):
         """Enforces rule on 'name' parameter's 'value'."""
 
     @property
-    def validations(self):
+    def validations(self) -> Any:
+        """Enforcer validation."""
         return self._validations
+
+    @validations.setter
+    def validations(self, val: Any):
+        self._validations = val
+
+    def _raise_if_validations_not_set(self):
+        if not self.validations:
+            raise ValueError("Validations must be set before calling 'enforce()'.")
 
     def __eq__(self, other) -> bool:
         """Equal if same type and validations."""
@@ -203,9 +232,11 @@ class TypeEnforcer(Enforcer):
 
     def enforce(self, name: str, value: Any):
         """Administers rule to enforce type validation."""
+
+        self._raise_if_validations_not_set()
         if not self.rule(value):
             raise TypeValidationError(
-                name, type(value).__name__, self._stringify(self.validations)
+                name, type(value).__name__, [k.__name__ for k in self.validations]
             )
 
     def rule(self, value) -> bool:
@@ -214,21 +245,15 @@ class TypeEnforcer(Enforcer):
 
     @property
     def validations(self) -> list[type]:
-        if not isinstance(self._validations, list):
-            self._validations = [self._validations]
-
+        if self._validations is None:
+            self._validations = []
         return self._validations
 
-    def _stringify(self, target: type | list[type]) -> str | list[str]:
-        """Converts type(s) to string for error message."""
-
-        if isinstance(target, list):
-            return [k.__name__ for k in target]
-
-        if isinstance(target, type):
-            return target.__name__
-
-        raise TypeError(f"Cannot stringify type {type(target)}")
+    @validations.setter
+    def validations(self, val: type | list[type]):
+        if not isinstance(val, list):
+            val = [val]
+        self._validations = val
 
 
 class ValueEnforcer(Enforcer):
@@ -247,12 +272,26 @@ class ValueEnforcer(Enforcer):
 
     def enforce(self, name: str, value: Any):
         """Administers rule to enforce value validation."""
+
+        self._raise_if_validations_not_set()
         if not self.rule(value):
             raise ValueValidationError(name, value, self.validations)
 
     def rule(self, value: Any) -> bool:
         """True if value is a valid choice."""
         return value in self.validations
+
+    @property
+    def validations(self) -> list[Any]:
+        if self._validations is None:
+            self._validations = []
+        return self._validations
+
+    @validations.setter
+    def validations(self, val: Any):
+        if not isinstance(val, list):
+            val = [val]
+        self._validations = val
 
 
 class UUIDEnforcer(Enforcer):
@@ -271,6 +310,7 @@ class UUIDEnforcer(Enforcer):
 
     def enforce(self, name: str, value: Any):
         """Administers rule to check if valid uuid."""
+
         if not self.rule(value):
             raise UUIDValidationError(
                 name,
@@ -305,6 +345,8 @@ class RequiredEnforcer(Enforcer):
 
     def enforce(self, name: str, value: Any):
         """Administers rule to check if required items in collection."""
+
+        self._raise_if_validations_not_set()
         if not self.rule(value):
             raise self.validation_error(
                 name,
@@ -314,6 +356,18 @@ class RequiredEnforcer(Enforcer):
     def rule(self, value: Any) -> bool:
         """True if all required parameters are in 'value' collection."""
         return all(k in value for k in self.validations)
+
+    @property
+    def validations(self) -> list[str]:
+        if self._validations is None:
+            self._validations = []
+        return self._validations
+
+    @validations.setter
+    def validations(self, val: str | list[str]):
+        if isinstance(val, str):
+            val = [val]
+        self._validations = val
 
 
 class RequiredUIJsonParameterEnforcer(RequiredEnforcer):

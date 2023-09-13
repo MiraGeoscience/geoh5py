@@ -49,7 +49,8 @@ def test_enforcer_pool_update():
     pool = EnforcerPool("my_param")
     pool.update({"type": str, "value": "onlythis"})
     assert pool.enforcers == [TypeEnforcer(str), ValueEnforcer("onlythis")]
-    pool.update({"type": int, "value": "nowonlythis"}, protected=["type"])
+    pool._restricted = ["type"]  # pylint: disable=protected-access
+    pool.update({"type": int, "value": "nowonlythis"})
     assert pool.enforcers == [TypeEnforcer(str), ValueEnforcer("nowonlythis")]
 
 

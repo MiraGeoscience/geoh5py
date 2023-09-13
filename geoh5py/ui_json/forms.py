@@ -135,6 +135,7 @@ class FormParameter:
         self,
         name: str,
         value: Any | None = None,
+        validations: dict[str, Any] | None = None,
         **kwargs,
     ):
         self.name: str = name
@@ -157,6 +158,9 @@ class FormParameter:
         self._active_members: list[str] = []
         if kwargs:
             self.register(kwargs)
+        self.enforcers = EnforcerPool.from_validations(
+            self.name, validations, self.validations
+        )
 
     def form(self, use_camel: bool = False) -> dict[str, Any]:
         """
@@ -201,8 +205,7 @@ class FormParameter:
 
     def validate(self):
         """Validates data against the pool of enforcers."""
-        enforcers = EnforcerPool.from_validations(self.name, self.validations)
-        enforcers.enforce(self.form())
+        self.enforcers.enforce(self.form())
 
     @property
     def valid_members(self) -> list[str]:
@@ -326,12 +329,10 @@ class ChoiceStringFormParameter(FormParameter):
 
     def __init__(self, name, value=None, **kwargs):
         self._choice_list = StringListParameter("choice_list")
-        enforcers = None
+        validations = None
         if "choice_list" in kwargs:
-            enforcers = EnforcerPool(
-                "choice_list", [ValueEnforcer(kwargs["choice_list"])]
-            )
-        value = StringListParameter("value", value=value, enforcers=enforcers)
+            validations = {"value": kwargs["choice_list"]}
+        value = StringListParameter("value", value=value, validations=validations)
         super().__init__(name, value=value, **kwargs)
 
     def _add_value_enforcer(
@@ -404,35 +405,23 @@ class DataFormParameter(FormParameter):
     def __init__(self, name, value=None, **kwargs):
         self._parent = StringParameter("parent")
         self._association = StringParameter(
-            "association",
-            enforcers=EnforcerPool(
-                "associations",
-                [ValueEnforcer(["Vertex", "Cell"])],
-            ),
+            "association", validations={"value": ["Vertex", "Cell"]}
         )
         self._data_type = StringParameter(
-            "data_type",
-            enforcers=EnforcerPool(
-                "data_type",
-                [ValueEnforcer(["Float", "Integer", "Reference"])],
-            ),
+            "data_type", validations={"value": ["Float", "Integer", "Reference"]}
         )
         self._data_group_type = StringParameter(
             "data_group_type",
-            enforcers=EnforcerPool(
-                "data_group_type",
-                [
-                    ValueEnforcer(
-                        [
-                            "3D vector",
-                            "Dip direction & dip",
-                            "Strike & dip",
-                            "Multi-element",
-                        ]
-                    )
-                ],
-            ),
+            validations={
+                "value": [
+                    "3D vector",
+                    "Dip direction & dip",
+                    "Strike & dip",
+                    "Multi-element",
+                ]
+            },
         )
+
         value = UUIDParameter("value", value=value)
         super().__init__(name, value=value, **kwargs)
 
@@ -463,18 +452,10 @@ class DataValueFormParameter(FormParameter):
     def __init__(self, name, value=None, **kwargs):
         self._parent = StringParameter("parent")
         self._association = StringParameter(
-            "association",
-            enforcers=EnforcerPool(
-                "associations",
-                [ValueEnforcer(["Vertex", "Cell"])],
-            ),
+            "association", validations={"value": ["Vertex", "Cell"]}
         )
         self._data_type = StringParameter(
-            "data_type",
-            enforcers=EnforcerPool(
-                "data_type",
-                [ValueEnforcer(["Float", "Integer", "Reference"])],
-            ),
+            "data_type", validations={"value": ["Float", "Integer", "Reference"]}
         )
         self._is_value = BoolParameter("is_value")
         self._property = UUIDParameter("property")

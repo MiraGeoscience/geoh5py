@@ -19,7 +19,7 @@
 import pytest
 
 from geoh5py.shared.exceptions import TypeValidationError, UUIDValidationError
-from geoh5py.ui_json.enforcers import EnforcerPool, TypeEnforcer, ValueEnforcer
+from geoh5py.ui_json.enforcers import TypeEnforcer, ValueEnforcer
 from geoh5py.ui_json.parameters import (
     BoolParameter,
     FloatParameter,
@@ -34,13 +34,7 @@ from geoh5py.ui_json.parameters import (
 
 
 def test_no_overwriting_class_enforcers():
-    param = StringParameter(
-        "param",
-        enforcers=EnforcerPool(
-            "param",
-            [TypeEnforcer(int), ValueEnforcer(["onlythis"])],
-        ),
-    )
+    param = StringParameter("param", validations={"type": [int], "value": ["onlythis"]})
     assert param._enforcers.enforcers == [
         TypeEnforcer(str),
         ValueEnforcer(["onlythis"]),
@@ -48,22 +42,19 @@ def test_no_overwriting_class_enforcers():
 
 
 def test_skip_validation_on_none_value():
-    enforcers = EnforcerPool("my_param", [TypeEnforcer(str)])
-    param = Parameter("my_param", None, enforcers=enforcers)
+    param = Parameter("my_param", None, validations={"type": str})
     assert param.value is None
 
 
 def test_parameter_validations_on_construction():
-    enforcers = EnforcerPool("my_param", [TypeEnforcer(str)])
-    _ = Parameter("my_param", "me", enforcers=enforcers)
+    _ = Parameter("my_param", "me", validations={"type": str})
     msg = "Type 'int' provided for 'my_param' is invalid. Must be: 'str'."
     with pytest.raises(TypeValidationError, match=msg):
-        _ = Parameter("my_param", 1, enforcers=enforcers)
+        _ = Parameter("my_param", 1, validations={"type": str})
 
 
 def test_parameter_validations_on_setting():
-    enforcers = EnforcerPool("my_param", [TypeEnforcer(str)])
-    param = Parameter("my_param", enforcers=enforcers)
+    param = Parameter("my_param", validations={"type": str})
     param.value = "me"
     msg = "Type 'int' provided for 'my_param' is invalid. Must be: 'str'."
     with pytest.raises(TypeValidationError, match=msg):
@@ -88,10 +79,7 @@ def test_string_parameter_optional_validations():
     param.validations = {"types": [str]}
     param.value = None
     param.value = "this is ok"
-    msg = (
-        "Type 'int' provided for 'my_param' is invalid. " 
-        "Must be: 'str'."
-    )
+    msg = "Type 'int' provided for 'my_param' is invalid. Must be: 'str'."
     with pytest.raises(TypeValidationError, match=msg):
         param.value = 1
 

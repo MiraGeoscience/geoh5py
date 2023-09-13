@@ -37,23 +37,13 @@ class Parameter:
     validations: dict[str, Any] = {}
 
     def __init__(
-        self, name: str, value: Any = None, enforcers: EnforcerPool | None = None
+        self, name: str, value: Any = None, validations: dict[str, Any] | None = None
     ):
         self.name: str = name
-        self._enforcers: EnforcerPool = self._get_enforcer_pool(enforcers)
+        self._enforcers: EnforcerPool = EnforcerPool.from_validations(
+            self.name, validations, self.validations
+        )
         setattr(self, "_value" if value is None else "value", value)
-
-    def _get_enforcer_pool(self, enforcers: EnforcerPool | None) -> EnforcerPool:
-        """Updates incoming enforcers with base enforcer instances."""
-
-        if enforcers is None:
-            pool = EnforcerPool.from_validations(self.name, self.validations)
-        else:
-            pool = EnforcerPool.from_validations(
-                self.name, dict(enforcers.validations, **self.validations)
-            )
-
-        return pool
 
     @property
     def value(self):
@@ -102,9 +92,9 @@ class BoolParameter(Parameter):
     validations = {"type": [bool]}
 
     def __init__(
-        self, name: str, value: bool = False, enforcers: EnforcerPool | None = None
+        self, name: str, value: bool = False, validations: dict[str, Any] | None = None
     ):
-        super().__init__(name, value, enforcers)
+        super().__init__(name, value, validations)
 
 
 class UUIDParameter(Parameter):
