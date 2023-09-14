@@ -18,13 +18,17 @@
 
 import pytest
 
-from geoh5py.shared.exceptions import TypeValidationError, UUIDValidationError
-from geoh5py.ui_json.enforcers import TypeEnforcer, ValueEnforcer
+from geoh5py.shared.exceptions import (
+    TypeValidationError,
+    UUIDValidationError,
+    ValueValidationError,
+)
 from geoh5py.ui_json.parameters import (
     BoolParameter,
     FloatParameter,
     IntegerParameter,
     Parameter,
+    RestrictedParameter,
     StringListParameter,
     StringParameter,
     UUIDParameter,
@@ -33,28 +37,13 @@ from geoh5py.ui_json.parameters import (
 # pylint: disable=protected-access
 
 
-def test_no_overwriting_class_enforcers():
-    param = StringParameter("param", validations={"type": [int], "value": ["onlythis"]})
-    assert param._enforcers.enforcers == [
-        TypeEnforcer(str),
-        ValueEnforcer(["onlythis"]),
-    ]
-
-
 def test_skip_validation_on_none_value():
-    param = Parameter("my_param", None, validations={"type": str})
+    param = StringParameter("my_param", None)
     assert param.value is None
 
 
-def test_parameter_validations_on_construction():
-    _ = Parameter("my_param", "me", validations={"type": str})
-    msg = "Type 'int' provided for 'my_param' is invalid. Must be: 'str'."
-    with pytest.raises(TypeValidationError, match=msg):
-        _ = Parameter("my_param", 1, validations={"type": str})
-
-
 def test_parameter_validations_on_setting():
-    param = Parameter("my_param", validations={"type": str})
+    param = StringParameter("my_param")
     param.value = "me"
     msg = "Type 'int' provided for 'my_param' is invalid. Must be: 'str'."
     with pytest.raises(TypeValidationError, match=msg):
@@ -64,6 +53,25 @@ def test_parameter_validations_on_setting():
 def test_parameter_str_representation():
     param = Parameter("my_param")
     assert str(param) == "<Parameter> : 'my_param' -> None"
+
+
+def test_restricted_parameter_construction():
+    param = RestrictedParameter("my_param", ["a", "b", "c"])
+    assert param.name == "my_param"
+    assert param.value is None
+    assert param._restrictions == ["a", "b", "c"]
+    assert param.validations == {"value": ["a", "b", "c"]}
+
+
+def test_restricted_parameter_validations():
+    param = RestrictedParameter("my_param", ["a", "b", "c"])
+    msg = "Value 'd' provided for 'my_param' is invalid. Must be one of: 'a', 'b', 'c'."
+    with pytest.raises(ValueValidationError, match=msg):
+        param.value = "d"
+    param = RestrictedParameter("my_param", restrictions="a")
+    msg = "Value 'b' provided for 'my_param' is invalid. Must be: 'a'."
+    with pytest.raises(ValueValidationError, match=msg):
+        param.value = "b"
 
 
 def test_string_parameter_type_validation():

@@ -54,18 +54,16 @@ class EnforcerPool:
         "required_object_data",
     ]
 
-    def __init__(self, name: str, enforcers: list[Enforcer] | None = None):
+    def __init__(self, name: str, enforcers: list[Enforcer]):
         self.name = name
-        self.enforcers: list[Enforcer] = enforcers or []
-        self._restricted: list[str] = []
+        self.enforcers: list[Enforcer] = enforcers
         self._errors: list[BaseValidationError] = []
 
     @classmethod
     def from_validations(
         cls,
         name: str,
-        validations: dict[str, Any] | None = None,
-        restricted_validations: dict[str, Any] | None = None,
+        validations: dict[str, Any],
     ) -> EnforcerPool:
         """
         Create enforcers pool from validations.
@@ -77,47 +75,20 @@ class EnforcerPool:
 
         """
 
-        def none_2_dict(target) -> dict:
-            return {} if target is None else target
-
-        validations = none_2_dict(validations)
-        restricted_validations = none_2_dict(restricted_validations)
-        validations.update(restricted_validations)
-
-        enforcers = cls(name)
-        enforcers.update(validations)
-        enforcers._restricted += list(restricted_validations)
-
-        return enforcers
-
-    def update(self, validations: dict[str, Any]):
-        """
-        Create enforcers pool from name/validation dictionary.
-
-        :param validations: Encodes validations as enforcer type and
-            validation key value pairs.
-
-        :note: Restricted enforcers are prevented from update.
-        """
-
-        existing_enforcers = {k.enforcer_type: k for k in self.enforcers}
-        for enforcer_type, validation in validations.items():
-            if enforcer_type in self._restricted:
-                continue
-
-            if enforcer_type in existing_enforcers:
-                existing_enforcers[enforcer_type].validations = validation
-
-            else:
-                enforcer = self._recruit_enforcer(enforcer_type, validation)
-                self.enforcers.append(enforcer)
+        return cls(name, cls._recruit(validations))
 
     @property
     def validations(self) -> dict[str, Any]:
         """Returns an enforcer type / validation dictionary from pool."""
         return {k.enforcer_type: k.validations for k in self.enforcers}
 
-    def _recruit_enforcer(self, enforcer_type: str, validation: Any) -> Enforcer:
+    @staticmethod
+    def _recruit(validations: dict[str, Any]):
+        """Recruit enforcers from validations."""
+        return [EnforcerPool._recruit_enforcer(k, v) for k, v in validations.items()]
+
+    @staticmethod
+    def _recruit_enforcer(enforcer_type: str, validation: Any) -> Enforcer:
         """
         Create enforcer from enforcer type and validation.
 
@@ -125,7 +96,7 @@ class EnforcerPool:
         :param validation: Enforcer validation.
         """
 
-        if enforcer_type not in self.enforcer_types:
+        if enforcer_type not in EnforcerPool.enforcer_types:
             raise ValueError(f"Invalid enforcer type: {enforcer_type}.")
 
         if enforcer_type == "type":
@@ -200,10 +171,6 @@ class Enforcer(ABC):
     def validations(self, val: Any):
         self._validations = val
 
-    def _raise_if_validations_not_set(self):
-        if not self.validations:
-            raise ValueError("Validations must be set before calling 'enforce()'.")
-
     def __eq__(self, other) -> bool:
         """Equal if same type and validations."""
 
@@ -233,7 +200,6 @@ class TypeEnforcer(Enforcer):
     def enforce(self, name: str, value: Any):
         """Administers rule to enforce type validation."""
 
-        self._raise_if_validations_not_set()
         if not self.rule(value):
             raise TypeValidationError(
                 name, type(value).__name__, [k.__name__ for k in self.validations]
@@ -273,7 +239,6 @@ class ValueEnforcer(Enforcer):
     def enforce(self, name: str, value: Any):
         """Administers rule to enforce value validation."""
 
-        self._raise_if_validations_not_set()
         if not self.rule(value):
             raise ValueValidationError(name, value, self.validations)
 
@@ -346,7 +311,6 @@ class RequiredEnforcer(Enforcer):
     def enforce(self, name: str, value: Any):
         """Administers rule to check if required items in collection."""
 
-        self._raise_if_validations_not_set()
         if not self.rule(value):
             raise self.validation_error(
                 name,

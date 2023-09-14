@@ -36,12 +36,10 @@ class Parameter:
 
     validations: dict[str, Any] = {}
 
-    def __init__(
-        self, name: str, value: Any = None, validations: dict[str, Any] | None = None
-    ):
+    def __init__(self, name: str, value: Any = None):
         self.name: str = name
         self._enforcers: EnforcerPool = EnforcerPool.from_validations(
-            self.name, validations, self.validations
+            self.name, self.validations
         )
         setattr(self, "_value" if value is None else "value", value)
 
@@ -62,22 +60,38 @@ class Parameter:
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
 
 
+class RestrictedParameter(Parameter):
+    """Parameter with a restricted set of values."""
+
+    def __init__(self, name: str, restrictions: list[Any], value: Any = None):
+        self._restrictions = restrictions
+        super().__init__(name, value)
+        # self._enforcers: EnforcerPool = EnforcerPool.from_validations(
+        #     self.name, {"value": restrictions}
+        # )
+        # setattr(self, "_value" if value is None else "value", value)
+
+    @property
+    def validations(self):
+        return {"value": self._restrictions}
+
+
 class StringParameter(Parameter):
     """Parameter for string values."""
 
-    validations = {"type": [str]}
+    validations = {"type": str}
 
 
 class IntegerParameter(Parameter):
     """Parameter for integer values."""
 
-    validations = {"type": [int]}
+    validations = {"type": int}
 
 
 class FloatParameter(Parameter):
     """Parameter for float values."""
 
-    validations = {"type": [float]}
+    validations = {"type": float}
 
 
 class NumericParameter(Parameter):
@@ -89,12 +103,10 @@ class NumericParameter(Parameter):
 class BoolParameter(Parameter):
     """Parameter for boolean values."""
 
-    validations = {"type": [bool]}
+    validations = {"type": bool}
 
-    def __init__(
-        self, name: str, value: bool = False, validations: dict[str, Any] | None = None
-    ):
-        super().__init__(name, value, validations)
+    def __init__(self, name: str, value: bool = False):
+        super().__init__(name, value)
 
 
 class UUIDParameter(Parameter):
