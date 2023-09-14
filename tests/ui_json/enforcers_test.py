@@ -41,7 +41,7 @@ from geoh5py.ui_json.enforcers import (
 
 
 def test_enforcer_pool_recruit():
-    enforcers = EnforcerPool._recruit( # pylint: disable=protected-access
+    enforcers = EnforcerPool._recruit(  # pylint: disable=protected-access
         {
             "type": str,
             "value": "onlythis",
