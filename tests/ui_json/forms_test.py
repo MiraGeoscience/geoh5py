@@ -23,6 +23,7 @@ from geoh5py.shared.exceptions import (
     AggregateValidationError,
     RequiredFormMemberValidationError,
     TypeValidationError,
+    ValueValidationError,
 )
 from geoh5py.ui_json.enforcers import TypeEnforcer, UUIDEnforcer, ValueEnforcer
 from geoh5py.ui_json.forms import (
@@ -274,22 +275,13 @@ def test_choice_string_form_parameter_construction():
     assert param.name == "my_param"
     assert param.value == "onlythis"
     assert param.label == "my param"  # pylint: disable=no-member
-    assert all(
-        k in param._value._enforcers.enforcers
-        for k in [ValueEnforcer(["onlythis"]), TypeEnforcer([list, str])]
-    )
+    assert param._value._enforcers.enforcers == [ValueEnforcer(["onlythis"])]
     assert param.choice_list == ["onlythis"]  # pylint: disable=no-member
 
 
 def test_choice_string_form_parameter_validation():
-    msg = (
-        "Validation of 'value' collected 2 errors:\n\t"
-        "0. Value '1' provided for 'value' is invalid. "
-        "Must be: 'onlythis'.\n\t"
-        "1. Type 'int' provided for 'value' is invalid. "
-        "Must be one of: 'list', 'str'."
-    )
-    with pytest.raises(AggregateValidationError, match=msg):
+    msg = "Value '1' provided for 'value' is invalid. Must be: 'onlythis'."
+    with pytest.raises(ValueValidationError, match=msg):
         _ = ChoiceStringFormParameter(
             "my_param",
             value=1,
@@ -300,6 +292,7 @@ def test_choice_string_form_parameter_validation():
 def test_choice_string_form_required_members_validation():
     param = ChoiceStringFormParameter(
         "my_param",
+        choice_list=["onlythis"],
         label="my param",
         value="onlythis",
     )

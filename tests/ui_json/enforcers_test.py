@@ -38,25 +38,15 @@ from geoh5py.ui_json.enforcers import (
 
 
 def test_enforcer_pool_construction():
-    pool = EnforcerPool("my_param")
-    assert pool.name == "my_param"
-    assert pool.enforcers == []
     pool = EnforcerPool("my_param", [TypeEnforcer(str)])
     assert pool.enforcers == [TypeEnforcer(str)]
-
-
-def test_enforcer_pool_update():
-    pool = EnforcerPool("my_param")
-    pool.update({"type": str, "value": "onlythis"})
-    assert pool.enforcers == [TypeEnforcer(str), ValueEnforcer("onlythis")]
-    pool._restricted = ["type"]  # pylint: disable=protected-access
-    pool.update({"type": int, "value": "nowonlythis"})
-    assert pool.enforcers == [TypeEnforcer(str), ValueEnforcer("nowonlythis")]
 
 
 def test_enforcer_pool_validations():
     validations = {"type": [str], "value": ["onlythis"]}
     pool = EnforcerPool.from_validations("my_param", validations)
+    assert pool.validations == validations
+    pool = EnforcerPool("my_param", [TypeEnforcer(str), ValueEnforcer(["onlythis"])])
     assert pool.validations == validations
 
 
