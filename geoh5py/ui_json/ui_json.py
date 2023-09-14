@@ -42,6 +42,9 @@ class UIJson:
 
     def __init__(self, parameters):
         self.parameters: list[Parameter | FormParameter] = parameters
+        self.enforcers: EnforcerPool = EnforcerPool.from_validations(
+            self.name, restricted_validations=self.validations
+        )
 
     def to_dict(self, naming: str = "snake") -> dict[str, Any]:
         """
@@ -66,8 +69,7 @@ class UIJson:
         """Validates uijson data against a pool of enforcers."""
 
         uijson = self.to_dict()
-        enforcers = EnforcerPool.from_validations(self.name, self.validations)
-        enforcers.enforce(uijson)
+        self.enforcers.enforce(uijson)
 
     @property
     def name(self) -> str:

@@ -16,9 +16,11 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
+import pytest
 
 from geoh5py import Workspace
 from geoh5py.objects import Points
+from geoh5py.shared.exceptions import RequiredUIJsonParameterValidationError
 from geoh5py.ui_json import InputFile
 from geoh5py.ui_json.forms import (
     BoolFormParameter,
@@ -142,12 +144,14 @@ def write_sample_uijson(
 
 
 def test_uijson_construct_default_and_update(tmp_path):
-    uijson = generate_sample_uijson(tmp_path)
+    uijson = generate_sample_uijson()
     forms = uijson.to_dict()
     assert isinstance(forms, dict)
 
 
 def test_uijson_validations(tmp_path):
-    uijson = generate_sample_uijson(tmp_path)
+    uijson = generate_sample_uijson()
     uijson.parameters = uijson.parameters[1:]
-    uijson.validate()
+    msg = r"UIJson: 'my application' is missing required parameter\(s\): \['title'\]."
+    with pytest.raises(RequiredUIJsonParameterValidationError, match=msg):
+        uijson.validate()
