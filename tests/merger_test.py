@@ -23,6 +23,7 @@ import pytest
 from geoh5py.groups import PropertyGroup
 from geoh5py.objects import Points, Surface
 from geoh5py.shared.merging import PointsMerger
+from geoh5py.shared.merging.base import BaseMerger
 from geoh5py.workspace import Workspace
 
 
@@ -67,6 +68,15 @@ def test_merge_point_data_unique_entity(tmp_path):
             )
         )
 
+        points[0].add_data(
+            {
+                "TestText": {
+                    "type": "text",
+                    "values": np.asarray(["values"]),
+                }
+            }
+        )
+
         entity_type = data[0].entity_type
 
         points.append(
@@ -81,89 +91,6 @@ def test_merge_point_data_unique_entity(tmp_path):
             points[1].add_data(
                 {
                     "DataValues0": {
-                        "association": "VERTEX",
-                        "values": np.random.randn(10),
-                        "entity_type": entity_type,
-                    }
-                }
-            )
-        )
-        data.append(
-            points[1].add_data(
-                {
-                    "DataValues3": {
-                        "association": "VERTEX",
-                        "values": np.random.randn(10),
-                    }
-                }
-            )
-        )
-
-        test = PointsMerger.merge_objects(workspace, points)
-
-        nan_array = np.empty(10)
-        nan_array[:] = np.nan
-
-        # sort the dictionary by its keys
-        np.testing.assert_almost_equal(
-            test.children[0].values, np.hstack((data[0].values, data[2].values))
-        )
-
-        np.testing.assert_almost_equal(
-            test.children[1].values, np.hstack((data[1].values, nan_array))
-        )
-
-        np.testing.assert_almost_equal(
-            test.children[2].values, np.hstack((nan_array, data[3].values))
-        )
-
-
-def test_merge_point_data_unique_entity_name(tmp_path):
-    """
-    Test the suboptimal scenario where all the data pairs of entity type
-        and name is unique in the objects.
-    """
-    h5file_path = tmp_path / r"testPoints.geoh5"
-    points = []
-    data = []
-    with Workspace.create(h5file_path) as workspace:
-        points.append(
-            Points.create(workspace, vertices=np.random.randn(10, 3), allow_move=False)
-        )
-
-        data.append(
-            points[0].add_data(
-                {
-                    "DataValues": {
-                        "association": "VERTEX",
-                        "values": np.random.randn(10),
-                    }
-                }
-            )
-        )
-
-        entity_type = data[0].entity_type
-
-        data.append(
-            points[0].add_data(
-                {
-                    "DataValues1": {
-                        "association": "VERTEX",
-                        "values": np.random.randn(10),
-                        "entity_type": entity_type,
-                    }
-                }
-            )
-        )
-
-        points.append(
-            Points.create(workspace, vertices=np.random.randn(10, 3), allow_move=False)
-        )
-
-        data.append(
-            points[1].add_data(
-                {
-                    "DataValues": {
                         "association": "VERTEX",
                         "values": np.random.randn(10),
                         "entity_type": entity_type,
@@ -218,7 +145,7 @@ def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
                 {
                     "DataValues": {
                         "association": "VERTEX",
-                        "values": np.random.randint(10, size=10),
+                        "values": np.random.randint(10, size=10, dtype=np.int32),
                     }
                 }
             )
@@ -231,7 +158,7 @@ def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
                 {
                     "DataValues": {
                         "association": "VERTEX",
-                        "values": np.random.randint(10, size=10),
+                        "values": np.random.randint(10, size=10, dtype=np.int32),
                         "entity_type": entity_type,
                     }
                 }
@@ -247,7 +174,7 @@ def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
                 {
                     "DataValues": {
                         "association": "VERTEX",
-                        "values": np.random.randint(10, size=10),
+                        "values": np.random.randint(10, size=10, dtype=np.int32),
                         "entity_type": entity_type,
                     }
                 }
@@ -350,3 +277,9 @@ def test_merge_attribute_error(tmp_path):
 
         with pytest.raises(AttributeError, match="All entities must have vertices"):
             _ = PointsMerger.merge_objects(workspace, points)
+
+        with pytest.raises(NotImplementedError, match="BaseMerger cannot be use"):
+            _ = BaseMerger.create_object(workspace, points, name="bidon")
+
+        with pytest.raises(NotImplementedError, match="BaseMerger cannot be use"):
+            _ = BaseMerger.validate_type(points[0])
