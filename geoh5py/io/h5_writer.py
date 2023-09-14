@@ -342,6 +342,8 @@ class H5Writer:
                 cls.write_property_groups(h5file, entity)
             elif attribute == "color_map":
                 cls.write_color_map(h5file, entity)
+            elif attribute == "value_map":
+                cls.write_value_map(h5file, entity)
             elif attribute == "entity_type":
                 del entity_handle["Type"]
                 entity.workspace.repack = True
