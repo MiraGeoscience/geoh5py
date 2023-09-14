@@ -218,7 +218,7 @@ def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
                 {
                     "DataValues": {
                         "association": "VERTEX",
-                        "values": np.random.randn(10),
+                        "values": np.random.randint(10, size=10),
                     }
                 }
             )
@@ -231,7 +231,7 @@ def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
                 {
                     "DataValues": {
                         "association": "VERTEX",
-                        "values": np.random.randn(10),
+                        "values": np.random.randint(10, size=10),
                         "entity_type": entity_type,
                     }
                 }
@@ -247,7 +247,7 @@ def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
                 {
                     "DataValues": {
                         "association": "VERTEX",
-                        "values": np.random.randn(10),
+                        "values": np.random.randint(10, size=10),
                         "entity_type": entity_type,
                     }
                 }
@@ -264,21 +264,25 @@ def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
             )
         )
 
-        test = PointsMerger.merge_objects(workspace, points)
+        with pytest.warns(UserWarning, match=f"Multiple data '{data[0].name}'"):
+            test = PointsMerger.merge_objects(workspace, points)
 
-        nan_array = np.empty(10)
-        nan_array[:] = np.nan
+        int_nan_array = np.empty(10)
+        int_nan_array[:] = data[0].nan_value
+
+        float_nan_array = np.empty(10)
+        float_nan_array[:] = np.nan
 
         np.testing.assert_almost_equal(
             test.children[0].values, np.hstack((data[0].values, data[2].values))
         )
 
         np.testing.assert_almost_equal(
-            test.children[1].values, np.hstack((data[1].values, nan_array))
+            test.children[1].values, np.hstack((data[1].values, int_nan_array))
         )
 
         np.testing.assert_almost_equal(
-            test.children[2].values, np.hstack((nan_array, data[3].values))
+            test.children[2].values, np.hstack((float_nan_array, data[3].values))
         )
 
 
