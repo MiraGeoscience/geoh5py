@@ -17,31 +17,13 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any, Dict
 from uuid import UUID
 
-import numpy as np
-
-from geoh5py.shared.exceptions import AggregateValidationError, BaseValidationError
-from geoh5py.ui_json.validation import Validations
+from geoh5py.ui_json.enforcers import EnforcerPool
 
 Validation = Dict[str, Any]
-
-KEY_MAP = {
-    "groupOptional": "group_optional",
-    "dependencyType": "dependency_type",
-    "groupDependency": "group_dependency",
-    "groupDependencyType": "group_dependency_type",
-    "lineEdit": "line_edit",
-    "choiceList": "choice_list",
-    "fileDescription": "file_description",
-    "fileType": "file_type",
-    "fileMulti": "file_multi",
-    "meshType": "mesh_type",
-    "dataType": "data_type",
-    "dataGroupType": "data_group_type",
-    "isValue": "is_value",
-}
 
 
 class Parameter:
@@ -50,13 +32,31 @@ class Parameter:
 
     :param name: Parameter name.
     :param value: The parameters value.
-    :param validations: Parameter validations
+    :param enforcers: A collection of enforcers.
+    :param validations: Base enforcers encoded as an enforcer type and
+        validation key value dictionary.
     """
 
-    def __init__(self, name, value=None, validations: Validation | None = None):
-        self._validations: Validations = Validations(validations)
+    validations: dict[str, Any] = {}
+
+    def __init__(
+        self, name: str, value: Any = None, enforcers: EnforcerPool | None = None
+    ):
         self.name: str = name
+        self._enforcers: EnforcerPool = self._get_enforcer_pool(enforcers)
         setattr(self, "_value" if value is None else "value", value)
+
+    def _get_enforcer_pool(self, enforcers: EnforcerPool | None) -> EnforcerPool:
+        """Updates incoming enforcers with base enforcer instances."""
+
+        if enforcers is None:
+            out = EnforcerPool.from_validations(self.name, self.validations)
+        else:
+            out = EnforcerPool.from_validations(
+                self.name, dict(enforcers.validations, **self.validations)
+            )
+
+        return out
 
     @property
     def value(self):
@@ -65,504 +65,102 @@ class Parameter:
     @value.setter
     def value(self, val):
         self._value = val
-        if self.validations:
-            self.validate()
-
-    @property
-    def validations(self) -> Validations:
-        return self._validations
-
-    @validations.setter
-    def validations(self, val):
-        self._validations = Validations(val)
+        self.validate()
 
     def validate(self):
-        self.validations.validate(self.name, self.value)
+        """Validates data against the pool of enforcers."""
+        self._enforcers.validate(self.value)
 
     def __str__(self):
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
 
 
-class ValueAccess:
-    """
-    Descriptor to elevate underlying member values within 'FormParameter'.
+class TypedParameter(Parameter):
+    """Parameter for typed values."""
 
-    :param private: Name of private attribute.
-    """
-
-    def __init__(self, private: str):
-        self.private = private
-
-    def __get__(self, obj, objtype=None):
-        return getattr(obj, self.private).value
-
-    def __set__(self, obj, value):
-        setattr(getattr(obj, self.private), "value", value)
-        obj._active_members.append(self.private[1:])
-
-
-class FormParameter:
-    """
-    Base class for parameters that create visual ui elements from a form.
-
-    :param name: Parameter name.
-    :param value: The parameters value.
-    :param validations: Parameter validations
-    :param form_validations: Parameter's form validations
-    :param form: dictionary specifying visual characteristics of a ui element.
-    :param active: list of form members to include in form.
-        valid form.
-
-    :note: Can be constructed from keyword arguments of through the
-        'from_dict' constructor.
-
-    :note: The form members may be updated with a dictionary of members and
-        associated data through the 'register' method.
-
-    :note: Standardized form members (in valid_members list) will also
-        be accessible through a descriptor that sets/gets the underlying
-        values attribute of the private Parameter object.
-    """
-
-    form_validations: dict[str, Validation] = {
-        "label": {"required": True, "types": [str]},
-        "value": {"required": True},
-        "enabled": {"types": [bool, type(None)]},
-        "optional": {"types": [bool, type(None)]},
-        "main": {"types": [bool, type(None)]},
-        "group": {"types": [str, type(None)]},
-        "group_optional": {"types": [bool, type(None)]},
-        "dependency": {"types": [str, type(None)]},
-        "dependency_type": {"values": ["enabled", "disabled", "show", "hide"]},
-        "group_dependency": {"types": [str, type(None)]},
-        "group_dependency_type": {"values": ["enabled", "disabled", "show", "hide"]},
-        "tooltip": {"types": [str, type(None)]},
-    }
-    valid_members: list[str] = list(form_validations.keys())
-    identifier_members: list[str] = []
-
-    def __init__(self, name: str, validations: Validation | None = None, **kwargs):
-        self.name: str = name
-        self._value = Parameter("value", None)
-        self._label: str | None = None
-        self._enabled: bool = True
-        self._optional: bool = False
-        self._group_optional: bool = False
-        self._main: bool = True
-        self._group: str | None = None
-        self._dependency: str | None = None
-        self._dependency_type: str | None = None
-        self._group_dependency: str | None = None
-        self._group_dependency_type: str | None = None
-        self._tooltip: str | None = None
-        self._extra_members: dict[str, Any] = {}
-        self._active_members: list[str] = list(kwargs)
-        self.validations: Validations = Validations(validations)
-        self.register(kwargs)
-
-    @classmethod
-    def from_dict(
-        cls, name: str, form: dict[str, Any], validations: dict | None = None
+    def __init__(
+        self,
+        name,
+        value=None,
+        enforcers: EnforcerPool | None = None,
+        optional: bool = False,
     ):
-        return cls(name, validations, **form)
+        self.optional = optional
 
-    @property
-    def value(self):
-        return self._value.value
+        super().__init__(name, value=value, enforcers=enforcers)
 
-    @value.setter
-    def value(self, val):
-        self._value.value = val
+    def _get_enforcer_pool(self, enforcers: EnforcerPool | None) -> EnforcerPool:
+        """Updates incoming enforcers with base enforcer instances."""
 
-    def register(self, members: dict[str, Any]):
-        """
-        Set parameters from form members with default or incoming values.
+        validations = deepcopy(self.validations)
+        if self.optional:
+            validations["type"] += [type(None)]
 
-        :param members: Dictionary of form members and associated data.
-
-        :return: Dictionary of unrecognized members and data.
-        """
-
-        if not members:
-            return
-
-        if not isinstance(members, dict):
-            raise TypeError("Input 'members' must be a dictionary.")
-
-        members = {KEY_MAP.get(k, k): v for k, v in members.items()}
-        error_list = []
-        for member in self.valid_members:
-            validations = (
-                self.validations if member == "value" else self.form_validations[member]
+        if enforcers is None:
+            out = EnforcerPool.from_validations(self.name, validations)
+        else:
+            out = EnforcerPool.from_validations(
+                self.name, dict(enforcers.validations, **validations)
             )
-            if member in members:
-                try:
-                    param = Parameter(
-                        member, members.pop(member), validations  # type: ignore
-                    )
-                except BaseValidationError as err:
-                    error_list.append(err)
-            else:
-                param = Parameter(member, validations=validations)  # type: ignore
 
-            setattr(self, f"_{member}", param)
-            if member not in dir(self):  # do not override pre-defined properties
-                setattr(self.__class__, member, ValueAccess(f"_{member}"))
-
-        if error_list:
-            if len(error_list) == 1:
-                raise error_list.pop()
-
-            raise AggregateValidationError(self.name, error_list)
-
-        self._extra_members.update(members)
-
-    @property
-    def validations(self) -> Validations:
-        return self._value.validations
-
-    @validations.setter
-    def validations(self, val):
-        self._value.validations = val
-
-    @property
-    def active(self) -> list[str]:
-        """
-        Returns names of active form members.
-
-        :return: List of active form members.  These will include any members
-            that were:
-                1. Provided during construction.
-                2. Updated through the 'register' method.
-                3. Updated through member setters.
-                4. Defined as 'required' by the validations.
-        """
-        active = self._active_members + list(self._extra_members)
-        active_unique, ind = np.unique(active, return_index=True)
-        return list(active_unique[ind])  # Preserve order after unique
-
-    @property
-    def form(self):
-        """Returns dictionary of active form members and their values."""
-        form = {}
-        for member in self.active:
-            if member in self._extra_members:
-                form[member] = self._extra_members[member]
-            else:
-                form[member] = getattr(self, member)
-
-        return form
-
-    @classmethod
-    def is_form(cls, form: dict[str, Any]) -> bool:
-        """Returns True if form contains any identifier members."""
-        id_members = cls.identifier_members
-        form_members = [KEY_MAP.get(k, k) for k in form]
-        return any(k in form_members for k in id_members)
-
-    def __str__(self):
-        return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
+        return out
 
 
-class StringParameter(FormParameter):
-    """String parameter type."""
+class StringParameter(TypedParameter):
+    """Parameter for string values."""
 
-    base_validations: Validation = {"types": [str]}
-
-    def __init__(self, name, validations=None, **kwargs):
-        validations = (
-            dict(self.base_validations, **validations)
-            if validations
-            else self.base_validations
-        )
-        super().__init__(name, validations=validations, **kwargs)
+    validations = {"type": [str]}
 
 
-class BoolParameter(FormParameter):
-    """Boolean parameter type."""
+class IntegerParameter(TypedParameter):
+    """Parameter for integer values."""
 
-    base_validations: Validation = {"types": [bool]}
-
-    def __init__(self, name, validations=None, **kwargs):
-        validations = (
-            dict(self.base_validations, **validations)
-            if validations
-            else self.base_validations
-        )
-        super().__init__(name, validations=validations, **kwargs)
+    validations = {"type": [int]}
 
 
-class IntegerParameter(FormParameter):
-    """
-    Integer parameter type.
+class FloatParameter(TypedParameter):
+    """Parameter for float values."""
 
-    :param min: Minimum value for ui element.
-    :param max: Maximum value for ui element.
-    """
-
-    base_validations: Validation = {"types": [int]}
-    form_validations: dict[str, Validation] = dict(
-        FormParameter.form_validations,
-        **{
-            "min": {"types": [int, type(None)]},
-            "max": {"types": [int, type(None)]},
-        },
-    )
-    valid_members: list[str] = list(form_validations.keys())
-    identifier_members: list[str] = []
-
-    def __init__(self, name, validations=None, **kwargs):
-        self._min: int | None = None
-        self._max: int | None = None
-        validations = (
-            dict(self.base_validations, **validations)
-            if validations
-            else self.base_validations
-        )
-        super().__init__(name, validations=validations, **kwargs)
+    validations = {"type": [float]}
 
 
-class FloatParameter(FormParameter):
-    """
-    Float parameter type.
+class NumericParameter(TypedParameter):
+    """Parameter for generic numeric values."""
 
-    :param min: Minimum value for ui element.
-    :param max: Maximum value for ui element.
-    :param precision: Number of decimal places to display in ui element.
-    :param line_edit: If False, the ui element incluces a spinbox.
-    """
-
-    base_validations: Validation = {"types": [float]}
-    form_validations: dict[str, Validation] = dict(
-        FormParameter.form_validations,
-        **{
-            "min": {"types": [float, type(None)]},
-            "max": {"types": [float, type(None)]},
-            "precision": {"types": [int, type(None)]},
-            "line_edit": {"types": [bool, type(None)]},
-        },
-    )
-    valid_members: list[str] = list(form_validations.keys())
-    identifier_members: list[str] = ["precision", "line_edit"]
-
-    def __init__(self, name, validations=None, **kwargs):
-        self._min: float | None = None
-        self._max: float | None = None
-        self._precision: int | None = None
-        self._line_edit: bool | None = None
-        validations = (
-            dict(self.base_validations, **validations)
-            if validations
-            else self.base_validations
-        )
-        super().__init__(name, validations=validations, **kwargs)
+    validations = {"type": [int, float]}
 
 
-class ChoiceStringParameter(FormParameter):
-    """
-    Choice string parameter type.
+class BoolParameter(TypedParameter):
+    """Parameter for boolean values."""
 
-    :param choice_list: List of choices for ui dropdown.
-    """
+    validations = {"type": [bool]}
 
-    base_validations: Validation = {"types": [str]}
-    form_validations: dict[str, Validation] = dict(
-        FormParameter.form_validations,
-        **{"choice_list": {"required": True, "types": [list]}},
-    )
-    valid_members: list[str] = list(form_validations.keys())
-    identifier_members: list[str] = ["choice_list"]
 
-    def __init__(self, name, validations=None, **kwargs):
-        self._choice_list: list | None = None
-        validations = (
-            dict(self.base_validations, **validations)
-            if validations
-            else self.base_validations
-        )
-        super().__init__(name, validations=validations, **kwargs)
+class UUIDParameter(TypedParameter):
+    validations = {"type": [str, UUID], "uuid": None}
 
-    @property
-    def choice_list(self):
-        return self._choice_list
+    def _get_enforcer_pool(self, enforcers: EnforcerPool | None) -> EnforcerPool:
+        """Updates incoming enforcers with base enforcer instances."""
 
-    @choice_list.setter
-    def choice_list(self, val):
-        self._choice_list = val
+        validations = deepcopy(self.validations)
+        if self.optional:
+            validations["type"] += [type(None)]
+            validations["uuid"] = "optional"
 
-        if isinstance(val, Parameter):
-            val = val.value
-
-        if self.validations:
-            self.validations.update({"values": val})
+        if enforcers is None:
+            out = EnforcerPool.from_validations(self.name, validations)
         else:
-            self.validations = {"values": val}  # type: ignore
+            out = EnforcerPool.from_validations(
+                self.name, dict(enforcers.validations, **validations)
+            )
+
+        return out
 
 
-class FileParameter(FormParameter):
-    """
-    File parameter type.
+class StringListParameter(TypedParameter):
+    """Parameter for list of strings."""
 
-    :param file_description: list of file descriptions for each file type.
-    :param file_type: list of file extensions to filter directory on.
-    :param file_multi: Allow multiple files to be selected from dropdown.
-    """
+    validations = {"type": [list, str]}
 
-    base_validations: Validation = {"types": [str]}
-    form_validations: dict[str, Validation] = dict(
-        FormParameter.form_validations,
-        **{
-            "file_description": {"required": True, "types": [str, tuple, list]},
-            "file_type": {"required": True, "types": [str, tuple, list]},
-            "file_multi": {"types": [bool, type(None)]},
-        },
-    )
-    valid_members: list[str] = list(form_validations.keys())
-    identifier_members: list[str] = ["file_description", "file_type", "file_multi"]
-
-    def __init__(self, name, validations=None, **kwargs):
-        self._file_description: str | tuple | list | None = None
-        self._file_type: str | tuple | list | None = None
-        self._file_multi: bool = False
-        validations = (
-            dict(self.base_validations, **validations)
-            if validations
-            else self.base_validations
-        )
-        super().__init__(name, validations=validations, **kwargs)
-
-
-class ObjectParameter(FormParameter):
-    """
-    Object parameter type.
-
-    :param mesh_type: list of object types (uid) that will be available in the
-        dropdown.  Empty list will reveal all objects in geoh5.
-    """
-
-    base_validations: Validation = {"types": [str, UUID]}
-    form_validations: dict[str, Validation] = dict(
-        FormParameter.form_validations,
-        **{
-            "mesh_type": {
-                "required": True,
-                "types": [str, UUID, list],
-            }
-        },
-    )
-    valid_members: list[str] = list(form_validations.keys())
-    identifier_members: list[str] = ["mesh_type"]
-
-    def __init__(self, name, validations=None, **kwargs):
-        self._mesh_type: list = []
-        validations = (
-            dict(self.base_validations, **validations)
-            if validations
-            else self.base_validations
-        )
-        super().__init__(name, validations=validations, **kwargs)
-
-
-class DataParameter(FormParameter):
-    """
-    Data parameter type.
-
-    :param parent: Name of parent object.
-    :param association: Filters data to those living on vertices or cells.
-    :param data_type: Filters data type.
-    :param data_group_type: Filters data group type.
-    """
-
-    base_validations: Validation = {"types": [str, UUID, type(None)]}
-    form_validations: dict[str, Validation] = dict(
-        FormParameter.form_validations,
-        **{
-            "parent": {"required": True, "types": [str, UUID]},
-            "association": {"required": True, "values": ["Vertex", "Cell"]},
-            "data_type": {
-                "required": True,
-                "values": ["Float", "Integer", "Reference"],
-            },
-            "data_group_type": {
-                "values": [
-                    "3D vector",
-                    "Dip direction & dip",
-                    "Strike & dip",
-                    "Multi-element",
-                ]
-            },
-        },
-    )
-    valid_members: list[str] = list(form_validations.keys())
-    identifier_members: list[str] = ["data_group_type"]
-
-    def __init__(self, name, validations=None, **kwargs):
-        self._parent: str | UUID | None = None
-        self._association: str | None = None
-        self._data_type: str | None = None
-        self._data_group_type: str | None = None
-        validations = (
-            dict(self.base_validations, **validations)
-            if validations
-            else self.base_validations
-        )
-        super().__init__(name, validations=validations, **kwargs)
-
-
-class DataValueParameter(FormParameter):
-    """
-    Data value parameter type.
-
-    :param parent: Name of parent object.
-    :param association: Filters data to those living on vertices or cells.
-    :param data_type: Filters data type.
-    :param is_value: Gives ui element a button to switch between value box
-        and dropdown of available properties.
-    :param property: Name of property.
-    """
-
-    base_validations: Validation = {"types": [int, float]}
-    form_validations: dict[str, Validation] = dict(
-        FormParameter.form_validations,
-        **{
-            "parent": {"required": True, "types": [str, UUID]},
-            "association": {"required": True, "values": ["Vertex", "Cell"]},
-            "data_type": {
-                "required": True,
-                "values": ["Float", "Integer", "Reference"],
-            },
-            "is_value": {"required": True, "types": [bool]},
-            "property": {"required": True, "types": [str, UUID]},
-        },
-    )
-    valid_members: list[str] = list(form_validations.keys())
-    identifier_members: list[str] = ["is_value", "property"]
-
-    def __init__(self, name, validations=None, **kwargs):
-        self._parent: str | UUID | None = None
-        self._association: str | None = None
-        self._data_type: str | None = None
-        self._is_value: bool | None = None
-        self._property: str | UUID | None = None
-        validations = (
-            dict(self.base_validations, **validations)
-            if validations
-            else self.base_validations
-        )
-        super().__init__(name, validations=validations, **kwargs)
-
-    @property
-    def value(self):
-        val = self.property
-        if self.is_value:
-            val = self._value.value
-        return val
-
-    @value.setter
-    def value(self, val):
-        if isinstance(val, (int, float)):
-            self._value.value = val
-            self.is_value = True
-        else:
-            self.property = val
-            self.is_value = False
+    # TODO: introduce type alias handling so that TypeEnforcer(list[str], str)
+    # is possible
