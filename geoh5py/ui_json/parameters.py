@@ -66,10 +66,6 @@ class RestrictedParameter(Parameter):
     def __init__(self, name: str, restrictions: list[Any], value: Any = None):
         self._restrictions = restrictions
         super().__init__(name, value)
-        # self._enforcers: EnforcerPool = EnforcerPool.from_validations(
-        #     self.name, {"value": restrictions}
-        # )
-        # setattr(self, "_value" if value is None else "value", value)
 
     @property
     def validations(self):
