@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from warnings import warn
 
 import numpy as np
 
@@ -59,13 +60,25 @@ class BaseMerger(ABC):
                 # Increment label in case of duplicate match
                 if label in data_dict:
                     values = data_dict[label].values
-                    if isinstance(values, np.ndarray) and ~np.all(
-                        values[start:end] == data.nan_value
+                    if isinstance(values, np.ndarray) and (
+                        ~np.all(
+                            np.logical_or(
+                                values[start:end] == data.nan_value,
+                                np.isnan(values[start:end]),
+                            )
+                        )
                     ):
                         label = (
                             data.name + f"({ind})",
                             data.entity_type.name,
                             association,
+                        )
+                        warn(
+                            f"Multiple data '{data.name}' with entity_type "
+                            f"name '{data.entity_type.name}' "
+                            f"were found on object '{input_entity.name}'. "
+                            f"The merging operation is ambiguous. "
+                            f"Please validate or rename the data."
                         )
 
                 if label not in data_dict:
