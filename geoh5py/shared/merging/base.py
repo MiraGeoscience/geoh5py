@@ -60,7 +60,7 @@ class BaseMerger(ABC):
                 if label in data_dict:
                     values = data_dict[label].values
                     if isinstance(values, np.ndarray) and ~np.all(
-                        np.isnan(values[start:end])
+                        values[start:end] == data.nan_value
                     ):
                         label = (
                             data.name + f"({ind})",
