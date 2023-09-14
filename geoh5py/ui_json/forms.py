@@ -160,7 +160,9 @@ class FormParameter:
         self._active_members: list[str] = []
         if kwargs:
             self.register(kwargs)
-        self.enforcers = EnforcerPool.from_validations(self.name, self.validations)
+        self.enforcers: EnforcerPool = EnforcerPool.from_validations(
+            self.name, self.validations
+        )
 
     def form(self, use_camel: bool = False) -> dict[str, Any]:
         """
@@ -385,9 +387,19 @@ class DataFormParameter(FormParameter):
 
     def __init__(self, name, value=None, **kwargs):
         self._parent = StringParameter("parent")
-        self._association = RestrictedParameter("association", ["Vertex", "Cell"])
+        self._association = RestrictedParameter("association", ["Vertex", "Cell", "Face"])
         self._data_type = RestrictedParameter(
-            "data_type", ["Float", "Integer", "Reference"]
+            "data_type",
+            [
+                "Integer",
+                "Float",
+                "Text",
+                "Referenced",
+                "Vector",
+                "DateTime",
+                "Geometric",
+                "Boolean",
+            ]
         )
         self._data_group_type = RestrictedParameter(
             "data_group_type", ["3D vector", "Dip direction & dip", "Strike & dip"]
@@ -422,9 +434,19 @@ class DataValueFormParameter(FormParameter):
 
     def __init__(self, name, value=None, **kwargs):
         self._parent = StringParameter("parent")
-        self._association = RestrictedParameter("association", ["Vertex", "Cell"])
+        self._association = RestrictedParameter("association", ["Vertex", "Cell", "Face"])
         self._data_type = RestrictedParameter(
-            "data_type", ["Float", "Integer", "Reference"]
+            "data_type",
+            [
+                "Integer",
+                "Float",
+                "Text",
+                "Referenced",
+                "Vector",
+                "DateTime",
+                "Geometric",
+                "Boolean",
+            ]
         )
         self._is_value = BoolParameter("is_value")
         self._property = UUIDParameter("property")
