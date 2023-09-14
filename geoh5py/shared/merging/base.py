@@ -17,11 +17,11 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import cast
+from warnings import warn
 
 import numpy as np
 
-from ...data import Data
+from ...data import NumericData
 from ...objects import ObjectBase
 from ...workspace import Workspace
 
@@ -30,150 +30,85 @@ class BaseMerger(ABC):
     _type: type = ObjectBase
 
     @classmethod
-    def number_of_keys(cls, type_list: list[entity_type], nb_keys: int) -> int:
-        """
-        Get the number of keys to use in the definition of the entity type.
-        
-        :param entity_unique_entity_types: the unique entity types generated
-            by extract_data_information().
-        :param nb_keys: the number of keys to use to define the entity type.
-        :return: the number of keys to use in the definition of the entity type.
-        """
-
-        # define how to define the entity_type
-        if nb_keys != 3 and len(
-            list({unique_type[:nb_keys] for unique_type in entity_unique_entity_types})
-        ) != len(entity_unique_entity_types):
-            nb_keys = 2
-            if len(list(set(entity_unique_entity_types))) != len(
-                entity_unique_entity_types
-            ):
-                nb_keys = 3
-
-        return nb_keys
-
-    @classmethod
-    def create_add_data_dictionary(
-        cls,
-        data_array: np.ndarray,
-        unique_entity_types: list,
-        unique_associations: dict,
-        nb_keys: int,
-    ):
-        """
-        Create the dictionary of data to add to the merged object.
-
-        :param data_array: the array containing the data to be merged.
-        :param unique_entity_types: the unique entity types generated
-        :param unique_associations: the unique associations generated
-        :param nb_keys: the number of keys to use to define the entity type.
-        :return: a dictionary of data to add to the merged object.
-        """
-
-        # create the output data
-        add_data_dict = {}
-        for id_, data in enumerate(data_array):
-            # define the association
-            association = unique_associations[unique_entity_types[id_]]
-
-            if not len(set(association)) == 1:
-                raise ValueError(
-                    f"Cannot merge data with different associations: {set(association)}"
-                )
-
-            # define the name
-            if nb_keys == 3:
-                name = f"merged_{unique_entity_types[id_][0].name}_{id_}"
-            elif nb_keys == 2:
-                name = f"merged_{unique_entity_types[id_][0].name}_{unique_entity_types[id_][1]}"
-            else:
-                name = f"merged_{unique_entity_types[id_][0].name}"
-
-            add_data_dict[name] = {
-                "association": association[0],
-                "values": data,
-                "entity_type": unique_entity_types[id_][0],
-            }
-
-        return add_data_dict
-
-    @classmethod
-    def extract_data_information(cls, input_entities: list[ObjectBase]) -> tuple:
-        """
-        Extract the information from data of the input entities.
-        :param input_entities: the list of the object to extract the data from.
-        :return: a tuple containing a list of the data information,
-            the unique entity types for each data,
-            the total length of the vertices,
-            and the number of keys to use to define the entity type.
-        """
-        # extract the data from the input entities
-        id_, previous, nb_keys = 0, 0, 1
-        all_data, unique_entity_types = [], []
-        for input_entity in input_entities:
-            entity_unique_entity_types = []
-
-            for data in input_entity.children:
-                if not isinstance(data, Data):
-                    continue
-                if data.name == "Visual Parameters":
-                    continue
-
-                all_data.append(
-                    [
-                        data.values,
-                        (data.entity_type, data.name, id_),
-                        data.association,
-                        previous,
-                        previous + cast(int, input_entity.n_vertices),
-                    ]
-                )
-                entity_unique_entity_types.append((data.entity_type, data.name))
-                unique_entity_types.append((data.entity_type, data.name, id_))
-                id_ += 1
-
-            # define how to define the entity_type
-            nb_keys = cls.compute_nb_keys(entity_unique_entity_types, nb_keys)
-            previous += cast(int, input_entity.n_vertices)
-
-        # create an intermediate array
-        all_data = np.array(all_data, dtype=object)
-
-        # prepare the attributes
-        unique_entity_types = list(
-            dict.fromkeys(
-                [entity_type[:nb_keys] for entity_type in unique_entity_types]  # type: ignore
-            )
-        )
-
-        return all_data, unique_entity_types, previous, nb_keys
-
-    @classmethod
-    def merge_data(cls, input_entities: list[ObjectBase]) -> dict[str, dict]:
+    def merge_data(cls, out_entity, input_entities: list[ObjectBase]):
         """
         Merge the data respecting the entity type, the values, and the association.
 
          :param input_entities: the list of objects to merge the data from.
         :return: a dictionary of data to add to the merged object.
         """
+        data_dict: dict[tuple, NumericData] = {}
+        data_count = {"VERTEX": 0, "CELL": 0}
 
-        # extract the data from the input entities
-        (
-            all_data,
-            unique_entity_types,
-            total_length,
-            nb_keys,
-        ) = cls.extract_data_information(input_entities)
+        for input_entity in input_entities:
+            for ind, data in enumerate(input_entity.children):
+                if (
+                    not isinstance(data, NumericData)
+                    or data.association is None
+                    or data.n_values is None
+                    or data.values is None
+                ):
+                    continue
 
-        # prepare the attributes
-        data_array, unique_associations = cls.prepare_attributes(
-            unique_entity_types, all_data, total_length, nb_keys
-        )
+                association = data.association.name
+                label = (data.name, data.entity_type.name, association)
+                start, end = (
+                    data_count[association],
+                    data_count[association] + data.n_values,
+                )
 
-        # create the output data
-        return cls.create_add_data_dictionary(
-            data_array, unique_entity_types, unique_associations, nb_keys
-        )
+                # Increment label in case of duplicate match
+                if label in data_dict:
+                    values = data_dict[label].values
+                    if isinstance(values, np.ndarray) and (
+                        ~np.all(
+                            np.logical_or(
+                                values[start:end] == data.nan_value,
+                                np.isnan(values[start:end]),
+                            )
+                        )
+                    ):
+                        label = (
+                            data.name + f"({ind})",
+                            data.entity_type.name,
+                            association,
+                        )
+                        warn(
+                            f"Multiple data '{data.name}' with entity_type "
+                            f"name '{data.entity_type.name}' "
+                            f"were found on object '{input_entity.name}'. "
+                            f"The merging operation is ambiguous. "
+                            f"Please validate or rename the data."
+                        )
+
+                if label not in data_dict:
+                    shape = (
+                        out_entity.n_vertices
+                        if association == "VERTEX"
+                        else out_entity.n_cells
+                    )
+                    data_dict[label] = out_entity.add_data(
+                        {
+                            data.name: {
+                                "values": np.ones(shape) * data.nan_value,
+                                "association": association,
+                                "entity_type": data.entity_type,
+                            }
+                        }
+                    )
+
+                values = data_dict[label].values
+
+                if isinstance(values, np.ndarray):
+                    values[start:end] = data.values
+                    data_dict[label].values = values
+
+            data_count["VERTEX"] += (
+                input_entity.n_vertices if input_entity.n_vertices is not None else 0
+            )
+            data_count["CELL"] += (
+                input_entity.n_cells if input_entity.n_cells is not None else 0
+            )
 
     @classmethod
     def merge_objects(
@@ -204,7 +139,7 @@ class BaseMerger(ABC):
 
         # add the data
         if add_data:
-            output.add_data(cls.merge_data(input_entities))
+            cls.merge_data(output, input_entities)
 
         return output
 

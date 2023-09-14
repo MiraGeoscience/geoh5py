@@ -20,7 +20,6 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from geoh5py.data import Data
 from geoh5py.groups import PropertyGroup
 from geoh5py.objects import Points, Surface
 from geoh5py.shared.merging import PointsMerger
@@ -81,7 +80,7 @@ def test_merge_point_data_unique_entity(tmp_path):
         data.append(
             points[1].add_data(
                 {
-                    "DataValues2": {
+                    "DataValues0": {
                         "association": "VERTEX",
                         "values": np.random.randn(10),
                         "entity_type": entity_type,
@@ -106,28 +105,16 @@ def test_merge_point_data_unique_entity(tmp_path):
         nan_array[:] = np.nan
 
         # sort the dictionary by its keys
-        merged_data = list(
-            dict(
-                sorted(
-                    {
-                        child.name: child.values
-                        for child in test.children
-                        if isinstance(child, Data)
-                    }.items()
-                )
-            ).values()
+        np.testing.assert_almost_equal(
+            test.children[0].values, np.hstack((data[0].values, data[2].values))
         )
 
         np.testing.assert_almost_equal(
-            merged_data[0], np.hstack((data[0].values, data[2].values))
+            test.children[1].values, np.hstack((data[1].values, nan_array))
         )
 
         np.testing.assert_almost_equal(
-            merged_data[1], np.hstack((data[1].values, nan_array))
-        )
-
-        np.testing.assert_almost_equal(
-            merged_data[2], np.hstack((nan_array, data[3].values))
+            test.children[2].values, np.hstack((nan_array, data[3].values))
         )
 
 
@@ -201,28 +188,16 @@ def test_merge_point_data_unique_entity_name(tmp_path):
         nan_array[:] = np.nan
 
         # sort the dictionary by its keys
-        merged_data = list(
-            dict(
-                sorted(
-                    {
-                        child.name: child.values
-                        for child in test.children
-                        if isinstance(child, Data)
-                    }.items()
-                )
-            ).values()
+        np.testing.assert_almost_equal(
+            test.children[0].values, np.hstack((data[0].values, data[2].values))
         )
 
         np.testing.assert_almost_equal(
-            merged_data[1], np.hstack((data[0].values, data[2].values))
+            test.children[1].values, np.hstack((data[1].values, nan_array))
         )
 
         np.testing.assert_almost_equal(
-            merged_data[2], np.hstack((data[1].values, nan_array))
-        )
-
-        np.testing.assert_almost_equal(
-            merged_data[0], np.hstack((nan_array, data[3].values))
+            test.children[2].values, np.hstack((nan_array, data[3].values))
         )
 
 
@@ -243,7 +218,7 @@ def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
                 {
                     "DataValues": {
                         "association": "VERTEX",
-                        "values": np.random.randn(10),
+                        "values": np.random.randint(10, size=10),
                     }
                 }
             )
@@ -256,7 +231,7 @@ def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
                 {
                     "DataValues": {
                         "association": "VERTEX",
-                        "values": np.random.randn(10),
+                        "values": np.random.randint(10, size=10),
                         "entity_type": entity_type,
                     }
                 }
@@ -272,7 +247,7 @@ def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
                 {
                     "DataValues": {
                         "association": "VERTEX",
-                        "values": np.random.randn(10),
+                        "values": np.random.randint(10, size=10),
                         "entity_type": entity_type,
                     }
                 }
@@ -289,38 +264,25 @@ def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
             )
         )
 
-        test = PointsMerger.merge_objects(workspace, points)
+        with pytest.warns(UserWarning, match=f"Multiple data '{data[0].name}'"):
+            test = PointsMerger.merge_objects(workspace, points)
 
-        nan_array = np.empty(10)
-        nan_array[:] = np.nan
+        int_nan_array = np.empty(10)
+        int_nan_array[:] = data[0].nan_value
 
-        # sort the dictionary by its keys
-        merged_data = list(
-            dict(
-                sorted(
-                    {
-                        child.name: child.values
-                        for child in test.children
-                        if isinstance(child, Data)
-                    }.items()
-                )
-            ).values()
+        float_nan_array = np.empty(10)
+        float_nan_array[:] = np.nan
+
+        np.testing.assert_almost_equal(
+            test.children[0].values, np.hstack((data[0].values, data[2].values))
         )
 
         np.testing.assert_almost_equal(
-            merged_data[0], np.hstack((nan_array, data[3].values))
+            test.children[1].values, np.hstack((data[1].values, int_nan_array))
         )
 
         np.testing.assert_almost_equal(
-            merged_data[1], np.hstack((data[0].values, nan_array))
-        )
-
-        np.testing.assert_almost_equal(
-            merged_data[2], np.hstack((data[1].values, nan_array))
-        )
-
-        np.testing.assert_almost_equal(
-            merged_data[3], np.hstack((nan_array, data[2].values))
+            test.children[2].values, np.hstack((float_nan_array, data[3].values))
         )
 
 
@@ -362,11 +324,6 @@ def test_merge_attribute_error(tmp_path):
             )
         )
 
-        with pytest.raises(
-            ValueError, match="Cannot merge data with different associations"
-        ):
-            _ = PointsMerger.merge_objects(workspace, points)
-
         with pytest.raises(TypeError, match="The input entities must be a list"):
             _ = PointsMerger.merge_objects(workspace, "bidon")
 
@@ -393,24 +350,3 @@ def test_merge_attribute_error(tmp_path):
 
         with pytest.raises(AttributeError, match="All entities must have vertices"):
             _ = PointsMerger.merge_objects(workspace, points)
-
-        point = Points.create(
-            workspace,
-            vertices=np.random.randn(10, 3),
-            allow_move=False,
-            name="visual parameter",
-        )
-
-        point.add_data(
-            {
-                "Visual Parameters": {
-                    "association": "VERTEX",
-                    "values": np.random.randn(10),
-                }
-            }
-        )
-
-        res = PointsMerger.extract_data_information([point])
-
-        assert (res[0] == np.array([], dtype=object)).all()
-        assert res[1:] == ([], 10, 1)
