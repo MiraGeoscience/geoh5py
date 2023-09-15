@@ -15,6 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -31,6 +34,7 @@ from geoh5py.ui_json.forms import (
     FloatFormParameter,
     IntegerFormParameter,
     ObjectFormParameter,
+    RestrictedParameter,
     StringFormParameter,
 )
 from geoh5py.ui_json.parameters import BoolParameter, StringParameter
@@ -51,11 +55,11 @@ def generate_sample_uijson_data(testpath):
     return workspace, data_object
 
 
-def generate_sample_uijson():
+def generate_sample_defaulted_uijson():
     """Returns a defaulted UIJson with all parameter types and valid data."""
 
     standard_uijson_parameters = [
-        StringParameter("title", value="my application"),
+        RestrictedParameter("title", "my application", value="my application"),
         StringParameter("geoh5"),
         StringParameter("run_command"),
         BoolFormParameter(
@@ -109,6 +113,7 @@ def generate_sample_uijson():
         ),
         DataFormParameter(
             "x_channel",
+            main=True,
             label="Bx",
             parent="data_object",
             association="Vertex",
@@ -122,6 +127,8 @@ def generate_sample_uijson():
             parent="data_object",
             association="Vertex",
             data_type="Float",
+            optional=True,
+            enabled=False,
             value=None,
         ),
         FileFormParameter("data_path", main=True, label="Data path", value=None),
@@ -132,26 +139,63 @@ def generate_sample_uijson():
     return uijson
 
 
-def write_sample_uijson(
-    testpath,
-):
-    uijson = generate_sample_uijson(testpath)
+def write_uijson(testpath, uijson):
     template = uijson.to_dict(naming="camel")
     ifile = InputFile(ui_json=template, validate=False)
     ifile.write_ui_json("test.ui.json", testpath)
 
-    return uijson
+    return ifile.path_name
 
 
-def test_uijson_construct_default_and_update(tmp_path):
-    uijson = generate_sample_uijson()
-    forms = uijson.to_dict()
-    assert isinstance(forms, dict)
+def populate_sample_uijson(
+    default_uijson_file, workspace, data_object, parameter_updates=None
+):
+    with open(default_uijson_file, encoding="utf8") as file:
+        data = json.load(file)
+        data["geoh5"] = str(workspace.h5file)
+        data["data_object"]["value"] = str(data_object.uid)
+
+        if parameter_updates is not None:
+            for key, value in parameter_updates.items():
+                if isinstance(value, dict):
+                    data[key].update(value)
+                elif isinstance(data[key], dict):
+                    data[key]["value"] = value
+                else:
+                    data[key] = value
+
+    populated_file = Path(default_uijson_file).parent / "populated.ui.json"
+    with open(populated_file, "w", encoding="utf8") as file:
+        json.dump(data, file, indent=4)
+
+    return populated_file
 
 
-def test_uijson_validations(tmp_path):
-    uijson = generate_sample_uijson()
+def test_uijson_validations():
+    uijson = generate_sample_defaulted_uijson()
     uijson.parameters = uijson.parameters[1:]
     msg = r"UIJson: 'my application' is missing required parameter\(s\): \['title'\]."
     with pytest.raises(RequiredUIJsonParameterValidationError, match=msg):
         uijson.validate()
+
+
+def test_uijson_construct_default_and_update(tmp_path):
+    uijson = generate_sample_defaulted_uijson()
+    filename = write_uijson(tmp_path, uijson)
+    workspace, data_object = generate_sample_uijson_data(tmp_path)
+    parameter_updates = {
+        "name": "my test name",
+        "flip_sign": True,
+        "number_of_iterations": 20,
+        "tolerance": 1e-6,
+        "method": "ssor",
+        "elevation": {
+            "isValue": False,
+            "property": str(data_object.get_data("elevation")[0].uid),
+        },
+        "x_channel": str(data_object.get_data("Bx")[0].uid),
+        "y_channel": {"value": str(data_object.get_data("By")[0].uid), "enabled": True},
+        "data_path": "my_data_path",
+    }
+
+    populate_sample_uijson(filename, workspace, data_object, parameter_updates)

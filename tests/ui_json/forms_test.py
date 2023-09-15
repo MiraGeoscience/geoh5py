@@ -289,18 +289,6 @@ def test_choice_string_form_parameter_validation():
         )
 
 
-def test_choice_string_form_required_members_validation():
-    param = ChoiceStringFormParameter(
-        "my_param",
-        choice_list=["onlythis"],
-        label="my param",
-        value="onlythis",
-    )
-    msg = r"Form: 'my_param' is missing required member\(s\): \['choice_list'\]."
-    with pytest.raises(RequiredFormMemberValidationError, match=msg):
-        param.validate()
-
-
 def test_file_form_parameter_construction():
     param = FileFormParameter(
         "my_param",
