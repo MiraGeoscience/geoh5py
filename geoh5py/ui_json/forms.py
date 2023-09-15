@@ -330,9 +330,9 @@ class ChoiceStringFormParameter(FormParameter):
     validations = {"required_form_members": ["choice_list"]}
 
     def __init__(self, name, choice_list, value=None, **kwargs):
-        self._choice_list = StringListParameter("choice_list", value=choice_list)
+        self._choice_list = StringListParameter("choice_list")
         value = RestrictedParameter("value", choice_list, value=value)
-        super().__init__(name, value=value, **kwargs)
+        super().__init__(name, value=value, choice_list=choice_list, **kwargs)
 
 
 class FileFormParameter(FormParameter):
@@ -387,7 +387,9 @@ class DataFormParameter(FormParameter):
 
     def __init__(self, name, value=None, **kwargs):
         self._parent = StringParameter("parent")
-        self._association = RestrictedParameter("association", ["Vertex", "Cell", "Face"])
+        self._association = RestrictedParameter(
+            "association", ["Vertex", "Cell", "Face"]
+        )
         self._data_type = RestrictedParameter(
             "data_type",
             [
@@ -399,7 +401,7 @@ class DataFormParameter(FormParameter):
                 "DateTime",
                 "Geometric",
                 "Boolean",
-            ]
+            ],
         )
         self._data_group_type = RestrictedParameter(
             "data_group_type", ["3D vector", "Dip direction & dip", "Strike & dip"]
@@ -434,7 +436,9 @@ class DataValueFormParameter(FormParameter):
 
     def __init__(self, name, value=None, **kwargs):
         self._parent = StringParameter("parent")
-        self._association = RestrictedParameter("association", ["Vertex", "Cell", "Face"])
+        self._association = RestrictedParameter(
+            "association", ["Vertex", "Cell", "Face"]
+        )
         self._data_type = RestrictedParameter(
             "data_type",
             [
@@ -446,7 +450,7 @@ class DataValueFormParameter(FormParameter):
                 "DateTime",
                 "Geometric",
                 "Boolean",
-            ]
+            ],
         )
         self._is_value = BoolParameter("is_value")
         self._property = UUIDParameter("property")
