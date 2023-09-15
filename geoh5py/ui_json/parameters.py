@@ -42,7 +42,8 @@ class Parameter:
         self._enforcers: EnforcerPool = EnforcerPool.from_validations(
             self.name, self.validations
         )
-        setattr(self, "_value" if value is None else "value", value)
+        if value is not None:
+            self.value = value
 
     @property
     def value(self):
