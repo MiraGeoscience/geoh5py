@@ -29,12 +29,40 @@ from geoh5py.shared.exceptions import (
 )
 from geoh5py.ui_json.enforcers import (
     EnforcerPool,
+    RequiredEnforcer,
     RequiredFormMemberEnforcer,
+    RequiredObjectDataEnforcer,
     RequiredUIJsonParameterEnforcer,
+    RequiredWorkspaceObjectEnforcer,
     TypeEnforcer,
     UUIDEnforcer,
     ValueEnforcer,
 )
+
+
+def test_enforcer_pool_recruit():
+    enforcers = EnforcerPool._recruit(  # pylint: disable=protected-access
+        {
+            "type": str,
+            "value": "onlythis",
+            "uuid": None,
+            "required": ["me"],
+            "required_uijson_parameters": ["me", "you"],
+            "required_form_members": ["label", "value"],
+            "required_workspace_objects": ["data"],
+            "required_object_data": ["object"],
+        }
+    )
+    assert enforcers == [
+        TypeEnforcer([str]),
+        ValueEnforcer(["onlythis"]),
+        UUIDEnforcer(),
+        RequiredEnforcer(["me"]),
+        RequiredUIJsonParameterEnforcer(["me", "you"]),
+        RequiredFormMemberEnforcer(["label", "value"]),
+        RequiredWorkspaceObjectEnforcer(["data"]),
+        RequiredObjectDataEnforcer(["object"]),
+    ]
 
 
 def test_enforcer_pool_construction():

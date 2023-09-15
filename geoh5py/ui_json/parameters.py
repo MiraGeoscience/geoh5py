@@ -38,10 +38,12 @@ class Parameter:
 
     def __init__(self, name: str, value: Any = None):
         self.name: str = name
+        self._value: Any | None = None
         self._enforcers: EnforcerPool = EnforcerPool.from_validations(
             self.name, self.validations
         )
-        setattr(self, "_value" if value is None else "value", value)
+        if value is not None:
+            self.value = value
 
     @property
     def value(self):
