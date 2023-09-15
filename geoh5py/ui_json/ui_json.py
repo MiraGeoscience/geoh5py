@@ -40,8 +40,8 @@ class UIJson:
         ]
     }
 
-    def __init__(self, parameters):
-        self.parameters: list[Parameter | FormParameter] = parameters
+    def __init__(self, parameters: dict[str, Parameter | FormParameter]):
+        self.parameters: dict[str, Parameter | FormParameter] = parameters
         self.enforcers: EnforcerPool = EnforcerPool.from_validations(
             self.name, self.validations
         )
@@ -60,10 +60,13 @@ class UIJson:
             return param.form(use_camel) if hasattr(param, "form") else param.value
 
         out = {}
-        for param in self.parameters:
-            out[param.name] = get_data(param)
+        for param, value in self.parameters.items():
+            out[param] = get_data(value)
 
         return out
+
+    def update(self, data: dict[str, Any]):
+        pass
 
     def validate(self):
         """Validates uijson data against a pool of enforcers."""

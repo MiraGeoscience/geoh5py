@@ -58,49 +58,51 @@ def generate_sample_uijson_data(testpath):
 def generate_sample_defaulted_uijson():
     """Returns a defaulted UIJson with all parameter types and valid data."""
 
-    standard_uijson_parameters = [
-        RestrictedParameter("title", "my application", value="my application"),
-        StringParameter("geoh5"),
-        StringParameter("run_command"),
-        BoolFormParameter(
+    standard_uijson_parameters = {
+        "title": RestrictedParameter("title", "my application", value="my application"),
+        "geoh5": StringParameter("geoh5"),
+        "run_command": StringParameter("run_command"),
+        "run_command_boolean": BoolFormParameter(
             "run_command_boolean",
             label="Run python module",
             value=False,
             tooltip="Warning: launches process to run python model on save",
             main=True,
         ),
-        StringParameter("monitoring_directory"),
-        StringParameter("conda_environment"),
-        BoolParameter("conda_environment_boolean"),
-        StringParameter("workspace"),
-    ]
-    custom_uijson_parameters = [
-        StringFormParameter("name", main=True, label="Name", value="test"),
-        BoolFormParameter(
+        "monitoring_directory": StringParameter("monitoring_directory"),
+        "conda_environment": StringParameter("conda_environment"),
+        "conda_environment_boolean": BoolParameter("conda_environment_boolean"),
+        "workspace": StringParameter("workspace"),
+    }
+    custom_uijson_parameters = {
+        "name": StringFormParameter("name", main=True, label="Name", value="test"),
+        "flip_sign": BoolFormParameter(
             "flip_sign",
             main=True,
             label="Flip sign",
             value=False,
         ),
-        IntegerFormParameter(
+        "number_of_iterations": IntegerFormParameter(
             "number_of_iterations", main=True, label="Number of iterations", value=5
         ),
-        FloatFormParameter("tolerance", main=True, label="Tolerance", value=1e-5),
-        ChoiceStringFormParameter(
+        "tolerance": FloatFormParameter(
+            "tolerance", main=True, label="Tolerance", value=1e-5
+        ),
+        "method": ChoiceStringFormParameter(
             "method",
             main=True,
             label="Method",
             choice_list=["cg", "ssor", "jacobi"],
             value="cg",
         ),
-        ObjectFormParameter(
+        "data_object": ObjectFormParameter(
             "data_object",
             main=True,
             label="Survey",
             mesh_type=["202c5db1-a56d-4004-9cad-baafd8899406"],
             value=None,
         ),
-        DataValueFormParameter(
+        "elevation": DataValueFormParameter(
             "elevation",
             main=True,
             label="Elevation",
@@ -111,7 +113,7 @@ def generate_sample_defaulted_uijson():
             property=None,
             value=1000.0,
         ),
-        DataFormParameter(
+        "x_channel": DataFormParameter(
             "x_channel",
             main=True,
             label="Bx",
@@ -120,7 +122,7 @@ def generate_sample_defaulted_uijson():
             data_type="Float",
             value=None,
         ),
-        DataFormParameter(
+        "y_channel": DataFormParameter(
             "y_channel",
             main=True,
             label="By",
@@ -131,9 +133,11 @@ def generate_sample_defaulted_uijson():
             enabled=False,
             value=None,
         ),
-        FileFormParameter("data_path", main=True, label="Data path", value=None),
-    ]
-    parameters = standard_uijson_parameters + custom_uijson_parameters
+        "data_path": FileFormParameter(
+            "data_path", main=True, label="Data path", value=None
+        ),
+    }
+    parameters = dict(standard_uijson_parameters, **custom_uijson_parameters)
     uijson = UIJson(parameters)
 
     return uijson
@@ -173,7 +177,7 @@ def populate_sample_uijson(
 
 def test_uijson_validations():
     uijson = generate_sample_defaulted_uijson()
-    uijson.parameters = uijson.parameters[1:]
+    uijson.parameters = {k: v for k, v in uijson.parameters.items() if k != "title"}
     msg = r"UIJson: 'my application' is missing required parameter\(s\): \['title'\]."
     with pytest.raises(RequiredUIJsonParameterValidationError, match=msg):
         uijson.validate()
@@ -198,4 +202,10 @@ def test_uijson_construct_default_and_update(tmp_path):
         "data_path": "my_data_path",
     }
 
-    populate_sample_uijson(filename, workspace, data_object, parameter_updates)
+    populated_file = populate_sample_uijson(
+        filename, workspace, data_object, parameter_updates
+    )
+    with open(populated_file, encoding="utf8") as file:
+        data = json.load(file)
+
+    uijson.update(data)
