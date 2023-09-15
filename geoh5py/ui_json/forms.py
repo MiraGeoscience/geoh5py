@@ -20,13 +20,14 @@ from __future__ import annotations
 from typing import Any
 
 from geoh5py.shared.exceptions import AggregateValidationError, BaseValidationError
-from geoh5py.ui_json.enforcers import EnforcerPool, ValueEnforcer
+from geoh5py.ui_json.enforcers import EnforcerPool
 from geoh5py.ui_json.parameters import (
     BoolParameter,
     FloatParameter,
     IntegerParameter,
     NumericParameter,
     Parameter,
+    RestrictedParameter,
     StringListParameter,
     StringParameter,
     UUIDParameter,
@@ -57,7 +58,7 @@ class MemberKeys:
         """Gives the inverse map to camel_to_snake."""
         return {v: k for k, v in self.camel_to_snake.items()}
 
-    def _map_single(self, key: str, convention: str = "snake"):
+    def map_key(self, key: str, convention: str = "snake"):
         """Map a string from snake to camel or vice versa."""
 
         if convention == "snake":
@@ -71,7 +72,7 @@ class MemberKeys:
 
     def map(self, collection: dict[str, Any], convention="snake"):
         """Map a dictionary from snake to camel or vice versa."""
-        return {self._map_single(k, convention): v for k, v in collection.items()}
+        return {self.map_key(k, convention): v for k, v in collection.items()}
 
 
 MEMBER_KEYS = MemberKeys()
@@ -128,6 +129,7 @@ class FormParameter:
         by way of the ValueAccess descriptor.
     """
 
+    validations = {"required_form_members": ["label", "value"]}
     identifier_members: list[str] = []
 
     def __init__(
@@ -140,15 +142,17 @@ class FormParameter:
         self._value: Parameter = self._set_value_parameter(value)
         self._label = StringParameter("label")
         self._enabled = BoolParameter("enabled", value=True)
-        self._optional = BoolParameter("optional", value=False)
-        self._group_optional = BoolParameter("group_optional", value=False)
+        self._optional = BoolParameter("optional")
+        self._group_optional = BoolParameter("group_optional")
         self._main = BoolParameter("main", value=True)
         self._group = StringParameter("group")
         self._dependency = StringParameter("dependency")
-        self._dependency_type = StringParameter("dependency_type", value="enabled")
+        self._dependency_type = RestrictedParameter(
+            "dependency_type", ["enabled", "disabled"], value="enabled"
+        )
         self._group_dependency = StringParameter("group_dependency")
-        self._group_dependency_type = StringParameter(
-            "group_dependency_type", value="enabled"
+        self._group_dependency_type = RestrictedParameter(
+            "group_dependency_type", ["enabled", "disabled"], value="enabled"
         )
         self._tooltip = StringParameter("tooltip")
         self._allow_values_access()
@@ -156,8 +160,9 @@ class FormParameter:
         self._active_members: list[str] = []
         if kwargs:
             self.register(kwargs)
+        self.enforcers = EnforcerPool.from_validations(self.name, self.validations)
 
-    def form(self, use_camel=False) -> dict[str, Any]:
+    def form(self, use_camel: bool = False) -> dict[str, Any]:
         """
         Returns dictionary of active form members and their values.
 
@@ -197,6 +202,10 @@ class FormParameter:
             raise AggregateValidationError(self.name, error_list)
 
         self._extra_members.update(members)
+
+    def validate(self):
+        """Validates data against the pool of enforcers."""
+        self.enforcers.enforce(self.form())
 
     @property
     def valid_members(self) -> list[str]:
@@ -250,6 +259,9 @@ class FormParameter:
     def __str__(self):
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
 
+    def __contains__(self, item):
+        return MEMBER_KEYS.map_key(item) in self.active
+
 
 class StringFormParameter(FormParameter):
     """String parameter type."""
@@ -262,9 +274,9 @@ class StringFormParameter(FormParameter):
 class BoolFormParameter(FormParameter):
     """Boolean parameter type."""
 
-    def __init__(self, name, value=None, **kwargs):
-        value = BoolParameter("value", value=value)
-        super().__init__(name, value=value, **kwargs)
+    def __init__(self, name, value: bool = False, **kwargs):
+        param = BoolParameter("value", value=value)
+        super().__init__(name, value=param, **kwargs)
 
 
 class IntegerFormParameter(FormParameter):
@@ -300,7 +312,7 @@ class FloatFormParameter(FormParameter):
         self._min = FloatParameter("min")
         self._max = FloatParameter("max")
         self._precision = IntegerParameter("precision")
-        self._line_edit = BoolParameter("line_edit")
+        self._line_edit = BoolParameter("line_edit", value=True)
         value = FloatParameter("value", value=value)
         super().__init__(name, value=value, **kwargs)
 
@@ -313,32 +325,12 @@ class ChoiceStringFormParameter(FormParameter):
     """
 
     identifier_members: list[str] = ["choice_list"]
+    validations = {"required_form_members": ["choice_list"]}
 
-    def __init__(self, name, value=None, **kwargs):
-        self._choice_list = StringListParameter("choice_list")
-        enforcers = None
-        if "choice_list" in kwargs:
-            enforcers = EnforcerPool(
-                "choice_list", [ValueEnforcer(kwargs["choice_list"])]
-            )
-        value = StringListParameter("value", value=value, enforcers=enforcers)
+    def __init__(self, name, choice_list, value=None, **kwargs):
+        self._choice_list = StringListParameter("choice_list", value=choice_list)
+        value = RestrictedParameter("value", choice_list, value=value)
         super().__init__(name, value=value, **kwargs)
-
-    def _add_value_enforcer(
-        self, choice_list: list, enforcers: EnforcerPool | None
-    ) -> EnforcerPool:
-        """
-        Updates enforcer pool to ensure parameter value in choice_list.
-
-        :param choice_list: list of ui element choices used for validation.
-        :param enforcers: Existing enforcer pool to update.
-        """
-        if enforcers is not None:
-            enforcers.enforcers.append(ValueEnforcer(choice_list))
-        else:
-            enforcers = EnforcerPool(self.name, [ValueEnforcer(choice_list)])
-
-        return enforcers
 
 
 class FileFormParameter(FormParameter):
@@ -351,6 +343,7 @@ class FileFormParameter(FormParameter):
     """
 
     identifier_members: list[str] = ["file_description", "file_type", "file_multi"]
+    validations = {"required_form_members": ["file_description", "file_type"]}
 
     def __init__(self, name, value=None, **kwargs):
         self._file_description = StringListParameter("file_description")
@@ -369,6 +362,7 @@ class ObjectFormParameter(FormParameter):
     """
 
     identifier_members: list[str] = ["mesh_type"]
+    validations = {"required_form_members": ["mesh_type"]}
 
     def __init__(self, name, value=None, **kwargs):
         self._mesh_type = StringListParameter("mesh_type", value=[])
@@ -387,39 +381,18 @@ class DataFormParameter(FormParameter):
     """
 
     identifier_members: list[str] = ["data_group_type"]
+    validations = {"required_form_members": ["parent", "association", "data_type"]}
 
     def __init__(self, name, value=None, **kwargs):
         self._parent = StringParameter("parent")
-        self._association = StringParameter(
-            "association",
-            enforcers=EnforcerPool(
-                "associations",
-                [ValueEnforcer(["Vertex", "Cell"])],
-            ),
+        self._association = RestrictedParameter("association", ["Vertex", "Cell"])
+        self._data_type = RestrictedParameter(
+            "data_type", ["Float", "Integer", "Reference"]
         )
-        self._data_type = StringParameter(
-            "data_type",
-            enforcers=EnforcerPool(
-                "data_type",
-                [ValueEnforcer(["Float", "Integer", "Reference"])],
-            ),
+        self._data_group_type = RestrictedParameter(
+            "data_group_type", ["3D vector", "Dip direction & dip", "Strike & dip"]
         )
-        self._data_group_type = StringParameter(
-            "data_group_type",
-            enforcers=EnforcerPool(
-                "data_group_type",
-                [
-                    ValueEnforcer(
-                        [
-                            "3D vector",
-                            "Dip direction & dip",
-                            "Strike & dip",
-                            "Multi-element",
-                        ]
-                    )
-                ],
-            ),
-        )
+
         value = UUIDParameter("value", value=value)
         super().__init__(name, value=value, **kwargs)
 
@@ -437,25 +410,24 @@ class DataValueFormParameter(FormParameter):
     """
 
     identifier_members: list[str] = ["is_value", "property"]
+    validations = {
+        "required_form_members": [
+            "parent",
+            "association",
+            "data_type",
+            "is_value",
+            "property",
+        ]
+    }
 
     def __init__(self, name, value=None, **kwargs):
         self._parent = StringParameter("parent")
-        self._association = StringParameter(
-            "association",
-            enforcers=EnforcerPool(
-                "associations",
-                [ValueEnforcer(["Vertex", "Cell"])],
-            ),
-        )
-        self._data_type = StringParameter(
-            "data_type",
-            enforcers=EnforcerPool(
-                "data_type",
-                [ValueEnforcer(["Float", "Integer", "Reference"])],
-            ),
+        self._association = RestrictedParameter("association", ["Vertex", "Cell"])
+        self._data_type = RestrictedParameter(
+            "data_type", ["Float", "Integer", "Reference"]
         )
         self._is_value = BoolParameter("is_value")
-        self._property = UUIDParameter("property", optional=True)
+        self._property = UUIDParameter("property")
         value = NumericParameter("value", value=value)
         super().__init__(name, value=value, **kwargs)
 

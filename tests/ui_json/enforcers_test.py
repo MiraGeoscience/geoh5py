@@ -21,37 +21,60 @@ import pytest
 
 from geoh5py.shared.exceptions import (
     AggregateValidationError,
+    RequiredFormMemberValidationError,
+    RequiredUIJsonParameterValidationError,
     TypeValidationError,
     UUIDValidationError,
     ValueValidationError,
 )
 from geoh5py.ui_json.enforcers import (
     EnforcerPool,
+    RequiredEnforcer,
+    RequiredFormMemberEnforcer,
+    RequiredObjectDataEnforcer,
+    RequiredUIJsonParameterEnforcer,
+    RequiredWorkspaceObjectEnforcer,
     TypeEnforcer,
     UUIDEnforcer,
     ValueEnforcer,
 )
 
 
+def test_enforcer_pool_recruit():
+    enforcers = EnforcerPool._recruit(  # pylint: disable=protected-access
+        {
+            "type": str,
+            "value": "onlythis",
+            "uuid": None,
+            "required": ["me"],
+            "required_uijson_parameters": ["me", "you"],
+            "required_form_members": ["label", "value"],
+            "required_workspace_objects": ["data"],
+            "required_object_data": ["object"],
+        }
+    )
+    assert enforcers == [
+        TypeEnforcer([str]),
+        ValueEnforcer(["onlythis"]),
+        UUIDEnforcer(),
+        RequiredEnforcer(["me"]),
+        RequiredUIJsonParameterEnforcer(["me", "you"]),
+        RequiredFormMemberEnforcer(["label", "value"]),
+        RequiredWorkspaceObjectEnforcer(["data"]),
+        RequiredObjectDataEnforcer(["object"]),
+    ]
+
+
 def test_enforcer_pool_construction():
-    pool = EnforcerPool("my_param")
-    assert pool.name == "my_param"
-    assert pool.enforcers == []
     pool = EnforcerPool("my_param", [TypeEnforcer(str)])
     assert pool.enforcers == [TypeEnforcer(str)]
 
 
-def test_enforcer_pool_update():
-    pool = EnforcerPool("my_param")
-    pool.update({"type": str, "value": "onlythis"})
-    assert pool.enforcers == [TypeEnforcer(str), ValueEnforcer("onlythis")]
-    pool.update({"type": int, "value": "nowonlythis"}, protected=["type"])
-    assert pool.enforcers == [TypeEnforcer(str), ValueEnforcer("nowonlythis")]
-
-
 def test_enforcer_pool_validations():
-    validations = {"type": [str], "value": "onlythis"}
+    validations = {"type": [str], "value": ["onlythis"]}
     pool = EnforcerPool.from_validations("my_param", validations)
+    assert pool.validations == validations
+    pool = EnforcerPool("my_param", [TypeEnforcer(str), ValueEnforcer(["onlythis"])])
     assert pool.validations == validations
 
 
@@ -62,24 +85,24 @@ def test_enforcer_pool_from_validations():
 
 def test_enforcer_pool_raises_single_error():
     enforcers = EnforcerPool("my_param", [TypeEnforcer(str)])
-    enforcers.validate("1")
+    enforcers.enforce("1")
     msg = "Type 'int' provided for 'my_param' is invalid. "
     msg += "Must be: 'str'."
     with pytest.raises(TypeValidationError, match=msg):
-        enforcers.validate(1)
+        enforcers.enforce(1)
 
 
 def test_enforcer_pool_raises_aggregate_error():
     enforcers = EnforcerPool(
         "my_param", [TypeEnforcer(str), ValueEnforcer(["onlythis"])]
     )
-    enforcers.validate("onlythis")
+    enforcers.enforce("onlythis")
     msg = (
         "Validation of 'my_param' collected 2 errors:\n\t"
         "0. Type 'int' provided for 'my_param' is invalid"
     )
     with pytest.raises(AggregateValidationError, match=msg):
-        enforcers.validate(1)
+        enforcers.enforce(1)
 
 
 def test_enforcer_str():
@@ -115,3 +138,17 @@ def test_uuid_enforcer():
     msg += "is not a valid uuid string."
     with pytest.raises(UUIDValidationError, match=msg):
         enforcer.enforce("test", "notachance")
+
+
+def test_required_uijson_parameter_enforcer():
+    enforcer = RequiredUIJsonParameterEnforcer(["my_param"])
+    msg = r"UIJson: 'my_param' is missing required parameter\(s\): \['my_param'\]."
+    with pytest.raises(RequiredUIJsonParameterValidationError, match=msg):
+        enforcer.enforce("my_param", {"label": "my param"})
+
+
+def test_required_form_member_enforcer():
+    enforcer = RequiredFormMemberEnforcer(["my_member"])
+    msg = r"Form: 'my_member' is missing required member\(s\): \['my_member'\]."
+    with pytest.raises(RequiredFormMemberValidationError, match=msg):
+        enforcer.enforce("my_member", {"label": "my member"})
