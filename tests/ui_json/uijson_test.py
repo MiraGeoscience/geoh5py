@@ -176,7 +176,6 @@ def populate_sample_uijson(
 
 
 def test_uijson_value_access():
-    print("first test")
     uijson = generate_sample_defaulted_uijson()
     assert uijson.title == "my application"  # pylint: disable=no-member
     assert uijson.elevation == 1000.0  # pylint: disable=no-member
@@ -185,7 +184,6 @@ def test_uijson_value_access():
 
 
 def test_uijson_validations():
-    print("second test")
     uijson = generate_sample_defaulted_uijson()
     uijson.parameters = {k: v for k, v in uijson.parameters.items() if k != "title"}
     msg = r"UIJson: 'my application' is missing required parameter\(s\): \['title'\]."
