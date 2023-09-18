@@ -20,6 +20,7 @@ from __future__ import annotations
 from typing import Any
 
 from geoh5py.shared.exceptions import AggregateValidationError, BaseValidationError
+from geoh5py.ui_json.descriptors import FormValueAccess
 from geoh5py.ui_json.enforcers import EnforcerPool
 from geoh5py.ui_json.parameters import (
     BoolParameter,
@@ -78,24 +79,6 @@ class MemberKeys:
 MEMBER_KEYS = MemberKeys()
 
 
-class ValueAccess:
-    """
-    Descriptor to elevate underlying member values within 'FormParameter'.
-
-    :param private: Name of private attribute.
-    """
-
-    def __init__(self, private: str):
-        self.private = private
-
-    def __get__(self, obj, objtype=None):
-        return getattr(obj, self.private).value
-
-    def __set__(self, obj, value):
-        setattr(getattr(obj, self.private), "value", value)
-        obj._active_members.append(self.private[1:])
-
-
 class FormParameter:
     """
     Base class for parameters that create visual ui elements from a form.
@@ -126,7 +109,7 @@ class FormParameter:
     :param tooltip: String rendered on hover over ui element.
 
     :note: Standardized form members are accessible through public namespace
-        by way of the ValueAccess descriptor.
+        by way of the FormValueAccess descriptor.
     """
 
     validations = {"required_form_members": ["label", "value"]}
@@ -256,7 +239,7 @@ class FormParameter:
         """Valid members public attr accesses underlying parameter value."""
         for member in self.valid_members:
             if member not in dir(self):
-                setattr(self.__class__, member, ValueAccess(f"_{member}"))
+                setattr(self.__class__, member, FormValueAccess(f"_{member}"))
 
     def __str__(self):
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
