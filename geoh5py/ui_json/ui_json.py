@@ -80,6 +80,6 @@ class UIJson:
         if "title" in uijson:
             name = uijson["title"]
         elif "geoh5" in uijson:
-            name = uijson["geoh5"].h5file
+            name = uijson["geoh5"].h5file.stem
 
         return name

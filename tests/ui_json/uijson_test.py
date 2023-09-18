@@ -34,6 +34,7 @@ from geoh5py.ui_json.forms import (
     FloatFormParameter,
     IntegerFormParameter,
     ObjectFormParameter,
+    Parameter,
     RestrictedParameter,
     StringFormParameter,
 )
@@ -169,6 +170,21 @@ def populate_sample_uijson(
         json.dump(data, file, indent=4)
 
     return populated_file
+
+
+def test_uijson_name(tmp_path):
+    workspace = Workspace(tmp_path / "test.geoh5")
+    uijson = UIJson(
+        [
+            StringParameter("title", value="my application"),
+            Parameter("geoh5", value=workspace),
+        ]
+    )
+    assert uijson.name == "my application"
+    uijson.parameters = uijson.parameters[1:]
+    assert uijson.name == "test"
+    uijson.parameters = []
+    assert uijson.name == "uijson"
 
 
 def test_uijson_validations():
