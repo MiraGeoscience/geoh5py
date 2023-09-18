@@ -190,7 +190,6 @@ def test_uijson_validations():
     with pytest.raises(RequiredUIJsonParameterValidationError, match=msg):
         uijson.validate()
 
-
 def test_uijson_construct_default_and_update(tmp_path):
     uijson = generate_sample_defaulted_uijson()
     filename = write_uijson(tmp_path, uijson)
@@ -217,3 +216,12 @@ def test_uijson_construct_default_and_update(tmp_path):
         data = json.load(file)
 
     uijson.update(data)
+    # assert uijson.name == "my test name"
+    assert uijson.flip_sign
+    assert uijson.number_of_iterations == 20
+    assert uijson.tolerance == 1e-6
+    assert uijson.method == "ssor"
+    assert uijson.elevation is not None
+    assert uijson.x_channel is not None
+    assert uijson.y_channel is not None
+    assert uijson.data_path == "my_data_path"

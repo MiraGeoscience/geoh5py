@@ -75,7 +75,9 @@ class UIJson:
         return out
 
     def update(self, data: dict[str, Any]):
-        pass
+        for param, value in data.items():
+            if param in self.parameters:
+                setattr(self, param, value)
 
     def validate(self):
         """Validates uijson data against a pool of enforcers."""

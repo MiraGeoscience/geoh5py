@@ -224,6 +224,10 @@ class FormParameter:
     def value(self):
         return self._value.value
 
+    @value.setter
+    def value(self, val):
+        self._value = val
+
     def _set_value_parameter(self, value) -> Parameter:
         """Handles value argument as either a Parameter or a value."""
 
