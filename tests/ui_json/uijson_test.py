@@ -75,7 +75,7 @@ def generate_sample_defaulted_uijson():
         "workspace": StringParameter("workspace"),
     }
     custom_uijson_parameters = {
-        "name": StringFormParameter("name", main=True, label="Name", value="test"),
+        "save_name": StringFormParameter("save_name", main=True, label="Save as", value="test"),
         "flip_sign": BoolFormParameter(
             "flip_sign",
             main=True,
@@ -177,6 +177,7 @@ def populate_sample_uijson(
 
 def test_uijson_value_access():
     uijson = generate_sample_defaulted_uijson()
+    assert "title" in uijson.parameters
     assert uijson.title == "my application"  # pylint: disable=no-member
     assert uijson.elevation == 1000.0  # pylint: disable=no-member
     uijson.parameters["elevation"].is_value = False
@@ -195,7 +196,7 @@ def test_uijson_construct_default_and_update(tmp_path):
     filename = write_uijson(tmp_path, uijson)
     workspace, data_object = generate_sample_uijson_data(tmp_path)
     parameter_updates = {
-        "name": "my test name",
+        "save_name": "my test name",
         "flip_sign": True,
         "number_of_iterations": 20,
         "tolerance": 1e-6,
@@ -216,7 +217,7 @@ def test_uijson_construct_default_and_update(tmp_path):
         data = json.load(file)
 
     uijson.update(data)
-    # assert uijson.name == "my test name"
+    assert uijson.save_name == "my test name"
     assert uijson.flip_sign
     assert uijson.number_of_iterations == 20
     assert uijson.tolerance == 1e-6

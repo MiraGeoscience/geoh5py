@@ -42,18 +42,22 @@ class UIJson:
     }
 
     def __init__(self, parameters: dict[str, Parameter | FormParameter]):
-        self.parameters: dict[str, Parameter | FormParameter] = parameters
+        self.__dict__["parameters"]: dict[str, Parameter | FormParameter] = parameters
         self.enforcers: EnforcerPool = EnforcerPool.from_validations(
             self.name, self.validations
         )
-        self._allow_values_access()
 
-    def _allow_values_access(self):
-        """Public parameter names access underlying parameter value."""
-        for parameter in self.parameters:
-            if parameter not in dir(self):
-                setattr(self, f"_{parameter}", self.parameters[parameter])
-                setattr(self.__class__, parameter, ValueAccess(f"_{parameter}"))
+    def __getattr__(self, name: str) -> Any:
+        if name in self.__dict__["parameters"]:
+            return self.__dict__["parameters"][name].value
+        else:
+            return self.__dict__[name]
+
+    def __setattr__(self, name: str, value: Any):
+        if name in self.__dict__["parameters"]:
+            self.__dict__["parameters"][name].value = value
+        else:
+            self.__dict__[name] = value
 
     def to_dict(self, naming: str = "snake") -> dict[str, Any]:
         """
@@ -77,7 +81,7 @@ class UIJson:
     def update(self, data: dict[str, Any]):
         for param, value in data.items():
             if param in self.parameters:
-                setattr(self, param, value)
+                self.parameters[param].value = value
 
     def validate(self):
         """Validates uijson data against a pool of enforcers."""
@@ -96,3 +100,5 @@ class UIJson:
             name = uijson["geoh5"].h5file.stem
 
         return name
+
+
