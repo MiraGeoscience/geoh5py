@@ -19,7 +19,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from geoh5py.ui_json.descriptors import ValueAccess
 from geoh5py.ui_json.enforcers import EnforcerPool
 from geoh5py.ui_json.forms import FormParameter
 from geoh5py.ui_json.parameters import Parameter
@@ -42,7 +41,7 @@ class UIJson:
     }
 
     def __init__(self, parameters: dict[str, Parameter | FormParameter]):
-        self.__dict__["parameters"]: dict[str, Parameter | FormParameter] = parameters
+        self.__dict__["parameters"] = parameters
         self.enforcers: EnforcerPool = EnforcerPool.from_validations(
             self.name, self.validations
         )
@@ -50,8 +49,7 @@ class UIJson:
     def __getattr__(self, name: str) -> Any:
         if name in self.__dict__["parameters"]:
             return self.__dict__["parameters"][name].value
-        else:
-            return self.__dict__[name]
+        return self.__dict__[name]
 
     def __setattr__(self, name: str, value: Any):
         if name in self.__dict__["parameters"]:
@@ -81,7 +79,28 @@ class UIJson:
     def update(self, data: dict[str, Any]):
         for param, value in data.items():
             if param in self.parameters:
-                self.parameters[param].value = value
+                self.update_state(param, value)
+                self.update_data(param, value)
+
+    def update_state(self, param: str, value: Any):
+        """Updates the member values of all FormParameter objects."""
+        if isinstance(value, dict):
+            state = {k: v for k, v in value.items() if k != "value"}
+            if not isinstance(self.parameters[param], FormParameter):
+                msg = (
+                    f"Parameter {param} is a {type(self.parameters[param])} and"
+                    " cannot be updated with a dictionary."
+                )
+                raise ValueError(msg)
+
+            self.parameters[param].register(state)
+
+    def update_data(self, param: str, value: Any):
+        """Updates the values of all FormParameter / Parameter objects."""
+        if isinstance(value, dict) and "value" in value:
+            self.parameters[param].value = value["value"]
+        else:
+            self.parameters[param].value = value
 
     def validate(self):
         """Validates uijson data against a pool of enforcers."""
@@ -100,5 +119,3 @@ class UIJson:
             name = uijson["geoh5"].h5file.stem
 
         return name
-
-

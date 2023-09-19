@@ -75,7 +75,9 @@ def generate_sample_defaulted_uijson():
         "workspace": StringParameter("workspace"),
     }
     custom_uijson_parameters = {
-        "save_name": StringFormParameter("save_name", main=True, label="Save as", value="test"),
+        "save_name": StringFormParameter(
+            "save_name", main=True, label="Save as", value="test"
+        ),
         "flip_sign": BoolFormParameter(
             "flip_sign",
             main=True,
@@ -191,6 +193,7 @@ def test_uijson_validations():
     with pytest.raises(RequiredUIJsonParameterValidationError, match=msg):
         uijson.validate()
 
+
 def test_uijson_construct_default_and_update(tmp_path):
     uijson = generate_sample_defaulted_uijson()
     filename = write_uijson(tmp_path, uijson)
@@ -199,8 +202,8 @@ def test_uijson_construct_default_and_update(tmp_path):
         "save_name": "my test name",
         "flip_sign": True,
         "number_of_iterations": 20,
-        "tolerance": 1e-6,
-        "method": "ssor",
+        "tolerance": {"value": 1e-6, "units": "m"},
+        "method": {"value": "ssor", "tooltip": "Solver types."},
         "elevation": {
             "isValue": False,
             "property": str(data_object.get_data("elevation")[0].uid),
@@ -217,12 +220,18 @@ def test_uijson_construct_default_and_update(tmp_path):
         data = json.load(file)
 
     uijson.update(data)
-    assert uijson.save_name == "my test name"
-    assert uijson.flip_sign
-    assert uijson.number_of_iterations == 20
-    assert uijson.tolerance == 1e-6
-    assert uijson.method == "ssor"
-    assert uijson.elevation is not None
-    assert uijson.x_channel is not None
-    assert uijson.y_channel is not None
-    assert uijson.data_path == "my_data_path"
+    forms = uijson.to_dict(naming="camel")
+    assert forms["save_name"]["value"] == "my test name"
+    assert forms["flip_sign"]["value"]
+    assert forms["number_of_iterations"]["value"] == 20
+    assert forms["tolerance"]["value"] == 1e-6
+    assert forms["tolerance"]["units"] == "m"
+    assert forms["method"]["value"] == "ssor"
+    assert not forms["elevation"]["isValue"]
+    assert forms["elevation"]["property"] == str(
+        data_object.get_data("elevation")[0].uid
+    )
+    assert forms["x_channel"]["value"] == str(data_object.get_data("Bx")[0].uid)
+    assert forms["y_channel"]["value"] == str(data_object.get_data("By")[0].uid)
+    assert forms["y_channel"]["enabled"]
+    assert forms["data_path"]["value"] == "my_data_path"

@@ -226,7 +226,7 @@ class FormParameter:
 
     @value.setter
     def value(self, val):
-        self._value = val
+        self._value.value = val
 
     def _set_value_parameter(self, value) -> Parameter:
         """Handles value argument as either a Parameter or a value."""
@@ -447,16 +447,11 @@ class DataValueFormParameter(FormParameter):
     @property
     def value(self):
         """Form value is value of property when is_value is False."""
-        val = self.property
-        if self.is_value:
+        val = self.property  # type: ignore # pylint: disable=no-member
+        if self.is_value:  # type: ignore # pylint: disable=no-member
             val = self._value.value
         return val
 
     @value.setter
     def value(self, val):
-        if isinstance(val, (int, float)):
-            self._value.value = val
-            self.is_value = True
-        else:
-            self.property = val
-            self.is_value = False
+        self._value.value = val

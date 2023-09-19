@@ -419,7 +419,7 @@ def test_data_value_form_parameter_construction():
     assert param.parent is None  # pylint: disable=no-member
     assert param.association is None  # pylint: disable=no-member
     assert param.data_type is None  # pylint: disable=no-member
-    assert not param.is_value
+    assert not param.is_value  # pylint: disable=no-member
 
 
 def test_data_value_form_parameter_validation():
