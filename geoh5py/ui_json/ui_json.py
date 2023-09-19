@@ -19,15 +19,32 @@ from __future__ import annotations
 
 from typing import Any
 
+from geoh5py.ui_json.enforcers import EnforcerPool
 from geoh5py.ui_json.forms import FormParameter
 from geoh5py.ui_json.parameters import Parameter
 
 
-class UIJson:  # pylint: disable=too-few-public-methods
+class UIJson:
     """Stores parameters and data for applications executed with ui.json files."""
+
+    validations = {
+        "required_uijson_parameters": [
+            "title",
+            "geoh5",
+            "run_command",
+            "run_command_boolean",
+            "monitoring_directory",
+            "conda_environment",
+            "conda_environment_boolean",
+            "workspace",
+        ]
+    }
 
     def __init__(self, parameters):
         self.parameters: list[Parameter | FormParameter] = parameters
+        self.enforcers: EnforcerPool = EnforcerPool.from_validations(
+            self.name, self.validations
+        )
 
     def to_dict(self, naming: str = "snake") -> dict[str, Any]:
         """
@@ -47,3 +64,22 @@ class UIJson:  # pylint: disable=too-few-public-methods
             out[param.name] = get_data(param)
 
         return out
+
+    def validate(self):
+        """Validates uijson data against a pool of enforcers."""
+
+        uijson = self.to_dict()
+        self.enforcers.enforce(uijson)
+
+    @property
+    def name(self) -> str:
+        """Returns a name for the uijson file."""
+
+        uijson = self.to_dict()
+        name = "uijson"
+        if "title" in uijson:
+            name = uijson["title"]
+        elif "geoh5" in uijson:
+            name = uijson["geoh5"].h5file.stem
+
+        return name
