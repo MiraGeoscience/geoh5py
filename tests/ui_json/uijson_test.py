@@ -34,10 +34,14 @@ from geoh5py.ui_json.forms import (
     FloatFormParameter,
     IntegerFormParameter,
     ObjectFormParameter,
-    RestrictedParameter,
     StringFormParameter,
 )
-from geoh5py.ui_json.parameters import BoolParameter, StringParameter
+from geoh5py.ui_json.parameters import (
+    BoolParameter,
+    StringParameter,
+    ValueRestrictedParameter,
+    WorkspaceParameter,
+)
 from geoh5py.ui_json.ui_json import UIJson
 
 
@@ -59,8 +63,10 @@ def generate_sample_defaulted_uijson():
     """Returns a defaulted UIJson with all parameter types and valid data."""
 
     standard_uijson_parameters = {
-        "title": RestrictedParameter("title", "my application", value="my application"),
-        "geoh5": StringParameter("geoh5"),
+        "title": ValueRestrictedParameter(
+            "title", "my application", value="my application"
+        ),
+        "geoh5": WorkspaceParameter("geoh5"),
         "run_command": StringParameter("run_command"),
         "run_command_boolean": BoolFormParameter(
             "run_command_boolean",
@@ -72,7 +78,7 @@ def generate_sample_defaulted_uijson():
         "monitoring_directory": StringParameter("monitoring_directory"),
         "conda_environment": StringParameter("conda_environment"),
         "conda_environment_boolean": BoolParameter("conda_environment_boolean"),
-        "workspace": StringParameter("workspace"),
+        "workspace": WorkspaceParameter("workspace"),
     }
     custom_uijson_parameters = {
         "save_name": StringFormParameter(
@@ -177,6 +183,15 @@ def populate_sample_uijson(
     return populated_file
 
 
+def test_uijson_name(tmp_path):
+    uijson = generate_sample_defaulted_uijson()
+    assert uijson.name == "my application"
+    workspace = Workspace(tmp_path / "test.geoh5")
+    uijson.geoh5 = workspace
+    name = uijson.name
+    assert name == "test"
+
+
 def test_uijson_value_access():
     uijson = generate_sample_defaulted_uijson()
     assert "title" in uijson.parameters
@@ -216,10 +231,9 @@ def test_uijson_construct_default_and_update(tmp_path):
     populated_file = populate_sample_uijson(
         filename, workspace, data_object, parameter_updates
     )
-    with open(populated_file, encoding="utf8") as file:
-        data = json.load(file)
+    ifile = InputFile.read_ui_json(populated_file)
 
-    uijson.update(data)
+    uijson.update(ifile.ui_json)
     forms = uijson.to_dict(naming="camel")
     assert forms["save_name"]["value"] == "my test name"
     assert forms["flip_sign"]["value"]
@@ -228,10 +242,10 @@ def test_uijson_construct_default_and_update(tmp_path):
     assert forms["tolerance"]["units"] == "m"
     assert forms["method"]["value"] == "ssor"
     assert not forms["elevation"]["isValue"]
-    assert forms["elevation"]["property"] == str(
-        data_object.get_data("elevation")[0].uid
+    assert (
+        forms["elevation"]["property"].uid == data_object.get_data("elevation")[0].uid
     )
-    assert forms["x_channel"]["value"] == str(data_object.get_data("Bx")[0].uid)
-    assert forms["y_channel"]["value"] == str(data_object.get_data("By")[0].uid)
+    assert forms["x_channel"]["value"].uid == data_object.get_data("Bx")[0].uid
+    assert forms["y_channel"]["value"].uid == data_object.get_data("By")[0].uid
     assert forms["y_channel"]["enabled"]
     assert forms["data_path"]["value"] == "my_data_path"

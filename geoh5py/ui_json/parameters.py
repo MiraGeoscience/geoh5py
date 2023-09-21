@@ -20,6 +20,8 @@ from __future__ import annotations
 from typing import Any, Dict
 from uuid import UUID
 
+from geoh5py import Workspace
+from geoh5py.groups import PropertyGroup
 from geoh5py.ui_json.enforcers import EnforcerPool
 
 Validation = Dict[str, Any]
@@ -62,16 +64,47 @@ class Parameter:
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
 
 
-class RestrictedParameter(Parameter):
-    """Parameter with a restricted set of values."""
+class DynamicallyRestrictedParameter(Parameter):
+    """Parameter whose validations are set at runtime."""
 
-    def __init__(self, name: str, restrictions: list[Any], value: Any = None):
+    def __init__(
+        self, name: str, restrictions: Any, enforcer_type="type", value: Any = None
+    ):
         self._restrictions = restrictions
+        self._enforcer_type = enforcer_type
         super().__init__(name, value)
 
     @property
+    def restrictions(self):
+        if not isinstance(self._restrictions, list):
+            self._restrictions = [self._restrictions]
+
+        return self._restrictions
+
+    @property
     def validations(self):
-        return {"value": self._restrictions}
+        return {self._enforcer_type: self.restrictions}
+
+
+class ValueRestrictedParameter(DynamicallyRestrictedParameter):
+    """Parameter with a restricted set of values."""
+
+    def __init__(self, name: str, restrictions: Any, value: Any = None):
+        super().__init__(name, restrictions, "value", value)
+
+
+class TypeRestrictedParameter(DynamicallyRestrictedParameter):
+    """Parameter with a restricted set of types known at runtime only."""
+
+    def __init__(self, name: str, restrictions: list[Any], value: Any = None):
+        super().__init__(name, restrictions, "type", value)
+
+
+class TypeUIDRestrictedParameter(DynamicallyRestrictedParameter):
+    """Parameter with a restricted set of type uids known at runtime only."""
+
+    def __init__(self, name: str, restrictions: list[UUID], value: Any = None):
+        super().__init__(name, restrictions, "type_uid", value)
 
 
 class StringParameter(Parameter):
@@ -107,12 +140,6 @@ class BoolParameter(Parameter):
         super().__init__(name, value)
 
 
-class UUIDParameter(Parameter):
-    """Parameter for UUID values."""
-
-    validations = {"type": [str, UUID], "uuid": None}
-
-
 class StringListParameter(Parameter):
     """Parameter for list of strings."""
 
@@ -120,3 +147,15 @@ class StringListParameter(Parameter):
 
     # TODO: introduce type alias handling so that TypeEnforcer(list[str], str)
     # is possible
+
+
+class WorkspaceParameter(Parameter):
+    """Parameter for workspace objects."""
+
+    validations = {"type": Workspace}
+
+
+class PropertyGroupParameter(Parameter):
+    """Parameter for property group objects."""
+
+    validations = {"type": PropertyGroup}

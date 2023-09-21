@@ -17,15 +17,20 @@
 
 import uuid
 
+import numpy as np
 import pytest
 
+from geoh5py import Workspace
+from geoh5py.data import IntegerData
+from geoh5py.objects import Points
 from geoh5py.shared.exceptions import (
     AggregateValidationError,
     RequiredFormMemberValidationError,
+    TypeUIDValidationError,
     TypeValidationError,
     ValueValidationError,
 )
-from geoh5py.ui_json.enforcers import TypeEnforcer, UUIDEnforcer, ValueEnforcer
+from geoh5py.ui_json.enforcers import TypeEnforcer, TypeUIDEnforcer, ValueEnforcer
 from geoh5py.ui_json.forms import (
     BoolFormParameter,
     ChoiceStringFormParameter,
@@ -324,26 +329,29 @@ def test_file_form_required_members_validation():
 def test_object_form_parameter_construction():
     new_uuid = str(uuid.uuid4())
     param = ObjectFormParameter(
-        "my_param",
-        value=new_uuid,
-        label="my param",
+        "my_param", value=new_uuid, label="my param", mesh_type=[""]
     )
     assert param.name == "my_param"
     assert param.value == new_uuid
     assert param.label == "my param"  # pylint: disable=no-member
-    assert param._value._enforcers.enforcers == [
-        TypeEnforcer([str, uuid.UUID]),
-        UUIDEnforcer(),
-    ]
+    assert param._value._enforcers.enforcers == [TypeUIDEnforcer([""])]
     assert param.mesh_type == []  # pylint: disable=no-member
 
 
-def test_object_form_parameter_validation():
-    msg = "Parameter 'value' with value '1' is not a valid uuid string."
-    with pytest.raises(AggregateValidationError, match=msg):
+def test_object_form_parameter_validation(tmp_path):
+    workspace = Workspace(tmp_path / "test.geoh5")
+    pts = Points.create(workspace, vertices=[[0, 0, 0]])
+
+    msg = (
+        "Type uid '202c5db1-a56d-4004-9cad-baafd8899406' "
+        "provided for 'value' is invalid. "
+        "Must be: '{4b99204c-d133-4579-a916-a9c8b98cfccb}'."
+    )
+    with pytest.raises(TypeUIDValidationError, match=msg):
         _ = ObjectFormParameter(
             "my_param",
-            value=1,
+            value=pts,
+            mesh_type=["{4b99204c-d133-4579-a916-a9c8b98cfccb}"],
         )
 
 
@@ -353,47 +361,62 @@ def test_object_form_required_members_validation():
         "my_param",
         value=new_uuid,
         label="my param",
+        mesh_type=[""],
     )
     msg = r"Form: 'my_param' is missing required member\(s\): \['mesh_type'\]."
     with pytest.raises(RequiredFormMemberValidationError, match=msg):
         param.validate()
 
 
-def test_data_form_parameter_construction():
-    new_uuid = str(uuid.uuid4())
+def test_data_form_parameter_construction(tmp_path):
+    workspace = Workspace(tmp_path / "test.geoh5")
+    pts = Points.create(workspace, vertices=[[0, 0, 0]])
+    data = pts.add_data({"my_data": {"values": np.array([1])}})
     param = DataFormParameter(
         "my_param",
-        value=new_uuid,
+        value=data,
         label="my param",
+        data_type="Integer",
     )
     assert param.name == "my_param"
-    assert param.value == new_uuid
+    assert param.value.uid == data.uid
     assert param.label == "my param"  # pylint: disable=no-member
-    assert param._value._enforcers.enforcers == [
-        TypeEnforcer([str, uuid.UUID]),
-        UUIDEnforcer(),
-    ]
+    assert param._value._enforcers.enforcers == [TypeEnforcer(IntegerData)]
     assert param.parent is None  # pylint: disable=no-member
     assert param.association is None  # pylint: disable=no-member
     assert param.data_type is None  # pylint: disable=no-member
     assert param.data_group_type is None  # pylint: disable=no-member
 
 
-def test_data_form_parameter_validation():
-    msg = "Parameter 'value' with value '1' is not a valid uuid string."
-    with pytest.raises(AggregateValidationError, match=msg):
+def test_data_form_parameter_validation(tmp_path):
+    workspace = Workspace(tmp_path / "test.geoh5")
+    pts = Points.create(workspace, vertices=[[0, 0, 0]])
+    data = pts.add_data({"my_data": {"values": np.array([1])}})
+    _ = DataFormParameter(
+        "my_param",
+        value=data,
+        label="my param",
+        data_type="Integer",
+    )
+    msg = "Type 'IntegerData' provided for 'value' is invalid. Must be: 'FloatData'."
+    with pytest.raises(TypeValidationError, match=msg):
         _ = DataFormParameter(
             "my_param",
-            value=1,
+            value=data,
+            label="my param",
+            data_type="Float",
         )
 
 
-def test_data_form_required_member_validation():
-    new_uuid = str(uuid.uuid4())
+def test_data_form_required_member_validation(tmp_path):
+    workspace = Workspace(tmp_path / "test.geoh5")
+    pts = Points.create(workspace, vertices=[[0, 0, 0]])
+    data = pts.add_data({"my_data": {"values": np.array([1])}})
     param = DataFormParameter(
         "my_param",
-        value=new_uuid,
+        value=data,
         label="my param",
+        data_type="Integer",
     )
     msg = (
         r"Form: 'my_param' is missing required member\(s\): "
@@ -403,17 +426,22 @@ def test_data_form_required_member_validation():
         param.validate()
 
 
-def test_data_value_form_parameter_construction():
-    new_uuid = str(uuid.uuid4())
+def test_data_value_form_parameter_construction(tmp_path):
+    workspace = Workspace(tmp_path / "test.geoh5")
+    pts = Points.create(workspace, vertices=[[0, 0, 0]])
+    data = pts.add_data({"my_data": {"values": np.array([1])}})
     param = DataValueFormParameter(
-        "my_param", label="my param", is_value=False, property=new_uuid
+        "my_param",
+        label="my param",
+        is_value=False,
+        property=data,
+        data_type="Integer",
     )
     assert param.name == "my_param"
-    assert param.value == new_uuid
+    assert param.value.uid == data.uid
     assert param.label == "my param"  # pylint: disable=no-member
     assert param._property._enforcers.enforcers == [
-        TypeEnforcer([str, uuid.UUID]),
-        UUIDEnforcer(),
+        TypeEnforcer([IntegerData]),
     ]
     assert param._value._enforcers.enforcers == [TypeEnforcer([int, float])]
     assert param.parent is None  # pylint: disable=no-member
@@ -426,15 +454,17 @@ def test_data_value_form_parameter_validation():
     msg = "Type 'str' provided for 'value' is invalid. "
     msg += "Must be one of: 'int', 'float'."
     with pytest.raises(TypeValidationError, match=msg):
-        _ = DataValueFormParameter("my_param", value="uh-oh", is_value=True)
+        _ = DataValueFormParameter(
+            "my_param",
+            value="uh-oh",
+            is_value=True,
+            data_type="Float",
+        )
 
 
 def test_data_value_form_required_member_validation():
     param = DataValueFormParameter(
-        "my_param",
-        label="my param",
-        is_value=False,
-        value=1,
+        "my_param", label="my param", is_value=False, value=1, data_type="Integer"
     )
     msg = (
         r"Form: 'my_param' is missing required member\(s\): "

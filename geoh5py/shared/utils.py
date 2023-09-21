@@ -32,7 +32,6 @@ if TYPE_CHECKING:
     from ..workspace import Workspace
     from .entity import Entity
 
-
 KEY_MAP = {
     "cells": "Cells",
     "color_map": "Color map",

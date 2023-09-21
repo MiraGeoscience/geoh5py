@@ -46,17 +46,6 @@ class UIJson:
             self.name, self.validations
         )
 
-    def __getattr__(self, name: str) -> Any:
-        if name in self.__dict__["parameters"]:
-            return self.__dict__["parameters"][name].value
-        return self.__dict__[name]
-
-    def __setattr__(self, name: str, value: Any):
-        if name in self.__dict__["parameters"]:
-            self.__dict__["parameters"][name].value = value
-        else:
-            self.__dict__[name] = value
-
     def to_dict(self, naming: str = "snake") -> dict[str, Any]:
         """
         Returns a dictionary of name and value/form for each parameter.
@@ -111,11 +100,19 @@ class UIJson:
     def name(self) -> str:
         """Returns a name for the uijson file."""
 
-        uijson = self.to_dict()
-        name = "uijson"
-        if "title" in uijson:
-            name = uijson["title"]
-        elif "geoh5" in uijson:
-            name = uijson["geoh5"].h5file.stem
+        name = self.title
+        if self.geoh5 is not None:
+            return self.geoh5.h5file.stem
 
         return name
+
+    def __getattr__(self, name: str) -> Any:
+        if name in self.__dict__["parameters"]:
+            return self.__dict__["parameters"][name].value
+        return self.__dict__[name]
+
+    def __setattr__(self, name: str, value: Any):
+        if name in self.__dict__["parameters"]:
+            self.__dict__["parameters"][name].value = value
+        else:
+            self.__dict__[name] = value
