@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 from geoh5py import Workspace
-from geoh5py.data import FloatData, IntegerData
+from geoh5py.data import FloatData
 from geoh5py.objects import Points
 from geoh5py.shared.exceptions import (
     AggregateValidationError,
