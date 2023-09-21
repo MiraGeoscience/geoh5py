@@ -112,6 +112,8 @@ class UIJson:
         if name in self.__dict__["parameters"]:
             return self.__dict__["parameters"][name].value
 
+        return self.__dict__[name]
+
     def __setattr__(self, name: str, value: Any):
         if name in self.__dict__["parameters"]:
             self.__dict__["parameters"][name].value = value
