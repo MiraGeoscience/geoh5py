@@ -70,6 +70,8 @@ class UIJson:
             if param in self.parameters:
                 self.update_state(param, value)
                 self.update_data(param, value)
+            else:
+                self.parameters[param] = value
 
     def update_state(self, param: str, value: Any):
         """Updates the member values of all FormParameter objects."""
@@ -109,7 +111,6 @@ class UIJson:
     def __getattr__(self, name: str) -> Any:
         if name in self.__dict__["parameters"]:
             return self.__dict__["parameters"][name].value
-        return self.__dict__[name]
 
     def __setattr__(self, name: str, value: Any):
         if name in self.__dict__["parameters"]:

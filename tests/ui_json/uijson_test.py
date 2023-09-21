@@ -209,6 +209,26 @@ def test_uijson_validations():
         uijson.validate()
 
 
+def test_getattr():
+    uijson = generate_sample_defaulted_uijson()
+    assert uijson.title == "my application"
+    assert uijson.parameters["title"].value == "my application"
+    assert uijson.enforcers
+
+
+def test_uijson_update_raises_error():
+    uijson = generate_sample_defaulted_uijson()
+    uijson.parameters["title"] = "some title"
+    with pytest.raises(ValueError):
+        uijson.update({"title": {"value": "new title"}})
+
+
+def test_uijson_extra_data():
+    uijson = generate_sample_defaulted_uijson()
+    uijson.update({"extra_data": "some data"})
+    assert uijson.parameters["extra_data"] == "some data"
+
+
 def test_uijson_construct_default_and_update(tmp_path):
     uijson = generate_sample_defaulted_uijson()
     filename = write_uijson(tmp_path, uijson)
