@@ -376,12 +376,12 @@ def test_data_form_parameter_construction(tmp_path):
         "my_param",
         value=data,
         label="my param",
-        data_type="Integer",
+        data_type="Float",
     )
     assert param.name == "my_param"
     assert param.value.uid == data.uid
     assert param.label == "my param"  # pylint: disable=no-member
-    assert param._value._enforcers.enforcers == [TypeEnforcer(IntegerData)]
+    assert param._value._enforcers.enforcers == [TypeEnforcer(FloatData)]
     assert param.parent is None  # pylint: disable=no-member
     assert param.association is None  # pylint: disable=no-member
     assert param.data_type is None  # pylint: disable=no-member
@@ -396,15 +396,15 @@ def test_data_form_parameter_validation(tmp_path):
         "my_param",
         value=data,
         label="my param",
-        data_type="Integer",
+        data_type="Float",
     )
-    msg = "Type 'IntegerData' provided for 'value' is invalid. Must be: 'FloatData'."
+    msg = "Type 'FloatData' provided for 'value' is invalid. Must be: 'IntegerData'."
     with pytest.raises(TypeValidationError, match=msg):
         _ = DataFormParameter(
             "my_param",
             value=data,
             label="my param",
-            data_type="Float",
+            data_type="Integer",
         )
 
 
@@ -416,7 +416,7 @@ def test_data_form_required_member_validation(tmp_path):
         "my_param",
         value=data,
         label="my param",
-        data_type="Integer",
+        data_type="Float",
     )
     msg = (
         r"Form: 'my_param' is missing required member\(s\): "
