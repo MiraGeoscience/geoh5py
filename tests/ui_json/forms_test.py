@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 from geoh5py import Workspace
-from geoh5py.data import IntegerData
+from geoh5py.data import FloatData, IntegerData
 from geoh5py.objects import Points
 from geoh5py.shared.exceptions import (
     AggregateValidationError,
@@ -370,8 +370,8 @@ def test_object_form_required_members_validation():
 
 def test_data_form_parameter_construction(tmp_path):
     workspace = Workspace(tmp_path / "test.geoh5")
-    pts = Points.create(workspace, vertices=[[0, 0, 0]])
-    data = pts.add_data({"my_data": {"values": np.array([1])}})
+    pts = Points.create(workspace, vertices=np.random.rand(10, 3))
+    data = pts.add_data({"my_data": {"values": np.random.rand(10, 1)}})
     param = DataFormParameter(
         "my_param",
         value=data,
@@ -390,8 +390,8 @@ def test_data_form_parameter_construction(tmp_path):
 
 def test_data_form_parameter_validation(tmp_path):
     workspace = Workspace(tmp_path / "test.geoh5")
-    pts = Points.create(workspace, vertices=[[0, 0, 0]])
-    data = pts.add_data({"my_data": {"values": np.array([1])}})
+    pts = Points.create(workspace, vertices=np.random.rand(10, 3))
+    data = pts.add_data({"my_data": {"values": np.random.rand(10, 1)}})
     _ = DataFormParameter(
         "my_param",
         value=data,
@@ -410,8 +410,8 @@ def test_data_form_parameter_validation(tmp_path):
 
 def test_data_form_required_member_validation(tmp_path):
     workspace = Workspace(tmp_path / "test.geoh5")
-    pts = Points.create(workspace, vertices=[[0, 0, 0]])
-    data = pts.add_data({"my_data": {"values": np.array([1])}})
+    pts = Points.create(workspace, vertices=np.random.rand(10, 3))
+    data = pts.add_data({"my_data": {"values": np.random.rand(10, 1)}})
     param = DataFormParameter(
         "my_param",
         value=data,
@@ -428,20 +428,20 @@ def test_data_form_required_member_validation(tmp_path):
 
 def test_data_value_form_parameter_construction(tmp_path):
     workspace = Workspace(tmp_path / "test.geoh5")
-    pts = Points.create(workspace, vertices=[[0, 0, 0]])
-    data = pts.add_data({"my_data": {"values": np.array([1])}})
+    pts = Points.create(workspace, vertices=np.random.rand(10, 3))
+    data = pts.add_data({"my_data": {"values": np.random.rand(10, 1)}})
     param = DataValueFormParameter(
         "my_param",
         label="my param",
         is_value=False,
         property=data,
-        data_type="Integer",
+        data_type="Float",
     )
     assert param.name == "my_param"
     assert param.value.uid == data.uid
     assert param.label == "my param"  # pylint: disable=no-member
     assert param._property._enforcers.enforcers == [
-        TypeEnforcer([IntegerData]),
+        TypeEnforcer([FloatData]),
     ]
     assert param._value._enforcers.enforcers == [TypeEnforcer([int, float])]
     assert param.parent is None  # pylint: disable=no-member
