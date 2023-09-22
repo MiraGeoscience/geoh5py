@@ -237,6 +237,15 @@ class FormParameter:
     def value(self, val):
         self._value.value = val
 
+    @property
+    def uijson_validations(self):
+        """Validations for UIJson level enforcers."""
+        validations = {}
+        if "dependency" in self.active:
+            validations["required"] = [self.dependency]
+
+        return validations
+
     def _set_value_parameter(self, value) -> Parameter:
         """Handles value argument as either a Parameter or a value."""
 

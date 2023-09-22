@@ -472,3 +472,8 @@ def test_data_value_form_required_member_validation():
     )
     with pytest.raises(RequiredFormMemberValidationError, match=msg):
         param.validate()
+
+
+def test_form_parameter_uijson_validations():
+    param = FormParameter("my_param", dependency="my_other_param")
+    assert param.uijson_validations == {"required": ["my_other_param"]}

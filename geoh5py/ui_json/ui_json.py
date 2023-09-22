@@ -42,9 +42,19 @@ class UIJson:
 
     def __init__(self, parameters: dict[str, Parameter | FormParameter]):
         self.__dict__["parameters"] = parameters
+        validations = dict(self.infer_validations(), **self.validations)
         self.enforcers: EnforcerPool = EnforcerPool.from_validations(
-            self.name, self.validations
+            self.name, validations
         )
+
+    def infer_validations(self):
+        """Infer validations from parameters."""
+        validations = {}
+        for param in self.parameters.values():
+            if hasattr(param, "uijson_validations"):
+                validations.update(param.uijson_validations)
+
+        return validations
 
     def to_dict(self, naming: str = "snake") -> dict[str, Any]:
         """
