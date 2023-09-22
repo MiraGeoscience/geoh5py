@@ -25,7 +25,8 @@ class ValueAccess:
     """
 
     def __init__(self, private: str):
-        self.private = private
+        self.private: str = private
+
 
     def __get__(self, obj, objtype=None):
         return getattr(obj, self.private).value
