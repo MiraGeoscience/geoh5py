@@ -416,7 +416,7 @@ class DataFormParameter(FormParameter):
             "Referenced": ReferencedData,
             "DateTime": DatetimeData,
             "Boolean": BooleanData,
-        }[data_type]
+        }.get(data_type, type(None))
 
 
 class DataValueFormParameter(FormParameter):
@@ -491,4 +491,4 @@ class DataValueFormParameter(FormParameter):
             "Referenced": ReferencedData,
             "DateTime": DatetimeData,
             "Boolean": BooleanData,
-        }[data_type]
+        }.get(data_type, type(None))
