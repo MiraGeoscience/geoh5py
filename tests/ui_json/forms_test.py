@@ -384,7 +384,7 @@ def test_data_form_parameter_construction(tmp_path):
     assert param._value._enforcers.enforcers == [TypeEnforcer(FloatData)]
     assert param.parent is None  # pylint: disable=no-member
     assert param.association is None  # pylint: disable=no-member
-    assert param.data_type is None  # pylint: disable=no-member
+    assert param.data_type == "Float"  # pylint: disable=no-member
     assert param.data_group_type is None  # pylint: disable=no-member
 
 
@@ -420,7 +420,7 @@ def test_data_form_required_member_validation(tmp_path):
     )
     msg = (
         r"Form: 'my_param' is missing required member\(s\): "
-        r"\['parent', 'association', 'data_type'\]."
+        r"\['parent', 'association'\]."
     )
     with pytest.raises(RequiredFormMemberValidationError, match=msg):
         param.validate()
@@ -446,7 +446,7 @@ def test_data_value_form_parameter_construction(tmp_path):
     assert param._value._enforcers.enforcers == [TypeEnforcer([int, float])]
     assert param.parent is None  # pylint: disable=no-member
     assert param.association is None  # pylint: disable=no-member
-    assert param.data_type is None  # pylint: disable=no-member
+    assert param.data_type == "Float"  # pylint: disable=no-member
     assert not param.is_value  # pylint: disable=no-member
 
 
@@ -468,7 +468,7 @@ def test_data_value_form_required_member_validation():
     )
     msg = (
         r"Form: 'my_param' is missing required member\(s\): "
-        r"\['parent', 'association', 'data_type', 'property'\]."
+        r"\['parent', 'association', 'property'\]."
     )
     with pytest.raises(RequiredFormMemberValidationError, match=msg):
         param.validate()

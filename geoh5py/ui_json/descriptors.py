@@ -15,11 +15,16 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from geoh5py.ui_json.forms import FormParameter
+    from geoh5py.ui_json.parameters import Parameter
+
 
 # pylint: disable=too-few-public-methods
-
-from geoh5py.ui_json.forms import FormParameter
-from geoh5py.ui_json.parameters import Parameter
 
 
 class ValueAccess:

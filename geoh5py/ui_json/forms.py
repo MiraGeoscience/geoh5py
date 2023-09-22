@@ -405,7 +405,7 @@ class DataFormParameter(FormParameter):
         value = TypeRestrictedParameter(
             "value", [self._data_type_string_to_type(data_type)], value=value
         )
-        super().__init__(name, value=value, **kwargs)
+        super().__init__(name, value=value, data_type=data_type, **kwargs)
 
     def _data_type_string_to_type(self, data_type: str) -> type:
         """Converts string data type to python type."""
@@ -465,7 +465,7 @@ class DataValueFormParameter(FormParameter):
             "property", [self._data_type_string_to_type(data_type)]
         )
         value = NumericParameter("value", value=value)
-        super().__init__(name, value=value, **kwargs)
+        super().__init__(name, value=value, data_type=data_type, **kwargs)
 
     @property
     def value(self):
