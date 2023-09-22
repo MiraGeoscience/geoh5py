@@ -17,12 +17,16 @@
 
 import uuid
 
+import numpy as np
 import pytest
 
+from geoh5py import Workspace
+from geoh5py.objects import Points
 from geoh5py.shared.exceptions import (
     AggregateValidationError,
     RequiredFormMemberValidationError,
     RequiredUIJsonParameterValidationError,
+    RequiredWorkspaceObjectValidationError,
     TypeValidationError,
     UUIDValidationError,
     ValueValidationError,
@@ -38,6 +42,8 @@ from geoh5py.ui_json.enforcers import (
     UUIDEnforcer,
     ValueEnforcer,
 )
+from geoh5py.ui_json.forms import ObjectFormParameter
+from geoh5py.ui_json.parameters import WorkspaceParameter
 
 
 def test_enforcer_pool_recruit():
@@ -152,3 +158,22 @@ def test_required_form_member_enforcer():
     msg = r"Form: 'my_member' is missing required member\(s\): \['my_member'\]."
     with pytest.raises(RequiredFormMemberValidationError, match=msg):
         enforcer.enforce("my_member", {"label": "my member"})
+
+
+def test_required_workspace_object_enforcer(tmp_path):
+    geoh5 = Workspace(tmp_path / "working_file.geoh5")
+    pts = Points.create(geoh5, vertices=np.random.rand(10, 3), name="my_points")
+    other_geoh5 = Workspace(tmp_path / "other_file.geoh5")
+    other_pts = Points.create(
+        other_geoh5, vertices=np.random.rand(10, 3), name="my_other_points"
+    )
+
+    data = {"geoh5": geoh5, "my_points": pts}
+    validations = ["my_points"]
+    enforcer = RequiredWorkspaceObjectEnforcer(validations)
+    enforcer.enforce(str(geoh5.h5file.stem), data)
+
+    data["my_points"] = other_pts
+    msg = "Workspace: 'working_file' is missing required object(s): ['my_points']."
+    with pytest.raises(RequiredWorkspaceObjectValidationError, match=msg):
+        enforcer.enforce(str(geoh5.h5file.stem), data)

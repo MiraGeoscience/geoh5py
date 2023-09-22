@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import Any
+from uuid import UUID
 
 from geoh5py.shared.exceptions import (
     AggregateValidationError,
@@ -285,10 +286,9 @@ class TypeUIDEnforcer(Enforcer):
 
     def rule(self, value: Any) -> bool:
         """True if value is a valid type uid."""
-        return (
-            self.validations == [""]
-            or str(value.default_type_uid()) in self.validations
-        )
+        return self.validations == [""] or value.default_type_uid() in [
+            UUID(k) for k in self.validations
+        ]
 
 
 class UUIDEnforcer(Enforcer):
@@ -337,7 +337,7 @@ class RequiredEnforcer(Enforcer):
     enforcer_type = "required"
     validation_error = InCollectionValidationError
 
-    def __init__(self, validations: list[str]):
+    def __init__(self, validations: str | list[str]):
         super().__init__(validations)
 
     def enforce(self, name: str, value: Any):
@@ -352,6 +352,10 @@ class RequiredEnforcer(Enforcer):
     def rule(self, value: Any) -> bool:
         """True if all required parameters are in 'value' collection."""
         return all(k in value for k in self.validations)
+
+    def collection(self, value: Any) -> list[Any]:
+        """Returns the collection to check for required items."""
+        return value
 
     @property
     def validations(self) -> list[str]:
@@ -379,6 +383,14 @@ class RequiredFormMemberEnforcer(RequiredEnforcer):
 class RequiredWorkspaceObjectEnforcer(RequiredEnforcer):
     enforcer_type = "required_workspace_objects"
     validation_error = RequiredWorkspaceObjectValidationError
+
+    def rule(self, value: Any) -> bool:
+        """True if all objects are in the workspace."""
+        validations = [value[k].uid for k in self.validations]
+        return all(k in self.collection(value) for k in validations)
+
+    def collection(self, value: dict[str, Any]) -> list[UUID]:
+        return list(value["geoh5"].list_entities_name)
 
 
 class RequiredObjectDataEnforcer(RequiredEnforcer):
