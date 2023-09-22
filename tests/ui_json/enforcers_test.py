@@ -42,8 +42,6 @@ from geoh5py.ui_json.enforcers import (
     UUIDEnforcer,
     ValueEnforcer,
 )
-from geoh5py.ui_json.forms import ObjectFormParameter
-from geoh5py.ui_json.parameters import WorkspaceParameter
 
 
 def test_enforcer_pool_recruit():
@@ -174,6 +172,6 @@ def test_required_workspace_object_enforcer(tmp_path):
     enforcer.enforce(str(geoh5.h5file.stem), data)
 
     data["my_points"] = other_pts
-    msg = "Workspace: 'working_file' is missing required object(s): ['my_points']."
+    msg = r"Workspace: 'working_file' is missing required object\(s\): \['my_points'\]."
     with pytest.raises(RequiredWorkspaceObjectValidationError, match=msg):
         enforcer.enforce(str(geoh5.h5file.stem), data)

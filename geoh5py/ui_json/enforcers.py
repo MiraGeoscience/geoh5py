@@ -347,12 +347,12 @@ class RequiredEnforcer(Enforcer):
         if not self.rule(value):
             raise self.validation_error(
                 name,
-                [k for k in self.validations if k not in value],
+                [k for k in self.validations if k not in self.collection(value)],
             )
 
     def rule(self, value: Any) -> bool:
         """True if all required parameters are in 'value' collection."""
-        return all(k in value for k in self.validations)
+        return all(k in self.collection(value) for k in self.validations)
 
     def collection(self, value: Any) -> list[Any]:
         """Returns the collection to check for required items."""
