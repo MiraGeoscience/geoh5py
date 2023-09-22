@@ -75,8 +75,8 @@ class UIJson:
 
     def update_state(self, param: str, value: Any):
         """Updates the member values of all FormParameter objects."""
+
         if isinstance(value, dict):
-            state = {k: v for k, v in value.items() if k != "value"}
             if not isinstance(self.parameters[param], FormParameter):
                 msg = (
                     f"Parameter {param} is a {type(self.parameters[param])} and"
@@ -84,6 +84,7 @@ class UIJson:
                 )
                 raise ValueError(msg)
 
+            state = {k: v for k, v in value.items() if k != "value"}
             self.parameters[param].register(state)
 
     def update_data(self, param: str, value: Any):

@@ -266,7 +266,8 @@ class ValueEnforcer(Enforcer):
 
 class TypeUIDEnforcer(Enforcer):
     """
-    Enforces restricted type uid(s).
+    Enforces restricted geoh5 entity_type uid(s).
+
 
     :param validations: Valid geoh5py object type uid(s).
 
