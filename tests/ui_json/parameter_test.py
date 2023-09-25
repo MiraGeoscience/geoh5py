@@ -18,20 +18,16 @@
 
 import pytest
 
-from geoh5py.shared.exceptions import (
-    TypeValidationError,
-    UUIDValidationError,
-    ValueValidationError,
-)
+from geoh5py.shared.exceptions import TypeValidationError, ValueValidationError
 from geoh5py.ui_json.parameters import (
     BoolParameter,
     FloatParameter,
     IntegerParameter,
     Parameter,
-    RestrictedParameter,
     StringListParameter,
     StringParameter,
-    UUIDParameter,
+    TypeRestrictedParameter,
+    ValueRestrictedParameter,
 )
 
 # pylint: disable=protected-access
@@ -53,25 +49,6 @@ def test_parameter_validations_on_setting():
 def test_parameter_str_representation():
     param = Parameter("my_param")
     assert str(param) == "<Parameter> : 'my_param' -> None"
-
-
-def test_restricted_parameter_construction():
-    param = RestrictedParameter("my_param", ["a", "b", "c"])
-    assert param.name == "my_param"
-    assert param.value is None
-    assert param._restrictions == ["a", "b", "c"]
-    assert param.validations == {"value": ["a", "b", "c"]}
-
-
-def test_restricted_parameter_validations():
-    param = RestrictedParameter("my_param", ["a", "b", "c"])
-    msg = "Value 'd' provided for 'my_param' is invalid. Must be one of: 'a', 'b', 'c'."
-    with pytest.raises(ValueValidationError, match=msg):
-        param.value = "d"
-    param = RestrictedParameter("my_param", restrictions="a")
-    msg = "Value 'b' provided for 'my_param' is invalid. Must be: 'a'."
-    with pytest.raises(ValueValidationError, match=msg):
-        param.value = "b"
 
 
 def test_string_parameter_type_validation():
@@ -121,13 +98,6 @@ def test_bool_parameter_type_validation():
         param.value = "butwhy?"
 
 
-def test_uuid_parameter_type_validation():
-    param = UUIDParameter("my_param")
-    msg = "Parameter 'my_param' with value 'notauuid' is not a valid uuid string."
-    with pytest.raises(UUIDValidationError, match=msg):
-        param.value = "notauuid"
-
-
 def test_string_list_parameter_type_validation():
     param = StringListParameter("my_param")
     param.value = "this is ok"
@@ -138,3 +108,22 @@ def test_string_list_parameter_type_validation():
     )
     with pytest.raises(TypeValidationError, match=msg):
         param.value = 1
+
+
+def test_type_restricted_parameter_type_validation():
+    param = TypeRestrictedParameter("my_param", [str])
+    param.value = "this is ok"
+    msg = "Type 'int' provided for 'my_param' is invalid. Must be: 'str'."
+    with pytest.raises(TypeValidationError, match=msg):
+        param.value = 1
+
+
+def test_value_restricted_parameter_type_validation():
+    param = ValueRestrictedParameter("my_param", [1, 2, 3])
+    param.value = 1
+    msg = (
+        "Value '1' provided for 'my_param' is invalid. "
+        "Must be one of: '1', '2', '3'."
+    )
+    with pytest.raises(ValueValidationError, match=msg):
+        param.value = "1"

@@ -34,11 +34,14 @@ from geoh5py.ui_json.forms import (
     FloatFormParameter,
     IntegerFormParameter,
     ObjectFormParameter,
-    Parameter,
-    RestrictedParameter,
     StringFormParameter,
 )
-from geoh5py.ui_json.parameters import BoolParameter, StringParameter
+from geoh5py.ui_json.parameters import (
+    BoolParameter,
+    StringParameter,
+    ValueRestrictedParameter,
+    WorkspaceParameter,
+)
 from geoh5py.ui_json.ui_json import UIJson
 
 
@@ -59,49 +62,55 @@ def generate_sample_uijson_data(testpath):
 def generate_sample_defaulted_uijson():
     """Returns a defaulted UIJson with all parameter types and valid data."""
 
-    standard_uijson_parameters = [
-        RestrictedParameter("title", "my application", value="my application"),
-        StringParameter("geoh5"),
-        StringParameter("run_command"),
-        BoolFormParameter(
+    standard_uijson_parameters = {
+        "title": ValueRestrictedParameter(
+            "title", "my application", value="my application"
+        ),
+        "geoh5": WorkspaceParameter("geoh5"),
+        "run_command": StringParameter("run_command"),
+        "run_command_boolean": BoolFormParameter(
             "run_command_boolean",
             label="Run python module",
             value=False,
             tooltip="Warning: launches process to run python model on save",
             main=True,
         ),
-        StringParameter("monitoring_directory"),
-        StringParameter("conda_environment"),
-        BoolParameter("conda_environment_boolean"),
-        StringParameter("workspace"),
-    ]
-    custom_uijson_parameters = [
-        StringFormParameter("name", main=True, label="Name", value="test"),
-        BoolFormParameter(
+        "monitoring_directory": StringParameter("monitoring_directory"),
+        "conda_environment": StringParameter("conda_environment"),
+        "conda_environment_boolean": BoolParameter("conda_environment_boolean"),
+        "workspace": WorkspaceParameter("workspace"),
+    }
+    custom_uijson_parameters = {
+        "save_name": StringFormParameter(
+            "save_name", main=True, label="Save as", value="test"
+        ),
+        "flip_sign": BoolFormParameter(
             "flip_sign",
             main=True,
             label="Flip sign",
             value=False,
         ),
-        IntegerFormParameter(
+        "number_of_iterations": IntegerFormParameter(
             "number_of_iterations", main=True, label="Number of iterations", value=5
         ),
-        FloatFormParameter("tolerance", main=True, label="Tolerance", value=1e-5),
-        ChoiceStringFormParameter(
+        "tolerance": FloatFormParameter(
+            "tolerance", main=True, label="Tolerance", value=1e-5
+        ),
+        "method": ChoiceStringFormParameter(
             "method",
             main=True,
             label="Method",
             choice_list=["cg", "ssor", "jacobi"],
             value="cg",
         ),
-        ObjectFormParameter(
+        "data_object": ObjectFormParameter(
             "data_object",
             main=True,
             label="Survey",
             mesh_type=["202c5db1-a56d-4004-9cad-baafd8899406"],
             value=None,
         ),
-        DataValueFormParameter(
+        "elevation": DataValueFormParameter(
             "elevation",
             main=True,
             label="Elevation",
@@ -112,7 +121,7 @@ def generate_sample_defaulted_uijson():
             property=None,
             value=1000.0,
         ),
-        DataFormParameter(
+        "x_channel": DataFormParameter(
             "x_channel",
             main=True,
             label="Bx",
@@ -121,7 +130,7 @@ def generate_sample_defaulted_uijson():
             data_type="Float",
             value=None,
         ),
-        DataFormParameter(
+        "y_channel": DataFormParameter(
             "y_channel",
             main=True,
             label="By",
@@ -132,9 +141,11 @@ def generate_sample_defaulted_uijson():
             enabled=False,
             value=None,
         ),
-        FileFormParameter("data_path", main=True, label="Data path", value=None),
-    ]
-    parameters = standard_uijson_parameters + custom_uijson_parameters
+        "data_path": FileFormParameter(
+            "data_path", main=True, label="Data path", value=None
+        ),
+    }
+    parameters = dict(standard_uijson_parameters, **custom_uijson_parameters)
     uijson = UIJson(parameters)
 
     return uijson
@@ -173,26 +184,49 @@ def populate_sample_uijson(
 
 
 def test_uijson_name(tmp_path):
-    workspace = Workspace(tmp_path / "test.geoh5")
-    uijson = UIJson(
-        [
-            StringParameter("title", value="my application"),
-            Parameter("geoh5", value=workspace),
-        ]
-    )
+    uijson = generate_sample_defaulted_uijson()
     assert uijson.name == "my application"
-    uijson.parameters = uijson.parameters[1:]
-    assert uijson.name == "test"
-    uijson.parameters = []
-    assert uijson.name == "uijson"
+    workspace = Workspace(tmp_path / "test.geoh5")
+    uijson.geoh5 = workspace
+    name = uijson.name
+    assert name == "test"
+
+
+def test_uijson_value_access():
+    uijson = generate_sample_defaulted_uijson()
+    assert "title" in uijson.parameters
+    assert uijson.title == "my application"  # pylint: disable=no-member
+    assert uijson.elevation == 1000.0  # pylint: disable=no-member
+    uijson.parameters["elevation"].is_value = False
+    assert uijson.elevation is None  # pylint: disable=no-member
 
 
 def test_uijson_validations():
     uijson = generate_sample_defaulted_uijson()
-    uijson.parameters = uijson.parameters[1:]
+    uijson.parameters = {k: v for k, v in uijson.parameters.items() if k != "title"}
     msg = r"UIJson: 'my application' is missing required parameter\(s\): \['title'\]."
     with pytest.raises(RequiredUIJsonParameterValidationError, match=msg):
         uijson.validate()
+
+
+def test_getattr():
+    uijson = generate_sample_defaulted_uijson()
+    assert uijson.title == "my application"
+    assert uijson.parameters["title"].value == "my application"
+    assert uijson.enforcers
+
+
+def test_uijson_update_raises_error():
+    uijson = generate_sample_defaulted_uijson()
+    uijson.parameters["title"] = "some title"
+    with pytest.raises(ValueError):
+        uijson.update({"title": {"value": "new title"}})
+
+
+def test_uijson_extra_data():
+    uijson = generate_sample_defaulted_uijson()
+    uijson.update({"extra_data": "some data"})
+    assert uijson.parameters["extra_data"] == "some data"
 
 
 def test_uijson_construct_default_and_update(tmp_path):
@@ -200,11 +234,11 @@ def test_uijson_construct_default_and_update(tmp_path):
     filename = write_uijson(tmp_path, uijson)
     workspace, data_object = generate_sample_uijson_data(tmp_path)
     parameter_updates = {
-        "name": "my test name",
+        "save_name": "my test name",
         "flip_sign": True,
         "number_of_iterations": 20,
-        "tolerance": 1e-6,
-        "method": "ssor",
+        "tolerance": {"value": 1e-6, "units": "m"},
+        "method": {"value": "ssor", "tooltip": "Solver types."},
         "elevation": {
             "isValue": False,
             "property": str(data_object.get_data("elevation")[0].uid),
@@ -214,4 +248,24 @@ def test_uijson_construct_default_and_update(tmp_path):
         "data_path": "my_data_path",
     }
 
-    populate_sample_uijson(filename, workspace, data_object, parameter_updates)
+    populated_file = populate_sample_uijson(
+        filename, workspace, data_object, parameter_updates
+    )
+    ifile = InputFile.read_ui_json(populated_file)
+
+    uijson.update(ifile.ui_json)
+    forms = uijson.to_dict(naming="camel")
+    assert forms["save_name"]["value"] == "my test name"
+    assert forms["flip_sign"]["value"]
+    assert forms["number_of_iterations"]["value"] == 20
+    assert forms["tolerance"]["value"] == 1e-6
+    assert forms["tolerance"]["units"] == "m"
+    assert forms["method"]["value"] == "ssor"
+    assert not forms["elevation"]["isValue"]
+    assert (
+        forms["elevation"]["property"].uid == data_object.get_data("elevation")[0].uid
+    )
+    assert forms["x_channel"]["value"].uid == data_object.get_data("Bx")[0].uid
+    assert forms["y_channel"]["value"].uid == data_object.get_data("By")[0].uid
+    assert forms["y_channel"]["enabled"]
+    assert forms["data_path"]["value"] == "my_data_path"

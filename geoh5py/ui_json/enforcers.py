@@ -28,6 +28,7 @@ from geoh5py.shared.exceptions import (
     RequiredObjectDataValidationError,
     RequiredUIJsonParameterValidationError,
     RequiredWorkspaceObjectValidationError,
+    TypeUIDValidationError,
     TypeValidationError,
     UUIDValidationError,
     ValueValidationError,
@@ -47,6 +48,7 @@ class EnforcerPool:
         "type",
         "value",
         "uuid",
+        "type_uid",
         "required",
         "required_uijson_parameters",
         "required_form_members",
@@ -105,6 +107,8 @@ class EnforcerPool:
             enforcer = ValueEnforcer(validation)  # type: ignore
         if enforcer_type == "uuid":
             enforcer = UUIDEnforcer(validation)  # type: ignore
+        if enforcer_type == "type_uid":
+            enforcer = TypeUIDEnforcer(validation)  # type: ignore
         if enforcer_type == "required":
             enforcer = RequiredEnforcer(validation)  # type: ignore
         if enforcer_type == "required_uijson_parameters":
@@ -257,6 +261,35 @@ class ValueEnforcer(Enforcer):
         if not isinstance(val, list):
             val = [val]
         self._validations = val
+
+
+class TypeUIDEnforcer(Enforcer):
+    """
+    Enforces restricted geoh5 entity_type uid(s).
+
+
+    :param validations: Valid geoh5py object type uid(s).
+
+    :raises TypeValidationError: If value is not a valid type uid.
+    """
+
+    enforcer_type = "type_uid"
+
+    def __init__(self, validations: list[str]):
+        super().__init__(validations)
+
+    def enforce(self, name: str, value: Any):
+        """Administers rule to enforce type uid validation."""
+
+        if not self.rule(value):
+            raise TypeUIDValidationError(name, value, self.validations)
+
+    def rule(self, value: Any) -> bool:
+        """True if value is a valid type uid."""
+        return (
+            self.validations == [""]
+            or str(value.default_type_uid()) in self.validations
+        )
 
 
 class UUIDEnforcer(Enforcer):

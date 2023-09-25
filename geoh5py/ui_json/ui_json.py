@@ -40,8 +40,8 @@ class UIJson:
         ]
     }
 
-    def __init__(self, parameters):
-        self.parameters: list[Parameter | FormParameter] = parameters
+    def __init__(self, parameters: dict[str, Parameter | FormParameter]):
+        self.__dict__["parameters"] = parameters
         self.enforcers: EnforcerPool = EnforcerPool.from_validations(
             self.name, self.validations
         )
@@ -60,14 +60,42 @@ class UIJson:
             return param.form(use_camel) if hasattr(param, "form") else param.value
 
         out = {}
-        for param in self.parameters:
-            out[param.name] = get_data(param)
+        for param, value in self.parameters.items():
+            out[param] = get_data(value)
 
         return out
 
+    def update(self, data: dict[str, Any]):
+        for param, value in data.items():
+            if param in self.parameters:
+                self.update_state(param, value)
+                self.update_data(param, value)
+            else:
+                self.parameters[param] = value
+
+    def update_state(self, param: str, value: Any):
+        """Updates the member values of all FormParameter objects."""
+
+        if isinstance(value, dict):
+            if not isinstance(self.parameters[param], FormParameter):
+                msg = (
+                    f"Parameter {param} is a {type(self.parameters[param])} and"
+                    " cannot be updated with a dictionary."
+                )
+                raise ValueError(msg)
+
+            state = {k: v for k, v in value.items() if k != "value"}
+            self.parameters[param].register(state)
+
+    def update_data(self, param: str, value: Any):
+        """Updates the values of all FormParameter / Parameter objects."""
+        if isinstance(value, dict) and "value" in value:
+            self.parameters[param].value = value["value"]
+        else:
+            self.parameters[param].value = value
+
     def validate(self):
         """Validates uijson data against a pool of enforcers."""
-
         uijson = self.to_dict()
         self.enforcers.enforce(uijson)
 
@@ -75,11 +103,20 @@ class UIJson:
     def name(self) -> str:
         """Returns a name for the uijson file."""
 
-        uijson = self.to_dict()
-        name = "uijson"
-        if "title" in uijson:
-            name = uijson["title"]
-        elif "geoh5" in uijson:
-            name = uijson["geoh5"].h5file.stem
+        name = self.title
+        if self.geoh5 is not None:
+            return self.geoh5.h5file.stem
 
         return name
+
+    def __getattr__(self, name: str) -> Any:
+        if name in self.__dict__["parameters"]:
+            return self.__dict__["parameters"][name].value
+
+        return self.__dict__[name]
+
+    def __setattr__(self, name: str, value: Any):
+        if name in self.__dict__["parameters"]:
+            self.__dict__["parameters"][name].value = value
+        else:
+            self.__dict__[name] = value

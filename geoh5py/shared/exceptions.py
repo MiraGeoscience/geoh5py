@@ -138,6 +138,22 @@ class AtLeastOneValidationError(BaseValidationError):
         return f"Must provide at least one {name}.  Options are: {opts}"
 
 
+class TypeUIDValidationError(BaseValidationError):
+    """Error on type uid validation."""
+
+    def __init__(self, name: str, value, validation: list[str]):
+        super().__init__(
+            TypeUIDValidationError.message(name, value.default_type_uid(), validation)
+        )
+
+    @classmethod
+    def message(cls, name, value, validation):
+        return (
+            f"Type uid '{value}' provided for '{name}' is invalid."
+            + iterable_message(validation)
+        )
+
+
 class RequiredValidationError(BaseValidationError):
     def __init__(self, name: str):
         super().__init__(RequiredValidationError.message(name))

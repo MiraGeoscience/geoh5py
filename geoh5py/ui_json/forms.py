@@ -19,7 +19,16 @@ from __future__ import annotations
 
 from typing import Any
 
+from geoh5py.data import (
+    BooleanData,
+    DatetimeData,
+    FloatData,
+    IntegerData,
+    ReferencedData,
+    TextData,
+)
 from geoh5py.shared.exceptions import AggregateValidationError, BaseValidationError
+from geoh5py.ui_json.descriptors import FormValueAccess
 from geoh5py.ui_json.enforcers import EnforcerPool
 from geoh5py.ui_json.parameters import (
     BoolParameter,
@@ -27,10 +36,11 @@ from geoh5py.ui_json.parameters import (
     IntegerParameter,
     NumericParameter,
     Parameter,
-    RestrictedParameter,
     StringListParameter,
     StringParameter,
-    UUIDParameter,
+    TypeRestrictedParameter,
+    TypeUIDRestrictedParameter,
+    ValueRestrictedParameter,
 )
 
 
@@ -78,24 +88,6 @@ class MemberKeys:
 MEMBER_KEYS = MemberKeys()
 
 
-class ValueAccess:
-    """
-    Descriptor to elevate underlying member values within 'FormParameter'.
-
-    :param private: Name of private attribute.
-    """
-
-    def __init__(self, private: str):
-        self.private = private
-
-    def __get__(self, obj, objtype=None):
-        return getattr(obj, self.private).value
-
-    def __set__(self, obj, value):
-        setattr(getattr(obj, self.private), "value", value)
-        obj._active_members.append(self.private[1:])
-
-
 class FormParameter:
     """
     Base class for parameters that create visual ui elements from a form.
@@ -126,7 +118,7 @@ class FormParameter:
     :param tooltip: String rendered on hover over ui element.
 
     :note: Standardized form members are accessible through public namespace
-        by way of the ValueAccess descriptor.
+        by way of the FormValueAccess descriptor.
     """
 
     validations = {"required_form_members": ["label", "value"]}
@@ -147,11 +139,11 @@ class FormParameter:
         self._main = BoolParameter("main", value=True)
         self._group = StringParameter("group")
         self._dependency = StringParameter("dependency")
-        self._dependency_type = RestrictedParameter(
+        self._dependency_type = ValueRestrictedParameter(
             "dependency_type", ["enabled", "disabled"], value="enabled"
         )
         self._group_dependency = StringParameter("group_dependency")
-        self._group_dependency_type = RestrictedParameter(
+        self._group_dependency_type = ValueRestrictedParameter(
             "group_dependency_type", ["enabled", "disabled"], value="enabled"
         )
         self._tooltip = StringParameter("tooltip")
@@ -175,7 +167,7 @@ class FormParameter:
             if member in self._extra_members:
                 form[member] = self._extra_members[member]
             else:
-                form[member] = getattr(self, member)
+                form[member] = getattr(self, f"_{member}").value
 
         if use_camel:
             form = MEMBER_KEYS.map(form, "camel")
@@ -241,6 +233,10 @@ class FormParameter:
     def value(self):
         return self._value.value
 
+    @value.setter
+    def value(self, val):
+        self._value.value = val
+
     def _set_value_parameter(self, value) -> Parameter:
         """Handles value argument as either a Parameter or a value."""
 
@@ -256,7 +252,7 @@ class FormParameter:
         """Valid members public attr accesses underlying parameter value."""
         for member in self.valid_members:
             if member not in dir(self):
-                setattr(self.__class__, member, ValueAccess(f"_{member}"))
+                setattr(self.__class__, member, FormValueAccess(f"_{member}"))
 
     def __str__(self):
         return f"<{type(self).__name__}> : '{self.name}' -> {self.value}"
@@ -331,7 +327,7 @@ class ChoiceStringFormParameter(FormParameter):
 
     def __init__(self, name, choice_list, value=None, **kwargs):
         self._choice_list = StringListParameter("choice_list")
-        value = RestrictedParameter("value", choice_list, value=value)
+        value = ValueRestrictedParameter("value", choice_list, value=value)
         super().__init__(name, value=value, choice_list=choice_list, **kwargs)
 
 
@@ -366,9 +362,9 @@ class ObjectFormParameter(FormParameter):
     identifier_members: list[str] = ["mesh_type"]
     validations = {"required_form_members": ["mesh_type"]}
 
-    def __init__(self, name, value=None, **kwargs):
+    def __init__(self, name, mesh_type, value=None, **kwargs):
         self._mesh_type = StringListParameter("mesh_type", value=[])
-        value = UUIDParameter("value", value=value)
+        value = TypeUIDRestrictedParameter("value", mesh_type, value=value)
         super().__init__(name, value=value, **kwargs)
 
 
@@ -385,12 +381,12 @@ class DataFormParameter(FormParameter):
     identifier_members: list[str] = ["data_group_type"]
     validations = {"required_form_members": ["parent", "association", "data_type"]}
 
-    def __init__(self, name, value=None, **kwargs):
+    def __init__(self, name, data_type, value=None, **kwargs):
         self._parent = StringParameter("parent")
-        self._association = RestrictedParameter(
+        self._association = ValueRestrictedParameter(
             "association", ["Vertex", "Cell", "Face"]
         )
-        self._data_type = RestrictedParameter(
+        self._data_type = ValueRestrictedParameter(
             "data_type",
             [
                 "Integer",
@@ -403,12 +399,24 @@ class DataFormParameter(FormParameter):
                 "Boolean",
             ],
         )
-        self._data_group_type = RestrictedParameter(
+        self._data_group_type = ValueRestrictedParameter(
             "data_group_type", ["3D vector", "Dip direction & dip", "Strike & dip"]
         )
+        value = TypeRestrictedParameter(
+            "value", [self._data_type_string_to_type(data_type)], value=value
+        )
+        super().__init__(name, value=value, data_type=data_type, **kwargs)
 
-        value = UUIDParameter("value", value=value)
-        super().__init__(name, value=value, **kwargs)
+    def _data_type_string_to_type(self, data_type: str) -> type:
+        """Converts string data type to python type."""
+        return {
+            "Integer": IntegerData,
+            "Float": FloatData,
+            "Text": TextData,
+            "Referenced": ReferencedData,
+            "DateTime": DatetimeData,
+            "Boolean": BooleanData,
+        }.get(data_type, type(None))
 
 
 class DataValueFormParameter(FormParameter):
@@ -434,12 +442,12 @@ class DataValueFormParameter(FormParameter):
         ]
     }
 
-    def __init__(self, name, value=None, **kwargs):
+    def __init__(self, name, data_type, value=None, **kwargs):
         self._parent = StringParameter("parent")
-        self._association = RestrictedParameter(
+        self._association = ValueRestrictedParameter(
             "association", ["Vertex", "Cell", "Face"]
         )
-        self._data_type = RestrictedParameter(
+        self._data_type = ValueRestrictedParameter(
             "data_type",
             [
                 "Integer",
@@ -453,15 +461,17 @@ class DataValueFormParameter(FormParameter):
             ],
         )
         self._is_value = BoolParameter("is_value")
-        self._property = UUIDParameter("property")
+        self._property = TypeRestrictedParameter(
+            "property", [self._data_type_string_to_type(data_type)]
+        )
         value = NumericParameter("value", value=value)
-        super().__init__(name, value=value, **kwargs)
+        super().__init__(name, value=value, data_type=data_type, **kwargs)
 
     @property
     def value(self):
         """Form value is value of property when is_value is False."""
-        val = self.property
-        if self.is_value:
+        val = self.property  # type: ignore # pylint: disable=no-member
+        if self.is_value:  # type: ignore # pylint: disable=no-member
             val = self._value.value
         return val
 
@@ -469,7 +479,16 @@ class DataValueFormParameter(FormParameter):
     def value(self, val):
         if isinstance(val, (int, float)):
             self._value.value = val
-            self.is_value = True
         else:
-            self.property = val
-            self.is_value = False
+            self._property.value = val
+
+    def _data_type_string_to_type(self, data_type: str) -> type:
+        """Converts string data type to python type."""
+        return {
+            "Integer": IntegerData,
+            "Float": FloatData,
+            "Text": TextData,
+            "Referenced": ReferencedData,
+            "DateTime": DatetimeData,
+            "Boolean": BooleanData,
+        }.get(data_type, type(None))
