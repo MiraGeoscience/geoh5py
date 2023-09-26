@@ -36,6 +36,8 @@ from geoh5py.shared.exceptions import (
 )
 from geoh5py.shared.utils import is_uuid
 
+from . import SetDict
+
 
 class EnforcerPool:
     """
@@ -66,7 +68,7 @@ class EnforcerPool:
     def from_validations(
         cls,
         name: str,
-        validations: dict[str, Any],
+        validations: SetDict,
     ) -> EnforcerPool:
         """
         Create enforcers pool from validations.
@@ -81,17 +83,17 @@ class EnforcerPool:
         return cls(name, cls._recruit(validations))
 
     @property
-    def validations(self) -> dict[str, Any]:
+    def validations(self) -> SetDict:
         """Returns an enforcer type / validation dictionary from pool."""
-        return {k.enforcer_type: k.validations for k in self.enforcers}
+        return SetDict(**{k.enforcer_type: k.validations for k in self.enforcers})
 
     @staticmethod
-    def _recruit(validations: dict[str, Any]):
+    def _recruit(validations: SetDict):
         """Recruit enforcers from validations."""
         return [EnforcerPool._recruit_enforcer(k, v) for k, v in validations.items()]
 
     @staticmethod
-    def _recruit_enforcer(enforcer_type: str, validation: Any) -> Enforcer:
+    def _recruit_enforcer(enforcer_type: str, validation: set) -> Enforcer:
         """
         Create enforcer from enforcer type and validation.
 
@@ -156,7 +158,7 @@ class Enforcer(ABC):
 
     enforcer_type: str = ""
 
-    def __init__(self, validations: Any | None = None):
+    def __init__(self, validations: set):
         self.validations = validations
 
     @abstractmethod
@@ -166,15 +168,6 @@ class Enforcer(ABC):
     @abstractmethod
     def enforce(self, name: str, value: Any):
         """Enforces rule on 'name' parameter's 'value'."""
-
-    @property
-    def validations(self) -> Any:
-        """Enforcer validation."""
-        return self._validations
-
-    @validations.setter
-    def validations(self, val: Any):
-        self._validations = val
 
     def __eq__(self, other) -> bool:
         """Equal if same type and validations."""
@@ -199,7 +192,7 @@ class TypeEnforcer(Enforcer):
 
     enforcer_type: str = "type"
 
-    def __init__(self, validations: type | list[type]):
+    def __init__(self, validations: set[type]):
         super().__init__(validations)
 
     def enforce(self, name: str, value: Any):
@@ -212,19 +205,7 @@ class TypeEnforcer(Enforcer):
 
     def rule(self, value) -> bool:
         """True if value is one of the valid types."""
-        return any(isinstance(value, k) for k in self.validations + [type(None)])
-
-    @property
-    def validations(self) -> list[type]:
-        if self._validations is None:
-            self._validations = []
-        return self._validations
-
-    @validations.setter
-    def validations(self, val: type | list[type]):
-        if not isinstance(val, list):
-            val = [val]
-        self._validations = val
+        return any(isinstance(value, k) for k in self.validations.union({type(None)}))
 
 
 class ValueEnforcer(Enforcer):
@@ -238,30 +219,18 @@ class ValueEnforcer(Enforcer):
 
     enforcer_type = "value"
 
-    def __init__(self, validations: list[Any]):
+    def __init__(self, validations: set[Any]):
         super().__init__(validations)
 
     def enforce(self, name: str, value: Any):
         """Administers rule to enforce value validation."""
 
         if not self.rule(value):
-            raise ValueValidationError(name, value, self.validations)
+            raise ValueValidationError(name, value, list(self.validations))
 
     def rule(self, value: Any) -> bool:
         """True if value is a valid choice."""
         return value in self.validations
-
-    @property
-    def validations(self) -> list[Any]:
-        if self._validations is None:
-            self._validations = []
-        return self._validations
-
-    @validations.setter
-    def validations(self, val: Any):
-        if not isinstance(val, list):
-            val = [val]
-        self._validations = val
 
 
 class TypeUIDEnforcer(Enforcer):
@@ -276,18 +245,18 @@ class TypeUIDEnforcer(Enforcer):
 
     enforcer_type = "type_uid"
 
-    def __init__(self, validations: list[str]):
+    def __init__(self, validations: set[str]):
         super().__init__(validations)
 
     def enforce(self, name: str, value: Any):
         """Administers rule to enforce type uid validation."""
 
         if not self.rule(value):
-            raise TypeUIDValidationError(name, value, self.validations)
+            raise TypeUIDValidationError(name, value, list(self.validations))
 
     def rule(self, value: Any) -> bool:
         """True if value is a valid type uid."""
-        return self.validations == [""] or value.default_type_uid() in [
+        return self.validations == {""} or value.default_type_uid() in [
             UUID(k) for k in self.validations
         ]
 
@@ -296,14 +265,13 @@ class UUIDEnforcer(Enforcer):
     """
     Enforces valid uuid string.
 
-    :param validations: None is considered a valid uuid if
-        validations is 'optional'.
+    :param validations: No validations needed, can be empty set.
     :raises UUIDValidationError: If value is not a valid uuid string.
     """
 
     enforcer_type = "uuid"
 
-    def __init__(self, validations: str | None = None):
+    def __init__(self, validations: set = set()):
         super().__init__(validations)
 
     def enforce(self, name: str, value: Any):
@@ -338,7 +306,7 @@ class RequiredEnforcer(Enforcer):
     enforcer_type = "required"
     validation_error = InCollectionValidationError
 
-    def __init__(self, validations: str | list[str]):
+    def __init__(self, validations: set[str]):
         super().__init__(validations)
 
     def enforce(self, name: str, value: Any):
@@ -357,18 +325,6 @@ class RequiredEnforcer(Enforcer):
     def collection(self, value: Any) -> list[Any]:
         """Returns the collection to check for required items."""
         return value
-
-    @property
-    def validations(self) -> list[str]:
-        if self._validations is None:
-            self._validations = []
-        return self._validations
-
-    @validations.setter
-    def validations(self, val: str | list[str]):
-        if isinstance(val, str):
-            val = [val]
-        self._validations = val
 
 
 class RequiredUIJsonParameterEnforcer(RequiredEnforcer):

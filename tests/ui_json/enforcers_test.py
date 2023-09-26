@@ -31,6 +31,7 @@ from geoh5py.shared.exceptions import (
     UUIDValidationError,
     ValueValidationError,
 )
+from geoh5py.ui_json import SetDict
 from geoh5py.ui_json.enforcers import (
     EnforcerPool,
     RequiredEnforcer,
@@ -45,40 +46,40 @@ from geoh5py.ui_json.enforcers import (
 
 
 def test_enforcer_pool_recruit():
-    enforcers = EnforcerPool._recruit(  # pylint: disable=protected-access
-        {
-            "type": str,
-            "value": "onlythis",
-            "uuid": None,
-            "required": ["me"],
-            "required_uijson_parameters": ["me", "you"],
-            "required_form_members": ["label", "value"],
-            "required_workspace_objects": ["data"],
-            "required_object_data": ["object"],
-        }
+    validations = SetDict(
+        type={str},
+        value={"onlythis"},
+        uuid={None},
+        required={"me"},
+        required_uijson_parameters={"me", "you"},
+        required_form_members={"label", "value"},
+        required_workspace_objects={"data"},
+        required_object_data={"object"},
     )
+    enforcers = EnforcerPool._recruit(validations)  # pylint: disable=protected-access
+
     assert enforcers == [
-        TypeEnforcer([str]),
-        ValueEnforcer(["onlythis"]),
-        UUIDEnforcer(),
-        RequiredEnforcer(["me"]),
-        RequiredUIJsonParameterEnforcer(["me", "you"]),
-        RequiredFormMemberEnforcer(["label", "value"]),
-        RequiredWorkspaceObjectEnforcer(["data"]),
-        RequiredObjectDataEnforcer(["object"]),
+        TypeEnforcer({str}),
+        ValueEnforcer({"onlythis"}),
+        UUIDEnforcer({None}),
+        RequiredEnforcer({"me"}),
+        RequiredUIJsonParameterEnforcer({"me", "you"}),
+        RequiredFormMemberEnforcer({"label", "value"}),
+        RequiredWorkspaceObjectEnforcer({"data"}),
+        RequiredObjectDataEnforcer({"object"}),
     ]
 
 
 def test_enforcer_pool_construction():
-    pool = EnforcerPool("my_param", [TypeEnforcer(str)])
-    assert pool.enforcers == [TypeEnforcer(str)]
+    pool = EnforcerPool("my_param", [TypeEnforcer({str})])
+    assert pool.enforcers == [TypeEnforcer({str})]
 
 
 def test_enforcer_pool_validations():
-    validations = {"type": [str], "value": ["onlythis"]}
+    validations = SetDict(type=str, value="onlythis")
     pool = EnforcerPool.from_validations("my_param", validations)
     assert pool.validations == validations
-    pool = EnforcerPool("my_param", [TypeEnforcer(str), ValueEnforcer(["onlythis"])])
+    pool = EnforcerPool("my_param", [TypeEnforcer({str}), ValueEnforcer({"onlythis"})])
     assert pool.validations == validations
 
 
@@ -88,7 +89,7 @@ def test_enforcer_pool_from_validations():
 
 
 def test_enforcer_pool_raises_single_error():
-    enforcers = EnforcerPool("my_param", [TypeEnforcer(str)])
+    enforcers = EnforcerPool("my_param", [TypeEnforcer({str})])
     enforcers.enforce("1")
     msg = "Type 'int' provided for 'my_param' is invalid. "
     msg += "Must be: 'str'."
@@ -98,7 +99,7 @@ def test_enforcer_pool_raises_single_error():
 
 def test_enforcer_pool_raises_aggregate_error():
     enforcers = EnforcerPool(
-        "my_param", [TypeEnforcer(str), ValueEnforcer(["onlythis"])]
+        "my_param", [TypeEnforcer({str}), ValueEnforcer({"onlythis"})]
     )
     enforcers.enforce("onlythis")
     msg = (
@@ -110,13 +111,13 @@ def test_enforcer_pool_raises_aggregate_error():
 
 
 def test_enforcer_str():
-    enforcer = TypeEnforcer(validations=str)
-    assert str(enforcer) == "<TypeEnforcer> : [<class 'str'>]"
+    enforcer = TypeEnforcer(validations={str})
+    assert str(enforcer) == "<TypeEnforcer> : {<class 'str'>}"
 
 
 def test_type_enforcer():
-    enforcer = TypeEnforcer(validations=int)
-    assert enforcer.validations == [int]
+    enforcer = TypeEnforcer(validations={int})
+    assert enforcer.validations == {int}
     enforcer.enforce("test", 1)
     msg = "Type 'float' provided for 'test' is invalid. Must be: 'int'."
     with pytest.raises(TypeValidationError, match=msg):
