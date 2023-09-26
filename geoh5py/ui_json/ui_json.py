@@ -23,11 +23,13 @@ from geoh5py.ui_json.enforcers import EnforcerPool
 from geoh5py.ui_json.forms import FormParameter
 from geoh5py.ui_json.parameters import Parameter
 
+from . import SetDict
+
 
 class UIJson:
     """Stores parameters and data for applications executed with ui.json files."""
 
-    validations = {
+    static_validations = {
         "required_uijson_parameters": [
             "title",
             "geoh5",
@@ -42,14 +44,24 @@ class UIJson:
 
     def __init__(self, parameters: dict[str, Parameter | FormParameter]):
         self.__dict__["parameters"] = parameters
-        validations = dict(self.infer_validations(), **self.validations)
+        self._validations = SetDict()
         self.enforcers: EnforcerPool = EnforcerPool.from_validations(
-            self.name, validations
+            self.name, self.validations
         )
 
-    def infer_validations(self):
+    @property
+    def validations(self):
+        """Returns a dictionary of static and inferred validations."""
+        if not self._validations:
+            self._validations.update(self.dynamic_validations)
+            self._validations.update(self.static_validations)
+
+        return self._validations
+
+    @property
+    def dynamic_validations(self):
         """Infer validations from parameters."""
-        validations = {}
+        validations = SetDict()
         for param in self.parameters.values():
             if hasattr(param, "uijson_validations"):
                 validations.update(param.uijson_validations)

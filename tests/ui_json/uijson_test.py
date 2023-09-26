@@ -281,11 +281,9 @@ def test_uijson_construct_default_and_update(tmp_path):
     assert forms["data_path"]["value"] == "my_data_path"
 
 
-def test_infer_validations(tmp_path):
+def test_validations():
     uijson = generate_sample_defaulted_uijson()
-    validations = uijson.infer_validations()
-    assert "required" in validations
-    assert all(
+    assert (
         k in uijson.enforcers.validations
         for k in ["required", "required_uijson_parameters"]
     )

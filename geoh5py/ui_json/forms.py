@@ -43,6 +43,8 @@ from geoh5py.ui_json.parameters import (
     ValueRestrictedParameter,
 )
 
+from . import SetDict
+
 
 class MemberKeys:
     """Converts in and out of camel (ui.json) and snake (python) case"""
@@ -121,7 +123,7 @@ class FormParameter:
         by way of the FormValueAccess descriptor.
     """
 
-    validations = {"required_form_members": ["label", "value"]}
+    static_validations = {"required_form_members": ["label", "value"]}
     identifier_members: list[str] = []
 
     def __init__(
@@ -152,9 +154,37 @@ class FormParameter:
         self._active_members: list[str] = []
         if kwargs:
             self.register(kwargs)
+        self._validations = SetDict()
         self.enforcers: EnforcerPool = EnforcerPool.from_validations(
             self.name, self.validations
         )
+
+    @property
+    def validations(self):
+        """Returns a dictionary of static and inferred validations."""
+        if not self._validations:
+            self._validations.update(self.dynamic_validations)
+            self._validations.update(self.static_validations)
+
+        return self._validations
+
+    @property
+    def dynamic_validations(self):
+        """Infer validations from parameters."""
+        validations = SetDict()
+        if "group_optional" in self.active:
+            validations.update({"required": "group"})
+
+        return validations
+
+    @property
+    def uijson_validations(self):
+        """Validations for UIJson level enforcers."""
+        validations = SetDict()
+        if "dependency" in self.active:
+            validations.update({"required": self.dependency})  # type: ignore
+
+        return validations
 
     def form(self, use_camel: bool = False) -> dict[str, Any]:
         """
@@ -204,7 +234,7 @@ class FormParameter:
     @property
     def valid_members(self) -> list[str]:
         """Recognized form member names."""
-        exclusions = ["_extra_members", "_active_members"]
+        exclusions = ["_extra_members", "_active_members", "_validations"]
         private_attrs = [k for k in self.__dict__ if k.startswith("_")]
         return [k[1:] for k in private_attrs if k not in exclusions]
 
@@ -236,15 +266,6 @@ class FormParameter:
     @value.setter
     def value(self, val):
         self._value.value = val
-
-    @property
-    def uijson_validations(self):
-        """Validations for UIJson level enforcers."""
-        validations = {}
-        if "dependency" in self.active:
-            validations["required"] = [self.dependency]
-
-        return validations
 
     def _set_value_parameter(self, value) -> Parameter:
         """Handles value argument as either a Parameter or a value."""
@@ -332,7 +353,7 @@ class ChoiceStringFormParameter(FormParameter):
     """
 
     identifier_members: list[str] = ["choice_list"]
-    validations = {"required_form_members": ["choice_list"]}
+    static_validations = {"required_form_members": ["choice_list"]}
 
     def __init__(self, name, choice_list, value=None, **kwargs):
         self._choice_list = StringListParameter("choice_list")
@@ -350,7 +371,7 @@ class FileFormParameter(FormParameter):
     """
 
     identifier_members: list[str] = ["file_description", "file_type", "file_multi"]
-    validations = {"required_form_members": ["file_description", "file_type"]}
+    static_validations = {"required_form_members": ["file_description", "file_type"]}
 
     def __init__(self, name, value=None, **kwargs):
         self._file_description = StringListParameter("file_description")
@@ -369,7 +390,7 @@ class ObjectFormParameter(FormParameter):
     """
 
     identifier_members: list[str] = ["mesh_type"]
-    validations = {"required_form_members": ["mesh_type"]}
+    static_validations = {"required_form_members": ["mesh_type"]}
 
     def __init__(self, name, mesh_type, value=None, **kwargs):
         self._mesh_type = StringListParameter("mesh_type", value=[])
@@ -388,7 +409,9 @@ class DataFormParameter(FormParameter):
     """
 
     identifier_members: list[str] = ["data_group_type"]
-    validations = {"required_form_members": ["parent", "association", "data_type"]}
+    static_validations = {
+        "required_form_members": ["parent", "association", "data_type"]
+    }
 
     def __init__(self, name, data_type, value=None, **kwargs):
         self._parent = StringParameter("parent")
@@ -441,7 +464,7 @@ class DataValueFormParameter(FormParameter):
     """
 
     identifier_members: list[str] = ["is_value", "property"]
-    validations = {
+    static_validations = {
         "required_form_members": [
             "parent",
             "association",

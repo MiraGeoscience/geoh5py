@@ -24,6 +24,8 @@ from geoh5py import Workspace
 from geoh5py.groups import PropertyGroup
 from geoh5py.ui_json.enforcers import EnforcerPool
 
+from . import SetDict
+
 Validation = Dict[str, Any]
 
 
@@ -36,7 +38,7 @@ class Parameter:
     :param enforcers: A collection of enforcers.
     """
 
-    validations: dict[str, Any] = {}
+    static_validations: dict[str, Any] = {}
 
     def __init__(self, name: str, value: Any = None):
         self.name: str = name
@@ -46,6 +48,11 @@ class Parameter:
         )
         if value is not None:
             self.value = value
+
+    @property
+    def validations(self):
+        """Returns a dictionary of static validations."""
+        return SetDict(**self.static_validations)
 
     @property
     def value(self):
@@ -77,13 +84,13 @@ class DynamicallyRestrictedParameter(Parameter):
     @property
     def restrictions(self):
         if not isinstance(self._restrictions, list):
-            self._restrictions = [self._restrictions]
+            self._restrictions = {self._restrictions}
 
         return self._restrictions
 
     @property
     def validations(self):
-        return {self._enforcer_type: self.restrictions}
+        return SetDict(**{self._enforcer_type: self.restrictions})
 
 
 class ValueRestrictedParameter(DynamicallyRestrictedParameter):
@@ -110,31 +117,31 @@ class TypeUIDRestrictedParameter(DynamicallyRestrictedParameter):
 class StringParameter(Parameter):
     """Parameter for string values."""
 
-    validations = {"type": str}
+    static_validations = {"type": str}
 
 
 class IntegerParameter(Parameter):
     """Parameter for integer values."""
 
-    validations = {"type": int}
+    static_validations = {"type": int}
 
 
 class FloatParameter(Parameter):
     """Parameter for float values."""
 
-    validations = {"type": float}
+    static_validations = {"type": float}
 
 
 class NumericParameter(Parameter):
     """Parameter for generic numeric values."""
 
-    validations = {"type": [int, float]}
+    static_validations = {"type": [int, float]}
 
 
 class BoolParameter(Parameter):
     """Parameter for boolean values."""
 
-    validations = {"type": bool}
+    static_validations = {"type": bool}
 
     def __init__(self, name: str, value: bool = False):
         super().__init__(name, value)
@@ -143,7 +150,7 @@ class BoolParameter(Parameter):
 class StringListParameter(Parameter):
     """Parameter for list of strings."""
 
-    validations = {"type": [list, str]}
+    static_validations = {"type": [list, str]}
 
     # TODO: introduce type alias handling so that TypeEnforcer(list[str], str)
     # is possible
@@ -152,10 +159,10 @@ class StringListParameter(Parameter):
 class WorkspaceParameter(Parameter):
     """Parameter for workspace objects."""
 
-    validations = {"type": Workspace}
+    static_validations = {"type": Workspace}
 
 
 class PropertyGroupParameter(Parameter):
     """Parameter for property group objects."""
 
-    validations = {"type": PropertyGroup}
+    static_validations = {"type": PropertyGroup}

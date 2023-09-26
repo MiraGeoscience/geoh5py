@@ -30,6 +30,7 @@ from geoh5py.shared.exceptions import (
     TypeValidationError,
     ValueValidationError,
 )
+from geoh5py.ui_json import SetDict
 from geoh5py.ui_json.enforcers import TypeEnforcer, TypeUIDEnforcer, ValueEnforcer
 from geoh5py.ui_json.forms import (
     BoolFormParameter,
@@ -174,7 +175,7 @@ def test_string_form_parameter_construction():
     assert param.name == "my_param"
     assert param.value == "this"
     assert param.label == "my param"  # pylint: disable=no-member
-    assert param._value._enforcers.enforcers == [TypeEnforcer(str)]
+    assert param._value._enforcers.enforcers == [TypeEnforcer({str})]
 
 
 def test_string_form_parameter_validation():
@@ -210,7 +211,7 @@ def test_bool_form_parameter_construction():
     assert param.name == "my_param"
     assert param.value
     assert param.label == "my param"  # pylint: disable=no-member
-    assert param._value._enforcers.enforcers == [TypeEnforcer(bool)]
+    assert param._value._enforcers.enforcers == [TypeEnforcer({bool})]
 
 
 def test_bool_form_parameter_validation():
@@ -232,7 +233,7 @@ def test_integer_form_parameter_construction():
     assert param.name == "my_param"
     assert param.value == 1
     assert param.label == "my param"  # pylint: disable=no-member
-    assert param._value._enforcers.enforcers == [TypeEnforcer(int)]
+    assert param._value._enforcers.enforcers == [TypeEnforcer({int})]
     assert param.min is None  # pylint: disable=no-member
     assert param.max is None  # pylint: disable=no-member
 
@@ -256,7 +257,7 @@ def test_float_form_parameter_construction():
     assert param.name == "my_param"
     assert param.value == 1
     assert param.label == "my param"  # pylint: disable=no-member
-    assert param._value._enforcers.enforcers == [TypeEnforcer(float)]
+    assert param._value._enforcers.enforcers == [TypeEnforcer({float})]
     assert param.min is None  # pylint: disable=no-member
     assert param.max is None  # pylint: disable=no-member
     assert param.precision is None  # pylint: disable=no-member
@@ -280,7 +281,7 @@ def test_choice_string_form_parameter_construction():
     assert param.name == "my_param"
     assert param.value == "onlythis"
     assert param.label == "my param"  # pylint: disable=no-member
-    assert param._value._enforcers.enforcers == [ValueEnforcer(["onlythis"])]
+    assert param._value._enforcers.enforcers == [ValueEnforcer({"onlythis"})]
     assert param.choice_list == ["onlythis"]  # pylint: disable=no-member
 
 
@@ -303,7 +304,7 @@ def test_file_form_parameter_construction():
     assert param.name == "my_param"
     assert param.value == "my_file"
     assert param.label == "my param"  # pylint: disable=no-member
-    assert param._value._enforcers.enforcers == [TypeEnforcer(str)]
+    assert param._value._enforcers.enforcers == [TypeEnforcer({str})]
     assert param.file_description is None  # pylint: disable=no-member
     assert param.file_type is None  # pylint: disable=no-member
     assert not param.file_multi  # pylint: disable=no-member
@@ -320,10 +321,12 @@ def test_file_form_parameter_validation():
 
 
 def test_file_form_required_members_validation():
-    msg = r"Form: 'my_param' is missing required member\(s\): \['file_description', 'file_type'\]."
+    msg = r"Form: 'my_param' is missing required member\(s\):"
     param = FileFormParameter("my_param", label="my param", value="my_file")
-    with pytest.raises(RequiredFormMemberValidationError, match=msg):
+    with pytest.raises(RequiredFormMemberValidationError, match=msg) as info:
         param.validate()
+
+    assert all(k in str(info.value) for k in ["file_description", "file_type"])
 
 
 def test_object_form_parameter_construction():
@@ -334,7 +337,7 @@ def test_object_form_parameter_construction():
     assert param.name == "my_param"
     assert param.value == new_uuid
     assert param.label == "my param"  # pylint: disable=no-member
-    assert param._value._enforcers.enforcers == [TypeUIDEnforcer([""])]
+    assert param._value._enforcers.enforcers == [TypeUIDEnforcer({""})]
     assert param.mesh_type == []  # pylint: disable=no-member
 
 
@@ -381,7 +384,7 @@ def test_data_form_parameter_construction(tmp_path):
     assert param.name == "my_param"
     assert param.value.uid == data.uid
     assert param.label == "my param"  # pylint: disable=no-member
-    assert param._value._enforcers.enforcers == [TypeEnforcer(FloatData)]
+    assert param._value._enforcers.enforcers == [TypeEnforcer({FloatData})]
     assert param.parent is None  # pylint: disable=no-member
     assert param.association is None  # pylint: disable=no-member
     assert param.data_type == "Float"  # pylint: disable=no-member
@@ -418,12 +421,11 @@ def test_data_form_required_member_validation(tmp_path):
         label="my param",
         data_type="Float",
     )
-    msg = (
-        r"Form: 'my_param' is missing required member\(s\): "
-        r"\['parent', 'association'\]."
-    )
-    with pytest.raises(RequiredFormMemberValidationError, match=msg):
+    msg = r"Form: 'my_param' is missing required member\(s\): "
+    with pytest.raises(RequiredFormMemberValidationError, match=msg) as info:
         param.validate()
+
+    assert all(k in str(info.value) for k in ["parent", "association"])
 
 
 def test_data_value_form_parameter_construction(tmp_path):
@@ -441,9 +443,9 @@ def test_data_value_form_parameter_construction(tmp_path):
     assert param.value.uid == data.uid
     assert param.label == "my param"  # pylint: disable=no-member
     assert param._property._enforcers.enforcers == [
-        TypeEnforcer([FloatData]),
+        TypeEnforcer({FloatData}),
     ]
-    assert param._value._enforcers.enforcers == [TypeEnforcer([int, float])]
+    assert param._value._enforcers.enforcers == [TypeEnforcer({int, float})]
     assert param.parent is None  # pylint: disable=no-member
     assert param.association is None  # pylint: disable=no-member
     assert param.data_type == "Float"  # pylint: disable=no-member
@@ -466,14 +468,13 @@ def test_data_value_form_required_member_validation():
     param = DataValueFormParameter(
         "my_param", label="my param", is_value=False, value=1, data_type="Integer"
     )
-    msg = (
-        r"Form: 'my_param' is missing required member\(s\): "
-        r"\['parent', 'association', 'property'\]."
-    )
-    with pytest.raises(RequiredFormMemberValidationError, match=msg):
+    msg = r"Form: 'my_param' is missing required member\(s\): "
+    with pytest.raises(RequiredFormMemberValidationError, match=msg) as info:
         param.validate()
+
+    assert all(k in str(info.value) for k in ["parent", "association", "property"])
 
 
 def test_form_parameter_uijson_validations():
     param = FormParameter("my_param", dependency="my_other_param")
-    assert param.uijson_validations == {"required": ["my_other_param"]}
+    assert param.uijson_validations == SetDict(**{"required": {"my_other_param"}})
