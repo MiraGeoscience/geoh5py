@@ -271,7 +271,7 @@ class UUIDEnforcer(Enforcer):
 
     enforcer_type = "uuid"
 
-    def __init__(self, validations: set[None] = {None}):
+    def __init__(self, validations: set = {""}):
         super().__init__(validations)
 
     def enforce(self, name: str, value: Any):

@@ -90,7 +90,7 @@ class MemberKeys:
 MEMBER_KEYS = MemberKeys()
 
 
-class FormParameter:  # type: ignore
+class FormParameter:  # pylint: disable=too-many-instance-attributes
     """
     Base class for parameters that create visual ui elements from a form.
 
