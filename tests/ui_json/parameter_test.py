@@ -101,7 +101,7 @@ def test_string_list_parameter_type_validation():
     param = StringListParameter("my_param")
     param.value = "this is ok"
     param.value = ["this", "is", "also", "ok"]
-    msg = "Type 'int' provided for 'my_param' is invalid. " "Must be one of:"
+    msg = "Type 'int' provided for 'my_param' is invalid. Must be one of:"
     with pytest.raises(TypeValidationError, match=msg) as info:
         param.value = 1
 
