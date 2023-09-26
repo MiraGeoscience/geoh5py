@@ -45,7 +45,7 @@ class SetDict(dict):
             if key in self.__dict__:
                 self.__dict__[key].update(self._make_set(value))
             else:
-                self.__setitem__(key, value)
+                self[key] = value
 
     def _make_set(self, value) -> set:
         """Converts value to a set."""

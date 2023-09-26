@@ -90,7 +90,7 @@ class MemberKeys:
 MEMBER_KEYS = MemberKeys()
 
 
-class FormParameter:
+class FormParameter:  # type: ignore
     """
     Base class for parameters that create visual ui elements from a form.
 
