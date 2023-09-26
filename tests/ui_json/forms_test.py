@@ -454,14 +454,16 @@ def test_data_value_form_parameter_construction(tmp_path):
 
 def test_data_value_form_parameter_validation():
     msg = "Type 'str' provided for 'value' is invalid. "
-    msg += "Must be one of: 'int', 'float'."
-    with pytest.raises(TypeValidationError, match=msg):
+    msg += "Must be one of:"
+    with pytest.raises(TypeValidationError, match=msg) as info:
         _ = DataValueFormParameter(
             "my_param",
             value="uh-oh",
             is_value=True,
             data_type="Float",
         )
+
+    assert all(k in str(info.value) for k in ["int", "float"])
 
 
 def test_data_value_form_required_member_validation():
