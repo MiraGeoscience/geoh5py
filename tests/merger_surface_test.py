@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from geoh5py.objects import Surface
 from geoh5py.shared.merging import SurfaceMerger
@@ -62,3 +63,8 @@ def test_merge_surface(tmp_path):
             merged_surface.cells
             == np.vstack([surface0.cells, surface1.cells + np.max(simplices) + 1])
         )
+
+        with pytest.raises(
+            TypeError, match="The input entities must be a list of geoh5py"
+        ):
+            SurfaceMerger.validate_type("bidon")

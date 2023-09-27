@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from geoh5py.objects import Curve
 from geoh5py.shared.merging import CurveMerger
@@ -115,3 +116,8 @@ def test_merge_curve(tmp_path):
         assert (
             merged_curve.vertices == np.vstack((curves[0].vertices, curves[1].vertices))
         ).all()
+
+        with pytest.raises(
+            TypeError, match="The input entities must be a list of geoh5py"
+        ):
+            CurveMerger.validate_type("bidon")

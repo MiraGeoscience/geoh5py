@@ -14,6 +14,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
 from __future__ import annotations
 
 from typing import cast
@@ -32,7 +33,7 @@ class CurveMerger(BaseMerger):
     def validate_type(cls, input_entity):
         # want to make sure that the input entities are Points, no subclasses
         if type(input_entity) is not cls._type:  # pylint: disable=unidiomatic-typecheck
-            raise TypeError("The input entities must be a list of geoh5py Points.")
+            raise TypeError("The input entities must be a list of geoh5py Curve.")
 
     @classmethod
     def create_object(
