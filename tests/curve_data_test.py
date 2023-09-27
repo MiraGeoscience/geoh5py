@@ -62,8 +62,6 @@ def test_create_curve_data(tmp_path: Path):
         with pytest.raises(TypeError, match="Indices array must be of integer type"):
             curve.cells = np.c_[0.0, 1.0]
 
-        print(curve.parts)
-
         curve.cells = cells.tolist()
 
         data_objects = curve.add_data(

@@ -17,42 +17,14 @@
 
 from __future__ import annotations
 
-from typing import cast
-
-import numpy as np
-
-from ...objects import Curve, ObjectBase
-from ...workspace import Workspace
-from .base import BaseMerger
+from ...objects import Curve
+from .cell import CellMerger
 
 
-class CurveMerger(BaseMerger):
+class CurveMerger(CellMerger):
     _type = Curve
 
     @classmethod
     def validate_type(cls, input_entity):
-        # want to make sure that the input entities are Points, no subclasses
         if type(input_entity) is not cls._type:  # pylint: disable=unidiomatic-typecheck
             raise TypeError("The input entities must be a list of geoh5py Curve.")
-
-    @classmethod
-    def create_object(
-        cls, workspace: Workspace, input_entities: list[ObjectBase], **kwargs
-    ) -> Curve:
-        # create the vertices
-        vertices = np.vstack([input_entity.vertices for input_entity in input_entities])
-
-        # merge the parts
-        parts: list = []
-        previous: int = 0
-
-        for entity in input_entities:
-            parts += (cast(Curve, entity).parts + previous).tolist()
-            previous = max(parts) + 1
-
-        # create an object of type
-        output = cls._type.create(
-            workspace, vertices=vertices, parts=np.hstack(parts), **kwargs
-        )
-
-        return output

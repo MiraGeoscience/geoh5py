@@ -491,7 +491,6 @@ class InputFile:
                     raise JSONParameterValidationError(key, error.args[0]) from error
                 value = cls.numify(value)
 
-            # todo: problem here: cannot get a path to a normal path
             mappers = [str2none, str2inf, str2uuid, path2workspace]
             ui_json[key] = dict_mapper(value, mappers)
 
