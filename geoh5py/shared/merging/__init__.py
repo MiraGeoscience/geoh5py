@@ -20,3 +20,4 @@
 
 from .curve import CurveMerger
 from .points import PointsMerger
+from .surface import SurfaceMerger
