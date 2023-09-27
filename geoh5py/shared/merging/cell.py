@@ -18,13 +18,13 @@ from __future__ import annotations
 
 import numpy as np
 
-from ...objects import CellObject, ObjectBase
+from ...objects import CellObject, Curve, ObjectBase, Surface
 from ...workspace import Workspace
 from .base import BaseMerger
 
 
 class CellMerger(BaseMerger):
-    _type = CellObject
+    _type: type = CellObject
 
     @classmethod
     def create_object(
@@ -52,8 +52,16 @@ class CellMerger(BaseMerger):
             previous = np.nanmax(temp_cells) + 1
 
         # create an object of type
-        output = cls._type.create(
+        output = cls._type.create(  # type: ignore
             workspace, vertices=vertices, cells=np.vstack(cells).tolist(), **kwargs
         )
 
         return output
+
+
+class CurveMerger(CellMerger):
+    _type = Curve
+
+
+class SurfaceMerger(CellMerger):
+    _type = Surface

@@ -18,6 +18,5 @@
 # pylint: disable=unused-import
 # flake8: noqa
 
-from .curve import CurveMerger
+from .cell import CurveMerger, SurfaceMerger
 from .points import PointsMerger
-from .surface import SurfaceMerger
