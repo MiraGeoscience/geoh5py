@@ -18,22 +18,50 @@ from __future__ import annotations
 
 import numpy as np
 
-from ...objects import ObjectBase, Points
+from ...objects import CellObject, Curve, ObjectBase, Surface
 from ...workspace import Workspace
 from .base import BaseMerger
 
 
-class PointsMerger(BaseMerger):
-    _type = Points
+class CellMerger(BaseMerger):
+    _type: type = CellObject
 
     @classmethod
     def create_object(
         cls, workspace: Workspace, input_entities: list[ObjectBase], **kwargs
-    ) -> Points:
+    ) -> CellObject:
+        """
+        Create a new object of type cls._type from a list of input entities.
+        It merges the cells together and create a new object with the merged cells.
+
+        :param workspace: The workspace to create the object in.
+        :param input_entities: The list of input entities to merge together.
+        :param kwargs: The kwargs to pass to the object creation.
+
+        :return: The newly created object merged from input_entities.
+        """
         # create the vertices
         vertices = np.vstack([input_entity.vertices for input_entity in input_entities])
 
+        # merge the simplices
+        cells: list = []
+        previous: int = 0
+        for entity in input_entities:
+            temp_cells = entity.cells + previous
+            cells.append(temp_cells)
+            previous = np.nanmax(temp_cells) + 1
+
         # create an object of type
-        output = cls._type.create(workspace, vertices=vertices, **kwargs)
+        output = cls._type.create(  # type: ignore
+            workspace, vertices=vertices, cells=np.vstack(cells).tolist(), **kwargs
+        )
 
         return output
+
+
+class CurveMerger(CellMerger):
+    _type = Curve
+
+
+class SurfaceMerger(CellMerger):
+    _type = Surface

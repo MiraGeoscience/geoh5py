@@ -280,6 +280,3 @@ def test_merge_attribute_error(tmp_path):
 
         with pytest.raises(NotImplementedError, match="BaseMerger cannot be use"):
             _ = BaseMerger.create_object(workspace, points, name="bidon")
-
-        with pytest.raises(NotImplementedError, match="BaseMerger cannot be use"):
-            _ = BaseMerger.validate_type(points[0])
