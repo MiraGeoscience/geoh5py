@@ -489,7 +489,6 @@ class InputFile:
                     cls.ui_validation(value)
                 except tuple(BaseValidationError.__subclasses__()) as error:
                     raise JSONParameterValidationError(key, error.args[0]) from error
-
                 value = cls.numify(value)
 
             mappers = [str2none, str2inf, str2uuid, path2workspace]
