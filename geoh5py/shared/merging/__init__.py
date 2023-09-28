@@ -19,4 +19,5 @@
 # flake8: noqa
 
 from .cell import CurveMerger, SurfaceMerger
+from .drape_model import DrapeModelMerger
 from .points import PointsMerger
