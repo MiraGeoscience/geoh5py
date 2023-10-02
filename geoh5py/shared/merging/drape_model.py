@@ -27,6 +27,7 @@ from .base import BaseMerger
 
 
 class DrapeModelMerger(BaseMerger):
+    _pad: int = 2
     _type: type = DrapeModel
 
     @classmethod
@@ -48,7 +49,11 @@ class DrapeModelMerger(BaseMerger):
         prisms: list = []
         previous_prism: int = 0
         previous_layer: int = 0
+        ghost_prism: np.ndarray = np.array([])
+        ghost_layer: np.ndarray = np.array([])
+
         for input_entity in input_entities:
+            # get the values of the entity
             temp_prisms: np.ndarray = cast(
                 np.ndarray, cast(DrapeModel, input_entity).prisms
             )
@@ -56,14 +61,38 @@ class DrapeModelMerger(BaseMerger):
                 np.ndarray, cast(DrapeModel, input_entity).layers
             )
 
+            # get the first ghost
+            if ghost_prism.size > 0:
+                # append last ghost prism and layer
+                prisms.append(ghost_prism)
+                layers.append(ghost_layer)
+
+                # create the first ghost point
+                ghost_prism, ghost_layer = cls._ghost_point(
+                    temp_prisms[0],
+                    temp_prisms[1],
+                    previous_prism - 1,
+                    previous_layer - 1,
+                )
+
+                # append first ghost prism and layer
+                prisms.append(ghost_prism)
+                layers.append(ghost_layer)
+
+            # add the entity prisms and layers to the list
             temp_prisms[:, -2] += previous_prism
             temp_layers[:, 0] += previous_layer
 
-            previous_prism = temp_prisms[-1, -1] + temp_prisms[-1, -2]
-            previous_layer = temp_layers[-1, 0] + 1
+            previous_prism = temp_prisms[-1, -1] + temp_prisms[-1, -2] + 2
+            previous_layer = temp_layers[-1, 0] + 3
 
             prisms.append(temp_prisms)
             layers.append(temp_layers)
+
+            # create a last ghost prism and layer
+            ghost_prism, ghost_layer = cls._ghost_point(
+                temp_prisms[-1], temp_prisms[-2], previous_prism - 2, previous_layer - 2
+            )
 
         # create an object
         output = cls._type.create(  # type: ignore
@@ -71,6 +100,36 @@ class DrapeModelMerger(BaseMerger):
         )
 
         return output
+
+    @staticmethod
+    def _ghost_point(
+        point: np.ndarray,
+        mirror: np.ndarray,
+        previous_prism: int,
+        previous_layer: int,
+    ) -> np.ndarray | np.ndarray:
+        """
+        Create a ghost point prism and layer based on two points.
+        :param point: The point to create the ghost from.
+        :param mirror: The mirror point to create the ghost from.
+        :param previous_prism: The ID of the previous prism.
+        :param previous_layer: The ID of the previous layer.
+        :return: A prism and a layer for the ghost point.
+        """
+
+        # create a mirrored point for last layer
+        ghost_prism: np.ndarray = point.copy()
+        ghost_layer: np.ndarray = np.empty(3)
+        ghost_prism[:3] = 2 * point[:3] - mirror[:3]
+
+        ghost_prism[3] = previous_prism
+        ghost_prism[4] = 1
+
+        ghost_layer[0] = previous_layer
+        ghost_layer[1] = 0
+        ghost_layer[2] = ghost_prism[2]
+
+        return np.expand_dims(ghost_prism, 0), np.expand_dims(ghost_layer, 0)
 
     @classmethod
     def validate_objects(cls, input_entities: list[ObjectBase]):

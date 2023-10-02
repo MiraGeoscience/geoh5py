@@ -57,9 +57,14 @@ def test_merge_drape_model(tmp_path):
     h5file_path = tmp_path / "drapedmodel.geoh5"
     with Workspace.create(h5file_path) as workspace:
         drape_models = []
+        count = 0
         for i in range(10):
             drape_model = create_drape_model(workspace, alpha=i * 2.5)
-
+            count += drape_model.n_cells
             drape_models.append(drape_model)
 
-        _ = DrapeModelMerger.merge_objects(workspace, drape_models, name="merged")
+        drape_model_merged = DrapeModelMerger.merge_objects(
+            workspace, drape_models, name="merged"
+        )
+
+        assert drape_model_merged.n_cells == count + 18
