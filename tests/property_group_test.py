@@ -66,6 +66,8 @@ def test_create_property_group(tmp_path):
 
         prop_group2 = curve2.find_or_create_property_group(name="myGroup2")
 
+        assert prop_group2.collect_values is None
+
         _ = curve2.copy()
 
         assert prop_group2.remove_properties("bidon") is None
