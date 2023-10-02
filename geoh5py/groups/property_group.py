@@ -140,7 +140,7 @@ class PropertyGroup(ABC):
         return self._attribute_map
 
     @property
-    def values(self) -> np.ndarray | None:
+    def collect_values(self) -> np.ndarray | None:
         """
         The values of the properties in the group.
         """

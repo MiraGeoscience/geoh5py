@@ -145,7 +145,7 @@ def test_create_property_group(tmp_path):
         assert property_group_from_object == property_group_test
 
         np.testing.assert_almost_equal(
-            property_group_from_object.values, np.array(test_values)
+            property_group_from_object.collect_values, np.array(test_values)
         )
 
     # Re-open the workspace
