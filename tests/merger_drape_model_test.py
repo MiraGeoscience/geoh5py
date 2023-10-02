@@ -116,18 +116,6 @@ def test_merge_drape_model_attribute_error(tmp_path):
             drape_model = create_drape_model(workspace, alpha=i * 2.5)
             drape_models.append(drape_model)
 
-        with pytest.raises(TypeError, match="The input entities must be a list"):
-            _ = DrapeModelMerger.merge_objects(workspace, "bidon")
-
-        with pytest.raises(ValueError, match="Need more than one object"):
-            _ = DrapeModelMerger.merge_objects(workspace, [drape_models[0]])
-
-        with pytest.raises(TypeError, match="All objects must be of"):
-            _ = DrapeModelMerger.merge_objects(workspace, [drape_models[0], "bidon"])
-
-        with pytest.raises(TypeError, match="The input entities must be a list"):
-            _ = DrapeModelMerger.merge_objects(workspace, ["bidon", "bidon"])
-
         drape_models[1] = DrapeModel(workspace)
 
         with pytest.raises(AttributeError, match="All entities must have prisms"):

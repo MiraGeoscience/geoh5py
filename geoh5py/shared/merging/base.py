@@ -187,10 +187,17 @@ class BaseMerger(ABC):
         cls.validate_type(input_entities[0])
 
         # verify if the all input entities have vertices
-        if not all(
-            isinstance(input_entity.vertices, np.ndarray)
-            for input_entity in input_entities
-        ):
+        for input_entity in input_entities:
+            cls.validate_structure(input_entity)
+
+    @classmethod
+    def validate_structure(cls, input_entity: ObjectBase):
+        """
+        Validate the input entity structure and raises error if incompatible.
+        :param input_entity: the input entity to validate.
+        """
+        # verify if the input entity have vertices
+        if not isinstance(input_entity.vertices, np.ndarray):
             raise AttributeError("All entities must have vertices.")
 
     @classmethod

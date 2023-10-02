@@ -132,36 +132,14 @@ class DrapeModelMerger(BaseMerger):
         return np.expand_dims(ghost_prism, 0), np.expand_dims(ghost_layer, 0)
 
     @classmethod
-    def validate_objects(cls, input_entities: list[ObjectBase]):
+    def validate_structure(cls, input_entity: ObjectBase):
         """
-        Validate the input entities types and raises error if incompatible.
-
-        :param input_entities: a list of :obj:geoh5py.objects.ObjectBase objects.
+        Validate the input entity structure and raises error if incompatible.
+        :param input_entity: the input entity to validate.
         """
-        # assert input entities is a list of len superior to 1
-        if not isinstance(input_entities, list):
-            raise TypeError("The input entities must be a list of geoh5py objects.")
-
-        # assert input entities is a list of len superior to 1
-        if len(input_entities) < 2:
-            raise ValueError("Need more than one object to merge.")
-
-        # assert input entities are of the same type
-        if not all(
-            type(input_entity) is type(input_entities[0])
-            for input_entity in input_entities
-        ):
-            raise TypeError("All objects must be of the same type.")
-
-        # assert input entities are of the same type
-        cls.validate_type(input_entities[0])
-
-        # verify if the all input entities have vertices
-        if not all(
-            (
-                isinstance(cast(DrapeModel, input_entity).prisms, np.ndarray)
-                and isinstance(cast(DrapeModel, input_entity).layers, np.ndarray)
-            )
-            for input_entity in input_entities
+        # verify if the input entity have prism and layers
+        if not (
+            isinstance(cast(DrapeModel, input_entity).prisms, np.ndarray)
+            and isinstance(cast(DrapeModel, input_entity).layers, np.ndarray)
         ):
             raise AttributeError("All entities must have prisms and layers.")
