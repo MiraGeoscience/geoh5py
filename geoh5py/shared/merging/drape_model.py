@@ -27,7 +27,7 @@ from .base import BaseMerger
 
 
 class DrapeModelMerger(BaseMerger):
-    _pad: int = 2
+    _ghost: int = 2
     _type: type = DrapeModel
 
     @classmethod

@@ -53,18 +53,52 @@ def create_drape_model(workspace: Workspace, alpha: float = 0.0):
     return drape
 
 
-def test_merge_drape_model(tmp_path):
+def test_merge_drape_model(tmp_path):  # pylint: disable=too-many-locals
     h5file_path = tmp_path / "drapedmodel.geoh5"
     with Workspace.create(h5file_path) as workspace:
         drape_models = []
-        count = 0
+        test_values = []
+        test_prisms = []
+        test_layers = []
+
+        count_n_cells = 0
         for i in range(10):
             drape_model = create_drape_model(workspace, alpha=i * 2.5)
-            count += drape_model.n_cells
+            count_n_cells += drape_model.n_cells
             drape_models.append(drape_model)
+
+            test_values.append(drape_model.get_data("indices")[0].values)
+            test_prisms.append(drape_model.prisms)
+            test_layers.append(drape_model.layers)
 
         drape_model_merged = DrapeModelMerger.merge_objects(
             workspace, drape_models, name="merged"
         )
 
-        assert drape_model_merged.n_cells == count + 18
+        count_values = 0
+        count_prism = 0
+        out_values = drape_model_merged.get_data("indices")[0].values
+        out_prisms = drape_model_merged.prisms
+        out_layers = drape_model_merged.layers
+        for i in range(10):
+            np.testing.assert_almost_equal(
+                out_values[count_values : count_values + test_values[i].shape[0]],
+                test_values[i],
+            )
+            np.testing.assert_almost_equal(
+                out_prisms[count_prism : count_prism + test_prisms[i].shape[0], :3],
+                test_prisms[i][:, :3],
+            )
+            np.testing.assert_almost_equal(
+                out_prisms[count_prism : count_prism + test_prisms[i].shape[0], -1],
+                test_prisms[i][:, -1],
+            )
+
+            np.testing.assert_almost_equal(
+                out_layers[count_values : count_values + test_layers[i].shape[0], 1:],
+                test_layers[i][:, 1:],
+            )
+            count_values += test_values[i].shape[0] + 2
+            count_prism += test_prisms[i].shape[0] + 2
+
+        assert drape_model_merged.n_cells == count_n_cells + 18
