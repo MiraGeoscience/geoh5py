@@ -164,4 +164,4 @@ class DrapeModelMerger(BaseMerger):
             )
             for input_entity in input_entities
         ):
-            raise AttributeError("All entities must have vertices.")
+            raise AttributeError("All entities must have prisms and layers.")

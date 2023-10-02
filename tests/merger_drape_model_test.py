@@ -16,6 +16,7 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
+import pytest
 
 from geoh5py.objects import DrapeModel
 from geoh5py.shared.merging import DrapeModelMerger
@@ -62,6 +63,8 @@ def test_merge_drape_model(tmp_path):  # pylint: disable=too-many-locals
         test_layers = []
 
         count_n_cells = 0
+
+        # prepare the output
         for i in range(10):
             drape_model = create_drape_model(workspace, alpha=i * 2.5)
             count_n_cells += drape_model.n_cells
@@ -75,6 +78,7 @@ def test_merge_drape_model(tmp_path):  # pylint: disable=too-many-locals
             workspace, drape_models, name="merged"
         )
 
+        # test the output
         count_values = 0
         count_prism = 0
         out_values = drape_model_merged.get_data("indices")[0].values
@@ -102,3 +106,29 @@ def test_merge_drape_model(tmp_path):  # pylint: disable=too-many-locals
             count_prism += test_prisms[i].shape[0] + 2
 
         assert drape_model_merged.n_cells == count_n_cells + 18
+
+
+def test_merge_drape_model_attribute_error(tmp_path):
+    h5file_path = tmp_path / r"testPoints.geoh5"
+    drape_models = []
+    with Workspace.create(h5file_path) as workspace:
+        for i in range(10):
+            drape_model = create_drape_model(workspace, alpha=i * 2.5)
+            drape_models.append(drape_model)
+
+        with pytest.raises(TypeError, match="The input entities must be a list"):
+            _ = DrapeModelMerger.merge_objects(workspace, "bidon")
+
+        with pytest.raises(ValueError, match="Need more than one object"):
+            _ = DrapeModelMerger.merge_objects(workspace, [drape_models[0]])
+
+        with pytest.raises(TypeError, match="All objects must be of"):
+            _ = DrapeModelMerger.merge_objects(workspace, [drape_models[0], "bidon"])
+
+        with pytest.raises(TypeError, match="The input entities must be a list"):
+            _ = DrapeModelMerger.merge_objects(workspace, ["bidon", "bidon"])
+
+        drape_models[1] = DrapeModel(workspace)
+
+        with pytest.raises(AttributeError, match="All entities must have prisms"):
+            _ = DrapeModelMerger.merge_objects(workspace, drape_models)
