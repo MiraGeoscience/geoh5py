@@ -22,6 +22,8 @@ from abc import ABC
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 from geoh5py.data import Data, DataAssociationEnum
 
 if TYPE_CHECKING:
@@ -136,6 +138,19 @@ class PropertyGroup(ABC):
         :obj:`dict` Attribute names mapping between geoh5 and geoh5py
         """
         return self._attribute_map
+
+    @property
+    def values(self) -> np.ndarray | None:
+        """
+        The values of the properties in the group.
+        """
+
+        if self._properties is None:
+            return None
+
+        return np.r_[
+            [self._parent.get_data(data)[0].values for data in self._properties]
+        ]
 
     @property
     def name(self) -> str:
