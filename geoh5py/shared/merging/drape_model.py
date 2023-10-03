@@ -21,13 +21,13 @@ from typing import cast
 
 import numpy as np
 
+from ...data import NumericData
 from ...objects import DrapeModel, ObjectBase
 from ...workspace import Workspace
 from .base import BaseMerger
 
 
 class DrapeModelMerger(BaseMerger):
-    _ghost: int = 2
     _type: type = DrapeModel
 
     @classmethod
@@ -130,6 +130,41 @@ class DrapeModelMerger(BaseMerger):
         ghost_layer[2] = ghost_prism[2]
 
         return np.expand_dims(ghost_prism, 0), np.expand_dims(ghost_layer, 0)
+
+    @classmethod
+    def merge_data(
+        cls,
+        out_entity,
+        input_entities: list[ObjectBase],
+    ):
+        super().merge_data(out_entity, input_entities)
+
+        # prepare an empty nan array
+        values: np.ndarray = np.empty(out_entity.n_cells)
+        values[:] = np.nan
+
+        # get all the values in the output entity
+        for data in out_entity.children:
+            if (
+                not isinstance(data, NumericData)
+                or data.association is None
+                or data.n_values is None
+                or data.values is None
+            ):
+                continue
+            previous: int = 0
+            twos: int = 0
+            for input_entity in input_entities:
+                n_cells = cast(int, input_entity.n_cells)
+                values[previous + twos : previous + twos + n_cells] = data.values[
+                    previous : previous + n_cells
+                ]
+
+                previous += n_cells
+                twos += 2
+
+            # update the values
+            data.values = values
 
     @classmethod
     def validate_structure(cls, input_entity: DrapeModel):

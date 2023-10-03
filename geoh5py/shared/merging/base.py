@@ -27,7 +27,6 @@ from ...workspace import Workspace
 
 
 class BaseMerger(ABC):
-    _ghost: int = 0
     _type: type = ObjectBase
 
     @classmethod
@@ -109,14 +108,10 @@ class BaseMerger(ABC):
                     data_dict[label].values = values
 
             data_count["VERTEX"] += (
-                input_entity.n_vertices + cls._ghost
-                if input_entity.n_vertices is not None
-                else 0
+                input_entity.n_vertices if input_entity.n_vertices is not None else 0
             )
             data_count["CELL"] += (
-                input_entity.n_cells + cls._ghost
-                if input_entity.n_cells is not None
-                else 0
+                input_entity.n_cells if input_entity.n_cells is not None else 0
             )
 
     @classmethod
