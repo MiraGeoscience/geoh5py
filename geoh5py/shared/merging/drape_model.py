@@ -132,7 +132,7 @@ class DrapeModelMerger(BaseMerger):
         return np.expand_dims(ghost_prism, 0), np.expand_dims(ghost_layer, 0)
 
     @classmethod
-    def validate_structure(cls, input_entity: ObjectBase):
+    def validate_structure(cls, input_entity: DrapeModel):
         """
         Validate the input entity structure and raises error if incompatible.
         :param input_entity: the input entity to validate.

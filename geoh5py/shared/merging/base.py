@@ -192,7 +192,7 @@ class BaseMerger(ABC):
 
     @classmethod
     @abstractmethod
-    def validate_structure(cls, input_entity: ObjectBase):
+    def validate_structure(cls, input_entity):
         """
         Validate the input entity structure and raises error if incompatible.
         :param input_entity: the input entity to validate.

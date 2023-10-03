@@ -41,7 +41,7 @@ class PointsMerger(BaseMerger):
         return output
 
     @classmethod
-    def validate_structure(cls, input_entity: ObjectBase):
+    def validate_structure(cls, input_entity: Points):
         """
         Validate the input entity structure and raises error if incompatible.
         :param input_entity: the input entity to validate.
