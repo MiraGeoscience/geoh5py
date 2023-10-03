@@ -18,7 +18,7 @@
 import numpy as np
 import pytest
 
-from geoh5py.objects import DrapeModel
+from geoh5py.objects import DrapeModel, Points
 from geoh5py.shared.merging import DrapeModelMerger
 from geoh5py.workspace import Workspace
 
@@ -75,7 +75,7 @@ def test_merge_drape_model(tmp_path):  # pylint: disable=too-many-locals
             test_layers.append(drape_model.layers)
 
         drape_model_merged = DrapeModelMerger.merge_objects(
-            workspace, drape_models, name="merged"
+            workspace, drape_models, name="merged", children=[Points(workspace)]
         )
 
         # test the output
