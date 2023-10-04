@@ -1,3 +1,4 @@
+.. _parameter_types:
 
 .. _bool_param:
 
