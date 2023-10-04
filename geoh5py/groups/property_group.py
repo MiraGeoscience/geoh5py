@@ -22,8 +22,6 @@ from abc import ABC
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
-import numpy as np
-
 from geoh5py.data import Data, DataAssociationEnum
 
 if TYPE_CHECKING:
