@@ -110,6 +110,11 @@ def test_remove_root(tmp_path: Path):
         ):
             points2.add_data_to_group(data2, "bidon")
 
+        with pytest.raises(
+            ValueError, match="No children data found on the parent object."
+        ):
+            points2.add_data_to_group(["abs"], "bidon")
+
         setattr(points2, "_property_groups", None)
 
         assert points2.remove_data_from_groups(data2) is None

@@ -1,6 +1,23 @@
 Release Notes
 =============
 
+Release 0.8.0 (2023-10-26)
+--------------------------
+
+GEOPY-241, 550, 993: Explicit creation of a Workspace object.
+GEOPY-262, 479: Improved documentation.
+GEOPY-438: Add access to property_groups as child of objects.
+GEOPY-516, 652: New functionality for UI.json forms.
+GEOPY-652: Expose coordinate system information.
+GEOPY-666: Add clipping by extent for mesh type objects.
+GEOPY-742, 747: Implement all remaining EM survey types for TEM, FEM, airbone and ground.
+GEOPY-776: Support mask data type (BoolData).
+GEOPY-846: Bgin support of object VisualParameters (Color only).
+GEOPY-915, 919, 991, 1002, 1013, 1014: Improve clipping by extent for Grid2D and GeoImage.
+GEOPY-923, 1025, 1050: Add documentation and docstrings.
+GEOPY-870, 897, 918, 976, 979, 987, 992, 1000, 1004, 1030, 1042, 1055: Bug fixes
+
+
 Release 0.7.0 (2023-03-26)
 --------------------------
 

@@ -27,7 +27,7 @@ from typing import Any
 import numpy as np
 
 from geoh5py import Workspace
-from geoh5py.groups import ContainerGroup
+from geoh5py.groups import ContainerGroup, Group
 from geoh5py.objects import ObjectBase
 from geoh5py.shared.utils import fetch_active_workspace
 
@@ -324,7 +324,7 @@ def container_group2name(value):
 
 
 def monitored_directory_copy(
-    directory: str, entity: ObjectBase, copy_children: bool = True
+    directory: str, entity: ObjectBase | Group, copy_children: bool = True
 ) -> str:
     """
     Create a temporary geoh5 file in the monitoring folder and export entity for update.
