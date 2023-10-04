@@ -138,6 +138,17 @@ class PropertyGroup(ABC):
         return self._attribute_map
 
     @property
+    def collect_values(self) -> list | None:
+        """
+        The values of the properties in the group.
+        """
+
+        if self._properties is None:
+            return None
+
+        return [self._parent.get_data(data)[0].values for data in self._properties]
+
+    @property
     def name(self) -> str:
         """
         :obj:`str` Name of the group
