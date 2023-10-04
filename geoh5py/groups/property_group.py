@@ -148,9 +148,7 @@ class PropertyGroup(ABC):
         if self._properties is None:
             return None
 
-        return np.r_[
-            [self._parent.get_data(data)[0].values for data in self._properties]
-        ]
+        return [self._parent.get_data(data)[0].values for data in self._properties]
 
     @property
     def name(self) -> str:
