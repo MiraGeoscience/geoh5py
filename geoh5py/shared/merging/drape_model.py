@@ -139,30 +139,26 @@ class DrapeModelMerger(BaseMerger):
     ):
         super().merge_data(out_entity, input_entities)
 
-        ind_map = []
-        data_count = 0
-        ghost_count = 0
-        n_values = np.sum([input_entity.n_cells for input_entity in input_entities])
-        for input_entity in input_entities:
+        ind_map: list = []
+        data_count: int = 0
+        n_values: int = out_entity.n_cells - (len(input_entities) - 1) * 2
+        for ghost, input_entity in enumerate(input_entities):
             if input_entity.n_cells is None:
                 continue
-
             n_cells = input_entity.n_cells
-            ind_map.append(np.arange(data_count, data_count + n_cells))
-
-            if input_entity != input_entities[-1]:
-                ind_map.append([n_values + ghost_count, n_values + ghost_count + 1])
-
-            ghost_count += 2
+            ind_map.extend(
+                [
+                    [n_values + (ghost - 1) * 2, n_values + (ghost - 1) * 2],
+                    np.arange(data_count, data_count + n_cells),
+                ]
+            )
             data_count += n_cells
 
-        ind_map = np.hstack(ind_map)
         # get all the values in the output entity
         for data in out_entity.children:
             if not isinstance(data, NumericData) or data.values is None:
                 continue
-
-            data.values = data.values[ind_map]
+            data.values = data.values[np.hstack(ind_map[1:])]
 
     @classmethod
     def validate_structure(cls, input_entity: DrapeModel):
