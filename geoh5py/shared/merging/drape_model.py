@@ -146,12 +146,10 @@ class DrapeModelMerger(BaseMerger):
             if input_entity.n_cells is None:
                 continue
             n_cells = input_entity.n_cells
-            ind_map.extend(
-                [
-                    [n_values + (ghost - 1) * 2, n_values + (ghost - 1) * 2],
-                    np.arange(data_count, data_count + n_cells),
-                ]
-            )
+            ind_map += [
+                [n_values + (ghost - 1) * 2, n_values + (ghost - 1) * 2],
+                np.arange(data_count, data_count + n_cells),
+            ]
             data_count += n_cells
 
         # get all the values in the output entity
