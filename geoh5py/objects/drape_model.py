@@ -140,8 +140,8 @@ class DrapeModel(GridObject):
 
     @property
     def n_cells(self):
-        if self._prisms is not None:
-            return int(self._prisms["Layer count"].sum())
+        if self._layers is not None:
+            return self._layers.shape[0]
         return None
 
     @property
