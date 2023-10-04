@@ -16,6 +16,7 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+import logging
 import uuid
 from abc import ABC, abstractmethod
 from typing import cast
@@ -23,9 +24,10 @@ from typing import cast
 import numpy as np
 
 from ...data import Data, ReferencedData
-from ...shared import logger
 from ..curve import Curve
 from ..object_type import ObjectType
+
+logger = logging.getLogger(__name__)
 
 
 class BaseElectrode(Curve, ABC):
