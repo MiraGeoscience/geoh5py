@@ -32,7 +32,7 @@ class DrapeModelMerger(BaseMerger):
 
     @classmethod
     def create_object(
-        cls, workspace: Workspace, input_entities: list[DrapeModel], **kwargs  # type: ignore
+        cls, workspace: Workspace, input_entities: list[DrapeModel], **kwargs
     ) -> DrapeModel:
         """
         Create a new DrapeModel from a list of input DrapeModels.

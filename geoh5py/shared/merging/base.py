@@ -144,9 +144,7 @@ class BaseMerger(ABC):
 
     @classmethod
     @abstractmethod
-    def create_object(
-        cls, workspace: Workspace, input_entities: list[ObjectBase], **kwargs
-    ):
+    def create_object(cls, workspace: Workspace, input_entities, **kwargs):
         """
         Create an object with the structure of all the input entities.
         :param workspace: The workspace to use to create the object.
