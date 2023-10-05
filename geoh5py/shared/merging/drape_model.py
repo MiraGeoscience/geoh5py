@@ -35,7 +35,8 @@ class DrapeModelMerger(BaseMerger):
         cls, workspace: Workspace, input_entities: list[ObjectBase], **kwargs
     ) -> DrapeModel:
         """
-        Create a new object of type cls._type from a list of input entities.
+        Create a new DrapeModel from a list of input DrapeModels.
+        
         It merges the cells together and create a new object with the merged cells.
 
         :param workspace: The workspace to create the object in.
