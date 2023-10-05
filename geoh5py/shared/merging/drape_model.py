@@ -32,7 +32,7 @@ class DrapeModelMerger(BaseMerger):
 
     @classmethod
     def create_object(
-        cls, workspace: Workspace, input_entities: list[DrapeModel], **kwargs
+        cls, workspace: Workspace, input_entities: list[DrapeModel], **kwargs  # type: ignore
     ) -> DrapeModel:
         """
         Create a new DrapeModel from a list of input DrapeModels.
@@ -144,7 +144,7 @@ class DrapeModelMerger(BaseMerger):
                 continue
             ind_map += [
                 np.arange(data_count, data_count + input_entity.n_cells),
-                [n_values + ghost * 2, n_values + ghost * 2],
+                [n_values + ghost * 2, n_values + ghost * 2 + 1],
             ]
             data_count += input_entity.n_cells
 
