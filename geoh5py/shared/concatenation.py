@@ -807,8 +807,10 @@ class ConcatenatedObject(Concatenated, ObjectBase):
     ) -> ConcatenatedPropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
+
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
+
         :return: A new :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
         if self._property_groups is not None and name in [
@@ -819,7 +821,9 @@ class ConcatenatedObject(Concatenated, ObjectBase):
         if "property_group_type" not in kwargs and "Property Group Type" not in kwargs:
             kwargs["property_group_type"] = "Interval table"
 
-        prop_group = ConcatenatedPropertyGroup(self, name=name, **kwargs)
+        prop_group = ConcatenatedPropertyGroup(
+            self, name=name, on_file=on_file, **kwargs
+        )
 
         return prop_group
 
@@ -894,7 +898,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
             for key in property_groups:
                 self.find_or_create_property_group(
-                    **self.concatenator.get_concatenated_attributes(key)
+                    **self.concatenator.get_concatenated_attributes(key), on_file=True
                 )
 
             property_groups = [
@@ -916,7 +920,8 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         for prop_group in (
             self.property_groups if self.property_groups is not None else []
         ):
-            data = [self.get_data(child)[0] for child in prop_group.properties]
+            properties = [] if prop_group.properties is None else prop_group.properties
+            data = [self.get_data(child)[0] for child in properties]
             if data and "depth" in data[0].name.lower():
                 obj_list.append(data[0])
 
@@ -931,7 +936,8 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         for prop_group in (
             self.property_groups if self.property_groups is not None else []
         ):
-            data = [self.get_data(child)[0] for child in prop_group.properties]
+            properties = [] if prop_group.properties is None else prop_group.properties
+            data = [self.get_data(child)[0] for child in properties]
             if len(data) > 0 and "from" in data[0].name.lower():
                 obj_list.append(data[0])
         return obj_list

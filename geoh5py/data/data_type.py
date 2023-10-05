@@ -139,7 +139,7 @@ class DataType(EntityType):
             value_map = ReferenceValueMap(value_map)
 
         self._value_map = value_map
-        self.workspace.update_attribute(self, "Value map")
+        self.workspace.update_attribute(self, "value_map")
 
     @property
     def units(self) -> str | None:

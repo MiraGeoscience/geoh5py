@@ -42,6 +42,7 @@ def test_create_property_group(tmp_path):
 
         # Add data
         props = []
+        test_values = []
         for i in range(4):
             values = np.cos(curve.vertices[:, 0] / (i + 1))
             props += [
@@ -49,6 +50,7 @@ def test_create_property_group(tmp_path):
                     {f"Period{i+1}": {"values": values}}, property_group="myGroup"
                 )
             ]
+            test_values.append(values)
 
         with pytest.raises(TypeError, match="Name must be"):
             _ = PropertyGroup(parent="bidon", name=42)
@@ -63,6 +65,8 @@ def test_create_property_group(tmp_path):
         curve2 = curve.copy()
 
         prop_group2 = curve2.find_or_create_property_group(name="myGroup2")
+
+        assert prop_group2.collect_values is None
 
         _ = curve2.copy()
 
@@ -141,6 +145,10 @@ def test_create_property_group(tmp_path):
         property_group_from_object = curve.get_entity("myGroup")[0]
 
         assert property_group_from_object == property_group_test
+
+        np.testing.assert_almost_equal(
+            np.r_[property_group_from_object.collect_values], np.array(test_values)
+        )
 
     # Re-open the workspace
     with Workspace(h5file_path) as workspace:
