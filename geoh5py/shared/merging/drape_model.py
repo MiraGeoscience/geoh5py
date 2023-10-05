@@ -36,7 +36,7 @@ class DrapeModelMerger(BaseMerger):
     ) -> DrapeModel:
         """
         Create a new DrapeModel from a list of input DrapeModels.
-        
+
         It merges the cells together and create a new object with the merged cells.
 
         :param workspace: The workspace to create the object in.
