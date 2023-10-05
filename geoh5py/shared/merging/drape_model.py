@@ -55,12 +55,8 @@ class DrapeModelMerger(BaseMerger):
 
         for input_entity in input_entities:
             # get the values of the entity
-            temp_prisms: np.ndarray = cast(
-                np.ndarray, cast(DrapeModel, input_entity).prisms
-            )
-            temp_layers: np.ndarray = cast(
-                np.ndarray, cast(DrapeModel, input_entity).layers
-            )
+            temp_prisms: np.ndarray = input_entity.prisms
+            temp_layers: np.ndarray = input_entity.layers
 
             # get the first ghost
             if ghost_prism.size > 0:
