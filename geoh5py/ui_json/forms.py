@@ -398,6 +398,16 @@ class ObjectFormParameter(FormParameter):
         super().__init__(name, value=value, **kwargs)
 
 
+DATA_TYPES = {
+    "Integer": IntegerData,
+    "Float": FloatData,
+    "Text": TextData,
+    "Referenced": ReferencedData,
+    "DateTime": DatetimeData,
+    "Boolean": BooleanData,
+}
+
+
 class DataFormParameter(FormParameter):
     """
     Data parameter type.
@@ -418,37 +428,14 @@ class DataFormParameter(FormParameter):
         self._association = ValueRestrictedParameter(
             "association", ["Vertex", "Cell", "Face"]
         )
-        self._data_type = ValueRestrictedParameter(
-            "data_type",
-            [
-                "Integer",
-                "Float",
-                "Text",
-                "Referenced",
-                "Vector",
-                "DateTime",
-                "Geometric",
-                "Boolean",
-            ],
-        )
+        self._data_type = ValueRestrictedParameter("data_type", list(DATA_TYPES))
         self._data_group_type = ValueRestrictedParameter(
             "data_group_type", ["3D vector", "Dip direction & dip", "Strike & dip"]
         )
         value = TypeRestrictedParameter(
-            "value", [self._data_type_string_to_type(data_type)], value=value
+            "value", [DATA_TYPES.get(data_type, None)], value=value
         )
         super().__init__(name, value=value, data_type=data_type, **kwargs)
-
-    def _data_type_string_to_type(self, data_type: str) -> type:
-        """Converts string data type to python type."""
-        return {
-            "Integer": IntegerData,
-            "Float": FloatData,
-            "Text": TextData,
-            "Referenced": ReferencedData,
-            "DateTime": DatetimeData,
-            "Boolean": BooleanData,
-        }[data_type]
 
 
 class DataValueFormParameter(FormParameter):
@@ -479,22 +466,10 @@ class DataValueFormParameter(FormParameter):
         self._association = ValueRestrictedParameter(
             "association", ["Vertex", "Cell", "Face"]
         )
-        self._data_type = ValueRestrictedParameter(
-            "data_type",
-            [
-                "Integer",
-                "Float",
-                "Text",
-                "Referenced",
-                "Vector",
-                "DateTime",
-                "Geometric",
-                "Boolean",
-            ],
-        )
+        self._data_type = ValueRestrictedParameter("data_type", list(DATA_TYPES))
         self._is_value = BoolParameter("is_value")
         self._property = TypeRestrictedParameter(
-            "property", [self._data_type_string_to_type(data_type)]
+            "property", [DATA_TYPES.get(data_type, None)]
         )
         value = NumericParameter("value", value=value)
         super().__init__(name, value=value, data_type=data_type, **kwargs)
