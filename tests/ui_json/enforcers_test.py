@@ -53,7 +53,7 @@ def test_enforcer_pool_recruit():
         required={"me"},
         required_uijson_parameters={"me", "you"},
         required_form_members={"label", "value"},
-        required_workspace_objects={"data"},
+        required_workspace_object={"data"},
         required_object_data={"object"},
     )
     enforcers = EnforcerPool._recruit(validations)  # pylint: disable=protected-access
