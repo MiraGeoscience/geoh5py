@@ -30,7 +30,7 @@ from geoh5py.shared.exceptions import (
     TypeValidationError,
     ValueValidationError,
 )
-from geoh5py.ui_json import SetDict
+from geoh5py.shared.utils import SetDict
 from geoh5py.ui_json.enforcers import TypeEnforcer, TypeUIDEnforcer, ValueEnforcer
 from geoh5py.ui_json.forms import (
     BoolFormParameter,

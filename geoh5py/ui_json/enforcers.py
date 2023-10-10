@@ -34,9 +34,7 @@ from geoh5py.shared.exceptions import (
     UUIDValidationError,
     ValueValidationError,
 )
-from geoh5py.shared.utils import is_uuid
-
-from . import SetDict
+from geoh5py.shared.utils import SetDict, is_uuid
 
 
 class Enforcer(ABC):
@@ -128,9 +126,7 @@ class TypeUIDEnforcer(Enforcer):
     """
     Enforces restricted geoh5 entity_type uid(s).
 
-
     :param validations: Valid geoh5py object type uid(s).
-
     :raises TypeValidationError: If value is not a valid type uid.
     """
 
@@ -187,9 +183,7 @@ class RequiredEnforcer(Enforcer):
     """
     Enforces required items in a collection.
 
-    :param validations: Items that are required in the
-
-        collection.
+    :param validations: Items that are required in the collection.
     :raises InCollectionValidationError: If collection is missing one of
         the required parameters/members.
     """
@@ -234,7 +228,7 @@ class RequiredWorkspaceObjectEnforcer(RequiredEnforcer):
 
     def rule(self, value: Any) -> bool:
         """True if all objects are in the workspace."""
-        validations = [value[k].uid for k in self.validations]
+        validations = [value[k]["value"].uid for k in self.validations]
         return all(k in self.collection(value) for k in validations)
 
     def collection(self, value: dict[str, Any]) -> list[UUID]:

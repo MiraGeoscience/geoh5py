@@ -264,6 +264,7 @@ def test_uijson_construct_default_and_update(tmp_path):
     ifile = InputFile.read_ui_json(populated_file)
 
     uijson.update(ifile.ui_json)
+    uijson.validate()
     forms = uijson.to_dict(naming="camel")
     assert forms["save_name"]["value"] == "my test name"
     assert forms["flip_sign"]["value"]

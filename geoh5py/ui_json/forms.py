@@ -28,6 +28,7 @@ from geoh5py.data import (
     TextData,
 )
 from geoh5py.shared.exceptions import AggregateValidationError, BaseValidationError
+from geoh5py.shared.utils import SetDict
 from geoh5py.ui_json.descriptors import FormValueAccess
 from geoh5py.ui_json.enforcers import EnforcerPool
 from geoh5py.ui_json.parameters import (
@@ -42,8 +43,6 @@ from geoh5py.ui_json.parameters import (
     TypeUIDRestrictedParameter,
     ValueRestrictedParameter,
 )
-
-from . import SetDict
 
 
 class MemberKeys:
@@ -390,12 +389,23 @@ class ObjectFormParameter(FormParameter):
     """
 
     identifier_members: list[str] = ["mesh_type"]
-    static_validations = {"required_form_members": ["mesh_type"]}
+    static_validations = dict(
+        FormParameter.static_validations, **{"required_form_members": ["mesh_type"]}
+    )
 
     def __init__(self, name, mesh_type, value=None, **kwargs):
         self._mesh_type = StringListParameter("mesh_type", value=[])
         value = TypeUIDRestrictedParameter("value", mesh_type, value=value)
         super().__init__(name, value=value, **kwargs)
+
+    @property
+    def uijson_validations(self):
+        """Validations for UIJson level enforcers."""
+        validations = SetDict()
+        if self.value is not None:
+            validations.update({"required_workspace_object": self.name})
+
+        return validations
 
 
 DATA_TYPES = {
@@ -488,14 +498,3 @@ class DataValueFormParameter(FormParameter):
             self._value.value = val
         else:
             self._property.value = val
-
-    def _data_type_string_to_type(self, data_type: str) -> type:
-        """Converts string data type to python type."""
-        return {
-            "Integer": IntegerData,
-            "Float": FloatData,
-            "Text": TextData,
-            "Referenced": ReferencedData,
-            "DateTime": DatetimeData,
-            "Boolean": BooleanData,
-        }[data_type]

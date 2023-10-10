@@ -15,7 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from geoh5py.ui_json import SetDict
+from geoh5py.shared.utils import SetDict
 
 
 def test_dict_set_class():

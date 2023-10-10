@@ -19,11 +19,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from geoh5py.shared.utils import SetDict
 from geoh5py.ui_json.enforcers import EnforcerPool
 from geoh5py.ui_json.forms import FormParameter
 from geoh5py.ui_json.parameters import Parameter
-
-from . import SetDict
 
 
 class UIJson:
@@ -52,9 +51,9 @@ class UIJson:
     @property
     def validations(self):
         """Returns a dictionary of static and inferred validations."""
-        if not self._validations:
-            self._validations.update(self.dynamic_validations)
-            self._validations.update(self.static_validations)
+
+        self._validations.update(self.dynamic_validations)
+        self._validations.update(self.static_validations)
 
         return self._validations
 
@@ -94,6 +93,8 @@ class UIJson:
                 self.update_data(param, value)
             else:
                 self.parameters[param] = value
+
+        self.enforcers = EnforcerPool.from_validations(self.name, self.validations)
 
     def update_state(self, param: str, value: Any):
         """Updates the member values of all FormParameter objects."""

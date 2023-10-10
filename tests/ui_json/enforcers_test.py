@@ -31,7 +31,7 @@ from geoh5py.shared.exceptions import (
     UUIDValidationError,
     ValueValidationError,
 )
-from geoh5py.ui_json import SetDict
+from geoh5py.shared.utils import SetDict
 from geoh5py.ui_json.enforcers import (
     EnforcerPool,
     RequiredEnforcer,
@@ -167,12 +167,12 @@ def test_required_workspace_object_enforcer(tmp_path):
         other_geoh5, vertices=np.random.rand(10, 3), name="my_other_points"
     )
 
-    data = {"geoh5": geoh5, "my_points": pts}
+    data = {"geoh5": geoh5, "my_points": {"value": pts}}
     validations = ["my_points"]
     enforcer = RequiredWorkspaceObjectEnforcer(validations)
     enforcer.enforce(str(geoh5.h5file.stem), data)
 
-    data["my_points"] = other_pts
+    data["my_points"] = {"value": other_pts}
     msg = r"Workspace: 'working_file' is missing required object\(s\): \['my_points'\]."
     with pytest.raises(RequiredWorkspaceObjectValidationError, match=msg):
         enforcer.enforce(str(geoh5.h5file.stem), data)
