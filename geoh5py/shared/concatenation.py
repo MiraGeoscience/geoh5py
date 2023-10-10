@@ -1130,7 +1130,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         collocation_distance=1e-4,
     ) -> ConcatenatedPropertyGroup:
         """
-        Compare new and current depth values and re-use the property group if possible.
+        Compare new and current depth values and reuse the property group if possible.
         Otherwise a new property group is added.
 
         :param from_to: Array of from-to values.
