@@ -17,10 +17,6 @@
 
 # pylint: disable=unused-import
 # flake8: noqa
-from . import weakref_utils
-from .entity import Entity
-from .entity_type import EntityType
-from .utils import fetch_h5_handle, match_values, merge_arrays
 
-INTEGER_NDV = -2147483648
-FLOAT_NDV = 1.17549435e-38
+from .cell import CurveMerger, SurfaceMerger
+from .points import PointsMerger

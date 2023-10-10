@@ -14,13 +14,26 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
 
-# pylint: disable=unused-import
-# flake8: noqa
-from . import weakref_utils
-from .entity import Entity
-from .entity_type import EntityType
-from .utils import fetch_h5_handle, match_values, merge_arrays
+import numpy as np
 
-INTEGER_NDV = -2147483648
-FLOAT_NDV = 1.17549435e-38
+from ...objects import ObjectBase, Points
+from ...workspace import Workspace
+from .base import BaseMerger
+
+
+class PointsMerger(BaseMerger):
+    _type = Points
+
+    @classmethod
+    def create_object(
+        cls, workspace: Workspace, input_entities: list[ObjectBase], **kwargs
+    ) -> Points:
+        # create the vertices
+        vertices = np.vstack([input_entity.vertices for input_entity in input_entities])
+
+        # create an object of type
+        output = cls._type.create(workspace, vertices=vertices, **kwargs)
+
+        return output
