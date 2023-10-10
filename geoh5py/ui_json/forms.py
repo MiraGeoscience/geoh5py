@@ -479,7 +479,7 @@ class DataValueFormParameter(FormParameter):
         self._data_type = ValueRestrictedParameter("data_type", list(DATA_TYPES))
         self._is_value = BoolParameter("is_value")
         self._property = TypeRestrictedParameter(
-            "property", [DATA_TYPES.get(data_type, None)]
+            "property", [DATA_TYPES.get(data_type, type(None))]
         )
         value = NumericParameter("value", value=value)
         super().__init__(name, value=value, data_type=data_type, **kwargs)
