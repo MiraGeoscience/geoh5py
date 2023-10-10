@@ -185,11 +185,8 @@ class BaseMerger(ABC):
             raise AttributeError("All entities must have vertices.")
 
     @classmethod
-    @abstractmethod
-    def validate_type(cls, input_entity: ObjectBase):
-        """
-        Validate the type of the input entity.
-
-        :param input_entity: the input entity to validate.
-        """
-        raise NotImplementedError("BaseMerger cannot be use, use a subclass.")
+    def validate_type(cls, input_entity):
+        if type(input_entity) is not cls._type:  # pylint: disable=unidiomatic-typecheck
+            raise TypeError(
+                f"The input entities must be a list of {cls._type.__name__}."
+            )

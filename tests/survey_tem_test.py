@@ -348,14 +348,10 @@ def test_survey_airborne_tem_data(tmp_path):
                 np.testing.assert_almost_equal(child_a.values[5:], child_b.values)
 
 
-def test_create_survey_ground_tem_large_loop(
-    tmp_path,
-):  # pylint: disable=too-many-locals
-    path = Path(tmp_path) / r"groundTEM.geoh5"
-
-    # Create a workspace
-    workspace = Workspace.create(path)
-
+def make_large_loop_survey(workspace: Workspace):
+    """
+    Utility function to create a large loop survey.
+    """
     vertices = []
     tx_loops = []
     tx_id = []
@@ -382,6 +378,27 @@ def test_create_survey_ground_tem_large_loop(
         workspace, vertices=np.vstack(vertices)
     )
 
+    transmitters = LargeLoopGroundTEMTransmitters.create(
+        workspace,
+        vertices=np.vstack(tx_loops),
+        cells=np.vstack(tx_cells),
+    )
+    transmitters.tx_id_property = transmitters.parts + 1
+    receivers.tx_id_property = np.hstack(tx_id)
+
+    return receivers, transmitters
+
+
+def test_create_survey_ground_tem_large_loop(
+    tmp_path,
+):  # pylint: disable=too-many-locals
+    path = Path(tmp_path) / r"groundTEM.geoh5"
+
+    # Create a workspace
+    workspace = Workspace.create(path)
+
+    receivers, transmitters = make_large_loop_survey(workspace)
+
     receivers.channels = [10.0, 100.0]
     values = {}
     for component in ["bx", "bz"]:
@@ -399,13 +416,6 @@ def test_create_survey_ground_tem_large_loop(
     assert isinstance(
         receivers, LargeLoopGroundTEMReceivers
     ), "Entity type GroundTEMReceiversLargeLoop failed to create."
-
-    transmitters = LargeLoopGroundTEMTransmitters.create(
-        workspace,
-        vertices=np.vstack(tx_loops),
-        cells=np.vstack(tx_cells),
-    )
-    transmitters.tx_id_property = transmitters.parts + 1
 
     assert isinstance(
         transmitters, LargeLoopGroundTEMTransmitters
@@ -430,10 +440,17 @@ def test_create_survey_ground_tem_large_loop(
 
     receivers.transmitters = transmitters
 
-    receivers.tx_id_property = np.hstack(tx_id)
-
     with Workspace.create(Path(tmp_path) / r"testGround_copy.geoh5") as new_workspace:
         receivers_orig = receivers.copy(new_workspace)
+        repeat_copy = receivers_orig.copy()
+        assert (
+            repeat_copy.metadata["EM Dataset"]["Tx ID property"]
+            != receivers_orig.metadata["EM Dataset"]["Tx ID property"]
+        )
+
+    with Workspace.create(
+        Path(tmp_path) / r"testGround_copy_extent.geoh5"
+    ) as new_workspace:
         transmitters_rec = receivers.transmitters.copy_from_extent(
             np.vstack([[-150, 300], [150, 600]]), parent=new_workspace
         )
@@ -442,11 +459,9 @@ def test_create_survey_ground_tem_large_loop(
             transmitters_rec.n_vertices == receivers_orig.transmitters.n_vertices / 2.0
         )
 
-        repeat_copy = receivers_orig.copy()
-        assert (
-            repeat_copy.metadata["EM Dataset"]["Tx ID property"]
-            != receivers_orig.metadata["EM Dataset"]["Tx ID property"]
-        )
+        assert list(
+            transmitters_rec.tx_id_property.entity_type.value_map.map.values()
+        ) == ["Unknown", "Loop 2"]
 
 
 def test_create_survey_ground_tem(tmp_path):

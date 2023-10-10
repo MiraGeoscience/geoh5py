@@ -466,6 +466,25 @@ def test_data_value_form_parameter_validation():
     assert all(k in str(info.value) for k in ["int", "float"])
 
 
+def test_data_value_form_parameter_data_type_validation(tmp_path):
+    workspace = Workspace(tmp_path / "test.geoh5")
+    pts = Points.create(workspace, vertices=np.random.rand(10, 3))
+    data = pts.add_data({"my_data": {"values": np.random.rand(10, 1)}})
+
+    msg = (
+        r"Validation of 'my_param' collected 2 errors:\n\t"
+        r"0. Value 'WhatThe\?' provided for 'data_type'(.*)"
+    )
+    with pytest.raises(AggregateValidationError, match=msg):
+        _ = DataValueFormParameter(
+            "my_param",
+            label="my param",
+            is_value=False,
+            property=data,
+            data_type="WhatThe?",
+        )
+
+
 def test_data_value_form_required_member_validation():
     param = DataValueFormParameter(
         "my_param", label="my param", is_value=False, value=1, data_type="Integer"

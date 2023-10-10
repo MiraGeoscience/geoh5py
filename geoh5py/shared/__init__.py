@@ -17,7 +17,6 @@
 
 # pylint: disable=unused-import
 # flake8: noqa
-
 from . import weakref_utils
 from .entity import Entity
 from .entity_type import EntityType
