@@ -44,7 +44,7 @@ def test_write_context():
     with pytest.raises(Geoh5FileClosedError):
         w_s.fetch_children(points)
 
-    # Re-open in stanalone readonly
+    # Re-open in standalone readonly
     w_s.open()
     assert len(w_s.objects) == 1, "Issue creating an object with context manager."
     w_s.close()
