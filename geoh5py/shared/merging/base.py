@@ -91,12 +91,17 @@ class BaseMerger(ABC):
                         if association == "VERTEX"
                         else out_entity.n_cells
                     )
+
+                    # update the entity type
+                    entity_type = data.entity_type
+                    entity_type.workspace = out_entity.workspace
+
                     data_dict[label] = out_entity.add_data(
                         {
                             data.name: {
                                 "values": np.ones(shape) * data.nan_value,
                                 "association": association,
-                                "entity_type": data.entity_type,
+                                "entity_type": entity_type,
                             }
                         }
                     )

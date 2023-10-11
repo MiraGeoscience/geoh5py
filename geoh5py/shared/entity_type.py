@@ -132,3 +132,9 @@ class EntityType(ABC):
         # which means workspace has been deleted.
         assert workspace is not None
         return workspace
+
+    @workspace.setter
+    def workspace(self, workspace: ws.Workspace):
+        assert workspace is not None
+        self._workspace = weakref.ref(workspace)
+        self.workspace.update_attribute(self, "attributes")

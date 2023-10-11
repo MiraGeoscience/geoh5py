@@ -74,6 +74,8 @@ def test_merge_drape_model(tmp_path):  # pylint: disable=too-many-locals
             test_prisms.append(drape_model.prisms)
             test_layers.append(drape_model.layers)
 
+    h5file_path_2 = tmp_path / "drapedmodel2.geoh5"
+    with workspace.create(h5file_path_2) as workspace:
         drape_model_merged = DrapeModelMerger.merge_objects(
             workspace, drape_models, name="merged", children=[Points(workspace)]
         )
