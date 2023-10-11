@@ -20,10 +20,10 @@ import numpy as np
 
 from ...objects import CellObject, Curve, ObjectBase, Surface
 from ...workspace import Workspace
-from .base import BaseMerger
+from .points import PointsMerger
 
 
-class CellMerger(BaseMerger):
+class CellMerger(PointsMerger):
     _type: type = CellObject
 
     @classmethod
