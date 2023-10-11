@@ -30,7 +30,11 @@ class BaseMerger(ABC):
     _type: type = ObjectBase
 
     @classmethod
-    def merge_data(cls, out_entity, input_entities: list[ObjectBase]):
+    def merge_data(
+        cls,
+        out_entity,
+        input_entities: list[ObjectBase],
+    ):
         """
         Merge the data respecting the entity type, the values, and the association.
         :param out_entity: the output entity to add the data to.
@@ -140,9 +144,7 @@ class BaseMerger(ABC):
 
     @classmethod
     @abstractmethod
-    def create_object(
-        cls, workspace: Workspace, input_entities: list[ObjectBase], **kwargs
-    ):
+    def create_object(cls, workspace: Workspace, input_entities, **kwargs):
         """
         Create an object with the structure of all the input entities.
         :param workspace: The workspace to use to create the object.
@@ -178,11 +180,17 @@ class BaseMerger(ABC):
         cls.validate_type(input_entities[0])
 
         # verify if the all input entities have vertices
-        if not all(
-            isinstance(input_entity.vertices, np.ndarray)
-            for input_entity in input_entities
-        ):
-            raise AttributeError("All entities must have vertices.")
+        for input_entity in input_entities:
+            cls.validate_structure(input_entity)
+
+    @classmethod
+    @abstractmethod
+    def validate_structure(cls, input_entity):
+        """
+        Validate the input entity structure and raises error if incompatible.
+        :param input_entity: the input entity to validate.
+        """
+        raise NotImplementedError("BaseMerger cannot be use, use a subclass.")
 
     @classmethod
     def validate_type(cls, input_entity):
