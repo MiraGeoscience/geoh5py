@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import Any
+from uuid import UUID
 
 from geoh5py.shared.exceptions import (
     AggregateValidationError,
@@ -33,116 +34,7 @@ from geoh5py.shared.exceptions import (
     UUIDValidationError,
     ValueValidationError,
 )
-from geoh5py.shared.utils import is_uuid
-
-
-class EnforcerPool:
-    """
-    Validate data on a collection of enforcers.
-
-    :param name: Name of parameter.
-    :param enforcers: List (pool) of enforcers.
-    """
-
-    enforcer_types = [
-        "type",
-        "value",
-        "uuid",
-        "type_uid",
-        "required",
-        "required_uijson_parameters",
-        "required_form_members",
-        "required_workspace_objects",
-        "required_object_data",
-    ]
-
-    def __init__(self, name: str, enforcers: list[Enforcer]):
-        self.name = name
-        self.enforcers: list[Enforcer] = enforcers
-        self._errors: list[BaseValidationError] = []
-
-    @classmethod
-    def from_validations(
-        cls,
-        name: str,
-        validations: dict[str, Any],
-    ) -> EnforcerPool:
-        """
-        Create enforcers pool from validations.
-
-        :param name: Name of parameter.
-        :param validations: Encodes validations as enforcer type and
-            validation key value pairs.
-        :param restricted_validations: 0.
-
-        """
-
-        return cls(name, cls._recruit(validations))
-
-    @property
-    def validations(self) -> dict[str, Any]:
-        """Returns an enforcer type / validation dictionary from pool."""
-        return {k.enforcer_type: k.validations for k in self.enforcers}
-
-    @staticmethod
-    def _recruit(validations: dict[str, Any]):
-        """Recruit enforcers from validations."""
-        return [EnforcerPool._recruit_enforcer(k, v) for k, v in validations.items()]
-
-    @staticmethod
-    def _recruit_enforcer(enforcer_type: str, validation: Any) -> Enforcer:
-        """
-        Create enforcer from enforcer type and validation.
-
-        :param enforcer_type: Type of enforcer to create.
-        :param validation: Enforcer validation.
-        """
-
-        if enforcer_type not in EnforcerPool.enforcer_types:
-            raise ValueError(f"Invalid enforcer type: {enforcer_type}.")
-
-        if enforcer_type == "type":
-            enforcer = TypeEnforcer(validation)
-        if enforcer_type == "value":
-            enforcer = ValueEnforcer(validation)  # type: ignore
-        if enforcer_type == "uuid":
-            enforcer = UUIDEnforcer(validation)  # type: ignore
-        if enforcer_type == "type_uid":
-            enforcer = TypeUIDEnforcer(validation)  # type: ignore
-        if enforcer_type == "required":
-            enforcer = RequiredEnforcer(validation)  # type: ignore
-        if enforcer_type == "required_uijson_parameters":
-            enforcer = RequiredUIJsonParameterEnforcer(validation)  # type: ignore
-        if enforcer_type == "required_form_members":
-            enforcer = RequiredFormMemberEnforcer(validation)  # type: ignore
-        if enforcer_type == "required_workspace_objects":
-            enforcer = RequiredWorkspaceObjectEnforcer(validation)  # type: ignore
-        if enforcer_type == "required_object_data":
-            enforcer = RequiredObjectDataEnforcer(validation)  # type: ignore
-
-        return enforcer
-
-    def enforce(self, value: Any):
-        """Enforce rules from all enforcers in the pool."""
-
-        for enforcer in self.enforcers:
-            self._capture_error(enforcer, value)
-
-        self._raise_errors()
-
-    def _capture_error(self, enforcer: Enforcer, value: Any):
-        """Catch and store 'BaseValidationError's for aggregation."""
-        try:
-            enforcer.enforce(self.name, value)
-        except BaseValidationError as err:
-            self._errors.append(err)
-
-    def _raise_errors(self):
-        """Raise errors if any exist, aggregate if more than one."""
-        if self._errors:
-            if len(self._errors) > 1:
-                raise AggregateValidationError(self.name, self._errors)
-            raise self._errors.pop()
+from geoh5py.shared.utils import SetDict, is_uuid
 
 
 class Enforcer(ABC):
@@ -155,7 +47,7 @@ class Enforcer(ABC):
 
     enforcer_type: str = ""
 
-    def __init__(self, validations: Any | None = None):
+    def __init__(self, validations: set):
         self.validations = validations
 
     @abstractmethod
@@ -165,15 +57,6 @@ class Enforcer(ABC):
     @abstractmethod
     def enforce(self, name: str, value: Any):
         """Enforces rule on 'name' parameter's 'value'."""
-
-    @property
-    def validations(self) -> Any:
-        """Enforcer validation."""
-        return self._validations
-
-    @validations.setter
-    def validations(self, val: Any):
-        self._validations = val
 
     def __eq__(self, other) -> bool:
         """Equal if same type and validations."""
@@ -198,7 +81,7 @@ class TypeEnforcer(Enforcer):
 
     enforcer_type: str = "type"
 
-    def __init__(self, validations: type | list[type]):
+    def __init__(self, validations: set[type]):
         super().__init__(validations)
 
     def enforce(self, name: str, value: Any):
@@ -211,19 +94,7 @@ class TypeEnforcer(Enforcer):
 
     def rule(self, value) -> bool:
         """True if value is one of the valid types."""
-        return any(isinstance(value, k) for k in self.validations + [type(None)])
-
-    @property
-    def validations(self) -> list[type]:
-        if self._validations is None:
-            self._validations = []
-        return self._validations
-
-    @validations.setter
-    def validations(self, val: type | list[type]):
-        if not isinstance(val, list):
-            val = [val]
-        self._validations = val
+        return any(isinstance(value, k) for k in self.validations.union({type(None)}))
 
 
 class ValueEnforcer(Enforcer):
@@ -237,73 +108,57 @@ class ValueEnforcer(Enforcer):
 
     enforcer_type = "value"
 
-    def __init__(self, validations: list[Any]):
+    def __init__(self, validations: set[Any]):
         super().__init__(validations)
 
     def enforce(self, name: str, value: Any):
         """Administers rule to enforce value validation."""
 
         if not self.rule(value):
-            raise ValueValidationError(name, value, self.validations)
+            raise ValueValidationError(name, value, list(self.validations))
 
     def rule(self, value: Any) -> bool:
         """True if value is a valid choice."""
         return value in self.validations
-
-    @property
-    def validations(self) -> list[Any]:
-        if self._validations is None:
-            self._validations = []
-        return self._validations
-
-    @validations.setter
-    def validations(self, val: Any):
-        if not isinstance(val, list):
-            val = [val]
-        self._validations = val
 
 
 class TypeUIDEnforcer(Enforcer):
     """
     Enforces restricted geoh5 entity_type uid(s).
 
-
     :param validations: Valid geoh5py object type uid(s).
-
     :raises TypeValidationError: If value is not a valid type uid.
     """
 
     enforcer_type = "type_uid"
 
-    def __init__(self, validations: list[str]):
+    def __init__(self, validations: set[str]):
         super().__init__(validations)
 
     def enforce(self, name: str, value: Any):
         """Administers rule to enforce type uid validation."""
 
         if not self.rule(value):
-            raise TypeUIDValidationError(name, value, self.validations)
+            raise TypeUIDValidationError(name, value, list(self.validations))
 
     def rule(self, value: Any) -> bool:
         """True if value is a valid type uid."""
-        return (
-            self.validations == [""]
-            or str(value.default_type_uid()) in self.validations
-        )
+        return self.validations == {""} or value.default_type_uid() in [
+            UUID(k) for k in self.validations
+        ]
 
 
 class UUIDEnforcer(Enforcer):
     """
     Enforces valid uuid string.
 
-    :param validations: None is considered a valid uuid if
-        validations is 'optional'.
+    :param validations: No validations needed, can be empty set.
     :raises UUIDValidationError: If value is not a valid uuid string.
     """
 
     enforcer_type = "uuid"
 
-    def __init__(self, validations: str | None = None):
+    def __init__(self, validations=None):
         super().__init__(validations)
 
     def enforce(self, name: str, value: Any):
@@ -328,9 +183,7 @@ class RequiredEnforcer(Enforcer):
     """
     Enforces required items in a collection.
 
-    :param validations: Items that are required in the
-
-        collection.
+    :param validations: Items that are required in the collection.
     :raises InCollectionValidationError: If collection is missing one of
         the required parameters/members.
     """
@@ -338,7 +191,7 @@ class RequiredEnforcer(Enforcer):
     enforcer_type = "required"
     validation_error = InCollectionValidationError
 
-    def __init__(self, validations: list[str]):
+    def __init__(self, validations: set[str]):
         super().__init__(validations)
 
     def enforce(self, name: str, value: Any):
@@ -347,24 +200,16 @@ class RequiredEnforcer(Enforcer):
         if not self.rule(value):
             raise self.validation_error(
                 name,
-                [k for k in self.validations if k not in value],
+                [k for k in self.validations if k not in self.collection(value)],
             )
 
     def rule(self, value: Any) -> bool:
         """True if all required parameters are in 'value' collection."""
-        return all(k in value for k in self.validations)
+        return all(k in self.collection(value) for k in self.validations)
 
-    @property
-    def validations(self) -> list[str]:
-        if self._validations is None:
-            self._validations = []
-        return self._validations
-
-    @validations.setter
-    def validations(self, val: str | list[str]):
-        if isinstance(val, str):
-            val = [val]
-        self._validations = val
+    def collection(self, value: Any) -> list[Any]:
+        """Returns the collection to check for required items."""
+        return value
 
 
 class RequiredUIJsonParameterEnforcer(RequiredEnforcer):
@@ -378,10 +223,108 @@ class RequiredFormMemberEnforcer(RequiredEnforcer):
 
 
 class RequiredWorkspaceObjectEnforcer(RequiredEnforcer):
-    enforcer_type = "required_workspace_objects"
+    enforcer_type = "required_workspace_object"
     validation_error = RequiredWorkspaceObjectValidationError
+
+    def rule(self, value: Any) -> bool:
+        """True if all objects are in the workspace."""
+        validations = [value[k]["value"].uid for k in self.validations]
+        return all(k in self.collection(value) for k in validations)
+
+    def collection(self, value: dict[str, Any]) -> list[UUID]:
+        return list(value["geoh5"].list_entities_name)
 
 
 class RequiredObjectDataEnforcer(RequiredEnforcer):
     enforcer_type = "required_object_data"
     validation_error = RequiredObjectDataValidationError
+
+
+class EnforcerPool:
+    """
+    Validate data on a collection of enforcers.
+
+    :param name: Name of parameter.
+    :param enforcers: List (pool) of enforcers.
+    """
+
+    enforcer_types = {
+        "type": TypeEnforcer,
+        "value": ValueEnforcer,
+        "uuid": UUIDEnforcer,
+        "type_uid": TypeUIDEnforcer,
+        "required": RequiredEnforcer,
+        "required_uijson_parameters": RequiredUIJsonParameterEnforcer,
+        "required_form_members": RequiredFormMemberEnforcer,
+        "required_workspace_object": RequiredWorkspaceObjectEnforcer,
+        "required_object_data": RequiredObjectDataEnforcer,
+    }
+
+    def __init__(self, name: str, enforcers: list[Enforcer]):
+        self.name = name
+        self.enforcers: list[Enforcer] = enforcers
+        self._errors: list[BaseValidationError] = []
+
+    @classmethod
+    def from_validations(
+        cls,
+        name: str,
+        validations: SetDict,
+    ) -> EnforcerPool:
+        """
+        Create enforcers pool from validations.
+
+        :param name: Name of parameter.
+        :param validations: Encodes validations as enforcer type and
+            validation key value pairs.
+        :param restricted_validations: 0.
+
+        """
+
+        return cls(name, cls._recruit(validations))
+
+    @property
+    def validations(self) -> SetDict:
+        """Returns an enforcer type / validation dictionary from pool."""
+        return SetDict(**{k.enforcer_type: k.validations for k in self.enforcers})
+
+    @staticmethod
+    def _recruit(validations: SetDict):
+        """Recruit enforcers from validations."""
+        return [EnforcerPool._recruit_enforcer(k, v) for k, v in validations.items()]
+
+    @staticmethod
+    def _recruit_enforcer(enforcer_type: str, validation: set) -> Enforcer:
+        """
+        Create enforcer from enforcer type and validation.
+
+        :param enforcer_type: Type of enforcer to create.
+        :param validation: Enforcer validation.
+        """
+
+        if enforcer_type not in EnforcerPool.enforcer_types:
+            raise ValueError(f"Invalid enforcer type: {enforcer_type}.")
+
+        return EnforcerPool.enforcer_types[enforcer_type](validation)
+
+    def enforce(self, value: Any):
+        """Enforce rules from all enforcers in the pool."""
+
+        for enforcer in self.enforcers:
+            self._capture_error(enforcer, value)
+
+        self._raise_errors()
+
+    def _capture_error(self, enforcer: Enforcer, value: Any):
+        """Catch and store 'BaseValidationError's for aggregation."""
+        try:
+            enforcer.enforce(self.name, value)
+        except BaseValidationError as err:
+            self._errors.append(err)
+
+    def _raise_errors(self):
+        """Raise errors if any exist, aggregate if more than one."""
+        if self._errors:
+            if len(self._errors) > 1:
+                raise AggregateValidationError(self.name, self._errors)
+            raise self._errors.pop()

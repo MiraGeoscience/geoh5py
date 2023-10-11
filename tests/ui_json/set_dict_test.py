@@ -15,11 +15,26 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=unused-import
-# flake8: noqa
+from geoh5py.shared.utils import SetDict
 
-from __future__ import annotations
 
-from .input_file import InputFile
-from .utils import monitored_directory_copy
-from .validation import InputValidation
+def test_dict_set_class():
+    test = SetDict(a=1, b=[2, 3])
+    assert repr(test) == "{'a': {1}, 'b': {2, 3}}"
+    assert test["a"] == {1}
+    test["a"] = [1, 2]
+    assert test["a"] == {1, 2}
+    test["a"] = {1, 2}
+    assert test["a"] == {1, 2}
+    test.update({"b": 4})
+    assert test["b"] == {2, 3, 4}
+    test.update({"c": "hello"})
+    assert test["c"] == {"hello"}
+    for v in test.values():  # pylint: disable=invalid-name
+        assert isinstance(v, set)
+    assert len(test) == 3
+    assert list(test) == ["a", "b", "c"]
+    assert repr(test) == "{'a': {1, 2}, 'b': {2, 3, 4}, 'c': {'hello'}}"
+    assert test
+    test = SetDict()
+    assert not test

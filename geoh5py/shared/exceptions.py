@@ -143,7 +143,9 @@ class TypeUIDValidationError(BaseValidationError):
 
     def __init__(self, name: str, value, validation: list[str]):
         super().__init__(
-            TypeUIDValidationError.message(name, value.default_type_uid(), validation)
+            TypeUIDValidationError.message(
+                name, value.default_type_uid(), list(validation)
+            )
         )
 
     @classmethod

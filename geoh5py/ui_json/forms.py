@@ -28,6 +28,7 @@ from geoh5py.data import (
     TextData,
 )
 from geoh5py.shared.exceptions import AggregateValidationError, BaseValidationError
+from geoh5py.shared.utils import SetDict
 from geoh5py.ui_json.descriptors import FormValueAccess
 from geoh5py.ui_json.enforcers import EnforcerPool
 from geoh5py.ui_json.parameters import (
@@ -88,7 +89,7 @@ class MemberKeys:
 MEMBER_KEYS = MemberKeys()
 
 
-class FormParameter:
+class FormParameter:  # pylint: disable=too-many-instance-attributes
     """
     Base class for parameters that create visual ui elements from a form.
 
@@ -121,7 +122,7 @@ class FormParameter:
         by way of the FormValueAccess descriptor.
     """
 
-    validations = {"required_form_members": ["label", "value"]}
+    static_validations = {"required_form_members": ["label", "value"]}
     identifier_members: list[str] = []
 
     def __init__(
@@ -152,9 +153,37 @@ class FormParameter:
         self._active_members: list[str] = []
         if kwargs:
             self.register(kwargs)
+        self._validations = SetDict()
         self.enforcers: EnforcerPool = EnforcerPool.from_validations(
             self.name, self.validations
         )
+
+    @property
+    def validations(self):
+        """Returns a dictionary of static and inferred validations."""
+        if not self._validations:
+            self._validations.update(self.dynamic_validations)
+            self._validations.update(self.static_validations)
+
+        return self._validations
+
+    @property
+    def dynamic_validations(self):
+        """Infer validations from parameters."""
+        validations = SetDict()
+        if "group_optional" in self.active:
+            validations.update({"required": "group"})
+
+        return validations
+
+    @property
+    def uijson_validations(self):
+        """Validations for UIJson level enforcers."""
+        validations = SetDict()
+        if "dependency" in self.active:
+            validations.update({"required": self.dependency})  # type: ignore
+
+        return validations
 
     def form(self, use_camel: bool = False) -> dict[str, Any]:
         """
@@ -204,7 +233,7 @@ class FormParameter:
     @property
     def valid_members(self) -> list[str]:
         """Recognized form member names."""
-        exclusions = ["_extra_members", "_active_members"]
+        exclusions = ["_extra_members", "_active_members", "_validations"]
         private_attrs = [k for k in self.__dict__ if k.startswith("_")]
         return [k[1:] for k in private_attrs if k not in exclusions]
 
@@ -323,7 +352,7 @@ class ChoiceStringFormParameter(FormParameter):
     """
 
     identifier_members: list[str] = ["choice_list"]
-    validations = {"required_form_members": ["choice_list"]}
+    static_validations = {"required_form_members": ["choice_list"]}
 
     def __init__(self, name, choice_list, value=None, **kwargs):
         self._choice_list = StringListParameter("choice_list")
@@ -341,7 +370,7 @@ class FileFormParameter(FormParameter):
     """
 
     identifier_members: list[str] = ["file_description", "file_type", "file_multi"]
-    validations = {"required_form_members": ["file_description", "file_type"]}
+    static_validations = {"required_form_members": ["file_description", "file_type"]}
 
     def __init__(self, name, value=None, **kwargs):
         self._file_description = StringListParameter("file_description")
@@ -360,12 +389,33 @@ class ObjectFormParameter(FormParameter):
     """
 
     identifier_members: list[str] = ["mesh_type"]
-    validations = {"required_form_members": ["mesh_type"]}
+    static_validations = dict(
+        FormParameter.static_validations, **{"required_form_members": ["mesh_type"]}
+    )
 
     def __init__(self, name, mesh_type, value=None, **kwargs):
         self._mesh_type = StringListParameter("mesh_type", value=[])
         value = TypeUIDRestrictedParameter("value", mesh_type, value=value)
         super().__init__(name, value=value, **kwargs)
+
+    @property
+    def uijson_validations(self):
+        """Validations for UIJson level enforcers."""
+        validations = SetDict()
+        if self.value is not None:
+            validations.update({"required_workspace_object": self.name})
+
+        return validations
+
+
+DATA_TYPES = {
+    "Integer": IntegerData,
+    "Float": FloatData,
+    "Text": TextData,
+    "Referenced": ReferencedData,
+    "DateTime": DatetimeData,
+    "Boolean": BooleanData,
+}
 
 
 class DataFormParameter(FormParameter):
@@ -379,44 +429,23 @@ class DataFormParameter(FormParameter):
     """
 
     identifier_members: list[str] = ["data_group_type"]
-    validations = {"required_form_members": ["parent", "association", "data_type"]}
+    static_validations = {
+        "required_form_members": ["parent", "association", "data_type"]
+    }
 
     def __init__(self, name, data_type, value=None, **kwargs):
         self._parent = StringParameter("parent")
         self._association = ValueRestrictedParameter(
             "association", ["Vertex", "Cell", "Face"]
         )
-        self._data_type = ValueRestrictedParameter(
-            "data_type",
-            [
-                "Integer",
-                "Float",
-                "Text",
-                "Referenced",
-                "Vector",
-                "DateTime",
-                "Geometric",
-                "Boolean",
-            ],
-        )
+        self._data_type = ValueRestrictedParameter("data_type", list(DATA_TYPES))
         self._data_group_type = ValueRestrictedParameter(
             "data_group_type", ["3D vector", "Dip direction & dip", "Strike & dip"]
         )
         value = TypeRestrictedParameter(
-            "value", [self._data_type_string_to_type(data_type)], value=value
+            "value", [DATA_TYPES.get(data_type, None)], value=value
         )
         super().__init__(name, value=value, data_type=data_type, **kwargs)
-
-    def _data_type_string_to_type(self, data_type: str) -> type:
-        """Converts string data type to python type."""
-        return {
-            "Integer": IntegerData,
-            "Float": FloatData,
-            "Text": TextData,
-            "Referenced": ReferencedData,
-            "DateTime": DatetimeData,
-            "Boolean": BooleanData,
-        }.get(data_type, type(None))
 
 
 class DataValueFormParameter(FormParameter):
@@ -432,7 +461,7 @@ class DataValueFormParameter(FormParameter):
     """
 
     identifier_members: list[str] = ["is_value", "property"]
-    validations = {
+    static_validations = {
         "required_form_members": [
             "parent",
             "association",
@@ -447,22 +476,10 @@ class DataValueFormParameter(FormParameter):
         self._association = ValueRestrictedParameter(
             "association", ["Vertex", "Cell", "Face"]
         )
-        self._data_type = ValueRestrictedParameter(
-            "data_type",
-            [
-                "Integer",
-                "Float",
-                "Text",
-                "Referenced",
-                "Vector",
-                "DateTime",
-                "Geometric",
-                "Boolean",
-            ],
-        )
+        self._data_type = ValueRestrictedParameter("data_type", list(DATA_TYPES))
         self._is_value = BoolParameter("is_value")
         self._property = TypeRestrictedParameter(
-            "property", [self._data_type_string_to_type(data_type)]
+            "property", [DATA_TYPES.get(data_type, type(None))]
         )
         value = NumericParameter("value", value=value)
         super().__init__(name, value=value, data_type=data_type, **kwargs)
@@ -481,14 +498,3 @@ class DataValueFormParameter(FormParameter):
             self._value.value = val
         else:
             self._property.value = val
-
-    def _data_type_string_to_type(self, data_type: str) -> type:
-        """Converts string data type to python type."""
-        return {
-            "Integer": IntegerData,
-            "Float": FloatData,
-            "Text": TextData,
-            "Referenced": ReferencedData,
-            "DateTime": DatetimeData,
-            "Boolean": BooleanData,
-        }.get(data_type, type(None))

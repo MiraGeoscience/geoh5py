@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from geoh5py.shared.utils import SetDict
 from geoh5py.ui_json.enforcers import EnforcerPool
 from geoh5py.ui_json.forms import FormParameter
 from geoh5py.ui_json.parameters import Parameter
@@ -27,7 +28,7 @@ from geoh5py.ui_json.parameters import Parameter
 class UIJson:
     """Stores parameters and data for applications executed with ui.json files."""
 
-    validations = {
+    static_validations = {
         "required_uijson_parameters": [
             "title",
             "geoh5",
@@ -42,9 +43,29 @@ class UIJson:
 
     def __init__(self, parameters: dict[str, Parameter | FormParameter]):
         self.__dict__["parameters"] = parameters
+        self._validations = SetDict()
         self.enforcers: EnforcerPool = EnforcerPool.from_validations(
             self.name, self.validations
         )
+
+    @property
+    def validations(self):
+        """Returns a dictionary of static and inferred validations."""
+
+        self._validations.update(self.dynamic_validations)
+        self._validations.update(self.static_validations)
+
+        return self._validations
+
+    @property
+    def dynamic_validations(self):
+        """Infer validations from parameters."""
+        validations = SetDict()
+        for param in self.parameters.values():
+            if hasattr(param, "uijson_validations"):
+                validations.update(param.uijson_validations)
+
+        return validations
 
     def to_dict(self, naming: str = "snake") -> dict[str, Any]:
         """
@@ -72,6 +93,8 @@ class UIJson:
                 self.update_data(param, value)
             else:
                 self.parameters[param] = value
+
+        self.enforcers = EnforcerPool.from_validations(self.name, self.validations)
 
     def update_state(self, param: str, value: Any):
         """Updates the member values of all FormParameter objects."""

@@ -552,3 +552,28 @@ def dip_points(points: np.ndarray, dip: float, rotation: float = 0) -> np.ndarra
     points = xy_rotation_matrix(rotation) @ points
 
     return points.T
+
+
+class SetDict(dict):
+    def __init__(self, **kwargs):
+        kwargs = {k: self.make_set(v) for k, v in kwargs.items()}
+        super().__init__(kwargs)
+
+    def make_set(self, value):
+        if isinstance(value, (set, tuple, list)):
+            value = set(value)
+        else:
+            value = {value}
+        return value
+
+    def __setitem__(self, key, value):
+        value = self.make_set(value)
+        super().__setitem__(key, value)
+
+    def update(self, value: dict, **kwargs) -> None:  # type: ignore
+        for key, val in value.items():
+            val = self.make_set(val)
+            if key in self:
+                val = self[key].union(val)
+            value[key] = val
+        super().update(value, **kwargs)
