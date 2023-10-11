@@ -91,6 +91,7 @@ class BaseMerger(ABC):
                         if association == "VERTEX"
                         else out_entity.n_cells
                     )
+
                     data_dict[label] = out_entity.add_data(
                         {
                             data.name: {

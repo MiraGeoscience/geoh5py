@@ -30,7 +30,7 @@ from ..data import CommentsData, Data, VisualParameters
 from ..data.data_association_enum import DataAssociationEnum
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
-from ..shared import Entity
+from ..shared import Entity, EntityType
 from ..shared.conversion import BaseConversion
 from ..shared.utils import clear_array_attributes
 from .object_type import ObjectType
@@ -571,11 +571,11 @@ class ObjectBase(Entity):
         else:
             attribute_dict["association"] = "OBJECT"
 
-    @staticmethod
-    def validate_data_type(attribute_dict):
+    def validate_data_type(self, attribute_dict):
         """
         Get a dictionary of attributes and validate the type of data.
         """
+
         entity_type = attribute_dict.get("entity_type")
         if entity_type is None:
             primitive_type = attribute_dict.get("type")
@@ -604,6 +604,11 @@ class ObjectBase(Entity):
                         "Only add_data values of type FLOAT, INTEGER,"
                         "BOOLEAN and TEXT have been implemented"
                     )
+        elif isinstance(entity_type, EntityType) and (
+            (entity_type.uid not in getattr(self.workspace, "_types"))
+            or (entity_type.workspace != self.workspace)
+        ):
+            return entity_type.copy(workspace=self.workspace)
 
         return entity_type
 
