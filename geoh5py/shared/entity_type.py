@@ -133,17 +133,21 @@ class EntityType(ABC):
         assert workspace is not None
         return workspace
 
-    def copy(self, workspace: ws.Workspace) -> EntityType:
+    def copy(self, **kwargs) -> EntityType:
         """Copy this entity type to another workspace."""
 
         attributes = {
             prop: getattr(self, prop)
             for prop in dir(self)
             if isinstance(getattr(self.__class__, prop, None), property)
-            and prop not in ["workspace", "uid"]
             and getattr(self, prop) is not None
         }
 
-        attributes.update({"workspace": workspace})
+        attributes.update(kwargs)
+
+        if attributes.get("uid") in getattr(
+            attributes.get("workspace", self.workspace), "_types"
+        ):
+            del attributes["uid"]
 
         return self.__class__(**attributes)

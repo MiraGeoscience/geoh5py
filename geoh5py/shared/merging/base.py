@@ -97,9 +97,7 @@ class BaseMerger(ABC):
                             data.name: {
                                 "values": np.ones(shape) * data.nan_value,
                                 "association": association,
-                                "entity_type": data.entity_type.copy(
-                                    out_entity.workspace
-                                ),
+                                "entity_type": data.entity_type,
                             }
                         }
                     )
