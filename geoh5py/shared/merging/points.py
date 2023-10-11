@@ -24,7 +24,7 @@ from .base import BaseMerger
 
 
 class PointsMerger(BaseMerger):
-    _type = Points
+    _type: type = Points
 
     @classmethod
     def create_object(
@@ -34,6 +34,18 @@ class PointsMerger(BaseMerger):
         vertices = np.vstack([input_entity.vertices for input_entity in input_entities])
 
         # create an object of type
-        output = cls._type.create(workspace, vertices=vertices, **kwargs)
+        output = cls._type.create(  # type: ignore
+            workspace, vertices=vertices, **kwargs
+        )
 
         return output
+
+    @classmethod
+    def validate_structure(cls, input_entity: Points):
+        """
+        Validate the input entity structure and raises error if incompatible.
+        :param input_entity: the input entity to validate.
+        """
+        # verify if the input entity have vertices
+        if not isinstance(input_entity.vertices, np.ndarray):
+            raise AttributeError("All entities must have vertices.")
