@@ -56,7 +56,7 @@ def create_drape_model(workspace: Workspace, alpha: float = 0.0):
 
 def test_merge_drape_model(tmp_path):  # pylint: disable=too-many-locals
     h5file_path = tmp_path / "drapedmodel.geoh5"
-    with Workspace.create(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace_init:
         drape_models = []
         test_values = []
         test_prisms = []
@@ -66,7 +66,7 @@ def test_merge_drape_model(tmp_path):  # pylint: disable=too-many-locals
 
         # prepare the output
         for i in range(10):
-            drape_model = create_drape_model(workspace, alpha=i * 2.5)
+            drape_model = create_drape_model(workspace_init, alpha=i * 2.5)
             count_n_cells += drape_model.n_cells
             drape_models.append(drape_model)
 
@@ -74,6 +74,8 @@ def test_merge_drape_model(tmp_path):  # pylint: disable=too-many-locals
             test_prisms.append(drape_model.prisms)
             test_layers.append(drape_model.layers)
 
+    h5file_path_2 = tmp_path / "drapedmodel2.geoh5"
+    with Workspace.create(h5file_path_2) as workspace:
         drape_model_merged = DrapeModelMerger.merge_objects(
             workspace, drape_models, name="merged", children=[Points(workspace)]
         )

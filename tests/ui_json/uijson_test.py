@@ -133,13 +133,23 @@ def generate_sample_defaulted_uijson():
         "y_channel": DataFormParameter(
             "y_channel",
             main=True,
-            label="By",
+            label="channel",
+            group="By",
             parent="data_object",
             association="Vertex",
             data_type="Float",
             optional=True,
             enabled=False,
             value=None,
+        ),
+        "y_channel_uncertainty": FloatFormParameter(
+            "y_channel_uncertainty",
+            main=True,
+            label="Uncertainty",
+            group="By",
+            dependency="y_channel",
+            dependency_type="enabled",
+            value=4.0,
         ),
         "data_path": FileFormParameter(
             "data_path", main=True, label="Data path", value=None
@@ -254,6 +264,7 @@ def test_uijson_construct_default_and_update(tmp_path):
     ifile = InputFile.read_ui_json(populated_file)
 
     uijson.update(ifile.ui_json)
+    uijson.validate()
     forms = uijson.to_dict(naming="camel")
     assert forms["save_name"]["value"] == "my test name"
     assert forms["flip_sign"]["value"]
@@ -269,3 +280,11 @@ def test_uijson_construct_default_and_update(tmp_path):
     assert forms["y_channel"]["value"].uid == data_object.get_data("By")[0].uid
     assert forms["y_channel"]["enabled"]
     assert forms["data_path"]["value"] == "my_data_path"
+
+
+def test_validations():
+    uijson = generate_sample_defaulted_uijson()
+    assert (
+        k in uijson.enforcers.validations
+        for k in ["required", "required_uijson_parameters"]
+    )

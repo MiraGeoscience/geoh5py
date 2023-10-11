@@ -135,9 +135,11 @@ def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
     h5file_path = tmp_path / r"testPoints.geoh5"
     points = []
     data = []
-    with Workspace.create(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace_init:
         points.append(
-            Points.create(workspace, vertices=np.random.randn(10, 3), allow_move=False)
+            Points.create(
+                workspace_init, vertices=np.random.randn(10, 3), allow_move=False
+            )
         )
 
         data.append(
@@ -166,7 +168,9 @@ def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
         )
 
         points.append(
-            Points.create(workspace, vertices=np.random.randn(10, 3), allow_move=False)
+            Points.create(
+                workspace_init, vertices=np.random.randn(10, 3), allow_move=False
+            )
         )
 
         data.append(
@@ -191,6 +195,8 @@ def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
             )
         )
 
+    h5file_path_2 = tmp_path / r"testPoints2.geoh5"
+    with Workspace.create(h5file_path_2) as workspace:
         with pytest.warns(UserWarning, match=f"Multiple data '{data[0].name}'"):
             test = PointsMerger.merge_objects(workspace, points)
 
@@ -217,9 +223,11 @@ def test_merge_attribute_error(tmp_path):
     h5file_path = tmp_path / r"testPoints.geoh5"
     points = []
     data = []
-    with Workspace.create(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace_init:
         points.append(
-            Points.create(workspace, vertices=np.random.randn(10, 3), allow_move=False)
+            Points.create(
+                workspace_init, vertices=np.random.randn(10, 3), allow_move=False
+            )
         )
 
         data.append(
@@ -236,7 +244,9 @@ def test_merge_attribute_error(tmp_path):
         entity_type = data[0].entity_type
 
         points.append(
-            Points.create(workspace, vertices=np.random.randn(10, 3), allow_move=False)
+            Points.create(
+                workspace_init, vertices=np.random.randn(10, 3), allow_move=False
+            )
         )
 
         data.append(
@@ -251,6 +261,8 @@ def test_merge_attribute_error(tmp_path):
             )
         )
 
+    h5file_path_2 = tmp_path / r"testPoints2.geoh5"
+    with Workspace.create(h5file_path_2) as workspace:
         with pytest.raises(TypeError, match="The input entities must be a list"):
             _ = PointsMerger.merge_objects(workspace, "bidon")
 
