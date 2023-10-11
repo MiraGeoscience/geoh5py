@@ -1311,7 +1311,7 @@ class Workspace(AbstractContextManager):
         if isinstance(entity, Concatenated):
             active_parent = self.get_entity(entity.concatenator.uid)[0]
             if not isinstance(active_parent, Concatenator):
-                raise UserWarning(
+                raise ValueError(
                     f"DrillholeGroup {entity.concatenator.name} is not registered in the "
                     "workspace. Please add it first."
                 )
