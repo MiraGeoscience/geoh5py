@@ -577,3 +577,26 @@ def test_copy_from_extent_drillhole_group(tmp_path):
             assert child_a.collar == child_b.collar
             np.testing.assert_array_almost_equal(child_a.surveys, child_b.surveys)
             assert child_a.get_data_list() == child_b.get_data_list()
+
+
+def test_open_close_creation(tmp_path):
+    h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
+
+    with Workspace.create(h5file_path, version=2.0) as workspace:
+        # Create a workspace
+        dh_group = DrillholeGroup.create(workspace)
+
+        Drillhole.create(
+            workspace,
+            parent=dh_group,
+            name="DH1",
+        )
+
+    workspace.open()
+    Drillhole.create(
+        workspace,
+        parent=dh_group,
+        name="DH2",
+    )
+    assert len(workspace.groups[1].concatenated_attributes["Attributes"]) == 2
+    workspace.close()

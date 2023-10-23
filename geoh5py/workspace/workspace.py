@@ -1309,7 +1309,13 @@ class Workspace(AbstractContextManager):
         :param compression: Compression level for data.
         """
         if isinstance(entity, Concatenated):
-            entity.concatenator.add_save_concatenated(entity)
+            active_parent = self.get_entity(entity.concatenator.uid)[0]
+            if not isinstance(active_parent, Concatenator):
+                raise ValueError(
+                    f"DrillholeGroup {entity.concatenator.name} is not registered in the "
+                    "workspace. Please add it first."
+                )
+            active_parent.add_save_concatenated(entity)
 
             if hasattr(entity, "entity_type"):
                 self.save_entity_type(entity.entity_type)
