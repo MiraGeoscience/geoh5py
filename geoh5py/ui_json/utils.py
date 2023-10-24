@@ -324,7 +324,10 @@ def container_group2name(value):
 
 
 def monitored_directory_copy(
-    directory: str, entity: ObjectBase | Group, copy_children: bool = True
+    directory: str,
+    entity: ObjectBase | Group,
+    copy_children: bool = True,
+    copy_property_groups: bool = False,
 ) -> str:
     """
     Create a temporary geoh5 file in the monitoring folder and export entity for update.
@@ -332,6 +335,7 @@ def monitored_directory_copy(
     :param directory: Monitoring directory
     :param entity: Entity to be updated
     :param copy_children: Option to copy children entities.
+    :param copy_property_groups: Option to copy property groups.
     """
     directory_path = Path(directory)
     working_path = directory_path / ".working"
@@ -341,7 +345,11 @@ def monitored_directory_copy(
 
     with fetch_active_workspace(entity.workspace, mode="r"):
         with Workspace.create(working_path / temp_geoh5) as w_s:
-            entity.copy(parent=w_s, copy_children=copy_children)
+            entity.copy(
+                parent=w_s,
+                copy_children=copy_children,
+                copy_property_groups=copy_property_groups,
+            )
 
     shutil.move(
         working_path / temp_geoh5,
