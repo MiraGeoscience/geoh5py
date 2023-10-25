@@ -378,6 +378,9 @@ class ObjectBase(Entity):
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
 
+        :param name: Name of the new property group.
+        :param on_file: If True, the property group is saved to file.
+        :param uid: Unique identifier for the new property group.
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
 
