@@ -248,8 +248,7 @@ def are_objects_similar(obj1, obj2, ignore):
 
     :return: If attributes similar or not.
     """
-    if not isinstance(obj1, type(obj2)):
-        return False
+    assert isinstance(obj1, type(obj2)), "Objects are not the same type."
 
     attributes1 = getattr(obj1, "__dict__", obj1)
     attributes2 = getattr(obj2, "__dict__", obj2)
