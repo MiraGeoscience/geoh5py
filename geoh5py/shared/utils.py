@@ -251,11 +251,11 @@ def are_objects_similar(obj1, obj2, ignore):
     if not isinstance(obj1, type(obj2)):
         return False
 
-    attributes1 = vars(obj1)
-    attributes2 = vars(obj2)
+    attributes1 = getattr(obj1, "__dict__", obj1)
+    attributes2 = getattr(obj2, "__dict__", obj2)
 
     # remove the ignore attributes
-    if isinstance(ignore, list):
+    if isinstance(ignore, list) and isinstance(attributes1, dict):
         for item in ignore:
             attributes1.pop(item, None)
             attributes2.pop(item, None)
