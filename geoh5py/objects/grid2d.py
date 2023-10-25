@@ -213,7 +213,7 @@ class Grid2D(GridObject):
 
         if not inverse:
             for child in copy.children:
-                if isinstance(child.values, np.ndarray):
+                if isinstance(getattr(child, "values", None), np.ndarray):
                     indices = child.mask_by_extent(extent, inverse=inverse)
                     values = child.values
                     values[~indices] = child.nan_value

@@ -373,7 +373,7 @@ class ObjectBase(Entity):
         return entities
 
     def create_property_group(
-        self, name=None, on_file=False, **kwargs
+        self, name=None, on_file=False, uid=None, **kwargs
     ) -> PropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
@@ -391,7 +391,7 @@ class ObjectBase(Entity):
         if "property_group_type" not in kwargs and "Property Group Type" not in kwargs:
             kwargs["property_group_type"] = "Multi-element"
 
-        prop_group = PropertyGroup(self, name=name, on_file=on_file, **kwargs)
+        prop_group = PropertyGroup(self, name=name, on_file=on_file, uid=uid, **kwargs)
 
         return prop_group
 
@@ -413,7 +413,7 @@ class ObjectBase(Entity):
             prop_group = self.get_property_group(uid or name)[0]
 
         if prop_group is None:
-            prop_group = self.create_property_group(name=name, **kwargs)
+            prop_group = self.create_property_group(name=name, uid=uid, **kwargs)
 
         return prop_group
 
