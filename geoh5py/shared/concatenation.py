@@ -803,11 +803,14 @@ class ConcatenatedObject(Concatenated, ObjectBase):
         super().__init__(entity_type, **kwargs)
 
     def create_property_group(
-        self, name=None, on_file=False, **kwargs
+        self, name=None, on_file=False, uid=None, **kwargs
     ) -> ConcatenatedPropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
 
+        :param name: Name of the property group.
+        :param on_file: If True, the property group is saved to file.
+        :param uid: Unique ID of the property group.
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
 

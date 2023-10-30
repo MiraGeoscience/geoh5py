@@ -313,21 +313,34 @@ class Workspace(AbstractContextManager):
 
     @classmethod
     def copy_property_groups(
-        cls, entity: ObjectBase, propery_groups: list[PropertyGroup], data_map: dict
+        cls, entity: ObjectBase, property_groups: list[PropertyGroup], data_map: dict
     ):
-        for prop_group in propery_groups:
+        """
+        Copy property groups to a new entity.
+        Keep the same uid if it's not present on the new workspace.
+
+        :param entity: The entity associated to the property groups.
+        :param property_groups: The property groups to copy.
+        :param data_map: the data map to use for the property groups.
+        """
+        for prop_group in property_groups:
             properties = None
             if prop_group.properties is not None:
                 properties = [data_map[uid] for uid in prop_group.properties]
 
-            entity.find_or_create_property_group(
-                **{
-                    "association": prop_group.association,
-                    "name": prop_group.name,
-                    "property_group_type": prop_group.property_group_type,
-                    "properties": properties,
-                }
-            )
+            # prepare the kwargs
+            property_group_kwargs = {
+                "association": prop_group.association,
+                "name": prop_group.name,
+                "property_group_type": prop_group.property_group_type,
+                "properties": properties,
+            }
+
+            # Assign the same uid if possible
+            if entity.workspace.find_property_group(prop_group.uid) is None:
+                property_group_kwargs["uid"] = prop_group.uid
+
+            entity.find_or_create_property_group(**property_group_kwargs)
 
     @classmethod
     def create(cls, path: str | Path, **kwargs) -> Workspace:
