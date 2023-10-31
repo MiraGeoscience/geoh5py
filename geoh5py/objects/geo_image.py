@@ -21,13 +21,12 @@ import warnings
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from PIL import Image
 from PIL.TiffImagePlugin import TiffImageFile
 
-from .. import objects
 from ..data import FilenameData
 from ..shared.conversion import GeoImageConversion
 from ..shared.utils import (
@@ -37,6 +36,9 @@ from ..shared.utils import (
     xy_rotation_matrix,
 )
 from .object_base import ObjectBase, ObjectType
+
+if TYPE_CHECKING:
+    from ..objects import Grid2D
 
 
 class GeoImage(ObjectBase):
@@ -576,7 +578,7 @@ class GeoImage(ObjectBase):
         self,
         mode: str | None = None,
         **grid2d_kwargs,
-    ) -> objects.Grid2D:
+    ) -> Grid2D:
         """
         Create a geoh5py :obj:geoh5py.objects.grid2d.Grid2D from the geoimage in the same workspace.
 
