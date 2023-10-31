@@ -191,16 +191,11 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
         parameters = find_all(group, "groupOptional")
         if parameters:
             is_group_optional = True
-            enabled_change = False
             for form in group.values():
-                enabled_change |= (
-                    form.get("optional", False) and form.get("enabled", True) != value
-                )
                 form["enabled"] = value
 
     if not is_group_optional and "dependency" in ui_json[parameter]:
         is_group_optional = not dependency_requires_value(ui_json, parameter)
-        enabled_change = False
 
     if (not value) and not (
         ui_json[parameter].get("optional", False) or is_group_optional
@@ -208,8 +203,6 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
         warnings.warn(
             f"Non-option parameter '{parameter}' cannot be set to 'enabled' False "
         )
-
-    return is_group_optional and enabled_change
 
 
 def truth(ui_json: dict[str, dict], name: str, member: str) -> bool:
