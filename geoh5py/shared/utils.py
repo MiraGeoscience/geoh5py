@@ -270,6 +270,10 @@ def compare_entities(
         for item in ignore:
             ignore_list.append(item)
 
+    if isinstance(object_a, bytes):
+        assert object_a == object_b, "Bytes values do not match."
+        return
+
     for attr in object_a.__dict__.keys():
         if attr in ignore_list:
             continue
