@@ -239,6 +239,29 @@ def clear_array_attributes(entity: Entity, recursive: bool = False):
             clear_array_attributes(child, recursive=recursive)
 
 
+def are_objects_similar(obj1, obj2, ignore):
+    """
+    Compare two objects to see if they are similar. This is a shallow comparison.
+
+    :param obj1: The first object.
+    :param obj2: The first object.
+
+    :return: If attributes similar or not.
+    """
+    assert isinstance(obj1, type(obj2)), "Objects are not the same type."
+
+    attributes1 = getattr(obj1, "__dict__", obj1)
+    attributes2 = getattr(obj2, "__dict__", obj2)
+
+    # remove the ignore attributes
+    if isinstance(ignore, list) and isinstance(attributes1, dict):
+        for item in ignore:
+            attributes1.pop(item, None)
+            attributes2.pop(item, None)
+
+    return attributes1 == attributes2
+
+
 def compare_entities(
     object_a, object_b, ignore: list | None = None, decimal: int = 6
 ) -> None:
@@ -282,6 +305,14 @@ def compare_entities(
                     decimal=decimal,
                     err_msg=f"Error comparing attribute '{attr}'.",
                 )
+            elif isinstance(getattr(object_a, attr[1:]), list):
+                get_object_a = getattr(object_a, attr[1:])
+                get_object_b = getattr(object_b, attr[1:])
+                assert isinstance(get_object_a, list)
+                assert len(get_object_a) == len(get_object_b)
+                for obj_a, obj_b in zip(get_object_a, get_object_b):
+                    assert are_objects_similar(obj_a, obj_b, ignore)
+
             else:
                 assert np.all(
                     getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
