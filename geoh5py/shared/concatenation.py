@@ -1098,7 +1098,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             if out_group.depth_.values.shape[0] != values.shape[0]:
                 raise ValueError(
                     f"Input values for '{name}' with shape({values.shape[0]}) "
-                    f"do not match the depths of the group '{out_group}' "
+                    f"do not match the depths of the group '{out_group.name}' "
                     f"with shape({out_group.depth_.values.shape[0]}). Check values or "
                     "assign to a new property group"
                 )
