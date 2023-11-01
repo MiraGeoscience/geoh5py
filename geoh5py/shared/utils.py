@@ -262,7 +262,7 @@ def are_objects_similar(obj1, obj2, ignore):
     return attributes1 == attributes2
 
 
-def compare_entities(
+def compare_entities(  # pylint: disable=too-many-branches
     object_a, object_b, ignore: list | None = None, decimal: int = 6
 ) -> None:
     ignore_list = ["_workspace", "_children", "_visual_parameters"]
