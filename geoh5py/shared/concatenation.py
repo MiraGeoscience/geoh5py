@@ -1063,11 +1063,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                 msg += f"and 'values' shape{values.shape}"
                 raise ValueError(msg)
 
-        if (
-            depth is not None
-            and property_group is None
-            and self.property_groups is not None
-        ):
+        if depth is not None and self.property_groups is not None:
             for group in self.property_groups:
                 if (
                     group.depth_ is not None
@@ -1076,6 +1072,9 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                         group.depth_.values, depth, atol=collocation_distance
                     )
                 ):
+                    if isinstance(property_group, str) and group.name != property_group:
+                        continue
+
                     return group
 
         ind = 0
@@ -1102,7 +1101,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             if out_group.depth_.values.shape[0] != values.shape[0]:
                 raise ValueError(
                     f"Input values for '{name}' with shape({values.shape[0]}) "
-                    f"do not match the depths of the group '{out_group}' "
+                    f"do not match the depths of the group '{out_group.name}' "
                     f"with shape({out_group.depth_.values.shape[0]}). Check values or "
                     "assign to a new property group"
                 )

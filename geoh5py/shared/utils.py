@@ -262,13 +262,17 @@ def are_objects_similar(obj1, obj2, ignore):
     return attributes1 == attributes2
 
 
-def compare_entities(
+def compare_entities(  # pylint: disable=too-many-branches
     object_a, object_b, ignore: list | None = None, decimal: int = 6
 ) -> None:
     ignore_list = ["_workspace", "_children", "_visual_parameters"]
     if ignore is not None:
         for item in ignore:
             ignore_list.append(item)
+
+    if isinstance(object_a, bytes):
+        assert object_a == object_b, "Bytes values do not match."
+        return
 
     for attr in object_a.__dict__.keys():
         if attr in ignore_list:
