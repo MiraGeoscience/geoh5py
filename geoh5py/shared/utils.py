@@ -261,18 +261,15 @@ def are_objects_similar(obj1, obj2, ignore):
 
     return attributes1 == attributes2
 
+
 def compare_arrays(object_a, object_b, attribute, decimal: int = 6):
     if getattr(object_b, attribute) is None:
-        raise ValueError(
-            f"attr {attribute} is None for object {object_b.name}"
-        )
+        raise ValueError(f"attr {attribute} is None for object {object_b.name}")
     attr_a = getattr(object_a, attribute).tolist()
     if len(attr_a) > 0 and isinstance(attr_a[0], str):
         assert all(
             a == b
-            for a, b in zip(
-                getattr(object_a, attribute), getattr(object_b, attribute)
-            )
+            for a, b in zip(getattr(object_a, attribute), getattr(object_b, attribute))
         ), f"Error comparing attribute '{attribute}'."
     else:
         np.testing.assert_array_almost_equal(
@@ -282,6 +279,7 @@ def compare_arrays(object_a, object_b, attribute, decimal: int = 6):
             err_msg=f"Error comparing attribute '{attribute}'.",
         )
 
+
 def compare_floats(object_a, object_b, attribute, decimal: int = 6):
     np.testing.assert_almost_equal(
         getattr(object_a, attribute),
@@ -289,6 +287,7 @@ def compare_floats(object_a, object_b, attribute, decimal: int = 6):
         decimal=decimal,
         err_msg=f"Error comparing attribute '{attribute}'.",
     )
+
 
 def compare_list(object_a, object_b, attribute, ignore):
     get_object_a = getattr(object_a, attribute)
@@ -298,15 +297,16 @@ def compare_list(object_a, object_b, attribute, ignore):
     for obj_a, obj_b in zip(get_object_a, get_object_b):
         assert are_objects_similar(obj_a, obj_b, ignore)
 
-def compare_bytes(object_a, object_b):
-    assert object_a == object_b, f"{type(object_a)} objects: {object_a}, {object_b} are not equal."
 
+def compare_bytes(object_a, object_b):
+    assert (
+        object_a == object_b
+    ), f"{type(object_a)} objects: {object_a}, {object_b} are not equal."
 
 
 def compare_entities(
     object_a, object_b, ignore: list | None = None, decimal: int = 6
 ) -> None:
-
     if isinstance(object_a, bytes):
         compare_bytes(object_a, object_b)
         return
@@ -315,12 +315,9 @@ def compare_entities(
     ignore_list = base_ignore + ignore if ignore else base_ignore
 
     for attr in [k for k in object_a.__dict__.keys() if k not in ignore_list]:
-
         if isinstance(getattr(object_a, attr[1:]), ABC):
             compare_entities(
-                getattr(object_a, attr[1:]),
-                getattr(object_b, attr[1:]),
-                ignore=ignore
+                getattr(object_a, attr[1:]), getattr(object_b, attr[1:]), ignore=ignore
             )
         else:
             if isinstance(getattr(object_a, attr[1:]), np.ndarray):
