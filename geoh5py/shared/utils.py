@@ -239,12 +239,13 @@ def clear_array_attributes(entity: Entity, recursive: bool = False):
             clear_array_attributes(child, recursive=recursive)
 
 
-def are_objects_similar(obj1, obj2, ignore):
+def are_objects_similar(obj1, obj2, ignore: list[str]):
     """
     Compare two objects to see if they are similar. This is a shallow comparison.
 
     :param obj1: The first object.
     :param obj2: The first object.
+    :param ignore: List of attributes to ignore.
 
     :return: If attributes similar or not.
     """
