@@ -305,7 +305,7 @@ def compare_bytes(object_a, object_b):
 
 
 def compare_entities(
-    object_a, object_b, ignore: list | None = None, decimal: int = 6
+    object_a, object_b, ignore: list[str] | None = None, decimal: int = 6
 ) -> None:
     if isinstance(object_a, bytes):
         compare_bytes(object_a, object_b)
