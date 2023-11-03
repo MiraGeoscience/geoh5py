@@ -280,7 +280,7 @@ def compare_arrays(object_a, object_b, attribute, decimal: int = 6):
         )
 
 
-def compare_floats(object_a, object_b, attribute, decimal: int = 6):
+def compare_floats(object_a, object_b, attribute: str, decimal: int = 6):
     np.testing.assert_almost_equal(
         getattr(object_a, attribute),
         getattr(object_b, attribute),
