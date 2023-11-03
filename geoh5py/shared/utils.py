@@ -239,7 +239,7 @@ def clear_array_attributes(entity: Entity, recursive: bool = False):
             clear_array_attributes(child, recursive=recursive)
 
 
-def are_objects_similar(obj1, obj2, ignore: list[str]):
+def are_objects_similar(obj1, obj2, ignore: list[str] | None):
     """
     Compare two objects to see if they are similar. This is a shallow comparison.
 
@@ -290,7 +290,7 @@ def compare_floats(object_a, object_b, attribute: str, decimal: int = 6):
     )
 
 
-def compare_list(object_a, object_b, attribute: str, ignore: list[str]):
+def compare_list(object_a, object_b, attribute: str, ignore: list[str] | None):
     get_object_a = getattr(object_a, attribute)
     get_object_b = getattr(object_b, attribute)
     assert isinstance(get_object_a, list)
