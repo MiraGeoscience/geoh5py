@@ -262,7 +262,7 @@ def are_objects_similar(obj1, obj2, ignore):
     return attributes1 == attributes2
 
 
-def compare_arrays(object_a, object_b, attribute, decimal: int = 6):
+def compare_arrays(object_a, object_b, attribute: str, decimal: int = 6):
     if getattr(object_b, attribute) is None:
         raise ValueError(f"attr {attribute} is None for object {object_b.name}")
     attr_a = getattr(object_a, attribute).tolist()
