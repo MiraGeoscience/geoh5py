@@ -129,7 +129,8 @@ class InputFile:
                 self.geoh5 = value["geoh5"]
 
             with fetch_active_workspace(self._geoh5):
-                value = self.promote(value)
+                if not self.validation_options.get("disable_promotion", False):
+                    value = self.promote(value)
 
                 if self.validators is not None and self.validate:
                     self.validators.validate_data(value)
