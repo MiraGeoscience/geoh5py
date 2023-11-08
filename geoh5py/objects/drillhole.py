@@ -357,6 +357,7 @@ class Drillhole(Points):
         self,
         data: dict,
         property_group: str | PropertyGroup | None = None,
+        compression: int = 5,
         collocation_distance=None,
     ) -> Data | list[Data]:
         """
@@ -381,6 +382,8 @@ class Drillhole(Points):
             }
 
         :param property_group: Name or PropertyGroup used to group the data.
+        :param collocation_distance: Minimum collocation distance for matching
+        :param compression: Compression level for data.
 
         :return: List of new Data objects.
         """
@@ -421,7 +424,7 @@ class Drillhole(Points):
                 kwargs[key] = val
 
             data_object = self.workspace.create_entity(
-                Data, entity=kwargs, entity_type=entity_type
+                Data, entity=kwargs, entity_type=entity_type, compression=compression
             )
 
             if not isinstance(data_object, Data):
