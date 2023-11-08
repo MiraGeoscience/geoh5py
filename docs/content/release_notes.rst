@@ -1,40 +1,42 @@
 Release Notes
 =============
 
-Release 0.8.0 (2023-10-26)
+Release 0.8.0 (2023-10-31)
 --------------------------
 
-GEOPY-241, 550, 993: Explicit creation of a Workspace object.
-GEOPY-262, 479: Improved documentation.
-GEOPY-438: Add access to property_groups as child of objects.
-GEOPY-516, 652: New functionality for UI.json forms.
-GEOPY-652: Expose coordinate system information.
-GEOPY-666: Add clipping by extent for mesh type objects.
-GEOPY-742, 747: Implement all remaining EM survey types for TEM, FEM, airbone and ground.
-GEOPY-776: Support mask data type (BoolData).
-GEOPY-846: Bgin support of object VisualParameters (Color only).
-GEOPY-915, 919, 991, 1002, 1013, 1014: Improve clipping by extent for Grid2D and GeoImage.
-GEOPY-923, 1025, 1050: Add documentation and docstrings.
-GEOPY-870, 897, 918, 976, 979, 987, 992, 1000, 1004, 1030, 1042, 1055: Bug fixes
+- GEOPY-241, 550, 993: Explicit creation of a Workspace object.
+- GEOPY-262, 479: Improved documentation.
+- GEOPY-438: Add access to property_groups as child of objects.
+- GEOPY-516, 652: New functionality for UI.json forms.
+- GEOPY-652: Expose coordinate system information.
+- GEOPY-666: Add clipping by extent for mesh type objects.
+- GEOPY-742, 747: Implement all remaining EM survey types for TEM, FEM, airbone and ground.
+- GEOPY-776: Support mask data type (BoolData).
+- GEOPY-846: Bgin support of object VisualParameters (Color only).
+- GEOPY-915, 919, 991, 1002, 1013, 1014: Improve clipping by extent for Grid2D and GeoImage.
+- GEOPY-923, 1025, 1050: Add documentation and docstrings.
+- GEOPY-870, 897, 918, 976, 979, 987, 992, 1000, 1004, 1030, 1042, 1055: Bug fixes
+- GEOPY-1092: Add "collect_values" method to collect values from property_groups.
+- GEOPY-1102: Add functionality to merge curve objects
 
 
 Release 0.7.0 (2023-03-26)
 --------------------------
 
-GEOPY-857, 877: Add and improve function to copy entities from extent.
-GEOPY-537: Throw user warning if change mode to "r+" to "r"
-GEOPY-667, 668, 723, 848: Fixes on drillhole copy and data selection
-GEOPY-851: Fix NDV not recognized on concatenated data
-GEOPY-862: Add measure of maintainability with code climate
-GEOPY-876: Handle geoh5 conversion from 4.2 (geoh5 v2.1) saved as 4.1 (geoh5 v2.0) format.
+- GEOPY-857, 877: Add and improve function to copy entities from extent.
+- GEOPY-537: Throw user warning if change mode to "r+" to "r"
+- GEOPY-667, 668, 723, 848: Fixes on drillhole copy and data selection
+- GEOPY-851: Fix NDV not recognized on concatenated data
+- GEOPY-862: Add measure of maintainability with code climate
+- GEOPY-876: Handle geoh5 conversion from 4.2 (geoh5 v2.1) saved as 4.1 (geoh5 v2.0) format.
 
 
 Release 0.6.1 (2023-02-09)
 --------------------------
 
-GEOPY-848: Fix the issue of copying drill holes with DateTime.
-GEOPY-847: Fix the issue with clipping by extent with 2d coordinates
-GEOPY-537: Add a convenience method to get an active workspace in a different mode "fetch_active_workspace".
+- GEOPY-848: Fix the issue of copying drill holes with DateTime.
+- GEOPY-847: Fix the issue with clipping by extent with 2d coordinates
+- GEOPY-537: Add a convenience method to get an active workspace in a different mode "fetch_active_workspace".
 
 
 Release 0.6.0 (2023/01/26)
