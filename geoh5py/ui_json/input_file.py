@@ -309,6 +309,7 @@ class InputFile:
             return {
                 "update_enabled": True,
                 "ignore_list": (),
+                "disable_promotion": False,
             }
 
         return self._validation_options
@@ -537,7 +538,8 @@ class InputFile:
         Check if the value needs to be promoted.
         """
         if isinstance(value, UUID) and self._geoh5 is not None:
-            self.association_validator(key, value, self._geoh5)
+            if self.validate:
+                self.association_validator(key, value, self._geoh5)
             value = uuid2entity(value, self._geoh5)
 
         return value

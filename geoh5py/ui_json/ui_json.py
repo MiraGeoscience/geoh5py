@@ -120,7 +120,8 @@ class UIJson:
     def validate(self):
         """Validates uijson data against a pool of enforcers."""
         uijson = self.to_dict()
-        self.enforcers.enforce(uijson)
+        with uijson["geoh5"].open():
+            self.enforcers.enforce(uijson)
 
     @property
     def name(self) -> str:

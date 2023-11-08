@@ -44,6 +44,11 @@ def test_required_workspace_object_validation_error():
 
 
 def test_required_object_data_validation_error():
-    msg = r"Object: 'test' is missing required data\(s\): \['data1', 'data2'\]."
+    msg = (
+        r"Workspace: 'test' object\(s\) \['object1', 'object2'] are "
+        r"missing required children \['data1', 'data2'\]."
+    )
     with pytest.raises(RequiredObjectDataValidationError, match=msg):
-        raise RequiredObjectDataValidationError("test", ["data1", "data2"])
+        raise RequiredObjectDataValidationError(
+            "test", [("object1", "data1"), ("object2", "data2")]
+        )

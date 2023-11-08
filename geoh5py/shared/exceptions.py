@@ -196,9 +196,16 @@ class RequiredWorkspaceObjectValidationError(InCollectionValidationError):
     item = "object"
 
 
-class RequiredObjectDataValidationError(InCollectionValidationError):
-    collection = "Object"
-    item = "data"
+class RequiredObjectDataValidationError(BaseValidationError):
+    def __init__(self, name: str, value: list[tuple[str, str]]):
+        super().__init__(self.message(name, value))
+
+    @classmethod
+    def message(cls, name, value):
+        return (
+            f"Workspace: '{name}' object(s) {[k[0] for k in value]} "
+            f"are missing required children {[k[1] for k in value]}."
+        )
 
 
 class ShapeValidationError(BaseValidationError):
