@@ -102,11 +102,8 @@ class VisualParameters(TextData):
         ):
             raise TypeError("Input 'colour' values must be a list of 3 integers.")
 
-        byte_string = ""
-        for val in rgb:
-            byte_string += f"{val:02x}"
-
-        byte_string += f"{255:02x}"  # alpha value
+        byte_string = "".join(f"{val:02x}" for val in rgb)
+        byte_string.join(f"{255:02x}")  # alpha value
         value = int.from_bytes(bytes.fromhex(byte_string), "little")
 
         self.set_tag("Colour", str(value))

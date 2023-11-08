@@ -255,12 +255,7 @@ class InputFile:
                     if self.validation_options.get("update_enabled", True):
                         enabled = False if value is None else True
 
-                    was_group_enabled = set_enabled(self.ui_json, key, enabled)
-                    if was_group_enabled:
-                        warnings.warn(
-                            f"Setting all member of group: {self.ui_json[key]['group']} "
-                            f"to enabled: {enabled}."
-                        )
+                    set_enabled(self.ui_json, key, enabled)
 
                 member = "value"
                 if "isValue" in self.ui_json[key]:
