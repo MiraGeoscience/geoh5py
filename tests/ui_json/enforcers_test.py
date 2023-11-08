@@ -200,6 +200,7 @@ def test_required_object_data_enforcer(tmp_path):
     enforcer.enforce(str(geoh5.h5file.stem), data)
 
     data["data"]["value"] = the_wrong_data
-    msg = r"Workspace: 'working_file' object\(s\) \['object'\] are missing required children \['data'\]."
+    msg = (r"Workspace: 'working_file' object\(s\) \['object'\] "
+           r"are missing required children \['data'\].")
     with pytest.raises(RequiredObjectDataValidationError, match=msg):
         enforcer.enforce(str(geoh5.h5file.stem), data)

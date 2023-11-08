@@ -201,7 +201,8 @@ class RequiredObjectDataValidationError(BaseValidationError):
         super().__init__(self.message(name, value))
 
     @classmethod
-    def message(cls, name, value):
+    def message(cls, name, value, validation=None):
+        _ = validation
         return (
             f"Workspace: '{name}' object(s) {[k[0] for k in value]} "
             f"are missing required children {[k[1] for k in value]}."
