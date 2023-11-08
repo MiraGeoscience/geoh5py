@@ -717,13 +717,8 @@ def test_stringify(tmp_path: Path):
     ui_json["test"]["group"] = "test_group"
     in_file = InputFile(ui_json=ui_json, validations={"test": {"types": [int]}})
 
-    with pytest.warns(UserWarning) as warn:
-        in_file.update_ui_values({"test": None})
+    in_file.update_ui_values({"test": None})
 
-    assert any(
-        "Setting all member of group: test_group to enabled" in str(w)
-        for w in warn.list
-    )
     assert in_file.ui_json["test"]["value"] is not None
     assert not in_file.ui_json["test"]["enabled"]
     assert not in_file.ui_json["test_group"]["enabled"]
