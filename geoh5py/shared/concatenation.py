@@ -992,7 +992,6 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             values = attributes.get("values")
             attributes["association"] = "DEPTH"
             property_group = self.validate_depth_data(
-                attributes.get("name"),
                 attributes.get("depth"),
                 values,
                 property_group=property_group,
@@ -1037,7 +1036,6 @@ class ConcatenatedDrillhole(ConcatenatedObject):
 
     def validate_depth_data(
         self,
-        name: str | None,
         depth: list | np.ndarray | None,
         values: np.ndarray,
         property_group: str | ConcatenatedPropertyGroup | None = None,
@@ -1087,25 +1085,28 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             property_group = f"depth_{ind}"
 
         if isinstance(property_group, str):
-            out_group: ConcatenatedPropertyGroup = (
-                self.find_or_create_property_group(  # type: ignore
-                    name=property_group,
-                    association="DEPTH",
-                    property_group_type="Depth table",
+            name_id = 0
+            while True:
+                out_group: ConcatenatedPropertyGroup = (
+                    self.find_or_create_property_group(  # type: ignore
+                        name=property_group
+                        if name_id == 0
+                        else f"{property_group} ({name_id})",
+                        association="DEPTH",
+                        property_group_type="Depth table",
+                    )
                 )
-            )
+
+                if (
+                    out_group.depth_ is None
+                    or out_group.depth_.values.shape[0] == values.shape
+                ):
+                    break
+
+                name_id += 1
+
         else:
             out_group = property_group
-
-        if out_group.depth_ is not None:
-            if out_group.depth_.values.shape[0] != values.shape[0]:
-                raise ValueError(
-                    f"Input values for '{name}' with shape({values.shape[0]}) "
-                    f"do not match the depths of the group '{out_group.name}' "
-                    f"with shape({out_group.depth_.values.shape[0]}). Check values or "
-                    "assign to a new property group"
-                )
-            return out_group
 
         depth = getattr(self, "add_data")(
             {
