@@ -95,11 +95,13 @@ class InputFile:
         validate: bool = True,
         validations: dict | None = None,
         validation_options: dict | None = None,
+        promotion: bool = True,
     ):
         self._geoh5 = None
         self.validation_options = validation_options
         self.validate = validate
         self.validations = validations
+        self.promotion = promotion
         self.ui_json = ui_json
         self.data = data
 
@@ -129,7 +131,7 @@ class InputFile:
                 self.geoh5 = value["geoh5"]
 
             with fetch_active_workspace(self._geoh5):
-                if not self.validation_options.get("disable_promotion", False):
+                if self.promotion:
                     value = self.promote(value)
 
                 if self.validators is not None and self.validate:
@@ -304,7 +306,6 @@ class InputFile:
             return {
                 "update_enabled": True,
                 "ignore_list": (),
-                "disable_promotion": False,
             }
 
         return self._validation_options
