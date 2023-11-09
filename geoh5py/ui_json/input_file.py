@@ -88,7 +88,7 @@ class InputFile:
     _validation_options: dict | None = None
     association_validator = AssociationValidator()
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         data: dict[str, Any] | None = None,
         ui_json: dict[str, Any] | None = None,
