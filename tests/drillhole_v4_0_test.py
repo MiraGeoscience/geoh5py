@@ -600,3 +600,62 @@ def test_open_close_creation(tmp_path):
     )
     assert len(workspace.groups[1].concatenated_attributes["Attributes"]) == 2
     workspace.close()
+
+
+def test_add_data_increments_property_group(tmp_path):
+    workspace = Workspace.create(tmp_path / "test.geoh5")
+    dh_group = DrillholeGroup.create(workspace, name="my drillhole group")
+    dh = Drillhole.create(workspace, parent=dh_group, name="my well")
+    dh.add_data(
+        {
+            "first property": {
+                "values": np.random.randn(10),
+                "depth": np.linspace(0, 9, 10),
+            }
+        },
+        property_group="my property group",
+    )
+
+    dh.add_data(
+        {
+            "second property": {
+                "values": np.random.randn(10),
+                "depth": np.linspace(0, 9, 10),
+            }
+        },
+        property_group="my property group",
+    )
+    dh.add_data(
+        {
+            "third property": {
+                "values": np.random.randn(6),
+                "depth": np.linspace(0, 5, 6),
+            }
+        },
+        property_group="my property group",
+    )
+
+    dh.add_data(
+        {
+            "fourth property": {
+                "values": np.random.randn(8),
+                "depth": np.linspace(0, 7, 8),
+            },
+        },
+        property_group="my property group",
+    )
+
+    assert [
+        workspace.get_entity(f"{k} property")[0].property_group.name
+        == "my property group"
+        for k in ["first", "second"]
+    ]
+    assert (
+        workspace.get_entity("third property")[0].property_group.name
+        == "my property group (1)"
+    )
+
+    assert (
+        workspace.get_entity("fourth property")[0].property_group.name
+        == "my property group (2)"
+    )
