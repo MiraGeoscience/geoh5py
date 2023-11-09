@@ -88,18 +88,20 @@ class InputFile:
     _validation_options: dict | None = None
     association_validator = AssociationValidator()
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         data: dict[str, Any] | None = None,
         ui_json: dict[str, Any] | None = None,
         validate: bool = True,
         validations: dict | None = None,
         validation_options: dict | None = None,
+        promotion: bool = True,
     ):
         self._geoh5 = None
         self.validation_options = validation_options
         self.validate = validate
         self.validations = validations
+        self.promotion = promotion
         self.ui_json = ui_json
         self.data = data
 
@@ -129,7 +131,8 @@ class InputFile:
                 self.geoh5 = value["geoh5"]
 
             with fetch_active_workspace(self._geoh5):
-                value = self.promote(value)
+                if self.promotion:
+                    value = self.promote(value)
 
                 if self.validators is not None and self.validate:
                     self.validators.validate_data(value)
@@ -531,7 +534,8 @@ class InputFile:
         Check if the value needs to be promoted.
         """
         if isinstance(value, UUID) and self._geoh5 is not None:
-            self.association_validator(key, value, self._geoh5)
+            if self.validate:
+                self.association_validator(key, value, self._geoh5)
             value = uuid2entity(value, self._geoh5)
 
         return value

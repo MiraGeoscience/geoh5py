@@ -25,6 +25,7 @@ from geoh5py.objects import Points
 from geoh5py.shared.exceptions import (
     AggregateValidationError,
     RequiredFormMemberValidationError,
+    RequiredObjectDataValidationError,
     RequiredUIJsonParameterValidationError,
     RequiredWorkspaceObjectValidationError,
     TypeValidationError,
@@ -175,4 +176,33 @@ def test_required_workspace_object_enforcer(tmp_path):
     data["my_points"] = {"value": other_pts}
     msg = r"Workspace: 'working_file' is missing required object\(s\): \['my_points'\]."
     with pytest.raises(RequiredWorkspaceObjectValidationError, match=msg):
+        enforcer.enforce(str(geoh5.h5file.stem), data)
+
+
+def test_required_object_data_enforcer(tmp_path):
+    geoh5 = Workspace(tmp_path / "working_file.geoh5")
+    pts = Points.create(geoh5, vertices=np.random.rand(10, 3), name="my_points")
+    my_data = pts.add_data({"my_data": {"values": np.random.rand(10)}})
+    other_pts = Points.create(
+        geoh5, vertices=np.random.rand(10, 3), name="my_other_points"
+    )
+    the_wrong_data = other_pts.add_data(
+        {"my_other_data": {"values": np.random.rand(10)}}
+    )
+
+    data = {
+        "geoh5": geoh5,
+        "object": {"value": pts},
+        "data": {"value": my_data},
+    }
+    validations = [("object", "data")]
+    enforcer = RequiredObjectDataEnforcer(validations)
+    enforcer.enforce(str(geoh5.h5file.stem), data)
+
+    data["data"]["value"] = the_wrong_data
+    msg = (
+        r"Workspace: 'working_file' object\(s\) \['object'\] "
+        r"are missing required children \['data'\]."
+    )
+    with pytest.raises(RequiredObjectDataValidationError, match=msg):
         enforcer.enforce(str(geoh5.h5file.stem), data)

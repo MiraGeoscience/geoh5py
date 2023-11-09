@@ -447,6 +447,21 @@ class DataFormParameter(FormParameter):
         )
         super().__init__(name, value=value, data_type=data_type, **kwargs)
 
+    @property
+    def uijson_validations(self):
+        """Validations for UIJson level enforcers."""
+
+        validations = SetDict()
+        if self.value is not None:
+            validations.update(
+                {
+                    "required_workspace_object": self.name,
+                    "required_object_data": [(self._parent.value, self.name)],
+                }
+            )
+
+        return validations
+
 
 class DataValueFormParameter(FormParameter):
     """

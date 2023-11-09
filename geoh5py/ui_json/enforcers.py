@@ -191,7 +191,7 @@ class RequiredEnforcer(Enforcer):
     enforcer_type = "required"
     validation_error = InCollectionValidationError
 
-    def __init__(self, validations: set[str]):
+    def __init__(self, validations: set[str | tuple[str, str]]):
         super().__init__(validations)
 
     def enforce(self, name: str, value: Any):
@@ -235,9 +235,35 @@ class RequiredWorkspaceObjectEnforcer(RequiredEnforcer):
         return list(value["geoh5"].list_entities_name)
 
 
-class RequiredObjectDataEnforcer(RequiredEnforcer):
+class RequiredObjectDataEnforcer(Enforcer):
     enforcer_type = "required_object_data"
     validation_error = RequiredObjectDataValidationError
+
+    def enforce(self, name: str, value: Any):
+        """Administers rule to check if required items in collection."""
+
+        if not self.rule(value):
+            raise self.validation_error(
+                name,
+                [
+                    k
+                    for i, k in enumerate(self.validations)
+                    if value[k[1]]["value"].uid not in self.collection(value)[i]
+                ],
+            )
+
+    def rule(self, value: Any) -> bool:
+        """True if object/data have parent/child relationship."""
+        return all(
+            value[k[1]]["value"].uid in self.collection(value)[i]
+            for i, k in enumerate(self.validations)
+        )
+
+    def collection(self, value: dict[str, Any]) -> list[list[UUID]]:
+        """Returns list of children for all parents in validations."""
+        return [
+            [c.uid for c in value[k[0]]["value"].children] for k in self.validations
+        ]
 
 
 class EnforcerPool:

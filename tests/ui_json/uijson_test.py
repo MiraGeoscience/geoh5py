@@ -16,6 +16,7 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
+import uuid
 from pathlib import Path
 
 import numpy as np
@@ -23,7 +24,10 @@ import pytest
 
 from geoh5py import Workspace
 from geoh5py.objects import Points
-from geoh5py.shared.exceptions import RequiredUIJsonParameterValidationError
+from geoh5py.shared.exceptions import (
+    RequiredObjectDataValidationError,
+    RequiredUIJsonParameterValidationError,
+)
 from geoh5py.ui_json import InputFile
 from geoh5py.ui_json.forms import (
     BoolFormParameter,
@@ -46,16 +50,16 @@ from geoh5py.ui_json.ui_json import UIJson
 
 
 def generate_sample_uijson_data(testpath):
-    workspace = Workspace(testpath / "test.geoh5")
-    pts = np.random.random((10, 3))
-    data_object = Points.create(workspace, name="survey", vertices=pts)
-    _ = data_object.add_data(
-        {
-            "Bx": {"values": np.random.random(10)},
-            "By": {"values": np.random.random(10)},
-            "elevation": {"values": np.random.random(10)},
-        }
-    )
+    with Workspace.create(testpath / "test.geoh5") as workspace:
+        pts = np.random.random((10, 3))
+        data_object = Points.create(workspace, name="survey", vertices=pts)
+        _ = data_object.add_data(
+            {
+                "Bx": {"values": np.random.random(10)},
+                "By": {"values": np.random.random(10)},
+                "elevation": {"values": np.random.random(10)},
+            }
+        )
     return workspace, data_object
 
 
@@ -211,9 +215,10 @@ def test_uijson_value_access():
     assert uijson.elevation is None  # pylint: disable=no-member
 
 
-def test_uijson_validations():
+def test_uijson_validations(tmp_path):
     uijson = generate_sample_defaulted_uijson()
     uijson.parameters = {k: v for k, v in uijson.parameters.items() if k != "title"}
+    uijson.geoh5 = Workspace.create(tmp_path / "test.geoh5")
     msg = r"UIJson: 'my application' is missing required parameter\(s\): \['title'\]."
     with pytest.raises(RequiredUIJsonParameterValidationError, match=msg):
         uijson.validate()
@@ -280,6 +285,40 @@ def test_uijson_construct_default_and_update(tmp_path):
     assert forms["y_channel"]["value"].uid == data_object.get_data("By")[0].uid
     assert forms["y_channel"]["enabled"]
     assert forms["data_path"]["value"] == "my_data_path"
+
+
+def test_uijson_raises_required_object_data_validation_error(tmp_path):
+    uijson = generate_sample_defaulted_uijson()
+    filename = write_uijson(tmp_path, uijson)
+    workspace, data_object = generate_sample_uijson_data(tmp_path)
+
+    with workspace.open():
+        pts = Points.create(
+            workspace, vertices=np.random.rand(10, 3), name="other object"
+        )
+        wrong_data = pts.add_data({"wrong data": {"values": np.random.rand(10)}})
+
+    parameter_updates = {"x_channel": str(wrong_data.uid)}
+    populated_file = populate_sample_uijson(
+        filename, workspace, data_object, parameter_updates
+    )
+
+    ifile = InputFile.read_ui_json(
+        populated_file,
+        validate=False,
+    )
+    with ifile.geoh5.open() as workspace:
+        for param, value in ifile.ui_json.items():
+            if isinstance(value, uuid.UUID):
+                ifile.data[param] = workspace.get_entity(value)
+
+    uijson.update(ifile.ui_json)
+    msg = (
+        r"Workspace: 'test' object\(s\) \['data_object'\] are missing "
+        r"required children \['x_channel'\]."
+    )
+    with pytest.raises(RequiredObjectDataValidationError, match=msg):
+        uijson.validate()
 
 
 def test_validations():
