@@ -634,6 +634,17 @@ def test_add_data_increments_property_group(tmp_path):
         },
         property_group="my property group",
     )
+
+    dh.add_data(
+        {
+            "fourth property": {
+                "values": np.random.randn(8),
+                "depth": np.linspace(0, 7, 8),
+            },
+        },
+        property_group="my property group",
+    )
+
     assert [
         workspace.get_entity(f"{k} property")[0].property_group.name
         == "my property group"
@@ -642,4 +653,9 @@ def test_add_data_increments_property_group(tmp_path):
     assert (
         workspace.get_entity("third property")[0].property_group.name
         == "my property group (1)"
+    )
+
+    assert (
+        workspace.get_entity("fourth property")[0].property_group.name
+        == "my property group (2)"
     )
