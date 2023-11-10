@@ -1014,7 +1014,6 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             values = attributes.get("values")
             attributes["association"] = "DEPTH"
             property_group = self.validate_interval_data(
-                attributes.get("name"),
                 attributes.get("from-to"),
                 attributes.get("values"),
                 property_group=property_group,
@@ -1126,7 +1125,6 @@ class ConcatenatedDrillhole(ConcatenatedObject):
 
     def validate_interval_data(
         self,
-        name: str | None,
         from_to: list | np.ndarray | None,
         values: np.ndarray,
         property_group: str | ConcatenatedPropertyGroup | None = None,
@@ -1182,21 +1180,28 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             property_group = f"Interval_{ind}"
 
         if isinstance(property_group, str):
-            out_group: ConcatenatedPropertyGroup = getattr(
-                self, "find_or_create_property_group"
-            )(name=property_group, association="DEPTH")
+            name_id = 0
+            while True:
+                out_group: ConcatenatedPropertyGroup = (
+                    self.find_or_create_property_group(
+                        name=property_group
+                        if name_id == 0
+                        else f"{property_group} ({name_id})",
+                        association="DEPTH",
+                        property_group_type="Interval table",
+                    )
+                )
+
+                if (
+                    out_group.depth_ is None
+                    or out_group.depth_.values.shape[0] == values.shape
+                ):
+                    break
+
+                name_id += 1
+
         else:
             out_group = property_group
-
-        if out_group.from_ is not None:
-            if out_group.from_.values.shape[0] != values.shape[0]:
-                raise ValueError(
-                    f"Input values for '{name}' with shape({values.shape[0]}) "
-                    f"do not match the from-to intervals of the group '{out_group}' "
-                    f"with shape({out_group.from_.values.shape[0]}). Check values or "
-                    f"assign to a new property group."
-                )
-            return out_group
 
         from_to = getattr(self, "add_data")(
             {

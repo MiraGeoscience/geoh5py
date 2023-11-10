@@ -659,3 +659,65 @@ def test_add_data_increments_property_group(tmp_path):
         workspace.get_entity("fourth property")[0].property_group.name
         == "my property group (2)"
     )
+
+def test_add_data_interval_increments_property_group(tmp_path):
+    workspace = Workspace.create(tmp_path / "test.geoh5")
+    dh_group = DrillholeGroup.create(workspace, name="my drillhole group")
+    dh = Drillhole.create(workspace, parent=dh_group, name="my well")
+
+    intervals = np.c_[np.linspace(0, 9, 10), np.linspace(1, 10, 10)]
+    dh.add_data(
+        {
+            "first property": {
+                "values": np.random.randn(10),
+                "from-to": intervals,
+            }
+        },
+        property_group="my property group",
+    )
+
+    dh.add_data(
+        {
+            "second property": {
+                "values": np.random.randn(10),
+                "from-to": intervals,
+            }
+        },
+        property_group="my property group",
+    )
+    intervals = np.c_[np.linspace(0, 5, 6), np.linspace(1, 6, 6)]
+    dh.add_data(
+        {
+            "third property": {
+                "values": np.random.randn(6),
+                "from-to": intervals,
+            }
+        },
+        property_group="my property group",
+    )
+
+    intervals = np.c_[np.linspace(0, 7, 8), np.linspace(1, 8, 8)]
+    dh.add_data(
+        {
+            "fourth property": {
+                "values": np.random.randn(8),
+                "from-to": np.linspace(0, 7, 8),
+            },
+        },
+        property_group="my property group",
+    )
+
+    assert [
+        workspace.get_entity(f"{k} property")[0].property_group.name
+        == "my property group"
+        for k in ["first", "second"]
+    ]
+    assert (
+            workspace.get_entity("third property")[0].property_group.name
+            == "my property group (1)"
+    )
+
+    assert (
+            workspace.get_entity("fourth property")[0].property_group.name
+            == "my property group (2)"
+    )
