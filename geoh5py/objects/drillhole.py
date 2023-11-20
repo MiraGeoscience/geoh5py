@@ -408,7 +408,10 @@ class Drillhole(Points):
                 )
 
             attributes, new_property_group = self.validate_data(
-                attributes, property_group, collocation_distance=collocation_distance
+                attributes,
+                property_group,
+                collocation_distance=collocation_distance,
+                type_=attributes.get("type"),
             )
 
             entity_type = self.validate_data_type(attributes)
@@ -495,7 +498,8 @@ class Drillhole(Points):
         from_to: np.ndarray | list,
         values: np.ndarray,
         collocation_distance: float = 1e-4,
-    ):
+        type_: str | None = None,
+    ):  # pylint: disable=too-many-locals
         """
         Compare new and current depth values, append new vertices if necessary and return
         an augmented values vector that matches the vertices indexing.
@@ -558,9 +562,15 @@ class Drillhole(Points):
                 from_to.flatten()[ind_new], return_inverse=True
             )
 
+            # check if its text data, and defined nan array if so
+            if type_ == "TEXT":
+                nan_values = np.array([""] * self.n_cells)  # type: ignore
+            else:
+                nan_values = np.ones(self.n_cells) * np.nan
+
             # Append values
             values = merge_arrays(
-                np.ones(self.n_cells) * np.nan,
+                nan_values,
                 np.r_[values],
                 replace="B->A",
                 mapping=cell_map,
@@ -625,13 +635,19 @@ class Drillhole(Points):
         return values
 
     def validate_data(
-        self, attributes: dict, property_group=None, collocation_distance=None
+        self,
+        attributes: dict,
+        property_group=None,
+        collocation_distance=None,
+        type_=None,
     ) -> tuple:
         """
         Validate input drillhole data attributes.
 
         :param attributes: Dictionary of data attributes.
         :param property_group: Input property group to validate against.
+        :param collocation_distance: Minimum collocation distance for matching.
+        :param type_: Type of data to be created.
         """
         if collocation_distance is None:
             collocation_distance = attributes.get(
@@ -664,6 +680,7 @@ class Drillhole(Points):
                 attributes["from-to"],
                 attributes["values"],
                 collocation_distance=collocation_distance,
+                type_=type_,
             )
             del attributes["from-to"]
 

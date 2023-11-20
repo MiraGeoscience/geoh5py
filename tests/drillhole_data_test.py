@@ -122,6 +122,18 @@ def test_create_drillhole_data(tmp_path):
                     "value_map": {1: "Unit_A", 2: "Unit_B", 3: "Unit_C"},
                     "type": "referenced",
                 },
+                "text_list": {
+                    "values": np.array(
+                        [
+                            "".join(
+                                random.choice(string.ascii_lowercase) for _ in range(6)
+                            )
+                            for _ in range(3)
+                        ]
+                    ),
+                    "from-to": from_to_b,
+                    "type": "TEXT",
+                },
             }
         )
 
@@ -235,7 +247,7 @@ def test_create_drillhole_data(tmp_path):
             ignore=["_parent"],
         )
         compare_entities(
-            data_objects[2],
+            data_objects[3],
             new_workspace.get_entity("log_int")[0],
             ignore=["_parent"],
         )
