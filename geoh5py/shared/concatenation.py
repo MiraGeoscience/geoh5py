@@ -960,11 +960,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         return obj_list
 
     def validate_data(
-        self,
-        attributes: dict,
-        property_group=None,
-        collocation_distance=None,
-        **_,
+        self, attributes: dict, property_group=None, collocation_distance=None
     ) -> tuple:
         """
         Validate input drillhole data attributes.
@@ -1052,10 +1048,12 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         collocation_distance: float | None = None,
     ) -> ConcatenatedPropertyGroup:
         """
-        :param name: Data name.
+        Compare new and current depth values and reuse the property group if possible.
+
         :param depth: Sampling depths.
         :param values: Data samples to depths.
         :param property_group: Group for possibly collocated data.
+        :param collocation_distance: Threshold on the comparison between existing depth values.
 
         :return: Augmented property group with name/values added for collocated data
             otherwise newly created property group with name/depth/values added.
@@ -1139,16 +1137,18 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         values: np.ndarray,
         property_group: str | ConcatenatedPropertyGroup | None = None,
         collocation_distance=1e-4,
-        **_,
     ) -> ConcatenatedPropertyGroup:
         """
         Compare new and current depth values and reuse the property group if possible.
         Otherwise a new property group is added.
 
+        :param name: Data name.
         :param from_to: Array of from-to values.
         :param values: Data values to be added on the from-to intervals.
         :param property_group: Property group name.
         :param collocation_distance: Threshold on the comparison between existing depth values.
+
+        :return A ConcatenatedPropertyGroup with the matched values.
         """
 
         if from_to is not None:
