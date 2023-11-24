@@ -251,6 +251,11 @@ def test_create_drillhole_data(tmp_path):
             new_workspace.get_entity("log_int")[0],
             ignore=["_parent"],
         )
+        compare_entities(
+            data_objects[2],
+            new_workspace.get_entity("text_list")[0],
+            ignore=["_parent"],
+        )
 
 
 def test_no_survey(tmp_path):
