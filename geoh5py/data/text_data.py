@@ -59,7 +59,9 @@ class TextData(Data):
         if isinstance(values, np.ndarray) and values.dtype == object:
             values = values.astype(str)
 
-        if not isinstance(values, (np.ndarray, str, type(None))):
+        if (not isinstance(values, (str, type(None)))) and (
+            isinstance(values, np.ndarray) and values.dtype.kind not in ["U", "S"]
+        ):
             raise ValueError(
                 f"Input 'values' for {self} must be of type {np.ndarray}  str or None."
             )
