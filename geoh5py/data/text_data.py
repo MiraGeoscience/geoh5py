@@ -40,9 +40,6 @@ class TextData(Data):
         if (getattr(self, "_values", None) is None) and self.on_file:
             values = self.workspace.fetch_values(self)
 
-            if isinstance(values, bytes):
-                values = values.decode()
-
             if isinstance(values, np.ndarray) and values.dtype == object:
                 values = values.astype(str)
 
