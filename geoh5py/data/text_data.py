@@ -59,7 +59,7 @@ class TextData(Data):
         if isinstance(values, np.ndarray) and values.dtype == object:
             values = values.astype(str)
 
-        if (not isinstance(values, (str, type(None)))) and (
+        if (not isinstance(values, (str, type(None), np.ndarray))) or (
             isinstance(values, np.ndarray) and values.dtype.kind not in ["U", "S"]
         ):
             raise ValueError(
