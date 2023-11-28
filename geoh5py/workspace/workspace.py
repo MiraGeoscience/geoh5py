@@ -419,7 +419,7 @@ class Workspace(AbstractContextManager):
                 if self.version > 1.0 and isinstance(
                     entity_kwargs["parent"], ConcatenatedObject
                 ):
-                    member = type(name + "Concatenated", (ConcatenatedData, member), {})
+                    member = type("Concatenated" + name, (ConcatenatedData, member), {})
 
                 if member is TextData and any(
                     isinstance(val, str) and "Visual Parameters" == val
