@@ -39,6 +39,10 @@ class TextData(Data):
         """
         if (getattr(self, "_values", None) is None) and self.on_file:
             values = self.workspace.fetch_values(self)
+
+            if isinstance(values, np.ndarray) and values.dtype == object:
+                values = values.astype(str)
+
             if isinstance(values, (np.ndarray, str, type(None))):
                 self._values = values
 
@@ -46,12 +50,20 @@ class TextData(Data):
 
     @values.setter
     def values(self, values: np.ndarray | str | None):
-        self._values = values
+        if isinstance(values, bytes):
+            values = values.decode()
 
-        if not isinstance(values, (np.ndarray, str, type(None))):
+        if isinstance(values, np.ndarray) and values.dtype == object:
+            values = values.astype(str)
+
+        if (not isinstance(values, (str, type(None), np.ndarray))) or (
+            isinstance(values, np.ndarray) and values.dtype.kind not in ["U", "S"]
+        ):
             raise ValueError(
                 f"Input 'values' for {self} must be of type {np.ndarray}  str or None."
             )
+
+        self._values = values
 
         self.workspace.update_attribute(self, "values")
 

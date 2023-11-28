@@ -988,6 +988,12 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                 )
             attributes["from-to"] = None
 
+        # set a specific nan value if text
+        if attributes.get("type") == "TEXT":
+            nan_value = ""
+        else:
+            nan_value = np.nan
+
         if "depth" in attributes.keys():
             values = attributes.get("values")
             attributes["association"] = "DEPTH"
@@ -1005,7 +1011,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                 attributes["values"] = np.pad(
                     values,
                     (0, property_group.depth_.values.shape[0] - len(values)),
-                    constant_values=np.nan,
+                    constant_values=nan_value,
                 )
 
             del attributes["depth"]
@@ -1027,7 +1033,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                 attributes["values"] = np.pad(
                     values,
                     (0, property_group.from_.values.shape[0] - len(values)),
-                    constant_values=np.nan,
+                    constant_values=nan_value,
                 )
 
             del attributes["from-to"]
@@ -1042,12 +1048,12 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         collocation_distance: float | None = None,
     ) -> ConcatenatedPropertyGroup:
         """
-        :param name: Data name.
+        Compare new and current depth values and reuse the property group if possible.
+
         :param depth: Sampling depths.
         :param values: Data samples to depths.
         :param property_group: Group for possibly collocated data.
-        :param collocation_distance: Tolerance to determine collocated data for
-            property group assignment
+        :param collocation_distance: Threshold on the comparison between existing depth values.
 
         :return: Augmented property group with name/values added for collocated data
             otherwise newly created property group with name/depth/values added.
@@ -1136,11 +1142,15 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         Compare new and current depth values and reuse the property group if possible.
         Otherwise a new property group is added.
 
+        :param name: Data name.
         :param from_to: Array of from-to values.
         :param values: Data values to be added on the from-to intervals.
-        :param property_group: Property group name
-        :collocation_distance: Threshold on the comparison between existing depth values.
+        :param property_group: Property group name.
+        :param collocation_distance: Threshold on the comparison between existing depth values.
+
+        :return A ConcatenatedPropertyGroup with the matched values.
         """
+
         if from_to is not None:
             if isinstance(from_to, list):
                 from_to = np.vstack(from_to)
