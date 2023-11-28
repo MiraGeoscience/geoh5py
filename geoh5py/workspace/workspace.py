@@ -548,7 +548,7 @@ class Workspace(AbstractContextManager):
             ):
                 if self.version > 1.0:
                     if member in (DrillholeGroup, IntegratorDrillholeGroup):
-                        member = type(name + "Concatenator", (Concatenator, member), {})
+                        member = type("Concatenator" + name, (Concatenator, member), {})
                     elif member is Drillhole and isinstance(
                         entity_kwargs.get("parent"),
                         (DrillholeGroup, IntegratorDrillholeGroup),
