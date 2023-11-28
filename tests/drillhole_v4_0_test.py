@@ -20,6 +20,9 @@
 
 from __future__ import annotations
 
+import random
+import string
+
 import numpy as np
 import pytest
 
@@ -332,6 +335,23 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
             }
         )
 
+        text_data = well_b.add_data(
+            {
+                "text Data": {
+                    "values": np.array(
+                        [
+                            "".join(
+                                random.choice(string.ascii_lowercase) for _ in range(6)
+                            )
+                            for _ in range(3)
+                        ]
+                    ),
+                    "from-to": from_to_b,
+                    "type": "TEXT",
+                },
+            }
+        )
+
         assert dh_group.fetch_index(well_b_data, well_b_data.name) == 1, (
             "'interval_values' on well_b should be the second entry.",
         )
@@ -396,9 +416,16 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
                 "_uid",
             ],
         )
+
         compare_entities(
             depth_data,
             well_b_reload.get_data("Depth Data")[0],
+            ignore=["_metadata", "_parent"],
+        )
+
+        compare_entities(
+            text_data,
+            well_b_reload.get_data("text Data")[0],
             ignore=["_metadata", "_parent"],
         )
 
