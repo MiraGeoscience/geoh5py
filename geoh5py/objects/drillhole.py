@@ -495,7 +495,6 @@ class Drillhole(Points):
         from_to: np.ndarray | list,
         values: np.ndarray,
         collocation_distance: float = 1e-4,
-        type_: str | None = None,
     ) -> np.ndarray:
         """
         Compare new and current depth values, append new vertices if necessary and return
@@ -504,7 +503,6 @@ class Drillhole(Points):
         :param from_to: Array of from-to values.
         :param values: Array of values.
         :param collocation_distance: Minimum collocation distance for matching.
-        :param type_: Type of data.
 
         :return: Augmented values vector that matches the vertices indexing.
         """
@@ -546,6 +544,7 @@ class Drillhole(Points):
                 entity_type={"primitive_type": "FLOAT"},
             )
         elif self.cells is not None and self.from_ is not None and self.to_ is not None:
+            values = np.r_[values]
             out_vec = np.c_[self.from_.values, self.to_.values]
             dist_match = []
             for i, elem in enumerate(from_to):
@@ -567,7 +566,7 @@ class Drillhole(Points):
             )
 
             # check if its text data, and defined nan array if so
-            if type_ == "TEXT":
+            if values.dtype.kind in ["U", "S"]:
                 nan_values = np.array([""] * self.n_cells)  # type: ignore
             else:
                 nan_values = np.ones(self.n_cells) * np.nan
@@ -575,7 +574,7 @@ class Drillhole(Points):
             # Append values
             values = merge_arrays(
                 nan_values,
-                np.r_[values],
+                values,
                 replace="B->A",
                 mapping=cell_map,
             )
@@ -679,7 +678,6 @@ class Drillhole(Points):
                 attributes["from-to"],
                 attributes["values"],
                 collocation_distance=collocation_distance,
-                type_=attributes.get("type"),
             )
             del attributes["from-to"]
 
