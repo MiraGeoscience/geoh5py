@@ -554,7 +554,7 @@ class Workspace(AbstractContextManager):
                         (DrillholeGroup, IntegratorDrillholeGroup),
                     ):
                         member = type(
-                            name + "Concatenated", (ConcatenatedDrillhole, member), {}
+                            "Concatenated" + name, (ConcatenatedDrillhole, member), {}
                         )
 
                 entity_type = member.find_or_create_type(self, **entity_type_kwargs)
