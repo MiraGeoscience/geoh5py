@@ -940,10 +940,12 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             self.property_groups if self.property_groups is not None else []
         ):
             properties = [] if prop_group.properties is None else prop_group.properties
-            data = [self.get_data(child)[0] for child in properties]
-            if len(data) > 0 and "from" in data[0].name.lower():
-                obj_list.append(data[0])
-        return obj_list
+            # data = [self.get_data(child)[0] for child in properties]
+            data = [k for k in properties if "from" in self.get_data(k)[0].name.lower()]
+            if len(data) > 0:
+                obj_list.append(data)
+
+        return np.unique(obj_list).tolist()
 
     @property
     def to_(self) -> list[Data]:
@@ -1151,22 +1153,21 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             )
             assert from_to.shape[1] == 2, "The `from-to` values must have shape(*, 2)"
 
-        if (
-            from_to is not None
-            and property_group is None
-            and self.property_groups is not None
-        ):
-            for p_g in self.property_groups:
+        if from_to is not None and self.property_groups is not None:
+            for group in self.property_groups:
                 if (
-                    p_g.from_ is not None
-                    and p_g.from_.values.shape[0] == from_to.shape[0]
+                    group.from_ is not None
+                    and group.from_.values.shape[0] == from_to.shape[0]
                     and np.allclose(
-                        np.c_[p_g.from_.values, p_g.to_.values],
+                        np.c_[group.from_.values, group.to_.values],
                         from_to,
                         atol=collocation_distance,
                     )
                 ):
-                    return p_g
+                    if isinstance(property_group, str) and group.name != property_group:
+                        continue
+
+                    return group
 
         ind = 0
         label = ""
@@ -1193,8 +1194,8 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                 )
 
                 if (
-                    out_group.depth_ is None
-                    or out_group.depth_.values.shape[0] == values.shape
+                    out_group.from_ is None
+                    or out_group.from_.values.shape[0] == values.shape
                 ):
                     break
 

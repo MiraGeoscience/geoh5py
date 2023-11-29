@@ -660,12 +660,16 @@ def test_add_data_increments_property_group(tmp_path):
         == "my property group (2)"
     )
 
+
 def test_add_data_interval_increments_property_group(tmp_path):
     workspace = Workspace.create(tmp_path / "test.geoh5")
     dh_group = DrillholeGroup.create(workspace, name="my drillhole group")
     dh = Drillhole.create(workspace, parent=dh_group, name="my well")
 
-    intervals = np.c_[np.linspace(0, 9, 10), np.linspace(1, 10, 10)]
+    intervals = np.c_[
+        np.linspace(0, 9, 10),
+        np.linspace(1, 10, 10)
+    ]
     dh.add_data(
         {
             "first property": {
@@ -701,7 +705,7 @@ def test_add_data_interval_increments_property_group(tmp_path):
         {
             "fourth property": {
                 "values": np.random.randn(8),
-                "from-to": np.linspace(0, 7, 8),
+                "from-to": intervals,
             },
         },
         property_group="my property group",
@@ -713,11 +717,11 @@ def test_add_data_interval_increments_property_group(tmp_path):
         for k in ["first", "second"]
     ]
     assert (
-            workspace.get_entity("third property")[0].property_group.name
-            == "my property group (1)"
+        workspace.get_entity("third property")[0].property_group.name
+        == "my property group (1)"
     )
 
     assert (
-            workspace.get_entity("fourth property")[0].property_group.name
-            == "my property group (2)"
+        workspace.get_entity("fourth property")[0].property_group.name
+        == "my property group (2)"
     )
