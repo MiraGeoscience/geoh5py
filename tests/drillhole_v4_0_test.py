@@ -666,10 +666,7 @@ def test_add_data_interval_increments_property_group(tmp_path):
     dh_group = DrillholeGroup.create(workspace, name="my drillhole group")
     dh = Drillhole.create(workspace, parent=dh_group, name="my well")
 
-    intervals = np.c_[
-        np.linspace(0, 9, 10),
-        np.linspace(1, 10, 10)
-    ]
+    intervals = np.c_[np.linspace(0, 9, 10), np.linspace(1, 10, 10)]
     dh.add_data(
         {
             "first property": {
