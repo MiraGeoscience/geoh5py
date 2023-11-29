@@ -419,7 +419,7 @@ class Workspace(AbstractContextManager):
                 if self.version > 1.0 and isinstance(
                     entity_kwargs["parent"], ConcatenatedObject
                 ):
-                    member = type(name + "Concatenated", (ConcatenatedData, member), {})
+                    member = type("Concatenated" + name, (ConcatenatedData, member), {})
 
                 if member is TextData and any(
                     isinstance(val, str) and "Visual Parameters" == val
@@ -548,13 +548,13 @@ class Workspace(AbstractContextManager):
             ):
                 if self.version > 1.0:
                     if member in (DrillholeGroup, IntegratorDrillholeGroup):
-                        member = type(name + "Concatenator", (Concatenator, member), {})
+                        member = type("Concatenator" + name, (Concatenator, member), {})
                     elif member is Drillhole and isinstance(
                         entity_kwargs.get("parent"),
                         (DrillholeGroup, IntegratorDrillholeGroup),
                     ):
                         member = type(
-                            name + "Concatenated", (ConcatenatedDrillhole, member), {}
+                            "Concatenated" + name, (ConcatenatedDrillhole, member), {}
                         )
 
                 entity_type = member.find_or_create_type(self, **entity_type_kwargs)
