@@ -439,9 +439,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
             well = [k for k in new_group.children if k.name == "bullseye/"][0]
 
             prop_group = [k for k in well.property_groups if k.name == "Interval_0"][0]
-            with pytest.raises(
-                ValueError, match="Input values with shape"
-            ):
+            with pytest.raises(ValueError, match="Input values with shape"):
                 well.add_data(
                     {
                         "new_data": {"values": np.random.randn(24).astype(np.float32)},
