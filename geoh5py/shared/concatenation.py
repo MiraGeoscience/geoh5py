@@ -1020,9 +1020,8 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             values = attributes.get("values")
             attributes["association"] = "DEPTH"
             property_group = self.validate_interval_data(
-                attributes.get("name"),
                 attributes.get("from-to"),
-                attributes.get("values"),
+                values,
                 property_group=property_group,
                 collocation_distance=collocation_distance,
             )
@@ -1091,25 +1090,23 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             property_group = f"depth_{ind}"
 
         if isinstance(property_group, str):
-            name_id = 0
-            while True:
-                out_group: ConcatenatedPropertyGroup = (
-                    self.find_or_create_property_group(  # type: ignore
-                        name=property_group
-                        if name_id == 0
-                        else f"{property_group} ({name_id})",
-                        association="DEPTH",
-                        property_group_type="Depth table",
+            out_group: ConcatenatedPropertyGroup = getattr(
+                self, "find_or_create_property_group"
+            )(
+                name=property_group,
+                association="DEPTH",
+                property_group_type="Depth table",
+            )
+
+            if out_group.depth_ is not None:
+                if out_group.depth_.values.shape[0] != values.shape[0]:
+                    raise ValueError(
+                        f"Input values with shape({values.shape[0]}) "
+                        f"do not match the from-to intervals of the group '{out_group}' "
+                        f"with shape({out_group.depth_.values.shape[0]}). Check values or "
+                        f"assign to a new property group."
                     )
-                )
-
-                if (
-                    out_group.depth_ is None
-                    or out_group.depth_.values.shape[0] == values.shape
-                ):
-                    break
-
-                name_id += 1
+                return out_group
 
         else:
             out_group = property_group
@@ -1132,7 +1129,6 @@ class ConcatenatedDrillhole(ConcatenatedObject):
 
     def validate_interval_data(
         self,
-        name: str | None,
         from_to: list | np.ndarray | None,
         values: np.ndarray,
         property_group: str | ConcatenatedPropertyGroup | None = None,
@@ -1142,7 +1138,6 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         Compare new and current depth values and reuse the property group if possible.
         Otherwise a new property group is added.
 
-        :param name: Data name.
         :param from_to: Array of from-to values.
         :param values: Data values to be added on the from-to intervals.
         :param property_group: Property group name.
@@ -1194,14 +1189,18 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         if isinstance(property_group, str):
             out_group: ConcatenatedPropertyGroup = getattr(
                 self, "find_or_create_property_group"
-            )(name=property_group, association="DEPTH")
+            )(
+                name=property_group,
+                association="DEPTH",
+                property_group_type="Interval table",
+            )
         else:
             out_group = property_group
 
         if out_group.from_ is not None:
             if out_group.from_.values.shape[0] != values.shape[0]:
                 raise ValueError(
-                    f"Input values for '{name}' with shape({values.shape[0]}) "
+                    f"Input values with shape({values.shape[0]}) "
                     f"do not match the from-to intervals of the group '{out_group}' "
                     f"with shape({out_group.from_.values.shape[0]}). Check values or "
                     f"assign to a new property group."
