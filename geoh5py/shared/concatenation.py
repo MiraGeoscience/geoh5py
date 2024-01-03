@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -979,9 +979,9 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         ):
             if property_group is None:
                 raise AttributeError(
-                    "Input data dictionary must contain {key:values} "
-                    + "{'from-to':numpy.ndarray} "
-                    + "or {'association': 'OBJECT'}."
+                    "Input data dictionary must contain a key/value pair of depth data "
+                    "or contain an 'OBJECT' association. Valid depth keys are 'depth' "
+                    "and 'from-to'."
                 )
             attributes["from-to"] = None
 

@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -577,3 +577,14 @@ def test_copy_from_extent_drillhole_group(tmp_path):
             assert child_a.collar == child_b.collar
             np.testing.assert_array_almost_equal(child_a.surveys, child_b.surveys)
             assert child_a.get_data_list() == child_b.get_data_list()
+
+
+def test_add_data_raises_error_bad_key(tmp_path):
+    workspace = Workspace(tmp_path / "test.geoh5")
+    dh_group = DrillholeGroup.create(workspace)
+    dh = Drillhole.create(workspace, name="dh1", parent=dh_group)
+    msg = "Valid depth keys are 'depth' and 'from-to'"
+    with pytest.raises(AttributeError, match=msg):
+        dh.add_data(
+            {"my data": {"depths": np.arange(0, 10.0), "values": np.random.randn(10)}}
+        )
