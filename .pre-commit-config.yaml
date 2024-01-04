@@ -10,7 +10,7 @@ ci:
 
 repos:
 -   repo: https://github.com/psf/black
-    rev: 23.7.0
+    rev: 23.10.1
     hooks:
     -   id: black
         types: [text]
@@ -35,14 +35,14 @@ repos:
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v3.10.1
+    rev: v3.15.0
     hooks:
     -   id: pyupgrade
         args: [--py37-plus]
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.5.1
+    rev: v1.6.1
     hooks:
     -   id: mypy
         additional_dependencies: [
@@ -75,14 +75,14 @@ repos:
         types_or: [python, pyi]
         exclude: ^(devtools/|docs/|setup.py)
 -   repo: https://github.com/codespell-project/codespell
-    rev: v2.2.5
+    rev: v2.2.6
     hooks:
     -   id: codespell
         exclude: (\.ipynb$|^\.github/workflows/issue_to_jira.yml$)
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
     -   id: trailing-whitespace
         exclude: \.mdj$
@@ -98,7 +98,7 @@ repos:
     -   id: mixed-line-ending
     -   id: name-tests-test
 -   repo: https://github.com/rstcheck/rstcheck
-    rev: v6.1.2
+    rev: v6.2.0
     hooks:
     -   id: rstcheck
         additional_dependencies: [sphinx]

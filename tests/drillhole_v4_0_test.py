@@ -20,6 +20,9 @@
 
 from __future__ import annotations
 
+import random
+import string
+
 import numpy as np
 import pytest
 
@@ -332,6 +335,23 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
             }
         )
 
+        text_data = well_b.add_data(
+            {
+                "text Data": {
+                    "values": np.array(
+                        [
+                            "".join(
+                                random.choice(string.ascii_lowercase) for _ in range(6)
+                            )
+                            for _ in range(3)
+                        ]
+                    ),
+                    "from-to": from_to_b,
+                    "type": "TEXT",
+                },
+            }
+        )
+
         assert dh_group.fetch_index(well_b_data, well_b_data.name) == 1, (
             "'interval_values' on well_b should be the second entry.",
         )
@@ -396,9 +416,16 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
                 "_uid",
             ],
         )
+
         compare_entities(
             depth_data,
             well_b_reload.get_data("Depth Data")[0],
+            ignore=["_metadata", "_parent"],
+        )
+
+        compare_entities(
+            text_data,
+            well_b_reload.get_data("text Data")[0],
             ignore=["_metadata", "_parent"],
         )
 
@@ -412,9 +439,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
             well = [k for k in new_group.children if k.name == "bullseye/"][0]
 
             prop_group = [k for k in well.property_groups if k.name == "Interval_0"][0]
-            with pytest.raises(
-                ValueError, match="Input values for 'new_data' with shape"
-            ):
+            with pytest.raises(ValueError, match="Input values with shape"):
                 well.add_data(
                     {
                         "new_data": {"values": np.random.randn(24).astype(np.float32)},
@@ -588,3 +613,26 @@ def test_add_data_raises_error_bad_key(tmp_path):
         dh.add_data(
             {"my data": {"depths": np.arange(0, 10.0), "values": np.random.randn(10)}}
         )
+
+
+def test_open_close_creation(tmp_path):
+    h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
+
+    with Workspace.create(h5file_path, version=2.0) as workspace:
+        # Create a workspace
+        dh_group = DrillholeGroup.create(workspace)
+
+        Drillhole.create(
+            workspace,
+            parent=dh_group,
+            name="DH1",
+        )
+
+    workspace.open()
+    Drillhole.create(
+        workspace,
+        parent=dh_group,
+        name="DH2",
+    )
+    assert len(workspace.groups[1].concatenated_attributes["Attributes"]) == 2
+    workspace.close()

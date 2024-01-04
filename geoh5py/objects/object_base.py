@@ -30,7 +30,7 @@ from ..data import CommentsData, Data, VisualParameters
 from ..data.data_association_enum import DataAssociationEnum
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
-from ..shared import Entity
+from ..shared import Entity, EntityType
 from ..shared.conversion import BaseConversion
 from ..shared.utils import clear_array_attributes
 from .object_type import ObjectType
@@ -373,11 +373,14 @@ class ObjectBase(Entity):
         return entities
 
     def create_property_group(
-        self, name=None, on_file=False, **kwargs
+        self, name=None, on_file=False, uid=None, **kwargs
     ) -> PropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
 
+        :param name: Name of the new property group.
+        :param on_file: If True, the property group is saved to file.
+        :param uid: Unique identifier for the new property group.
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
 
@@ -391,7 +394,7 @@ class ObjectBase(Entity):
         if "property_group_type" not in kwargs and "Property Group Type" not in kwargs:
             kwargs["property_group_type"] = "Multi-element"
 
-        prop_group = PropertyGroup(self, name=name, on_file=on_file, **kwargs)
+        prop_group = PropertyGroup(self, name=name, on_file=on_file, uid=uid, **kwargs)
 
         return prop_group
 
@@ -413,7 +416,7 @@ class ObjectBase(Entity):
             prop_group = self.get_property_group(uid or name)[0]
 
         if prop_group is None:
-            prop_group = self.create_property_group(name=name, **kwargs)
+            prop_group = self.create_property_group(name=name, uid=uid, **kwargs)
 
         return prop_group
 
@@ -571,11 +574,11 @@ class ObjectBase(Entity):
         else:
             attribute_dict["association"] = "OBJECT"
 
-    @staticmethod
-    def validate_data_type(attribute_dict):
+    def validate_data_type(self, attribute_dict):
         """
         Get a dictionary of attributes and validate the type of data.
         """
+
         entity_type = attribute_dict.get("entity_type")
         if entity_type is None:
             primitive_type = attribute_dict.get("type")
@@ -604,6 +607,11 @@ class ObjectBase(Entity):
                         "Only add_data values of type FLOAT, INTEGER,"
                         "BOOLEAN and TEXT have been implemented"
                     )
+        elif isinstance(entity_type, EntityType) and (
+            (entity_type.uid not in getattr(self.workspace, "_types"))
+            or (entity_type.workspace != self.workspace)
+        ):
+            return entity_type.copy(workspace=self.workspace)
 
         return entity_type
 

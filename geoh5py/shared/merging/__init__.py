@@ -1,4 +1,4 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
+#  Copyright (c) 2023 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -17,10 +17,7 @@
 
 # pylint: disable=unused-import
 # flake8: noqa
-from . import weakref_utils
-from .entity import Entity
-from .entity_type import EntityType
-from .utils import fetch_h5_handle, match_values, merge_arrays
 
-INTEGER_NDV = -2147483648
-FLOAT_NDV = 1.17549435e-38
+from .cell import CurveMerger, SurfaceMerger
+from .drape_model import DrapeModelMerger
+from .points import PointsMerger

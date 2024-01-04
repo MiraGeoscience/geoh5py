@@ -803,11 +803,14 @@ class ConcatenatedObject(Concatenated, ObjectBase):
         super().__init__(entity_type, **kwargs)
 
     def create_property_group(
-        self, name=None, on_file=False, **kwargs
+        self, name=None, on_file=False, uid=None, **kwargs
     ) -> ConcatenatedPropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
 
+        :param name: Name of the property group.
+        :param on_file: If True, the property group is saved to file.
+        :param uid: Unique ID of the property group.
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
 
@@ -985,11 +988,16 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                 )
             attributes["from-to"] = None
 
+        # set a specific nan value if text
+        if attributes.get("type") == "TEXT":
+            nan_value = ""
+        else:
+            nan_value = np.nan
+
         if "depth" in attributes.keys():
             values = attributes.get("values")
             attributes["association"] = "DEPTH"
             property_group = self.validate_depth_data(
-                attributes.get("name"),
                 attributes.get("depth"),
                 values,
                 property_group=property_group,
@@ -1003,7 +1011,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                 attributes["values"] = np.pad(
                     values,
                     (0, property_group.depth_.values.shape[0] - len(values)),
-                    constant_values=np.nan,
+                    constant_values=nan_value,
                 )
 
             del attributes["depth"]
@@ -1012,9 +1020,8 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             values = attributes.get("values")
             attributes["association"] = "DEPTH"
             property_group = self.validate_interval_data(
-                attributes.get("name"),
                 attributes.get("from-to"),
-                attributes.get("values"),
+                values,
                 property_group=property_group,
                 collocation_distance=collocation_distance,
             )
@@ -1025,7 +1032,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                 attributes["values"] = np.pad(
                     values,
                     (0, property_group.from_.values.shape[0] - len(values)),
-                    constant_values=np.nan,
+                    constant_values=nan_value,
                 )
 
             del attributes["from-to"]
@@ -1034,19 +1041,18 @@ class ConcatenatedDrillhole(ConcatenatedObject):
 
     def validate_depth_data(
         self,
-        name: str | None,
         depth: list | np.ndarray | None,
         values: np.ndarray,
         property_group: str | ConcatenatedPropertyGroup | None = None,
         collocation_distance: float | None = None,
     ) -> ConcatenatedPropertyGroup:
         """
-        :param name: Data name.
+        Compare new and current depth values and reuse the property group if possible.
+
         :param depth: Sampling depths.
         :param values: Data samples to depths.
         :param property_group: Group for possibly collocated data.
-        :param collocation_distance: Tolerance to determine collocated data for
-            property group assignment
+        :param collocation_distance: Threshold on the comparison between existing depth values.
 
         :return: Augmented property group with name/values added for collocated data
             otherwise newly created property group with name/depth/values added.
@@ -1084,25 +1090,26 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             property_group = f"depth_{ind}"
 
         if isinstance(property_group, str):
-            out_group: ConcatenatedPropertyGroup = (
-                self.find_or_create_property_group(  # type: ignore
-                    name=property_group,
-                    association="DEPTH",
-                    property_group_type="Depth table",
-                )
+            out_group: ConcatenatedPropertyGroup = getattr(
+                self, "find_or_create_property_group"
+            )(
+                name=property_group,
+                association="DEPTH",
+                property_group_type="Depth table",
             )
+
+            if out_group.depth_ is not None:
+                if out_group.depth_.values.shape[0] != values.shape[0]:
+                    raise ValueError(
+                        f"Input values with shape({values.shape[0]}) "
+                        f"do not match the from-to intervals of the group '{out_group}' "
+                        f"with shape({out_group.depth_.values.shape[0]}). Check values or "
+                        f"assign to a new property group."
+                    )
+                return out_group
+
         else:
             out_group = property_group
-
-        if out_group.depth_ is not None:
-            if out_group.depth_.values.shape[0] != values.shape[0]:
-                raise ValueError(
-                    f"Input values for '{name}' with shape({values.shape[0]}) "
-                    f"do not match the depths of the group '{out_group.name}' "
-                    f"with shape({out_group.depth_.values.shape[0]}). Check values or "
-                    "assign to a new property group"
-                )
-            return out_group
 
         depth = getattr(self, "add_data")(
             {
@@ -1122,21 +1129,23 @@ class ConcatenatedDrillhole(ConcatenatedObject):
 
     def validate_interval_data(
         self,
-        name: str | None,
         from_to: list | np.ndarray | None,
         values: np.ndarray,
         property_group: str | ConcatenatedPropertyGroup | None = None,
         collocation_distance=1e-4,
     ) -> ConcatenatedPropertyGroup:
         """
-        Compare new and current depth values and re-use the property group if possible.
+        Compare new and current depth values and reuse the property group if possible.
         Otherwise a new property group is added.
 
         :param from_to: Array of from-to values.
         :param values: Data values to be added on the from-to intervals.
-        :param property_group: Property group name
-        :collocation_distance: Threshold on the comparison between existing depth values.
+        :param property_group: Property group name.
+        :param collocation_distance: Threshold on the comparison between existing depth values.
+
+        :return A ConcatenatedPropertyGroup with the matched values.
         """
+
         if from_to is not None:
             if isinstance(from_to, list):
                 from_to = np.vstack(from_to)
@@ -1180,14 +1189,18 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         if isinstance(property_group, str):
             out_group: ConcatenatedPropertyGroup = getattr(
                 self, "find_or_create_property_group"
-            )(name=property_group, association="DEPTH")
+            )(
+                name=property_group,
+                association="DEPTH",
+                property_group_type="Interval table",
+            )
         else:
             out_group = property_group
 
         if out_group.from_ is not None:
             if out_group.from_.values.shape[0] != values.shape[0]:
                 raise ValueError(
-                    f"Input values for '{name}' with shape({values.shape[0]}) "
+                    f"Input values with shape({values.shape[0]}) "
                     f"do not match the from-to intervals of the group '{out_group}' "
                     f"with shape({out_group.from_.values.shape[0]}). Check values or "
                     f"assign to a new property group."

@@ -305,7 +305,7 @@ def workspace2path(value):
 
 
 def path2workspace(value):
-    if isinstance(value, str) and ".geoh5" in value:
+    if isinstance(value, (str, Path)) and Path(value).suffix == ".geoh5":
         workspace = Workspace(value, mode="r")
         workspace.close()
         return workspace

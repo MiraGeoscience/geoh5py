@@ -313,21 +313,34 @@ class Workspace(AbstractContextManager):
 
     @classmethod
     def copy_property_groups(
-        cls, entity: ObjectBase, propery_groups: list[PropertyGroup], data_map: dict
+        cls, entity: ObjectBase, property_groups: list[PropertyGroup], data_map: dict
     ):
-        for prop_group in propery_groups:
+        """
+        Copy property groups to a new entity.
+        Keep the same uid if it's not present on the new workspace.
+
+        :param entity: The entity associated to the property groups.
+        :param property_groups: The property groups to copy.
+        :param data_map: the data map to use for the property groups.
+        """
+        for prop_group in property_groups:
             properties = None
             if prop_group.properties is not None:
                 properties = [data_map[uid] for uid in prop_group.properties]
 
-            entity.find_or_create_property_group(
-                **{
-                    "association": prop_group.association,
-                    "name": prop_group.name,
-                    "property_group_type": prop_group.property_group_type,
-                    "properties": properties,
-                }
-            )
+            # prepare the kwargs
+            property_group_kwargs = {
+                "association": prop_group.association,
+                "name": prop_group.name,
+                "property_group_type": prop_group.property_group_type,
+                "properties": properties,
+            }
+
+            # Assign the same uid if possible
+            if entity.workspace.find_property_group(prop_group.uid) is None:
+                property_group_kwargs["uid"] = prop_group.uid
+
+            entity.find_or_create_property_group(**property_group_kwargs)
 
     @classmethod
     def create(cls, path: str | Path, **kwargs) -> Workspace:
@@ -406,7 +419,7 @@ class Workspace(AbstractContextManager):
                 if self.version > 1.0 and isinstance(
                     entity_kwargs["parent"], ConcatenatedObject
                 ):
-                    member = type(name + "Concatenated", (ConcatenatedData, member), {})
+                    member = type("Concatenated" + name, (ConcatenatedData, member), {})
 
                 if member is TextData and any(
                     isinstance(val, str) and "Visual Parameters" == val
@@ -535,13 +548,13 @@ class Workspace(AbstractContextManager):
             ):
                 if self.version > 1.0:
                     if member in (DrillholeGroup, IntegratorDrillholeGroup):
-                        member = type(name + "Concatenator", (Concatenator, member), {})
+                        member = type("Concatenator" + name, (Concatenator, member), {})
                     elif member is Drillhole and isinstance(
                         entity_kwargs.get("parent"),
                         (DrillholeGroup, IntegratorDrillholeGroup),
                     ):
                         member = type(
-                            name + "Concatenated", (ConcatenatedDrillhole, member), {}
+                            "Concatenated" + name, (ConcatenatedDrillhole, member), {}
                         )
 
                 entity_type = member.find_or_create_type(self, **entity_type_kwargs)
@@ -1309,7 +1322,13 @@ class Workspace(AbstractContextManager):
         :param compression: Compression level for data.
         """
         if isinstance(entity, Concatenated):
-            entity.concatenator.add_save_concatenated(entity)
+            active_parent = self.get_entity(entity.concatenator.uid)[0]
+            if not isinstance(active_parent, Concatenator):
+                raise ValueError(
+                    f"DrillholeGroup {entity.concatenator.name} is not registered in the "
+                    "workspace. Please add it first."
+                )
+            active_parent.add_save_concatenated(entity)
 
             if hasattr(entity, "entity_type"):
                 self.save_entity_type(entity.entity_type)

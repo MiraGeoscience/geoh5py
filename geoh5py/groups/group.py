@@ -50,7 +50,7 @@ class Group(Entity):
         Add text comment to an object.
 
         :param comment: Text to be added as comment.
-        :param author: Author's name or :obj:`~geoh5py.workspace.workspace.Worspace.contributors`.
+        :param author: Author's name or :obj:`~geoh5py.workspace.workspace.Workspace.contributors`.
         """
 
         date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")

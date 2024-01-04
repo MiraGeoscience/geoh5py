@@ -16,6 +16,7 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+import logging
 import uuid
 from abc import ABC, abstractmethod
 from typing import cast
@@ -25,6 +26,8 @@ import numpy as np
 from ...data import Data, ReferencedData
 from ..curve import Curve
 from ..object_type import ObjectType
+
+logger = logging.getLogger(__name__)
 
 
 class BaseElectrode(Curve, ABC):
@@ -64,7 +67,7 @@ class BaseElectrode(Curve, ABC):
                 self._ab_cell_id = cast(ReferencedData, data.copy(parent=self))
         else:
             if data.dtype != np.int32:
-                print("ab_cell_id values will be converted to type 'int32'")
+                logger.info("ab_cell_id values will be converted to type 'int32'")
 
             if any(self.get_data("A-B Cell ID")):
                 child = self.get_data("A-B Cell ID")[0]

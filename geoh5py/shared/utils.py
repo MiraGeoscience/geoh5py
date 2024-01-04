@@ -32,7 +32,6 @@ if TYPE_CHECKING:
     from ..workspace import Workspace
     from .entity import Entity
 
-
 KEY_MAP = {
     "cells": "Cells",
     "color_map": "Color map",
@@ -240,53 +239,94 @@ def clear_array_attributes(entity: Entity, recursive: bool = False):
             clear_array_attributes(child, recursive=recursive)
 
 
-def compare_entities(  # pylint: disable=too-many-branches
-    object_a, object_b, ignore: list | None = None, decimal: int = 6
-) -> None:
-    ignore_list = ["_workspace", "_children", "_visual_parameters"]
-    if ignore is not None:
-        for item in ignore:
-            ignore_list.append(item)
+def are_objects_similar(obj1, obj2, ignore: list[str] | None):
+    """
+    Compare two objects to see if they are similar. This is a shallow comparison.
 
+    :param obj1: The first object.
+    :param obj2: The first object.
+    :param ignore: List of attributes to ignore.
+
+    :return: If attributes similar or not.
+    """
+    assert isinstance(obj1, type(obj2)), "Objects are not the same type."
+
+    attributes1 = getattr(obj1, "__dict__", obj1)
+    attributes2 = getattr(obj2, "__dict__", obj2)
+
+    # remove the ignore attributes
+    if isinstance(ignore, list) and isinstance(attributes1, dict):
+        for item in ignore:
+            attributes1.pop(item, None)
+            attributes2.pop(item, None)
+
+    return attributes1 == attributes2
+
+
+def compare_arrays(object_a, object_b, attribute: str, decimal: int = 6):
+    if getattr(object_b, attribute) is None:
+        raise ValueError(f"attr {attribute} is None for object {object_b.name}")
+    attr_a = getattr(object_a, attribute).tolist()
+    if len(attr_a) > 0 and isinstance(attr_a[0], str):
+        assert all(
+            a == b
+            for a, b in zip(getattr(object_a, attribute), getattr(object_b, attribute))
+        ), f"Error comparing attribute '{attribute}'."
+    else:
+        np.testing.assert_array_almost_equal(
+            attr_a,
+            getattr(object_b, attribute).tolist(),
+            decimal=decimal,
+            err_msg=f"Error comparing attribute '{attribute}'.",
+        )
+
+
+def compare_floats(object_a, object_b, attribute: str, decimal: int = 6):
+    np.testing.assert_almost_equal(
+        getattr(object_a, attribute),
+        getattr(object_b, attribute),
+        decimal=decimal,
+        err_msg=f"Error comparing attribute '{attribute}'.",
+    )
+
+
+def compare_list(object_a, object_b, attribute: str, ignore: list[str] | None):
+    get_object_a = getattr(object_a, attribute)
+    get_object_b = getattr(object_b, attribute)
+    assert isinstance(get_object_a, list)
+    assert len(get_object_a) == len(get_object_b)
+    for obj_a, obj_b in zip(get_object_a, get_object_b):
+        assert are_objects_similar(obj_a, obj_b, ignore)
+
+
+def compare_bytes(object_a, object_b):
+    assert (
+        object_a == object_b
+    ), f"{type(object_a)} objects: {object_a}, {object_b} are not equal."
+
+
+def compare_entities(
+    object_a, object_b, ignore: list[str] | None = None, decimal: int = 6
+) -> None:
     if isinstance(object_a, bytes):
-        assert object_a == object_b, "Bytes values do not match."
+        compare_bytes(object_a, object_b)
         return
 
-    for attr in object_a.__dict__.keys():
-        if attr in ignore_list:
-            continue
+    base_ignore = ["_workspace", "_children", "_visual_parameters"]
+    ignore_list = base_ignore + ignore if ignore else base_ignore
+
+    for attr in [k for k in object_a.__dict__.keys() if k not in ignore_list]:
         if isinstance(getattr(object_a, attr[1:]), ABC):
             compare_entities(
                 getattr(object_a, attr[1:]), getattr(object_b, attr[1:]), ignore=ignore
             )
         else:
             if isinstance(getattr(object_a, attr[1:]), np.ndarray):
-                if getattr(object_b, attr[1:]) is None:
-                    raise ValueError(
-                        f"attr {attr[1:]} is None for object {object_b.name}"
-                    )
-                attr_a = getattr(object_a, attr[1:]).tolist()
-                if len(attr_a) > 0 and isinstance(attr_a[0], str):
-                    assert all(
-                        a == b
-                        for a, b in zip(
-                            getattr(object_a, attr[1:]), getattr(object_b, attr[1:])
-                        )
-                    ), f"Error comparing attribute '{attr}'."
-                else:
-                    np.testing.assert_array_almost_equal(
-                        attr_a,
-                        getattr(object_b, attr[1:]).tolist(),
-                        decimal=decimal,
-                        err_msg=f"Error comparing attribute '{attr}'.",
-                    )
+                compare_arrays(object_a, object_b, attr[1:], decimal=decimal)
             elif isinstance(getattr(object_a, attr[1:]), float):
-                np.testing.assert_almost_equal(
-                    getattr(object_a, attr[1:]),
-                    getattr(object_b, attr[1:]),
-                    decimal=decimal,
-                    err_msg=f"Error comparing attribute '{attr}'.",
-                )
+                compare_floats(object_a, object_b, attr[1:], decimal=decimal)
+            elif isinstance(getattr(object_a, attr[1:]), list):
+                compare_list(object_a, object_b, attr[1:], ignore)
             else:
                 assert np.all(
                     getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
@@ -557,3 +597,28 @@ def dip_points(points: np.ndarray, dip: float, rotation: float = 0) -> np.ndarra
     points = xy_rotation_matrix(rotation) @ points
 
     return points.T
+
+
+class SetDict(dict):
+    def __init__(self, **kwargs):
+        kwargs = {k: self.make_set(v) for k, v in kwargs.items()}
+        super().__init__(kwargs)
+
+    def make_set(self, value):
+        if isinstance(value, (set, tuple, list)):
+            value = set(value)
+        else:
+            value = {value}
+        return value
+
+    def __setitem__(self, key, value):
+        value = self.make_set(value)
+        super().__setitem__(key, value)
+
+    def update(self, value: dict, **kwargs) -> None:  # type: ignore
+        for key, val in value.items():
+            val = self.make_set(val)
+            if key in self:
+                val = self[key].union(val)
+            value[key] = val
+        super().update(value, **kwargs)

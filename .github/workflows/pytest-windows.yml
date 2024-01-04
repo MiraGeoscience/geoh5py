@@ -2,12 +2,6 @@ name: pytest on Windows
 
 on:
   pull_request:
-    branches:
-      - develop
-      - main
-      - release/**
-      - feature/**
-      - hotfix/**
   push:
     branches:
       - develop
@@ -29,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_ver: ['3.8', '3.9', '3.10']
+        python_ver: ['3.9', '3.10']
     defaults:
       run:
         shell: bash
@@ -38,7 +32,7 @@ jobs:
       POETRY_VIRTUALENVS_CREATE: true
       POETRY_VIRTUALENVS_IN_PROJECT: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python version
         uses: actions/setup-python@v4
         with:

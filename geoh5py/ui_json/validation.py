@@ -18,7 +18,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, cast
+from typing import Any, Dict, cast
 from uuid import UUID
 
 from geoh5py.groups import PropertyGroup
@@ -37,6 +37,8 @@ from geoh5py.shared.validators import (
     ValueValidator,
 )
 from geoh5py.ui_json.utils import requires_value
+
+Validation = Dict[str, Any]
 
 
 class InputValidation:
