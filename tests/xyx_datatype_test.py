@@ -16,8 +16,6 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
-# pylint: disable=R0401
-
 from __future__ import annotations
 
 from pathlib import Path
