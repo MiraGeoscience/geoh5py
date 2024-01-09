@@ -42,6 +42,13 @@ from .surveys.electromagnetics.airborne_tem import (
     AirborneTEMReceivers,
     AirborneTEMTransmitters,
 )
+from .surveys.electromagnetics.base import (
+    AirborneEMSurvey,
+    FEMSurvey,
+    LargeLoopGroundEMSurvey,
+    MovingLoopGroundEMSurvey,
+    TEMSurvey,
+)
 from .surveys.electromagnetics.ground_fem import (
     LargeLoopGroundFEMReceivers,
     LargeLoopGroundFEMTransmitters,
