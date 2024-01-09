@@ -35,7 +35,6 @@ from ..groups import Group, PropertyGroup
 from ..shared import Entity
 from ..shared.conversion import BaseConversion
 from ..shared.utils import clear_array_attributes
-from ..workspace import Workspace
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
@@ -862,7 +861,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
 
     def copy(  # pylint: disable=too-many-arguments
         self,
-        parent: Group | Workspace | None = None,
+        parent: Group | workspace.Workspace | None = None,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
@@ -904,7 +903,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
     def copy_complement(
         self,
         new_entity,
-        parent: Group | Workspace | None = None,
+        parent: Group | workspace.Workspace | None = None,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
@@ -1204,7 +1203,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
 
     def _super_copy(
         self,
-        parent: Group | Workspace | None = None,
+        parent: Group | workspace.Workspace | None = None,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
