@@ -17,6 +17,13 @@
 
 # flake8: noqa
 
+from .base import (
+    MovingLoopGroundEMSurvey,
+    LargeLoopGroundEMSurvey,
+    AirborneEMSurvey,
+    FEMSurvey,
+    TEMSurvey,
+)
 from .airborne_fem import AirborneFEMReceivers, AirborneFEMTransmitters
 from .airborne_tem import AirborneTEMReceivers, AirborneTEMTransmitters
 from .ground_fem import (
