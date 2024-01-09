@@ -221,6 +221,11 @@ class BaseElectrode(Curve, ABC):
         The associated current_electrodes (transmitters)
         """
 
+    @classmethod
+    @abstractmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        """Default unique identifier. Implemented on the child class."""
+
     @property
     def metadata(self):
         """
