@@ -31,6 +31,8 @@ from .electromagnetics import (
     MovingLoopGroundFEMTransmitters,
     MovingLoopGroundTEMReceivers,
     MovingLoopGroundTEMTransmitters,
+    MTReceivers,
+    TipperBaseStations,
     TipperReceivers,
 )
 from .magnetics import AirborneMagnetics

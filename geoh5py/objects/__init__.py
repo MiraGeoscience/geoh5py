@@ -50,4 +50,6 @@ from .surveys import (
     MovingLoopGroundTEMReceivers,
     MovingLoopGroundTEMTransmitters,
     TipperReceivers,
+    MTReceivers,
+    TipperBaseStations,
 )
