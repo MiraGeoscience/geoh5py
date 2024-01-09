@@ -25,7 +25,8 @@ import numpy as np
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_type import ObjectType
 from geoh5py.objects.points import Points
-from geoh5py.objects.surveys.electromagnetics.base import AirborneEMSurvey, FEMSurvey
+
+from .base import AirborneEMSurvey, FEMSurvey
 
 # pylint: disable=too-many-ancestors
 
