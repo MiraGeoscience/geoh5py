@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -38,3 +38,4 @@ class PrimitiveTypeEnum(Enum):
     DATETIME = 8
     GEOMETRIC = 9
     MULTI_TEXT = 10
+    BOOLEAN = 11

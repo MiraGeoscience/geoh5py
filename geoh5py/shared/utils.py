@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -20,6 +20,7 @@ from __future__ import annotations
 import warnings
 from abc import ABC
 from contextlib import contextmanager
+from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 from uuid import UUID
@@ -32,10 +33,69 @@ if TYPE_CHECKING:
     from .entity import Entity
 
 
+KEY_MAP = {
+    "cells": "Cells",
+    "color_map": "Color map",
+    "concatenated_attributes": "Attributes",
+    "concatenated_object_ids": "Concatenated object IDs",
+    "layers": "Layers",
+    "metadata": "Metadata",
+    "octree_cells": "Octree Cells",
+    "options": "options",
+    "prisms": "Prisms",
+    "property_groups": "PropertyGroups",
+    "property_group_ids": "Property Group IDs",
+    "surveys": "Surveys",
+    "trace": "Trace",
+    "trace_depth": "TraceDepth",
+    "u_cell_delimiters": "U cell delimiters",
+    "v_cell_delimiters": "V cell delimiters",
+    "values": "Data",
+    "vertices": "Vertices",
+    "z_cell_delimiters": "Z cell delimiters",
+    "INVALID": "Invalid",
+    "INTEGER": "Integer",
+    "FLOAT": "Float",
+    "TEXT": "Text",
+    "BOOLEAN": "Boolean",
+    "REFERENCED": "Referenced",
+    "FILENAME": "Filename",
+    "BLOB": "Blob",
+    "VECTOR": "Vector",
+    "DATETIME": "DateTime",
+    "GEOMETRIC": "Geometric",
+    "MULTI_TEXT": "Multi-Text",
+    "UNKNOWN": "Unknown",
+    "OBJECT": "Object",
+    "CELL": "Cell",
+    "VERTEX": "Vertex",
+    "FACE": "Face",
+    "GROUP": "Group",
+}
+INV_KEY_MAP = {value: key for key, value in KEY_MAP.items()}
+
+PNG_KWARGS = {"format": "PNG", "compress_level": 9}
+JPG_KWARGS = {"format": "JPEG", "quality": 85}
+TIF_KWARGS = {"format": "TIFF"}
+
+PILLOW_ARGUMENTS = {
+    "1": PNG_KWARGS,
+    "L": PNG_KWARGS,
+    "P": PNG_KWARGS,
+    "RGB": PNG_KWARGS,
+    "RGBA": PNG_KWARGS,
+    "CMYK": JPG_KWARGS,
+    "YCbCr": JPG_KWARGS,
+    "I": TIF_KWARGS,
+    "F": TIF_KWARGS,
+}
+
+
 @contextmanager
 def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
     """
     Open a workspace in the requested 'mode'.
+
     If receiving an opened Workspace instead, merely return the given workspace.
 
     :param workspace: A Workspace class
@@ -168,6 +228,9 @@ def clear_array_attributes(entity: Entity, recursive: bool = False):
     :param entity: Entity to clear attributes from.
     :param recursive: Clear attributes from children entities.
     """
+    if isinstance(entity.workspace.h5file, BytesIO):
+        return
+
     for attribute in ["vertices", "cells", "values", "prisms", "layers"]:
         if hasattr(entity, attribute):
             setattr(entity, f"_{attribute}", None)
@@ -177,13 +240,17 @@ def clear_array_attributes(entity: Entity, recursive: bool = False):
             clear_array_attributes(child, recursive=recursive)
 
 
-def compare_entities(
+def compare_entities(  # pylint: disable=too-many-branches
     object_a, object_b, ignore: list | None = None, decimal: int = 6
 ) -> None:
-    ignore_list = ["_workspace", "_children"]
+    ignore_list = ["_workspace", "_children", "_visual_parameters"]
     if ignore is not None:
         for item in ignore:
             ignore_list.append(item)
+
+    if isinstance(object_a, bytes):
+        assert object_a == object_b, "Bytes values do not match."
+        return
 
     for attr in object_a.__dict__.keys():
         if attr in ignore_list:
@@ -194,6 +261,10 @@ def compare_entities(
             )
         else:
             if isinstance(getattr(object_a, attr[1:]), np.ndarray):
+                if getattr(object_b, attr[1:]) is None:
+                    raise ValueError(
+                        f"attr {attr[1:]} is None for object {object_b.name}"
+                    )
                 attr_a = getattr(object_a, attr[1:]).tolist()
                 if len(attr_a) > 0 and isinstance(attr_a[0], str):
                     assert all(
@@ -209,6 +280,13 @@ def compare_entities(
                         decimal=decimal,
                         err_msg=f"Error comparing attribute '{attr}'.",
                     )
+            elif isinstance(getattr(object_a, attr[1:]), float):
+                np.testing.assert_almost_equal(
+                    getattr(object_a, attr[1:]),
+                    getattr(object_b, attr[1:]),
+                    decimal=decimal,
+                    err_msg=f"Error comparing attribute '{attr}'.",
+                )
             else:
                 assert np.all(
                     getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
@@ -246,48 +324,6 @@ def iterable_message(valid: list[Any] | None) -> str:
         msg = f" Must be: '{valid[0]}'."
 
     return msg
-
-
-KEY_MAP = {
-    "cells": "Cells",
-    "color_map": "Color map",
-    "concatenated_attributes": "Attributes",
-    "concatenated_object_ids": "Concatenated object IDs",
-    "layers": "Layers",
-    "metadata": "Metadata",
-    "octree_cells": "Octree Cells",
-    "options": "options",
-    "prisms": "Prisms",
-    "property_groups": "PropertyGroups",
-    "property_group_ids": "Property Group IDs",
-    "surveys": "Surveys",
-    "trace": "Trace",
-    "trace_depth": "TraceDepth",
-    "u_cell_delimiters": "U cell delimiters",
-    "v_cell_delimiters": "V cell delimiters",
-    "values": "Data",
-    "vertices": "Vertices",
-    "z_cell_delimiters": "Z cell delimiters",
-    "INVALID": "Invalid",
-    "INTEGER": "Integer",
-    "FLOAT": "Float",
-    "TEXT": "Text",
-    "REFERENCED": "Referenced",
-    "FILENAME": "Filename",
-    "BLOB": "Blob",
-    "VECTOR": "Vector",
-    "DATETIME": "DateTime",
-    "GEOMETRIC": "Geometric",
-    "MULTI_TEXT": "Multi-Text",
-    "UNKNOWN": "Unknown",
-    "OBJECT": "Object",
-    "CELL": "Cell",
-    "VERTEX": "Vertex",
-    "FACE": "Face",
-    "GROUP": "Group",
-    "DEPTH": "Depth",
-}
-INV_KEY_MAP = {value: key for key, value in KEY_MAP.items()}
 
 
 def is_uuid(value: str) -> bool:
@@ -356,9 +392,7 @@ def as_str_if_utf8_bytes(value) -> str:
     return value
 
 
-def dict_mapper(
-    val, string_funcs: list[Callable], *args, omit: dict | None = None
-) -> dict:
+def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = None):
     """
     Recursion through nested dictionaries and applies mapping functions to values.
 
@@ -368,14 +402,23 @@ def dict_mapper(
 
     :return val: Transformed values
     """
-    if omit is None:
-        omit = {}
     if isinstance(val, dict):
         for key, values in val.items():
-            val[key] = dict_mapper(
-                values,
-                [fun for fun in string_funcs if fun not in omit.get(key, [])],
-            )
+            short_list = string_funcs.copy()
+            if omit is not None:
+                short_list = [
+                    fun for fun in string_funcs if fun not in omit.get(key, [])
+                ]
+
+            val[key] = dict_mapper(values, short_list)
+
+    if isinstance(val, list):
+        out = []
+        for elem in val:
+            for fun in string_funcs:
+                elem = fun(elem, *args)
+            out += [elem]
+        return out
 
     for fun in string_funcs:
         val = fun(val, *args)
@@ -474,3 +517,43 @@ def xy_rotation_matrix(angle: float) -> np.ndarray:
             [0.0, 0.0, 1.0],
         ]
     )
+
+
+def yz_rotation_matrix(angle: float) -> np.ndarray:
+    """
+    Rotation matrix about the x-axis.
+    :param angle: Rotation angle in radians.
+    :return: rot: Rotation matrix.
+    """
+
+    return np.array(
+        [
+            [1, 0, 0],
+            [0, np.cos(angle), -np.sin(angle)],
+            [0, np.sin(angle), np.cos(angle)],
+        ]
+    )
+
+
+def dip_points(points: np.ndarray, dip: float, rotation: float = 0) -> np.ndarray:
+    """
+    Rotate points about the x-axis by the dip angle and then about the z-axis by the rotation angle.
+    :param points: an array of points to rotate
+    :param dip: the dip angle in radians
+    :param rotation: the rotation angle in radians
+    :return: the rotated points
+    """
+    # Assert points is a numpy array containing 3D points
+    if not isinstance(points, np.ndarray) and points.ndim != 2 and points.shape[1] != 3:
+        raise TypeError("Input points must be a 2D numpy array of shape (N, 3).")
+
+    # rotate the points about the z-axis by the inverse rotation angle
+    points = xy_rotation_matrix(-rotation) @ points.T
+
+    # Rotate points with the dip angle
+    points = yz_rotation_matrix(dip) @ points
+
+    # Rotate back the points to initial orientation
+    points = xy_rotation_matrix(rotation) @ points
+
+    return points.T

@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -139,7 +139,7 @@ class DataType(EntityType):
             value_map = ReferenceValueMap(value_map)
 
         self._value_map = value_map
-        self.workspace.update_attribute(self, "Value map")
+        self.workspace.update_attribute(self, "value_map")
 
     @property
     def units(self) -> str | None:
@@ -259,10 +259,12 @@ class DataType(EntityType):
                     uid = uuid.UUID(val)
 
         entity_type = cls.find(workspace, uid)
+
         if entity_type is not None:
             return entity_type
 
         kwargs["uid"] = uid
+
         return cls(workspace, **kwargs)
 
     @classmethod

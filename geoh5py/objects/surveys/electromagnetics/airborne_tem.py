@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -19,91 +19,15 @@ from __future__ import annotations
 
 import uuid
 
-import numpy as np
-
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.object_base import ObjectType
 
-from .base import BaseTEMSurvey
+from .base import AirborneEMSurvey, TEMSurvey
+
+# pylint: disable=too-many-ancestors
 
 
-class BaseAirborneTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancestors
-    __INPUT_TYPE = ["Rx", "Tx", "Tx and Rx"]
-    _PROPERTY_MAP = {
-        "crossline_offset": "Crossline offset",
-        "inline_offset": "Inline offset",
-        "pitch": "Pitch",
-        "roll": "Roll",
-        "vertical_offset": "Vertical offset",
-        "yaw": "Yaw",
-    }
-
-    @property
-    def crossline_offset(self) -> float | uuid.UUID | None:
-        """
-        Numeric value or property UUID for the crossline offset between receiver and transmitter.
-        """
-        return self.fetch_metadata("crossline_offset")
-
-    @crossline_offset.setter
-    def crossline_offset(self, value: float | uuid.UUID | None):
-        self.set_metadata("crossline_offset", value)
-
-    def copy(
-        self,
-        parent=None,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: np.ndarray | None = None,
-        cell_mask: np.ndarray | None = None,
-        **kwargs,
-    ):
-        """
-        Sub-class extension of :func:`~geoh5py.objects.cell_object.CellObject.copy`.
-        """
-        if parent is None:
-            parent = self.parent
-
-        omit_list = [
-            "_metadata",
-            "_receivers",
-            "_transmitters",
-        ]
-        metadata = self.metadata.copy()
-        new_entity = super().copy(
-            parent=parent,
-            clear_cache=clear_cache,
-            copy_children=copy_children,
-            mask=mask,
-            cell_mask=cell_mask,
-            omit_list=omit_list,
-            **kwargs,
-        )
-
-        metadata["EM Dataset"][new_entity.type] = new_entity.uid
-
-        complement: AirborneTEMTransmitters | AirborneTEMReceivers = (
-            self.transmitters  # type: ignore
-            if isinstance(self, AirborneTEMReceivers)
-            else self.receivers
-        )
-        if complement is not None:
-            new_complement = super(Curve, complement).copy(  # type: ignore
-                parent=parent,
-                omit_list=omit_list,
-                copy_children=copy_children,
-                clear_cache=clear_cache,
-                mask=mask,
-            )
-
-            setattr(new_entity, complement.type, new_complement)
-            metadata["EM Dataset"][complement.type] = new_complement.uid
-            new_complement.metadata = metadata
-
-        new_entity.metadata = metadata
-
-        return new_entity
-
+class AirborneTEMSurvey(TEMSurvey, AirborneEMSurvey):
     @property
     def default_metadata(self) -> dict:
         """
@@ -123,14 +47,9 @@ class BaseAirborneTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancesto
         }
 
     @property
-    def default_input_types(self) -> list[str]:
-        """Choice of survey creation types."""
-        return self.__INPUT_TYPE
-
-    @property
     def default_receiver_type(self):
         """
-        :return: Transmitter class
+        :return: Receiver class
         """
         return AirborneTEMReceivers
 
@@ -141,112 +60,22 @@ class BaseAirborneTEM(BaseTEMSurvey, Curve):  # pylint: disable=too-many-ancesto
         """
         return AirborneTEMTransmitters
 
-    def fetch_metadata(self, key: str) -> float | uuid.UUID | None:
+    @property
+    def base_receiver_type(self):
         """
-        Fetch entry from the metadata.
+        :return: Base receiver class
         """
-        field = self._PROPERTY_MAP.get(key, "")
-        if field + " value" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"][field + " value"]
-        if field + " property" in self.metadata["EM Dataset"]:
-            return self.metadata["EM Dataset"][field + " property"]
-        return None
-
-    def set_metadata(self, key: str, value: float | uuid.UUID | None):
-        if key not in self._PROPERTY_MAP:
-            raise ValueError(f"No property map found for key metadata '{key}'.")
-
-        field = self._PROPERTY_MAP[key]
-        if isinstance(value, float):
-            self.edit_metadata({field + " value": value, field + " property": None})
-        elif isinstance(value, uuid.UUID):
-            self.edit_metadata({field + " value": None, field + " property": value})
-        elif value is None:
-            self.edit_metadata({field + " value": None, field + " property": None})
-        else:
-            raise TypeError(
-                f"Input '{key}' must be one of type float, uuid.UUID or None"
-            )
+        return Curve
 
     @property
-    def inline_offset(self) -> float | uuid.UUID | None:
+    def base_transmitter_type(self):
         """
-        Numeric value or property UUID for the inline offset between receiver and transmitter.
+        :return: Base transmitter class
         """
-        return self.fetch_metadata("inline_offset")
-
-    @inline_offset.setter
-    def inline_offset(self, value: float | uuid.UUID):
-        self.set_metadata("inline_offset", value)
-
-    @property
-    def loop_radius(self) -> float | None:
-        """Transmitter loop radius"""
-        return self.metadata["EM Dataset"].get("Loop radius", None)
-
-    @loop_radius.setter
-    def loop_radius(self, value: float | None):
-        if not isinstance(value, (float, type(None))):
-            raise TypeError("Input 'loop_radius' must be of type 'float'")
-        self.edit_metadata({"Loop radius": value})
-
-    @property
-    def pitch(self) -> float | uuid.UUID | None:
-        """
-        Numeric value or property UUID for the pitch angle of the transmitter loop.
-        """
-        return self.fetch_metadata("pitch")
-
-    @pitch.setter
-    def pitch(self, value: float | uuid.UUID | None):
-        self.set_metadata("pitch", value)
-
-    @property
-    def relative_to_bearing(self) -> bool | None:
-        """Data relative_to_bearing"""
-        return self.metadata["EM Dataset"].get("Angles relative to bearing", None)
-
-    @relative_to_bearing.setter
-    def relative_to_bearing(self, value: bool | None):
-        if not isinstance(value, (bool, type(None))):
-            raise TypeError("Input 'relative_to_bearing' must be one of type 'bool'")
-        self.edit_metadata({"Angles relative to bearing": value})
-
-    @property
-    def roll(self) -> float | uuid.UUID | None:
-        """
-        Numeric value or property UUID for the roll angle of the transmitter loop.
-        """
-        return self.fetch_metadata("roll")
-
-    @roll.setter
-    def roll(self, value: float | uuid.UUID | None):
-        self.set_metadata("roll", value)
-
-    @property
-    def vertical_offset(self) -> float | uuid.UUID | None:
-        """
-        Numeric value or property UUID for the vertical offset between receiver and transmitter.
-        """
-        return self.fetch_metadata("vertical_offset")
-
-    @vertical_offset.setter
-    def vertical_offset(self, value: float | uuid.UUID | None):
-        self.set_metadata("vertical_offset", value)
-
-    @property
-    def yaw(self) -> float | uuid.UUID | None:
-        """
-        Numeric value or property UUID for the yaw angle of the transmitter loop.
-        """
-        return self.fetch_metadata("yaw")
-
-    @yaw.setter
-    def yaw(self, value: float | uuid.UUID):
-        self.set_metadata("yaw", value)
+        return Curve
 
 
-class AirborneTEMReceivers(BaseAirborneTEM):  # pylint: disable=too-many-ancestors
+class AirborneTEMReceivers(AirborneTEMSurvey):
     """
     Airborne time-domain electromagnetic receivers class.
     """
@@ -256,6 +85,10 @@ class AirborneTEMReceivers(BaseAirborneTEM):  # pylint: disable=too-many-ancesto
 
     def __init__(self, object_type: ObjectType, name="Airborne TEM Rx", **kwargs):
         super().__init__(object_type, name=name, **kwargs)
+
+    @property
+    def complement(self):
+        return self.transmitters
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -270,7 +103,7 @@ class AirborneTEMReceivers(BaseAirborneTEM):  # pylint: disable=too-many-ancesto
         return self.__TYPE
 
 
-class AirborneTEMTransmitters(BaseAirborneTEM):  # pylint: disable=too-many-ancestors
+class AirborneTEMTransmitters(AirborneTEMSurvey):
     """
     Airborne time-domain electromagnetic transmitters class.
     """
@@ -280,6 +113,10 @@ class AirborneTEMTransmitters(BaseAirborneTEM):  # pylint: disable=too-many-ance
 
     def __init__(self, object_type: ObjectType, name="Airborne TEM Tx", **kwargs):
         super().__init__(object_type, name=name, **kwargs)
+
+    @property
+    def complement(self):
+        return self.receivers
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

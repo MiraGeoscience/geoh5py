@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -21,28 +21,32 @@ import inspect
 
 import pytest
 
-from geoh5py import objects
 from geoh5py.groups import GroupType
-from geoh5py.objects import CellObject, ObjectBase, ObjectType
+from geoh5py.objects import ObjectBase, ObjectType
 from geoh5py.workspace import Workspace
 
 
+def collect_sub_classes(obj):
+    classes = []
+
+    for sub_class in obj.__subclasses__():
+        if any(sub_class.__subclasses__()):
+            classes += collect_sub_classes(sub_class)
+        else:
+            classes.append(sub_class)
+
+    return [obj] + classes
+
+
 def all_object_types():
-    for _, obj in inspect.getmembers(objects):
-        if (
-            inspect.isclass(obj)
-            and issubclass(obj, ObjectBase)
-            and obj not in (ObjectBase, CellObject)
-        ):
+    for obj in set(collect_sub_classes(ObjectBase)):
+        if inspect.isclass(obj) and obj.default_type_uid() is not None:
             yield obj
 
 
 @pytest.mark.parametrize("object_class", all_object_types())
-def test_object_instantiation(object_class, tmp_path):
-    # TODO: no file on disk should be required for this test
-    #       as workspace does not have to be saved
-    h5file_path = tmp_path / f"{__name__}.geoh5"
-    with Workspace(h5file_path) as workspace:
+def test_object_instantiation(object_class):
+    with Workspace() as workspace:
         object_type = object_class.find_or_create_type(workspace)
         isinstance(object_type, ObjectType)
         assert object_type.workspace is workspace

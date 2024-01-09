@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -17,6 +17,6 @@
 
 # flake8: noqa
 
-__version__ = "0.7.1"
+__version__ = "0.8.0"
 
 from geoh5py.workspace import Workspace

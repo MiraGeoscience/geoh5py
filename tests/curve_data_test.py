@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -26,13 +28,13 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_curve_data(tmp_path):
+def test_create_curve_data(tmp_path: Path):
     curve_name = "TestCurve"
     h5file_path = tmp_path / r"testCurve.geoh5"
     # Generate a random cloud of points
     n_data = 12
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         curve = Curve.create(
             workspace, vertices=np.random.randn(n_data, 3), name=curve_name
         )
@@ -90,7 +92,12 @@ def test_create_curve_data(tmp_path):
 
             # Modify and write
             obj_rec.vertices = np.random.randn(n_data, 3)
-            data_vert_rec.values = np.random.randn(n_data)
+
+            with pytest.raises(TypeError, match="Values cannot have decimal points."):
+                data_vert_rec.values = np.random.randn(n_data)  # warning here
+            data_vert_rec.values = np.random.randint(
+                0, curve.n_vertices, curve.n_vertices
+            ).astype(np.uint32)
 
         # Read back and compare
         with ws2.open():
@@ -102,11 +109,11 @@ def test_create_curve_data(tmp_path):
                 compare_entities(data_vert_rec, data_vertex)
 
 
-def test_remove_cells_data(tmp_path):
+def test_remove_cells_data(tmp_path: Path):
     # Generate a random cloud of points
     n_data = 12
 
-    with Workspace(tmp_path / r"testCurve.geoh5") as workspace:
+    with Workspace.create(tmp_path / r"testCurve.geoh5") as workspace:
         curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
         data = curve.add_data(
             {
@@ -141,7 +148,7 @@ def test_remove_vertex_data(tmp_path):
     # Generate a random cloud of points
     n_data = 12
 
-    with Workspace(tmp_path / r"testCurve.geoh5") as workspace:
+    with Workspace.create(tmp_path / r"testCurve.geoh5") as workspace:
         curve = Curve.create(workspace)
         with pytest.warns(UserWarning, match="No vertices to be removed."):
             curve.remove_vertices(12)
@@ -170,7 +177,7 @@ def test_copy_cells_data(tmp_path):
     # Generate a random cloud of points
     n_data = 12
 
-    with Workspace(tmp_path / r"testCurve.geoh5") as workspace:
+    with Workspace.create(tmp_path / r"testCurve.geoh5") as workspace:
         curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
         data = curve.add_data(
             {

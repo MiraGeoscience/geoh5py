@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -19,6 +19,7 @@
 # flake8: noqa
 
 from .blob_data import BlobData
+from .boolean_data import BooleanData
 from .data import Data
 from .data_association_enum import DataAssociationEnum
 from .data_type import DataType
@@ -34,3 +35,4 @@ from .reference_value_map import ReferenceValueMap
 from .referenced_data import ReferencedData
 from .text_data import CommentsData, MultiTextData, TextData
 from .unknown_data import UnknownData
+from .visual_parameters import VisualParameters

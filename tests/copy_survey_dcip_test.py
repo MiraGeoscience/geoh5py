@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -20,6 +20,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -27,13 +29,13 @@ from geoh5py.objects import CurrentElectrode, PotentialElectrode
 from geoh5py.workspace import Workspace
 
 
-def test_copy_survey_dcip(tmp_path):
+def test_copy_survey_dcip(tmp_path: Path):
     name = "TestCurrents"
     n_data = 12
     path = tmp_path / r"testDC.geoh5"
 
     # Create a workspace
-    with Workspace(path) as workspace:
+    with Workspace.create(path) as workspace:
         # Create sources along line
         x_loc, y_loc = np.meshgrid(np.arange(n_data), np.arange(-1, 3))
         vertices = np.c_[x_loc.ravel(), y_loc.ravel(), np.zeros_like(x_loc).ravel()]
@@ -76,7 +78,7 @@ def test_copy_survey_dcip(tmp_path):
 
         # Copy the survey to a new workspace
         path = tmp_path / r"testDC_copy_current.geoh5"
-        with Workspace(path) as new_workspace:
+        with Workspace.create(path) as new_workspace:
             new_currents = currents.copy_from_extent(
                 np.vstack([[5, 0], [8, 2]]), parent=new_workspace
             )

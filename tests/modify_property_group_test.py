@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -46,7 +46,7 @@ def test_modify_property_group(tmp_path):
     # Generate a curve with multiple data
     xyz = np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)]
     h5file_path = tmp_path / r"prop_group_test.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         curve = Curve.create(workspace, vertices=xyz, name=obj_name)
 
         assert curve.property_groups is None
@@ -68,8 +68,8 @@ def test_modify_property_group(tmp_path):
         prop_group = curve.find_or_create_property_group(name="myGroup")
 
         # Remove on props from the list
-        curve.remove_data_from_group(children_list[0], name="myGroup")
-        curve.remove_data_from_group(props[-2:], name="myGroup")
+        prop_group.remove_properties(curve.children[0])
+        prop_group.remove_properties(props[-2:])
 
         assert len(prop_group.properties) == 1, "Error removing a property_group"
 

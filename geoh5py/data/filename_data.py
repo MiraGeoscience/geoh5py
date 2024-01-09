@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -14,9 +14,10 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
 from __future__ import annotations
 
-import os
+from pathlib import Path
 
 from .data import Data, PrimitiveTypeEnum
 from .data_type import DataType
@@ -59,21 +60,19 @@ class FilenameData(Data):
 
         self.workspace.update_attribute(self, "values")
 
-    def save_file(self, path: str = "./", name=None):
+    def save_file(self, path: str | Path = Path(), name=None):
         """
         Save the file to disk.
 
         :param path: Directory to save the file to.
         :param name: Name given to the file.
         """
-        if not os.path.exists(path):
-            os.mkdir(path)
-
+        Path(path).mkdir(exist_ok=True)
         if name is None:
             name = getattr(self, "file_name", "image.tiff")
 
         if self.values is not None:
-            with open(os.path.join(path, name), "wb") as raw_binary:
+            with open(Path(path) / name, "wb") as raw_binary:
                 raw_binary.write(getattr(self, "values"))
 
     @property

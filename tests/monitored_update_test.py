@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 
 from geoh5py.groups import ContainerGroup
@@ -27,11 +29,11 @@ from geoh5py.ui_json.utils import monitored_directory_copy
 from geoh5py.workspace import Workspace
 
 
-def test_monitored_directory_copy(tmp_path):
+def test_monitored_directory_copy(tmp_path: Path):
     xyz = np.random.randn(12, 3)
     values = np.random.randn(12)
     h5file_path = tmp_path / r"testPoints.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         group = ContainerGroup.create(workspace, name="groupee")
         points = Points.create(workspace, parent=group, vertices=xyz, allow_move=False)
         points.add_data({"DataValues": {"association": "VERTEX", "values": values}})

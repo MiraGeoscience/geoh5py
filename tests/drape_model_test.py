@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,7 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+from __future__ import annotations
+
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -24,13 +26,12 @@ from geoh5py.objects import DrapeModel
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
+# pylint: disable=too-many-locals
 
-def test_create_drape_model(tmp_path):
-    # pass
-    h5file_path = os.path.join(tmp_path, "drapedmodel.geoh5")
-    with Workspace(h5file_path) as workspace:
-        #
-        # drape_model = workspace.get_entity("draped_models_line_id_1")[0]
+
+def test_create_drape_model(tmp_path: Path):
+    h5file_path = tmp_path / "drapedmodel.geoh5"
+    with Workspace.create(h5file_path) as workspace:
         n_col, n_row = 64, 32
         j, i = np.meshgrid(np.arange(n_row), np.arange(n_col))
         bottom = (
@@ -47,16 +48,22 @@ def test_create_drape_model(tmp_path):
 
         assert "Attribute 'layers'" in str(error)
 
-        drape.layers = np.c_[i.flatten(), j.flatten(), bottom.flatten()]
+        layers = np.c_[i.flatten(), j.flatten(), bottom.flatten()]
+        drape.layers = layers
+
+        with pytest.raises(ValueError, match="Prism index"):
+            layers[-32:, 0] = 64
+            drape.layers = layers
 
         with pytest.raises(AttributeError) as error:
             getattr(drape, "centroids")
 
         assert "Attribute 'prisms'" in str(error)
 
-        drape.prisms = np.c_[
+        prisms = np.c_[
             x, y, top, np.arange(0, i.flatten().shape[0], n_row), np.tile(n_row, n_col)
         ]
+        drape.prisms = prisms
 
         drape.add_data(
             {
@@ -67,9 +74,9 @@ def test_create_drape_model(tmp_path):
             }
         )
 
-        with Workspace(os.path.join(tmp_path, "tester.geoh5")) as new_workspace:
+        with Workspace.create(tmp_path / "tester.geoh5") as new_workspace:
             drape.copy(parent=new_workspace)
 
-        with Workspace(os.path.join(tmp_path, "tester.geoh5")) as new_workspace:
+        with Workspace(tmp_path / "tester.geoh5") as new_workspace:
             rec_drape = new_workspace.objects[0]
             compare_entities(drape, rec_drape, ignore=["_parent"])

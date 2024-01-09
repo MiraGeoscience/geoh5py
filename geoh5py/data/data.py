@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-import uuid
 from abc import abstractmethod
 
 import numpy as np
@@ -46,8 +45,15 @@ class Data(Entity):
         self._association = None
         self._on_file = False
         self._modifiable = True
-        assert data_type is not None
-        assert data_type.primitive_type == self.primitive_type()
+
+        if (
+            not isinstance(data_type, DataType)
+            or data_type.primitive_type != self.primitive_type()
+        ):
+            raise TypeError(
+                "Input 'data_type' must be a DataType object of primitive_type 'TEXT'."
+            )
+
         self.entity_type = data_type
         self._values = None
 
@@ -85,7 +91,7 @@ class Data(Entity):
             if not isinstance(mask, np.ndarray):
                 raise TypeError("Mask must be an array or None.")
 
-            if mask.dtype != np.bool or mask.shape != self.values.shape:
+            if mask.dtype != bool or mask.shape != self.values.shape:
                 raise ValueError(
                     f"Mask must be a boolean array of shape {self.values.shape}, not {mask.shape}"
                 )
@@ -99,8 +105,9 @@ class Data(Entity):
             if n_values < self.values.shape[0]:
                 kwargs.update({"values": self.values[mask]})
             else:
-                values = np.ones_like(self.values) * np.nan
+                values = np.ones_like(self.values) * self.nan_value
                 values[mask] = self.values[mask]
+
                 kwargs.update({"values": values})
 
         new_entity = parent.workspace.copy_to_parent(
@@ -120,7 +127,7 @@ class Data(Entity):
         :return: shape(2, 3) Bounding box defined by the bottom South-West and
             top North-East coordinates.
         """
-        return self.parent.extent
+        return None
 
     @property
     def n_values(self) -> int | None:
@@ -139,6 +146,13 @@ class Data(Entity):
         if self.association is DataAssociationEnum.OBJECT:
             return 1
 
+        return None
+
+    @property
+    def nan_value(self) -> None:
+        """
+        Value used to represent missing data in python.
+        """
         return None
 
     @property
@@ -209,13 +223,6 @@ class Data(Entity):
         Alias not implemented from base Entity class.
         """
         raise NotImplementedError("Data entity cannot contain files.")
-
-    def remove_data_from_group(
-        self, data: list | Entity | uuid.UUID | str, name: str | None = None
-    ):
-        """
-        Remove self from a property group.
-        """
 
     def mask_by_extent(
         self, extent: np.ndarray, inverse: bool = False

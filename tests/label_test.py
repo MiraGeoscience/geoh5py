@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -26,11 +28,11 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_label(tmp_path):
+def test_create_label(tmp_path: Path):
     h5file_path = tmp_path / r"testGroup.geoh5"
 
     # Create a workspace
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         label = Label.create(workspace, name="MyTestLabel")
 
         assert label.copy_from_extent(np.vstack([[0, 0], [1, 1]])) is None

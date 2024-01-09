@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -38,10 +38,7 @@ def test_create_grid_2d_data(tmp_path):
     n_x, n_y = 10, 15
     h5file_path = tmp_path / r"test2Grid.geoh5"
 
-    # Create a workspace
-    workspace = Workspace(h5file_path)
-
-    with workspace.open("r+") as workspace_context:
+    with Workspace.create(h5file_path) as workspace_context:
         grid = Grid2D.create(workspace_context)
 
         converter = Grid2DConversion
@@ -75,6 +72,8 @@ def test_create_grid_2d_data(tmp_path):
         grid.v_count = n_y
         grid.u_cell_size = np.r_[20.0]
         grid.v_cell_size = np.r_[30.0]
+
+        grid.dip = 33.0
         grid.vertical = True
 
         assert isinstance(grid.centroids, np.ndarray)
@@ -89,9 +88,8 @@ def test_grid2d_to_geoimage(tmp_path):
     h5file_path = tmp_path / r"test2Grid.geoh5"
 
     # Create a workspace
-    workspace = Workspace(h5file_path)
     converter = Grid2DConversion
-    with workspace.open("r+") as workspace_context:
+    with Workspace.create(h5file_path) as workspace_context:
         grid = Grid2D.create(
             workspace_context,
             origin=[0, 0, 0],
@@ -116,7 +114,7 @@ def test_grid2d_to_geoimage(tmp_path):
         ):
             grid.to_geoimage(1000)
 
-        data = grid.add_data({"DataValues": {"values": values}})
+        data = grid.add_data({"DataValues": {"values": values.flatten()}})
         grid.rotation = 45.0
 
         # Read the data back in from a fresh workspace

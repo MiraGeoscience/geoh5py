@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
 import pytest
 
@@ -27,11 +28,11 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_octree(tmp_path):
+def test_octree(tmp_path: Path):
     name = "MyTestOctree"
     h5file_path = tmp_path / r"octree.geoh5"
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         # Create an octree mesh with variable dimensions
 
         mesh = Octree.create(

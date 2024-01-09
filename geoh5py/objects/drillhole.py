@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -357,6 +357,7 @@ class Drillhole(Points):
         self,
         data: dict,
         property_group: str | PropertyGroup | None = None,
+        compression: int = 5,
         collocation_distance=None,
     ) -> Data | list[Data]:
         """
@@ -381,6 +382,8 @@ class Drillhole(Points):
             }
 
         :param property_group: Name or PropertyGroup used to group the data.
+        :param collocation_distance: Minimum collocation distance for matching
+        :param compression: Compression level for data.
 
         :return: List of new Data objects.
         """
@@ -407,6 +410,7 @@ class Drillhole(Points):
             attributes, new_property_group = self.validate_data(
                 attributes, property_group, collocation_distance=collocation_distance
             )
+
             entity_type = self.validate_data_type(attributes)
             kwargs = {
                 "name": None,
@@ -420,7 +424,7 @@ class Drillhole(Points):
                 kwargs[key] = val
 
             data_object = self.workspace.create_entity(
-                Data, entity=kwargs, entity_type=entity_type
+                Data, entity=kwargs, entity_type=entity_type, compression=compression
             )
 
             if not isinstance(data_object, Data):
@@ -674,7 +678,7 @@ class Drillhole(Points):
 
             depths = data_obj.values
             if isinstance(data_obj, NumericData):
-                depths = data_obj.check_vector_length(depths)
+                depths = data_obj.format_values(depths)
 
             if not np.all(np.diff(depths) >= 0):
                 sort_ind = np.argsort(depths)
@@ -684,7 +688,7 @@ class Drillhole(Points):
                         isinstance(child, NumericData)
                         and getattr(child.association, "name", None) == "VERTEX"
                     ):
-                        child.values = child.check_vector_length(child.values)[sort_ind]
+                        child.values = child.format_values(child.values)[sort_ind]
 
                 if self.vertices is not None:
                     self.vertices = self.vertices[sort_ind, :]

@@ -376,15 +376,6 @@ VP Model
 *To be further documented*
 
 
-
-Airborne EM
------------
-**UUID : {fdf7d01e-97ab-43f7-8f2c-b99cc10d8411}**
-
-*Not yet geoh5py implemented*
-
-*To be further documented*
-
 .. _geoh5_atem_rx:
 
 Airborne TEM Rx
@@ -397,7 +388,7 @@ Airborne TEM Rx
 Attributes
 ^^^^^^^^^^
 
-:Target position: composite type
+:SurveyCost: ``double``
 
 Datasets
 ^^^^^^^^
@@ -408,7 +399,7 @@ Datasets
     parameters stored under the "EM Dataset" key.
 
     - "Channels": ``list`` of ``double``
-        Time channels at which data are recorder.
+        Time channels at which data are recorded.
     - "Input type": ``string``
         Type of survey from "Rx", "Tx" or "Tx and Rx"
     - "Loop radius": ``double``
@@ -429,9 +420,6 @@ Datasets
         either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
     - "Inline offset property" ``uuid`` OR  "Crossline offset value" ``double``:
         Inline offset between the receivers and transmitters,
-        either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
-    - "Inline offset property" ``uuid`` OR  "Crossline offset value" ``double``:
-        Vertical offset between the receivers and transmitters,
         either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
     - "Yaw property" ``uuid`` OR  "Yaw value" ``double``:
         Rotation (angle) of the transmitter loop as measured on the UV-plane (+ clockwise),
@@ -469,25 +457,396 @@ Datasets
     should point to itself, while the "Receivers" ``uuid`` refers the linked
     :ref:`Airborne TEM Rx <geoh5_atem_rx>` object.
 
+.. _geoh5_gtem_rx:
+
+Moving Loop Ground TEM Rx
+-------------------------
+
+**UUID : {41018a45-01a0-4c61-a7cb-9f32d8159df4}**
+
+:ref:`Curve <geoh5_curve>` object representing an array of time-domain electromagnetic moving receiver dipoles.
+
+Attributes
+^^^^^^^^^^
+
+:SurveyCost: ``double``
+
+Datasets
+^^^^^^^^
+
+:Metadata: json formatted ``string``
+
+    Dictionary of survey parameters shared with the :ref:`Transmitters <geoh5_gtem_tx>`. The following items are core
+    parameters stored under the "EM Dataset" key.
+
+    - "Channels": ``list`` of ``double``
+        Time channels at which data are recorded.
+    - "Input type": ``string``
+        Type of survey from "Rx", "Tx" or "Tx and Rx"
+    - "Loop radius": ``double``
+        Transmitter loop radius.
+    - "Property groups": ``list`` of ``uuid``
+        Reference to property groups containing data at every channel.
+    - "Receivers": ``uuid``
+        Unique identifier referencing to itself.
+    - "Survey type": ``string``
+        Defaults to "Ground TEM".
+    - "Transmitters": ``uuid``
+        Unique identifier referencing to the linked transmitters entity.
+    - "Unit": ``string``
+        Sampling units, must be one of "Seconds (s)", "Milliseconds (ms)",
+        "Microseconds (us)" or "Nanoseconds (ns)".
+    - "Waveform" ``dict``:
+        - "Discretization" array of ``double``, shape(N, 2):
+            Array of times and normalized currents (Amp) describing the source impulse
+            over a discrete interval (e.g. [[t_1, c_1], [t_2, c_2], ..., [t_N, c_N]])
+        - "Timing mark" ``double``:
+            Reference timing mark measured from the beginning of the "Discretization".
+            Generally used as the reference (t_i=0.0) for the provided data channels:
+            (-) on-time an (+) off-time.
+
+
+.. _geoh5_gtem_tx:
+
+Moving Loop Ground TEM Tx
+-------------------------
+
+**UUID : {98a96d44-6144-4adb-afbe-0d5e757c9dfc}**
+
+:ref:`Curve <geoh5_curve>` object representing an array of time-domain electromagnetic moving transmitter loops.
+
+Datasets
+^^^^^^^^
+
+:Metadata: json formatted ``string``
+
+    See definition from the :ref:`Moving Loop Ground TEM Rx <geoh5_gtem_rx>` object. The "Transmitters" ``uuid`` value
+    should point to itself, while the "Receivers" ``uuid`` refers the linked
+    :ref:`Moving Loop Ground TEM Rx <geoh5_gtem_rx>` object.
+
+
+.. _geoh5_gtem_loop_rx:
+
+Ground TEM Rx (large-loop)
+--------------------------
+
+**UUID : {deebe11a-b57b-4a03-99d6-8f27b25eb2a8}**
+
+:ref:`Curve <geoh5_curve>` object representing an array of frequency-domain electromagnetic receiver dipoles.
+
+Datasets
+^^^^^^^^
+
+:Metadata: json formatted ``string``
+
+    Dictionary of survey parameters shared with the :ref:`Transmitters <geoh5_gtem_loop_tx>`. The following items are core
+    parameters stored under the "EM Dataset" key.
+
+    - "Channels": ``list`` of ``double``
+        Time channels at which data are recorded.
+    - "Input type": ``string``
+        "Tx and Rx"
+    - "Property groups": ``list`` of ``uuid``
+        Reference to property groups containing data at every channel.
+    - "Receivers": ``uuid``
+        Unique identifier referencing to itself.
+    - "Survey type": ``string``
+        Defaults to "Ground TEM (large loop)".
+    - "Transmitters": ``uuid``
+        Unique identifier referencing to the linked transmitters entity.
+    - "Tx ID property": ``uuid``
+        Reference to a property containing the transmitter ID for every receiver.
+    - "Unit": ``string``
+        Sampling units, must be one of "Seconds (s)", "Milliseconds (ms)",
+        "Microseconds (us)" or "Nanoseconds (ns)".
+    - "Waveform" ``dict``:
+        - "Discretization" array of ``double``, shape(N, 2):
+            Array of times and normalized currents (Amp) describing the source impulse
+            over a discrete interval (e.g. [[t_1, c_1], [t_2, c_2], ..., [t_N, c_N]])
+        - "Timing mark" ``double``:
+            Reference timing mark measured from the beginning of the "Discretization".
+            Generally used as the reference (t_i=0.0) for the provided data channels:
+            (-) on-time an (+) off-time.
+
+
+.. _geoh5_gtem_loop_tx:
+
+Ground TEM Tx (large-loop)
+--------------------------
+
+**UUID : {17dbbfbb-3ee4-461c-9f1d-1755144aac90}**
+
+:ref:`Curve <geoh5_curve>` object representing an array of time-domain electromagnetic large transmitter loops.
+
+Datasets
+^^^^^^^^
+
+:Metadata: json formatted ``string``
+
+    See definition from the :ref:`Ground TEM Rx (large-loop) <geoh5_gtem_loop_rx>` object. The "Transmitters" ``uuid`` value
+    should point to itself, while the "Receivers" ``uuid`` refers the linked
+    :ref:`Ground TEM Rx (large-loop) <geoh5_gtem_loop_rx>` object.
+
+
+.. _geoh5_afem_rx:
 
 Airborne FEM Rx
 ---------------
 
 **UUID : {b3a47539-0301-4b27-922e-1dde9d882c60}**
 
-*Not yet geoh5py implemented*
+:ref:`Curve <geoh5_curve>` object representing an array of frequency-domain electromagnetic receiver dipoles.
 
-*To be further documented*
+Attributes
+^^^^^^^^^^
 
+:SurveyCost: ``double``
+
+Datasets
+^^^^^^^^
+
+:Metadata: json formatted ``string``
+
+    Dictionary of survey parameters shared with the :ref:`Transmitters <geoh5_afem_tx>`. The following items are core
+    parameters stored under the "EM Dataset" key.
+
+    - "Channels": ``list`` of ``double``
+        Frequency channels at which data are recorded.
+    - "Input type": ``string``
+        Type of survey from "Rx", "Tx" or "Tx and Rx"
+    - "Loop radius": ``double``
+        Transmitter loop radius.
+    - "Property groups": ``list`` of ``uuid``
+        Reference to property groups containing data at every channel.
+    - "Receivers": ``uuid``
+        Unique identifier referencing to itself.
+    - "Survey type": ``string``
+        Defaults to "Airborne TEM".
+    - "Transmitters": ``uuid``
+        Unique identifier referencing to the linked transmitters entity.
+    - "Unit": ``string``
+        Sampling units, must be one of ""Hertz (Hz)", "KiloHertz (kHz)",
+        "MegaHertz (MHz)" or "Gigahertz (GHz)".
+    - "Crossline offset property" ``uuid`` OR  "Crossline offset value" ``double``:
+        Offline offset between the receivers and transmitters,
+        either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
+    - "Inline offset property" ``uuid`` OR  "Crossline offset value" ``double``:
+        Inline offset between the receivers and transmitters,
+        either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
+    - "Yaw property" ``uuid`` OR  "Yaw value" ``double``:
+        Rotation (angle) of the transmitter loop as measured on the UV-plane (+ clockwise),
+        either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
+    - "Pitch property" ``uuid`` OR  "Pitch value" ``double``:
+        Tilt angle of the transmitter loop as measured on the VW-plane (+ nose up),
+        either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
+    - "Roll property" ``uuid`` OR  "Roll value" ``double``:
+        Banking angle of the transmitter loop as measured on the UW-plane (+ right-wing down),
+        either defined locally on vertices as a ``property`` OR globally as a constant ``value``.
+
+.. _geoh5_afem_tx:
 
 Airborne FEM Tx
 ---------------
 
 **UUID : {a006cf3e-e24a-4c02-b904-2e57b9b5916d}**
 
-*Not yet geoh5py implemented*
+:ref:`Curve <geoh5_curve>` object representing an array of frequency-domain electromagnetic transmitter loops.
 
-*To be further documented*
+Datasets
+^^^^^^^^
+
+:Metadata: json formatted ``string``
+
+    See definition from the :ref:`Airborne FEM Rx <geoh5_afem_rx>` object. The "Transmitters" ``uuid`` value
+    should point to itself, while the "Receivers" ``uuid`` refers the linked
+    :ref:`Airborne FEM Rx <geoh5_afem_rx>` object.
+
+
+.. _geoh5_gfem_rx:
+
+Moving Loop Ground FEM Rx
+-------------------------
+
+**UUID : {a81c6b0a-f290-4bc8-b72d-60e59964bfe8}**
+
+:ref:`Curve <geoh5_curve>` object representing an array of frequency-domain electromagnetic moving receiver dipoles.
+
+Attributes
+^^^^^^^^^^
+
+:SurveyCost: ``double``
+
+Datasets
+^^^^^^^^
+
+:Metadata: json formatted ``string``
+
+    Dictionary of survey parameters shared with the :ref:`Transmitters <geoh5_gfem_tx>`. The following items are core
+    parameters stored under the "EM Dataset" key.
+
+    - "Channels": ``list`` of ``double``
+        Frequency channels at which data are recorded.
+    - "Input type": ``string``
+        Type of survey from "Rx", "Tx" or "Tx and Rx"
+    - "Loop radius": ``double``
+        Transmitter loop radius.
+    - "Property groups": ``list`` of ``uuid``
+        Reference to property groups containing data at every channel.
+    - "Receivers": ``uuid``
+        Unique identifier referencing to itself.
+    - "Survey type": ``string``
+        Defaults to "Ground FEM".
+    - "Transmitters": ``uuid``
+        Unique identifier referencing to the linked transmitters entity.
+    - "Unit": ``string``
+        Sampling units, must be one of ""Hertz (Hz)", "KiloHertz (kHz)",
+        "MegaHertz (MHz)" or "Gigahertz (GHz)".
+
+
+.. _geoh5_gfem_tx:
+
+Moving Loop Ground FEM Tx
+-------------------------
+
+**UUID : {f59d5a1c-5e63-4297-b5bc-43898cb4f5f8}**
+
+:ref:`Curve <geoh5_curve>` object representing an array of frequency-domain electromagnetic moving transmitter loops.
+
+Datasets
+^^^^^^^^
+
+:Metadata: json formatted ``string``
+
+    See definition from the :ref:`Moving Loop Ground FEM Rx <geoh5_gfem_rx>` object. The "Transmitters" ``uuid`` value
+    should point to itself, while the "Receivers" ``uuid`` refers the linked
+    :ref:`Moving Loop Ground FEM Rx <geoh5_gfem_rx>` object.
+
+
+.. _geoh5_gfem_loop_rx:
+
+Ground FEM Rx (large-loop)
+--------------------------
+
+**UUID : {30928322-cf2c-4230-b393-4dc629259b64}**
+
+:ref:`Curve <geoh5_curve>` object representing an array of frequency-domain electromagnetic receiver dipoles.
+
+Datasets
+^^^^^^^^
+
+:Metadata: json formatted ``string``
+
+    Dictionary of survey parameters shared with the :ref:`Transmitters <geoh5_atem_tx>`. The following items are core
+    parameters stored under the "EM Dataset" key.
+
+    - "Channels": ``list`` of ``double``
+        Frequency channels at which data are recorded.
+    - "Input type": ``string``
+        "Tx and Rx"
+    - "Property groups": ``list`` of ``uuid``
+        Reference to property groups containing data at every channel.
+    - "Receivers": ``uuid``
+        Unique identifier referencing to itself.
+    - "Survey type": ``string``
+        Defaults to "Ground FEM (large loop)".
+    - "Transmitters": ``uuid``
+        Unique identifier referencing to the linked transmitters entity.
+    - "Tx ID property": ``uuid``
+        Reference to a property containing the transmitter ID for every receiver.
+    - "Unit": ``string``
+        Sampling units, must be one of ""Hertz (Hz)", "KiloHertz (kHz)",
+        "MegaHertz (MHz)" or "Gigahertz (GHz)".
+
+.. _geoh5_gfem_loop_tx:
+
+Ground FEM Tx (large-loop)
+--------------------------
+
+**UUID : {fe1a240a-9189-49ff-aa7e-6067405b6e0a}**
+
+:ref:`Curve <geoh5_curve>` object representing an array of frequency-domain electromagnetic large transmitter loops.
+
+Datasets
+^^^^^^^^
+
+:Metadata: json formatted ``string``
+
+    See definition from the :ref:`Ground FEM Rx (large-loop) <geoh5_gfem_loop_rx>` object. The "Transmitters" ``uuid`` value
+    should point to itself, while the "Receivers" ``uuid`` refers the linked
+    :ref:`Ground FEM Rx (large-loop) <geoh5_gfem_loop_rx>` object.
+
+
+
+Magnetotellurics
+----------------
+
+**UUID : {b99bd6e5-4fe1-45a5-bd2f-75fc31f91b38}**
+
+:ref:`Points <geoh5_points>` object representing a magnetotelluric survey.
+
+:Metadata: json formatted ``string``
+
+    Dictionary of survey parameters. The following items are core parameters stored under the
+    "EM Dataset" key.
+
+    - "Channels": ``list`` of ``double``
+        Frequency channels at which data are recorded.
+    - "Input type": ``string``
+        Static field set to "Rx only"
+    - "Property groups": ``list`` of ``uuid``
+        Reference to property groups containing data at every channel.
+    - "Receivers": ``uuid``
+        Reference to itself.
+    - "Survey type": ``string``
+        Static field set to "Magnetotellurics"
+    - "Unit": ``string``
+        Sampling units, must be one of "Hertz (Hz)", "KiloHertz (kHz)", "MegaHertz (MHz)" or
+        "Gigahertz (GHz)".
+
+.. _geoh5_tipper_receivers:
+
+Tipper Rx
+---------
+
+**UUID : {0b639533-f35b-44d8-92a8-f70ecff3fd26}**
+
+:ref:`Curve <geoh5_curve>` object representing a tipper survey.
+
+:Metadata: json formatted ``string``
+
+    Dictionary of survey parameters. The following items are core parameters stored under the
+    "EM Dataset" key.
+
+    - "Channels": ``list`` of ``double``
+        Frequency channels at which data are recorded.
+    - "Input type": ``string``
+        Static field set to "Rx and base stations"
+    - "Property groups": ``list`` of ``uuid``
+        Reference to property groups containing data at every channel.
+    - "Receivers": ``uuid``
+        Reference to itself.
+    - "Base stations: ``uuid``
+        Reference to :ref:`Tipper Base stations <geoh5_tipper_base_stations>`
+    - "Survey type": ``string``
+        Static field set to "Magnetotellurics"
+    - "Unit": ``string``
+        Sampling units, must be one of "Hertz (Hz)", "KiloHertz (kHz)", "MegaHertz (MHz)" or
+        "Gigahertz (GHz)".
+
+.. _geoh5_tipper_base_stations:
+
+Tipper Base stations
+--------------------
+
+**UUID : {f495cd13-f09b-4a97-9212-2ea392aeb375}**
+
+:ref:`Points <geoh5_points>` object representing a tipper survey.
+
+:Metadata: json formatted ``string``
+
+    See definition from the :ref:`Tipper Rx <geoh5_tipper_receivers>` object. The "Base stations" ``uuid`` value
+    should point to itself, while the "Receivers" ``uuid`` refers the linked
+    :ref:`Tipper Rx <geoh5_tipper_receivers>` object.
 
 
 Airborne Gravity
@@ -538,145 +897,3 @@ Ground Gradient IP
 *Not yet geoh5py implemented*
 
 *To be further documented*
-
-
-Ground EM
----------
-
-**UUID : {09f1212f-2bdd-4dea-8bbd-f66b1030dfcd}**
-
-*Not yet geoh5py implemented*
-
-*To be further documented*
-
-
-Ground TEM Rx
--------------
-
-**UUID : {41018a45-01a0-4c61-a7cb-9f32d8159df4}**
-
-*Not yet geoh5py implemented*
-
-*To be further documented*
-
-
-Ground TEM Tx
--------------
-
-**UUID : {98a96d44-6144-4adb-afbe-0d5e757c9dfc}**
-
-*Not yet geoh5py implemented*
-
-*To be further documented*
-
-
-Ground TEM Rx (large-loop)
---------------------------
-
-**UUID : {deebe11a-b57b-4a03-99d6-8f27b25eb2a8}**
-
-*Not yet geoh5py implemented*
-
-*To be further documented*
-
-
-Ground TEM Tx (large-loop)
---------------------------
-
-**UUID : {17dbbfbb-3ee4-461c-9f1d-1755144aac90}**
-
-*Not yet geoh5py implemented*
-
-*To be further documented*
-
-
-Ground FEM Rx
--------------
-
-**UUID : {a81c6b0a-f290-4bc8-b72d-60e59964bfe8}**
-
-*Not yet geoh5py implemented*
-
-*To be further documented*
-
-
-Ground FEM Tx
--------------
-
-**UUID : {f59d5a1c-5e63-4297-b5bc-43898cb4f5f8}**
-
-*Not yet geoh5py implemented*
-
-*To be further documented*
-
-
-Magnetotellurics
-----------------
-
-**UUID : {b99bd6e5-4fe1-45a5-bd2f-75fc31f91b38}**
-
-:ref:`Points <geoh5_points>` object representing a magnetotelluric survey.
-
-:Metadata: json formatted ``string``
-
-    Dictionary of survey parameters. The following items are core parameters stored under the
-    "EM Dataset" key.
-
-    - "Channels": ``list`` of ``double``
-        Frequency channels at which data are recorder.
-    - "Input type": ``string``
-        Static field set to "Rx only"
-    - "Property groups": ``list`` of ``uuid``
-        Reference to property groups containing data at every channel.
-    - "Receivers": ``uuid``
-        Reference to itself.
-    - "Survey type": ``string``
-        Static field set to "Magnetotellurics"
-    - "Unit": ``string``
-        Sampling units, must be one of "Hertz (Hz)", "KiloHertz (kHz)", "MegaHertz (MHz)" or
-        "Gigahertz (GHz)".
-
-.. _geoh5_tipper_receivers:
-
-Tipper Rx
----------
-
-**UUID : {0b639533-f35b-44d8-92a8-f70ecff3fd26}**
-
-:ref:`Curve <geoh5_curve>` object representing a tipper survey.
-
-:Metadata: json formatted ``string``
-
-    Dictionary of survey parameters. The following items are core parameters stored under the
-    "EM Dataset" key.
-
-    - "Channels": ``list`` of ``double``
-        Frequency channels at which data are recorder.
-    - "Input type": ``string``
-        Static field set to "Rx and base stations"
-    - "Property groups": ``list`` of ``uuid``
-        Reference to property groups containing data at every channel.
-    - "Receivers": ``uuid``
-        Reference to itself.
-    - "Base stations: ``uuid``
-        Reference to :ref:`Tipper Base stations <geoh5_tipper_base_stations>`
-    - "Survey type": ``string``
-        Static field set to "Magnetotellurics"
-    - "Unit": ``string``
-        Sampling units, must be one of "Hertz (Hz)", "KiloHertz (kHz)", "MegaHertz (MHz)" or
-        "Gigahertz (GHz)".
-
-.. _geoh5_tipper_base_stations:
-
-Tipper Base stations
---------------------
-
-**UUID : {f495cd13-f09b-4a97-9212-2ea392aeb375}**
-
-:ref:`Points <geoh5_points>` object representing a tipper survey.
-
-:Metadata: json formatted ``string``
-
-    See definition from the :ref:`Tipper Rx <geoh5_tipper_receivers>` object. The "Base stations" ``uuid`` value
-    should point to itself, while the "Receivers" ``uuid`` refers the linked
-    :ref:`Tipper Rx <geoh5_tipper_receivers>` object.

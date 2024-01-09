@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,13 +18,15 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from geoh5py.data import DataType, GeometricDataConstants
 from geoh5py.workspace import Workspace
 
 
-def test_xyz_dataype(tmp_path):
+def test_xyz_dataype(tmp_path: Path):
     h5file_path = tmp_path / f"{__name__}.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         x_datatype = DataType.for_x_data(workspace)
         assert x_datatype.uid == GeometricDataConstants.x_datatype_uid()
         assert (

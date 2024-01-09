@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..data import CommentsData, Data
+from ..data import CommentsData, Data, VisualParameters
 from ..data.data_association_enum import DataAssociationEnum
 from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
@@ -57,6 +57,7 @@ class ObjectBase(Entity):
         self._last_focus = "None"
         self._property_groups: list[PropertyGroup] | None = None
         # self._clipping_ids: list[uuid.UUID] = []
+        self._visual_parameters: VisualParameters | None = None
 
         if not any(key for key in kwargs if key in ["name", "Name"]):
             kwargs["name"] = type(self).__name__
@@ -65,6 +66,23 @@ class ObjectBase(Entity):
 
         if self.entity_type.name == "Entity":
             self.entity_type.name = type(self).__name__
+
+    def add_children(self, children: list[Entity] | list[PropertyGroup]):
+        """
+        :param children: Add a list of entities as
+            :obj:`~geoh5py.shared.entity.Entity.children`
+        """
+        property_groups = self._property_groups or []
+
+        for child in children:
+            if child not in self._children and isinstance(child, (Data, PropertyGroup)):
+                self._children.append(child)
+
+            if isinstance(child, PropertyGroup) and child not in property_groups:
+                property_groups.append(child)
+
+            if property_groups:
+                self._property_groups = property_groups
 
     def add_comment(self, comment: str, author: str | None = None):
         """
@@ -95,13 +113,18 @@ class ObjectBase(Entity):
             self.comments.values = self.comments.values + [comment_dict]
 
     def add_data(
-        self, data: dict, property_group: str | PropertyGroup | None = None
+        self,
+        data: dict,
+        property_group: str | PropertyGroup | None = None,
+        compression: int = 5,
     ) -> Data | list[Data]:
         """
         Create :obj:`~geoh5py.data.data.Data` from dictionary of name and arguments.
         The provided arguments can be any property of the target Data class.
 
         :param data: Dictionary of data to be added to the object, e.g.
+        :param property_group: Name or :obj:`~geoh5py.groups.property_group.PropertyGroup`.
+        :param compression: Compression level for data.
 
         .. code-block:: python
 
@@ -134,7 +157,7 @@ class ObjectBase(Entity):
                 kwargs[key] = val
 
             data_object = self.workspace.create_entity(
-                Data, entity=kwargs, entity_type=entity_type
+                Data, entity=kwargs, entity_type=entity_type, compression=compression
             )
 
             if not isinstance(data_object, Data):
@@ -151,7 +174,9 @@ class ObjectBase(Entity):
         return data_objects
 
     def add_data_to_group(
-        self, data: list | Data | uuid.UUID, property_group: str | PropertyGroup
+        self,
+        data: list[Data | uuid.UUID] | Data | uuid.UUID,
+        property_group: str | PropertyGroup,
     ) -> PropertyGroup:
         """
         Append data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
@@ -165,31 +190,37 @@ class ObjectBase(Entity):
 
         :return: The target property group.
         """
-        if isinstance(data, list):
-            uids = []
-            for datum in data:
-                uids += self.reference_to_uid(datum)
-        else:
-            uids = self.reference_to_uid(data)
-
-        association = None
-        template = self.workspace.get_entity(uids[0])[0]
-        if isinstance(template, Data):
-            association = template.association
+        if isinstance(data, (Data, uuid.UUID)):
+            data = [data]
 
         if isinstance(property_group, str):
-            property_group = self.find_or_create_property_group(
-                name=property_group,
-                association=association,
-            )
-        for uid in uids:
-            assert uid in [
-                child.uid for child in self.children
-            ], f"Given data with uuid {uid} does not match any known children"
-            if uid not in property_group.properties:
-                property_group.properties.append(uid)
+            associations = []
+            for elem in data:
+                if isinstance(elem, uuid.UUID):
+                    entity = self.get_entity(elem)[0]
+                elif elem in self.children:
+                    entity = elem
+                else:
+                    continue
 
-        self.workspace.update_attribute(self, "property_groups")
+                if isinstance(entity, Data):
+                    associations.append(entity.association)
+
+            associations = list(set(associations))
+            if not associations:
+                raise ValueError(
+                    "No children data found on the parent object. "
+                    "Verify that the list of data or uuid provided are children entities."
+                )
+
+            if len(associations) != 1:
+                raise ValueError("All input 'data' must have the same association.")
+
+            property_group = self.find_or_create_property_group(
+                name=property_group, association=associations[0]
+            )
+
+        property_group.add_properties(data)
 
         return property_group
 
@@ -245,6 +276,8 @@ class ObjectBase(Entity):
         if copy_children:
             children_map = {}
             for child in self.children:
+                if isinstance(child, PropertyGroup):
+                    continue
                 if isinstance(child, Data) and child.association in (
                     DataAssociationEnum.VERTEX,
                     DataAssociationEnum.CELL,
@@ -317,7 +350,54 @@ class ObjectBase(Entity):
         """
         return ObjectType.find_or_create(workspace, cls, **kwargs)
 
-    def find_or_create_property_group(self, **kwargs) -> PropertyGroup:
+    def get_property_group(self, name: uuid.UUID | str) -> list:
+        """
+        Get a child :obj:`~geoh5py.groups.property_group.PropertyGroup` by name.
+        :param name: the reference of the property group to get.
+        :return: A list of children Data objects
+        """
+        if self._property_groups is None:
+            return [None]
+
+        entities = []
+
+        for child in self._property_groups:
+            if (
+                isinstance(name, uuid.UUID) and child.uid == name
+            ) or child.name == name:
+                entities.append(child)
+
+        if len(entities) == 0:
+            return [None]
+
+        return entities
+
+    def create_property_group(
+        self, name=None, on_file=False, **kwargs
+    ) -> PropertyGroup:
+        """
+        Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
+
+        :param kwargs: Any arguments taken by the
+            :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
+
+        :return: A new :obj:`~geoh5py.groups.property_group.PropertyGroup`
+        """
+        if self._property_groups is not None and name in [
+            pg.name for pg in self._property_groups
+        ]:
+            raise KeyError(f"A Property Group with name '{name}' already exists.")
+
+        if "property_group_type" not in kwargs and "Property Group Type" not in kwargs:
+            kwargs["property_group_type"] = "Multi-element"
+
+        prop_group = PropertyGroup(self, name=name, on_file=on_file, **kwargs)
+
+        return prop_group
+
+    def find_or_create_property_group(
+        self, name=None, uid=None, **kwargs
+    ) -> PropertyGroup:
         """
         Find or create :obj:`~geoh5py.groups.property_group.PropertyGroup`
         from given name and properties.
@@ -327,26 +407,14 @@ class ObjectBase(Entity):
 
         :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        property_groups = []
-        if self._property_groups is not None:
-            property_groups = self._property_groups
 
-        if "name" in kwargs and any(
-            pg.name == kwargs["name"] for pg in property_groups
-        ):
-            prop_group = [pg for pg in property_groups if pg.name == kwargs["name"]][0]
-        else:
-            if (
-                "property_group_type" not in kwargs
-                and "Property Group Type" not in kwargs
-            ):
-                kwargs["property_group_type"] = "Multi-element"
+        prop_group = None
+        if name is not None or uid is not None:
+            prop_group = self.get_property_group(uid or name)[0]
 
-            prop_group = PropertyGroup(self, **kwargs)
+        if prop_group is None:
+            prop_group = self.create_property_group(name=name, **kwargs)
 
-            property_groups += [prop_group]
-
-        self._property_groups = property_groups
         return prop_group
 
     def get_data(self, name: str | uuid.UUID) -> list[Data]:
@@ -416,26 +484,36 @@ class ObjectBase(Entity):
         """
         return self._property_groups
 
-    def remove_property_groups(
-        self, property_groups: PropertyGroup | list[PropertyGroup]
-    ):
-        if self.property_groups is None:
-            return
+    def remove_children(self, children: list[Entity] | list[PropertyGroup]):
+        """
+        Remove children from the list of children entities.
 
-        if isinstance(property_groups, PropertyGroup):
-            property_groups = [property_groups]
+        :param children: List of entities
 
-        keepers = []
-        for property_group in self.property_groups:
-            if property_group not in property_groups:
-                keepers += [property_group]
+        .. warning::
+            Removing a child entity without re-assigning it to a different
+            parent may cause it to become inactive. Inactive entities are removed
+            from the workspace by
+            :func:`~geoh5py.shared.weakref_utils.remove_none_referents`.
+        """
+        if not isinstance(children, list):
+            children = [children]
 
-        if not keepers:
-            self._property_groups = None
-        else:
-            self._property_groups = keepers
+        for child in children:
+            if child not in self._children:
+                continue
 
-        self.workspace.update_attribute(self, "property_groups")
+            self._children.remove(child)
+
+            if not self._property_groups:
+                continue
+
+            if isinstance(child, PropertyGroup):
+                self._property_groups.remove(child)
+            elif isinstance(child, Data):
+                self.remove_data_from_groups(child)
+
+        self.workspace.remove_children(self, children)
 
     def remove_children_values(
         self,
@@ -519,9 +597,74 @@ class ObjectBase(Entity):
                     entity_type = {"primitive_type": "INTEGER"}
                 elif isinstance(values, str):
                     entity_type = {"primitive_type": "TEXT"}
+                elif isinstance(values, np.ndarray) and (values.dtype == bool):
+                    entity_type = {"primitive_type": "BOOLEAN"}
                 else:
                     raise NotImplementedError(
-                        "Only add_data values of type FLOAT, INTEGER and TEXT have been implemented"
+                        "Only add_data values of type FLOAT, INTEGER,"
+                        "BOOLEAN and TEXT have been implemented"
                     )
 
         return entity_type
+
+    def add_default_visual_parameters(self):
+        """
+        Add default visual parameters to the object.
+        """
+        if self.visual_parameters is not None:
+            raise UserWarning("Visual parameters already exist.")
+
+        self.workspace.create_entity(  # type: ignore
+            Data,
+            save_on_creation=True,
+            **{  # type: ignore
+                "entity": {
+                    "name": "Visual Parameters",
+                    "parent": self,
+                    "association": "OBJECT",
+                },
+                "entity_type": {"name": "XmlData", "primitive_type": "TEXT"},
+            },
+        )
+
+        return self._visual_parameters
+
+    def remove_data_from_groups(
+        self, data: list[Data | uuid.UUID] | Data | uuid.UUID
+    ) -> None:
+        """
+        Remove data children to all
+        :obj:`~geoh5py.groups.property_group.PropertyGroup` of the object.
+
+        :param data: :obj:`~geoh5py.data.data.Data` object,
+            :obj:`~geoh5py.shared.entity.Entity.uid` or
+            :obj:`~geoh5py.shared.entity.Entity.name` of data.
+        """
+        if not isinstance(data, list):
+            data = [data]
+
+        if not self._property_groups:
+            return
+
+        for property_group in self._property_groups:
+            property_group.remove_properties(data)
+
+    @property
+    def visual_parameters(self) -> VisualParameters | None:
+        """
+        Access the visual parameters of the object.
+        """
+        if self._visual_parameters is None:
+            for child in self.children:
+                if isinstance(child, VisualParameters):
+                    self._visual_parameters = child
+                    break
+
+        return self._visual_parameters
+
+    @visual_parameters.setter
+    def visual_parameters(self, value: VisualParameters):
+        if not isinstance(value, VisualParameters):
+            raise TypeError("visual_parameters must be a VisualParameters object.")
+
+        self._visual_parameters = value

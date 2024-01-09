@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..data import Data, DataAssociationEnum
+from ..groups import PropertyGroup
 from ..shared.utils import box_intersect, mask_by_extent
 from .points import Points
 
@@ -143,7 +144,7 @@ class CellObject(Points, ABC):
         self.remove_cells(np.where(~np.all(vert_index[self.cells], axis=1)))
         setattr(self, "cells", new_index[self.cells])
 
-    def copy(
+    def copy(  # pylint: disable=too-many-branches
         self,
         parent=None,
         copy_children: bool = True,
@@ -195,6 +196,8 @@ class CellObject(Points, ABC):
         if copy_children:
             children_map = {}
             for child in self.children:
+                if isinstance(child, PropertyGroup):
+                    continue
                 if isinstance(child, Data):
                     if child.name in ["A-B Cell ID", "Transmitter ID"]:
                         continue
@@ -223,6 +226,5 @@ class CellObject(Points, ABC):
                 self.workspace.copy_property_groups(
                     new_object, self.property_groups, children_map
                 )
-                new_object.workspace.update_attribute(new_object, "property_groups")
 
         return new_object

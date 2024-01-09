@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -40,5 +40,5 @@ class UnknownData(Data):
         return PrimitiveTypeEnum.INVALID
 
     # TODO: Provide a partial implementation to access generic data,
-    # for which primitive type would be provided by the H5 file.
-    # raise NotImplementedError for method that are not supported
+    #  for which primitive type would be provided by the H5 file.
+    #  raise NotImplementedError for method that are not supported

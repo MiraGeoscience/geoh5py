@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -27,8 +27,16 @@ from typing import TYPE_CHECKING
 import h5py
 import numpy as np
 
-from ..data import CommentsData, Data, DataType, FilenameData, IntegerData, TextData
-from ..groups import Group, GroupType, RootGroup
+from ..data import (
+    BooleanData,
+    CommentsData,
+    Data,
+    DataType,
+    FilenameData,
+    IntegerData,
+    TextData,
+)
+from ..groups import Group, GroupType, PropertyGroup, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import FLOAT_NDV, Entity, EntityType, fetch_h5_handle
 from ..shared.concatenation import Concatenator
@@ -46,7 +54,7 @@ class H5Writer:
     str_type = h5py.special_dtype(vlen=str)
 
     @classmethod
-    def create_geoh5(
+    def init_geoh5(
         cls,
         file: str | h5py.File,
         workspace: workspace.Workspace,
@@ -207,26 +215,30 @@ class H5Writer:
         cls,
         file: str | h5py.File,
         entity,
+        compression: int = 5,
         add_children: bool = True,
     ) -> h5py.Group:
         """
-        Write an :obj:`~geoh5py.shared.entity.Entity` to geoh5 with its
-        :obj:`~geoh5py.shared.entity.Entity.children`.
+        Save a :obj:`~geoh5py.shared.entity.Entity` to geoh5 with its
+        :obj:`~geoh5py.shared.entity.Entity.children` recursively.
 
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
+        :param compression: Compression level for the data.
         :param add_children: Add :obj:`~geoh5py.shared.entity.Entity.children`.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-            new_entity = H5Writer.write_entity(h5file, entity)
+            new_entity = H5Writer.write_entity(h5file, entity, compression)
 
-            if add_children:
+            if add_children and not isinstance(entity, Concatenator):
                 # Write children entities and add to current parent
                 for child in entity.children:
-                    H5Writer.write_entity(h5file, child)
-                    H5Writer.write_to_parent(h5file, child, recursively=False)
+                    if not isinstance(child, PropertyGroup):
+                        H5Writer.save_entity(h5file, child, compression)
 
-            H5Writer.write_to_parent(h5file, entity)
+            H5Writer.write_to_parent(
+                h5file, entity, compression=compression, recursively=False
+            )
 
         return new_entity
 
@@ -264,8 +276,12 @@ class H5Writer:
             dict_values = getattr(entity, attribute)
 
             if channel in dict_values:
-                values = dict_values[channel]
-                if isinstance(values, np.ndarray) and values.dtype == np.float64:
+                values = dict_values[channel].copy()
+
+                if isinstance(values, np.ndarray) and values.dtype in (
+                    np.float64,
+                    np.float32,
+                ):
                     values[np.isnan(values)] = FLOAT_NDV
                     values = values.astype(np.float32)
 
@@ -278,7 +294,12 @@ class H5Writer:
 
     @classmethod
     def update_field(
-        cls, file: str | h5py.File, entity, attribute: str, **kwargs
+        cls,
+        file: str | h5py.File,
+        entity,
+        attribute: str,
+        compression: int = 5,
+        **kwargs,
     ) -> None:
         """
         Update the attributes of an :obj:`~geoh5py.shared.entity.Entity`.
@@ -286,6 +307,7 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
         :param attribute: Name of the attribute to get updated.
+        :param compression: Compression level for the data.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
@@ -300,7 +322,7 @@ class H5Writer:
                 "trace_depth",
                 "values",
             ]:
-                cls.write_data_values(h5file, entity, attribute, **kwargs)
+                cls.write_data_values(h5file, entity, attribute, compression, **kwargs)
             elif attribute in [
                 "cells",
                 "concatenated_object_ids",
@@ -320,6 +342,8 @@ class H5Writer:
                 cls.write_property_groups(h5file, entity)
             elif attribute == "color_map":
                 cls.write_color_map(h5file, entity)
+            elif attribute == "value_map":
+                cls.write_value_map(h5file, entity)
             elif attribute == "entity_type":
                 del entity_handle["Type"]
                 entity.workspace.repack = True
@@ -520,7 +544,13 @@ class H5Writer:
 
     @classmethod
     def write_data_values(  # pylint: disable=too-many-branches
-        cls, file: str | h5py.File, entity, attribute, values=None, **kwargs
+        cls,
+        file: str | h5py.File,
+        entity,
+        attribute,
+        compression: int,
+        values=None,
+        **kwargs,
     ) -> None:
         """
         Add data :obj:`~geoh5py.data.data.Data.values`.
@@ -528,6 +558,8 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file.
         :param entity: Target entity.
         :param attribute: Name of the attribute to be written to geoh5
+        :param compression: Compression level for the data.
+        :param values: Data values.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
@@ -592,7 +624,10 @@ class H5Writer:
 
             else:
                 out_values = deepcopy(values)
-                if isinstance(entity, IntegerData):
+                if isinstance(entity, BooleanData):
+                    out_values = np.round(out_values).astype("int8")
+
+                elif isinstance(entity, IntegerData):
                     out_values = np.round(out_values).astype("int32")
 
                 elif isinstance(entity, TextData) and not isinstance(values[0], bytes):
@@ -605,7 +640,7 @@ class H5Writer:
                     name_map,
                     data=out_values,
                     compression="gzip",
-                    compression_opts=9,
+                    compression_opts=compression,
                     **kwargs,
                 )
 
@@ -639,6 +674,7 @@ class H5Writer:
         cls,
         file: str | h5py.File,
         entity,
+        compression: int,
     ) -> h5py.Group:
         """
         Add an :obj:`~geoh5py.shared.entity.Entity` and its attributes to geoh5.
@@ -646,6 +682,7 @@ class H5Writer:
 
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
+        :param compression: Compression level for data.
 
         :return entity: Pointer to the written entity. Active link if "close_file" is False.
         """
@@ -689,7 +726,7 @@ class H5Writer:
             entity_handle["Type"] = new_type
             entity.entity_type.on_file = True
 
-            cls.write_properties(h5file, entity)
+            cls.write_properties(h5file, entity, compression)
             entity.on_file = True
 
             if isinstance(entity, RootGroup):
@@ -790,19 +827,21 @@ class H5Writer:
         cls,
         file: str | h5py.File,
         entity: Entity,
+        compression: int,
     ) -> None:
         """
         Add properties of an :obj:`~geoh5py.shared.entity.Entity`.
 
         :param file: Name or handle to a geoh5 file.
         :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
+        :param compression: Compression level for data.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-            H5Writer.update_field(h5file, entity, "attributes")
+            H5Writer.update_field(h5file, entity, "attributes", compression)
 
             for attribute in KEY_MAP:
                 if getattr(entity, attribute, None) is not None:
-                    H5Writer.update_field(h5file, entity, attribute)
+                    H5Writer.update_field(h5file, entity, attribute, compression)
 
     @classmethod
     def write_property_groups(
@@ -831,48 +870,76 @@ class H5Writer:
             if hasattr(entity, "property_groups") and isinstance(
                 entity.property_groups, list
             ):
-                entity_handle.create_group("PropertyGroups")
                 for p_g in entity.property_groups:
-                    uid = as_str_if_uuid(p_g.uid)
-                    if uid in entity_handle["PropertyGroups"]:
-                        del entity_handle["PropertyGroups"][uid]
-                        entity.workspace.repack = True
+                    cls.add_or_update_property_group(h5file, p_g)
 
-                    entity_handle["PropertyGroups"].create_group(uid)
+    @classmethod
+    def add_or_update_property_group(cls, file, property_group, remove=False):
+        """
+        Update a :obj:`~geoh5py.groups.property_group.PropertyGroup` associated with
+        an :obj:`~geoh5py.shared.entity.Entity`.
 
-                    group_handle = entity_handle["PropertyGroups"][uid]
+        :param file: Name or handle to a geoh5 file.
+        :param property_group: Target PropertyGroup
+        """
+        with fetch_h5_handle(file, mode="r+") as h5file:
+            entity_handle = H5Writer.fetch_handle(h5file, property_group.parent)
 
-                    for key, attr in p_g.attribute_map.items():
-                        try:
-                            value = getattr(p_g, attr)
-                        except AttributeError:
-                            continue
+            if entity_handle is None:
+                return
 
-                        if key == "Association":
-                            value = value.name.capitalize()
+            if "PropertyGroups" not in entity_handle:
+                entity_handle.create_group("PropertyGroups")
 
-                        elif key == "Properties":
-                            value = np.asarray([as_str_if_uuid(val) for val in value])
+            uid = as_str_if_uuid(property_group.uid)
+            if uid in entity_handle["PropertyGroups"]:
+                del entity_handle["PropertyGroups"][uid]
+                property_group.parent.workspace.repack = True
 
-                        elif key == "ID":
-                            value = as_str_if_uuid(value)
+            if remove:
+                return
 
-                        group_handle.attrs.create(
-                            key, value, dtype=h5py.special_dtype(vlen=str)
-                        )
+            entity_handle["PropertyGroups"].create_group(uid)
+            group_handle = entity_handle["PropertyGroups"][uid]
+
+            for key, attr in property_group.attribute_map.items():
+                try:
+                    value = getattr(property_group, attr)
+                except AttributeError:
+                    continue
+
+                if key == "Association":
+                    value = value.name.capitalize()
+
+                elif key == "Properties":
+                    if value is None:
+                        continue
+
+                    value = np.asarray([as_str_if_uuid(val) for val in value])
+
+                elif key == "ID":
+                    value = as_str_if_uuid(value)
+
+                group_handle.attrs.create(
+                    key, value, dtype=h5py.special_dtype(vlen=str)
+                )
+
+            property_group.on_file = True
 
     @classmethod
     def write_to_parent(
         cls,
         file: str | h5py.File,
         entity: Entity,
-        recursively=False,
+        compression: int,
+        recursively: bool = False,
     ) -> None:
         """
         Add/create an :obj:`~geoh5py.shared.entity.Entity` and add it to its parent.
 
         :param file: Name or handle to a geoh5 file.
         :param entity: Entity to be added or linked to a parent in geoh5.
+        :param compression: Compression level for data.
         :param recursively: Add parents recursively until reaching the
             :obj:`~geoh5py.groups.root_group.RootGroup`.
         """
@@ -881,8 +948,8 @@ class H5Writer:
                 return
 
             uid = entity.uid
-            entity_handle = H5Writer.write_entity(h5file, entity)
-            parent_handle = H5Writer.write_entity(h5file, entity.parent)
+            entity_handle = H5Writer.write_entity(h5file, entity, compression)
+            parent_handle = H5Writer.write_entity(h5file, entity.parent, compression)
 
             if isinstance(entity, Data):
                 entity_type = "Data"
@@ -902,4 +969,6 @@ class H5Writer:
                 parent_handle[entity_type][as_str_if_uuid(uid)] = entity_handle
 
             if recursively:
-                H5Writer.write_to_parent(h5file, entity.parent, recursively=True)
+                H5Writer.write_to_parent(
+                    h5file, entity.parent, compression=compression, recursively=True
+                )

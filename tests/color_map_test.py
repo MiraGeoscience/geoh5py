@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -37,7 +37,7 @@ def test_create_color_map(tmp_path):
     h5file_path = tmp_path / r"test_color_map.geoh5"
 
     # Create a workspace
-    workspace = Workspace(h5file_path)
+    workspace = Workspace.create(h5file_path)
     grid = Grid2D.create(
         workspace,
         origin=[0, 0, 0],
@@ -49,7 +49,7 @@ def test_create_color_map(tmp_path):
         allow_move=False,
     )
 
-    data = grid.add_data({"DataValues": {"values": values}})
+    data = grid.add_data({"DataValues": {"values": values.flatten()}})
 
     n_c = 10
     rgba = np.vstack(
@@ -102,7 +102,7 @@ def test_create_color_map(tmp_path):
         rec_data.entity_type.color_map, data.entity_type.color_map, ignore=["_parent"]
     )
 
-    new_workspace = Workspace(tmp_path / r"test_color_map_copy.geoh5")
+    new_workspace = Workspace.create(tmp_path / r"test_color_map_copy.geoh5")
 
     workspace.open(mode="r")
     data.copy(parent=new_workspace)
@@ -114,3 +114,5 @@ def test_create_color_map(tmp_path):
         == getattr(data.entity_type.color_map, key)
         for key in ["name", "values"]
     ), "Issue copying the ColorMap."
+
+    assert len(rec_data.entity_type.color_map) == 10

@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -26,7 +28,7 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_copy_entity(tmp_path):
+def test_copy_entity(tmp_path: Path):
     # pylint: disable=R0914
 
     # Generate a random cloud of points
@@ -60,7 +62,7 @@ def test_copy_entity(tmp_path):
     h5file_path = tmp_path / r"testProject.geoh5"
 
     # Create a workspace
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         for obj, kwargs in objects.items():
             entity = obj.create(workspace, **kwargs)
 
@@ -86,10 +88,13 @@ def test_copy_entity(tmp_path):
         with pytest.raises(AssertionError, match="Input metadata must be of type"):
             entity.metadata = 0
 
-        _ = entity.save()
+    with pytest.raises(FileExistsError, match="File "):
+        _ = Workspace.create(h5file_path)
 
-    workspace = Workspace(h5file_path)
-    new_workspace = Workspace(tmp_path / r"testProject_2.geoh5")
+    h5file_path = tmp_path / r"testProject2.geoh5"
+    workspace = Workspace.create(h5file_path)
+
+    new_workspace = Workspace.create(tmp_path / r"testProject_2.geoh5")
     for entity in workspace.objects:
         entity.copy(parent=new_workspace)
 

@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -24,7 +24,7 @@ import numpy as np
 
 from ..objects import GeoImage
 from ..shared.conversion import Grid2DConversion
-from ..shared.utils import xy_rotation_matrix
+from ..shared.utils import mask_by_extent, xy_rotation_matrix, yz_rotation_matrix
 from .grid_object import GridObject
 
 if TYPE_CHECKING:
@@ -43,7 +43,6 @@ class Grid2D(GridObject):
     __TYPE_UID = uuid.UUID(
         fields=(0x48F5054A, 0x1C5C, 0x4CA4, 0x90, 0x48, 0x80F36DC60A06)
     )
-
     _attribute_map = GridObject._attribute_map.copy()
     _attribute_map.update(
         {
@@ -57,11 +56,12 @@ class Grid2D(GridObject):
             "Vertical": "vertical",
         }
     )
-
-    _converter = Grid2DConversion
+    _converter: type[Grid2DConversion] = Grid2DConversion
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._origin: np.ndarray = np.zeros(3)
+        self._origin: np.ndarray = np.asarray(
+            tuple(np.zeros(3)), dtype=[("x", float), ("y", float), ("z", float)]
+        )
         self._u_cell_size: float | None = None
         self._v_cell_size: float | None = None
         self._u_count: int | None = None
@@ -122,16 +122,14 @@ class Grid2D(GridObject):
             and self.n_cells is not None
             and self.origin is not None
         ):
-            rot = xy_rotation_matrix(np.deg2rad(self.rotation))
+            rotation_matrix = xy_rotation_matrix(np.deg2rad(self.rotation))
+            dip_matrix = yz_rotation_matrix(np.deg2rad(self.dip))
+
             u_grid, v_grid = np.meshgrid(self.cell_center_u, self.cell_center_v)
+            xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.zeros(self.n_cells)]
 
-            if self.vertical:
-                xyz = np.c_[np.ravel(u_grid), np.zeros(self.n_cells), np.ravel(v_grid)]
-
-            else:
-                xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.zeros(self.n_cells)]
-
-            centroids = np.asarray(np.dot(rot, xyz.T).T)
+            xyz_dipped = dip_matrix @ xyz.T
+            centroids = (rotation_matrix @ xyz_dipped).T
 
             for ind, axis in enumerate(["x", "y", "z"]):
                 centroids[:, ind] += self.origin[axis]
@@ -140,7 +138,7 @@ class Grid2D(GridObject):
 
         return self._centroids
 
-    def copy_from_extent(
+    def copy_from_extent(  # pylint: disable=too-many-locals disable=too-many-arguments
         self,
         extent: np.ndarray,
         parent=None,
@@ -155,38 +153,22 @@ class Grid2D(GridObject):
         if not isinstance(extent, np.ndarray):
             raise TypeError("Expected a numpy array of extent values.")
 
+        if not extent.ndim == 2 and 3 < extent.shape[1] < 2:
+            raise TypeError("Expected a 2D numpy array with 2 or 3 columns")
+
         if self.u_cell_size is None or self.v_cell_size is None:
             raise AttributeError("Cell sizes are not defined.")
 
-        if extent.shape[1] == 2:
-            extent = np.c_[extent, np.r_[-np.inf, np.inf]]
+        if self.centroids is None:
+            raise AttributeError("Centroids are not defined.")
 
-        extent = extent.astype(float)
-        extent = np.vstack(
-            [
-                extent[0, :],
-                np.c_[extent[0, 0], extent[1, 1], extent[0, 2]],
-                extent[1, :],
-                np.c_[extent[1, 0], extent[0, 1], extent[1, 2]],
-            ]
-        )
-        z_extent = extent[:, 2]
-        origin = np.r_[self.origin["x"], self.origin["y"], self.origin["z"]].astype(
-            float
-        )
-        extent[:, :2] -= origin[:2]
-        if self.rotation != 0.0:
-            extent[:, 2] = 0
-            rot = xy_rotation_matrix(-np.deg2rad(self.rotation))
-            extent = np.dot(rot, extent.T).T
-            extent[:, 2] = z_extent
+        # get the centroids
+        selected_centroids = mask_by_extent(
+            self.centroids, extent, inverse=inverse
+        ).reshape((self.v_count, self.u_count))
 
-        u_ind = (self.cell_center_u <= np.max(extent[:, 0])) & (
-            self.cell_center_u >= np.min(extent[:, 0])
-        )
-        v_ind = (self.cell_center_v <= np.max(extent[:, 1])) & (
-            self.cell_center_v >= np.min(extent[:, 1])
-        )
+        u_ind = np.any(selected_centroids, axis=0)
+        v_ind = np.any(selected_centroids, axis=1)
 
         indices = np.kron(v_ind, u_ind).flatten()
 
@@ -198,30 +180,46 @@ class Grid2D(GridObject):
                 np.argmax(u_ind) * self.u_cell_size,
                 np.argmax(v_ind) * self.v_cell_size,
                 0.0,
-            ]
-            rot = xy_rotation_matrix(np.deg2rad(self.rotation))
-            delta_orig = np.dot(rot, delta_orig.T).T
+            ].T
+
+            dip_matrix = yz_rotation_matrix(np.deg2rad(self.dip))
+            delta_orig = dip_matrix @ delta_orig
+
+            rotation_matrix = xy_rotation_matrix(np.deg2rad(self.rotation))
+            delta_orig = (rotation_matrix @ delta_orig).T
+
             kwargs.update(
                 {
                     "origin": np.r_[
-                        origin[0] + delta_orig[0, 0],
-                        origin[1] + delta_orig[0, 1],
-                        origin[2],
+                        self.origin["x"] + delta_orig[0, 0],
+                        self.origin["y"] + delta_orig[0, 1],
+                        self.origin["z"] + delta_orig[0, 2],
                     ],
                     "u_count": np.sum(u_ind),
                     "v_count": np.sum(v_ind),
                 }
             )
-        else:
-            indices = ~indices
 
-        return super(GridObject, self).copy(
+        else:
+            indices = GridObject.mask_by_extent(self, extent, inverse=inverse)
+
+        copy = super(GridObject, self).copy(
             parent=parent,
             copy_children=copy_children,
             clear_cache=clear_cache,
             mask=indices,
             **kwargs,
         )
+
+        if not inverse:
+            for child in copy.children:
+                if isinstance(child.values, np.ndarray):
+                    indices = child.mask_by_extent(extent, inverse=inverse)
+                    values = child.values
+                    values[~indices] = child.nan_value
+                    child.values = values
+
+        return copy
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -235,15 +233,23 @@ class Grid2D(GridObject):
         """
         :obj:`float`: Dip angle from horizontal (positive down) in degrees.
         """
+        if self.vertical:
+            self._dip = 90.0
+            return self._dip
+
         return self._dip
 
     @dip.setter
     def dip(self, value):
-        if value is not None:
-            assert isinstance(value, float), "Dip angle must be a float"
-            self._centroids = None
-            self._dip = value
-            self.workspace.update_attribute(self, "attributes")
+        if not isinstance(value, (float, int)):
+            raise TypeError("Dip angle must be a float.")
+        self._centroids = None
+
+        self._dip = float(value)
+        if self._dip == 90:
+            self._vertical = True
+
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def n_cells(self) -> int | None:
@@ -285,13 +291,12 @@ class Grid2D(GridObject):
         return self._rotation
 
     @rotation.setter
-    def rotation(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
-            self._centroids = None
-            self._rotation = value.astype(float).item()
-            self.workspace.update_attribute(self, "attributes")
+    def rotation(self, value: float | int):
+        if not isinstance(value, (float, int)):
+            raise TypeError("Rotation angle must be a float.")
+        self._centroids = None
+        self._rotation = float(value)
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def shape(self) -> tuple | None:
@@ -390,13 +395,20 @@ class Grid2D(GridObject):
             ], "vertical must be of type 'bool'"
             self._centroids = None
             self._vertical = value
+            if self.dip != 90 and value is True:
+                self._dip = 90.0
             self.workspace.update_attribute(self, "attributes")
 
-    def to_geoimage(self, keys: list | str, **geoimage_kwargs) -> GeoImage:
+    def to_geoimage(
+        self, keys: list | str, mode: str | None = None, **geoimage_kwargs
+    ) -> GeoImage:
         """
         Create a :obj:geoh5py.objects.geo_image.GeoImage object from the current Grid2D.
+
         :param keys: the list of the data name to pass as band in the image.
-        Warning: The len of the list can only be 1, 3, 4 (Pillow restrictions).
+            Warning: The len of the list can only be 1, 3, 4 (Pillow restrictions).
+        :param mode: The mode of the image. One of 'GRAY', 'RGB', 'RGBA' or 'CMYK'.
+
         :return: a new georeferenced :obj:`geoh5py.objects.geo_image.GeoImage`.
         """
-        return self.converter.to_geoimage(self, keys, **geoimage_kwargs)
+        return self.converter.to_geoimage(self, keys, mode=mode, **geoimage_kwargs)

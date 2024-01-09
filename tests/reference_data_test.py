@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -40,7 +40,7 @@ def test_create_reference_data(tmp_path):
             random.choice(string.ascii_lowercase) for i in range(8)
         )
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         points = Points.create(
             workspace, vertices=np.random.randn(n_data, 3), name=name, allow_move=False
         )

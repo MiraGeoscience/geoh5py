@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,26 +18,29 @@
 # pylint: disable=R0914
 # mypy: ignore-errors
 
+from __future__ import annotations
+
 import numpy as np
 import pytest
 
 from geoh5py.data import FloatData, data_type
 from geoh5py.groups import ContainerGroup, DrillholeGroup, Group
 from geoh5py.objects import Drillhole, ObjectBase
+from geoh5py.shared import fetch_h5_handle
 from geoh5py.shared.concatenation import (
     ConcatenatedData,
     ConcatenatedObject,
     ConcatenatedPropertyGroup,
     Concatenator,
 )
-from geoh5py.shared.utils import compare_entities
+from geoh5py.shared.utils import as_str_if_uuid, compare_entities
 from geoh5py.workspace import Workspace
 
 
 def test_concatenator(tmp_path):
     h5file_path = tmp_path / r"test_Concatenator.geoh5"
 
-    with Workspace(h5file_path, version=2.0) as workspace:
+    with Workspace.create(h5file_path, version=2.0) as workspace:
         # Create a workspace
         dh_group = DrillholeGroup.create(workspace)
 
@@ -78,7 +81,7 @@ def test_concatenator(tmp_path):
 
 def test_concatenated_entities(tmp_path):
     h5file_path = tmp_path / r"test_concatenated_data.geoh5"
-    with Workspace(h5file_path, version=2.0) as workspace:
+    with Workspace.create(h5file_path, version=2.0) as workspace:
         class_type = type("TestGroup", (Concatenator, ContainerGroup), {})
         entity_type = Group.find_or_create_type(workspace)
         concat = class_type(entity_type)
@@ -116,25 +119,47 @@ def test_concatenated_entities(tmp_path):
 
         prop_group = ConcatenatedPropertyGroup(parent=concat_object)
 
-        with pytest.raises(AttributeError) as error:
+        with pytest.raises(
+            AttributeError, match="Cannot change parent of a property group."
+        ):
             prop_group.parent = Drillhole
-
-        assert (
-            "The 'parent' of a concatenated Data must be of type 'Concatenated'"
-            in str(error)
-        )
 
         assert prop_group.to_ is None
         assert prop_group.from_ is None
 
+        setattr(prop_group, "_parent", None)
 
-def test_create_drillhole_data(tmp_path):
+        with pytest.raises(
+            AttributeError, match="The 'parent' of a concatenated Data must be of type"
+        ):
+            prop_group.parent = "bidon"
+
+        prop_group.parent = concat_object
+
+        assert prop_group.parent == concat_object
+
+        with pytest.raises(KeyError, match="A Property Group"):
+            concat_object.create_property_group(name="property_group")
+
+
+def test_empty_concatenated_property_group():
+    workspace = Workspace()
+    dh_group = DrillholeGroup.create(workspace)
+    well = Drillhole.create(
+        workspace,
+        parent=dh_group,
+    )
+    ConcatenatedPropertyGroup(parent=well)
+    assert not well.from_
+
+
+def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
     h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
     new_path = tmp_path / r"test_drillholeGroup2.geoh5"
     well_name = "bullseye/"
     n_data = 10
 
-    with Workspace(h5file_path, version=2.0) as workspace:
+    with Workspace.create(h5file_path, version=2.0) as workspace:
         # Create a workspace
         dh_group = DrillholeGroup.create(workspace)
 
@@ -191,18 +216,46 @@ def test_create_drillhole_data(tmp_path):
                 },
             )
 
+        test_values = np.random.randn(30)
+        test_values[0] = np.nan
+        test_values[-1] = np.nan
+
         well.add_data(
             {
                 "my_log_values/": {
                     "depth": np.arange(0, 50.0),
-                    "values": np.random.randn(30),
+                    "values": np.random.randn(50),
                 },
                 "log_wt_tolerance": {
                     "depth": np.arange(0.01, 50.01),
-                    "values": np.random.randn(50),
+                    "values": test_values.astype(np.float32),
                 },
             }
         )
+
+        log_data = well.get_data("my_log_values/")[0]
+        assert log_data.parent.name == "bullseye/"
+        assert (
+            log_data.parent.depth_
+            and not log_data.parent.from_
+            and not log_data.parent.to_
+        )
+        assert log_data.parent.depth_[0].name == "DEPTH"
+        assert not log_data.parent.get_data("FROM")
+        assert not log_data.parent.get_data("TO")
+        assert log_data.property_group.name == "depth_0"
+        assert log_data.property_group.depth_.name == "DEPTH"
+        assert (
+            len(log_data.parent.property_groups[0].properties) == 3
+        ), "Should only have 3 properties (my_log_values, log_wt_tolerance, DEPTH)"
+        assert log_data.property_group.property_group_type == "Depth table"
+
+        with fetch_h5_handle(h5file_path) as h5file:
+            name = list(h5file)[0]
+            group = h5file[name]["Groups"][as_str_if_uuid(dh_group.uid)][
+                "Concatenated Data"
+            ]
+            assert np.all(~np.isnan(group["Data"]["log_wt_tolerance"][:]))
 
         assert len(well.get_data("my_log_values/")) == 1
         assert len(well.get_data("my_log_values/")[0].values) == 50
@@ -247,6 +300,19 @@ def test_create_drillhole_data(tmp_path):
             }
         )
 
+        interval_data = data_objects[0]
+        assert interval_data.property_group.name == "Interval_0"
+        assert interval_data.parent.get_data("FROM")
+
+        assert interval_data.parent.get_data("FROM(1)")
+        assert interval_data.parent.get_data("TO")
+        assert interval_data.parent.get_data("TO(1)")
+        assert (
+            (interval_data.property_group.depth_ is None)
+            and (interval_data.property_group.from_ is not None)
+            and (interval_data.property_group.to_ is not None)
+        )
+        assert interval_data.property_group.property_group_type == "Interval table"
         assert data_objects[1].property_group == data_objects[2].property_group
 
         well_b_data = well_b.add_data(
@@ -260,8 +326,8 @@ def test_create_drillhole_data(tmp_path):
         depth_data = well_b.add_data(
             {
                 "Depth Data": {
-                    "values": np.random.randn(10),
                     "depth": np.sort(np.random.uniform(low=0.05, high=100, size=(10,))),
+                    "values": np.random.randn(8),
                 },
             }
         )
@@ -270,7 +336,7 @@ def test_create_drillhole_data(tmp_path):
             "'interval_values' on well_b should be the second entry.",
         )
 
-        assert len(well.to_) == len(well.from_) == 3, "Should have only 3 from-to data."
+        assert len(well.to_) == len(well.from_) == 2, "Should have only 2 from-to data."
 
         with pytest.raises(
             UserWarning, match="Data with name 'Depth Data' already present"
@@ -288,7 +354,7 @@ def test_create_drillhole_data(tmp_path):
 
         well_b_data.values = np.random.randn(from_to_b.shape[0])
 
-    with well.workspace.open() as workspace:
+    with well.workspace.open(mode="r") as workspace:
         # Check entities
         compare_entities(
             well,
@@ -327,6 +393,7 @@ def test_create_drillhole_data(tmp_path):
                 "_metadata",
                 "_default_collocation_distance",
                 "_property_groups",
+                "_uid",
             ],
         )
         compare_entities(
@@ -340,29 +407,30 @@ def test_create_drillhole_data(tmp_path):
             == well_b.get_data_list()
         )
 
-        with Workspace(new_path, version=2.0) as new_workspace:
+        with Workspace.create(new_path, version=2.0) as new_workspace:
             new_group = dh_group.copy(parent=new_workspace)
-            well = new_group.children[0]
+            well = [k for k in new_group.children if k.name == "bullseye/"][0]
 
+            prop_group = [k for k in well.property_groups if k.name == "Interval_0"][0]
             with pytest.raises(
                 ValueError, match="Input values for 'new_data' with shape"
             ):
                 well.add_data(
                     {
-                        "new_data": {"values": np.random.randn(49).astype(np.float32)},
+                        "new_data": {"values": np.random.randn(24).astype(np.float32)},
                     },
-                    property_group=well.property_groups[0].name,
+                    property_group=prop_group.name,
                 )
 
             well.add_data(
                 {
-                    "new_data": {"values": np.random.randn(50).astype(np.float32)},
+                    "new_data": {"values": np.random.randn(25).astype(np.float32)},
                 },
-                property_group=well.property_groups[0].name,
+                property_group=prop_group.name,
             )
 
         assert (
-            len(well.property_groups[0].properties) == 5
+            len(well.property_groups[0].properties) == 3
         ), "Issue adding data to interval."
 
 
@@ -370,7 +438,9 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
     well_name = "well"
     n_data = 10
 
-    with Workspace(h5file_path, version=version, ga_version=ga_version) as workspace:
+    with Workspace.create(
+        h5file_path, version=version, ga_version=ga_version
+    ) as workspace:
         # Create a workspace
         dh_group = DrillholeGroup.create(workspace, name="DH_group")
         well = Drillhole.create(
@@ -478,7 +548,7 @@ def test_copy_drillhole_group(tmp_path):
             np.testing.assert_array_almost_equal(child_a.surveys, child_b.surveys)
             assert child_a.get_data_list() == child_b.get_data_list()
 
-        with Workspace(
+        with Workspace.create(
             tmp_path / r"test_copy_concatenated_copy.geoh5",
             version=2.0,
             ga_version="4.2",
@@ -498,7 +568,7 @@ def test_copy_from_extent_drillhole_group(tmp_path):
 
     with workspace.open():
         dh_group = workspace.get_entity("DH_group")[0]
-        dh_group_copy = dh_group.copy_from_extent(np.asarray([[0, 0], [15, 15]]))
+        dh_group_copy = dh_group.copy_from_extent(extent=np.asarray([[0, 0], [15, 15]]))
 
         assert len(dh_group_copy.children) == 2
         for child_a in dh_group_copy.children:

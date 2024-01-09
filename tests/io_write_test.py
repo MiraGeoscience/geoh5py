@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -26,7 +26,7 @@ from geoh5py.workspace import Workspace
 
 def test_fetch_handle(tmp_path):
     h5file_path = tmp_path / r"test2.geoh5"
-    w_s = Workspace(h5file_path)
+    w_s = Workspace.create(h5file_path)
     with File(h5file_path, "r+") as project:
         base = list(project.keys())[0]
         del project[base]["Objects"]

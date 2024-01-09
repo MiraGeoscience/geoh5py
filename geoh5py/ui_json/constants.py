@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from uuid import UUID
 
 from ..groups import PropertyGroup
@@ -49,7 +50,7 @@ ui_validations = {
             "Strike & dip",
         ],
     },
-    "dataType": {"values": ["Float", "Text", "Integer", "Referenced"]},
+    "dataType": {"values": ["Float", "Text", "Integer", "Referenced", "Boolean"]},
     "dependency": {"types": [str, type(None)]},
     "dependencyType": {"values": ["enabled", "disabled"]},
     "enabled": {"types": [bool, type(None)]},
@@ -74,9 +75,9 @@ base_validations = {
     "conda_environment_boolean": {
         "types": [bool],
     },
-    "geoh5": {"required": True, "types": [str, Workspace, type(None)]},
+    "geoh5": {"required": True, "types": [str, Path, Workspace, type(None)]},
     "monitoring_directory": {
-        "types": [str, type(None)],
+        "types": [str, Path, type(None)],
     },
     "run_command": {
         "types": [str, type(None)],
@@ -85,6 +86,6 @@ base_validations = {
         "types": [bool],
     },
     "workspace": {
-        "types": [str, Workspace, type(None)],
+        "types": [str, Path, Workspace, type(None)],
     },
 }

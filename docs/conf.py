@@ -15,15 +15,15 @@
 import os
 import sys
 
-# import geoh5py
+from pathlib import Path
 
-sys.path.append(os.path.abspath("./_ext"))
-sys.path.append(os.path.abspath(".."))
+sys.path.append(str(Path("_ext").resolve()))
+sys.path.append(str(Path().parent.resolve()))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-# sys.path.insert(0, os.path.abspath('.'))
+# documentation root, use pathlib.Path.resolve to make it absolute, like shown here.
+# sys.path.insert(0, Path().resolve())
 
 # -- General configuration ------------------------------------------------
 
@@ -80,9 +80,9 @@ master_doc = "index"
 project = "geoh5py"
 
 # The short X.Y version.
-version = "0.7.1"
+version = "0.8.0"
 # The full version, including alpha/beta/rc tags.
-release = "0.7.1"
+release = "0.8.0"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -160,6 +160,11 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 # html_logo = 'images/geoh5py.png'
 
 check_meta = False
+
+html_theme_options = {
+    "navigation_depth": 5,
+    "collapse_navigation": False,
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
@@ -345,26 +350,28 @@ def clean_state():
     for root, dirList, fileList in os.walk(cwd):
         if "Workspace" not in root:
             for filename in fileList:
-                if "ipynb" in filename:
-                    os.system("nbstripout " + os.path.join(root, filename))
-                if ".geoh5" in filename:
-                    os.remove(os.path.join(root, filename))
+                filepath = Path(root) / filename
+                if filepath.suffix == ".ipynb":
+                    os.system("nbstripout " + str(filepath))
+                if filepath.suffix == ".geoh5":
+                    filepath.unlink()
 
 
 clean_state()
 # # Build the API
-# dirname, filename = os.path.split(os.path.abspath(__file__))
+# dirpath = Path(__file__).parent.resolve()
 # subprocess.run(
 #     [
 #         "sphinx-autogen",
 #         "-i",
 #         "-t",
-#         os.path.sep.join([dirname, "_templates"]),
+#         str(dirpath / "_templates"),
 #         "-o",
-#         os.path.sep.join([dirname, "content/api/generated"]),
-#         os.path.sep.join([dirname, "content/api/index.rst"]),
+#         str(dirpath / "content" / "api" / "generated"),
+#         str(dirpath / "content" / "api" / "index.rst"),
 #     ]
 # )
+
 
 # TODO: build the source
 # sphinx-apidoc --templatedir templates/ -o content/api/ ../geoh5py

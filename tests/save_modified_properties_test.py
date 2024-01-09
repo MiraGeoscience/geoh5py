@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -37,26 +37,26 @@ def test_save_modified_properties(
     h5file_path = tmp_path / r"testPoints.geoh5"
 
     # Create a workspace
-    workspace = Workspace(h5file_path)
-    points = Points.create(workspace)
+    with Workspace.create(h5file_path) as workspace:
+        points = Points.create(workspace)
 
-    assert write_attributes.called, f"{write_attributes} was not called."
-    assert (
-        not write_array_attribute.called
-    ), f"{write_array_attribute} should not have been called."
-    assert (
-        not write_data_values.called
-    ), f"{write_data_values} should not have been called."
+        assert write_attributes.called, f"{write_attributes} was not called."
+        assert (
+            not write_array_attribute.called
+        ), f"{write_array_attribute} should not have been called."
+        assert (
+            not write_data_values.called
+        ), f"{write_data_values} should not have been called."
 
-    points.vertices = xyz
+        points.vertices = xyz
 
-    assert (
-        write_array_attribute.called
-    ), f"{write_array_attribute} should have been called."
-    assert (
-        not write_data_values.called
-    ), f"{write_data_values} should not have been called."
+        assert (
+            write_array_attribute.called
+        ), f"{write_array_attribute} should have been called."
+        assert (
+            not write_data_values.called
+        ), f"{write_data_values} should not have been called."
 
-    points.add_data({"rando": {"values": np.ones(n_data)}})
+        points.add_data({"rando": {"values": np.ones(n_data)}})
 
-    assert write_data_values.called, f"{write_data_values} should have been called."
+        assert write_data_values.called, f"{write_data_values} should have been called."

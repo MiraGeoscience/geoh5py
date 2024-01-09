@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 from gc import collect
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -27,12 +28,12 @@ from geoh5py.objects import Curve
 from geoh5py.workspace import Workspace
 
 
-def test_delete_entities(tmp_path):
+def test_delete_entities(tmp_path: Path):
     h5file_path = tmp_path / r"testPoints.geoh5"
     xyz = np.random.randn(12, 3)
     values = np.random.randn(12)
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         group = ContainerGroup.create(workspace)
         curve_1 = Curve.create(workspace, vertices=xyz, parent=group)
         curve_1.add_data({"DataValues": {"association": "VERTEX", "values": values}})
@@ -61,19 +62,22 @@ def test_delete_entities(tmp_path):
                 )
         uid_out = curve_2.children[1].uid
 
-        workspace.remove_entity(curve_2.children[0])
-        workspace.remove_entity(curve_2.children[0])
+        curve_2.remove_children(curve_2.children[0])
 
         assert (
             uid_out
             not in curve_2.find_or_create_property_group(name="myGroup").properties
         ), "Data uid was not removed from the property_group"
+
+        curve_2.remove_children(curve_2.children[0])
+        curve_2.remove_children(curve_2.children[0])
+
         assert (
             len(workspace.data) == 3
         ), "Data were not fully removed from the workspace."
         assert (
             len(curve_2.children) == 2
-        ), "Data were not fully removed from the parent object."
+        ), f"Data were not fully removed from the parent object. {curve_2.children}"
         assert (
             len(workspace.types) == 6
         ), "Data types were not properly removed from the workspace."

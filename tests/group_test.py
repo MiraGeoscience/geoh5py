@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -29,7 +29,7 @@ def test_create_group(tmp_path):
     group_name = "MyTestContainer"
 
     # Create a workspace
-    workspace = Workspace(h5file_path)
+    workspace = Workspace.create(h5file_path)
     group = ContainerGroup.create(workspace, name=group_name)
     workspace.save_entity(group)
 
@@ -42,13 +42,13 @@ def test_simpeg_group(tmp_path):
     h5file_path = tmp_path / r"testGroup.geoh5"
 
     # Create a workspace with group
-    workspace = Workspace(h5file_path)
+    workspace = Workspace.create(h5file_path)
     group = SimPEGGroup.create(workspace)
     group.options = constants.default_ui_json
     group.options["something"] = templates.float_parameter()
 
     # Copy
-    new_workspace = Workspace(tmp_path / r"testGroup2.geoh5")
+    new_workspace = Workspace.create(tmp_path / r"testGroup2.geoh5")
     group.copy(parent=new_workspace)
 
     # Read back in and compare

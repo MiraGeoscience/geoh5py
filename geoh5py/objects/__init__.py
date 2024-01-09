@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,7 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=unused-import
+# pylint: disable=unused-import, cyclic-import
 # flake8: noqa
 
 from .block_model import BlockModel
@@ -34,13 +34,32 @@ from .octree import Octree
 from .points import Points
 from .surface import Surface
 from .surveys.direct_current import CurrentElectrode, PotentialElectrode
+from .surveys.electromagnetics.base import (
+    AirborneEMSurvey,
+    FEMSurvey,
+    LargeLoopGroundEMSurvey,
+    MovingLoopGroundEMSurvey,
+    TEMSurvey,
+)
+from .surveys.electromagnetics.airborne_fem import (
+    AirborneFEMReceivers,
+    AirborneFEMTransmitters,
+)
 from .surveys.electromagnetics.airborne_tem import (
     AirborneTEMReceivers,
     AirborneTEMTransmitters,
 )
+from .surveys.electromagnetics.ground_fem import (
+    LargeLoopGroundFEMReceivers,
+    LargeLoopGroundFEMTransmitters,
+    MovingLoopGroundFEMReceivers,
+    MovingLoopGroundFEMTransmitters,
+)
 from .surveys.electromagnetics.ground_tem import (
-    GroundTEMReceiversLargeLoop,
-    GroundTEMTransmittersLargeLoop,
+    LargeLoopGroundTEMReceivers,
+    LargeLoopGroundTEMTransmitters,
+    MovingLoopGroundTEMReceivers,
+    MovingLoopGroundTEMTransmitters,
 )
 from .surveys.electromagnetics.magnetotellurics import MTReceivers
 from .surveys.electromagnetics.tipper import TipperBaseStations, TipperReceivers

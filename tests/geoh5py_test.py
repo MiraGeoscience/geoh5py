@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -20,7 +20,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import toml
+import tomli as toml
 
 import geoh5py
 

@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 
 from geoh5py.groups import ContainerGroup
@@ -25,9 +27,9 @@ from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
-def test_create_point_data(tmp_path):
+def test_create_point_data(tmp_path: Path):
     h5file_path = tmp_path / r"test.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         group = ContainerGroup.create(workspace, parent=None)
         assert (
             group.parent == workspace.root
@@ -43,10 +45,10 @@ def test_create_point_data(tmp_path):
         assert points.parent == group, "Parent setter did not work."
 
 
-def test_parent_extent(tmp_path):
+def test_parent_extent(tmp_path: Path):
     h5file_path = tmp_path / r"test.geoh5"
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         group = ContainerGroup.create(workspace, parent=None)
 
         assert group.extent is None, "Extent should be None for empty group."

@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -33,7 +33,7 @@ def test_create_point_data(tmp_path):
     # Generate a random cloud of points
     values = np.random.randn(12)
     h5file_path = tmp_path / r"testPoints.geoh5"
-    workspace = Workspace(h5file_path)
+    workspace = Workspace.create(h5file_path)
     points = Points.create(workspace, vertices=np.random.randn(12, 3), allow_move=False)
     data = points.add_data({"DataValues": {"association": "VERTEX", "values": values}})
 
@@ -43,7 +43,7 @@ def test_create_point_data(tmp_path):
     with pytest.raises(TypeError, match="Association must be of type"):
         points.add_data({"test": {"association": Points, "values": values}})
 
-    with pytest.raises(ValueError, match="Input 'values' of shape"):
+    with pytest.warns(UserWarning, match="Input 'values' converted to a 1D array."):
         points.add_data({"test": {"values": values.reshape(-1, 1)}})
 
     tag = points.add_data(
@@ -80,7 +80,7 @@ def test_remove_point_data(tmp_path):
     # Generate a random cloud of points
     values = np.random.randn(12)
     h5file_path = tmp_path / r"testPoints.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         points = Points.create(workspace)
 
         with pytest.warns(UserWarning, match="No vertices to be removed."):
@@ -124,7 +124,7 @@ def test_remove_point_data(tmp_path):
 def test_copy_points_data(tmp_path):
     values = np.random.randn(12)
     h5file_path = tmp_path / r"testPoints.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         points = Points.create(workspace)
         points.vertices = np.random.randn(12, 3)
         data = points.add_data(

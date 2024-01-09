@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -62,7 +62,7 @@ def test_create_block_model_data(tmp_path):
         ),
     ]
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         grid = BlockModel.create(
             workspace,
             origin=[0, 0, 0],

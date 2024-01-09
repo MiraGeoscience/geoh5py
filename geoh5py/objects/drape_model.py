@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -92,7 +92,25 @@ class DrapeModel(GridObject):
     @property
     def layers(self) -> np.ndarray | None:
         """
-        :obj:`~geoh5py.objects.object_base.ObjectBase.layers`
+        :obj:`numpy.array`, shape(*, 3): Layers in the drape model with columns: X
+        (prism index), K (depth index), elevation (cell bottom)).
+        shape(*, 3) organized into blocks representing each prism in the model.
+
+        .. code-block:: python
+
+            layers = [
+                [x_1, k_1, z_11],
+                [x_1, k_2, z_12],
+                ...
+                [x_1, k_N, z_1N],
+                .
+                .
+                .
+                [x_M, k_1, z_M1],
+                [x_M, k_2, z_M2],
+                ...
+                [x_M, k_N, z_MM]
+            ]
         """
         if self._layers is None and self.on_file:
             self._layers = self.workspace.fetch_array_attribute(self, "layers")
@@ -104,9 +122,14 @@ class DrapeModel(GridObject):
 
     @layers.setter
     def layers(self, xyz: np.ndarray):
-        assert (
-            xyz.shape[1] == 3
-        ), f"Array of layers must be of shape (*, 3). Array of shape {xyz.shape} provided."
+        if any(np.diff(np.unique(xyz[:, 0])) != 1):
+            msg = "Prism index (first column) must be monotonically increasing."
+            raise ValueError(msg)
+
+        if xyz.shape[1] != 3:
+            msg = f"Array of layers must be of shape (*, 3). Array of shape {xyz.shape} provided."
+            raise ValueError(msg)
+
         self._layers = np.asarray(
             np.core.records.fromarrays(
                 xyz.T.tolist(),
@@ -124,7 +147,21 @@ class DrapeModel(GridObject):
     @property
     def prisms(self) -> np.ndarray | None:
         """
-        :obj:`~geoh5py.objects.object_base.ObjectBase.prisms`
+        :obj:`numpy.array`, shape(*, 5) detailing the assembly of :obj:
+        `geoh5py.objects.drape_model.Drapemodel.layers` within the trace
+        of the drape model.
+
+        Columns: Easting, Northing, Elevation (top),
+        layer index (first), layer count.
+
+        .. code-block:: python
+
+            prisms = [
+                [e_1, n_1, z_1, l_1, c_1],
+                ...,
+                [e_N, n_N, z_N, l_N, c_N]
+            ]
+
         """
         if self._prisms is None and self.on_file:
             self._prisms = self.workspace.fetch_array_attribute(self, "prisms")

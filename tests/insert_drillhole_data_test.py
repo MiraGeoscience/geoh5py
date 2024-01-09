@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -30,7 +30,7 @@ def test_insert_drillhole_data(tmp_path):
     collocation = 1e-5
     h5file_path = tmp_path / r"testCurve.geoh5"
 
-    with Workspace(h5file_path, version=1.0) as workspace:
+    with Workspace(version=1.0).save_as(h5file_path) as workspace:
         max_depth = 100
         well = Drillhole.create(
             workspace,

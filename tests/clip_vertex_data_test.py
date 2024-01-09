@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -43,7 +43,7 @@ def test_clip_point_data(tmp_path):
         axis=1,
     )
     h5file_path = tmp_path / r"testClipPoints.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         points = Points.create(workspace, vertices=vertices, allow_move=False)
         data = points.add_data(
             {
@@ -53,8 +53,8 @@ def test_clip_point_data(tmp_path):
         )
         points.add_file(tmp_path / "numpy_array.txt")
 
-        with Workspace(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
-            clipped_pts = points.copy_from_extent(extent, parent=new_workspace)
+        with Workspace.create(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
+            clipped_pts = points.copy_from_extent(parent=new_workspace, extent=extent)
             clipped_d = clipped_pts.get_data("DataValues")[0]
             assert clipped_pts.n_vertices == clippings.sum()
             assert np.all(clipped_d.values == data[0].values[clippings])
@@ -76,7 +76,7 @@ def test_clip_curve_data(tmp_path):
     )
 
     h5file_path = tmp_path / r"testClipCurve.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         curve = Curve.create(workspace, vertices=vertices, allow_move=False)
         data = curve.add_data(
             {
@@ -90,7 +90,7 @@ def test_clip_curve_data(tmp_path):
                 },
             }
         )
-        with Workspace(tmp_path / r"testClipCurve_copy.geoh5") as new_workspace:
+        with Workspace.create(tmp_path / r"testClipCurve_copy.geoh5") as new_workspace:
             clipped_pts = curve.copy_from_extent(parent=new_workspace, extent=extent)
             assert (
                 len(clipped_pts.get_data("VertexValues")[0].values) == clippings.sum()
@@ -104,7 +104,7 @@ def test_clip_curve_data(tmp_path):
             )
 
             clipping_inverse = curve.copy_from_extent(
-                extent, parent=new_workspace, inverse=True
+                parent=new_workspace, extent=extent, inverse=True
             )
             assert clipping_inverse.n_vertices == curve.n_vertices - clippings.sum()
             assert clipping_inverse.n_cells == 10
@@ -116,7 +116,9 @@ def test_clip_curve_data(tmp_path):
     # Repeat with 2D bounds - single point left
     extent = np.vstack([[-1, -100], [0.5, 100]])
     with workspace.open():
-        with Workspace(tmp_path / r"testClipPoints_copy2D.geoh5") as new_workspace:
+        with Workspace.create(
+            tmp_path / r"testClipPoints_copy2D.geoh5"
+        ) as new_workspace:
             clipped_pts = curve.copy_from_extent(parent=new_workspace, extent=extent)
             assert clipped_pts is None
 
@@ -137,19 +139,19 @@ def test_clip_surface(tmp_path):
         ]
     )
     h5file_path = tmp_path / r"testClipSurface.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         surf = Surface.create(workspace, vertices=vertices, cells=cells)
 
         # Clip center point, no cells left
         surf_copy = surf.copy_from_extent(
-            np.array([[0.5, -0.5], [1.5, 0.5]]), parent=workspace, inverse=True
+            parent=workspace, extent=np.array([[0.5, -0.5], [1.5, 0.5]]), inverse=True
         )
 
         assert surf_copy is None
 
         # Clip one point of triangle, one cell left
         surf_copy = surf.copy_from_extent(
-            np.array([[-0.5, -0.5], [0.5, 0.5]]), parent=workspace, inverse=True
+            parent=workspace, extent=np.array([[-0.5, -0.5], [0.5, 0.5]]), inverse=True
         )
 
         assert len(surf_copy.cells) == 1
@@ -157,14 +159,14 @@ def test_clip_surface(tmp_path):
 
         # Keep three points of triangle, one cell left
         surf_copy = surf.copy_from_extent(
-            np.array([[-0.5, -0.5], [1.5, 1.5]]), parent=workspace
+            parent=workspace, extent=np.array([[-0.5, -0.5], [1.5, 1.5]])
         )
 
         assert len(surf_copy.cells) == 1
 
         # Keep two points of triangle, no object
         surf_copy = surf.copy_from_extent(
-            np.array([[0.5, -0.5], [1.5, 1.5]]), parent=workspace
+            parent=workspace, extent=np.array([[0.5, -0.5], [1.5, 1.5]])
         )
 
         assert surf_copy is None
@@ -176,7 +178,7 @@ def test_clip_groups(tmp_path):
         np.percentile(vertices, 10, axis=0), np.percentile(vertices, 90, axis=0)
     ].T
     h5file_path = tmp_path / r"testClipGroup.geoh5"
-    with Workspace(h5file_path) as workspace:
+    with Workspace.create(h5file_path) as workspace:
         group_a = ContainerGroup.create(workspace, name="Group A")
         group_b = ContainerGroup.create(workspace, name="Group B", parent=group_a)
         curve_a = Curve.create(workspace, vertices=vertices, parent=group_a)
@@ -198,8 +200,10 @@ def test_clip_groups(tmp_path):
             }
         )
 
-        with Workspace(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
-            group_a.copy_from_extent(extent, parent=new_workspace, clear_cache=True)
+        with Workspace.create(tmp_path / r"testClipPoints_copy.geoh5") as new_workspace:
+            group_a.copy_from_extent(
+                parent=new_workspace, clear_cache=True, extent=extent
+            )
 
             assert (
                 len(new_workspace.objects) == 1

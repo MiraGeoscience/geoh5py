@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-from io import BytesIO
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -35,158 +34,129 @@ class GeoImageConversion(BaseConversion):
     Convert a :obj:'geoh5py.objects.geo_image.GeoImage' object.
     """
 
-    @classmethod
-    def convert_to_grid2d_reference(
-        cls, input_entity: GeoImage, grid2d_attributes
-    ) -> dict:
+    @staticmethod
+    def convert_to_grid2d_reference(geoimage: GeoImage, grid2d_attributes) -> dict:
         """
         Extract the geographic information from the entity.
         """
-        if input_entity.vertices is None:
-            raise AttributeError("GeoImage has no vertices")
+        if geoimage.vertices is None or geoimage.default_vertices is None:
+            raise AttributeError("GeoImage has no vertices.")
 
         # get geographic information
-        grid2d_attributes["u_origin"] = input_entity.vertices[0, 0]
-        grid2d_attributes["v_origin"] = input_entity.vertices[2, 1]
-        grid2d_attributes["u_count"] = input_entity.default_vertices[1, 0]
-        grid2d_attributes["v_count"] = input_entity.default_vertices[0, 1]
+        grid2d_attributes["origin"] = np.asarray(
+            tuple(geoimage.vertices[3]),
+            dtype=[("x", float), ("y", float), ("z", float)],
+        )
 
-        grid2d_attributes["u_cell_size"] = (
-            abs(grid2d_attributes["u_origin"] - input_entity.vertices[1, 0])
-            / grid2d_attributes["u_count"]
-        )
-        grid2d_attributes["v_cell_size"] = (
-            abs(grid2d_attributes["v_origin"] - input_entity.vertices[0, 1])
-            / grid2d_attributes["v_count"]
-        )
+        grid2d_attributes["u_count"] = geoimage.default_vertices[1, 0]
+        grid2d_attributes["v_count"] = geoimage.default_vertices[0, 1]
+
+        # Compute the distances
+        distance_u = np.linalg.norm(geoimage.vertices[2] - geoimage.vertices[3])
+        distance_v = np.linalg.norm(geoimage.vertices[0] - geoimage.vertices[3])
+
+        # Now compute the cell sizes
+        grid2d_attributes["u_cell_size"] = distance_u / grid2d_attributes["u_count"]
+        grid2d_attributes["v_cell_size"] = distance_v / grid2d_attributes["v_count"]
+
         grid2d_attributes["elevation"] = grid2d_attributes.get("elevation", 0)
+
+        if geoimage.rotation is not None:
+            grid2d_attributes["rotation"] = geoimage.rotation
+
+        if geoimage.dip is not None:
+            grid2d_attributes["dip"] = geoimage.dip
+
         return grid2d_attributes
 
-    @classmethod
-    def add_gray_data(cls, input_entity: GeoImage, output: Grid2D, name: str):
+    @staticmethod
+    def add_gray_data(values: np.ndarray, output: Grid2D):
         """
         Send the image as gray in the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        :param input_entity: :obj:'geoh5py.objects.geo_image.GeoImage' object.
+        :param values: Input image values as an array of int.
         :param output: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        :param name: the name of the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
-        value = Image.open(BytesIO(input_entity.image_data.values))
+        if values.ndim > 1:
+            values = np.asarray(Image.fromarray(values).convert("L"))
 
         output.add_data(
             data={
-                f"{name}_GRAY": {
-                    "values": np.array(value.convert("L")).astype(np.uint32)[::-1],
+                "band[0]": {
+                    "values": values.astype(np.uint32)[::-1].flatten(),
                     "association": "CELL",
                 }
             }
         )
 
-    @classmethod
-    def add_rgb_data(cls, input_entity: GeoImage, output: Grid2D, name: str):
+    @staticmethod
+    def add_color_data(values: np.ndarray, output: Grid2D):
         """
-        Send the image as rgb in the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        :param input_entity: :obj:'geoh5py.objects.geo_image.GeoImage' object.
+        Send the image color bands to :obj:'geoh5py.data.integer_data.IntegerData'.
+
+        :param values: Input image values as an array of int.
         :param output: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        :param name: the name of the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
-        value = Image.open(BytesIO(input_entity.image_data.values))
+        if values.ndim != 3:
+            raise IndexError("To export to color image, the array must be 3d.")
 
-        if np.array(value).shape[-1] != 3:
-            raise IndexError("To export to RGB the image has to have 3 bands")
-
-        output.add_data(
-            data={
-                f"{name}_R": {
-                    "values": np.array(value).astype(np.uint32)[::-1, :, 0],
-                    "association": "CELL",
-                },
-                f"{name}_G": {
-                    "values": np.array(value).astype(np.uint32)[::-1, :, 1],
-                    "association": "CELL",
-                },
-                f"{name}_B": {
-                    "values": np.array(value).astype(np.uint32)[::-1, :, 2],
-                    "association": "CELL",
-                },
-            }
-        )
-
-    @classmethod
-    def add_cmyk_data(cls, input_entity: GeoImage, output: Grid2D, name: str):
-        """
-        Send the image as cmyk in the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        :param input_entity: :obj:'geoh5py.objects.geo_image.GeoImage' object.
-        :param output: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        :param name: the name of the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        """
-        value = Image.open(BytesIO(input_entity.image_data.values))
-
-        if np.array(value).shape[-1] != 4:
-            raise IndexError("To export to CMYK the image has to have 4 bands")
-
-        output.add_data(
-            data={
-                f"{name}_C": {
-                    "values": np.array(value).astype(np.uint32)[::-1, :, 0],
-                    "association": "CELL",
-                },
-                f"{name}_M": {
-                    "values": np.array(value).astype(np.uint32)[::-1, :, 1],
-                    "association": "CELL",
-                },
-                f"{name}_Y": {
-                    "values": np.array(value).astype(np.uint32)[::-1, :, 2],
-                    "association": "CELL",
-                },
-                f"{name}_K": {
-                    "values": np.array(value).astype(np.uint32)[::-1, :, 3],
-                    "association": "CELL",
-                },
-            }
-        )
-
-    @classmethod
-    def add_data_2dgrid(
-        cls, input_entity: GeoImage, output: Grid2D, transform: str, name: str
-    ):
-        """
-        Select the type of the image transformation.
-        :param input_entity: :obj:'geoh5py.objects.geo_image.GeoImage' object.
-        :param output: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        :param transform: the type of the image transformation.
-        :param name: the name of the new :obj:'geoh5py.objects.grid2d.Grid2D'.
-        """
-        # add the data to the 2dgrid
-        if transform == "GRAY":
-            cls.add_gray_data(input_entity, output, name)
-        elif transform == "RGB":
-            cls.add_rgb_data(input_entity, output, name)
-        elif transform == "CMYK":
-            cls.add_cmyk_data(input_entity, output, name)
-        else:
-            raise KeyError(
-                f"'transform' has to be 'GRAY', 'CMYK' or 'RGB', you entered {transform} instead."
+        for ind in range(values.shape[2]):
+            output.add_data(
+                {
+                    f"band[{ind}]": {
+                        "values": values.astype(np.uint32)[::-1, :, ind].flatten(),
+                        "association": "CELL",
+                    }
+                }
             )
 
-    @classmethod
+    @staticmethod
+    def add_data_2dgrid(geoimage: Image, output: Grid2D):
+        """
+        Select the type of the image transformation.
+        :param geoimage: :obj:'geoh5py.objects.geo_image.GeoImage' object.
+        :param output: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
+        """
+        values = np.asarray(geoimage)
+
+        if values.ndim == 2:
+            GeoImageConversion.add_gray_data(values, output)
+        else:
+            GeoImageConversion.add_color_data(values, output)
+
+    @staticmethod
     def to_grid2d(
-        cls, input_entity: GeoImage, transform: str, copy_children=True, **grid2d_kwargs
+        geoimage: GeoImage,
+        mode: str | None,
+        copy_children=True,
+        **grid2d_kwargs,
     ) -> Grid2D:
         """
         Transform the :obj:'geoh5py.objects.image.Image' to a :obj:'geoh5py.objects.grid2d.Grid2D'.
-        :param input_entity: :obj:'geoh5py.objects.geo_image.GeoImage' object.
-        :param transform: the transforming type option.
+        :param geoimage: :obj:'geoh5py.objects.geo_image.GeoImage' object.
+        :param mode: The outgoing image mode option.
+
         :return: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
-        workspace = cls.validate_workspace(input_entity, **grid2d_kwargs)
-        grid2d_kwargs = cls.verify_kwargs(input_entity, **grid2d_kwargs)
-        grid2d_kwargs = cls.convert_to_grid2d_reference(input_entity, grid2d_kwargs)
+
+        workspace, grid2d_kwargs = GeoImageConversion.validate_workspace(
+            geoimage, **grid2d_kwargs
+        )
+        grid2d_kwargs = GeoImageConversion.verify_kwargs(geoimage, **grid2d_kwargs)
+        grid2d_kwargs = GeoImageConversion.convert_to_grid2d_reference(
+            geoimage, grid2d_kwargs
+        )
+
         output = objects.Grid2D.create(
             workspace,
             **grid2d_kwargs,
         )
 
+        image = geoimage.image.copy()
+
+        if mode is not None and mode != image.mode:
+            image = image.convert(mode if mode != "GRAY" else "L")
+
         if copy_children:
-            cls.add_data_2dgrid(input_entity, output, transform, output.name)
+            GeoImageConversion.add_data_2dgrid(image, output)
 
         return output

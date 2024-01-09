@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -17,17 +17,19 @@
 
 from __future__ import annotations
 
+import shutil
 import warnings
-from os import mkdir, path
-from shutil import move
+from io import BytesIO
+from pathlib import Path
 from time import time
 from typing import Any
 
 import numpy as np
 
 from geoh5py import Workspace
-from geoh5py.groups import ContainerGroup
+from geoh5py.groups import ContainerGroup, Group
 from geoh5py.objects import ObjectBase
+from geoh5py.shared.utils import fetch_active_workspace
 
 
 def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
@@ -189,10 +191,11 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
         parameters = find_all(group, "groupOptional")
         if parameters:
             is_group_optional = True
-            enabled_change = False
             for form in group.values():
-                enabled_change |= form.get("enabled", True) != value
                 form["enabled"] = value
+
+    if not is_group_optional and "dependency" in ui_json[parameter]:
+        is_group_optional = not dependency_requires_value(ui_json, parameter)
 
     if (not value) and not (
         ui_json[parameter].get("optional", False) or is_group_optional
@@ -200,8 +203,6 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
         warnings.warn(
             f"Non-option parameter '{parameter}' cannot be set to 'enabled' False "
         )
-
-    return is_group_optional and enabled_change
 
 
 def truth(ui_json: dict[str, dict], name: str, member: str) -> bool:
@@ -297,13 +298,17 @@ def str2inf(value):
 
 def workspace2path(value):
     if isinstance(value, Workspace):
-        return value.h5file
+        if isinstance(value.h5file, BytesIO):
+            return "[in-memory]"
+        return str(value.h5file)
     return value
 
 
 def path2workspace(value):
     if isinstance(value, str) and ".geoh5" in value:
-        return Workspace(value, mode="r")
+        workspace = Workspace(value, mode="r")
+        workspace.close()
+        return workspace
     return value
 
 
@@ -314,8 +319,8 @@ def container_group2name(value):
 
 
 def monitored_directory_copy(
-    directory: str, entity: ObjectBase, copy_children: bool = True
-):
+    directory: str, entity: ObjectBase | Group, copy_children: bool = True
+) -> str:
     """
     Create a temporary geoh5 file in the monitoring folder and export entity for update.
 
@@ -323,22 +328,19 @@ def monitored_directory_copy(
     :param entity: Entity to be updated
     :param copy_children: Option to copy children entities.
     """
-    working_path = path.join(directory, ".working")
-
-    if not path.exists(working_path):
-        mkdir(working_path)
+    directory_path = Path(directory)
+    working_path = directory_path / ".working"
+    working_path.mkdir(exist_ok=True)
 
     temp_geoh5 = f"temp{time():.3f}.geoh5"
 
-    if getattr(entity.workspace, "_geoh5") is None:
-        entity.workspace.open(mode="r")
+    with fetch_active_workspace(entity.workspace, mode="r"):
+        with Workspace.create(working_path / temp_geoh5) as w_s:
+            entity.copy(parent=w_s, copy_children=copy_children)
 
-    with Workspace(path.join(working_path, temp_geoh5)) as w_s:
-        entity.copy(parent=w_s, copy_children=copy_children)
-
-    move(
-        path.join(working_path, temp_geoh5),
-        path.join(directory, temp_geoh5),
+    shutil.move(
+        working_path / temp_geoh5,
+        directory_path / temp_geoh5,
     )
 
-    return path.join(directory, temp_geoh5)
+    return str(directory_path / temp_geoh5)

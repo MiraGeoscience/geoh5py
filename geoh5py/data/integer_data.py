@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -17,8 +17,6 @@
 
 from __future__ import annotations
 
-import warnings
-
 import numpy as np
 
 from ..shared import INTEGER_NDV
@@ -27,9 +25,27 @@ from .numeric_data import NumericData
 
 
 class IntegerData(NumericData):
+    def format_type(self, values: np.ndarray) -> np.ndarray:
+        """
+        Check if the type of values is valid and coerse to type int32.
+        :param values: numpy array to modify.
+        :return: the formatted values.
+        """
+        if np.any(np.modf(values)[0] != 0):
+            raise TypeError("Values cannot have decimal points.")
+
+        return values.astype(np.int32)
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.INTEGER
+
+    @property
+    def nan_value(self):
+        """
+        Nan-Data-Value
+        """
+        return self.ndv
 
     @property
     def ndv(self) -> int:
@@ -37,38 +53,3 @@ class IntegerData(NumericData):
         No-Data-Value
         """
         return INTEGER_NDV
-
-    @property
-    def values(self) -> np.ndarray | None:
-        """
-        :return: values: An array of integer values
-        """
-        if getattr(self, "_values", None) is None:
-            values = self.workspace.fetch_values(self)
-
-            if isinstance(values, (np.ndarray, type(None))):
-                self._values = self.check_vector_length(values)
-
-        return self._values
-
-    @values.setter
-    def values(self, values: np.ndarray | None):
-        if isinstance(values, (np.ndarray, type(None))):
-            values = self.check_vector_length(values)
-
-        else:
-            raise ValueError(
-                f"Input 'values' for {self} must be of type {np.ndarray} or None."
-            )
-
-        if isinstance(values, np.ndarray) and values.dtype not in [np.uint32, np.int32]:
-            warnings.warn(
-                f"Values provided in {values.dtype} are converted to int32 for "
-                f"{self.primitive_type()} data '{self.name}.'"
-            )
-            values[np.isnan(values)] = self.ndv
-            values = values.astype(np.int32)
-
-        self._values = values
-
-        self.workspace.update_attribute(self, "values")

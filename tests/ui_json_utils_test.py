@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -212,16 +212,15 @@ def test_set_enabled():
 
     # If parameter is in group and groupOptional: True then disable
     # the parameter containing the groupOptional member.
-    is_group_optional = set_enabled(ui_json, "float_parameter", False)
+    set_enabled(ui_json, "float_parameter", False)
     assert not ui_json["string_parameter"]["enabled"]
     assert not ui_json["float_parameter"]["enabled"]
     assert not ui_json["integer_parameter"]["enabled"]
-    assert is_group_optional
-    is_group_optional = set_enabled(ui_json, "float_parameter", True)
+
+    set_enabled(ui_json, "float_parameter", True)
     assert ui_json["string_parameter"]["enabled"]
     assert ui_json["float_parameter"]["enabled"]
     assert ui_json["integer_parameter"]["enabled"]
-    assert is_group_optional
 
     # Remove the groupOptional member and check that set_enabled
     # Affects the enabled status of the calling parameter
@@ -234,14 +233,13 @@ def test_set_enabled():
     ) in str(warn[0])
 
     ui_json["float_parameter"]["optional"] = True
-    is_group_optional = set_enabled(ui_json, "float_parameter", False)
+    set_enabled(ui_json, "float_parameter", False)
     assert not ui_json["float_parameter"]["enabled"]
     assert ui_json["string_parameter"]["enabled"]
     assert ui_json["integer_parameter"]["enabled"]
-    assert not is_group_optional
-    is_group_optional = set_enabled(ui_json, "float_parameter", True)
+
+    set_enabled(ui_json, "float_parameter", True)
     assert ui_json["float_parameter"]["enabled"]
-    assert not is_group_optional
 
 
 def test_truth():

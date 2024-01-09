@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -63,7 +63,6 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
     _data: dict
     _index: dict
     _property_group_ids: np.ndarray | None = None
-    _property_groups: list | None = None
 
     def __init__(self, group_type: GroupType, **kwargs):
         super().__init__(group_type, **kwargs)
@@ -90,7 +89,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return self._attributes_keys
 
-    def add_children(self, children: list[Entity]):
+    def add_children(self, children: list[ConcatenatedObject] | list[Entity]) -> None:
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
@@ -533,6 +532,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         :param entity: Concatenated entity with attributes.
         """
         target_attributes = self.get_concatenated_attributes(entity.uid)
+
         for key, attr in entity.attribute_map.items():
             val = getattr(entity, attr, None)
 
@@ -672,6 +672,9 @@ class ConcatenatedData(Concatenated):
             return None
 
         for prop_group in self.parent.property_groups:
+            if prop_group.properties is None:
+                continue
+
             if self.uid in prop_group.properties:
                 return prop_group
 
@@ -688,12 +691,26 @@ class ConcatenatedData(Concatenated):
                 "The 'parent' of a concatenated Data must be of type 'Concatenated'."
             )
         self._parent = parent
-        self._parent.add_children([self])
+        self._parent.add_children([self])  # type: ignore
 
         parental_attr = self.concatenator.get_concatenated_attributes(self.parent.uid)
 
         if f"Property:{self.name}" not in parental_attr:
             parental_attr[f"Property:{self.name}"] = as_str_if_uuid(self.uid)
+
+    @property
+    def n_values(self) -> np.ndarray:
+        """Number of values in the data."""
+
+        n_values = None
+        depths = getattr(self.property_group, "depth_", None)
+        if depths and depths is not self:
+            n_values = len(depths.values)
+        intervals = getattr(self.property_group, "from_", None)
+        if intervals and intervals is not self:
+            n_values = len(intervals.values)
+
+        return n_values
 
 
 class ConcatenatedPropertyGroup(PropertyGroup):
@@ -709,8 +726,22 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         super().__init__(parent, **kwargs)
 
     @property
+    def depth_(self):
+        if self.properties is None or len(self.properties) < 1:
+            return None
+
+        data = self.parent.get_data(  # pylint: disable=no-value-for-parameter
+            self.properties[0]
+        )[0]
+
+        if isinstance(data, Data) and "depth" in data.name.lower():
+            return data
+
+        return None
+
+    @property
     def from_(self):
-        """Return the data entities definind the 'from' depth intervals."""
+        """Return the data entities defined the 'from' depth intervals."""
         if self.properties is None or len(self.properties) < 1:
             return None
 
@@ -725,7 +756,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
     @property
     def to_(self):
-        """Return the data entities definind the 'to' depth intervals."""
+        """Return the data entities defined the 'to' depth intervals."""
         if self.properties is None or len(self.properties) < 2:
             return None
 
@@ -744,11 +775,16 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
     @parent.setter
     def parent(self, parent):
+        if self._parent is not None:
+            raise AttributeError("Cannot change parent of a property group.")
+
         if not isinstance(parent, ConcatenatedObject):
             raise AttributeError(
                 "The 'parent' of a concatenated Data must be of type 'Concatenated'."
             )
+        parent.add_children([self])
         self._parent = parent
+        parent.workspace.add_or_update_property_group(self)
 
 
 class ConcatenatedObject(Concatenated, ObjectBase):
@@ -766,35 +802,29 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
         super().__init__(entity_type, **kwargs)
 
-    def find_or_create_property_group(self, **kwargs) -> ConcatenatedPropertyGroup:
+    def create_property_group(
+        self, name=None, on_file=False, **kwargs
+    ) -> ConcatenatedPropertyGroup:
         """
-        Find or create :obj:`~geoh5py.groups.property_group.PropertyGroup`
-        from given name and properties.
+        Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
 
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
 
-        :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
+        :return: A new :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        property_groups = []
-        if self._property_groups is not None:
-            property_groups = self._property_groups
+        if self._property_groups is not None and name in [
+            pg.name for pg in self._property_groups
+        ]:
+            raise KeyError(f"A Property Group with name '{name}' already exists.")
 
-        if "name" in kwargs and any(
-            pg.name == kwargs["name"] for pg in property_groups
-        ):
-            prop_group = [pg for pg in property_groups if pg.name == kwargs["name"]][0]
-        else:
-            if (
-                "property_group_type" not in kwargs
-                and "Property Group Type" not in kwargs
-            ):
-                kwargs["property_group_type"] = "Interval table"
+        if "property_group_type" not in kwargs and "Property Group Type" not in kwargs:
+            kwargs["property_group_type"] = "Interval table"
 
-            prop_group = ConcatenatedPropertyGroup(self, **kwargs)
-            property_groups += [prop_group]
+        prop_group = ConcatenatedPropertyGroup(
+            self, name=name, on_file=on_file, **kwargs
+        )
 
-        self._property_groups = property_groups
         return prop_group
 
     def get_data(self, name: str | uuid.UUID) -> list[Data]:
@@ -815,8 +845,10 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                     ).copy()
                     attributes["parent"] = self
                     self.workspace.create_from_concatenation(attributes)
-                else:
+                elif not isinstance(child_data, PropertyGroup):
                     self.add_children([child_data])
+                else:
+                    warnings.warn(f"Failed: '{name}' is a property group, not a Data.")
 
         for child in getattr(self, "children"):
             if (
@@ -859,20 +891,42 @@ class ConcatenatedObject(Concatenated, ObjectBase):
     @property
     def property_groups(self) -> list | None:
         if self._property_groups is None:
-            prop_groups = self.concatenator.fetch_values(self, "property_group_ids")
+            property_groups = self.concatenator.fetch_values(self, "property_group_ids")
 
-            if prop_groups is None or isinstance(self, Data):
-                return None
+            if property_groups is None or isinstance(self, Data):
+                property_groups = []
 
-            for key in prop_groups:
-                getattr(self, "find_or_create_property_group")(
-                    **self.concatenator.get_concatenated_attributes(key)
+            for key in property_groups:
+                self.find_or_create_property_group(
+                    **self.concatenator.get_concatenated_attributes(key), on_file=True
                 )
+
+            property_groups = [
+                child
+                for child in self.children
+                if isinstance(child, ConcatenatedPropertyGroup)
+            ]
+
+            if len(property_groups) > 0:
+                self._property_groups = property_groups
 
         return self._property_groups
 
 
 class ConcatenatedDrillhole(ConcatenatedObject):
+    @property
+    def depth_(self) -> list[Data]:
+        obj_list = []
+        for prop_group in (
+            self.property_groups if self.property_groups is not None else []
+        ):
+            properties = [] if prop_group.properties is None else prop_group.properties
+            data = [self.get_data(child)[0] for child in properties]
+            if data and "depth" in data[0].name.lower():
+                obj_list.append(data[0])
+
+        return obj_list
+
     @property
     def from_(self) -> list[Data]:
         """
@@ -882,7 +936,8 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         for prop_group in (
             self.property_groups if self.property_groups is not None else []
         ):
-            data = [self.get_data(child)[0] for child in prop_group.properties]
+            properties = [] if prop_group.properties is None else prop_group.properties
+            data = [self.get_data(child)[0] for child in properties]
             if len(data) > 0 and "from" in data[0].name.lower():
                 obj_list.append(data[0])
         return obj_list
@@ -931,9 +986,25 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             attributes["from-to"] = None
 
         if "depth" in attributes.keys():
-            attributes["from-to"] = np.c_[
-                attributes["depth"], attributes["depth"] + collocation_distance
-            ]
+            values = attributes.get("values")
+            attributes["association"] = "DEPTH"
+            property_group = self.validate_depth_data(
+                attributes.get("name"),
+                attributes.get("depth"),
+                values,
+                property_group=property_group,
+                collocation_distance=collocation_distance,
+            )
+
+            if (
+                isinstance(values, np.ndarray)
+                and values.shape[0] < property_group.depth_.values.shape[0]
+            ):
+                attributes["values"] = np.pad(
+                    values,
+                    (0, property_group.depth_.values.shape[0] - len(values)),
+                    constant_values=np.nan,
+                )
 
             del attributes["depth"]
 
@@ -960,6 +1031,94 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             del attributes["from-to"]
 
         return attributes, property_group
+
+    def validate_depth_data(
+        self,
+        name: str | None,
+        depth: list | np.ndarray | None,
+        values: np.ndarray,
+        property_group: str | ConcatenatedPropertyGroup | None = None,
+        collocation_distance: float | None = None,
+    ) -> ConcatenatedPropertyGroup:
+        """
+        :param name: Data name.
+        :param depth: Sampling depths.
+        :param values: Data samples to depths.
+        :param property_group: Group for possibly collocated data.
+        :param collocation_distance: Tolerance to determine collocated data for
+            property group assignment
+
+        :return: Augmented property group with name/values added for collocated data
+            otherwise newly created property group with name/depth/values added.
+        """
+        if depth is not None:
+            if isinstance(depth, list):
+                depth = np.vstack(depth)
+
+            if len(depth) < len(values):
+                msg = f"Mismatch between input 'depth' shape{depth.shape} "
+                msg += f"and 'values' shape{values.shape}"
+                raise ValueError(msg)
+
+        if depth is not None and self.property_groups is not None:
+            for group in self.property_groups:
+                if (
+                    group.depth_ is not None
+                    and group.depth_.values.shape[0] == depth.shape[0]
+                    and np.allclose(
+                        group.depth_.values, depth, atol=collocation_distance
+                    )
+                ):
+                    if isinstance(property_group, str) and group.name != property_group:
+                        continue
+
+                    return group
+
+        ind = 0
+        label = ""
+        if len(self.depth_) > 0:
+            ind = len(self.depth_)
+            label = f"({ind})"
+
+        if property_group is None:
+            property_group = f"depth_{ind}"
+
+        if isinstance(property_group, str):
+            out_group: ConcatenatedPropertyGroup = (
+                self.find_or_create_property_group(  # type: ignore
+                    name=property_group,
+                    association="DEPTH",
+                    property_group_type="Depth table",
+                )
+            )
+        else:
+            out_group = property_group
+
+        if out_group.depth_ is not None:
+            if out_group.depth_.values.shape[0] != values.shape[0]:
+                raise ValueError(
+                    f"Input values for '{name}' with shape({values.shape[0]}) "
+                    f"do not match the depths of the group '{out_group.name}' "
+                    f"with shape({out_group.depth_.values.shape[0]}). Check values or "
+                    "assign to a new property group"
+                )
+            return out_group
+
+        depth = getattr(self, "add_data")(
+            {
+                f"DEPTH{label}": {
+                    "association": "DEPTH",
+                    "values": depth,
+                    "entity_type": {"primitive_type": "FLOAT"},
+                    "parent": self,
+                    "allow_move": False,
+                    "allow_delete": False,
+                },
+            },
+            out_group,
+        )
+
+        return out_group
 
     def validate_interval_data(
         self,
@@ -996,17 +1155,23 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             and self.property_groups is not None
         ):
             for p_g in self.property_groups:
-                if p_g.from_.values.shape[0] == from_to.shape[0] and np.allclose(
-                    np.c_[p_g.from_.values, p_g.to_.values],
-                    from_to,
-                    atol=collocation_distance,
+                if (
+                    p_g.from_ is not None
+                    and p_g.from_.values.shape[0] == from_to.shape[0]
+                    and np.allclose(
+                        np.c_[p_g.from_.values, p_g.to_.values],
+                        from_to,
+                        atol=collocation_distance,
+                    )
                 ):
                     return p_g
 
         ind = 0
         label = ""
         if len(self.from_) > 0:
-            ind = len(self.from_)
+            ind = len(
+                list(set(self.from_))
+            )  # todo: from_ return the same value x time why?
             label = f"({ind})"
 
         if property_group is None:

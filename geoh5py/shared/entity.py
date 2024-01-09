@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -19,9 +19,10 @@
 
 from __future__ import annotations
 
-import os
 import uuid
+import warnings
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -32,7 +33,10 @@ if TYPE_CHECKING:
     from numpy import ndarray
 
     from .. import shared
+    from ..groups import PropertyGroup
     from ..workspace import Workspace
+
+DEFAULT_CRS = {"Code": "Unknown", "Name": "Unknown"}
 
 
 class Entity(ABC):
@@ -92,13 +96,13 @@ class Entity(ABC):
 
         :param file: File name with path to import.
         """
-        if not os.path.exists(file):
+        if not Path(file).is_file():
             raise ValueError(f"Input file '{file}' does not exist.")
 
         with open(file, "rb") as raw_binary:
             blob = raw_binary.read()
 
-        _, name = os.path.split(file)
+        name = Path(file).name
         attributes = {
             "name": name,
             "file_name": name,
@@ -181,9 +185,9 @@ class Entity(ABC):
 
         :param extent: Bounding box extent coordinates defined by either:
             - obj:`numpy.ndarray` of shape (2, 3)
-                3D coordinate: [[west, south, bottom], [east, north, top]]
+            3D coordinate: [[west, south, bottom], [east, north, top]]
             - obj:`numpy.ndarray` of shape (2, 2)
-                Horizontal coordinates: [[west, south], [east, north]].
+            Horizontal coordinates: [[west, south], [east, north]].
         :param inverse: Return the complement of the mask extent. Default to False
 
         :return: Array of bool defining the vertices or cell centers
@@ -211,6 +215,46 @@ class Entity(ABC):
             **{**entity_kwargs, **entity_type_kwargs},
         )
         return new_object
+
+    @property
+    def coordinate_reference_system(self) -> dict:
+        """
+        Coordinate reference system attached to the entity.
+        """
+        coordinate_reference_system = DEFAULT_CRS
+
+        if self.metadata is not None and "Coordinate Reference System" in self.metadata:
+            coordinate_reference_system = self.metadata[
+                "Coordinate Reference System"
+            ].get("Current", DEFAULT_CRS)
+
+        return coordinate_reference_system
+
+    @coordinate_reference_system.setter
+    def coordinate_reference_system(self, value: dict):
+        # assert value is a dictionary containing "Code" and "Name" keys
+        if not isinstance(value, dict):
+            raise TypeError("Input coordinate reference system must be a dictionary")
+
+        if value.keys() != {"Code", "Name"}:
+            raise KeyError(
+                "Input coordinate reference system must only contain a 'Code' and 'Name' keys"
+            )
+
+        # get the actual coordinate reference system
+        coordinate_reference_system = {
+            "Current": value,
+            "Previous": self.coordinate_reference_system,
+        }
+
+        # update the metadata
+        metadata = self.metadata
+        if isinstance(metadata, dict):
+            metadata["Coordinate Reference System"] = coordinate_reference_system
+        else:
+            metadata = {"Coordinate Reference System": coordinate_reference_system}
+
+        self.metadata = metadata
 
     @abstractmethod
     def copy(
@@ -285,7 +329,7 @@ class Entity(ABC):
         #  (possibly it has to be abstract with different implementations per Entity type)
         return name
 
-    def get_entity(self, name: str | uuid.UUID) -> list[Entity]:
+    def get_entity(self, name: str | uuid.UUID) -> list[Entity | None]:
         """
         Get a child :obj:`~geoh5py.data.data.Data` by name.
 
@@ -298,6 +342,9 @@ class Entity(ABC):
             entity_list = [child for child in self.children if child.uid == name]
         else:
             entity_list = [child for child in self.children if child.name == name]
+
+        if not entity_list:
+            return [None]
 
         return entity_list
 
@@ -397,7 +444,9 @@ class Entity(ABC):
         self._public = value
         self.workspace.update_attribute(self, "attributes")
 
-    def reference_to_uid(self, value: Entity | str | uuid.UUID) -> list[uuid.UUID]:
+    def reference_to_uid(
+        self, value: Entity | PropertyGroup | str | uuid.UUID
+    ) -> list[uuid.UUID]:
         """
         General entity reference translation.
 
@@ -406,7 +455,7 @@ class Entity(ABC):
         :return: List of unique identifier associated with the input reference.
         """
         children_uid = [child.uid for child in self.children]
-        if isinstance(value, Entity):
+        if hasattr(value, "uid"):
             uid = [value.uid]
         elif isinstance(value, str):
             uid = [
@@ -416,9 +465,10 @@ class Entity(ABC):
             ]
         elif isinstance(value, uuid.UUID):
             uid = [value]
+
         return uid
 
-    def remove_children(self, children: list[shared.Entity]):
+    def remove_children(self, children: list[shared.Entity] | list[PropertyGroup]):
         """
         Remove children from the list of children entities.
 
@@ -430,52 +480,22 @@ class Entity(ABC):
             from the workspace by
             :func:`~geoh5py.shared.weakref_utils.remove_none_referents`.
         """
+        if not isinstance(children, list):
+            children = [children]
+
         self._children = [child for child in self._children if child not in children]
         self.workspace.remove_children(self, children)
-
-    def remove_data_from_group(
-        self, data: list | Entity | uuid.UUID | str, name: str | None = None
-    ) -> None:
-        """
-        Remove data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
-        All given data must be children of the parent object.
-
-        :param data: :obj:`~geoh5py.data.data.Data` object,
-            :obj:`~geoh5py.shared.entity.Entity.uid` or
-            :obj:`~geoh5py.shared.entity.Entity.name` of data.
-        :param name: Name of a :obj:`~geoh5py.groups.property_group.PropertyGroup`.
-            A new group is created if none exist with the given name.
-        """
-        if getattr(self, "property_groups", None) is not None:
-            if isinstance(data, list):
-                uids = []
-                for datum in data:
-                    uids += self.reference_to_uid(datum)
-            else:
-                uids = self.reference_to_uid(data)
-
-            if name is not None:
-                prop_groups = [
-                    prop_group
-                    for prop_group in getattr(self, "property_groups")
-                    if prop_group.name == name
-                ]
-            else:
-                prop_groups = getattr(self, "property_groups")
-
-            for prop_group in prop_groups:
-                for uid in uids:
-                    if uid in prop_group.properties:
-                        prop_group.properties.remove(uid)
-
-            self.workspace.update_attribute(self, "property_groups")
 
     def save(self, add_children: bool = True):
         """
         Alias method of :func:`~geoh5py.workspace.Workspace.save_entity`.
-
+        WILL BE DEPRECATED AS ENTITIES ARE ALWAYS AUTOMATICALLY UPDATED.
         :param add_children: Option to also save the children.
         """
+        warnings.warn(
+            "Entity.save() is deprecated and will be removed in next versions.",
+            DeprecationWarning,
+        )
         return self.workspace.save_entity(self, add_children=add_children)
 
     @property
