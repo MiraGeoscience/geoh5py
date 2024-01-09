@@ -33,27 +33,21 @@ from .object_type import ObjectType
 from .octree import Octree
 from .points import Points
 from .surface import Surface
-from .surveys.direct_current import CurrentElectrode, PotentialElectrode
-from .surveys.electromagnetics.airborne_fem import (
+from .surveys import (
+    CurrentElectrode,
+    PotentialElectrode,
+    AirborneMagnetics,
     AirborneFEMReceivers,
     AirborneFEMTransmitters,
-)
-from .surveys.electromagnetics.airborne_tem import (
     AirborneTEMReceivers,
     AirborneTEMTransmitters,
-)
-from .surveys.electromagnetics.ground_fem import (
     LargeLoopGroundFEMReceivers,
     LargeLoopGroundFEMTransmitters,
     MovingLoopGroundFEMReceivers,
     MovingLoopGroundFEMTransmitters,
-)
-from .surveys.electromagnetics.ground_tem import (
     LargeLoopGroundTEMReceivers,
     LargeLoopGroundTEMTransmitters,
     MovingLoopGroundTEMReceivers,
     MovingLoopGroundTEMTransmitters,
+    TipperReceivers,
 )
-from .surveys.electromagnetics.magnetotellurics import MTReceivers
-from .surveys.electromagnetics.tipper import TipperBaseStations, TipperReceivers
-from .surveys.magnetics import AirborneMagnetics

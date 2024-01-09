@@ -14,3 +14,23 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
+# flake8: noqa
+
+from .direct_current import CurrentElectrode, PotentialElectrode
+from .electromagnetics import (
+    AirborneFEMReceivers,
+    AirborneFEMTransmitters,
+    AirborneTEMReceivers,
+    AirborneTEMTransmitters,
+    LargeLoopGroundFEMReceivers,
+    LargeLoopGroundFEMTransmitters,
+    LargeLoopGroundTEMReceivers,
+    LargeLoopGroundTEMTransmitters,
+    MovingLoopGroundFEMReceivers,
+    MovingLoopGroundFEMTransmitters,
+    MovingLoopGroundTEMReceivers,
+    MovingLoopGroundTEMTransmitters,
+    TipperReceivers,
+)
+from .magnetics import AirborneMagnetics
