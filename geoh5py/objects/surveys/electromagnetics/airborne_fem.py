@@ -19,9 +19,8 @@ from __future__ import annotations
 
 import uuid
 
-from geoh5py.objects.curve import Curve
-from geoh5py.objects.object_base import ObjectType
-
+from ...curve import Curve
+from ...object_base import ObjectType
 from .base import AirborneEMSurvey, FEMSurvey
 
 # pylint: disable=too-many-ancestors

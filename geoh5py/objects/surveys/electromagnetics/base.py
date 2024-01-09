@@ -30,9 +30,10 @@ import numpy as np
 from geoh5py.data import ReferencedData
 from geoh5py.data.float_data import FloatData
 from geoh5py.groups.property_group import PropertyGroup
-from geoh5py.objects import Curve
-from geoh5py.objects.object_base import ObjectBase
 from geoh5py.shared.utils import is_uuid
+
+from ... import Curve
+from ...object_base import ObjectBase
 
 if TYPE_CHECKING:
     from geoh5py.groups import Group
