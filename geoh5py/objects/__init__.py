@@ -34,14 +34,6 @@ from .octree import Octree
 from .points import Points
 from .surface import Surface
 from .surveys.direct_current import CurrentElectrode, PotentialElectrode
-from .surveys.electromagnetics import base
-from .surveys.electromagnetics.base import (
-    AirborneEMSurvey,
-    FEMSurvey,
-    LargeLoopGroundEMSurvey,
-    MovingLoopGroundEMSurvey,
-    TEMSurvey,
-)
 from .surveys.electromagnetics.airborne_fem import (
     AirborneFEMReceivers,
     AirborneFEMTransmitters,
