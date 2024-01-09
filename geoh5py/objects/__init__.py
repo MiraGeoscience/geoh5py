@@ -34,22 +34,22 @@ from .octree import Octree
 from .points import Points
 from .surface import Surface
 from .surveys import (
-    CurrentElectrode,
-    PotentialElectrode,
-    AirborneMagnetics,
     AirborneFEMReceivers,
     AirborneFEMTransmitters,
+    AirborneMagnetics,
     AirborneTEMReceivers,
     AirborneTEMTransmitters,
+    CurrentElectrode,
     LargeLoopGroundFEMReceivers,
     LargeLoopGroundFEMTransmitters,
-    MovingLoopGroundFEMReceivers,
-    MovingLoopGroundFEMTransmitters,
     LargeLoopGroundTEMReceivers,
     LargeLoopGroundTEMTransmitters,
+    MovingLoopGroundFEMReceivers,
+    MovingLoopGroundFEMTransmitters,
     MovingLoopGroundTEMReceivers,
     MovingLoopGroundTEMTransmitters,
-    TipperReceivers,
     MTReceivers,
+    PotentialElectrode,
     TipperBaseStations,
+    TipperReceivers,
 )
