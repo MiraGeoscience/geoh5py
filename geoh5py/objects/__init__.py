@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -34,6 +34,13 @@ from .octree import Octree
 from .points import Points
 from .surface import Surface
 from .surveys.direct_current import CurrentElectrode, PotentialElectrode
+from .surveys.electromagnetics.base import (
+    AirborneEMSurvey,
+    FEMSurvey,
+    LargeLoopGroundEMSurvey,
+    MovingLoopGroundEMSurvey,
+    TEMSurvey,
+)
 from .surveys.electromagnetics.airborne_fem import (
     AirborneFEMReceivers,
     AirborneFEMTransmitters,
