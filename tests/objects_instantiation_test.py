@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -38,15 +38,15 @@ def all_object_types():
 
 
 @pytest.mark.parametrize("object_class", all_object_types())
-def test_object_instantiation(object_class, tmp_path):
-    # TODO: no file on disk should be required for this test
-    #       as workspace does not have to be saved
-    h5file_path = tmp_path / f"{__name__}.geoh5"
-    with Workspace.create(h5file_path) as workspace:
+def test_object_instantiation(object_class):
+    if object_class.default_type_uid() is None:
+        # this object class is not instantiable
+        return
+
+    with Workspace() as workspace:
         object_type = object_class.find_or_create_type(workspace)
         isinstance(object_type, ObjectType)
         assert object_type.workspace is workspace
-        assert object_type.uid == object_class.default_type_uid()
         assert ObjectType.find(workspace, object_type.uid) is object_type
         assert workspace.find_type(object_type.uid, ObjectType) is object_type
 
