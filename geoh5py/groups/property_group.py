@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -61,7 +61,7 @@ class PropertyGroup(ABC):
 
         self._parent: ObjectBase = parent
         self._properties: list[uuid.UUID] | None = None
-        self._property_group_type = "Multi-element"
+        self._property_group_type = kwargs.get("property_group_type", "Multi-element")
 
         parent.add_children([self])
 
