@@ -660,9 +660,9 @@ class Drillhole(Points):
         if "depth" not in attributes and "from-to" not in attributes:
             if "association" not in attributes or attributes["association"] != "OBJECT":
                 raise ValueError(
-                    "Input data dictionary must contain {key:values} "
-                    + "{'from-to':numpy.ndarray} "
-                    + "or {'association': 'OBJECT'}."
+                    "Input data dictionary must contain a key/value pair of depth data "
+                    "or contain an 'OBJECT' association. Valid depth keys are 'depth' "
+                    "and 'from-to'."
                 )
 
         if "depth" in attributes.keys():
