@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -1089,14 +1089,13 @@ class ConcatenatedDrillhole(ConcatenatedObject):
         if property_group is None:
             property_group = f"depth_{ind}"
 
-
         if isinstance(property_group, str):
             out_group: ConcatenatedPropertyGroup = getattr(
                 self, "find_or_create_property_group"
             )(
                 name=property_group,
                 association="DEPTH",
-                property_group_type="Depth table"
+                property_group_type="Depth table",
             )
 
             if out_group.depth_ is not None:
@@ -1193,7 +1192,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             )(
                 name=property_group,
                 association="DEPTH",
-                property_group_type="Interval table"
+                property_group_type="Interval table",
             )
         else:
             out_group = property_group

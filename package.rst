@@ -51,4 +51,4 @@ along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 Copyright
 ^^^^^^^^^
-Copyright (c) 2023 Mira Geoscience Ltd.
+Copyright (c) 2024 Mira Geoscience Ltd.
