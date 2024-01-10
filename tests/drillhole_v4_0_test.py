@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -263,7 +263,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         assert len(well.get_data("my_log_values/")) == 1
         assert len(well.get_data("my_log_values/")[0].values) == 50
 
-        with pytest.raises(UserWarning, match="already present on the drillhole"):
+        with pytest.warns(match="already present on the drillhole"):
             well.add_data(
                 {
                     "my_log_values/": {
@@ -358,9 +358,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
 
         assert len(well.to_) == len(well.from_) == 2, "Should have only 2 from-to data."
 
-        with pytest.raises(
-            UserWarning, match="Data with name 'Depth Data' already present"
-        ):
+        with pytest.warns(match="Data with name 'Depth Data' already present"):
             well_b.add_data(
                 {
                     "Depth Data": {
@@ -439,9 +437,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
             well = [k for k in new_group.children if k.name == "bullseye/"][0]
 
             prop_group = [k for k in well.property_groups if k.name == "Interval_0"][0]
-            with pytest.raises(
-                ValueError, match="Input values with shape"
-            ):
+            with pytest.raises(ValueError, match="Input values with shape"):
                 well.add_data(
                     {
                         "new_data": {"values": np.random.randn(24).astype(np.float32)},
