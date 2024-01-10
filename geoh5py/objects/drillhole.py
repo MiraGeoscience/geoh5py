@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import re
 import uuid
+import warnings
 
 import numpy as np
 
@@ -401,11 +402,12 @@ class Drillhole(Points):
             attributes["name"] = name
 
             if attributes["name"] in self.get_data_list():
-                raise UserWarning(
+                warnings.warn(
                     f"Data with name '{attributes['name']}' already present "
                     f"on the drillhole '{self.name}'. "
                     "Consider changing the values or renaming."
                 )
+                continue
 
             attributes, new_property_group = self.validate_data(
                 attributes, property_group, collocation_distance=collocation_distance
