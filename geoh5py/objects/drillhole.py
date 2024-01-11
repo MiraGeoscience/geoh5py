@@ -401,7 +401,7 @@ class Drillhole(Points):
             attributes["name"] = name
 
             if attributes["name"] in self.get_data_list():
-                raise UserWarning(
+                raise ValueError(
                     f"Data with name '{attributes['name']}' already present "
                     f"on the drillhole '{self.name}'. "
                     "Consider changing the values or renaming."
