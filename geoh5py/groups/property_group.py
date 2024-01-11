@@ -52,7 +52,7 @@ class PropertyGroup(ABC):
         on_file=False,
         uid=None,
         property_group_type="Multi-element",
-        **kwargs
+        **kwargs,
     ):
         self.name = name or "property_group"
         self.uid = uid or uuid.uuid4()
