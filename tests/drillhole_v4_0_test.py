@@ -263,7 +263,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         assert len(well.get_data("my_log_values/")) == 1
         assert len(well.get_data("my_log_values/")[0].values) == 50
 
-        with pytest.warns(match="already present on the drillhole"):
+        with pytest.raises(ValueError, match="already present on the drillhole"):
             well.add_data(
                 {
                     "my_log_values/": {
@@ -358,7 +358,9 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
 
         assert len(well.to_) == len(well.from_) == 2, "Should have only 2 from-to data."
 
-        with pytest.warns(match="Data with name 'Depth Data' already present"):
+        with pytest.raises(
+            ValueError, match="Data with name 'Depth Data' already present"
+        ):
             well_b.add_data(
                 {
                     "Depth Data": {
