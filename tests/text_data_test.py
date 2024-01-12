@@ -137,6 +137,9 @@ def test_create_byte_text_data(tmp_path: Path):
 
             points.copy(new_workspace)
 
+            assert word.values == np.array([b"a word"])[0].decode("utf-8")
+            assert all(data.values == values)
+
     with workspace.open():
         with new_workspace.open():
             rec_obj = new_workspace.get_entity(name)[0]
