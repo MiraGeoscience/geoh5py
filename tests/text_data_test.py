@@ -149,3 +149,6 @@ def test_create_byte_text_data(tmp_path: Path):
             compare_entities(points, rec_obj, ignore=["_parent"])
             compare_entities(data, rec_data, ignore=["_parent"])
             compare_entities(word, rec_word, ignore=["_parent"])
+
+            word.values = np.array([b"b word"])[0]
+            assert word.values == "b word"
