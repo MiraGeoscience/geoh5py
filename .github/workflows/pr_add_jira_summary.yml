@@ -19,7 +19,13 @@ jobs:
         PR_TITLE: ${{ github.event.pull_request.title }}
       run: >
         echo $HEAD_REF $PR_TITLE
-        | echo "issue_key=$(grep -os "\b\(GA\|GEOPY\)-[0-9]\+" | head -n1)" >> $GITHUB_OUTPUT
+        | echo "issue_key=$(
+        grep -osi "\b\(GA\|GEOPY\)[ #-]*[0-9]\+"
+        | head -n1
+        | sed -E "s/([A-Z]+)[-# ]*([0-9]+)/\1-\2/i"
+        | tr [:lower:] [:upper:]
+        )"
+        >> $GITHUB_OUTPUT
     - name: Get JIRA summary
       id: get_jira_summary
       if: ${{ steps.find_jira_key.outputs.issue_key }}
