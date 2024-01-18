@@ -1082,8 +1082,9 @@ class ConcatenatedDrillhole(ConcatenatedObject):
 
         ind = 0
         label = ""
-        if len(self.depth_) > 0:
-            ind = len(self.depth_)
+        depth_properties = [k.name for k in self.children if "DEPTH" in k.name]
+        if len(depth_properties) > 0:
+            ind = len(depth_properties)
             label = f"({ind})"
 
         if property_group is None:
