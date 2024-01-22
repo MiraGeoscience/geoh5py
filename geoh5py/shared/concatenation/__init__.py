@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -18,8 +18,9 @@
 # pylint: disable=unused-import
 # flake8: noqa
 
+from .concatenated import Concatenated
+from .concatenator import Concatenator
 from .data import ConcatenatedData
 from .drillhole import ConcatenatedDrillhole
-from .entity import Concatenated, ConcatenatedObject
-from .group import Concatenator
+from .object import ConcatenatedObject
 from .property_group import ConcatenatedPropertyGroup

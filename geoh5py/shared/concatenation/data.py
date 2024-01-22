@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -17,19 +17,23 @@
 
 from __future__ import annotations
 
-import numpy as np
+from abc import ABC
+from typing import TYPE_CHECKING
 
-from geoh5py.shared.utils import as_str_if_uuid
+from ..utils import as_str_if_uuid
+from .concatenated import Concatenated
+from .utils import is_concatenated_object
 
-from .entity import Concatenated, ConcatenatedObject
+if TYPE_CHECKING:
+    from .object import ConcatenatedObject
 
 
-class ConcatenatedData(Concatenated):
+class ConcatenatedData(Concatenated, ABC):
     _parent: ConcatenatedObject
 
     def __init__(self, entity_type, **kwargs):
-        if kwargs.get("parent") is None or not isinstance(
-            kwargs.get("parent"), ConcatenatedObject
+        if kwargs.get("parent") is None or not is_concatenated_object(
+            kwargs.get("parent")
         ):
             raise UserWarning(
                 "Creating a concatenated data must have a parent "
@@ -58,12 +62,12 @@ class ConcatenatedData(Concatenated):
         return self._parent
 
     @parent.setter
-    def parent(self, parent):
-        if not isinstance(parent, ConcatenatedObject):
+    def parent(self, parent: ConcatenatedObject):
+        if not is_concatenated_object(parent):
             raise AttributeError(
                 "The 'parent' of a concatenated Data must be of type 'Concatenated'."
             )
-        self._parent = parent
+        self._parent: ConcatenatedObject = parent
         self._parent.add_children([self])  # type: ignore
 
         parental_attr = self.concatenator.get_concatenated_attributes(self.parent.uid)
@@ -72,7 +76,7 @@ class ConcatenatedData(Concatenated):
             parental_attr[f"Property:{self.name}"] = as_str_if_uuid(self.uid)
 
     @property
-    def n_values(self) -> np.ndarray:
+    def n_values(self) -> int | None:
         """Number of values in the data."""
 
         n_values = None

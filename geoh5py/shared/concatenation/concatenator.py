@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,31 +15,28 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=too-many-lines
+
 from __future__ import annotations
 
 import uuid
 import warnings
+from abc import ABC
 from typing import TYPE_CHECKING
 
 import numpy as np
 from h5py import special_dtype
 
-from geoh5py.data import Data, DataAssociationEnum, DataType
-from geoh5py.groups import Group
-from geoh5py.shared.entity import Entity
-from geoh5py.shared.utils import (
-    INV_KEY_MAP,
-    KEY_MAP,
-    as_str_if_utf8_bytes,
-    as_str_if_uuid,
-)
-
-from .data import ConcatenatedData
-from .entity import Concatenated, ConcatenatedObject
+from ...data import Data, DataAssociationEnum, DataType
+from ...groups import Group
+from ..entity import Entity
+from ..utils import INV_KEY_MAP, KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid
+from .utils import is_concatenated, is_concatenated_data, is_concatenated_object
 
 if TYPE_CHECKING:
     from ...groups import GroupType
-
+    from .concatenated import Concatenated
+    from .object import ConcatenatedObject
 
 PROPERTY_KWARGS = {
     "trace": {"maxshape": (None,)},
@@ -52,7 +49,7 @@ PROPERTY_KWARGS = {
 }
 
 
-class Concatenator(Group):  # pylint: disable=too-many-public-methods
+class Concatenator(Group, ABC):  # pylint: disable=too-many-public-methods
     """
     Class modifier for concatenation of objects and data.
     """
@@ -97,7 +94,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         """
         for child in children:
             if not (
-                isinstance(child, Concatenated)
+                is_concatenated(child)
                 or (
                     isinstance(child, Data)
                     and child.association
@@ -126,12 +123,12 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             uid = as_str_if_uuid(child.uid).encode()
             concat_object_ids = [uid]
             if self._concatenated_object_ids is not None:
-                if uid not in self._concatenated_object_ids:
+                if uid not in self._concatenated_object_ids:  # type: ignore
                     concat_object_ids = (
-                        self._concatenated_object_ids + concat_object_ids
+                        self._concatenated_object_ids + concat_object_ids  # type: ignore
                     )
                 else:
-                    concat_object_ids = self._concatenated_object_ids
+                    concat_object_ids = self._concatenated_object_ids  # type: ignore
 
             self.concatenated_object_ids = concat_object_ids
             self.update_array_attribute(child, "surveys")
@@ -180,7 +177,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             if isinstance(concatenated_object_ids, np.ndarray):
                 concatenated_object_ids = concatenated_object_ids.tolist()
 
-            self._concatenated_object_ids = concatenated_object_ids
+            self._concatenated_object_ids = concatenated_object_ids  # type: ignore
 
         return self._concatenated_object_ids
 
@@ -344,7 +341,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         uid = as_str_if_uuid(entity.uid).encode()
 
-        if isinstance(entity, ConcatenatedData):
+        if is_concatenated_data(entity):
             ind = np.where(self.index[field]["Data ID"] == uid)[0]
             if len(ind) == 1:
                 return ind[0]
@@ -453,15 +450,15 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
     def remove_entity(self, entity: Concatenated):
         """Remove a concatenated entity."""
 
-        if isinstance(entity, ConcatenatedData):
+        if is_concatenated_data(entity):
             # Remove the rows of data and index
             self.update_array_attribute(entity, entity.name, remove=True)
             # Remove from the concatenated Attributes
             parent_attr = self.get_concatenated_attributes(entity.parent.uid)
             name = entity.name
             del parent_attr[f"Property:{name}"]
-        elif isinstance(entity, ConcatenatedObject):
-            if entity.property_groups is not None:
+        elif is_concatenated_object(entity):
+            if entity.property_groups is not None:  # type: ignore
                 self.update_array_attribute(entity, "property_groups", remove=True)
 
             object_ids = self.concatenated_object_ids
@@ -563,11 +560,11 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         self, entity: Concatenated, field: str, remove=False
     ) -> None:
         """
-        Update values stored as data.
-        Row data and indices are first remove then appended.
+        Update values stored as data.        Row data and indices are first remove then appended.
 
         :param entity: Concatenated entity with array values.
         :param field: Name of the valued field.
+        :param remove: Remove the data from the concatenated array.
         """
         if hasattr(entity, f"_{field}"):
             values = getattr(entity, f"_{field}", None)

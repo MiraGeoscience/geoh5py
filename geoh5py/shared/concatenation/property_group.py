@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -17,17 +17,22 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from geoh5py.data import Data
 from geoh5py.groups import PropertyGroup
 
-from .entity import ConcatenatedObject
+from .utils import is_concatenated_object
+
+if TYPE_CHECKING:
+    from .object import ConcatenatedObject
 
 
 class ConcatenatedPropertyGroup(PropertyGroup):
     _parent: ConcatenatedObject
 
     def __init__(self, parent: ConcatenatedObject, **kwargs):
-        if not isinstance(parent, ConcatenatedObject):
+        if not is_concatenated_object(parent):
             raise UserWarning(
                 "Creating a concatenated data must have a parent "
                 "of type Concatenated."
@@ -80,7 +85,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         return None
 
     @property
-    def parent(self):
+    def parent(self) -> ConcatenatedObject:
         return self._parent
 
     @parent.setter
@@ -88,7 +93,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         if self._parent is not None:
             raise AttributeError("Cannot change parent of a property group.")
 
-        if not isinstance(parent, ConcatenatedObject):
+        if not is_concatenated_object(parent):
             raise AttributeError(
                 "The 'parent' of a concatenated Data must be of type 'Concatenated'."
             )
