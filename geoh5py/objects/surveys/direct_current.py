@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -223,6 +223,11 @@ class BaseElectrode(Curve, ABC):
         """
         The associated current_electrodes (transmitters)
         """
+
+    @classmethod
+    @abstractmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        """Default unique identifier. Implemented on the child class."""
 
     @property
     def metadata(self):

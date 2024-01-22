@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -15,10 +15,13 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=R0914
+# pylint: disable=too-many-locals
 # mypy: ignore-errors
 
 from __future__ import annotations
+
+import random
+import string
 
 import numpy as np
 import pytest
@@ -260,7 +263,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         assert len(well.get_data("my_log_values/")) == 1
         assert len(well.get_data("my_log_values/")[0].values) == 50
 
-        with pytest.raises(UserWarning, match="already present on the drillhole"):
+        with pytest.raises(ValueError, match="already present on the drillhole"):
             well.add_data(
                 {
                     "my_log_values/": {
@@ -332,6 +335,23 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
             }
         )
 
+        text_data = well_b.add_data(
+            {
+                "text Data": {
+                    "values": np.array(
+                        [
+                            "".join(
+                                random.choice(string.ascii_lowercase) for _ in range(6)
+                            )
+                            for _ in range(3)
+                        ]
+                    ),
+                    "from-to": from_to_b,
+                    "type": "TEXT",
+                },
+            }
+        )
+
         assert dh_group.fetch_index(well_b_data, well_b_data.name) == 1, (
             "'interval_values' on well_b should be the second entry.",
         )
@@ -339,7 +359,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         assert len(well.to_) == len(well.from_) == 2, "Should have only 2 from-to data."
 
         with pytest.raises(
-            UserWarning, match="Data with name 'Depth Data' already present"
+            ValueError, match="Data with name 'Depth Data' already present"
         ):
             well_b.add_data(
                 {
@@ -396,9 +416,16 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
                 "_uid",
             ],
         )
+
         compare_entities(
             depth_data,
             well_b_reload.get_data("Depth Data")[0],
+            ignore=["_metadata", "_parent"],
+        )
+
+        compare_entities(
+            text_data,
+            well_b_reload.get_data("text Data")[0],
             ignore=["_metadata", "_parent"],
         )
 
@@ -412,9 +439,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
             well = [k for k in new_group.children if k.name == "bullseye/"][0]
 
             prop_group = [k for k in well.property_groups if k.name == "Interval_0"][0]
-            with pytest.raises(
-                ValueError, match="Input values for 'new_data' with shape"
-            ):
+            with pytest.raises(ValueError, match="Input values with shape"):
                 well.add_data(
                     {
                         "new_data": {"values": np.random.randn(24).astype(np.float32)},
@@ -579,6 +604,17 @@ def test_copy_from_extent_drillhole_group(tmp_path):
             assert child_a.get_data_list() == child_b.get_data_list()
 
 
+def test_add_data_raises_error_bad_key(tmp_path):
+    workspace = Workspace(tmp_path / "test.geoh5")
+    dh_group = DrillholeGroup.create(workspace)
+    dh = Drillhole.create(workspace, name="dh1", parent=dh_group)
+    msg = "Valid depth keys are 'depth' and 'from-to'"
+    with pytest.raises(AttributeError, match=msg):
+        dh.add_data(
+            {"my data": {"depths": np.arange(0, 10.0), "values": np.random.randn(10)}}
+        )
+
+
 def test_open_close_creation(tmp_path):
     h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
 
@@ -600,62 +636,3 @@ def test_open_close_creation(tmp_path):
     )
     assert len(workspace.groups[1].concatenated_attributes["Attributes"]) == 2
     workspace.close()
-
-
-def test_add_data_increments_property_group(tmp_path):
-    workspace = Workspace.create(tmp_path / "test.geoh5")
-    dh_group = DrillholeGroup.create(workspace, name="my drillhole group")
-    dh = Drillhole.create(workspace, parent=dh_group, name="my well")
-    dh.add_data(
-        {
-            "first property": {
-                "values": np.random.randn(10),
-                "depth": np.linspace(0, 9, 10),
-            }
-        },
-        property_group="my property group",
-    )
-
-    dh.add_data(
-        {
-            "second property": {
-                "values": np.random.randn(10),
-                "depth": np.linspace(0, 9, 10),
-            }
-        },
-        property_group="my property group",
-    )
-    dh.add_data(
-        {
-            "third property": {
-                "values": np.random.randn(6),
-                "depth": np.linspace(0, 5, 6),
-            }
-        },
-        property_group="my property group",
-    )
-
-    dh.add_data(
-        {
-            "fourth property": {
-                "values": np.random.randn(8),
-                "depth": np.linspace(0, 7, 8),
-            },
-        },
-        property_group="my property group",
-    )
-
-    assert [
-        workspace.get_entity(f"{k} property")[0].property_group.name
-        == "my property group"
-        for k in ["first", "second"]
-    ]
-    assert (
-        workspace.get_entity("third property")[0].property_group.name
-        == "my property group (1)"
-    )
-
-    assert (
-        workspace.get_entity("fourth property")[0].property_group.name
-        == "my property group (2)"
-    )

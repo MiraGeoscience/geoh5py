@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -284,6 +284,8 @@ class H5Writer:
                 ):
                     values[np.isnan(values)] = FLOAT_NDV
                     values = values.astype(np.float32)
+                if np.issubdtype(values.dtype, np.str_):
+                    values = values.astype(h5py.special_dtype(vlen=str))
 
                 attr_handle.create_dataset(
                     name,

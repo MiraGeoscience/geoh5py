@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -46,7 +46,13 @@ class PropertyGroup(ABC):
     _uid: uuid.UUID
 
     def __init__(
-        self, parent: ObjectBase, name=None, on_file=False, uid=None, **kwargs
+        self,
+        parent: ObjectBase,
+        name=None,
+        on_file=False,
+        uid=None,
+        property_group_type="Multi-element",
+        **kwargs,
     ):
         self.name = name or "property_group"
         self.uid = uid or uuid.uuid4()
@@ -61,7 +67,7 @@ class PropertyGroup(ABC):
 
         self._parent: ObjectBase = parent
         self._properties: list[uuid.UUID] | None = None
-        self._property_group_type = "Multi-element"
+        self._property_group_type = property_group_type
 
         parent.add_children([self])
 

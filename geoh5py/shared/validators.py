@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -65,9 +65,11 @@ class BaseValidator(ABC):
 
     @property
     @abstractmethod
-    def validator_type(self):
-        """Validation type identifier."""
-        raise NotImplementedError("Must implement the type property.")
+    def validator_type(self) -> str:
+        """
+        Validation type identifier.
+        """
+        raise NotImplementedError("Must implement the validator_type property.")
 
 
 class OptionalValidator(BaseValidator):

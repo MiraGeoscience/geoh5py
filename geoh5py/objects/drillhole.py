@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -401,7 +401,7 @@ class Drillhole(Points):
             attributes["name"] = name
 
             if attributes["name"] in self.get_data_list():
-                raise UserWarning(
+                raise ValueError(
                     f"Data with name '{attributes['name']}' already present "
                     f"on the drillhole '{self.name}'. "
                     "Consider changing the values or renaming."
@@ -490,15 +490,21 @@ class Drillhole(Points):
 
         return indices.astype("uint32")
 
-    def validate_interval_data(
+    def validate_interval_data(  # pylint: disable=too-many-locals
         self,
         from_to: np.ndarray | list,
         values: np.ndarray,
         collocation_distance: float = 1e-4,
-    ):
+    ) -> np.ndarray:
         """
         Compare new and current depth values, append new vertices if necessary and return
         an augmented values vector that matches the vertices indexing.
+
+        :param from_to: Array of from-to values.
+        :param values: Array of values.
+        :param collocation_distance: Minimum collocation distance for matching.
+
+        :return: Augmented values vector that matches the vertices indexing.
         """
         if isinstance(from_to, list):
             from_to = np.vstack(from_to)
@@ -538,6 +544,7 @@ class Drillhole(Points):
                 entity_type={"primitive_type": "FLOAT"},
             )
         elif self.cells is not None and self.from_ is not None and self.to_ is not None:
+            values = np.r_[values]
             out_vec = np.c_[self.from_.values, self.to_.values]
             dist_match = []
             for i, elem in enumerate(from_to):
@@ -558,10 +565,16 @@ class Drillhole(Points):
                 from_to.flatten()[ind_new], return_inverse=True
             )
 
+            # check if its text data, and defined nan array if so
+            if values.dtype.kind in ["U", "S"]:
+                nan_values = np.array([""] * self.n_cells)  # type: ignore
+            else:
+                nan_values = np.ones(self.n_cells) * np.nan
+
             # Append values
             values = merge_arrays(
-                np.ones(self.n_cells) * np.nan,
-                np.r_[values],
+                nan_values,
+                values,
                 replace="B->A",
                 mapping=cell_map,
             )
@@ -632,6 +645,7 @@ class Drillhole(Points):
 
         :param attributes: Dictionary of data attributes.
         :param property_group: Input property group to validate against.
+        :param collocation_distance: Minimum collocation distance for matching.
         """
         if collocation_distance is None:
             collocation_distance = attributes.get(
@@ -644,9 +658,9 @@ class Drillhole(Points):
         if "depth" not in attributes and "from-to" not in attributes:
             if "association" not in attributes or attributes["association"] != "OBJECT":
                 raise ValueError(
-                    "Input data dictionary must contain {key:values} "
-                    + "{'from-to':numpy.ndarray} "
-                    + "or {'association': 'OBJECT'}."
+                    "Input data dictionary must contain a key/value pair of depth data "
+                    "or contain an 'OBJECT' association. Valid depth keys are 'depth' "
+                    "and 'from-to'."
                 )
 
         if "depth" in attributes.keys():
