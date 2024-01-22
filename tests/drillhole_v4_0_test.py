@@ -195,7 +195,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
             dh_group.update_array_attribute(well, "abc")
 
         # Add both set of log data with 0.5 m tolerance
-        values = np.random.randn(50)
+        values = np.random.randn(48)
         with pytest.raises(
             UserWarning, match="Input depth 'collocation_distance' must be >0."
         ):
@@ -287,7 +287,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         data_objects = well.add_data(
             {
                 "interval_values": {
-                    "values": np.random.randn(from_to_a.shape[0]),
+                    "values": np.random.randn(from_to_a.shape[0] - 1),
                     "from-to": from_to_a.tolist(),
                 },
                 "int_interval_list": {
