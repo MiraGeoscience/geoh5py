@@ -1139,6 +1139,13 @@ class ConcatenatedDrillhole(ConcatenatedObject):
                         f"with shape({out_group.depth_.values.shape[0]}). Check values or "
                         f"assign to a new property group."
                     )
+                if depth is not None and not np.allclose(
+                    out_group.depth_.values, depth
+                ):
+                    raise ValueError(
+                        f"Cannot create property group {property_group} as it already"
+                        "exists and has a different depth sampling."
+                    )
                 return out_group
 
         else:
