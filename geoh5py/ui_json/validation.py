@@ -20,6 +20,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any, Dict, cast
 from uuid import UUID
+from warnings import warn
 
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
@@ -138,8 +139,10 @@ class InputValidation:
                 try:
                     validations[key]["association"] = item["parent"]
                     validations[key]["uuid"] = None
-                except KeyError:
-                    pass
+                except KeyError as error:
+                    warn(
+                        f"Failed to set association for {key}. {error}",
+                    )
 
             elif "choiceList" in item:
                 validations[key] = {

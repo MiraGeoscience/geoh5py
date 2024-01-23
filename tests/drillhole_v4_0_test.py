@@ -220,6 +220,16 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
                 },
             )
 
+        with pytest.raises(ValueError, match="Mismatch between input"):
+            well.add_data(
+                {
+                    "my_log_values/": {
+                        "depth": np.arange(0, 49.0).tolist(),
+                        "values": np.random.randn(50),
+                    },
+                }
+            )
+
         test_values = np.random.randn(30)
         test_values[0] = np.nan
         test_values[-1] = np.nan
@@ -227,7 +237,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         well.add_data(
             {
                 "my_log_values/": {
-                    "depth": np.arange(0, 50.0),
+                    "depth": np.arange(0, 50.0).tolist(),
                     "values": np.random.randn(50),
                 },
                 "log_wt_tolerance": {
