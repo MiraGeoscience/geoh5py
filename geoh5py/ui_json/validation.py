@@ -118,7 +118,9 @@ class InputValidation:
         return val
 
     @staticmethod
-    def _validations_from_uijson(ui_json: dict[str, Any]) -> dict[str, dict]:
+    def _validations_from_uijson(  # pylint: disable=too-many-branches
+        ui_json: dict[str, Any]
+    ) -> dict[str, dict]:
         """Determine base set of validations from ui.json structure."""
         validations: dict[str, dict] = {}
         for key, item in ui_json.items():
@@ -133,8 +135,11 @@ class InputValidation:
                 validations[key] = {
                     "types": [str, UUID, int, float, Entity],
                 }
-                validations[key]["association"] = item["parent"]
-                validations[key]["uuid"] = None
+                try:
+                    validations[key]["association"] = item["parent"]
+                    validations[key]["uuid"] = None
+                except KeyError:
+                    pass
 
             elif "choiceList" in item:
                 validations[key] = {

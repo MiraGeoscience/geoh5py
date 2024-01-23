@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING
 
 from ..utils import as_str_if_uuid
 from .concatenated import Concatenated
-from .utils import is_concatenated_object
 
 if TYPE_CHECKING:
     from .object import ConcatenatedObject
@@ -32,9 +31,7 @@ class ConcatenatedData(Concatenated, ABC):
     _parent: ConcatenatedObject
 
     def __init__(self, entity_type, **kwargs):
-        if kwargs.get("parent") is None or not is_concatenated_object(
-            kwargs.get("parent")
-        ):
+        if kwargs.get("parent") is None:
             raise UserWarning(
                 "Creating a concatenated data must have a parent "
                 "of type Concatenated."
@@ -63,12 +60,12 @@ class ConcatenatedData(Concatenated, ABC):
 
     @parent.setter
     def parent(self, parent: ConcatenatedObject):
-        if not is_concatenated_object(parent):
-            raise AttributeError(
-                "The 'parent' of a concatenated Data must be of type 'Concatenated'."
+        if not hasattr(parent, "add_children"):
+            raise ValueError(
+                "The 'parent' of a concatenated data must have an 'add_children' method."
             )
+        parent.add_children([self])
         self._parent: ConcatenatedObject = parent
-        self._parent.add_children([self])  # type: ignore
 
         parental_attr = self.concatenator.get_concatenated_attributes(self.parent.uid)
 

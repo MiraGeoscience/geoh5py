@@ -22,8 +22,6 @@ from typing import TYPE_CHECKING
 from geoh5py.data import Data
 from geoh5py.groups import PropertyGroup
 
-from .utils import is_concatenated_object
-
 if TYPE_CHECKING:
     from .object import ConcatenatedObject
 
@@ -32,12 +30,6 @@ class ConcatenatedPropertyGroup(PropertyGroup):
     _parent: ConcatenatedObject
 
     def __init__(self, parent: ConcatenatedObject, **kwargs):
-        if not is_concatenated_object(parent):
-            raise UserWarning(
-                "Creating a concatenated data must have a parent "
-                "of type Concatenated."
-            )
-
         super().__init__(parent, **kwargs)
 
     @property
@@ -93,10 +85,12 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         if self._parent is not None:
             raise AttributeError("Cannot change parent of a property group.")
 
-        if not is_concatenated_object(parent):
-            raise AttributeError(
-                "The 'parent' of a concatenated Data must be of type 'Concatenated'."
+        if not hasattr(parent, "add_children"):
+            raise ValueError(
+                "The 'parent' of a concatenated data must have an 'add_children' method."
             )
+
         parent.add_children([self])
-        self._parent = parent
+        self._parent: ConcatenatedObject = parent
+
         parent.workspace.add_or_update_property_group(self)
