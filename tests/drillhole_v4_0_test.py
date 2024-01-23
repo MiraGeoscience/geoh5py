@@ -115,10 +115,10 @@ def test_concatenated_entities(tmp_path):
 
         assert data.property_group is None
 
-        with pytest.raises(UserWarning) as error:
+        with pytest.raises(
+            AttributeError, match="must have a 'property_groups' attribute"
+        ):
             prop_group = ConcatenatedPropertyGroup(None)
-
-        assert "Creating a concatenated data must have a parent" in str(error)
 
         prop_group = ConcatenatedPropertyGroup(parent=concat_object)
 
@@ -133,7 +133,8 @@ def test_concatenated_entities(tmp_path):
         setattr(prop_group, "_parent", None)
 
         with pytest.raises(
-            AttributeError, match="The 'parent' of a concatenated Data must be of type"
+            ValueError,
+            match="The 'parent' of a concatenated data must have an 'add_children' method.",
         ):
             prop_group.parent = "bidon"
 
@@ -219,6 +220,16 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
                 },
             )
 
+        with pytest.raises(ValueError, match="Mismatch between input"):
+            well.add_data(
+                {
+                    "my_log_values/": {
+                        "depth": np.arange(0, 49.0).tolist(),
+                        "values": np.random.randn(50),
+                    },
+                }
+            )
+
         test_values = np.random.randn(30)
         test_values[0] = np.nan
         test_values[-1] = np.nan
@@ -226,7 +237,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         well.add_data(
             {
                 "my_log_values/": {
-                    "depth": np.arange(0, 50.0),
+                    "depth": np.arange(0, 50.0).tolist(),
                     "values": np.random.randn(50),
                 },
                 "log_wt_tolerance": {
