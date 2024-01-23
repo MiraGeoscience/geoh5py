@@ -115,10 +115,10 @@ def test_concatenated_entities(tmp_path):
 
         assert data.property_group is None
 
-        with pytest.raises(UserWarning) as error:
+        with pytest.raises(
+            AttributeError, match="must have a 'property_groups' attribute"
+        ):
             prop_group = ConcatenatedPropertyGroup(None)
-
-        assert "Creating a concatenated data must have a parent" in str(error)
 
         prop_group = ConcatenatedPropertyGroup(parent=concat_object)
 
@@ -133,7 +133,8 @@ def test_concatenated_entities(tmp_path):
         setattr(prop_group, "_parent", None)
 
         with pytest.raises(
-            AttributeError, match="The 'parent' of a concatenated Data must be of type"
+            ValueError,
+            match="The 'parent' of a concatenated data must have an 'add_children' method.",
         ):
             prop_group.parent = "bidon"
 

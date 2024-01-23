@@ -22,12 +22,10 @@ import warnings
 from abc import ABC
 from typing import TYPE_CHECKING
 
-from ...data import Data
-from ...groups import PropertyGroup
 from ...objects import ObjectBase
 from .concatenated import Concatenated
+from .data import ConcatenatedData
 from .property_group import ConcatenatedPropertyGroup
-from .utils import is_concatenator
 
 if TYPE_CHECKING:
     from .concatenator import Concatenator
@@ -38,13 +36,38 @@ class ConcatenatedObject(Concatenated, ObjectBase, ABC):
     _property_groups: list | None = None
 
     def __init__(self, entity_type, **kwargs):
-        if kwargs.get("parent") is None or not is_concatenator(kwargs.get("parent")):
+        if kwargs.get("parent") is None:
             raise UserWarning(
                 "Creating a concatenated object must have a parent "
                 "of type Concatenator."
             )
 
         super().__init__(entity_type, **kwargs)
+
+    def add_children(
+        self,
+        children,
+    ):
+        """
+        :param children: Add a list of entities as
+            :obj:`~geoh5py.shared.entity.Entity.children`
+        """
+        property_groups = self._property_groups or []
+
+        for child in children:
+            if child not in self._children and isinstance(
+                child, (ConcatenatedData, ConcatenatedPropertyGroup)
+            ):
+                self._children.append(child)
+
+            if (
+                isinstance(child, ConcatenatedPropertyGroup)
+                and child not in property_groups
+            ):
+                property_groups.append(child)
+
+            if property_groups:
+                self._property_groups = property_groups
 
     def create_property_group(
         self, name=None, on_file=False, uid=None, **kwargs
@@ -74,7 +97,7 @@ class ConcatenatedObject(Concatenated, ObjectBase, ABC):
 
         return prop_group
 
-    def get_data(self, name: str | uuid.UUID) -> list[Data]:
+    def get_data(self, name: str | uuid.UUID):
         """
         Generic function to get data values from object.
         """
@@ -92,7 +115,7 @@ class ConcatenatedObject(Concatenated, ObjectBase, ABC):
                     ).copy()
                     attributes["parent"] = self
                     self.workspace.create_from_concatenation(attributes)
-                elif not isinstance(child_data, PropertyGroup):
+                elif not isinstance(child_data, ConcatenatedPropertyGroup):
                     self.add_children([child_data])
                 else:
                     warnings.warn(f"Failed: '{name}' is a property group, not a Data.")
@@ -126,21 +149,21 @@ class ConcatenatedObject(Concatenated, ObjectBase, ABC):
         return self._parent
 
     @parent.setter
-    def parent(self, parent):
-        if not is_concatenator(parent):
-            raise AttributeError(
-                "The 'parent' of a concatenated Object must be of type "
-                "'Concatenator'."
+    def parent(self, parent: Concatenator):
+        if not hasattr(parent, "add_children"):
+            raise ValueError(
+                "The 'parent' of a concatenated Object must have an "
+                "'add_children' method."
             )
+        parent.add_children([self])
         self._parent = parent
-        self._parent.add_children([self])
 
     @property
     def property_groups(self) -> list | None:
         if self._property_groups is None:
             property_groups = self.concatenator.fetch_values(self, "property_group_ids")
 
-            if property_groups is None or isinstance(self, Data):
+            if property_groups is None or isinstance(self, ConcatenatedData):
                 property_groups = []
 
             for key in property_groups:

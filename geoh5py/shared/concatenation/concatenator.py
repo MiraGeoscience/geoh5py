@@ -31,12 +31,13 @@ from ...data import Data, DataAssociationEnum, DataType
 from ...groups import Group
 from ..entity import Entity
 from ..utils import INV_KEY_MAP, KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid
-from .utils import is_concatenated, is_concatenated_data, is_concatenated_object
+from .concatenated import Concatenated
+from .data import ConcatenatedData
+from .object import ConcatenatedObject
 
 if TYPE_CHECKING:
     from ...groups import GroupType
-    from .concatenated import Concatenated
-    from .object import ConcatenatedObject
+
 
 PROPERTY_KWARGS = {
     "trace": {"maxshape": (None,)},
@@ -94,7 +95,7 @@ class Concatenator(Group, ABC):  # pylint: disable=too-many-public-methods
         """
         for child in children:
             if not (
-                is_concatenated(child)
+                isinstance(child, Concatenated)
                 or (
                     isinstance(child, Data)
                     and child.association
@@ -341,7 +342,7 @@ class Concatenator(Group, ABC):  # pylint: disable=too-many-public-methods
 
         uid = as_str_if_uuid(entity.uid).encode()
 
-        if is_concatenated_data(entity):
+        if isinstance(entity, ConcatenatedData):
             ind = np.where(self.index[field]["Data ID"] == uid)[0]
             if len(ind) == 1:
                 return ind[0]
@@ -450,14 +451,14 @@ class Concatenator(Group, ABC):  # pylint: disable=too-many-public-methods
     def remove_entity(self, entity: Concatenated):
         """Remove a concatenated entity."""
 
-        if is_concatenated_data(entity):
+        if isinstance(entity, ConcatenatedData):
             # Remove the rows of data and index
             self.update_array_attribute(entity, entity.name, remove=True)
             # Remove from the concatenated Attributes
             parent_attr = self.get_concatenated_attributes(entity.parent.uid)
             name = entity.name
             del parent_attr[f"Property:{name}"]
-        elif is_concatenated_object(entity):
+        elif isinstance(entity, ConcatenatedObject):
             if entity.property_groups is not None:  # type: ignore
                 self.update_array_attribute(entity, "property_groups", remove=True)
 
