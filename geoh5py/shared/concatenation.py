@@ -725,6 +725,40 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
         super().__init__(parent, **kwargs)
 
+    def is_collocated(
+        self,
+        locations: np.ndarray,
+        collocation_distance: float,
+    ) -> bool:
+        """
+        True if locations are collocated with property group.
+
+        :param locations: Locations to check.
+        :param collocation_distance: tolerance for similarity check.
+        """
+
+        if (
+            self.locations is None
+            or locations.ndim != self.locations.ndim
+            or len(locations) != len(self.locations)
+            or not np.allclose(locations, self.locations, atol=collocation_distance)
+        ):
+            return False
+
+        return True
+
+    @property
+    def locations(self) -> np.ndarray:
+        """Return depths or intervals array if either exists else None."""
+
+        if self.depth_ is not None:
+            return self.depth_.values
+
+        if self.from_ is not None and self.to_ is not None:
+            return np.c_[self.from_.values, self.to_.values]
+
+        return None
+
     @property
     def depth_(self):
         if self.properties is None or len(self.properties) < 1:
@@ -916,6 +950,11 @@ class ConcatenatedObject(Concatenated, ObjectBase):
         return self._property_groups
 
 
+class ConcatenatedDrillholeValidationError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
 class ConcatenatedDrillhole(ConcatenatedObject):
     @property
     def depth_(self) -> list[Data]:
@@ -1068,13 +1107,7 @@ class ConcatenatedDrillhole(ConcatenatedObject):
 
         if depth is not None and self.property_groups is not None:
             for group in self.property_groups:
-                if (
-                    group.depth_ is not None
-                    and group.depth_.values.shape[0] == depth.shape[0]
-                    and np.allclose(
-                        group.depth_.values, depth, atol=collocation_distance
-                    )
-                ):
+                if group.is_collocated(depth, collocation_distance):
                     if isinstance(property_group, str) and group.name != property_group:
                         continue
 
@@ -1158,22 +1191,13 @@ class ConcatenatedDrillhole(ConcatenatedObject):
             )
             assert from_to.shape[1] == 2, "The `from-to` values must have shape(*, 2)"
 
-        if (
-            from_to is not None
-            and property_group is None
-            and self.property_groups is not None
-        ):
-            for p_g in self.property_groups:
-                if (
-                    p_g.from_ is not None
-                    and p_g.from_.values.shape[0] == from_to.shape[0]
-                    and np.allclose(
-                        np.c_[p_g.from_.values, p_g.to_.values],
-                        from_to,
-                        atol=collocation_distance,
-                    )
-                ):
-                    return p_g
+        if from_to is not None and self.property_groups is not None:
+            for group in self.property_groups:
+                if group.is_collocated(from_to, collocation_distance):
+                    if isinstance(property_group, str) and group.name != property_group:
+                        continue
+
+                    return group
 
         ind = 0
         label = ""
