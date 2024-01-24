@@ -697,6 +697,20 @@ def test_is_collocated(tmp_path):
     property_group = dh.find_or_create_property_group(name="my property group")
     assert property_group.is_collocated(np.arange(0, 10.0), 0.01)
 
+    dh2 = Drillhole.create(ws, name="dh2", parent=dh_group)
+    dh2.add_data(
+        {
+            "my other data": {
+                "depth": np.arange(1, 11.0),
+                "values": np.random.randn(10),
+            },
+        },
+        property_group="my property group",
+    )
+
+    property_group = dh2.find_or_create_property_group(name="my property group")
+    assert property_group.is_collocated(np.arange(1, 11.0), 0.01)
+
     dh.add_data(
         {
             "my other data": {
