@@ -40,6 +40,41 @@ from geoh5py.shared.utils import as_str_if_uuid, compare_entities
 from geoh5py.workspace import Workspace
 
 
+def compare_structured_arrays(
+    array1: np.ndarray, array2: np.ndarray, tolerance: float = 1e-5
+) -> bool:
+    """
+    Compare two NumPy record arrays.
+
+    :param array1: The first structured array to compare.
+    :param array2: The second array to be compared.
+    :param tolerance: The tolerance level for numerical comparison.
+
+    :return: True if arrays are equivalent within the given tolerance, False otherwise.
+    """
+
+    if array1.dtype != array2.dtype:
+        return False  # Different structure
+
+    for column in array1.dtype.names:
+        data1, data2 = array1[column], array2[column]
+
+        # Decode byte strings to regular strings if necessary
+        if data1.dtype.kind == "S":
+            data1 = np.array([d.decode() for d in data1])
+            data2 = np.array([d.decode() for d in data2])
+
+        # Check if the data type of the column is numerical
+        if np.issubdtype(data1.dtype, np.number):
+            if not np.all(np.isclose(data1, data2, atol=tolerance, equal_nan=True)):
+                return False
+        else:
+            if not np.array_equal(data1, data2):
+                return False
+
+    return True
+
+
 def test_concatenator(tmp_path):
     h5file_path = tmp_path / r"test_Concatenator.geoh5"
 
@@ -647,3 +682,136 @@ def test_open_close_creation(tmp_path):
     )
     assert len(workspace.groups[1].concatenated_attributes["Attributes"]) == 2
     workspace.close()
+
+
+def test_export_table(tmp_path):
+    h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
+    well_name = "bullseye/"
+    n_data = 10
+
+    with Workspace.create(h5file_path) as workspace:
+        # Create a workspace
+        dh_group = DrillholeGroup.create(workspace)
+
+        well = Drillhole.create(
+            workspace,
+            collar=np.r_[0.0, 10.0, 10],
+            surveys=np.c_[
+                np.linspace(0, 100, n_data),
+                np.ones(n_data) * 45.0,
+                np.linspace(-89, -75, n_data),
+            ],
+            parent=dh_group,
+            name=well_name,
+        )
+
+        depth = np.sort(np.random.uniform(low=0.05, high=100, size=(10,))).astype(
+            np.float16
+        )
+        value = np.random.randn(8)
+
+        _ = well.add_data(
+            {
+                "Depth Data": {
+                    "depth": depth,
+                    "values": value,
+                },
+            }
+        )
+
+        # Create random from-to
+        from_to = (
+            np.sort(np.random.uniform(low=0.05, high=100, size=(52,)))
+            .reshape((-1, 2))
+            .astype(np.float16)
+        )
+        text = np.array(
+            [
+                "".join(random.choice(string.ascii_lowercase) for _ in range(6))
+                for _ in range(3)
+            ]
+        )
+        _ = well.add_data(
+            {
+                "text Data": {
+                    "values": text,
+                    "from-to": from_to,
+                    "type": "TEXT",
+                },
+            }
+        )
+
+        # close and open again
+
+    with Workspace(h5file_path) as workspace:
+        well = workspace.get_entity(well_name)[0]
+
+        drillhole_group = well.parent
+
+        temp_uid = np.array(
+            ["{%s}" % well.uid for i in range(from_to.shape[0])]
+        ).astype("S")
+
+        # append "" n-3 times to text
+        text = np.hstack(
+            (text, np.array(["" for i in range(from_to.shape[0] - text.shape[0])]))
+        ).astype("S")
+
+        # create types
+        dtypes = [
+            ("Drillhole", "O"),
+            ("FROM", np.float32),
+            ("TO", np.float32),
+            ("text Data", "O"),
+        ]
+
+        verification = np.core.records.fromarrays(
+            [temp_uid, from_to[:, 0], from_to[:, 1], text], dtype=dtypes
+        )
+
+        assert compare_structured_arrays(
+            drillhole_group.get_data_table("text Data", True),
+            verification,
+            tolerance=1e-5,
+        )
+
+        temp_uid = np.array(["{%s}" % well.uid for _ in range(depth.shape[0])]).astype(
+            "S"
+        )
+
+        values = np.hstack(
+            (value, np.array([np.nan for _ in range(depth.shape[0] - value.shape[0])]))
+        )
+
+        dtypes = [
+            ("Drillhole", "O"),
+            ("DEPTH", np.float32),
+            ("Depth Data", np.float32),
+        ]
+
+        verification = np.core.records.fromarrays(
+            [temp_uid, depth, values], dtype=dtypes
+        )
+
+        # todo: a process increase the number of decimals of the depth value.
+        assert compare_structured_arrays(
+            drillhole_group.get_data_table("Depth Data", False),
+            verification,
+            tolerance=1e-2,
+        )
+
+        # test errors
+        with pytest.raises(KeyError, match="Data 'bidon' not found"):
+            drillhole_group.get_data_table("bidon", True)
+
+        well.add_data(
+            {
+                "bidon": {
+                    "association": "OBJECT",
+                    "values": value,
+                },
+            }
+        )
+
+        with pytest.raises(TypeError, match="Data 'bidon' is not associated"):
+            drillhole_group.get_data_table("bidon", True)

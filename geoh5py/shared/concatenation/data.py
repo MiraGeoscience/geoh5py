@@ -25,6 +25,7 @@ from .concatenated import Concatenated
 
 if TYPE_CHECKING:
     from .object import ConcatenatedObject
+    from .property_group import ConcatenatedPropertyGroup
 
 
 class ConcatenatedData(Concatenated, ABC):
@@ -40,7 +41,7 @@ class ConcatenatedData(Concatenated, ABC):
         super().__init__(entity_type, **kwargs)
 
     @property
-    def property_group(self):
+    def property_group(self) -> ConcatenatedPropertyGroup | None:
         """Get the property group containing the data interval."""
         if self.parent.property_groups is None:
             return None

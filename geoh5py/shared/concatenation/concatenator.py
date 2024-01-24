@@ -22,22 +22,23 @@ from __future__ import annotations
 import uuid
 import warnings
 from abc import ABC
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
 import numpy as np
 from h5py import special_dtype
 
-from ...data import Data, DataAssociationEnum, DataType
+from ...data import Data, DataAssociationEnum, DataType, NumericData, TextData
 from ...groups import Group
 from ..entity import Entity
 from ..utils import INV_KEY_MAP, KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid
 from .concatenated import Concatenated
 from .data import ConcatenatedData
 from .object import ConcatenatedObject
+from .property_group import ConcatenatedPropertyGroup
 
 if TYPE_CHECKING:
     from ...groups import GroupType
-
 
 PROPERTY_KWARGS = {
     "trace": {"maxshape": (None,)},
@@ -616,3 +617,186 @@ class Concatenator(Group, ABC):  # pylint: disable=too-many-public-methods
             self.data[alias] = values
 
         self.save_attribute(field)
+
+    def _extract_objects_data_table(
+        self, data_name: str
+    ) -> tuple[np.ndarray, ConcatenatedPropertyGroup, Any]:
+        """
+        Extract the data table for a given data name.
+        This function is an internal function used by the get_data_table function.
+
+        :param data_name: The name of the data to extract.
+
+        :return: The index, the property group and the NDV value of the data
+        """
+        # ensure data_name is in the data
+        if data_name not in self.data:
+            raise KeyError(f"Data '{data_name}' not found in concatenated data.")
+
+        # get the index of the data and sort it
+        data_index = np.sort(self.index[data_name], order="Start index")
+
+        # get the first object of the know association
+        object_: ConcatenatedObject = self.workspace.get_entity(  # type: ignore
+            UUID(data_index[0][-2].decode("utf-8").strip("{}"))
+        )[0]
+
+        data: Data = object_.get_data(
+            UUID(data_index[0][-1].decode("utf-8").strip("{}"))
+        )[0]
+
+        # ensure the association is Depth:
+        if data.association != DataAssociationEnum.DEPTH:
+            raise TypeError(
+                f"Data '{data_name}' is not associated with depth ({data.association})."
+            )
+
+        # define NDV value
+        ndv = np.nan
+        if isinstance(data, NumericData):
+            ndv = data.nan_value
+        elif isinstance(data, TextData):
+            ndv = ""
+
+        property_group: ConcatenatedPropertyGroup = getattr(data, "property_group")
+
+        return data_index, property_group, ndv
+
+    def _get_association_data_table(
+        self, property_group: ConcatenatedPropertyGroup
+    ) -> np.ndarray:
+        """
+        Get the association table for a given property group.
+        This function is an internal function used by the get_data_table function.
+
+        :param property_group: The property group to extract.
+
+        :return: the association table of the property group.
+        """
+        # get the associations
+        associations: np.ndarray = np.array([])
+        # todo: if association is DEPTH,. it just can be "Interval Table" or "Depth Table"
+        if property_group.property_group_type == "Interval table":
+            associations = np.array(
+                [
+                    [
+                        property_group.from_.name,
+                        np.sort(
+                            self.index[property_group.from_.name], order="Start index"
+                        ),
+                        self.data[property_group.from_.name],
+                    ],
+                    [
+                        property_group.to_.name,
+                        np.sort(
+                            self.index[property_group.to_.name], order="Start index"
+                        ),
+                        self.data[property_group.to_.name],
+                    ],
+                ]
+            )
+        elif property_group.property_group_type == "Depth table":
+            associations = np.array(
+                [
+                    [
+                        property_group.depth_.name,
+                        np.sort(
+                            self.index[property_group.depth_.name], order="Start index"
+                        ),
+                        self.data[property_group.depth_.name],
+                    ]
+                ]
+            )
+
+        return associations
+
+    def _pad_data_table(
+        self,
+        data_name: str,
+        associations: np.ndarray,
+        data_index: np.ndarray,
+        ndv: str | int | float,
+        pad: bool,
+    ) -> np.ndarray:
+        """
+        Pad the data table for a given data name.
+        This function is an internal function used by the get_data_table function.
+
+        :param data_name: The name of the data to extract.
+        :param associations: The association table of the property group.
+        :param data_index: The index of the data sorted.
+        :param ndv: The No Data Value of the data.
+        :param pad: Pad the data based on the association if True.
+
+        :return: a structured array with the data.
+        """
+        # pad the values
+        if pad:
+            values = self.data[data_name]
+            temp_association = np.array(
+                [
+                    np.empty(values.shape, dtype=association[2].dtype)
+                    for association in associations
+                ]
+            )
+            drillhole_index = np.empty(values.shape, dtype="O")
+
+            for depth, value in zip(associations[0][1], data_index):
+                for association_index in range(associations.shape[0]):
+                    temp_association[association_index][
+                        value[0] : value[0] + value[1]
+                    ] = associations[association_index][2][
+                        depth[0] : depth[0] + value[1]
+                    ]
+
+                drillhole_index[value[0] : value[0] + value[1]] = value[2]
+
+            for association_index in range(associations.shape[0]):
+                associations[association_index][2] = temp_association[association_index]
+
+        else:
+            values = np.empty(
+                associations[0][2].shape, dtype=self.data[data_name].dtype
+            )
+            values[:] = ndv
+            drillhole_index = np.empty(associations[0][2].shape, dtype="O")
+
+            for depth, value in zip(associations[0][1], data_index):
+                values[depth[0] : depth[0] + value[1]] = self.data[data_name][
+                    value[0] : value[0] + value[1]
+                ]
+                drillhole_index[depth[0] : depth[0] + value[1]] = value[2]
+
+        # prepare the output
+        dtype = [("Drillhole", drillhole_index.dtype)]
+        output = [drillhole_index]
+
+        for association in associations:
+            dtype.append((association[0], association[2].dtype))
+            output.append(association[2])
+
+        dtype.append((data_name, values.dtype))
+        output.append(values)
+
+        return np.core.records.fromarrays(output, dtype=dtype)
+
+    def get_data_table(self, data_name: str, pad: bool = False) -> np.ndarray:
+        """
+        Get the complete table for a given data name.
+        this table contains the associated drillhole, the depth/from-to and the values.
+
+        :param data_name: The name of the data to extract.
+        :param pad: Pad the data based on the association if True.
+
+        :return: a structured array with the data.
+        """
+        # get the sorted index, the property group and the NDV value
+        data_index, property_group, ndv = self._extract_objects_data_table(data_name)
+
+        # get the associations
+        associations: np.ndarray = self._get_association_data_table(property_group)
+
+        # pad the values
+        output = self._pad_data_table(data_name, associations, data_index, ndv, pad)
+
+        return output
