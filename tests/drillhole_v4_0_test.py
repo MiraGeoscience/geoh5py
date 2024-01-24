@@ -815,3 +815,100 @@ def test_export_table(tmp_path):
 
         with pytest.raises(TypeError, match="Data 'bidon' is not associated"):
             drillhole_group.get_data_table("bidon", True)
+
+
+def test_push_table(tmp_path):
+    h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
+    well_name = "bullseye/"
+    n_data = 10
+
+    with Workspace.create(h5file_path) as workspace:
+        # Create a workspace
+        dh_group = DrillholeGroup.create(workspace)
+
+        well = Drillhole.create(
+            workspace,
+            collar=np.r_[0.0, 10.0, 10],
+            surveys=np.c_[
+                np.linspace(0, 100, n_data),
+                np.ones(n_data) * 45.0,
+                np.linspace(-89, -75, n_data),
+            ],
+            parent=dh_group,
+            name=well_name,
+        )
+
+        depth = np.sort(np.random.uniform(low=0.05, high=100, size=(10,))).astype(
+            np.float16
+        )
+        value = np.random.randn(10)
+
+        _ = well.add_data(
+            {
+                "Depth Data": {
+                    "depth": depth,
+                    "values": value,
+                },
+            }
+        )
+
+        # Create random from-to
+        from_to = (
+            np.sort(np.random.uniform(low=0.05, high=100, size=(20,)))
+            .reshape((-1, 2))
+            .astype(np.float16)
+        )
+        text = np.array(
+            [
+                "".join(random.choice(string.ascii_lowercase) for _ in range(6))
+                for _ in range(10)
+            ]
+        )
+        _ = well.add_data(
+            {
+                "text Data": {
+                    "values": text,
+                    "from-to": from_to,
+                    "type": "TEXT",
+                },
+            }
+        )
+
+    with Workspace(h5file_path) as workspace:
+        well = workspace.get_entity(well_name)[0]
+
+        drillhole_group = well.parent
+
+        drillhole_group.add_data_from_template(
+            "copied",
+            text,
+            "text Data",
+        )
+
+        drillhole_group.add_data_from_template(
+            "copied2",
+            value,
+            "Depth Data",
+        )
+
+        assert all(
+            drillhole_group.data["copied"]
+            == drillhole_group.data["text Data"].astype(str)
+        )
+        np.testing.assert_array_almost_equal(
+            drillhole_group.data["copied2"], drillhole_group.data["Depth Data"]
+        )
+
+        with pytest.raises(KeyError, match="Data 'text Data' exists"):
+            drillhole_group.add_data_from_template(
+                "text Data",
+                value,
+                "Depth Data",
+            )
+
+        with pytest.raises(IndexError, match="Values shape"):
+            drillhole_group.add_data_from_template(
+                "copied3",
+                np.random.randn(5),
+                "text Data",
+            )

@@ -800,3 +800,68 @@ class Concatenator(Group, ABC):  # pylint: disable=too-many-public-methods
         output = self._pad_data_table(data_name, associations, data_index, ndv, pad)
 
         return output
+
+    def add_data_from_template(
+        self,
+        name: str,
+        values: np.darray,
+        template: str,
+        padded: bool = False,
+    ):
+        """
+        Add data to objects in the group using a template.
+
+        :param name: The name of the new data.
+        :param values: The values of the new data ;
+            must be a 1D array similar to the template value.
+        :param template: The name of the template data to use.
+        :param padded: If the data are padded (last drillhole data no data value).
+        """
+
+        # ensure name is not already in the data
+        if name in self.data:
+            raise KeyError(
+                f"Data '{name}' exists in concatenated data, choose a new one."
+            )
+
+        # get the values of the template
+        template_values = self.get_data_table(template, pad=padded)
+
+        # ensure the values and the template values have the same shape
+        if values.shape != template_values[template].shape:
+            raise IndexError(
+                f"Values shape ({values.shape}) and template shape "
+                f"({template_values[template].shape}) must be the same."
+            )
+
+        if "FROM" in template_values.dtype.names:
+            association = "from-to"
+            association_values = np.column_stack(
+                [template_values["FROM"], template_values["TO"]]
+            )
+        else:
+            association = "depth"
+            association_values = (
+                template_values["DEPTH"].copy().view(template_values["DEPTH"].dtype)
+            )
+
+        association_values = association_values.view(np.float32).reshape(
+            association_values.shape[0], -1
+        )
+
+        # run over the objects the unique drillholes
+        for start_index, count_index, parent, _ in self.index[template]:
+            parent = self.workspace.get_entity(  # type: ignore
+                UUID(parent.decode("utf-8").strip("{}"))
+            )[0]
+
+            parent.add_data(
+                {
+                    name: {
+                        "values": values[start_index : start_index + count_index],
+                        association: association_values[
+                            start_index : start_index + count_index
+                        ],
+                    }
+                }
+            )
