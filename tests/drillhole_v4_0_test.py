@@ -685,6 +685,8 @@ def test_is_collocated(tmp_path):
     ws = Workspace(tmp_path / "test.geoh5")
     dh_group = DrillholeGroup.create(ws)
     dh = Drillhole.create(ws, name="dh", parent=dh_group)
+    property_group = dh.find_or_create_property_group(name="some uninitialized group")
+    assert not property_group.is_collocated(np.arange(0, 10.0), 0.01)
     dh.add_data(
         {
             "my data": {
@@ -696,6 +698,11 @@ def test_is_collocated(tmp_path):
     )
     property_group = dh.find_or_create_property_group(name="my property group")
     assert property_group.is_collocated(np.arange(0, 10.0), 0.01)
+    assert not property_group.is_collocated(np.arange(1, 11.0), 0.01)
+    assert not property_group.is_collocated(np.arange(0, 9.0), 0.01)
+    assert not property_group.is_collocated(
+        np.c_[np.arange(0, 10.0), np.arange(1, 11.0)], 0.01
+    )
 
     dh2 = Drillhole.create(ws, name="dh2", parent=dh_group)
     dh2.add_data(
