@@ -15,7 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=unused-import
+# pylint: disable=unused-import, cyclic-import
 # flake8: noqa
 
 from .block_model import BlockModel
