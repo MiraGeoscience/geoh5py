@@ -759,10 +759,10 @@ def test_export_table(tmp_path):
 
         # create types
         dtypes = [
-            ("Drillhole", "O"),
-            ("FROM", np.float32),
-            ("TO", np.float32),
-            ("text Data", "O"),
+            ("Drillhole", "S38"),
+            ("FROM", np.float64),
+            ("TO", np.float64),
+            ("text Data", "S6"),
         ]
 
         verification = np.core.records.fromarrays(
@@ -770,7 +770,7 @@ def test_export_table(tmp_path):
         )
 
         assert compare_structured_arrays(
-            drillhole_group.get_data_table("text Data", True),
+            drillhole_group.get_depth_table("text Data", True),
             verification,
             tolerance=1e-5,
         )
@@ -784,9 +784,9 @@ def test_export_table(tmp_path):
         )
 
         dtypes = [
-            ("Drillhole", "O"),
-            ("DEPTH", np.float32),
-            ("Depth Data", np.float32),
+            ("Drillhole", "S38"),
+            ("DEPTH", np.float64),
+            ("Depth Data", np.float64),
         ]
 
         verification = np.core.records.fromarrays(
@@ -795,14 +795,17 @@ def test_export_table(tmp_path):
 
         # todo: a process increase the number of decimals of the depth value.
         assert compare_structured_arrays(
-            drillhole_group.get_data_table("Depth Data", False),
+            drillhole_group.get_depth_table("Depth Data", False),
             verification,
-            tolerance=1e-2,
+            tolerance=1e-5,
         )
 
         # test errors
         with pytest.raises(KeyError, match="Data 'bidon' not found"):
-            drillhole_group.get_data_table("bidon", True)
+            drillhole_group.get_depth_table("bidon", True)
+
+        with pytest.raises(ValueError, match="The data to extract are not"):
+            drillhole_group.get_depth_table(["text Data", "Depth Data"], True)
 
         well.add_data(
             {
@@ -814,4 +817,29 @@ def test_export_table(tmp_path):
         )
 
         with pytest.raises(TypeError, match="Data 'bidon' is not associated"):
-            drillhole_group.get_data_table("bidon", True)
+            drillhole_group.get_depth_table("bidon", True)
+
+        # test padding method
+        test = [
+            np.array([1, 2, 3, 4, 5]),
+            np.array(["a", "b", "c"]),
+            np.array([1.0, 2.0, 3.0, 4.0]),
+        ]
+
+        verification = [
+            np.array([1, 2, 3, 4, 5]),
+            np.array(["a", "b", "c", "", ""]),
+            np.array([1.0, 2.0, 3.0, 4.0, 0.0]),
+        ]
+
+        no_data_test = ["", 0.0]
+
+        assert all(
+            all(array1 == array2)
+            for array1, array2 in zip(
+                drillhole_group._pad_arrays_to_first(  # pylint: disable=protected-access
+                    test, no_data_test
+                ),
+                verification,
+            )
+        )
