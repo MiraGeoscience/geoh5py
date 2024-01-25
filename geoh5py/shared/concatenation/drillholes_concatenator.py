@@ -68,9 +68,7 @@ class DrillholesConcatenator(Concatenator):
         return ndv, data.property_group
 
     @staticmethod
-    def _get_depth_association(
-        property_group: ConcatenatedPropertyGroup
-    ) -> tuple:
+    def _get_depth_association(property_group: ConcatenatedPropertyGroup) -> tuple:
         """
         Based on a PropertyGroup, it gets the name of the depth (or from to)
             associated with the data.
@@ -82,9 +80,9 @@ class DrillholesConcatenator(Concatenator):
         if property_group.property_group_type == "Interval table":
             return property_group.from_.name, property_group.to_.name
         elif property_group.property_group_type == "Depth table":
-            return property_group.depth_.name,
+            return (property_group.depth_.name,)
 
-        return None,
+        return (None,)
 
     def _construct_dict_data(
         self,
