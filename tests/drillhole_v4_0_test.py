@@ -759,10 +759,10 @@ def test_export_table(tmp_path):
 
         # create types
         dtypes = [
-            ("Drillhole", "O"),
-            ("FROM", np.float32),
-            ("TO", np.float32),
-            ("text Data", "O"),
+            ("Drillhole", "S38"),
+            ("FROM", np.float64),
+            ("TO", np.float64),
+            ("text Data", "S6"),
         ]
 
         verification = np.core.records.fromarrays(
@@ -770,7 +770,7 @@ def test_export_table(tmp_path):
         )
 
         assert compare_structured_arrays(
-            drillhole_group.get_data_table("text Data", True),
+            drillhole_group.get_depth_table("text Data", True),
             verification,
             tolerance=1e-5,
         )
@@ -784,9 +784,9 @@ def test_export_table(tmp_path):
         )
 
         dtypes = [
-            ("Drillhole", "O"),
-            ("DEPTH", np.float32),
-            ("Depth Data", np.float32),
+            ("Drillhole", "S38"),
+            ("DEPTH", np.float64),
+            ("Depth Data", np.float64),
         ]
 
         verification = np.core.records.fromarrays(
@@ -795,14 +795,17 @@ def test_export_table(tmp_path):
 
         # todo: a process increase the number of decimals of the depth value.
         assert compare_structured_arrays(
-            drillhole_group.get_data_table("Depth Data", False),
+            drillhole_group.get_depth_table("Depth Data", False),
             verification,
-            tolerance=1e-2,
+            tolerance=1e-5,
         )
 
         # test errors
         with pytest.raises(KeyError, match="Data 'bidon' not found"):
-            drillhole_group.get_data_table("bidon", True)
+            drillhole_group.get_depth_table("bidon", True)
+
+        with pytest.raises(ValueError, match="The data to extract are not"):
+            drillhole_group.get_depth_table(["text Data", "Depth Data"], True)
 
         well.add_data(
             {
@@ -814,101 +817,29 @@ def test_export_table(tmp_path):
         )
 
         with pytest.raises(TypeError, match="Data 'bidon' is not associated"):
-            drillhole_group.get_data_table("bidon", True)
+            drillhole_group.get_depth_table("bidon", True)
 
+        # test padding method
+        test = [
+            np.array([1, 2, 3, 4, 5]),
+            np.array(["a", "b", "c"]),
+            np.array([1.0, 2.0, 3.0, 4.0]),
+        ]
 
-def test_push_table(tmp_path):
-    h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
-    well_name = "bullseye/"
-    n_data = 10
+        verification = [
+            np.array([1, 2, 3, 4, 5]),
+            np.array(["a", "b", "c", "", ""]),
+            np.array([1.0, 2.0, 3.0, 4.0, 0.0]),
+        ]
 
-    with Workspace.create(h5file_path) as workspace:
-        # Create a workspace
-        dh_group = DrillholeGroup.create(workspace)
-
-        well = Drillhole.create(
-            workspace,
-            collar=np.r_[0.0, 10.0, 10],
-            surveys=np.c_[
-                np.linspace(0, 100, n_data),
-                np.ones(n_data) * 45.0,
-                np.linspace(-89, -75, n_data),
-            ],
-            parent=dh_group,
-            name=well_name,
-        )
-
-        depth = np.sort(np.random.uniform(low=0.05, high=100, size=(10,))).astype(
-            np.float16
-        )
-        value = np.random.randn(10)
-
-        _ = well.add_data(
-            {
-                "Depth Data": {
-                    "depth": depth,
-                    "values": value,
-                },
-            }
-        )
-
-        # Create random from-to
-        from_to = (
-            np.sort(np.random.uniform(low=0.05, high=100, size=(20,)))
-            .reshape((-1, 2))
-            .astype(np.float16)
-        )
-        text = np.array(
-            [
-                "".join(random.choice(string.ascii_lowercase) for _ in range(6))
-                for _ in range(10)
-            ]
-        )
-        _ = well.add_data(
-            {
-                "text Data": {
-                    "values": text,
-                    "from-to": from_to,
-                    "type": "TEXT",
-                },
-            }
-        )
-
-    with Workspace(h5file_path) as workspace:
-        well = workspace.get_entity(well_name)[0]
-
-        drillhole_group = well.parent
-
-        drillhole_group.add_data_from_template(
-            "copied",
-            text,
-            "text Data",
-        )
-
-        drillhole_group.add_data_from_template(
-            "copied2",
-            value,
-            "Depth Data",
-        )
+        no_data_test = ["", 0.0]
 
         assert all(
-            drillhole_group.data["copied"]
-            == drillhole_group.data["text Data"].astype(str)
-        )
-        np.testing.assert_array_almost_equal(
-            drillhole_group.data["copied2"], drillhole_group.data["Depth Data"]
-        )
-
-        with pytest.raises(KeyError, match="Data 'text Data' exists"):
-            drillhole_group.add_data_from_template(
-                "text Data",
-                value,
-                "Depth Data",
+            all(array1 == array2)
+            for array1, array2 in zip(
+                drillhole_group._pad_arrays_to_first(  # pylint: disable=protected-access
+                    test, no_data_test
+                ),
+                verification,
             )
-
-        with pytest.raises(IndexError, match="Values shape"):
-            drillhole_group.add_data_from_template(
-                "copied3",
-                np.random.randn(5),
-                "text Data",
-            )
+        )
