@@ -647,3 +647,88 @@ def test_open_close_creation(tmp_path):
     )
     assert len(workspace.groups[1].concatenated_attributes["Attributes"]) == 2
     workspace.close()
+
+
+def test_locations(tmp_path):
+    ws = Workspace(tmp_path / "test.geoh5")
+    dh_group = DrillholeGroup.create(ws)
+    dh = Drillhole.create(ws, name="dh", parent=dh_group)
+    dh.add_data(
+        {
+            "my data": {
+                "depth": np.arange(0, 10.0),
+                "values": np.random.randn(10),
+            },
+        },
+        property_group="my property group",
+    )
+
+    property_group = dh.find_or_create_property_group(name="my property group")
+    assert np.allclose(property_group.locations, np.arange(0, 10.0))
+
+    dh.add_data(
+        {
+            "my other data": {
+                "from-to": np.c_[np.arange(0, 10.0), np.arange(1, 11.0)],
+                "values": np.random.randn(10),
+            }
+        },
+        property_group="my other property group",
+    )
+    property_group = dh.find_or_create_property_group(name="my other property group")
+    assert np.allclose(
+        property_group.locations, np.c_[np.arange(0, 10.0), np.arange(1, 11.0)]
+    )
+
+
+def test_is_collocated(tmp_path):
+    ws = Workspace(tmp_path / "test.geoh5")
+    dh_group = DrillholeGroup.create(ws)
+    dh = Drillhole.create(ws, name="dh", parent=dh_group)
+    property_group = dh.find_or_create_property_group(name="some uninitialized group")
+    assert not property_group.is_collocated(np.arange(0, 10.0), 0.01)
+    dh.add_data(
+        {
+            "my data": {
+                "depth": np.arange(0, 10.0),
+                "values": np.random.randn(10),
+            },
+        },
+        property_group="my property group",
+    )
+    property_group = dh.find_or_create_property_group(name="my property group")
+    assert property_group.is_collocated(np.arange(0, 10.0), 0.01)
+    assert property_group.is_collocated(np.arange(0.001, 10), 0.01)
+    assert not property_group.is_collocated(np.arange(1, 11.0), 0.01)
+    assert not property_group.is_collocated(np.arange(0, 9.0), 0.01)
+    assert not property_group.is_collocated(
+        np.c_[np.arange(0, 10.0), np.arange(1, 11.0)], 0.01
+    )
+
+    dh2 = Drillhole.create(ws, name="dh2", parent=dh_group)
+    dh2.add_data(
+        {
+            "my other data": {
+                "depth": np.arange(1, 11.0),
+                "values": np.random.randn(10),
+            },
+        },
+        property_group="my property group",
+    )
+
+    property_group = dh2.find_or_create_property_group(name="my property group")
+    assert property_group.is_collocated(np.arange(1, 11.0), 0.01)
+
+    dh.add_data(
+        {
+            "my other data": {
+                "from-to": np.c_[np.arange(0, 10.0), np.arange(1, 11.0)],
+                "values": np.random.randn(10),
+            }
+        },
+        property_group="my other property group",
+    )
+    property_group = dh.find_or_create_property_group(name="my other property group")
+    assert property_group.is_collocated(
+        np.c_[np.arange(0, 10.0), np.arange(1, 11.0)], 0.01
+    )
