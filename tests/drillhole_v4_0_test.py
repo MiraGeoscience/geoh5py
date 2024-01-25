@@ -115,10 +115,10 @@ def test_concatenated_entities(tmp_path):
 
         assert data.property_group is None
 
-        with pytest.raises(UserWarning) as error:
+        with pytest.raises(
+            AttributeError, match="must have a 'property_groups' attribute"
+        ):
             prop_group = ConcatenatedPropertyGroup(None)
-
-        assert "Creating a concatenated data must have a parent" in str(error)
 
         prop_group = ConcatenatedPropertyGroup(parent=concat_object)
 
@@ -133,7 +133,8 @@ def test_concatenated_entities(tmp_path):
         setattr(prop_group, "_parent", None)
 
         with pytest.raises(
-            AttributeError, match="The 'parent' of a concatenated Data must be of type"
+            ValueError,
+            match="The 'parent' of a concatenated data must have an 'add_children' method.",
         ):
             prop_group.parent = "bidon"
 
@@ -195,7 +196,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
             dh_group.update_array_attribute(well, "abc")
 
         # Add both set of log data with 0.5 m tolerance
-        values = np.random.randn(50)
+        values = np.random.randn(48)
         with pytest.raises(
             UserWarning, match="Input depth 'collocation_distance' must be >0."
         ):
@@ -219,6 +220,16 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
                 },
             )
 
+        with pytest.raises(ValueError, match="Mismatch between input"):
+            well.add_data(
+                {
+                    "my_log_values/": {
+                        "depth": np.arange(0, 49.0).tolist(),
+                        "values": np.random.randn(50),
+                    },
+                }
+            )
+
         test_values = np.random.randn(30)
         test_values[0] = np.nan
         test_values[-1] = np.nan
@@ -226,7 +237,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         well.add_data(
             {
                 "my_log_values/": {
-                    "depth": np.arange(0, 50.0),
+                    "depth": np.arange(0, 50.0).tolist(),
                     "values": np.random.randn(50),
                 },
                 "log_wt_tolerance": {
@@ -287,7 +298,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         data_objects = well.add_data(
             {
                 "interval_values": {
-                    "values": np.random.randn(from_to_a.shape[0]),
+                    "values": np.random.randn(from_to_a.shape[0] - 1),
                     "from-to": from_to_a.tolist(),
                 },
                 "int_interval_list": {
@@ -636,3 +647,88 @@ def test_open_close_creation(tmp_path):
     )
     assert len(workspace.groups[1].concatenated_attributes["Attributes"]) == 2
     workspace.close()
+
+
+def test_locations(tmp_path):
+    ws = Workspace(tmp_path / "test.geoh5")
+    dh_group = DrillholeGroup.create(ws)
+    dh = Drillhole.create(ws, name="dh", parent=dh_group)
+    dh.add_data(
+        {
+            "my data": {
+                "depth": np.arange(0, 10.0),
+                "values": np.random.randn(10),
+            },
+        },
+        property_group="my property group",
+    )
+
+    property_group = dh.find_or_create_property_group(name="my property group")
+    assert np.allclose(property_group.locations, np.arange(0, 10.0))
+
+    dh.add_data(
+        {
+            "my other data": {
+                "from-to": np.c_[np.arange(0, 10.0), np.arange(1, 11.0)],
+                "values": np.random.randn(10),
+            }
+        },
+        property_group="my other property group",
+    )
+    property_group = dh.find_or_create_property_group(name="my other property group")
+    assert np.allclose(
+        property_group.locations, np.c_[np.arange(0, 10.0), np.arange(1, 11.0)]
+    )
+
+
+def test_is_collocated(tmp_path):
+    ws = Workspace(tmp_path / "test.geoh5")
+    dh_group = DrillholeGroup.create(ws)
+    dh = Drillhole.create(ws, name="dh", parent=dh_group)
+    property_group = dh.find_or_create_property_group(name="some uninitialized group")
+    assert not property_group.is_collocated(np.arange(0, 10.0), 0.01)
+    dh.add_data(
+        {
+            "my data": {
+                "depth": np.arange(0, 10.0),
+                "values": np.random.randn(10),
+            },
+        },
+        property_group="my property group",
+    )
+    property_group = dh.find_or_create_property_group(name="my property group")
+    assert property_group.is_collocated(np.arange(0, 10.0), 0.01)
+    assert property_group.is_collocated(np.arange(0.001, 10), 0.01)
+    assert not property_group.is_collocated(np.arange(1, 11.0), 0.01)
+    assert not property_group.is_collocated(np.arange(0, 9.0), 0.01)
+    assert not property_group.is_collocated(
+        np.c_[np.arange(0, 10.0), np.arange(1, 11.0)], 0.01
+    )
+
+    dh2 = Drillhole.create(ws, name="dh2", parent=dh_group)
+    dh2.add_data(
+        {
+            "my other data": {
+                "depth": np.arange(1, 11.0),
+                "values": np.random.randn(10),
+            },
+        },
+        property_group="my property group",
+    )
+
+    property_group = dh2.find_or_create_property_group(name="my property group")
+    assert property_group.is_collocated(np.arange(1, 11.0), 0.01)
+
+    dh.add_data(
+        {
+            "my other data": {
+                "from-to": np.c_[np.arange(0, 10.0), np.arange(1, 11.0)],
+                "values": np.random.randn(10),
+            }
+        },
+        property_group="my other property group",
+    )
+    property_group = dh.find_or_create_property_group(name="my other property group")
+    assert property_group.is_collocated(
+        np.c_[np.arange(0, 10.0), np.arange(1, 11.0)], 0.01
+    )
