@@ -593,23 +593,29 @@ class Drillhole(Points):
 
         return values
 
-    def validate_log_data(
+    def validate_depth_data(
         self,
         depth: np.ndarray,
-        input_values: np.ndarray,
+        values: np.ndarray,
         collocation_distance=1e-4,
     ) -> np.ndarray:
         """
         Compare new and current depth values. Append new vertices if necessary and return
         an augmented values vector that matches the vertices indexing.
+
+        :param depth: Array of depth values.
+        :param values: Array of values.
+        :param collocation_distance: Minimum collocation distance for matching.
+
+        :return: Augmented values vector that matches the vertices indexing.
         """
-        if depth.shape != input_values.shape:
+        if depth.shape != values.shape:
             raise ValueError(
                 f"Mismatch between input 'depth' shape{depth.shape} "
-                + f"and 'values' shape{input_values.shape}"
+                + f"and 'values' shape{values.shape}"
             )
 
-        input_values = np.r_[input_values]
+        input_values = np.r_[values]
 
         if self.depths is None:
             self.add_vertices(self.desurvey(depth))
@@ -665,7 +671,7 @@ class Drillhole(Points):
 
         if "depth" in attributes.keys():
             attributes["association"] = "VERTEX"
-            attributes["values"] = self.validate_log_data(
+            attributes["values"] = self.validate_depth_data(
                 attributes["depth"],
                 attributes["values"],
                 collocation_distance=collocation_distance,
