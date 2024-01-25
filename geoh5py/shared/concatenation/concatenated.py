@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-from abc import ABC
 from typing import TYPE_CHECKING
 
 from geoh5py.shared.entity import Entity
@@ -26,7 +25,7 @@ if TYPE_CHECKING:
     from .concatenator import Concatenator
 
 
-class Concatenated(Entity, ABC):
+class Concatenated(Entity):
     """
     Base class modifier for concatenated objects and data.
     """
