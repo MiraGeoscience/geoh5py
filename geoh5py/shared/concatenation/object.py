@@ -98,7 +98,7 @@ class ConcatenatedObject(Concatenated, ObjectBase, ABC):
 
         return prop_group
 
-    def get_data(self, name: str | uuid.UUID) -> list[ConcatenatedData]:
+    def get_data(self, name: str | uuid.UUID) -> list[Data]:
         """
         Generic function to get data values from object.
         """
