@@ -17,20 +17,19 @@
 
 from __future__ import annotations
 
-from abc import ABC
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from geoh5py.data import Data
-
+from ...data import Data
+from ...objects import Drillhole
 from .object import ConcatenatedObject
 
 if TYPE_CHECKING:
     from .property_group import ConcatenatedPropertyGroup
 
 
-class ConcatenatedDrillhole(ConcatenatedObject, ABC):
+class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
     @property
     def depth_(self) -> list[Data]:
         obj_list = []
@@ -158,16 +157,16 @@ class ConcatenatedDrillhole(ConcatenatedObject, ABC):
         self,
         depth: list | np.ndarray | None,
         values: np.ndarray,
-        property_group: str | ConcatenatedPropertyGroup | None = None,
         collocation_distance: float | None = None,
+        property_group: str | ConcatenatedPropertyGroup | None = None,
     ) -> ConcatenatedPropertyGroup:
         """
         Compare new and current depth values and reuse the property group if possible.
 
         :param depth: Sampling depths.
         :param values: Data samples to depths.
-        :param property_group: Group for possibly collocated data.
         :param collocation_distance: Threshold on the comparison between existing depth values.
+        :param property_group: Group for possibly collocated data.
 
         :return: Augmented property group with name/values added for collocated data
             otherwise newly created property group with name/depth/values added.
@@ -246,8 +245,8 @@ class ConcatenatedDrillhole(ConcatenatedObject, ABC):
         self,
         from_to: list | np.ndarray | None,
         values: np.ndarray,
-        property_group: str | ConcatenatedPropertyGroup | None = None,
         collocation_distance=1e-4,
+        property_group: str | ConcatenatedPropertyGroup | None = None,
     ) -> ConcatenatedPropertyGroup:
         """
         Compare new and current depth values and reuse the property group if possible.
@@ -255,8 +254,8 @@ class ConcatenatedDrillhole(ConcatenatedObject, ABC):
 
         :param from_to: Array of from-to values.
         :param values: Data values to be added on the from-to intervals.
-        :param property_group: Property group name.
         :param collocation_distance: Threshold on the comparison between existing depth values.
+        :param property_group: Property group name.
 
         :return A ConcatenatedPropertyGroup with the matched values.
         """

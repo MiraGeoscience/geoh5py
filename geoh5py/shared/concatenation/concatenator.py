@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import uuid
 import warnings
-from abc import ABC
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -50,7 +49,7 @@ PROPERTY_KWARGS = {
 }
 
 
-class Concatenator(Group, ABC):  # pylint: disable=too-many-public-methods
+class Concatenator(Group):  # pylint: disable=too-many-public-methods
     """
     Class modifier for concatenation of objects and data.
     """
