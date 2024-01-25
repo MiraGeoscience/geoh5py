@@ -21,8 +21,6 @@ from __future__ import annotations
 
 import uuid
 import warnings
-from abc import ABC
-
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -36,9 +34,9 @@ from .concatenated import Concatenated
 from .data import ConcatenatedData
 from .object import ConcatenatedObject
 
-
 if TYPE_CHECKING:
     from ...groups import GroupType
+
 
 PROPERTY_KWARGS = {
     "trace": {"maxshape": (None,)},
@@ -51,7 +49,7 @@ PROPERTY_KWARGS = {
 }
 
 
-class Concatenator(Group, ABC):  # pylint: disable=too-many-public-methods
+class Concatenator(Group):  # pylint: disable=too-many-public-methods
     """
     Class modifier for concatenation of objects and data.
     """
