@@ -15,8 +15,12 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=unused-import
 # flake8: noqa
 
-__version__ = "0.9.0-alpha.1"
-
-from geoh5py.workspace import Workspace
+from .concatenated import Concatenated
+from .concatenator import Concatenator
+from .data import ConcatenatedData
+from .drillhole import ConcatenatedDrillhole
+from .object import ConcatenatedObject
+from .property_group import ConcatenatedPropertyGroup
