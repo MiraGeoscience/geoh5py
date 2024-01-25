@@ -698,6 +698,7 @@ def test_is_collocated(tmp_path):
     )
     property_group = dh.find_or_create_property_group(name="my property group")
     assert property_group.is_collocated(np.arange(0, 10.0), 0.01)
+    assert property_group.is_collocated(np.arange(0.001, 10), 0.01)
     assert not property_group.is_collocated(np.arange(1, 11.0), 0.01)
     assert not property_group.is_collocated(np.arange(0, 9.0), 0.01)
     assert not property_group.is_collocated(
