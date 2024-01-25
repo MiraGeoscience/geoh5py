@@ -17,20 +17,18 @@
 
 from __future__ import annotations
 
-from abc import ABC
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from geoh5py.data import Data
-
+from ...data import Data
 from .object import ConcatenatedObject
 
 if TYPE_CHECKING:
     from .property_group import ConcatenatedPropertyGroup
 
 
-class ConcatenatedDrillhole(ConcatenatedObject, ABC):
+class ConcatenatedDrillhole(ConcatenatedObject):
     @property
     def depth_(self) -> list[Data]:
         obj_list = []
