@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -107,9 +107,7 @@ def test_create_block_model_data(tmp_path):
 
         mask = grid_copy.mask_by_extent(np.vstack([[-100, -100], [1, 100]]))
 
-        grid_copy_copy = grid_copy.copy_from_extent(
-            extent=np.vstack([[-100, -100], [1, 100]])
-        )
+        grid_copy_copy = grid_copy.copy_from_extent(np.vstack([[-100, -100], [1, 100]]))
 
         assert np.all(~np.isnan(grid_copy_copy.children[0].values) == mask)
         assert mask.sum() == np.prod(grid.shape[1:])

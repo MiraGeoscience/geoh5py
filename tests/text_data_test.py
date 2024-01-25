@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -137,6 +137,9 @@ def test_create_byte_text_data(tmp_path: Path):
 
             points.copy(new_workspace)
 
+            assert word.values == np.array([b"a word"])[0].decode("utf-8")
+            assert all(data.values == values)
+
     with workspace.open():
         with new_workspace.open():
             rec_obj = new_workspace.get_entity(name)[0]
@@ -146,3 +149,6 @@ def test_create_byte_text_data(tmp_path: Path):
             compare_entities(points, rec_obj, ignore=["_parent"])
             compare_entities(data, rec_data, ignore=["_parent"])
             compare_entities(word, rec_word, ignore=["_parent"])
+
+            word.values = np.array([b"b word"])[0]
+            assert word.values == "b word"

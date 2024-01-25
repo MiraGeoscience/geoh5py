@@ -1,4 +1,4 @@
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -39,9 +39,10 @@ class TextData(Data):
         """
         if (getattr(self, "_values", None) is None) and self.on_file:
             values = self.workspace.fetch_values(self)
-
             if isinstance(values, np.ndarray) and values.dtype == object:
-                values = values.astype(str)
+                values = np.array(
+                    [v.decode("utf-8") if isinstance(v, bytes) else v for v in values]
+                )
 
             if isinstance(values, (np.ndarray, str, type(None))):
                 self._values = values

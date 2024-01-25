@@ -10,18 +10,19 @@ ci:
 
 repos:
 -   repo: https://github.com/psf/black
-    rev: 23.10.1
+    rev: 23.12.1
     hooks:
     -   id: black
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/PyCQA/isort
-    rev: 5.12.0
+    rev: 5.13.2
     hooks:
     -   id: isort
         additional_dependencies: [tomli] # to read config from pyproject.toml
         types: [text]
         types_or: [python, pyi]
+        exclude: geoh5py/objects/__init__\.py
 -   repo: https://github.com/humitos/mirrors-autoflake
     rev: v1.1
     hooks:
@@ -29,7 +30,7 @@ repos:
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/PyCQA/flake8
-    rev: 6.1.0
+    rev: 7.0.0
     hooks:
     -   id: flake8
         types: [text]
@@ -42,7 +43,7 @@ repos:
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.6.1
+    rev: v1.8.0
     hooks:
     -   id: mypy
         additional_dependencies: [
