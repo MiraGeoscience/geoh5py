@@ -548,14 +548,13 @@ class Workspace(AbstractContextManager):
             ):
                 if self.version > 1.0:
                     if member in (DrillholeGroup, IntegratorDrillholeGroup):
+                        # todo: will change with DrillholeConcatenator soon
                         member = type("Concatenator" + name, (Concatenator, member), {})
                     elif member is Drillhole and isinstance(
                         entity_kwargs.get("parent"),
                         (DrillholeGroup, IntegratorDrillholeGroup),
                     ):
-                        member = type(
-                            "Concatenated" + name, (ConcatenatedDrillhole, member), {}
-                        )
+                        member = ConcatenatedDrillhole
 
                 entity_type = member.find_or_create_type(self, **entity_type_kwargs)
 
