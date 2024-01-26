@@ -125,6 +125,7 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
     def depth_names_association(self, names: str | tuple[str] | list[str]) -> dict:
         """
         Get the index and N count of the data associated with depth for every drillhole object.
+        The data must have the same association.
 
         :param names: The names of the data to extract.
 
@@ -150,6 +151,18 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
         pad: bool = True,
         first_name: str = "Drillhole",
     ):
+        """
+        Get a table with all the data associated with depth for every drillhole object.
+        The Drillhole name is added at the beginning of the table for every row.
+        Several data can be extracted at the same time and push in the same table.
+
+        :param data_name: The name of the data to extract.
+        :param pad: If True, the data are padded to the size of the first data;
+            otherwise, the data are truncated to the size of the smallest data.
+        :param first_name: The name of the first column of the structured array.
+
+        :return: a structured array with all the data.
+        """
         # get the dictionary
         object_index_dictionary = self.depth_names_association(data_name)
 
