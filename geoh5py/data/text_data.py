@@ -28,6 +28,13 @@ from .primitive_type_enum import PrimitiveTypeEnum
 class TextData(Data):
     _values: np.ndarray | str | None
 
+    @property
+    def nan_value(self):
+        """
+        Nan-Data-Value to be used in arrays
+        """
+        return ""
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.TEXT

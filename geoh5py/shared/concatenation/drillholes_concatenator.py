@@ -17,32 +17,31 @@
 
 from __future__ import annotations
 
-from copy import copy
 from typing import Any
 from uuid import UUID
 
 import numpy as np
 
-from ...data import Data, DataAssociationEnum, NumericData, TextData
+from ...groups import DrillholeGroup
 from .concatenator import Concatenator
+from .data import ConcatenatedData
 from .property_group import ConcatenatedPropertyGroup
 
 
-class DrillholesConcatenator(Concatenator):
+class DrillholesConcatenator(Concatenator, DrillholeGroup):
     """
     Class for concatenating drillhole data.
     """
 
-    def _no_value_property_group(
-        self, name: str
-    ) -> tuple[Any, ConcatenatedPropertyGroup]:
+    def get_data_from_name(self, name: str) -> ConcatenatedData:
         """
-        Extract the data no data values and the property group for a given data name.
+        Get the data from a given name.
 
         :param name: The name of the data to extract.
 
-        :return: The no data value and the property group
+        :return: The first data found with the given name in index.
         """
+
         # ensure data_name is in the data
         if name not in self.data:
             raise KeyError(f"Data '{name}' not found in concatenated data.")
@@ -52,25 +51,12 @@ class DrillholesConcatenator(Concatenator):
             UUID(self.index[name][0][-2].decode("utf-8").strip("{}"))
         )[0].get_data(UUID(self.index[name][0][-1].decode("utf-8").strip("{}")))[0]
 
-        # ensure the association is Depth:
-        if data.association != DataAssociationEnum.DEPTH:
-            raise TypeError(
-                f"Data '{name}' is not associated with depth ({data.association})."
-            )
-
-        # define NDV value
-        ndv = np.nan
-        if isinstance(data, NumericData):
-            ndv = data.nan_value
-        elif isinstance(data, TextData):
-            ndv = ""
-
-        return ndv, data.property_group
+        return data
 
     @staticmethod
-    def _get_depth_association(
-        property_group: ConcatenatedPropertyGroup
-    ) -> tuple:
+    def get_depth_association(
+        property_group: ConcatenatedPropertyGroup,
+    ) -> tuple[str] | tuple[str, str] | None:
         """
         Based on a PropertyGroup, it gets the name of the depth (or from to)
             associated with the data.
@@ -81,65 +67,122 @@ class DrillholesConcatenator(Concatenator):
         """
         if property_group.property_group_type == "Interval table":
             return property_group.from_.name, property_group.to_.name
-        elif property_group.property_group_type == "Depth table":
-            return property_group.depth_.name,
+        if property_group.property_group_type == "Depth table":
+            return (property_group.depth_.name,)
 
-        return None,
+        return None
 
-    def _construct_dict_data(
+    def association_by_drillhole(
         self,
-        data_info: dict,
+        names: tuple,
     ) -> dict:
         """
-        Constructs a dictionary with the objects as keys.
-        The values are (start index, n count and no data value) tuple.
-        The order of the dictionary depends on the first key of 'data_info'.
+        Based on the first name of the input list,
+        get for every object index and count of all the data in 'names'
 
-        :param data_info: the dictionary containing the name of the data and the no data values.
+        :param names: The names of the data to extract.
 
-        :return: The object dictionary {object: {Column: (start_index, n_count, ndv)}}.
+        :return: A dictionary with the object uuid and the index of all the data.
         """
-        object_index_dictionary: dict = {}
-        for object_ in self.index[list(data_info.keys())[0]]["Object ID"]:
-            data_object_info = copy(data_info)
+        # ensure all the names are in the index
+        if not all(name in self.index for name in names):
+            raise KeyError(f"Data '{names}' not found in concatenated data.")
 
-            for column, ndv in data_info.items():
-                # get the line corresponding to object
-                start_index, n_count, _, _ = self.index[column][
-                    self.index[column]["Object ID"] == object_
-                ][0]
+        object_index = {
+            drillhole: {
+                name: list(
+                    self.index[name][self.index[name]["Object ID"] == drillhole][0]
+                )[:2]
+                for name in names
+            }
+            for drillhole in self.index[names[0]]["Object ID"]
+        }
 
-                # get the start index and the n count
-                data_object_info[column] = (start_index, n_count, ndv)
+        return object_index
 
-            object_index_dictionary[object_] = data_object_info
+    def depth_name_association(self, name: str) -> dict:
+        """
+        Get the index and N count of the data associated with depth for every drillhole object.
 
-        return object_index_dictionary
+        :param name: The name of the data to extract.
 
-    def index_by_object(
+        :return: A dictionary with the object uuid, the association and the data index.
+        """
+
+        data = self.get_data_from_name(name)
+
+        association_name = None
+        if data.property_group is not None:
+            association_name = self.get_depth_association(data.property_group)
+        if association_name is None:
+            raise ValueError(f"Data '{name}' is not associated with depth.")
+
+        # merge association with name at the end
+        associations = self.association_by_drillhole(association_name + (name,))
+
+        return associations
+
+    def depth_names_association(self, names: str | tuple[str] | list[str]) -> dict:
+        """
+        Get the index and N count of the data associated with depth for every drillhole object.
+
+        :param names: The names of the data to extract.
+
+        :return: A dictionary with the object uuid, the association and the data index.
+        """
+        if not isinstance(names, (list, tuple)):
+            names = [names]
+
+        associations = self.depth_name_association(names[0])
+        for name in names[1:]:
+            association = self.depth_name_association(name)
+            # ensure the first value is the same
+            if list(association.values())[0] != list(associations.values())[0]:
+                raise AssertionError(f"Data '{names}' don't have the same association.")
+
+            associations.update(association)
+
+        return associations
+
+    def get_depth_table(
         self,
         data_name: str | list[str],
-    ) -> dict:
-        """
-        Constructs a dictionary with the objects as keys.
-        The dictionary contains the data name as keys
-            and the values are (start index, n count and no data value) tuple.
+        pad: bool = True,
+        first_name: str = "Drillhole",
+    ):
+        # get the dictionary
+        object_index_dictionary = self.depth_names_association(data_name)
 
-        :param data_name: The name of the data to extract.
+        all_data_list = []
+        for object_, data_dict in object_index_dictionary.items():
+            data_list: list = []
+            no_data_values: list = []
+            # get the values
+            for name, info in data_dict.items():
+                data_list.append(self.data[name][info[0] : info[0] + info[1]])
+                if pad:
+                    no_data_values.append(self.get_data_from_name(name).nan_value)
 
-        :return: The object dictionary {object: {Column: (start_index, n_count, ndv)}}.
-        """
+            # transform all the data to the same size
+            if pad:
+                data_list = self._pad_arrays_to_first(data_list, no_data_values[1:])
+            else:
+                data_list = self._truncate_arrays_to_smallest(data_list)
 
-        # get the property group and the no data values
-        data_info, property_group = self._no_value_property_group(data_name)
+            # add the object list to the first position of the data list
+            data_list.insert(0, [object_] * data_list[0].shape[0])
 
-        # define the association based on the property group
-        data_info = self._get_depth_association(data_info, property_group)
+            # create a numpy array
+            all_data_list.append(np.array(data_list, dtype=object).T)
 
-        # get the index corresponding to every object and data_name
-        object_index_dictionary = self._construct_dict_data(data_info)
+        # concatenate all the numpy arrays using Keys a structured array
+        structured_array = self._create_structured_array(
+            np.concatenate(all_data_list, axis=0),
+            object_index_dictionary,
+            first_name=first_name,
+        )
 
-        return object_index_dictionary
+        return structured_array
 
     @staticmethod
     def _pad_arrays_to_first(arrays: list[np.ndarray], ndv: Any) -> list[np.ndarray]:
@@ -199,50 +242,17 @@ class DrillholesConcatenator(Concatenator):
         :return: The structured array.
         """
         # create the structured array
-        dtype = [(first_name, np.array([output[0][0]]).dtype)]
+        dtype = [(first_name, "O")]
 
-        # get the first value of the dictionary
-        data_dict = object_index_dictionary[list(object_index_dictionary.keys())[0]]
-
-        # get the data names
-        data_names = list(data_dict.keys())
-
-        for idx, data_name in enumerate(data_names):
-            dtype.append((data_name, np.array([output[0][idx + 1]]).dtype))
+        for idx, data_name in enumerate(
+            list(
+                object_index_dictionary[list(object_index_dictionary.keys())[0]].keys()
+            )
+        ):
+            type_temp = np.array([output[0, idx + 1]]).dtype
+            if type_temp.kind in ["S", "U"]:
+                dtype.append((data_name, "O"))
+            else:
+                dtype.append((data_name, type_temp))
 
         return np.core.records.fromarrays(output.T, dtype=dtype)
-
-    def get_depth_table(
-        self,
-        data_name: str | list[str],
-        pad: bool = True,
-        first_name: str = "Drillhole",
-    ):
-        # get the dictionary
-        object_index_dictionary = self.index_by_object(data_name)
-
-        all_data_list: list = []
-        for object_, data_dict in object_index_dictionary.items():
-            data_list = []
-            no_data_values: list = []
-            for name, info in data_dict.items():
-                # get the data
-                data_list.append(self.data[name][info[0] : info[0] + info[1]])
-                no_data_values.append(info[2])
-            if pad:
-                data_list = self._pad_arrays_to_first(data_list, no_data_values[1:])
-            else:
-                data_list = self._truncate_arrays_to_smallest(data_list)
-
-            # add the object list to the first position of the data list
-            data_list.insert(0, [object_] * data_list[0].shape[0])
-
-            # create a numpy array
-            all_data_list.append(np.array(data_list, dtype=object).T)
-
-        # concatenate all the numpy arrays using Keys a structured array
-        return self._create_structured_array(
-            np.concatenate(all_data_list, axis=0),
-            object_index_dictionary,
-            first_name=first_name,
-        )

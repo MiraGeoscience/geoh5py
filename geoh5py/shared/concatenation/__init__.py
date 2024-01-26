@@ -22,5 +22,6 @@ from .concatenated import Concatenated
 from .concatenator import Concatenator
 from .data import ConcatenatedData
 from .drillhole import ConcatenatedDrillhole
+from .drillholes_concatenator import DrillholesConcatenator
 from .object import ConcatenatedObject
 from .property_group import ConcatenatedPropertyGroup
