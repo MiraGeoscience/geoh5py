@@ -17,9 +17,9 @@
 
 from __future__ import annotations
 
-from abc import ABC
 from typing import TYPE_CHECKING
 
+from ...data import Data
 from ..utils import as_str_if_uuid
 from .concatenated import Concatenated
 
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from .property_group import ConcatenatedPropertyGroup
 
 
-class ConcatenatedData(Concatenated, ABC):
+class ConcatenatedData(Concatenated, Data):
     _parent: ConcatenatedObject
 
     def __init__(self, entity_type, **kwargs):

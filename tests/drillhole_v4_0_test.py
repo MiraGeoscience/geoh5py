@@ -40,41 +40,6 @@ from geoh5py.shared.utils import as_str_if_uuid, compare_entities
 from geoh5py.workspace import Workspace
 
 
-def compare_structured_arrays(
-    array1: np.ndarray, array2: np.ndarray, tolerance: float = 1e-5
-) -> bool:
-    """
-    Compare two NumPy record arrays.
-
-    :param array1: The first structured array to compare.
-    :param array2: The second array to be compared.
-    :param tolerance: The tolerance level for numerical comparison.
-
-    :return: True if arrays are equivalent within the given tolerance, False otherwise.
-    """
-
-    if array1.dtype != array2.dtype:
-        return False  # Different structure
-
-    for column in array1.dtype.names:
-        data1, data2 = array1[column], array2[column]
-
-        # Decode byte strings to regular strings if necessary
-        if data1.dtype.kind == "S":
-            data1 = np.array([d.decode() for d in data1])
-            data2 = np.array([d.decode() for d in data2])
-
-        # Check if the data type of the column is numerical
-        if np.issubdtype(data1.dtype, np.number):
-            if not np.all(np.isclose(data1, data2, atol=tolerance, equal_nan=True)):
-                return False
-        else:
-            if not np.array_equal(data1, data2):
-                return False
-
-    return True
-
-
 def test_concatenator(tmp_path):
     h5file_path = tmp_path / r"test_Concatenator.geoh5"
 
@@ -684,6 +649,126 @@ def test_open_close_creation(tmp_path):
     workspace.close()
 
 
+def test_locations(tmp_path):
+    ws = Workspace(tmp_path / "test.geoh5")
+    dh_group = DrillholeGroup.create(ws)
+    dh = Drillhole.create(ws, name="dh", parent=dh_group)
+    dh.add_data(
+        {
+            "my data": {
+                "depth": np.arange(0, 10.0),
+                "values": np.random.randn(10),
+            },
+        },
+        property_group="my property group",
+    )
+
+    property_group = dh.find_or_create_property_group(name="my property group")
+    assert np.allclose(property_group.locations, np.arange(0, 10.0))
+
+    dh.add_data(
+        {
+            "my other data": {
+                "from-to": np.c_[np.arange(0, 10.0), np.arange(1, 11.0)],
+                "values": np.random.randn(10),
+            }
+        },
+        property_group="my other property group",
+    )
+    property_group = dh.find_or_create_property_group(name="my other property group")
+    assert np.allclose(
+        property_group.locations, np.c_[np.arange(0, 10.0), np.arange(1, 11.0)]
+    )
+
+
+def test_is_collocated(tmp_path):
+    ws = Workspace(tmp_path / "test.geoh5")
+    dh_group = DrillholeGroup.create(ws)
+    dh = Drillhole.create(ws, name="dh", parent=dh_group)
+    property_group = dh.find_or_create_property_group(name="some uninitialized group")
+    assert not property_group.is_collocated(np.arange(0, 10.0), 0.01)
+    dh.add_data(
+        {
+            "my data": {
+                "depth": np.arange(0, 10.0),
+                "values": np.random.randn(10),
+            },
+        },
+        property_group="my property group",
+    )
+    property_group = dh.find_or_create_property_group(name="my property group")
+    assert property_group.is_collocated(np.arange(0, 10.0), 0.01)
+    assert property_group.is_collocated(np.arange(0.001, 10), 0.01)
+    assert not property_group.is_collocated(np.arange(1, 11.0), 0.01)
+    assert not property_group.is_collocated(np.arange(0, 9.0), 0.01)
+    assert not property_group.is_collocated(
+        np.c_[np.arange(0, 10.0), np.arange(1, 11.0)], 0.01
+    )
+
+    dh2 = Drillhole.create(ws, name="dh2", parent=dh_group)
+    dh2.add_data(
+        {
+            "my other data": {
+                "depth": np.arange(1, 11.0),
+                "values": np.random.randn(10),
+            },
+        },
+        property_group="my property group",
+    )
+
+    property_group = dh2.find_or_create_property_group(name="my property group")
+    assert property_group.is_collocated(np.arange(1, 11.0), 0.01)
+
+    dh.add_data(
+        {
+            "my other data": {
+                "from-to": np.c_[np.arange(0, 10.0), np.arange(1, 11.0)],
+                "values": np.random.randn(10),
+            }
+        },
+        property_group="my other property group",
+    )
+    property_group = dh.find_or_create_property_group(name="my other property group")
+    assert property_group.is_collocated(
+        np.c_[np.arange(0, 10.0), np.arange(1, 11.0)], 0.01
+    )
+
+
+def compare_structured_arrays(
+    array1: np.ndarray, array2: np.ndarray, tolerance: float = 1e-5
+) -> bool:
+    """
+    Compare two NumPy record arrays.
+
+    :param array1: The first structured array to compare.
+    :param array2: The second array to be compared.
+    :param tolerance: The tolerance level for numerical comparison.
+
+    :return: True if arrays are equivalent within the given tolerance, False otherwise.
+    """
+
+    if array1.dtype != array2.dtype:
+        return False  # Different structure
+
+    for column in array1.dtype.names:
+        data1, data2 = array1[column], array2[column]
+
+        # Decode byte strings to regular strings if necessary
+        if data1.dtype.kind == "S":
+            data1 = np.array([d.decode() for d in data1])
+            data2 = np.array([d.decode() for d in data2])
+
+        # Check if the data type of the column is numerical
+        if np.issubdtype(data1.dtype, np.number):
+            if not np.all(np.isclose(data1, data2, atol=tolerance, equal_nan=True)):
+                return False
+        else:
+            if not np.array_equal(data1, data2):
+                return False
+
+    return True
+
+
 def test_export_table(tmp_path):
     h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
     well_name = "bullseye/"
@@ -710,7 +795,7 @@ def test_export_table(tmp_path):
         )
         value = np.random.randn(8)
 
-        _ = well.add_data(
+        well.add_data(
             {
                 "Depth Data": {
                     "depth": depth,
@@ -731,7 +816,7 @@ def test_export_table(tmp_path):
                 for _ in range(3)
             ]
         )
-        _ = well.add_data(
+        well.add_data(
             {
                 "text Data": {
                     "values": text,
@@ -759,10 +844,10 @@ def test_export_table(tmp_path):
 
         # create types
         dtypes = [
-            ("Drillhole", "S38"),
+            ("Drillhole", "O"),
             ("FROM", np.float64),
             ("TO", np.float64),
-            ("text Data", "S6"),
+            ("text Data", "O"),
         ]
 
         verification = np.core.records.fromarrays(
@@ -784,7 +869,7 @@ def test_export_table(tmp_path):
         )
 
         dtypes = [
-            ("Drillhole", "S38"),
+            ("Drillhole", "O"),
             ("DEPTH", np.float64),
             ("Depth Data", np.float64),
         ]
@@ -804,7 +889,9 @@ def test_export_table(tmp_path):
         with pytest.raises(KeyError, match="Data 'bidon' not found"):
             drillhole_group.get_depth_table("bidon", True)
 
-        with pytest.raises(ValueError, match="The data to extract are not"):
+        with pytest.raises(
+            AssertionError, match="Data '\\['text Data', 'Depth Data'\\]' don't"
+        ):
             drillhole_group.get_depth_table(["text Data", "Depth Data"], True)
 
         well.add_data(
@@ -816,8 +903,8 @@ def test_export_table(tmp_path):
             }
         )
 
-        with pytest.raises(TypeError, match="Data 'bidon' is not associated"):
-            drillhole_group.get_depth_table("bidon", True)
+        with pytest.raises(ValueError, match="Data 'bidon' is not associated"):
+            drillhole_group.depth_name_association("bidon")
 
         # test padding method
         test = [

@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import uuid
 import warnings
-from abc import ABC
 from typing import TYPE_CHECKING
 
 from ...data import Data
@@ -32,7 +31,7 @@ if TYPE_CHECKING:
     from .concatenator import Concatenator
 
 
-class ConcatenatedObject(Concatenated, ObjectBase, ABC):
+class ConcatenatedObject(Concatenated, ObjectBase):
     _parent: Concatenator
     _property_groups: list | None = None
 

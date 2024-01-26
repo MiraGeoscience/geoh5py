@@ -19,6 +19,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 from geoh5py.data import Data
 from geoh5py.groups import PropertyGroup
 
@@ -31,6 +33,40 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
     def __init__(self, parent: ConcatenatedObject, **kwargs):
         super().__init__(parent, **kwargs)
+
+    def is_collocated(
+        self,
+        locations: np.ndarray,
+        collocation_distance: float,
+    ) -> bool:
+        """
+        True if locations are collocated with property group.
+
+        :param locations: Locations to check.
+        :param collocation_distance: tolerance for similarity check.
+        """
+
+        if (
+            self.locations is None
+            or locations.ndim != self.locations.ndim
+            or len(locations) != len(self.locations)
+            or not np.allclose(locations, self.locations, atol=collocation_distance)
+        ):
+            return False
+
+        return True
+
+    @property
+    def locations(self) -> np.ndarray:
+        """Return depths or intervals array if either exists else None."""
+
+        if self.depth_ is not None:
+            return self.depth_.values
+
+        if self.from_ is not None and self.to_ is not None:
+            return np.c_[self.from_.values, self.to_.values]
+
+        return None
 
     @property
     def depth_(self):
