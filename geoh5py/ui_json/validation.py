@@ -174,9 +174,9 @@ class InputValidation:
                     check_type = cast(Any, type(item["value"]))
 
                 validations[key] = {
-                    "types": [check_type, Entity]
-                    if check_type is UUID
-                    else [check_type],
+                    "types": (
+                        [check_type, Entity] if check_type is UUID else [check_type]
+                    ),
                 }
 
             validations[key].update({"optional": not requires_value(ui_json, key)})

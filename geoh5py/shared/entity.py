@@ -316,8 +316,7 @@ class Entity(ABC):
 
     @property
     @abstractmethod
-    def entity_type(self) -> shared.EntityType:
-        ...
+    def entity_type(self) -> shared.EntityType: ...
 
     @classmethod
     def fix_up_name(cls, name: str) -> str:

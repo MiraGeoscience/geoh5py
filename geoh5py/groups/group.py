@@ -42,8 +42,7 @@ class Group(Entity):
 
     @classmethod
     @abstractmethod
-    def default_type_uid(cls) -> uuid.UUID | None:
-        ...
+    def default_type_uid(cls) -> uuid.UUID | None: ...
 
     def add_comment(self, comment: str, author: str | None = None):
         """

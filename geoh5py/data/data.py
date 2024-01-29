@@ -215,8 +215,7 @@ class Data(Entity):
 
     @classmethod
     @abstractmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        ...
+    def primitive_type(cls) -> PrimitiveTypeEnum: ...
 
     def add_file(self, file: str):
         """

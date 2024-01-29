@@ -353,8 +353,7 @@ class CurrentElectrode(BaseElectrode):
         return self
 
     @current_electrodes.setter
-    def current_electrodes(self, _):
-        ...
+    def current_electrodes(self, _): ...
 
     @property
     def potential_electrodes(self) -> PotentialElectrode | None:
