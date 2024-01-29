@@ -826,12 +826,35 @@ def test_export_table(tmp_path):
             }
         )
 
-        # close and open again
+        # create another drillhole with other data
+        well2 = Drillhole.create(
+            workspace,
+            collar=np.r_[10.0, 10.0, 10],
+            surveys=np.c_[
+                np.linspace(0, 100, n_data),
+                np.ones(n_data) * 45.0,
+                np.linspace(-89, -75, n_data),
+            ],
+            parent=dh_group,
+            name=well_name + "(1)",
+        )
+
+        well2.add_data(
+            {
+                "Depth Data2": {
+                    "depth": depth,
+                    "values": value,
+                },
+            }
+        )
 
     with Workspace(h5file_path) as workspace:
         well = workspace.get_entity(well_name)[0]
 
         drillhole_group = well.parent
+
+        print(drillhole_group.index)
+        # print(drillhole_group.data)
 
         temp_uid = np.array(
             ["{%s}" % well.uid for i in range(from_to.shape[0])]
