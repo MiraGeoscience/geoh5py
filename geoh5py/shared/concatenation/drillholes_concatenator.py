@@ -101,7 +101,7 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
 
         return object_index
 
-    def depth_name_association(self, name: str) -> dict:
+    def depth_single_association(self, name: str) -> dict:
         """
         Get the index and N count of the data associated with depth for every drillhole object.
 
@@ -123,10 +123,10 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
 
         return associations
 
-    def depth_names_association(self, names: str | tuple[str] | list[str]) -> dict:
+    def depth_multiple_association(self, names: str | tuple[str] | list[str]) -> dict:
         """
         Get the index and N count of the data associated with depth for every drillhole object.
-        The data must have the same association. It runs the function depth_name_association
+        The data must have the same association. It runs the function depth_single_association
         for every data in the list and ensure the association is the same.
 
         :param names: The names of the data to extract.
@@ -136,10 +136,10 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
         if not isinstance(names, (list, tuple)):
             names = [names]
 
-        associations = self.depth_name_association(names[0])
+        associations = self.depth_single_association(names[0])
 
         for name in names[1:]:
-            association = self.depth_name_association(name)
+            association = self.depth_single_association(name)
 
             # ensure the first value is the same
             if (
@@ -173,7 +173,7 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
         :return: a structured array with all the data.
         """
         # get the dictionary
-        object_index_dictionary = self.depth_names_association(data_name)
+        object_index_dictionary = self.depth_multiple_association(data_name)
 
         all_data_list = []
         for object_, data_dict in object_index_dictionary.items():

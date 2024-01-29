@@ -933,7 +933,7 @@ def test_export_table(tmp_path):
             drillhole_group.get_depth_table("bidon", True)
 
         with pytest.raises(KeyError, match="Data '\\('bidon',\\)' not found"):
-            drillhole_group.depth_name_association(("bidon",))
+            drillhole_group.depth_single_association(("bidon",))
 
         with pytest.raises(KeyError, match="Data '\\('bidon',\\)' not found"):
             drillhole_group.association_by_drillhole(("bidon",))
@@ -953,7 +953,7 @@ def test_export_table(tmp_path):
         )
 
         with pytest.raises(ValueError, match="Data 'bidon' is not associated"):
-            drillhole_group.depth_name_association("bidon")
+            drillhole_group.depth_single_association("bidon")
 
         # test padding method
         test = [
