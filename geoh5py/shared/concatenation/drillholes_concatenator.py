@@ -65,9 +65,9 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
 
         return: the name of the values to used for association.
         """
-        if property_group.property_group_type == "Interval table":
+        if getattr(property_group, "property_group_type", None) == "Interval table":
             return property_group.from_.name, property_group.to_.name
-        if property_group.property_group_type == "Depth table":
+        if getattr(property_group, "property_group_type", None) == "Depth table":
             return (property_group.depth_.name,)
 
         return None
@@ -88,15 +88,16 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
         if not all(name in self.index for name in names):
             raise KeyError(f"Data '{names}' not found in concatenated data.")
 
-        object_index = {
-            drillhole: {
-                name: list(
-                    self.index[name][self.index[name]["Object ID"] == drillhole][0]
-                )[:2]
-                for name in names
-            }
-            for drillhole in self.index[names[0]]["Object ID"]
-        }
+        object_index: dict = {}
+        for drillhole in self.index[names[0]]["Object ID"]:
+            object_index[drillhole] = {}
+            for name in names:
+                if drillhole in self.index[name]["Object ID"]:
+                    object_index[drillhole][name] = list(
+                        self.index[name][self.index[name]["Object ID"] == drillhole][0]
+                    )[:2]
+                else:
+                    object_index[drillhole][name] = [0, 0]
 
         return object_index
 
@@ -125,7 +126,8 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
     def depth_names_association(self, names: str | tuple[str] | list[str]) -> dict:
         """
         Get the index and N count of the data associated with depth for every drillhole object.
-        The data must have the same association.
+        The data must have the same association. It runs the function depth_name_association
+        for every data in the list and ensure the association is the same.
 
         :param names: The names of the data to extract.
 
@@ -135,13 +137,20 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
             names = [names]
 
         associations = self.depth_name_association(names[0])
+
         for name in names[1:]:
             association = self.depth_name_association(name)
+
             # ensure the first value is the same
-            if list(association.values())[0] != list(associations.values())[0]:
+            if (
+                list(list(association.values())[0].items())[0]
+                != list(list(associations.values())[0].items())[0]
+            ):
                 raise AssertionError(f"Data '{names}' don't have the same association.")
 
-            associations.update(association)
+            # update the dictionary
+            for drillhole, association_dict in associations.items():
+                association_dict.update(association[drillhole])
 
         return associations
 

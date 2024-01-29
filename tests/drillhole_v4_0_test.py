@@ -810,12 +810,16 @@ def test_export_table(tmp_path):
             .reshape((-1, 2))
             .astype(np.float16)
         )
+
         text = np.array(
             [
                 "".join(random.choice(string.ascii_lowercase) for _ in range(6))
                 for _ in range(3)
             ]
         )
+
+        value2 = np.random.randn(26)
+
         well.add_data(
             {
                 "text Data": {
@@ -823,7 +827,45 @@ def test_export_table(tmp_path):
                     "from-to": from_to,
                     "type": "TEXT",
                 },
+                "value Data": {"values": value2, "from-to": from_to},
+            },
+            property_group=ConcatenatedPropertyGroup(
+                parent=well,
+                name="property_group",
+                property_group_type="Interval table",
+            ),
+        )
+        # create another drillhole with other data
+        well2 = Drillhole.create(
+            workspace,
+            collar=np.r_[10.0, 10.0, 10],
+            surveys=np.c_[
+                np.linspace(0, 100, n_data),
+                np.ones(n_data) * 45.0,
+                np.linspace(-89, -75, n_data),
+            ],
+            parent=dh_group,
+            name=well_name + "(1)",
+        )
+
+        well2.add_data(
+            {
+                "Depth Data2": {
+                    "depth": depth,
+                    "values": value,
+                },
             }
+        )
+
+        # add a data with no association
+        well2.add_data(
+            {
+                "data_object": {
+                    "values": value,
+                    "association": "OBJECT",
+                },
+            },
+            property_group="test_pg",
         )
 
         # close and open again
@@ -848,14 +890,15 @@ def test_export_table(tmp_path):
             ("FROM", np.float64),
             ("TO", np.float64),
             ("text Data", "O"),
+            ("value Data", np.float64),
         ]
 
         verification = np.core.records.fromarrays(
-            [temp_uid, from_to[:, 0], from_to[:, 1], text], dtype=dtypes
+            [temp_uid, from_to[:, 0], from_to[:, 1], text, value2], dtype=dtypes
         )
 
         assert compare_structured_arrays(
-            drillhole_group.get_depth_table("text Data", True),
+            drillhole_group.get_depth_table(("text Data", "value Data"), True),
             verification,
             tolerance=1e-5,
         )
@@ -888,6 +931,12 @@ def test_export_table(tmp_path):
         # test errors
         with pytest.raises(KeyError, match="Data 'bidon' not found"):
             drillhole_group.get_depth_table("bidon", True)
+
+        with pytest.raises(KeyError, match="Data '\\('bidon',\\)' not found"):
+            drillhole_group.depth_name_association(("bidon",))
+
+        with pytest.raises(KeyError, match="Data '\\('bidon',\\)' not found"):
+            drillhole_group.association_by_drillhole(("bidon",))
 
         with pytest.raises(
             AssertionError, match="Data '\\['text Data', 'Depth Data'\\]' don't"
@@ -930,3 +979,6 @@ def test_export_table(tmp_path):
                 verification,
             )
         )
+
+        # create an empty property group
+        assert drillhole_group.get_depth_association("test_pg") is None
