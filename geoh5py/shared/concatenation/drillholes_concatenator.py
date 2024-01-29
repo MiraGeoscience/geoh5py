@@ -55,7 +55,7 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
 
     @staticmethod
     def get_depth_association(
-            property_group: ConcatenatedPropertyGroup,
+        property_group: ConcatenatedPropertyGroup,
     ) -> tuple[str] | tuple[str, str] | None:
         """
         Based on a PropertyGroup, it gets the name of the depth (or from to)
@@ -73,8 +73,8 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
         return None
 
     def association_by_drillhole(
-            self,
-            names: tuple,
+        self,
+        names: tuple,
     ) -> dict:
         """
         Based on the first name of the input list,
@@ -159,10 +159,10 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
         return associations
 
     def get_depth_table(
-            self,
-            data_name: str | list[str],
-            pad: bool = True,
-            first_name: str = "Drillhole",
+        self,
+        data_name: str | list[str],
+        pad: bool = True,
+        first_name: str = "Drillhole",
     ):
         """
         Get a table with all the data associated with depth for every drillhole object.
@@ -185,7 +185,7 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
             no_data_values: list = []
             # get the values
             for name, info in data_dict.items():
-                data_list.append(self.data[name][info[0]: info[0] + info[1]])
+                data_list.append(self.data[name][info[0] : info[0] + info[1]])
                 if pad:
                     no_data_values.append(self.get_data_from_name(name).nan_value)
 
@@ -256,7 +256,7 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
 
     @staticmethod
     def _create_structured_array(
-            output: np.ndarray, object_index_dictionary: dict, first_name: str = "Drillhole"
+        output: np.ndarray, object_index_dictionary: dict, first_name: str = "Drillhole"
     ) -> np.ndarray:
         """
         Create a structured array from the output of the function get_depth_table.
@@ -271,9 +271,9 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
         dtype = [(first_name, "O")]
 
         for idx, data_name in enumerate(
-                list(
-                    object_index_dictionary[list(object_index_dictionary.keys())[0]].keys()
-                )
+            list(
+                object_index_dictionary[list(object_index_dictionary.keys())[0]].keys()
+            )
         ):
             type_temp = np.array([output[0, idx + 1]]).dtype
             if type_temp.kind in ["S", "U"]:
@@ -283,14 +283,7 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
 
         return np.core.records.fromarrays(output.T, dtype=dtype)
 
-
-
-    def add_data_from_template(
-            self,
-            name: str,
-            template: str,
-            values: np.ndarray
-    ):
+    def add_data_from_template(self, name: str, template: str, values: np.ndarray):
         """
         Add a data to all objects of the group from an existing template.
 
@@ -317,15 +310,11 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
 
         # get the pad table of template to get the depth and the to
         for object_, data_dict in template.items():
-
-
-
-            start_index , n_count = data_dict.items()[-1]
+            start_index, n_count = data_dict.items()[-1]
             depth_index, _ = data_dict.items()[0]
 
             data_list: list = []
             # get the values
-            data_list.append(values[info[0]: info[0] + info[1]])
+            data_list.append(values[info[0] : info[0] + info[1]])
 
         # add data to everyobject ensuring property group is the same
-
