@@ -55,7 +55,7 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
 
     @staticmethod
     def get_depth_association(
-            property_group: ConcatenatedPropertyGroup,
+        property_group: ConcatenatedPropertyGroup,
     ) -> tuple[str] | tuple[str, str] | None:
         """
         Based on a PropertyGroup, it gets the name of the depth (or from to)
@@ -65,16 +65,16 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
 
         return: the name of the values to used for association.
         """
-        if property_group.property_group_type == "Interval table":
+        if getattr(property_group, "property_group_type", None) == "Interval table":
             return property_group.from_.name, property_group.to_.name
-        if property_group.property_group_type == "Depth table":
+        if getattr(property_group, "property_group_type", None) == "Depth table":
             return (property_group.depth_.name,)
 
         return None
 
     def association_by_drillhole(
-            self,
-            names: tuple,
+        self,
+        names: tuple,
     ) -> dict:
         """
         Based on the first name of the input list,
@@ -88,19 +88,7 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
         if not all(name in self.index for name in names):
             raise KeyError(f"Data '{names}' not found in concatenated data.")
 
-        # object_index = {
-        #     drillhole: {
-        #         name: list(
-        #             self.index[name][self.index[name]["Object ID"] == drillhole][0]
-        #         )[:2]
-        #         for name in names
-        #         if drillhole in self.index[name]["Object ID"]
-        #     }
-        #     for drillhole in self.index[names[0]]["Object ID"]
-        # }
-        # replicate the lines above with a loop
-
-        object_index = {}
+        object_index: dict = {}
         for drillhole in self.index[names[0]]["Object ID"]:
             object_index[drillhole] = {}
             for name in names:
@@ -109,11 +97,11 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
                         self.index[name][self.index[name]["Object ID"] == drillhole][0]
                     )[:2]
                 else:
-                    print("test")
+                    object_index[drillhole][name] = [0, 0]
 
         return object_index
 
-    def depth_name_association(self, name: str) -> dict:
+    def depth_single_association(self, name: str) -> dict:
         """
         Get the index and N count of the data associated with depth for every drillhole object.
 
@@ -128,17 +116,18 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
         if data.property_group is not None:
             association_name = self.get_depth_association(data.property_group)
         if association_name is None:
-            raise ValueError(f"Data '{name}' is not associated with depth.")
+            raise ValueError(f"Data '{name}' is not associated with depth or interval.")
 
         # merge association with name at the end
         associations = self.association_by_drillhole(association_name + (name,))
 
         return associations
 
-    def depth_names_association(self, names: str | tuple[str] | list[str]) -> dict:
+    def depth_multiple_association(self, names: str | tuple[str] | list[str]) -> dict:
         """
         Get the index and N count of the data associated with depth for every drillhole object.
-        The data must have the same association.
+        The data must have the same association. It runs the function depth_single_association
+        for every data in the list and ensure the association is the same.
 
         :param names: The names of the data to extract.
 
@@ -147,22 +136,29 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
         if not isinstance(names, (list, tuple)):
             names = [names]
 
-        associations = self.depth_name_association(names[0])
+        associations = self.depth_single_association(names[0])
+
         for name in names[1:]:
-            association = self.depth_name_association(name)
+            association = self.depth_single_association(name)
+
             # ensure the first value is the same
-            if list(association.values())[0] != list(associations.values())[0]:
+            if (
+                list(list(association.values())[0].items())[0]
+                != list(list(associations.values())[0].items())[0]
+            ):
                 raise AssertionError(f"Data '{names}' don't have the same association.")
 
-            associations.update(association)
+            # update the dictionary
+            for drillhole, association_dict in associations.items():
+                association_dict.update(association[drillhole])
 
         return associations
 
     def get_depth_table(
-            self,
-            data_name: str | list[str],
-            pad: bool = True,
-            first_name: str = "Drillhole",
+        self,
+        data_name: str | list[str],
+        pad: bool = True,
+        first_name: str = "Drillhole",
     ):
         """
         Get a table with all the data associated with depth for every drillhole object.
@@ -177,7 +173,7 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
         :return: a structured array with all the data.
         """
         # get the dictionary
-        object_index_dictionary = self.depth_names_association(data_name)
+        object_index_dictionary = self.depth_multiple_association(data_name)
 
         all_data_list = []
         for object_, data_dict in object_index_dictionary.items():
@@ -185,7 +181,7 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
             no_data_values: list = []
             # get the values
             for name, info in data_dict.items():
-                data_list.append(self.data[name][info[0]: info[0] + info[1]])
+                data_list.append(self.data[name][info[0] : info[0] + info[1]])
                 if pad:
                     no_data_values.append(self.get_data_from_name(name).nan_value)
 
@@ -256,7 +252,7 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
 
     @staticmethod
     def _create_structured_array(
-            output: np.ndarray, object_index_dictionary: dict, first_name: str = "Drillhole"
+        output: np.ndarray, object_index_dictionary: dict, first_name: str = "Drillhole"
     ) -> np.ndarray:
         """
         Create a structured array from the output of the function get_depth_table.
@@ -271,9 +267,9 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
         dtype = [(first_name, "O")]
 
         for idx, data_name in enumerate(
-                list(
-                    object_index_dictionary[list(object_index_dictionary.keys())[0]].keys()
-                )
+            list(
+                object_index_dictionary[list(object_index_dictionary.keys())[0]].keys()
+            )
         ):
             type_temp = np.array([output[0, idx + 1]]).dtype
             if type_temp.kind in ["S", "U"]:
@@ -282,50 +278,3 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
                 dtype.append((data_name, type_temp))
 
         return np.core.records.fromarrays(output.T, dtype=dtype)
-
-
-
-    def add_data_from_template(
-            self,
-            name: str,
-            template: str,
-            values: np.ndarray
-    ):
-        """
-        Add a data to all objects of the group from an existing template.
-
-        :param name: The name of the data to add.
-        :param template: The name of the template to use.
-        :param values: The values to add.
-        """
-        # ensure name is in data
-        if name not in self.data:
-            raise KeyError(f"Data '{name}' not found in concatenated data.")
-
-        # ensure values and template have the same length
-        if len(values) != len(self.data[template]):
-            raise ValueError(
-                f"The new data ({self.data[name]}) and the template "
-                f"({len(self.data[template])}) lengths don't match.'."
-            )
-
-        # get the template indexes
-        template_index = self.depth_name_association(template)
-
-        # prepare a list with the association and the new value
-        data_list = [self.data[key] for key in template_index.keys()[:-1]] + [values]
-
-        # get the pad table of template to get the depth and the to
-        for object_, data_dict in template.items():
-
-
-
-            start_index , n_count = data_dict.items()[-1]
-            depth_index, _ = data_dict.items()[0]
-
-            data_list: list = []
-            # get the values
-            data_list.append(values[info[0]: info[0] + info[1]])
-
-        # add data to everyobject ensuring property group is the same
-
