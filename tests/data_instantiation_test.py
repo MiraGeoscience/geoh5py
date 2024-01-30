@@ -66,7 +66,7 @@ def test_data_instantiation(data_class, tmp_path):
 
         _can_find(workspace, created_data)
 
-        assert created_data.nan_value in [None, 0, np.nan, INTEGER_NDV, FLOAT_NDV]
+        assert created_data.nan_value in [None, 0, np.nan, INTEGER_NDV, FLOAT_NDV, ""]
 
         # now, make sure that unused data and types do not remain reference in the workspace
         data_type_uid = data_type.uid
