@@ -494,7 +494,6 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
         from_to_a = np.sort(np.random.uniform(low=0.05, high=100, size=(50,))).reshape(
             (-1, 2)
         )
-        from_to_b = np.vstack([from_to_a[0, :], [30.1, 55.5], [56.5, 80.2]])
 
         values = np.random.randn(50)
         values[0] = np.nan
@@ -511,6 +510,29 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
                 },
             }
         )
+
+        text = np.array(
+            [
+                "".join(random.choice(string.ascii_lowercase) for _ in range(6))
+                for _ in range(from_to_a.shape[0])
+            ]
+        )
+
+        well.add_data(
+            {
+                "text Data": {
+                    "values": text,
+                    "from-to": from_to_a,
+                    "type": "TEXT",
+                },
+                "interval_values_a": {
+                    "values": np.random.randn(from_to_a.shape[0]),
+                    "from-to": from_to_a,
+                },
+            },
+            property_group="property_group",
+        )
+
         well_b = well.copy()
         well_b.name = "Number 2"
         well_b.collar = np.r_[10.0, 10.0, 10]
@@ -519,14 +541,16 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
         well_c.name = "Number 3"
         well_c.collar = np.r_[10.0, -10.0, 10]
 
-        well.add_data(
+        well_c.add_data(
             {
                 "interval_values_b": {
-                    "values": np.random.randn(from_to_b.shape[0]),
-                    "from-to": from_to_b,
+                    "values": np.random.randn(from_to_a.shape[0]),
+                    "from-to": from_to_a,
                 },
-            }
+            },
+            property_group="property_group",
         )
+
     return dh_group, workspace
 
 
@@ -771,214 +795,97 @@ def compare_structured_arrays(
 
 def test_export_table(tmp_path):
     h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
-    well_name = "bullseye/"
-    n_data = 10
+    drillhole_group, workspace = create_drillholes(
+        h5file_path, version=2.0, ga_version="4.2"
+    )
 
-    with Workspace.create(h5file_path) as workspace:
-        # Create a workspace
-        dh_group = DrillholeGroup.create(workspace)
-
-        well = Drillhole.create(
-            workspace,
-            collar=np.r_[0.0, 10.0, 10],
-            surveys=np.c_[
-                np.linspace(0, 100, n_data),
-                np.ones(n_data) * 45.0,
-                np.linspace(-89, -75, n_data),
-            ],
-            parent=dh_group,
-            name=well_name,
-        )
-
-        depth = np.sort(np.random.uniform(low=0.05, high=100, size=(10,))).astype(
-            np.float16
-        )
-        value = np.random.randn(8)
-
-        well.add_data(
-            {
-                "Depth Data": {
-                    "depth": depth,
-                    "values": value,
-                },
-            }
-        )
-
-        # Create random from-to
-        from_to = (
-            np.sort(np.random.uniform(low=0.05, high=100, size=(52,)))
-            .reshape((-1, 2))
-            .astype(np.float16)
-        )
-
-        text = np.array(
-            [
-                "".join(random.choice(string.ascii_lowercase) for _ in range(6))
-                for _ in range(3)
-            ]
-        )
-
-        value2 = np.random.randn(26)
-
-        well.add_data(
-            {
-                "text Data": {
-                    "values": text,
-                    "from-to": from_to,
-                    "type": "TEXT",
-                },
-                "value Data": {"values": value2, "from-to": from_to},
-            },
-            property_group=ConcatenatedPropertyGroup(
-                parent=well,
-                name="property_group",
-                property_group_type="Interval table",
+    with workspace.open():
+        values = [
+            np.array([["{%s}" % child.uid] * 25 for child in drillhole_group.children])
+            .flatten()
+            .astype("S"),
+            drillhole_group.data["FROM"],
+            drillhole_group.data["TO"],
+            drillhole_group.data["text Data"],
+            drillhole_group.data["interval_values_a"],
+            np.array(
+                [np.nan]
+                * (
+                    drillhole_group.data["FROM"].shape[0]
+                    - drillhole_group.data["interval_values_b"].shape[0]
+                )
+                + drillhole_group.data["interval_values_b"].tolist()
             ),
-        )
-        # create another drillhole with other data
-        well2 = Drillhole.create(
-            workspace,
-            collar=np.r_[10.0, 10.0, 10],
-            surveys=np.c_[
-                np.linspace(0, 100, n_data),
-                np.ones(n_data) * 45.0,
-                np.linspace(-89, -75, n_data),
-            ],
-            parent=dh_group,
-            name=well_name + "(1)",
-        )
+        ]
 
-        well2.add_data(
-            {
-                "Depth Data2": {
-                    "depth": depth,
-                    "values": value,
-                },
-            }
-        )
-
-        # add a data with no association
-        well2.add_data(
-            {
-                "data_object": {
-                    "values": value,
-                    "association": "OBJECT",
-                },
-            },
-            property_group="test_pg",
-        )
-
-        # close and open again
-
-    with Workspace(h5file_path) as workspace:
-        well = workspace.get_entity(well_name)[0]
-
-        drillhole_group = well.parent
-
-        temp_uid = np.array(
-            ["{%s}" % well.uid for i in range(from_to.shape[0])]
-        ).astype("S")
-
-        # append "" n-3 times to text
-        text = np.hstack(
-            (text, np.array(["" for i in range(from_to.shape[0] - text.shape[0])]))
-        ).astype("S")
-
-        # create types
         dtypes = [
             ("Drillhole", "O"),
             ("FROM", np.float64),
             ("TO", np.float64),
             ("text Data", "O"),
-            ("value Data", np.float64),
+            ("interval_values_a", np.float64),
+            ("interval_values_b", np.float64),
         ]
 
-        verification = np.core.records.fromarrays(
-            [temp_uid, from_to[:, 0], from_to[:, 1], text, value2], dtype=dtypes
-        )
+        verification = np.core.records.fromarrays(values, dtype=dtypes)
 
         assert compare_structured_arrays(
-            drillhole_group.get_depth_table(("text Data", "value Data"), True),
+            drillhole_group.get_depth_table(
+                ("text Data", "interval_values_a", "interval_values_b"), True
+            ),
             verification,
             tolerance=1e-5,
         )
 
-        temp_uid = np.array(["{%s}" % well.uid for _ in range(depth.shape[0])]).astype(
-            "S"
-        )
-
-        values = np.hstack(
-            (value, np.array([np.nan for _ in range(depth.shape[0] - value.shape[0])]))
-        )
+        values = [
+            np.array([["{%s}" % child.uid] * 50 for child in drillhole_group.children])
+            .flatten()
+            .astype("S"),
+            drillhole_group.data["DEPTH"],
+            drillhole_group.data["my_log_values/"],
+        ]
 
         dtypes = [
             ("Drillhole", "O"),
             ("DEPTH", np.float64),
-            ("Depth Data", np.float64),
+            ("my_log_values/", np.float64),
         ]
 
-        verification = np.core.records.fromarrays(
-            [temp_uid, depth, values], dtype=dtypes
-        )
+        verification = np.core.records.fromarrays(values, dtype=dtypes)
 
-        # todo: a process increase the number of decimals of the depth value.
         assert compare_structured_arrays(
-            drillhole_group.get_depth_table("Depth Data", False),
+            drillhole_group.get_depth_table("my_log_values/", False),
             verification,
             tolerance=1e-5,
         )
 
-        # test errors
-        with pytest.raises(KeyError, match="Data 'bidon' not found"):
-            drillhole_group.get_depth_table("bidon", True)
 
-        with pytest.raises(KeyError, match="Data '\\('bidon',\\)' not found"):
-            drillhole_group.depth_single_association(("bidon",))
+def test_export_table_errors(tmp_path):
+    h5file_path = tmp_path / "test_drillholeGroup.geoh5"
+    drillhole_group, workspace = create_drillholes(
+        h5file_path, version=2.0, ga_version="4.2"
+    )
 
-        with pytest.raises(KeyError, match="Data '\\('bidon',\\)' not found"):
-            drillhole_group.association_by_drillhole(("bidon",))
+    with workspace.open(mode="r+"):
+        with pytest.raises(KeyError, match="Data 'bidon' not found in concatenated "):
+            drillhole_group.get_data_from_name("bidon")
 
         with pytest.raises(
-            AssertionError, match="Data '\\['text Data', 'Depth Data'\\]' don't"
+            AssertionError, match=r"Data '\('text Data', 'my_log_values/'\)' don't have"
         ):
-            drillhole_group.get_depth_table(["text Data", "Depth Data"], True)
+            drillhole_group.depth_multiple_association(("text Data", "my_log_values/"))
 
-        well.add_data(
-            {
-                "bidon": {
-                    "association": "OBJECT",
-                    "values": value,
-                },
-            }
-        )
+        drillhole_group.children[0].get_data("text Data")[
+            0
+        ].property_group.property_group_type = "Multi-element"
 
-        with pytest.raises(ValueError, match="Data 'bidon' is not associated"):
-            drillhole_group.depth_single_association("bidon")
-
-        # test padding method
-        test = [
-            np.array([1, 2, 3, 4, 5]),
-            np.array(["a", "b", "c"]),
-            np.array([1.0, 2.0, 3.0, 4.0]),
-        ]
-
-        verification = [
-            np.array([1, 2, 3, 4, 5]),
-            np.array(["a", "b", "c", "", ""]),
-            np.array([1.0, 2.0, 3.0, 4.0, 0.0]),
-        ]
-
-        no_data_test = ["", 0.0]
-
-        assert all(
-            all(array1 == array2)
-            for array1, array2 in zip(
-                drillhole_group._pad_arrays_to_first(  # pylint: disable=protected-access
-                    test, no_data_test
-                ),
-                verification,
+        # create a drillhole group
+        assert (
+            drillhole_group.get_depth_association(
+                drillhole_group.children[0].get_data("text Data")[0].property_group
             )
+            is None
         )
 
-        # create an empty property group
-        assert drillhole_group.get_depth_association("test_pg") is None
+        with pytest.raises(KeyError, match=r"Data '\('bidon',\)' not found"):
+            drillhole_group.association_by_drillhole(("bidon",))

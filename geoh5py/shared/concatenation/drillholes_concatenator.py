@@ -116,7 +116,7 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
         if data.property_group is not None:
             association_name = self.get_depth_association(data.property_group)
         if association_name is None:
-            raise ValueError(f"Data '{name}' is not associated with depth.")
+            raise ValueError(f"Data '{name}' is not associated with depth or interval.")
 
         # merge association with name at the end
         associations = self.association_by_drillhole(association_name + (name,))
