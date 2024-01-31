@@ -19,6 +19,8 @@ from __future__ import annotations
 from abc import ABC
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 if TYPE_CHECKING:
     from .drillholes_concatenator import DrillholesConcatenator
 
@@ -63,7 +65,10 @@ class DrillholesGroupTable(ABC):
             raise KeyError(f"Data '{names}' not found in concatenated data.")
 
         object_index: dict = {}
-        for drillhole in self._parent.index[names[0]]["Object ID"]:
+        # todo: is the order of the index always the same?
+        for drillhole in np.sort(self._parent.index[names[0]], order="Start index")[
+            "Object ID"
+        ]:
             object_index[drillhole] = {}
             for name in names:
                 if drillhole in self._parent.index[name]["Object ID"]:

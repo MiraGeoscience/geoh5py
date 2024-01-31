@@ -18,10 +18,12 @@
 from __future__ import annotations
 
 from typing import Any
+from uuid import UUID
 
 import numpy as np
 
 from ...groups import DrillholeGroup
+from ...objects import Drillhole
 from ..utils import to_tuple
 from .concatenator import Concatenator
 from .drillholes_group_table import DrillholesGroupTable
@@ -178,3 +180,96 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
                 dtype.append((data_name, type_temp))
 
         return np.core.records.fromarrays(output.T, dtype=dtype)
+
+    def _push_values_to_drillhole(
+        self,
+        name: str,
+        values: np.ndarray,
+        index: dict,
+        property_group: str,
+    ):
+        """
+        Push the values to the drillhole.
+
+        :param name: The name of the data to push.
+        :param values: The values to push.
+        :param index: The index to use to map the data
+        :param property_group: the name of the property group.
+        :return:
+        """
+        template = list(list(index.values())[0].keys())[0]
+
+        # prepare the association values
+        associations_values = {
+            name: self.data[name]
+            for name in self.unique_property_group_names[property_group][0]
+        }
+
+        if len(associations_values) == 2:
+            association = "from-to"
+        else:
+            association = "depth"
+
+        for drillhole_uid, indices in index.items():
+            # get the drillhole
+            drillhole: Drillhole = self.workspace.get_entity(  # type: ignore
+                UUID(drillhole_uid.decode("utf-8"))
+            )[0]
+
+            # define the specific associations
+            drillhole_association = []
+            for key, value in associations_values.items():
+                drillhole_association.append(
+                    value[indices[key][0] : indices[key][0] + indices[template][1]]
+                )
+
+            drillhole.add_data(
+                {
+                    name: {
+                        "values": values[
+                            indices[template][0] : indices[template][0]
+                            + indices[template][1]
+                        ],
+                        association: np.array(drillhole_association).T,
+                    },
+                },
+                property_group=property_group,
+            )
+
+    def add_values_on_property_group(
+        self,
+        name: str,
+        values: np.ndarray,
+        property_group: str,
+        template: str | None = None,
+    ):
+        if not isinstance(name, str) or name in self.data:
+            raise KeyError("The name must be a string not present in data.")
+
+        # get the property_group
+        drillholes_group_table = DrillholesGroupTable(self, property_group)
+
+        # if template is None, get the first association for template
+        if template is None:
+            template_: tuple = drillholes_group_table.association_names
+            template_ = (template_[0],) + template_
+        elif template not in self.unique_property_group_names[property_group][1]:
+            raise KeyError(f"The template '{template}' is not in the property group.")
+        else:
+            template_ = (template,) + drillholes_group_table.association_names
+
+        # ensure the length of the values is the same as the length of the template
+        if values.shape != self.data[template_[0]].shape:
+            raise ValueError(
+                "The length of the values must be the same as the template."
+            )
+
+        # get the index of the property group
+        index = drillholes_group_table.association_by_drillhole(template_)
+
+        self._push_values_to_drillhole(
+            name,
+            values,
+            index,
+            property_group,
+        )

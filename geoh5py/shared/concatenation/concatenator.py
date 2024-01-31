@@ -719,7 +719,6 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                 association,
                 data_names,
             ) in self.unique_property_group_names.items():
-                # Concatenate namesa and namesb tuples and iterate over the result
                 for name in association + data_names:
                     # Assign Names (the original key) as the value for each new key
                     new_dict[name] = key

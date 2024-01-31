@@ -899,3 +899,89 @@ def test_export_table_errors(tmp_path):
             )[0]
             is None
         )
+
+        assert (
+            Concatenator.get_properties_names(
+                ConcatenatedPropertyGroup(parent=drillhole_group.children[0])
+            )[0]
+            is None
+        )
+
+
+def test_add_data_to_property(tmp_path):
+    h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
+    drillhole_group, workspace = create_drillholes(
+        h5file_path, version=2.0, ga_version="4.2"
+    )
+
+    with workspace.open():
+        values = drillhole_group.data["interval_values_a"]
+
+        drillhole_group.add_values_on_property_group(
+            "new value",
+            values,
+            "property_group",
+        )
+
+        values = drillhole_group.data["my_log_values/"]
+
+        drillhole_group.add_values_on_property_group(
+            "new value 2",
+            values,
+            "depth_0",
+            "my_log_values/",
+        )
+
+    # todo, has to close an reopen the workspace to update data and index
+    with workspace.open():
+        drillhole_group = workspace.get_entity(drillhole_group.uid)[0]
+
+        verification = drillhole_group.get_depth_table("interval_values_a", True)
+        # change the name of the dtype in verification: "interval_values_a" to "new value"
+        verification.dtype.names = ("Drillhole", "FROM", "TO", "new value")
+
+        assert compare_structured_arrays(
+            verification,
+            drillhole_group.get_depth_table("new value", True),
+            tolerance=1e-5,
+        )
+
+        verification = drillhole_group.get_depth_table("my_log_values/", True)
+        # change the name of the dtype in verification: "interval_values_a" to "new value"
+        verification.dtype.names = ("Drillhole", "DEPTH", "new value 2")
+
+        assert compare_structured_arrays(
+            verification,
+            drillhole_group.get_depth_table("new value 2", True),
+            tolerance=1e-5,
+        )
+
+
+def test_add_data_to_property_errors(tmp_path):
+    h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
+    drillhole_group, workspace = create_drillholes(
+        h5file_path, version=2.0, ga_version="4.2"
+    )
+
+    with workspace.open():
+        with pytest.raises(KeyError, match="The name must be a string"):
+            drillhole_group.add_values_on_property_group(
+                "interval_values_a",
+                np.random.randn(50),
+                "bidon",
+            )
+
+        with pytest.raises(KeyError, match="The template "):
+            drillhole_group.add_values_on_property_group(
+                "new value",
+                np.random.randn(50),
+                "property_group",
+                "bidon",
+            )
+
+        with pytest.raises(ValueError, match="The length of the values"):
+            drillhole_group.add_values_on_property_group(
+                "new value",
+                np.random.randn(49),
+                "property_group",
+            )
