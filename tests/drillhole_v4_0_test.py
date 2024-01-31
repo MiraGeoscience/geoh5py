@@ -36,6 +36,7 @@ from geoh5py.shared.concatenation import (
     ConcatenatedPropertyGroup,
     Concatenator,
 )
+from geoh5py.shared.concatenation.drillholes_group_table import DrillholesGroupTable
 from geoh5py.shared.utils import as_str_if_uuid, compare_entities
 from geoh5py.workspace import Workspace
 
@@ -806,7 +807,6 @@ def test_export_table(tmp_path):
             .astype("S"),
             drillhole_group.data["FROM"],
             drillhole_group.data["TO"],
-            drillhole_group.data["text Data"],
             drillhole_group.data["interval_values_a"],
             np.array(
                 [np.nan]
@@ -816,15 +816,16 @@ def test_export_table(tmp_path):
                 )
                 + drillhole_group.data["interval_values_b"].tolist()
             ),
+            drillhole_group.data["text Data"],
         ]
 
         dtypes = [
             ("Drillhole", "O"),
             ("FROM", np.float64),
             ("TO", np.float64),
-            ("text Data", "O"),
             ("interval_values_a", np.float64),
             ("interval_values_b", np.float64),
+            ("text Data", "O"),
         ]
 
         verification = np.core.records.fromarrays(values, dtype=dtypes)
@@ -870,22 +871,31 @@ def test_export_table_errors(tmp_path):
         with pytest.raises(KeyError, match="Data 'bidon' not found in concatenated "):
             drillhole_group.get_data_from_name("bidon")
 
-        with pytest.raises(
-            AssertionError, match=r"Data '\('text Data', 'my_log_values/'\)' don't have"
-        ):
-            drillhole_group.depth_multiple_association(("text Data", "my_log_values/"))
+        with pytest.raises(TypeError, match="The parent must be a Concatenator"):
+            DrillholesGroupTable("bidon", "bidon")
+
+        with pytest.raises(KeyError, match="The name 'bidon' is not in"):
+            DrillholesGroupTable(drillhole_group, "bidon")
+
+        drillhole_group_table = DrillholesGroupTable(drillhole_group, "depth_0")
+
+        with pytest.raises(KeyError, match=r"Data '\('bidon',\)' not found"):
+            drillhole_group_table.association_by_drillhole(("bidon",))
+
+        with pytest.raises(KeyError, match=r"The name 'bidon' is not"):
+            drillhole_group.get_drillhole_group_table(("bidon",))
+
+        with pytest.raises(ValueError, match=r"All the data must be in the same"):
+            drillhole_group.get_drillhole_group_table(("my_log_values/", "text Data"))
 
         drillhole_group.children[0].get_data("text Data")[
             0
         ].property_group.property_group_type = "Multi-element"
 
-        # create a drillhole group
+        # create an empty property group
         assert (
-            drillhole_group.get_depth_association(
-                drillhole_group.children[0].get_data("text Data")[0].property_group
-            )
+            Concatenator.get_depth_association(
+                ConcatenatedPropertyGroup(parent=drillhole_group.children[0])
+            )[0]
             is None
         )
-
-        with pytest.raises(KeyError, match=r"Data '\('bidon',\)' not found"):
-            drillhole_group.association_by_drillhole(("bidon",))

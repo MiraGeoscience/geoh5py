@@ -599,6 +599,22 @@ def dip_points(points: np.ndarray, dip: float, rotation: float = 0) -> np.ndarra
     return points.T
 
 
+def to_tuple(value: Any) -> tuple:
+    """
+    Convert value to a tuple.
+
+    :param value: The value to convert.
+
+    :return: A tuple
+    """
+    # ensure the names are a tuple
+    if isinstance(value, tuple):
+        return value
+    if isinstance(value, list):
+        return tuple(value)
+    return (value,)
+
+
 class SetDict(dict):
     def __init__(self, **kwargs):
         kwargs = {k: self.make_set(v) for k, v in kwargs.items()}

@@ -33,6 +33,7 @@ from ..utils import INV_KEY_MAP, KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid
 from .concatenated import Concatenated
 from .data import ConcatenatedData
 from .object import ConcatenatedObject
+from .property_group import ConcatenatedPropertyGroup
 
 if TYPE_CHECKING:
     from ...groups import GroupType
@@ -61,6 +62,8 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
     _data: dict
     _index: dict
     _property_group_ids: np.ndarray | None = None
+    _unique_property_groups_names: dict = {}
+    _property_group_by_data_name: dict = {}
 
     def __init__(self, group_type: GroupType, **kwargs):
         super().__init__(group_type, **kwargs)
@@ -437,7 +440,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
     @property
     def property_group_ids(self) -> list | None:
         """Dictionary of concatenated objects and data property_group_ids."""
-        if self._property_group_ids is None:
+        if not self._property_group_ids:
             property_groups_ids = self.workspace.fetch_concatenated_values(
                 self, "property_group_ids"
             )
@@ -615,3 +618,132 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             self.data[alias] = values
 
         self.save_attribute(field)
+
+    @staticmethod
+    def get_depth_association(
+        property_group: ConcatenatedPropertyGroup,
+    ) -> tuple[str] | tuple[str, str] | tuple[None]:
+        """
+        Based on a PropertyGroup, it gets the name of the depth (or from to)
+            associated with the data.
+
+        :param property_group: The property group to extract.
+
+        return: the name of the values to used for association.
+        """
+        if getattr(property_group, "property_group_type", None) == "Interval table":
+            return property_group.from_.name, property_group.to_.name
+        if getattr(property_group, "property_group_type", None) == "Depth table":
+            return (property_group.depth_.name,)
+
+        return (None,)
+
+    @staticmethod
+    def get_properties_names(property_group: ConcatenatedPropertyGroup) -> tuple:
+        """
+        Get the names of the properties in the property group.
+
+        :param property_group: The property group to extract.
+        """
+        if property_group.properties is None:
+            return (None,)
+        return tuple(
+            property_group.parent.get_data(property_)[0].name
+            for property_ in property_group.properties
+        )
+
+    @property
+    def unique_property_group_names(self) -> dict:
+        """
+        Returns the unique property groups of the parent and there type.
+        The structure is a dictionary with the name of the property group as key,
+        and the name of the association and the names of the data as values.
+        """
+        if (
+            not self._unique_property_groups_names
+            and self.property_group_ids is not None
+        ):
+            unique_property_groups: dict = {}
+            for property_group_uid in self.property_group_ids:
+                property_group = self.workspace.get_entity(
+                    uuid.UUID(property_group_uid.decode("utf-8"))
+                )[0]
+                if isinstance(property_group, ConcatenatedPropertyGroup):
+                    # get the association and the names
+                    association = self.get_depth_association(property_group)
+                    data_names = self.get_properties_names(property_group)
+                    data_names = tuple(
+                        name for name in data_names if name not in association
+                    )
+
+                    if property_group.name in unique_property_groups:
+                        unique_property_groups[property_group.name] = (
+                            tuple(
+                                sorted(
+                                    set(
+                                        unique_property_groups[property_group.name][0]
+                                        + association
+                                    )
+                                )
+                            ),
+                            tuple(
+                                sorted(
+                                    set(
+                                        unique_property_groups[property_group.name][1]
+                                        + data_names
+                                    )
+                                )
+                            ),
+                        )
+                    else:
+                        unique_property_groups[property_group.name] = (
+                            association,
+                            data_names,
+                        )
+
+            self._unique_property_groups_names = unique_property_groups
+
+        return self._unique_property_groups_names
+
+    @property
+    def property_group_by_data_name(self) -> dict:
+        """
+        Return a dictionary with the data names as keys and the property group names as values.
+        """
+        # New dictionary to store the transformed data
+        if not self._property_group_by_data_name:
+            new_dict = {}
+
+            # Iterate over the original dictionary
+            for key, (
+                association,
+                data_names,
+            ) in self.unique_property_group_names.items():
+                # Concatenate namesa and namesb tuples and iterate over the result
+                for name in association + data_names:
+                    # Assign Names (the original key) as the value for each new key
+                    new_dict[name] = key
+
+            self._property_group_by_data_name = new_dict
+
+        return self._property_group_by_data_name
+
+    def get_data_from_name(self, name: str) -> ConcatenatedData:
+        """
+        Get the data from a given name.
+
+        :param name: The name of the data to extract.
+
+        :return: The first data found with the given name in index.
+        """
+
+        # ensure data_name is in the data
+        if name not in self.data:
+            raise KeyError(f"Data '{name}' not found in concatenated data.")
+
+        # get the data of the know association
+        data: ConcatenatedData = self.workspace.get_entity(  # type: ignore
+            uuid.UUID(self.index[name][0][-2].decode("utf-8").strip("{}"))
+        )[0].get_data(uuid.UUID(self.index[name][0][-1].decode("utf-8").strip("{}")))[0]
+
+        return data
