@@ -708,7 +708,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
     @property
     def property_group_by_data_name(self) -> dict:
         """
-        Return a dictionary with the data names as keys and the property group names as values.
+        Returns a dictionary with the data names as keys and the property group names as values.
         """
         # New dictionary to store the transformed data
         if not self._property_group_by_data_name:

@@ -243,6 +243,14 @@ class DrillholesConcatenator(Concatenator, DrillholeGroup):
         property_group: str,
         template: str | None = None,
     ):
+        """
+        Add values to the drillholes in the concatenator.
+
+        :param name: the new name of the data.
+        :param values: The values to add.
+        :param property_group: The name of the property group.
+        :param template: The template to use for the association.
+        """
         if not isinstance(name, str) or name in self.data:
             raise KeyError("The name must be a string not present in data.")
 
