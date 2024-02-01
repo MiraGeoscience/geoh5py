@@ -264,3 +264,17 @@ def test_is_form_test():
     assert is_form(ui_json["string_parameter"])
     ui_json["string_parameter"].pop("value")
     assert not is_form(ui_json["string_parameter"])
+
+
+def test_flatten_grou_value():
+    ui_json = deepcopy(default_ui_json)
+    ui_json["test"] = {
+        "label": "drillhole group",
+        "value": ["test1"],
+        "groupValue": "{test}",
+        "enable": True,
+        "main": True,
+    }
+    flat = flatten(ui_json)
+
+    assert flat["test"] == ("{test}", ["test1"])
