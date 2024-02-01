@@ -45,7 +45,7 @@ def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
                     temp_value = value[field]
 
                     if value.get("groupValue"):
-                        temp_value = (value["groupValue"], temp_value)
+                        temp_value = {"group": value["groupValue"], "data": temp_value}
 
                     data[name] = temp_value
         else:

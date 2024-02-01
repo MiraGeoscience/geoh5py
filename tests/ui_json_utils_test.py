@@ -35,6 +35,7 @@ from geoh5py.ui_json.utils import (
     set_enabled,
     truth,
 )
+from geoh5py.ui_json.validation import InputValidation
 
 
 def test_dict_mapper():
@@ -266,7 +267,7 @@ def test_is_form_test():
     assert not is_form(ui_json["string_parameter"])
 
 
-def test_flatten_grou_value():
+def test_flatten_group_value():
     ui_json = deepcopy(default_ui_json)
     ui_json["test"] = {
         "label": "drillhole group",
@@ -275,6 +276,10 @@ def test_flatten_grou_value():
         "enable": True,
         "main": True,
     }
+
+    validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
+    assert validators["test"]["types"] == [dict]
+
     flat = flatten(ui_json)
 
-    assert flat["test"] == ("{test}", ["test1"])
+    assert flat["test"] == {"data": ["test1"], "group": "{test}"}
