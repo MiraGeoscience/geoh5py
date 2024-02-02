@@ -277,7 +277,7 @@ class DrillholesGroupTable(ABC):
     @property
     def index_by_drillhole(
         self,
-    ) -> dict:
+    ) -> dict[bytes, dict[str, list[int]]]:
         """
         Get for every object index and count of all the data in 'association' and 'properties'
 
