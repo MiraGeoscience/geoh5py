@@ -29,7 +29,7 @@ from h5py import special_dtype
 from ...data import Data, DataAssociationEnum, DataType
 from ...groups import Group
 from ..entity import Entity
-from ..utils import INV_KEY_MAP, KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid
+from ..utils import INV_KEY_MAP, KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid, str2uuid
 from .concatenated import Concatenated
 from .data import ConcatenatedData
 from .drillholes_group_table import DrillholesGroupTable
@@ -624,7 +624,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         if not self._drillholes_tables and self.property_group_ids is not None:
             for property_group_uid in self.property_group_ids:
                 property_group = self.workspace.get_entity(
-                    uuid.UUID(property_group_uid.decode("utf-8"))
+                    str2uuid(property_group_uid)
                 )[0]
 
                 if (

@@ -18,11 +18,10 @@ from __future__ import annotations
 
 from abc import ABC
 from typing import TYPE_CHECKING, Any
-from uuid import UUID
 
 import numpy as np
 
-from ..utils import to_tuple
+from ..utils import str2uuid, to_tuple
 from .property_group import ConcatenatedPropertyGroup
 
 if TYPE_CHECKING:
@@ -103,9 +102,9 @@ class DrillholesGroupTable(ABC):
 
         property_groups = []
         for property_group_uid in parent.property_group_ids:
-            property_group = parent.workspace.get_entity(
-                UUID(property_group_uid.decode("utf-8"))
-            )[0]
+            property_group = parent.workspace.get_entity(str2uuid(property_group_uid))[
+                0
+            ]
             if (
                 isinstance(property_group, ConcatenatedPropertyGroup)
                 and property_group.name == name
@@ -170,7 +169,7 @@ class DrillholesGroupTable(ABC):
         for drillhole_uid, indices in self.index_by_drillhole.items():
             # get the drillhole
             drillhole: ConcatenatedDrillhole = self.parent.workspace.get_entity(  # type: ignore
-                UUID(drillhole_uid.decode("utf-8"))
+                str2uuid(drillhole_uid)
             )[
                 0
             ]
@@ -321,10 +320,8 @@ class DrillholesGroupTable(ABC):
 
         # get the data of the know association
         data: ConcatenatedData = self.parent.workspace.get_entity(  # type: ignore
-            UUID(self.parent.index[name][0][-2].decode("utf-8").strip("{}"))
-        )[0].get_data(UUID(self.parent.index[name][0][-1].decode("utf-8").strip("{}")))[
-            0
-        ]
+            str2uuid(self.parent.index[name][0][-2])
+        )[0].get_data(str2uuid(self.parent.index[name][0][-1]))[0]
 
         return data.nan_value
 
