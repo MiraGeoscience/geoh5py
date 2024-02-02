@@ -376,16 +376,14 @@ class DrillholesGroupTable(ABC):
         """
         self._property_groups = self._get_property_groups(self.parent, self.name)
 
-        if self._properties:
+        if self._properties is not None:
             self._properties += (name,)
         else:
             self._properties = (name,)
 
-        if self._index_by_drillhole:
-            for drillhole_uid in self._index_by_drillhole:
-                self._index_by_drillhole[drillhole_uid][
-                    name
-                ] = self._index_by_drillhole[drillhole_uid][self.association[0]]
+        if self._index_by_drillhole is not None:
+            for value in self._index_by_drillhole.values():
+                value[name] = value[self.association[0]]
 
-        if self._depth_table:
+        if self._depth_table is not None:
             self._depth_table = rfn.append_fields(self._depth_table, [name], [values])
