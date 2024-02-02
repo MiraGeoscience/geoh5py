@@ -71,10 +71,10 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         self._concatenated_attributes: dict | None = None
         self._attributes_keys: list[uuid.UUID] | None = None
         self._concatenated_object_ids: list[bytes] | None = None
+        self._property_group_ids: np.ndarray | None = None
+
         self._data: dict
         self._index: dict
-        self._property_group_ids: np.ndarray | None = None
-        self._drillholes_tables: dict = {}
 
     @property
     def attributes_keys(self) -> list | None:
@@ -620,8 +620,10 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
     def drillholes_tables(self) -> dict:
         """
         Dictionary of drillholes tables.
+        Always recompute the drillholes tables to ensure changes.
         """
-        if not self._drillholes_tables and self.property_group_ids is not None:
+        drillholes_tables = {}
+        if self.property_group_ids is not None:
             for property_group_uid in self.property_group_ids:
                 property_group = self.workspace.get_entity(
                     str2uuid(property_group_uid)
@@ -629,10 +631,10 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
                 if (
                     property_group is not None
-                    and property_group.name not in self._drillholes_tables
+                    and property_group.name not in drillholes_tables
                 ):
-                    self._drillholes_tables[property_group.name] = DrillholesGroupTable(
+                    drillholes_tables[property_group.name] = DrillholesGroupTable(
                         self, property_group.name
                     )
 
-        return self._drillholes_tables
+        return drillholes_tables
