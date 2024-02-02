@@ -21,6 +21,7 @@ import uuid
 import warnings
 from typing import TYPE_CHECKING
 
+from ...data import Data
 from ...objects import ObjectBase
 from .concatenated import Concatenated
 from .data import ConcatenatedData
@@ -96,7 +97,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
         return prop_group
 
-    def get_data(self, name: str | uuid.UUID):
+    def get_data(self, name: str | uuid.UUID) -> list[Data]:
         """
         Generic function to get data values from object.
         """

@@ -494,7 +494,6 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
         from_to_a = np.sort(np.random.uniform(low=0.05, high=100, size=(50,))).reshape(
             (-1, 2)
         )
-        from_to_b = np.vstack([from_to_a[0, :], [30.1, 55.5], [56.5, 80.2]])
 
         values = np.random.randn(50)
         values[0] = np.nan
@@ -511,6 +510,29 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
                 },
             }
         )
+
+        text = np.array(
+            [
+                "".join(random.choice(string.ascii_lowercase) for _ in range(6))
+                for _ in range(from_to_a.shape[0])
+            ]
+        )
+
+        well.add_data(
+            {
+                "text Data": {
+                    "values": text,
+                    "from-to": from_to_a,
+                    "type": "TEXT",
+                },
+                "interval_values_a": {
+                    "values": np.random.randn(from_to_a.shape[0]),
+                    "from-to": from_to_a,
+                },
+            },
+            property_group="property_group",
+        )
+
         well_b = well.copy()
         well_b.name = "Number 2"
         well_b.collar = np.r_[10.0, 10.0, 10]
@@ -519,14 +541,16 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
         well_c.name = "Number 3"
         well_c.collar = np.r_[10.0, -10.0, 10]
 
-        well.add_data(
+        well_c.add_data(
             {
                 "interval_values_b": {
-                    "values": np.random.randn(from_to_b.shape[0]),
-                    "from-to": from_to_b,
+                    "values": np.random.randn(from_to_a.shape[0]),
+                    "from-to": from_to_a,
                 },
-            }
+            },
+            property_group="property_group",
         )
+
     return dh_group, workspace
 
 
@@ -732,3 +756,136 @@ def test_is_collocated(tmp_path):
     assert property_group.is_collocated(
         np.c_[np.arange(0, 10.0), np.arange(1, 11.0)], 0.01
     )
+
+
+def compare_structured_arrays(
+    array1: np.ndarray, array2: np.ndarray, tolerance: float = 1e-5
+) -> bool:
+    """
+    Compare two NumPy record arrays.
+
+    :param array1: The first structured array to compare.
+    :param array2: The second array to be compared.
+    :param tolerance: The tolerance level for numerical comparison.
+
+    :return: True if arrays are equivalent within the given tolerance, False otherwise.
+    """
+
+    if array1.dtype != array2.dtype:
+        return False  # Different structure
+
+    for column in array1.dtype.names:
+        data1, data2 = array1[column], array2[column]
+
+        # Decode byte strings to regular strings if necessary
+        if data1.dtype.kind == "S":
+            data1 = np.array([d.decode() for d in data1])
+            data2 = np.array([d.decode() for d in data2])
+
+        # Check if the data type of the column is numerical
+        if np.issubdtype(data1.dtype, np.number):
+            if not np.all(np.isclose(data1, data2, atol=tolerance, equal_nan=True)):
+                return False
+        else:
+            if not np.array_equal(data1, data2):
+                return False
+
+    return True
+
+
+def test_export_table(tmp_path):
+    h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
+    drillhole_group, workspace = create_drillholes(
+        h5file_path, version=2.0, ga_version="4.2"
+    )
+
+    with workspace.open():
+        values = [
+            np.array([["{%s}" % child.uid] * 25 for child in drillhole_group.children])
+            .flatten()
+            .astype("S"),
+            drillhole_group.data["FROM"],
+            drillhole_group.data["TO"],
+            drillhole_group.data["text Data"],
+            drillhole_group.data["interval_values_a"],
+            np.array(
+                [np.nan]
+                * (
+                    drillhole_group.data["FROM"].shape[0]
+                    - drillhole_group.data["interval_values_b"].shape[0]
+                )
+                + drillhole_group.data["interval_values_b"].tolist()
+            ),
+        ]
+
+        dtypes = [
+            ("Drillhole", "O"),
+            ("FROM", np.float64),
+            ("TO", np.float64),
+            ("text Data", "O"),
+            ("interval_values_a", np.float64),
+            ("interval_values_b", np.float64),
+        ]
+
+        verification = np.core.records.fromarrays(values, dtype=dtypes)
+
+        assert compare_structured_arrays(
+            drillhole_group.get_depth_table(
+                ("text Data", "interval_values_a", "interval_values_b"), True
+            ),
+            verification,
+            tolerance=1e-5,
+        )
+
+        values = [
+            np.array([["{%s}" % child.uid] * 50 for child in drillhole_group.children])
+            .flatten()
+            .astype("S"),
+            drillhole_group.data["DEPTH"],
+            drillhole_group.data["my_log_values/"],
+        ]
+
+        dtypes = [
+            ("Drillhole", "O"),
+            ("DEPTH", np.float64),
+            ("my_log_values/", np.float64),
+        ]
+
+        verification = np.core.records.fromarrays(values, dtype=dtypes)
+
+        assert compare_structured_arrays(
+            drillhole_group.get_depth_table("my_log_values/", False),
+            verification,
+            tolerance=1e-5,
+        )
+
+
+def test_export_table_errors(tmp_path):
+    h5file_path = tmp_path / "test_drillholeGroup.geoh5"
+    drillhole_group, workspace = create_drillholes(
+        h5file_path, version=2.0, ga_version="4.2"
+    )
+
+    with workspace.open(mode="r+"):
+        with pytest.raises(KeyError, match="Data 'bidon' not found in concatenated "):
+            drillhole_group.get_data_from_name("bidon")
+
+        with pytest.raises(
+            AssertionError, match=r"Data '\('text Data', 'my_log_values/'\)' don't have"
+        ):
+            drillhole_group.depth_multiple_association(("text Data", "my_log_values/"))
+
+        drillhole_group.children[0].get_data("text Data")[
+            0
+        ].property_group.property_group_type = "Multi-element"
+
+        # create a drillhole group
+        assert (
+            drillhole_group.get_depth_association(
+                drillhole_group.children[0].get_data("text Data")[0].property_group
+            )
+            is None
+        )
+
+        with pytest.raises(KeyError, match=r"Data '\('bidon',\)' not found"):
+            drillhole_group.association_by_drillhole(("bidon",))
