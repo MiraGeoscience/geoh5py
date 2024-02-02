@@ -877,16 +877,15 @@ def test_add_data_to_property(tmp_path):
     )
 
     with workspace.open():
-        verification = drillhole_group.drillholes_tables[
-            "property_group"
-        ].depth_table_by_name("interval_values_a")
+        drillholes_table = drillhole_group.drillholes_tables["property_group"]
+        verification = drillholes_table.depth_table_by_name("interval_values_a")
 
-        drillhole_group.drillholes_tables[
-            "property_group"
-        ].add_values_to_property_group(
+        drillholes_table.add_values_to_property_group(
             "new value",
             verification["interval_values_a"],
         )
+
+        verificationb = drillholes_table.depth_table_by_name("new value")
 
         # reopen
         drillhole_group = workspace.get_entity("DH_group")[0]
@@ -898,6 +897,12 @@ def test_add_data_to_property(tmp_path):
         verification2 = drillhole_group.drillholes_tables[
             "property_group"
         ].depth_table_by_name("new value")
+
+        assert compare_structured_arrays(
+            verification2,
+            verificationb,
+            tolerance=1e-5,
+        )
 
         # change the name for the verification
         verification2.dtype.names = verification.dtype.names
