@@ -89,7 +89,7 @@ class DrillholesGroupTable(ABC):
         """
         if self.index_by_drillhole is None:
             raise ValueError("No drillhole found in the concatenator.")
-            
+
         all_data_list = []
         for object_, data_dict in self.index_by_drillhole.items():
             data_list: list = []
@@ -118,7 +118,6 @@ class DrillholesGroupTable(ABC):
         return self._create_structured_array(
             np.concatenate(all_data_list, axis=0), names
         )
-
 
     @staticmethod
     def _get_property_groups(parent, name) -> dict[UUID, ConcatenatedPropertyGroup]:
