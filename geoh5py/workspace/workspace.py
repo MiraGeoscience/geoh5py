@@ -60,7 +60,6 @@ from ..shared.concatenation import (
     ConcatenatedObject,
     ConcatenatedPropertyGroup,
     Concatenator,
-    DrillholesConcatenator,
 )
 from ..shared.entity import Entity
 from ..shared.exceptions import Geoh5FileClosedError
@@ -538,7 +537,7 @@ class Workspace(AbstractContextManager):
             else:
                 entity_type_uid = uuid.uuid4()
 
-        for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
+        for name, member in inspect.getmembers(groups) + inspect.getmembers(objects):
             if (
                 inspect.isclass(member)
                 and issubclass(member, entity_class.__bases__)
@@ -549,8 +548,7 @@ class Workspace(AbstractContextManager):
             ):
                 if self.version > 1.0:
                     if member in (DrillholeGroup, IntegratorDrillholeGroup):
-                        # todo: will change with DrillholeConcatenator soon
-                        member = DrillholesConcatenator
+                        member = type("Concatenator" + name, (Concatenator, member), {})
                     elif member is Drillhole and isinstance(
                         entity_kwargs.get("parent"),
                         (DrillholeGroup, IntegratorDrillholeGroup),
