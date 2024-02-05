@@ -838,9 +838,7 @@ def test_export_table(tmp_path):
         verification = np.core.records.fromarrays(values, dtype=dtypes)
 
         assert compare_structured_arrays(
-            drillhole_group.drillholes_tables["property_group"].depth_table_by_name(
-                ["interval_values_a", "interval_values_b", "text Data"]
-            ),
+            drillhole_group.drillholes_tables["property_group"].depth_table,
             verification,
             tolerance=1e-5,
         )
@@ -861,11 +859,20 @@ def test_export_table(tmp_path):
 
         verification = np.core.records.fromarrays(values, dtype=dtypes)
 
+        # drillholes cannot be compared directly as the order is based on depth
         assert compare_structured_arrays(
             drillhole_group.drillholes_tables["depth_0"].depth_table_by_name(
-                "my_log_values/"
+                "my_log_values/", spatial_index=True
+            )[["DEPTH", "my_log_values/"]],
+            verification[["DEPTH", "my_log_values/"]],
+            tolerance=1e-5,
+        )
+
+        assert compare_structured_arrays(
+            drillhole_group.drillholes_tables["depth_0"].depth_table_by_name(
+                "my_log_values/", spatial_index=False
             ),
-            verification,
+            verification[["my_log_values/"]],
             tolerance=1e-5,
         )
 
@@ -878,7 +885,9 @@ def test_add_data_to_property(tmp_path):
 
     with workspace.open():
         drillholes_table = drillhole_group.drillholes_tables["property_group"]
-        verification = drillholes_table.depth_table_by_name("interval_values_a")
+        verification = drillholes_table.depth_table_by_name(
+            "interval_values_a", spatial_index=True
+        )
 
         drillholes_table.add_values_to_property_group(
             "new value",

@@ -18,9 +18,9 @@ from __future__ import annotations
 
 from abc import ABC
 from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
 import numpy as np
-import numpy.lib.recfunctions as rfn
 
 from ..utils import str2uuid, to_tuple
 from .property_group import ConcatenatedPropertyGroup
@@ -41,11 +41,12 @@ class DrillholesGroupTable(ABC):
 
     def __init__(self, parent: Concatenator, name: str):
         self._association: tuple | None = None
-        self._depth_table: np.ndarray | None = None
         self._index_by_drillhole: dict | None = None
         self._properties: tuple | None = None
 
-        self._property_groups: list = self._get_property_groups(parent, name)
+        self._property_groups: dict[
+            UUID, ConcatenatedPropertyGroup
+        ] = self._get_property_groups(parent, name)
         self._parent: Concatenator = parent
         self._name: str = name
 
@@ -70,20 +71,68 @@ class DrillholesGroupTable(ABC):
 
         return np.core.records.fromarrays(output.T, dtype=dtype)
 
+    def _depth_table_by_key(
+        self,
+        names: tuple,
+        drillholes: bool = True,
+    ) -> np.ndarray:
+        """
+        Get a table with all the data associated with depth for every drillhole object.
+
+        The Drillhole name is added at the beginning of the table for every row.
+        The table is based on the association and contains nan values if no data is found.
+
+        :param names: The names to extract.
+        :param drillholes: If True, the drillholes are added to the table.
+
+        :return: a structured array with all the data.
+        """
+        if self.index_by_drillhole is None:
+            raise ValueError("No drillhole found in the concatenator.")
+
+        all_data_list = []
+        for object_, data_dict in self.index_by_drillhole.items():
+            data_list: list = []
+            no_data_values: list = []
+            for name, info in data_dict.items():
+                if name in names:
+                    data_list.append(
+                        self.parent.data[name][info[0] : info[0] + info[1]]
+                    )
+                    no_data_values.append(self.nan_value_from_name(name))
+
+            data_list = self._pad_arrays_to_first(data_list, no_data_values[1:])
+
+            if drillholes:
+                # add the object list to the first position of the data list
+                data_list.insert(0, [object_] * data_list[0].shape[0])
+
+            # create a numpy array
+            all_data_list.append(np.array(data_list, dtype=object).T)
+
+        # get the names of the data
+        if drillholes:
+            names = ("Drillhole",) + names
+
+        # transform to a structured array
+        return self._create_structured_array(
+            np.concatenate(all_data_list, axis=0), names
+        )
+
     @staticmethod
-    def _get_property_groups(parent, name) -> list:
+    def _get_property_groups(parent, name) -> dict[UUID, ConcatenatedPropertyGroup]:
         """
         Get all the property groups with a given name in the concatenator.
 
         :param parent: the concatenator object.
         :param name: the name to get the property groups for.
 
-        :return: a list of property groups.
+        :return: a  dictionary of property groups with drillhole object as Key.
         """
         if not hasattr(parent, "property_group_ids"):
             raise TypeError("The parent must be a Concatenator instance.")
 
-        property_groups = []
+        property_groups: dict[UUID, ConcatenatedPropertyGroup] = {}
         for property_group_uid in parent.property_group_ids:
             property_group = parent.workspace.get_entity(str2uuid(property_group_uid))[
                 0
@@ -92,7 +141,7 @@ class DrillholesGroupTable(ABC):
                 isinstance(property_group, ConcatenatedPropertyGroup)
                 and property_group.name == name
             ):
-                property_groups.append(property_group)
+                property_groups[property_group.parent.uid] = property_group
 
         if not property_groups:
             raise ValueError(
@@ -172,10 +221,10 @@ class DrillholesGroupTable(ABC):
                         ],
                     },
                 },
-                property_group=self.name,
+                property_group=self.property_groups[drillhole.uid],
             )
 
-        self._update_drillholes_group_table(name, values)
+        self._update_drillholes_group_table(name)
 
     @property
     def association(self) -> tuple:
@@ -185,11 +234,13 @@ class DrillholesGroupTable(ABC):
         if self._association is None:
             if self.property_group_type == "Interval table":
                 self._association = (
-                    self.property_groups[0].from_.name,
-                    self.property_groups[0].to_.name,
+                    list(self.property_groups.values())[0].from_.name,
+                    list(self.property_groups.values())[0].to_.name,
                 )
             elif self.property_group_type == "Depth table":
-                self._association = (self.property_groups[0].depth_.name,)
+                self._association = (
+                    list(self.property_groups.values())[0].depth_.name,
+                )
             else:
                 raise TypeError(
                     f"The property group type '{self.property_group_type}' is not supported."
@@ -209,44 +260,19 @@ class DrillholesGroupTable(ABC):
 
         :return: a structured array with all the data.
         """
-        if self._depth_table is None and self.index_by_drillhole is not None:
-            all_data_list = []
-            for object_, data_dict in self.index_by_drillhole.items():
-                data_list: list = []
-                no_data_values: list = []
-
-                for name, info in data_dict.items():
-                    data_list.append(
-                        self.parent.data[name][info[0] : info[0] + info[1]]
-                    )
-                    no_data_values.append(self.nan_value_from_name(name))
-
-                data_list = self._pad_arrays_to_first(data_list, no_data_values[1:])
-
-                # add the object list to the first position of the data list
-                data_list.insert(0, [object_] * data_list[0].shape[0])
-
-                # create a numpy array
-                all_data_list.append(np.array(data_list, dtype=object).T)
-
-            # get the names of the data
-            names = ("Drillhole",) + self.association + self.properties
-
-            # transform to a structured array
-            self._depth_table = self._create_structured_array(
-                np.concatenate(all_data_list, axis=0), names
-            )
-
-        return self._depth_table
+        # get the depth table
+        return self._depth_table_by_key(self.association + self.properties, True)
 
     def depth_table_by_name(
         self,
         names: tuple[str],
+        spatial_index: bool = False,
     ) -> np.ndarray:
         """
         Get a table with specific data associated with depth for every drillhole object.
 
         :param names: The names to extract.
+        :param spatial_index: If True, the spatial index is added to the table.
 
         :return: a table containing the Drillholes, the association and the data.
         """
@@ -256,7 +282,10 @@ class DrillholesGroupTable(ABC):
         if not all(name in self.properties for name in names):
             raise KeyError("The names are not in the list of properties.")
 
-        return self.depth_table[[*("Drillhole",) + self.association + names]]
+        if spatial_index:
+            return self._depth_table_by_key(self.association + names, True)
+
+        return self._depth_table_by_key(names, False)
 
     @property
     def index_by_drillhole(
@@ -328,7 +357,7 @@ class DrillholesGroupTable(ABC):
         """
         if not self._properties:
             properties: tuple = ()
-            for property_group in self.property_groups:
+            for property_group in self.property_groups.values():
                 if property_group.properties is None:
                     continue
 
@@ -356,10 +385,10 @@ class DrillholesGroupTable(ABC):
         """
         The type of the PropertyGroup.
         """
-        return self.property_groups[0].property_group_type
+        return list(self.property_groups.values())[0].property_group_type
 
     @property
-    def property_groups(self) -> list:
+    def property_groups(self) -> dict[UUID, ConcatenatedPropertyGroup]:
         """
         Get all the property groups in the concatenator.
 
@@ -367,13 +396,13 @@ class DrillholesGroupTable(ABC):
         """
         return self._property_groups
 
-    def _update_drillholes_group_table(self, name, values):
+    def _update_drillholes_group_table(self, name):
         """
         Update the drillholes group table with a new property group.
 
         :param name: The name of the property group to update.
-        :param values: The values to update.
         """
+        self.parent.update_data_index()
         self._property_groups = self._get_property_groups(self.parent, self.name)
 
         if self._properties is not None:
@@ -384,6 +413,3 @@ class DrillholesGroupTable(ABC):
         if self._index_by_drillhole is not None:
             for value in self._index_by_drillhole.values():
                 value[name] = value[self.association[0]]
-
-        if self._depth_table is not None:
-            self._depth_table = rfn.append_fields(self._depth_table, [name], [values])

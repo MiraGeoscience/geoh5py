@@ -266,13 +266,19 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return new_entity
 
+    def update_data_index(self):
+        """
+        Update the concatenated data and index of the concatenator
+        """
+        self._data, self._index = self.fetch_concatenated_data_index()
+
     @property
     def data(self) -> dict:
         """
         Concatenated data values stored as a dictionary.
         """
         if getattr(self, "_data", None) is None:
-            self._data, self._index = self.fetch_concatenated_data_index()
+            self.update_data_index()
 
         return self._data
 
@@ -423,7 +429,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         Concatenated index stored as a dictionary.
         """
         if getattr(self, "_index", None) is None:
-            self._data, self._index = self.fetch_concatenated_data_index()
+            self.update_data_index()
 
         return self._index
 
