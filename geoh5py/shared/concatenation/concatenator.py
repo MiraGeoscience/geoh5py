@@ -29,9 +29,10 @@ from h5py import special_dtype
 from ...data import Data, DataAssociationEnum, DataType
 from ...groups import Group
 from ..entity import Entity
-from ..utils import INV_KEY_MAP, KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid
+from ..utils import INV_KEY_MAP, KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid, str2uuid
 from .concatenated import Concatenated
 from .data import ConcatenatedData
+from .drillholes_group_table import DrillholesGroupTable
 from .object import ConcatenatedObject
 
 if TYPE_CHECKING:
@@ -54,13 +55,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
     Class modifier for concatenation of objects and data.
     """
 
-    _concatenated_attributes: dict | None = None
-    _attributes_keys: list[uuid.UUID] | None = None
-    _concatenated_object_ids: list[bytes] | None = None
     _concat_attr_str: str | None = None
-    _data: dict
-    _index: dict
-    _property_group_ids: np.ndarray | None = None
 
     def __init__(self, group_type: GroupType, **kwargs):
         super().__init__(group_type, **kwargs)
@@ -72,6 +67,14 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                 "Concatenated object IDs": "concatenated_object_ids",
             }
         )
+
+        self._concatenated_attributes: dict | None = None
+        self._attributes_keys: list[uuid.UUID] | None = None
+        self._concatenated_object_ids: list[bytes] | None = None
+        self._property_group_ids: np.ndarray | None = None
+
+        self._data: dict
+        self._index: dict
 
     @property
     def attributes_keys(self) -> list | None:
@@ -221,11 +224,8 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             copy_children=False,
             clear_cache=clear_cache,
             omit_list=[
-                "_concatenated_object_ids",
-                "_concatenated_attributes",
                 "_data",
                 "_index",
-                "_property_group_ids",
             ],
             **kwargs,
         )
@@ -266,13 +266,19 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return new_entity
 
+    def update_data_index(self):
+        """
+        Update the concatenated data and index of the concatenator
+        """
+        self._data, self._index = self.fetch_concatenated_data_index()
+
     @property
     def data(self) -> dict:
         """
         Concatenated data values stored as a dictionary.
         """
         if getattr(self, "_data", None) is None:
-            self._data, self._index = self.fetch_concatenated_data_index()
+            self.update_data_index()
 
         return self._data
 
@@ -423,7 +429,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         Concatenated index stored as a dictionary.
         """
         if getattr(self, "_index", None) is None:
-            self._data, self._index = self.fetch_concatenated_data_index()
+            self.update_data_index()
 
         return self._index
 
@@ -437,7 +443,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
     @property
     def property_group_ids(self) -> list | None:
         """Dictionary of concatenated objects and data property_group_ids."""
-        if self._property_group_ids is None:
+        if not self._property_group_ids:
             property_groups_ids = self.workspace.fetch_concatenated_values(
                 self, "property_group_ids"
             )
@@ -615,3 +621,26 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             self.data[alias] = values
 
         self.save_attribute(field)
+
+    @property
+    def drillholes_tables(self) -> dict:
+        """
+        Dictionary of drillholes tables.
+        Always recompute the drillholes tables to ensure changes.
+        """
+        drillholes_tables = {}
+        if self.property_group_ids is not None:
+            for property_group_uid in self.property_group_ids:
+                property_group = self.workspace.get_entity(
+                    str2uuid(property_group_uid)
+                )[0]
+
+                if (
+                    property_group is not None
+                    and property_group.name not in drillholes_tables
+                ):
+                    drillholes_tables[property_group.name] = DrillholesGroupTable(
+                        self, property_group.name
+                    )
+
+        return drillholes_tables
