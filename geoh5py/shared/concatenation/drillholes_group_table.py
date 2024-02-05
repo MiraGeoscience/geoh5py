@@ -87,37 +87,38 @@ class DrillholesGroupTable(ABC):
 
         :return: a structured array with all the data.
         """
-        if self.index_by_drillhole is not None:
-            all_data_list = []
-            for object_, data_dict in self.index_by_drillhole.items():
-                data_list: list = []
-                no_data_values: list = []
-                for name, info in data_dict.items():
-                    if name in names:
-                        data_list.append(
-                            self.parent.data[name][info[0] : info[0] + info[1]]
-                        )
-                        no_data_values.append(self.nan_value_from_name(name))
+        if self.index_by_drillhole is None:
+            raise ValueError("No drillhole found in the concatenator.")
+            
+        all_data_list = []
+        for object_, data_dict in self.index_by_drillhole.items():
+            data_list: list = []
+            no_data_values: list = []
+            for name, info in data_dict.items():
+                if name in names:
+                    data_list.append(
+                        self.parent.data[name][info[0] : info[0] + info[1]]
+                    )
+                    no_data_values.append(self.nan_value_from_name(name))
 
-                data_list = self._pad_arrays_to_first(data_list, no_data_values[1:])
+            data_list = self._pad_arrays_to_first(data_list, no_data_values[1:])
 
-                if drillholes:
-                    # add the object list to the first position of the data list
-                    data_list.insert(0, [object_] * data_list[0].shape[0])
-
-                # create a numpy array
-                all_data_list.append(np.array(data_list, dtype=object).T)
-
-            # get the names of the data
             if drillholes:
-                names = ("Drillhole",) + names
+                # add the object list to the first position of the data list
+                data_list.insert(0, [object_] * data_list[0].shape[0])
 
-            # transform to a structured array
-            return self._create_structured_array(
-                np.concatenate(all_data_list, axis=0), names
-            )
+            # create a numpy array
+            all_data_list.append(np.array(data_list, dtype=object).T)
 
-        raise ValueError("No drillhole found in the concatenator.")
+        # get the names of the data
+        if drillholes:
+            names = ("Drillhole",) + names
+
+        # transform to a structured array
+        return self._create_structured_array(
+            np.concatenate(all_data_list, axis=0), names
+        )
+
 
     @staticmethod
     def _get_property_groups(parent, name) -> dict[UUID, ConcatenatedPropertyGroup]:
