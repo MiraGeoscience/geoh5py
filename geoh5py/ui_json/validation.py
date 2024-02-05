@@ -119,7 +119,7 @@ class InputValidation:
         return val
 
     @staticmethod
-    def _validations_from_uijson(  # pylint: disable=too-many-branches  # noqa: C901
+    def _validations_from_uijson(  # pylint: disable=too-many-branches  # noqa: too complex
         ui_json: dict[str, Any]
     ) -> dict[str, dict]:
         """Determine base set of validations from ui.json structure."""

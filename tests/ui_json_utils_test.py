@@ -269,17 +269,23 @@ def test_is_form_test():
 
 def test_flatten_group_value():
     ui_json = deepcopy(default_ui_json)
-    ui_json["test"] = {
-        "label": "drillhole group",
-        "value": ["test1"],
-        "groupValue": "{test}",
-        "enable": True,
-        "main": True,
-    }
+    ui_json["test"] = templates.drillhole_group_data(value=["test1"])
 
     validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
     assert validators["test"]["types"] == [dict]
 
     flat = flatten(ui_json)
 
-    assert flat["test"] == {"data": ["test1"], "group": "{test}"}
+    assert flat["test"] == {"value": ["test1"], "group": "{test}"}
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["test"] = templates.drillhole_group_data(
+        value=None,
+        group_value=None,
+    )
+    validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
+    assert validators["test"]["types"] == [dict]
+
+    flat = flatten(ui_json)
+
+    assert flat["test"] is None
