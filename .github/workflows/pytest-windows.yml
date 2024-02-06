@@ -45,7 +45,7 @@ jobs:
           curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
           echo "$HOME/.poetry/bin" >> $GITHUB_PATH
       - name: Set up cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache
         env:
           # Increase this value to reset cache if poetry.lock has not changed
@@ -62,6 +62,6 @@ jobs:
         run: poetry run pytest --cov --cov-report=xml
       - name: Codecov
         if: ${{ success() && matrix.python_ver == '3.10' }}
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           name: GitHub

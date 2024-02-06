@@ -215,7 +215,8 @@ class Data(Entity):
 
     @classmethod
     @abstractmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum: ...
+    def primitive_type(cls) -> PrimitiveTypeEnum:
+        """Abstract method to return the primitive type of the class."""
 
     def add_file(self, file: str):
         """
