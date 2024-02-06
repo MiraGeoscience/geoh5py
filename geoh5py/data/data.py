@@ -150,16 +150,6 @@ class Data(Entity):
         )
 
     @property
-    def extent(self) -> np.ndarray | None:
-        """
-        Geography bounding box of the parent object.
-
-        :return: shape(2, 3) Bounding box defined by the bottom South-West and
-            top North-East coordinates.
-        """
-        return None
-
-    @property
     def n_values(self) -> int | None:
         """
         :obj:`int`: Number of expected data values based on
@@ -246,7 +236,9 @@ class Data(Entity):
     @classmethod
     @abstractmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
-        ...
+        """
+        Return the primitive type of the data.
+        """
 
     def mask_by_extent(
         self, extent: np.ndarray, inverse: bool = False
