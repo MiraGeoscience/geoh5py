@@ -922,6 +922,16 @@ def test_add_data_to_property(tmp_path):
             tolerance=1e-5,
         )
 
+        test_drillhole_table = drillhole_group.drillholes_table_from_data_name[
+            "interval_values_a"
+        ]
+
+        assert compare_structured_arrays(
+            test_drillhole_table.depth_table_by_name("interval_values_a"),
+            verification,
+            tolerance=1e-5,
+        )
+
 
 def test_tables_errors(tmp_path):
     h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
