@@ -196,7 +196,7 @@ class EntityContainer(Entity):
         """
         General entity reference translation.
 
-        Todo: Remove in future release:
+        Todo: Remove in future release
 
         :param value: Either an `Entity`, string or uuid
 

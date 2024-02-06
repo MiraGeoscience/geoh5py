@@ -26,7 +26,6 @@ from geoh5py.data import Data, DataAssociationEnum
 
 if TYPE_CHECKING:
     from geoh5py.objects import ObjectBase
-    from geoh5py.shared import Entity
 
 
 class PropertyGroup(ABC):
@@ -183,7 +182,7 @@ class PropertyGroup(ABC):
         self._on_file = value
 
     @property
-    def parent(self) -> Entity:
+    def parent(self) -> ObjectBase:
         """
         The parent :obj:`~geoh5py.objects.object_base.ObjectBase`
         """
