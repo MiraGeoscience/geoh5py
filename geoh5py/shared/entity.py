@@ -81,13 +81,20 @@ class Entity(ABC):
             except AttributeError:
                 continue
 
-    def add_children(self, children: list[shared.Entity]):
+    def add_children(self, children: list[Entity]):
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
         """
+        if not isinstance(children, list):
+            children = [children]
+
         for child in children:
             if child not in self._children:
+                if not isinstance(child, Entity):
+                    raise TypeError(
+                        f"Child must be an instance of Entity, not {type(child)}"
+                    )
                 self._children.append(child)
 
     def add_file(self, file: str):
@@ -411,7 +418,7 @@ class Entity(ABC):
     def parent(self, parent: shared.Entity):
         current_parent = self._parent
 
-        if parent is not None:
+        if hasattr(parent, "add_children"):
             parent.add_children([self])
             self._parent = parent
 
