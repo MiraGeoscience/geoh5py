@@ -119,7 +119,7 @@ class InputValidation:
         return val
 
     @staticmethod
-    def _validations_from_uijson(  # pylint: disable=too-many-branches
+    def _validations_from_uijson(  # pylint: disable=too-many-branches  # noqa: too complex
         ui_json: dict[str, Any]
     ) -> dict[str, dict]:
         """Determine base set of validations from ui.json structure."""
@@ -143,7 +143,10 @@ class InputValidation:
                     warn(
                         f"Failed to set association for {key}. {error}",
                     )
-
+            elif "groupValue" in item and "value" in item:
+                validations[key] = {
+                    "types": [dict],
+                }
             elif "choiceList" in item:
                 validations[key] = {
                     "types": [str],
@@ -231,6 +234,7 @@ class InputValidation:
         :param value: Input parameter value.
         :param validations: [Optional] Validations provided on runtime
         """
+
         if validations is None:
             if name not in self.validations:
                 raise KeyError(f"{name} is missing from the known validations.")

@@ -42,7 +42,12 @@ def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
                 if not truth(ui_json, name, "enabled"):
                     data[name] = None
                 else:
-                    data[name] = value[field]
+                    temp_value = value[field]
+
+                    if value.get("groupValue"):
+                        temp_value = {"group": value["groupValue"], "value": temp_value}
+
+                    data[name] = temp_value
         else:
             data[name] = value
 
