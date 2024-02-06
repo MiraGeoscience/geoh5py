@@ -407,10 +407,10 @@ def data_value_parameter(
 
 
 def drillhole_group_data(
-    value: list[str],
+    value: list[str] | None = None,
     main: bool = True,
     label: str = "Data channel",
-    group_type: UUID = groups.DrillholeGroup.__TYPE_UID,
+    group_type: UUID = groups.DrillholeGroup.default_type_uid(),
     group_value: UUID | None = None,
     multiselect: bool = True,
     optional: str | None = None,
@@ -429,7 +429,7 @@ def drillhole_group_data(
     :param value: The name of the Data channel to extract.
     :param optional: Make optional if not None. Initial state provided by not None
     :param enabled: Enable or disable the form.
-    :toolTip: The tooltip to display when hovering over the form.
+    :param tooltip: The tooltip to display when hovering over the form.
 
     :returns: Ui_json compliant dictionary.
     """

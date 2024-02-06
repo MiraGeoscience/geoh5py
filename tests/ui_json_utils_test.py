@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import uuid
 from copy import deepcopy
 
 import pytest
@@ -269,14 +270,19 @@ def test_is_form_test():
 
 def test_flatten_group_value():
     ui_json = deepcopy(default_ui_json)
-    ui_json["test"] = templates.drillhole_group_data(value=["test1"])
+    my_uuid = uuid.uuid4()
+
+    ui_json["test"] = templates.drillhole_group_data(
+        value=["test1"],
+        group_value=my_uuid,
+    )
 
     validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
     assert validators["test"]["types"] == [dict]
 
     flat = flatten(ui_json)
 
-    assert flat["test"] == {"value": ["test1"], "group": "{test}"}
+    assert flat["test"] == {"value": ["test1"], "group": my_uuid}
 
     ui_json = deepcopy(default_ui_json)
     ui_json["test"] = templates.drillhole_group_data(
