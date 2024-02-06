@@ -265,7 +265,7 @@ class DrillholesGroupTable(ABC):
 
     def depth_table_by_name(
         self,
-        names: tuple[str],
+        names: tuple[str] | str,
         spatial_index: bool = False,
     ) -> np.ndarray:
         """
