@@ -598,7 +598,9 @@ class ObjectBase(Entity):
                     values.dtype in [np.uint32, np.int32]
                 ):
                     entity_type = {"primitive_type": "INTEGER"}
-                elif isinstance(values, str):
+                elif isinstance(values, str) or (
+                    isinstance(values, np.ndarray) and values.dtype.kind in ["U", "S"]
+                ):
                     entity_type = {"primitive_type": "TEXT"}
                 elif isinstance(values, np.ndarray) and (values.dtype == bool):
                     entity_type = {"primitive_type": "BOOLEAN"}

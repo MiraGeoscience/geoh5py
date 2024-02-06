@@ -407,6 +407,12 @@ def uuid2entity(value: UUID, workspace: Workspace) -> Entity | Any:
 
 def str2uuid(value: Any) -> UUID | Any:
     """Convert string to UUID"""
+    if isinstance(value, bytes):
+        value = value.decode("utf-8")
+
+    if isinstance(value, str) and not (value.startswith("{") and value.endswith("}")):
+        value = value.strip("{}")
+
     if is_uuid(value):
         # TODO insert validation
         return UUID(str(value))
@@ -597,6 +603,22 @@ def dip_points(points: np.ndarray, dip: float, rotation: float = 0) -> np.ndarra
     points = xy_rotation_matrix(rotation) @ points
 
     return points.T
+
+
+def to_tuple(value: Any) -> tuple:
+    """
+    Convert value to a tuple.
+
+    :param value: The value to convert.
+
+    :return: A tuple
+    """
+    # ensure the names are a tuple
+    if isinstance(value, tuple):
+        return value
+    if isinstance(value, list):
+        return tuple(value)
+    return (value,)
 
 
 class SetDict(dict):
