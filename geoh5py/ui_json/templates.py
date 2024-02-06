@@ -410,7 +410,7 @@ def drillhole_group_data(
     value: list[str],
     main: bool = True,
     label: str = "Data channel",
-    group_type: str = "825424FB-C2C6-4FEA-9F2B-6CD00023D393",
+    group_type: UUID = groups.DrillholeGroup.__TYPE_UID,
     group_value: str = "{test}",
     multiselect: bool = True,
     optional: str | None = None,
