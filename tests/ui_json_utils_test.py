@@ -288,6 +288,7 @@ def test_flatten_group_value():
     ui_json["test"] = templates.drillhole_group_data(
         value=None,
         group_value=None,
+        optional="enabled",
     )
     validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
     assert validators["test"]["types"] == [dict]
@@ -295,3 +296,8 @@ def test_flatten_group_value():
     flat = flatten(ui_json)
 
     assert flat["test"] is None
+
+
+def test_optional_error():
+    with pytest.raises(ValueError, match="Unrecognized state option."):
+        templates.optional_parameter("bidon")
