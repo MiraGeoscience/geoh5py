@@ -44,9 +44,9 @@ class DrillholesGroupTable(ABC):
         self._index_by_drillhole: dict | None = None
         self._properties: tuple | None = None
 
-        self._property_groups: dict[
-            UUID, ConcatenatedPropertyGroup
-        ] = self._get_property_groups(parent, name)
+        self._property_groups: dict[UUID, ConcatenatedPropertyGroup] = (
+            self._get_property_groups(parent, name)
+        )
         self._parent: Concatenator = parent
         self._name: str = name
 

@@ -861,9 +861,9 @@ class Workspace(AbstractContextManager):
             H5Reader.fetch_metadata,
             uid,
             argument=argument,
-            entity_type="Groups"
-            if isinstance(self.get_entity(uid)[0], Group)
-            else "Objects",
+            entity_type=(
+                "Groups" if isinstance(self.get_entity(uid)[0], Group) else "Objects"
+            ),
             mode="r",
         )
 
