@@ -32,6 +32,7 @@ from ..data.primitive_type_enum import PrimitiveTypeEnum
 from ..groups import PropertyGroup
 from ..shared import Entity, EntityType
 from ..shared.conversion import BaseConversion
+from ..shared.entity_container import EntityContainer
 from ..shared.utils import clear_array_attributes
 from .object_type import ObjectType
 
@@ -39,12 +40,12 @@ if TYPE_CHECKING:
     from .. import workspace
 
 
-class ObjectBase(Entity):
+class ObjectBase(EntityContainer):
     """
     Object base class.
     """
 
-    _attribute_map: dict = Entity._attribute_map.copy()
+    _attribute_map: dict = getattr(EntityContainer, "_attribute_map").copy()
     _attribute_map.update(
         {"Last focus": "last_focus", "PropertyGroups": "property_groups"}
     )

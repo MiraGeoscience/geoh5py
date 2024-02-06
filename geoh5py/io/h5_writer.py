@@ -230,7 +230,11 @@ class H5Writer:
         with fetch_h5_handle(file, mode="r+") as h5file:
             new_entity = H5Writer.write_entity(h5file, entity, compression)
 
-            if add_children and not isinstance(entity, Concatenator):
+            if (
+                add_children
+                and not isinstance(entity, Concatenator)
+                and hasattr(entity, "children")
+            ):
                 # Write children entities and add to current parent
                 for child in entity.children:
                     if not isinstance(child, PropertyGroup):

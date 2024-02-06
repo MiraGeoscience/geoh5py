@@ -130,7 +130,3 @@ def test_remove_root(tmp_path: Path):
         assert points2.reference_to_uid(points2.children[0].uid) == [
             points2.children[0].uid
         ]
-
-        # will be deprecated
-        with pytest.warns(DeprecationWarning, match="Entity.save()"):
-            points2.save()

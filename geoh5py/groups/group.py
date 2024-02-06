@@ -25,14 +25,14 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..data import CommentsData, Data
-from ..shared import Entity
+from ..shared.entity_container import EntityContainer
 from .group_type import GroupType
 
 if TYPE_CHECKING:
     from .. import workspace
 
 
-class Group(Entity):
+class Group(EntityContainer):
     """Base Group class"""
 
     def __init__(self, group_type: GroupType, **kwargs):

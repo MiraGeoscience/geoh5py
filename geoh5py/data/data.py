@@ -67,7 +67,6 @@ class Data(Entity):
     def copy(
         self,
         parent=None,
-        copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         **kwargs,
@@ -77,7 +76,6 @@ class Data(Entity):
 
         :param parent: Target parent to copy the entity under. Copied to current
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: (Optional) Create copies of all children entities along with it.
         :param clear_cache: Clear array attributes after copy.
         :param mask: Array of bool defining the values to keep.
         :param kwargs: Additional keyword arguments to pass to the copy constructor.
@@ -118,6 +116,38 @@ class Data(Entity):
         )
 
         return new_entity
+
+    def copy_from_extent(
+        self,
+        extent: np.ndarray,
+        parent=None,
+        clear_cache: bool = False,
+        inverse: bool = False,
+        **kwargs,
+    ) -> Entity | None:
+        """
+        Function to copy an entity to a different parent entity.
+
+        :param extent: Bounding box extent requested for the input entity, as supplied for
+            :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
+        :param parent: Target parent to copy the entity under. Copied to current
+            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
+        :param clear_cache: Clear array attributes after copy.
+        :param inverse: Keep the inverse (clip) of the extent selection.
+        :param kwargs: Additional keyword arguments to pass to the copy constructor.
+
+        :return entity: Registered Entity to the workspace.
+        """
+        indices = self.mask_by_extent(extent, inverse=inverse)
+        if indices is None:
+            return None
+
+        return self.copy(
+            parent=parent,
+            clear_cache=clear_cache,
+            mask=indices,
+            **kwargs,
+        )
 
     @property
     def extent(self) -> np.ndarray | None:
@@ -217,18 +247,6 @@ class Data(Entity):
     @abstractmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         ...
-
-    def add_children(self, children: list):
-        """
-        Alias not implemented from base Entity class.
-        """
-        raise NotImplementedError("Data entity cannot contain children.")
-
-    def add_file(self, file: str):
-        """
-        Alias not implemented from base Entity class.
-        """
-        raise NotImplementedError("Data entity cannot contain files.")
 
     def mask_by_extent(
         self, extent: np.ndarray, inverse: bool = False
