@@ -411,7 +411,7 @@ def drillhole_group_data(
     main: bool = True,
     label: str = "Data channel",
     group_type: UUID = groups.DrillholeGroup.__TYPE_UID,
-    group_value: str = "{test}",
+    group_value: UUID | None = None,
     multiselect: bool = True,
     optional: str | None = None,
     enabled: bool = True,
