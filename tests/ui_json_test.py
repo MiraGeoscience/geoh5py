@@ -411,7 +411,7 @@ def test_group_promotion(tmp_path):
     ui_json["object"]["value"] = str(group.uid)
     ui_json["object"]["groupType"] = [group.entity_type.uid]
 
-    ui_json["dh"] = templates.group_parameter()
+    ui_json["dh"] = templates.group_parameter(optional="enabled")
     ui_json["dh"]["value"] = str(dh_group.uid)
     ui_json["dh"]["groupType"] = [dh_group.entity_type.uid]
 
