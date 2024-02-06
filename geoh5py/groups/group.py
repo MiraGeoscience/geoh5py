@@ -43,7 +43,7 @@ class Group(EntityContainer):
     @classmethod
     @abstractmethod
     def default_type_uid(cls) -> uuid.UUID | None:
-        ...
+        """Abstract method to return the default type uid for the class."""
 
     def add_comment(self, comment: str, author: str | None = None):
         """

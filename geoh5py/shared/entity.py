@@ -192,7 +192,7 @@ class Entity(ABC):
     @property
     @abstractmethod
     def entity_type(self) -> shared.EntityType:
-        ...
+        """Abstract property to get the entity type of the entity."""
 
     @classmethod
     def fix_up_name(cls, name: str) -> str:

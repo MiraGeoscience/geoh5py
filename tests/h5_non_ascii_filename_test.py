@@ -29,8 +29,7 @@ from geoh5py.ui_json.constants import default_ui_json
 from geoh5py.ui_json.input_file import InputFile
 
 NON_ASCII_FILENAME = (
-    r"éèçàù¨ẫäêëîïôöûü"
-    + r"ὦშข้าእግᚾᚩᚱᚦᚹ⠎⠁⠹ ⠹ ∀x∈ℝ ٩(-̮̮̃-̃)۶ ٩(●̮̮̃•̃)۶ ٩(͡๏̯͡๏)۶ ٩(-̮̮̃•̃).h5"
+    r"éèçàù¨ẫäêëîïôöûü" + r"ὦშข้าእግᚾᚩᚱᚦᚹ⠎⠁⠹ ⠹ ∀x∈ℝ ٩(-̮̮̃-̃)۶ ٩(●̮̮̃•̃)۶ ٩(͡๏̯͡๏)۶ ٩(-̮̮̃•̃).h5"
 )
 
 

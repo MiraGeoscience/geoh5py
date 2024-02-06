@@ -62,7 +62,7 @@ class Data(Entity):
         if self.entity_type.name == "Entity":
             self.entity_type.name = self.name
 
-        data_type.workspace._register_data(self)
+        getattr(data_type.workspace, "_register_data")(self)
 
     def copy(
         self,
@@ -236,9 +236,7 @@ class Data(Entity):
     @classmethod
     @abstractmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
-        """
-        Return the primitive type of the data.
-        """
+        """Abstract method to return the primitive type of the class."""
 
     def mask_by_extent(
         self, extent: np.ndarray, inverse: bool = False
