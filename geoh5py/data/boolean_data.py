@@ -33,7 +33,8 @@ class BooleanData(ReferencedData):
     def __init__(self, data_type: DataType, **kwargs):
         super().__init__(data_type, **kwargs)
 
-        self.entity_type.value_map = ReferenceValueMap({0: "False", 1: "True"})
+        if not self.on_file and self.entity_type.value_map is None:
+            self.entity_type.value_map = ReferenceValueMap({0: "False", 1: "True"})
 
     def format_type(self, values: np.ndarray):
         """
