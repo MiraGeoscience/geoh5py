@@ -45,22 +45,6 @@ class Group(Entity):
     def default_type_uid(cls) -> uuid.UUID | None:
         ...
 
-    def add_children(self, children: list[Entity]):
-        """
-        :param children: Add a list of entities as
-            :obj:`~geoh5py.shared.entity.Entity.children`
-        """
-        if not isinstance(children, list):
-            children = [children]
-
-        for child in children:
-            if child not in self._children:
-                if not isinstance(child, Entity):
-                    raise TypeError(
-                        f"Child must be an instance of Entity, not {type(child)}"
-                    )
-                self._children.append(child)
-
     def add_comment(self, comment: str, author: str | None = None):
         """
         Add text comment to an object.

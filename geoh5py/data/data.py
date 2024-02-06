@@ -218,6 +218,12 @@ class Data(Entity):
     def primitive_type(cls) -> PrimitiveTypeEnum:
         ...
 
+    def add_children(self, children: list):
+        """
+        Alias not implemented from base Entity class.
+        """
+        raise NotImplementedError("Data entity cannot contain children.")
+
     def add_file(self, file: str):
         """
         Alias not implemented from base Entity class.
