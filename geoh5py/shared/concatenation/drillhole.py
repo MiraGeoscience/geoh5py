@@ -100,7 +100,16 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
                     "or contain an 'OBJECT' association. Valid depth keys are 'depth' "
                     "and 'from-to'."
                 )
-            attributes["from-to"] = None
+            if property_group.property_group_type == "Depth table":
+                attributes["depth"] = property_group.depth_.values
+            elif property_group.property_group_type == "Interval table":
+                attributes["from-to"] = np.c_[
+                    property_group.from_.values, property_group.to_.values
+                ]
+            else:
+                raise AttributeError(
+                    "Input data property group must be of type 'Depth table' or 'Interval table'"
+                )
 
         # set a specific nan value if text
         if attributes.get("type") == "TEXT":
