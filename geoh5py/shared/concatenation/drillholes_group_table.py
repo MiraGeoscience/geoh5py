@@ -101,7 +101,9 @@ class DrillholesGroupTable(ABC):
                     )
                     no_data_values.append(self.nan_value_from_name(name))
 
-            data_list = self._pad_arrays_to_first(data_list, no_data_values[1:])
+            data_list = self._pad_arrays_to_first(
+                data_dict[self.association[0]][1], data_list, no_data_values
+            )
 
             if drillholes:
                 # add the object list to the first position of the data list
@@ -151,19 +153,22 @@ class DrillholesGroupTable(ABC):
         return property_groups
 
     @staticmethod
-    def _pad_arrays_to_first(arrays: list[np.ndarray], ndv: Any) -> list[np.ndarray]:
+    def _pad_arrays_to_first(
+        padding_shape: int, arrays: list[np.ndarray], ndv: Any
+    ) -> list[np.ndarray]:
         """
         Pad the arrays in the list to match the size of the first array.
 
+        :param padding_shape: The size to use for padding.
         :param arrays: The list of arrays to pad.
         :param ndv: The No Data Value of the data.
 
         :return: The padded arrays.
         """
         # Pad other arrays in the list to match the size of the first array
-        padded_arrays = [arrays[0]]  # First array remains the same
-        for idx, array in enumerate(arrays[1:]):
-            pad_size = arrays[0].shape[0] - array.shape[0]
+        padded_arrays = []  # First array remains the same
+        for idx, array in enumerate(arrays):
+            pad_size = padding_shape - array.shape[0]
             if pad_size > 0:
                 padded_array = np.pad(
                     array,
