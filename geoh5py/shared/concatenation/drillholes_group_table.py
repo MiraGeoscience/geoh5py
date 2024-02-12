@@ -165,9 +165,6 @@ class DrillholesGroupTable(ABC):
 
         :return: The padded arrays.
         """
-        if self.index_by_drillhole is None:
-            raise AssertionError("No drillhole found in the concatenator.")
-
         padded_arrays = []  # First array remains the same
         for idx, array in enumerate(arrays):
             pad_size = (
@@ -207,9 +204,6 @@ class DrillholesGroupTable(ABC):
                 "The length of the values must be the same as the association "
                 f"({self.parent.data[self.association[0]].shape})."
             )
-
-        if self.index_by_drillhole is None:
-            raise ValueError("No drillhole found in the concatenator.")
 
         for drillhole_uid, indices in self.index_by_drillhole.items():
             # get the drillhole
@@ -300,7 +294,7 @@ class DrillholesGroupTable(ABC):
     @property
     def index_by_drillhole(
         self,
-    ) -> dict[bytes, dict[str, list[int]]] | None:
+    ) -> dict[bytes, dict[str, list[int]]]:
         """
         Get for every object index and count of all the data in 'association' and 'properties'
 
@@ -325,6 +319,8 @@ class DrillholesGroupTable(ABC):
 
             if index_by_drillhole:
                 self._index_by_drillhole = index_by_drillhole
+            else:
+                raise AssertionError("No drillhole found in the concatenator.")
 
         return self._index_by_drillhole
 
