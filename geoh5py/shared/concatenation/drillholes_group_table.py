@@ -101,8 +101,8 @@ class DrillholesGroupTable(ABC):
                     )
                     no_data_values.append(self.nan_value_from_name(name))
 
-            data_list = self._pad_arrays_to_first(
-                data_dict[self.association[0]][1], data_list, no_data_values
+            data_list = self._pad_arrays_to_association(
+                object_, data_list, no_data_values
             )
 
             if drillholes:
@@ -152,23 +152,28 @@ class DrillholesGroupTable(ABC):
 
         return property_groups
 
-    @staticmethod
-    def _pad_arrays_to_first(
-        padding_shape: int, arrays: list[np.ndarray], ndv: Any
+    def _pad_arrays_to_association(
+        self, drillhole_uid: bytes, arrays: list[np.ndarray], ndv: Any
     ) -> list[np.ndarray]:
         """
-        Pad the arrays in the list to match the size of the first array.
+        Pad the arrays in the list to match the size of the association
+            for a given drillhole.
 
-        :param padding_shape: The size to use for padding.
+        :param drillhole_uid: The uid of the drillhole where the data is located.
         :param arrays: The list of arrays to pad.
         :param ndv: The No Data Value of the data.
 
         :return: The padded arrays.
         """
-        # Pad other arrays in the list to match the size of the first array
+        if self.index_by_drillhole is None:
+            raise AssertionError("No drillhole found in the concatenator.")
+
         padded_arrays = []  # First array remains the same
         for idx, array in enumerate(arrays):
-            pad_size = padding_shape - array.shape[0]
+            pad_size = (
+                self.index_by_drillhole[drillhole_uid][self.association[0]][1]
+                - array.shape[0]
+            )
             if pad_size > 0:
                 padded_array = np.pad(
                     array,
