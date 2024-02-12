@@ -101,7 +101,9 @@ class DrillholesGroupTable(ABC):
                     )
                     no_data_values.append(self.nan_value_from_name(name))
 
-            data_list = self._pad_arrays_to_first(data_list, no_data_values[1:])
+            data_list = self._pad_arrays_to_association(
+                object_, data_list, no_data_values
+            )
 
             if drillholes:
                 # add the object list to the first position of the data list
@@ -150,20 +152,25 @@ class DrillholesGroupTable(ABC):
 
         return property_groups
 
-    @staticmethod
-    def _pad_arrays_to_first(arrays: list[np.ndarray], ndv: Any) -> list[np.ndarray]:
+    def _pad_arrays_to_association(
+        self, drillhole_uid: bytes, arrays: list[np.ndarray], ndv: Any
+    ) -> list[np.ndarray]:
         """
-        Pad the arrays in the list to match the size of the first array.
+        Pad the arrays in the list to match the size of the association
+            for a given drillhole.
 
+        :param drillhole_uid: The uid of the drillhole where the data is located.
         :param arrays: The list of arrays to pad.
         :param ndv: The No Data Value of the data.
 
         :return: The padded arrays.
         """
-        # Pad other arrays in the list to match the size of the first array
-        padded_arrays = [arrays[0]]  # First array remains the same
-        for idx, array in enumerate(arrays[1:]):
-            pad_size = arrays[0].shape[0] - array.shape[0]
+        padded_arrays = []  # First array remains the same
+        for idx, array in enumerate(arrays):
+            pad_size = (
+                self.index_by_drillhole[drillhole_uid][self.association[0]][1]
+                - array.shape[0]
+            )
             if pad_size > 0:
                 padded_array = np.pad(
                     array,
@@ -197,9 +204,6 @@ class DrillholesGroupTable(ABC):
                 "The length of the values must be the same as the association "
                 f"({self.parent.data[self.association[0]].shape})."
             )
-
-        if self.index_by_drillhole is None:
-            raise ValueError("No drillhole found in the concatenator.")
 
         for drillhole_uid, indices in self.index_by_drillhole.items():
             # get the drillhole
@@ -265,7 +269,7 @@ class DrillholesGroupTable(ABC):
 
     def depth_table_by_name(
         self,
-        names: tuple[str],
+        names: tuple[str] | str,
         spatial_index: bool = False,
     ) -> np.ndarray:
         """
@@ -290,7 +294,7 @@ class DrillholesGroupTable(ABC):
     @property
     def index_by_drillhole(
         self,
-    ) -> dict[bytes, dict[str, list[int]]] | None:
+    ) -> dict[bytes, dict[str, list[int]]]:
         """
         Get for every object index and count of all the data in 'association' and 'properties'
 
@@ -315,6 +319,8 @@ class DrillholesGroupTable(ABC):
 
             if index_by_drillhole:
                 self._index_by_drillhole = index_by_drillhole
+            else:
+                raise AssertionError("No drillhole found in the concatenator.")
 
         return self._index_by_drillhole
 

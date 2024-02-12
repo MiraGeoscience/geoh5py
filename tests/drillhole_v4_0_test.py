@@ -466,8 +466,30 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
                 property_group=prop_group.name,
             )
 
+            prop_group = [k for k in well.property_groups if k.name == "depth_0"][0]
+            well.add_data(
+                {
+                    "new_data_depth": {
+                        "values": np.random.randn(25).astype(np.float32)
+                    },
+                },
+                property_group=prop_group.name,
+            )
+
+            with pytest.raises(AttributeError, match="Input data property group"):
+                well.add_data(
+                    {
+                        "new_data_bidon": {
+                            "values": np.random.randn(24).astype(np.float32)
+                        },
+                    },
+                    property_group=ConcatenatedPropertyGroup(
+                        parent=well, property_group_type="Multi-element"
+                    ),
+                )
+
         assert (
-            len(well.property_groups[0].properties) == 3
+            len(well.property_groups[0].properties) == 4
         ), "Issue adding data to interval."
 
 
@@ -919,6 +941,16 @@ def test_add_data_to_property(tmp_path):
         assert compare_structured_arrays(
             verification,
             verification2,
+            tolerance=1e-5,
+        )
+
+        test_drillhole_table = drillhole_group.drillholes_table_from_data_name[
+            "interval_values_a"
+        ]
+
+        assert compare_structured_arrays(
+            test_drillhole_table.depth_table_by_name("interval_values_a"),
+            verification,
             tolerance=1e-5,
         )
 
