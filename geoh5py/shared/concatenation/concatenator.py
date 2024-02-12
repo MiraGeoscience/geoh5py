@@ -644,3 +644,23 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                     )
 
         return drillholes_tables
+
+    @property
+    def drillholes_table_from_data_name(self) -> dict | dict[str, DrillholesGroupTable]:
+        """
+        Dictionary of the drillholes tables from data name as keys
+        """
+        property_group_from_data_name = {}
+
+        for drillholes_table in self.drillholes_tables.values():
+            # prepare the data to pass
+            data: tuple = ()
+            if drillholes_table.association is not None:
+                data += drillholes_table.association
+            if drillholes_table.properties is not None:
+                data += drillholes_table.properties
+
+            for data_name in data:
+                property_group_from_data_name[data_name] = drillholes_table
+
+        return property_group_from_data_name
