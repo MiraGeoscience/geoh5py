@@ -78,7 +78,7 @@ class PropertyGroup(ABC):
             except AttributeError:
                 continue
 
-        self.parent.workspace.register_property_group(self)
+        self.parent.workspace.register(self)
 
     def add_properties(self, data: Data | list[Data | uuid.UUID] | uuid.UUID):
         """

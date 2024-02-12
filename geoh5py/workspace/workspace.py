@@ -476,22 +476,6 @@ class Workspace(AbstractContextManager):
 
         return created_entity
 
-    def register_property_group(self, property_group: PropertyGroup) -> PropertyGroup:
-        """
-        Create a new PropertyGroup entity with attributes.
-        :param property_group: :obj:`~geoh5py.objects.property.property_group.PropertyGroup` class.
-        return the newly created entity.
-        """
-        if not isinstance(property_group, PropertyGroup):
-            raise TypeError("property_group must be a PropertyGroup instance")
-
-        self._register_property_group(property_group)
-
-        if not property_group.on_file:
-            self.add_or_update_property_group(property_group)
-
-        return property_group
-
     def add_or_update_property_group(
         self, property_group: PropertyGroup, remove: bool = False
     ):
@@ -1230,35 +1214,23 @@ class Workspace(AbstractContextManager):
 
         :param entity: The entity to be registered.
         """
+        dict_entity: dict[uuid.UUID, ReferenceType]
         if isinstance(entity, EntityType):
-            self._register_type(entity)
+            dict_entity = self._types
         elif isinstance(entity, Group):
-            self._register_group(entity)
+            dict_entity = self._groups
         elif isinstance(entity, Data):
-            self._register_data(entity)
+            dict_entity = self._data
         elif isinstance(entity, ObjectBase):
-            self._register_object(entity)
+            dict_entity = self._objects
         elif isinstance(entity, PropertyGroup):
-            self.register_property_group(entity)
+            dict_entity = self._property_groups
+            if not entity.on_file:
+                self.add_or_update_property_group(entity)
         else:
             raise ValueError(f"Entity of type {type(entity)} is not supported.")
 
-    def _register_type(self, entity_type: EntityType):
-        weakref_utils.insert_once(self._types, entity_type.uid, entity_type)
-
-    def _register_group(self, group: Group):
-        weakref_utils.insert_once(self._groups, group.uid, group)
-
-    def _register_data(self, data_obj: Entity):
-        weakref_utils.insert_once(self._data, data_obj.uid, data_obj)
-
-    def _register_object(self, obj: ObjectBase):
-        weakref_utils.insert_once(self._objects, obj.uid, obj)
-
-    def _register_property_group(self, property_group: PropertyGroup):
-        weakref_utils.insert_once(
-            self._property_groups, property_group.uid, property_group
-        )
+        weakref_utils.insert_once(dict_entity, entity.uid, entity)
 
     @property
     def root(self) -> Entity | PropertyGroup | None:
