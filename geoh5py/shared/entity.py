@@ -76,6 +76,8 @@ class Entity(ABC):
             except AttributeError:
                 continue
 
+        self.workspace.register(self)
+
     @property
     def allow_delete(self) -> bool:
         """

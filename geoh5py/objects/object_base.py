@@ -57,7 +57,6 @@ class ObjectBase(EntityContainer):
         self._entity_type = object_type
         self._last_focus = "None"
         self._property_groups: list[PropertyGroup] | None = None
-        # self._clipping_ids: list[uuid.UUID] = []
         self._visual_parameters: VisualParameters | None = None
 
         if not any(key for key in kwargs if key in ["name", "Name"]):

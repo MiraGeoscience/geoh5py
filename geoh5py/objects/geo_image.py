@@ -62,8 +62,6 @@ class GeoImage(ObjectBase):
 
         super().__init__(object_type, **kwargs)
 
-        object_type.workspace._register_object(self)
-
     @property
     def cells(self) -> np.ndarray | None:
         r"""

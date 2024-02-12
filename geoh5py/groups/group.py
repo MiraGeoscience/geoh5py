@@ -78,7 +78,6 @@ class Group(EntityContainer):
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
         """
-
         return None
 
     def copy(

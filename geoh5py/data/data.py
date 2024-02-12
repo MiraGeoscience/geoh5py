@@ -62,8 +62,6 @@ class Data(Entity):
         if self.entity_type.name == "Entity":
             self.entity_type.name = self.name
 
-        getattr(data_type.workspace, "_register_data")(self)
-
     def copy(
         self,
         parent=None,

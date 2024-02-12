@@ -50,6 +50,8 @@ class EntityType(ABC):
             except AttributeError:
                 continue
 
+        self.workspace.register(self)
+
     @property
     def attribute_map(self):
         """

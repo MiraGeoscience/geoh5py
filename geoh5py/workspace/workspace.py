@@ -32,7 +32,7 @@ from getpass import getuser
 from io import BytesIO
 from pathlib import Path
 from subprocess import CalledProcessError
-from typing import TYPE_CHECKING, ClassVar, cast
+from typing import ClassVar, cast
 from weakref import ReferenceType
 
 import h5py
@@ -62,6 +62,7 @@ from ..shared.concatenation import (
     Concatenator,
 )
 from ..shared.entity import Entity
+from ..shared.entity_type import EntityType
 from ..shared.exceptions import Geoh5FileClosedError
 from ..shared.utils import (
     as_str_if_utf8_bytes,
@@ -69,11 +70,6 @@ from ..shared.utils import (
     get_attributes,
     str2uuid,
 )
-
-if TYPE_CHECKING:
-    from ..groups import group
-    from ..objects import object_base
-    from ..shared import EntityType
 
 
 # pylint: disable=too-many-instance-attributes
@@ -937,7 +933,7 @@ class Workspace(AbstractContextManager):
             or self.find_property_group(entity_uid)
         )
 
-    def find_group(self, group_uid: uuid.UUID) -> group.Group | None:
+    def find_group(self, group_uid: uuid.UUID) -> Group | None:
         """
         Find an existing and active Group object.
         """
@@ -951,7 +947,7 @@ class Workspace(AbstractContextManager):
         """
         return weakref_utils.get_clean_ref(self._property_groups, property_group_uid)
 
-    def find_object(self, object_uid: uuid.UUID) -> object_base.ObjectBase | None:
+    def find_object(self, object_uid: uuid.UUID) -> ObjectBase | None:
         """
         Find an existing and active Object.
         """
@@ -1227,6 +1223,25 @@ class Workspace(AbstractContextManager):
         self.fetch_or_create_root()
 
         return self
+
+    def register(self, entity: Entity | EntityType | PropertyGroup):
+        """
+        Register an entity to the workspace based on its type.
+
+        :param entity: The entity to be registered.
+        """
+        if isinstance(entity, EntityType):
+            self._register_type(entity)
+        elif isinstance(entity, Group):
+            self._register_group(entity)
+        elif isinstance(entity, Data):
+            self._register_data(entity)
+        elif isinstance(entity, ObjectBase):
+            self._register_object(entity)
+        elif isinstance(entity, PropertyGroup):
+            self.register_property_group(entity)
+        else:
+            raise ValueError(f"Entity of type {type(entity)} is not supported.")
 
     def _register_type(self, entity_type: EntityType):
         weakref_utils.insert_once(self._types, entity_type.uid, entity_type)
