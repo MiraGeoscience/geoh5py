@@ -124,7 +124,7 @@ class Data(Entity):
         **kwargs,
     ) -> Entity | None:
         """
-        Function to copy an entity to a different parent entity.
+        Function to copy data based on a bounding box extent.
 
         :param extent: Bounding box extent requested for the input entity, as supplied for
             :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
