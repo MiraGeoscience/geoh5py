@@ -38,8 +38,6 @@ class DrapeModel(GridObject):
 
         super().__init__(object_type, **kwargs)
 
-        object_type.workspace._register_object(self)
-
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID

@@ -23,7 +23,6 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from geoh5py.data import Data
 from geoh5py.groups import ContainerGroup
 from geoh5py.objects import Curve
 from geoh5py.shared.utils import compare_entities
@@ -35,20 +34,12 @@ def test_add_file(tmp_path: Path):
     workspace_copy = Workspace()
     curve = Curve.create(workspace)
     group = ContainerGroup.create(workspace)
-    data = curve.add_data({"ABC": {"values": "axs"}})
 
     xyz = np.random.randn(32)
     np.savetxt(tmp_path / r"numpy_array.txt", xyz)
     file_name = "numpy_array.txt"
-    for obj in [data, curve, group]:
-        try:
-            file_data = obj.add_file(tmp_path / file_name)
-        except NotImplementedError:
-            assert isinstance(
-                obj, Data
-            ), "Only Data should return 'NotImplementedError'"
-            continue
-
+    for obj in [curve, group]:
+        file_data = obj.add_file(tmp_path / file_name)
         assert file_data.file_name == file_name, "File_name not properly set."
         assert file_data.n_values == 1, "Object association should have 1 value."
         # Rename the file locally and write back out

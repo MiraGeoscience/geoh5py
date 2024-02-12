@@ -234,7 +234,7 @@ def clear_array_attributes(entity: Entity, recursive: bool = False):
         if hasattr(entity, attribute):
             setattr(entity, f"_{attribute}", None)
 
-    if recursive:
+    if recursive and hasattr(entity, "children"):
         for child in entity.children:
             clear_array_attributes(child, recursive=recursive)
 

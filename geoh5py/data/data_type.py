@@ -62,8 +62,6 @@ class DataType(EntityType):
         assert workspace is not None
         super().__init__(workspace, **kwargs)
 
-        workspace._register_type(self)
-
     @staticmethod
     def _is_abstract() -> bool:
         return False

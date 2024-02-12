@@ -72,8 +72,6 @@ class Grid2D(GridObject):
 
         super().__init__(object_type, **kwargs)
 
-        object_type.workspace._register_object(self)
-
     @property
     def cell_center_u(self) -> np.ndarray | None:
         """

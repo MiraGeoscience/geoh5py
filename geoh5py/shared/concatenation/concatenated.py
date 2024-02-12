@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from geoh5py.shared.entity import Entity
+from ...shared.entity import Entity
 
 if TYPE_CHECKING:
     from .concatenator import Concatenator

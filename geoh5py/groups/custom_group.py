@@ -35,8 +35,6 @@ class CustomGroup(Group):
         if self.entity_type.name == "Entity":
             self.entity_type.name = "Custom Group"
 
-        group_type.workspace._register_group(self)
-
     @classmethod
     def default_type_uid(cls) -> uuid.UUID | None:
         # raise RuntimeError(f"No predefined static type UUID for {cls}.")
