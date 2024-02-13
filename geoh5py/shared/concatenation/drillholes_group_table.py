@@ -185,15 +185,15 @@ class DrillholesGroupTable(ABC):
         return padded_arrays
 
     def add_values_to_property_group(
-        self,
-        name: str,
-        values: np.ndarray,
+        self, name: str, values: np.ndarray, value_map: dict[int, str] | None = None
     ):
         """
         Push the values to each drillhole of the property group based on association.
 
         :param name: The name of the data to push.
         :param values: The values to push.
+        :param value_map: The value map associating the index and the description
+            in the case of referenced data
         """
         if not isinstance(name, str) or name in self.parent.data:
             raise KeyError("The name must be a string not present in data.")
@@ -206,6 +206,17 @@ class DrillholesGroupTable(ABC):
             )
 
         for drillhole_uid, indices in self.index_by_drillhole.items():
+            add_data_dict = {
+                "values": values[
+                    indices[self.association[0]][0] : indices[self.association[0]][0]
+                    + indices[self.association[0]][1]
+                ],
+            }
+
+            if isinstance(value_map, dict):
+                add_data_dict["type"] = "referenced"
+                add_data_dict["value_map"] = value_map
+
             # get the drillhole
             drillhole: ConcatenatedDrillhole = self.parent.workspace.get_entity(  # type: ignore
                 str2uuid(drillhole_uid)
@@ -215,16 +226,7 @@ class DrillholesGroupTable(ABC):
 
             # add data to the drillhole
             drillhole.add_data(
-                {
-                    name: {
-                        "values": values[
-                            indices[self.association[0]][0] : indices[
-                                self.association[0]
-                            ][0]
-                            + indices[self.association[0]][1]
-                        ],
-                    },
-                },
+                {name: add_data_dict},
                 property_group=self.property_groups[drillhole.uid],
             )
 
