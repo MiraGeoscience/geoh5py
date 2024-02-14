@@ -15,7 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=no-member, too-many-lines
+# pylint: disable=no-member, too-many-lines, too-many-ancestors
 # mypy: disable-error-code="attr-defined"
 
 from __future__ import annotations
@@ -337,19 +337,18 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
 
         :param entries: Metadata key value pairs.
         """
-        metadata = self.metadata.copy()
+        em_metadata = self.metadata.copy().pop("EM Dataset", {})
+
         for key, value in entries.items():
             if key == "Property groups":
                 self._edit_validate_property_groups(value)
-
             elif value is None:
-                if key in metadata["EM Dataset"]:
-                    del metadata["EM Dataset"][key]
-
+                if key in em_metadata:
+                    del em_metadata[key]
             else:
-                metadata["EM Dataset"][key] = value
+                em_metadata[key] = value
 
-        self.metadata = metadata
+        self.metadata = {"EM Dataset": em_metadata}
 
     @property
     def input_type(self) -> str | None:

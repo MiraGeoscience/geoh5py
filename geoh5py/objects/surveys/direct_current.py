@@ -14,6 +14,9 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
+# pylint: disable=too-many-ancestors
+
 from __future__ import annotations
 
 import logging
@@ -35,7 +38,6 @@ class BaseElectrode(Curve, ABC):
     _current_electrodes: CurrentElectrode | None = None
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._metadata: dict | None = None
         self._ab_cell_id: ReferencedData | None = None
 
         super().__init__(object_type, **kwargs)
@@ -229,36 +231,18 @@ class BaseElectrode(Curve, ABC):
     def default_type_uid(cls) -> uuid.UUID:
         """Default unique identifier. Implemented on the child class."""
 
-    @property
-    def metadata(self):
-        """
-        Metadata attached to the entity.
-        """
-        if getattr(self, "_metadata", None) is None:
-            metadata = self.workspace.fetch_metadata(self.uid)
-            self._metadata = metadata
-        return self._metadata
+    @Curve.metadata.setter  # type: ignore
+    def metadata(self, values: dict | None):
+        if isinstance(values, dict):
+            default_keys = ["Current Electrodes", "Potential Electrodes"]
+            if sorted(list(values.keys())) != default_keys:
+                raise ValueError(f"Input metadata must have for keys {default_keys}")
 
-    @metadata.setter
-    def metadata(self, values):
-        if not len(values) == 2:
-            raise ValueError(
-                f"Metadata must have two key-value pairs. {values} provided."
-            )
+            for key in default_keys:
+                if self.workspace.get_entity(values[key])[0] is None:
+                    raise IndexError(f"Input {key} uuid not present in Workspace")
 
-        default_keys = ["Current Electrodes", "Potential Electrodes"]
-
-        if list(values.keys()) != default_keys:
-            raise ValueError(f"Input metadata must have for keys {default_keys}")
-
-        if self.workspace.get_entity(values["Current Electrodes"])[0] is None:
-            raise IndexError("Input Current Electrodes uuid not present in Workspace")
-
-        if self.workspace.get_entity(values["Potential Electrodes"])[0] is None:
-            raise IndexError("Input Potential Electrodes uuid not present in Workspace")
-
-        self._metadata = values
-        self.workspace.update_attribute(self, "metadata")
+        super(Curve, Curve).metadata.fset(self, values)  # type: ignore
 
     @property
     @abstractmethod
