@@ -161,13 +161,7 @@ class Entity(ABC):
         }
 
         # update the metadata
-        metadata = self.metadata
-        if isinstance(metadata, dict):
-            metadata["Coordinate Reference System"] = coordinate_reference_system
-        else:
-            metadata = {"Coordinate Reference System": coordinate_reference_system}
-
-        self.metadata = metadata
+        self.metadata = {"Coordinate Reference System": coordinate_reference_system}
 
     @classmethod
     def create(cls, workspace, **kwargs):
@@ -228,6 +222,8 @@ class Entity(ABC):
     def metadata(self) -> dict | None:
         """
         Metadata attached to the entity.
+        To update the metadata, use the setter method.
+        To remove the metadata, set it to None.
         """
         if getattr(self, "_metadata", None) is None:
             self._metadata = self.workspace.fetch_metadata(self.uid)
@@ -236,11 +232,17 @@ class Entity(ABC):
 
     @metadata.setter
     def metadata(self, value: dict | None):
-        if value is not None:
-            assert isinstance(
-                value, (dict, str)
-            ), f"Input metadata must be of type {dict} or None"
-        self._metadata = value
+        if isinstance(value, dict):
+            if isinstance(self.metadata, dict):
+                self._metadata.update(value)  # type: ignore
+            else:
+                self._metadata = value
+        elif value is None:  # remove the metadata
+            self._metadata = None
+        else:
+            raise TypeError(
+                "Input metadata must be of type dict or None" f" find '{type(value)}'."
+            )
         self.workspace.update_attribute(self, "metadata")
 
     @property
