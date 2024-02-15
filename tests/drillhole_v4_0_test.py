@@ -915,7 +915,7 @@ def test_add_data_to_property(tmp_path):
         verification_map_value = (verification["interval_values_a"] * 10).astype(
             np.int32
         )
-        verification_map_value -= np.min(verification_map_value)
+        verification_map_value -= np.min(verification_map_value) - 1
 
         value_map = {idx: f"{idx}" for idx in np.unique(verification_map_value)}
 
@@ -925,7 +925,19 @@ def test_add_data_to_property(tmp_path):
             value_map=value_map,
         )
 
+        drillholes_table.add_values_to_property_group(
+            "new value int", verification_map_value
+        )
+
         verificationb = drillholes_table.depth_table_by_name("new value")
+        verificatione = drillholes_table.depth_table_by_name("new value int")
+        verificatione.dtype.names = verificationb.dtype.names
+
+        assert compare_structured_arrays(
+            verificationb,
+            verificatione,
+            tolerance=1e-5,
+        )
 
         # reopen
         drillhole_group = workspace.get_entity("DH_group")[0]

@@ -19,19 +19,30 @@ from __future__ import annotations
 
 from abc import ABC
 
+import numpy as np
+
 
 class ReferenceValueMap(ABC):
     """Maps from reference index to reference value of ReferencedData."""
 
-    def __init__(self, color_map: dict[int, str] | None = None):
-        self._map = {} if color_map is None else color_map
+    def __init__(self, color_map: dict[int, str]):
+        self.map: dict[int, str] = color_map
 
     def __getitem__(self, item: int) -> str:
         return self._map[item]
 
     def __setitem__(self, key, value):
+        if not isinstance(key, (int, np.int32)) or key < 0:
+            raise KeyError("Key must be an positive integer")
+        if key == 0:
+            if value != "Unknown" and not (
+                len(self) <= 2 and value == "False" and value == "True"
+            ):
+                raise ValueError("Value for key 0 must be 'Unknown'")
+        if not isinstance(value, str):
+            raise TypeError("Value must be a string")
+
         self._map[key] = value
-        return self._map[key]
 
     def __len__(self):
         return len(self._map)
@@ -40,13 +51,28 @@ class ReferenceValueMap(ABC):
         return self._map
 
     @property
-    def map(self):
+    def map(self) -> dict[int, str]:
         """
-        :obj:`dict`: A reference dictionary mapping values to strings
+        A reference dictionary mapping values to strings.
+        The keys are positive integers, and the values description.
+        The key '0' is always 'Unknown'.
         """
         return self._map
 
     @map.setter
-    def map(self, value):
-        assert isinstance(value, dict), "Map values must be a dictionary"
+    def map(self, value: dict[int, str]):
+        if not isinstance(value, dict):
+            raise TypeError("Map values must be a dictionary")
+
+        if not all(isinstance(k, (int, np.int32)) and k >= 0 for k in value.keys()):
+            raise KeyError("Map keys must be positive integers")
+
+        if 0 in value.keys():
+            if value[0] != "Unknown" and not (
+                len(value) <= 2 and value[0] == "False" and value[1] == "True"
+            ):
+                raise ValueError("Map value for 0 must be 'Unknown'")
+        else:
+            value[0] = "Unknown"
+
         self._map = value

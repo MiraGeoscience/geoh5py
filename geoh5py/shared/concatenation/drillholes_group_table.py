@@ -22,6 +22,7 @@ from uuid import UUID
 
 import numpy as np
 
+from ...data import DataType
 from ..utils import str2uuid, to_tuple
 from .property_group import ConcatenatedPropertyGroup
 
@@ -205,18 +206,19 @@ class DrillholesGroupTable(ABC):
                 f"({self.parent.data[self.association[0]].shape})."
             )
 
+        if isinstance(value_map, dict):
+            new_type = DataType(
+                self.parent.workspace, primitive_type="REFERENCED", value_map=value_map
+            )
+        else:
+            new_type = DataType.find_or_create(
+                self.parent.workspace,
+                **DataType.validate_data_type(
+                    self.parent.workspace, {"name": name, "values": values}
+                ),
+            )
+
         for drillhole_uid, indices in self.index_by_drillhole.items():
-            add_data_dict = {
-                "values": values[
-                    indices[self.association[0]][0] : indices[self.association[0]][0]
-                    + indices[self.association[0]][1]
-                ],
-            }
-
-            if isinstance(value_map, dict):
-                add_data_dict["type"] = "referenced"
-                add_data_dict["value_map"] = value_map
-
             # get the drillhole
             drillhole: ConcatenatedDrillhole = self.parent.workspace.get_entity(  # type: ignore
                 str2uuid(drillhole_uid)
@@ -226,7 +228,17 @@ class DrillholesGroupTable(ABC):
 
             # add data to the drillhole
             drillhole.add_data(
-                {name: add_data_dict},
+                {
+                    name: {
+                        "values": values[
+                            indices[self.association[0]][0] : indices[
+                                self.association[0]
+                            ][0]
+                            + indices[self.association[0]][1]
+                        ],
+                        "entity_type": new_type,
+                    }
+                },
                 property_group=self.property_groups[drillhole.uid],
             )
 

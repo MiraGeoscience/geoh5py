@@ -85,6 +85,9 @@ def test_data_instantiation(data_class, tmp_path):
         with pytest.raises(TypeError, match="Input 'data_type' must be "):
             data.TextData(data_type="bidon")
 
+        with pytest.raises(NotImplementedError, match="Only add_data"):
+            DataType.validate_data_type(workspace, {"values": object()})
+
 
 def _can_find(workspace, created_data):
     """Make sure we can find the created data in the workspace."""
