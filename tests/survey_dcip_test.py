@@ -92,17 +92,17 @@ def test_create_survey_dcip(tmp_path):
             "Potential Electrodes": uuid.uuid4(),
             "One too many key": uuid.uuid4(),
         }
-        with pytest.raises(ValueError):
+        with pytest.raises(KeyError, match="Input"):
             potentials.metadata = fake_meta
 
         del fake_meta["One too many key"]
 
-        with pytest.raises(IndexError):
+        with pytest.raises(KeyError, match="Input"):
             potentials.metadata = fake_meta
 
         fake_meta["Current Electrodes"] = currents.uid
 
-        with pytest.raises(IndexError):
+        with pytest.raises(KeyError, match="Input"):
             potentials.metadata = fake_meta
 
         fake_meta["Potential Electrodes"] = potentials.uid
@@ -165,3 +165,16 @@ def test_create_survey_dcip(tmp_path):
         compare_entities(
             potentials, potentials_rec, ignore=["_current_electrodes", "_parent"]
         )
+
+        currents.metadata = {
+            "Current Electrodes": currents.uid,
+            "Potential Electrodes": potentials.uid,
+        }
+
+        currents.metadata = {"Just a general comment": "This is a test"}
+
+        assert list(currents.metadata.keys()) == [
+            "Current Electrodes",
+            "Potential Electrodes",
+            "Just a general comment",
+        ]

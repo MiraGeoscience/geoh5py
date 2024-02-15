@@ -235,12 +235,20 @@ class BaseElectrode(Curve, ABC):
     def metadata(self, values: dict | None):
         if isinstance(values, dict):
             default_keys = ["Current Electrodes", "Potential Electrodes"]
-            if sorted(list(values.keys())) != default_keys:
+
+            if self.metadata:
+                existing_keys = self.metadata.copy()
+                existing_keys.update(values)
+            else:
+                existing_keys = values
+
+            # check if metadata has the required keys
+            if not all(key in existing_keys for key in default_keys):
                 raise ValueError(f"Input metadata must have for keys {default_keys}")
 
             for key in default_keys:
-                if self.workspace.get_entity(values[key])[0] is None:
-                    raise IndexError(f"Input {key} uuid not present in Workspace")
+                if self.workspace.get_entity(existing_keys[key])[0] is None:
+                    raise KeyError(f"Input {key} uuid not present in Workspace")
 
         super(Curve, Curve).metadata.fset(self, values)  # type: ignore
 

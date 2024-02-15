@@ -232,24 +232,17 @@ class Entity(ABC):
 
     @metadata.setter
     def metadata(self, value: dict | None):
-        if value is not None:
-            if not isinstance(value, dict):
-                raise TypeError(
-                    "Input metadata must be of type dict or None"
-                    f" find '{type(value)}'."
-                )
-
-            # ensure metadata is loaded
-            if getattr(self, "_metadata", None) is None:
-                self._metadata = self.workspace.fetch_metadata(self.uid)
-
-            if isinstance(self._metadata, dict):
-                self._metadata.update(value)
+        if isinstance(value, dict):
+            if isinstance(self.metadata, dict):
+                self._metadata.update(value)  # type: ignore
             else:
                 self._metadata = value
-        else:  # remove the metadata
+        elif value is None:  # remove the metadata
             self._metadata = None
-
+        else:
+            raise TypeError(
+                "Input metadata must be of type dict or None" f" find '{type(value)}'."
+            )
         self.workspace.update_attribute(self, "metadata")
 
     @property

@@ -24,6 +24,7 @@ import json
 import uuid
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
+from warnings import warn
 
 import numpy as np
 
@@ -134,7 +135,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         ]:
             raise ValueError(
                 f"PropertyGroup named '{name}' already exists on the survey entity. "
-                f"Consider using the 'edit_metadata' method with "
+                f"Consider using the 'edit_em_metadata' method with "
                 "'Property groups' argument instead."
             )
 
@@ -174,7 +175,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
                 data_list.append(self.add_data({channel: attr}))
 
         prop_group = self.add_data_to_group(data_list, name)
-        self.edit_metadata({"Property groups": prop_group})
+        self.edit_em_metadata({"Property groups": prop_group})
 
         return prop_group
 
@@ -198,7 +199,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
                 f"Values provided as 'channels' must be a list of {float}. {type(values)} provided"
             )
 
-        self.edit_metadata({"Channels": values})
+        self.edit_em_metadata({"Channels": values})
 
     @property
     def complement(self):
@@ -253,7 +254,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         # Copy metadata except reference to entities UUID
         for key, value in self.metadata["EM Dataset"].items():
             if not isinstance(value, (uuid.UUID, type(None))):
-                new_entity.edit_metadata({key: value})
+                new_entity.edit_em_metadata({key: value})
 
         if self.complement is not None:
             self.copy_complement(
@@ -330,14 +331,14 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         List of accepted units.
         """
 
-    def edit_metadata(self, entries: dict[str, Any]):
+    def edit_em_metadata(self, entries: dict[str, Any]):
         """
         Utility function to edit or add metadata fields and trigger an update
         on the receiver and transmitter entities.
 
         :param entries: Metadata key value pairs.
         """
-        em_metadata = self.metadata.copy().pop("EM Dataset", {})
+        em_metadata = self.metadata.get("EM Dataset", {})
 
         for key, value in entries.items():
             if key == "Property groups":
@@ -349,6 +350,21 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
                 em_metadata[key] = value
 
         self.metadata = {"EM Dataset": em_metadata}
+
+    def edit_metadata(self, entries: dict[str, Any]):
+        """
+        WILL BE DEPRECATED IN 0.10 version.
+        The name will change to edit_em_metadata.
+
+        :param entries:
+        :return:
+        """
+        warn(
+            "DEPRECATION WARNING"
+            "The method 'edit_metadata' will be deprecated in 0.10 version. "
+            "It will be replaced by 'edit_em_metadata'"
+        )
+        self.edit_em_metadata(entries)
 
     @property
     def input_type(self) -> str | None:
@@ -368,7 +384,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
                 "Input 'input_type' must be one of "
                 f"{self.default_input_types}. {value} provided."
             )
-        self.edit_metadata({"Input type": value})
+        self.edit_em_metadata({"Input type": value})
 
     @property
     def metadata(self):
@@ -456,7 +472,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
                 f"{type(receivers)} provided."
             )
         self._receivers = receivers
-        self.edit_metadata({"Receivers": receivers.uid})
+        self.edit_em_metadata({"Receivers": receivers.uid})
 
     @property
     def survey_type(self) -> str | None:
@@ -497,7 +513,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
                 f"{type(transmitters)} provided."
             )
         self._transmitters = transmitters
-        self.edit_metadata({"Transmitters": transmitters.uid})
+        self.edit_em_metadata({"Transmitters": transmitters.uid})
 
     @property
     @abstractmethod
@@ -516,7 +532,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         if self.default_units is not None:
             if value not in self.default_units:
                 raise ValueError(f"Input 'unit' must be one of {self.default_units}")
-            self.edit_metadata({"Unit": value})
+            self.edit_em_metadata({"Unit": value})
 
     def _edit_validate_property_groups(
         self, values: PropertyGroup | list[PropertyGroup] | list[str] | None
@@ -613,7 +629,7 @@ class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve):
     def loop_radius(self, value: float | None):
         if not isinstance(value, (float, type(None))):
             raise TypeError("Input 'loop_radius' must be of type 'float'")
-        self.edit_metadata({"Loop radius": value})
+        self.edit_em_metadata({"Loop radius": value})
 
 
 class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
@@ -784,7 +800,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
         self._tx_id_property = value
 
         if self.type == "Receivers":
-            self.edit_metadata({"Tx ID property": getattr(value, "uid", None)})
+            self.edit_em_metadata({"Tx ID property": getattr(value, "uid", None)})
 
 
 class AirborneEMSurvey(BaseEMSurvey, Curve):
@@ -831,11 +847,11 @@ class AirborneEMSurvey(BaseEMSurvey, Curve):
 
         field = self._PROPERTY_MAP[key]
         if isinstance(value, float):
-            self.edit_metadata({field + " value": value, field + " property": None})
+            self.edit_em_metadata({field + " value": value, field + " property": None})
         elif isinstance(value, uuid.UUID):
-            self.edit_metadata({field + " value": None, field + " property": value})
+            self.edit_em_metadata({field + " value": None, field + " property": value})
         elif value is None:
-            self.edit_metadata({field + " value": None, field + " property": None})
+            self.edit_em_metadata({field + " value": None, field + " property": None})
         else:
             raise TypeError(
                 f"Input '{key}' must be one of type float, uuid.UUID or None"
@@ -861,7 +877,7 @@ class AirborneEMSurvey(BaseEMSurvey, Curve):
     def loop_radius(self, value: float | None):
         if not isinstance(value, (float, type(None))):
             raise TypeError("Input 'loop_radius' must be of type 'float'")
-        self.edit_metadata({"Loop radius": value})
+        self.edit_em_metadata({"Loop radius": value})
 
     @property
     def pitch(self) -> float | uuid.UUID | None:
@@ -883,7 +899,7 @@ class AirborneEMSurvey(BaseEMSurvey, Curve):
     def relative_to_bearing(self, value: bool | None):
         if not isinstance(value, (bool, type(None))):
             raise TypeError("Input 'relative_to_bearing' must be one of type 'bool'")
-        self.edit_metadata({"Angles relative to bearing": value})
+        self.edit_em_metadata({"Angles relative to bearing": value})
 
     @property
     def roll(self) -> float | uuid.UUID | None:
@@ -991,7 +1007,7 @@ class TEMSurvey(BaseEMSurvey):
         else:
             value["Timing mark"] = timing_mark
 
-        self.edit_metadata({"Waveform": value})
+        self.edit_em_metadata({"Waveform": value})
 
     @property
     def waveform(self) -> np.ndarray | None:
@@ -1041,7 +1057,7 @@ class TEMSurvey(BaseEMSurvey):
                 {"current": row[1], "time": row[0]} for row in waveform
             ]
 
-        self.edit_metadata({"Waveform": value})
+        self.edit_em_metadata({"Waveform": value})
 
     @property
     def waveform_parameters(self) -> dict | None:
