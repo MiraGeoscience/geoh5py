@@ -32,7 +32,7 @@ class ReferenceValueMap(ABC):
         return self._map[item]
 
     def __setitem__(self, key, value):
-        if not isinstance(key, (int, np.int32)) or key < 0:
+        if not isinstance(key, (int, np.int16, np.int32, np.int64)) or key < 0:
             raise KeyError("Key must be an positive integer")
         if key == 0:
             if value != "Unknown" and not (
@@ -64,7 +64,10 @@ class ReferenceValueMap(ABC):
         if not isinstance(value, dict):
             raise TypeError("Map values must be a dictionary")
 
-        if not all(isinstance(k, (int, np.int32)) and k >= 0 for k in value.keys()):
+        if not all(
+            isinstance(k, (int, np.int16, np.int32, np.int64)) and k >= 0
+            for k in value.keys()
+        ):
             raise KeyError("Map keys must be positive integers")
 
         if 0 in value.keys():
