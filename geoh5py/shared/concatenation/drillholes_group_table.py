@@ -206,17 +206,14 @@ class DrillholesGroupTable(ABC):
                 f"({self.parent.data[self.association[0]].shape})."
             )
 
+        attributes = {"name": name, "values": values}
         if isinstance(value_map, dict):
-            new_type = DataType(
-                self.parent.workspace, primitive_type="REFERENCED", value_map=value_map
-            )
-        else:
-            new_type = DataType.find_or_create(
-                self.parent.workspace,
-                **DataType.validate_data_type(
-                    self.parent.workspace, {"name": name, "values": values}
-                ),
-            )
+            attributes.update({"type": "referenced", "value_map": value_map})
+
+        new_type = DataType.find_or_create(
+            self.parent.workspace,
+            **DataType.validate_data_type(self.parent.workspace, attributes),
+        )
 
         for drillhole_uid, indices in self.index_by_drillhole.items():
             # get the drillhole

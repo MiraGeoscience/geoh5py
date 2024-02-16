@@ -21,27 +21,24 @@ from abc import ABC
 
 import numpy as np
 
+BOOLEAN_VALUE_MAP = {0: "False", 1: "True"}
+
 
 class ReferenceValueMap(ABC):
     """Maps from reference index to reference value of ReferencedData."""
 
-    def __init__(self, color_map: dict[int, str]):
-        self.map: dict[int, str] = color_map
+    def __init__(self, value_map: dict[int, str]):
+        self.map: dict[int, str] = value_map
 
     def __getitem__(self, item: int) -> str:
         return self._map[item]
 
     def __setitem__(self, key, value):
-        if not isinstance(key, (int, np.int16, np.int32, np.int64)) or key < 0:
-            raise KeyError("Key must be an positive integer")
-        if key == 0:
-            if value != "Unknown" and not (
-                len(self) <= 2 and value == "False" and value == "True"
-            ):
-                raise ValueError("Value for key 0 must be 'Unknown'")
-        if not isinstance(value, str):
-            raise TypeError("Value must be a string")
+        # verify if it corresponds to boolean values
+        if self.map == BOOLEAN_VALUE_MAP:
+            raise AssertionError("Boolean value map cannot be modified")
 
+        self._validate_key_value(key, value)
         self._map[key] = value
 
     def __len__(self):
@@ -49,6 +46,23 @@ class ReferenceValueMap(ABC):
 
     def __call__(self):
         return self._map
+
+    @staticmethod
+    def _validate_key_value(key: int, value: str):
+        """
+        Verify that the key and value are valid.
+        It raises errors if there is an issue
+
+        :param key: The key to verify.
+        :param value: The value to verify.
+        """
+        if not isinstance(key, (int, np.int16, np.int32, np.int64)) or key < 0:
+            raise KeyError("Key must be an positive integer")
+        if not isinstance(value, str):
+            raise TypeError("Value must be a string")
+
+        if key == 0 and value != "Unknown":
+            raise ValueError("Value for key 0 must be 'Unknown'")
 
     @property
     def map(self) -> dict[int, str]:
@@ -60,22 +74,14 @@ class ReferenceValueMap(ABC):
         return self._map
 
     @map.setter
-    def map(self, value: dict[int, str]):
-        if not isinstance(value, dict):
+    def map(self, value_map: dict[int, str]):
+        if not isinstance(value_map, dict):
             raise TypeError("Map values must be a dictionary")
+        if value_map != BOOLEAN_VALUE_MAP:
+            for key, val in value_map.items():
+                self._validate_key_value(key, val)
 
-        if not all(
-            isinstance(k, (int, np.int16, np.int32, np.int64)) and k >= 0
-            for k in value.keys()
-        ):
-            raise KeyError("Map keys must be positive integers")
+            if 0 not in value_map:
+                value_map[0] = "Unknown"
 
-        if 0 in value.keys():
-            if value[0] != "Unknown" and not (
-                len(value) <= 2 and value[0] == "False" and value[1] == "True"
-            ):
-                raise ValueError("Map value for 0 must be 'Unknown'")
-        else:
-            value[0] = "Unknown"
-
-        self._map = value
+        self._map = value_map

@@ -67,11 +67,10 @@ def test_create_reference_data(tmp_path):
         with pytest.raises(TypeError, match="Map values must be a dictionary"):
             ReferenceValueMap("value_map")
 
-        with pytest.raises(KeyError, match="Map keys must be positive integers"):
+        with pytest.raises(KeyError, match="Key must be an positive integer"):
             ReferenceValueMap({-1: "test"})
 
-        print("testing")
-        with pytest.raises(ValueError, match="Map value for 0 must be 'Unknown'"):
+        with pytest.raises(ValueError, match="Value for key 0 must be 'Unknown'"):
             ReferenceValueMap({0: "test"})
 
         value_map = ReferenceValueMap({0: "Unknown", 1: "test"})
