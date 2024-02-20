@@ -130,7 +130,7 @@ class EntityType(ABC):
 
     @description.setter
     def description(self, description: str | None):
-        if not isinstance(description, (str | type(None))):
+        if not isinstance(description, (str, type(None))):
             raise TypeError(
                 f"Description must be a string or None, find {type(description)}"
             )
@@ -173,7 +173,7 @@ class EntityType(ABC):
 
     @name.setter
     def name(self, name: str | None):
-        if not isinstance(name, (str | type(None))):
+        if not isinstance(name, (str, type(None))):
             raise TypeError(f"name must be a string or None, not {type(name)}")
 
         self._name = name
