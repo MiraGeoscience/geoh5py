@@ -87,7 +87,7 @@ class EntityType(ABC):
 
         workspace_ = weakref.ref(workspace)()
 
-        if not isinstance(workspace_, Workspace):
+        if workspace_ is None:
             raise ValueError("Workspace is not available.")
 
         return workspace_
