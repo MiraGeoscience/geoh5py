@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 from ..shared import EntityType
 
 if TYPE_CHECKING:
-    from .. import workspace
+    from ..workspace import Workspace
 
 
 class ObjectType(EntityType):
@@ -31,16 +31,8 @@ class ObjectType(EntityType):
     Object type class
     """
 
-    def __init__(self, workspace: workspace.Workspace, **kwargs):
-        assert workspace is not None
-        super().__init__(workspace, **kwargs)
-
     @staticmethod
-    def _is_abstract() -> bool:
-        return False
-
-    @staticmethod
-    def create_custom(workspace: workspace.Workspace) -> ObjectType:
+    def create_custom(workspace: Workspace) -> ObjectType:
         """Creates a new instance of ObjectType for an unlisted custom Object type with a
         new auto-generated UUID.
 
@@ -49,34 +41,38 @@ class ObjectType(EntityType):
         return ObjectType(workspace)
 
     @classmethod
-    def find_or_create(
-        cls, workspace: workspace.Workspace, entity_class, **kwargs
-    ) -> ObjectType:
-        """Find or creates an EntityType with given :obj:`uuid.UUID` that matches the given
+    def find_or_create(cls, workspace: Workspace, **kwargs) -> ObjectType:
+        """
+        Find or creates an EntityType with given uid that matches the given
         Group implementation class.
 
         It is expected to have a single instance of EntityType in the Workspace
         for each concrete Entity class.
 
+        To find an object, the kwargs must contain an existing 'uid' keyword,
+        or a 'entity_class' keyword, containing an object class.
+
         :param workspace: An active Workspace class
-        :param entity_class: An Group implementation class.
 
         :return: A new instance of GroupType.
         """
-        uid = uuid.uuid4()
-        if getattr(entity_class, "default_type_uid", None) is not None:
-            uid = entity_class.default_type_uid()
-            if "ID" in kwargs:
-                kwargs["ID"] = uid
-            else:
-                kwargs["uid"] = uid
+        if (
+            getattr(kwargs.get("entity_class", None), "default_type_uid", None)
+            is not None
+        ):
+            uid = kwargs["entity_class"].default_type_uid()
+            kwargs["uid"] = uid
         else:
-            for key, val in kwargs.items():
-                if key.lower() in ["id", "uid"]:
-                    uid = uuid.UUID(val)
+            uid = kwargs.get("uid", None)
+            uid = kwargs.get("ID", uid)
+            if isinstance(uid, str):
+                uid = uuid.UUID(uid)
+        if isinstance(uid, uuid.UUID):
+            entity_type = cls.find(workspace, uid)
+            if entity_type is not None:
+                return entity_type
 
-        entity_type = cls.find(workspace, uid)
-        if entity_type is not None:
-            return entity_type
+        if not isinstance(uid, (uuid.UUID, type(None))):
+            raise TypeError(f"'uid' must be a valid UUID, find {uid}")
 
         return cls(workspace, **kwargs)

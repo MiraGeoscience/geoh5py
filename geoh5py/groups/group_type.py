@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 from ..shared import EntityType
 
 if TYPE_CHECKING:
-    from .. import workspace
+    from ..workspace import Workspace
     from . import group  # noqa: F401
 
 
@@ -36,27 +36,33 @@ class GroupType(EntityType):
         }
     )
 
-    _allow_move_content = True
-    _allow_delete_content = True
-
-    def __init__(self, workspace: workspace.Workspace, **kwargs):
-        assert workspace is not None
+    def __init__(
+        self,
+        workspace: Workspace,
+        allow_move_content: bool = True,
+        allow_delete_content: bool = True,
+        **kwargs,
+    ):
         super().__init__(workspace, **kwargs)
 
-    @staticmethod
-    def _is_abstract() -> bool:
-        return False
+        self.allow_move_content = self._modify_attribute(
+            "Allow move contents", allow_move_content, **kwargs
+        )
+        self.allow_delete_content = self._modify_attribute(
+            "Allow delete contents", allow_delete_content, **kwargs
+        )
 
     @property
     def allow_move_content(self) -> bool:
         """
-        :obj:`bool`: [True] Allow to move the group
-        :obj:`~geoh5py.shared.entity.Entity.children`.
+        Allow to move the group.
         """
         return self._allow_move_content
 
     @allow_move_content.setter
     def allow_move_content(self, allow: bool):
+        if not isinstance(allow, bool) and allow != 1 and allow != 0:
+            raise TypeError("'allow_move_content must be a boolean.")
         self._allow_move_content = bool(allow)
 
     @property
@@ -69,44 +75,48 @@ class GroupType(EntityType):
 
     @allow_delete_content.setter
     def allow_delete_content(self, allow: bool):
+        if not isinstance(allow, bool) and allow != 1 and allow != 0:
+            raise TypeError("'allow_delete_content must be a boolean.")
         self._allow_delete_content = bool(allow)
 
-    @classmethod
-    def find_or_create(
-        cls, workspace: workspace.Workspace, entity_class, **kwargs
-    ) -> GroupType:
-        """Find or creates an EntityType with given UUID that matches the given
-        Group implementation class.
-
-        :param workspace: An active Workspace class
-        :param entity_class: An Group implementation class.
-
-        :return: A new instance of GroupType.
-        """
-        uid = uuid.uuid4()
-        if getattr(entity_class, "default_type_uid", None) is not None and isinstance(
-            entity_class.default_type_uid(), uuid.UUID
-        ):
-            uid = entity_class.default_type_uid()
-
-            if "ID" in kwargs:
-                kwargs["ID"] = uid
-            else:
-                kwargs["uid"] = uid
-        else:
-            for key, val in kwargs.items():
-                if key.lower() in ["id", "uid"]:
-                    uid = uuid.UUID(val)
-
-        entity_type = cls.find(workspace, uid)
-        if entity_type is not None:
-            return entity_type
-
-        return cls(workspace, **kwargs)
-
     @staticmethod
-    def create_custom(workspace: workspace.Workspace, **kwargs) -> GroupType:
+    def create_custom(workspace: Workspace, **kwargs) -> GroupType:
         """Creates a new instance of GroupType for an unlisted custom Group type with a
         new auto-generated UUID.
         """
         return GroupType(workspace, **kwargs)
+
+    @classmethod
+    def find_or_create(cls, workspace: Workspace, **kwargs) -> GroupType:
+        """
+        Find or creates an EntityType with given uid that matches the given
+        Group implementation class.
+
+        It is expected to have a single instance of EntityType in the Workspace
+        for each concrete Entity class.
+
+        To find an object, the kwargs must contain an existing 'uid' keyword,
+        or a 'entity_class' keyword, containing an object class.
+
+        :param workspace: An active Workspace class
+
+        :return: A new instance of GroupType.
+        """
+        if (
+            getattr(kwargs.get("entity_class", None), "default_type_uid", None)
+            is not None
+        ):
+            uid = kwargs["entity_class"].default_type_uid()
+            kwargs["uid"] = uid
+        else:
+            uid = kwargs.get("uid", None)
+            if isinstance(uid, str):
+                uid = uuid.UUID(uid)
+        if isinstance(uid, uuid.UUID):
+            entity_type = cls.find(workspace, uid)
+            if entity_type is not None:
+                return entity_type
+        if not isinstance(uid, (uuid.UUID, type(None))):
+            raise TypeError(f"'uid' must be a valid UUID, find {uid}")
+
+        return cls(workspace, **kwargs)

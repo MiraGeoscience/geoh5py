@@ -20,123 +20,90 @@ from __future__ import annotations
 import uuid
 import weakref
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 if TYPE_CHECKING:
-    from .. import workspace as ws
-
+    from ..workspace import Workspace
 
 EntityTypeT = TypeVar("EntityTypeT", bound="EntityType")
 
 
 class EntityType(ABC):
+    """
+    The base class for all entity types.
+
+    :param workspace: The workspace to which the entity type belongs.
+    :param uid: The unique identifier of the entity type.
+    :param description: The description of the entity type.
+    :param name: The name of the entity type.
+    :param kwargs: Additional keyword arguments to set as attributes.
+    """
+
+    # todo: This mechanic feels quite hacky
     _attribute_map = {"Description": "description", "ID": "uid", "Name": "name"}
 
-    def __init__(self, workspace: ws.Workspace, uid: uuid.UUID | None = None, **kwargs):
-        assert workspace is not None
-        self._workspace = weakref.ref(workspace)
+    def __init__(
+        self,
+        workspace: Workspace,
+        uid: uuid.UUID | None = None,
+        description: str | None = "Entity",
+        name: str | None = "Entity",
+        **kwargs,
+    ):
 
-        assert uid is None or isinstance(uid, uuid.UUID)
-        self._description: str | None = "Entity"
-        self._name: str | None = "Entity"
+        self._workspace: Workspace = self._set_workspace(workspace)
+        self.uid = self._modify_attribute("ID", uid, **kwargs)
+        self.description = self._modify_attribute("Description", description, **kwargs)
+        self.name = self._modify_attribute("Name", name, **kwargs)
         self._on_file = False
-        self._uid: uuid.UUID = uid if uid is not None else uuid.uuid4()
-
-        for attr, item in kwargs.items():
-            try:
-                if attr in self._attribute_map:
-                    attr = self._attribute_map[attr]
-                setattr(self, attr, item)
-            except AttributeError:
-                continue
 
         self.workspace.register(self)
 
-    @property
-    def attribute_map(self):
+    @classmethod
+    def _modify_attribute(cls, attribute_name: str, attribute: Any, **kwargs):
         """
-        :obj:`dict` Correspondence map between property names used in geoh5py and
+        Modify the attribute based on the name and kwargs.
+
+        :param attribute_name: The name of the attribute to modify.
+        :param attribute: The attribute to modify.
+        :param kwargs: The kwargs to modify the attribute.
+
+        :return: The modified attribute.
+        """
+        if cls._attribute_map.get(attribute_name, None):
+            if attribute_name in kwargs:
+                return kwargs[attribute_name]
+        return attribute
+
+    def _set_workspace(self, workspace: Workspace) -> Workspace:
+        """
+        Set the workspace for the entity type.
+        It is private as workspace should not be changed
+
+        :param workspace: The workspace to set.
+        """
+        if not hasattr(workspace, "create_entity"):
+            raise TypeError(f"Workspace must be a Workspace, not {type(workspace)}")
+
+        workspace_ = weakref.ref(workspace)()
+
+        if not isinstance(workspace_, Workspace):
+            raise ValueError("Workspace is not available.")
+
+        return workspace_
+
+    @property
+    def attribute_map(self) -> dict[str, str]:
+        """
+        Correspondence map between property names used in geoh5py and
         geoh5.
         """
         return self._attribute_map
 
-    @property
-    def description(self) -> str | None:
-        return self._description
-
-    @description.setter
-    def description(self, description: str):
-        self._description = description
-        self.workspace.update_attribute(self, "attributes")
-
-    @classmethod
-    def find(
-        cls: type[EntityTypeT], workspace: ws.Workspace, type_uid: uuid.UUID
-    ) -> EntityTypeT | None:
-        """Finds in the given Workspace the EntityType with the given UUID for
-        this specific EntityType implementation class.
-
-        :return: EntityType of None
-        """
-        return cast(EntityTypeT, workspace.find_type(type_uid, cls))
-
-    @property
-    def on_file(self) -> bool:
-        """
-        :obj:`bool` Entity already present in
-        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
-        """
-        return self._on_file
-
-    @on_file.setter
-    def on_file(self, value: bool):
-        self._on_file = value
-
-    @staticmethod
-    @abstractmethod
-    def _is_abstract() -> bool:
-        """Trick to prevent from instantiating abstract base class."""
-        return True
-
-    @property
-    def name(self) -> str | None:
-        return self._name
-
-    @name.setter
-    def name(self, name: str):
-        self._name = name
-        self.workspace.update_attribute(self, "attributes")
-
-    @property
-    def uid(self) -> uuid.UUID:
-        """
-        :obj:`uuid.UUID` The unique identifier of an entity, either as stored
-        in geoh5 or generated in :func:`~uuid.UUID.uuid4` format.
-        """
-        return self._uid
-
-    @uid.setter
-    def uid(self, uid: str | uuid.UUID):
-        if isinstance(uid, str):
-            uid = uuid.UUID(uid)
-
-        self._uid = uid
-        self.workspace.update_attribute(self, "attributes")
-
-    @property
-    def workspace(self) -> ws.Workspace:
-        """
-        :obj:`~geoh5py.workspace.workspace.Workspace` registering this type.
-        """
-        workspace = self._workspace()
-
-        # Workspace should never be null, unless this is a dangling type object,
-        # which means workspace has been deleted.
-        assert workspace is not None
-        return workspace
-
     def copy(self, **kwargs) -> EntityType:
-        """Copy this entity type to another workspace."""
+        """
+        Copy this entity type to another workspace.
+        """
 
         attributes = {
             prop: getattr(self, prop)
@@ -153,3 +120,109 @@ class EntityType(ABC):
             del attributes["uid"]
 
         return self.__class__(**attributes)
+
+    @property
+    def description(self) -> str | None:
+        """
+        The description of the entity type.
+        """
+        return self._description
+
+    @description.setter
+    def description(self, description: str | None):
+        if not isinstance(description, (str | type(None))):
+            raise TypeError(
+                f"Description must be a string or None, find {type(description)}"
+            )
+
+        self._description = description
+
+        if hasattr(self, "_on_file"):
+            self.workspace.update_attribute(self, "attributes")
+
+    @classmethod
+    def find(
+        cls: type[EntityTypeT], workspace: Workspace, type_uid: uuid.UUID
+    ) -> EntityTypeT | None:
+        """
+        Finds in the given Workspace the EntityType with the given UUID for
+        this specific EntityType implementation class.
+
+        :return: EntityType of None
+        """
+        return cast(EntityTypeT, workspace.find_type(type_uid, cls))
+
+    @classmethod
+    @abstractmethod
+    def find_or_create(cls, workspace: Workspace, **kwargs) -> EntityType:
+        """
+        Find or creates an EntityType with given UUID that matches the given
+        Entity implementation class.
+
+        :param workspace: An active Workspace class
+
+        :return: EntityType
+        """
+
+    @property
+    def name(self) -> str | None:
+        """
+        The name of the entity type.
+        """
+        return self._name
+
+    @name.setter
+    def name(self, name: str | None):
+        if not isinstance(name, (str | type(None))):
+            raise TypeError(f"name must be a string or None, not {type(name)}")
+
+        self._name = name
+
+        if hasattr(self, "_on_file"):
+            self.workspace.update_attribute(self, "attributes")
+
+    @property
+    def on_file(self) -> bool:
+        """
+        Return True if Entity already present in
+        the workspace.
+        """
+        return self._on_file
+
+    @on_file.setter
+    def on_file(self, value: bool):
+        if not isinstance(value, bool) and value != 1 and value != 0:
+            raise TypeError(f"on_file must be a bool, not {type(value)}")
+        self._on_file = bool(value)
+
+    @property
+    def uid(self) -> uuid.UUID:
+        """
+        The unique identifier of an entity, either as stored
+        in geoh5 or generated in :func:`~uuid.UUID.uuid4` format.
+        """
+        return self._uid
+
+    @uid.setter
+    def uid(self, uid: str | uuid.UUID | None):
+        if uid is None:
+            uid = uuid.uuid4()
+        if isinstance(uid, str):
+            uid = uuid.UUID(uid)
+        if not isinstance(uid, uuid.UUID):
+            raise TypeError(f"uid must be a string or uuid.UUID, not {type(uid)}")
+
+        self._uid = uid
+
+        if hasattr(self, "_on_file"):
+            self.workspace.update_attribute(self, "attributes")
+
+    @property
+    def workspace(self) -> Workspace:
+        """
+        The Workspace associated to the object.
+        """
+        if not hasattr(self._workspace, "create_entity"):
+            raise AssertionError("Cannot access the workspace, ensure it is open.")
+
+        return self._workspace

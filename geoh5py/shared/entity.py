@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from geoh5py.shared.utils import str2uuid
+from ..shared.utils import map_attributes, str2uuid
 
 if TYPE_CHECKING:
     from .. import shared
@@ -68,13 +68,7 @@ class Entity(ABC):
         self._partially_hidden = False
         self._public = True
 
-        for attr, item in kwargs.items():
-            try:
-                if attr in self._attribute_map:
-                    attr = self._attribute_map[attr]
-                setattr(self, attr, item)
-            except AttributeError:
-                continue
+        map_attributes(self, **kwargs)
 
         self.workspace.register(self)
 

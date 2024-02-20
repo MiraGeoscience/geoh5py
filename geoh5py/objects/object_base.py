@@ -344,7 +344,8 @@ class ObjectBase(EntityContainer):
 
         :return: The ObjectType instance for the given object class.
         """
-        return ObjectType.find_or_create(workspace, cls, **kwargs)
+        kwargs["entity_class"] = cls
+        return ObjectType.find_or_create(workspace, **kwargs)
 
     def get_property_group(self, name: uuid.UUID | str) -> list:
         """

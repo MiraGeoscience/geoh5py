@@ -22,6 +22,7 @@ from uuid import UUID
 
 import numpy as np
 
+from ...data import DataType
 from ..utils import str2uuid, to_tuple
 from .property_group import ConcatenatedPropertyGroup
 
@@ -205,9 +206,15 @@ class DrillholesGroupTable(ABC):
                 f"({self.parent.data[self.association[0]].shape})."
             )
 
-        attributes = {}
         if isinstance(value_map, dict):
-            attributes.update({"type": "referenced", "value_map": value_map})
+            data_type = DataType(
+                self.parent.workspace, "REFERENCED", name=name, value_map=value_map
+            )
+        else:
+            data_type_ = DataType.validate_data_type(
+                self.parent.workspace, {"values": values}
+            )["primitive_type"]
+            data_type = DataType(self.parent.workspace, data_type_, name=name)
 
         for drillhole_uid, indices in self.index_by_drillhole.items():
             # get the drillhole
@@ -229,7 +236,7 @@ class DrillholesGroupTable(ABC):
                                 + indices[self.association[0]][1]
                             ]
                         },
-                        **attributes,
+                        "entity_type": data_type,
                     },
                 },
                 property_group=self.property_groups[drillhole.uid],

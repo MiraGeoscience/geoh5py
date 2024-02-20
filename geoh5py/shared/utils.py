@@ -605,6 +605,26 @@ def dip_points(points: np.ndarray, dip: float, rotation: float = 0) -> np.ndarra
     return points.T
 
 
+def map_attributes(object_, **kwargs):
+    """
+    Map attributes to an object. The object must have an '_attribute_map'.
+
+    :param object_: The object to map the attributes to.
+    :param kwargs: The kwargs to map to the object.
+    """
+    if not hasattr(object_, "_attribute_map"):
+        warnings.warn(f"Object {object_} does not have an attribute map.")
+        return
+
+    for attr, item in kwargs.items():
+        try:
+            if attr in getattr(object_, "_attribute_map"):
+                attr = getattr(object_, "_attribute_map")[attr]
+            setattr(object_, attr, item)
+        except AttributeError:
+            continue
+
+
 def to_tuple(value: Any) -> tuple:
     """
     Convert value to a tuple.

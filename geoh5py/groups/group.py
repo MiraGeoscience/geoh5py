@@ -29,7 +29,7 @@ from ..shared.entity_container import EntityContainer
 from .group_type import GroupType
 
 if TYPE_CHECKING:
-    from .. import workspace
+    from ..workspace import Workspace
 
 
 class Group(EntityContainer):
@@ -199,5 +199,6 @@ class Group(EntityContainer):
         return None
 
     @classmethod
-    def find_or_create_type(cls, workspace: workspace.Workspace, **kwargs) -> GroupType:
-        return GroupType.find_or_create(workspace, cls, **kwargs)
+    def find_or_create_type(cls, workspace: Workspace, **kwargs) -> GroupType:
+        kwargs["entity_class"] = cls
+        return GroupType.find_or_create(workspace, **kwargs)
