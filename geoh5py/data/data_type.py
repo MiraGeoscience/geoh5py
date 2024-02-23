@@ -40,8 +40,9 @@ ColorMapping = Literal["linear", "equal_area", "logarithmic", "cdf", "missing"]
 class DataType(EntityType):
     # pylint: disable=too-many-arguments
     """
-    DataType class. It controls all the attributes of the data type for
-    displays in Geoscience Analyst.
+    DataType class. 
+    
+    Controls all the attributes of the data type for displays in Geoscience ANALYST.
 
     :param workspace: An active Workspace.
     :param primitive_type: The primitive type of the data.
