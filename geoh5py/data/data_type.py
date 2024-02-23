@@ -32,7 +32,9 @@ if TYPE_CHECKING:
     from ..workspace import Workspace
     from .data import Data  # noqa: F401
 
-COLOR_MAPPING: list[str] = ["linear", "equal_area", "logarithmic", "cdf", "missing"]
+from typing import get_args, Literal
+
+ColorMapping = Literal["linear", "equal_area", "logarithmic", "cdf", "missing"]
 
 
 class DataType(EntityType):
