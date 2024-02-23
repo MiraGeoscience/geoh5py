@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from ..workspace import Workspace
     from .data import Data  # noqa: F401
 
-from typing import get_args, Literal
+from typing import Literal
 
 ColorMapping = Literal["linear", "equal_area", "logarithmic", "cdf", "missing"]
 
