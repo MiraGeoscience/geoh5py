@@ -65,6 +65,7 @@ def test_create_drillhole_data(tmp_path):
             value_map[ref] = "".join(
                 random.choice(string.ascii_lowercase) for i in range(8)
             )
+        value_map[0] = "Unknown"
 
         # Create random from-to
         from_to_a = np.sort(

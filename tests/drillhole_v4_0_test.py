@@ -15,6 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=too-many-lines
 # pylint: disable=too-many-locals
 # mypy: ignore-errors
 
@@ -911,12 +912,32 @@ def test_add_data_to_property(tmp_path):
             "interval_values_a", spatial_index=True
         )
 
+        verification_map_value = (verification["interval_values_a"] * 10).astype(
+            np.int32
+        )
+        verification_map_value -= np.min(verification_map_value) - 1
+
+        value_map = {idx: f"{idx}" for idx in np.unique(verification_map_value)}
+
         drillholes_table.add_values_to_property_group(
             "new value",
-            verification["interval_values_a"],
+            verification_map_value,
+            value_map=value_map,
+        )
+
+        drillholes_table.add_values_to_property_group(
+            "new value int", verification_map_value
         )
 
         verificationb = drillholes_table.depth_table_by_name("new value")
+        verificatione = drillholes_table.depth_table_by_name("new value int")
+        verificatione.dtype.names = verificationb.dtype.names
+
+        assert compare_structured_arrays(
+            verificationb,
+            verificatione,
+            tolerance=1e-5,
+        )
 
         # reopen
         drillhole_group = workspace.get_entity("DH_group")[0]
@@ -925,22 +946,24 @@ def test_add_data_to_property(tmp_path):
             "property_group"
         ].depth_table_by_name("interval_values_a")
 
-        verification2 = drillhole_group.drillholes_tables[
+        verificationd = drillhole_group.drillholes_tables[
             "property_group"
         ].depth_table_by_name("new value")
 
         assert compare_structured_arrays(
-            verification2,
+            verificationd,
             verificationb,
             tolerance=1e-5,
         )
 
         # change the name for the verification
-        verification2.dtype.names = verification.dtype.names
+        verificationd.dtype.names = verification.dtype.names
+        verificationc = verification.copy()
+        verificationc["interval_values_a"] = verification_map_value
 
         assert compare_structured_arrays(
-            verification,
-            verification2,
+            verificationc,
+            verificationd,
             tolerance=1e-5,
         )
 
