@@ -404,3 +404,47 @@ def data_value_parameter(
     if optional is not None:
         form.update(optional_parameter(optional))
     return form
+
+
+def drillhole_group_data(
+    value: list[str] | None = None,
+    main: bool = True,
+    label: str = "Data channel",
+    group_type: UUID = groups.DrillholeGroup.default_type_uid(),
+    group_value: UUID | None = None,
+    multiselect: bool = True,
+    optional: str | None = None,
+    enabled: bool = True,
+    tooltip: str = "Select the data channel to use for the calculation.",
+) -> dict:
+    """
+    Dropdown of data or input box.
+
+    :param main: Show form in main.
+    :param label: Label identifier.
+    :param value: Input value.
+    :param group_type: The group type to select, must be drillhole group.
+    :param group_value: The selected group UUID.
+    :param multiselect: Allow multiple data selection.
+    :param value: The name of the Data channel to extract.
+    :param optional: Make optional if not None. Initial state provided by not None
+    :param enabled: Enable or disable the form.
+    :param tooltip: The tooltip to display when hovering over the form.
+
+    :returns: Ui_json compliant dictionary.
+    """
+    form = {
+        "main": main,
+        "label": label,
+        "groupType": group_type,
+        "groupValue": group_value,
+        "multiselect": multiselect,
+        "value": value,
+        "optional": optional,
+        "enabled": enabled,
+        "tooltip": tooltip,
+    }
+
+    if optional is not None:
+        form.update(optional_parameter(optional))
+    return form

@@ -25,14 +25,14 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..data import CommentsData, Data
-from ..shared import Entity
+from ..shared.entity_container import EntityContainer
 from .group_type import GroupType
 
 if TYPE_CHECKING:
     from .. import workspace
 
 
-class Group(Entity):
+class Group(EntityContainer):
     """Base Group class"""
 
     def __init__(self, group_type: GroupType, **kwargs):
@@ -43,7 +43,7 @@ class Group(Entity):
     @classmethod
     @abstractmethod
     def default_type_uid(cls) -> uuid.UUID | None:
-        ...
+        """Abstract method to return the default type uid for the class."""
 
     def add_comment(self, comment: str, author: str | None = None):
         """
@@ -78,7 +78,6 @@ class Group(Entity):
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
         """
-
         return None
 
     def copy(

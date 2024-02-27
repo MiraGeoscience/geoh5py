@@ -34,8 +34,6 @@ class AirborneGeophysics(Group):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
 
-        group_type.workspace._register_group(self)
-
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID

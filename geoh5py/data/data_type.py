@@ -29,8 +29,8 @@ from .primitive_type_enum import PrimitiveTypeEnum
 from .reference_value_map import ReferenceValueMap
 
 if TYPE_CHECKING:
-    from .. import workspace
-    from . import data  # noqa: F401
+    from ..workspace import Workspace
+    from .data import Data  # noqa: F401
 
 
 class DataType(EntityType):
@@ -58,11 +58,9 @@ class DataType(EntityType):
     _mapping: str = "equal_area"
     _hidden: bool = False
 
-    def __init__(self, workspace: workspace.Workspace, **kwargs):
+    def __init__(self, workspace: Workspace, **kwargs):
         assert workspace is not None
         super().__init__(workspace, **kwargs)
-
-        workspace._register_type(self)
 
     @staticmethod
     def _is_abstract() -> bool:
@@ -127,16 +125,10 @@ class DataType(EntityType):
 
     @value_map.setter
     def value_map(self, value_map: dict | ReferenceValueMap):
-        assert isinstance(
-            value_map, (dict, ReferenceValueMap)
-        ), f"'value_map' must be a {dict} or {ReferenceValueMap}"
-
         if isinstance(value_map, dict):
-            assert all(
-                np.issubdtype(type(val), np.integer) and (val >= 0)
-                for val in value_map.keys()
-            ), f"Value_map keys must be of integer type >= 0. Input values {value_map.keys()}"
             value_map = ReferenceValueMap(value_map)
+        if not isinstance(value_map, ReferenceValueMap):
+            raise TypeError(f"'value_map' must be a {dict} or {ReferenceValueMap}.")
 
         self._value_map = value_map
         self.workspace.update_attribute(self, "value_map")
@@ -226,12 +218,11 @@ class DataType(EntityType):
             self._primitive_type = value
 
     @classmethod
-    def create(
-        cls, workspace: workspace.Workspace, data_class: type[data.Data]
-    ) -> DataType:
+    def create(cls, workspace: Workspace, data_class: type[Data]) -> DataType:
         """Creates a new instance of :obj:`~geoh5py.data.data_type.DataType` with
         corresponding :obj:`~geoh5py.data.primitive_type_enum.PrimitiveTypeEnum`.
 
+        :param workspace: An active Workspace.
         :param data_class: A :obj:`~geoh5py.data.data.Data` implementation class.
 
         :return: A new instance of :obj:`~geoh5py.data.data_type.DataType`.
@@ -241,7 +232,7 @@ class DataType(EntityType):
         return cls(workspace, uid=uid, primitive_type=primitive_type)
 
     @classmethod
-    def find_or_create(cls, workspace: workspace.Workspace, **kwargs) -> DataType:
+    def find_or_create(cls, workspace: Workspace, **kwargs) -> DataType:
         """Find or creates an EntityType with given UUID that matches the given
         Group implementation class.
 
@@ -268,9 +259,15 @@ class DataType(EntityType):
         return cls(workspace, **kwargs)
 
     @classmethod
-    def _for_geometric_data(
-        cls, workspace: workspace.Workspace, uid: uuid.UUID
-    ) -> DataType:
+    def _for_geometric_data(cls, workspace: Workspace, uid: uuid.UUID) -> DataType:
+        """
+        Get the data type for geometric data.
+
+        :param workspace: An active Workspace.
+        :param uid: The uid of the existing data type to get.
+
+        :return: A new instance of DataType.
+        """
         geom_primitive_type = GeometricDataConstants.primitive_type()
         data_type = cast(DataType, workspace.find_type(uid, DataType))
         if data_type is not None:
@@ -279,19 +276,89 @@ class DataType(EntityType):
         return cls(workspace, uid=uid, primitive_type=geom_primitive_type)
 
     @classmethod
-    def for_x_data(cls, workspace: workspace.Workspace) -> DataType:
+    def for_x_data(cls, workspace: Workspace) -> DataType:
+        """
+        Get the data type for x data.
+
+        :param workspace: An active Workspace.
+
+        :return: A new instance of DataType.
+        """
         return cls._for_geometric_data(
             workspace, GeometricDataConstants.x_datatype_uid()
         )
 
     @classmethod
-    def for_y_data(cls, workspace: workspace.Workspace) -> DataType:
+    def for_y_data(cls, workspace: Workspace) -> DataType:
+        """
+        Get the data type for y data.
+
+        :param workspace: An active Workspace.
+
+        :return: A new instance of DataType.
+        """
         return cls._for_geometric_data(
             workspace, GeometricDataConstants.y_datatype_uid()
         )
 
     @classmethod
-    def for_z_data(cls, workspace: workspace.Workspace) -> DataType:
+    def for_z_data(cls, workspace: Workspace) -> DataType:
+        """
+        Get the data type for z data.
+
+        :param workspace: An active Workspace.
+
+        :return: A new instance of DataType.
+        """
         return cls._for_geometric_data(
             workspace, GeometricDataConstants.z_datatype_uid()
         )
+
+    @staticmethod
+    def validate_data_type(workspace: Workspace, attribute_dict: dict):
+        """
+        Get a dictionary of attributes and validate the type of data.
+
+        :param workspace: An active Workspace.
+        :param attribute_dict: A dictionary of attributes of the new Datatype to create.
+
+        :return: A new instance of DataType.
+        """
+
+        entity_type = attribute_dict.get("entity_type")
+        if entity_type is None:
+            primitive_type = attribute_dict.get("type")
+            if primitive_type is not None:
+                assert (
+                    primitive_type.upper() in PrimitiveTypeEnum.__members__
+                ), f"Data 'type' should be one of {PrimitiveTypeEnum.__members__}"
+                entity_type = {"primitive_type": primitive_type.upper()}
+            else:
+                values = attribute_dict.get("values")
+                if values is None or (
+                    isinstance(values, np.ndarray)
+                    and (values.dtype in [np.float32, np.float64])
+                ):
+                    entity_type = {"primitive_type": "FLOAT"}
+                elif isinstance(values, np.ndarray) and (
+                    values.dtype in [np.uint32, np.int32]
+                ):
+                    entity_type = {"primitive_type": "INTEGER"}
+                elif isinstance(values, str) or (
+                    isinstance(values, np.ndarray) and values.dtype.kind in ["U", "S"]
+                ):
+                    entity_type = {"primitive_type": "TEXT"}
+                elif isinstance(values, np.ndarray) and (values.dtype == bool):
+                    entity_type = {"primitive_type": "BOOLEAN"}
+                else:
+                    raise NotImplementedError(
+                        "Only add_data values of type FLOAT, INTEGER,"
+                        "BOOLEAN and TEXT have been implemented"
+                    )
+        elif isinstance(entity_type, EntityType) and (
+            (entity_type.uid not in getattr(workspace, "_types"))
+            or (entity_type.workspace != workspace)
+        ):
+            return entity_type.copy(workspace=workspace)
+
+        return entity_type

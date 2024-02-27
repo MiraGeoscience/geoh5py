@@ -32,7 +32,7 @@ from getpass import getuser
 from io import BytesIO
 from pathlib import Path
 from subprocess import CalledProcessError
-from typing import TYPE_CHECKING, ClassVar, cast
+from typing import ClassVar, cast
 from weakref import ReferenceType
 
 import h5py
@@ -60,9 +60,9 @@ from ..shared.concatenation import (
     ConcatenatedObject,
     ConcatenatedPropertyGroup,
     Concatenator,
-    DrillholesConcatenator,
 )
 from ..shared.entity import Entity
+from ..shared.entity_type import EntityType
 from ..shared.exceptions import Geoh5FileClosedError
 from ..shared.utils import (
     as_str_if_utf8_bytes,
@@ -70,11 +70,6 @@ from ..shared.utils import (
     get_attributes,
     str2uuid,
 )
-
-if TYPE_CHECKING:
-    from ..groups import group
-    from ..objects import object_base
-    from ..shared import EntityType
 
 
 # pylint: disable=too-many-instance-attributes
@@ -481,22 +476,6 @@ class Workspace(AbstractContextManager):
 
         return created_entity
 
-    def register_property_group(self, property_group: PropertyGroup) -> PropertyGroup:
-        """
-        Create a new PropertyGroup entity with attributes.
-        :param property_group: :obj:`~geoh5py.objects.property.property_group.PropertyGroup` class.
-        return the newly created entity.
-        """
-        if not isinstance(property_group, PropertyGroup):
-            raise TypeError("property_group must be a PropertyGroup instance")
-
-        self._register_property_group(property_group)
-
-        if not property_group.on_file:
-            self.add_or_update_property_group(property_group)
-
-        return property_group
-
     def add_or_update_property_group(
         self, property_group: PropertyGroup, remove: bool = False
     ):
@@ -538,7 +517,7 @@ class Workspace(AbstractContextManager):
             else:
                 entity_type_uid = uuid.uuid4()
 
-        for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
+        for name, member in inspect.getmembers(groups) + inspect.getmembers(objects):
             if (
                 inspect.isclass(member)
                 and issubclass(member, entity_class.__bases__)
@@ -549,8 +528,7 @@ class Workspace(AbstractContextManager):
             ):
                 if self.version > 1.0:
                     if member in (DrillholeGroup, IntegratorDrillholeGroup):
-                        # todo: will change with DrillholeConcatenator soon
-                        member = DrillholesConcatenator
+                        member = type("Concatenator" + name, (Concatenator, member), {})
                     elif member is Drillhole and isinstance(
                         entity_kwargs.get("parent"),
                         (DrillholeGroup, IntegratorDrillholeGroup),
@@ -863,9 +841,9 @@ class Workspace(AbstractContextManager):
             H5Reader.fetch_metadata,
             uid,
             argument=argument,
-            entity_type="Groups"
-            if isinstance(self.get_entity(uid)[0], Group)
-            else "Objects",
+            entity_type=(
+                "Groups" if isinstance(self.get_entity(uid)[0], Group) else "Objects"
+            ),
             mode="r",
         )
 
@@ -939,7 +917,7 @@ class Workspace(AbstractContextManager):
             or self.find_property_group(entity_uid)
         )
 
-    def find_group(self, group_uid: uuid.UUID) -> group.Group | None:
+    def find_group(self, group_uid: uuid.UUID) -> Group | None:
         """
         Find an existing and active Group object.
         """
@@ -953,7 +931,7 @@ class Workspace(AbstractContextManager):
         """
         return weakref_utils.get_clean_ref(self._property_groups, property_group_uid)
 
-    def find_object(self, object_uid: uuid.UUID) -> object_base.ObjectBase | None:
+    def find_object(self, object_uid: uuid.UUID) -> ObjectBase | None:
         """
         Find an existing and active Object.
         """
@@ -1230,22 +1208,26 @@ class Workspace(AbstractContextManager):
 
         return self
 
-    def _register_type(self, entity_type: EntityType):
-        weakref_utils.insert_once(self._types, entity_type.uid, entity_type)
+    def register(self, entity: Entity | EntityType | PropertyGroup):
+        """
+        Register an entity to the workspace based on its type.
 
-    def _register_group(self, group: Group):
-        weakref_utils.insert_once(self._groups, group.uid, group)
-
-    def _register_data(self, data_obj: Entity):
-        weakref_utils.insert_once(self._data, data_obj.uid, data_obj)
-
-    def _register_object(self, obj: ObjectBase):
-        weakref_utils.insert_once(self._objects, obj.uid, obj)
-
-    def _register_property_group(self, property_group: PropertyGroup):
-        weakref_utils.insert_once(
-            self._property_groups, property_group.uid, property_group
-        )
+        :param entity: The entity to be registered.
+        """
+        if isinstance(entity, EntityType):
+            weakref_utils.insert_once(self._types, entity.uid, entity)
+        elif isinstance(entity, Group):
+            weakref_utils.insert_once(self._groups, entity.uid, entity)
+        elif isinstance(entity, Data):
+            weakref_utils.insert_once(self._data, entity.uid, entity)
+        elif isinstance(entity, ObjectBase):
+            weakref_utils.insert_once(self._objects, entity.uid, entity)
+        elif isinstance(entity, PropertyGroup):
+            weakref_utils.insert_once(self._property_groups, entity.uid, entity)
+            if not entity.on_file:
+                self.add_or_update_property_group(entity)
+        else:
+            raise ValueError(f"Entity of type {type(entity)} is not supported.")
 
     @property
     def root(self) -> Entity | PropertyGroup | None:

@@ -15,21 +15,54 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from __future__ import annotations
+# pylint: disable=too-many-ancestors
 
-from typing import TYPE_CHECKING
+from __future__ import annotations
 
 import numpy as np
 
 from ...data import Data
 from ...objects import Drillhole
 from .object import ConcatenatedObject
-
-if TYPE_CHECKING:
-    from .property_group import ConcatenatedPropertyGroup
+from .property_group import ConcatenatedPropertyGroup
 
 
 class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
+    def _update_attribute_from_property_group(
+        self,
+        attributes: dict,
+        property_group: ConcatenatedPropertyGroup | str,
+    ) -> tuple[dict, ConcatenatedPropertyGroup]:
+        """
+        Update the input attributes with the depth or from-to values from the property group.
+
+        :param attributes: The attributes to update.
+        :param property_group: the property group to use for the update.
+
+        :return: The updated attributes and the property group.
+        """
+
+        if isinstance(property_group, str):
+            property_group = self.get_property_group(property_group)[0]
+        if not isinstance(property_group, ConcatenatedPropertyGroup):
+            raise AttributeError(
+                "Input data dictionary must contain a key/value pair of depth data "
+                "or contain an 'OBJECT' association. Valid depth keys are 'depth' "
+                "and 'from-to'."
+            )
+        if property_group.property_group_type == "Depth table":
+            attributes["depth"] = property_group.depth_.values
+        elif property_group.property_group_type == "Interval table":
+            attributes["from-to"] = np.c_[
+                property_group.from_.values, property_group.to_.values
+            ]
+        else:
+            raise AttributeError(
+                "Input data property group must be of type 'Depth table' or 'Interval table'"
+            )
+
+        return attributes, property_group
+
     @property
     def depth_(self) -> list[Data]:
         obj_list = []
@@ -94,13 +127,9 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
             and "from-to" not in attributes
             and "association" not in attributes
         ):
-            if property_group is None:
-                raise AttributeError(
-                    "Input data dictionary must contain a key/value pair of depth data "
-                    "or contain an 'OBJECT' association. Valid depth keys are 'depth' "
-                    "and 'from-to'."
-                )
-            attributes["from-to"] = None
+            attributes, property_group = self._update_attribute_from_property_group(
+                attributes, property_group
+            )
 
         # set a specific nan value if text
         if attributes.get("type") == "TEXT":

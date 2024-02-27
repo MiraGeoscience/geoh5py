@@ -17,23 +17,32 @@
 
 from __future__ import annotations
 
-import uuid
+import numpy as np
+import pytest
 
-from .group import Group, GroupType
+from geoh5py.objects import Points
+from geoh5py.workspace import Workspace
 
 
-class MapsGroup(Group):
-    """The type for the basic Container group."""
+def test_metadata(tmp_path):
 
-    __TYPE_UID = uuid.UUID("{4d65f8c3-a015-4c01-b411-412c0f4f0884}")
+    h5file_path = tmp_path / r"testPoints.geoh5"
+    workspace = Workspace.create(h5file_path)
+    points = Points.create(workspace, vertices=np.random.randn(12, 3), allow_move=False)
 
-    _name = "Maps Group"
-    _description = "Maps Group"
+    assert points.metadata is None
 
-    def __init__(self, group_type: GroupType, **kwargs):
-        assert group_type is not None
-        super().__init__(group_type, **kwargs)
+    points.metadata = {"test": "test"}
 
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
+    assert points.metadata == {"test": "test"}
+
+    points.metadata = {"test2": "test"}
+
+    assert points.metadata == {"test": "test", "test2": "test"}
+
+    points.metadata = None
+
+    assert points.metadata is None
+
+    with pytest.raises(TypeError, match="Input metadata must be of type"):
+        points.metadata = "bidon"

@@ -24,7 +24,7 @@ import uuid
 
 import numpy as np
 
-from ..data import Data, FloatData, NumericData
+from ..data import Data, DataType, FloatData, NumericData
 from ..groups import PropertyGroup
 from ..shared.utils import box_intersect, mask_by_extent, merge_arrays
 from .object_base import ObjectType
@@ -411,7 +411,7 @@ class Drillhole(Points):
                 attributes, property_group, collocation_distance=collocation_distance
             )
 
-            entity_type = self.validate_data_type(attributes)
+            entity_type = DataType.validate_data_type(self.workspace, attributes)
             kwargs = {
                 "name": None,
                 "parent": self,

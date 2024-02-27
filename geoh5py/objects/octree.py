@@ -65,8 +65,6 @@ class Octree(GridObject):
 
         super().__init__(object_type, **kwargs)
 
-        object_type.workspace._register_object(self)
-
     def base_refine(self):
         """
         Refine the mesh to its base octree level resulting in a

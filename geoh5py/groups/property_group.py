@@ -26,7 +26,6 @@ from geoh5py.data import Data, DataAssociationEnum
 
 if TYPE_CHECKING:
     from geoh5py.objects import ObjectBase
-    from geoh5py.shared import Entity
 
 
 class PropertyGroup(ABC):
@@ -79,7 +78,7 @@ class PropertyGroup(ABC):
             except AttributeError:
                 continue
 
-        self.parent.workspace.register_property_group(self)
+        self.parent.workspace.register(self)
 
     def add_properties(self, data: Data | list[Data | uuid.UUID] | uuid.UUID):
         """
@@ -183,7 +182,7 @@ class PropertyGroup(ABC):
         self._on_file = value
 
     @property
-    def parent(self) -> Entity:
+    def parent(self) -> ObjectBase:
         """
         The parent :obj:`~geoh5py.objects.object_base.ObjectBase`
         """

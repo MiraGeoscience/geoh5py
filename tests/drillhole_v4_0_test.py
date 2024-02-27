@@ -15,6 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=too-many-lines
 # pylint: disable=too-many-locals
 # mypy: ignore-errors
 
@@ -36,6 +37,7 @@ from geoh5py.shared.concatenation import (
     ConcatenatedPropertyGroup,
     Concatenator,
 )
+from geoh5py.shared.concatenation.drillholes_group_table import DrillholesGroupTable
 from geoh5py.shared.utils import as_str_if_uuid, compare_entities
 from geoh5py.workspace import Workspace
 
@@ -465,8 +467,30 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
                 property_group=prop_group.name,
             )
 
+            prop_group = [k for k in well.property_groups if k.name == "depth_0"][0]
+            well.add_data(
+                {
+                    "new_data_depth": {
+                        "values": np.random.randn(25).astype(np.float32)
+                    },
+                },
+                property_group=prop_group.name,
+            )
+
+            with pytest.raises(AttributeError, match="Input data property group"):
+                well.add_data(
+                    {
+                        "new_data_bidon": {
+                            "values": np.random.randn(24).astype(np.float32)
+                        },
+                    },
+                    property_group=ConcatenatedPropertyGroup(
+                        parent=well, property_group_type="Multi-element"
+                    ),
+                )
+
         assert (
-            len(well.property_groups[0].properties) == 3
+            len(well.property_groups[0].properties) == 4
         ), "Issue adding data to interval."
 
 
@@ -614,10 +638,17 @@ def test_copy_drillhole_group(tmp_path):
             ga_version="4.2",
         ) as new_space:
             dh_group_copy = dh_group.copy(parent=new_space)
+
             compare_entities(
                 dh_group_copy,
                 dh_group,
-                ignore=["_metadata", "_parent", "_data", "_index"],
+                ignore=[
+                    "_metadata",
+                    "_parent",
+                    "_data",
+                    "_index",
+                    "_drillholes_tables",
+                ],
             )
 
 
@@ -767,11 +798,11 @@ def compare_structured_arrays(
     :param array1: The first structured array to compare.
     :param array2: The second array to be compared.
     :param tolerance: The tolerance level for numerical comparison.
+    :param ignore: The names of the columns to ignore in the comparison.
 
     :return: True if arrays are equivalent within the given tolerance, False otherwise.
     """
-
-    if array1.dtype != array2.dtype:
+    if array1.dtype.names != array2.dtype.names:
         return False  # Different structure
 
     for column in array1.dtype.names:
@@ -806,7 +837,6 @@ def test_export_table(tmp_path):
             .astype("S"),
             drillhole_group.data["FROM"],
             drillhole_group.data["TO"],
-            drillhole_group.data["text Data"],
             drillhole_group.data["interval_values_a"],
             np.array(
                 [np.nan]
@@ -816,23 +846,22 @@ def test_export_table(tmp_path):
                 )
                 + drillhole_group.data["interval_values_b"].tolist()
             ),
+            drillhole_group.data["text Data"],
         ]
 
         dtypes = [
             ("Drillhole", "O"),
             ("FROM", np.float64),
             ("TO", np.float64),
-            ("text Data", "O"),
             ("interval_values_a", np.float64),
             ("interval_values_b", np.float64),
+            ("text Data", "O"),
         ]
 
         verification = np.core.records.fromarrays(values, dtype=dtypes)
 
         assert compare_structured_arrays(
-            drillhole_group.get_depth_table(
-                ("text Data", "interval_values_a", "interval_values_b"), True
-            ),
+            drillhole_group.drillholes_tables["property_group"].depth_table,
             verification,
             tolerance=1e-5,
         )
@@ -853,39 +882,134 @@ def test_export_table(tmp_path):
 
         verification = np.core.records.fromarrays(values, dtype=dtypes)
 
+        # drillholes cannot be compared directly as the order is based on depth
         assert compare_structured_arrays(
-            drillhole_group.get_depth_table("my_log_values/", False),
+            drillhole_group.drillholes_tables["depth_0"].depth_table_by_name(
+                "my_log_values/", spatial_index=True
+            )[["DEPTH", "my_log_values/"]],
+            verification[["DEPTH", "my_log_values/"]],
+            tolerance=1e-5,
+        )
+
+        assert compare_structured_arrays(
+            drillhole_group.drillholes_tables["depth_0"].depth_table_by_name(
+                "my_log_values/", spatial_index=False
+            ),
+            verification[["my_log_values/"]],
+            tolerance=1e-5,
+        )
+
+
+def test_add_data_to_property(tmp_path):
+    h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
+    drillhole_group, workspace = create_drillholes(
+        h5file_path, version=2.0, ga_version="4.2"
+    )
+
+    with workspace.open():
+        drillholes_table = drillhole_group.drillholes_tables["property_group"]
+        verification = drillholes_table.depth_table_by_name(
+            "interval_values_a", spatial_index=True
+        )
+
+        verification_map_value = (verification["interval_values_a"] * 10).astype(
+            np.int32
+        )
+        verification_map_value -= np.min(verification_map_value) - 1
+
+        value_map = {idx: f"{idx}" for idx in np.unique(verification_map_value)}
+
+        drillholes_table.add_values_to_property_group(
+            "new value",
+            verification_map_value,
+            value_map=value_map,
+        )
+
+        drillholes_table.add_values_to_property_group(
+            "new value int", verification_map_value
+        )
+
+        verificationb = drillholes_table.depth_table_by_name("new value")
+        verificatione = drillholes_table.depth_table_by_name("new value int")
+        verificatione.dtype.names = verificationb.dtype.names
+
+        assert compare_structured_arrays(
+            verificationb,
+            verificatione,
+            tolerance=1e-5,
+        )
+
+        # reopen
+        drillhole_group = workspace.get_entity("DH_group")[0]
+
+        verification = drillhole_group.drillholes_tables[
+            "property_group"
+        ].depth_table_by_name("interval_values_a")
+
+        verificationd = drillhole_group.drillholes_tables[
+            "property_group"
+        ].depth_table_by_name("new value")
+
+        assert compare_structured_arrays(
+            verificationd,
+            verificationb,
+            tolerance=1e-5,
+        )
+
+        # change the name for the verification
+        verificationd.dtype.names = verification.dtype.names
+        verificationc = verification.copy()
+        verificationc["interval_values_a"] = verification_map_value
+
+        assert compare_structured_arrays(
+            verificationc,
+            verificationd,
+            tolerance=1e-5,
+        )
+
+        test_drillhole_table = drillhole_group.drillholes_table_from_data_name[
+            "interval_values_a"
+        ]
+
+        assert compare_structured_arrays(
+            test_drillhole_table.depth_table_by_name("interval_values_a"),
             verification,
             tolerance=1e-5,
         )
 
 
-def test_export_table_errors(tmp_path):
-    h5file_path = tmp_path / "test_drillholeGroup.geoh5"
+def test_tables_errors(tmp_path):
+    h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
+
     drillhole_group, workspace = create_drillholes(
         h5file_path, version=2.0, ga_version="4.2"
     )
 
-    with workspace.open(mode="r+"):
-        with pytest.raises(KeyError, match="Data 'bidon' not found in concatenated "):
-            drillhole_group.get_data_from_name("bidon")
+    with workspace.open():
+        with pytest.raises(TypeError, match="The parent must be a Concatenator"):
+            getattr(DrillholesGroupTable, "_get_property_groups")("bidon", "bidon")
 
-        with pytest.raises(
-            AssertionError, match=r"Data '\('text Data', 'my_log_values/'\)' don't have"
-        ):
-            drillhole_group.depth_multiple_association(("text Data", "my_log_values/"))
-
-        drillhole_group.children[0].get_data("text Data")[
-            0
-        ].property_group.property_group_type = "Multi-element"
-
-        # create a drillhole group
-        assert (
-            drillhole_group.get_depth_association(
-                drillhole_group.children[0].get_data("text Data")[0].property_group
+        with pytest.raises(ValueError, match="No property group with name"):
+            getattr(DrillholesGroupTable, "_get_property_groups")(
+                drillhole_group, "bidon"
             )
-            is None
-        )
 
-        with pytest.raises(KeyError, match=r"Data '\('bidon',\)' not found"):
-            drillhole_group.association_by_drillhole(("bidon",))
+        with pytest.raises(KeyError, match="The name must"):
+            drillhole_group.drillholes_tables[
+                "property_group"
+            ].add_values_to_property_group(name=123, values=np.random.randn(50))
+
+        with pytest.raises(ValueError, match="The length of the values"):
+            drillhole_group.drillholes_tables[
+                "property_group"
+            ].add_values_to_property_group(name="new value", values=np.random.randn(49))
+
+        with pytest.raises(KeyError, match="The names are not in the list"):
+            drillhole_group.drillholes_tables["property_group"].depth_table_by_name(
+                ("bidon", "bidon")
+            )
+
+        with pytest.raises(KeyError, match="The name 'bidon' is not in"):
+            drillhole_group.drillholes_tables["property_group"].nan_value_from_name(
+                "bidon"
+            )

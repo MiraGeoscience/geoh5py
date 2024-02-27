@@ -33,7 +33,6 @@ if TYPE_CHECKING:
 
 class ConcatenatedObject(Concatenated, ObjectBase):
     _parent: Concatenator
-    _property_groups: list | None = None
 
     def __init__(self, entity_type, **kwargs):
         if kwargs.get("parent") is None:
@@ -41,6 +40,8 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                 "Creating a concatenated object must have a parent "
                 "of type Concatenator."
             )
+
+        self._property_groups: list | None = None
 
         super().__init__(entity_type, **kwargs)
 

@@ -235,14 +235,14 @@ def test_survey_airborne_fem_data(tmp_path):
     # Create another property group and assign by name
     prop_group = receivers.add_data_to_group(data, "NewGroup")
 
-    receivers.edit_metadata({"Property groups": prop_group})
+    receivers.edit_em_metadata({"Property groups": prop_group})
 
     assert (
         prop_group.name in receivers.metadata["EM Dataset"]["Property groups"]
         and len(receivers.metadata["EM Dataset"]["Property groups"]) == 2
     ), "Failed to add the property group to list of metadata."
 
-    receivers.edit_metadata({"Property groups": None})
+    receivers.edit_em_metadata({"Property groups": None})
 
     assert (
         len(receivers.metadata["EM Dataset"]["Property groups"]) == 0
@@ -251,7 +251,7 @@ def test_survey_airborne_fem_data(tmp_path):
     with pytest.raises(
         TypeError, match="Input value for 'Property groups' must be a PropertyGroup"
     ):
-        receivers.edit_metadata({"Property groups": 1234})
+        receivers.edit_em_metadata({"Property groups": 1234})
 
     with pytest.raises(
         TypeError,

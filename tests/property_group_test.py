@@ -137,11 +137,6 @@ def test_create_property_group(tmp_path):
 
         assert isinstance(workspace.property_groups, list)
 
-        with pytest.raises(
-            TypeError, match="property_group must be a PropertyGroup instance"
-        ):
-            workspace.register_property_group("bidon")
-
         property_group_from_object = curve.get_entity("myGroup")[0]
 
         assert property_group_from_object == property_group_test
