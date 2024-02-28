@@ -15,6 +15,7 @@ dependencies:
     - sphinx_issues
     - sphinx_rtd_theme
     - sphinxcontrib-bibtex
+    - sphinxcontrib-googleanalytics
     - nbsphinx
     - nbstripout
     - numpydoc
