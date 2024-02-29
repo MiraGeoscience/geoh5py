@@ -22,6 +22,8 @@ import weakref
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
+from ..shared.utils import ensure_uuid
+
 if TYPE_CHECKING:
     from ..workspace import Workspace
 
@@ -32,65 +34,29 @@ class EntityType(ABC):
     """
     The base class for all entity types.
 
-    :param workspace: The workspace to which the entity type belongs.
+    :param workspace: The workspace to associate the entity type with.
     :param uid: The unique identifier of the entity type.
     :param description: The description of the entity type.
     :param name: The name of the entity type.
-    :param kwargs: Additional keyword arguments to set as attributes.
     """
 
-    # todo: This mechanic feels quite hacky
     _attribute_map = {"Description": "description", "ID": "uid", "Name": "name"}
 
     def __init__(
         self,
         workspace: Workspace,
-        uid: uuid.UUID | None = None,
+        uid: uuid.UUID = uuid.uuid4(),
         description: str | None = "Entity",
         name: str | None = "Entity",
-        **kwargs,
+        entity_class: type | None = None,
     ):
+        self._on_file: bool = False
+        self._uid: uuid.UUID = ensure_uuid(uid)
 
-        self._workspace: Workspace = self._set_workspace(workspace)
-        self.uid = self._modify_attribute("ID", uid, **kwargs)
-        self.description = self._modify_attribute("Description", description, **kwargs)
-        self.name = self._modify_attribute("Name", name, **kwargs)
-        self._on_file = False
-
-        self.workspace.register(self)
-
-    @classmethod
-    def _modify_attribute(cls, attribute_name: str, attribute: Any, **kwargs):
-        """
-        Modify the attribute based on the name and kwargs.
-
-        :param attribute_name: The name of the attribute to modify.
-        :param attribute: The attribute to modify.
-        :param kwargs: The kwargs to modify the attribute.
-
-        :return: The modified attribute.
-        """
-        if cls._attribute_map.get(attribute_name, None):
-            if attribute_name in kwargs:
-                return kwargs[attribute_name]
-        return attribute
-
-    def _set_workspace(self, workspace: Workspace) -> Workspace:
-        """
-        Set the workspace for the entity type.
-        It is private as workspace should not be changed
-
-        :param workspace: The workspace to set.
-        """
-        if not hasattr(workspace, "create_entity"):
-            raise TypeError(f"Workspace must be a Workspace, not {type(workspace)}")
-
-        workspace_ = weakref.ref(workspace)()
-
-        if workspace_ is None:
-            raise ValueError("Workspace is not available.")
-
-        return workspace_
+        self.description = description
+        self.name = name
+        self.entity_class = entity_class
+        self.workspace = workspace
 
     @property
     def attribute_map(self) -> dict[str, str]:
@@ -99,6 +65,19 @@ class EntityType(ABC):
         geoh5.
         """
         return self._attribute_map
+
+    @classmethod
+    def convert_kwargs(cls, kwargs: dict[str, Any]) -> dict[str, Any]:
+        """
+        Convert the kwargs to the geoh5py attribute names.
+
+        :param kwargs: The kwargs to convert.
+
+        :return: The converted kwargs.
+        """
+        return {
+            cls._attribute_map.get(key, key): value for key, value in kwargs.items()
+        }
 
     def copy(self, **kwargs) -> EntityType:
         """
@@ -137,7 +116,24 @@ class EntityType(ABC):
 
         self._description = description
 
-        if hasattr(self, "_on_file"):
+        if self.workspace:
+            self.workspace.update_attribute(self, "attributes")
+
+    @property
+    def entity_class(self) -> type | None:
+        """
+        The class of the entity.
+        """
+        return self._entity_class
+
+    @entity_class.setter
+    def entity_class(self, value: type | None):
+        if not isinstance(value, (type, type(None))):
+            raise TypeError(f"entity_class must be a type, not {type(value)}")
+
+        self._entity_class = value
+
+        if self.workspace:
             self.workspace.update_attribute(self, "attributes")
 
     @classmethod
@@ -150,7 +146,7 @@ class EntityType(ABC):
 
         :return: EntityType of None
         """
-        return cast(EntityTypeT, workspace.find_type(type_uid, cls))
+        return cast(EntityTypeT, workspace.find_type(ensure_uuid(type_uid), cls))
 
     @classmethod
     @abstractmethod
@@ -178,7 +174,7 @@ class EntityType(ABC):
 
         self._name = name
 
-        if hasattr(self, "_on_file"):
+        if self.workspace:
             self.workspace.update_attribute(self, "attributes")
 
     @property
@@ -203,26 +199,26 @@ class EntityType(ABC):
         """
         return self._uid
 
-    @uid.setter
-    def uid(self, uid: str | uuid.UUID | None):
-        if uid is None:
-            uid = uuid.uuid4()
-        if isinstance(uid, str):
-            uid = uuid.UUID(uid)
-        if not isinstance(uid, uuid.UUID):
-            raise TypeError(f"uid must be a string or uuid.UUID, not {type(uid)}")
-
-        self._uid = uid
-
-        if hasattr(self, "_on_file"):
-            self.workspace.update_attribute(self, "attributes")
-
     @property
     def workspace(self) -> Workspace:
         """
         The Workspace associated to the object.
         """
-        if not hasattr(self._workspace, "create_entity"):
+        if not hasattr(self, "_workspace"):
+            return None  # type: ignore
+
+        _workspace = self._workspace()
+        if _workspace is None:
             raise AssertionError("Cannot access the workspace, ensure it is open.")
 
-        return self._workspace
+        return _workspace
+
+    @workspace.setter
+    def workspace(self, workspace: Workspace):
+        if hasattr(self, "_workspace"):
+            raise AssertionError("Cannot change the workspace of an entity type.")
+        if not hasattr(workspace, "create_entity"):
+            raise TypeError(f"Workspace must be a Workspace, not {type(workspace)}")
+
+        self._workspace = weakref.ref(workspace)
+        self.workspace.register(self)

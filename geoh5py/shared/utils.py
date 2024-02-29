@@ -438,6 +438,24 @@ def as_str_if_utf8_bytes(value) -> str:
     return value
 
 
+def ensure_uuid(value: UUID | str) -> UUID:
+    """
+    Ensure that the value is a UUID.
+
+    If not, it raises a type error.
+
+    :param value: The value to ensure is a UUID.
+
+    :return: The verified UUID.
+    """
+    value = str2uuid(value)
+
+    if not isinstance(value, UUID):
+        raise TypeError(f"Value {value} is not a UUID but a {type(value)}.")
+
+    return value
+
+
 def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = None):
     """
     Recursion through nested dictionaries and applies mapping functions to values.

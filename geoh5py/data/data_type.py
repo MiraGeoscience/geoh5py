@@ -18,11 +18,12 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast, get_args
 
 import numpy as np
 
 from ..shared import EntityType
+from ..shared.utils import ensure_uuid
 from .color_map import ColorMap
 from .geometric_data_constants import GeometricDataConstants
 from .primitive_type_enum import PrimitiveTypeEnum
@@ -32,7 +33,6 @@ if TYPE_CHECKING:
     from ..workspace import Workspace
     from .data import Data  # noqa: F401
 
-from typing import Literal
 
 ColorMapping = Literal["linear", "equal_area", "logarithmic", "cdf", "missing"]
 
@@ -40,8 +40,8 @@ ColorMapping = Literal["linear", "equal_area", "logarithmic", "cdf", "missing"]
 class DataType(EntityType):
     # pylint: disable=too-many-arguments
     """
-    DataType class. 
-    
+    DataType class.
+
     Controls all the attributes of the data type for displays in Geoscience ANALYST.
 
     :param workspace: An active Workspace.
@@ -74,28 +74,21 @@ class DataType(EntityType):
         primitive_type: type[Data] | PrimitiveTypeEnum | str | None = None,
         color_map: ColorMap | None = None,
         hidden: bool = False,
-        mapping: str = "equal_area",
+        mapping: ColorMapping = "equal_area",
         number_of_bins: int | None = None,
         transparent_no_data: bool = True,
         units: str | None = None,
         value_map: dict[int, str] | ReferenceValueMap | None = None,
         **kwargs,
     ):
-
         super().__init__(workspace, **kwargs)
 
         self.color_map = color_map
-        self.hidden = self._modify_attribute("Hidden", hidden, **kwargs)
-        self.mapping = self._modify_attribute("Mapping", mapping, **kwargs)
-        self.number_of_bins = self._modify_attribute(
-            "Number of bins", number_of_bins, **kwargs
-        )
-        self.primitive_type = self._modify_attribute(
-            "Primitive type", primitive_type, **kwargs
-        )
-        self.transparent_no_data = self._modify_attribute(
-            "Transparent no data", transparent_no_data, **kwargs
-        )
+        self.hidden = hidden
+        self.mapping = mapping
+        self.number_of_bins = number_of_bins
+        self.primitive_type = primitive_type  # type: ignore
+        self.transparent_no_data = transparent_no_data
         self.units = units
         self.value_map = value_map  # type: ignore
 
@@ -158,6 +151,7 @@ class DataType(EntityType):
             color_map.parent = self
 
         self._color_map: ColorMap | None = color_map
+
         self.workspace.update_attribute(self, "color_map")
 
     @classmethod
@@ -189,12 +183,11 @@ class DataType(EntityType):
 
         :return: A new instance of DataType.
         """
+        kwargs = cls.convert_kwargs(kwargs)
         uid = kwargs.get("uid", None)
-        uid = kwargs.get("ID", uid)
 
         if uid is not None:
-            if not isinstance(uid, uuid.UUID):
-                uid = uuid.UUID(uid)
+            uid = ensure_uuid(uid)
             entity_type = cls.find(workspace, uid)
             if entity_type is not None:
                 return entity_type
@@ -253,6 +246,7 @@ class DataType(EntityType):
             raise TypeError(f"hidden must be a bool, not {type(value)}")
 
         self._hidden: bool = bool(value)
+
         self.workspace.update_attribute(self, "attributes")
 
     @property
@@ -265,12 +259,13 @@ class DataType(EntityType):
         return self._mapping
 
     @mapping.setter
-    def mapping(self, value: str):
-        if value not in COLOR_MAPPING:
+    def mapping(self, value: ColorMapping):
+        if value not in get_args(ColorMapping):
             raise ValueError(
-                f"Mapping {value} was provided but should be one of {COLOR_MAPPING}"
+                f"Mapping {value} was provided but should be one of {get_args(ColorMapping)}"
             )
         self._mapping: str = value
+
         self.workspace.update_attribute(self, "attributes")
 
     @property
@@ -291,6 +286,7 @@ class DataType(EntityType):
             )
 
         self._number_of_bins: int | None = n_bins
+
         self.workspace.update_attribute(self, "attributes")
 
     @property
@@ -325,6 +321,7 @@ class DataType(EntityType):
         if not isinstance(value, bool) and value != 1 and value != 0:
             raise TypeError(f"transparent_no_data must be a bool, not {type(value)}")
         self._transparent_no_data = bool(value)
+
         self.workspace.update_attribute(self, "attributes")
 
     @property
@@ -339,6 +336,7 @@ class DataType(EntityType):
         if not isinstance(unit, (str, type(None))):
             raise TypeError(f"units must be a string, not {type(unit)}")
         self._units = unit
+
         self.workspace.update_attribute(self, "attributes")
 
     @staticmethod
@@ -419,4 +417,5 @@ class DataType(EntityType):
             )
 
         self._value_map: ReferenceValueMap | None = value_map
+
         self.workspace.update_attribute(self, "value_map")

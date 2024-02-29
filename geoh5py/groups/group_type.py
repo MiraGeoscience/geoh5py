@@ -45,12 +45,8 @@ class GroupType(EntityType):
     ):
         super().__init__(workspace, **kwargs)
 
-        self.allow_move_content = self._modify_attribute(
-            "Allow move contents", allow_move_content, **kwargs
-        )
-        self.allow_delete_content = self._modify_attribute(
-            "Allow delete contents", allow_delete_content, **kwargs
-        )
+        self.allow_move_content = allow_move_content
+        self.allow_delete_content = allow_delete_content
 
     @property
     def allow_move_content(self) -> bool:
@@ -102,6 +98,7 @@ class GroupType(EntityType):
 
         :return: A new instance of GroupType.
         """
+        kwargs = cls.convert_kwargs(kwargs)
         if (
             getattr(kwargs.get("entity_class", None), "default_type_uid", None)
             is not None

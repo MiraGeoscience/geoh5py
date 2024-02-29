@@ -56,6 +56,7 @@ class ObjectType(EntityType):
 
         :return: A new instance of GroupType.
         """
+        kwargs = cls.convert_kwargs(kwargs)
         if (
             getattr(kwargs.get("entity_class", None), "default_type_uid", None)
             is not None
@@ -64,7 +65,6 @@ class ObjectType(EntityType):
             kwargs["uid"] = uid
         else:
             uid = kwargs.get("uid", None)
-            uid = kwargs.get("ID", uid)
             if isinstance(uid, str):
                 uid = uuid.UUID(uid)
         if isinstance(uid, uuid.UUID):
