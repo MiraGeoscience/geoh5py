@@ -45,13 +45,13 @@ class EntityType(ABC):
     def __init__(
         self,
         workspace: Workspace,
-        uid: uuid.UUID = uuid.uuid4(),
+        uid: uuid.UUID | None = None,
         description: str | None = "Entity",
         name: str | None = "Entity",
         entity_class: type | None = None,
     ):
         self._on_file: bool = False
-        self._uid: uuid.UUID = ensure_uuid(uid)
+        self._uid: uuid.UUID = ensure_uuid(uid) if uid is not None else uuid.uuid4()
 
         self.description = description
         self.name = name

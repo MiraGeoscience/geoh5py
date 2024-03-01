@@ -82,7 +82,6 @@ class DataType(EntityType):
         **kwargs,
     ):
         super().__init__(workspace, **kwargs)
-
         self.color_map = color_map
         self.hidden = hidden
         self.mapping = mapping
@@ -191,7 +190,6 @@ class DataType(EntityType):
             entity_type = cls.find(workspace, uid)
             if entity_type is not None:
                 return entity_type
-
         return cls(workspace, **kwargs)
 
     @classmethod
