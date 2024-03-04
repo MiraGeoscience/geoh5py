@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -75,12 +76,13 @@ class ObjectBase(EntityContainer):
         for child in children:
             if child not in self._children and isinstance(child, (Data, PropertyGroup)):
                 self._children.append(child)
+                if isinstance(child, PropertyGroup) and child not in property_groups:
+                    property_groups.append(child)
+            else:
+                warnings.warn(f"Child {child} is not valid or already exists.")
 
-            if isinstance(child, PropertyGroup) and child not in property_groups:
-                property_groups.append(child)
-
-            if property_groups:
-                self._property_groups = property_groups
+        if property_groups:
+            self._property_groups = property_groups
 
     def add_comment(self, comment: str, author: str | None = None):
         """
