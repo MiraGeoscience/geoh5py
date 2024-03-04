@@ -17,10 +17,10 @@
 
 from __future__ import annotations
 
-import uuid
 from typing import TYPE_CHECKING
 
 from ..shared import EntityType
+from ..shared.utils import ensure_uuid
 
 if TYPE_CHECKING:
     from ..workspace import Workspace
@@ -104,16 +104,12 @@ class GroupType(EntityType):
             is not None
         ):
             uid = kwargs["entity_class"].default_type_uid()
-            kwargs["uid"] = uid
-        else:
-            uid = kwargs.get("uid", None)
-            if isinstance(uid, str):
-                uid = uuid.UUID(uid)
-        if isinstance(uid, uuid.UUID):
-            entity_type = cls.find(workspace, uid)
+            if uid is not None:
+                kwargs["uid"] = uid
+        uid = kwargs.get("uid", None)
+        if uid is not None:
+            entity_type = cls.find(workspace, ensure_uuid(uid))
             if entity_type is not None:
                 return entity_type
-        if not isinstance(uid, (uuid.UUID, type(None))):
-            raise TypeError(f"'uid' must be a valid UUID, find {uid}")
 
         return cls(workspace, **kwargs)

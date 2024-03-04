@@ -31,6 +31,7 @@ EntityTypeT = TypeVar("EntityTypeT", bound="EntityType")
 
 
 class EntityType(ABC):
+    # pylint: disable=too-many-arguments
     """
     The base class for all entity types.
 
@@ -38,6 +39,8 @@ class EntityType(ABC):
     :param uid: The unique identifier of the entity type.
     :param description: The description of the entity type.
     :param name: The name of the entity type.
+    :param entity_class: The class of the entity.
+    :param on_file: Return True if the entity is on file.
     """
 
     _attribute_map = {"Description": "description", "ID": "uid", "Name": "name"}
@@ -49,14 +52,15 @@ class EntityType(ABC):
         description: str | None = "Entity",
         name: str | None = "Entity",
         entity_class: type | None = None,
+        on_file: bool = False,
     ):
-        self._on_file: bool = False
         self._uid: uuid.UUID = ensure_uuid(uid) if uid is not None else uuid.uuid4()
 
         self.description = description
         self.name = name
         self.entity_class = entity_class
         self.workspace = workspace
+        self.on_file = on_file
 
     @property
     def attribute_map(self) -> dict[str, str]:
@@ -89,6 +93,7 @@ class EntityType(ABC):
             for prop in dir(self)
             if isinstance(getattr(self.__class__, prop, None), property)
             and getattr(self, prop) is not None
+            and prop != "attribute_map"
         }
 
         attributes.update(kwargs)

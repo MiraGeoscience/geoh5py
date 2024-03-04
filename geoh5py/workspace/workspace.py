@@ -445,6 +445,7 @@ class Workspace(AbstractContextManager):
 
         :return entity: Newly created entity registered to the workspace
         """
+
         entity_kwargs: dict = kwargs.get("entity", {})
         entity_type_kwargs: dict = kwargs.get("entity_type", {})
 

@@ -312,7 +312,7 @@ def compare_entities(
         compare_bytes(object_a, object_b)
         return
 
-    base_ignore = ["_workspace", "_children", "_visual_parameters"]
+    base_ignore = ["_workspace", "_children", "_visual_parameters", "_entity_class"]
     ignore_list = base_ignore + ignore if ignore else base_ignore
 
     for attr in [k for k in object_a.__dict__.keys() if k not in ignore_list]:
