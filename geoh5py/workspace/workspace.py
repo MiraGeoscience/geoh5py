@@ -445,6 +445,7 @@ class Workspace(AbstractContextManager):
 
         :return entity: Newly created entity registered to the workspace
         """
+
         entity_kwargs: dict = kwargs.get("entity", {})
         entity_type_kwargs: dict = kwargs.get("entity_type", {})
 
@@ -507,6 +508,7 @@ class Workspace(AbstractContextManager):
         :return: A new Object or Group.
         """
         entity_type_uid = None
+
         for key, val in entity_type_kwargs.items():
             if key.lower() in ["id", "uid"]:
                 entity_type_uid = uuid.UUID(str(val))
@@ -1113,6 +1115,7 @@ class Workspace(AbstractContextManager):
             entity = val()
             if entity is not None:
                 objects_name[key] = entity.name
+                objects_name[key] = entity.name
         return objects_name
 
     def load_entity(
@@ -1214,23 +1217,20 @@ class Workspace(AbstractContextManager):
 
         :param entity: The entity to be registered.
         """
-        dict_entity: dict[uuid.UUID, ReferenceType]
         if isinstance(entity, EntityType):
-            dict_entity = self._types
+            weakref_utils.insert_once(self._types, entity.uid, entity)
         elif isinstance(entity, Group):
-            dict_entity = self._groups
+            weakref_utils.insert_once(self._groups, entity.uid, entity)
         elif isinstance(entity, Data):
-            dict_entity = self._data
+            weakref_utils.insert_once(self._data, entity.uid, entity)
         elif isinstance(entity, ObjectBase):
-            dict_entity = self._objects
+            weakref_utils.insert_once(self._objects, entity.uid, entity)
         elif isinstance(entity, PropertyGroup):
-            dict_entity = self._property_groups
+            weakref_utils.insert_once(self._property_groups, entity.uid, entity)
             if not entity.on_file:
                 self.add_or_update_property_group(entity)
         else:
             raise ValueError(f"Entity of type {type(entity)} is not supported.")
-
-        weakref_utils.insert_once(dict_entity, entity.uid, entity)
 
     @property
     def root(self) -> Entity | PropertyGroup | None:

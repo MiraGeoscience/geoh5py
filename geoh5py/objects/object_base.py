@@ -20,24 +20,23 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..data import CommentsData, Data, VisualParameters
-from ..data.data_association_enum import DataAssociationEnum
-from ..data.primitive_type_enum import PrimitiveTypeEnum
+from ..data import CommentsData, Data, DataAssociationEnum, DataType, VisualParameters
 from ..groups import PropertyGroup
-from ..shared import Entity, EntityType
+from ..shared import Entity
 from ..shared.conversion import BaseConversion
 from ..shared.entity_container import EntityContainer
 from ..shared.utils import clear_array_attributes
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
-    from .. import workspace
+    from ..workspace import Workspace
 
 
 class ObjectBase(EntityContainer):
@@ -77,12 +76,13 @@ class ObjectBase(EntityContainer):
         for child in children:
             if child not in self._children and isinstance(child, (Data, PropertyGroup)):
                 self._children.append(child)
+                if isinstance(child, PropertyGroup) and child not in property_groups:
+                    property_groups.append(child)
+            else:
+                warnings.warn(f"Child {child} is not valid or already exists.")
 
-            if isinstance(child, PropertyGroup) and child not in property_groups:
-                property_groups.append(child)
-
-            if property_groups:
-                self._property_groups = property_groups
+        if property_groups:
+            self._property_groups = property_groups
 
     def add_comment(self, comment: str, author: str | None = None):
         """
@@ -149,7 +149,7 @@ class ObjectBase(EntityContainer):
             )
             attr["name"] = name
             self.validate_data_association(attr)
-            entity_type = self.validate_data_type(attr)
+            entity_type = DataType.validate_data_type(self.workspace, attr)
             kwargs = {"parent": self, "association": attr["association"]}
             for key, val in attr.items():
                 if key in ["parent", "association", "entity_type", "type"]:
@@ -225,7 +225,7 @@ class ObjectBase(EntityContainer):
         return property_group
 
     @property
-    def cells(self):
+    def cells(self) -> np.ndarray:
         """
         :obj:`numpy.array` of :obj:`int`: Array of indices
         defining the connection between
@@ -334,13 +334,11 @@ class ObjectBase(EntityContainer):
         """
 
     @property
-    def faces(self):
+    def faces(self) -> np.ndarray:
         """Object faces."""
 
     @classmethod
-    def find_or_create_type(
-        cls, workspace: workspace.Workspace, **kwargs
-    ) -> ObjectType:
+    def find_or_create_type(cls, workspace: Workspace, **kwargs) -> ObjectType:
         """
         Find or create a type instance for a given object class.
 
@@ -348,7 +346,8 @@ class ObjectBase(EntityContainer):
 
         :return: The ObjectType instance for the given object class.
         """
-        return ObjectType.find_or_create(workspace, cls, **kwargs)
+        kwargs["entity_class"] = cls
+        return ObjectType.find_or_create(workspace, **kwargs)
 
     def get_property_group(self, name: uuid.UUID | str) -> list:
         """
@@ -405,6 +404,8 @@ class ObjectBase(EntityContainer):
         Find or create :obj:`~geoh5py.groups.property_group.PropertyGroup`
         from given name and properties.
 
+        :param name: Name of the property group.
+        :param uid: Unique identifier for the property group.
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
 
@@ -541,7 +542,7 @@ class ObjectBase(EntityContainer):
                     clear_array_attributes(child)
 
     @property
-    def vertices(self):
+    def vertices(self) -> np.ndarray:
         r"""
         :obj:`numpy.array` of :obj:`float`, shape (\*, 3): Array of x, y, z coordinates
         defining the position of points in 3D space.
@@ -573,49 +574,6 @@ class ObjectBase(EntityContainer):
             attribute_dict["association"] = "VERTEX"
         else:
             attribute_dict["association"] = "OBJECT"
-
-    def validate_data_type(self, attribute_dict):
-        """
-        Get a dictionary of attributes and validate the type of data.
-        """
-
-        entity_type = attribute_dict.get("entity_type")
-        if entity_type is None:
-            primitive_type = attribute_dict.get("type")
-            if primitive_type is not None:
-                assert (
-                    primitive_type.upper() in PrimitiveTypeEnum.__members__
-                ), f"Data 'type' should be one of {PrimitiveTypeEnum.__members__}"
-                entity_type = {"primitive_type": primitive_type.upper()}
-            else:
-                values = attribute_dict.get("values")
-                if values is None or (
-                    isinstance(values, np.ndarray)
-                    and (values.dtype in [np.float32, np.float64])
-                ):
-                    entity_type = {"primitive_type": "FLOAT"}
-                elif isinstance(values, np.ndarray) and (
-                    values.dtype in [np.uint32, np.int32]
-                ):
-                    entity_type = {"primitive_type": "INTEGER"}
-                elif isinstance(values, str) or (
-                    isinstance(values, np.ndarray) and values.dtype.kind in ["U", "S"]
-                ):
-                    entity_type = {"primitive_type": "TEXT"}
-                elif isinstance(values, np.ndarray) and (values.dtype == bool):
-                    entity_type = {"primitive_type": "BOOLEAN"}
-                else:
-                    raise NotImplementedError(
-                        "Only add_data values of type FLOAT, INTEGER,"
-                        "BOOLEAN and TEXT have been implemented"
-                    )
-        elif isinstance(entity_type, EntityType) and (
-            (entity_type.uid not in getattr(self.workspace, "_types"))
-            or (entity_type.workspace != self.workspace)
-        ):
-            return entity_type.copy(workspace=self.workspace)
-
-        return entity_type
 
     def add_default_visual_parameters(self):
         """

@@ -21,7 +21,9 @@ import random
 import string
 
 import numpy as np
+import pytest
 
+from geoh5py.data import ReferenceValueMap
 from geoh5py.objects import Points
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
@@ -61,3 +63,31 @@ def test_create_reference_data(tmp_path):
 
         compare_entities(points, rec_obj)
         compare_entities(data, rec_data)
+
+        with pytest.raises(TypeError, match="Map values must be a dictionary"):
+            ReferenceValueMap("value_map")
+
+        with pytest.raises(KeyError, match="Key must be an positive integer"):
+            ReferenceValueMap({-1: "test"})
+
+        with pytest.raises(ValueError, match="Value for key 0 must be 'Unknown'"):
+            ReferenceValueMap({0: "test"})
+
+        value_map = ReferenceValueMap({0: "Unknown", 1: "test"})
+
+        with pytest.raises(KeyError, match="Key must be an positive integer"):
+            value_map["test"] = "test"
+
+        with pytest.raises(TypeError, match="Value must be a string"):
+            value_map[1] = 1
+
+        with pytest.raises(ValueError, match="Value for key 0 must be 'Unknown'"):
+            value_map[0] = "test"
+
+        value_map[1] = "bidon"
+
+        assert value_map[1] == "bidon"
+
+        assert len(value_map) == 2
+
+        assert value_map() == {0: "Unknown", 1: "bidon"}

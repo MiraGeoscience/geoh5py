@@ -43,7 +43,7 @@ def all_data_types():
 def test_data_instantiation(data_class, tmp_path):
     h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace.create(h5file_path) as workspace:
-        data_type = DataType.create(workspace, data_class)
+        data_type = DataType(workspace, primitive_type=data_class)
         assert data_type.uid is not None
         assert data_type.uid.int != 0
         assert data_type.name == "Entity"
@@ -84,6 +84,9 @@ def test_data_instantiation(data_class, tmp_path):
 
         with pytest.raises(TypeError, match="Input 'data_type' must be "):
             data.TextData(data_type="bidon")
+
+        with pytest.raises(NotImplementedError, match="Only add_data"):
+            DataType.validate_data_type(workspace, {"values": object()})
 
 
 def _can_find(workspace, created_data):

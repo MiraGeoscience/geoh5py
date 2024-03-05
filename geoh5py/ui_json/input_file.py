@@ -107,6 +107,9 @@ class InputFile:
 
     @property
     def data(self) -> dict[str, Any] | None:
+        """
+        Dictionary representing the input data for the ui.json file.
+        """
         if self._data is None and self.ui_json is not None:
             self.data = flatten(self.ui_json)
 
