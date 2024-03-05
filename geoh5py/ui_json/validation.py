@@ -259,7 +259,6 @@ class InputValidation:
                 or name in self.ignore_list
             ):
                 continue
-
             self.validators[val](name, value, validations[val])
 
     def validate_data(self, data: dict[str, Any]) -> None:
