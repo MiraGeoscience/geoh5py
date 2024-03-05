@@ -218,7 +218,7 @@ class DataType(EntityType):
             pass
         elif not isinstance(n_bins, int) or n_bins < 1:
             raise ValueError(
-                "Number of bins should be an integer greater than 0 or None"
+                f"Number of bins should be an integer greater than 0 or None, not {n_bins}"
             )
 
         self._number_of_bins: int | None = n_bins
