@@ -73,10 +73,3 @@ class GroupType(EntityType):
         if not isinstance(allow, bool) and allow != 1 and allow != 0:
             raise TypeError("'allow_delete_content must be a boolean.")
         self._allow_delete_content = bool(allow)
-
-    @staticmethod
-    def create_custom(workspace: Workspace, **kwargs) -> GroupType:
-        """Creates a new instance of GroupType for an unlisted custom Group type with a
-        new auto-generated UUID.
-        """
-        return GroupType(workspace, **kwargs)

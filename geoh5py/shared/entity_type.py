@@ -21,6 +21,7 @@ import uuid
 import weakref
 from abc import ABC
 from typing import TYPE_CHECKING, Any, TypeVar, cast
+from warnings import warn
 
 from ..shared.utils import ensure_uuid
 
@@ -81,7 +82,7 @@ class EntityType(ABC):
             cls._attribute_map.get(key, key): value for key, value in kwargs.items()
         }
 
-    def copy(self, **kwargs) -> EntityType:
+    def copy(self, **kwargs):
         """
         Copy this entity type to another workspace.
         """
@@ -102,6 +103,33 @@ class EntityType(ABC):
             del attributes["uid"]
 
         return self.__class__(**attributes)
+
+    @classmethod
+    def create(cls, workspace, **kwargs):
+        """
+        WILL BE  DEPRECATED IN 10.0.0
+        Creates a new instance of :obj:`~geoh5py.data.data_type.DataType` with
+        corresponding :obj:`~geoh5py.data.primitive_type_enum.PrimitiveTypeEnum`.
+
+        :param workspace: The workspace to associate the entity type with.
+        :param kwargs: Keyword arguments to initialize the new DataType.
+
+        :return: A new instance of :obj:`~geoh5py.data.data_type.DataType`.
+        """
+        warn("This method will be deprecated in 10.0.0. Use the class constructor")
+
+        return cls(workspace, **kwargs)
+
+    @classmethod
+    def create_custom(cls, workspace: Workspace, **kwargs):
+        """
+        WILL BE  DEPRECATED IN 10.0.0
+
+        Creates a new instance of GroupType for an unlisted custom Group type with a
+        new auto-generated UUID.
+        """
+        warn("This method will be deprecated in 10.0.0. Use the class constructor")
+        return cls(workspace, **kwargs)
 
     @property
     def description(self) -> str | None:
@@ -141,7 +169,7 @@ class EntityType(ABC):
         uid: uuid.UUID | None = None,
         entity_class: type | None = None,
         **kwargs,
-    ) -> EntityType:
+    ):
         """
         Find or creates an EntityType with given uid that matches the given
         Group implementation class.

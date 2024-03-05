@@ -30,11 +30,5 @@ class ObjectType(EntityType):
     Object type class
     """
 
-    @staticmethod
-    def create_custom(workspace: Workspace) -> ObjectType:
-        """Creates a new instance of ObjectType for an unlisted custom Object type with a
-        new auto-generated UUID.
-
-        :param workspace: An active Workspace class
-        """
-        return ObjectType(workspace)
+    def __init__(self, workspace: Workspace, **kwargs):
+        super().__init__(workspace, **kwargs)

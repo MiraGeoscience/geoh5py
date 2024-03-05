@@ -43,7 +43,7 @@ def all_data_types():
 def test_data_instantiation(data_class, tmp_path):
     h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace.create(h5file_path) as workspace:
-        data_type = DataType.create(workspace, data_class)
+        data_type = DataType(workspace, primitive_type=data_class)
         assert data_type.uid is not None
         assert data_type.uid.int != 0
         assert data_type.name == "Entity"

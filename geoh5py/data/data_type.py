@@ -153,21 +153,43 @@ class DataType(EntityType):
         self.workspace.update_attribute(self, "color_map")
 
     @classmethod
-    def create(
-        cls, workspace: Workspace, primitive_type: type[Data], **kwargs
-    ) -> DataType:
+    def for_x_data(cls, workspace: Workspace) -> DataType:
         """
-        Creates a new instance of :obj:`~geoh5py.data.data_type.DataType` with
-        corresponding :obj:`~geoh5py.data.primitive_type_enum.PrimitiveTypeEnum`.
+        Get the data type for x data.
 
         :param workspace: An active Workspace.
-        :param primitive_type: A :obj:`~geoh5py.data.data.Data` implementation class.
-        :param kwargs: Keyword arguments to initialize the new DataType.
 
-        :return: A new instance of :obj:`~geoh5py.data.data_type.DataType`.
+        :return: A new instance of DataType.
         """
-        # todo: this could be to deprecate.
-        return cls(workspace, primitive_type=primitive_type, **kwargs)
+        return cls._for_geometric_data(
+            workspace, GeometricDataConstants.x_datatype_uid()
+        )
+
+    @classmethod
+    def for_y_data(cls, workspace: Workspace) -> DataType:
+        """
+        Get the data type for y data.
+
+        :param workspace: An active Workspace.
+
+        :return: A new instance of DataType.
+        """
+        return cls._for_geometric_data(
+            workspace, GeometricDataConstants.y_datatype_uid()
+        )
+
+    @classmethod
+    def for_z_data(cls, workspace: Workspace) -> DataType:
+        """
+        Get the data type for z data.
+
+        :param workspace: An active Workspace.
+
+        :return: A new instance of DataType.
+        """
+        return cls._for_geometric_data(
+            workspace, GeometricDataConstants.z_datatype_uid()
+        )
 
     @property
     def hidden(self) -> bool:
