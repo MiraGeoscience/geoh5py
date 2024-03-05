@@ -39,7 +39,6 @@ class EntityType(ABC):
     :param uid: The unique identifier of the entity type.
     :param description: The description of the entity type.
     :param name: The name of the entity type.
-    :param entity_class: The class of the entity.
     :param on_file: Return True if the entity is on file.
     """
 
@@ -51,14 +50,13 @@ class EntityType(ABC):
         uid: uuid.UUID | None = None,
         description: str | None = "Entity",
         name: str | None = "Entity",
-        entity_class: type | None = None,
         on_file: bool = False,
+        **_,
     ):
         self._uid: uuid.UUID = ensure_uuid(uid) if uid is not None else uuid.uuid4()
 
         self.description = description
         self.name = name
-        self.entity_class = entity_class
         self.workspace = workspace
         self.on_file = on_file
 
@@ -120,23 +118,6 @@ class EntityType(ABC):
             )
 
         self._description = description
-
-        if self.workspace:
-            self.workspace.update_attribute(self, "attributes")
-
-    @property
-    def entity_class(self) -> type | None:
-        """
-        The class of the entity.
-        """
-        return self._entity_class
-
-    @entity_class.setter
-    def entity_class(self, value: type | None):
-        if not isinstance(value, (type, type(None))):
-            raise TypeError(f"entity_class must be a type, not {type(value)}")
-
-        self._entity_class = value
 
         if self.workspace:
             self.workspace.update_attribute(self, "attributes")
