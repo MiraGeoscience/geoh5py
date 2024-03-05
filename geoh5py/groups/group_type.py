@@ -20,7 +20,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..shared import EntityType
-from ..shared.utils import ensure_uuid
 
 if TYPE_CHECKING:
     from ..workspace import Workspace
@@ -81,35 +80,3 @@ class GroupType(EntityType):
         new auto-generated UUID.
         """
         return GroupType(workspace, **kwargs)
-
-    @classmethod
-    def find_or_create(cls, workspace: Workspace, **kwargs) -> GroupType:
-        """
-        Find or creates an EntityType with given uid that matches the given
-        Group implementation class.
-
-        It is expected to have a single instance of EntityType in the Workspace
-        for each concrete Entity class.
-
-        To find an object, the kwargs must contain an existing 'uid' keyword,
-        or a 'entity_class' keyword, containing an object class.
-
-        :param workspace: An active Workspace class
-
-        :return: A new instance of GroupType.
-        """
-        kwargs = cls.convert_kwargs(kwargs)
-        if (
-            getattr(kwargs.get("entity_class", None), "default_type_uid", None)
-            is not None
-        ):
-            uid = kwargs["entity_class"].default_type_uid()
-            if uid is not None:
-                kwargs["uid"] = uid
-        uid = kwargs.get("uid", None)
-        if uid is not None:
-            entity_type = cls.find(workspace, ensure_uuid(uid))
-            if entity_type is not None:
-                return entity_type
-
-        return cls(workspace, **kwargs)

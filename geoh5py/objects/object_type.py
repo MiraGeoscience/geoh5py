@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-import uuid
 from typing import TYPE_CHECKING
 
 from ..shared import EntityType
@@ -39,40 +38,3 @@ class ObjectType(EntityType):
         :param workspace: An active Workspace class
         """
         return ObjectType(workspace)
-
-    @classmethod
-    def find_or_create(cls, workspace: Workspace, **kwargs) -> ObjectType:
-        """
-        Find or creates an EntityType with given uid that matches the given
-        Group implementation class.
-
-        It is expected to have a single instance of EntityType in the Workspace
-        for each concrete Entity class.
-
-        To find an object, the kwargs must contain an existing 'uid' keyword,
-        or a 'entity_class' keyword, containing an object class.
-
-        :param workspace: An active Workspace class
-
-        :return: A new instance of GroupType.
-        """
-        kwargs = cls.convert_kwargs(kwargs)
-        if (
-            getattr(kwargs.get("entity_class", None), "default_type_uid", None)
-            is not None
-        ):
-            uid = kwargs["entity_class"].default_type_uid()
-            kwargs["uid"] = uid
-        else:
-            uid = kwargs.get("uid", None)
-            if isinstance(uid, str):
-                uid = uuid.UUID(uid)
-        if isinstance(uid, uuid.UUID):
-            entity_type = cls.find(workspace, uid)
-            if entity_type is not None:
-                return entity_type
-
-        if not isinstance(uid, (uuid.UUID, type(None))):
-            raise TypeError(f"'uid' must be a valid UUID, find {uid}")
-
-        return cls(workspace, **kwargs)

@@ -23,7 +23,6 @@ from typing import TYPE_CHECKING, Literal, cast, get_args
 import numpy as np
 
 from ..shared import EntityType
-from ..shared.utils import ensure_uuid
 from .color_map import ColorMap
 from .geometric_data_constants import GeometricDataConstants
 from .primitive_type_enum import PrimitiveTypeEnum
@@ -169,67 +168,6 @@ class DataType(EntityType):
         """
         # todo: this could be to deprecate.
         return cls(workspace, primitive_type=primitive_type, **kwargs)
-
-    @classmethod
-    def find_or_create(cls, workspace: Workspace, **kwargs) -> DataType:
-        """
-        Find or creates an EntityType with given UUID that matches the given
-        Group implementation class.
-        The uid can be provided as a keyword argument or as a value in the kwargs.
-
-        :param workspace: An active Workspace class
-        :param kwargs: Keyword arguments to initialize the new DataType.
-
-        :return: A new instance of DataType.
-        """
-        kwargs = cls.convert_kwargs(kwargs)
-        uid = kwargs.get("uid", None)
-
-        if uid is not None:
-            uid = ensure_uuid(uid)
-            entity_type = cls.find(workspace, uid)
-            if entity_type is not None:
-                return entity_type
-        return cls(workspace, **kwargs)
-
-    @classmethod
-    def for_x_data(cls, workspace: Workspace) -> DataType:
-        """
-        Get the data type for x data.
-
-        :param workspace: An active Workspace.
-
-        :return: A new instance of DataType.
-        """
-        return cls._for_geometric_data(
-            workspace, GeometricDataConstants.x_datatype_uid()
-        )
-
-    @classmethod
-    def for_y_data(cls, workspace: Workspace) -> DataType:
-        """
-        Get the data type for y data.
-
-        :param workspace: An active Workspace.
-
-        :return: A new instance of DataType.
-        """
-        return cls._for_geometric_data(
-            workspace, GeometricDataConstants.y_datatype_uid()
-        )
-
-    @classmethod
-    def for_z_data(cls, workspace: Workspace) -> DataType:
-        """
-        Get the data type for z data.
-
-        :param workspace: An active Workspace.
-
-        :return: A new instance of DataType.
-        """
-        return cls._for_geometric_data(
-            workspace, GeometricDataConstants.z_datatype_uid()
-        )
 
     @property
     def hidden(self) -> bool:

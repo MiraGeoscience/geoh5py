@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import uuid
 import weakref
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from ..shared.utils import ensure_uuid
@@ -154,16 +154,44 @@ class EntityType(ABC):
         return cast(EntityTypeT, workspace.find_type(ensure_uuid(type_uid), cls))
 
     @classmethod
-    @abstractmethod
-    def find_or_create(cls, workspace: Workspace, **kwargs) -> EntityType:
+    def find_or_create(
+        cls,
+        workspace: Workspace,
+        uid: uuid.UUID | None = None,
+        entity_class: type | None = None,
+        **kwargs,
+    ) -> EntityType:
         """
-        Find or creates an EntityType with given UUID that matches the given
-        Entity implementation class.
+        Find or creates an EntityType with given uid that matches the given
+        Group implementation class.
+
+        It is expected to have a single instance of EntityType in the Workspace
+        for each concrete Entity class.
+
+        To find an object, the kwargs must contain an existing 'uid' keyword,
+        or a 'entity_class' keyword, containing an object class.
 
         :param workspace: An active Workspace class
+        :param uid: The unique identifier of the entity type.
+        :param entity_class: The class of the entity.
+        :param kwargs: The attributes of the entity type.
 
         :return: EntityType
         """
+        kwargs = cls.convert_kwargs(kwargs)
+        uid = kwargs.pop("uid", uid)
+
+        if (
+            getattr(entity_class, "default_type_uid", None) is not None
+        ) and uid is None:
+            uid = getattr(entity_class, "default_type_uid")()
+
+        if uid is not None:
+            entity_type = cls.find(workspace, ensure_uuid(uid))
+            if entity_type is not None:
+                return entity_type
+
+        return cls(workspace, uid=uid, **kwargs)
 
     @property
     def name(self) -> str | None:
