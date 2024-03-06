@@ -551,9 +551,11 @@ def test_copy_and_append_drillhole_data(tmp_path):
         dh_group = workspace.get_entity("DH_group")[0]
         with Workspace.create(new_path, version=2.0) as new_workspace:
             new_group = dh_group.copy(parent=new_workspace)
-            well = [k for k in new_group.children if k.name == "bullseye/"][0]
+            well = [k for k in new_group.children if k.name == "well"][0]
 
-            prop_group = [k for k in well.property_groups if k.name == "Interval_0"][0]
+            prop_group = [
+                k for k in well.property_groups if k.name == "property_group"
+            ][0]
             with pytest.raises(ValueError, match="Input values with shape"):
                 well.add_data(
                     {
@@ -564,7 +566,11 @@ def test_copy_and_append_drillhole_data(tmp_path):
 
             well.add_data(
                 {
-                    "new_data": {"values": np.random.randn(25).astype(np.float32)},
+                    "new_data": {
+                        "values": np.random.randn(
+                            prop_group.from_.values.shape[0]
+                        ).astype(np.float32)
+                    },
                 },
                 property_group=prop_group.name,
             )
@@ -844,27 +850,26 @@ def compare_structured_arrays(
 
 def test_export_table(tmp_path):
     h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
-    drillhole_group, workspace = create_drillholes(
-        h5file_path, version=2.0, ga_version="4.2"
-    )
+    _, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
 
     with workspace.open():
+        drillhole_group = workspace.get_entity("DH_group")[0]
+        n_ndv = 25
         values = [
-            np.array([["{%s}" % child.uid] * 25 for child in drillhole_group.children])
+            np.array(
+                [["{%s}" % child.uid] * 25 for child in drillhole_group.children[::2]]
+            )
             .flatten()
             .astype("S"),
             drillhole_group.data["FROM"],
             drillhole_group.data["TO"],
-            drillhole_group.data["interval_values_a"],
             np.array(
-                [np.nan]
-                * (
-                    drillhole_group.data["FROM"].shape[0]
-                    - drillhole_group.data["interval_values_b"].shape[0]
-                )
-                + drillhole_group.data["interval_values_b"].tolist()
+                drillhole_group.data["interval_values_a"].tolist() + [np.nan] * n_ndv
             ),
-            drillhole_group.data["text Data"],
+            np.array(
+                [np.nan] * n_ndv + drillhole_group.data["interval_values_b"].tolist()
+            ),
+            np.array(drillhole_group.data["text Data"].tolist() + [""] * n_ndv),
         ]
 
         dtypes = [
@@ -885,7 +890,9 @@ def test_export_table(tmp_path):
         )
 
         values = [
-            np.array([["{%s}" % child.uid] * 50 for child in drillhole_group.children])
+            np.array(
+                [["{%s}" % child.uid] * 50 for child in drillhole_group.children[:-2]]
+            )
             .flatten()
             .astype("S"),
             drillhole_group.data["DEPTH"],
@@ -930,12 +937,11 @@ def test_add_data_to_property(tmp_path):
             "interval_values_a", spatial_index=True
         )
 
-        verification_map_value = (verification["interval_values_a"] * 10).astype(
-            np.int32
+        verification_map_value = np.random.randint(
+            0, 100, verification["interval_values_a"].shape[0]
         )
-        verification_map_value -= np.min(verification_map_value) - 1
-
         value_map = {idx: f"{idx}" for idx in np.unique(verification_map_value)}
+        value_map[0] = "Unknown"
 
         drillholes_table.add_values_to_property_group(
             "new value",
