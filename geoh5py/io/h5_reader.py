@@ -192,6 +192,9 @@ class H5Reader:
                 if attribute.dtype in [float, "float64", "float32"]:
                     attribute[attribute == FLOAT_NDV] = np.nan
 
+                if attribute.dtype == object and isinstance(attribute[0], bytes):
+                    attribute = attribute.astype(str)
+
                 return attribute, group["Index"][label][:]
 
             except KeyError:
