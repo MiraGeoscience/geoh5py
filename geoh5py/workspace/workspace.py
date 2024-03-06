@@ -353,7 +353,7 @@ class Workspace(AbstractContextManager):
                 save_on_creation=False,
                 **{
                     "entity": attributes,
-                    "entity_type": {"uid": attributes["Object Type ID"]},
+                    "entity_type": {"uid": attributes.pop("Object Type ID")},
                 },
             )
 
@@ -364,7 +364,7 @@ class Workspace(AbstractContextManager):
                 **{
                     "entity": attributes,
                     "entity_type": self.fetch_type(
-                        uuid.UUID(attributes["Type ID"]), "Data"
+                        uuid.UUID(attributes.pop("Type ID")), "Data"
                     ),
                 },
             )
