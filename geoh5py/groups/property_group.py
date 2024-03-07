@@ -236,18 +236,22 @@ class PropertyGroup(ABC):
         if self._properties is None:
             return
 
+        update = False
         for elem in data:
-            if isinstance(elem, uuid.UUID):
-                entity = self.parent.get_entity(elem)[0]
-            elif isinstance(elem, Data) and elem in self.parent.children:
-                entity = elem
+
+            if isinstance(elem, Data):
+                uid = elem.uid
             else:
-                continue
+                uid = elem
+
+            entity = self.parent.get_entity(uid)[0]
 
             if entity is not None and entity.uid in self._properties:
+                update = True
                 self._properties.remove(entity.uid)
 
-        self.parent.workspace.add_or_update_property_group(self)
+        if update:
+            self.parent.workspace.add_or_update_property_group(self)
 
     @property
     def uid(self) -> uuid.UUID:

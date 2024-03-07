@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..data import CommentsData, Data
+from ..shared.entity import Entity
 from ..shared.entity_container import EntityContainer
 from .group_type import GroupType
 
@@ -44,6 +45,22 @@ class Group(EntityContainer):
     @abstractmethod
     def default_type_uid(cls) -> uuid.UUID | None:
         """Abstract method to return the default type uid for the class."""
+
+    def add_children(self, children: list[Entity]):
+        """
+        :param children: Add a list of entities as
+            :obj:`~geoh5py.shared.entity.Entity.children`
+        """
+        if not isinstance(children, list):
+            children = [children]
+
+        for child in children:
+            if child not in self._children:
+                if not isinstance(child, Entity):
+                    raise TypeError(
+                        f"Child must be an instance of Entity, not {type(child)}"
+                    )
+                self._children.append(child)
 
     def add_comment(self, comment: str, author: str | None = None):
         """

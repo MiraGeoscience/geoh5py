@@ -611,10 +611,18 @@ def test_remove_drillhole_data(tmp_path):
         well = workspace.get_entity("well")[0]
         well_b = workspace.get_entity("Number 2")[0]
         data = well.get_data("my_log_values/")[0]
-        workspace.remove_entity(data)
-        workspace.remove_entity(well_b)
 
+        well.remove_children(data)
+        del data
+        assert "my_log_values/" not in well.get_entity_list()
+        assert len(well.property_groups[0].properties) == 2
+
+        assert workspace.get_entity("my_log_values/")[0] is None
+        workspace.remove_entity(well_b)
+        del well_b
         assert np.isnan(well.get_data("log_wt_tolerance")[0].values).sum() == 1
+
+        assert workspace.get_entity("Number 2")[0] is None
 
     with Workspace(h5file_path, version=2.0) as workspace:
         well = workspace.get_entity("well")[0]

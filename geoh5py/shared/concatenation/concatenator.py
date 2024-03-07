@@ -478,7 +478,8 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             self.concatenated_attributes["Attributes"].remove(attr_handle)
             self.workspace.repack = True
 
-        entity.parent._children.remove(entity)  # pylint: disable=protected-access
+        if entity in entity.parent.children:
+            entity.parent.children.remove(entity)
 
     def save_attribute(self, field: str):
         """
