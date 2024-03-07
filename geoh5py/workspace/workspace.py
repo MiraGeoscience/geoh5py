@@ -347,6 +347,8 @@ class Workspace(AbstractContextManager):
         if "Name" in attributes:
             attributes["Name"] = attributes["Name"].replace("\u2044", "/")
 
+        recovered_entity = None
+
         if "Object Type ID" in attributes:
             recovered_entity = self.create_entity(
                 ObjectBase,
@@ -357,7 +359,7 @@ class Workspace(AbstractContextManager):
                 },
             )
 
-        else:
+        elif "Type ID" in attributes:
             recovered_entity = self.create_entity(
                 Data,
                 save_on_creation=False,
