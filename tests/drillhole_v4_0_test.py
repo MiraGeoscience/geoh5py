@@ -938,7 +938,7 @@ def test_add_data_to_property(tmp_path):
         )
 
         verification_map_value = np.random.randint(
-            0, 100, verification["interval_values_a"].shape[0]
+            0, 100, verification["interval_values_a"].shape[0], dtype=np.int32
         )
         value_map = {idx: f"{idx}" for idx in np.unique(verification_map_value)}
         value_map[0] = "Unknown"
