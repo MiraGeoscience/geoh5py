@@ -196,7 +196,7 @@ class Workspace(AbstractContextManager):
             self._io_call(H5Writer.save_entity, self.root, add_children=True, mode="r+")
 
         self.geoh5.close()
-        self._data = {}
+
         if (
             self.repack
             and not isinstance(self._h5file, BytesIO)
