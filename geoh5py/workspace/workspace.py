@@ -714,21 +714,20 @@ class Workspace(AbstractContextManager):
 
         if isinstance(entity, RootGroup) and not entity.on_file:
             children_list = {child.uid: "" for child in entity.children}
-        else:
-            children_list = self._io_call(
-                H5Reader.fetch_children, entity.uid, entity_type, mode="r"
-            )
 
-        if isinstance(entity, Concatenator):
+        elif isinstance(entity, Concatenator):
             if any(entity.children):
                 return entity.children
 
             cat_children = entity.fetch_concatenated_objects()
-            children_list.update(
-                {
-                    str2uuid(as_str_if_utf8_bytes(uid)): attr
-                    for uid, attr in cat_children.items()
-                }
+            children_list = {
+                str2uuid(as_str_if_utf8_bytes(uid)): attr
+                for uid, attr in cat_children.items()
+            }
+
+        else:
+            children_list = self._io_call(
+                H5Reader.fetch_children, entity.uid, entity_type, mode="r"
             )
 
         family_tree = []

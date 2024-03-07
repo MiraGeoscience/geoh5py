@@ -75,10 +75,10 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
         data = self.parent.get_data(  # pylint: disable=no-value-for-parameter
             self.properties[0]
-        )[0]
+        )
 
-        if isinstance(data, Data) and "depth" in data.name.lower():
-            return data
+        if any(data) and isinstance(data[0], Data) and "depth" in data[0].name.lower():
+            return data[0]
 
         return None
 
@@ -90,10 +90,10 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
         data = self.parent.get_data(  # pylint: disable=no-value-for-parameter
             self.properties[0]
-        )[0]
+        )
 
-        if isinstance(data, Data) and "from" in data.name.lower():
-            return data
+        if any(data) and isinstance(data[0], Data) and "from" in data[0].name.lower():
+            return data[0]
 
         return None
 
@@ -105,10 +105,10 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
         data = self.parent.get_data(  # pylint: disable=no-value-for-parameter
             self.properties[1]
-        )[0]
+        )
 
-        if isinstance(data, Data) and "to" in data.name.lower():
-            return data
+        if any(data) and isinstance(data[0], Data) and "to" in data[0].name.lower():
+            return data[0]
 
         return None
 
