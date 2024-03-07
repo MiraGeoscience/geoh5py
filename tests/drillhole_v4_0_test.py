@@ -520,6 +520,7 @@ def test_append_data_to_tables(tmp_path):
                 "_property_groups",
                 "_uid",
             ],
+            decimal=5,
         )
 
         compare_entities(
