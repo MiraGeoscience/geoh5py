@@ -240,15 +240,11 @@ class PropertyGroup(ABC):
         for elem in data:
 
             if isinstance(elem, Data):
-                uid = elem.uid
-            else:
-                uid = elem
+                elem = elem.uid
 
-            entity = self.parent.get_entity(uid)[0]
-
-            if entity is not None and entity.uid in self._properties:
+            if elem in self._properties:
                 update = True
-                self._properties.remove(entity.uid)
+                self._properties.remove(elem)
 
         if update:
             self.parent.workspace.add_or_update_property_group(self)
