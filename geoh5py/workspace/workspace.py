@@ -196,7 +196,7 @@ class Workspace(AbstractContextManager):
             self._io_call(H5Writer.save_entity, self.root, add_children=True, mode="r+")
 
         self.geoh5.close()
-        self._data = {}
+
         if (
             self.repack
             and not isinstance(self._h5file, BytesIO)
@@ -347,24 +347,26 @@ class Workspace(AbstractContextManager):
         if "Name" in attributes:
             attributes["Name"] = attributes["Name"].replace("\u2044", "/")
 
+        recovered_entity = None
+
         if "Object Type ID" in attributes:
             recovered_entity = self.create_entity(
                 ObjectBase,
                 save_on_creation=False,
                 **{
                     "entity": attributes,
-                    "entity_type": {"uid": attributes["Object Type ID"]},
+                    "entity_type": {"uid": attributes.pop("Object Type ID")},
                 },
             )
 
-        else:
+        elif "Type ID" in attributes:
             recovered_entity = self.create_entity(
                 Data,
                 save_on_creation=False,
                 **{
                     "entity": attributes,
                     "entity_type": self.fetch_type(
-                        uuid.UUID(attributes["Type ID"]), "Data"
+                        uuid.UUID(attributes.pop("Type ID")), "Data"
                     ),
                 },
             )
@@ -712,21 +714,20 @@ class Workspace(AbstractContextManager):
 
         if isinstance(entity, RootGroup) and not entity.on_file:
             children_list = {child.uid: "" for child in entity.children}
-        else:
-            children_list = self._io_call(
-                H5Reader.fetch_children, entity.uid, entity_type, mode="r"
-            )
 
-        if isinstance(entity, Concatenator):
+        elif isinstance(entity, Concatenator):
             if any(entity.children):
                 return entity.children
 
             cat_children = entity.fetch_concatenated_objects()
-            children_list.update(
-                {
-                    str2uuid(as_str_if_utf8_bytes(uid)): attr
-                    for uid, attr in cat_children.items()
-                }
+            children_list = {
+                str2uuid(as_str_if_utf8_bytes(uid)): attr
+                for uid, attr in cat_children.items()
+            }
+
+        else:
+            children_list = self._io_call(
+                H5Reader.fetch_children, entity.uid, entity_type, mode="r"
             )
 
         family_tree = []
