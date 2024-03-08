@@ -254,7 +254,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
         else:
             out_group = property_group
 
-        _ = self.add_data(
+        self.add_data(
             {
                 f"DEPTH{label}": {
                     "association": "DEPTH",
@@ -350,7 +350,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
                 )
             return out_group
 
-        _ = self.add_data(
+        self.add_data(
             {
                 f"FROM{label}": {
                     "association": "DEPTH",
