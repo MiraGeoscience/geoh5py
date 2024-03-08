@@ -457,38 +457,41 @@ class Drillhole(Points):
             depths = np.asarray(depths)
 
         surveys = self.surveys.copy()
-        
+
         # Repeat first survey point at surface for de-survey interpolation
         # (only if needed)
-        if surveys[0,0] != 0.0:
+        if surveys[0, 0] != 0.0:
             surveys = np.vstack([surveys[0, :], surveys])
             surveys[0, 0] = 0.0
 
         try:
             import wellpathpy as wp
 
-            # Repeat last survey point at bottom depth of desurvey request 
-            # TODO there is a mathematically more correct way to do this. 
+            # Repeat last survey point at bottom depth of desurvey request
+            # TODO there is a mathematically more correct way to do this.
             if surveys[-1, 0] < depths[-1]:
-                surveys = np.vstack([surveys, surveys[-1, :] ])
+                surveys = np.vstack([surveys, surveys[-1, :]])
                 surveys[-1, 0] = depths[-1]
-                
-            # geoh5py dips range from -90 to 0
-            # wellpathpy expects inclination inc | 0 <= inc < 180 
-            # where 180 = 90 degree dip (vertical), so never truly vertical?
-            surveys[:,2] = surveys[:,2] + 90.00000000001
-            
-            dev = wp.deviation( md=surveys[:,0], azi=surveys[:,1], inc=surveys[:,2])
-            pos = dev.minimum_curvature( ).resample( depths )
 
-            return np.c_[ [ self.locations[0, 0] + pos.easting , 
-                self.locations[0, 1] + pos.northing , 
-                self.locations[0, 2] - pos.depth]].T
+            # geoh5py dips range from -90 to 0
+            # wellpathpy expects inclination inc | 0 <= inc < 180
+            # where 180 = 90 degree dip (vertical), so never truly vertical?
+            surveys[:, 2] = surveys[:, 2] + 90.00000000001
+
+            dev = wp.deviation(md=surveys[:, 0], azi=surveys[:, 1], inc=surveys[:, 2])
+            pos = dev.minimum_curvature().resample(depths)
+
+            return np.c_[
+                [
+                    self.locations[0, 0] + pos.easting,
+                    self.locations[0, 1] + pos.northing,
+                    self.locations[0, 2] - pos.depth,
+                ]
+            ].T
         except Exception as e:
-            print('cannot do wellpathpy')
-            print( e )
-            
-            pass
+            print("cannot do wellpathpy")
+            print(e)
+
 
         ind_loc = np.maximum(
             np.searchsorted(surveys[:, 0], depths, side="left") - 1,
