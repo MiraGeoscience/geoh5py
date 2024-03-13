@@ -610,6 +610,7 @@ def test_remove_drillhole_data(tmp_path):
 
     with Workspace(h5file_path, version=2.0) as workspace:
         well = workspace.get_entity("well")[0]
+        dh_group = well.parent
         well_b = workspace.get_entity("Number 2")[0]
         data = well.get_data("my_log_values/")[0]
 
@@ -619,7 +620,7 @@ def test_remove_drillhole_data(tmp_path):
         assert len(well.property_groups[0].properties) == 2
 
         assert workspace.get_entity("my_log_values/")[0] is None
-        workspace.remove_entity(well_b)
+        dh_group.remove_children(well_b)
         del well_b
         assert np.isnan(well.get_data("log_wt_tolerance")[0].values).sum() == 1
 

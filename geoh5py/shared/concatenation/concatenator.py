@@ -453,6 +453,21 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return self._property_group_ids
 
+    def remove_children(self, children: list | Concatenated):
+        """
+        Remove children object or data from the Group.
+
+        :param children: List of children to remove.
+        """
+        if not isinstance(children, list):
+            children = [children]
+
+        for child in children:
+            if child not in self._children:
+                continue
+
+            self.remove_entity(child)
+
     def remove_entity(self, entity: Concatenated):
         """Remove a concatenated entity."""
 
