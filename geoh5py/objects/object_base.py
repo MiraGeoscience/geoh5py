@@ -65,18 +65,23 @@ class ObjectBase(EntityContainer):
         if self.entity_type.name == "Entity":
             self.entity_type.name = type(self).__name__
 
-    def add_children(self, children: list[Entity] | list[PropertyGroup]):
+    def add_children(self, children: list[Entity | PropertyGroup]):
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
         """
         property_groups = self._property_groups or []
 
+        prop_group_uids = {prop_group.uid: prop_group for prop_group in property_groups}
+        children_uids = {child.uid: child for child in self._children}
+
         for child in children:
-            if child not in self._children and isinstance(child, (Data, PropertyGroup)):
+            if child.uid not in children_uids and isinstance(
+                child, (Data, PropertyGroup)
+            ):
                 self._children.append(child)
 
-            if isinstance(child, PropertyGroup) and child not in property_groups:
+            if isinstance(child, PropertyGroup) and child.uid not in prop_group_uids:
                 property_groups.append(child)
 
             if property_groups:
@@ -504,15 +509,12 @@ class ObjectBase(EntityContainer):
             if child not in self._children:
                 continue
 
-            self._children.remove(child)
-
-            if not self._property_groups:
-                continue
-
-            if isinstance(child, PropertyGroup):
+            if isinstance(child, PropertyGroup) and self._property_groups:
                 self._property_groups.remove(child)
             elif isinstance(child, Data):
                 self.remove_data_from_groups(child)
+
+            self._children.remove(child)
 
         self.workspace.remove_children(self, children)
 

@@ -318,7 +318,10 @@ def compare_entities(
     for attr in [k for k in object_a.__dict__.keys() if k not in ignore_list]:
         if isinstance(getattr(object_a, attr[1:]), ABC):
             compare_entities(
-                getattr(object_a, attr[1:]), getattr(object_b, attr[1:]), ignore=ignore
+                getattr(object_a, attr[1:]),
+                getattr(object_b, attr[1:]),
+                ignore=ignore,
+                decimal=decimal,
             )
         else:
             if isinstance(getattr(object_a, attr[1:]), np.ndarray):

@@ -453,6 +453,24 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return self._property_group_ids
 
+    def remove_children(self, children: list | Concatenated):
+        """
+        Remove children from object.
+
+        This method calls the ObjectBase parent class to remove children from the
+        object children, but also deletes the children from the workspace.
+
+        :param children: List of children to remove.
+        """
+        if not isinstance(children, list):
+            children = [children]
+
+        for child in children:
+            if child not in self._children:
+                continue
+
+            self.remove_entity(child)
+
     def remove_entity(self, entity: Concatenated):
         """Remove a concatenated entity."""
 
@@ -464,6 +482,10 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             name = entity.name
             del parent_attr[f"Property:{name}"]
         elif isinstance(entity, ConcatenatedObject):
+
+            for child in entity.children.copy():
+                self.remove_entity(child)
+
             if entity.property_groups is not None:  # type: ignore
                 self.update_array_attribute(entity, "property_groups", remove=True)
 
@@ -473,12 +495,17 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                 object_ids.remove(as_str_if_uuid(entity.uid).encode())
                 self.concatenated_object_ids = object_ids
 
-        if self.concatenated_attributes is not None:
+        if (
+            self.concatenated_attributes is not None
+            and self.attributes_keys is not None
+        ):
             attr_handle = self.get_concatenated_attributes(entity.uid)
+            self.attributes_keys.remove(as_str_if_uuid(entity.uid))
             self.concatenated_attributes["Attributes"].remove(attr_handle)
             self.workspace.repack = True
 
-        entity.parent._children.remove(entity)  # pylint: disable=protected-access
+        if entity in entity.parent.children:
+            entity.parent.children.remove(entity)
 
     def save_attribute(self, field: str):
         """

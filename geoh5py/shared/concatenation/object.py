@@ -45,31 +45,6 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
         super().__init__(entity_type, **kwargs)
 
-    def add_children(
-        self,
-        children,
-    ):
-        """
-        :param children: Add a list of entities as
-            :obj:`~geoh5py.shared.entity.Entity.children`
-        """
-        property_groups = self._property_groups or []
-
-        for child in children:
-            if child not in self._children and isinstance(
-                child, (ConcatenatedData, ConcatenatedPropertyGroup)
-            ):
-                self._children.append(child)
-
-            if (
-                isinstance(child, ConcatenatedPropertyGroup)
-                and child not in property_groups
-            ):
-                property_groups.append(child)
-
-            if property_groups:
-                self._property_groups = property_groups
-
     def create_property_group(
         self, name=None, on_file=False, uid=None, **kwargs
     ) -> ConcatenatedPropertyGroup:
@@ -103,9 +78,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
         Generic function to get data values from object.
         """
         entity_list = []
-        attr = self.concatenator.get_concatenated_attributes(
-            getattr(self, "uid")
-        ).copy()
+        attr = self.concatenator.get_concatenated_attributes(self.uid).copy()
 
         for key, value in attr.items():
             if "Property:" in key:
@@ -121,7 +94,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                 else:
                     warnings.warn(f"Failed: '{name}' is a property group, not a Data.")
 
-        for child in getattr(self, "children"):
+        for child in self.children:
             if (
                 isinstance(name, str) and hasattr(child, "name") and child.name == name
             ) or (
@@ -182,3 +155,22 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                 self._property_groups = property_groups
 
         return self._property_groups
+
+    def remove_children(self, children: list | Concatenated):
+        """
+        Remove children from object.
+
+        This method calls the ObjectBase parent class to remove children from the
+        object children, but also deletes the children from the workspace.
+
+        :param children: List of children to remove.
+        """
+        if not isinstance(children, list):
+            children = [children]
+
+        for child in children:
+            if child not in self._children:
+                continue
+
+            super().remove_children(child)
+            self.workspace.remove_entity(child)

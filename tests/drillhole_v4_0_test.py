@@ -520,6 +520,7 @@ def test_append_data_to_tables(tmp_path):
                 "_property_groups",
                 "_uid",
             ],
+            decimal=5,
         )
 
         compare_entities(
@@ -609,17 +610,25 @@ def test_remove_drillhole_data(tmp_path):
 
     with Workspace(h5file_path, version=2.0) as workspace:
         well = workspace.get_entity("well")[0]
-        well_b = workspace.get_entity("Number 2")[0]
-        data = well.get_data("my_log_values/")[0]
-        workspace.remove_entity(data)
-        workspace.remove_entity(well_b)
 
         assert np.isnan(well.get_data("log_wt_tolerance")[0].values).sum() == 1
+
+        dh_group = well.parent
+
+        data = well.get_data("my_log_values/")[0]
+        new_well = well.copy(parent=dh_group, name="well copy")
+        well.remove_children(data)
+        del data
+        assert "my_log_values/" not in well.get_entity_list()
+        assert len(well.property_groups[0].properties) == 2
+
+        assert workspace.get_entity("my_log_values/")[0] is not None
+        dh_group.remove_children(new_well)
 
     with Workspace(h5file_path, version=2.0) as workspace:
         well = workspace.get_entity("well")[0]
         assert "my_log_values/" not in well.get_entity_list()
-        assert workspace.get_entity("Number 2")[0] is None
+        assert workspace.get_entity("well copy")[0] is None
 
 
 def test_create_drillhole_data_v4_2(tmp_path):
