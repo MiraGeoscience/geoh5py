@@ -46,6 +46,12 @@ def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
 
                     if value.get("groupValue"):
                         temp_value = {"group": value["groupValue"], "value": temp_value}
+                    elif value.get("rangeLabel"):
+                        temp_value = {
+                            "property": value["property"],
+                            "value": value["value"],
+                            "isComplement": value["isComplement"],
+                        }
 
                     data[name] = temp_value
         else:

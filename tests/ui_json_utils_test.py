@@ -298,6 +298,23 @@ def test_flatten_group_value():
     assert flat["test"] is None
 
 
+def test_range_label():
+    ui_json = deepcopy(default_ui_json)
+    my_uuid = uuid.uuid4()
+    ui_json["test"] = templates.range_label_template(
+        value=[1, 2], property_=my_uuid, is_complement=False
+    )
+
+    validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
+    assert validators["test"]["types"] == [dict]
+
+    flat = flatten(ui_json)
+
+    assert flat["test"]["value"] == [1, 2]
+    assert flat["test"]["property"] == my_uuid
+    assert flat["test"]["isComplement"] is False
+
+
 def test_optional_error():
     with pytest.raises(ValueError, match="Unrecognized state option."):
         templates.optional_parameter("bidon")
