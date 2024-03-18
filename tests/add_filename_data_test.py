@@ -58,7 +58,6 @@ def test_add_file(tmp_path: Path):
         file_data.values = b"abc"
         obj.copy(parent=workspace_copy)
         workspace_copy.close()
-
         workspace_copy.open()
         copied_obj = workspace_copy.get_entity(obj.uid)[0]
         rec_data = copied_obj.get_entity("numpy_array.txt")[0]

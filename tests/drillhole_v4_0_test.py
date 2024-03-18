@@ -610,26 +610,25 @@ def test_remove_drillhole_data(tmp_path):
 
     with Workspace(h5file_path, version=2.0) as workspace:
         well = workspace.get_entity("well")[0]
-        dh_group = well.parent
-        well_b = workspace.get_entity("Number 2")[0]
-        data = well.get_data("my_log_values/")[0]
 
+        assert np.isnan(well.get_data("log_wt_tolerance")[0].values).sum() == 1
+
+        dh_group = well.parent
+
+        data = well.get_data("my_log_values/")[0]
+        new_well = well.copy(parent=dh_group, name="well copy")
         well.remove_children(data)
         del data
         assert "my_log_values/" not in well.get_entity_list()
         assert len(well.property_groups[0].properties) == 2
 
-        assert workspace.get_entity("my_log_values/")[0] is None
-        dh_group.remove_children(well_b)
-        del well_b
-        assert np.isnan(well.get_data("log_wt_tolerance")[0].values).sum() == 1
-
-        assert workspace.get_entity("Number 2")[0] is None
+        assert workspace.get_entity("my_log_values/")[0] is not None
+        dh_group.remove_children(new_well)
 
     with Workspace(h5file_path, version=2.0) as workspace:
         well = workspace.get_entity("well")[0]
         assert "my_log_values/" not in well.get_entity_list()
-        assert workspace.get_entity("Number 2")[0] is None
+        assert workspace.get_entity("well copy")[0] is None
 
 
 def test_create_drillhole_data_v4_2(tmp_path):
@@ -954,13 +953,15 @@ def test_add_data_to_property(tmp_path):
         value_map[0] = "Unknown"
 
         drillholes_table.add_values_to_property_group(
-            "new value",
-            verification_map_value,
-            value_map=value_map,
+            "new value int", verification_map_value
         )
 
         drillholes_table.add_values_to_property_group(
-            "new value int", verification_map_value
+            "new value",
+            verification_map_value,
+            data_type=data_type.DataType(
+                workspace, "REFERENCED", name="new_value", value_map=value_map
+            ),
         )
 
         verificationb = drillholes_table.depth_table_by_name("new value")

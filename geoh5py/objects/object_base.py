@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -80,12 +81,16 @@ class ObjectBase(EntityContainer):
                 child, (Data, PropertyGroup)
             ):
                 self._children.append(child)
+                if (
+                    isinstance(child, PropertyGroup)
+                    and child.uid not in prop_group_uids
+                ):
+                    property_groups.append(child)
+            else:
+                warnings.warn(f"Child {child} is not valid or already exists.")
 
-            if isinstance(child, PropertyGroup) and child.uid not in prop_group_uids:
-                property_groups.append(child)
-
-            if property_groups:
-                self._property_groups = property_groups
+        if property_groups:
+            self._property_groups = property_groups
 
     def add_comment(self, comment: str, author: str | None = None):
         """
@@ -349,7 +354,8 @@ class ObjectBase(EntityContainer):
 
         :return: The ObjectType instance for the given object class.
         """
-        return ObjectType.find_or_create(workspace, cls, **kwargs)
+        kwargs["entity_class"] = cls
+        return ObjectType.find_or_create(workspace, **kwargs)
 
     def get_property_group(self, name: uuid.UUID | str) -> list:
         """

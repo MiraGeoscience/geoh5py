@@ -447,6 +447,7 @@ class Workspace(AbstractContextManager):
 
         :return entity: Newly created entity registered to the workspace
         """
+
         entity_kwargs: dict = kwargs.get("entity", {})
         entity_type_kwargs: dict = kwargs.get("entity_type", {})
 
@@ -509,6 +510,7 @@ class Workspace(AbstractContextManager):
         :return: A new Object or Group.
         """
         entity_type_uid = None
+
         for key, val in entity_type_kwargs.items():
             if key.lower() in ["id", "uid"]:
                 entity_type_uid = uuid.UUID(str(val))
@@ -1113,6 +1115,7 @@ class Workspace(AbstractContextManager):
         for key, val in self._objects.items():
             entity = val()
             if entity is not None:
+                objects_name[key] = entity.name
                 objects_name[key] = entity.name
         return objects_name
 

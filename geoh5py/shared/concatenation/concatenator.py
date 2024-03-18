@@ -455,7 +455,10 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
     def remove_children(self, children: list | Concatenated):
         """
-        Remove children object or data from the Group.
+        Remove children from object.
+
+        This method calls the ObjectBase parent class to remove children from the
+        object children, but also deletes the children from the workspace.
 
         :param children: List of children to remove.
         """
@@ -479,6 +482,10 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             name = entity.name
             del parent_attr[f"Property:{name}"]
         elif isinstance(entity, ConcatenatedObject):
+
+            for child in entity.children.copy():
+                self.remove_entity(child)
+
             if entity.property_groups is not None:  # type: ignore
                 self.update_array_attribute(entity, "property_groups", remove=True)
 
@@ -488,8 +495,12 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                 object_ids.remove(as_str_if_uuid(entity.uid).encode())
                 self.concatenated_object_ids = object_ids
 
-        if self.concatenated_attributes is not None:
+        if (
+            self.concatenated_attributes is not None
+            and self.attributes_keys is not None
+        ):
             attr_handle = self.get_concatenated_attributes(entity.uid)
+            self.attributes_keys.remove(as_str_if_uuid(entity.uid))
             self.concatenated_attributes["Attributes"].remove(attr_handle)
             self.workspace.repack = True
 
