@@ -302,7 +302,7 @@ def test_range_label():
     ui_json = deepcopy(default_ui_json)
     my_uuid = uuid.uuid4()
     ui_json["test"] = templates.range_label_template(
-        value=[1, 2], property_=my_uuid, is_complement=False
+        value=[1, 2], property_=my_uuid, is_complement=False, optional="enabled"
     )
 
     validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
