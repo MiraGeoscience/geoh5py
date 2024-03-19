@@ -37,5 +37,8 @@ class CustomGroup(Group):
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID | None:
-        # raise RuntimeError(f"No predefined static type UUID for {cls}.")
-        return None
+        """
+        Mock the default type uid for the custom group.
+        It returns a new UUID every time this class is called.
+        """
+        return uuid.uuid4()

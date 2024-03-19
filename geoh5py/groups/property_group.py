@@ -22,10 +22,11 @@ from abc import ABC
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
-from geoh5py.data import Data, DataAssociationEnum
+from ..data import Data, DataAssociationEnum
+from ..shared.utils import map_attributes
 
 if TYPE_CHECKING:
-    from geoh5py.objects import ObjectBase
+    from ..objects import ObjectBase
 
 
 class PropertyGroup(ABC):
@@ -70,13 +71,7 @@ class PropertyGroup(ABC):
 
         parent.add_children([self])
 
-        for attr, item in kwargs.items():
-            try:
-                if attr in self._attribute_map:
-                    attr = self._attribute_map[attr]
-                setattr(self, attr, item)
-            except AttributeError:
-                continue
+        map_attributes(self, **kwargs)
 
         self.parent.workspace.register(self)
 
