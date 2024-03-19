@@ -312,7 +312,7 @@ def compare_entities(
         compare_bytes(object_a, object_b)
         return
 
-    base_ignore = ["_workspace", "_children", "_visual_parameters"]
+    base_ignore = ["_workspace", "_children", "_visual_parameters", "_entity_class"]
     ignore_list = base_ignore + ignore if ignore else base_ignore
 
     for attr in [k for k in object_a.__dict__.keys() if k not in ignore_list]:
@@ -438,6 +438,24 @@ def as_str_if_utf8_bytes(value) -> str:
     """Convert bytes to string"""
     if isinstance(value, bytes):
         value = value.decode("utf-8")
+    return value
+
+
+def ensure_uuid(value: UUID | str) -> UUID:
+    """
+    Ensure that the value is a UUID.
+
+    If not, it raises a type error.
+
+    :param value: The value to ensure is a UUID.
+
+    :return: The verified UUID.
+    """
+    value = str2uuid(value)
+
+    if not isinstance(value, UUID):
+        raise TypeError(f"Value {value} is not a UUID but a {type(value)}.")
+
     return value
 
 
@@ -606,6 +624,26 @@ def dip_points(points: np.ndarray, dip: float, rotation: float = 0) -> np.ndarra
     points = xy_rotation_matrix(rotation) @ points
 
     return points.T
+
+
+def map_attributes(object_, **kwargs):
+    """
+    Map attributes to an object. The object must have an '_attribute_map'.
+
+    :param object_: The object to map the attributes to.
+    :param kwargs: The kwargs to map to the object.
+    """
+    if not hasattr(object_, "_attribute_map"):
+        warnings.warn(f"Object {object_} does not have an attribute map.")
+        return
+
+    for attr, item in kwargs.items():
+        try:
+            if attr in getattr(object_, "_attribute_map"):
+                attr = getattr(object_, "_attribute_map")[attr]
+            setattr(object_, attr, item)
+        except AttributeError:
+            continue
 
 
 def to_tuple(value: Any) -> tuple:

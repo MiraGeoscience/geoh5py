@@ -20,7 +20,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from geoh5py.shared.exceptions import ShapeValidationError
+from ..shared.exceptions import ShapeValidationError
+from ..shared.utils import map_attributes
 
 if TYPE_CHECKING:
     from .data_type import DataType
@@ -38,13 +39,7 @@ class ColorMap:
         self._name = "geoh5py_custom.TBL"
         self._parent = None
 
-        for attr, item in kwargs.items():
-            try:
-                if attr in self._attribute_map:
-                    attr = self._attribute_map[attr]
-                setattr(self, attr, item)
-            except AttributeError:
-                continue
+        map_attributes(self, **kwargs)
 
     @property
     def values(self) -> np.ndarray | None:

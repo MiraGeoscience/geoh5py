@@ -953,13 +953,15 @@ def test_add_data_to_property(tmp_path):
         value_map[0] = "Unknown"
 
         drillholes_table.add_values_to_property_group(
-            "new value",
-            verification_map_value,
-            value_map=value_map,
+            "new value int", verification_map_value
         )
 
         drillholes_table.add_values_to_property_group(
-            "new value int", verification_map_value
+            "new value",
+            verification_map_value,
+            data_type=data_type.DataType(
+                workspace, "REFERENCED", name="new_value", value_map=value_map
+            ),
         )
 
         verificationb = drillholes_table.depth_table_by_name("new value")
