@@ -413,9 +413,6 @@ def str2uuid(value: Any) -> UUID | Any:
     if isinstance(value, bytes):
         value = value.decode("utf-8")
 
-    if isinstance(value, str) and not (value.startswith("{") and value.endswith("}")):
-        value = value.strip("{}")
-
     if is_uuid(value):
         # TODO insert validation
         return UUID(str(value))
