@@ -721,7 +721,7 @@ def test_stringify(tmp_path: Path):
 
     assert in_file.ui_json["test"]["value"] is not None
     assert not in_file.ui_json["test"]["enabled"]
-    assert not in_file.ui_json["test_group"]["enabled"]
+    assert in_file.ui_json["test_group"]["enabled"]
     assert "optional" in in_file.ui_json["test"]
 
     ui_json["test_group"] = templates.string_parameter(optional="enabled")
