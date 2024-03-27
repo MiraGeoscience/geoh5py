@@ -27,6 +27,7 @@ from .data import ConcatenatedData
 from .property_group import ConcatenatedPropertyGroup
 
 if TYPE_CHECKING:
+    from ..entity import Entity
     from .concatenator import Concatenator
 
 
@@ -90,30 +91,30 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                 elif not isinstance(child_data, ConcatenatedPropertyGroup):
                     self.add_children([child_data])
 
-    def get_data(self, name: str | uuid.UUID) -> list[Data]:
+    def get_entity(self, name: str | uuid.UUID) -> list[Entity | None]:
         """
-        Generic function to get data values from object.
-        """
-        entity_list = []
+        Get a child :obj:`~geoh5py.data.data.Data` by name.
 
-        if not self.children or self.get_entity(name)[0] is None:
+        :param name: Name of the target child data
+        :param entity_type: Sub-select entities based on type.
+        :return: A list of children Data objects
+        """
+        if not any(child for child in self.children if isinstance(child, Data)):
             self._fetch_concatenated_children()
 
-        for child in self.children:
-            if (
-                isinstance(name, str) and hasattr(child, "name") and child.name == name
-            ) or (
-                isinstance(name, uuid.UUID)
-                and hasattr(child, "uid")
-                and child.uid == name
-            ):
-                entity_list.append(child)
+        if isinstance(name, uuid.UUID):
+            entity_list = [child for child in self.children if child.uid == name]
+        else:
+            entity_list = [child for child in self.children if child.name == name]
+
+        if not entity_list:
+            return [None]
 
         return entity_list
 
     def get_data_list(self, attribute="name"):
         """
-        Get list of data names.
+        Lazy loading of data names from concatenated attributes.
         """
         data_list = [
             attr.replace("Property:", "").replace("\u2044", "/")
