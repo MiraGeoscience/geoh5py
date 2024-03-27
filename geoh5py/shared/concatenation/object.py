@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 import uuid
-import warnings
 from typing import TYPE_CHECKING
 
 from ...data import Data
@@ -73,11 +72,10 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
         return prop_group
 
-    def get_data(self, name: str | uuid.UUID) -> list[Data]:
+    def _fetch_concatenated_children(self):
         """
-        Generic function to get data values from object.
+        Method to generate concatenated children.
         """
-        entity_list = []
         attr = self.concatenator.get_concatenated_attributes(self.uid).copy()
 
         for key, value in attr.items():
@@ -91,8 +89,15 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                     self.workspace.create_from_concatenation(attributes)
                 elif not isinstance(child_data, ConcatenatedPropertyGroup):
                     self.add_children([child_data])
-                else:
-                    warnings.warn(f"Failed: '{name}' is a property group, not a Data.")
+
+    def get_data(self, name: str | uuid.UUID) -> list[Data]:
+        """
+        Generic function to get data values from object.
+        """
+        entity_list = []
+
+        if not self.children or self.get_entity(name)[0] is None:
+            self._fetch_concatenated_children()
 
         for child in self.children:
             if (
