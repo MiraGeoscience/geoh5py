@@ -112,21 +112,9 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
         return entity_list
 
-    def get_data(self, name: str | uuid.UUID) -> list[Data]:
-        """
-        Generic function to get data values from object.
-        """
-        entity_list = []
-
-        for child in self.get_entity(name):
-            if isinstance(child, Data):
-                entity_list.append(child)
-
-        return entity_list
-
     def get_data_list(self, attribute="name"):
         """
-        Get list of data names.
+        Lazy loading of data names from concatenated attributes.
         """
         data_list = [
             attr.replace("Property:", "").replace("\u2044", "/")
