@@ -96,7 +96,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
         """
         entity_list = []
 
-        if self.get_entity(name)[0] is None:
+        if not self.children or self.get_entity(name)[0] is None:
             self._fetch_concatenated_children()
 
         for child in self.children:
