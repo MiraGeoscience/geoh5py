@@ -214,12 +214,12 @@ def test_set_enabled():
 
     # If parameter is in group and groupOptional: True then disable
     # the parameter containing the groupOptional member.
-    set_enabled(ui_json, "float_parameter", False)
+    set_enabled(ui_json, "string_parameter", False)
     assert not ui_json["string_parameter"]["enabled"]
     assert not ui_json["float_parameter"]["enabled"]
     assert not ui_json["integer_parameter"]["enabled"]
 
-    set_enabled(ui_json, "float_parameter", True)
+    set_enabled(ui_json, "string_parameter", True)
     assert ui_json["string_parameter"]["enabled"]
     assert ui_json["float_parameter"]["enabled"]
     assert ui_json["integer_parameter"]["enabled"]
