@@ -200,7 +200,7 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
     if group_name:
         group = collect(ui_json, "group", group_name)
         parameters = find_all(group, "groupOptional")
-        if parameters:
+        if parameters and parameters[0] == parameter:
             is_group_optional = True
             for form in group.values():
                 form["enabled"] = value

@@ -439,12 +439,9 @@ class ObjectBase(EntityContainer):
         """
         entity_list = []
 
-        for child in self.children:
+        for child in self.get_entity(name):
             if isinstance(child, Data):
-                if (
-                    isinstance(name, uuid.UUID) and child.uid == name
-                ) or child.name == name:
-                    entity_list.append(child)
+                entity_list.append(child)
 
         return entity_list
 
