@@ -274,11 +274,7 @@ class InputFile:
                 if (value is None) and (not self.ui_json[key].get("enabled", False)):
                     continue
 
-                if isinstance(value, dict):
-                    self.ui_json[key].update(value)
-                else:
-                    self.ui_json[key][member] = value
-
+                self.ui_json[key][member] = value
             else:
                 self.ui_json[key] = value
 

@@ -42,18 +42,7 @@ def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
                 if not truth(ui_json, name, "enabled"):
                     data[name] = None
                 else:
-                    temp_value = value[field]
-
-                    if value.get("groupValue"):
-                        temp_value = {"group": value["groupValue"], "value": temp_value}
-                    elif value.get("rangeLabel"):
-                        temp_value = {
-                            "property": value["property"],
-                            "value": value["value"],
-                            "isComplement": value["isComplement"],
-                        }
-
-                    data[name] = temp_value
+                    data[name] = value[field]
         else:
             data[name] = value
 
@@ -200,7 +189,7 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
     if group_name:
         group = collect(ui_json, "group", group_name)
         parameters = find_all(group, "groupOptional")
-        if parameters:
+        if parameters and parameters[0] == parameter:
             is_group_optional = True
             for form in group.values():
                 form["enabled"] = value

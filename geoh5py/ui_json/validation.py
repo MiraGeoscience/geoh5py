@@ -145,11 +145,11 @@ class InputValidation:
                     )
             elif "rangeLabel" in item:
                 validations[key] = {
-                    "types": [dict],
+                    "types": [list],
                 }
             elif "groupValue" in item and "value" in item:
                 validations[key] = {
-                    "types": [dict],
+                    "types": [list],
                 }
             elif "choiceList" in item:
                 validations[key] = {

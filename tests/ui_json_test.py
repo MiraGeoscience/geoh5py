@@ -721,7 +721,7 @@ def test_stringify(tmp_path: Path):
 
     assert in_file.ui_json["test"]["value"] is not None
     assert not in_file.ui_json["test"]["enabled"]
-    assert not in_file.ui_json["test_group"]["enabled"]
+    assert in_file.ui_json["test_group"]["enabled"]
     assert "optional" in in_file.ui_json["test"]
 
     ui_json["test_group"] = templates.string_parameter(optional="enabled")
@@ -844,4 +844,5 @@ def test_range_label(tmp_path):
     ifile = InputFile(ui_json=ui_json)
     ifile.write_ui_json("test_range_label.ui.json", path=tmp_path)
     new = InputFile.read_ui_json(tmp_path / "test_range_label.ui.json")
-    assert new.data["test"]["value"] == ifile.data["test"]["value"]
+
+    assert new.data["test"] == ifile.data["test"]
