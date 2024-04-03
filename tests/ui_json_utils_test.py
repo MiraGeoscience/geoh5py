@@ -278,11 +278,11 @@ def test_flatten_group_value():
     )
 
     validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
-    assert validators["test"]["types"] == [dict]
+    assert validators["test"]["types"] == [list]
 
     flat = flatten(ui_json)
 
-    assert flat["test"] == {"value": ["test1"], "group": my_uuid}
+    assert flat["test"] == ["test1"]
 
     ui_json = deepcopy(default_ui_json)
     ui_json["test"] = templates.drillhole_group_data(
@@ -291,11 +291,26 @@ def test_flatten_group_value():
         optional="enabled",
     )
     validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
-    assert validators["test"]["types"] == [dict]
+    assert validators["test"]["types"] == [list]
 
     flat = flatten(ui_json)
 
     assert flat["test"] is None
+
+
+def test_range_label():
+    ui_json = deepcopy(default_ui_json)
+    my_uuid = uuid.uuid4()
+    ui_json["test"] = templates.range_label_template(
+        value=[1, 2], property_=my_uuid, is_complement=False, optional="enabled"
+    )
+
+    validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
+    assert validators["test"]["types"] == [list]
+
+    flat = flatten(ui_json)
+
+    assert flat["test"] == [1, 2]
 
 
 def test_optional_error():

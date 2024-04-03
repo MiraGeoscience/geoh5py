@@ -827,3 +827,22 @@ def test_dependency_enabling(tmp_path: Path):
 
     with pytest.warns(UserWarning, match="Non-option parameter"):
         in_file.update_ui_values({"parameter_b": None})
+
+
+def test_range_label(tmp_path):
+    workspace = Workspace.create(tmp_path / "test.geoh5")
+    points = Points.create(workspace, vertices=np.random.randn(12, 3), name="my points")
+    data = points.add_data({"my data": {"values": np.random.randn(12)}})
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = str(workspace.h5file)
+    ui_json["object"] = templates.object_parameter(value=str(points.uid))
+    ui_json["test"] = templates.range_label_template(
+        value=[0.2, 0.8], parent="object", property_=data.uid, is_complement=False
+    )
+
+    ifile = InputFile(ui_json=ui_json)
+    ifile.write_ui_json("test_range_label.ui.json", path=tmp_path)
+    new = InputFile.read_ui_json(tmp_path / "test_range_label.ui.json")
+
+    assert new.data["test"] == ifile.data["test"]

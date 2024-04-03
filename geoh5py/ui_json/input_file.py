@@ -275,7 +275,6 @@ class InputFile:
                     continue
 
                 self.ui_json[key][member] = value
-
             else:
                 self.ui_json[key] = value
 

@@ -424,7 +424,7 @@ class DrillholesGroupTable(ABC):
         if self._properties is not None:
             self._properties += (name,)
         else:
-            self._properties = (name,)
+            self._properties = ((name,),)
 
         if self._index_by_drillhole is not None:
             for value in self._index_by_drillhole.values():
