@@ -57,6 +57,7 @@ class H5Reader:
         """
         with fetch_h5_handle(file) as h5file:
             name = list(h5file)[0]
+
             entity_type = cls.format_type_string(entity_type)
 
             if entity_type == "Root":

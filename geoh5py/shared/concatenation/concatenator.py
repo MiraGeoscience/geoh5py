@@ -259,6 +259,9 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                     new_entity.workspace.save_entity_type(data_type)
 
             new_entity.workspace.fetch_children(new_entity)
+            for child in self.children:
+                if not isinstance(child, Concatenated):
+                    child.copy(parent=new_entity)
         else:
             for child in self.children:
                 child.copy(
