@@ -655,8 +655,13 @@ def test_copy_drillhole_group(tmp_path):
 
     _, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
 
+    xyz = np.random.randn(32)
+    np.savetxt(tmp_path / r"numpy_array.txt", xyz)
+    file_name = "numpy_array.txt"
+
     with workspace.open():
         dh_group = workspace.get_entity("DH_group")[0]
+        dh_group.add_file(tmp_path / file_name)
         dh_group_copy = dh_group.copy(workspace)
 
         for child_a, child_b in zip(dh_group.children, dh_group_copy.children):
