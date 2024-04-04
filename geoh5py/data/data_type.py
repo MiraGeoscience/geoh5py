@@ -238,7 +238,7 @@ class DataType(EntityType):
     def number_of_bins(self, n_bins: int | None):
         if n_bins is None:
             pass
-        elif not isinstance(n_bins, (int, np.int32, np.uint32)) or n_bins < 1:
+        elif not isinstance(n_bins, (int, np.integer)) or n_bins < 1:
             raise ValueError(
                 f"Number of bins should be an integer greater than 0 or None, not {n_bins}"
             )
@@ -319,13 +319,10 @@ class DataType(EntityType):
             else:
                 values = attribute_dict.get("values")
                 if values is None or (
-                    isinstance(values, np.ndarray)
-                    and (values.dtype in [np.float32, np.float64])
+                    isinstance(values, np.ndarray) and (values.dtype in [np.floating])
                 ):
                     entity_type = {"primitive_type": "FLOAT"}
-                elif isinstance(values, np.ndarray) and (
-                    values.dtype in [np.uint32, np.int32]
-                ):
+                elif isinstance(values, np.ndarray) and (values.dtype in [np.integer]):
                     entity_type = {"primitive_type": "INTEGER"}
                 elif isinstance(values, str) or (
                     isinstance(values, np.ndarray) and values.dtype.kind in ["U", "S"]
