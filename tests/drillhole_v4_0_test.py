@@ -665,10 +665,13 @@ def test_copy_drillhole_group(tmp_path):
         dh_group_copy = dh_group.copy(workspace)
 
         for child_a, child_b in zip(dh_group.children, dh_group_copy.children):
-            assert child_a.name == child_b.name
-            assert child_a.collar == child_b.collar
-            np.testing.assert_array_almost_equal(child_a.surveys, child_b.surveys)
-            assert child_a.get_data_list() == child_b.get_data_list()
+            if isinstance(child_a, Drillhole):
+                assert child_a.name == child_b.name
+                assert child_a.collar == child_b.collar
+                np.testing.assert_array_almost_equal(child_a.surveys, child_b.surveys)
+                assert child_a.get_data_list() == child_b.get_data_list()
+            else:
+                assert child_a.values == child_b.values
 
         with Workspace.create(
             tmp_path / r"test_copy_concatenated_copy.geoh5",
