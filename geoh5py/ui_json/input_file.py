@@ -111,7 +111,10 @@ class InputFile:
         Dictionary representing the input data for the ui.json file.
         """
         if self._data is None and self.ui_json is not None:
+            original = self.validation_options.get("update_enabled", True)
+            self.validation_options["update_enabled"] = False
             self.data = flatten(self.ui_json)
+            self.validation_options["update_enabled"] = original
 
         return self._data
 
@@ -305,7 +308,7 @@ class InputFile:
 
         """
         if self._validation_options is None:
-            return {
+            self._validation_options = {
                 "update_enabled": True,
                 "ignore_list": (),
             }
