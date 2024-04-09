@@ -181,21 +181,23 @@ class H5Reader:
                 group = h5file[name][entity_type][as_str_if_uuid(uid)][
                     "Concatenated Data"
                 ]
-                if label not in group["Index"]:
+                indices = group["Index"].get(label.replace("/", "\u2044"))
+                if indices is None:
                     return None
 
-                if label in group["Data"]:
-                    attribute = group["Data"][label][:]
-                else:
-                    attribute = group[label][:]
+                array = group["Data"].get(label.replace("/", "\u2044"))
+                if array is None:
+                    array = group.get(label.replace("/", "\u2044"))
+
+                attribute = array[:]
 
                 if attribute.dtype in [float, "float64", "float32"]:
                     attribute[attribute == FLOAT_NDV] = np.nan
 
                 if attribute.dtype == object and isinstance(attribute[0], bytes):
-                    attribute = attribute.astype(str)
+                    attribute = np.char.decode(attribute.astype(np.bytes_), "UTF-8")
 
-                return attribute, group["Index"][label][:]
+                return attribute, indices[:]
 
             except KeyError:
                 return None
