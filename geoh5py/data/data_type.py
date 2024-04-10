@@ -319,7 +319,7 @@ class DataType(EntityType):
             else:
                 values = attribute_dict.get("values")
                 if values is None or (
-                    isinstance(values, np.ndarray) and (values.dtype in [np.floating])
+                    isinstance(values, np.ndarray) and np.issubdtype(values.dtype, np.floating)
                 ):
                     entity_type = {"primitive_type": "FLOAT"}
 
