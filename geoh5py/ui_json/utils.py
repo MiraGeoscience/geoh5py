@@ -189,10 +189,11 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
     if group_name:
         group = collect(ui_json, "group", group_name)
         parameters = find_all(group, "groupOptional")
-        if parameters and parameters[0] == parameter:
+        if parameters:
             is_group_optional = True
-            for form in group.values():
-                form["enabled"] = value
+            if parameters[0] == parameter:
+                for form in group.values():
+                    form["enabled"] = value
 
     if not is_group_optional and "dependency" in ui_json[parameter]:
         is_group_optional = not dependency_requires_value(ui_json, parameter)

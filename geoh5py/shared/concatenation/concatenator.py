@@ -169,6 +169,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             )
 
         self._concatenated_attributes = concatenated_attributes
+        self.workspace.update_attribute(self, "concatenated_attributes")
 
     @property
     def concatenated_object_ids(self) -> list[bytes] | None:
