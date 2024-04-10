@@ -34,6 +34,7 @@ from .concatenated import Concatenated
 from .data import ConcatenatedData
 from .drillholes_group_table import DrillholesGroupTable
 from .object import ConcatenatedObject
+from .property_group import ConcatenatedPropertyGroup
 
 if TYPE_CHECKING:
     from ...groups import GroupType
@@ -472,7 +473,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
             self.remove_entity(child)
 
-    def remove_entity(self, entity: Concatenated):
+    def remove_entity(self, entity: Concatenated | ConcatenatedPropertyGroup):
         """Remove a concatenated entity."""
 
         if isinstance(entity, ConcatenatedData):
@@ -487,14 +488,14 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             for child in entity.children.copy():
                 self.remove_entity(child)
 
-            if entity.property_groups is not None:  # type: ignore
-                self.update_array_attribute(entity, "property_groups", remove=True)
-
             object_ids = self.concatenated_object_ids
 
             if object_ids is not None:
                 object_ids.remove(as_str_if_uuid(entity.uid).encode())
                 self.concatenated_object_ids = object_ids
+
+        elif isinstance(entity, ConcatenatedPropertyGroup):
+            self.update_array_attribute(entity.parent, "property_groups", remove=True)
 
         if (
             self.concatenated_attributes is not None

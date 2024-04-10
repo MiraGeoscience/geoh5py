@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import uuid
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -25,6 +26,7 @@ from geoh5py.data import Data
 from geoh5py.groups import PropertyGroup
 
 if TYPE_CHECKING:
+    from .concatenator import Concatenator
     from .object import ConcatenatedObject
 
 
@@ -33,6 +35,13 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
     def __init__(self, parent: ConcatenatedObject, **kwargs):
         super().__init__(parent, **kwargs)
+
+    @property
+    def concatenator(self) -> Concatenator:
+        """
+        Parental Concatenator entity.
+        """
+        return self._parent.concatenator
 
     def is_collocated(
         self,
@@ -130,3 +139,27 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         self._parent: ConcatenatedObject = parent
 
         parent.workspace.add_or_update_property_group(self)
+
+    def remove_properties(self, data: Data | list[Data | uuid.UUID] | uuid.UUID):
+        """
+        Remove data from the properties.
+        """
+        super().remove_properties(data)
+
+        if (
+            self._properties is not None
+            and len(self._properties) == 1
+            and self.depth_ is not None
+        ):
+            self.depth_.allow_delete = True
+            super().remove_properties(self.depth_)
+
+        elif (
+            self._properties is not None
+            and len(self._properties) == 2
+            and self.from_ is not None
+            and self.to_ is not None
+        ):
+            self.from_.allow_delete = True
+            self.to_.allow_delete = True
+            super().remove_properties([self.from_, self.to_])
