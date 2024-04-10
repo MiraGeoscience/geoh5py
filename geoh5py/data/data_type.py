@@ -324,7 +324,7 @@ class DataType(EntityType):
                 ):
                     entity_type = {"primitive_type": "FLOAT"}
                 elif isinstance(values, np.ndarray) and (
-                    values.dtype in [np.uint32, np.int32]
+                    np.issubdtype(values.dtype, np.integer)
                 ):
                     entity_type = {"primitive_type": "INTEGER"}
                 elif isinstance(values, str) or (
