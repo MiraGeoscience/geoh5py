@@ -307,7 +307,10 @@ class Octree(GridObject):
     def u_count(self, value: int):
         value = np.int32(value).item()
 
-        if not isinstance(value, (float, np.integer, int)) or np.log2(value) % 1.0 != 0:
+        if (
+            not isinstance(value, (float, np.floating, np.integer, int))
+            or np.log2(value) % 1.0 != 0
+        ):
             raise TypeError("Attribute 'u_count' must be type(int) in power of 2.")
 
         self._centroids = None
@@ -346,7 +349,10 @@ class Octree(GridObject):
     def v_count(self, value: int):
         value = np.int32(value).item()
 
-        if not isinstance(value, (float, np.integer, int)) or np.log2(value) % 1.0 != 0:
+        if (
+            not isinstance(value, (float, np.floating, np.integer, int))
+            or np.log2(value) % 1.0 != 0
+        ):
             raise TypeError("Attribute 'v_count' must be type(int) in power of 2.")
         self._centroids = None
         self._v_count = np.int32(value).item()
@@ -383,7 +389,10 @@ class Octree(GridObject):
     def w_count(self, value: int):
         value = np.int32(value).item()
 
-        if not isinstance(value, (float, np.integer, int)) or np.log2(value) % 1.0 != 0:
+        if (
+            not isinstance(value, (float, np.floating, np.integer, int))
+            or np.log2(value) % 1.0 != 0
+        ):
             raise TypeError("Attribute 'w_count' must be type(int) in power of 2.")
         self._centroids = None
         self._w_count = np.int32(value).item()

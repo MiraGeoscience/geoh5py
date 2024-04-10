@@ -284,7 +284,7 @@ class H5Writer:
 
                 if isinstance(values, np.ndarray):
 
-                    if values.dtype in (np.floa32, np.float64):
+                    if np.issubdtype(values.dtype, np.floating):
                         values[np.isnan(values)] = FLOAT_NDV
                         values = values.astype(np.float32)
 
