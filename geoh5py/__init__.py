@@ -17,6 +17,6 @@
 
 # flake8: noqa
 
-__version__ = "0.9.0-alpha.2"
+__version__ = "0.9.0-alpha.3"
 
 from geoh5py.workspace import Workspace
