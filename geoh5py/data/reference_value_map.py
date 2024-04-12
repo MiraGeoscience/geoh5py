@@ -56,7 +56,7 @@ class ReferenceValueMap(ABC):
         :param key: The key to verify.
         :param value: The value to verify.
         """
-        if not isinstance(key, (int, np.int16, np.int32, np.int64)) or key < 0:
+        if not isinstance(key, (int, np.integer)) or key < 0:
             raise KeyError("Key must be an positive integer")
         if not isinstance(value, str):
             raise TypeError("Value must be a string")
