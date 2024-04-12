@@ -493,7 +493,7 @@ class ObjectBase(EntityContainer):
         """
         return self._property_groups
 
-    def remove_children(self, children: list[Entity] | list[PropertyGroup]):
+    def remove_children(self, children: list[Entity | PropertyGroup]):
         """
         Remove children from the list of children entities.
 

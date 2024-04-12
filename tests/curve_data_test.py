@@ -203,3 +203,26 @@ def test_copy_cells_data(tmp_path):
         mask = data.mask_by_extent(np.vstack([[0, 0], [2, 2]]))
 
         assert np.all(mask == ind), "Error masking cell data by extent."
+
+
+def test_cell_from_part(tmp_path):
+    n_vertices = 100
+    locations = np.random.randn(n_vertices, 3)
+    parts = np.random.randint(0, 10, n_vertices)
+
+    with Workspace.create(tmp_path / r"testCellParts.geoh5") as workspace:
+        curve = Curve.create(workspace, vertices=locations, parts=parts)
+        curve.add_data(
+            {
+                "parts": {"values": parts},
+            }
+        )
+        cells = curve.cells
+
+    end_points = cells[:-1, 1] != cells[1:, 0]
+    assert np.sum(end_points) == 9, "Error creating cells from parts."
+
+    ascending = cells[1:, 0] > cells[:-1, 0]
+    ascending[end_points] = True
+
+    assert np.all(ascending), "Error creating sorted cells from parts."

@@ -23,9 +23,29 @@ from uuid import uuid4
 import numpy as np
 import pytest
 
+from geoh5py.data import Data
 from geoh5py.groups import PropertyGroup
 from geoh5py.objects import Curve
 from geoh5py.workspace import Workspace
+
+
+def make_example(workspace):
+    curve = Curve.create(
+        workspace,
+        vertices=np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)],
+    )
+
+    # Add data
+    props = []
+    for i in range(4):
+        values = np.cos(curve.vertices[:, 0] / (i + 1))
+        props += [
+            curve.add_data(
+                {f"Period{i + 1}": {"values": values}}, property_group="myGroup"
+            )
+        ]
+
+    return curve
 
 
 def test_create_property_group(tmp_path):
@@ -35,22 +55,10 @@ def test_create_property_group(tmp_path):
     h5file_path = tmp_path / r"prop_group_test.geoh5"
 
     with Workspace.create(h5file_path) as workspace:
-        curve = Curve.create(
-            workspace,
-            vertices=np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)],
-        )
+        curve = make_example(workspace)
 
-        # Add data
-        props = []
-        test_values = []
-        for i in range(4):
-            values = np.cos(curve.vertices[:, 0] / (i + 1))
-            props += [
-                curve.add_data(
-                    {f"Period{i+1}": {"values": values}}, property_group="myGroup"
-                )
-            ]
-            test_values.append(values)
+        props = [child for child in curve.children if isinstance(child, Data)]
+        test_values = np.r_[[prop.values for prop in props]]
 
         with pytest.raises(TypeError, match="Name must be"):
             _ = PropertyGroup(parent="bidon", name=42)
@@ -190,20 +198,7 @@ def test_copy_property_group(tmp_path):
     h5file_path = tmp_path / r"prop_group_test.geoh5"
 
     with Workspace.create(h5file_path) as workspace:
-        curve = Curve.create(
-            workspace,
-            vertices=np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)],
-        )
-
-        # Add data
-        props = []
-        for i in range(4):
-            values = np.cos(curve.vertices[:, 0] / (i + 1))
-            props += [
-                curve.add_data(
-                    {f"Period{i+1}": {"values": values}}, property_group="myGroup"
-                )
-            ]
+        curve = make_example(workspace)
 
         # New property group object should have been created on copy
         curve_2 = curve.copy()
@@ -213,3 +208,17 @@ def test_copy_property_group(tmp_path):
             len(curve_2.get_data(uid)) > 0
             for uid in curve_2.property_groups[0].properties
         )
+
+
+def test_clean_out_empty(tmp_path):
+    h5file_path = tmp_path / r"prop_group_clean.geoh5"
+
+    with Workspace.create(h5file_path) as workspace:
+        curve = make_example(workspace)
+
+        assert len(curve.property_groups) == 1
+
+        props = [child for child in curve.children if isinstance(child, Data)]
+        curve.remove_children(props)
+
+        assert len(curve.property_groups) == 0

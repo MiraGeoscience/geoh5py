@@ -279,15 +279,13 @@ class H5Writer:
 
             dict_values = getattr(entity, attribute)
 
-            if channel in dict_values:
+            if channel in dict_values and len(dict_values[channel]) > 0:
+
                 values = dict_values[channel].copy()
 
                 if isinstance(values, np.ndarray):
 
-                    if values.dtype in (
-                        np.float64,
-                        np.float32,
-                    ):
+                    if np.issubdtype(values.dtype, np.floating):
                         values[np.isnan(values)] = FLOAT_NDV
                         values = values.astype(np.float32)
 
@@ -644,7 +642,7 @@ class H5Writer:
                     out_values = np.round(out_values).astype("int32")
 
                 elif isinstance(entity, TextData) and not isinstance(values[0], bytes):
-                    out_values = np.char.encode(values, encoding="utf-8")
+                    out_values = np.char.encode(values, encoding="utf-8").astype("O")
 
                 if getattr(entity, "ndv", None) is not None:
                     out_values[np.isnan(out_values)] = entity.ndv

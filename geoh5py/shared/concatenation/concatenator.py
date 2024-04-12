@@ -34,6 +34,7 @@ from .concatenated import Concatenated
 from .data import ConcatenatedData
 from .drillholes_group_table import DrillholesGroupTable
 from .object import ConcatenatedObject
+from .property_group import ConcatenatedPropertyGroup
 
 if TYPE_CHECKING:
     from ...groups import GroupType
@@ -475,29 +476,39 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
             self.remove_entity(child)
 
-    def remove_entity(self, entity: Concatenated):
+    def remove_entity(self, entity: Concatenated | ConcatenatedPropertyGroup):
         """Remove a concatenated entity."""
 
+        parent = entity.parent
         if isinstance(entity, ConcatenatedData):
             # Remove the rows of data and index
             self.update_array_attribute(entity, entity.name, remove=True)
+            # Remove the data from the group
+
+            if entity.property_group is not None:
+                entity.property_group.remove_properties([entity])
+
             # Remove from the concatenated Attributes
-            parent_attr = self.get_concatenated_attributes(entity.parent.uid)
+            parent_attr = self.get_concatenated_attributes(parent.uid)
             name = entity.name
             del parent_attr[f"Property:{name}"]
+
         elif isinstance(entity, ConcatenatedObject):
-
-            for child in entity.children.copy():
-                self.remove_entity(child)
-
-            if entity.property_groups is not None:  # type: ignore
-                self.update_array_attribute(entity, "property_groups", remove=True)
-
+            # First remove the children
+            entity.remove_children(entity.children.copy())
             object_ids = self.concatenated_object_ids
 
             if object_ids is not None:
                 object_ids.remove(as_str_if_uuid(entity.uid).encode())
                 self.concatenated_object_ids = object_ids
+
+        elif isinstance(entity, ConcatenatedPropertyGroup):
+            # Remove all data within the group
+            if entity.properties is not None and len(entity.properties) > 0:
+                data = [entity.parent.get_entity(uid)[0] for uid in entity.properties]
+                entity.parent.remove_children(data)
+
+            self.update_array_attribute(parent, "property_groups", remove=True)
 
         if (
             self.concatenated_attributes is not None
@@ -507,9 +518,6 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             self.attributes_keys.remove(as_str_if_uuid(entity.uid))
             self.concatenated_attributes["Attributes"].remove(attr_handle)
             self.workspace.repack = True
-
-        if entity in entity.parent.children:
-            entity.parent.children.remove(entity)
 
     def save_attribute(self, field: str):
         """
