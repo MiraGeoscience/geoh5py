@@ -24,7 +24,7 @@ exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
 
 [tool.poetry.dependencies]
 python = "^3.8,<3.11"
-Pillow = "^10.0.1"
+Pillow = "10.2.0"
 h5py = "^3.2.1"
 numpy = "!=1.19.4, ~1.23.5"
 
