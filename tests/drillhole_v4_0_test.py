@@ -624,7 +624,6 @@ def test_remove_drillhole_data(tmp_path):
 
         assert workspace.get_entity("my_log_values/")[0] is not None
         dh_group.remove_children(new_well)
-        print("Done")
 
     with Workspace(h5file_path, version=2.0) as workspace:
         well = workspace.get_entity("well")[0]
