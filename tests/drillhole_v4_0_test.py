@@ -641,6 +641,8 @@ def test_remove_drillhole_data(tmp_path):
         well = workspace.get_entity("Number 3")[0]
         well.remove_children(well.property_groups[0])
 
+        assert len(well.children) == 0, "Prop group and all data should be removed."
+
 
 def test_create_drillhole_data_v4_2(tmp_path):
     h5file_path = tmp_path / r"test_create_concatenated_v4_2_v2_1.geoh5"
