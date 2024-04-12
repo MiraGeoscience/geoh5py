@@ -611,7 +611,7 @@ class Workspace(AbstractContextManager):
                 "being removed. Please revise."
             )
 
-        if isinstance(entity, (Concatenated | ConcatenatedPropertyGroup)):
+        if isinstance(entity, (Concatenated, ConcatenatedPropertyGroup)):
             entity.concatenator.remove_entity(entity)
             return
 
