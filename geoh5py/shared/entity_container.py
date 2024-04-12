@@ -206,7 +206,7 @@ class EntityContainer(Entity):
 
         return uid
 
-    def remove_children(self, children: list[shared.Entity] | list[PropertyGroup]):
+    def remove_children(self, children: list[shared.Entity | PropertyGroup]):
         """
         Remove children from the list of children entities.
 

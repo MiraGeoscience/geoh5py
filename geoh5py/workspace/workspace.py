@@ -601,7 +601,7 @@ class Workspace(AbstractContextManager):
                     H5Writer.remove_child, child.uid, ref_type, parent, mode="r+"
                 )
 
-    def remove_entity(self, entity: Entity):
+    def remove_entity(self, entity: Entity | PropertyGroup):
         """
         Function to remove an entity and its children from the workspace.
         """
@@ -611,12 +611,13 @@ class Workspace(AbstractContextManager):
                 "being removed. Please revise."
             )
 
-        if not isinstance(entity, (Concatenated | ConcatenatedPropertyGroup)):
-            self.workspace.remove_recursively(entity)
-
         if isinstance(entity, (Concatenated | ConcatenatedPropertyGroup)):
             entity.concatenator.remove_entity(entity)
-        else:
+            return
+
+        self.workspace.remove_recursively(entity)
+
+        if not isinstance(entity, PropertyGroup):
             ref_type = self.str_from_type(entity)
             self._io_call(
                 H5Writer.remove_entity,
@@ -624,9 +625,10 @@ class Workspace(AbstractContextManager):
                 ref_type,
                 mode="r+",
             )
-            del entity
-            collect()
-            self.remove_none_referents(self._types, "Types")
+
+        del entity
+        collect()
+        self.remove_none_referents(self._types, "Types")
 
     def remove_none_referents(
         self,
@@ -647,7 +649,7 @@ class Workspace(AbstractContextManager):
         for key in rem_list:
             del referents[key]
 
-    def remove_recursively(self, entity: Entity):
+    def remove_recursively(self, entity: Entity | PropertyGroup):
         """Delete an entity and its children from the workspace and geoh5 recursively"""
         parent = entity.parent
 
@@ -655,7 +657,7 @@ class Workspace(AbstractContextManager):
             for child in entity.children:
                 self.remove_entity(child)
 
-        parent.remove_children(entity)
+        parent.remove_children([entity])
 
     def deactivate(self):
         """Deactivate this workspace if it was the active one, else does nothing."""

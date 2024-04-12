@@ -143,6 +143,8 @@ class ConcatenatedPropertyGroup(PropertyGroup):
     def remove_properties(self, data: Data | list[Data | uuid.UUID] | uuid.UUID):
         """
         Remove data from the properties.
+
+        The property group is removed if only the depth or from/to data are left.
         """
         super().remove_properties(data)
 
@@ -152,7 +154,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
             and self.depth_ is not None
         ):
             self.depth_.allow_delete = True
-            super().remove_properties(self.depth_)
+            self.parent.remove_children(self)
 
         elif (
             self._properties is not None
@@ -162,4 +164,4 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         ):
             self.from_.allow_delete = True
             self.to_.allow_delete = True
-            super().remove_properties([self.from_, self.to_])
+            self.parent.remove_children(self)

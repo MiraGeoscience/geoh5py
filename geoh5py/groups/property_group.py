@@ -243,7 +243,7 @@ class PropertyGroup(ABC):
 
         if len(self._properties) == 0:
             update = False
-            self.parent.remove_children([self])
+            self.parent.workspace.remove_entity(self)
 
         if update:
             self.parent.workspace.add_or_update_property_group(self)

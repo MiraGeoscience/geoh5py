@@ -162,7 +162,9 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
         return self._property_groups
 
-    def remove_children(self, children: list | Concatenated):
+    def remove_children(
+        self, children: list | Concatenated | ConcatenatedPropertyGroup
+    ):
         """
         Remove children from object.
 
@@ -178,5 +180,9 @@ class ConcatenatedObject(Concatenated, ObjectBase):
             if child not in self._children:
                 continue
 
-            super().remove_children(child)
-            self.workspace.remove_entity(child)
+            self.concatenator.remove_entity(child)
+
+            if isinstance(child, ConcatenatedPropertyGroup) and self._property_groups:
+                self._property_groups.remove(child)
+
+            self._children.remove(child)

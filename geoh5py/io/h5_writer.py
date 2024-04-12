@@ -279,7 +279,8 @@ class H5Writer:
 
             dict_values = getattr(entity, attribute)
 
-            if channel in dict_values:
+            if channel in dict_values and len(dict_values[channel]) > 0:
+
                 values = dict_values[channel].copy()
 
                 if isinstance(values, np.ndarray):
