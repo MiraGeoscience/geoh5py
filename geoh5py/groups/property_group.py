@@ -231,22 +231,19 @@ class PropertyGroup(ABC):
         if self._properties is None:
             return
 
-        update = False
         for elem in data:
 
             if isinstance(elem, Data):
                 elem = elem.uid
 
             if elem in self._properties:
-                update = True
                 self._properties.remove(elem)
 
         if len(self._properties) == 0:
-            update = False
             self.parent.workspace.remove_entity(self)
+            return
 
-        if update:
-            self.parent.workspace.add_or_update_property_group(self)
+        self.parent.workspace.add_or_update_property_group(self)
 
     @property
     def uid(self) -> uuid.UUID:
