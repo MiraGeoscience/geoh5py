@@ -277,27 +277,27 @@ class H5Writer:
             except KeyError:
                 pass
 
-            dict_values = getattr(entity, attribute)
+            values = getattr(entity, attribute).get(channel, None)
 
-            if channel in dict_values and len(dict_values[channel]) > 0:
+            if values is None:
+                return
 
-                values = dict_values[channel].copy()
+            if isinstance(values, np.ndarray) and len(values) > 0:
 
-                if isinstance(values, np.ndarray):
+                values = values.copy()
+                if np.issubdtype(values.dtype, np.floating):
+                    values[np.isnan(values)] = FLOAT_NDV
+                    values = values.astype(np.float32)
 
-                    if np.issubdtype(values.dtype, np.floating):
-                        values[np.isnan(values)] = FLOAT_NDV
-                        values = values.astype(np.float32)
+                if np.issubdtype(values.dtype, np.str_):
+                    values = values.astype(h5py.special_dtype(vlen=str))
 
-                    if np.issubdtype(values.dtype, np.str_):
-                        values = values.astype(h5py.special_dtype(vlen=str))
-
-                attr_handle.create_dataset(
-                    name,
-                    data=values,
-                    compression="gzip",
-                    compression_opts=9,
-                )
+            attr_handle.create_dataset(
+                name,
+                data=values,
+                compression="gzip",
+                compression_opts=9,
+            )
 
     @classmethod
     def update_field(
