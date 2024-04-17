@@ -285,12 +285,10 @@ class H5Writer:
             if isinstance(values, np.ndarray):
 
                 if np.issubdtype(values.dtype, np.floating):
+                    values = values.astype(np.float32)
 
                     if len(values) > 0:
-                        values = values.copy()
                         values[np.isnan(values)] = FLOAT_NDV
-
-                    values = values.astype(np.float32)
 
                 if np.issubdtype(values.dtype, np.str_):
                     values = values.astype(h5py.special_dtype(vlen=str))
