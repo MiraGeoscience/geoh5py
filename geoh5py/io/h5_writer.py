@@ -282,11 +282,14 @@ class H5Writer:
             if values is None:
                 return
 
-            if isinstance(values, np.ndarray) and len(values) > 0:
+            if isinstance(values, np.ndarray):
 
-                values = values.copy()
                 if np.issubdtype(values.dtype, np.floating):
-                    values[np.isnan(values)] = FLOAT_NDV
+
+                    if len(values) > 0:
+                        values = values.copy()
+                        values[np.isnan(values)] = FLOAT_NDV
+
                     values = values.astype(np.float32)
 
                 if np.issubdtype(values.dtype, np.str_):
