@@ -535,11 +535,16 @@ class ObjectBase(EntityContainer):
 
         for child in self.children:
             if (
-                getattr(child, "values", None) is not None
+                hasattr(child, "_values")
                 and isinstance(child.association, DataAssociationEnum)
                 and child.association.name == association
             ):
-                child.values = np.delete(child.values, indices, axis=0)
+                # accessing values with no property as the vertices had changed
+                values = getattr(child, "_values", None)
+                if values is None:
+                    values = child.workspace.fetch_values(child)
+
+                child.values = np.delete(values, indices, axis=0)
                 if clear_cache:
                     clear_array_attributes(child)
 

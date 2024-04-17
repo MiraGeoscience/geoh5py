@@ -111,7 +111,7 @@ class Points(ObjectBase):
         :param clear_cache: Clear cached data and attributes.
         """
 
-        if self._vertices is None:
+        if self.vertices is None:
             warnings.warn("No vertices to be removed.", UserWarning)
             return
 
