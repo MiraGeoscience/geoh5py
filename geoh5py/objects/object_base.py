@@ -543,7 +543,6 @@ class ObjectBase(EntityContainer):
                 values = getattr(child, "_values", None)
                 if values is None:
                     values = child.workspace.fetch_values(child)
-
                 child.values = np.delete(values, indices, axis=0)
                 if clear_cache:
                     clear_array_attributes(child)
