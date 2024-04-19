@@ -76,13 +76,13 @@ class GeoImageConversion(BaseConversion):
         :param values: Input image values as an array of int.
         :param output: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
         """
-        if values.ndim > 1:
-            values = np.asarray(Image.fromarray(values).convert("L"))
+        if values.ndim != 2:
+            raise ValueError("To export to gray image, the array must be 2d. ")
 
         output.add_data(
             data={
                 "band[0]": {
-                    "values": values.astype(np.uint32)[::-1].flatten(),
+                    "values": values[::-1].flatten(),
                     "association": "CELL",
                 }
             }
@@ -91,7 +91,7 @@ class GeoImageConversion(BaseConversion):
     @staticmethod
     def add_color_data(values: np.ndarray, output: Grid2D):
         """
-        Send the image color bands to :obj:'geoh5py.data.integer_data.IntegerData'.
+        Send the image color bands to data.
 
         :param values: Input image values as an array of int.
         :param output: the new :obj:'geoh5py.objects.grid2d.Grid2D'.
@@ -103,7 +103,7 @@ class GeoImageConversion(BaseConversion):
             output.add_data(
                 {
                     f"band[{ind}]": {
-                        "values": values.astype(np.uint32)[::-1, :, ind].flatten(),
+                        "values": values[::-1, :, ind].flatten(),
                         "association": "CELL",
                     }
                 }
