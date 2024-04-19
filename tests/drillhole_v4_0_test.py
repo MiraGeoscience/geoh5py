@@ -129,10 +129,14 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0", add_data=True)
 def test_concatenator(tmp_path):
     h5file_path = tmp_path / r"test_Concatenator.geoh5"
 
+    xyz = np.random.randn(32)
+    np.savetxt(tmp_path / r"numpy_array.txt", xyz)
+    file_name = "numpy_array.txt"
+
     with Workspace.create(h5file_path, version=2.0) as workspace:
         # Create a workspace
-        dh_group = DrillholeGroup.create(workspace)
-
+        dh_group = DrillholeGroup.create(workspace, name="DH_group")
+        dh_group.add_file(tmp_path / file_name)
         assert (
             dh_group.data == {}
         ), "DrillholeGroup should not have data on instantiation."
@@ -166,6 +170,10 @@ def test_concatenator(tmp_path):
         dh_group_copy = dh_group.copy()
 
         compare_entities(dh_group_copy, dh_group, ignore=["_uid"])
+
+    with Workspace(h5file_path) as workspace:
+
+        assert len(workspace.get_entity("DH_group")[0].children) == 1
 
 
 def test_concatenated_entities(tmp_path):
