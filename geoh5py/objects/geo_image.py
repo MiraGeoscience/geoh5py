@@ -352,6 +352,7 @@ class GeoImage(ObjectBase):
         :return: List of new Data objects.
         """
         convert_to_grid = False
+        # todo: this should be changed in the future to accept tiff images
         if isinstance(image, np.ndarray) and image.ndim in [2, 3]:
             if image.ndim == 3 and image.shape[2] != 3:
                 raise ValueError(
@@ -372,22 +373,19 @@ class GeoImage(ObjectBase):
                 raise ValueError(f"Input image file {image} does not exist.")
 
             image = Image.open(image)
-            # if the image is a tiff save tag information
-            if isinstance(image, TiffImageFile):
-                self.tag = image
-                convert_to_grid = True
-
         elif isinstance(image, bytes):
             image = Image.open(BytesIO(image))
-        elif isinstance(image, TiffImageFile):
-            self.tag = image
-            convert_to_grid = True
+
         elif not isinstance(image, Image.Image):
             raise ValueError(
                 "Input 'value' for the 'image' property must be "
                 "a 2D or 3D numpy.ndarray, bytes, PIL.Image or a path to an existing image."
                 f"Get type {type(image)} instead."
             )
+        # if the image is a tiff save tag information
+        if isinstance(image, TiffImageFile):
+            self.tag = image
+            convert_to_grid = True
 
         with TemporaryDirectory() as tempdir:
             if image.mode not in PILLOW_ARGUMENTS:
