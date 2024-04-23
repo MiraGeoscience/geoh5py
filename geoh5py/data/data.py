@@ -40,9 +40,10 @@ class Data(Entity):
     def __init__(
         self,
         data_type: DataType,
+        association: DataAssociationEnum = DataAssociationEnum.OBJECT,
         **kwargs,
     ):
-        self._association = None
+        self.association = association
         self._on_file = False
         self._modifiable = True
 
@@ -181,7 +182,7 @@ class Data(Entity):
         return self._values
 
     @property
-    def association(self) -> DataAssociationEnum | None:
+    def association(self) -> DataAssociationEnum:
         """
         :obj:`~geoh5py.data.data_association_enum.DataAssociationEnum`:
         Relationship made between the

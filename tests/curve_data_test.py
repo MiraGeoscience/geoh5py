@@ -35,6 +35,11 @@ def test_create_curve_data(tmp_path: Path):
     n_data = 12
 
     with Workspace.create(h5file_path) as workspace:
+        curve = Curve.create(workspace)
+
+        with pytest.warns(UserWarning, match="No cells to be removed."):
+            curve.remove_cells(0)
+
         curve = Curve.create(
             workspace, vertices=np.random.randn(n_data, 3), name=curve_name
         )
@@ -43,10 +48,6 @@ def test_create_curve_data(tmp_path: Path):
             TypeError, match="Input current_line_id value should be of type"
         ):
             curve.current_line_id = "abc"
-
-        setattr(curve, "_cells", None)
-        with pytest.warns(UserWarning, match="No cells to be removed."):
-            curve.remove_cells(0)
 
         # Get and change the parts
         parts = curve.parts
@@ -114,7 +115,9 @@ def test_remove_cells_data(tmp_path: Path):
     n_data = 12
 
     with Workspace.create(tmp_path / r"testCurve.geoh5") as workspace:
-        curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
+        curve = Curve.create(
+            workspace, name="new_curve", vertices=np.random.randn(n_data, 3)
+        )
         data = curve.add_data(
             {
                 "cellValues": {
@@ -122,6 +125,11 @@ def test_remove_cells_data(tmp_path: Path):
                 },
             }
         )
+
+        del curve, data
+
+    with Workspace(tmp_path / r"testCurve.geoh5") as workspace:
+        curve = workspace.get_entity("new_curve")[0]
 
         with pytest.raises(
             ValueError, match="Found indices larger than the number of cells."
@@ -140,6 +148,8 @@ def test_remove_cells_data(tmp_path: Path):
             curve.remove_vertices("abc")
 
         curve.remove_cells([0])
+
+        data = curve.get_data("cellValues")[0]
 
         assert len(data.values) == 10, "Error removing data values with cells."
 
@@ -203,3 +213,26 @@ def test_copy_cells_data(tmp_path):
         mask = data.mask_by_extent(np.vstack([[0, 0], [2, 2]]))
 
         assert np.all(mask == ind), "Error masking cell data by extent."
+
+
+def test_cell_from_part(tmp_path):
+    n_vertices = 100
+    locations = np.random.randn(n_vertices, 3)
+    parts = np.random.randint(0, 10, n_vertices)
+
+    with Workspace.create(tmp_path / r"testCellParts.geoh5") as workspace:
+        curve = Curve.create(workspace, vertices=locations, parts=parts)
+        curve.add_data(
+            {
+                "parts": {"values": parts},
+            }
+        )
+        cells = curve.cells
+
+    end_points = cells[:-1, 1] != cells[1:, 0]
+    assert np.sum(end_points) == 9, "Error creating cells from parts."
+
+    ascending = cells[1:, 0] > cells[:-1, 0]
+    ascending[end_points] = True
+
+    assert np.all(ascending), "Error creating sorted cells from parts."

@@ -60,7 +60,7 @@ class Curve(CellObject):
                 cells = []
                 for part_id in self.unique_parts:
                     ind = np.where(self.parts == part_id)[0]
-                    cells.append(np.c_[ind[:-1], ind[1:]])
+                    cells.append(np.sort(np.c_[ind[:-1], ind[1:]], axis=0))
                 self.cells = np.vstack(cells)
 
             elif self.on_file:

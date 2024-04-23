@@ -83,7 +83,7 @@ class CellObject(Points, ABC):
         :param clear_cache: Clear cache of data values.
         """
 
-        if self._cells is None:
+        if self.cells is None:
             warnings.warn("No cells to be removed.", UserWarning)
             return
 

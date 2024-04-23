@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 import uuid
-import warnings
 from typing import TYPE_CHECKING
 
 from ...data import Data
@@ -28,6 +27,7 @@ from .data import ConcatenatedData
 from .property_group import ConcatenatedPropertyGroup
 
 if TYPE_CHECKING:
+    from ..entity import Entity
     from .concatenator import Concatenator
 
 
@@ -44,31 +44,6 @@ class ConcatenatedObject(Concatenated, ObjectBase):
         self._property_groups: list | None = None
 
         super().__init__(entity_type, **kwargs)
-
-    def add_children(
-        self,
-        children,
-    ):
-        """
-        :param children: Add a list of entities as
-            :obj:`~geoh5py.shared.entity.Entity.children`
-        """
-        property_groups = self._property_groups or []
-
-        for child in children:
-            if child not in self._children and isinstance(
-                child, (ConcatenatedData, ConcatenatedPropertyGroup)
-            ):
-                self._children.append(child)
-
-            if (
-                isinstance(child, ConcatenatedPropertyGroup)
-                and child not in property_groups
-            ):
-                property_groups.append(child)
-
-            if property_groups:
-                self._property_groups = property_groups
 
     def create_property_group(
         self, name=None, on_file=False, uid=None, **kwargs
@@ -98,14 +73,11 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
         return prop_group
 
-    def get_data(self, name: str | uuid.UUID) -> list[Data]:
+    def _fetch_concatenated_children(self):
         """
-        Generic function to get data values from object.
+        Method to generate concatenated children.
         """
-        entity_list = []
-        attr = self.concatenator.get_concatenated_attributes(
-            getattr(self, "uid")
-        ).copy()
+        attr = self.concatenator.get_concatenated_attributes(self.uid).copy()
 
         for key, value in attr.items():
             if "Property:" in key:
@@ -118,24 +90,31 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                     self.workspace.create_from_concatenation(attributes)
                 elif not isinstance(child_data, ConcatenatedPropertyGroup):
                     self.add_children([child_data])
-                else:
-                    warnings.warn(f"Failed: '{name}' is a property group, not a Data.")
 
-        for child in getattr(self, "children"):
-            if (
-                isinstance(name, str) and hasattr(child, "name") and child.name == name
-            ) or (
-                isinstance(name, uuid.UUID)
-                and hasattr(child, "uid")
-                and child.uid == name
-            ):
-                entity_list.append(child)
+    def get_entity(self, name: str | uuid.UUID) -> list[Entity | None]:
+        """
+        Get a child :obj:`~geoh5py.data.data.Data` by name.
+
+        :param name: Name of the target child data
+        :param entity_type: Sub-select entities based on type.
+        :return: A list of children Data objects
+        """
+        if not any(child for child in self.children if isinstance(child, Data)):
+            self._fetch_concatenated_children()
+
+        if isinstance(name, uuid.UUID):
+            entity_list = [child for child in self.children if child.uid == name]
+        else:
+            entity_list = [child for child in self.children if child.name == name]
+
+        if not entity_list:
+            return [None]
 
         return entity_list
 
     def get_data_list(self, attribute="name"):
         """
-        Get list of data names.
+        Lazy loading of data names from concatenated attributes.
         """
         data_list = [
             attr.replace("Property:", "").replace("\u2044", "/")
@@ -182,3 +161,28 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                 self._property_groups = property_groups
 
         return self._property_groups
+
+    def remove_children(
+        self, children: list | Concatenated | ConcatenatedPropertyGroup
+    ):
+        """
+        Remove children from object.
+
+        This method calls the ObjectBase parent class to remove children from the
+        object children, but also deletes the children from the workspace.
+
+        :param children: List of children to remove.
+        """
+        if not isinstance(children, list):
+            children = [children]
+
+        for child in children:
+            if child not in self._children:
+                continue
+
+            self.concatenator.remove_entity(child)
+
+            if isinstance(child, ConcatenatedPropertyGroup) and self._property_groups:
+                self._property_groups.remove(child)
+
+            self._children.remove(child)

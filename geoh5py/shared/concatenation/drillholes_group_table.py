@@ -419,12 +419,13 @@ class DrillholesGroupTable(ABC):
         :param name: The name of the property group to update.
         """
         self.parent.update_data_index()
+        self.parent.workspace.update_attribute(self.parent, "concatenated_attributes")
         self._property_groups = self._get_property_groups(self.parent, self.name)
 
         if self._properties is not None:
             self._properties += (name,)
         else:
-            self._properties = (name,)
+            self._properties = ((name,),)
 
         if self._index_by_drillhole is not None:
             for value in self._index_by_drillhole.values():

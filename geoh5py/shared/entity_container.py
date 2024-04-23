@@ -50,22 +50,6 @@ class EntityContainer(Entity):
 
         super().__init__(uid, name, **kwargs)
 
-    def add_children(self, children: list[Entity]):
-        """
-        :param children: Add a list of entities as
-            :obj:`~geoh5py.shared.entity.Entity.children`
-        """
-        if not isinstance(children, list):
-            children = [children]
-
-        for child in children:
-            if child not in self._children:
-                if not isinstance(child, Entity):
-                    raise TypeError(
-                        f"Child must be an instance of Entity, not {type(child)}"
-                    )
-                self._children.append(child)
-
     def add_file(self, file: str):
         """
         Add a file to the object or group stored as bytes on a FilenameData
@@ -222,7 +206,7 @@ class EntityContainer(Entity):
 
         return uid
 
-    def remove_children(self, children: list[shared.Entity] | list[PropertyGroup]):
+    def remove_children(self, children: list[shared.Entity | PropertyGroup]):
         """
         Remove children from the list of children entities.
 

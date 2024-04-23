@@ -66,17 +66,25 @@ class ObjectBase(EntityContainer):
         if self.entity_type.name == "Entity":
             self.entity_type.name = type(self).__name__
 
-    def add_children(self, children: list[Entity] | list[PropertyGroup]):
+    def add_children(self, children: list[Entity | PropertyGroup]):
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
         """
         property_groups = self._property_groups or []
 
+        prop_group_uids = {prop_group.uid: prop_group for prop_group in property_groups}
+        children_uids = {child.uid: child for child in self._children}
+
         for child in children:
-            if child not in self._children and isinstance(child, (Data, PropertyGroup)):
+            if child.uid not in children_uids and isinstance(
+                child, (Data, PropertyGroup)
+            ):
                 self._children.append(child)
-                if isinstance(child, PropertyGroup) and child not in property_groups:
+                if (
+                    isinstance(child, PropertyGroup)
+                    and child.uid not in prop_group_uids
+                ):
                     property_groups.append(child)
             else:
                 warnings.warn(f"Child {child} is not valid or already exists.")
@@ -431,12 +439,9 @@ class ObjectBase(EntityContainer):
         """
         entity_list = []
 
-        for child in self.children:
+        for child in self.get_entity(name):
             if isinstance(child, Data):
-                if (
-                    isinstance(name, uuid.UUID) and child.uid == name
-                ) or child.name == name:
-                    entity_list.append(child)
+                entity_list.append(child)
 
         return entity_list
 
@@ -488,7 +493,7 @@ class ObjectBase(EntityContainer):
         """
         return self._property_groups
 
-    def remove_children(self, children: list[Entity] | list[PropertyGroup]):
+    def remove_children(self, children: list[Entity | PropertyGroup]):
         """
         Remove children from the list of children entities.
 
@@ -507,15 +512,12 @@ class ObjectBase(EntityContainer):
             if child not in self._children:
                 continue
 
-            self._children.remove(child)
-
-            if not self._property_groups:
-                continue
-
-            if isinstance(child, PropertyGroup):
+            if isinstance(child, PropertyGroup) and self._property_groups:
                 self._property_groups.remove(child)
             elif isinstance(child, Data):
                 self.remove_data_from_groups(child)
+
+            self._children.remove(child)
 
         self.workspace.remove_children(self, children)
 
@@ -533,11 +535,15 @@ class ObjectBase(EntityContainer):
 
         for child in self.children:
             if (
-                getattr(child, "values", None) is not None
+                hasattr(child, "_values")
                 and isinstance(child.association, DataAssociationEnum)
                 and child.association.name == association
             ):
-                child.values = np.delete(child.values, indices, axis=0)
+                # accessing values with no property as the vertices had changed
+                values = getattr(child, "_values", None)
+                if values is None:
+                    values = child.workspace.fetch_values(child)
+                child.values = np.delete(values, indices, axis=0)
                 if clear_cache:
                     clear_array_attributes(child)
 
