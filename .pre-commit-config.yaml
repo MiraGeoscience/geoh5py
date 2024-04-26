@@ -29,7 +29,7 @@ repos:
         types_or: [python, pyi]
         exclude: geoh5py/objects/__init__\.py
 -   repo: https://github.com/humitos/mirrors-autoflake
-    rev: v1.1
+    rev: v1.3
     hooks:
     -   id: autoflake
         types: [text]
