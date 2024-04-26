@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "geoh5py"
-version = "0.9.0-alpha.4"
+version = "0.9.0-rc.1"
 license = "LGPL-3.0-or-later"
 description = "Python API for geoh5, an open file format for geoscientific data"
 authors = ["Mira Geoscience <support@mirageoscience.com>"]
@@ -20,21 +20,32 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Software Development :: Libraries :: Python Modules"
 ]
+
 exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
+
+include = [
+    "COPYING",
+    "COPYING.LESSER",
+    "LICENSE",
+    "README.rst",
+    "THIRD_PARTY_SOFTWARE.rst",
+]
 
 [tool.poetry.dependencies]
 python = "^3.8,<3.11"
-Pillow = "10.1.0"
+
 h5py = "^3.2.1"
 numpy = "!=1.19.4, ~1.23.5"
+Pillow = "~10.1.0"
 
 
 [tool.poetry.group.dev.dependencies]
+Pygments = "*"
 lockfile = "^0.12.2"
 pylint = "*"
 pytest = "*"
 pytest-cov = "*"
-scipy = "^1.4.1"
+scipy = "~1.10.1"
 sphinx = "^3.0"
 sphinx-autodoc-typehints = "^1.10"
 sphinx-rtd-theme = "^0.4.3"

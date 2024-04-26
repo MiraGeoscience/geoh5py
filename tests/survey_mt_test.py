@@ -48,7 +48,7 @@ def test_create_survey_mt(tmp_path):
             TypeError,
             match=(
                 f"Provided receivers must be of type {mt_survey.default_receiver_type}. "
-                f"{type('123')} provided."
+                f"{str} provided."
             ),
         ):
             mt_survey.receivers = "123"
