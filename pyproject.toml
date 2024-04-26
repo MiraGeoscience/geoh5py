@@ -20,7 +20,16 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Software Development :: Libraries :: Python Modules"
 ]
+
 exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
+
+include = [
+    "COPYING",
+    "COPYING.LESSER",
+    "LICENSE",
+    "README.rst",
+    "THIRD_PARTY_SOFTWARE.rst",
+]
 
 [tool.poetry.dependencies]
 python = "^3.8,<3.11"
