@@ -42,12 +42,7 @@ def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
                 if not truth(ui_json, name, "enabled"):
                     data[name] = None
                 else:
-                    temp_value = value[field]
-
-                    if value.get("groupValue"):
-                        temp_value = {"group": value["groupValue"], "value": temp_value}
-
-                    data[name] = temp_value
+                    data[name] = value[field]
         else:
             data[name] = value
 
@@ -196,8 +191,9 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
         parameters = find_all(group, "groupOptional")
         if parameters:
             is_group_optional = True
-            for form in group.values():
-                form["enabled"] = value
+            if parameters[0] == parameter:
+                for form in group.values():
+                    form["enabled"] = value
 
     if not is_group_optional and "dependency" in ui_json[parameter]:
         is_group_optional = not dependency_requires_value(ui_json, parameter)

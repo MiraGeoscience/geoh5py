@@ -277,26 +277,28 @@ class H5Writer:
             except KeyError:
                 pass
 
-            dict_values = getattr(entity, attribute)
+            values = getattr(entity, attribute).get(channel, None)
 
-            if channel in dict_values:
-                values = dict_values[channel].copy()
+            if values is None:
+                return
 
-                if isinstance(values, np.ndarray) and values.dtype in (
-                    np.float64,
-                    np.float32,
-                ):
-                    values[np.isnan(values)] = FLOAT_NDV
+            if isinstance(values, np.ndarray):
+
+                if np.issubdtype(values.dtype, np.floating):
                     values = values.astype(np.float32)
+
+                    if len(values) > 0:
+                        values[np.isnan(values)] = FLOAT_NDV
+
                 if np.issubdtype(values.dtype, np.str_):
                     values = values.astype(h5py.special_dtype(vlen=str))
 
-                attr_handle.create_dataset(
-                    name,
-                    data=values,
-                    compression="gzip",
-                    compression_opts=9,
-                )
+            attr_handle.create_dataset(
+                name,
+                data=values,
+                compression="gzip",
+                compression_opts=9,
+            )
 
     @classmethod
     def update_field(
@@ -539,7 +541,11 @@ class H5Writer:
             except KeyError:
                 pass
 
+            if isinstance(values, np.ndarray) and np.issubdtype(values.dtype, np.str_):
+                values = values.astype(h5py.special_dtype(vlen=str))
+
             if values is not None:
+
                 entity_handle.create_dataset(
                     KEY_MAP[attribute],
                     data=values,
@@ -637,7 +643,7 @@ class H5Writer:
                     out_values = np.round(out_values).astype("int32")
 
                 elif isinstance(entity, TextData) and not isinstance(values[0], bytes):
-                    out_values = [val.encode() for val in values]
+                    out_values = np.char.encode(values, encoding="utf-8").astype("O")
 
                 if getattr(entity, "ndv", None) is not None:
                     out_values[np.isnan(out_values)] = entity.ndv

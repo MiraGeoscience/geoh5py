@@ -42,13 +42,101 @@ from geoh5py.shared.utils import as_str_if_uuid, compare_entities
 from geoh5py.workspace import Workspace
 
 
+def create_drillholes(h5file_path, version=1.0, ga_version="1.0", add_data=True):
+    well_name = "well"
+    n_data = 10
+
+    with Workspace.create(
+        h5file_path, version=version, ga_version=ga_version
+    ) as workspace:
+        # Create a workspace
+        dh_group = DrillholeGroup.create(workspace, name="DH_group")
+        well = Drillhole.create(
+            workspace,
+            collar=np.r_[0.0, 10.0, 10],
+            surveys=np.c_[
+                np.linspace(0, 100, n_data),
+                np.ones(n_data) * 45.0,
+                np.linspace(-89, -75, n_data),
+            ],
+            parent=dh_group,
+            name=well_name,
+        )
+        well_b = well.copy()
+        well_b.name = "Number 2"
+        well_b.collar = np.r_[10.0, 10.0, 10]
+
+        well_c = well.copy()
+        well_c.name = "Number 3"
+        well_c.collar = np.r_[10.0, -10.0, 10]
+
+        if add_data:
+            # Create random from-to
+            from_to_a = np.sort(
+                np.random.uniform(low=0.05, high=100, size=(50,))
+            ).reshape((-1, 2))
+
+            values = np.random.randn(50)
+            values[0] = np.nan
+            # Add both set of log data with 0.5 m tolerance
+            well.add_data(
+                {
+                    "my_log_values/": {
+                        "depth": np.arange(0, 50.0),
+                        "values": np.random.randn(50),
+                    },
+                    "log_wt_tolerance": {
+                        "depth": np.arange(0.01, 50.01),
+                        "values": values,
+                    },
+                }
+            )
+            well.add_data(
+                {
+                    "text Data": {
+                        "values": np.array(
+                            [
+                                "".join(
+                                    random.choice(string.ascii_lowercase)
+                                    for _ in range(6)
+                                )
+                                for _ in range(from_to_a.shape[0])
+                            ]
+                        ),
+                        "from-to": from_to_a,
+                        "type": "TEXT",
+                    },
+                    "interval_values_a": {
+                        "values": np.random.randn(from_to_a.shape[0]),
+                        "from-to": from_to_a,
+                    },
+                },
+                property_group="property_group",
+            )
+            well_c.add_data(
+                {
+                    "interval_values_b": {
+                        "values": np.random.randn(from_to_a.shape[0]),
+                        "from-to": from_to_a,
+                    },
+                },
+                property_group="property_group",
+            )
+
+    return dh_group, workspace
+
+
 def test_concatenator(tmp_path):
     h5file_path = tmp_path / r"test_Concatenator.geoh5"
 
+    xyz = np.random.randn(32)
+    np.savetxt(tmp_path / r"numpy_array.txt", xyz)
+    file_name = "numpy_array.txt"
+
     with Workspace.create(h5file_path, version=2.0) as workspace:
         # Create a workspace
-        dh_group = DrillholeGroup.create(workspace)
-
+        dh_group = DrillholeGroup.create(workspace, name="DH_group")
+        dh_group.add_file(tmp_path / file_name)
         assert (
             dh_group.data == {}
         ), "DrillholeGroup should not have data on instantiation."
@@ -82,6 +170,10 @@ def test_concatenator(tmp_path):
         dh_group_copy = dh_group.copy()
 
         compare_entities(dh_group_copy, dh_group, ignore=["_uid"])
+
+    with Workspace(h5file_path) as workspace:
+
+        assert len(workspace.get_entity("DH_group")[0].children) == 1
 
 
 def test_concatenated_entities(tmp_path):
@@ -161,7 +253,6 @@ def test_empty_concatenated_property_group():
 
 def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
     h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
-    new_path = tmp_path / r"test_drillholeGroup2.geoh5"
     well_name = "bullseye/"
     n_data = 10
 
@@ -286,7 +377,16 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
                 }
             )
 
-        well_b = well.copy()
+
+def test_append_data_to_tables(tmp_path):
+    h5file_path = tmp_path / r"test_append_data_to_tables.geoh5"
+
+    _, workspace = create_drillholes(h5file_path, version=2.0, ga_version="1.0")
+
+    with workspace.open():
+        well = workspace.get_entity("well")[0]
+        dh_group = well.parent
+        well_b = workspace.get_entity("Number 2")[0]
         well_b.name = "Number 2"
         well_b.collar = np.r_[10.0, 10.0, 10]
 
@@ -317,7 +417,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         )
 
         interval_data = data_objects[0]
-        assert interval_data.property_group.name == "Interval_0"
+        assert interval_data.property_group.name == "Interval_1"
         assert interval_data.parent.get_data("FROM")
 
         assert interval_data.parent.get_data("FROM(1)")
@@ -347,18 +447,16 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
                 },
             }
         )
-
+        text = np.array(
+            [
+                "".join(random.choice(string.ascii_lowercase) for _ in range(6))
+                for _ in range(from_to_b.shape[0])
+            ]
+        )
         text_data = well_b.add_data(
             {
                 "text Data": {
-                    "values": np.array(
-                        [
-                            "".join(
-                                random.choice(string.ascii_lowercase) for _ in range(6)
-                            )
-                            for _ in range(3)
-                        ]
-                    ),
+                    "values": text,
                     "from-to": from_to_b,
                     "type": "TEXT",
                 },
@@ -369,7 +467,9 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
             "'interval_values' on well_b should be the second entry.",
         )
 
-        assert len(well.to_) == len(well.from_) == 2, "Should have only 2 from-to data."
+        assert (
+            len(well.to_) == len(well.from_) == 3
+        ), "Should have exactly 3 from-to data."
 
         with pytest.raises(
             ValueError, match="Data with name 'Depth Data' already present"
@@ -391,7 +491,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         # Check entities
         compare_entities(
             well,
-            workspace.get_entity(well_name)[0],
+            workspace.get_entity("well")[0],
             ignore=[
                 "_parent",
                 "_metadata",
@@ -428,6 +528,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
                 "_property_groups",
                 "_uid",
             ],
+            decimal=5,
         )
 
         compare_entities(
@@ -447,11 +548,23 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
             == well_b.get_data_list()
         )
 
+
+def test_copy_and_append_drillhole_data(tmp_path):
+    h5file_path = tmp_path / r"test_copy_and_append_drillhole_data.geoh5"
+
+    _, workspace = create_drillholes(h5file_path, version=2.0, ga_version="1.0")
+
+    new_path = tmp_path / r"test_copy_and_append_drillhole_data_NEW.geoh5"
+
+    with workspace.open():
+        dh_group = workspace.get_entity("DH_group")[0]
         with Workspace.create(new_path, version=2.0) as new_workspace:
             new_group = dh_group.copy(parent=new_workspace)
-            well = [k for k in new_group.children if k.name == "bullseye/"][0]
+            well = [k for k in new_group.children if k.name == "well"][0]
 
-            prop_group = [k for k in well.property_groups if k.name == "Interval_0"][0]
+            prop_group = [
+                k for k in well.property_groups if k.name == "property_group"
+            ][0]
             with pytest.raises(ValueError, match="Input values with shape"):
                 well.add_data(
                     {
@@ -462,7 +575,11 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
 
             well.add_data(
                 {
-                    "new_data": {"values": np.random.randn(25).astype(np.float32)},
+                    "new_data": {
+                        "values": np.random.randn(
+                            prop_group.from_.values.shape[0]
+                        ).astype(np.float32)
+                    },
                 },
                 property_group=prop_group.name,
             )
@@ -489,93 +606,9 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
                     ),
                 )
 
-        assert (
-            len(well.property_groups[0].properties) == 4
-        ), "Issue adding data to interval."
-
-
-def create_drillholes(h5file_path, version=1.0, ga_version="1.0"):
-    well_name = "well"
-    n_data = 10
-
-    with Workspace.create(
-        h5file_path, version=version, ga_version=ga_version
-    ) as workspace:
-        # Create a workspace
-        dh_group = DrillholeGroup.create(workspace, name="DH_group")
-        well = Drillhole.create(
-            workspace,
-            collar=np.r_[0.0, 10.0, 10],
-            surveys=np.c_[
-                np.linspace(0, 100, n_data),
-                np.ones(n_data) * 45.0,
-                np.linspace(-89, -75, n_data),
-            ],
-            parent=dh_group,
-            name=well_name,
-        )
-        # Create random from-to
-        from_to_a = np.sort(np.random.uniform(low=0.05, high=100, size=(50,))).reshape(
-            (-1, 2)
-        )
-
-        values = np.random.randn(50)
-        values[0] = np.nan
-        # Add both set of log data with 0.5 m tolerance
-        well.add_data(
-            {
-                "my_log_values/": {
-                    "depth": np.arange(0, 50.0),
-                    "values": np.random.randn(50),
-                },
-                "log_wt_tolerance": {
-                    "depth": np.arange(0.01, 50.01),
-                    "values": values,
-                },
-            }
-        )
-
-        text = np.array(
-            [
-                "".join(random.choice(string.ascii_lowercase) for _ in range(6))
-                for _ in range(from_to_a.shape[0])
-            ]
-        )
-
-        well.add_data(
-            {
-                "text Data": {
-                    "values": text,
-                    "from-to": from_to_a,
-                    "type": "TEXT",
-                },
-                "interval_values_a": {
-                    "values": np.random.randn(from_to_a.shape[0]),
-                    "from-to": from_to_a,
-                },
-            },
-            property_group="property_group",
-        )
-
-        well_b = well.copy()
-        well_b.name = "Number 2"
-        well_b.collar = np.r_[10.0, 10.0, 10]
-
-        well_c = well.copy()
-        well_c.name = "Number 3"
-        well_c.collar = np.r_[10.0, -10.0, 10]
-
-        well_c.add_data(
-            {
-                "interval_values_b": {
-                    "values": np.random.randn(from_to_a.shape[0]),
-                    "from-to": from_to_a,
-                },
-            },
-            property_group="property_group",
-        )
-
-    return dh_group, workspace
+            assert (
+                len(well.property_groups[0].properties) == 4
+            ), "Issue adding data to interval."
 
 
 def test_remove_drillhole_data(tmp_path):
@@ -585,17 +618,38 @@ def test_remove_drillhole_data(tmp_path):
 
     with Workspace(h5file_path, version=2.0) as workspace:
         well = workspace.get_entity("well")[0]
-        well_b = workspace.get_entity("Number 2")[0]
-        data = well.get_data("my_log_values/")[0]
-        workspace.remove_entity(data)
-        workspace.remove_entity(well_b)
 
         assert np.isnan(well.get_data("log_wt_tolerance")[0].values).sum() == 1
+
+        dh_group = well.parent
+
+        data = well.get_data("my_log_values/")[0]
+        new_well = well.copy(parent=dh_group, name="well copy")
+        well.remove_children(data)
+        del data
+        assert "my_log_values/" not in well.get_entity_list()
+        assert len(well.property_groups[0].properties) == 2
+
+        assert workspace.get_entity("my_log_values/")[0] is not None
+        dh_group.remove_children(new_well)
 
     with Workspace(h5file_path, version=2.0) as workspace:
         well = workspace.get_entity("well")[0]
         assert "my_log_values/" not in well.get_entity_list()
-        assert workspace.get_entity("Number 2")[0] is None
+        assert workspace.get_entity("well copy")[0] is None
+
+    with Workspace(h5file_path, version=2.0) as workspace:
+        well = workspace.get_entity("well")[0]
+        all_data = [well.get_entity(name)[0] for name in well.get_data_list()]
+        all_data = [data for data in all_data if data.allow_delete]
+        well.remove_children(all_data)
+
+        assert len(well.property_groups) == 0
+
+        well = workspace.get_entity("Number 3")[0]
+        well.remove_children(well.property_groups[0])
+
+        assert len(well.children) == 0, "Prop group and all data should be removed."
 
 
 def test_create_drillhole_data_v4_2(tmp_path):
@@ -622,15 +676,23 @@ def test_copy_drillhole_group(tmp_path):
 
     _, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
 
+    xyz = np.random.randn(32)
+    np.savetxt(tmp_path / r"numpy_array.txt", xyz)
+    file_name = "numpy_array.txt"
+
     with workspace.open():
         dh_group = workspace.get_entity("DH_group")[0]
+        dh_group.add_file(tmp_path / file_name)
         dh_group_copy = dh_group.copy(workspace)
 
         for child_a, child_b in zip(dh_group.children, dh_group_copy.children):
-            assert child_a.name == child_b.name
-            assert child_a.collar == child_b.collar
-            np.testing.assert_array_almost_equal(child_a.surveys, child_b.surveys)
-            assert child_a.get_data_list() == child_b.get_data_list()
+            if isinstance(child_a, Drillhole):
+                assert child_a.name == child_b.name
+                assert child_a.collar == child_b.collar
+                np.testing.assert_array_almost_equal(child_a.surveys, child_b.surveys)
+                assert child_a.get_data_list() == child_b.get_data_list()
+            else:
+                assert child_a.values == child_b.values
 
         with Workspace.create(
             tmp_path / r"test_copy_concatenated_copy.geoh5",
@@ -826,27 +888,26 @@ def compare_structured_arrays(
 
 def test_export_table(tmp_path):
     h5file_path = tmp_path / r"test_drillholeGroup.geoh5"
-    drillhole_group, workspace = create_drillholes(
-        h5file_path, version=2.0, ga_version="4.2"
-    )
+    _, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
 
     with workspace.open():
+        drillhole_group = workspace.get_entity("DH_group")[0]
+        n_ndv = 25
         values = [
-            np.array([["{%s}" % child.uid] * 25 for child in drillhole_group.children])
+            np.array(
+                [["{%s}" % child.uid] * 25 for child in drillhole_group.children[::2]]
+            )
             .flatten()
             .astype("S"),
             drillhole_group.data["FROM"],
             drillhole_group.data["TO"],
-            drillhole_group.data["interval_values_a"],
             np.array(
-                [np.nan]
-                * (
-                    drillhole_group.data["FROM"].shape[0]
-                    - drillhole_group.data["interval_values_b"].shape[0]
-                )
-                + drillhole_group.data["interval_values_b"].tolist()
+                drillhole_group.data["interval_values_a"].tolist() + [np.nan] * n_ndv
             ),
-            drillhole_group.data["text Data"],
+            np.array(
+                [np.nan] * n_ndv + drillhole_group.data["interval_values_b"].tolist()
+            ),
+            np.array(drillhole_group.data["text Data"].tolist() + [""] * n_ndv),
         ]
 
         dtypes = [
@@ -867,7 +928,9 @@ def test_export_table(tmp_path):
         )
 
         values = [
-            np.array([["{%s}" % child.uid] * 50 for child in drillhole_group.children])
+            np.array(
+                [["{%s}" % child.uid] * 50 for child in drillhole_group.children[:-2]]
+            )
             .flatten()
             .astype("S"),
             drillhole_group.data["DEPTH"],
@@ -912,12 +975,11 @@ def test_add_data_to_property(tmp_path):
             "interval_values_a", spatial_index=True
         )
 
-        verification_map_value = (verification["interval_values_a"] * 10).astype(
-            np.int32
+        verification_map_value = np.random.randint(
+            0, 100, verification["interval_values_a"].shape[0], dtype=np.int32
         )
-        verification_map_value -= np.min(verification_map_value) - 1
-
         value_map = {idx: f"{idx}" for idx in np.unique(verification_map_value)}
+        value_map[0] = "Unknown"
 
         drillholes_table.add_values_to_property_group(
             "new value int", verification_map_value
