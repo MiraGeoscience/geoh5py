@@ -32,7 +32,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8,<3.11"
+python = "^3.9,<3.11"
 
 h5py = "^3.2.1"
 numpy = "!=1.19.4, ~1.23.5"
