@@ -61,7 +61,7 @@ precision ``int``
 .. code-block:: json
 
    {
-   "avacado": {
+   "avocado": {
    "main": true,
    "label": "Cost per avocado ($)",
    "value": 0.99,
@@ -184,7 +184,7 @@ association ``str``
 parent ``str``
    Either a *UUID* of the parent or the name of the :ref:`Object parameter <object_parameter>` JSON object to allow the user to choose the mesh.
 isValue ``bool``
-   Describes whether to read the **value** (``float``) or **property** (``str``) member. If not given, the value member is an *UUID* and is considered a *drop-down data parameter*. If this member is given along with **property**, then an icon is added to the UI element, which switches between te **value** (line edit) and **property** (drop-down) choices. This value is updated on export depending on the style choice (``float`` or ``str``)
+   Describes whether to read the **value** (``float``) or **property** (``str``) member. If not given, the value member is an *UUID* and is considered a *drop-down data parameter*. If this member is given along with **property**, then an icon is added to the UI element, which switches between the **value** (line edit) and **property** (drop-down) choices. This value is updated on export depending on the style choice (``float`` or ``str``)
 property ``str``.
    Data *UUID*  that is selected when **isValue** is present.  Geoscience ANALYST Pro will update this value on export.
 min ``float``

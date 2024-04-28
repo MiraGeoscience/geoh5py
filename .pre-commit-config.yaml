@@ -58,7 +58,6 @@ repos:
     hooks:
     -   id: relint
         args: [-W]  # to fail on warnings
-        exclude: ^setup.py$
 -   repo: local
     hooks:
     -   id: pylint
@@ -68,21 +67,30 @@ repos:
         require_serial: true  # pylint does its own parallelism
         types: [text]
         types_or: [python, pyi]
-        exclude: ^(setup.py$|(devtools|docs|geoh5py/interfaces|geoh5py/handlers)/)
+        exclude: ^(devtools|docs|geoh5py/interfaces|geoh5py/handlers)/
     -   id: check-copyright
         name: Check copyright
         entry: python devtools/check-copyright.py
         language: python
         types: [text]
-        types_or: [python, pyi]
-        exclude: ^(devtools/|docs/|setup.py)
+        files: (^LICENSE|^README(|-dev).rst|\.py|\.pyi)$
+        exclude: (^\.|^docs/)
+    -   id: prepare-commit-msg
+        stages: [prepare-commit-msg]
+        name: Prepare commit message
+        entry: python devtools/git_message_hook.py --prepare
+        language: python
+    -   id: check-commit-msg
+        stages: [commit-msg]
+        name: Check commit message
+        entry: python devtools/git_message_hook.py --check
+        language: python
 -   repo: https://github.com/codespell-project/codespell
     rev: v2.2.6
     hooks:
     -   id: codespell
-        exclude: (\.ipynb$|^\.github/workflows/issue_to_jira.yml$)
-        types: [text]
-        types_or: [python, pyi]
+        exclude: (\.lock|\.ipynb|^THIRD_PARTY_SOFTWARE\.rst)$
+        entry: codespell -I .codespellignore
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
@@ -96,13 +104,15 @@ repos:
     -   id: debug-statements
     -   id: detect-private-key
     -   id: end-of-file-fixer
-        exclude: \.mdj$
+        exclude: (^\.idea/.*\.xml|\.mdj)$
     -   id: mixed-line-ending
+        exclude: ^\.idea/.*\.xml$
     -   id: name-tests-test
 -   repo: https://github.com/rstcheck/rstcheck
     rev: v6.2.0
     hooks:
     -   id: rstcheck
+        exclude: ^THIRD_PARTY_SOFTWARE.rst$
         additional_dependencies: [sphinx]
 -   repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.10.0
