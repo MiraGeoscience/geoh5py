@@ -48,9 +48,9 @@ repos:
     hooks:
     -   id: mypy
         additional_dependencies: [
-            types-toml,
+#            numpy==1.26.*,  # TODO: fix mypy errors related to numpy
             tomli, # to read config from pyproject.toml
-#            numpy==1.26.*,
+            types-toml,
         ]
         exclude: (geoh5py/interfaces/__init__\.py|geoh5py/handlers/__init__\.py|geoh5py/interfaces|geoh5py/handlers|tests)
 -   repo: https://github.com/codingjoe/relint
