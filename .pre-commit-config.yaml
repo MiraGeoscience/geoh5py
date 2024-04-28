@@ -50,7 +50,7 @@ repos:
         additional_dependencies: [
             types-toml,
             tomli, # to read config from pyproject.toml
-#            'numpy>=1.23.5,<1.24.0'
+#            numpy==1.26.*,
         ]
         exclude: (geoh5py/interfaces/__init__\.py|geoh5py/handlers/__init__\.py|geoh5py/interfaces|geoh5py/handlers|tests)
 -   repo: https://github.com/codingjoe/relint
