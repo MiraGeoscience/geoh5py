@@ -154,7 +154,8 @@ class ConcatenatedPropertyGroup(PropertyGroup):
             and self.depth_ is not None
         ):
             self.depth_.allow_delete = True
-            self.parent.remove_children(self)
+            self.parent.remove_children([self.depth_])
+            # self.parent.remove_children(self)
 
         elif (
             self._properties is not None
@@ -162,6 +163,8 @@ class ConcatenatedPropertyGroup(PropertyGroup):
             and self.from_ is not None
             and self.to_ is not None
         ):
-            self.from_.allow_delete = True
             self.to_.allow_delete = True
-            self.parent.remove_children(self)
+            self.parent.remove_children([self.to_])
+            self.from_.allow_delete = True
+            self.parent.remove_children([self.from_])
+            # self.parent.remove_children(self)

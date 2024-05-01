@@ -181,8 +181,4 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                 continue
 
             self.concatenator.remove_entity(child)
-
-            if isinstance(child, ConcatenatedPropertyGroup) and self._property_groups:
-                self._property_groups.remove(child)
-
             self._children.remove(child)
