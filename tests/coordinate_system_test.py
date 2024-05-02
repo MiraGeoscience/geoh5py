@@ -36,7 +36,6 @@ tag = {
     33550: (0.9990415797117552, 0.999041579711816, 0.0),
     339: (1, 1, 1),
     277: (3,),
-    278: (5,),
     284: (1,),
     34737: ("WGS 84 / UTM zone 34N|WGS 84|",),
 }
@@ -49,12 +48,13 @@ def test_coordinate_system(tmp_path):
 
     # create and save a tiff
     image = Image.fromarray(
-        np.random.randint(0, 255, (128, 128, 3)).astype("uint8"), "RGB"
+        np.random.randint(0, 255, (128, 128, 3)).astype("uint16"), "RGB"
     )
 
     for id_ in tag.items():
         image.getexif()[id_[0]] = id_[1]
-    image.save(tmp_path / r"testtif.tif", exif=image.getexif())
+
+    image.save(tmp_path / r"testtif.tif", exif=image.getexif())  # working with 10.1
 
     # load image
     geoimage = GeoImage.create(
