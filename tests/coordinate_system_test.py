@@ -54,7 +54,7 @@ def test_coordinate_system(tmp_path):
     for id_ in tag.items():
         image.getexif()[id_[0]] = id_[1]
 
-    image.save(tmp_path / r"testtif.tif", exif=image.getexif())  # working with 10.1
+    image.save(tmp_path / r"testtif.tif", exif=image.getexif())
 
     # load image
     geoimage = GeoImage.create(
