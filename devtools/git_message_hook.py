@@ -39,7 +39,7 @@ def get_jira_id(text) -> str:
         making sure it gets compiled only once."""
 
         __pattern = re.compile(
-            r"(?:GEOPY|GI|GA|GMS|VPem1D|VPem3D|VPmg|UBCGIF|LICMGR)-\d+"
+            r"(?:GEOPY|DEVOPS|QA|GI|GA|GMS|VPem1D|VPem3D|VPmg|UBCGIF|LICMGR)-\d+"
         )
 
         @staticmethod
@@ -56,9 +56,7 @@ def get_branch_name() -> str | None:
     """:return: the name of the current branch"""
 
     git_proc = subprocess.run(
-        shlex.split("git branch --list"),
-        stdout=subprocess.PIPE,
-        text=True,
+        shlex.split("git branch --list"), stdout=subprocess.PIPE, text=True, check=False
     )
 
     # cannot use HEAD during rebase
@@ -192,10 +190,7 @@ def prepare_commit_msg(filepath: str, source: str | None = None) -> None:
     if source not in [None, "message", "template"]:
         return
 
-    with open(
-        filepath,
-        "r+",
-    ) as message_file:
+    with open(filepath, "r+", encoding="utf-8") as message_file:
         message_has_jira_id = False
         message_lines = message_file.readlines()
         for line_index, line_content in enumerate(message_lines):
