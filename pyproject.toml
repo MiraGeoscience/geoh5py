@@ -25,7 +25,7 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Mathematics",
     "Topic :: Scientific/Engineering :: Physics",
-    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 
 exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
@@ -74,20 +74,23 @@ show_column_numbers = true
 check_untyped_defs = true
 
 plugins = [
-    #    'numpy.typing.mypy_plugin'
+#    'numpy.typing.mypy_plugin'
 ]
 
 [tool.coverage.run]
 branch = true
 source = ["geoh5py"]
-omit = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
+omit = [
+    "geoh5py/handlers/*",
+    "geoh5py/interfaces/*"
+]
 
 [tool.coverage.report]
 exclude_lines = [
     "raise NotImplementedError",
     "pass",
     "if TYPE_CHECKING",
-    "pragma: no cover",
+    "pragma: no cover"
 ]
 
 fail_under = 80
