@@ -513,7 +513,7 @@ class ObjectBase(EntityContainer):
                 continue
 
             if isinstance(child, PropertyGroup) and self._property_groups:
-                self._property_groups.remove(child)
+                self.remove_property_group(child)
             elif isinstance(child, Data):
                 self.remove_data_from_groups(child)
 
@@ -546,6 +546,18 @@ class ObjectBase(EntityContainer):
                 child.values = np.delete(values, indices, axis=0)
                 if clear_cache:
                     clear_array_attributes(child)
+
+    def remove_property_group(self, property_group: PropertyGroup):
+        """
+        Remove a property group from the object.
+
+        :param property_group: The property group to remove.
+        """
+        if (
+            self._property_groups is not None
+            and property_group in self._property_groups
+        ):
+            self._property_groups.remove(property_group)
 
     @property
     def vertices(self) -> np.ndarray:
