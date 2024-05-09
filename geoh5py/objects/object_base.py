@@ -553,10 +553,11 @@ class ObjectBase(EntityContainer):
 
         :param property_group: The property group to remove.
         """
-        if self._property_groups is None or property_group not in self._property_groups:
-            return
-
-        self._property_groups.remove(property_group)
+        if (
+            self._property_groups is not None
+            and property_group in self._property_groups
+        ):
+            self._property_groups.remove(property_group)
 
     @property
     def vertices(self) -> np.ndarray:
