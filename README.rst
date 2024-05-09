@@ -54,14 +54,33 @@ See also documentation for the `geoh5 file format`_.
 
 Installation
 ^^^^^^^^^^^^
-**geoh5py** is currently written for Python 3.7 or higher, and depends on `NumPy <https://numpy.org/>`_ and
+**geoh5py** is currently written for Python 3.9 or higher, and depends on `NumPy <https://numpy.org/>`_ and
 `h5py <https://www.h5py.org/>`_. Users will likely want to also make use of advanced processing
-techniques made available under the python ecosystem. We therefore recommend installing
-Anaconda to handle the various packages.
+techniques made available under the python ecosystem. We therefore recommend installing a **Conda** distribution
+such as `miniforge`_ to handle the various packages.
 
-Install **geoh5py** from PyPI::
+.. _miniforge: https://github.com/conda-forge/miniforge
+
+Install **geoh5py** with ``pip`` from PyPI::
 
     $ pip install geoh5py
+
+
+Or from a branch on `github <https://github.com/MiraGeoscience/geoh5py>`_:
+
+.. code:: bash
+
+    pip install --upgrade --force-reinstall https://github.com/MiraGeoscience/geoh5py/archive/refs/heads/BRANCH_NAME.zip
+
+(to use a tag rather than a branch, replace ``heads\BRANCH_NAME.zip`` by ``tags\TAG_NAME.zip``)
+
+
+Or from a local sources, after you have cloned the repository:
+
+.. code:: bash
+
+    git clone https://github.com/MiraGeoscience/geoh5py [-b BRANCH_NAME]
+    pip install -e geoh5py
 
 
 Setup for development
