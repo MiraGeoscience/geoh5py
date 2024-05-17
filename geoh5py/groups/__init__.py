@@ -43,3 +43,4 @@ from .property_group import PropertyGroup
 from .root_group import RootGroup
 from .simpeg_group import SimPEGGroup
 from .survey_group import AirborneGeophysics
+from .uijson_group import UIJsonGroup
