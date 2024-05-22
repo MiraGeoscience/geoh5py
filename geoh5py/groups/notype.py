@@ -14,29 +14,21 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
 from __future__ import annotations
 
 import uuid
 
-from .group import GroupType
-from .uijson_group import UIJsonGroup
+from .base import Group
 
 
-class SimPEGGroup(UIJsonGroup):
-    """Group for SimPEG inversions."""
+class NoTypeGroup(Group):
+    """A group with no type."""
 
-    __TYPE_UID = uuid.UUID("{55ed3daf-c192-4d4b-a439-60fa987fe2b8}")
-
-    _name = "SimPEG"
-    _description = "SimPEG"
-    _options = None
-
-    def __init__(self, group_type: GroupType, **kwargs):
-        assert group_type is not None
-        super().__init__(group_type, **kwargs)
-
-        if self.entity_type.name == "Entity":
-            self.entity_type.name = "SimPEG"
+    __TYPE_UID = uuid.UUID(
+        fields=(0xDD99B610, 0xBE92, 0x48C0, 0x87, 0x3C, 0x5B5946EA2840)
+    )
+    _default_name = "NoType"
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

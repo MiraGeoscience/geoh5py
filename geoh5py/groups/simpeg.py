@@ -14,40 +14,19 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
-
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import uuid
 
-from . import NoTypeGroup
-
-if TYPE_CHECKING:
-    from ..groups import GroupType
+from .uijson import UIJsonGroup
 
 
-class RootGroup(NoTypeGroup):
-    """The Root group of a workspace."""
+class SimPEGGroup(UIJsonGroup):
+    """Group for SimPEG inversions."""
 
-    __ROOT_NAME = "Workspace"
+    __TYPE_UID = uuid.UUID("{55ed3daf-c192-4d4b-a439-60fa987fe2b8}")
+    _default_name = "SimPEG"
 
-    def __init__(self, group_type: GroupType, **kwargs):
-        assert group_type is not None
-        super().__init__(group_type, **kwargs)
-
-        # Hard wired attributes
-        self._parent = None
-        self._allow_move = False
-        self._allow_delete = False
-        self._allow_rename = False
-        self._name = self.__ROOT_NAME
-
-    @property
-    def parent(self):
-        """
-        Parental entity of root is always None
-        """
-        return self._parent
-
-    @parent.setter
-    def parent(self, _):
-        self._parent = None
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID

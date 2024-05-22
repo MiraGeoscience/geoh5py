@@ -18,13 +18,13 @@
 # pylint: disable=unused-import
 # flake8: noqa
 
-from .container_group import ContainerGroup
-from .custom_group import CustomGroup
-from .drillhole_group import DrillholeGroup, IntegratorDrillholeGroup
-from .giftools_group import GiftoolsGroup
-from .group import Group
+from .base import Group
+from .container import ContainerGroup
+from .custom import CustomGroup
+from .drillhole import DrillholeGroup, IntegratorDrillholeGroup
+from .giftools import GiftoolsGroup
 from .group_type import GroupType
-from .integrator_group import (
+from .integrator import (
     AirborneTheme,
     EarthModelsTheme,
     GeochemistryMineralogyDataSet,
@@ -38,9 +38,9 @@ from .integrator_group import (
     RockPropertiesTheme,
     SamplesTheme,
 )
-from .notype_group import NoTypeGroup
+from .notype import NoTypeGroup
 from .property_group import PropertyGroup
-from .root_group import RootGroup
-from .simpeg_group import SimPEGGroup
-from .survey_group import AirborneGeophysics
-from .uijson_group import UIJsonGroup
+from .root import RootGroup
+from .simpeg import SimPEGGroup
+from .survey import AirborneGeophysics
+from .uijson import UIJsonGroup

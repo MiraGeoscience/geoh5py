@@ -18,41 +18,33 @@ from __future__ import annotations
 
 import uuid
 
-from .group import Group, GroupType
+from .base import Group, GroupType
 
 
 class UIJsonGroup(Group):
     """Group for SimPEG inversions."""
 
     __TYPE_UID = uuid.UUID("{BB50AC61-A657-4926-9C82-067658E246A0}")
+    _default_name = "UIJson"
 
-    _name = "UIJson"
-    _description = "UIJson"
-    _options = None
+    def __init__(self, group_type: GroupType, **kwargs):
+        self._options: dict | None = None
 
-    def __init__(self, group_type: GroupType, name="UIJson", **kwargs):
-        assert group_type is not None
-        super().__init__(group_type, name=name, **kwargs)
-
-        if self.entity_type.name == "Entity":
-            self.entity_type.name = "UIJson"
+        super().__init__(group_type, **kwargs)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
 
     @property
-    def options(self) -> dict | None:
+    def options(self) -> dict:
         """
         Metadata attached to the entity.
         """
         if getattr(self, "_options", None) is None:
             self._options = self.workspace.fetch_metadata(self.uid, argument="options")
 
-        if self._options is None:
-            self._options = {}
-
-        return self._options
+        return self._options or {}
 
     @options.setter
     def options(self, value: dict | None):

@@ -36,9 +36,20 @@ if TYPE_CHECKING:
 class Group(EntityContainer):
     """Base Group class"""
 
+    _default_name = "Group"
+
     def __init__(self, group_type: GroupType, **kwargs):
-        assert group_type is not None
+
+        if not isinstance(group_type, GroupType):
+            raise TypeError(
+                f"Input 'group_type' must be of type {GroupType}, not {type(group_type)}"
+            )
+
+        if group_type.name == "Entity":
+            group_type.name = self._default_name
+
         self._entity_type = group_type
+
         super().__init__(**kwargs)
 
     @classmethod

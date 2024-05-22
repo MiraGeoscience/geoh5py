@@ -17,23 +17,37 @@
 
 from __future__ import annotations
 
-import uuid
+from typing import TYPE_CHECKING
 
-from .group import Group, GroupType
+from . import NoTypeGroup
+
+if TYPE_CHECKING:
+    from ..groups import GroupType
 
 
-class AirborneGeophysics(Group):
-    """The type for the basic Container group."""
+class RootGroup(NoTypeGroup):
+    """The Root group of a workspace."""
 
-    __TYPE_UID = uuid.UUID("{812f3b2a-fdae-4752-8391-3b657953a983}")
-
-    _name = "Airborne Geophysics"
-    _description = "Airborne Geophysics"
+    __ROOT_NAME = "Workspace"
 
     def __init__(self, group_type: GroupType, **kwargs):
-        assert group_type is not None
+
         super().__init__(group_type, **kwargs)
 
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
+        # Hard wired attributes
+        self._parent = None
+        self._allow_move = False
+        self._allow_delete = False
+        self._allow_rename = False
+        self._name = self.__ROOT_NAME
+
+    @property
+    def parent(self):
+        """
+        Parental entity of root is always None
+        """
+        return self._parent
+
+    @parent.setter
+    def parent(self, _):
+        self._parent = None
