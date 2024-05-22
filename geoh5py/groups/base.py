@@ -66,12 +66,15 @@ class Group(EntityContainer):
             children = [children]
 
         for child in children:
-            if child not in self._children:
-                if not isinstance(child, Entity):
-                    raise TypeError(
-                        f"Child must be an instance of Entity, not {type(child)}"
-                    )
-                self._children.append(child)
+            if child in self._children:
+                continue
+
+            if not isinstance(child, Entity):
+                raise TypeError(
+                    f"Child must be an instance of Entity, not {type(child)}"
+                )
+
+            self._children.append(child)
 
     def add_comment(self, comment: str, author: str | None = None):
         """
