@@ -17,28 +17,37 @@
 
 from __future__ import annotations
 
-import uuid
+from typing import TYPE_CHECKING
 
-from .group import Group, GroupType
+from . import NoTypeGroup
+
+if TYPE_CHECKING:
+    from ..groups import GroupType
 
 
-class GiftoolsGroup(Group):
-    """The type for a GIFtools group."""
+class RootGroup(NoTypeGroup):
+    """The Root group of a workspace."""
 
-    __TYPE_UID = uuid.UUID(
-        fields=(0x585B3218, 0xC24B, 0x41FE, 0xAD, 0x1F, 0x24D5E6E8348A)
-    )
-
-    _name = "GIFtools Project"
-    _description = "GIFtools Project"
+    __ROOT_NAME = "Workspace"
 
     def __init__(self, group_type: GroupType, **kwargs):
-        assert group_type is not None
+
         super().__init__(group_type, **kwargs)
 
-        if self.entity_type.name == "Entity":
-            self.entity_type.name = "GIFtools Group"
+        # Hard wired attributes
+        self._parent = None
+        self._allow_move = False
+        self._allow_delete = False
+        self._allow_rename = False
+        self._name = self.__ROOT_NAME
 
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
+    @property
+    def parent(self):
+        """
+        Parental entity of root is always None
+        """
+        return self._parent
+
+    @parent.setter
+    def parent(self, _):
+        self._parent = None

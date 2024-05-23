@@ -42,13 +42,13 @@ class EntityContainer(Entity):
     Base Entity class
     """
 
-    def __init__(self, uid: uuid.UUID | None = None, name="Entity", **kwargs):
+    def __init__(self, uid: uuid.UUID | None = None, **kwargs):
         self._uid = (
             str2uuid(uid) if isinstance(str2uuid(uid), uuid.UUID) else uuid.uuid4()
         )
         self._children: list = []
 
-        super().__init__(uid, name, **kwargs)
+        super().__init__(uid, **kwargs)
 
     def add_file(self, file: str):
         """

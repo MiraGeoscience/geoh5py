@@ -51,8 +51,9 @@ class Entity(ABC):
         "Visible": "visible",
     }
     _visible = True
+    _default_name: str = "Entity"
 
-    def __init__(self, uid: uuid.UUID | None = None, name="Entity", **kwargs):
+    def __init__(self, uid: uuid.UUID | None = None, **kwargs):
         self._uid = (
             str2uuid(uid) if isinstance(str2uuid(uid), uuid.UUID) else uuid.uuid4()
         )
@@ -62,7 +63,7 @@ class Entity(ABC):
         self._allow_rename = True
         self._clipping_ids: list[uuid.UUID] | None = None
         self._metadata: dict | None = None
-        self._name = name
+        self._name = self._default_name
         self._on_file = False
         self._parent: Entity | None = None
         self._partially_hidden = False
