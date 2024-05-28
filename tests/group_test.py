@@ -88,3 +88,7 @@ def test_uijson_group(tmp_path):
     new_workspace = Workspace(tmp_path / r"testGroup2.geoh5")
     rec_obj = new_workspace.get_entity(group.uid)[0]
     compare_entities(group, rec_obj, ignore=["_parent"])
+
+    rec_obj.add_ui_json("something")
+
+    assert new_workspace.get_entity("something.ui.json")[0]
