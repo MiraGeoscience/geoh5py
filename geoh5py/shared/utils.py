@@ -650,7 +650,7 @@ def stringify(values: dict[str, Any]) -> dict[str, Any]:
     :param values: Dictionary of values to be converted.
     """
     for key, value in values.items():
-        mappers = [inf2str, as_str_if_uuid, none2str]
+        mappers = [inf2str, as_str_if_uuid, none2str, nan2str]
         values[key] = dict_mapper(value, mappers)
 
     return values
@@ -711,6 +711,12 @@ def list2str(value):
 
 def none2str(value):
     if value is None:
+        return ""
+    return value
+
+
+def nan2str(value):
+    if value is np.nan:
         return ""
     return value
 
