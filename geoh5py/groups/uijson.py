@@ -16,8 +16,10 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+import json
 import uuid
 
+from ..shared.utils import stringify
 from .base import Group, GroupType
 
 
@@ -53,3 +55,20 @@ class UIJsonGroup(Group):
 
         self._options = value
         self.workspace.update_attribute(self, "options")
+
+    def add_ui_json(self, name: str | None = None):
+        """
+        Add ui.json file to entity.
+
+        :param name: Name of the file in the workspace.
+        """
+        if self.options is None:
+            raise ValueError("UIJsonGroup must have options set.")
+
+        json_str = json.dumps(stringify(self.options), indent=4)
+        bytes_data = json_str.encode("utf-8")
+
+        if name is None:
+            name = self.name
+
+        self.add_file(bytes_data, name=f"{name}.ui.json")
