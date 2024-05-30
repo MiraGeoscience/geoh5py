@@ -649,11 +649,12 @@ def stringify(values: dict[str, Any]) -> dict[str, Any]:
 
     :param values: Dictionary of values to be converted.
     """
+    string_dict = {}
     for key, value in values.items():
-        mappers = [inf2str, as_str_if_uuid, none2str, nan2str]
-        values[key] = dict_mapper(value, mappers)
+        mappers = [nan2str, inf2str, as_str_if_uuid, none2str]
+        string_dict[key] = dict_mapper(value, mappers)
 
-    return values
+    return string_dict
 
 
 def to_tuple(value: Any) -> tuple:
