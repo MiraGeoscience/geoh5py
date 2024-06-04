@@ -376,3 +376,30 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
 
     def sort_depths(self):
         """Bypass sort_depths from previous version."""
+
+    def format_survey_values(self, values: list | np.ndarray) -> np.recarray:
+        """
+        Reformat the survey values as structured array with the right shape.
+        """
+        if isinstance(values, np.ndarray):
+            values = values.tolist()
+
+        dtype = [("Depth", "<f4"), ("Azimuth", "<f4"), ("Dip", "<f4")]
+
+        if (
+            "Surveys" in self.concatenator.data
+            and len(self.concatenator.data["Surveys"].dtype) == 4
+        ):
+            dtype = self.concatenator.data["Surveys"].dtype
+
+        if len(values[0]) == 3:
+            if len(dtype) == 4:
+                values = [(*v, b"") for v in values]
+        elif len(values[0]) == 4:
+            if len(dtype) == 3:
+                values = [v[:-1] for v in values]
+        else:
+            raise ValueError("'surveys' requires an ndarray of shape (*, 3) or (*, 4)")
+
+        array_values = np.array(values, dtype=dtype)
+        return array_values
