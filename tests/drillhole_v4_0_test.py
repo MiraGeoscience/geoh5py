@@ -611,6 +611,47 @@ def test_copy_and_append_drillhole_data(tmp_path):
             ), "Issue adding data to interval."
 
 
+def test_partial_group_removal(tmp_path):
+    h5file_path = tmp_path / r"test_append_data_to_tables.geoh5"
+
+    _, workspace = create_drillholes(h5file_path, version=2.0, ga_version="1.0")
+
+    with workspace.open():
+        well = workspace.get_entity("well")[0]
+        # Create random from-to
+        from_to_a = np.sort(np.random.uniform(low=0.05, high=100, size=(50,))).reshape(
+            (-1, 2)
+        )
+        from_to_b = np.vstack([from_to_a[0, :], [30.1, 55.5], [56.5, 80.2]])
+
+        # Add from-to data
+        well.add_data(
+            {
+                "interval_values": {
+                    "values": np.random.randn(from_to_a.shape[0] - 1),
+                    "from-to": from_to_a.tolist(),
+                },
+                "int_interval_list": {
+                    "values": np.asarray([1, 2, 3]),
+                    "from-to": from_to_b.T.tolist(),
+                    "value_map": {1: "Unit_A", 2: "Unit_B", 3: "Unit_C"},
+                    "type": "referenced",
+                },
+                "interval_values_b": {
+                    "values": np.random.randn(from_to_b.shape[0]),
+                    "from-to": from_to_b,
+                },
+            }
+        )
+
+        well.remove_children(well.get_entity("interval_values_a"))
+        well.remove_children(well.get_entity("text Data"))
+
+    with workspace.open():
+        well = workspace.get_entity("well")[0]
+        assert len(well.property_groups) == 3
+
+
 def test_remove_drillhole_data(tmp_path):
     h5file_path = tmp_path / r"test_remove_concatenated.geoh5"
 
