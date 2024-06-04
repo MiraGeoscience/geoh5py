@@ -297,7 +297,7 @@ class Grid2D(GridObject):
         self.workspace.update_attribute(self, "attributes")
 
     @property
-    def shape(self) -> tuple | None:
+    def shape(self) -> tuple[int, int] | None:
         """
         :obj:`list` of :obj:`int`, len (2, ): Number of cells along the u and v-axis.
         """

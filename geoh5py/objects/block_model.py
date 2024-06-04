@@ -165,7 +165,7 @@ class BlockModel(GridObject):
             self.workspace.update_attribute(self, "attributes")
 
     @property
-    def shape(self) -> tuple | None:
+    def shape(self) -> tuple[int, int, int] | None:
         """
         :obj:`list` of :obj:`int`, len (3, ): Number of cells along the u, v and z-axis
         """
