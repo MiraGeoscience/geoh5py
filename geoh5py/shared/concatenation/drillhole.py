@@ -377,7 +377,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
     def sort_depths(self):
         """Bypass sort_depths from previous version."""
 
-    def format_survey_values(self, values: list | np.ndarray) -> np.ndarray:
+    def format_survey_values(self, values: list | np.ndarray) -> np.recarray:
         """
         Reformat the survey values as structured array with the right shape.
         """

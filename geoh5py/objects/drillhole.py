@@ -256,7 +256,7 @@ class Drillhole(Points):
 
         self._locations = None
 
-    def format_survey_values(self, values: list | np.ndarray):
+    def format_survey_values(self, values: list | np.ndarray) -> np.recarray:
         """
         Reformat the survey values as structured array with the right shape.
         """
