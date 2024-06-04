@@ -382,7 +382,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
         Reformat the survey values as structured array with the right shape.
         """
         if isinstance(values, np.ndarray):
-            values = values.tolist()
+            values = values.T.tolist()
 
         dtype = [("Depth", "<f4"), ("Azimuth", "<f4"), ("Dip", "<f4")]
 
@@ -392,14 +392,14 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
         ):
             dtype = self.concatenator.data["Surveys"].dtype
 
-        if len(values[0]) not in [3, 4]:
+        if len(values) not in [3, 4]:
             raise ValueError("'surveys' requires an ndarray of shape (*, 3) or (*, 4)")
 
-        if len(values[0]) == 3 and len(dtype) == 4:
-            values = [(*v, b"") for v in values]
-        elif len(values[0]) == 4 and len(dtype) == 3:
-            values = [v[:-1] for v in values]
+        if len(values) == 3 and len(dtype) == 4:
+            values += [np.array([b""] * len(values[0]), dtype="|S1")]
+        elif len(values) == 4 and len(dtype) == 3:
+            values = values[:-1]
 
-        array_values = np.array(values, dtype=dtype)
+        array_values = np.core.records.fromarrays(values, dtype=dtype)
 
         return array_values
