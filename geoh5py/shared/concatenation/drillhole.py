@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import numpy as np
+from h5py import special_dtype
 
 from ...data import Data
 from ...objects import Drillhole
@@ -396,8 +397,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
             raise ValueError("'surveys' requires an ndarray of shape (*, 3) or (*, 4)")
 
         if len(values) == 3 and len(dtype) == 4:
-            empty_strings = np.array([""] * len(values[0]))
-            values += [np.char.encode(empty_strings, encoding="utf-8").astype("O")]
+            values += [np.array([b""] * len(values[0]), dtype=special_dtype(vlen=str))]
         elif len(values) == 4 and len(dtype) == 3:
             values = values[:-1]
 
