@@ -1,12 +1,17 @@
 [tool.poetry]
 name = "geoh5py"
-version = "0.9.0-alpha.4"
+version = "0.10.0-alpha.1"
 license = "LGPL-3.0-or-later"
 description = "Python API for geoh5, an open file format for geoscientific data"
 authors = ["Mira Geoscience <support@mirageoscience.com>"]
 repository = "https://github.com/MiraGeoscience/geoh5py"
-documentation = "https://geoh5py.readthedocs.io/en/latest/"
-homepage = "https://mirageoscience.com"
+maintainers = [
+    "Benjamin Kary <benjamink@mirageoscience.com>",
+    "Dominique Fournier <dominiquef@mirageoscience.com>",
+    "Matthieu Cedou <matthieuc@mirageoscience.com>",
+]
+documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
+homepage = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
 readme = "package.rst"
 keywords = ["geology", "geophysics", "data", "interoperability"]
 classifiers = [
@@ -20,10 +25,19 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Software Development :: Libraries :: Python Modules"
 ]
+
 exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
 
+include = [
+    "COPYING",
+    "COPYING.LESSER",
+    "LICENSE",
+    "README.rst",
+    "THIRD_PARTY_SOFTWARE.rst",
+]
+
 [tool.poetry.dependencies]
-python = "^3.8,<4"
+python = "^3.9,<3.11"
 Pillow = "10.1.0"
 h5py = "^3.2.1"
 numpy = [
@@ -33,11 +47,12 @@ numpy = [
 
 
 [tool.poetry.group.dev.dependencies]
+Pygments = "*"
 lockfile = "^0.12.2"
 pylint = "*"
 pytest = "*"
 pytest-cov = "*"
-scipy = "^1.4.1"
+scipy = "~1.10.1"
 sphinx = "^3.0"
 sphinx-autodoc-typehints = "^1.10"
 sphinx-rtd-theme = "^0.4.3"
@@ -46,12 +61,7 @@ tomli = "*"
 [tool.poetry.extras]
 
 [tool.isort]
-# settings for compatibility between ``isort`` and ``black`` formatting
-multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
-line_length = 88
+profile = "black"
 
 [tool.black]
 # defaults are just fine

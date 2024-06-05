@@ -15,8 +15,21 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: skip-file
-# pylint: disable=unused-import,no-name-in-module
-# flake8: noqa
+from __future__ import annotations
 
-from . import data, groups, objects, shared, workspace
+import uuid
+
+from .base import Group
+
+
+class ContainerGroup(Group):
+    """The type for the basic Container group."""
+
+    __TYPE_UID = uuid.UUID(
+        fields=(0x61FBB4E8, 0xA480, 0x11E3, 0x8D, 0x5A, 0x2776BDF4F982)
+    )
+    _default_name = "Container Group"
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID

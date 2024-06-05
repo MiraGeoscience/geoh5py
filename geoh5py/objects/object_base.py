@@ -36,6 +36,7 @@ from ..shared.utils import clear_array_attributes
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
+
     from ..workspace import Workspace
 
 
@@ -513,7 +514,7 @@ class ObjectBase(EntityContainer):
                 continue
 
             if isinstance(child, PropertyGroup) and self._property_groups:
-                self._property_groups.remove(child)
+                self.remove_property_group(child)
             elif isinstance(child, Data):
                 self.remove_data_from_groups(child)
 
@@ -547,12 +548,35 @@ class ObjectBase(EntityContainer):
                 if clear_cache:
                     clear_array_attributes(child)
 
+    def remove_property_group(self, property_group: PropertyGroup):
+        """
+        Remove a property group from the object.
+
+        :param property_group: The property group to remove.
+        """
+        if (
+            self._property_groups is not None
+            and property_group in self._property_groups
+        ):
+            self._property_groups.remove(property_group)
+
     @property
     def vertices(self) -> np.ndarray:
         r"""
         :obj:`numpy.array` of :obj:`float`, shape (\*, 3): Array of x, y, z coordinates
         defining the position of points in 3D space.
         """
+
+    @property
+    def locations(self):
+        """Exposes the vertices or centroids of the object."""
+        out = None
+        if hasattr(self, "vertices"):
+            out = self.vertices
+        if hasattr(self, "centroids"):
+            out = self.centroids
+
+        return out
 
     @property
     def converter(self):

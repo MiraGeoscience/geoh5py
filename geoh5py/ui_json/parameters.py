@@ -17,7 +17,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 from uuid import UUID
 
 from geoh5py import Workspace
@@ -25,7 +25,7 @@ from geoh5py.groups import PropertyGroup
 from geoh5py.shared.utils import SetDict
 from geoh5py.ui_json.enforcers import EnforcerPool
 
-Validation = Dict[str, Any]
+Validation = dict[str, Any]
 
 
 class Parameter:

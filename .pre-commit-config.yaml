@@ -1,34 +1,35 @@
 
 default_language_version:
     python: python3
-exclude: docs/(conf.py|_ext/)
+exclude: ^docs/(conf.py|_ext/)
 default_stages: [commit,push]
 fail_fast: false
 
 ci:
     skip: [pylint]
+    autoupdate_branch: develop
+    autoupdate_schedule: monthly
 
 repos:
--   repo: https://github.com/psf/black
-    rev: 24.4.0
+-   repo: https://github.com/python-poetry/poetry
+    rev: 1.8.0
     hooks:
-    -   id: black
-        types: [text]
-        types_or: [python, pyi]
+    -   id: poetry-check
+        args: [--lock]
+-   repo: https://github.com/hadialqattan/pycln
+    rev: v2.4.0
+    hooks:
+    -   id: pycln
+        args: [--config=pyproject.toml]
 -   repo: https://github.com/PyCQA/isort
     rev: 5.13.2
     hooks:
     -   id: isort
         additional_dependencies: [tomli] # to read config from pyproject.toml
-        types: [text]
-        types_or: [python, pyi]
-        exclude: geoh5py/objects/__init__\.py
--   repo: https://github.com/humitos/mirrors-autoflake
-    rev: v1.1
+-   repo: https://github.com/psf/black
+    rev: 24.4.2
     hooks:
-    -   id: autoflake
-        types: [text]
-        types_or: [python, pyi]
+    -   id: black
 -   repo: https://github.com/PyCQA/flake8
     rev: 7.0.0
     hooks:
@@ -39,17 +40,17 @@ repos:
     rev: v3.15.2
     hooks:
     -   id: pyupgrade
-        args: [--py37-plus]
+        args: [--py39-plus]
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.9.0
+    rev: v1.10.0
     hooks:
     -   id: mypy
         additional_dependencies: [
-            types-toml,
+#            numpy==1.26.*,  # TODO: fix mypy errors related to numpy
             tomli, # to read config from pyproject.toml
-#            'numpy>=1.23.5,<1.24.0'
+            types-toml,
         ]
         exclude: (geoh5py/interfaces/__init__\.py|geoh5py/handlers/__init__\.py|geoh5py/interfaces|geoh5py/handlers|tests)
 -   repo: https://github.com/codingjoe/relint
@@ -57,7 +58,6 @@ repos:
     hooks:
     -   id: relint
         args: [-W]  # to fail on warnings
-        exclude: ^setup.py$
 -   repo: local
     hooks:
     -   id: pylint
@@ -67,26 +67,37 @@ repos:
         require_serial: true  # pylint does its own parallelism
         types: [text]
         types_or: [python, pyi]
-        exclude: ^(setup.py$|(devtools|docs|geoh5py/interfaces|geoh5py/handlers)/)
+        exclude: ^(devtools|docs|geoh5py/interfaces|geoh5py/handlers)/
     -   id: check-copyright
         name: Check copyright
         entry: python devtools/check-copyright.py
         language: python
         types: [text]
-        types_or: [python, pyi]
-        exclude: ^(devtools/|docs/|setup.py)
+        files: (^LICENSE|^README(|-dev).rst|\.py|\.pyi)$
+        exclude: (^\.|^docs/)
+    -   id: prepare-commit-msg
+        stages: [prepare-commit-msg]
+        name: Prepare commit message
+        entry: python devtools/git_message_hook.py --prepare
+        language: python
+    -   id: check-commit-msg
+        stages: [commit-msg]
+        name: Check commit message
+        entry: python devtools/git_message_hook.py --check
+        language: python
 -   repo: https://github.com/codespell-project/codespell
     rev: v2.2.6
     hooks:
     -   id: codespell
-        exclude: (\.ipynb$|^\.github/workflows/issue_to_jira.yml$)
-        types: [text]
-        types_or: [python, pyi]
+        exclude: (\.lock|\.ipynb|^THIRD_PARTY_SOFTWARE\.rst)$
+        entry: codespell -I .codespellignore
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
     -   id: trailing-whitespace
         exclude: \.mdj$
+    -   id: check-json
+        exclude_types: [jupyter]
     -   id: check-toml
     -   id: check-yaml
 #    -   id: check-added-large-files # crashing on some configuration. To be investigated
@@ -95,13 +106,24 @@ repos:
     -   id: debug-statements
     -   id: detect-private-key
     -   id: end-of-file-fixer
-        exclude: \.mdj$
+        exclude: (^\.idea/.*\.xml|\.mdj)$
     -   id: mixed-line-ending
+        exclude: ^\.idea/.*\.xml$
     -   id: name-tests-test
+    -   id: pretty-format-json
+        args:
+            - --autofix
+            - --indent=4
+            - --no-sort-keys
+            - --top-keys
+            - version,title,icon,documentation,conda_environment,run_command,geoh5,monitoring_directory,workspace_geoh5
+        exclude_types: [jupyter]
+        exclude: ^docs/(.*/)?images/
 -   repo: https://github.com/rstcheck/rstcheck
     rev: v6.2.0
     hooks:
     -   id: rstcheck
+        exclude: ^THIRD_PARTY_SOFTWARE.rst$
         additional_dependencies: [sphinx]
 -   repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.10.0
