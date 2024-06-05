@@ -396,7 +396,8 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
             raise ValueError("'surveys' requires an ndarray of shape (*, 3) or (*, 4)")
 
         if len(values) == 3 and len(dtype) == 4:
-            values += [np.array([b""] * len(values[0]), dtype="|S1")]
+            empty_strings = np.array([""] * len(values[0]))
+            values += [np.char.encode(empty_strings, encoding="utf-8").astype("O")]
         elif len(values) == 4 and len(dtype) == 3:
             values = values[:-1]
 
