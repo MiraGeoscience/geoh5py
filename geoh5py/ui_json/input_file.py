@@ -34,18 +34,19 @@ from ..shared.utils import (
     dict_mapper,
     entity2uuid,
     fetch_active_workspace,
-    str2none,
     str2uuid,
-    stringify,
     uuid2entity,
 )
 from .constants import base_validations, ui_validations
 from .utils import (
     container_group2name,
     flatten,
+    inf2str,
+    none2str,
     path2workspace,
     set_enabled,
     str2inf,
+    str2none,
     workspace2path,
 )
 from .validation import InputValidation
@@ -460,7 +461,9 @@ class InputFile:
         :return: Dictionary with inf and none types converted to string
             representations in json format.
         """
-        var = stringify(var)
+        for key, value in var.items():
+            mappers = [inf2str, as_str_if_uuid, none2str]
+            var[key] = dict_mapper(value, mappers)
 
         return var
 
@@ -504,17 +507,16 @@ class InputFile:
         Other parameters are left unchanged.
         """
         mappers = [entity2uuid, as_str_if_uuid, workspace2path, container_group2name]
-        demoted: dict[str, Any] = {}
         for key, value in var.items():
             if isinstance(value, dict):
-                demoted[key] = cls.demote(value)
+                var[key] = cls.demote(value)
 
             elif isinstance(value, (list, tuple)):
-                demoted[key] = [dict_mapper(val, mappers) for val in value]
+                var[key] = [dict_mapper(val, mappers) for val in value]
             else:
-                demoted[key] = dict_mapper(value, mappers)
+                var[key] = dict_mapper(value, mappers)
 
-        return demoted
+        return var
 
     def promote(self, var: dict[str, Any]) -> dict[str, Any]:
         """Convert uuids to entities from the workspace."""

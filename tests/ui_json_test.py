@@ -403,8 +403,8 @@ def test_object_promotion(tmp_path: Path):
 
 def test_group_promotion(tmp_path):
     workspace = get_workspace(tmp_path)
-    group = workspace.get_entity("Container Group")[0]
-    dh_group = workspace.get_entity("Drillhole Group")[0]
+    group = workspace.get_entity("Entity")[0]
+    dh_group = workspace.get_entity("Drillholes Group")[0]
     ui_json = deepcopy(default_ui_json)
     ui_json["object"] = templates.group_parameter()
     ui_json["geoh5"] = workspace
