@@ -19,20 +19,27 @@ from __future__ import annotations
 
 import uuid
 
-from .group import Group, GroupType
+from .base import Group
 
 
-class AirborneGeophysics(Group):
-    """The type for the basic Container group."""
+class DrillholeGroup(Group):
+    """The type for the group containing drillholes."""
 
-    __TYPE_UID = uuid.UUID("{812f3b2a-fdae-4752-8391-3b657953a983}")
+    __TYPE_UID = uuid.UUID(
+        fields=(0x825424FB, 0xC2C6, 0x4FEA, 0x9F, 0x2B, 0x6CD00023D393)
+    )
+    _default_name = "Drillhole Group"
 
-    _name = "Airborne Geophysics"
-    _description = "Airborne Geophysics"
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID
 
-    def __init__(self, group_type: GroupType, **kwargs):
-        assert group_type is not None
-        super().__init__(group_type, **kwargs)
+
+class IntegratorDrillholeGroup(DrillholeGroup):
+    """The type for the group containing drillholes."""
+
+    __TYPE_UID = uuid.UUID("{952829b6-76a2-4d0b-b908-7f8d2482dc0d}")
+    _default_name = "Integrator Drillhole Group"
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

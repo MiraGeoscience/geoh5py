@@ -19,26 +19,15 @@ from __future__ import annotations
 
 import uuid
 
-from .group import Group, GroupType
+from .base import Group
 
 
-class CustomGroup(Group):
-    """A custom group, for an unlisted Group type."""
+class AirborneGeophysics(Group):
+    """The type for the basic Container group."""
 
-    _name = "Custom"
-    _description = "Custom"
-
-    def __init__(self, group_type: GroupType, **kwargs):
-        assert group_type is not None
-        super().__init__(group_type, **kwargs)
-
-        if self.entity_type.name == "Entity":
-            self.entity_type.name = "Custom Group"
+    __TYPE_UID = uuid.UUID("{812f3b2a-fdae-4752-8391-3b657953a983}")
+    _default_name = "Airborne Geophysics"
 
     @classmethod
-    def default_type_uid(cls) -> uuid.UUID | None:
-        """
-        Mock the default type uid for the custom group.
-        It returns a new UUID every time this class is called.
-        """
-        return uuid.uuid4()
+    def default_type_uid(cls) -> uuid.UUID:
+        return cls.__TYPE_UID

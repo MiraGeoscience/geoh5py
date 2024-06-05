@@ -643,6 +643,20 @@ def map_attributes(object_, **kwargs):
             continue
 
 
+def stringify(values: dict[str, Any]) -> dict[str, Any]:
+    """
+    Convert all values in a dictionary to string.
+
+    :param values: Dictionary of values to be converted.
+    """
+    string_dict = {}
+    for key, value in values.items():
+        mappers = [nan2str, inf2str, as_str_if_uuid, none2str]
+        string_dict[key] = dict_mapper(value, mappers)
+
+    return string_dict
+
+
 def to_tuple(value: Any) -> tuple:
     """
     Convert value to a tuple.
@@ -682,3 +696,33 @@ class SetDict(dict):
                 val = self[key].union(val)
             value[key] = val
         super().update(value, **kwargs)
+
+
+def inf2str(value):  # map np.inf to "inf"
+    if not isinstance(value, (int, float)):
+        return value
+    return str(value) if not np.isfinite(value) else value
+
+
+def list2str(value):
+    if isinstance(value, list):  # & (key not in exclude):
+        return str(value)[1:-1]
+    return value
+
+
+def none2str(value):
+    if value is None:
+        return ""
+    return value
+
+
+def nan2str(value):
+    if value is np.nan:
+        return ""
+    return value
+
+
+def str2none(value):
+    if value == "":
+        return None
+    return value
