@@ -68,3 +68,4 @@ jobs:
         with:
           name: GitHub
           fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
