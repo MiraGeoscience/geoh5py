@@ -92,7 +92,7 @@ exclude_lines = [
     "pragma: no cover"
 ]
 
-fail_under = 80
+fail_under = 90
 
 [build-system]
 requires = ["poetry-core>=1.0.0", "setuptools"]
