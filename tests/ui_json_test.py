@@ -540,7 +540,12 @@ def test_input_file(tmp_path: Path):
     ):
         InputFile.read_ui_json("somefile.json")
 
-    with pytest.raises(TypeError, match="expected str, bytes or os.PathLike object"):
+    with pytest.raises(
+        TypeError,
+        match="expected str, bytes or os.PathLike object|"
+        + "argument should be a str or an os.PathLike object where "
+        + "__fspath__ returns a str, not 'int'",
+    ):
         InputFile.read_ui_json(123)
 
     # Load the input back in
