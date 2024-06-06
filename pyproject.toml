@@ -29,11 +29,12 @@ classifiers = [
 exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
 
 include = [
-    "COPYING",
-    "COPYING.LESSER",
-    "LICENSE",
-    "README.rst",
-    "THIRD_PARTY_SOFTWARE.rst",
+    { path = "COPYING", format = ["sdist", "wheel"] },
+    { path = "COPYING.LESSER", format = ["sdist", "wheel"] },
+    { path = "LICENSE", format = ["sdist", "wheel"] },
+    { path = "README.rst", format = ["sdist", "wheel"] },
+    { path = "THIRD_PARTY_SOFTWARE.rst", format = ["sdist", "wheel"] },
+    { path = "docs/**/THIRD_PARTY_SOFTWARE.rst", format = ["sdist", "wheel"] },
 ]
 
 [tool.poetry.dependencies]
