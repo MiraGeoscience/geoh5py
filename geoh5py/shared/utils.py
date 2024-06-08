@@ -19,10 +19,11 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC
+from collections.abc import Callable
 from contextlib import contextmanager
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 import h5py
