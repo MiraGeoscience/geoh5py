@@ -39,10 +39,12 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.9,<3.11"
-
+python = "^3.10,<4"
 h5py = "^3.2.1"
-numpy = "!=1.19.4, ~1.23.5"
+numpy = [
+    {version="!=1.19.4, ^1.23.5", python= "<3.12"},
+    {version="^1.26.0", python= ">=3.12"}
+]
 Pillow = "~10.3.0"
 
 
@@ -52,7 +54,10 @@ lockfile = "^0.12.2"
 pylint = "*"
 pytest = "*"
 pytest-cov = "*"
-scipy = "~1.10.1"
+scipy = [
+    {version="~1.10.1", python= "<3.12"},
+    {version=">=1.12.0", python= ">=3.12"}
+]
 sphinx = "^3.0"
 sphinx-autodoc-typehints = "^1.10"
 sphinx-rtd-theme = "^0.4.3"
