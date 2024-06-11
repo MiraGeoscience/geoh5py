@@ -87,7 +87,7 @@ class NumericData(Data, ABC):
             return full_vector
 
         if (
-            len(values) != self.n_values
+            len(values) > self.n_values
             and self.association is not DataAssociationEnum.OBJECT
         ):
             raise ValueError(
