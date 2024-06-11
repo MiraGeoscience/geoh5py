@@ -9,11 +9,11 @@ capabilities of `Geoscience ANALYST <https://mirageoscience.com/mining-industry-
 
 Installation
 ^^^^^^^^^^^^
-**geoh5py** is currently written for Python 3.7 or higher, and depends on `NumPy <https://numpy.org/>`_ and
+**geoh5py** is currently written for Python 3.9 or higher, and depends on `NumPy <https://numpy.org/>`_ and
 `h5py <https://www.h5py.org/>`_.
 
 .. note:: Users will likely want to take advantage of other packages available in the Python ecosystem.
-    We therefore recommend using `Anaconda <https://www.anaconda.com/download/>`_ to manage the installation.
+    We therefore recommend using `Miniforge <https://github.com/conda-forge/miniforge#download>`_ `(Windows x86_64) <https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe>`_
 
 
 Install **geoh5py** from PyPI::

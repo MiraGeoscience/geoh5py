@@ -1,14 +1,11 @@
 Usage with Geoscience ANALYST Pro
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A ui.json file contains the parameters that reference a Python script to run. Geoscience ANALYST must be configured prior to running the application by setting the path to Python scripts or to a Conda environment as defined by the **conda_environment** parameter.
-
-.. figure:: ./images/ANALYST_preferences.png
-
+A ui.json file contains the parameters that reference a Python script to run, as well as the conda environment to activate when running the script if provided.
 
 run_command ``str``
     Name of python script excluding the .py extension (i.e., "run_me" for run_me.py) required for Geoscience ANALYST Pro to run on save or auto-load.
 conda_environment ``str``
-    Optional name of conda environment to activate when running the python script in *run_command*
+    [Optional] Name of conda environment to activate when running the python script in *run_command*
 title ``str``
     Title of user interface window
 
