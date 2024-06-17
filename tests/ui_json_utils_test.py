@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import uuid
 from copy import deepcopy
 
 import pytest
@@ -35,6 +36,7 @@ from geoh5py.ui_json.utils import (
     set_enabled,
     truth,
 )
+from geoh5py.ui_json.validation import InputValidation
 
 
 def test_dict_mapper():
@@ -212,12 +214,12 @@ def test_set_enabled():
 
     # If parameter is in group and groupOptional: True then disable
     # the parameter containing the groupOptional member.
-    set_enabled(ui_json, "float_parameter", False)
+    set_enabled(ui_json, "string_parameter", False)
     assert not ui_json["string_parameter"]["enabled"]
     assert not ui_json["float_parameter"]["enabled"]
     assert not ui_json["integer_parameter"]["enabled"]
 
-    set_enabled(ui_json, "float_parameter", True)
+    set_enabled(ui_json, "string_parameter", True)
     assert ui_json["string_parameter"]["enabled"]
     assert ui_json["float_parameter"]["enabled"]
     assert ui_json["integer_parameter"]["enabled"]
@@ -264,3 +266,53 @@ def test_is_form_test():
     assert is_form(ui_json["string_parameter"])
     ui_json["string_parameter"].pop("value")
     assert not is_form(ui_json["string_parameter"])
+
+
+def test_flatten_group_value():
+    ui_json = deepcopy(default_ui_json)
+    my_uuid = uuid.uuid4()
+
+    ui_json["test"] = templates.drillhole_group_data(
+        value=["test1"],
+        group_value=my_uuid,
+    )
+
+    validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
+    assert validators["test"]["types"] == [list]
+
+    flat = flatten(ui_json)
+
+    assert flat["test"] == ["test1"]
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["test"] = templates.drillhole_group_data(
+        value=None,
+        group_value=None,
+        optional="enabled",
+    )
+    validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
+    assert validators["test"]["types"] == [list]
+
+    flat = flatten(ui_json)
+
+    assert flat["test"] is None
+
+
+def test_range_label():
+    ui_json = deepcopy(default_ui_json)
+    my_uuid = uuid.uuid4()
+    ui_json["test"] = templates.range_label_template(
+        value=[1, 2], property_=my_uuid, is_complement=False, optional="enabled"
+    )
+
+    validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
+    assert validators["test"]["types"] == [list]
+
+    flat = flatten(ui_json)
+
+    assert flat["test"] == [1, 2]
+
+
+def test_optional_error():
+    with pytest.raises(ValueError, match="Unrecognized state option."):
+        templates.optional_parameter("bidon")

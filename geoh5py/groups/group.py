@@ -25,14 +25,15 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..data import CommentsData, Data
-from ..shared import Entity
+from ..shared.entity import Entity
+from ..shared.entity_container import EntityContainer
 from .group_type import GroupType
 
 if TYPE_CHECKING:
-    from .. import workspace
+    from ..workspace import Workspace
 
 
-class Group(Entity):
+class Group(EntityContainer):
     """Base Group class"""
 
     def __init__(self, group_type: GroupType, **kwargs):
@@ -43,14 +44,30 @@ class Group(Entity):
     @classmethod
     @abstractmethod
     def default_type_uid(cls) -> uuid.UUID | None:
-        ...
+        """Abstract method to return the default type uid for the class."""
+
+    def add_children(self, children: list[Entity]):
+        """
+        :param children: Add a list of entities as
+            :obj:`~geoh5py.shared.entity.Entity.children`
+        """
+        if not isinstance(children, list):
+            children = [children]
+
+        for child in children:
+            if child not in self._children:
+                if not isinstance(child, Entity):
+                    raise TypeError(
+                        f"Child must be an instance of Entity, not {type(child)}"
+                    )
+                self._children.append(child)
 
     def add_comment(self, comment: str, author: str | None = None):
         """
         Add text comment to an object.
 
         :param comment: Text to be added as comment.
-        :param author: Author's name or :obj:`~geoh5py.workspace.workspace.Worspace.contributors`.
+        :param author: Author's name or :obj:`~geoh5py.workspace.workspace.Workspace.contributors`.
         """
 
         date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -78,7 +95,6 @@ class Group(Entity):
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
         """
-
         return None
 
     def copy(
@@ -200,5 +216,6 @@ class Group(Entity):
         return None
 
     @classmethod
-    def find_or_create_type(cls, workspace: workspace.Workspace, **kwargs) -> GroupType:
-        return GroupType.find_or_create(workspace, cls, **kwargs)
+    def find_or_create_type(cls, workspace: Workspace, **kwargs) -> GroupType:
+        kwargs["entity_class"] = cls
+        return GroupType.find_or_create(workspace, **kwargs)

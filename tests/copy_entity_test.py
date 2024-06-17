@@ -23,7 +23,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from geoh5py.objects import Curve, Octree, Points, Surface
+from geoh5py.objects import Curve, Grid2D, Octree, Points, Surface
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -85,7 +85,7 @@ def test_copy_entity(tmp_path: Path):
         get_entity = entity.get_entity(entity.uid)
         assert isinstance(get_entity, list)
 
-        with pytest.raises(AssertionError, match="Input metadata must be of type"):
+        with pytest.raises(TypeError, match="Input metadata must be of type"):
             entity.metadata = 0
 
     with pytest.raises(FileExistsError, match="File "):
@@ -105,3 +105,45 @@ def test_copy_entity(tmp_path: Path):
 
         compare_entities(entity, rec_entity, ignore=["_parent"])
         compare_entities(entity.children[0], rec_data, ignore=["_parent"])
+
+
+def test_copy_grid_object(tmp_path):
+    name = "MyTestGrid2D"
+
+    # Generate a 2D array
+    n_x, n_y = 10, 15
+    h5file_path = tmp_path / r"test2Grid.geoh5"
+
+    with Workspace.create(h5file_path) as workspace_context:
+        grid = Grid2D.create(
+            workspace_context,
+            origin=[0, 0, 0],
+            u_cell_size=20.0,
+            v_cell_size=30.0,
+            u_count=n_x,
+            v_count=n_y,
+            name=name,
+            allow_move=False,
+        )
+
+        grid.add_data(
+            {
+                "DataValues": {
+                    "values": np.random.randn(n_x * n_y),
+                    "association": "CELL",
+                },
+                "DataValues2": {
+                    "values": np.random.randn(n_x * n_y),
+                    "association": "CELL",
+                },
+            },
+            property_group="property_group_test",
+        )
+
+        test1 = grid.copy()
+
+        assert len(test1.children) == 3
+
+        test2 = grid.copy(copy_children=False)
+
+        assert len(test2.children) == 0

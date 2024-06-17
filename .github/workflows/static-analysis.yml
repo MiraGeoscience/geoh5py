@@ -2,6 +2,7 @@ name: static analysis
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - develop
       - main
@@ -26,6 +27,7 @@ env:
 jobs:
   pylint:
     name: pylint
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -34,9 +36,9 @@ jobs:
       POETRY_VIRTUALENVS_CREATE: true
       POETRY_VIRTUALENVS_IN_PROJECT: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python version
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.9
       - name: Get full Python version
@@ -48,7 +50,7 @@ jobs:
           curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
           echo "$HOME/.poetry/bin" >> $GITHUB_PATH
       - name: Set up cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache
         env:
           # Increase this value to reset cache if poetry.lock has not changed

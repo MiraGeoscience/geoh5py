@@ -20,6 +20,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any, cast
 from uuid import UUID
+from warnings import warn
 
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
@@ -37,6 +38,8 @@ from geoh5py.shared.validators import (
     ValueValidator,
 )
 from geoh5py.ui_json.utils import requires_value
+
+Validation = dict[str, Any]
 
 
 class InputValidation:
@@ -116,7 +119,9 @@ class InputValidation:
         return val
 
     @staticmethod
-    def _validations_from_uijson(ui_json: dict[str, Any]) -> dict[str, dict]:
+    def _validations_from_uijson(  # pylint: disable=too-many-branches  # noqa: too complex
+        ui_json: dict[str, Any]
+    ) -> dict[str, dict]:
         """Determine base set of validations from ui.json structure."""
         validations: dict[str, dict] = {}
         for key, item in ui_json.items():
@@ -131,9 +136,21 @@ class InputValidation:
                 validations[key] = {
                     "types": [str, UUID, int, float, Entity],
                 }
-                validations[key]["association"] = item["parent"]
-                validations[key]["uuid"] = None
-
+                try:
+                    validations[key]["association"] = item["parent"]
+                    validations[key]["uuid"] = None
+                except KeyError as error:
+                    warn(
+                        f"Failed to set association for {key}. {error}",
+                    )
+            elif "rangeLabel" in item:
+                validations[key] = {
+                    "types": [list],
+                }
+            elif "groupValue" in item and "value" in item:
+                validations[key] = {
+                    "types": [list],
+                }
             elif "choiceList" in item:
                 validations[key] = {
                     "types": [str],
@@ -164,9 +181,9 @@ class InputValidation:
                     check_type = cast(Any, type(item["value"]))
 
                 validations[key] = {
-                    "types": [check_type, Entity]
-                    if check_type is UUID
-                    else [check_type],
+                    "types": (
+                        [check_type, Entity] if check_type is UUID else [check_type]
+                    ),
                 }
 
             validations[key].update({"optional": not requires_value(ui_json, key)})
@@ -221,6 +238,7 @@ class InputValidation:
         :param value: Input parameter value.
         :param validations: [Optional] Validations provided on runtime
         """
+
         if validations is None:
             if name not in self.validations:
                 raise KeyError(f"{name} is missing from the known validations.")
@@ -245,7 +263,6 @@ class InputValidation:
                 or name in self.ignore_list
             ):
                 continue
-
             self.validators[val](name, value, validations[val])
 
     def validate_data(self, data: dict[str, Any]) -> None:

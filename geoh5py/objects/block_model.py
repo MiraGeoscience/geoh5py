@@ -52,8 +52,6 @@ class BlockModel(GridObject):
 
         super().__init__(object_type, **kwargs)
 
-        object_type.workspace._register_object(self)
-
     @property
     def centroids(self) -> np.ndarray | None:
         """

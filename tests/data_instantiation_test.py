@@ -24,7 +24,7 @@ import pytest
 
 from geoh5py import data
 from geoh5py.data import Data, DataAssociationEnum, DataType, NumericData
-from geoh5py.objects import ObjectType
+from geoh5py.objects import ObjectType, Points
 from geoh5py.shared import FLOAT_NDV, INTEGER_NDV
 from geoh5py.workspace import Workspace
 
@@ -43,7 +43,7 @@ def all_data_types():
 def test_data_instantiation(data_class, tmp_path):
     h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace.create(h5file_path) as workspace:
-        data_type = DataType.create(workspace, data_class)
+        data_type = DataType(workspace, primitive_type=data_class)
         assert data_type.uid is not None
         assert data_type.uid.int != 0
         assert data_type.name == "Entity"
@@ -66,7 +66,7 @@ def test_data_instantiation(data_class, tmp_path):
 
         _can_find(workspace, created_data)
 
-        assert created_data.nan_value in [None, 0, np.nan, INTEGER_NDV, FLOAT_NDV]
+        assert created_data.nan_value in [None, 0, np.nan, INTEGER_NDV, FLOAT_NDV, ""]
 
         # now, make sure that unused data and types do not remain reference in the workspace
         data_type_uid = data_type.uid
@@ -82,6 +82,12 @@ def test_data_instantiation(data_class, tmp_path):
         # no more reference on data_type, so it should be gone from the workspace
         assert workspace.find_type(data_type_uid, DataType) is None
 
+        with pytest.raises(TypeError, match="Input 'data_type' must be "):
+            data.TextData(data_type="bidon")
+
+        with pytest.raises(NotImplementedError, match="Only add_data"):
+            DataType.validate_data_type(workspace, {"values": object()})
+
 
 def _can_find(workspace, created_data):
     """Make sure we can find the created data in the workspace."""
@@ -89,3 +95,27 @@ def _can_find(workspace, created_data):
     assert len(all_data) == 1
     assert next(iter(all_data)) is created_data
     assert workspace.find_data(created_data.uid) is created_data
+
+
+def test_copy_from_extent(tmp_path):
+    # Generate a random cloud of points
+    h5file_path = tmp_path / r"testPoints.geoh5"
+    workspace = Workspace.create(h5file_path)
+    points = Points.create(
+        workspace,
+        vertices=np.vstack((np.arange(20), np.arange(20), np.zeros(20))).T,
+        allow_move=False,
+    )
+
+    data_ = points.add_data(
+        {"DataValues": {"association": "VERTEX", "values": np.random.randn(20)}}
+    )
+
+    cropped_data = data_.copy_from_extent(np.vstack([[5, 5], [10, 10]]))
+
+    # prepare validation
+    validation = data_.values
+    validation[:5] = np.nan
+    validation[11:] = np.nan
+
+    np.testing.assert_array_equal(cropped_data.values, validation)

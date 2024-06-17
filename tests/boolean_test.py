@@ -95,7 +95,7 @@ def test_data_boolean(tmp_path):
             with pytest.raises(TypeError, match="Input 'values' for "):
                 data2.values = "bidon"
 
-    with Workspace(h5file_path) as workspace:
+    with Workspace(h5file_path, mode="r") as workspace:
         grid2 = workspace.get_entity("masking")[0]
         data2 = grid2.get_data("my_boolean")[0]
         assert all(data2.values == grid.get_data("my_boolean")[0].values)

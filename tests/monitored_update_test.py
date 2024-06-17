@@ -35,8 +35,20 @@ def test_monitored_directory_copy(tmp_path: Path):
     h5file_path = tmp_path / r"testPoints.geoh5"
     with Workspace.create(h5file_path) as workspace:
         group = ContainerGroup.create(workspace, name="groupee")
-        points = Points.create(workspace, parent=group, vertices=xyz, allow_move=False)
-        points.add_data({"DataValues": {"association": "VERTEX", "values": values}})
+
+        points = Points.create(
+            workspace, name="test", parent=group, vertices=xyz, allow_move=False
+        )
+        points.add_data(
+            {
+                "DataValues": {
+                    "association": "VERTEX",
+                    "values": values,
+                }
+            },
+            property_group="property_group_test",
+        )
+
         new_file = monitored_directory_copy(tmp_path, points)
         new_workspace = Workspace(new_file)
 

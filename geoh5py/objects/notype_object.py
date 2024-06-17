@@ -22,7 +22,6 @@ import warnings
 from typing import TYPE_CHECKING
 
 from .object_base import ObjectBase
-from .object_type import ObjectType
 
 if TYPE_CHECKING:
     from numpy import ndarray
@@ -36,11 +35,6 @@ class NoTypeObject(ObjectBase):
     __TYPE_UID = uuid.UUID(
         fields=(0x849D2F3E, 0xA46E, 0x11E3, 0xB4, 0x01, 0x2776BDF4F982)
     )
-
-    def __init__(self, object_type: ObjectType, **kwargs):
-        super().__init__(object_type, **kwargs)
-
-        object_type.workspace._register_object(self)
 
     def copy(
         self,

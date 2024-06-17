@@ -39,8 +39,6 @@ class ContainerGroup(Group):
         if self.entity_type.name == "Entity":
             self.entity_type.name = "Container Group"
 
-        group_type.workspace._register_group(self)
-
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID

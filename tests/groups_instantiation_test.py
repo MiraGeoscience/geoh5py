@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import inspect
+import uuid
 
 import pytest
 
@@ -85,7 +86,7 @@ def test_group_instantiation(group_class, tmp_path):
 
 
 def test_custom_group_instantiation(tmp_path):
-    assert CustomGroup.default_type_uid() is None
+    assert isinstance(CustomGroup.default_type_uid(), uuid.UUID)
 
     h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace.create(h5file_path) as workspace:

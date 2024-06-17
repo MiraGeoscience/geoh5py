@@ -34,8 +34,6 @@ class AirborneTheme(Group):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
 
-        group_type.workspace._register_group(self)
-
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
@@ -52,8 +50,6 @@ class EarthModelsTheme(Group):
     def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
-
-        group_type.workspace._register_group(self)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -72,8 +68,6 @@ class GeochemistryMineralogyTheme(Group):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
 
-        group_type.workspace._register_group(self)
-
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
@@ -90,8 +84,6 @@ class GeochemistryMineralogyDataSet(Group):
     def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
-
-        group_type.workspace._register_group(self)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -110,8 +102,6 @@ class GeophysicsTheme(Group):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
 
-        group_type.workspace._register_group(self)
-
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
@@ -128,8 +118,6 @@ class GroundTheme(Group):
     def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
-
-        group_type.workspace._register_group(self)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -148,8 +136,6 @@ class IntegratorProject(Group):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
 
-        group_type.workspace._register_group(self)
-
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
@@ -166,8 +152,6 @@ class IntegratorGroup(Group):
     def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
-
-        group_type.workspace._register_group(self)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -186,8 +170,6 @@ class QueryGroup(Group):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
 
-        group_type.workspace._register_group(self)
-
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
@@ -204,8 +186,6 @@ class ObservationPointsTheme(Group):
     def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
-
-        group_type.workspace._register_group(self)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -224,8 +204,6 @@ class RockPropertiesTheme(Group):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
 
-        group_type.workspace._register_group(self)
-
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
@@ -242,8 +220,6 @@ class SamplesTheme(Group):
     def __init__(self, group_type: GroupType, **kwargs):
         assert group_type is not None
         super().__init__(group_type, **kwargs)
-
-        group_type.workspace._register_group(self)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

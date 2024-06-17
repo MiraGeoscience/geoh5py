@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from geoh5py.groups import ContainerGroup, SimPEGGroup
 from geoh5py.shared.utils import compare_entities
 from geoh5py.ui_json import constants, templates
@@ -55,3 +57,15 @@ def test_simpeg_group(tmp_path):
     new_workspace = Workspace(tmp_path / r"testGroup2.geoh5")
     rec_obj = new_workspace.get_entity(group.uid)[0]
     compare_entities(group, rec_obj, ignore=["_parent"])
+
+
+def test_add_children_group(tmp_path):
+    h5file_path = tmp_path / r"testGroup.geoh5"
+    group_name = "MyTestContainer"
+
+    # Create a workspace
+    workspace = Workspace.create(h5file_path)
+    group = ContainerGroup.create(workspace, name=group_name)
+
+    with pytest.raises(TypeError, match="Child must be an instance"):
+        group.add_children("bidon")

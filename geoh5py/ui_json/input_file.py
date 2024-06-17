@@ -1,9 +1,19 @@
 #  Copyright (c) 2024 Mira Geoscience Ltd.
 #
-#  This file is part of geoapps.
+#  This file is part of geoh5py.
 #
-#  geoapps is distributed under the terms and conditions of the MIT License
-#  (see LICENSE file at the root of this source code package).
+#  geoh5py is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU Lesser General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  geoh5py is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 
@@ -78,25 +88,33 @@ class InputFile:
     _validation_options: dict | None = None
     association_validator = AssociationValidator()
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         data: dict[str, Any] | None = None,
         ui_json: dict[str, Any] | None = None,
         validate: bool = True,
         validations: dict | None = None,
         validation_options: dict | None = None,
+        promotion: bool = True,
     ):
         self._geoh5 = None
         self.validation_options = validation_options
         self.validate = validate
         self.validations = validations
+        self.promotion = promotion
         self.ui_json = ui_json
         self.data = data
 
     @property
     def data(self) -> dict[str, Any] | None:
+        """
+        Dictionary representing the input data for the ui.json file.
+        """
         if self._data is None and self.ui_json is not None:
+            original = self.validation_options.get("update_enabled", True)
+            self.validation_options["update_enabled"] = False
             self.data = flatten(self.ui_json)
+            self.validation_options["update_enabled"] = original
 
         return self._data
 
@@ -119,7 +137,8 @@ class InputFile:
                 self.geoh5 = value["geoh5"]
 
             with fetch_active_workspace(self._geoh5):
-                value = self.promote(value)
+                if self.promotion:
+                    value = self.promote(value)
 
                 if self.validators is not None and self.validate:
                     self.validators.validate_data(value)
@@ -259,7 +278,6 @@ class InputFile:
                     continue
 
                 self.ui_json[key][member] = value
-
             else:
                 self.ui_json[key] = value
 
@@ -290,7 +308,7 @@ class InputFile:
 
         """
         if self._validation_options is None:
-            return {
+            self._validation_options = {
                 "update_enabled": True,
                 "ignore_list": (),
             }
@@ -474,7 +492,6 @@ class InputFile:
                     cls.ui_validation(value)
                 except tuple(BaseValidationError.__subclasses__()) as error:
                     raise JSONParameterValidationError(key, error.args[0]) from error
-
                 value = cls.numify(value)
 
             mappers = [str2none, str2inf, str2uuid, path2workspace]
@@ -522,7 +539,8 @@ class InputFile:
         Check if the value needs to be promoted.
         """
         if isinstance(value, UUID) and self._geoh5 is not None:
-            self.association_validator(key, value, self._geoh5)
+            if self.validate:
+                self.association_validator(key, value, self._geoh5)
             value = uuid2entity(value, self._geoh5)
 
         return value

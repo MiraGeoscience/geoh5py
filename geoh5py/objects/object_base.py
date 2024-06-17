@@ -20,31 +20,31 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..data import CommentsData, Data, VisualParameters
-from ..data.data_association_enum import DataAssociationEnum
-from ..data.primitive_type_enum import PrimitiveTypeEnum
+from ..data import CommentsData, Data, DataAssociationEnum, DataType, VisualParameters
 from ..groups import PropertyGroup
 from ..shared import Entity
 from ..shared.conversion import BaseConversion
+from ..shared.entity_container import EntityContainer
 from ..shared.utils import clear_array_attributes
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
-    from .. import workspace
+    from ..workspace import Workspace
 
 
-class ObjectBase(Entity):
+class ObjectBase(EntityContainer):
     """
     Object base class.
     """
 
-    _attribute_map: dict = Entity._attribute_map.copy()
+    _attribute_map: dict = getattr(EntityContainer, "_attribute_map").copy()
     _attribute_map.update(
         {"Last focus": "last_focus", "PropertyGroups": "property_groups"}
     )
@@ -56,7 +56,6 @@ class ObjectBase(Entity):
         self._entity_type = object_type
         self._last_focus = "None"
         self._property_groups: list[PropertyGroup] | None = None
-        # self._clipping_ids: list[uuid.UUID] = []
         self._visual_parameters: VisualParameters | None = None
 
         if not any(key for key in kwargs if key in ["name", "Name"]):
@@ -67,22 +66,31 @@ class ObjectBase(Entity):
         if self.entity_type.name == "Entity":
             self.entity_type.name = type(self).__name__
 
-    def add_children(self, children: list[Entity] | list[PropertyGroup]):
+    def add_children(self, children: list[Entity | PropertyGroup]):
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
         """
         property_groups = self._property_groups or []
 
+        prop_group_uids = {prop_group.uid: prop_group for prop_group in property_groups}
+        children_uids = {child.uid: child for child in self._children}
+
         for child in children:
-            if child not in self._children and isinstance(child, (Data, PropertyGroup)):
+            if child.uid not in children_uids and isinstance(
+                child, (Data, PropertyGroup)
+            ):
                 self._children.append(child)
+                if (
+                    isinstance(child, PropertyGroup)
+                    and child.uid not in prop_group_uids
+                ):
+                    property_groups.append(child)
+            else:
+                warnings.warn(f"Child {child} is not valid or already exists.")
 
-            if isinstance(child, PropertyGroup) and child not in property_groups:
-                property_groups.append(child)
-
-            if property_groups:
-                self._property_groups = property_groups
+        if property_groups:
+            self._property_groups = property_groups
 
     def add_comment(self, comment: str, author: str | None = None):
         """
@@ -149,7 +157,7 @@ class ObjectBase(Entity):
             )
             attr["name"] = name
             self.validate_data_association(attr)
-            entity_type = self.validate_data_type(attr)
+            entity_type = DataType.validate_data_type(self.workspace, attr)
             kwargs = {"parent": self, "association": attr["association"]}
             for key, val in attr.items():
                 if key in ["parent", "association", "entity_type", "type"]:
@@ -225,7 +233,7 @@ class ObjectBase(Entity):
         return property_group
 
     @property
-    def cells(self):
+    def cells(self) -> np.ndarray:
         """
         :obj:`numpy.array` of :obj:`int`: Array of indices
         defining the connection between
@@ -334,13 +342,11 @@ class ObjectBase(Entity):
         """
 
     @property
-    def faces(self):
+    def faces(self) -> np.ndarray:
         """Object faces."""
 
     @classmethod
-    def find_or_create_type(
-        cls, workspace: workspace.Workspace, **kwargs
-    ) -> ObjectType:
+    def find_or_create_type(cls, workspace: Workspace, **kwargs) -> ObjectType:
         """
         Find or create a type instance for a given object class.
 
@@ -348,7 +354,8 @@ class ObjectBase(Entity):
 
         :return: The ObjectType instance for the given object class.
         """
-        return ObjectType.find_or_create(workspace, cls, **kwargs)
+        kwargs["entity_class"] = cls
+        return ObjectType.find_or_create(workspace, **kwargs)
 
     def get_property_group(self, name: uuid.UUID | str) -> list:
         """
@@ -373,11 +380,14 @@ class ObjectBase(Entity):
         return entities
 
     def create_property_group(
-        self, name=None, on_file=False, **kwargs
+        self, name=None, on_file=False, uid=None, **kwargs
     ) -> PropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
 
+        :param name: Name of the new property group.
+        :param on_file: If True, the property group is saved to file.
+        :param uid: Unique identifier for the new property group.
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
 
@@ -391,7 +401,7 @@ class ObjectBase(Entity):
         if "property_group_type" not in kwargs and "Property Group Type" not in kwargs:
             kwargs["property_group_type"] = "Multi-element"
 
-        prop_group = PropertyGroup(self, name=name, on_file=on_file, **kwargs)
+        prop_group = PropertyGroup(self, name=name, on_file=on_file, uid=uid, **kwargs)
 
         return prop_group
 
@@ -402,6 +412,8 @@ class ObjectBase(Entity):
         Find or create :obj:`~geoh5py.groups.property_group.PropertyGroup`
         from given name and properties.
 
+        :param name: Name of the property group.
+        :param uid: Unique identifier for the property group.
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
 
@@ -413,7 +425,7 @@ class ObjectBase(Entity):
             prop_group = self.get_property_group(uid or name)[0]
 
         if prop_group is None:
-            prop_group = self.create_property_group(name=name, **kwargs)
+            prop_group = self.create_property_group(name=name, uid=uid, **kwargs)
 
         return prop_group
 
@@ -427,12 +439,9 @@ class ObjectBase(Entity):
         """
         entity_list = []
 
-        for child in self.children:
+        for child in self.get_entity(name):
             if isinstance(child, Data):
-                if (
-                    isinstance(name, uuid.UUID) and child.uid == name
-                ) or child.name == name:
-                    entity_list.append(child)
+                entity_list.append(child)
 
         return entity_list
 
@@ -484,7 +493,7 @@ class ObjectBase(Entity):
         """
         return self._property_groups
 
-    def remove_children(self, children: list[Entity] | list[PropertyGroup]):
+    def remove_children(self, children: list[Entity | PropertyGroup]):
         """
         Remove children from the list of children entities.
 
@@ -503,15 +512,12 @@ class ObjectBase(Entity):
             if child not in self._children:
                 continue
 
-            self._children.remove(child)
-
-            if not self._property_groups:
-                continue
-
-            if isinstance(child, PropertyGroup):
-                self._property_groups.remove(child)
+            if isinstance(child, PropertyGroup) and self._property_groups:
+                self.remove_property_group(child)
             elif isinstance(child, Data):
                 self.remove_data_from_groups(child)
+
+            self._children.remove(child)
 
         self.workspace.remove_children(self, children)
 
@@ -529,16 +535,32 @@ class ObjectBase(Entity):
 
         for child in self.children:
             if (
-                getattr(child, "values", None) is not None
+                hasattr(child, "_values")
                 and isinstance(child.association, DataAssociationEnum)
                 and child.association.name == association
             ):
-                child.values = np.delete(child.values, indices, axis=0)
+                # accessing values with no property as the vertices had changed
+                values = getattr(child, "_values", None)
+                if values is None:
+                    values = child.workspace.fetch_values(child)
+                child.values = np.delete(values, indices, axis=0)
                 if clear_cache:
                     clear_array_attributes(child)
 
+    def remove_property_group(self, property_group: PropertyGroup):
+        """
+        Remove a property group from the object.
+
+        :param property_group: The property group to remove.
+        """
+        if (
+            self._property_groups is not None
+            and property_group in self._property_groups
+        ):
+            self._property_groups.remove(property_group)
+
     @property
-    def vertices(self):
+    def vertices(self) -> np.ndarray:
         r"""
         :obj:`numpy.array` of :obj:`float`, shape (\*, 3): Array of x, y, z coordinates
         defining the position of points in 3D space.
@@ -570,42 +592,6 @@ class ObjectBase(Entity):
             attribute_dict["association"] = "VERTEX"
         else:
             attribute_dict["association"] = "OBJECT"
-
-    @staticmethod
-    def validate_data_type(attribute_dict):
-        """
-        Get a dictionary of attributes and validate the type of data.
-        """
-        entity_type = attribute_dict.get("entity_type")
-        if entity_type is None:
-            primitive_type = attribute_dict.get("type")
-            if primitive_type is not None:
-                assert (
-                    primitive_type.upper() in PrimitiveTypeEnum.__members__
-                ), f"Data 'type' should be one of {PrimitiveTypeEnum.__members__}"
-                entity_type = {"primitive_type": primitive_type.upper()}
-            else:
-                values = attribute_dict.get("values")
-                if values is None or (
-                    isinstance(values, np.ndarray)
-                    and (values.dtype in [np.float32, np.float64])
-                ):
-                    entity_type = {"primitive_type": "FLOAT"}
-                elif isinstance(values, np.ndarray) and (
-                    values.dtype in [np.uint32, np.int32]
-                ):
-                    entity_type = {"primitive_type": "INTEGER"}
-                elif isinstance(values, str):
-                    entity_type = {"primitive_type": "TEXT"}
-                elif isinstance(values, np.ndarray) and (values.dtype == bool):
-                    entity_type = {"primitive_type": "BOOLEAN"}
-                else:
-                    raise NotImplementedError(
-                        "Only add_data values of type FLOAT, INTEGER,"
-                        "BOOLEAN and TEXT have been implemented"
-                    )
-
-        return entity_type
 
     def add_default_visual_parameters(self):
         """

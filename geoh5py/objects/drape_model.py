@@ -38,8 +38,6 @@ class DrapeModel(GridObject):
 
         super().__init__(object_type, **kwargs)
 
-        object_type.workspace._register_object(self)
-
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
@@ -140,8 +138,8 @@ class DrapeModel(GridObject):
 
     @property
     def n_cells(self):
-        if self._prisms is not None:
-            return int(self._prisms["Layer count"].sum())
+        if self._layers is not None:
+            return self._layers.shape[0]
         return None
 
     @property

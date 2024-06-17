@@ -46,7 +46,6 @@ tag = {
     33550: (0.9990415797117552, 0.999041579711816, 0.0),
     339: (1, 1, 1),
     277: (3,),
-    278: (5,),
     284: (1,),
     34737: ("WGS 84 / UTM zone 34N|WGS 84|",),
 }
@@ -586,3 +585,23 @@ def test_copy_from_extent_geoimage(tmp_path):
                 BytesIO(geoimage.image_data.values).getbuffer().nbytes
                 > BytesIO(geoimage2.image_data.values).getbuffer().nbytes
             )
+
+
+def test_complex_tiff(tmp_path):
+    image_path = tmp_path / r"testtif.tif"
+    workspace_path = tmp_path / r"geo_image_test.geoh5"
+
+    # create a tiff
+    image = Image.fromarray(1000 * np.random.randn(128, 128).astype("float32"))
+    image.save(image_path)
+
+    with Workspace.create(workspace_path) as workspace:
+        # load image
+        geoimage = GeoImage.create(workspace, name="test_area", image=str(image_path))
+
+        grid = workspace.get_entity("test_area_grid2d")[0]
+
+        assert all(
+            np.array(geoimage.image)[::-1].flatten()
+            == grid.get_data("band[0]")[0].values
+        )

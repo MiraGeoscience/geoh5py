@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-#  Copyright (c) 2023 Mira Geoscience Ltd.
+#  Copyright (c) 2024 Mira Geoscience Ltd.
 #
 #  This file is part of geoh5py.
 #
@@ -17,13 +17,17 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import re
 import sys
 from datetime import date
 
 if __name__ == "__main__":
     current_year = date.today().year
-    copyright_re = re.compile(rf"\bcopyright \(c\) \b{current_year}\b", re.IGNORECASE)
+    copyright_re = re.compile(
+        rf"\bcopyright \(c\) (:?\d{{4}}-|)\b{current_year}\b", re.IGNORECASE
+    )
     files = sys.argv[1:]
     max_lines = 10
     report_files = []
@@ -33,7 +37,9 @@ if __name__ == "__main__":
             has_dated_copyright = False
             for line in file:
                 count += 1
-                if count >= max_lines:
+                if count >= max_lines and not (
+                    f.endswith("README.rst") or f.endswith("README-dev.rst")
+                ):
                     break
                 if re.search(copyright_re, line):
                     has_dated_copyright = True
@@ -45,7 +51,7 @@ if __name__ == "__main__":
     if len(report_files) > 0:
         for f in report_files:
             sys.stderr.write(f"{f}: No copyright or invalid year\n")
-        exit(1)
+        sys.exit(1)
 
 # readonly CURRENT_YEAR=$(date +"%Y")
 

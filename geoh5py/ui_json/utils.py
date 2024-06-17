@@ -191,8 +191,9 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
         parameters = find_all(group, "groupOptional")
         if parameters:
             is_group_optional = True
-            for form in group.values():
-                form["enabled"] = value
+            if parameters[0] == parameter:
+                for form in group.values():
+                    form["enabled"] = value
 
     if not is_group_optional and "dependency" in ui_json[parameter]:
         is_group_optional = not dependency_requires_value(ui_json, parameter)
@@ -305,7 +306,7 @@ def workspace2path(value):
 
 
 def path2workspace(value):
-    if isinstance(value, str) and ".geoh5" in value:
+    if isinstance(value, (str, Path)) and Path(value).suffix == ".geoh5":
         workspace = Workspace(value, mode="r")
         workspace.close()
         return workspace

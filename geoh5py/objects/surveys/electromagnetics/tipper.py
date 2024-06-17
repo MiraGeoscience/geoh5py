@@ -90,7 +90,7 @@ class TipperSurvey(FEMSurvey, AirborneEMSurvey):
             )
 
         self._base_stations = base
-        self.edit_metadata({"Base stations": base.uid})
+        self.edit_em_metadata({"Base stations": base.uid})
 
     def copy_from_extent(
         self,

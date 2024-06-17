@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from ..data import Data
 from ..shared.utils import box_intersect, mask_by_extent
 from .object_base import ObjectBase
 
@@ -90,6 +91,8 @@ class GridObject(ObjectBase, ABC):
         if copy_children:
             children_map = {}
             for child in self.children:
+                if not isinstance(child, Data):
+                    continue
                 if (
                     isinstance(mask, np.ndarray)
                     and isinstance(getattr(child, "values", None), np.ndarray)

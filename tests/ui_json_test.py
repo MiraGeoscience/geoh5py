@@ -411,7 +411,7 @@ def test_group_promotion(tmp_path):
     ui_json["object"]["value"] = str(group.uid)
     ui_json["object"]["groupType"] = [group.entity_type.uid]
 
-    ui_json["dh"] = templates.group_parameter()
+    ui_json["dh"] = templates.group_parameter(optional="enabled")
     ui_json["dh"]["value"] = str(dh_group.uid)
     ui_json["dh"]["groupType"] = [dh_group.entity_type.uid]
 
@@ -721,7 +721,7 @@ def test_stringify(tmp_path: Path):
 
     assert in_file.ui_json["test"]["value"] is not None
     assert not in_file.ui_json["test"]["enabled"]
-    assert not in_file.ui_json["test_group"]["enabled"]
+    assert in_file.ui_json["test_group"]["enabled"]
     assert "optional" in in_file.ui_json["test"]
 
     ui_json["test_group"] = templates.string_parameter(optional="enabled")
@@ -827,3 +827,22 @@ def test_dependency_enabling(tmp_path: Path):
 
     with pytest.warns(UserWarning, match="Non-option parameter"):
         in_file.update_ui_values({"parameter_b": None})
+
+
+def test_range_label(tmp_path):
+    workspace = Workspace.create(tmp_path / "test.geoh5")
+    points = Points.create(workspace, vertices=np.random.randn(12, 3), name="my points")
+    data = points.add_data({"my data": {"values": np.random.randn(12)}})
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = str(workspace.h5file)
+    ui_json["object"] = templates.object_parameter(value=str(points.uid))
+    ui_json["test"] = templates.range_label_template(
+        value=[0.2, 0.8], parent="object", property_=data.uid, is_complement=False
+    )
+
+    ifile = InputFile(ui_json=ui_json)
+    ifile.write_ui_json("test_range_label.ui.json", path=tmp_path)
+    new = InputFile.read_ui_json(tmp_path / "test_range_label.ui.json")
+
+    assert new.data["test"] == ifile.data["test"]

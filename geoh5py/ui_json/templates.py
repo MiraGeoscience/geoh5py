@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import inspect
+import uuid
 from uuid import UUID
 
 from .. import groups, objects
@@ -403,4 +404,103 @@ def data_value_parameter(
 
     if optional is not None:
         form.update(optional_parameter(optional))
+    return form
+
+
+def drillhole_group_data(
+    value: list[str] | None = None,
+    main: bool = True,
+    label: str = "Data channel",
+    group_type: UUID = groups.DrillholeGroup.default_type_uid(),
+    group_value: UUID | None = None,
+    multiselect: bool = True,
+    optional: str | None = None,
+    enabled: bool = True,
+    tooltip: str = "Select the data channel to use for the calculation.",
+) -> dict:
+    """
+    Dropdown of data or input box.
+
+    :param main: Show form in main.
+    :param label: Label identifier.
+    :param value: Input value.
+    :param group_type: The group type to select, must be drillhole group.
+    :param group_value: The selected group UUID.
+    :param multiselect: Allow multiple data selection.
+    :param value: The name of the Data channel to extract.
+    :param optional: Make optional if not None. Initial state provided by not None
+    :param enabled: Enable or disable the form.
+    :param tooltip: The tooltip to display when hovering over the form.
+
+    :returns: Ui_json compliant dictionary.
+    """
+    form = {
+        "main": main,
+        "label": label,
+        "groupType": group_type,
+        "groupValue": group_value,
+        "multiselect": multiselect,
+        "value": value,
+        "optional": optional,
+        "enabled": enabled,
+        "tooltip": tooltip,
+    }
+
+    if optional is not None:
+        form.update(optional_parameter(optional))
+    return form
+
+
+def range_label_template(
+    main: bool = True,
+    label: str = "Range",
+    allow_complement: bool = False,
+    is_complement: bool = False,
+    parent: str = "",
+    property_: str | uuid.UUID = "",
+    association: str = "Vertex",
+    data_type: list[str] | str = "Float",
+    value: list[float | int] | None = None,
+    range_label: str = "Values",
+    enabled: bool = True,
+    optional: str | None = None,
+) -> dict:
+    """
+    Template for range label.
+
+    Or it is a multiselect data on a property group if referenced data.
+    Or they are 2 values, an upper and lower bound as float values.
+    In the second scenario, is_complement allows to invert the range.
+
+    :param main: Show form in main.
+    :param label: The label identifier.
+    :param allow_complement: If users can invert the range.
+    :param is_complement: If the range is inverted.
+    :param parent: The parent object.
+    :param property_: The property uid associated with the range.
+    :param association: The association type.
+    :param data_type: The data type of the range.
+    :param value: The value of the range.
+    :param range_label: The label of the range.
+    :param enabled: The state of the form.
+    :param optional: Make optional if not None. Initial state provided by not None.
+
+    :return: The form dictionary.
+    """
+    form = {
+        "main": main,
+        "label": label,
+        "allowComplement": allow_complement,
+        "isComplement": is_complement,
+        "parent": parent,
+        "property": property_,
+        "association": association,
+        "dataType": data_type,
+        "value": value,
+        "rangeLabel": range_label,
+        "enabled": enabled,
+    }
+    if optional is not None:
+        form.update(optional_parameter(optional))
+
     return form

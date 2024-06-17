@@ -56,7 +56,7 @@ def test_modify_property_group(tmp_path):
             values = np.cos(xyz[:, 0] / (i + 1))
             props += [
                 curve.add_data(
-                    {f"Period{i+1}": {"values": values}}, property_group="myGroup"
+                    {f"Period{i + 1}": {"values": values}}, property_group="myGroup"
                 )
             ]
 

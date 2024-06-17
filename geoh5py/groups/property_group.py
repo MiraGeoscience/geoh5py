@@ -22,11 +22,11 @@ from abc import ABC
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
-from geoh5py.data import Data, DataAssociationEnum
+from ..data import Data, DataAssociationEnum
+from ..shared.utils import map_attributes
 
 if TYPE_CHECKING:
-    from geoh5py.objects import ObjectBase
-    from geoh5py.shared import Entity
+    from ..objects import ObjectBase
 
 
 class PropertyGroup(ABC):
@@ -46,7 +46,13 @@ class PropertyGroup(ABC):
     _uid: uuid.UUID
 
     def __init__(
-        self, parent: ObjectBase, name=None, on_file=False, uid=None, **kwargs
+        self,
+        parent: ObjectBase,
+        name=None,
+        on_file=False,
+        uid=None,
+        property_group_type="Multi-element",
+        **kwargs,
     ):
         self.name = name or "property_group"
         self.uid = uid or uuid.uuid4()
@@ -61,19 +67,13 @@ class PropertyGroup(ABC):
 
         self._parent: ObjectBase = parent
         self._properties: list[uuid.UUID] | None = None
-        self._property_group_type = "Multi-element"
+        self._property_group_type = property_group_type
 
         parent.add_children([self])
 
-        for attr, item in kwargs.items():
-            try:
-                if attr in self._attribute_map:
-                    attr = self._attribute_map[attr]
-                setattr(self, attr, item)
-            except AttributeError:
-                continue
+        map_attributes(self, **kwargs)
 
-        self.parent.workspace.register_property_group(self)
+        self.parent.workspace.register(self)
 
     def add_properties(self, data: Data | list[Data | uuid.UUID] | uuid.UUID):
         """
@@ -138,6 +138,17 @@ class PropertyGroup(ABC):
         return self._attribute_map
 
     @property
+    def collect_values(self) -> list | None:
+        """
+        The values of the properties in the group.
+        """
+
+        if self._properties is None:
+            return None
+
+        return [self._parent.get_data(data)[0].values for data in self._properties]
+
+    @property
     def name(self) -> str:
         """
         :obj:`str` Name of the group
@@ -166,7 +177,7 @@ class PropertyGroup(ABC):
         self._on_file = value
 
     @property
-    def parent(self) -> Entity:
+    def parent(self) -> ObjectBase:
         """
         The parent :obj:`~geoh5py.objects.object_base.ObjectBase`
         """
@@ -221,15 +232,16 @@ class PropertyGroup(ABC):
             return
 
         for elem in data:
-            if isinstance(elem, uuid.UUID):
-                entity = self.parent.get_entity(elem)[0]
-            elif isinstance(elem, Data) and elem in self.parent.children:
-                entity = elem
-            else:
-                continue
 
-            if entity is not None and entity.uid in self._properties:
-                self._properties.remove(entity.uid)
+            if isinstance(elem, Data):
+                elem = elem.uid
+
+            if elem in self._properties:
+                self._properties.remove(elem)
+
+        if len(self._properties) == 0:
+            self.parent.workspace.remove_entity(self)
+            return
 
         self.parent.workspace.add_or_update_property_group(self)
 

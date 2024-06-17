@@ -62,8 +62,6 @@ class GeoImage(ObjectBase):
 
         super().__init__(object_type, **kwargs)
 
-        object_type.workspace._register_object(self)
-
     @property
     def cells(self) -> np.ndarray | None:
         r"""
@@ -353,6 +351,8 @@ class GeoImage(ObjectBase):
 
         :return: List of new Data objects.
         """
+        convert_to_grid = False
+        # todo: this should be changed in the future to accept tiff images
         if isinstance(image, np.ndarray) and image.ndim in [2, 3]:
             if image.ndim == 3 and image.shape[2] != 3:
                 raise ValueError(
@@ -373,21 +373,19 @@ class GeoImage(ObjectBase):
                 raise ValueError(f"Input image file {image} does not exist.")
 
             image = Image.open(image)
-
-            # if the image is a tiff save tag information
-            if isinstance(image, TiffImageFile):
-                self.tag = image
-
         elif isinstance(image, bytes):
             image = Image.open(BytesIO(image))
-        elif isinstance(image, TiffImageFile):
-            self.tag = image
+
         elif not isinstance(image, Image.Image):
             raise ValueError(
                 "Input 'value' for the 'image' property must be "
                 "a 2D or 3D numpy.ndarray, bytes, PIL.Image or a path to an existing image."
                 f"Get type {type(image)} instead."
             )
+        # if the image is a tiff save tag information
+        if isinstance(image, TiffImageFile):
+            self.tag = image
+            convert_to_grid = True
 
         with TemporaryDirectory() as tempdir:
             if image.mode not in PILLOW_ARGUMENTS:
@@ -404,6 +402,10 @@ class GeoImage(ObjectBase):
             image = self.add_file(str(temp_file))
             image.name = "GeoImageMesh_Image"
             image.entity_type.name = "GeoImageMesh_Image"
+
+        # quick and dirty fix: create a grid if image is tiff
+        if convert_to_grid:
+            self.to_grid2d(name=self.name + "_grid2d")
 
     @property
     def image_data(self):

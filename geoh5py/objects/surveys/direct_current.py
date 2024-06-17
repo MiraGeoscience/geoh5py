@@ -14,8 +14,12 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
+# pylint: disable=too-many-ancestors
+
 from __future__ import annotations
 
+import logging
 import uuid
 from abc import ABC, abstractmethod
 from typing import cast
@@ -26,13 +30,14 @@ from ...data import Data, ReferencedData
 from ..curve import Curve
 from ..object_type import ObjectType
 
+logger = logging.getLogger(__name__)
+
 
 class BaseElectrode(Curve, ABC):
     _potential_electrodes: PotentialElectrode | None = None
     _current_electrodes: CurrentElectrode | None = None
 
     def __init__(self, object_type: ObjectType, **kwargs):
-        self._metadata: dict | None = None
         self._ab_cell_id: ReferencedData | None = None
 
         super().__init__(object_type, **kwargs)
@@ -64,7 +69,7 @@ class BaseElectrode(Curve, ABC):
                 self._ab_cell_id = cast(ReferencedData, data.copy(parent=self))
         else:
             if data.dtype != np.int32:
-                print("ab_cell_id values will be converted to type 'int32'")
+                logger.info("ab_cell_id values will be converted to type 'int32'")
 
             if any(self.get_data("A-B Cell ID")):
                 child = self.get_data("A-B Cell ID")[0]
@@ -226,36 +231,26 @@ class BaseElectrode(Curve, ABC):
     def default_type_uid(cls) -> uuid.UUID:
         """Default unique identifier. Implemented on the child class."""
 
-    @property
-    def metadata(self):
-        """
-        Metadata attached to the entity.
-        """
-        if getattr(self, "_metadata", None) is None:
-            metadata = self.workspace.fetch_metadata(self.uid)
-            self._metadata = metadata
-        return self._metadata
+    @Curve.metadata.setter  # type: ignore
+    def metadata(self, values: dict | None):
+        if isinstance(values, dict):
+            default_keys = ["Current Electrodes", "Potential Electrodes"]
 
-    @metadata.setter
-    def metadata(self, values):
-        if not len(values) == 2:
-            raise ValueError(
-                f"Metadata must have two key-value pairs. {values} provided."
-            )
+            if self.metadata:
+                existing_keys = self.metadata.copy()
+                existing_keys.update(values)
+            else:
+                existing_keys = values
 
-        default_keys = ["Current Electrodes", "Potential Electrodes"]
+            # check if metadata has the required keys
+            if not all(key in existing_keys for key in default_keys):
+                raise ValueError(f"Input metadata must have for keys {default_keys}")
 
-        if list(values.keys()) != default_keys:
-            raise ValueError(f"Input metadata must have for keys {default_keys}")
+            for key in default_keys:
+                if self.workspace.get_entity(existing_keys[key])[0] is None:
+                    raise KeyError(f"Input {key} uuid not present in Workspace")
 
-        if self.workspace.get_entity(values["Current Electrodes"])[0] is None:
-            raise IndexError("Input Current Electrodes uuid not present in Workspace")
-
-        if self.workspace.get_entity(values["Potential Electrodes"])[0] is None:
-            raise IndexError("Input Potential Electrodes uuid not present in Workspace")
-
-        self._metadata = values
-        self.workspace.update_attribute(self, "metadata")
+        super(Curve, Curve).metadata.fset(self, values)  # type: ignore
 
     @property
     @abstractmethod
@@ -351,7 +346,7 @@ class CurrentElectrode(BaseElectrode):
 
     @current_electrodes.setter
     def current_electrodes(self, _):
-        ...
+        """"""
 
     @property
     def potential_electrodes(self) -> PotentialElectrode | None:
