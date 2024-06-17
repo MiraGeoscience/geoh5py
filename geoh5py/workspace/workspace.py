@@ -547,12 +547,10 @@ class Workspace(AbstractContextManager):
 
         # Special case for CustomGroup without uuid
         if entity_class == Group:
-            entity_type = groups.custom_group.CustomGroup.find_or_create_type(
+            entity_type = groups.custom.CustomGroup.find_or_create_type(
                 self, **entity_type_kwargs
             )
-            created_entity = groups.custom_group.CustomGroup(
-                entity_type, **entity_kwargs
-            )
+            created_entity = groups.custom.CustomGroup(entity_type, **entity_kwargs)
 
             return created_entity
 

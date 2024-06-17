@@ -36,9 +36,20 @@ if TYPE_CHECKING:
 class Group(EntityContainer):
     """Base Group class"""
 
+    _default_name = "Group"
+
     def __init__(self, group_type: GroupType, **kwargs):
-        assert group_type is not None
+
+        if not isinstance(group_type, GroupType):
+            raise TypeError(
+                f"Input 'group_type' must be of type {GroupType}, not {type(group_type)}"
+            )
+
+        if group_type.name == "Entity":
+            group_type.name = self._default_name
+
         self._entity_type = group_type
+
         super().__init__(**kwargs)
 
     @classmethod
@@ -55,12 +66,15 @@ class Group(EntityContainer):
             children = [children]
 
         for child in children:
-            if child not in self._children:
-                if not isinstance(child, Entity):
-                    raise TypeError(
-                        f"Child must be an instance of Entity, not {type(child)}"
-                    )
-                self._children.append(child)
+            if child in self._children:
+                continue
+
+            if not isinstance(child, Entity):
+                raise TypeError(
+                    f"Child must be an instance of Entity, not {type(child)}"
+                )
+
+            self._children.append(child)
 
     def add_comment(self, comment: str, author: str | None = None):
         """

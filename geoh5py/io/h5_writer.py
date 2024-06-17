@@ -594,10 +594,14 @@ class H5Writer:
                 entity.workspace.repack = True
 
             if values is None:
-                if getattr(entity, attribute, None) is None:
+
+                values = getattr(
+                    entity, attribute, None
+                )  # Give the chance to fetch from file
+
+                if values is None:
                     return
 
-                values = getattr(entity, "_" + attribute)
                 if (
                     attribute == "concatenated_attributes"
                     and entity.concat_attr_str == "Attributes Jsons"

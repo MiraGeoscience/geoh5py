@@ -403,8 +403,8 @@ def test_object_promotion(tmp_path: Path):
 
 def test_group_promotion(tmp_path):
     workspace = get_workspace(tmp_path)
-    group = workspace.get_entity("Entity")[0]
-    dh_group = workspace.get_entity("Drillholes Group")[0]
+    group = workspace.get_entity("Container Group")[0]
+    dh_group = workspace.get_entity("Drillhole Group")[0]
     ui_json = deepcopy(default_ui_json)
     ui_json["object"] = templates.group_parameter()
     ui_json["geoh5"] = workspace
@@ -540,7 +540,12 @@ def test_input_file(tmp_path: Path):
     ):
         InputFile.read_ui_json("somefile.json")
 
-    with pytest.raises(TypeError, match="expected str, bytes or os.PathLike object"):
+    with pytest.raises(
+        TypeError,
+        match="expected str, bytes or os.PathLike object|"
+        + "argument should be a str or an os.PathLike object where "
+        + "__fspath__ returns a str, not 'int'",
+    ):
         InputFile.read_ui_json(123)
 
     # Load the input back in

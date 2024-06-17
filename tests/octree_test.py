@@ -80,6 +80,7 @@ def test_octree(tmp_path: Path):
         rec_obj = new_workspace.get_entity(name)[0]
 
         compare_entities(mesh, rec_obj)
+        assert np.allclose(mesh.centroids, mesh.locations)
 
 
 def test_change_octree_cells(tmp_path: Path):
