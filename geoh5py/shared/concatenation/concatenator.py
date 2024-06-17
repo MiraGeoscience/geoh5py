@@ -508,7 +508,8 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                 data = [entity.parent.get_entity(uid)[0] for uid in entity.properties]
                 entity.parent.remove_children(data)
 
-            self.update_array_attribute(parent, "property_groups", remove=True)
+            entity.parent.remove_property_group(entity)
+            self.update_array_attribute(parent, "property_groups")
 
         if (
             self.concatenated_attributes is not None

@@ -15,6 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: skip-file
 # pylint: disable=unused-argument,no-self-use,no-name-in-module
 # flake8: noqa
 

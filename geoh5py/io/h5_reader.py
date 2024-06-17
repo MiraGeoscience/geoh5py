@@ -195,7 +195,11 @@ class H5Reader:
                 if attribute.dtype in [float, "float64", "float32"]:
                     attribute[attribute == FLOAT_NDV] = np.nan
 
-                if attribute.dtype == object and isinstance(attribute[0], bytes):
+                if (
+                    attribute.dtype == object
+                    and len(attribute) > 0
+                    and isinstance(attribute[0], bytes)
+                ):
                     attribute = np.char.decode(attribute.astype(np.bytes_), "UTF-8")
 
                 return attribute, indices[:]

@@ -134,7 +134,7 @@ Attributes
 :Rotation: ``double``
     (Optional) Counterclockwise angle (degrees) of rotation around the vertical axis at the Origin.
 :Vertical: ``char``, 0(false, default) or 1(true))
-    (Optiona) If true, V axis is vertical (and rotation defined around the V axis)
+    (Optional) If true, V axis is vertical (and rotation defined around the V axis)
 
 Drillhole
 ---------
