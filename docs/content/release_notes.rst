@@ -1,6 +1,39 @@
 Release Notes
 =============
 
+Release 0.9.0 (2024-06-17)
+--------------------------
+
+- GEOPY-1062: Add merging utility for Points
+- GEOPY-1092: Add collect_values method to collect values from property_groups.
+- GEOPY-1045: Add merging of DrapeModel objects
+- GEOPY-1102: Add merging of curve objects
+- GEOPY-1144: 1147: Increment property_group name if already exists.
+- GEOPY-1287: Fix handling of byte strings.
+- GEOPY-1297: Expose data tables from DrillholeGroup.
+- GEOPY-1296: Allow access of Concatenated data in array form.
+- GEOPY-1335: Improve drillholes tables memory and access.
+- GEOPY-1332: Adapt geoh5py for drillhole group in ui.json form.
+- GEOPY-1328: Issue loading Bool data in mode="r".
+- GEOPY-1364: Facilitate metadata assignation to object.
+- GEOPY-1351: Implement referenced data in depth_tables add_data.
+- GEOPY-1349: Fix get_data() for ConcatenatedPropertyGroup.
+- GEOPY-1441: Suppress unnecessary warnings triggered in set_enabled.
+- GEOPY-1434: Fix DrillholeGroup exported for monitoring directory.
+- GEOPY-532: Re-order curve parts for ANALYST efficiency.
+- GEOPY-1440: Better handling of integer data.
+- GEOPY-1418: Clean out empty property groups on drillhole objects after data removal.
+- GEOPY-1439: Allow FileData associated to DrillholeGroup.
+- GEOPY-1418: Avoid removing empty arrays.
+- GEOPY-1460: Fix crash on remove_vertices of points object.
+- GEOPY-1450: Handle Geoimage from tiff with float layers.
+- GEOPY-1418: Clean out empty property groups on drillhole objects after data removal.
+- GEOPY-1503: Octree mesh cell definition not update if record array.
+- GEOPY-1539: Add a locations property to expose vertices or centroids on geoh5py.objects.ObjectBase.
+- GEOPY-1032, 1111, 1217, 1229, 1230, 1311, 1321, 1346, 1349, 1562: Better handling of Drillhole objects.
+- GEOPY-1375, 1456, 1472, 1481, 1541, 1548, 1564: General maintenance.
+
+
 Release 0.8.0 (2023-10-31)
 --------------------------
 
