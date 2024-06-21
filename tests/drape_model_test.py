@@ -41,29 +41,23 @@ def test_create_drape_model(tmp_path: Path):
         x = np.sin(2 * np.arange(n_col) / n_col * np.pi)
         y = np.cos(2 * np.arange(n_col) / n_col * np.pi)
         top = bottom.flatten()[::n_row] + 0.1
-        drape = DrapeModel.create(workspace)
-
-        with pytest.raises(AttributeError) as error:
-            getattr(drape, "centroids")
-
-        assert "Attribute 'layers'" in str(error)
 
         layers = np.c_[i.flatten(), j.flatten(), bottom.flatten()]
-        drape.layers = layers
+        prisms = np.c_[
+            x, y, top, np.arange(0, i.flatten().shape[0], n_row), np.tile(n_row, n_col)
+        ]
+
+        with pytest.raises(ValueError, match="Array of 'layers' must be"):
+            DrapeModel.create(workspace)
+
+        with pytest.raises(ValueError, match="Array of 'prisms' must be"):
+            DrapeModel.create(workspace, layers=layers)
+
+        drape = DrapeModel.create(workspace, layers=layers, prisms=prisms)
 
         with pytest.raises(ValueError, match="Prism index"):
             layers[-32:, 0] = 64
             drape.layers = layers
-
-        with pytest.raises(AttributeError) as error:
-            getattr(drape, "centroids")
-
-        assert "Attribute 'prisms'" in str(error)
-
-        prisms = np.c_[
-            x, y, top, np.arange(0, i.flatten().shape[0], n_row), np.tile(n_row, n_col)
-        ]
-        drape.prisms = prisms
 
         drape.add_data(
             {

@@ -38,14 +38,18 @@ class GridObject(ObjectBase, ABC):
 
     _attribute_map = ObjectBase._attribute_map.copy()
 
-    def __init__(self, object_type: ObjectType, **kwargs):
-        self._centroids: np.ndarray | None = None
+    def __init__(
+        self, object_type: ObjectType, origin=np.asarray([0.0, 0.0, 0.0]), **kwargs
+    ):
+        self._origin: np.ndarray
+        self.origin = origin
+        self._centroids: np.ndarray
 
         super().__init__(object_type, **kwargs)
 
     @property
     @abstractmethod
-    def centroids(self) -> np.ndarray | None:
+    def centroids(self) -> np.ndarray:
         """
         Cell center locations in world coordinates.
         """
@@ -72,13 +76,8 @@ class GridObject(ObjectBase, ABC):
         if parent is None:
             parent = self.parent
 
-        if (
-            mask is not None
-            and self.centroids is not None
-            and (
-                not isinstance(mask, np.ndarray)
-                or mask.shape != (self.centroids.shape[0],)
-            )
+        if mask is not None and (
+            not isinstance(mask, np.ndarray) or mask.shape != (self.centroids.shape[0],)
         ):
             raise ValueError("Mask must be an array of shape (n_vertices,).")
 
@@ -129,10 +128,7 @@ class GridObject(ObjectBase, ABC):
         :return: shape(2, 3) Bounding box defined by the bottom South-West and
             top North-East coordinates.
         """
-        if self.centroids is not None:
-            return np.c_[self.centroids.min(axis=0), self.centroids.max(axis=0)].T
-
-        return None
+        return np.c_[self.centroids.min(axis=0), self.centroids.max(axis=0)].T
 
     def mask_by_extent(
         self, extent: np.ndarray, inverse: bool = False
@@ -145,7 +141,26 @@ class GridObject(ObjectBase, ABC):
         if self.extent is None or not box_intersect(self.extent, extent):
             return None
 
-        if self.centroids is not None:
-            return mask_by_extent(self.centroids, extent, inverse=inverse)
+        return mask_by_extent(self.centroids, extent, inverse=inverse)
 
-        return None
+    @property
+    def origin(self) -> np.ndarray:
+        """
+        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin.
+        """
+        return self._origin
+
+    @origin.setter
+    def origin(self, value):
+        if isinstance(value, np.ndarray):
+            value = value.tolist()
+
+        assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
+
+        self._centroids = None
+
+        value = np.asarray(
+            tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
+        )
+        self._origin = value
+        self.workspace.update_attribute(self, "attributes")
