@@ -43,49 +43,59 @@ class Curve(CellObject):
         fields=(0x6A057FDC, 0xB355, 0x11E3, 0x95, 0xBE, 0xFD84A7FFCB88)
     )
 
-    def __init__(self, object_type: ObjectType, name="Curve", **kwargs):
+    def __init__(
+        self,
+        object_type: ObjectType,
+        cells: np.ndarray | None = None,
+        current_line_id: uuid.UUID | None = None,
+        parts: np.ndarray | None = None,
+        name="Curve",
+        **kwargs,
+    ):
         self._current_line_id: uuid.UUID | None = None
         self._parts: np.ndarray | None = None
+
         super().__init__(object_type, name=name, **kwargs)
 
+        if parts is not None:
+            if cells is not None:
+                raise ValueError("Parts can only be set if cells are not provided.")
+
+            self.parts = parts
+
+            cells = self.make_cells_from_parts()
+
+        self.cells = cells
+        self.current_line_id = current_line_id
+
     @property
-    def cells(self) -> np.ndarray | None:
+    def cells(self) -> np.ndarray:
         r"""
         :obj:`numpy.ndarray` of :obj:`int`, shape (\*, 2):
         Array of indices defining segments connecting vertices. Defined based on
         :obj:`~geoh5py.objects.curve.Curve.parts` if set by the user.
         """
-        if getattr(self, "_cells", None) is None:
-            if self._parts is not None:
-                cells = []
-                for part_id in self.unique_parts:
-                    ind = np.where(self.parts == part_id)[0]
-                    cells.append(np.sort(np.c_[ind[:-1], ind[1:]], axis=0))
-                self.cells = np.vstack(cells)
-
-            elif self.on_file:
-                self._cells = self.workspace.fetch_array_attribute(self)
-
-            if self._cells is None and self.vertices is not None:
-                n_segments = self.vertices.shape[0]
-                self.cells = np.c_[
-                    np.arange(0, n_segments - 1), np.arange(1, n_segments)
-                ].astype("uint32")
-
         return self._cells
 
     @cells.setter
     def cells(self, indices: list | np.ndarray | None):
+        if getattr(self, "_cells", None) is not None:
+            raise UserWarning(
+                "Attempting to re-assign 'cells'. "
+                "Consider using the `remove_cells` method or create a new entity."
+            )
+
+        if indices is None and self.on_file:
+            indices = self.workspace.fetch_array_attribute(self, "cells")
+
+        if indices is None:
+            n_segments = self.vertices.shape[0]
+            indices = np.c_[
+                np.arange(0, n_segments - 1), np.arange(1, n_segments)
+            ].astype("uint32")
+
         if isinstance(indices, list):
             indices = np.vstack(indices)
-
-        if self._cells is not None and (
-            indices is None or indices.shape[0] < self._cells.shape[0]
-        ):
-            raise ValueError(
-                "Attempting to assign 'cells' with fewer values. "
-                "Use the `remove_cells` method instead."
-            )
 
         if indices.ndim != 2 or indices.shape[1] != 2:
             raise ValueError("Array of cells should be of shape (*, 2).")
@@ -95,7 +105,9 @@ class Curve(CellObject):
 
         self._cells = indices.astype(np.int32)
         self._parts = None
-        self.workspace.update_attribute(self, "cells")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "cells")
 
     @property
     def current_line_id(self) -> uuid.UUID | None:
@@ -125,7 +137,7 @@ class Curve(CellObject):
         return cls.__TYPE_UID
 
     @property
-    def parts(self):
+    def parts(self) -> np.ndarray:
         """
         :obj:`numpy.array` of :obj:`int`, shape
         (:obj:`~geoh5py.objects.object_base.ObjectBase.n_vertices`, 2):
@@ -134,11 +146,7 @@ class Curve(CellObject):
         property. The definition of the :obj:`~geoh5py.objects.curve.Curve.cells`
         property get modified by the setting of parts.
         """
-        if (
-            getattr(self, "_parts", None) is None
-            and self.cells is not None
-            and self.vertices is not None
-        ):
+        if getattr(self, "_parts", None) is None:
             cells = self.cells
             parts = np.zeros(self.vertices.shape[0], dtype="int")
             count = 0
@@ -154,18 +162,21 @@ class Curve(CellObject):
 
     @parts.setter
     def parts(self, indices: list | np.ndarray):
-        if self.vertices is not None:
-            if isinstance(indices, list):
-                indices = np.asarray(indices, dtype="int32")
-            else:
-                indices = indices.astype("int32")
+        if getattr(self, "_cells", None) is not None:
+            raise UserWarning(
+                "Attempting to re-assign 'parts'. "
+                "Consider using the `remove_cells` method or create a new entity."
+            )
 
-            assert indices.shape == (
-                self.vertices.shape[0],
-            ), f"Provided parts must be of shape {self.vertices.shape[0]}"
-            self._parts = indices
-            self._cells = None
-            self.workspace.update_attribute(self, "cells")
+        if isinstance(indices, list):
+            indices = np.asarray(indices, dtype="int32")
+        else:
+            indices = indices.astype("int32")
+
+        assert indices.shape == (
+            self.vertices.shape[0],
+        ), f"Provided parts must be of shape {self.vertices.shape[0]}"
+        self._parts = indices
 
     @property
     def unique_parts(self):
@@ -173,7 +184,17 @@ class Curve(CellObject):
         :obj:`list` of :obj:`int`: Unique :obj:`~geoh5py.objects.curve.Curve.parts`
         identifiers.
         """
-        if self.parts is not None:
-            return np.unique(self.parts).tolist()
+        return np.unique(self.parts).tolist()
 
-        return None
+    def make_cells_from_parts(self) -> np.ndarray | None:
+        """
+        Generate cells from parts.
+        """
+        if self.unique_parts is None:
+            return None
+
+        cells = []
+        for part_id in self.unique_parts:
+            ind = np.where(self.parts == part_id)[0]
+            cells.append(np.sort(np.c_[ind[:-1], ind[1:]], axis=0))
+        return np.vstack(cells)

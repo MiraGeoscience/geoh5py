@@ -35,11 +35,6 @@ def test_create_curve_data(tmp_path: Path):
     n_data = 12
 
     with Workspace.create(h5file_path) as workspace:
-        curve = Curve.create(workspace)
-
-        with pytest.warns(UserWarning, match="No cells to be removed."):
-            curve.remove_cells(0)
-
         curve = Curve.create(
             workspace, vertices=np.random.randn(n_data, 3), name=curve_name
         )
@@ -52,10 +47,12 @@ def test_create_curve_data(tmp_path: Path):
         # Get and change the parts
         parts = curve.parts
         parts[-3:] = 1
-        curve.parts = parts
+        with pytest.raises(UserWarning, match="Attempting to re-assign 'parts'."):
+            curve.parts = parts
 
         cells = curve.cells.copy()
-        assert cells.shape[0] == 10, "Error creating cells from parts." ""
+        assert cells.shape[0] == 11, "Error creating cells from parts." ""
+
         setattr(curve, "_cells", None)
         with pytest.raises(ValueError, match="Array of cells should be of shape"):
             curve.cells = np.c_[1]
@@ -91,11 +88,15 @@ def test_create_curve_data(tmp_path: Path):
             compare_entities(data_objects[0], data_vert_rec)
             compare_entities(data_objects[1], ws2.get_entity("cellValues")[0])
 
-            # Modify and write
-            obj_rec.vertices = np.random.randn(n_data, 3)
+            with pytest.raises(
+                UserWarning, match="Attempting to re-assign 'vertices'."
+            ):
+                # Modify and write
+                obj_rec.vertices = np.random.randn(n_data, 3)
 
             with pytest.raises(TypeError, match="Values cannot have decimal points."):
                 data_vert_rec.values = np.random.randn(n_data)  # warning here
+
             data_vert_rec.values = np.random.randint(
                 0, curve.n_vertices, curve.n_vertices
             ).astype(np.uint32)
@@ -136,9 +137,7 @@ def test_remove_cells_data(tmp_path: Path):
         ):
             curve.remove_cells([12])
 
-        with pytest.raises(
-            ValueError, match="Attempting to assign 'cells' with fewer values."
-        ):
+        with pytest.raises(UserWarning, match="Attempting to re-assign 'cells'"):
             curve.cells = curve.cells[1:, :]
 
         with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
@@ -159,11 +158,7 @@ def test_remove_vertex_data(tmp_path):
     n_data = 12
 
     with Workspace.create(tmp_path / r"testCurve.geoh5") as workspace:
-        curve = Curve.create(workspace)
-        with pytest.warns(UserWarning, match="No vertices to be removed."):
-            curve.remove_vertices(12)
-
-        curve.vertices = np.random.randn(n_data, 3)
+        curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
         data = curve.add_data(
             {
                 "cellValues": {

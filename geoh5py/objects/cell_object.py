@@ -20,7 +20,6 @@ from __future__ import annotations
 import uuid
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -29,26 +28,29 @@ from ..groups import PropertyGroup
 from ..shared.utils import box_intersect, mask_by_extent
 from .points import Points
 
-if TYPE_CHECKING:
-    from geoh5py.objects import ObjectType
-
 
 class CellObject(Points, ABC):
     """
     Base class for object with cells.
     """
 
-    _attribute_map: dict = Points._attribute_map.copy()
-
-    def __init__(self, object_type: ObjectType, name="Object", **kwargs):
-        self._cells: np.ndarray | None = None
-
-        super().__init__(object_type, name=name, **kwargs)
-
     @classmethod
     @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:
         """Default type uid."""
+
+    @property
+    @abstractmethod
+    def cells(self) -> np.ndarray:
+        """
+        Definition of cells.
+        """
+
+    @cells.setter
+    def cells(self, _) -> np.ndarray:
+        """
+        Definition of cells.
+        """
 
     def mask_by_extent(
         self,
@@ -64,11 +66,10 @@ class CellObject(Points, ABC):
         vert_mask = mask_by_extent(self.vertices, extent, inverse=inverse)
 
         # Check for orphan vertices
-        if self.cells is not None:
-            cell_mask = np.all(vert_mask[self.cells], axis=1)
-            orphan_mask = np.zeros_like(vert_mask, dtype=bool)
-            orphan_mask[self.cells[cell_mask].flatten()] = True
-            vert_mask &= orphan_mask
+        cell_mask = np.all(vert_mask[self.cells], axis=1)
+        orphan_mask = np.zeros_like(vert_mask, dtype=bool)
+        orphan_mask[self.cells[cell_mask].flatten()] = True
+        vert_mask &= orphan_mask
 
         if ~np.any(vert_mask):
             return None
@@ -100,9 +101,8 @@ class CellObject(Points, ABC):
             raise ValueError("Found indices larger than the number of cells.")
 
         cells = np.delete(self.cells, indices, axis=0)
-        self._cells = None
-        setattr(self, "cells", cells)
-
+        setattr(self, "_cells", None)
+        self.cells = cells
         self.remove_children_values(indices, "CELL", clear_cache=clear_cache)
 
     def remove_vertices(
@@ -135,14 +135,16 @@ class CellObject(Points, ABC):
         vert_index[indices] = False
         vertices = self.vertices[vert_index, :]
 
-        self._vertices = None
+        setattr(self, "_vertices", None)
         setattr(self, "vertices", vertices)
         self.remove_children_values(indices, "VERTEX", clear_cache=clear_cache)
 
         new_index = np.ones_like(vert_index, dtype=int)
         new_index[vert_index] = np.arange(self.vertices.shape[0])
         self.remove_cells(np.where(~np.all(vert_index[self.cells], axis=1)))
-        setattr(self, "cells", new_index[self.cells])
+        new_cells = new_index[self.cells]
+        setattr(self, "_cells", None)
+        setattr(self, "cells", new_cells)
 
     def copy(  # pylint: disable=too-many-branches
         self,
