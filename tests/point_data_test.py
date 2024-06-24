@@ -83,15 +83,13 @@ def test_remove_point_data(tmp_path):
     values = np.random.randn(12)
     h5file_path = tmp_path / r"testPoints.geoh5"
     with Workspace.create(h5file_path) as workspace:
-        points = Points.create(workspace)
-
-        with pytest.warns(UserWarning, match="No vertices to be removed."):
-            points.remove_vertices([12])
+        with pytest.raises(TypeError, match="Vertices must be a numpy array."):
+            Points.create(workspace)
 
         with pytest.raises(ValueError, match="Array of vertices must be of shape"):
-            points.vertices = np.r_[1, 2, 3]
+            Points.create(workspace, vertices=np.r_[1, 2, 3])
 
-        points.vertices = np.random.randn(12, 3)
+        points = Points.create(workspace, vertices=np.random.randn(12, 3))
 
         assert (
             points.mask_by_extent(np.vstack([[1000, 1000], [1001, 1001]])) is None
@@ -104,9 +102,7 @@ def test_remove_point_data(tmp_path):
             {"DataValues": {"association": "VERTEX", "values": values}}
         )
 
-        with pytest.raises(
-            ValueError, match="Attempting to assign 'vertices' with fewer values."
-        ):
+        with pytest.raises(UserWarning, match="Attempting to re-assign 'vertices'."):
             points.vertices = np.random.randn(10, 3)
 
         with pytest.raises(
@@ -127,8 +123,7 @@ def test_copy_points_data(tmp_path):
     values = np.random.randn(12)
     h5file_path = tmp_path / r"testPoints.geoh5"
     with Workspace.create(h5file_path) as workspace:
-        points = Points.create(workspace)
-        points.vertices = np.random.randn(12, 3)
+        points = Points.create(workspace, vertices=np.random.randn(12, 3))
         data = points.add_data(
             {"DataValues": {"association": "VERTEX", "values": values}}
         )
