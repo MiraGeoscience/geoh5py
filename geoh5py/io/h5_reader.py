@@ -26,7 +26,13 @@ import h5py
 import numpy as np
 
 from ..shared import FLOAT_NDV, fetch_h5_handle
-from ..shared.utils import KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid, str2uuid
+from ..shared.utils import (
+    ATTRIBUTE_NAME_MAP,
+    KEY_MAP,
+    as_str_if_utf8_bytes,
+    as_str_if_uuid,
+    str2uuid,
+)
 
 
 class H5Reader:
@@ -73,7 +79,7 @@ class H5Reader:
             property_groups: dict = {}
 
             for key, value in entity.attrs.items():
-                attributes["entity"][key] = value
+                attributes["entity"][ATTRIBUTE_NAME_MAP.get(key, key)] = value
 
             if "Type" in entity:
                 type_attributes["entity_type"] = cls.fetch_type_attributes(
@@ -379,7 +385,7 @@ class H5Reader:
         """
         type_attributes = {}
         for key, value in type_handle.attrs.items():
-            type_attributes[key] = value
+            type_attributes[ATTRIBUTE_NAME_MAP.get(key, key)] = value
 
         if "Color map" in type_handle:
             type_attributes["color_map"] = {}

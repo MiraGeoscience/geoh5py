@@ -65,16 +65,15 @@ def test_create_block_model_data(tmp_path):
     with Workspace.create(h5file_path) as workspace:
         grid = BlockModel.create(
             workspace,
-            origin=[0, 0, 0],
+            u_cell_delimiters=nodal_x,
             v_cell_delimiters=nodal_y,
             z_cell_delimiters=nodal_z,
             name=name,
-            rotation=30,
+            rotation=30.0,
             allow_move=False,
         )
         assert grid.mask_by_extent(np.vstack([[-100, -100], [-1, -1]])) is None
 
-        grid.u_cell_delimiters = (nodal_x,)
         data = grid.add_data(
             {
                 "DataValues": {

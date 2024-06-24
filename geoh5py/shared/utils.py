@@ -90,6 +90,57 @@ PILLOW_ARGUMENTS = {
     "F": TIF_KWARGS,
 }
 
+ATTRIBUTE_NAME_MAP = {
+    "Allow delete": "allow_delete",
+    "Allow delete contents": "allow_delete_content",
+    "Allow move": "allow_move",
+    "Allow move contents": "allow_move_content",
+    "Allow rename": "allow_rename",
+    "Association": "association",
+    "Clipping IDs": "clipping_ids: list | None",
+    "Collar": "collar",
+    "Contributors": "contributors",
+    "Cost": "cost",
+    "Current line property ID": "current_line_id",
+    "Description": "description",
+    "Dip": "dip",
+    "Distance unit": "distance_unit",
+    "End of hole": "end_of_hole",
+    "File name": "name",
+    "Group Name": "name",
+    "GA Version": "ga_version",
+    "Hidden": "hidden",
+    "ID": "uid",
+    "Last focus": "last_focus",
+    "Mapping": "mapping",
+    "Modifiable": "modifiable",
+    "Name": "name",
+    "Number of bins": "number_of_bins",
+    "NU": "u_count",
+    "NV": "v_count",
+    "NW": "w_count",
+    "Origin": "origin",
+    "Properties": "properties",
+    "Property Group Type": "property_group_type",
+    "Partially hidden": "partially_hidden",
+    "Planning": "planning",
+    "Primitive type": "primitive_type",
+    "PropertyGroups": "property_groups",
+    "Public": "public",
+    "Rotation": "rotation",
+    "Transparent no data": "transparent_no_data",
+    "U Cell Size": "u_cell_size",
+    "U Count": "u_count",
+    "U Size": "u_cell_size",
+    "V Cell Size": "v_cell_size",
+    "V Count": "v_count",
+    "V Size": "v_cell_size",
+    "Version": "version",
+    "Vertical": "vertical",
+    "Visible": "visible",
+    "W Cell Size": "w_cell_size",
+}
+
 
 @contextmanager
 def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
@@ -624,6 +675,41 @@ def dip_points(points: np.ndarray, dip: float, rotation: float = 0) -> np.ndarra
     return points.T
 
 
+def set_attributes(entity, **kwargs):
+    """
+    Loop over kwargs and set attributes to an entity.
+
+    TODO: Deprecate in favor of explicit attribute setting.
+    """
+    for key, value in kwargs.items():
+        try:
+            setattr(entity, key, value)
+        except AttributeError:
+            continue
+
+
+def map_name_attributes(object_, kwargs: dict):
+    """
+    Map attributes to an object. The object must have an '_attribute_map'.
+
+    :param object_: The object to map the attributes to.
+    :param kwargs: Dictionary of attributes.
+    """
+    if not hasattr(object_, "_attribute_map"):
+        raise AttributeError("Object must have an '_attribute_map' attribute.")
+
+    mapping: dict = getattr(object_, "_attribute_map")
+
+    new_args = {}
+    for attr, item in kwargs.items():
+        if attr in mapping:
+            new_args[mapping[attr]] = item
+        else:
+            new_args[attr] = item
+
+    return new_args
+
+
 def map_attributes(object_, **kwargs):
     """
     Map attributes to an object. The object must have an '_attribute_map'.
@@ -631,17 +717,17 @@ def map_attributes(object_, **kwargs):
     :param object_: The object to map the attributes to.
     :param kwargs: The kwargs to map to the object.
     """
-    if not hasattr(object_, "_attribute_map"):
-        warnings.warn(f"Object {object_} does not have an attribute map.")
-        return
+    warnings.warn(
+        "'map_attributes' is deprecated "
+        "and will be removed in versions 0.11.0."
+        "Consider using 'map_name_attributes' followed by"
+        "'set_attributes' instead.",
+        DeprecationWarning,
+    )
 
-    for attr, item in kwargs.items():
-        try:
-            if attr in getattr(object_, "_attribute_map"):
-                attr = getattr(object_, "_attribute_map")[attr]
-            setattr(object_, attr, item)
-        except AttributeError:
-            continue
+    values = map_name_attributes(**kwargs)  # Swap duplicates
+
+    set_attributes(object_, **values)
 
 
 def stringify(values: dict[str, Any]) -> dict[str, Any]:
