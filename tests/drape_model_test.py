@@ -47,11 +47,19 @@ def test_create_drape_model(tmp_path: Path):
             x, y, top, np.arange(0, i.flatten().shape[0], n_row), np.tile(n_row, n_col)
         ]
 
-        with pytest.raises(ValueError, match="Array of 'layers' must be"):
-            DrapeModel.create(workspace)
+        with pytest.raises(TypeError, match="Attribute 'prisms' must be"):
+            DrapeModel.create(workspace, prisms="abc")
 
-        with pytest.raises(ValueError, match="Array of 'prisms' must be"):
-            DrapeModel.create(workspace, layers=layers)
+        with pytest.raises(ValueError, match="Array of 'prisms' must be of shape"):
+            DrapeModel.create(workspace, prisms=(0, 0))
+
+        with pytest.raises(TypeError, match="Attribute 'layers' must be"):
+            DrapeModel.create(workspace, layers="abc")
+
+        with pytest.raises(ValueError, match="Array of 'layers' must be of shape"):
+            DrapeModel.create(workspace, layers=(0, 0))
+
+        assert DrapeModel.create(workspace).n_cells == 1
 
         drape = DrapeModel.create(workspace, layers=layers, prisms=prisms)
 
