@@ -31,10 +31,18 @@ if TYPE_CHECKING:
 class BlockModel(GridObject):
     """
     Rectilinear 3D tensor mesh defined by three perpendicular axes.
+
     Each axis is divided into discrete intervals that define the cell dimensions.
     Nodal coordinates are determined relative to the origin and the sign of cell delimiters.
     Negative and positive cell delimiters
     are accepted to denote relative offsets from the origin.
+
+    :param object_type: Type of object registered in the workspace.
+    :param rotation: Clockwise rotation angle (degree) about the vertical axis.
+    :param u_cell_delimiters: Nodal offsets along the u-axis relative to the origin.
+    :param v_cell_delimiters: Nodal offsets along the v-axis relative to the origin.
+    :param z_cell_delimiters: Nodal offsets along the z-axis relative to the origin.
+    :param kwargs: Additional attributes to assign to the object as defined by the base class.
     """
 
     __TYPE_UID = uuid.UUID(
@@ -47,18 +55,25 @@ class BlockModel(GridObject):
         self,
         object_type: ObjectType,
         rotation: float = 0.0,
-        u_cell_delimiters: np.ndarray | None = None,
-        v_cell_delimiters: np.ndarray | None = None,
-        z_cell_delimiters: np.ndarray | None = None,
+        u_cell_delimiters: np.ndarray = np.array([0.0, 1.0]),
+        v_cell_delimiters: np.ndarray = np.array([0.0, 1.0]),
+        z_cell_delimiters: np.ndarray = np.array([0.0, 1.0]),
         **kwargs,
     ):
 
-        super().__init__(object_type, **kwargs)
+        self._rotation: float
+        self._u_cell_delimiters: np.ndarray
+        self._v_cell_delimiters: np.ndarray
+        self._z_cell_delimiters: np.ndarray
 
-        self.rotation: float = rotation
-        self.u_cell_delimiters: np.ndarray = u_cell_delimiters
-        self.v_cell_delimiters: np.ndarray = v_cell_delimiters
-        self.z_cell_delimiters: np.ndarray = z_cell_delimiters
+        super().__init__(
+            object_type,
+            rotation=rotation,
+            u_cell_delimiters=u_cell_delimiters,
+            v_cell_delimiters=v_cell_delimiters,
+            z_cell_delimiters=z_cell_delimiters,
+            **kwargs,
+        )
 
     @property
     def centroids(self) -> np.ndarray | None:
@@ -161,10 +176,12 @@ class BlockModel(GridObject):
         return self._u_cell_delimiters
 
     @u_cell_delimiters.setter
-    def u_cell_delimiters(self, value: np.ndarray | None):
-        if value is None:
-            if self.on_file:
-                value = self.workspace.fetch_array_attribute(self, "u_cell_delimiters")
+    def u_cell_delimiters(self, value: np.ndarray):
+        if getattr(self, "_u_cell_delimiters", None) is not None:
+            raise ValueError(
+                "The 'u_cell_delimiters' is a read-only property. "
+                "Consider creating a new BlockModel."
+            )
 
         if not isinstance(value, np.ndarray):
             raise TypeError("u_cell_delimiters must be a numpy array.")
@@ -190,10 +207,12 @@ class BlockModel(GridObject):
         return self._v_cell_delimiters
 
     @v_cell_delimiters.setter
-    def v_cell_delimiters(self, value: np.ndarray | None):
-        if value is None:
-            if self.on_file:
-                value = self.workspace.fetch_array_attribute(self, "v_cell_delimiters")
+    def v_cell_delimiters(self, value: np.ndarray):
+        if getattr(self, "_v_cell_delimiters", None) is not None:
+            raise ValueError(
+                "The 'v_cell_delimiters' is a read-only property. "
+                "Consider creating a new BlockModel."
+            )
 
         if not isinstance(value, np.ndarray):
             raise TypeError("v_cell_delimiters must be a numpy array.")
@@ -219,10 +238,12 @@ class BlockModel(GridObject):
         return self._z_cell_delimiters
 
     @z_cell_delimiters.setter
-    def z_cell_delimiters(self, value: np.ndarray | None):
-        if value is None:
-            if self.on_file:
-                value = self.workspace.fetch_array_attribute(self, "z_cell_delimiters")
+    def z_cell_delimiters(self, value: np.ndarray):
+        if getattr(self, "_z_cell_delimiters", None) is not None:
+            raise ValueError(
+                "The 'z_cell_delimiters' is a read-only property. "
+                "Consider creating a new BlockModel."
+            )
 
         if not isinstance(value, np.ndarray):
             raise TypeError("z_cell_delimiters must be a numpy array.")
