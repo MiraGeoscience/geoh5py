@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import uuid
 from abc import ABC, abstractmethod
+from numbers import Number
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -30,6 +31,8 @@ from .object_base import ObjectBase
 if TYPE_CHECKING:
     from geoh5py.objects import ObjectType
 
+ORIGIN_TYPE = np.dtype([("x", float), ("y", float), ("z", float)])
+
 
 class GridObject(ObjectBase, ABC):
     """
@@ -38,14 +41,11 @@ class GridObject(ObjectBase, ABC):
 
     _attribute_map = ObjectBase._attribute_map.copy()
 
-    def __init__(
-        self, object_type: ObjectType, origin=np.asarray([0.0, 0.0, 0.0]), **kwargs
-    ):
+    def __init__(self, object_type: ObjectType, origin=(0.0, 0.0, 0.0), **kwargs):
         self._origin: np.ndarray
-        self.origin = origin
-        self._centroids: np.ndarray
+        self._centroids: np.ndarray | None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(object_type, origin=origin, **kwargs)
 
     @property
     @abstractmethod
@@ -144,6 +144,27 @@ class GridObject(ObjectBase, ABC):
         return mask_by_extent(self.centroids, extent, inverse=inverse)
 
     @property
+    def rotation(self) -> float:
+        """
+        :obj:`float`: Clockwise rotation angle (degree) about the vertical axis.
+        """
+        return self._rotation
+
+    @rotation.setter
+    def rotation(self, value: np.ndarray | Number):
+        if isinstance(value, Number):
+            value = np.r_[value]
+
+        if not isinstance(value, np.ndarray) or value.shape != (1,):
+            raise TypeError("Rotation angle must be a float of shape (1,)")
+
+        self._centroids = None
+        self._rotation = value.astype(float).item()
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
+
+    @property
     def origin(self) -> np.ndarray:
         """
         :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin.
@@ -151,16 +172,31 @@ class GridObject(ObjectBase, ABC):
         return self._origin
 
     @origin.setter
-    def origin(self, value):
-        if isinstance(value, np.ndarray):
-            value = value.tolist()
+    def origin(self, values: np.ndarray | list | tuple):
+        if isinstance(values, (list, tuple)):
+            values = np.array(values)
 
-        assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
+        if not isinstance(values, (np.ndarray, np.void)):
+            raise TypeError(
+                "Attribute 'origin' must be a list, tuple or numpy array. "
+                f"Object of type {type(values)} provided."
+            )
+
+        if np.issubdtype(values.dtype, np.number):
+            if len(values) != 3:
+                raise ValueError(
+                    "Array of 'prisms' must be of shape (3,). "
+                    f"Array of shape {values.shape} provided."
+                )
+
+            values = np.asarray(tuple(values), dtype=ORIGIN_TYPE)
+
+        if values.dtype != np.dtype(ORIGIN_TYPE):
+            raise ValueError(f"Array of 'prisms' must be of dtype = {ORIGIN_TYPE}")
 
         self._centroids = None
 
-        value = np.asarray(
-            tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
-        )
-        self._origin = value
-        self.workspace.update_attribute(self, "attributes")
+        if getattr(self, "_origin", None) is not None and self.on_file:
+            self.workspace.update_attribute(self, "attributes")
+
+        self._origin = values
