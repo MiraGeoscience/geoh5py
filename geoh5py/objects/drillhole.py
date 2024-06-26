@@ -52,7 +52,9 @@ class Drillhole(Points):
         }
     )
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(
+        self, object_type: ObjectType, vertices: np.ndarray | None = None, **kwargs
+    ):
         self._cells: np.ndarray | None = None
         self._collar: np.ndarray | None = None
         self._cost: float | None = 0.0
@@ -66,6 +68,11 @@ class Drillhole(Points):
         self._default_collocation_distance = 1e-2
 
         super().__init__(object_type, **kwargs)
+
+        if vertices is None:
+            self._vertices = None
+        else:
+            self._vertices: np.ndarray = self.validate_vertices(vertices)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -482,7 +489,7 @@ class Drillhole(Points):
         Function to add vertices to the drillhole
         """
         indices = np.arange(xyz.shape[0])
-        if isinstance(self.vertices, np.ndarray):
+        if self._vertices is not None:
             indices += self.vertices.shape[0]
             self._vertices = np.vstack([self.vertices, xyz])
         else:
