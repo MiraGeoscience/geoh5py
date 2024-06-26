@@ -484,9 +484,11 @@ class Drillhole(Points):
         indices = np.arange(xyz.shape[0])
         if isinstance(self.vertices, np.ndarray):
             indices += self.vertices.shape[0]
-            self.vertices = np.vstack([self.vertices, xyz])
+            self._vertices = np.vstack([self.vertices, xyz])
         else:
-            self.vertices = xyz
+            self._vertices = xyz
+
+        self.workspace.update_attribute(self, "vertices")
 
         return indices.astype("uint32")
 
@@ -711,11 +713,13 @@ class Drillhole(Points):
                         child.values = child.format_values(child.values)[sort_ind]
 
                 if self.vertices is not None:
-                    self.vertices = self.vertices[sort_ind, :]
+                    self._vertices = self.vertices[sort_ind, :]
+                    self.workspace.update_attribute(self, "vertices")
 
                 if self.cells is not None:
                     key_map = np.argsort(sort_ind)[self.cells.flatten()]
-                    self.cells = key_map.reshape((-1, 2)).astype("uint32")
+                    self._cells = key_map.reshape((-1, 2)).astype("uint32")
+                    self.workspace.update_attribute(self, "cells")
 
 
 def compute_deviation(surveys: np.ndarray) -> np.ndarray:
