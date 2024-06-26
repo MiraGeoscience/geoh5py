@@ -22,6 +22,7 @@ import uuid
 import numpy as np
 
 from .cell_object import CellObject
+from .object_base import ObjectType
 
 
 class Surface(CellObject):
@@ -32,6 +33,15 @@ class Surface(CellObject):
     __TYPE_UID = uuid.UUID(
         fields=(0xF26FEBA3, 0xADED, 0x494B, 0xB9, 0xE9, 0xB2BBCBE298E1)
     )
+
+    def __init__(
+        self,
+        object_type: ObjectType,
+        vertices: np.ndarray = tuple([[0.0, 0.0, 0.0]] * 3),
+        cells: np.ndarray | list | tuple = (0, 1, 2),
+        **kwargs,
+    ):
+        super().__init__(object_type, cells=cells, vertices=vertices, **kwargs)
 
     @property
     def cells(self) -> np.ndarray:
@@ -50,7 +60,7 @@ class Surface(CellObject):
 
     def validate_cells(self, indices: list | tuple | np.ndarray | None):
         if isinstance(indices, (tuple | list)):
-            indices = np.vstack(indices)
+            indices = np.array(indices, ndmin=2)
 
         if not isinstance(indices, np.ndarray):
             raise AttributeError(

@@ -55,8 +55,8 @@ def test_octree(tmp_path: Path):
             "w_count",
         ]:
             with pytest.raises(
-                TypeError,
-                match=re.escape(f"Attribute '{attr}' must be type(int) in power of 2."),
+                AttributeError,
+                match=re.escape(f"can't set attribute '{attr}'"),
             ):
                 setattr(mesh, attr, 12.0)
 

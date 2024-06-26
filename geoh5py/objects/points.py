@@ -55,10 +55,8 @@ class Points(ObjectBase):
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy`.
         """
-        if mask is not None:
-            if not isinstance(mask, np.ndarray) or mask.shape != (
-                self.vertices.shape[0],
-            ):
+        if mask is not None and self.n_vertices:
+            if not isinstance(mask, np.ndarray) or mask.shape != (self.n_vertices,):
                 raise ValueError("Mask must be an array of shape (n_vertices,).")
 
             kwargs.update({"vertices": self.vertices[mask]})

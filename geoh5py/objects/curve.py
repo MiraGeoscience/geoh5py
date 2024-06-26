@@ -61,7 +61,7 @@ class Curve(CellObject):
             if cells is not None:
                 raise ValueError("Parts can only be set if cells are not provided.")
 
-            self._parts = parts
+            self._parts = self.validate_parts(parts)
             cells = self.make_cells_from_parts()
 
         super().__init__(
@@ -197,7 +197,7 @@ class Curve(CellObject):
 
         indices = indices.astype("int32")
 
-        if indices.shape != self.vertices.shape[0]:
+        if len(indices) != self.n_vertices:
             raise ValueError(
                 f"Provided parts must be of shape {self.vertices.shape[0]}"
             )

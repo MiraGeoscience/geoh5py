@@ -58,6 +58,9 @@ class DrapeModelMerger(BaseMerger):
             temp_prisms: np.ndarray = input_entity.prisms
             temp_layers: np.ndarray = input_entity.layers
 
+            if len(temp_prisms) < 2:
+                raise ValueError("All DrapeModel entities must have at least 2 prisms.")
+
             # get the first ghost
             if ghost_prism.size > 0:
                 # append last ghost prism and layer

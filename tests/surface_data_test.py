@@ -55,9 +55,6 @@ def test_create_surface_data(tmp_path: Path):
                 workspace, vertices=(1.0, 1.0, 1.0), cells=simplices.tolist()
             )
         # Create a geoh5 surface
-        with pytest.raises(AttributeError, match="Attribute 'cells' must be provided"):
-            Surface.create(workspace, name="mySurf", vertices=xyz)
-
         with pytest.raises(ValueError, match="Array of 'cells' should be of shape"):
             Surface.create(workspace, name="mySurf", vertices=xyz, cells=np.c_[[0, 1]])
 
