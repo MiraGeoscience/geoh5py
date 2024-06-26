@@ -38,11 +38,11 @@ class BlockModel(GridObject):
     are accepted to denote relative offsets from the origin.
 
     :param object_type: Type of object registered in the workspace.
-    :param rotation: Clockwise rotation angle (degree) about the vertical axis.
     :param u_cell_delimiters: Nodal offsets along the u-axis relative to the origin.
     :param v_cell_delimiters: Nodal offsets along the v-axis relative to the origin.
     :param z_cell_delimiters: Nodal offsets along the z-axis relative to the origin.
-    :param kwargs: Additional attributes to assign to the object as defined by the base class.
+    :param kwargs: Additional attributes defined by the
+        :obj:`~geoh5py.objects.grid_object.GridObject` class.
     """
 
     __TYPE_UID = uuid.UUID(
@@ -54,24 +54,23 @@ class BlockModel(GridObject):
     def __init__(
         self,
         object_type: ObjectType,
-        rotation: float = 0.0,
         u_cell_delimiters: np.ndarray = np.array([0.0, 1.0]),
         v_cell_delimiters: np.ndarray = np.array([0.0, 1.0]),
         z_cell_delimiters: np.ndarray = np.array([0.0, 1.0]),
         **kwargs,
     ):
-
-        self._rotation: float
-        self._u_cell_delimiters: np.ndarray
-        self._v_cell_delimiters: np.ndarray
-        self._z_cell_delimiters: np.ndarray
+        self._u_cell_delimiters: np.ndarray = self.validate_cell_delimiters(
+            u_cell_delimiters, "u"
+        )
+        self._v_cell_delimiters: np.ndarray = self.validate_cell_delimiters(
+            v_cell_delimiters, "v"
+        )
+        self._z_cell_delimiters: np.ndarray = self.validate_cell_delimiters(
+            z_cell_delimiters, "z"
+        )
 
         super().__init__(
             object_type,
-            rotation=rotation,
-            u_cell_delimiters=u_cell_delimiters,
-            v_cell_delimiters=v_cell_delimiters,
-            z_cell_delimiters=z_cell_delimiters,
             **kwargs,
         )
 
@@ -138,27 +137,6 @@ class BlockModel(GridObject):
         return int(np.prod(self.shape))
 
     @property
-    def rotation(self) -> float:
-        """
-        :obj:`float`: Clockwise rotation angle (degree) about the vertical axis.
-        """
-        return self._rotation
-
-    @rotation.setter
-    def rotation(self, value: np.ndarray | float):
-        if isinstance(value, float):
-            value = np.r_[value]
-
-        if not isinstance(value, np.ndarray) or value.shape != (1,):
-            raise TypeError("Rotation angle must be a float of shape (1,)")
-
-        self._centroids = None
-        self._rotation = value.astype(float).item()
-
-        if self.on_file:
-            self.workspace.update_attribute(self, "attributes")
-
-    @property
     def shape(self) -> tuple | None:
         """
         :obj:`list` of :obj:`int`, len (3, ): Number of cells along the u, v and z-axis
@@ -174,20 +152,6 @@ class BlockModel(GridObject):
         Nodal offsets along the u-axis relative to the origin.
         """
         return self._u_cell_delimiters
-
-    @u_cell_delimiters.setter
-    def u_cell_delimiters(self, value: np.ndarray):
-        if getattr(self, "_u_cell_delimiters", None) is not None:
-            raise ValueError(
-                "The 'u_cell_delimiters' is a read-only property. "
-                "Consider creating a new BlockModel."
-            )
-
-        if not isinstance(value, np.ndarray):
-            raise TypeError("u_cell_delimiters must be a numpy array.")
-
-        self._centroids = None
-        self._u_cell_delimiters = value.astype(float)
 
     @property
     def u_cells(self) -> np.ndarray:
@@ -206,20 +170,6 @@ class BlockModel(GridObject):
         """
         return self._v_cell_delimiters
 
-    @v_cell_delimiters.setter
-    def v_cell_delimiters(self, value: np.ndarray):
-        if getattr(self, "_v_cell_delimiters", None) is not None:
-            raise ValueError(
-                "The 'v_cell_delimiters' is a read-only property. "
-                "Consider creating a new BlockModel."
-            )
-
-        if not isinstance(value, np.ndarray):
-            raise TypeError("v_cell_delimiters must be a numpy array.")
-
-        self._centroids = None
-        self._v_cell_delimiters = value.astype(float)
-
     @property
     def v_cells(self) -> np.ndarray:
         """
@@ -237,20 +187,6 @@ class BlockModel(GridObject):
         """
         return self._z_cell_delimiters
 
-    @z_cell_delimiters.setter
-    def z_cell_delimiters(self, value: np.ndarray):
-        if getattr(self, "_z_cell_delimiters", None) is not None:
-            raise ValueError(
-                "The 'z_cell_delimiters' is a read-only property. "
-                "Consider creating a new BlockModel."
-            )
-
-        if not isinstance(value, np.ndarray):
-            raise TypeError("z_cell_delimiters must be a numpy array.")
-
-        self._centroids = None
-        self._z_cell_delimiters = value.astype(float)
-
     @property
     def z_cells(self) -> np.ndarray:
         """
@@ -259,3 +195,18 @@ class BlockModel(GridObject):
         Cell size along the z-axis
         """
         return self.z_cell_delimiters[1:] - self.z_cell_delimiters[:-1]
+
+    @staticmethod
+    def validate_cell_delimiters(value: np.ndarray, axis: str) -> np.ndarray:
+        if not isinstance(value, np.ndarray):
+            raise TypeError(
+                f"Attribute '{axis}_cell_delimiters' must be a numpy array."
+            )
+
+        if not np.issubdtype(value.dtype, np.number) or value.ndim != 1:
+            raise ValueError(
+                f"Attribute '{axis}_cell_delimiters' must be a 1D array of floats. "
+                f"Provided {value}"
+            )
+
+        return value.astype(float)

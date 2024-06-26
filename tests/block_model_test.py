@@ -63,6 +63,15 @@ def test_create_block_model_data(tmp_path):
     ]
 
     with Workspace.create(h5file_path) as workspace:
+
+        with pytest.raises(
+            TypeError, match="Attribute 'u_cell_delimiters' must be a numpy array."
+        ):
+            BlockModel.create(workspace, u_cell_delimiters="abc")
+
+        with pytest.raises(ValueError, match="must be a 1D array of floats"):
+            BlockModel.create(workspace, u_cell_delimiters=np.ones((2, 2)))
+
         grid = BlockModel.create(
             workspace,
             u_cell_delimiters=nodal_x,
@@ -92,7 +101,6 @@ def test_create_block_model_data(tmp_path):
         with Workspace(h5file_path) as new_workspace:
             rec_obj = new_workspace.get_entity(name)[0]
             rec_data = new_workspace.get_entity("DataValues")[0]
-
             compare_entities(grid, rec_obj)
             compare_entities(data, rec_data)
 
