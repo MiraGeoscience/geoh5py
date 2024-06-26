@@ -122,7 +122,7 @@ ATTRIBUTE_NAME_MAP = {
     "NV": "v_count",
     "NW": "w_count",
     "Origin": "origin",
-    "Octree cells": "octree_cells",
+    "Octree Cells": "octree_cells",
     "Prisms": "prisms",
     "Properties": "properties",
     "Property Group Type": "property_group_type",
@@ -144,6 +144,7 @@ ATTRIBUTE_NAME_MAP = {
     "V Size": "v_cell_size",
     "Version": "version",
     "Vertical": "vertical",
+    "Vertices": "vertices",
     "Visible": "visible",
     "W Cell Size": "w_cell_size",
 }
