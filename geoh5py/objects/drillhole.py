@@ -490,7 +490,7 @@ class Drillhole(Points):
         """
         indices = np.arange(xyz.shape[0])
         if self._vertices is not None:
-            indices += self.vertices.shape[0]
+            indices += self.n_vertices
             self._vertices = np.vstack([self.vertices, xyz])
         else:
             self._vertices = xyz
@@ -697,6 +697,19 @@ class Drillhole(Points):
             del attributes["from-to"]
 
         return attributes, property_group
+
+    @property
+    def vertices(self) -> np.ndarray | None:
+        """
+        :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`
+        """
+        if self._vertices is None and self.on_file:
+            self._vertices = self.workspace.fetch_array_attribute(self, "vertices")
+
+        if self._vertices is not None:
+            return self._vertices.view("<f8").reshape((-1, 3))
+
+        return None
 
     def sort_depths(self):
         """
