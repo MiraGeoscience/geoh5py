@@ -243,15 +243,11 @@ class Octree(GridObject):
         return self._u_cell_size
 
     @u_cell_size.setter
-    def u_cell_size(self, value: float | np.ndarray):
-        if not isinstance(value, (float, np.ndarray)):
+    def u_cell_size(self, value: float):
+        if not isinstance(value, float):
             raise TypeError("Attribute 'u_cell_size' must be type(float).")
 
-        if isinstance(value, np.ndarray):
-            assert len(value) == 1, "u_cell_size must be a float of shape (1,)"
-            self._u_cell_size = np.r_[value].astype(float).item()
-        else:
-            self._u_cell_size = value
+        self._u_cell_size = value
 
     @property
     def u_count(self) -> int:
@@ -262,15 +258,13 @@ class Octree(GridObject):
 
     @u_count.setter
     def u_count(self, value: int):
-        value = np.int32(value).item()
+        if not isinstance(value, (np.integer, int)):
+            raise TypeError("Attribute 'u_count' must be type(int).")
 
-        if (
-            not isinstance(value, (float, np.floating, np.integer, int))
-            or np.log2(value) % 1.0 != 0
-        ):
+        if np.log2(value) % 1.0 != 0:
             raise TypeError("Attribute 'u_count' must be type(int) in power of 2.")
 
-        self._u_count = np.int32(value).item()
+        self._u_count = np.int32(value)
 
     @property
     def v_cell_size(self) -> float:
@@ -280,15 +274,11 @@ class Octree(GridObject):
         return self._v_cell_size
 
     @v_cell_size.setter
-    def v_cell_size(self, value: float | np.ndarray):
-        if not isinstance(value, (float, np.ndarray)):
+    def v_cell_size(self, value: float):
+        if not isinstance(value, float):
             raise TypeError("Attribute 'v_cell_size' must be type(float).")
 
-        if isinstance(value, np.ndarray):
-            assert len(value) == 1, "v_cell_size must be a float of shape (1,)"
-            self._v_cell_size = np.r_[value].astype(float).item()
-        else:
-            self._v_cell_size = value
+        self._v_cell_size = value
 
     @property
     def v_count(self) -> int:
@@ -299,15 +289,13 @@ class Octree(GridObject):
 
     @v_count.setter
     def v_count(self, value: int):
-        value = np.int32(value).item()
+        if not isinstance(value, (np.integer, int)):
+            raise TypeError("Attribute 'v_count' must be type(int).")
 
-        if (
-            not isinstance(value, (float, np.floating, np.integer, int))
-            or np.log2(value) % 1.0 != 0
-        ):
+        if np.log2(value) % 1.0 != 0:
             raise TypeError("Attribute 'v_count' must be type(int) in power of 2.")
 
-        self._v_count = np.int32(value).item()
+        self._v_count = np.int32(value)
 
     @property
     def w_cell_size(self) -> float:
@@ -317,15 +305,11 @@ class Octree(GridObject):
         return self._w_cell_size
 
     @w_cell_size.setter
-    def w_cell_size(self, value: float | np.ndarray):
-        if not isinstance(value, (float, np.ndarray)):
+    def w_cell_size(self, value: float):
+        if not isinstance(value, float):
             raise TypeError("Attribute 'w_cell_size' must be type(float).")
 
-        if isinstance(value, np.ndarray):
-            assert len(value) == 1, "w_cell_size must be a float of shape (1,)"
-            self._w_cell_size = np.r_[value].astype(float).item()
-        else:
-            self._w_cell_size = value
+        self._w_cell_size = value
 
     @property
     def w_count(self) -> int:
@@ -336,12 +320,10 @@ class Octree(GridObject):
 
     @w_count.setter
     def w_count(self, value: int):
-        value = np.int32(value).item()
+        if not isinstance(value, (np.integer, int)):
+            raise TypeError("Attribute 'w_count' must be type(int).")
 
-        if (
-            not isinstance(value, (float, np.floating, np.integer, int))
-            or np.log2(value) % 1.0 != 0
-        ):
+        if np.log2(value) % 1.0 != 0:
             raise TypeError("Attribute 'w_count' must be type(int) in power of 2.")
 
-        self._w_count = np.int32(value).item()
+        self._w_count = np.int32(value)
