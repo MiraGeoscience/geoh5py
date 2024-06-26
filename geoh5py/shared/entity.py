@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..shared.utils import map_attributes, str2uuid
+from ..shared.utils import set_attributes, str2uuid
 
 if TYPE_CHECKING:
     from .. import shared
@@ -69,7 +69,7 @@ class Entity(ABC):
         self._partially_hidden = False
         self._public = True
 
-        map_attributes(self, **kwargs)
+        set_attributes(self, **kwargs)
 
         self.workspace.register(self)
 
