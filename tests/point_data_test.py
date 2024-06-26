@@ -83,10 +83,11 @@ def test_remove_point_data(tmp_path):
     values = np.random.randn(12)
     h5file_path = tmp_path / r"testPoints.geoh5"
     with Workspace.create(h5file_path) as workspace:
-        with pytest.raises(TypeError, match="Vertices must be a numpy array."):
-            Points.create(workspace)
 
-        with pytest.raises(ValueError, match="Array of vertices must be of shape"):
+        pt = Points.create(workspace)
+        assert pt.n_vertices == 1
+
+        with pytest.raises(ValueError, match="Array of vertices should be of shape"):
             Points.create(workspace, vertices=np.r_[1, 2, 3])
 
         points = Points.create(workspace, vertices=np.random.randn(12, 3))
@@ -102,7 +103,7 @@ def test_remove_point_data(tmp_path):
             {"DataValues": {"association": "VERTEX", "values": values}}
         )
 
-        with pytest.raises(UserWarning, match="Attempting to re-assign 'vertices'."):
+        with pytest.raises(AttributeError, match="can't set attribute 'vertices'"):
             points.vertices = np.random.randn(10, 3)
 
         with pytest.raises(
