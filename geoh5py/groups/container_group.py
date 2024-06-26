@@ -19,14 +19,25 @@ from __future__ import annotations
 
 import uuid
 
-from .base import Group
+from .group import Group, GroupType
 
 
-class MapsGroup(Group):
+class ContainerGroup(Group):
     """The type for the basic Container group."""
 
-    __TYPE_UID = uuid.UUID("{4d65f8c3-a015-4c01-b411-412c0f4f0884}")
-    _default_name = "Maps Group"
+    __TYPE_UID = uuid.UUID(
+        fields=(0x61FBB4E8, 0xA480, 0x11E3, 0x8D, 0x5A, 0x2776BDF4F982)
+    )
+
+    _name = "Container"
+    _description = "Container"
+
+    def __init__(self, group_type: GroupType, **kwargs):
+        assert group_type is not None
+        super().__init__(group_type, **kwargs)
+
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = "Container Group"
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
