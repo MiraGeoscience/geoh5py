@@ -81,6 +81,10 @@ class H5Reader:
             for key, value in entity.attrs.items():
                 attributes["entity"][ATTRIBUTE_NAME_MAP.get(key, key)] = value
 
+            for key, value in entity.items():
+                if key in ATTRIBUTE_NAME_MAP and isinstance(value, h5py.Dataset):
+                    attributes["entity"][ATTRIBUTE_NAME_MAP[key]] = value[:]
+
             if "Type" in entity:
                 type_attributes["entity_type"] = cls.fetch_type_attributes(
                     entity["Type"]

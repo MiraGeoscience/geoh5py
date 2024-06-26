@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..shared.exceptions import ShapeValidationError
-from ..shared.utils import map_attributes
+from ..shared.utils import set_attributes
 
 if TYPE_CHECKING:
     from .data_type import DataType
@@ -39,7 +39,7 @@ class ColorMap:
         self._name = "geoh5py_custom.TBL"
         self._parent = None
 
-        map_attributes(self, **kwargs)
+        set_attributes(self, **kwargs)
 
     @property
     def values(self) -> np.ndarray | None:
