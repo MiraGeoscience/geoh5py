@@ -69,6 +69,7 @@ class Curve(CellObject):
             cells=cells,
             current_line_id=current_line_id,
             name=name,
+            vertices=vertices,
             **kwargs,
         )
 
@@ -79,6 +80,9 @@ class Curve(CellObject):
         Array of indices defining segments connecting vertices. Defined based on
         :obj:`~geoh5py.objects.curve.Curve.parts` if set by the user.
         """
+        if self._cells is None and self.on_file:
+            self._cells = self.workspace.fetch_array_attribute(self, "cells")
+
         return self._cells
 
     @property

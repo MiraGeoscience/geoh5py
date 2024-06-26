@@ -116,6 +116,9 @@ class DrapeModel(GridObject):
                 [x_M, k_N, z_MM]
             ]
         """
+        if self._layers is None and self.on_file:
+            self._layers = self.workspace.fetch_array_attribute(self, "layers")
+
         return np.asarray(self._layers.tolist())
 
     @property
@@ -141,6 +144,9 @@ class DrapeModel(GridObject):
             ]
 
         """
+        if self._prisms is None and self.on_file:
+            self._prisms = self.workspace.fetch_array_attribute(self, "prisms")
+
         return np.array(self._prisms.tolist())
 
     @property

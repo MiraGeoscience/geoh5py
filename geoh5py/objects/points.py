@@ -129,6 +129,9 @@ class Points(ObjectBase):
         """
         :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`
         """
+        if self._vertices is None and self.on_file:
+            self._vertices = self.workspace.fetch_array_attribute(self, "vertices")
+
         return self._vertices.view("<f8").reshape((-1, 3))
 
     @classmethod
@@ -148,11 +151,16 @@ class Points(ObjectBase):
             if xyz.ndim != 2 or xyz.shape[-1] != 3:
                 raise ValueError("Array of vertices should be of shape (*, 3).")
 
-            xyz.dtype = cls.__VERTICES_DTYPE
+            xyz = np.asarray(
+                np.core.records.fromarrays(
+                    xyz.T.tolist(),
+                    dtype=cls.__VERTICES_DTYPE,
+                )
+            )
 
         if xyz.dtype != np.dtype(cls.__VERTICES_DTYPE):
             raise ValueError(
                 f"Array of 'vertices' must be of dtype = {cls.__VERTICES_DTYPE}"
             )
 
-        return xyz.flatten()
+        return xyz

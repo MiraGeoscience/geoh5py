@@ -45,7 +45,7 @@ class Octree(GridObject):
     __TYPE_UID = uuid.UUID(
         fields=(0x4EA87376, 0x3ECE, 0x438B, 0xBF, 0x12, 0x3479733DED46)
     )
-    __OCTREE_TYPE = np.dtype(
+    __OCTREE_DTYPE = np.dtype(
         [("I", "<i4"), ("J", "<i4"), ("K", "<i4"), ("NCells", "<i4")]
     )
     _attribute_map: dict = GridObject._attribute_map.copy()
@@ -199,6 +199,11 @@ class Octree(GridObject):
                 [i_N, j_N, k_N, size_N]
             ]
         """
+        if self._octree_cells is None and self.on_file:
+            self._octree_cells = self.workspace.fetch_array_attribute(
+                self, "octree_cells"
+            )
+
         return self._octree_cells
 
     @property
@@ -264,29 +269,33 @@ class Octree(GridObject):
 
     @classmethod
     def validate_octree_cells(
-        cls, value: np.ndarray | list | tuple | None
+        cls, array: np.ndarray | list | tuple | None
     ) -> np.ndarray:
-        if isinstance(value, (list, tuple)):
-            value = np.array(value, ndmin=2)
+        if isinstance(array, (list, tuple)):
+            array = np.array(array, ndmin=2)
 
-        if not isinstance(value, np.ndarray):
+        if not isinstance(array, np.ndarray):
             raise TypeError(
                 "Attribute 'octree_cells' must be a list, tuple or numpy array. "
-                f"Object of type {type(value)} provided."
+                f"Object of type {type(array)} provided."
             )
 
-        if np.issubdtype(value.dtype, np.number):
+        if np.issubdtype(array.dtype, np.number):
             assert (
-                value.shape[1] == 4
+                array.shape[1] == 4
             ), "'octree_cells' requires an ndarray of shape (*, 4)"
-            value.dtype = cls.__OCTREE_TYPE
-
-        if value.dtype != cls.__OCTREE_TYPE:
+            array = np.asarray(
+                np.core.records.fromarrays(
+                    array.T.tolist(),
+                    dtype=cls.__OCTREE_DTYPE,
+                )
+            )
+        if array.dtype != cls.__OCTREE_DTYPE:
             raise ValueError(
-                f"Array of 'layers' must be of dtype = {cls.__OCTREE_TYPE}"
+                f"Array of 'layers' must be of dtype = {cls.__OCTREE_DTYPE}"
             )
 
-        return value.flatten()
+        return array
 
     @property
     def w_cell_size(self) -> float:

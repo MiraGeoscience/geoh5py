@@ -290,7 +290,14 @@ def clear_array_attributes(entity: Entity, recursive: bool = False):
     if isinstance(entity.workspace.h5file, BytesIO):
         return
 
-    for attribute in ["vertices", "cells", "values", "prisms", "layers"]:
+    for attribute in [
+        "vertices",
+        "cells",
+        "values",
+        "prisms",
+        "layers",
+        "octree_cells",
+    ]:
         if hasattr(entity, attribute):
             setattr(entity, f"_{attribute}", None)
 

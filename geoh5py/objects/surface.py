@@ -39,6 +39,9 @@ class Surface(CellObject):
         Array of vertices index forming triangles
         :return cells: :obj:`numpy.array` of :obj:`int`, shape ("*", 3)
         """
+        if self._cells is None and self.on_file:
+            self._cells = self.workspace.fetch_array_attribute(self, "cells")
+
         return self._cells
 
     @classmethod
