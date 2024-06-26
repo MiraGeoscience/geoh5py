@@ -41,11 +41,14 @@ class GridObject(ObjectBase, ABC):
 
     _attribute_map = ObjectBase._attribute_map.copy()
 
-    def __init__(self, object_type: ObjectType, origin=(0.0, 0.0, 0.0), **kwargs):
-        self._origin: np.ndarray
+    def __init__(
+        self, object_type: ObjectType, origin=(0.0, 0.0, 0.0), rotation=0.0, **kwargs
+    ):
         self._centroids: np.ndarray | None
+        self._origin: np.ndarray
+        self._rotation: float
 
-        super().__init__(object_type, origin=origin, **kwargs)
+        super().__init__(object_type, origin=origin, rotation=rotation, **kwargs)
 
     @property
     @abstractmethod

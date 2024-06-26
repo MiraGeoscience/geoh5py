@@ -382,7 +382,7 @@ def compare_entities(
     base_ignore = ["_workspace", "_children", "_visual_parameters", "_entity_class"]
     ignore_list = base_ignore + ignore if ignore else base_ignore
 
-    for attr in [k for k in object_a.__dict__.keys() if k not in ignore_list]:
+    for attr in [k for k in object_a.__dict__ if k not in ignore_list]:
         if isinstance(getattr(object_a, attr[1:]), ABC):
             compare_entities(
                 getattr(object_a, attr[1:]),
@@ -703,7 +703,7 @@ def set_attributes(entity, **kwargs):
             continue
 
 
-def map_name_attributes(object_, kwargs: dict):
+def map_name_attributes(object_, **kwargs: dict):
     """
     Map attributes to an object. The object must have an '_attribute_map'.
 
@@ -732,16 +732,7 @@ def map_attributes(object_, **kwargs):
     :param object_: The object to map the attributes to.
     :param kwargs: The kwargs to map to the object.
     """
-    warnings.warn(
-        "'map_attributes' is deprecated "
-        "and will be removed in versions 0.11.0."
-        "Consider using 'map_name_attributes' followed by"
-        "'set_attributes' instead.",
-        DeprecationWarning,
-    )
-
-    values = map_name_attributes(**kwargs)  # Swap duplicates
-
+    values = map_name_attributes(object_, **kwargs)  # Swap duplicates
     set_attributes(object_, **values)
 
 

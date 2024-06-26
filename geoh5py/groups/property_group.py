@@ -23,7 +23,7 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 from ..data import Data, DataAssociationEnum
-from ..shared.utils import set_attributes
+from ..shared.utils import map_attributes
 
 if TYPE_CHECKING:
     from ..objects import ObjectBase
@@ -71,7 +71,7 @@ class PropertyGroup(ABC):
 
         parent.add_children([self])
 
-        set_attributes(self, **kwargs)
+        map_attributes(self, **kwargs)
 
         self.parent.workspace.register(self)
 
