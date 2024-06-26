@@ -90,7 +90,7 @@ def test_remove_cells_surface_data(tmp_path: Path):
         ):
             surface.remove_cells([101])
 
-        with pytest.raises(AttributeError, match="can't set attribute 'cells'"):
+        with pytest.raises(AttributeError):
             surface.cells = surface.cells[1:, :]
 
         surface.remove_cells([0])

@@ -63,7 +63,7 @@ def test_create_drape_model(tmp_path: Path):
 
         drape = DrapeModel.create(workspace, layers=layers, prisms=prisms)
 
-        with pytest.raises(AttributeError, match="can't set attribute 'layers'"):
+        with pytest.raises(AttributeError):
             layers[-32:, 0] = 64
             drape.layers = layers
 

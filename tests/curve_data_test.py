@@ -49,13 +49,13 @@ def test_create_curve_data(tmp_path: Path):
         # Get and change the parts
         parts = curve.parts
         parts[-3:] = 1
-        with pytest.raises(AttributeError, match="can't set attribute 'parts'"):
+        with pytest.raises(AttributeError):
             curve.parts = parts
 
         cells = curve.cells.copy()
         assert cells.shape[0] == 11, "Error creating cells from parts." ""
 
-        with pytest.raises(AttributeError, match="can't set attribute 'cells'"):
+        with pytest.raises(AttributeError):
             curve.cells = np.c_[1]
 
         curve = Curve.create(

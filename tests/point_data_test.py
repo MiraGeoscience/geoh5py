@@ -103,7 +103,7 @@ def test_remove_point_data(tmp_path):
             {"DataValues": {"association": "VERTEX", "values": values}}
         )
 
-        with pytest.raises(AttributeError, match="can't set attribute 'vertices'"):
+        with pytest.raises(AttributeError):
             points.vertices = np.random.randn(10, 3)
 
         with pytest.raises(

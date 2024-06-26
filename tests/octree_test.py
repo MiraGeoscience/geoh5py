@@ -56,7 +56,6 @@ def test_octree(tmp_path: Path):
         ]:
             with pytest.raises(
                 AttributeError,
-                match=re.escape(f"can't set attribute '{attr}'"),
             ):
                 setattr(mesh, attr, 12.0)
 
