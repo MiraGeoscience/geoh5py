@@ -22,7 +22,6 @@ import uuid
 import numpy as np
 
 from .cell_object import CellObject
-from .object_base import ObjectType
 
 
 class Surface(CellObject):
@@ -34,45 +33,45 @@ class Surface(CellObject):
         fields=(0xF26FEBA3, 0xADED, 0x494B, 0xB9, 0xE9, 0xB2BBCBE298E1)
     )
 
-    def __init__(self, object_type: ObjectType, **kwargs):
-        self._cells: np.ndarray | None = None
-
-        super().__init__(object_type, **kwargs)
-
     @property
-    def cells(self) -> np.ndarray | None:
+    def cells(self) -> np.ndarray:
         """
         Array of vertices index forming triangles
         :return cells: :obj:`numpy.array` of :obj:`int`, shape ("*", 3)
         """
-        if getattr(self, "_cells", None) is None:
-            if self.on_file:
-                self._cells = self.workspace.fetch_array_attribute(self)
-
         return self._cells
-
-    @cells.setter
-    def cells(self, indices: list | np.ndarray | None):
-        if isinstance(indices, list):
-            indices = np.vstack(indices)
-
-        if self._cells is not None and (
-            indices is None or indices.shape[0] < self._cells.shape[0]
-        ):
-            raise ValueError(
-                "Attempting to assign 'cells' with fewer values. "
-                "Use the `remove_cells` method instead."
-            )
-
-        if indices.ndim != 2 or indices.shape[1] != 3:
-            raise ValueError("Array of cells should be of shape (*, 3).")
-
-        if not np.issubdtype(indices.dtype, np.integer):
-            raise TypeError("Indices array must be of integer type")
-
-        self._cells = indices.astype(np.int32)
-        self.workspace.update_attribute(self, "cells")
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
+
+    def validate_cells(self, indices: list | tuple | np.ndarray | None):
+        if isinstance(indices, (tuple | list)):
+            indices = np.vstack(indices)
+
+        if not isinstance(indices, np.ndarray):
+            raise AttributeError(
+                "Attribute 'cells' must be provided as type numpy.ndarray, list or tuple."
+            )
+
+        if indices.ndim != 2 or indices.shape[-1] != 3:
+            raise ValueError("Array of 'cells' should be of shape (*, 3).")
+
+        if not np.issubdtype(indices.dtype, np.integer):
+            raise TypeError("Indices array must be of integer type")
+
+        return indices.astype(np.int32)
+
+    @classmethod
+    def validate_vertices(cls, xyz: np.ndarray | list | tuple) -> np.ndarray:
+        """
+        Validate and format type of vertices array.
+
+        :param xyz: Array of vertices as defined by :obj:`~geoh5py.objects.points.Points.vertices`.
+        """
+        xyz = super().validate_vertices(xyz)
+
+        if len(xyz) < 3:
+            raise ValueError("Surface must have at least three vertices.")
+
+        return xyz

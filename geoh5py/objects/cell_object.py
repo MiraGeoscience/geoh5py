@@ -26,6 +26,7 @@ import numpy as np
 from ..data import Data, DataAssociationEnum
 from ..groups import PropertyGroup
 from ..shared.utils import box_intersect, mask_by_extent
+from .object_base import ObjectType
 from .points import Points
 
 
@@ -33,6 +34,20 @@ class CellObject(Points, ABC):
     """
     Base class for object with cells.
     """
+
+    _attribute_map: dict = Points._attribute_map.copy()
+    _attribute_map.update(
+        {
+            "Cells": "cells",
+        }
+    )
+
+    def __init__(
+        self, object_type: ObjectType, cells: np.ndarray | None = None, **kwargs
+    ):
+        self._cells = self.validate_cells(cells)
+
+        super().__init__(object_type, **kwargs)
 
     @classmethod
     @abstractmethod
@@ -42,12 +57,6 @@ class CellObject(Points, ABC):
     @property
     @abstractmethod
     def cells(self) -> np.ndarray:
-        """
-        Definition of cells.
-        """
-
-    @cells.setter
-    def cells(self, _) -> np.ndarray:
         """
         Definition of cells.
         """
@@ -101,9 +110,10 @@ class CellObject(Points, ABC):
             raise ValueError("Found indices larger than the number of cells.")
 
         cells = np.delete(self.cells, indices, axis=0)
-        setattr(self, "_cells", None)
-        self.cells = cells
+
+        self._cells = self.validate_cells(cells)
         self.remove_children_values(indices, "CELL", clear_cache=clear_cache)
+        self.workspace.update_attribute(self, "cells")
 
     def remove_vertices(
         self, indices: list[int] | np.ndarray, clear_cache: bool = False
@@ -134,17 +144,17 @@ class CellObject(Points, ABC):
         vert_index = np.ones(self.vertices.shape[0], dtype=bool)
         vert_index[indices] = False
         vertices = self.vertices[vert_index, :]
-
-        setattr(self, "_vertices", None)
-        setattr(self, "vertices", vertices)
+        self._vertices = self.validate_vertices(vertices)
         self.remove_children_values(indices, "VERTEX", clear_cache=clear_cache)
+        self.workspace.update_attribute(self, "vertices")
 
         new_index = np.ones_like(vert_index, dtype=int)
         new_index[vert_index] = np.arange(self.vertices.shape[0])
         self.remove_cells(np.where(~np.all(vert_index[self.cells], axis=1)))
         new_cells = new_index[self.cells]
-        setattr(self, "_cells", None)
-        setattr(self, "cells", new_cells)
+
+        self._cells = new_cells
+        self.workspace.update_attribute(self, "cells")
 
     def copy(  # pylint: disable=too-many-branches
         self,
@@ -230,3 +240,9 @@ class CellObject(Points, ABC):
                 )
 
         return new_object
+
+    @abstractmethod
+    def validate_cells(self, indices: tuple | list | np.ndarray | None) -> np.ndarray:
+        """
+        Validate cells.
+        """

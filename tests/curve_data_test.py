@@ -35,9 +35,11 @@ def test_create_curve_data(tmp_path: Path):
     n_data = 12
 
     with Workspace.create(h5file_path) as workspace:
-        curve = Curve.create(
-            workspace, vertices=np.random.randn(n_data, 3), name=curve_name
-        )
+
+        with pytest.raises(ValueError, match="Curve must have at least two vertices"):
+            Curve.create(workspace, vertices=(1.0, 1.0, 1.0))
+
+        curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
 
         with pytest.raises(
             TypeError, match="Input current_line_id value should be of type"
@@ -47,20 +49,18 @@ def test_create_curve_data(tmp_path: Path):
         # Get and change the parts
         parts = curve.parts
         parts[-3:] = 1
-        with pytest.raises(UserWarning, match="Attempting to re-assign 'parts'."):
+        with pytest.raises(AttributeError, match="can't set attribute 'parts'"):
             curve.parts = parts
 
         cells = curve.cells.copy()
         assert cells.shape[0] == 11, "Error creating cells from parts." ""
 
-        setattr(curve, "_cells", None)
-        with pytest.raises(ValueError, match="Array of cells should be of shape"):
+        with pytest.raises(AttributeError, match="can't set attribute 'cells'"):
             curve.cells = np.c_[1]
 
-        with pytest.raises(TypeError, match="Indices array must be of integer type"):
-            curve.cells = np.c_[0.0, 1.0]
-
-        curve.cells = cells.tolist()
+        curve = Curve.create(
+            workspace, vertices=np.random.randn(n_data, 3), name=curve_name, cells=cells
+        )
 
         data_objects = curve.add_data(
             {
@@ -88,9 +88,7 @@ def test_create_curve_data(tmp_path: Path):
             compare_entities(data_objects[0], data_vert_rec)
             compare_entities(data_objects[1], ws2.get_entity("cellValues")[0])
 
-            with pytest.raises(
-                UserWarning, match="Attempting to re-assign 'vertices'."
-            ):
+            with pytest.raises(AttributeError, match="can't set attribute 'vertices'"):
                 # Modify and write
                 obj_rec.vertices = np.random.randn(n_data, 3)
 
@@ -137,9 +135,6 @@ def test_remove_cells_data(tmp_path: Path):
         ):
             curve.remove_cells([12])
 
-        with pytest.raises(UserWarning, match="Attempting to re-assign 'cells'"):
-            curve.cells = curve.cells[1:, :]
-
         with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
             curve.remove_cells("abc")
 
@@ -164,8 +159,13 @@ def test_remove_vertex_data(tmp_path):
                 "cellValues": {
                     "values": np.random.randn(curve.n_cells).astype(np.float64)
                 },
+                "vertValues": {
+                    "values": np.random.randn(curve.n_vertices).astype(np.float64)
+                },
             }
         )
+
+        curve.copy(name="validation")
 
         with pytest.raises(
             ValueError, match="Found indices larger than the number of vertices."
@@ -174,7 +174,7 @@ def test_remove_vertex_data(tmp_path):
 
         curve.remove_vertices([0, 3])
 
-        assert len(data.values) == 8, "Error removing data values with cells."
+        assert len(data[0].values) == 8, "Error removing data values with cells."
         assert len(curve.vertices) == 10, "Error removing vertices from cells."
 
 
