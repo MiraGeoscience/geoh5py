@@ -38,7 +38,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.10,<4"
+python = "^3.10"
 h5py = "^3.2.1"
 numpy = [
     {version="!=1.19.4, ^1.23.5", python= "<3.12"},
