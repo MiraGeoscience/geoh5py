@@ -28,9 +28,6 @@ if TYPE_CHECKING:
     from geoh5py.objects import ObjectType
 
 
-OCTREE_TYPE = np.dtype([("I", "<i4"), ("J", "<i4"), ("K", "<i4"), ("NCells", "<i4")])
-
-
 class Octree(GridObject):
     """
     Octree mesh class that uses a tree structure such that cells
@@ -48,7 +45,9 @@ class Octree(GridObject):
     __TYPE_UID = uuid.UUID(
         fields=(0x4EA87376, 0x3ECE, 0x438B, 0xBF, 0x12, 0x3479733DED46)
     )
-
+    __OCTREE_TYPE = np.dtype(
+        [("I", "<i4"), ("J", "<i4"), ("K", "<i4"), ("NCells", "<i4")]
+    )
     _attribute_map: dict = GridObject._attribute_map.copy()
     _attribute_map.update(
         {
@@ -75,13 +74,17 @@ class Octree(GridObject):
         octree_cells: np.ndarray | list | tuple | None = None,
         **kwargs,
     ):
-        self._u_count: int
-        self._v_count: int
-        self._w_count: int
+        self._u_count = self.validate_octree_count(u_count, "u")
+        self._v_count = self.validate_octree_count(v_count, "v")
+        self._w_count = self.validate_octree_count(w_count, "w")
         self._u_cell_size: float
         self._v_cell_size: float
         self._w_cell_size: float
-        self._octree_cells: np.ndarray | None
+
+        if octree_cells is None:
+            octree_cells = self.base_refine()
+
+        self._octree_cells: np.ndarray = self.validate_octree_cells(octree_cells)
 
         super().__init__(
             object_type,
@@ -198,36 +201,6 @@ class Octree(GridObject):
         """
         return self._octree_cells
 
-    @octree_cells.setter
-    def octree_cells(self, value: np.ndarray | list | tuple | None):
-        if getattr(self, "_octree_cells", None) is not None:
-            raise UserWarning(
-                "Attempting to re-assign 'octree_cells'. Consider creating a new entity."
-            )
-
-        if isinstance(value, (list, tuple)):
-            value = np.array(value, ndmin=2)
-
-        if value is None:
-            value = self.base_refine()
-
-        if not isinstance(value, np.ndarray):
-            raise TypeError(
-                "Attribute 'octree_cells' must be a list, tuple or numpy array. "
-                f"Object of type {type(value)} provided."
-            )
-
-        if np.issubdtype(value.dtype, np.number):
-            assert (
-                value.shape[1] == 4
-            ), "'octree_cells' requires an ndarray of shape (*, 4)"
-            value = np.asarray(np.core.records.fromarrays(value.T, dtype=OCTREE_TYPE))
-
-        if value.dtype != OCTREE_TYPE:
-            raise ValueError(f"Array of 'layers' must be of dtype = {OCTREE_TYPE}")
-
-        self._octree_cells = value
-
     @property
     def shape(self) -> tuple:
         """
@@ -256,16 +229,6 @@ class Octree(GridObject):
         """
         return self._u_count
 
-    @u_count.setter
-    def u_count(self, value: int):
-        if not isinstance(value, (np.integer, int)):
-            raise TypeError("Attribute 'u_count' must be type(int).")
-
-        if np.log2(value) % 1.0 != 0:
-            raise TypeError("Attribute 'u_count' must be type(int) in power of 2.")
-
-        self._u_count = np.int32(value)
-
     @property
     def v_cell_size(self) -> float:
         """
@@ -287,15 +250,43 @@ class Octree(GridObject):
         """
         return self._v_count
 
-    @v_count.setter
-    def v_count(self, value: int):
+    @staticmethod
+    def validate_octree_count(value: int, axis: str) -> np.int32:
         if not isinstance(value, (np.integer, int)):
-            raise TypeError("Attribute 'v_count' must be type(int).")
+            raise TypeError(f"Attribute '{axis}_count' must be type(int).")
 
         if np.log2(value) % 1.0 != 0:
-            raise TypeError("Attribute 'v_count' must be type(int) in power of 2.")
+            raise TypeError(
+                f"Attribute '{axis}_count' must be type(int) in power of 2."
+            )
 
-        self._v_count = np.int32(value)
+        return np.int32(value)
+
+    @classmethod
+    def validate_octree_cells(
+        cls, value: np.ndarray | list | tuple | None
+    ) -> np.ndarray:
+        if isinstance(value, (list, tuple)):
+            value = np.array(value, ndmin=2)
+
+        if not isinstance(value, np.ndarray):
+            raise TypeError(
+                "Attribute 'octree_cells' must be a list, tuple or numpy array. "
+                f"Object of type {type(value)} provided."
+            )
+
+        if np.issubdtype(value.dtype, np.number):
+            assert (
+                value.shape[1] == 4
+            ), "'octree_cells' requires an ndarray of shape (*, 4)"
+            value.dtype = cls.__OCTREE_TYPE
+
+        if value.dtype != cls.__OCTREE_TYPE:
+            raise ValueError(
+                f"Array of 'layers' must be of dtype = {cls.__OCTREE_TYPE}"
+            )
+
+        return value.flatten()
 
     @property
     def w_cell_size(self) -> float:
@@ -317,13 +308,3 @@ class Octree(GridObject):
         :obj:`int`: Number of cells along w-axis.
         """
         return self._w_count
-
-    @w_count.setter
-    def w_count(self, value: int):
-        if not isinstance(value, (np.integer, int)):
-            raise TypeError("Attribute 'w_count' must be type(int).")
-
-        if np.log2(value) % 1.0 != 0:
-            raise TypeError("Attribute 'w_count' must be type(int) in power of 2.")
-
-        self._w_count = np.int32(value)

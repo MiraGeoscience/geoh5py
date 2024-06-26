@@ -24,8 +24,6 @@ import numpy as np
 from ..shared.utils import box_intersect, mask_by_extent
 from .object_base import ObjectBase, ObjectType
 
-VERTICES_DTYPE = np.dtype([("x", "<f8"), ("y", "<f8"), ("z", "<f8")])
-
 
 class Points(ObjectBase):
     """
@@ -33,6 +31,7 @@ class Points(ObjectBase):
     """
 
     __TYPE_UID = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
+    __VERTICES_DTYPE = np.dtype([("x", "<f8"), ("y", "<f8"), ("z", "<f8")])
 
     def __init__(
         self,
@@ -132,8 +131,8 @@ class Points(ObjectBase):
         """
         return self._vertices.view("<f8").reshape((-1, 3))
 
-    @staticmethod
-    def validate_vertices(xyz: np.ndarray | list | tuple) -> np.ndarray:
+    @classmethod
+    def validate_vertices(cls, xyz: np.ndarray | list | tuple) -> np.ndarray:
         """
         Validate and format type of vertices array.
 
@@ -149,9 +148,11 @@ class Points(ObjectBase):
             if xyz.ndim != 2 or xyz.shape[-1] != 3:
                 raise ValueError("Array of vertices should be of shape (*, 3).")
 
-            xyz.dtype = VERTICES_DTYPE
+            xyz.dtype = cls.__VERTICES_DTYPE
 
-        if xyz.dtype != np.dtype(VERTICES_DTYPE):
-            raise ValueError(f"Array of 'vertices' must be of dtype = {VERTICES_DTYPE}")
+        if xyz.dtype != np.dtype(cls.__VERTICES_DTYPE):
+            raise ValueError(
+                f"Array of 'vertices' must be of dtype = {cls.__VERTICES_DTYPE}"
+            )
 
         return xyz.flatten()

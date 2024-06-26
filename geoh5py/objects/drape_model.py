@@ -24,15 +24,6 @@ import numpy as np
 from .grid_object import GridObject
 from .object_base import ObjectType
 
-LAYERS_TYPE = [("I", "<i4"), ("K", "<i4"), ("Bottom elevation", "<f8")]
-PRISM_TYPE = [
-    ("Top easting", "<f8"),
-    ("Top northing", "<f8"),
-    ("Top elevation", "<f8"),
-    ("First layer", "<i4"),
-    ("Layer count", "<i4"),
-]
-
 
 class DrapeModel(GridObject):
     """
@@ -40,6 +31,16 @@ class DrapeModel(GridObject):
     """
 
     __TYPE_UID = uuid.UUID("{C94968EA-CF7D-11EB-B8BC-0242AC130003}")
+    __LAYERS_DTYPE = np.dtype([("I", "<i4"), ("K", "<i4"), ("Bottom elevation", "<f8")])
+    __PRISM_DTYPE = np.dtype(
+        [
+            ("Top easting", "<f8"),
+            ("Top northing", "<f8"),
+            ("Top elevation", "<f8"),
+            ("First layer", "<i4"),
+            ("Layer count", "<i4"),
+        ]
+    )
 
     def __init__(
         self,
@@ -48,8 +49,8 @@ class DrapeModel(GridObject):
         prisms: np.ndarray | list | tuple = (0.0, 0.0, 0.0, 0, 1),
         **kwargs,
     ):
-        self._layers: np.ndarray
-        self._prisms: np.ndarray
+        self._layers: np.ndarray = self.validate_layers(layers)
+        self._prisms: np.ndarray = self.validate_prisms(prisms)
 
         super().__init__(object_type, layers=layers, prisms=prisms, **kwargs)
 
@@ -117,40 +118,6 @@ class DrapeModel(GridObject):
         """
         return np.asarray(self._layers.tolist())
 
-    @layers.setter
-    def layers(self, values: np.ndarray | list | tuple):
-        if isinstance(values, (list, tuple)):
-            values = np.array(values, ndmin=2)
-
-        if not isinstance(values, np.ndarray):
-            raise TypeError(
-                "Attribute 'layers' must be a list, tuple or numpy array. "
-                f"Object of type {type(values)} provided."
-            )
-
-        if np.issubdtype(values.dtype, np.number):
-            if values.shape[1] != 3:
-                raise ValueError(
-                    "Array of 'layers' must be of shape (*, 3). "
-                    f"Array of shape {values.shape} provided."
-                )
-
-            if any(np.diff(np.unique(values[:, 0])) != 1):
-                msg = "Prism index (first column) must be monotonically increasing."
-                raise ValueError(msg)
-
-            values = np.asarray(
-                np.core.records.fromarrays(
-                    values.T.tolist(),
-                    dtype=LAYERS_TYPE,
-                )
-            )
-
-        if values.dtype != np.dtype(LAYERS_TYPE):
-            raise ValueError(f"Array of 'layers' must be of dtype = {LAYERS_TYPE}")
-
-        self._layers = values
-
     @property
     def n_cells(self):
         return self._layers.shape[0]
@@ -176,8 +143,36 @@ class DrapeModel(GridObject):
         """
         return np.array(self._prisms.tolist())
 
-    @prisms.setter
-    def prisms(self, values: np.ndarray | list | tuple):
+    @property
+    def rotation(self):
+        """
+        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the rotation.
+        """
+        return None
+
+    @rotation.setter
+    def rotation(self, value):
+        pass
+
+    @property
+    def origin(self):
+        """
+        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin.
+        """
+        return None
+
+    @origin.setter
+    def origin(self, value):
+        pass
+
+    @classmethod
+    def validate_prisms(cls, values) -> np.ndarray:
+        """
+        Validate and format type of prisms array.
+
+        :param values: Array of prisms as defined by
+            :obj:`~geoh5py.objects.drape_model.DrapeModel.prisms`.
+        """
         if isinstance(values, (list, tuple)):
             values = np.array(values, ndmin=2)
 
@@ -197,23 +192,55 @@ class DrapeModel(GridObject):
             values = np.asarray(
                 np.core.records.fromarrays(
                     values.T.tolist(),
-                    dtype=PRISM_TYPE,
+                    dtype=cls.__PRISM_DTYPE,
                 )
             )
 
-        if values.dtype != np.dtype(PRISM_TYPE):
-            raise ValueError(f"Array of 'prisms' must be of dtype = {PRISM_TYPE}")
+        if values.dtype != cls.__PRISM_DTYPE:
+            raise ValueError(
+                f"Array of 'prisms' must be of dtype = {cls.__PRISM_DTYPE}"
+            )
 
-        self._prisms = values
-        self.workspace.update_attribute(self, "prisms")
+        return values
 
-    @property
-    def origin(self):
+    @classmethod
+    def validate_layers(cls, values: np.ndarray | list | tuple) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin.
-        """
-        return None
+        Validate and format type of layers array.
 
-    @origin.setter
-    def origin(self, value):
-        pass
+        :param values: Array of layers as defined by
+            :obj:`~geoh5py.objects.drape_model.DrapeModel.layers`.
+        """
+        if isinstance(values, (list, tuple)):
+            values = np.array(values, ndmin=2)
+
+        if not isinstance(values, np.ndarray):
+            raise TypeError(
+                "Attribute 'layers' must be a list, tuple or numpy array. "
+                f"Object of type {type(values)} provided."
+            )
+
+        if np.issubdtype(values.dtype, np.number):
+            if values.shape[1] != 3:
+                raise ValueError(
+                    "Array of 'layers' must be of shape (*, 3). "
+                    f"Array of shape {values.shape} provided."
+                )
+
+            if any(np.diff(np.unique(values[:, 0])) != 1):
+                msg = "Prism index (first column) must be monotonically increasing."
+                raise ValueError(msg)
+
+            values = np.asarray(
+                np.core.records.fromarrays(
+                    values.T.tolist(),
+                    dtype=cls.__LAYERS_DTYPE,
+                )
+            )
+
+        if values.dtype != cls.__LAYERS_DTYPE:
+            raise ValueError(
+                f"Array of 'layers' must be of dtype = {cls.__LAYERS_DTYPE}"
+            )
+
+        return values
