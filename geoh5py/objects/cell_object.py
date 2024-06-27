@@ -36,11 +36,6 @@ class CellObject(Points, ABC):
     """
 
     _attribute_map: dict = Points._attribute_map.copy()
-    _attribute_map.update(
-        {
-            "Cells": "cells",
-        }
-    )
 
     def __init__(
         self, object_type: ObjectType, cells: np.ndarray | None = None, **kwargs
