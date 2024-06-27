@@ -85,7 +85,11 @@ class H5Reader:
             # TODO Use lazy pointer to data
             if entity_type != "Data":
                 for key, value in entity.items():
-                    if key in INV_KEY_MAP and isinstance(value, h5py.Dataset):
+                    if (
+                        key in INV_KEY_MAP
+                        and isinstance(value, h5py.Dataset)
+                        and value.ndim > 0
+                    ):
                         attributes["entity"][INV_KEY_MAP[key]] = value[:]
 
             if "Type" in entity:

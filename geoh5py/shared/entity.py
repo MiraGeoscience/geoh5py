@@ -222,14 +222,19 @@ class Entity(ABC):
         """
         if getattr(self, "_metadata", None) is None:
             value = self.workspace.fetch_metadata(self.uid)
-
-            if value is not None:
-                self.metadata = value
+            self._metadata = self.validate_metadata(value)
 
         return self._metadata
 
     @metadata.setter
     def metadata(self, value: dict | np.ndarray | bytes | None):
+        self._metadata = self.validate_metadata(value)
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "metadata")
+
+    @staticmethod
+    def validate_metadata(value):
         if isinstance(value, np.ndarray):
             value = value[0]
 
@@ -242,8 +247,7 @@ class Entity(ABC):
                 f"Provided value of type '{type(value)}'."
             )
 
-        self._metadata = value
-        self.workspace.update_attribute(self, "metadata")
+        return value
 
     @property
     def name(self) -> str:

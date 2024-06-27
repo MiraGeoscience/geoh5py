@@ -232,23 +232,22 @@ class BaseElectrode(Curve, ABC):
     def default_type_uid(cls) -> uuid.UUID:
         """Default unique identifier. Implemented on the child class."""
 
-    @Curve.metadata.setter  # type: ignore
-    def metadata(self, values: dict | np.ndarray | bytes | None):
+    @staticmethod
+    def validate_metadata(value):
+        if isinstance(value, np.ndarray):
+            value = value[0]
 
-        if isinstance(values, np.ndarray):
-            values = values[0]
+        if isinstance(value, bytes):
+            value = str_json_to_dict(value)
 
-        if isinstance(values, bytes):
-            values = str_json_to_dict(values)
-
-        if isinstance(values, dict):
+        if isinstance(value, dict):
             default_keys = ["Current Electrodes", "Potential Electrodes"]
 
             # check if metadata has the required keys
-            if not all(key in values for key in default_keys):
+            if not all(key in value for key in default_keys):
                 raise ValueError(f"Input metadata must have for keys {default_keys}")
 
-        super(Curve, Curve).metadata.fset(self, values)  # type: ignore
+        return value
 
     @property
     @abstractmethod
