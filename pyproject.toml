@@ -41,6 +41,7 @@ include = [
 [tool.poetry.dependencies]
 python = "^3.9,<3.11"
 
+pydantic = "~2.5.2"
 h5py = "^3.2.1"
 numpy = "!=1.19.4, ~1.23.5"
 Pillow = "~10.3.0"
@@ -75,6 +76,7 @@ show_column_numbers = true
 check_untyped_defs = true
 
 plugins = [
+    "pydantic.mypy"
 #    'numpy.typing.mypy_plugin'
 ]
 

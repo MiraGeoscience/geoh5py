@@ -17,7 +17,20 @@
 
 from __future__ import annotations
 
+from enum import Enum
+from pathlib import Path
 from typing import Any
+from uuid import UUID
+
+import numpy as np
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
+from pydantic.alias_generators import to_camel
 
 from geoh5py.data import (
     BooleanData,
@@ -45,6 +58,250 @@ from geoh5py.ui_json.parameters import (
 )
 
 
+class DependencyType(str, Enum):
+    enabled = "enabled"
+    disabled = "disabled"
+
+
+class BaseForm(BaseModel):
+    """
+    Base class for uijson forms
+    """
+
+    model_config: ConfigDict = ConfigDict(
+        extra="allow",
+        frozen=True,
+        populate_by_name=True,
+        loc_by_alias=True,
+        alias_generator=to_camel,
+    )
+
+    label: str
+    value: Any
+    optional: bool = False
+    enabled: bool = True
+    main: bool = True
+    tooltip: str = ""
+    group: str = ""
+    group_optional: bool = False
+    dependency: str = ""
+    dependency_type: DependencyType = "enabled"
+    group_dependency: str = ""
+    group_dependency_type: DependencyType = "enabled"
+
+    @property
+    def json(self):
+        return self.model_dump_json(exclude_unset=True, by_alias=True)
+
+
+class StringForm(BaseForm):
+    """
+    String valued uijson form.
+    """
+
+    value: str = ""
+
+
+class BoolForm(BaseForm):
+    """
+    Boolean valued uijson form.
+    """
+
+    value: bool = True
+
+
+class IntegerForm(BaseForm):
+    """
+    Integer valued uijson form.
+    """
+
+    value: int = 1
+    min: float = -np.inf
+    max: float = np.inf
+
+
+class FloatForm(BaseForm):
+    """
+    Float valued uijson form.
+    """
+
+    value: float = 1.0
+    min: float = -np.inf
+    max: float = np.inf
+    precision: int = 2
+    line_edit: bool = True
+
+
+class ChoiceForm(BaseForm):
+    """
+    Choice list uijson form.
+    """
+
+    value: list[str]
+    choice_list: list[str]
+    multi_select: bool = False
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def to_list(cls, value):
+        if not isinstance(value, list):
+            value = [value]
+        return value
+
+    @field_serializer("value", when_used="json")
+    def string_if_single(self, value):
+        if len(value) == 1:
+            value = value[0]
+        return value
+
+    @model_validator(mode="after")
+    def valid_choice(self):
+        bad_choices = []
+        for val in self.value:
+            if val not in self.choice_list:
+                bad_choices.append(val)
+        if bad_choices:
+            raise ValueError(f"Provided value(s): {bad_choices} are not valid choices.")
+
+        return self
+
+
+class FileForm(BaseForm):
+    """
+    File path uijson form
+    """
+
+    value: list[Path]
+    file_description: list[str]
+    file_type: list[str]
+    file_multi: bool = False
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def to_list(cls, value):
+        return [Path(path) for path in value.split(";")]
+
+    @field_serializer("value", when_used="json")
+    def to_string(self, value):
+        return ";".join([str(path) for path in value])
+
+    @field_validator("value")
+    @classmethod
+    def valid_file(cls, value):
+        bad_paths = []
+        for path in value:
+            if not path.exists():
+                bad_paths.append(path)
+        if any(bad_paths):
+            raise ValueError(f"Provided path(s) {bad_paths} does not exist.")
+        return value
+
+    @model_validator(mode="after")
+    def same_length(self):
+        if len(self.file_description) != len(self.file_type):
+            raise ValueError("File description and type lists must be the same length.")
+        return self
+
+    @model_validator(mode="before")
+    @classmethod
+    def value_file_type(cls, data):
+        bad_paths = []
+        for path in data["value"].split(";"):
+            if Path(path).suffix[1:] not in data["file_type"]:
+                bad_paths.append(path)
+        if any(bad_paths):
+            raise ValueError(f"Provided paths {bad_paths} have invalid extensions.")
+        return data
+
+
+class TypeUID(str, Enum):
+    """
+    Geoh5py object types.
+    """
+
+    Points = "{202C5DB1-A56D-4004-9CAD-BAAFD8899406}"
+    Curve = "{6a057fdc-b355-11e3-95be-fd84a7ffcb88}"
+    Surface = "{f26feba3-aded-494b-b9e9-b2bbcbe298e1}"
+    Grid2D = "{f26feba3-aded-494b-b9e9-b2bbcbe298e1}"
+    BlockModel = "{b020a277-90e2-4cd7-84d6-612ee3f25051}"
+    Octree = "{4ea87376-3ece-438b-bf12-3479733ded46}"
+    DrapeModel = "{C94968EA-CF7D-11EB-B8BC-0242AC130003}"
+    Drillhole = "{7caebf0e-d16e-11e3-bc69-e4632694aa37}"
+    GeoImage = "{77ac043c-fe8d-4d14-8167-75e300fb835a}"
+    IntegratorPoints = "{6832ACF3-78AA-44D3-8506-9574A3510C44}"
+    Label = "{e79f449d-74e3-4598-9c9c-351a28b8b69e}"
+
+    # TODO: Enter surveys and groups, or search all __TYPE_UID.
+    # TODO: use geoh5py inspect.getmembers(groups) + inspect.getmembers(objects)
+
+
+class ObjectForm(BaseForm):
+    """
+    Geoh5py object uijson form.
+    """
+
+    value: UUID
+    mesh_type: list[TypeUID]
+
+
+class Association(str, Enum):
+    """
+    Geoh5py object association types.
+    """
+
+    Vertex = "Vertex"
+    Cell = "Cell"
+    Face = "Face"
+
+
+class DataType(str, Enum):
+    """
+    Geoh5py data types.
+    """
+
+    Integer = "Integer"
+    Float = "Float"
+    Boolean = "Boolean"
+    Referenced = "Referenced"
+    Vector = "Vector"
+    DateTime = "DateTime"
+    Geometric = "Geometric"
+    Text = "Text"
+
+
+class DataForm(BaseForm):
+    """
+    Geoh5py data uijson form.
+    """
+
+    value: UUID | float | int
+    parent: UUID | str
+    association: Association | list[Association]
+    data_type: DataType | list[DataType]
+    is_value: bool = False
+    property: UUID = UUID("00000000-0000-0000-0000-000000000000")
+    min: float = -np.inf
+    max: float = np.inf
+    precision: int = 2
+
+    @model_validator(mode="after")
+    def value_if_is_value(self):
+        if "is_value" in self.model_fields_set and self.is_value:
+            if isinstance(self.value, UUID):
+                raise ValueError("Value must be numeric if is_value is True.")
+        return self
+
+    @model_validator(mode="after")
+    def property_if_not_is_value(self):
+        if (
+            "is_value" in self.model_fields_set
+            and "property" not in self.model_fields_set
+        ):
+            raise ValueError("A property must be provided in is_value is used.")
+        return self
+
+
+### TODO: Old code to be cleaned up ###
 class MemberKeys:
     """Converts in and out of camel (ui.json) and snake (python) case"""
 
