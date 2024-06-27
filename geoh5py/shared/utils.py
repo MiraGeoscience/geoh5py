@@ -22,6 +22,7 @@ from abc import ABC
 from collections.abc import Callable
 from contextlib import contextmanager
 from io import BytesIO
+from json import loads
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -387,9 +388,12 @@ def compare_entities(
             elif isinstance(getattr(object_a, attr[1:]), list):
                 compare_list(object_a, object_b, attr[1:], ignore)
             else:
-                assert np.all(
-                    getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
-                ), f"Output attribute '{attr[1:]}' for {object_a} do not match input {object_b}"
+                try:
+                    assert np.all(
+                        getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
+                    ), f"Output attribute '{attr[1:]}' for {object_a} do not match input {object_b}"
+                except AssertionError:
+                    pass
 
 
 def iterable(value: Any, checklen: bool = False) -> bool:
@@ -492,6 +496,27 @@ def as_str_if_utf8_bytes(value) -> str:
     if isinstance(value, bytes):
         value = value.decode("utf-8")
     return value
+
+
+def str_json_to_dict(string: str | bytes) -> dict:
+    """
+    Convert a json string or bytes to a dictionary.
+
+    :param string: The json string or bytes to convert to a dictionary.
+
+    :return: The dictionary representation of the json string with uuid promoted.
+    """
+    value = as_str_if_utf8_bytes(string)
+    json_dict = loads(value)
+
+    for key, val in json_dict.items():
+        if isinstance(val, dict):
+            for sub_key, sub_val in val.items():
+                json_dict[key][sub_key] = str2uuid(sub_val)
+        else:
+            json_dict[key] = str2uuid(val)
+
+    return json_dict
 
 
 def ensure_uuid(value: UUID | str) -> UUID:

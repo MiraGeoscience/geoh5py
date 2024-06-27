@@ -42,6 +42,8 @@ class Drillhole(Points):
     __TYPE_UID = uuid.UUID(
         fields=(0x7CAEBF0E, 0xD16E, 0x11E3, 0xBC, 0x69, 0xE4632694AA37)
     )
+    __SURVEY_DTYPE = np.dtype([("Depth", "<f4"), ("Azimuth", "<f4"), ("Dip", "<f4")])
+    __COLLAR_DTYPE = np.dtype([("x", float), ("y", float), ("z", float)])
     _attribute_map = Points._attribute_map.copy()
     _attribute_map.update(
         {
@@ -115,9 +117,7 @@ class Drillhole(Points):
             if len(value) != 3:
                 raise ValueError("Origin must be a list or numpy array of len (3,).")
 
-            value = np.asarray(
-                tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
-            )
+            value = np.asarray(tuple(value), dtype=self.__COLLAR_DTYPE)
             self._collar = value
             self.workspace.update_attribute(self, "attributes")
 
@@ -253,18 +253,26 @@ class Drillhole(Points):
         return surveys.astype(float)
 
     @surveys.setter
-    def surveys(self, value):
-        if value is not None:
-            value = np.vstack(value)
+    def surveys(self, array: np.ndarray | list | None):
+        if array is not None:
 
-            if value.shape[1] != 3:
-                raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
+            if isinstance(array, list):
+                array = np.array(array, ndmin=2)
 
-            self._surveys = np.asarray(
-                np.core.records.fromarrays(
-                    value.T, names="Depth, Azimuth, Dip", formats="<f4, <f4, <f4"
+            if np.issubdtype(array.dtype, np.number):
+                if array.shape[1] != 3:
+                    raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
+
+                array = np.asarray(
+                    np.core.records.fromarrays(array.T, dtype=self.__SURVEY_DTYPE)
                 )
-            )
+
+            if array.dtype != self.__SURVEY_DTYPE:
+                raise ValueError(
+                    f"Array of 'survey' must be of dtype = {self.__SURVEY_DTYPE}"
+                )
+
+            self._surveys = array
             self.workspace.update_attribute(self, "surveys")
             self.end_of_hole = float(self._surveys["Depth"][-1])
             self._trace = None

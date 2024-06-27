@@ -38,7 +38,7 @@ def test_metadata(tmp_path):
 
     points.metadata = {"test2": "test"}
 
-    assert points.metadata == {"test": "test", "test2": "test"}
+    assert points.metadata == {"test2": "test"}
 
     points.metadata = None
 

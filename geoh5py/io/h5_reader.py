@@ -32,6 +32,7 @@ from ..shared.utils import (
     as_str_if_utf8_bytes,
     as_str_if_uuid,
     str2uuid,
+    str_json_to_dict,
 )
 
 
@@ -81,9 +82,11 @@ class H5Reader:
             for key, value in entity.attrs.items():
                 attributes["entity"][INV_KEY_MAP.get(key, key)] = value
 
-            for key, value in entity.items():
-                if key in INV_KEY_MAP and isinstance(value, h5py.Dataset):
-                    attributes["entity"][INV_KEY_MAP[key]] = value[:]
+            # TODO Use lazy pointer to data
+            if entity_type != "Data":
+                for key, value in entity.items():
+                    if key in INV_KEY_MAP and isinstance(value, h5py.Dataset):
+                        attributes["entity"][INV_KEY_MAP[key]] = value[:]
 
             if "Type" in entity:
                 type_attributes["entity_type"] = cls.fetch_type_attributes(
@@ -286,24 +289,14 @@ class H5Reader:
             name = list(h5file)[0]
 
             try:
-                metadata = np.r_[
-                    h5file[name][entity_type][as_str_if_uuid(uid)][argument]
+                value = np.r_[h5file[name][entity_type][as_str_if_uuid(uid)][argument]][
+                    0
                 ]
-                metadata = as_str_if_utf8_bytes(metadata[0])
 
             except KeyError:
                 return None
 
-        metadata = json.loads(metadata)
-
-        for key, val in metadata.items():
-            if isinstance(val, dict):
-                for sub_key, sub_val in val.items():
-                    metadata[key][sub_key] = str2uuid(sub_val)
-            else:
-                metadata[key] = str2uuid(val)
-
-        return metadata
+        return str_json_to_dict(value)
 
     @classmethod
     def fetch_project_attributes(cls, file: str | h5py.File) -> dict[Any, Any]:
