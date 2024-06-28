@@ -113,10 +113,10 @@ def test_dependency_type_enum():
 
 def test_base_form_serieralization():
     form = BaseForm(label="name", value="test", extra="stuff")
-    json = form.json
+    json = form.json_string
     assert all(k in json for k in ["label", "value", "extra"])
     form = BaseForm(label="name", value="test", dependency_type="disabled")
-    json = form.json
+    json = form.json_string
     assert "dependencyType" in json
 
 
@@ -165,7 +165,7 @@ def test_choice_form():
     assert form.value == ["test"]
     assert form.choice_list == ["test"]
     assert not form.multi_select
-    assert '"value":"test"' in form.json
+    assert '"value":"test"' in form.json_string
     msg = r"Provided value\(s\): \['nope'\] are not valid choices"
     with pytest.raises(ValidationError, match=msg):
         _ = ChoiceForm(label="name", value="nope", choice_list=["test"])
@@ -191,7 +191,7 @@ def test_file_form(tmp_path):
     assert form.file_description == ["something"]
     assert form.file_type == ["ext"]
     assert not form.file_multi
-    assert '"value":"C:' in form.json
+    assert '"value":"C:' in form.json_string
 
     form = FileForm(
         label="file",
@@ -237,22 +237,22 @@ def test_file_form(tmp_path):
 def test_object_form():
     obj_uid = str(uuid.uuid4())
     form = ObjectForm(
-        label="name", value=obj_uid, mesh_type=[TypeUID.Points, TypeUID.Surface]
+        label="name", value=obj_uid, mesh_type=[TypeUID.POINTS, TypeUID.SURFACE]
     )
     assert form.label == "name"
     assert form.value == uuid.UUID(obj_uid)
-    assert form.mesh_type == [TypeUID.Points, TypeUID.Surface]
+    assert form.mesh_type == [TypeUID.POINTS, TypeUID.SURFACE]
 
     with pytest.raises(ValidationError, match="Input should be a valid UUID"):
         _ = ObjectForm(
             label="name",
             value="not a uuid",
-            mesh_type=[TypeUID.Points, TypeUID.Surface],
+            mesh_type=[TypeUID.POINTS, TypeUID.SURFACE],
         )
 
     with pytest.raises(ValidationError, match="Input should be '{202C5DB1-"):
         _ = ObjectForm(
-            label="name", value=obj_uid, mesh_type=[TypeUID.Points, str(uuid.uuid4())]
+            label="name", value=obj_uid, mesh_type=[TypeUID.POINTS, str(uuid.uuid4())]
         )
 
 
@@ -278,8 +278,8 @@ def test_data_form():
         association=["Vertex", "Cell"],
         data_type=["Float", "Integer"],
     )
-    assert form.association == [Association.Vertex, Association.Cell]
-    assert form.data_type == [DataType.Float, DataType.Integer]
+    assert form.association == [Association.VERTEX, Association.CELL]
+    assert form.data_type == [DataType.FLOAT, DataType.INTEGER]
 
     with pytest.raises(
         ValidationError, match="Value must be numeric if is_value is True."

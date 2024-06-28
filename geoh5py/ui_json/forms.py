@@ -59,8 +59,8 @@ from geoh5py.ui_json.parameters import (
 
 
 class DependencyType(str, Enum):
-    enabled = "enabled"
-    disabled = "disabled"
+    ENABLED = "enabled"
+    DISABLED = "disabled"
 
 
 class BaseForm(BaseModel):
@@ -90,7 +90,7 @@ class BaseForm(BaseModel):
     group_dependency_type: DependencyType = "enabled"
 
     @property
-    def json(self):
+    def json_string(self):
         return self.model_dump_json(exclude_unset=True, by_alias=True)
 
 
@@ -219,20 +219,29 @@ class TypeUID(str, Enum):
     Geoh5py object types.
     """
 
-    Points = "{202C5DB1-A56D-4004-9CAD-BAAFD8899406}"
-    Curve = "{6a057fdc-b355-11e3-95be-fd84a7ffcb88}"
-    Surface = "{f26feba3-aded-494b-b9e9-b2bbcbe298e1}"
-    Grid2D = "{f26feba3-aded-494b-b9e9-b2bbcbe298e1}"
-    BlockModel = "{b020a277-90e2-4cd7-84d6-612ee3f25051}"
-    Octree = "{4ea87376-3ece-438b-bf12-3479733ded46}"
-    DrapeModel = "{C94968EA-CF7D-11EB-B8BC-0242AC130003}"
-    Drillhole = "{7caebf0e-d16e-11e3-bc69-e4632694aa37}"
-    GeoImage = "{77ac043c-fe8d-4d14-8167-75e300fb835a}"
-    IntegratorPoints = "{6832ACF3-78AA-44D3-8506-9574A3510C44}"
-    Label = "{e79f449d-74e3-4598-9c9c-351a28b8b69e}"
-
-    # TODO: Enter surveys and groups, or search all __TYPE_UID.
-    # TODO: use geoh5py inspect.getmembers(groups) + inspect.getmembers(objects)
+    POINTS = "{202C5DB1-A56D-4004-9CAD-BAAFD8899406}"
+    CURVE = "{6a057fdc-b355-11e3-95be-fd84a7ffcb88}"
+    SURFACE = "{f26feba3-aded-494b-b9e9-b2bbcbe298e1}"
+    GRID2D = "{f26feba3-aded-494b-b9e9-b2bbcbe298e1}"
+    BLOCKMODEL = "{b020a277-90e2-4cd7-84d6-612ee3f25051}"
+    OCTREE = "{4ea87376-3ece-438b-bf12-3479733ded46}"
+    DRAPEMODEL = "{C94968EA-CF7D-11EB-B8BC-0242AC130003}"
+    DRILLHOLE = "{7caebf0e-d16e-11e3-bc69-e4632694aa37}"
+    GEOIMAGE = "{77ac043c-fe8d-4d14-8167-75e300fb835a}"
+    INTEGRATORPOINTS = "{6832ACF3-78AA-44D3-8506-9574A3510C44}"
+    LABEL = "{e79f449d-74e3-4598-9c9c-351a28b8b69e}"
+    AIRBORNEFEMRECEIVERS = "{b3a47539-0301-4b27-922e-1dde9d882c60}"
+    AIRBORNETEMRECEIVERS = "{19730589-fd28-4649-9de0-ad47249d9aba}"
+    MOVINGLOOPGROUNDFEMRECEIVERS = "{a81c6b0a-f290-4bc8-b72d-60e59964bfe8}"
+    MOVINGLOOPGROUNDTEMRECEIVERS = "{41018a45-01a0-4c61-a7cb-9f32d8159df4}"
+    MTRECEIVERS = "{b99bd6e5-4fe1-45a5-bd2f-75fc31f91b38}"
+    TIPPERRECEIVERS = "{0b639533-f35b-44d8-92a8-f70ecff3fd26}"
+    POTENTIALELECTRODE = "{275ecee9-9c24-4378-bf94-65f3c5fbe163}"
+    AIRBORNEMAGNETICS = "{4b99204c-d133-4579-a916-a9c8b98cfccb}"
+    CONTAINERGROUP = "{61fbb4e8-a480-11e3-8d5a-2776bdf4f982}"
+    DRILLHOLEGROUP = "{825424fb-c2c6-4fea-9f2b-6cd00023d393}"
+    SIMPEGGROUP = "{55ed3daf-c192-4d4b-a439-60fa987fe2b8}"
+    UIJSONGROUP = "{BB50AC61-A657-4926-9C82-067658E246A0}"
 
 
 class ObjectForm(BaseForm):
@@ -249,9 +258,9 @@ class Association(str, Enum):
     Geoh5py object association types.
     """
 
-    Vertex = "Vertex"
-    Cell = "Cell"
-    Face = "Face"
+    VERTEX = "Vertex"
+    CELL = "Cell"
+    FACE = "Face"
 
 
 class DataType(str, Enum):
@@ -259,14 +268,14 @@ class DataType(str, Enum):
     Geoh5py data types.
     """
 
-    Integer = "Integer"
-    Float = "Float"
-    Boolean = "Boolean"
-    Referenced = "Referenced"
-    Vector = "Vector"
-    DateTime = "DateTime"
-    Geometric = "Geometric"
-    Text = "Text"
+    INTEGER = "Integer"
+    FLOAT = "Float"
+    BOOLEAN = "Boolean"
+    REFERENCED = "Referenced"
+    VECTOR = "Vector"
+    DATETIME = "DateTime"
+    GEOMETRIC = "Geometric"
+    TEXT = "Text"
 
 
 class DataForm(BaseForm):
@@ -286,7 +295,11 @@ class DataForm(BaseForm):
 
     @model_validator(mode="after")
     def value_if_is_value(self):
-        if "is_value" in self.model_fields_set and self.is_value:
+        if (
+            "is_value"
+            in self.model_fields_set  # pylint: disable=unsupported-membership-test
+            and self.is_value
+        ):
             if isinstance(self.value, UUID):
                 raise ValueError("Value must be numeric if is_value is True.")
         return self
@@ -294,8 +307,10 @@ class DataForm(BaseForm):
     @model_validator(mode="after")
     def property_if_not_is_value(self):
         if (
-            "is_value" in self.model_fields_set
-            and "property" not in self.model_fields_set
+            "is_value"
+            in self.model_fields_set  # pylint: disable=unsupported-membership-test
+            and "property"
+            not in self.model_fields_set  # pylint: disable=unsupported-membership-test
         ):
             raise ValueError("A property must be provided in is_value is used.")
         return self
