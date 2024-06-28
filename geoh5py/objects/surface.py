@@ -22,7 +22,6 @@ import uuid
 import numpy as np
 
 from .cell_object import CellObject
-from .object_base import ObjectType
 
 
 class Surface(CellObject):
@@ -34,26 +33,6 @@ class Surface(CellObject):
         fields=(0xF26FEBA3, 0xADED, 0x494B, 0xB9, 0xE9, 0xB2BBCBE298E1)
     )
 
-    def __init__(
-        self,
-        object_type: ObjectType,
-        vertices: np.ndarray = tuple([[0.0, 0.0, 0.0]] * 3),
-        cells: np.ndarray | list | tuple = (0, 1, 2),
-        **kwargs,
-    ):
-        super().__init__(object_type, cells=cells, vertices=vertices, **kwargs)
-
-    @property
-    def cells(self) -> np.ndarray:
-        """
-        Array of vertices index forming triangles
-        :return cells: :obj:`numpy.array` of :obj:`int`, shape ("*", 3)
-        """
-        if self._cells is None and self.on_file:
-            self._cells = self.workspace.fetch_array_attribute(self, "cells")
-
-        return self._cells
-
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
@@ -61,6 +40,12 @@ class Surface(CellObject):
     def validate_cells(self, indices: list | tuple | np.ndarray | None):
         if isinstance(indices, (tuple | list)):
             indices = np.array(indices, ndmin=2)
+
+        if indices is None:
+            n_vert = self.vertices.shape[0]
+            indices = np.c_[
+                np.arange(0, n_vert - 2), np.arange(1, n_vert - 1), np.arange(2, n_vert)
+            ].astype("uint32")
 
         if not isinstance(indices, np.ndarray):
             raise AttributeError(
@@ -85,6 +70,6 @@ class Surface(CellObject):
         xyz = super().validate_vertices(xyz)
 
         if len(xyz) < 3:
-            raise ValueError("Surface must have at least three vertices.")
+            xyz = np.vstack([xyz] * 3)[:3]
 
         return xyz

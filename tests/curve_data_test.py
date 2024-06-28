@@ -36,9 +36,13 @@ def test_create_curve_data(tmp_path: Path):
 
     with Workspace.create(h5file_path) as workspace:
 
-        with pytest.raises(ValueError, match="Curve must have at least two vertices"):
-            Curve.create(workspace, vertices=(1.0, 1.0, 1.0))
+        curve = Curve.create(workspace, vertices=(1.0, 1.0, 1.0))
 
+        assert curve.vertices.shape == (
+            2,
+            3,
+        ), "Error creating curve with single vertex."
+        assert len(curve.cells) == 1
         curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
 
         with pytest.raises(

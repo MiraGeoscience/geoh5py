@@ -38,11 +38,14 @@ class CellObject(Points, ABC):
     _attribute_map: dict = Points._attribute_map.copy()
 
     def __init__(
-        self, object_type: ObjectType, cells: np.ndarray | None = None, **kwargs
+        self,
+        object_type: ObjectType,
+        cells: np.ndarray | list | tuple | None = None,
+        **kwargs,
     ):
-        self._cells = self.validate_cells(cells)
-
         super().__init__(object_type, **kwargs)
+
+        self._cells = self.validate_cells(cells)
 
     @classmethod
     @abstractmethod
@@ -50,11 +53,14 @@ class CellObject(Points, ABC):
         """Default type uid."""
 
     @property
-    @abstractmethod
     def cells(self) -> np.ndarray:
         """
-        Definition of cells.
+        Array of indices defining connecting vertices.
         """
+        if self._cells is None and self.on_file:
+            self._cells = self.workspace.fetch_array_attribute(self, "cells")
+
+        return self._cells
 
     def mask_by_extent(
         self,

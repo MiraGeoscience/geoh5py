@@ -48,12 +48,12 @@ def test_create_surface_data(tmp_path: Path):
             np.c_[x[simplices[:, 0]], x[simplices[:, 1]], x[simplices[:, 2]]], axis=1
         )
 
-        with pytest.raises(
-            ValueError, match="Surface must have at least three vertices"
-        ):
-            Surface.create(
-                workspace, vertices=(1.0, 1.0, 1.0), cells=simplices.tolist()
-            )
+        surf = Surface.create(
+            workspace,
+        )
+        assert surf.n_vertices == 3, "Error creating surface with no vertices."
+        assert surf.n_cells == 1, "Error creating surface with no cells."
+
         # Create a geoh5 surface
         with pytest.raises(ValueError, match="Array of 'cells' should be of shape"):
             Surface.create(workspace, name="mySurf", vertices=xyz, cells=np.c_[[0, 1]])

@@ -74,8 +74,15 @@ class BlockModel(GridObject):
             **kwargs,
         )
 
+    def local_axis_centers(self, axis: str):
+        """
+        Get the local axis centers for the block model.
+        """
+        n_cells = getattr(self, f"{axis}_cells")
+        return np.cumsum(n_cells) - n_cells / 2.0
+
     @property
-    def centroids(self) -> np.ndarray | None:
+    def centroids(self) -> np.ndarray:
         """
         :obj:`numpy.array`,
         shape (:obj:`~geoh5py.objects.block_model.BlockModel.n_cells`, 3):
@@ -90,23 +97,19 @@ class BlockModel(GridObject):
             ]
         """
         if getattr(self, "_centroids", None) is None:
-            cell_center_u = np.cumsum(self.u_cells) - self.u_cells / 2.0
-            cell_center_v = np.cumsum(self.v_cells) - self.v_cells / 2.0
-            cell_center_z = np.cumsum(self.z_cells) - self.z_cells / 2.0
-
+            cell_center_u = self.local_axis_centers("u")
+            cell_center_v = self.local_axis_centers("v")
+            cell_center_z = self.local_axis_centers("z")
             angle = np.deg2rad(self.rotation)
             rot = np.r_[
                 np.c_[np.cos(angle), -np.sin(angle), 0],
                 np.c_[np.sin(angle), np.cos(angle), 0],
                 np.c_[0, 0, 1],
             ]
-
             u_grid, v_grid, z_grid = np.meshgrid(
                 cell_center_u, cell_center_v, cell_center_z
             )
-
             xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.ravel(z_grid)]
-
             self._centroids = np.dot(rot, xyz.T).T
 
             for ind, axis in enumerate(["x", "y", "z"]):
@@ -137,7 +140,7 @@ class BlockModel(GridObject):
         return int(np.prod(self.shape))
 
     @property
-    def shape(self) -> tuple | None:
+    def shape(self) -> tuple:
         """
         :obj:`list` of :obj:`int`, len (3, ): Number of cells along the u, v and z-axis
         """

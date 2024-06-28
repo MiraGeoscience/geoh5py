@@ -37,7 +37,7 @@ class Points(ObjectBase):
         self,
         object_type: ObjectType,
         name="Points",
-        vertices: np.ndarray = (0.0, 0.0, 0.0),
+        vertices: np.ndarray | list | tuple = (0.0, 0.0, 0.0),
         **kwargs,
     ):
         self._vertices: np.ndarray = self.validate_vertices(vertices)
