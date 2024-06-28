@@ -183,7 +183,9 @@ def test_clip_groups(tmp_path):
         group_b = ContainerGroup.create(workspace, name="Group B", parent=group_a)
         curve_a = Curve.create(workspace, vertices=vertices, parent=group_a)
         curve_b = Curve.create(
-            workspace, vertices=np.c_[1000.0, 1000.0, 0.0], parent=group_b
+            workspace,
+            vertices=((1000.0, 1000.0, 0.0), (1001.0, 1000.0, 0.0)),
+            parent=group_b,
         )
         curve_a.add_data(
             {

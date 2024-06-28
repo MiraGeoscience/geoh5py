@@ -38,21 +38,14 @@ def test_save_modified_properties(
 
     # Create a workspace
     with Workspace.create(h5file_path) as workspace:
-        points = Points.create(workspace)
+        points = Points.create(workspace, vertices=xyz)
 
         assert write_attributes.called, f"{write_attributes} was not called."
-        assert (
-            not write_array_attribute.called
-        ), f"{write_array_attribute} should not have been called."
+        assert write_array_attribute.called, f"{write_array_attribute} was not called."
         assert (
             not write_data_values.called
         ), f"{write_data_values} should not have been called."
 
-        points.vertices = xyz
-
-        assert (
-            write_array_attribute.called
-        ), f"{write_array_attribute} should have been called."
         assert (
             not write_data_values.called
         ), f"{write_data_values} should not have been called."

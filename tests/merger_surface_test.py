@@ -40,16 +40,17 @@ def test_merge_surface(tmp_path):
             np.random.randint(0, xyz.shape[0] - 1, (xyz.shape[0], 3)), axis=1
         )
 
-        surface0 = Surface.create(workspace, name="mySurf0", vertices=xyz)
-        surface0.cells = simplices.tolist()
-
+        surface0 = Surface.create(
+            workspace, name="mySurf0", vertices=xyz, cells=simplices.tolist()
+        )
         surfaces.append(surface0)
 
         z = np.random.randn(x.shape[0]) + 5
         xyz = np.c_[x, y, z]
 
-        surface1 = Surface.create(workspace, name="mySurf1", vertices=xyz)
-        surface1.cells = simplices.tolist()
+        surface1 = Surface.create(
+            workspace, name="mySurf1", vertices=xyz, cells=simplices.tolist()
+        )
 
         surfaces.append(surface1)
 

@@ -45,9 +45,7 @@ def test_create_survey_dcip(tmp_path):
             workspace, name=name, vertices=vertices, parts=parts
         )
         currents.add_default_ab_cell_id()
-        potentials = PotentialElectrode.create(
-            workspace, name=name + "_rx", vertices=vertices
-        )
+
         n_dipoles = 9
         dipoles = []
         current_id = []
@@ -58,7 +56,7 @@ def test_create_survey_dcip(tmp_path):
                 dipole_ids = currents.cells[cell_id, :] + 2 + dipole
 
                 if (
-                    any(dipole_ids > (potentials.n_vertices - 1))
+                    any(dipole_ids > (vertices.shape[0] - 1))
                     or len(np.unique(parts[dipole_ids])) > 1
                 ):
                     continue
@@ -66,7 +64,12 @@ def test_create_survey_dcip(tmp_path):
                 dipoles += [dipole_ids]
                 current_id += [val]
 
-        potentials.cells = np.vstack(dipoles).astype("uint32")
+        potentials = PotentialElectrode.create(
+            workspace,
+            name=name + "_rx",
+            vertices=vertices,
+            cells=np.vstack(dipoles).astype("uint32"),
+        )
 
         fake_ab = potentials.add_data(
             {"fake_ab": {"values": np.random.randn(potentials.n_cells)}}
@@ -92,18 +95,8 @@ def test_create_survey_dcip(tmp_path):
             "Potential Electrodes": uuid.uuid4(),
             "One too many key": uuid.uuid4(),
         }
-        with pytest.raises(KeyError, match="Input"):
-            potentials.metadata = fake_meta
 
-        del fake_meta["One too many key"]
-
-        with pytest.raises(KeyError, match="Input"):
-            potentials.metadata = fake_meta
-
-        fake_meta["Current Electrodes"] = currents.uid
-
-        with pytest.raises(KeyError, match="Input"):
-            potentials.metadata = fake_meta
+        potentials.metadata = fake_meta
 
         fake_meta["Potential Electrodes"] = potentials.uid
 
@@ -166,12 +159,14 @@ def test_create_survey_dcip(tmp_path):
             potentials, potentials_rec, ignore=["_current_electrodes", "_parent"]
         )
 
+        with pytest.raises(ValueError, match="Input metadata must have"):
+            currents.metadata = {"Just a general comment": "This is a test"}
+
         currents.metadata = {
             "Current Electrodes": currents.uid,
             "Potential Electrodes": potentials.uid,
+            "Just a general comment": "This is a test",
         }
-
-        currents.metadata = {"Just a general comment": "This is a test"}
 
         assert list(currents.metadata.keys()) == [
             "Current Electrodes",

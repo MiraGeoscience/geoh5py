@@ -287,9 +287,6 @@ def test_merge_attribute_error(tmp_path):
 
         points[0] = Points(workspace)
 
-        with pytest.raises(AttributeError, match="All entities must have vertices"):
-            _ = PointsMerger.merge_objects(workspace, points)
-
         with pytest.raises(NotImplementedError, match="BaseMerger cannot be use"):
             _ = BaseMerger.create_object(workspace, points, name="bidon")
 

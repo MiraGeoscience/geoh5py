@@ -35,7 +35,6 @@ def test_create_grid_2d_data(tmp_path):
     name = "MyTestGrid2D"
 
     # Generate a 2D array
-    n_x, n_y = 10, 15
     h5file_path = tmp_path / r"test2Grid.geoh5"
 
     with Workspace.create(h5file_path) as workspace_context:
@@ -47,7 +46,7 @@ def test_create_grid_2d_data(tmp_path):
             converter.grid_to_tag(grid)
 
         for axis in ["u", "v"]:
-            assert getattr(grid, f"cell_center_{axis}", None) is None
+            assert len(getattr(grid, f"cell_center_{axis}", None)) == 1
 
             with pytest.raises(
                 TypeError,
@@ -55,28 +54,15 @@ def test_create_grid_2d_data(tmp_path):
             ):
                 setattr(grid, f"{axis}_cell_size", "rando")
 
-        assert grid.n_cells is None
-        assert grid.shape is None
+        assert grid.n_cells == 1
+        assert grid.shape == (1, 1)
 
         grid.origin = [0, 0, 0]
         grid.u_cell_size = 20.0
         grid.v_cell_size = 30.0
         grid.name = name
 
-        with pytest.raises(AttributeError, match="The Grid2D has no number of cells."):
-            converter.grid_to_tag(grid)
-
-        workspace_context.remove_entity(grid)
-
-        grid.u_count = n_x
-        grid.v_count = n_y
-        grid.u_cell_size = np.r_[20.0]
-        grid.v_cell_size = np.r_[30.0]
-
-        grid.dip = 33.0
-        grid.vertical = True
-
-        assert isinstance(grid.centroids, np.ndarray)
+        assert converter.grid_to_tag(grid)[33550] == (20.0, 30.0, 0.0)
 
 
 def test_grid2d_to_geoimage(tmp_path):

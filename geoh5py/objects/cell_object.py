@@ -20,17 +20,14 @@ from __future__ import annotations
 import uuid
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
 
 import numpy as np
 
 from ..data import Data, DataAssociationEnum
 from ..groups import PropertyGroup
 from ..shared.utils import box_intersect, mask_by_extent
+from .object_base import ObjectType
 from .points import Points
-
-if TYPE_CHECKING:
-    from geoh5py.objects import ObjectType
 
 
 class CellObject(Points, ABC):
@@ -40,15 +37,30 @@ class CellObject(Points, ABC):
 
     _attribute_map: dict = Points._attribute_map.copy()
 
-    def __init__(self, object_type: ObjectType, name="Object", **kwargs):
-        self._cells: np.ndarray | None = None
+    def __init__(
+        self,
+        object_type: ObjectType,
+        cells: np.ndarray | list | tuple | None = None,
+        **kwargs,
+    ):
+        super().__init__(object_type, **kwargs)
 
-        super().__init__(object_type, name=name, **kwargs)
+        self._cells = self.validate_cells(cells)
 
     @classmethod
     @abstractmethod
     def default_type_uid(cls) -> uuid.UUID:
         """Default type uid."""
+
+    @property
+    def cells(self) -> np.ndarray:
+        """
+        Array of indices defining connecting vertices.
+        """
+        if self._cells is None and self.on_file:
+            self._cells = self.workspace.fetch_array_attribute(self, "cells")
+
+        return self._cells
 
     def mask_by_extent(
         self,
@@ -64,11 +76,10 @@ class CellObject(Points, ABC):
         vert_mask = mask_by_extent(self.vertices, extent, inverse=inverse)
 
         # Check for orphan vertices
-        if self.cells is not None:
-            cell_mask = np.all(vert_mask[self.cells], axis=1)
-            orphan_mask = np.zeros_like(vert_mask, dtype=bool)
-            orphan_mask[self.cells[cell_mask].flatten()] = True
-            vert_mask &= orphan_mask
+        cell_mask = np.all(vert_mask[self.cells], axis=1)
+        orphan_mask = np.zeros_like(vert_mask, dtype=bool)
+        orphan_mask[self.cells[cell_mask].flatten()] = True
+        vert_mask &= orphan_mask
 
         if ~np.any(vert_mask):
             return None
@@ -100,10 +111,10 @@ class CellObject(Points, ABC):
             raise ValueError("Found indices larger than the number of cells.")
 
         cells = np.delete(self.cells, indices, axis=0)
-        self._cells = None
-        setattr(self, "cells", cells)
 
+        self._cells = self.validate_cells(cells)
         self.remove_children_values(indices, "CELL", clear_cache=clear_cache)
+        self.workspace.update_attribute(self, "cells")
 
     def remove_vertices(
         self, indices: list[int] | np.ndarray, clear_cache: bool = False
@@ -134,15 +145,17 @@ class CellObject(Points, ABC):
         vert_index = np.ones(self.vertices.shape[0], dtype=bool)
         vert_index[indices] = False
         vertices = self.vertices[vert_index, :]
-
-        self._vertices = None
-        setattr(self, "vertices", vertices)
+        self._vertices = self.validate_vertices(vertices)
         self.remove_children_values(indices, "VERTEX", clear_cache=clear_cache)
+        self.workspace.update_attribute(self, "vertices")
 
         new_index = np.ones_like(vert_index, dtype=int)
         new_index[vert_index] = np.arange(self.vertices.shape[0])
         self.remove_cells(np.where(~np.all(vert_index[self.cells], axis=1)))
-        setattr(self, "cells", new_index[self.cells])
+        new_cells = new_index[self.cells]
+
+        self._cells = new_cells
+        self.workspace.update_attribute(self, "cells")
 
     def copy(  # pylint: disable=too-many-branches
         self,
@@ -228,3 +241,9 @@ class CellObject(Points, ABC):
                 )
 
         return new_object
+
+    @abstractmethod
+    def validate_cells(self, indices: tuple | list | np.ndarray | None) -> np.ndarray:
+        """
+        Validate cells.
+        """

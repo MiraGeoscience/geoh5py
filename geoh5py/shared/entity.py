@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..shared.utils import map_attributes, str2uuid
+from ..shared.utils import map_attributes, str2uuid, str_json_to_dict
 
 if TYPE_CHECKING:
     from .. import shared
@@ -221,24 +221,33 @@ class Entity(ABC):
         To remove the metadata, set it to None.
         """
         if getattr(self, "_metadata", None) is None:
-            self._metadata = self.workspace.fetch_metadata(self.uid)
+            value = self.workspace.fetch_metadata(self.uid)
+            self._metadata = self.validate_metadata(value)
 
         return self._metadata
 
     @metadata.setter
-    def metadata(self, value: dict | None):
-        if isinstance(value, dict):
-            if isinstance(self.metadata, dict):
-                self._metadata.update(value)  # type: ignore
-            else:
-                self._metadata = value
-        elif value is None:  # remove the metadata
-            self._metadata = None
-        else:
+    def metadata(self, value: dict | np.ndarray | bytes | None):
+        self._metadata = self.validate_metadata(value)
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "metadata")
+
+    @staticmethod
+    def validate_metadata(value):
+        if isinstance(value, np.ndarray):
+            value = value[0]
+
+        if isinstance(value, bytes):
+            value = str_json_to_dict(value)
+
+        if not isinstance(value, (dict, type(None))):  # remove the metadata
             raise TypeError(
-                "Input metadata must be of type dict or None" f" find '{type(value)}'."
+                "Input metadata must be of type dict or None. "
+                f"Provided value of type '{type(value)}'."
             )
-        self.workspace.update_attribute(self, "metadata")
+
+        return value
 
     @property
     def name(self) -> str:

@@ -30,6 +30,15 @@ class Curve(CellObject):
     """
     Curve object defined by a series of line segments (:obj:`~geoh5py.objects.curve.Curve.cells`)
     connecting :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
+
+    Attributes
+    ----------
+    :attr cells: Array of integer shape(*, 2) defining the connection between pair of vertices.
+    :attr current_line_id: Unique identifier of the current line.
+    :attr parts: Group identifiers for vertices connected by line segments as defined by the
+        :obj:`~geoh5py.objects.curve.Curve.cells` property.
+    :attr unique_parts: Unique 'parts' identifiers.
+    :attr vertices: Array of vertices as defined by :obj:`~geoh5py.objects.points.Points.vertices`.
     """
 
     _attribute_map: dict = CellObject._attribute_map.copy()
@@ -43,65 +52,37 @@ class Curve(CellObject):
         fields=(0x6A057FDC, 0xB355, 0x11E3, 0x95, 0xBE, 0xFD84A7FFCB88)
     )
 
-    def __init__(self, object_type: ObjectType, name="Curve", **kwargs):
+    def __init__(  # pylint: disable="too-many-arguments"
+        self,
+        object_type: ObjectType,
+        cells: np.ndarray | tuple | list | None = None,
+        current_line_id: uuid.UUID | None = None,
+        parts: np.ndarray | None = None,
+        name="Curve",
+        **kwargs,
+    ):
         self._current_line_id: uuid.UUID | None = None
         self._parts: np.ndarray | None = None
-        super().__init__(object_type, name=name, **kwargs)
 
-    @property
-    def cells(self) -> np.ndarray | None:
-        r"""
-        :obj:`numpy.ndarray` of :obj:`int`, shape (\*, 2):
-        Array of indices defining segments connecting vertices. Defined based on
-        :obj:`~geoh5py.objects.curve.Curve.parts` if set by the user.
-        """
-        if getattr(self, "_cells", None) is None:
-            if self._parts is not None:
-                cells = []
-                for part_id in self.unique_parts:
-                    ind = np.where(self.parts == part_id)[0]
-                    cells.append(np.sort(np.c_[ind[:-1], ind[1:]], axis=0))
-                self.cells = np.vstack(cells)
-
-            elif self.on_file:
-                self._cells = self.workspace.fetch_array_attribute(self)
-
-            if self._cells is None and self.vertices is not None:
-                n_segments = self.vertices.shape[0]
-                self.cells = np.c_[
-                    np.arange(0, n_segments - 1), np.arange(1, n_segments)
-                ].astype("uint32")
-
-        return self._cells
-
-    @cells.setter
-    def cells(self, indices: list | np.ndarray | None):
-        if isinstance(indices, list):
-            indices = np.vstack(indices)
-
-        if self._cells is not None and (
-            indices is None or indices.shape[0] < self._cells.shape[0]
-        ):
+        if parts is not None and cells is not None:
             raise ValueError(
-                "Attempting to assign 'cells' with fewer values. "
-                "Use the `remove_cells` method instead."
+                "Attribute 'parts' can only be set if cells are not provided."
             )
 
-        if indices.ndim != 2 or indices.shape[1] != 2:
-            raise ValueError("Array of cells should be of shape (*, 2).")
-
-        if not np.issubdtype(indices.dtype, np.integer):
-            raise TypeError("Indices array must be of integer type")
-
-        self._cells = indices.astype(np.int32)
-        self._parts = None
-        self.workspace.update_attribute(self, "cells")
+        super().__init__(
+            object_type,
+            cells=cells,
+            parts=parts,
+            current_line_id=current_line_id,
+            name=name,
+            **kwargs,
+        )
 
     @property
     def current_line_id(self) -> uuid.UUID | None:
-        if getattr(self, "_current_line_id", None) is None:
-            self._current_line_id = uuid.uuid4()
-
+        """
+        :obj:`uuid.UUID` or :obj:`None`: Unique identifier of the current line.
+        """
         return self._current_line_id
 
     @current_line_id.setter
@@ -115,7 +96,9 @@ class Curve(CellObject):
             )
 
         self._current_line_id = value
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -124,8 +107,21 @@ class Curve(CellObject):
         """
         return cls.__TYPE_UID
 
+    def make_cells_from_parts(self) -> np.ndarray | None:
+        """
+        Generate cells from parts.
+        """
+        if self.unique_parts is None:
+            return None
+
+        cells = []
+        for part_id in self.unique_parts:
+            ind = np.where(self.parts == part_id)[0]
+            cells.append(np.sort(np.c_[ind[:-1], ind[1:]], axis=0))
+        return np.vstack(cells)
+
     @property
-    def parts(self):
+    def parts(self) -> np.ndarray:
         """
         :obj:`numpy.array` of :obj:`int`, shape
         (:obj:`~geoh5py.objects.object_base.ObjectBase.n_vertices`, 2):
@@ -134,11 +130,7 @@ class Curve(CellObject):
         property. The definition of the :obj:`~geoh5py.objects.curve.Curve.cells`
         property get modified by the setting of parts.
         """
-        if (
-            getattr(self, "_parts", None) is None
-            and self.cells is not None
-            and self.vertices is not None
-        ):
+        if getattr(self, "_parts", None) is None:
             cells = self.cells
             parts = np.zeros(self.vertices.shape[0], dtype="int")
             count = 0
@@ -153,19 +145,27 @@ class Curve(CellObject):
         return self._parts
 
     @parts.setter
-    def parts(self, indices: list | np.ndarray):
-        if self.vertices is not None:
-            if isinstance(indices, list):
-                indices = np.asarray(indices, dtype="int32")
-            else:
-                indices = indices.astype("int32")
+    def parts(self, indices: list | tuple | np.ndarray | None):
+        if indices is None:
+            return
 
-            assert indices.shape == (
-                self.vertices.shape[0],
-            ), f"Provided parts must be of shape {self.vertices.shape[0]}"
-            self._parts = indices
-            self._cells = None
-            self.workspace.update_attribute(self, "cells")
+        if self._parts is not None:
+            raise AttributeError("Attribute 'parts' can only be set once.")
+
+        if isinstance(indices, (list | tuple)):
+            indices = np.asarray(indices, dtype="int32")
+
+        if not isinstance(indices, np.ndarray):
+            raise TypeError("Parts must be a list or numpy array.")
+
+        indices = indices.astype("int32")
+
+        if len(indices) != self.n_vertices:
+            raise ValueError(
+                f"Provided parts must be of shape {self.vertices.shape[0]}"
+            )
+
+        self._parts = indices
 
     @property
     def unique_parts(self):
@@ -173,7 +173,50 @@ class Curve(CellObject):
         :obj:`list` of :obj:`int`: Unique :obj:`~geoh5py.objects.curve.Curve.parts`
         identifiers.
         """
-        if self.parts is not None:
-            return np.unique(self.parts).tolist()
+        return np.unique(self.parts).tolist()
 
-        return None
+    def validate_cells(self, indices: tuple | list | np.ndarray | None) -> np.ndarray:
+        """
+        Validate or generate cells array.
+
+        :param indices: Array of indices defining segments connecting vertices.
+        """
+        # Auto-create from parts or connect vertices sequentially
+        if indices is None:
+            if self._parts is not None:
+                indices = self.make_cells_from_parts()
+            else:
+                n_segments = self.vertices.shape[0]
+                indices = np.c_[
+                    np.arange(0, n_segments - 1), np.arange(1, n_segments)
+                ].astype("uint32")
+
+        if isinstance(indices, (list, tuple)):
+            indices = np.array(indices, ndmin=2)
+
+        if not isinstance(indices, np.ndarray):
+            raise TypeError(
+                "Attribute 'cells' must be provided as type numpy.ndarray, list or tuple."
+            )
+
+        if indices.ndim != 2 or indices.shape[1] != 2:
+            raise ValueError("Array of cells should be of shape (*, 2).")
+
+        if not np.issubdtype(indices.dtype, np.integer):
+            raise TypeError("Indices array must be of integer type")
+
+        return indices
+
+    @classmethod
+    def validate_vertices(cls, xyz: np.ndarray | list | tuple) -> np.ndarray:
+        """
+        Validate and format type of vertices array.
+
+        :param xyz: Array of vertices as defined by :obj:`~geoh5py.objects.points.Points.vertices`.
+        """
+        xyz = super().validate_vertices(xyz)
+
+        if len(xyz) < 2:
+            xyz = np.vstack([xyz] * 2)
+
+        return xyz

@@ -27,6 +27,7 @@ from typing import cast
 import numpy as np
 
 from ...data import Data, ReferencedData
+from ...shared.utils import str_json_to_dict
 from ..curve import Curve
 from ..object_type import ObjectType
 
@@ -231,26 +232,22 @@ class BaseElectrode(Curve, ABC):
     def default_type_uid(cls) -> uuid.UUID:
         """Default unique identifier. Implemented on the child class."""
 
-    @Curve.metadata.setter  # type: ignore
-    def metadata(self, values: dict | None):
-        if isinstance(values, dict):
+    @staticmethod
+    def validate_metadata(value):
+        if isinstance(value, np.ndarray):
+            value = value[0]
+
+        if isinstance(value, bytes):
+            value = str_json_to_dict(value)
+
+        if isinstance(value, dict):
             default_keys = ["Current Electrodes", "Potential Electrodes"]
 
-            if self.metadata:
-                existing_keys = self.metadata.copy()
-                existing_keys.update(values)
-            else:
-                existing_keys = values
-
             # check if metadata has the required keys
-            if not all(key in existing_keys for key in default_keys):
+            if not all(key in value for key in default_keys):
                 raise ValueError(f"Input metadata must have for keys {default_keys}")
 
-            for key in default_keys:
-                if self.workspace.get_entity(existing_keys[key])[0] is None:
-                    raise KeyError(f"Input {key} uuid not present in Workspace")
-
-        super(Curve, Curve).metadata.fset(self, values)  # type: ignore
+        return value
 
     @property
     @abstractmethod

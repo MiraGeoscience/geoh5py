@@ -19,7 +19,9 @@ from __future__ import annotations
 import json
 import uuid
 
-from ..shared.utils import stringify
+import numpy as np
+
+from ..shared.utils import str_json_to_dict, stringify
 from .base import Group, GroupType
 
 
@@ -44,12 +46,21 @@ class UIJsonGroup(Group):
         Metadata attached to the entity.
         """
         if getattr(self, "_options", None) is None:
-            self._options = self.workspace.fetch_metadata(self.uid, argument="options")
+            value = self.workspace.fetch_metadata(self.uid, argument="options")
+
+            if value is not None:
+                self.options = value
 
         return self._options or {}
 
     @options.setter
-    def options(self, value: dict | None):
+    def options(self, value: dict | np.ndarray | bytes | None):
+        if isinstance(value, np.ndarray):
+            value = value[0]
+
+        if isinstance(value, bytes):
+            value = str_json_to_dict(value)
+
         if not isinstance(value, (dict, type(None))):
             raise ValueError(f"Input 'options' must be of type {dict} or None")
 

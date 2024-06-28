@@ -254,6 +254,7 @@ class Workspace(AbstractContextManager):
                 "_entity_type",
                 "_on_file",
                 "_centroids",
+                "_parts",
                 "_extent",
                 "_visual_parameters",
             ]

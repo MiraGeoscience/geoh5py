@@ -41,29 +41,31 @@ def test_create_drape_model(tmp_path: Path):
         x = np.sin(2 * np.arange(n_col) / n_col * np.pi)
         y = np.cos(2 * np.arange(n_col) / n_col * np.pi)
         top = bottom.flatten()[::n_row] + 0.1
-        drape = DrapeModel.create(workspace)
-
-        with pytest.raises(AttributeError) as error:
-            getattr(drape, "centroids")
-
-        assert "Attribute 'layers'" in str(error)
 
         layers = np.c_[i.flatten(), j.flatten(), bottom.flatten()]
-        drape.layers = layers
-
-        with pytest.raises(ValueError, match="Prism index"):
-            layers[-32:, 0] = 64
-            drape.layers = layers
-
-        with pytest.raises(AttributeError) as error:
-            getattr(drape, "centroids")
-
-        assert "Attribute 'prisms'" in str(error)
-
         prisms = np.c_[
             x, y, top, np.arange(0, i.flatten().shape[0], n_row), np.tile(n_row, n_col)
         ]
-        drape.prisms = prisms
+
+        with pytest.raises(TypeError, match="Attribute 'prisms' must be"):
+            DrapeModel.create(workspace, prisms="abc")
+
+        with pytest.raises(ValueError, match="Array of 'prisms' must be of shape"):
+            DrapeModel.create(workspace, prisms=(0, 0))
+
+        with pytest.raises(TypeError, match="Attribute 'layers' must be"):
+            DrapeModel.create(workspace, layers="abc")
+
+        with pytest.raises(ValueError, match="Array of 'layers' must be of shape"):
+            DrapeModel.create(workspace, layers=(0, 0))
+
+        assert DrapeModel.create(workspace).n_cells == 1
+
+        drape = DrapeModel.create(workspace, layers=layers, prisms=prisms)
+
+        with pytest.raises(AttributeError):
+            layers[-32:, 0] = 64
+            drape.layers = layers
 
         drape.add_data(
             {

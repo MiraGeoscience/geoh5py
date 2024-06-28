@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import uuid
 from abc import ABC, abstractmethod
+from numbers import Number
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -30,6 +31,8 @@ from .object_base import ObjectBase
 if TYPE_CHECKING:
     from geoh5py.objects import ObjectType
 
+ORIGIN_TYPE = np.dtype([("x", float), ("y", float), ("z", float)])
+
 
 class GridObject(ObjectBase, ABC):
     """
@@ -38,14 +41,18 @@ class GridObject(ObjectBase, ABC):
 
     _attribute_map = ObjectBase._attribute_map.copy()
 
-    def __init__(self, object_type: ObjectType, **kwargs):
-        self._centroids: np.ndarray | None = None
+    def __init__(
+        self, object_type: ObjectType, origin=(0.0, 0.0, 0.0), rotation=0.0, **kwargs
+    ):
+        self._centroids: np.ndarray | None
+        self._origin: np.ndarray
+        self._rotation: float
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(object_type, origin=origin, rotation=rotation, **kwargs)
 
     @property
     @abstractmethod
-    def centroids(self) -> np.ndarray | None:
+    def centroids(self) -> np.ndarray:
         """
         Cell center locations in world coordinates.
         """
@@ -72,13 +79,8 @@ class GridObject(ObjectBase, ABC):
         if parent is None:
             parent = self.parent
 
-        if (
-            mask is not None
-            and self.centroids is not None
-            and (
-                not isinstance(mask, np.ndarray)
-                or mask.shape != (self.centroids.shape[0],)
-            )
+        if mask is not None and (
+            not isinstance(mask, np.ndarray) or mask.shape != (self.centroids.shape[0],)
         ):
             raise ValueError("Mask must be an array of shape (n_vertices,).")
 
@@ -129,10 +131,7 @@ class GridObject(ObjectBase, ABC):
         :return: shape(2, 3) Bounding box defined by the bottom South-West and
             top North-East coordinates.
         """
-        if self.centroids is not None:
-            return np.c_[self.centroids.min(axis=0), self.centroids.max(axis=0)].T
-
-        return None
+        return np.c_[self.centroids.min(axis=0), self.centroids.max(axis=0)].T
 
     def mask_by_extent(
         self, extent: np.ndarray, inverse: bool = False
@@ -145,7 +144,62 @@ class GridObject(ObjectBase, ABC):
         if self.extent is None or not box_intersect(self.extent, extent):
             return None
 
-        if self.centroids is not None:
-            return mask_by_extent(self.centroids, extent, inverse=inverse)
+        return mask_by_extent(self.centroids, extent, inverse=inverse)
 
-        return None
+    @property
+    def rotation(self) -> float:
+        """
+        :obj:`float`: Clockwise rotation angle (degree) about the vertical axis.
+        """
+        return self._rotation
+
+    @rotation.setter
+    def rotation(self, value: np.ndarray | Number):
+        if isinstance(value, Number):
+            value = np.r_[value]
+
+        if not isinstance(value, np.ndarray) or value.shape != (1,):
+            raise TypeError("Rotation angle must be a float of shape (1,)")
+
+        self._centroids = None
+        self._rotation = value.astype(float).item()
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
+
+    @property
+    def origin(self) -> np.ndarray:
+        """
+        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin.
+        """
+        return self._origin
+
+    @origin.setter
+    def origin(self, values: np.ndarray | list | tuple):
+        if isinstance(values, (list, tuple)):
+            values = np.array(values)
+
+        if not isinstance(values, (np.ndarray, np.void)):
+            raise TypeError(
+                "Attribute 'origin' must be a list, tuple or numpy array. "
+                f"Object of type {type(values)} provided."
+            )
+
+        if np.issubdtype(values.dtype, np.number):
+            if len(values) != 3:
+                raise ValueError(
+                    "Array of 'prisms' must be of shape (3,). "
+                    f"Array of shape {values.shape} provided."
+                )
+
+            values = np.asarray(tuple(values), dtype=ORIGIN_TYPE)
+
+        if values.dtype != np.dtype(ORIGIN_TYPE):
+            raise ValueError(f"Array of 'prisms' must be of dtype = {ORIGIN_TYPE}")
+
+        self._centroids = None
+
+        if getattr(self, "_origin", None) is not None and self.on_file:
+            self.workspace.update_attribute(self, "attributes")
+
+        self._origin = values
