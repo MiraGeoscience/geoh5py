@@ -139,5 +139,8 @@ dmypy.json
 # isort config is in pyproject.toml
 .isort.cfg
 
+# vscode
+.vscode
+
 # geoh5 locks
 *.geoh5.lock
