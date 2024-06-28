@@ -91,7 +91,9 @@ class BaseForm(BaseModel):
 
     @property
     def json_string(self):
-        return self.model_dump_json(exclude_unset=True, by_alias=True)
+        return self.model_dump_json(
+            exclude_unset=True, by_alias=True
+        )
 
 
 class StringForm(BaseForm):
