@@ -46,7 +46,7 @@ class Curve(CellObject):
     def __init__(  # pylint: disable="too-many-arguments"
         self,
         object_type: ObjectType,
-        vertices: np.ndarray = ((0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+        vertices: np.ndarray = (0.0, 0.0, 0.0),
         cells: np.ndarray | None = None,
         current_line_id: uuid.UUID | None = None,
         parts: np.ndarray | None = None,
@@ -214,6 +214,6 @@ class Curve(CellObject):
         xyz = super().validate_vertices(xyz)
 
         if len(xyz) < 2:
-            raise ValueError("Curve must have at least two vertices.")
+            xyz = np.vstack([xyz] * 2)
 
         return xyz
