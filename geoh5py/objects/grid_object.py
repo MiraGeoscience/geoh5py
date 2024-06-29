@@ -147,6 +147,13 @@ class GridObject(ObjectBase, ABC):
         return mask_by_extent(self.centroids, extent, inverse=inverse)
 
     @property
+    def n_cells(self) -> int:
+        """
+        :obj:`int`: Total number of cells
+        """
+        return int(np.prod(self.shape))
+
+    @property
     def rotation(self) -> float:
         """
         :obj:`float`: Clockwise rotation angle (degree) about the vertical axis.
@@ -203,3 +210,10 @@ class GridObject(ObjectBase, ABC):
             self.workspace.update_attribute(self, "attributes")
 
         self._origin = values
+
+    @property
+    @abstractmethod
+    def shape(self) -> np.ndarray:
+        """
+        Cell center locations in world coordinates.
+        """

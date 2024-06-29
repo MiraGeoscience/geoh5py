@@ -133,13 +133,6 @@ class BlockModel(GridObject):
         return cls.__TYPE_UID
 
     @property
-    def n_cells(self) -> int:
-        """
-        :obj:`int`: Total number of cells
-        """
-        return int(np.prod(self.shape))
-
-    @property
     def shape(self) -> tuple:
         """
         :obj:`list` of :obj:`int`, len (3, ): Number of cells along the u, v and z-axis

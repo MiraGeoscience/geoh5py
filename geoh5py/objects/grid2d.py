@@ -246,13 +246,6 @@ class Grid2D(GridObject):
         self.workspace.update_attribute(self, "attributes")
 
     @property
-    def n_cells(self) -> int:
-        """
-        :obj:`int`: Total number of cells.
-        """
-        return np.prod(self.shape)
-
-    @property
     def shape(self) -> tuple:
         """
         :obj:`list` of :obj:`int`, len (2, ): Number of cells along the u and v-axis.
