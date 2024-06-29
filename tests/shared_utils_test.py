@@ -24,24 +24,10 @@ import pytest
 
 from geoh5py.shared.utils import (
     box_intersect,
-    inf2str,
     iterable,
     iterable_message,
     mask_by_extent,
-    nan2str,
 )
-
-
-def test_inf2str():
-    assert inf2str(np.inf) == "inf"
-    assert inf2str(1) == 1
-    assert inf2str("a") == "a"
-
-
-def test_nan2str():
-    assert nan2str(np.nan) == ""
-    assert nan2str(1) == 1
-    assert nan2str("a") == "a"
 
 
 def test_iterable():

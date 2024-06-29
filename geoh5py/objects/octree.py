@@ -222,8 +222,7 @@ class Octree(GridObject):
                         value.T, names="I, J, K, NCells", formats="<i4, <i4, <i4, <i4"
                     )
                 )
-            self._centroids = None
-            self.workspace.update_attribute(self, "octree_cells")
+                self.workspace.update_attribute(self, "octree_cells")
 
     @property
     def origin(self):

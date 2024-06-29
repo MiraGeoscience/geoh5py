@@ -26,6 +26,7 @@ import string
 
 import numpy as np
 import pytest
+from h5py import special_dtype
 
 from geoh5py.data import FloatData, data_type
 from geoh5py.groups import ContainerGroup, DrillholeGroup, Group
@@ -1118,3 +1119,49 @@ def test_tables_errors(tmp_path):
             drillhole_group.drillholes_tables["property_group"].nan_value_from_name(
                 "bidon"
             )
+
+
+def test_surveys_info(tmp_path):
+    h5file_path = tmp_path / r"test_info.geoh5"
+
+    _, workspace = create_drillholes(h5file_path, version=2.0, ga_version="1.0")
+
+    # Manually add an info column to the surveys
+    dh_group = workspace.get_entity("DH_group")[0]
+
+    surveys = dh_group.data["Surveys"].view("<f4").reshape((-1, 3))
+
+    new_dtype = [
+        ("Depth", "<f4"),
+        ("Azimuth", "<f4"),
+        ("Dip", "<f4"),
+        ("Info", special_dtype(vlen=str)),
+    ]
+    values = []
+
+    for val in surveys:
+        values.append((*val, b""))
+
+    new_surveys = np.array(values, dtype=new_dtype)
+
+    dh_group.data["Surveys"] = new_surveys
+
+    with workspace.open(mode="r+"):
+        dh_group.save_attribute("surveys")
+
+    with workspace.open(mode="r+") as workspace:
+        dh_group = workspace.get_entity("DH_group")[0]
+        dh = Drillhole.create(
+            workspace,
+            collar=np.r_[0.0, 10.0, 10],
+            surveys=np.c_[
+                np.linspace(0, 100, 5),
+                np.ones(5) * 45.0,
+                np.ones(5) * -89.0,
+            ],
+            parent=dh_group,
+            name="Info Drillhole",
+        )
+
+    assert len(dh.parent.data["Surveys"]) == 35
+    assert "Info" in dh.parent.data["Surveys"].dtype.names
