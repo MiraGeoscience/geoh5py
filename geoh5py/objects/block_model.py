@@ -190,6 +190,9 @@ class BlockModel(GridObject):
     def validate_cell_delimiters(value: np.ndarray, axis: str) -> np.ndarray:
         """
         Validate the cell delimiters for the block model.
+
+        :param value: Cell delimiters along the axis.
+        :param axis: Axis to validate the cell delimiters for.
         """
         if not isinstance(value, np.ndarray):
             raise TypeError(
