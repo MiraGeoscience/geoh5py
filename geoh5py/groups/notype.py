@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import uuid
 
-from .group import Group, GroupType
+from .base import Group
 
 
 class NoTypeGroup(Group):
@@ -28,16 +28,7 @@ class NoTypeGroup(Group):
     __TYPE_UID = uuid.UUID(
         fields=(0xDD99B610, 0xBE92, 0x48C0, 0x87, 0x3C, 0x5B5946EA2840)
     )
-
-    _name = "NoType"
-    _description = "<Unknown>"
-
-    def __init__(self, group_type: GroupType, **kwargs):
-        assert group_type is not None
-        super().__init__(group_type, **kwargs)
-
-        if self.entity_type.name == "Entity":
-            self.entity_type.name = "NoType Group"
+    _default_name = "NoType"
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:

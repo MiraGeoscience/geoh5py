@@ -16,43 +16,37 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+import json
 import uuid
 
-from .group import Group, GroupType
+from ..shared.utils import stringify
+from .base import Group, GroupType
 
 
-class SimPEGGroup(Group):
+class UIJsonGroup(Group):
     """Group for SimPEG inversions."""
 
-    __TYPE_UID = uuid.UUID("{55ed3daf-c192-4d4b-a439-60fa987fe2b8}")
-
-    _name = "SimPEG"
-    _description = "SimPEG"
-    _options = None
+    __TYPE_UID = uuid.UUID("{BB50AC61-A657-4926-9C82-067658E246A0}")
+    _default_name = "UIJson"
 
     def __init__(self, group_type: GroupType, **kwargs):
-        assert group_type is not None
-        super().__init__(group_type, **kwargs)
+        self._options: dict | None = None
 
-        if self.entity_type.name == "Entity":
-            self.entity_type.name = "SimPEG"
+        super().__init__(group_type, **kwargs)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
 
     @property
-    def options(self) -> dict | None:
+    def options(self) -> dict:
         """
         Metadata attached to the entity.
         """
         if getattr(self, "_options", None) is None:
             self._options = self.workspace.fetch_metadata(self.uid, argument="options")
 
-        if self._options is None:
-            self._options = {}
-
-        return self._options
+        return self._options or {}
 
     @options.setter
     def options(self, value: dict | None):
@@ -61,3 +55,20 @@ class SimPEGGroup(Group):
 
         self._options = value
         self.workspace.update_attribute(self, "options")
+
+    def add_ui_json(self, name: str | None = None):
+        """
+        Add ui.json file to entity.
+
+        :param name: Name of the file in the workspace.
+        """
+        if self.options is None:
+            raise ValueError("UIJsonGroup must have options set.")
+
+        json_str = json.dumps(stringify(self.options), indent=4)
+        bytes_data = json_str.encode("utf-8")
+
+        if name is None:
+            name = self.name
+
+        self.add_file(bytes_data, name=f"{name}.ui.json")

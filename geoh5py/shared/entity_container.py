@@ -42,27 +42,42 @@ class EntityContainer(Entity):
     Base Entity class
     """
 
-    def __init__(self, uid: uuid.UUID | None = None, name="Entity", **kwargs):
+    def __init__(self, uid: uuid.UUID | None = None, **kwargs):
         self._uid = (
             str2uuid(uid) if isinstance(str2uuid(uid), uuid.UUID) else uuid.uuid4()
         )
         self._children: list = []
 
-        super().__init__(uid, name, **kwargs)
+        super().__init__(uid, **kwargs)
 
-    def add_file(self, file: str):
+    def add_file(self, file: str | Path | bytes, name: str = "filename.dat"):
         """
         Add a file to the object or group stored as bytes on a FilenameData
 
         :param file: File name with path to import.
+        :param name: Name of the file in the workspace.
         """
-        if not Path(file).is_file():
-            raise ValueError(f"Input file '{file}' does not exist.")
+        if isinstance(file, str):
+            file = Path(file)
 
-        with open(file, "rb") as raw_binary:
-            blob = raw_binary.read()
+        if isinstance(file, Path):
 
-        name = Path(file).name
+            if not file.is_file():
+                raise ValueError(f"Input file '{file}' does not exist.")
+
+            name = Path(file).name
+
+            with open(file, "rb") as raw_binary:
+                blob = raw_binary.read()
+
+        elif isinstance(file, bytes):
+            blob = file
+
+        else:
+            raise TypeError(
+                f"Input file must be a path or BytesIO object, not {type(file)}"
+            )
+
         attributes = {
             "name": name,
             "file_name": name,
