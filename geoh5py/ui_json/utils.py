@@ -24,8 +24,6 @@ from pathlib import Path
 from time import time
 from typing import Any
 
-import numpy as np
-
 from geoh5py import Workspace
 from geoh5py.groups import ContainerGroup, Group
 from geoh5py.objects import ObjectBase
@@ -255,24 +253,6 @@ def is_form(var) -> bool:
     return is_a_form
 
 
-def list2str(value):
-    if isinstance(value, list):  # & (key not in exclude):
-        return str(value)[1:-1]
-    return value
-
-
-def none2str(value):
-    if value is None:
-        return ""
-    return value
-
-
-def inf2str(value):  # map np.inf to "inf"
-    if not isinstance(value, (int, float)):
-        return value
-    return str(value) if not np.isfinite(value) else value
-
-
 def str2list(value):  # map "[...]" to [...]
     if isinstance(value, str):
         if value in ["inf", "-inf", ""]:
@@ -282,12 +262,6 @@ def str2list(value):  # map "[...]" to [...]
         except ValueError:
             return value
 
-    return value
-
-
-def str2none(value):
-    if value == "":
-        return None
     return value
 
 
