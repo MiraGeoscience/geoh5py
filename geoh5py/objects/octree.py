@@ -136,9 +136,7 @@ class Octree(GridObject):
     @property
     def centroids(self):
         """
-        :obj:`numpy.array` of :obj:`float`,
-        shape (:obj:`~geoh5py.objects.octree.Octree.n_cells`, 3):
-        Cell center locations in world coordinates.
+        Cell center locations in world coordinates of shape (n_cells, 3).
 
         .. code-block:: python
 
@@ -179,17 +177,16 @@ class Octree(GridObject):
     @property
     def n_cells(self) -> int:
         """
-        :obj:`int`: Total number of cells in the mesh
+        Total number of cells in the mesh
         """
         return self.octree_cells.shape[0]
 
     @property
     def octree_cells(self) -> np.ndarray:
         """
-        :obj:`numpy.ndarray` of :obj:`int`,
-        shape (:obj:`~geoh5py.objects.octree.Octree.n_cells`, 4):
         Array defining the i, j, k position and size of each cell.
-        The size defines the width of a cell in number of base cells.
+        The size defines the width of a cell in number of base cells,
+        shape (:obj:`~geoh5py.objects.octree.Octree.n_cells`, 4).
 
          .. code-block:: python
 
@@ -300,7 +297,7 @@ class Octree(GridObject):
     @property
     def w_cell_size(self) -> float:
         """
-        :obj:`float`: Base cell size along the w-axis.
+        Base cell size along the w-axis.
         """
         return self._w_cell_size
 
@@ -314,6 +311,6 @@ class Octree(GridObject):
     @property
     def w_count(self) -> int:
         """
-        :obj:`int`: Number of cells along w-axis.
+        Number of cells along w-axis.
         """
         return self._w_count

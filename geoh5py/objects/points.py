@@ -52,7 +52,7 @@ class Points(ObjectBase):
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         **kwargs,
-    ):
+    ) -> Points:
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy`.
         """
@@ -81,8 +81,8 @@ class Points(ObjectBase):
         """
         Geography bounding box of the object.
 
-        :return: shape(2, 3) Bounding box defined by the bottom South-West and
-            top North-East coordinates.
+        :return: Bounding box defined by the bottom South-West and
+            top North-East coordinates,  shape(2, 3).
         """
         return np.c_[self.vertices.min(axis=0), self.vertices.max(axis=0)].T
 
@@ -126,7 +126,7 @@ class Points(ObjectBase):
     @property
     def vertices(self) -> np.ndarray:
         """
-        :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`
+        Array of vertices coordinates, shape(n_vertices, 3).
         """
         if self._vertices is None and self.on_file:
             self._vertices = self.workspace.fetch_array_attribute(self, "vertices")
