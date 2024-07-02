@@ -140,9 +140,7 @@ class BlockModel(GridObject):
         """
         Number of cells along the u, v and z-axis
         """
-        return tuple(
-            [self.u_cells.shape[0], self.v_cells.shape[0], self.z_cells.shape[0]]
-        )
+        return self.u_cells.shape[0], self.v_cells.shape[0], self.z_cells.shape[0]
 
     @property
     def u_cell_delimiters(self) -> np.ndarray:
