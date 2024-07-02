@@ -24,7 +24,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..data import Data
 from ..shared.utils import box_intersect, mask_by_extent
 from .object_base import ObjectBase
 
@@ -37,16 +36,24 @@ ORIGIN_TYPE = np.dtype([("x", float), ("y", float), ("z", float)])
 class GridObject(ObjectBase, ABC):
     """
     Base class for object with centroids.
+
+    :param object_type: Type of object.
+    :param origin: Origin of the object.
+    :param rotation: Rotation angle (clockwise) about the vertical axis.
     """
 
     _attribute_map = ObjectBase._attribute_map.copy()
 
     def __init__(
-        self, object_type: ObjectType, origin=(0.0, 0.0, 0.0), rotation=0.0, **kwargs
+        self,
+        object_type: ObjectType,
+        origin: np.ndarray | tuple = (0.0, 0.0, 0.0),
+        rotation: float = 0.0,
+        **kwargs,
     ):
-        self._centroids: np.ndarray | None
-        self._origin: np.ndarray
-        self._rotation: float
+        self._centroids: np.ndarray | None = None
+        self._origin: np.ndarray = origin
+        self._rotation: float = rotation
 
         super().__init__(object_type, origin=origin, rotation=rotation, **kwargs)
 
@@ -54,69 +61,8 @@ class GridObject(ObjectBase, ABC):
     @abstractmethod
     def centroids(self) -> np.ndarray:
         """
-        Cell center locations in world coordinates.
+        Cell center locations in world coordinates of shape (n_cells, 3).
         """
-
-    def copy(
-        self,
-        parent=None,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: np.ndarray | None = None,
-        **kwargs,
-    ):
-        """
-        Function to copy an entity to a different parent entity.
-
-        :param parent: New parent for the copied object.
-        :param copy_children: Copy children entities.
-        :param clear_cache: Clear cache of data values.
-        :param mask: Array of indices to sub-sample the input entity.
-        :param kwargs: Additional keyword arguments.
-
-        :return: New copy of the input entity.
-        """
-        if parent is None:
-            parent = self.parent
-
-        if mask is not None and (
-            not isinstance(mask, np.ndarray) or mask.shape != (self.centroids.shape[0],)
-        ):
-            raise ValueError("Mask must be an array of shape (n_vertices,).")
-
-        new_entity = parent.workspace.copy_to_parent(
-            self,
-            parent,
-            clear_cache=clear_cache,
-            **kwargs,
-        )
-        if copy_children:
-            children_map = {}
-            for child in self.children:
-                if not isinstance(child, Data):
-                    continue
-                if (
-                    isinstance(mask, np.ndarray)
-                    and isinstance(getattr(child, "values", None), np.ndarray)
-                    and child.values.shape == mask.shape
-                ):
-                    values = np.ones_like(child.values) * np.nan
-                    values[mask] = child.values[mask]
-                else:
-                    values = child.values
-
-                child_copy = child.copy(
-                    parent=new_entity, clear_cache=clear_cache, values=values
-                )
-                children_map[child.uid] = child_copy.uid
-
-            if self.property_groups:
-                self.workspace.copy_property_groups(
-                    new_entity, self.property_groups, children_map
-                )
-                new_entity.workspace.update_attribute(new_entity, "property_groups")
-
-        return new_entity
 
     @classmethod
     @abstractmethod
@@ -124,7 +70,7 @@ class GridObject(ObjectBase, ABC):
         """Default type uid."""
 
     @property
-    def extent(self) -> np.ndarray | None:
+    def extent(self) -> np.ndarray:
         """
         Geography bounding box of the object.
 
@@ -141,7 +87,7 @@ class GridObject(ObjectBase, ABC):
 
         Applied to object's centroids.
         """
-        if self.extent is None or not box_intersect(self.extent, extent):
+        if not box_intersect(self.extent, extent):
             return None
 
         return mask_by_extent(self.centroids, extent, inverse=inverse)

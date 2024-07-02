@@ -209,14 +209,14 @@ class Octree(GridObject):
     @property
     def shape(self) -> tuple:
         """
-        :obj:`list` of :obj:`int`, len (3, ): Number of cells along the u, v and w-axis.
+        Number of cells along the u, v and w-axis.
         """
         return self.u_count, self.v_count, self.w_count
 
     @property
     def u_cell_size(self) -> float:
         """
-        :obj:`float`: Base cell size along the u-axis.
+        Base cell size along the u-axis.
         """
         return self._u_cell_size
 
@@ -230,14 +230,14 @@ class Octree(GridObject):
     @property
     def u_count(self) -> int:
         """
-        :obj:`int`: Number of cells along u-axis.
+        Number of cells along u-axis.
         """
         return self._u_count
 
     @property
     def v_cell_size(self) -> float:
         """
-        :obj:`float`: Base cell size along the v-axis.
+        Base cell size along the v-axis.
         """
         return self._v_cell_size
 
@@ -251,7 +251,7 @@ class Octree(GridObject):
     @property
     def v_count(self) -> int:
         """
-        :obj:`int`: Number of cells along v-axis.
+        Number of cells along v-axis.
         """
         return self._v_count
 

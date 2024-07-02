@@ -68,7 +68,7 @@ class CellObject(Points, ABC):
         inverse: bool = False,
     ) -> np.ndarray | None:
         """
-        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
+        Extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
         """
         if self.extent is None or not box_intersect(self.extent, extent):
             return None

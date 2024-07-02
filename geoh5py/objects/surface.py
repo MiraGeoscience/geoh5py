@@ -67,9 +67,12 @@ class Surface(CellObject):
 
         :param xyz: Array of vertices as defined by :obj:`~geoh5py.objects.points.Points.vertices`.
         """
-        xyz = super().validate_vertices(xyz)
+        if isinstance(xyz, (list, tuple)):
+            xyz = np.array(xyz, ndmin=2)
 
         if len(xyz) < 3:
-            xyz = np.vstack([xyz] * 3)[:3]
+            xyz = np.vstack([xyz] * 3)
+
+        xyz = super().validate_vertices(xyz)
 
         return xyz

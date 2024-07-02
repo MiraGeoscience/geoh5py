@@ -21,11 +21,11 @@ import uuid
 
 import numpy as np
 
-from .grid_object import GridObject
-from .object_base import ObjectType
+from ..shared.utils import box_intersect, mask_by_extent
+from .object_base import ObjectBase, ObjectType
 
 
-class DrapeModel(GridObject):
+class DrapeModel(ObjectBase):
     """
     Drape (curtain) model object made up of layers and prisms.
     """
@@ -49,6 +49,7 @@ class DrapeModel(GridObject):
         prisms: np.ndarray | list | tuple = (0.0, 0.0, 0.0, 0, 1),
         **kwargs,
     ):
+        self._centroids: np.ndarray | None = None
         self._layers: np.ndarray = self.validate_layers(layers)
         self._prisms: np.ndarray = self.validate_prisms(prisms)
 
@@ -94,6 +95,16 @@ class DrapeModel(GridObject):
         return self._centroids
 
     @property
+    def extent(self) -> np.ndarray | None:
+        """
+        Geography bounding box of the object.
+
+        :return: shape(2, 3) Bounding box defined by the bottom South-West and
+            top North-East coordinates.
+        """
+        return np.c_[self.centroids.min(axis=0), self.centroids.max(axis=0)].T
+
+    @property
     def layers(self) -> np.ndarray:
         """
         :obj:`numpy.array`, shape(*, 3): Layers in the drape model with columns: X
@@ -125,6 +136,19 @@ class DrapeModel(GridObject):
     def n_cells(self):
         return self._layers.shape[0]
 
+    def mask_by_extent(
+        self, extent: np.ndarray, inverse: bool = False
+    ) -> np.ndarray | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
+
+        Applied to object's centroids.
+        """
+        if not box_intersect(self.extent, extent):
+            return None
+
+        return mask_by_extent(self.centroids, extent, inverse=inverse)
+
     @property
     def prisms(self) -> np.ndarray:
         """
@@ -149,30 +173,8 @@ class DrapeModel(GridObject):
 
         return np.array(self._prisms.tolist())
 
-    @property
-    def rotation(self):
-        """
-        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the rotation.
-        """
-        return None
-
-    @rotation.setter
-    def rotation(self, value):
-        pass
-
-    @property
-    def origin(self):
-        """
-        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin.
-        """
-        return None
-
-    @origin.setter
-    def origin(self, value):
-        pass
-
     @classmethod
-    def validate_prisms(cls, values) -> np.ndarray:
+    def validate_prisms(cls, values: np.ndarray | list | tuple) -> np.ndarray:
         """
         Validate and format type of prisms array.
 

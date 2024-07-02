@@ -77,6 +77,8 @@ class BlockModel(GridObject):
     def local_axis_centers(self, axis: str):
         """
         Get the local axis centers for the block model.
+
+        :param axis: Axis to get the centers for.
         """
         n_cells = getattr(self, f"{axis}_cells")
         return np.cumsum(n_cells) - n_cells / 2.0
@@ -84,9 +86,7 @@ class BlockModel(GridObject):
     @property
     def centroids(self) -> np.ndarray:
         """
-        :obj:`numpy.array`,
-        shape (:obj:`~geoh5py.objects.block_model.BlockModel.n_cells`, 3):
-        Cell center locations in world coordinates.
+        Cell center locations in world coordinates of shape (n_cells, 3).
 
         .. code-block:: python
 
@@ -118,7 +118,10 @@ class BlockModel(GridObject):
         return self._centroids
 
     @property
-    def cell_delimiters(self):
+    def cell_delimiters(self) -> list[np.ndarray]:
+        """
+        List of cell delimiters along the u, v and z-axis.
+        """
         return [
             self._u_cell_delimiters,
             self._v_cell_delimiters,
@@ -135,7 +138,7 @@ class BlockModel(GridObject):
     @property
     def shape(self) -> tuple:
         """
-        :obj:`list` of :obj:`int`, len (3, ): Number of cells along the u, v and z-axis
+        Number of cells along the u, v and z-axis
         """
         return tuple(
             [self.u_cells.shape[0], self.v_cells.shape[0], self.z_cells.shape[0]]
@@ -144,7 +147,6 @@ class BlockModel(GridObject):
     @property
     def u_cell_delimiters(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`:
         Nodal offsets along the u-axis relative to the origin.
         """
         return self._u_cell_delimiters
@@ -152,8 +154,6 @@ class BlockModel(GridObject):
     @property
     def u_cells(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`,
-        shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [0], ):
         Cell size along the u-axis.
         """
         return self.u_cell_delimiters[1:] - self.u_cell_delimiters[:-1]
@@ -161,7 +161,6 @@ class BlockModel(GridObject):
     @property
     def v_cell_delimiters(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`:
         Nodal offsets along the v-axis relative to the origin.
         """
         return self._v_cell_delimiters
@@ -169,8 +168,6 @@ class BlockModel(GridObject):
     @property
     def v_cells(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`,
-        shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [1], ):
         Cell size along the v-axis.
         """
         return self.v_cell_delimiters[1:] - self.v_cell_delimiters[:-1]
@@ -178,7 +175,6 @@ class BlockModel(GridObject):
     @property
     def z_cell_delimiters(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`:
         Nodal offsets along the u-axis relative to the origin.
         """
         return self._z_cell_delimiters
@@ -186,14 +182,15 @@ class BlockModel(GridObject):
     @property
     def z_cells(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`,
-        shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [2], ):
         Cell size along the z-axis
         """
         return self.z_cell_delimiters[1:] - self.z_cell_delimiters[:-1]
 
     @staticmethod
     def validate_cell_delimiters(value: np.ndarray, axis: str) -> np.ndarray:
+        """
+        Validate the cell delimiters for the block model.
+        """
         if not isinstance(value, np.ndarray):
             raise TypeError(
                 f"Attribute '{axis}_cell_delimiters' must be a numpy array."

@@ -121,6 +121,10 @@ def test_change_octree_cells(tmp_path: Path):
         rec_obj = workspace.get_entity(name)[0]
         compare_entities(mesh, rec_obj)
 
+        rec_obj.add_data({"values": {"values": np.random.randn(rec_obj.n_cells)}})
+        extent_grid = rec_obj.copy_from_extent(np.vstack([[-3, 3], [3, 9]]))
+        assert (~np.isnan(extent_grid.children[0].values)).sum() == 3
+
     # Revert back using recarray
     with workspace.open():
         base_mesh = Octree.create(
