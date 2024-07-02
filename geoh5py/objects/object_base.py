@@ -36,6 +36,7 @@ from ..shared.utils import clear_array_attributes
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
+
     from ..workspace import Workspace
 
 
@@ -565,6 +566,17 @@ class ObjectBase(EntityContainer):
         :obj:`numpy.array` of :obj:`float`, shape (\*, 3): Array of x, y, z coordinates
         defining the position of points in 3D space.
         """
+
+    @property
+    def locations(self):
+        """Exposes the vertices or centroids of the object."""
+        out = None
+        if hasattr(self, "vertices"):
+            out = self.vertices
+        if hasattr(self, "centroids"):
+            out = self.centroids
+
+        return out
 
     @property
     def converter(self):

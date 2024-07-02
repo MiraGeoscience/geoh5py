@@ -17,37 +17,20 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import uuid
 
-from . import NoTypeGroup
-
-if TYPE_CHECKING:
-    from ..groups import GroupType
+from .base import Group
 
 
-class RootGroup(NoTypeGroup):
-    """The Root group of a workspace."""
+class CustomGroup(Group):
+    """A custom group, for an unlisted Group type."""
 
-    __ROOT_NAME = "Workspace"
+    _default_name = "Custom Group"
 
-    def __init__(self, group_type: GroupType, **kwargs):
-        assert group_type is not None
-        super().__init__(group_type, **kwargs)
-
-        # Hard wired attributes
-        self._parent = None
-        self._allow_move = False
-        self._allow_delete = False
-        self._allow_rename = False
-        self._name = self.__ROOT_NAME
-
-    @property
-    def parent(self):
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID | None:
         """
-        Parental entity of root is always None
+        Mock the default type uid for the custom group.
+        It returns a new UUID every time this class is called.
         """
-        return self._parent
-
-    @parent.setter
-    def parent(self, _):
-        self._parent = None
+        return uuid.uuid4()
