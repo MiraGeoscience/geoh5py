@@ -45,8 +45,8 @@ class DrapeModel(ObjectBase):
     def __init__(
         self,
         object_type: ObjectType,
-        layers: np.ndarray | list | tuple = (0, 0, -1.0),
-        prisms: np.ndarray | list | tuple = (0.0, 0.0, 0.0, 0, 1),
+        layers: np.ndarray | list | tuple | None = None,
+        prisms: np.ndarray | list | tuple | None = None,
         **kwargs,
     ):
         self._centroids: np.ndarray | None = None
@@ -174,7 +174,7 @@ class DrapeModel(ObjectBase):
         return np.array(self._prisms.tolist())
 
     @classmethod
-    def validate_prisms(cls, values: np.ndarray | list | tuple) -> np.ndarray:
+    def validate_prisms(cls, values: np.ndarray | list | tuple | None) -> np.ndarray:
         """
         Validate and format type of prisms array.
 
@@ -212,7 +212,7 @@ class DrapeModel(ObjectBase):
         return values
 
     @classmethod
-    def validate_layers(cls, values: np.ndarray | list | tuple) -> np.ndarray:
+    def validate_layers(cls, values: np.ndarray | list | tuple | None) -> np.ndarray:
         """
         Validate and format type of layers array.
 

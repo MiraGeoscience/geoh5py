@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 
 import numpy as np
 
@@ -37,7 +38,7 @@ class Points(ObjectBase):
         self,
         object_type: ObjectType,
         name="Points",
-        vertices: np.ndarray | list | tuple = (0.0, 0.0, 0.0),
+        vertices: np.ndarray | list | tuple | None = None,
         **kwargs,
     ):
         self._vertices: np.ndarray = self.validate_vertices(vertices)
@@ -133,12 +134,19 @@ class Points(ObjectBase):
         return self._vertices.view("<f8").reshape((-1, 3))
 
     @classmethod
-    def validate_vertices(cls, xyz: np.ndarray | list | tuple) -> np.ndarray:
+    def validate_vertices(cls, xyz: np.ndarray | list | tuple | None) -> np.ndarray:
         """
         Validate and format type of vertices array.
 
         :param xyz: Array of vertices as defined by :obj:`~geoh5py.objects.points.Points.vertices`.
         """
+        if xyz is None:
+            warnings.warn(
+                "No 'vertices' provided. Using a default point at the origin.",
+                UserWarning,
+            )
+            xyz = (0.0, 0.0, 0.0)
+
         if isinstance(xyz, (list, tuple)):
             xyz = np.array(xyz, ndmin=2)
 

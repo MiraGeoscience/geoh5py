@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 
 import numpy as np
 
@@ -67,6 +68,13 @@ class Surface(CellObject):
 
         :param xyz: Array of vertices as defined by :obj:`~geoh5py.objects.points.Points.vertices`.
         """
+        if xyz is None:
+            warnings.warn(
+                "No 'vertices' provided. Using a default point at the origin.",
+                UserWarning,
+            )
+            xyz = (0.0, 0.0, 0.0)
+
         if isinstance(xyz, (list, tuple)):
             xyz = np.array(xyz, ndmin=2)
 

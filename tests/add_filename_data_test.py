@@ -32,7 +32,8 @@ from geoh5py.workspace import Workspace
 def test_add_file(tmp_path: Path):
     workspace = Workspace()
     workspace_copy = Workspace()
-    curve = Curve.create(workspace)
+    with pytest.warns(UserWarning, match="No 'vertices' provided."):
+        curve = Curve.create(workspace)
     group = ContainerGroup.create(workspace)
 
     xyz = np.random.randn(32)
