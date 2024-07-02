@@ -255,30 +255,36 @@ class Drillhole(Points):
     @surveys.setter
     def surveys(self, array: np.ndarray | list | None):
         if array is not None:
-
-            if isinstance(array, list):
-                array = np.array(array, ndmin=2)
-
-            if np.issubdtype(array.dtype, np.number):
-                if array.shape[1] != 3:
-                    raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
-
-                array = np.asarray(
-                    np.core.records.fromarrays(array.T, dtype=self.__SURVEY_DTYPE)
-                )
-
-            if array.dtype != self.__SURVEY_DTYPE:
-                raise ValueError(
-                    f"Array of 'survey' must be of dtype = {self.__SURVEY_DTYPE}"
-                )
-
-            self._surveys = array
+            self._surveys = self.format_survey_values(array)
             self.workspace.update_attribute(self, "surveys")
             self.end_of_hole = float(self._surveys["Depth"][-1])
             self._trace = None
             self.workspace.update_attribute(self, "trace")
 
         self._locations = None
+
+    def format_survey_values(self, values: list | np.ndarray) -> np.ndarray:
+        """
+        Reformat the survey values as structured array with the right shape.
+        """
+        if isinstance(values, list):
+            values = np.array(values, ndmin=2)
+
+        if np.issubdtype(values.dtype, np.number):
+            if values.shape[1] != 3:
+                raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
+
+            array_values = np.asarray(
+                np.core.records.fromarrays(values.T, dtype=self.__SURVEY_DTYPE)
+            )
+        else:
+            array_values = values
+
+        if array_values.dtype != self.__SURVEY_DTYPE:
+            raise ValueError(
+                f"Array of 'survey' must be of dtype = {self.__SURVEY_DTYPE}"
+            )
+        return array_values
 
     @property
     def default_collocation_distance(self):

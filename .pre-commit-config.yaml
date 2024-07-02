@@ -31,20 +31,20 @@ repos:
     hooks:
     -   id: black
 -   repo: https://github.com/PyCQA/flake8
-    rev: 7.0.0
+    rev: 7.1.0
     hooks:
     -   id: flake8
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.2
+    rev: v3.16.0
     hooks:
     -   id: pyupgrade
         args: [--py310-plus]
         types: [text]
         types_or: [python, pyi]
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
+    rev: v1.10.1
     hooks:
     -   id: mypy
         additional_dependencies: [
@@ -86,7 +86,7 @@ repos:
         entry: python devtools/git_message_hook.py --check
         language: python
 -   repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.3.0
     hooks:
     -   id: codespell
         exclude: (\.lock|\.ipynb|^THIRD_PARTY_SOFTWARE\.rst)$

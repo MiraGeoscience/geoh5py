@@ -1,8 +1,6 @@
 [tool.poetry]
 name = "geoh5py"
-
 version = "0.10.0-alpha.1"
-
 license = "LGPL-3.0-or-later"
 description = "Python API for geoh5, an open file format for geoscientific data"
 authors = ["Mira Geoscience <support@mirageoscience.com>"]
@@ -31,22 +29,20 @@ classifiers = [
 exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
 
 include = [
-    "COPYING",
-    "COPYING.LESSER",
-    "LICENSE",
-    "README.rst",
-    "THIRD_PARTY_SOFTWARE.rst",
+    { path = "COPYING", format = ["sdist", "wheel"] },
+    { path = "COPYING.LESSER", format = ["sdist", "wheel"] },
+    { path = "LICENSE", format = ["sdist", "wheel"] },
+    { path = "README.rst", format = ["sdist", "wheel"] },
+    { path = "THIRD_PARTY_SOFTWARE.rst", format = ["sdist", "wheel"] },
+    { path = "docs/**/THIRD_PARTY_SOFTWARE.rst", format = ["sdist", "wheel"] },
 ]
 
 [tool.poetry.dependencies]
-python = "^3.10,<4"
-h5py = "^3.2.1"
-numpy = [
-    {version="!=1.19.4, ^1.23.5", python= "<3.12"},
-    {version="^1.26.0", python= ">=3.12"}
-]
-Pillow = "~10.3.0"
+python = "^3.10"
 
+h5py = "^3.2.1"
+numpy = "~1.26.0"
+Pillow = "~10.3.0"
 
 [tool.poetry.group.dev.dependencies]
 Pygments = "*"
@@ -54,10 +50,7 @@ lockfile = "^0.12.2"
 pylint = "*"
 pytest = "*"
 pytest-cov = "*"
-scipy = [
-    {version="~1.10.1", python= "<3.12"},
-    {version=">=1.12.0", python= ">=3.12"}
-]
+scipy = "~1.13.1"
 sphinx = "^3.0"
 sphinx-autodoc-typehints = "^1.10"
 sphinx-rtd-theme = "^0.4.3"
@@ -99,7 +92,11 @@ exclude_lines = [
     "pragma: no cover"
 ]
 
-fail_under = 80
+fail_under = 90
+
+[tool.coverage.html]
+skip_empty = true
+skip_covered = true
 
 [build-system]
 requires = ["poetry-core>=1.0.0", "setuptools"]
