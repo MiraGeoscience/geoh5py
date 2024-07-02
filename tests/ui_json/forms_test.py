@@ -174,12 +174,12 @@ def test_choice_form():
         label="name", value=["test", "other"], choice_list=["test", "other"]
     )
     assert form.value == ["test", "other"]
-    assert '"value":["test","other"]'
+    assert '"value":["test","other"]' in form.json_string
 
 
 def test_file_form(tmp_path):
     paths = [tmp_path / "my_file.ext", tmp_path / "my_other_file.ext"]
-    [p.touch() for p in paths]
+    _ = [p.touch() for p in paths]
     form = FileForm(
         label="file",
         value=str(paths[0]),
@@ -191,7 +191,7 @@ def test_file_form(tmp_path):
     assert form.file_description == ["something"]
     assert form.file_type == ["ext"]
     assert not form.file_multi
-    assert '"value":"C:' in form.json_string
+    assert 'my_file.ext",' in form.json_string
 
     form = FileForm(
         label="file",
