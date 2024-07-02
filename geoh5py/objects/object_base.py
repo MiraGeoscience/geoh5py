@@ -336,10 +336,8 @@ class ObjectBase(EntityContainer):
     @abstractmethod
     def extent(self):
         """
-        Geography bounding box of the object.
-
-        :return: shape(2, 3) Bounding box defined by the bottom South-West and
-            top North-East coordinates.
+        Geography bounding box of the object defined by the bottom South-West and
+            top North-East coordinates, shape(2, 3).
         """
 
     @property

@@ -165,7 +165,7 @@ class CellObject(Points, ABC):
         mask: np.ndarray | None = None,
         cell_mask: np.ndarray | None = None,
         **kwargs,
-    ):
+    ) -> CellObject:
         """
         Sub-class extension of :func:`~geoh5py.objects.points.Points.copy`.
 

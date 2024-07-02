@@ -88,8 +88,8 @@ class Grid2D(GridObject):
     @property
     def cell_center_u(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`, shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, ):
-        Cell center local coordinate along the u-axis.
+        Cell center local coordinate along the u-axis,
+        shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, )
         """
         return (
             np.cumsum(np.ones(self.u_count) * self.u_cell_size) - self.u_cell_size / 2.0
@@ -98,8 +98,8 @@ class Grid2D(GridObject):
     @property
     def cell_center_v(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float` shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, ):
-        The cell center local coordinate along the v-axis.
+        The cell center local coordinate along the v-axis,
+        shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, )
         """
         return (
             np.cumsum(np.ones(self.v_count) * self.v_cell_size) - self.v_cell_size / 2.0
@@ -108,9 +108,8 @@ class Grid2D(GridObject):
     @property
     def centroids(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`,
-        shape (:obj:`~geoh5py.objects.grid2d.Grid2D.n_cells`, 3):
-        Cell center locations in world coordinates.
+        Cell center locations in world coordinates,
+        shape(:obj:`~geoh5py.objects.grid2d.Grid2D.n_cells`, 3).
 
         .. code-block:: python
 
@@ -217,14 +216,14 @@ class Grid2D(GridObject):
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
         """
-        :return: Default unique identifier
+        Default unique identifier
         """
         return cls.__TYPE_UID
 
     @property
     def dip(self) -> float:
         """
-        :obj:`float`: Dip angle from horizontal (positive down) in degrees.
+        Dip angle from horizontal (positive down) in degrees.
         """
         if self.vertical:
             self._dip = 90.0
@@ -248,14 +247,14 @@ class Grid2D(GridObject):
     @property
     def shape(self) -> tuple:
         """
-        :obj:`list` of :obj:`int`, len (2, ): Number of cells along the u and v-axis.
+        Number of cells along the u and v-axis.
         """
         return self.u_count, self.v_count
 
     @property
     def u_cell_size(self) -> float:
         """
-        :obj:`np.ndarray`: Cell size along the u-axis.
+        Cell size along the u-axis.
         """
         return self._u_cell_size
 
@@ -277,14 +276,14 @@ class Grid2D(GridObject):
     @property
     def u_count(self) -> np.int32:
         """
-        :obj:`int`: Number of cells along v-axis.
+        Number of cells along v-axis.
         """
         return self._u_count
 
     @property
     def v_cell_size(self) -> float:
         """
-        :obj:`np.ndarray`: Cell size along the v-axis
+        Cell size along the v-axis
         """
         return self._v_cell_size
 
@@ -304,14 +303,14 @@ class Grid2D(GridObject):
     @property
     def v_count(self) -> np.int32:
         """
-        :obj:`int`: Number of cells along v-axis.
+        Number of cells along v-axis.
         """
         return self._v_count
 
     @property
     def vertical(self) -> bool:
         """
-        :obj:`bool`: Set the grid to be vertical.
+        Set the grid to be vertical.
         """
         return self._vertical
 

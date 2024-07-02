@@ -72,10 +72,8 @@ class GridObject(ObjectBase, ABC):
     @property
     def extent(self) -> np.ndarray:
         """
-        Geography bounding box of the object.
-
-        :return: shape(2, 3) Bounding box defined by the bottom South-West and
-            top North-East coordinates.
+        Geography bounding box of the object defined by the bottom South-West and
+            top North-East coordinates, shape(2, 3).
         """
         return np.c_[self.centroids.min(axis=0), self.centroids.max(axis=0)].T
 
@@ -95,14 +93,14 @@ class GridObject(ObjectBase, ABC):
     @property
     def n_cells(self) -> int:
         """
-        :obj:`int`: Total number of cells
+        Total number of cells
         """
         return int(np.prod(self.shape))
 
     @property
     def rotation(self) -> float:
         """
-        :obj:`float`: Clockwise rotation angle (degree) about the vertical axis.
+        Clockwise rotation angle (degree) about the vertical axis.
         """
         return self._rotation
 
@@ -123,7 +121,7 @@ class GridObject(ObjectBase, ABC):
     @property
     def origin(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin.
+        Coordinates of the origin, shape (3, ).
         """
         return self._origin
 

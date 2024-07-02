@@ -28,6 +28,12 @@ from .object_base import ObjectBase, ObjectType
 class DrapeModel(ObjectBase):
     """
     Drape (curtain) model object made up of layers and prisms.
+
+    :attr layers: Array of layers in the drape model organized into blocks
+        representing each prism in the model.
+    :attr prisms: Array detailing the assembly of
+        :obj:`geoh5py.objects.drape_model.DrapeModel.layers` within the trace
+         of the drape model.
     """
 
     __TYPE_UID = uuid.UUID("{C94968EA-CF7D-11EB-B8BC-0242AC130003}")
@@ -62,9 +68,7 @@ class DrapeModel(ObjectBase):
     @property
     def centroids(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`,
-        shape (:obj:`~geoh5py.objects.drape_model.Drapemodel.n_cells`, 3):
-        Cell center locations in world coordinates.
+        Cell center locations in world coordinates, shape(*, 3).
 
         .. code-block:: python
 
@@ -95,7 +99,7 @@ class DrapeModel(ObjectBase):
         return self._centroids
 
     @property
-    def extent(self) -> np.ndarray | None:
+    def extent(self) -> np.ndarray:
         """
         Geography bounding box of the object.
 
@@ -107,9 +111,9 @@ class DrapeModel(ObjectBase):
     @property
     def layers(self) -> np.ndarray:
         """
-        :obj:`numpy.array`, shape(*, 3): Layers in the drape model with columns: X
-        (prism index), K (depth index), elevation (cell bottom)).
-        shape(*, 3) organized into blocks representing each prism in the model.
+        Layers in the drape model organized into blocks representing each prism in the model:
+
+        X (prism index), K (depth index), elevation (cell bottom))
 
         .. code-block:: python
 
@@ -133,7 +137,7 @@ class DrapeModel(ObjectBase):
         return np.asarray(self._layers.tolist())
 
     @property
-    def n_cells(self):
+    def n_cells(self) -> int:
         return self._layers.shape[0]
 
     def mask_by_extent(
@@ -152,7 +156,7 @@ class DrapeModel(ObjectBase):
     @property
     def prisms(self) -> np.ndarray:
         """
-        :obj:`numpy.array`, shape(*, 5) detailing the assembly of :obj:
+        Array detailing the assembly of :obj:
         `geoh5py.objects.drape_model.Drapemodel.layers` within the trace
         of the drape model.
 

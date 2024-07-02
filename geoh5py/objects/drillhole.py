@@ -99,9 +99,9 @@ class Drillhole(Points):
         self.workspace.update_attribute(self, "cells")
 
     @property
-    def collar(self):
+    def collar(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the collar
+        Coordinates of the collar, shape(1, 3)
         """
         return self._collar
 
@@ -130,7 +130,7 @@ class Drillhole(Points):
             self.workspace.update_attribute(self, "trace_depth")
 
     @property
-    def cost(self):
+    def cost(self) -> float | None:
         """
         :obj:`float`: Cost estimate of the drillhole
         """
@@ -233,7 +233,7 @@ class Drillhole(Points):
     @property
     def surveys(self) -> np.ndarray:
         """
-        Coordinates of the surveys
+        Coordinates of the surveys.
         """
         if (getattr(self, "_surveys", None) is None) and self.on_file:
             self._surveys = self.workspace.fetch_array_attribute(self, "surveys")

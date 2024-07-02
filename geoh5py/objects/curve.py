@@ -123,8 +123,6 @@ class Curve(CellObject):
     @property
     def parts(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`int`, shape
-        (:obj:`~geoh5py.objects.object_base.ObjectBase.n_vertices`, 2):
         Group identifiers for vertices connected by line segments as defined by the
         :obj:`~geoh5py.objects.curve.Curve.cells`
         property. The definition of the :obj:`~geoh5py.objects.curve.Curve.cells`
@@ -168,9 +166,9 @@ class Curve(CellObject):
         self._parts = indices
 
     @property
-    def unique_parts(self):
+    def unique_parts(self) -> list[int]:
         """
-        :obj:`list` of :obj:`int`: Unique :obj:`~geoh5py.objects.curve.Curve.parts`
+        Unique :obj:`~geoh5py.objects.curve.Curve.parts`
         identifiers.
         """
         return np.unique(self.parts).tolist()
