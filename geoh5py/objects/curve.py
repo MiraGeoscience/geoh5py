@@ -214,7 +214,7 @@ class Curve(CellObject):
         """
         xyz = super().validate_vertices(xyz)
 
-        if len(xyz) < 2:
+        if len(xyz) > 0 and len(xyz) < 2:
             xyz = np.vstack([xyz] * 2)
 
         return xyz

@@ -181,6 +181,9 @@ def test_remove_vertex_data(tmp_path):
         assert len(data[0].values) == 8, "Error removing data values with cells."
         assert len(curve.vertices) == 10, "Error removing vertices from cells."
 
+        curve.remove_vertices(np.arange(curve.n_vertices))
+        assert curve.n_vertices == 0
+
 
 def test_copy_cells_data(tmp_path):
     # Generate a random cloud of points

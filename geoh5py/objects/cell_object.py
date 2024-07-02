@@ -137,6 +137,9 @@ class CellObject(Points, ABC):
         ):
             raise ValueError("Found indices larger than the number of vertices.")
 
+        # if len(indices) == self.n_vertices:
+        #     raise ValueError("Cannot remove all vertices.")
+
         vert_index = np.ones(self.vertices.shape[0], dtype=bool)
         vert_index[indices] = False
         vertices = self.vertices[vert_index, :]
@@ -149,7 +152,7 @@ class CellObject(Points, ABC):
         self.remove_cells(np.where(~np.all(vert_index[self.cells], axis=1)))
         new_cells = new_index[self.cells]
 
-        self._cells = new_cells
+        self._cells = self.validate_cells(new_cells)
         self.workspace.update_attribute(self, "cells")
 
     def copy(  # pylint: disable=too-many-branches
