@@ -125,11 +125,6 @@ class CellObject(Points, ABC):
         :param indices: Indices of vertices to be removed.
         :param clear_cache: Clear cache of data values.
         """
-
-        if self.vertices is None:
-            warnings.warn("No vertices to be removed.", UserWarning)
-            return
-
         if isinstance(indices, list):
             indices = np.array(indices)
 
@@ -165,7 +160,7 @@ class CellObject(Points, ABC):
         mask: np.ndarray | None = None,
         cell_mask: np.ndarray | None = None,
         **kwargs,
-    ) -> CellObject:
+    ):
         """
         Sub-class extension of :func:`~geoh5py.objects.points.Points.copy`.
 

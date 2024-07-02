@@ -115,7 +115,9 @@ def test_merge_drape_model_attribute_error(tmp_path):
             drape_model = create_drape_model(workspace, alpha=i * 2.5)
             drape_models.append(drape_model)
 
-        drape_models[1] = DrapeModel(workspace)
+        drape_models[1] = DrapeModel(
+            workspace, layers=(0, 0, -1), prisms=(0, 0, 0, 0, 0)
+        )
 
         with pytest.raises(
             ValueError, match="All DrapeModel entities must have at least 2 prisms"
