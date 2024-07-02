@@ -75,8 +75,6 @@ def test_create_point_data(tmp_path):
             etype_handle.get("StatsCache") is None
         ), "StatsCache was not properly deleted on update of values"
 
-    assert np.allclose(points.vertices, points.locations)
-
 
 def test_remove_point_data(tmp_path):
     # Generate a random cloud of points

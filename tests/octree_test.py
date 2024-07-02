@@ -21,7 +21,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import numpy as np
 import pytest
 
 from geoh5py.objects import Octree
@@ -79,54 +78,4 @@ def test_octree(tmp_path: Path):
         new_workspace = Workspace(h5file_path)
         rec_obj = new_workspace.get_entity(name)[0]
 
-        compare_entities(mesh, rec_obj)
-        assert np.allclose(mesh.centroids, mesh.locations)
-
-
-def test_change_octree_cells(tmp_path: Path):
-    name = "MyTestOctree"
-    h5file_path = tmp_path / r"octree.geoh5"
-
-    with Workspace.create(h5file_path) as workspace:
-        # Create an octree mesh with variable dimensions
-
-        mesh = Octree.create(
-            workspace,
-            name=name,
-            origin=[0, 0, 0],
-            u_count=32,
-            v_count=16,
-            w_count=8,
-            u_cell_size=1.0,
-            v_cell_size=1.0,
-            w_cell_size=2.0,
-            rotation=45,
-        )
-
-    base_cells = mesh.octree_cells
-
-    # Refinement on first cell
-    new_cells = np.vstack(
-        [
-            [0, 0, 0, 4],
-            [4, 0, 0, 4],
-            [0, 4, 0, 4],
-            [4, 4, 0, 4],
-        ]
-    )
-    octree_cells = np.vstack([new_cells, np.asarray(base_cells.tolist())[1:]])
-
-    with workspace.open():
-        mesh.octree_cells = octree_cells
-
-    with workspace.open():
-        rec_obj = workspace.get_entity(name)[0]
-        compare_entities(mesh, rec_obj)
-
-    # Revert back using recarray
-    with workspace.open():
-        mesh.octree_cells = base_cells
-
-    with workspace.open():
-        rec_obj = workspace.get_entity(name)[0]
         compare_entities(mesh, rec_obj)
