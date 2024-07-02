@@ -66,6 +66,30 @@ class DependencyType(str, Enum):
 class BaseForm(BaseModel):
     """
     Base class for uijson forms
+
+    :param label: Label for ui element.
+    :param value: The parameter's value.
+    :param optional: If True, ui element is rendered with a checkbox to
+        control the enabled state.
+    :param enabled: If False, ui element is rendered grey and value will
+        be written to file as None.
+    :param main: Controls whether ui element will render in the general
+        parameters tab (True) or optional parameters (False).
+    :param tooltip: String rendered on hover over ui element.
+    :param group: Grouped ui elements will be rendered within a box labelled
+        with the group name.
+    :param group_optional: If True, ui group is rendered with a checkbox that
+        controls the enabled state of all of the groups members
+    :param dependency: Name of parameter that controls the enabled or
+        visible state of the ui element.
+    :param dependency_type: Controls whether the ui element is enabled
+        or visible when the dependency is enabled if optional or True
+        if a bool type.
+    :param group_dependency: Name of parameter that controls the enabled
+        or visible state of the ui group.
+    :param group_dependency_type: Controls whether the ui group is
+        enabled or visible when the group dependency is enabled if
+        optional or True if a bool type.
     """
 
     model_config: ConfigDict = ConfigDict(
