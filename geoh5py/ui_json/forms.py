@@ -85,9 +85,9 @@ class BaseForm(BaseModel):
     group: str = ""
     group_optional: bool = False
     dependency: str = ""
-    dependency_type: DependencyType = "enabled"
+    dependency_type: DependencyType = DependencyType.ENABLED
     group_dependency: str = ""
-    group_dependency_type: DependencyType = "enabled"
+    group_dependency_type: DependencyType = DependencyType.ENABLED
 
     @property
     def json_string(self):
