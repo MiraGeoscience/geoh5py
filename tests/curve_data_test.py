@@ -218,7 +218,7 @@ def test_copy_cells_data(tmp_path):
 
 
 def test_cell_from_part(tmp_path):
-    n_vertices = 100
+    n_vertices = 1000
     locations = np.random.randn(n_vertices, 3)
     parts = np.random.randint(0, 10, n_vertices)
 
