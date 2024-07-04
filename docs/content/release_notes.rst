@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Release 0.9.1 (2024-07-02)
+--------------------------
+
+- Adjust dependencies to allow for Python 3.9 to 3.12
+
 Release 0.9.0 (2024-06-17)
 --------------------------
 
