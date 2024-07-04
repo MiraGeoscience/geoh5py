@@ -606,7 +606,9 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         self, entity: Concatenated, field: str, remove=False
     ) -> None:
         """
-        Update values stored as data.        Row data and indices are first remove then appended.
+        Update values stored as data.
+
+        Row data and indices are first removed then appended.
 
         :param entity: Concatenated entity with array values.
         :param field: Name of the valued field.

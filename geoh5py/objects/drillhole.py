@@ -248,22 +248,30 @@ class Drillhole(Points):
     @surveys.setter
     def surveys(self, value):
         if value is not None:
-            value = np.vstack(value)
-
-            if value.shape[1] != 3:
-                raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
-
-            self._surveys = np.asarray(
-                np.core.records.fromarrays(
-                    value.T, names="Depth, Azimuth, Dip", formats="<f4, <f4, <f4"
-                )
-            )
+            self._surveys = self.format_survey_values(value)
             self.workspace.update_attribute(self, "surveys")
             self.end_of_hole = float(self._surveys["Depth"][-1])
             self._trace = None
             self.workspace.update_attribute(self, "trace")
 
         self._locations = None
+
+    def format_survey_values(self, values: list | np.ndarray) -> np.recarray:
+        """
+        Reformat the survey values as structured array with the right shape.
+        """
+        if isinstance(values, list):
+            values = np.vstack(values)
+
+        if values.shape[1] != 3:
+            raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
+
+        array_values = np.asarray(
+            np.core.records.fromarrays(
+                values.T, names="Depth, Azimuth, Dip", formats="<f4, <f4, <f4"
+            )
+        )
+        return array_values
 
     @property
     def default_collocation_distance(self):
