@@ -35,6 +35,17 @@ def test_octree(tmp_path: Path):
 
     with Workspace.create(h5file_path) as workspace:
         # Create an octree mesh with variable dimensions
+        with pytest.raises(TypeError, match=r"Attribute 'u_count' must"):
+            Octree.create(
+                workspace,
+                u_count=32.0,
+            )
+
+        with pytest.raises(ValueError, match="power of 2"):
+            Octree.create(
+                workspace,
+                u_count=15,
+            )
 
         mesh = Octree.create(
             workspace,

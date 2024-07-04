@@ -252,7 +252,7 @@ class Octree(GridObject):
             raise TypeError(f"Attribute '{axis}_count' must be type(int).")
 
         if np.log2(value) % 1.0 != 0:
-            raise TypeError(
+            raise ValueError(
                 f"Attribute '{axis}_count' must be type(int) in power of 2."
             )
 
