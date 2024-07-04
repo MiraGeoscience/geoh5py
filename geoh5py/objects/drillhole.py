@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import re
 import uuid
+from numbers import Real
 
 import numpy as np
 
@@ -137,11 +138,11 @@ class Drillhole(Points):
         return self._cost
 
     @cost.setter
-    def cost(self, value: float | int):
+    def cost(self, value: Real):
         assert isinstance(
-            value, (float, int)
+            value, Real
         ), f"Provided cost value must be of type {float} or int."
-        self._cost = value
+        self._cost = float(value)
         self.workspace.update_attribute(self, "attributes")
 
     @property
@@ -152,7 +153,7 @@ class Drillhole(Points):
         return self._end_of_hole
 
     @end_of_hole.setter
-    def end_of_hole(self, value: float | int | None):
+    def end_of_hole(self, value: Real | None):
         assert isinstance(
             value, (int, float, type(None))
         ), f"Provided end_of_hole value must be of type {int}"

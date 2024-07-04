@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import uuid
 from abc import ABC, abstractmethod
-from numbers import Number
+from numbers import Real
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -106,8 +106,8 @@ class GridObject(ObjectBase, ABC):
         return self._rotation
 
     @rotation.setter
-    def rotation(self, value: np.ndarray | Number):
-        if isinstance(value, Number):
+    def rotation(self, value: np.ndarray | Real):
+        if isinstance(value, Real):
             value = np.r_[value]
 
         if not isinstance(value, np.ndarray) or value.shape != (1,):

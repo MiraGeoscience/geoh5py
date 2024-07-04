@@ -18,7 +18,7 @@
 from __future__ import annotations
 
 import uuid
-from numbers import Number, Real
+from numbers import Real
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -257,8 +257,8 @@ class Grid2D(GridObject):
         return self._u_cell_size
 
     @u_cell_size.setter
-    def u_cell_size(self, value: Number | np.ndarray):
-        if not isinstance(value, (float, int, np.ndarray)):
+    def u_cell_size(self, value: Real | np.ndarray):
+        if not isinstance(value, (Real, np.ndarray)):
             raise TypeError("Attribute 'u_cell_size' must be type(float).")
 
         self._centroids = None
@@ -287,8 +287,8 @@ class Grid2D(GridObject):
         return self._v_cell_size
 
     @v_cell_size.setter
-    def v_cell_size(self, value: Number | np.ndarray):
-        if not isinstance(value, (float, int, np.ndarray)):
+    def v_cell_size(self, value: Real | np.ndarray):
+        if not isinstance(value, (Real, np.ndarray)):
             raise TypeError("Attribute 'v_cell_size' must be type(float).")
 
         self._centroids = None
