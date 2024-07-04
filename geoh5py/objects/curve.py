@@ -55,28 +55,21 @@ class Curve(CellObject):
     def __init__(  # pylint: disable="too-many-arguments"
         self,
         object_type: ObjectType,
-        cells: np.ndarray | tuple | list | None = None,
         current_line_id: uuid.UUID | None = None,
-        parts: np.ndarray | None = None,
         name="Curve",
+        parts: np.ndarray | None = None,
+        vertices: np.ndarray | list | tuple | None = None,
         **kwargs,
     ):
-        self._current_line_id: uuid.UUID | None = None
-        self._parts: np.ndarray | None = None
-
-        if parts is not None and cells is not None:
-            raise ValueError(
-                "Attribute 'parts' can only be set if cells are not provided."
-            )
+        self._parts = self.validate_parts(parts, vertices)
 
         super().__init__(
             object_type,
-            cells=cells,
-            parts=parts,
-            current_line_id=current_line_id,
             name=name,
+            vertices=vertices,
             **kwargs,
         )
+        self.current_line_id = current_line_id
 
     @property
     def current_line_id(self) -> uuid.UUID | None:
@@ -142,13 +135,12 @@ class Curve(CellObject):
 
         return self._parts
 
-    @parts.setter
-    def parts(self, indices: list | tuple | np.ndarray | None):
+    @staticmethod
+    def validate_parts(
+        indices: list | tuple | np.ndarray | None, vertices: np.ndarray | None
+    ):
         if indices is None:
-            return
-
-        if self._parts is not None:
-            raise AttributeError("Attribute 'parts' can only be set once.")
+            return None
 
         if isinstance(indices, (list | tuple)):
             indices = np.asarray(indices, dtype="int32")
@@ -158,12 +150,10 @@ class Curve(CellObject):
 
         indices = indices.astype("int32")
 
-        if len(indices) != self.n_vertices:
-            raise ValueError(
-                f"Provided parts must be of shape {self.vertices.shape[0]}"
-            )
+        if vertices is not None and len(indices) != vertices.shape[0]:
+            raise ValueError(f"Provided parts must be of shape {vertices.shape[0]}")
 
-        self._parts = indices
+        return indices
 
     @property
     def unique_parts(self) -> list[int]:

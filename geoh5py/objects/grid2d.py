@@ -69,21 +69,18 @@ class Grid2D(GridObject):
         dip: float = 0.0,
         **kwargs,
     ):
-        self._u_cell_size: float
-        self._v_cell_size: float
         self._u_count: np.int32 = self.validate_count(u_count, "u")
         self._v_count: np.int32 = self.validate_count(v_count, "v")
-        self._vertical: bool
-        self._dip: float
 
         super().__init__(
             object_type=object_type,
-            u_cell_size=u_cell_size,
-            v_cell_size=v_cell_size,
-            vertical=vertical,
-            dip=dip,
             **kwargs,
         )
+
+        self.u_cell_size = u_cell_size
+        self.v_cell_size = v_cell_size
+        self.dip = dip
+        self.vertical = vertical
 
     @property
     def cell_center_u(self) -> np.ndarray:
@@ -271,7 +268,8 @@ class Grid2D(GridObject):
         else:
             self._u_cell_size = value
 
-        self.workspace.update_attribute(self, "attributes")
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def u_count(self) -> np.int32:
@@ -298,7 +296,9 @@ class Grid2D(GridObject):
             self._v_cell_size = np.r_[value].astype(float).item()
         else:
             self._v_cell_size = value
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def v_count(self) -> np.int32:
@@ -328,7 +328,8 @@ class Grid2D(GridObject):
         if self.dip != 90 and value is True:
             self._dip = 90.0
 
-        self.workspace.update_attribute(self, "attributes")
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     def to_geoimage(
         self, keys: list | str, mode: str | None = None, **geoimage_kwargs
