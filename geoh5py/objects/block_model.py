@@ -68,7 +68,7 @@ class BlockModel(GridObject):
             **kwargs,
         )
 
-    def local_axis_centers(self, axis: str):
+    def local_axis_centers(self, axis: str) -> np.ndarray:
         """
         Get the local axis centers for the block model.
 
@@ -130,7 +130,7 @@ class BlockModel(GridObject):
         return cls.__TYPE_UID
 
     @property
-    def shape(self) -> tuple:
+    def shape(self) -> tuple[int, int, int]:
         """
         Number of cells along the u, v and z-axis
         """
