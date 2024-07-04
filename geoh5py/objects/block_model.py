@@ -59,15 +59,9 @@ class BlockModel(GridObject):
         z_cell_delimiters: np.ndarray = np.array([0.0, 1.0]),
         **kwargs,
     ):
-        self._u_cell_delimiters: np.ndarray = self.validate_cell_delimiters(
-            u_cell_delimiters, "u"
-        )
-        self._v_cell_delimiters: np.ndarray = self.validate_cell_delimiters(
-            v_cell_delimiters, "v"
-        )
-        self._z_cell_delimiters: np.ndarray = self.validate_cell_delimiters(
-            z_cell_delimiters, "z"
-        )
+        self._u_cell_delimiters = self.validate_cell_delimiters(u_cell_delimiters, "u")
+        self._v_cell_delimiters = self.validate_cell_delimiters(v_cell_delimiters, "v")
+        self._z_cell_delimiters = self.validate_cell_delimiters(z_cell_delimiters, "z")
 
         super().__init__(
             object_type,
