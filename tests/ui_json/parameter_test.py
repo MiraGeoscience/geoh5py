@@ -16,6 +16,8 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
+
 import pytest
 
 from geoh5py.shared.exceptions import TypeValidationError, ValueValidationError
