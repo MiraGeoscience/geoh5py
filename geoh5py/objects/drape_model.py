@@ -59,7 +59,7 @@ class DrapeModel(ObjectBase):
         self._layers: np.ndarray = self.validate_layers(layers)
         self._prisms: np.ndarray = self.validate_prisms(prisms)
 
-        super().__init__(object_type, layers=layers, prisms=prisms, **kwargs)
+        super().__init__(object_type, **kwargs)
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
