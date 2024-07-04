@@ -77,9 +77,6 @@ class Octree(GridObject):
         self._u_count = self.validate_octree_count(u_count, "u")
         self._v_count = self.validate_octree_count(v_count, "v")
         self._w_count = self.validate_octree_count(w_count, "w")
-        self._u_cell_size: float
-        self._v_cell_size: float
-        self._w_cell_size: float
 
         if octree_cells is None:
             octree_cells = self.base_refine()
@@ -88,15 +85,12 @@ class Octree(GridObject):
 
         super().__init__(
             object_type,
-            u_count=u_count,
-            v_count=v_count,
-            w_count=w_count,
-            u_cell_size=u_cell_size,
-            v_cell_size=v_cell_size,
-            w_cell_size=w_cell_size,
-            octree_cells=octree_cells,
             **kwargs,
         )
+
+        self.u_cell_size = u_cell_size
+        self.v_cell_size = v_cell_size
+        self.w_cell_size = w_cell_size
 
     def base_refine(self):
         """
