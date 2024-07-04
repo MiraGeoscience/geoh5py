@@ -100,8 +100,6 @@ class H5Reader:
             if "PropertyGroups" in entity:
                 property_groups = cls.fetch_property_groups(file, uid)
 
-            attributes["entity"]["on_file"] = True
-
         return attributes, type_attributes, property_groups
 
     @classmethod

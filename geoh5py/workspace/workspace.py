@@ -741,18 +741,17 @@ class Workspace(AbstractContextManager):
             recovered_object = self.get_entity(uid)[0]
             if recovered_object is None and not isinstance(entity, PropertyGroup):
                 recovered_object = self.load_entity(uid, child_type, parent=entity)
-            if not (
-                recovered_object is None or isinstance(recovered_object, PropertyGroup)
-            ):
-                recovered_object.on_file = True
-                recovered_object.entity_type.on_file = True
-                family_tree += [recovered_object]
-                if recursively and isinstance(recovered_object, (Group, ObjectBase)):
-                    family_tree += self.fetch_children(
-                        recovered_object, recursively=True
-                    )
-                    if getattr(recovered_object, "property_groups", None) is not None:
-                        family_tree += getattr(recovered_object, "property_groups")
+
+            if recovered_object is None or isinstance(recovered_object, PropertyGroup):
+                continue
+
+            recovered_object.on_file = True
+            recovered_object.entity_type.on_file = True
+            family_tree += [recovered_object]
+            if recursively and isinstance(recovered_object, (Group, ObjectBase)):
+                family_tree += self.fetch_children(recovered_object, recursively=True)
+                if getattr(recovered_object, "property_groups", None) is not None:
+                    family_tree += getattr(recovered_object, "property_groups")
 
         if getattr(entity, "property_groups", None) is not None:
             family_tree += getattr(entity, "property_groups")
@@ -1167,6 +1166,9 @@ class Workspace(AbstractContextManager):
         if isinstance(entity, ObjectBase) and len(attributes[2]) > 0:
             for kwargs in attributes[2].values():
                 entity.create_property_group(on_file=True, **kwargs)
+
+        if entity is not None:
+            entity.on_file = True
 
         return entity
 
