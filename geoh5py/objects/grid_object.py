@@ -52,10 +52,11 @@ class GridObject(ObjectBase, ABC):
         **kwargs,
     ):
         self._centroids: np.ndarray | None = None
-        self._origin: np.ndarray = origin
-        self._rotation: float = rotation
 
-        super().__init__(object_type, origin=origin, rotation=rotation, **kwargs)
+        super().__init__(object_type, **kwargs)
+
+        self.origin = origin
+        self.rotation = rotation
 
     @property
     @abstractmethod
