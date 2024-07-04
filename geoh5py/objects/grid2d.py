@@ -18,7 +18,7 @@
 from __future__ import annotations
 
 import uuid
-from numbers import Number
+from numbers import Number, Real
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -230,8 +230,8 @@ class Grid2D(GridObject):
         return self._dip
 
     @dip.setter
-    def dip(self, value):
-        if not isinstance(value, (float, int)):
+    def dip(self, value: Real):
+        if not isinstance(value, Real):
             raise TypeError("Dip angle must be a float.")
 
         self._centroids = None
