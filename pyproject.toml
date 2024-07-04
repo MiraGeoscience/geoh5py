@@ -40,6 +40,8 @@ include = [
 
 [tool.poetry.dependencies]
 python = "^3.10,<4"
+
+pydantic = "~2.5.2"
 h5py = "^3.2.1"
 numpy = [
     {version="!=1.19.4, ^1.23.5", python= "<3.12"},
@@ -78,10 +80,6 @@ scripts_are_modules = true
 show_error_context = true
 show_column_numbers = true
 check_untyped_defs = true
-
-plugins = [
-#    'numpy.typing.mypy_plugin'
-]
 
 [tool.coverage.run]
 branch = true

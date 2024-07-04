@@ -88,6 +88,10 @@ def test_clip_curve_data(tmp_path):
                     "association": "CELL",
                     "values": np.random.randn(curve.n_cells),
                 },
+                "ObjectValues": {
+                    "association": "OBJECT",
+                    "values": np.random.randn(1000),
+                },
             }
         )
         with Workspace.create(tmp_path / r"testClipCurve_copy.geoh5") as new_workspace:
@@ -111,6 +115,10 @@ def test_clip_curve_data(tmp_path):
             assert np.all(
                 clipping_inverse.get_data("CellValues")[0].values
                 == np.r_[data[1].values[0:9], data[1].values[-1]]
+            )
+
+            np.testing.assert_allclose(
+                data[2].values, clipping_inverse.get_data("ObjectValues")[0].values
             )
 
     # Repeat with 2D bounds - single point left
