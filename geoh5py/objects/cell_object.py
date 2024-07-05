@@ -241,7 +241,12 @@ class CellObject(Points, ABC):
         return new_object
 
     @abstractmethod
-    def validate_cells(self, indices: tuple | list | np.ndarray | None) -> np.ndarray:
+    def validate_cells(self, indices: list | tuple | np.ndarray | None) -> np.ndarray:
         """
-        Validate cells.
+        Validate or generate cells defining the connection between vertices.
+
+        :param indices: Array of indices. If None provided, the
+            vertices are connected sequentially.
+
+        :return: Array of indices defining connected vertices.
         """

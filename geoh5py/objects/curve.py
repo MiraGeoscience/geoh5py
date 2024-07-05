@@ -163,11 +163,15 @@ class Curve(CellObject):
         """
         return np.unique(self.parts).tolist()
 
-    def validate_cells(self, indices: tuple | list | np.ndarray | None) -> np.ndarray:
+    def validate_cells(self, indices: list | tuple | np.ndarray | None) -> np.ndarray:
         """
-        Validate or generate cells array.
+        Validate or generate cells made up of pairs of vertices making
+            up line segments.
 
-        :param indices: Array of indices defining segments connecting vertices.
+        :param indices: Array of indices, shape(*, 2). If None provided, the
+            vertices are connected sequentially.
+
+        :return: Array of indices defining connected vertices.
         """
         # Auto-create from parts or connect vertices sequentially
         if indices is None:

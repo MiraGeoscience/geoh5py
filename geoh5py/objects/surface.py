@@ -38,7 +38,16 @@ class Surface(CellObject):
     def default_type_uid(cls) -> uuid.UUID:
         return cls.__TYPE_UID
 
-    def validate_cells(self, indices: list | tuple | np.ndarray | None):
+    def validate_cells(self, indices: list | tuple | np.ndarray | None) -> np.ndarray:
+        """
+        Validate or generate cells made up of triplets of vertices making
+            up triangles.
+
+        :param indices: Array of indices, shape(*, 3). If None provided, the
+            vertices are connected sequentially.
+
+        :return: Array of indices defining connecting vertices.
+        """
         if isinstance(indices, (tuple | list)):
             indices = np.array(indices, ndmin=2)
 
