@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import uuid
+from numbers import Real
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -212,11 +213,11 @@ class Octree(GridObject):
         return self._u_cell_size
 
     @u_cell_size.setter
-    def u_cell_size(self, value: float):
-        if not isinstance(value, float):
+    def u_cell_size(self, value: Real):
+        if not isinstance(value, Real):
             raise TypeError("Attribute 'u_cell_size' must be type(float).")
 
-        self._u_cell_size = value
+        self._u_cell_size = float(value)
 
     @property
     def u_count(self) -> int:
@@ -233,11 +234,11 @@ class Octree(GridObject):
         return self._v_cell_size
 
     @v_cell_size.setter
-    def v_cell_size(self, value: float):
-        if not isinstance(value, float):
+    def v_cell_size(self, value: Real):
+        if not isinstance(value, Real):
             raise TypeError("Attribute 'v_cell_size' must be type(float).")
 
-        self._v_cell_size = value
+        self._v_cell_size = float(value)
 
     @property
     def v_count(self) -> int:
@@ -296,11 +297,11 @@ class Octree(GridObject):
         return self._w_cell_size
 
     @w_cell_size.setter
-    def w_cell_size(self, value: float):
-        if not isinstance(value, float):
+    def w_cell_size(self, value: Real):
+        if not isinstance(value, Real):
             raise TypeError("Attribute 'w_cell_size' must be type(float).")
 
-        self._w_cell_size = value
+        self._w_cell_size = float(value)
 
     @property
     def w_count(self) -> int:
