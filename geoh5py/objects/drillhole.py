@@ -60,7 +60,7 @@ class Drillhole(Points):
         self,
         object_type: ObjectType,
         collar: np.ndarray | list | None = None,
-        cost: float | None = 0.0,
+        cost: float = 0.0,
         end_of_hole: float | None = None,
         planning: str = "Default",
         surveys: np.ndarray | list | None = None,
@@ -150,7 +150,7 @@ class Drillhole(Points):
                 self.workspace.update_attribute(self, "trace_depth")
 
     @property
-    def cost(self) -> float | None:
+    def cost(self) -> float:
         """
         :obj:`float`: Cost estimate of the drillhole
         """
