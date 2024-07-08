@@ -56,20 +56,23 @@ class Drillhole(Points):
         }
     )
 
-    def __init__(
-        self, object_type: ObjectType, vertices: np.ndarray | None = None, **kwargs
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        object_type: ObjectType,
+        collar: np.ndarray | list | None = None,
+        cost: float | None = 0.0,
+        end_of_hole: float | None = None,
+        planning: str = "Default",
+        surveys: np.ndarray | list | None = None,
+        vertices: np.ndarray | None = None,
+        default_collocation_distance: float = 1e-2,
+        **kwargs,
     ):
         self._cells: np.ndarray | None = None
-        self._collar: np.ndarray | None = None
-        self._cost: float | None = 0.0
         self._depths: FloatData | None = None
-        self._end_of_hole: float | None = None
-        self._planning: str = "Default"
-        self._surveys: np.ndarray | None = None
         self._trace: np.ndarray | None = None
         self._trace_depth: np.ndarray | None = None
         self._locations = None
-        self._default_collocation_distance = 1e-2
 
         super().__init__(object_type, **kwargs)
 
@@ -77,6 +80,13 @@ class Drillhole(Points):
             self._vertices = None
         else:
             self._vertices: np.ndarray = self.validate_vertices(vertices)
+
+        self.collar = collar
+        self.cost = cost
+        self.default_collocation_distance = default_collocation_distance
+        self.end_of_hole = end_of_hole
+        self.planning = planning
+        self.surveys = surveys
 
     @classmethod
     def default_type_uid(cls) -> uuid.UUID:
@@ -127,15 +137,17 @@ class Drillhole(Points):
 
         value = np.asarray(tuple(value), dtype=self.__COLLAR_DTYPE)
         self._collar = value
-        self.workspace.update_attribute(self, "attributes")
 
         self._locations = None
+        self._trace = None
+        self._trace_depth = None
 
-        if self.trace is not None:
-            self._trace = None
-            self._trace_depth = None
-            self.workspace.update_attribute(self, "trace")
-            self.workspace.update_attribute(self, "trace_depth")
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
+            if self.trace is not None:
+
+                self.workspace.update_attribute(self, "trace")
+                self.workspace.update_attribute(self, "trace_depth")
 
     @property
     def cost(self) -> float | None:
@@ -150,7 +162,9 @@ class Drillhole(Points):
             value, Real
         ), f"Provided cost value must be of type {float} or int."
         self._cost = float(value)
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def end_of_hole(self) -> float | None:
@@ -165,7 +179,9 @@ class Drillhole(Points):
             value, (int, float, type(None))
         ), f"Provided end_of_hole value must be of type {int}"
         self._end_of_hole = value
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def extent(self) -> np.ndarray | None:
@@ -236,7 +252,9 @@ class Drillhole(Points):
         choices = ["Default", "Ongoing", "Planned", "Completed", "No status"]
         assert value in choices, f"Provided planning value must be one of {choices}"
         self._planning = value
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def surveys(self) -> np.ndarray:
@@ -264,10 +282,12 @@ class Drillhole(Points):
     def surveys(self, array: np.ndarray | list | None):
         if array is not None:
             self._surveys = self.format_survey_values(array)
-            self.workspace.update_attribute(self, "surveys")
             self.end_of_hole = float(self._surveys["Depth"][-1])
             self._trace = None
-            self.workspace.update_attribute(self, "trace")
+
+            if self.on_file:
+                self.workspace.update_attribute(self, "surveys")
+                self.workspace.update_attribute(self, "trace")
 
         self._locations = None
 
