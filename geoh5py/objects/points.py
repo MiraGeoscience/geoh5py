@@ -77,7 +77,7 @@ class Points(ObjectBase):
         return cls.__TYPE_UID
 
     @property
-    def extent(self) -> np.ndarray | None:
+    def extent(self) -> np.ndarray:
         """
         Geography bounding box of the object.
 

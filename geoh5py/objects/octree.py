@@ -93,7 +93,7 @@ class Octree(GridObject):
         self.v_cell_size = v_cell_size
         self.w_cell_size = w_cell_size
 
-    def base_refine(self):
+    def base_refine(self) -> np.ndarray:
         """
         Refine the mesh to its base octree level resulting in a
         single cell along the shortest dimension.
@@ -129,7 +129,7 @@ class Octree(GridObject):
         return octree_cells
 
     @property
-    def centroids(self):
+    def centroids(self) -> np.ndarray:
         """
         Cell center locations in world coordinates of shape (n_cells, 3).
 
@@ -199,7 +199,7 @@ class Octree(GridObject):
         return self._octree_cells
 
     @property
-    def shape(self) -> tuple:
+    def shape(self) -> tuple[np.int32, np.int32, np.int32]:
         """
         Number of cells along the u, v and w-axis.
         """
