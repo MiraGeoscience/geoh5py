@@ -243,7 +243,7 @@ class Grid2D(GridObject):
         self.workspace.update_attribute(self, "attributes")
 
     @property
-    def shape(self) -> tuple:
+    def shape(self) -> tuple[np.int32, np.int32]:
         """
         Number of cells along the u and v-axis.
         """
