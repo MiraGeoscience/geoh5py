@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import re
 import uuid
+import warnings
 from numbers import Real
 
 import numpy as np
@@ -108,19 +109,25 @@ class Drillhole(Points):
 
     @collar.setter
     def collar(self, value: list | np.ndarray | None):
-        if value is not None:
-            if isinstance(value, np.ndarray):
-                value = value.tolist()
+        if value is None:
+            warnings.warn(
+                "No 'collar' provided. Using a default point at the origin.",
+                UserWarning,
+            )
+            value = (0.0, 0.0, 0.0)
 
-            if isinstance(value, str):
-                value = [float(n) for n in re.findall(r"-?\d+\.\d+", value)]
+        if isinstance(value, np.ndarray):
+            value = value.tolist()
 
-            if len(value) != 3:
-                raise ValueError("Origin must be a list or numpy array of len (3,).")
+        if isinstance(value, str):
+            value = [float(n) for n in re.findall(r"-?\d+\.\d+", value)]
 
-            value = np.asarray(tuple(value), dtype=self.__COLLAR_DTYPE)
-            self._collar = value
-            self.workspace.update_attribute(self, "attributes")
+        if len(value) != 3:
+            raise ValueError("Origin must be a list or numpy array of len (3,).")
+
+        value = np.asarray(tuple(value), dtype=self.__COLLAR_DTYPE)
+        self._collar = value
+        self.workspace.update_attribute(self, "attributes")
 
         self._locations = None
 
