@@ -35,10 +35,15 @@ from .points import Points
 
 class Drillhole(Points):
     """
-    Drillhole object class defined by
+    Drillhole object class defined by a collar and survey.
 
-    .. warning:: Not yet implemented.
-
+    :param collar: Coordinates of the drillhole.
+    :param cost: Cost estimate of the drillhole.
+    :param end_of_hole: End of drillhole in meters.
+    :param planning: Status of the hole, defaults to 'Default'.
+    :param surveys: Survey information provided as 'Depth', 'Azimuth', 'Dip'.
+    :param vertices: Coordinates of the vertices.
+    :param default_collocation_distance: Minimum collocation distance for matching depth on merge.
     """
 
     __TYPE_UID = uuid.UUID(
