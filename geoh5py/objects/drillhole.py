@@ -533,10 +533,14 @@ class Drillhole(Points):
         indices = np.arange(xyz.shape[0])
         if self._vertices is not None:
             indices += self.n_vertices
-            self._vertices = np.vstack([self.vertices, xyz])
-        else:
-            self._vertices = xyz
+            xyz = np.vstack([self.vertices, xyz])
 
+        self._vertices = np.asarray(
+            np.core.records.fromarrays(
+                xyz.T.tolist(),
+                dtype=[("x", "<f8"), ("y", "<f8"), ("z", "<f8")],
+            )
+        )
         self.workspace.update_attribute(self, "vertices")
 
         return indices.astype("uint32")
