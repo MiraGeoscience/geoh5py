@@ -100,13 +100,10 @@ class Curve(CellObject):
         """
         return cls.__TYPE_UID
 
-    def make_cells_from_parts(self) -> np.ndarray | None:
+    def _make_cells_from_parts(self) -> np.ndarray:
         """
         Generate cells from parts.
         """
-        if self.unique_parts is None:
-            return None
-
         cells = []
         for part_id in self.unique_parts:
             ind = np.where(self.parts == part_id)[0]
@@ -176,7 +173,7 @@ class Curve(CellObject):
         # Auto-create from parts or connect vertices sequentially
         if indices is None:
             if self._parts is not None:
-                indices = self.make_cells_from_parts()
+                indices = self._make_cells_from_parts()
             else:
                 n_segments = self.vertices.shape[0]
                 indices = np.c_[
