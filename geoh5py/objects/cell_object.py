@@ -137,9 +137,6 @@ class CellObject(Points, ABC):
         ):
             raise ValueError("Found indices larger than the number of vertices.")
 
-        # if len(indices) == self.n_vertices:
-        #     raise ValueError("Cannot remove all vertices.")
-
         vert_index = np.ones(self.vertices.shape[0], dtype=bool)
         vert_index[indices] = False
         vertices = self.vertices[vert_index, :]
