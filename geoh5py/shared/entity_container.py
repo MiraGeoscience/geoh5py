@@ -44,6 +44,25 @@ class EntityContainer(Entity):
         self._children: list = []
         super().__init__(**kwargs)
 
+    def add_children(self, children: list[Entity]):
+        """
+        :param children: Add a list of entities as
+            :obj:`~geoh5py.shared.entity.Entity.children`
+        """
+        if not isinstance(children, list):
+            children = [children]
+
+        for child in children:
+            if child in self._children:
+                continue
+
+            if not isinstance(child, Entity):
+                raise TypeError(
+                    f"Child must be an instance of Entity, not {type(child)}"
+                )
+
+            self._children.append(child)
+
     def add_file(self, file: str | Path | bytes, name: str = "filename.dat"):
         """
         Add a file to the object or group stored as bytes on a FilenameData

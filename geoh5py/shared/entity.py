@@ -324,19 +324,14 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
     @parent.setter
     def parent(self, parent: EntityContainer):
 
-        current_parent = getattr(self, "_parent", None)
+        current_parent: EntityContainer | None = getattr(self, "_parent", None)
 
-        if hasattr(parent, "add_children") and hasattr(parent, "remove_children"):
-            parent.add_children([self])
-            self._parent = parent
+        parent.add_children([self])
+        self._parent = parent
 
-            if (
-                current_parent is not None
-                and current_parent != self._parent
-                and hasattr(current_parent, "remove_children")
-            ):
-                current_parent.remove_children([self])
-                self.workspace.save_entity(self)
+        if current_parent is not None and current_parent != self._parent:
+            current_parent.remove_children([self])
+            self.workspace.save_entity(self)
 
     @property
     def partially_hidden(self) -> bool:
