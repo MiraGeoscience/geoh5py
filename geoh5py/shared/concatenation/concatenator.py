@@ -387,7 +387,9 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return start
 
-    def fetch_values(self, entity: ConcatenatedObject, field: str) -> np.ndarray | None:
+    def fetch_values(
+        self, entity: ConcatenatedObject | ConcatenatedData, field: str
+    ) -> np.ndarray | None:
         """
         Get an array of values from concatenated data.
 
@@ -549,7 +551,9 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         else:  # For data values
             self.workspace.update_attribute(self, "data", field)
 
-    def update_attributes(self, entity: ConcatenatedObject, label: str) -> None:
+    def update_attributes(
+        self, entity: ConcatenatedObject | ConcatenatedData, label: str
+    ) -> None:
         """
         Update a concatenated entity.
         """
