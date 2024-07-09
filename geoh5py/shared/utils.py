@@ -717,7 +717,7 @@ def set_attributes(entity, **kwargs):
             continue
 
 
-def map_name_attributes(object_, **kwargs: dict):
+def map_name_attributes(object_, **kwargs: dict) -> dict:
     """
     Map attributes to an object. The object must have an '_attribute_map'.
 

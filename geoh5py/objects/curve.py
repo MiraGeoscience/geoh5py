@@ -31,14 +31,10 @@ class Curve(CellObject):
     Curve object defined by a series of line segments (:obj:`~geoh5py.objects.curve.Curve.cells`)
     connecting :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
 
-    Attributes
-    ----------
-    :attr cells: Array of integer shape(*, 2) defining the connection between pair of vertices.
-    :attr current_line_id: Unique identifier of the current line.
-    :attr parts: Group identifiers for vertices connected by line segments as defined by the
+    :param current_line_id: Unique identifier of the current line.
+    :param parts: Group identifiers for vertices connected by line segments as defined by the
         :obj:`~geoh5py.objects.curve.Curve.cells` property.
-    :attr unique_parts: Unique 'parts' identifiers.
-    :attr vertices: Array of vertices as defined by :obj:`~geoh5py.objects.points.Points.vertices`.
+    :param vertices: Array of vertices as defined by :obj:`~geoh5py.objects.points.Points.vertices`.
     """
 
     _attribute_map: dict = CellObject._attribute_map.copy()
@@ -47,7 +43,7 @@ class Curve(CellObject):
             "Current line property ID": "current_line_id",
         }
     )
-
+    _default_name = "Curve"
     __TYPE_UID = uuid.UUID(
         fields=(0x6A057FDC, 0xB355, 0x11E3, 0x95, 0xBE, 0xFD84A7FFCB88)
     )
@@ -56,7 +52,6 @@ class Curve(CellObject):
         self,
         object_type: ObjectType,
         current_line_id: uuid.UUID | None = None,
-        name="Curve",
         parts: np.ndarray | None = None,
         vertices: np.ndarray | list | tuple | None = None,
         **kwargs,
@@ -65,7 +60,6 @@ class Curve(CellObject):
 
         super().__init__(
             object_type,
-            name=name,
             vertices=vertices,
             **kwargs,
         )

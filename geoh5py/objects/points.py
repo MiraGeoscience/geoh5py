@@ -33,17 +33,17 @@ class Points(ObjectBase):
 
     __TYPE_UID = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
     __VERTICES_DTYPE = np.dtype([("x", "<f8"), ("y", "<f8"), ("z", "<f8")])
+    _default_name = "Points"
 
     def __init__(
         self,
         object_type: ObjectType,
-        name="Points",
         vertices: np.ndarray | list | tuple | None = None,
         **kwargs,
     ):
         self._vertices: np.ndarray = self.validate_vertices(vertices)
 
-        super().__init__(object_type, name=name, **kwargs)
+        super().__init__(object_type, **kwargs)
 
     def copy(
         self,
