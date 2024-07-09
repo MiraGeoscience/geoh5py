@@ -29,7 +29,6 @@ from ..shared.utils import map_attributes, str2uuid, str_json_to_dict
 
 if TYPE_CHECKING:
     from .. import shared
-    from ..shared.concatenation import ConcatenatedObject, Concatenator
     from ..shared.entity_container import EntityContainer
     from ..workspace import Workspace
 
@@ -319,7 +318,7 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         self._on_file = value
 
     @property
-    def parent(self) -> EntityContainer | ConcatenatedObject | Concatenator:
+    def parent(self):
         return self._parent
 
     @parent.setter
