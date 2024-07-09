@@ -44,7 +44,7 @@ class EntityContainer(Entity):
         self._children: list = []
         super().__init__(**kwargs)
 
-    def add_children(self, children: list[Entity]):
+    def add_children(self, children: list):
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
