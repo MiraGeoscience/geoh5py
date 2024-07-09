@@ -27,7 +27,6 @@ from warnings import warn
 
 import numpy as np
 
-from ..shared.utils import str2uuid
 from .entity import Entity
 
 if TYPE_CHECKING:
@@ -42,13 +41,9 @@ class EntityContainer(Entity):
     Base Entity class
     """
 
-    def __init__(self, uid: uuid.UUID | None = None, **kwargs):
-        self._uid = (
-            str2uuid(uid) if isinstance(str2uuid(uid), uuid.UUID) else uuid.uuid4()
-        )
+    def __init__(self, **kwargs):
         self._children: list = []
-
-        super().__init__(uid, **kwargs)
+        super().__init__(**kwargs)
 
     def add_file(self, file: str | Path | bytes, name: str = "filename.dat"):
         """

@@ -382,6 +382,9 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
         """
         Reformat the survey values as structured array with the right shape.
         """
+        if isinstance(values, (list, tuple)):
+            values = np.array(values, ndmin=2)
+
         if isinstance(values, np.ndarray):
             values = values.T.tolist()
 

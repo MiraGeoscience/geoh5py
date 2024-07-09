@@ -75,6 +75,7 @@ def test_data_instantiation(data_class, tmp_path):
         assert workspace.find_type(data_type_uid, DataType) is not None
 
         created_data_uid = created_data.uid
+        workspace.remove_entity(created_data)
         created_data = None  # type: ignore
         # no more reference on created_data, so it should be gone from the workspace
         assert workspace.find_data(created_data_uid) is None

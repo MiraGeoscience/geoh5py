@@ -613,14 +613,12 @@ class ObjectBase(EntityContainer):
         self.workspace.create_entity(  # type: ignore
             Data,
             save_on_creation=True,
-            **{  # type: ignore
-                "entity": {
-                    "name": "Visual Parameters",
-                    "parent": self,
-                    "association": "OBJECT",
-                },
-                "entity_type": {"name": "XmlData", "primitive_type": "TEXT"},
+            entity={
+                "name": "Visual Parameters",
+                "parent": self,
+                "association": "OBJECT",
             },
+            entity_type={"name": "XmlData", "primitive_type": "TEXT"},
         )
 
         return self._visual_parameters

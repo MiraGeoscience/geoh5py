@@ -68,7 +68,7 @@ class Drillhole(Points):
         cost: float = 0.0,
         end_of_hole: float | None = None,
         planning: str = "Default",
-        surveys: np.ndarray | list | None = None,
+        surveys: np.ndarray | list | tuple = (0, 0, -90),
         vertices: np.ndarray | None = None,
         default_collocation_distance: float = 1e-2,
         **kwargs,
@@ -269,38 +269,38 @@ class Drillhole(Points):
         if (getattr(self, "_surveys", None) is None) and self.on_file:
             self._surveys = self.workspace.fetch_array_attribute(self, "surveys")
 
-        if isinstance(self._surveys, np.ndarray):
-            surveys = np.vstack(
-                [
-                    self._surveys["Depth"],
-                    self._surveys["Azimuth"],
-                    self._surveys["Dip"],
-                ]
-            ).T
-
-        else:
-            surveys = np.c_[0, 0, -90]
+        surveys = np.vstack(
+            [
+                self._surveys["Depth"],
+                self._surveys["Azimuth"],
+                self._surveys["Dip"],
+            ]
+        ).T
 
         return surveys.astype(float)
 
     @surveys.setter
-    def surveys(self, array: np.ndarray | list | None):
-        if array is not None:
-            self._surveys = self.format_survey_values(array)
-            self.end_of_hole = float(self._surveys["Depth"][-1])
-            self._trace = None
+    def surveys(self, array: np.ndarray | list | tuple):
+        if not isinstance(array, (np.ndarray, list, tuple)):
+            raise TypeError(
+                "Input 'surveys' must be of type 'numpy.ndarray' or 'list'."
+            )
 
-            if self.on_file:
-                self.workspace.update_attribute(self, "surveys")
-                self.workspace.update_attribute(self, "trace")
+        self._surveys = self.format_survey_values(array)
+        self.end_of_hole = float(self._surveys["Depth"][-1])
+        self._trace = None
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "surveys")
+            self.workspace.update_attribute(self, "trace")
 
         self._locations = None
 
-    def format_survey_values(self, values: list | np.ndarray) -> np.ndarray:
+    def format_survey_values(self, values: list | tuple | np.ndarray) -> np.ndarray:
         """
         Reformat the survey values as structured array with the right shape.
         """
-        if isinstance(values, list):
+        if isinstance(values, (list, tuple)):
             values = np.array(values, ndmin=2)
 
         if np.issubdtype(values.dtype, np.number):

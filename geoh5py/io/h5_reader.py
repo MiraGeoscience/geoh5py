@@ -47,7 +47,7 @@ class H5Reader:
         file: str | h5py.File,
         uid: uuid.UUID,
         entity_type: str,
-    ) -> tuple[dict, dict, dict] | None:
+    ) -> tuple[dict, dict, dict] | tuple[None, None, None]:
         """
         Get attributes of an :obj:`~geoh5py.shared.entity.Entity`.
 
@@ -73,14 +73,14 @@ class H5Reader:
                 entity = h5file[name][entity_type].get(as_str_if_uuid(uid))
 
             if entity is None:
-                return None
+                return None, None, None
 
-            attributes: dict = {"entity": {}}
-            type_attributes: dict = {"entity_type": {}}
+            attributes: dict = {}
+            type_attributes: dict = {}
             property_groups: dict = {}
 
             for key, value in entity.attrs.items():
-                attributes["entity"][INV_KEY_MAP.get(key, key)] = value
+                attributes[INV_KEY_MAP.get(key, key)] = value
 
             # TODO Use lazy pointer to data
             if entity_type != "Data":
@@ -90,12 +90,10 @@ class H5Reader:
                         and isinstance(value, h5py.Dataset)
                         and value.ndim > 0
                     ):
-                        attributes["entity"][INV_KEY_MAP[key]] = value[:]
+                        attributes[INV_KEY_MAP[key]] = value[:]
 
             if "Type" in entity:
-                type_attributes["entity_type"] = cls.fetch_type_attributes(
-                    entity["Type"]
-                )
+                type_attributes = cls.fetch_type_attributes(entity["Type"])
             # Check if the entity has property_group
             if "PropertyGroups" in entity:
                 property_groups = cls.fetch_property_groups(file, uid)

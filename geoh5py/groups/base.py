@@ -45,9 +45,6 @@ class Group(EntityContainer):
                 f"Input 'group_type' must be of type {GroupType}, not {type(group_type)}"
             )
 
-        if group_type.name == "Entity":
-            group_type.name = self._default_name
-
         self._entity_type = group_type
 
         super().__init__(**kwargs)

@@ -29,12 +29,13 @@ from ..shared.utils import map_attributes, str2uuid, str_json_to_dict
 
 if TYPE_CHECKING:
     from .. import shared
+    from ..shared.entity_container import EntityContainer
     from ..workspace import Workspace
 
 DEFAULT_CRS = {"Code": "Unknown", "Name": "Unknown"}
 
 
-class Entity(ABC):
+class Entity(ABC):  # pylint: disable=too-many-instance-attributes
     """
     Base Entity class
     """
@@ -53,24 +54,35 @@ class Entity(ABC):
     _visible = True
     _default_name: str = "Entity"
 
-    def __init__(self, uid: uuid.UUID | None = None, **kwargs):
-        self._uid = (
-            str2uuid(uid) if isinstance(str2uuid(uid), uuid.UUID) else uuid.uuid4()
-        )
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        allow_delete: bool = True,
+        allow_move: bool = True,
+        allow_rename: bool = True,
+        clipping_ids: list[uuid.UUID] | None = None,
+        metadata: dict | None = None,
+        name: str | None = None,
+        on_file: bool = False,
+        partially_hidden: bool = False,
+        parent: EntityContainer | None = None,
+        public: bool = True,
+        uid: uuid.UUID | None = None,
+        **kwargs,
+    ):
+        self.on_file = on_file
+        self.uid: uuid.UUID = uid or uuid.uuid4()
+        self.allow_delete = allow_delete
+        self.allow_move = allow_move
+        self.allow_rename = allow_rename
+        self.clipping_ids = clipping_ids
+        self.metadata = metadata
+        self.name = name or self._default_name
+        self.parent = parent or self.workspace.root
+        self.partially_hidden = partially_hidden
+        self.public = public
 
-        self._allow_delete = True
-        self._allow_move = True
-        self._allow_rename = True
-        self._clipping_ids: list[uuid.UUID] | None = None
-        self._metadata: dict | None = None
-        self._name = self._default_name
-        self._on_file = False
-        self._parent: Entity | None = None
-        self._partially_hidden = False
-        self._public = True
-
+        # TODO Deprecate in favor of explicit attribute setter
         map_attributes(self, **kwargs)
-
         self.workspace.register(self)
 
     @property
@@ -83,7 +95,9 @@ class Entity(ABC):
     @allow_delete.setter
     def allow_delete(self, value: bool):
         self._allow_delete = value
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def allow_move(self) -> bool:
@@ -95,7 +109,9 @@ class Entity(ABC):
     @allow_move.setter
     def allow_move(self, value: bool):
         self._allow_move = value
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def allow_rename(self) -> bool:
@@ -107,7 +123,9 @@ class Entity(ABC):
     @allow_rename.setter
     def allow_rename(self, value: bool):
         self._allow_rename = value
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def attribute_map(self) -> dict:
@@ -123,6 +141,27 @@ class Entity(ABC):
         List of clipping uuids
         """
         return self._clipping_ids
+
+    @clipping_ids.setter
+    def clipping_ids(self, value: list | None):
+        msg = (
+            "Input clipping_ids must be a list of uuid.UUID or None. "
+            f"Provided value of type '{type(value)}'."
+        )
+
+        if isinstance(value, list):
+            value = [str2uuid(val) for val in value]
+
+            if not all(isinstance(val, uuid.UUID) for val in value):
+                raise TypeError(msg)
+
+        elif not isinstance(value, type(None)):
+            raise TypeError(msg)
+
+        self._clipping_ids = value
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def coordinate_reference_system(self) -> dict:
@@ -169,14 +208,14 @@ class Entity(ABC):
         :return entity: Registered Entity to the workspace.
         """
         entity_type_kwargs = (
-            {"entity_type": {"uid": kwargs["entity_type_uid"]}}
+            {"uid": kwargs.pop("entity_type_uid")}
             if "entity_type_uid" in kwargs
             else {}
         )
-        entity_kwargs = {"entity": kwargs}
         new_object = workspace.create_entity(
             cls,
-            **{**entity_kwargs, **entity_type_kwargs},
+            entity=kwargs,
+            entity_type=entity_type_kwargs,
         )
         return new_object
 
@@ -234,7 +273,7 @@ class Entity(ABC):
             self.workspace.update_attribute(self, "metadata")
 
     @staticmethod
-    def validate_metadata(value):
+    def validate_metadata(value) -> dict | None:
         if isinstance(value, np.ndarray):
             value = value[0]
 
@@ -259,7 +298,9 @@ class Entity(ABC):
     @name.setter
     def name(self, new_name: str):
         self._name = self.fix_up_name(new_name)
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def on_file(self) -> bool:
@@ -271,15 +312,19 @@ class Entity(ABC):
 
     @on_file.setter
     def on_file(self, value: bool):
+        if not isinstance(value, bool):
+            raise TypeError("Attribute 'on_file' must be of type bool.")
+
         self._on_file = value
 
     @property
-    def parent(self):
+    def parent(self) -> EntityContainer:
         return self._parent
 
     @parent.setter
-    def parent(self, parent: shared.Entity):
-        current_parent = self._parent
+    def parent(self, parent: EntityContainer):
+
+        current_parent = getattr(self, "_parent", None)
 
         if hasattr(parent, "add_children") and hasattr(parent, "remove_children"):
             parent.add_children([self])
@@ -303,7 +348,9 @@ class Entity(ABC):
     @partially_hidden.setter
     def partially_hidden(self, value: bool):
         self._partially_hidden = value
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def public(self) -> bool:
@@ -316,7 +363,9 @@ class Entity(ABC):
     @public.setter
     def public(self, value: bool):
         self._public = value
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def uid(self) -> uuid.UUID:
@@ -324,8 +373,10 @@ class Entity(ABC):
 
     @uid.setter
     def uid(self, uid: str | uuid.UUID):
-        if isinstance(uid, str):
-            uid = uuid.UUID(uid)
+        uid = str2uuid(uid)
+
+        if not isinstance(uid, uuid.UUID):
+            raise TypeError("Input uid must be a string or uuid.UUID.")
 
         self._uid = uid
 
@@ -339,7 +390,9 @@ class Entity(ABC):
     @visible.setter
     def visible(self, value: bool):
         self._visible = value
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def workspace(self) -> Workspace:

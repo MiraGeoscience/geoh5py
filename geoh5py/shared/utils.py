@@ -632,7 +632,7 @@ def mask_by_extent(
     return indices
 
 
-def get_attributes(entity, omit_list=(), attributes=None):
+def get_attributes(entity, omit_list=(), attributes=None) -> dict:
     """Extract the attributes of an object with omissions."""
     if attributes is None:
         attributes = {}

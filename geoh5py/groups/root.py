@@ -28,26 +28,33 @@ if TYPE_CHECKING:
 class RootGroup(NoTypeGroup):
     """The Root group of a workspace."""
 
-    __ROOT_NAME = "Workspace"
+    _default_name = "Workspace"
 
-    def __init__(self, group_type: GroupType, **kwargs):
+    def __init__(
+        self,
+        group_type: GroupType,
+        allow_move=False,
+        allow_delete=False,
+        allow_rename=False,
+        **kwargs,
+    ):
 
-        super().__init__(group_type, **kwargs)
-
-        # Hard wired attributes
-        self._parent = None
-        self._allow_move = False
-        self._allow_delete = False
-        self._allow_rename = False
-        self._name = self.__ROOT_NAME
+        super().__init__(
+            group_type,
+            allow_move=allow_move,
+            allow_delete=allow_delete,
+            allow_rename=allow_rename,
+            parent=self,
+            **kwargs,
+        )
 
     @property
     def parent(self):
         """
         Parental entity of root is always None
         """
-        return self._parent
+        return None
 
     @parent.setter
     def parent(self, _):
-        self._parent = None
+        pass

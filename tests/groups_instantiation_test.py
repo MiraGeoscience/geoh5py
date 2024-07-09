@@ -73,6 +73,7 @@ def test_group_instantiation(group_class, tmp_path):
         assert workspace.find_type(group_type_uid, GroupType) is not None
 
         created_group_uid = created_group.uid
+        workspace.remove_entity(created_group)
         created_group = None  # type: ignore
         # no more reference on create_group, so it should be gone from the workspace
         assert workspace.find_group(created_group_uid) is None

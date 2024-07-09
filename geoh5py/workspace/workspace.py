@@ -110,6 +110,7 @@ class Workspace(AbstractContextManager):
         repack: bool = False,
         version: float = 2.1,
     ):
+        self._root: RootGroup
         self._data: dict[uuid.UUID, ReferenceType[data.Data]] = {}
         self._distance_unit: str = distance_unit
         self._contributors: np.ndarray = np.asarray(
@@ -124,7 +125,6 @@ class Workspace(AbstractContextManager):
         self._name: str = name
         self._objects: dict[uuid.UUID, ReferenceType[ObjectBase]] = {}
         self._repack: bool = repack
-        self._root: Entity | PropertyGroup | None = None
         self._types: dict[uuid.UUID, ReferenceType[EntityType]] = {}
         self._version: float = version
 
@@ -299,7 +299,7 @@ class Workspace(AbstractContextManager):
         entity_kwargs.pop("property_groups", None)
 
         new_object = parent.workspace.create_entity(
-            entity_type, **{"entity": entity_kwargs, "entity_type": entity_type_kwargs}
+            entity_type, entity=entity_kwargs, entity_type=entity_type_kwargs
         )
 
         if clear_cache:
@@ -354,22 +354,18 @@ class Workspace(AbstractContextManager):
             recovered_entity = self.create_entity(
                 ObjectBase,
                 save_on_creation=False,
-                **{
-                    "entity": attributes,
-                    "entity_type": {"uid": attributes.pop("Object Type ID")},
-                },
+                entity=attributes,
+                entity_type={"uid": attributes.pop("Object Type ID")},
             )
 
         elif "Type ID" in attributes:
             recovered_entity = self.create_entity(
                 Data,
                 save_on_creation=False,
-                **{
-                    "entity": attributes,
-                    "entity_type": self.fetch_type(
-                        uuid.UUID(attributes.pop("Type ID")), "Data"
-                    ),
-                },
+                entity=attributes,
+                entity_type=self.fetch_type(
+                    uuid.UUID(attributes.pop("Type ID")), "Data"
+                ),
             )
 
         if recovered_entity is not None:
@@ -381,23 +377,26 @@ class Workspace(AbstractContextManager):
     def create_data(
         self,
         entity_class,
-        entity_kwargs: dict,
-        entity_type_kwargs: dict | DataType,
-    ) -> Data | None:
+        entity: dict,
+        entity_type: dict | EntityType,
+    ) -> Data:
         """
         Create a new Data entity with attributes.
 
         :param entity_class: :obj:`~geoh5py.data.data.Data` class.
-        :param entity_kwargs: Properties of the entity.
-        :param entity_type_kwargs: Properties of the entity_type.
+        :param entity: Properties of the entity.
+        :param entity_type: Properties of the entity_type.
 
         :return: The newly created entity.
         """
-        if isinstance(entity_type_kwargs, DataType):
-            data_type = entity_type_kwargs
+        if isinstance(entity_type, DataType):
+            data_type: DataType = entity_type
+        elif isinstance(entity_type, dict):
+            data_type = data.data_type.DataType.find_or_create(self, **entity_type)
         else:
-            data_type = data.data_type.DataType.find_or_create(
-                self, **entity_type_kwargs
+            raise TypeError(
+                f"Expected `entity_type` to be of type `dict` or `DataType`, "
+                f"got {type(entity_type)}."
             )
 
         for name, member in inspect.getmembers(data):
@@ -411,71 +410,72 @@ class Workspace(AbstractContextManager):
             ):
                 if member is CommentsData and not any(
                     isinstance(val, str) and val == "UserComments"
-                    for val in entity_kwargs.values()
+                    for val in entity.values()
                 ):
                     continue
 
                 if self.version > 1.0 and isinstance(
-                    entity_kwargs["parent"], ConcatenatedObject
+                    entity["parent"], ConcatenatedObject
                 ):
                     member = type("Concatenated" + name, (ConcatenatedData, member), {})
 
                 if member is TextData and any(
                     isinstance(val, str) and "Visual Parameters" == val
-                    for val in entity_kwargs.values()
+                    for val in entity.values()
                 ):
                     member = VisualParameters
 
-                created_entity = member(data_type, **entity_kwargs)
+                created_entity = member(data_type, **entity)
 
                 return created_entity
 
-        return None
+        raise TypeError(
+            f"Data type {entity_class} not found in {data_type.primitive_type}."
+        )
 
     def create_entity(
         self,
         entity_class,
-        save_on_creation: bool = True,
         compression: int = 5,
-        **kwargs,
-    ) -> Entity | None:
+        entity: dict | None = None,
+        entity_type: EntityType | dict | None = None,
+        save_on_creation: bool = True,
+    ) -> Entity:
         """
         Function to create and register a new entity and its entity_type.
 
         :param entity_class: Type of entity to be created
-        :param save_on_creation: Save the entity to geoh5 immediately
         :param compression: Compression level for data.
+        :param entity: Attributes of the entity.
+        :param entity_type: Attributes of the entity_type.
+        :param save_on_creation: Save the entity to geoh5 immediately
 
         :return entity: Newly created entity registered to the workspace
         """
 
-        entity_kwargs: dict = kwargs.get("entity", {})
-        entity_type_kwargs: dict = kwargs.get("entity_type", {})
+        entity = entity or {}
+        entity_type = entity_type or {}
 
         if entity_class is not RootGroup and (
-            "parent" not in entity_kwargs or entity_kwargs["parent"] is None
+            "parent" not in entity or entity["parent"] is None
         ):
-            entity_kwargs["parent"] = self.root
+            entity["parent"] = self.root
 
-        created_entity: Data | Group | ObjectBase | None = None
+        created_entity: Data | Group | ObjectBase
         if entity_class is None or issubclass(entity_class, Data):
-            created_entity = self.create_data(Data, entity_kwargs, entity_type_kwargs)
+            created_entity = self.create_data(Data, entity, entity_type)
 
-            if isinstance(created_entity, VisualParameters):
-                entity_kwargs["parent"].visual_parameters = created_entity
+            if isinstance(created_entity, VisualParameters) and isinstance(
+                created_entity.parent, ObjectBase
+            ):
+                created_entity.parent.visual_parameters = created_entity
 
-        elif entity_class is RootGroup:
-            created_entity = RootGroup(
-                RootGroup.find_or_create_type(self, **entity_type_kwargs),
-                **entity_kwargs,
-            )
-
-        elif issubclass(entity_class, (Group, ObjectBase)):
+        else:
             created_entity = self.create_object_or_group(
-                entity_class, entity_kwargs, entity_type_kwargs
+                entity_class, entity, entity_type
             )
 
-        if created_entity is not None and save_on_creation and self.h5file is not None:
+        if save_on_creation and self.h5file is not None:
             self.save_entity(created_entity, compression=compression)
 
         return created_entity
@@ -498,21 +498,24 @@ class Workspace(AbstractContextManager):
             )
 
     def create_object_or_group(
-        self, entity_class, entity_kwargs: dict, entity_type_kwargs: dict
-    ) -> Group | ObjectBase | None:
+        self, entity_class, entity: dict, entity_type: dict | EntityType
+    ) -> Group | ObjectBase:
         """
         Create an object or a group with attributes.
 
         :param entity_class: :obj:`~geoh5py.objects.object_base.ObjectBase` or
             :obj:`~geoh5py.groups.group.Group` class.
-        :param entity_kwargs: Attributes of the entity.
-        :param entity_type_kwargs: Attributes of the entity_type.
+        :param entity: Attributes of the entity.
+        :param entity_type: Attributes of the entity_type.
 
         :return: A new Object or Group.
         """
         entity_type_uid = None
 
-        for key, val in entity_type_kwargs.items():
+        if isinstance(entity_type, EntityType):
+            entity_type = get_attributes(entity_type)
+
+        for key, val in entity_type.items():
             if key.lower() in ["id", "uid"]:
                 entity_type_uid = uuid.UUID(str(val))
 
@@ -535,27 +538,46 @@ class Workspace(AbstractContextManager):
                     if member in (DrillholeGroup, IntegratorDrillholeGroup):
                         member = type("Concatenator" + name, (Concatenator, member), {})
                     elif member is Drillhole and isinstance(
-                        entity_kwargs.get("parent"),
+                        entity.get("parent"),
                         (DrillholeGroup, IntegratorDrillholeGroup),
                     ):
                         member = ConcatenatedDrillhole
 
-                entity_type = member.find_or_create_type(self, **entity_type_kwargs)
+                entity_type = member.find_or_create_type(self, **entity_type)
 
-                created_entity = member(entity_type, **entity_kwargs)
+                created_entity = member(entity_type, **entity)
 
                 return created_entity
 
         # Special case for CustomGroup without uuid
         if entity_class == Group:
             entity_type = groups.custom.CustomGroup.find_or_create_type(
-                self, **entity_type_kwargs
+                self, **entity_type
             )
-            created_entity = groups.custom.CustomGroup(entity_type, **entity_kwargs)
+            created_entity = groups.custom.CustomGroup(entity_type, **entity)
 
             return created_entity
 
-        return None
+        raise TypeError(f"Entity class type {entity_class} not recognized.")
+
+    def create_root(
+        self, entity_attributes: dict | None = None, type_attributes: dict | None = None
+    ) -> RootGroup:
+        """
+        Create a RootGroup entity.
+
+        :param entity_attributes: Attributes of the entity.
+        :param type_attributes: Attributes of the entity_type.
+
+        :return: The newly created RootGroup entity.
+        """
+        type_attributes = type_attributes or {}
+        group_type = RootGroup.find_or_create_type(self, **type_attributes)
+
+        entity_attributes = entity_attributes or {}
+        root = RootGroup(group_type, **entity_attributes)
+
+        return root
 
     @property
     def data(self) -> list[data.Data]:
@@ -563,26 +585,35 @@ class Workspace(AbstractContextManager):
         return self._all_data()
 
     def fetch_or_create_root(self):
-        root = self.load_entity(uuid.uuid4(), "root")
-        if root is not None and not isinstance(root, PropertyGroup):
-            self._root = root
+        """
+        Fetch the root group or create a new one if it does not exist.
+        """
+        attrs, type_attrs, _ = self._io_call(
+            H5Reader.fetch_attributes, uuid.uuid4(), "root", mode="r"
+        )
+        self._root = self.create_root(
+            entity_attributes=attrs, type_attributes=type_attrs
+        )
+
+        if attrs is not None:
             self._root.on_file = True
             self._root.entity_type.on_file = True
             self.fetch_children(self._root, recursively=True)
-        else:
-            self._root = self.create_entity(RootGroup, save_on_creation=False)
 
-            for entity_type in ["group", "object"]:
-                uuids = self._io_call(H5Reader.fetch_uuids, entity_type, mode="r")
+            return
 
-                for uid in uuids:
-                    if isinstance(self.get_entity(uid)[0], Entity):
-                        continue
+        # Fetch all entities and build the family tree with RootGroup at the base
+        for entity_type in ["group", "object"]:
+            uuids = self._io_call(H5Reader.fetch_uuids, entity_type, mode="r")
 
-                    recovered_object = self.load_entity(uid, entity_type)
+            for uid in uuids:
+                if isinstance(self.get_entity(uid)[0], Entity):
+                    continue
 
-                    if isinstance(recovered_object, (Group, ObjectBase)):
-                        self.fetch_children(recovered_object, recursively=True)
+                recovered_object = self.load_entity(uid, entity_type)
+
+                if isinstance(recovered_object, (Group, ObjectBase)):
+                    self.fetch_children(recovered_object, recursively=True)
 
     def remove_children(self, parent, children: list):
         """
@@ -1039,7 +1070,7 @@ class Workspace(AbstractContextManager):
             self._geoh5 = h5py.File(self.h5file, "a")
 
             with self._geoh5:
-                self._root = self.create_entity(RootGroup, save_on_creation=False)
+                self._root = self.create_root()
                 H5Writer.init_geoh5(self.geoh5, self)
 
         elif isinstance(file, BytesIO):
@@ -1146,25 +1177,26 @@ class Workspace(AbstractContextManager):
             "root": RootGroup,
         }
 
-        attributes = self._io_call(
+        entity_attrs, type_attrs, prop_groups = self._io_call(
             H5Reader.fetch_attributes, uid, entity_type, mode="r"
         )
 
-        if attributes is None:
+        if entity_attrs is None:
             return None
 
         if parent is not None:
-            attributes[0]["entity"]["parent"] = parent
+            entity_attrs["parent"] = parent
 
         entity = self.create_entity(
             base_classes[entity_type],
             save_on_creation=False,
-            **{**attributes[0], **attributes[1]},
+            entity=entity_attrs,
+            entity_type=type_attrs,
         )
 
         # Get property groups (key 2) from object attributes
-        if isinstance(entity, ObjectBase) and len(attributes[2]) > 0:
-            for kwargs in attributes[2].values():
+        if isinstance(entity, ObjectBase) and len(prop_groups) > 0:
+            for kwargs in prop_groups.values():
                 entity.create_property_group(on_file=True, **kwargs)
 
         if entity is not None:
@@ -1240,7 +1272,7 @@ class Workspace(AbstractContextManager):
             raise ValueError(f"Entity of type {type(entity)} is not supported.")
 
     @property
-    def root(self) -> Entity | PropertyGroup | None:
+    def root(self) -> RootGroup:
         """
         :obj:`~geoh5py.groups.root_group.RootGroup` entity.
         """
