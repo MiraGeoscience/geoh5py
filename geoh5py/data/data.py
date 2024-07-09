@@ -167,9 +167,7 @@ class Data(Entity):
             self.parent, "n_faces"
         ):
             return self.parent.n_faces
-        if self.association is DataAssociationEnum.OBJECT and hasattr(
-            self.parent, "n_vertices"
-        ):
+        if self.association is DataAssociationEnum.OBJECT:
             return 1
 
         return None
