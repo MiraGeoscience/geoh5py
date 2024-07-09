@@ -53,6 +53,7 @@ def test_group_instantiation(group_class, tmp_path):
         # searching for the wrong type
         assert workspace.find_type(group_type.uid, ObjectType) is None
 
+        type_used_by_root = False
         if workspace.root is not None:
             type_used_by_root = workspace.root.entity_type is group_type
         created_group = group_class(group_type, name="test group")

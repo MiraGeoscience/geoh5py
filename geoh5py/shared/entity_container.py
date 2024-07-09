@@ -23,7 +23,6 @@ import uuid
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING
-from warnings import warn
 
 import numpy as np
 
@@ -183,38 +182,6 @@ class EntityContainer(Entity):
             child.name for child in self.children if isinstance(child, entity_type)
         ]
         return sorted(name_list)
-
-    def reference_to_uid(
-        self, value: Entity | PropertyGroup | str | uuid.UUID
-    ) -> list[uuid.UUID]:
-        """
-        General entity reference translation.
-
-        Todo: Remove in future release
-
-        :param value: Either an `Entity`, string or uuid
-
-        :return: List of unique identifier associated with the input reference.
-        """
-        warn(
-            "EntityContainer.reference_to_uid() is deprecated "
-            "and will be removed in versions 0.10.0.",
-            DeprecationWarning,
-        )
-
-        children_uid = [child.uid for child in self.children]
-        if hasattr(value, "uid"):
-            uid = [value.uid]
-        elif isinstance(value, str):
-            uid = [
-                obj.uid
-                for obj in self.workspace.get_entity(value)
-                if (obj is not None) and (obj.uid in children_uid)
-            ]
-        elif isinstance(value, uuid.UUID):
-            uid = [value]
-
-        return uid
 
     def remove_children(self, children: list[shared.Entity | PropertyGroup]):
         """
