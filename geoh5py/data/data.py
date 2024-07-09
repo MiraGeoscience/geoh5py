@@ -154,15 +154,22 @@ class Data(Entity):
         :obj:`int`: Number of expected data values based on
         :obj:`~geoh5py.data.data.Data.association`
         """
-        if self.association is DataAssociationEnum.VERTEX:
+        if self.association in [
+            DataAssociationEnum.VERTEX,
+            DataAssociationEnum.DEPTH,
+        ] and hasattr(self.parent, "n_vertices"):
             return self.parent.n_vertices
-        if self.association is DataAssociationEnum.DEPTH:
-            return self.parent.n_vertices
-        if self.association is DataAssociationEnum.CELL:
+        if self.association is DataAssociationEnum.CELL and hasattr(
+            self.parent, "n_cells"
+        ):
             return self.parent.n_cells
-        if self.association is DataAssociationEnum.FACE:
+        if self.association is DataAssociationEnum.FACE and hasattr(
+            self.parent, "n_faces"
+        ):
             return self.parent.n_faces
-        if self.association is DataAssociationEnum.OBJECT:
+        if self.association is DataAssociationEnum.OBJECT and hasattr(
+            self.parent, "n_vertices"
+        ):
             return 1
 
         return None
@@ -245,18 +252,22 @@ class Data(Entity):
 
         Uses the parent object's vertices or centroids coordinates.
         """
-        if self.association is DataAssociationEnum.VERTEX:
+        if self.association is DataAssociationEnum.VERTEX and hasattr(
+            self.parent, "vertices"
+        ):
             return mask_by_extent(self.parent.vertices, extent, inverse=inverse)
 
         if self.association is DataAssociationEnum.CELL:
-            if getattr(self.parent, "centroids", None) is not None:
+            if hasattr(self.parent, "centroids"):
                 return mask_by_extent(self.parent.centroids, extent, inverse=inverse)
 
-            indices = mask_by_extent(self.parent.vertices, extent, inverse=inverse)
-            if indices is not None:
-                indices = np.all(indices[self.parent.cells], axis=1)
+            if hasattr(self.parent, "vertices") and hasattr(self.parent, "cells"):
 
-            return indices
+                indices = mask_by_extent(self.parent.vertices, extent, inverse=inverse)
+                if indices is not None:
+                    indices = np.all(indices[self.parent.cells], axis=1)
+
+                return indices
 
         return None
 
