@@ -227,11 +227,6 @@ class BaseElectrode(Curve, ABC):
         The associated current_electrodes (transmitters)
         """
 
-    @classmethod
-    @abstractmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """Default unique identifier. Implemented on the child class."""
-
     @staticmethod
     def validate_metadata(value):
         if isinstance(value, np.ndarray):
@@ -262,7 +257,7 @@ class PotentialElectrode(BaseElectrode):
     Ground potential electrode (receiver).
     """
 
-    __TYPE_UID = uuid.UUID("{275ecee9-9c24-4378-bf94-65f3c5fbe163}")
+    _TYPE_UID = uuid.UUID("{275ecee9-9c24-4378-bf94-65f3c5fbe163}")
 
     @property
     def current_electrodes(self):
@@ -307,32 +302,18 @@ class PotentialElectrode(BaseElectrode):
         """
         return self
 
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
-
 
 class CurrentElectrode(BaseElectrode):
     """
     Ground direct current electrode (transmitter).
     """
 
-    __TYPE_UID = uuid.UUID("{9b08bb5a-300c-48fe-9007-d206f971ea92}")
+    _TYPE_UID = uuid.UUID("{9b08bb5a-300c-48fe-9007-d206f971ea92}")
 
     def __init__(self, object_type: ObjectType, **kwargs):
         self._current_line_id: uuid.UUID | None = None
 
         super().__init__(object_type, **kwargs)
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     @property
     def current_electrodes(self):

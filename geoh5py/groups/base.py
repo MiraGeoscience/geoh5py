@@ -17,8 +17,6 @@
 
 from __future__ import annotations
 
-import uuid
-from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -47,11 +45,6 @@ class Group(EntityContainer):
         self._entity_type = group_type
 
         super().__init__(**kwargs)
-
-    @classmethod
-    @abstractmethod
-    def default_type_uid(cls) -> uuid.UUID | None:
-        """Abstract method to return the default type uid for the class."""
 
     def add_comment(self, comment: str, author: str | None = None):
         """

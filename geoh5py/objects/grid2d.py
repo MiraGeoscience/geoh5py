@@ -41,7 +41,7 @@ class Grid2D(GridObject):
     of cell delimiters.
     """
 
-    __TYPE_UID = uuid.UUID(
+    _TYPE_UID = uuid.UUID(
         fields=(0x48F5054A, 0x1C5C, 0x4CA4, 0x90, 0x48, 0x80F36DC60A06)
     )
     _attribute_map = GridObject._attribute_map.copy()
@@ -210,13 +210,6 @@ class Grid2D(GridObject):
                     child.values = values
 
         return copy
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     @property
     def dip(self) -> float:

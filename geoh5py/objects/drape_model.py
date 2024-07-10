@@ -36,7 +36,7 @@ class DrapeModel(ObjectBase):
          of the drape model.
     """
 
-    __TYPE_UID = uuid.UUID("{C94968EA-CF7D-11EB-B8BC-0242AC130003}")
+    _TYPE_UID = uuid.UUID("{C94968EA-CF7D-11EB-B8BC-0242AC130003}")
     __LAYERS_DTYPE = np.dtype([("I", "<i4"), ("K", "<i4"), ("Bottom elevation", "<f8")])
     __PRISM_DTYPE = np.dtype(
         [
@@ -60,10 +60,6 @@ class DrapeModel(ObjectBase):
         self._prisms: np.ndarray = self.validate_prisms(prisms)
 
         super().__init__(object_type, **kwargs)
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
 
     @property
     def centroids(self) -> np.ndarray:

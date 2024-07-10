@@ -310,13 +310,6 @@ class ObjectBase(EntityContainer):
 
         return new_object
 
-    @classmethod
-    @abstractmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        Default entity type unique identifier
-        """
-
     @abstractmethod
     def mask_by_extent(
         self, extent: np.ndarray, inverse: bool = False

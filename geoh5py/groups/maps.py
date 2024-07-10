@@ -25,9 +25,5 @@ from .base import Group
 class MapsGroup(Group):
     """The type for the basic Container group."""
 
-    __TYPE_UID = uuid.UUID("{4d65f8c3-a015-4c01-b411-412c0f4f0884}")
+    _TYPE_UID = uuid.UUID("{4d65f8c3-a015-4c01-b411-412c0f4f0884}")
     _default_name = "Maps Group"
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID

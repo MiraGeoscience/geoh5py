@@ -176,7 +176,7 @@ class TipperReceivers(TipperSurvey, Curve):  # pylint: disable=too-many-ancestor
     A z-tipper EM survey object.
     """
 
-    __TYPE_UID = uuid.UUID("{0b639533-f35b-44d8-92a8-f70ecff3fd26}")
+    _TYPE_UID = uuid.UUID("{0b639533-f35b-44d8-92a8-f70ecff3fd26}")
     __TYPE = "Receivers"
 
     def __init__(self, object_type: ObjectType, name="Tipper rx", **kwargs):
@@ -187,13 +187,6 @@ class TipperReceivers(TipperSurvey, Curve):  # pylint: disable=too-many-ancestor
     @property
     def complement(self):
         return self.base_stations
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     @property
     def type(self):
@@ -206,7 +199,7 @@ class TipperBaseStations(TipperSurvey, Points):
     A z-tipper EM survey object.
     """
 
-    __TYPE_UID = uuid.UUID("{f495cd13-f09b-4a97-9212-2ea392aeb375}")
+    _TYPE_UID = uuid.UUID("{f495cd13-f09b-4a97-9212-2ea392aeb375}")
     __TYPE = "Base stations"
 
     def __init__(self, object_type: ObjectType, name="Tipper base", **kwargs):
@@ -215,13 +208,6 @@ class TipperBaseStations(TipperSurvey, Points):
     @property
     def complement(self):
         return self.receivers
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     @property
     def type(self):

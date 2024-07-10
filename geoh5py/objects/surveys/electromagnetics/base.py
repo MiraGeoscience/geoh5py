@@ -305,11 +305,6 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         """Default metadata structure. Implemented on the child class."""
         return {"EM Dataset": {}}
 
-    @classmethod
-    @abstractmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """Default unique identifier. Implemented on the child class."""
-
     @property
     @abstractmethod
     def default_transmitter_type(self) -> type:
@@ -618,8 +613,9 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         )
 
 
-class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve):
+class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
     __INPUT_TYPE = ["Rx"]
+    _TYPE_UID: uuid.UUID | None = None
 
     @property
     def base_receiver_type(self):
@@ -646,9 +642,10 @@ class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve):
         self.edit_em_metadata({"Loop radius": value})
 
 
-class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
+class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
     __INPUT_TYPE = ["Tx and Rx"]
     _tx_id_property: ReferencedData | None = None
+    _TYPE_UID: uuid.UUID | None = None
 
     @property
     def base_receiver_type(self):
@@ -817,7 +814,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
             self.edit_em_metadata({"Tx ID property": getattr(value, "uid", None)})
 
 
-class AirborneEMSurvey(BaseEMSurvey, Curve):
+class AirborneEMSurvey(BaseEMSurvey, Curve, ABC):
     __INPUT_TYPE = ["Rx", "Tx", "Tx and Rx"]
     _PROPERTY_MAP = {
         "crossline_offset": "Crossline offset",
@@ -827,6 +824,7 @@ class AirborneEMSurvey(BaseEMSurvey, Curve):
         "vertical_offset": "Vertical offset",
         "yaw": "Yaw",
     }
+    _TYPE_UID: uuid.UUID | None = None
 
     @property
     def crossline_offset(self) -> float | uuid.UUID | None:
@@ -949,7 +947,7 @@ class AirborneEMSurvey(BaseEMSurvey, Curve):
         self.set_metadata("yaw", value)
 
 
-class FEMSurvey(BaseEMSurvey):
+class FEMSurvey(BaseEMSurvey, ABC):
     __UNITS = __UNITS = [
         "Hertz (Hz)",
         "KiloHertz (kHz)",
@@ -970,7 +968,7 @@ class FEMSurvey(BaseEMSurvey):
         return self.__UNITS
 
 
-class TEMSurvey(BaseEMSurvey):
+class TEMSurvey(BaseEMSurvey, ABC):
     __UNITS = [
         "Seconds (s)",
         "Milliseconds (ms)",

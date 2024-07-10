@@ -45,7 +45,7 @@ class BlockModel(GridObject):
         :obj:`~geoh5py.objects.grid_object.GridObject` class.
     """
 
-    __TYPE_UID = uuid.UUID(
+    _TYPE_UID = uuid.UUID(
         fields=(0xB020A277, 0x90E2, 0x4CD7, 0x84, 0xD6, 0x612EE3F25051)
     )
     _attribute_map = GridObject._attribute_map.copy()
@@ -121,13 +121,6 @@ class BlockModel(GridObject):
             self._v_cell_delimiters,
             self._z_cell_delimiters,
         ]
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     @property
     def shape(self) -> tuple[int, int, int]:

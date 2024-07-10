@@ -40,9 +40,18 @@ class EntityContainer(Entity):
     Base Entity class
     """
 
+    _TYPE_UID: uuid.UUID | None = None
+
     def __init__(self, **kwargs):
         self._children: list = []
         super().__init__(**kwargs)
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID | None:
+        """
+        Default uuid for the entity type.
+        """
+        return cls._TYPE_UID
 
     def add_children(self, children: list):
         """

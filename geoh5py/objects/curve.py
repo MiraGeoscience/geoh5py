@@ -44,7 +44,7 @@ class Curve(CellObject):
         }
     )
     _default_name = "Curve"
-    __TYPE_UID = uuid.UUID(
+    _TYPE_UID: uuid.UUID | None = uuid.UUID(
         fields=(0x6A057FDC, 0xB355, 0x11E3, 0x95, 0xBE, 0xFD84A7FFCB88)
     )
 
@@ -68,7 +68,7 @@ class Curve(CellObject):
     @property
     def current_line_id(self) -> uuid.UUID | None:
         """
-        :obj:`uuid.UUID` or :obj:`None`: Unique identifier of the current line.
+        Unique identifier of the current line.
         """
         return self._current_line_id
 
@@ -86,13 +86,6 @@ class Curve(CellObject):
 
         if self.on_file:
             self.workspace.update_attribute(self, "attributes")
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     def _make_cells_from_parts(self) -> np.ndarray:
         """

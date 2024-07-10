@@ -28,7 +28,7 @@ from .base import Group, GroupType
 class UIJsonGroup(Group):
     """Group for SimPEG inversions."""
 
-    __TYPE_UID = uuid.UUID("{BB50AC61-A657-4926-9C82-067658E246A0}")
+    _TYPE_UID = uuid.UUID("{BB50AC61-A657-4926-9C82-067658E246A0}")
     _default_name = "UIJson"
 
     def __init__(
@@ -41,10 +41,6 @@ class UIJsonGroup(Group):
 
         super().__init__(group_type, **kwargs)
         self.options = self.format_input_options(options)
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
 
     @property
     def options(self) -> dict:

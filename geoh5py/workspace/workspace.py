@@ -530,7 +530,6 @@ class Workspace(AbstractContextManager):
                 inspect.isclass(member)
                 and issubclass(member, entity_class.__bases__)
                 and member is not entity_class.__bases__
-                and hasattr(member, "default_type_uid")
                 and not member == CustomGroup
                 and member.default_type_uid() == entity_type_uid
             ):

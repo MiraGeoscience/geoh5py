@@ -30,13 +30,9 @@ class Surface(CellObject):
     Surface object defined by vertices and cells
     """
 
-    __TYPE_UID = uuid.UUID(
+    _TYPE_UID = uuid.UUID(
         fields=(0xF26FEBA3, 0xADED, 0x494B, 0xB9, 0xE9, 0xB2BBCBE298E1)
     )
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
 
     def validate_cells(self, indices: list | tuple | np.ndarray | None) -> np.ndarray:
         """

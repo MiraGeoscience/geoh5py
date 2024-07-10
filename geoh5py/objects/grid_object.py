@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-import uuid
 from abc import ABC, abstractmethod
 from numbers import Real
 from typing import TYPE_CHECKING
@@ -64,11 +63,6 @@ class GridObject(ObjectBase, ABC):
         """
         Cell center locations in world coordinates of shape (n_cells, 3).
         """
-
-    @classmethod
-    @abstractmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """Default type uid."""
 
     @property
     def extent(self) -> np.ndarray:

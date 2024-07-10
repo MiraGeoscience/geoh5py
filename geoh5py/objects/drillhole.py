@@ -46,7 +46,7 @@ class Drillhole(Points):
     :param default_collocation_distance: Minimum collocation distance for matching depth on merge.
     """
 
-    __TYPE_UID = uuid.UUID(
+    _TYPE_UID = uuid.UUID(
         fields=(0x7CAEBF0E, 0xD16E, 0x11E3, 0xBC, 0x69, 0xE4632694AA37)
     )
     __SURVEY_DTYPE = np.dtype([("Depth", "<f4"), ("Azimuth", "<f4"), ("Dip", "<f4")])
@@ -92,10 +92,6 @@ class Drillhole(Points):
         self.end_of_hole = end_of_hole
         self.planning = planning
         self.surveys = surveys
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
 
     @property
     def cells(self) -> np.ndarray | None:

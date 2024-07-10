@@ -17,9 +17,9 @@
 
 from __future__ import annotations
 
-import uuid
 import warnings
 from abc import ABC, abstractmethod
+from uuid import UUID
 
 import numpy as np
 
@@ -36,6 +36,7 @@ class CellObject(Points, ABC):
     """
 
     _attribute_map: dict = Points._attribute_map.copy()
+    _TYPE_UID: UUID | None = None
 
     def __init__(
         self,
@@ -46,11 +47,6 @@ class CellObject(Points, ABC):
         super().__init__(object_type, **kwargs)
 
         self._cells = self.validate_cells(cells)
-
-    @classmethod
-    @abstractmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """Default type uid."""
 
     @property
     def cells(self) -> np.ndarray:

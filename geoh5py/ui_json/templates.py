@@ -29,13 +29,13 @@ from ..shared import Entity
 known_object_types = [
     member.default_type_uid()
     for _, member in inspect.getmembers(objects)
-    if hasattr(member, "default_type_uid") and member.default_type_uid() is not None
+    if member.default_type_uid() is not None
 ]
 
 known_group_types = [
     member.default_type_uid()
     for _, member in inspect.getmembers(groups)
-    if hasattr(member, "default_type_uid") and member.default_type_uid() is not None
+    if member.default_type_uid() is not None
 ]
 
 
@@ -411,7 +411,7 @@ def drillhole_group_data(
     value: list[str] | None = None,
     main: bool = True,
     label: str = "Data channel",
-    group_type: UUID = groups.DrillholeGroup.default_type_uid(),
+    group_type: UUID | None = groups.DrillholeGroup.default_type_uid(),
     group_value: UUID | None = None,
     multiselect: bool = True,
     optional: str | None = None,

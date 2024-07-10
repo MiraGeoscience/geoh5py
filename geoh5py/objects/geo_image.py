@@ -49,7 +49,7 @@ class GeoImage(ObjectBase):
 
     """
 
-    __TYPE_UID = uuid.UUID(
+    _TYPE_UID = uuid.UUID(
         fields=(0x77AC043C, 0xFE8D, 0x4D14, 0x81, 0x67, 0x75E300FB835A)
     )
 
@@ -160,10 +160,6 @@ class GeoImage(ObjectBase):
         grid.workspace.remove_entity(grid)
 
         return image_transformed
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
 
     @property
     def default_vertices(self):

@@ -31,7 +31,7 @@ class Points(ObjectBase):
     Points object made up of vertices.
     """
 
-    __TYPE_UID = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
+    _TYPE_UID: uuid.UUID | None = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
     __VERTICES_DTYPE = np.dtype([("x", "<f8"), ("y", "<f8"), ("z", "<f8")])
     _default_name = "Points"
 
@@ -71,10 +71,6 @@ class Points(ObjectBase):
         )
 
         return new_entity
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
 
     @property
     def extent(self) -> np.ndarray:

@@ -80,7 +80,7 @@ class AirborneTEMReceivers(AirborneTEMSurvey):
     Airborne time-domain electromagnetic receivers class.
     """
 
-    __TYPE_UID = uuid.UUID("{19730589-fd28-4649-9de0-ad47249d9aba}")
+    _TYPE_UID = uuid.UUID("{19730589-fd28-4649-9de0-ad47249d9aba}")
     __TYPE = "Receivers"
 
     def __init__(self, object_type: ObjectType, name="Airborne TEM Rx", **kwargs):
@@ -89,13 +89,6 @@ class AirborneTEMReceivers(AirborneTEMSurvey):
     @property
     def complement(self):
         return self.transmitters
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     @property
     def type(self):
@@ -108,7 +101,7 @@ class AirborneTEMTransmitters(AirborneTEMSurvey):
     Airborne time-domain electromagnetic transmitters class.
     """
 
-    __TYPE_UID = uuid.UUID("{58c4849f-41e2-4e09-b69b-01cf4286cded}")
+    _TYPE_UID = uuid.UUID("{58c4849f-41e2-4e09-b69b-01cf4286cded}")
     __TYPE = "Transmitters"
 
     def __init__(self, object_type: ObjectType, name="Airborne TEM Tx", **kwargs):
@@ -117,13 +110,6 @@ class AirborneTEMTransmitters(AirborneTEMSurvey):
     @property
     def complement(self):
         return self.receivers
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     @property
     def type(self):

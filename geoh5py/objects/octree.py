@@ -43,7 +43,7 @@ class Octree(GridObject):
     :attr octree_cells: Array defining the i, j, k position and size of each cell.
     """
 
-    __TYPE_UID = uuid.UUID(
+    _TYPE_UID = uuid.UUID(
         fields=(0x4EA87376, 0x3ECE, 0x438B, 0xBF, 0x12, 0x3479733DED46)
     )
     __OCTREE_DTYPE = np.dtype(
@@ -164,10 +164,6 @@ class Octree(GridObject):
                 self._centroids[:, ind] += self.origin[axis]
 
         return self._centroids
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
 
     @property
     def n_cells(self) -> int:
