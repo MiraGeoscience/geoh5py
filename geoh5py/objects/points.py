@@ -108,10 +108,7 @@ class Points(ObjectBase):
         if not isinstance(indices, np.ndarray):
             raise TypeError("Indices must be a list or numpy array.")
 
-        if (
-            isinstance(self.vertices, np.ndarray)
-            and np.max(indices) > self.vertices.shape[0] - 1
-        ):
+        if np.max(indices) > self.vertices.shape[0] - 1:
             raise ValueError("Found indices larger than the number of vertices.")
 
         vertices = np.delete(self.vertices, indices, axis=0)
