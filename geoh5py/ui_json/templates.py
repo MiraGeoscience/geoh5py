@@ -29,13 +29,13 @@ from ..shared import Entity
 known_object_types = [
     member.default_type_uid()
     for _, member in inspect.getmembers(objects)
-    if member.default_type_uid() is not None
+    if hasattr(member, "_TYPE_UID") and member.default_type_uid() is not None
 ]
 
 known_group_types = [
     member.default_type_uid()
     for _, member in inspect.getmembers(groups)
-    if member.default_type_uid() is not None
+    if hasattr(member, "_TYPE_UID") and member.default_type_uid() is not None
 ]
 
 
