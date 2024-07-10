@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import uuid
 from pathlib import Path
 
 import numpy as np
@@ -26,6 +27,46 @@ import pytest
 from geoh5py.objects import Curve
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
+
+
+def test_attribute_validations():
+    # Generate a random cloud of points
+    n_data = 12
+
+    with Workspace() as workspace:
+        with pytest.raises(TypeError, match="Parts must be a list or numpy array."):
+            Curve.create(workspace, vertices=np.random.randn(n_data, 3), parts="abc")
+
+        with pytest.raises(
+            TypeError, match="Attribute 'cells' must be provided as type"
+        ):
+            Curve.create(workspace, vertices=np.random.randn(n_data, 3), cells="abc")
+
+        with pytest.raises(TypeError, match="Indices array must be of integer type"):
+            Curve.create(
+                workspace,
+                vertices=np.random.randn(n_data, 3),
+                cells=np.c_[np.arange(n_data - 1), np.arange(n_data - 1)].astype(float),
+            )
+
+        with pytest.raises(ValueError, match="Provided parts must be of shape"):
+            Curve.create(
+                workspace,
+                vertices=np.random.randn(n_data, 3),
+                parts=np.ones(n_data - 1),
+            )
+
+        curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
+
+        with pytest.raises(
+            TypeError, match="Input current_line_id value should be of type"
+        ):
+            curve.current_line_id = "abc"
+
+        new_value = uuid.uuid4()
+        curve.current_line_id = new_value
+
+        assert curve.current_line_id == new_value
 
 
 def test_create_curve_data(tmp_path: Path):
@@ -44,12 +85,6 @@ def test_create_curve_data(tmp_path: Path):
         ), "Error creating curve with single vertex."
         assert len(curve.cells) == 1
         curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
-
-        with pytest.raises(
-            TypeError, match="Input current_line_id value should be of type"
-        ):
-            curve.current_line_id = "abc"
-
         # Get and change the parts
         parts = curve.parts
         parts[-3:] = 1
