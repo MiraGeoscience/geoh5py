@@ -29,7 +29,6 @@ import numpy as np
 from ..data import Data, DataType, FloatData, NumericData
 from ..groups import PropertyGroup
 from ..shared.utils import box_intersect, mask_by_extent, merge_arrays
-from .object_base import ObjectType
 from .points import Points
 
 
@@ -63,7 +62,6 @@ class Drillhole(Points):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        object_type: ObjectType,
         collar: np.ndarray | list | None = None,
         cost: float = 0.0,
         end_of_hole: float | None = None,
@@ -79,7 +77,7 @@ class Drillhole(Points):
         self._trace_depth: np.ndarray | None = None
         self._locations = None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(**kwargs)
 
         if vertices is None:
             self._vertices = None

@@ -51,10 +51,8 @@ class ObjectBase(EntityContainer):
     )
     _converter: type[BaseConversion] | None = None
 
-    def __init__(self, object_type: ObjectType, **kwargs):
-        assert object_type is not None
+    def __init__(self, **kwargs):
         self._comments = None
-        self._entity_type = object_type
         self._last_focus = "None"
         self._property_groups: list[PropertyGroup] | None = None
         self._visual_parameters: VisualParameters | None = None
@@ -635,6 +633,17 @@ class ObjectBase(EntityContainer):
 
         for property_group in self._property_groups:
             property_group.remove_properties(data)
+
+    def validate_entity_type(self, entity_type: ObjectType | None) -> ObjectType:
+        """
+        Validate the entity type.
+        """
+        if not isinstance(entity_type, ObjectType):
+            raise TypeError(
+                f"Input 'entity_type' must be of type {ObjectType}, not {type(entity_type)}"
+            )
+
+        return entity_type
 
     @property
     def visual_parameters(self) -> VisualParameters | None:

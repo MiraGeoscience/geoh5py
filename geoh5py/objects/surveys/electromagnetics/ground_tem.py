@@ -21,8 +21,6 @@ from __future__ import annotations
 
 import uuid
 
-from geoh5py.objects.object_base import ObjectType
-
 from .base import LargeLoopGroundEMSurvey, MovingLoopGroundEMSurvey, TEMSurvey
 
 # pylint: disable=too-many-ancestors, no-member
@@ -76,8 +74,8 @@ class MovingLoopGroundTEMReceivers(
 
     _transmitters: MovingLoopGroundTEMTransmitters | None = None
 
-    def __init__(self, object_type: ObjectType, name="Airborne TEM Rx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    def __init__(self, name="Airborne TEM Rx", **kwargs):
+        super().__init__(name=name, **kwargs)
 
     @property
     def complement(self):
@@ -106,8 +104,8 @@ class MovingLoopGroundTEMTransmitters(
     _TYPE_UID = uuid.UUID("{98a96d44-6144-4adb-afbe-0d5e757c9dfc}")
     __TYPE = "Transmitters"
 
-    def __init__(self, object_type: ObjectType, name="Ground TEM Tx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    def __init__(self, name="Ground TEM Tx", **kwargs):
+        super().__init__(name=name, **kwargs)
 
     @property
     def complement(self):
@@ -170,8 +168,8 @@ class LargeLoopGroundTEMReceivers(LargeLoopGroundTEMSurvey):
 
     _transmitters: LargeLoopGroundTEMTransmitters | None = None
 
-    def __init__(self, object_type: ObjectType, name="Ground TEM Rx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    def __init__(self, name="Ground TEM Rx", **kwargs):
+        super().__init__(name=name, **kwargs)
 
     @property
     def complement(self):
@@ -200,8 +198,8 @@ class LargeLoopGroundTEMTransmitters(LargeLoopGroundTEMSurvey):
 
     _receivers: LargeLoopGroundTEMReceivers | None = None
 
-    def __init__(self, object_type: ObjectType, name="Ground TEM Tx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    def __init__(self, name="Ground TEM Tx", **kwargs):
+        super().__init__(name=name, **kwargs)
 
     @property
     def complement(self):

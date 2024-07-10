@@ -425,7 +425,7 @@ class Workspace(AbstractContextManager):
                 ):
                     member = VisualParameters
 
-                created_entity = member(data_type, **entity)
+                created_entity = member(entity_type=data_type, **entity)
 
                 return created_entity
 
@@ -544,7 +544,7 @@ class Workspace(AbstractContextManager):
 
                 entity_type = member.find_or_create_type(self, **entity_type)
 
-                created_entity = member(entity_type, **entity)
+                created_entity = member(entity_type=entity_type, **entity)
 
                 return created_entity
 
@@ -553,7 +553,9 @@ class Workspace(AbstractContextManager):
             entity_type = groups.custom.CustomGroup.find_or_create_type(
                 self, **entity_type
             )
-            created_entity = groups.custom.CustomGroup(entity_type, **entity)
+            created_entity = groups.custom.CustomGroup(
+                entity_type=entity_type, **entity
+            )
 
             return created_entity
 
@@ -574,7 +576,7 @@ class Workspace(AbstractContextManager):
         group_type = RootGroup.find_or_create_type(self, **type_attributes)
 
         entity_attributes = entity_attributes or {}
-        root = RootGroup(group_type, **entity_attributes)
+        root = RootGroup(entity_type=group_type, **entity_attributes)
 
         return root
 

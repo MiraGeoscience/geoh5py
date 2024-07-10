@@ -19,8 +19,6 @@ from __future__ import annotations
 
 import uuid
 
-from geoh5py.objects.object_base import ObjectType
-
 from .base import FEMSurvey, LargeLoopGroundEMSurvey, MovingLoopGroundEMSurvey
 
 # pylint: disable=too-many-ancestors
@@ -77,8 +75,8 @@ class MovingLoopGroundFEMReceivers(
 
     _transmitters: MovingLoopGroundFEMTransmitters | None = None
 
-    def __init__(self, object_type: ObjectType, name="Airborne FEM Rx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    def __init__(self, name="Airborne FEM Rx", **kwargs):
+        super().__init__(name=name, **kwargs)
 
     @property
     def complement(self):
@@ -107,8 +105,8 @@ class MovingLoopGroundFEMTransmitters(
     _TYPE_UID = uuid.UUID("{f59d5a1c-5e63-4297-b5bc-43898cb4f5f8}")
     __TYPE = "Transmitters"
 
-    def __init__(self, object_type: ObjectType, name="Ground FEM Tx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    def __init__(self, name="Ground FEM Tx", **kwargs):
+        super().__init__(name=name, **kwargs)
 
     @property
     def complement(self):
@@ -172,8 +170,8 @@ class LargeLoopGroundFEMReceivers(
 
     _transmitters: LargeLoopGroundFEMTransmitters | None = None
 
-    def __init__(self, object_type: ObjectType, name="Airborne FEM Rx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    def __init__(self, name="Airborne FEM Rx", **kwargs):
+        super().__init__(name=name, **kwargs)
 
     @property
     def complement(self):
@@ -202,8 +200,8 @@ class LargeLoopGroundFEMTransmitters(
     _TYPE_UID = uuid.UUID("{fe1a240a-9189-49ff-aa7e-6067405b6e0a}")
     __TYPE = "Transmitters"
 
-    def __init__(self, object_type: ObjectType, name="Ground FEM Tx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    def __init__(self, name="Ground FEM Tx", **kwargs):
+        super().__init__(name=name, **kwargs)
 
     @property
     def complement(self):

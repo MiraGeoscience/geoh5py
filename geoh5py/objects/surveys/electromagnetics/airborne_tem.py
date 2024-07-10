@@ -20,7 +20,6 @@ from __future__ import annotations
 import uuid
 
 from geoh5py.objects.curve import Curve
-from geoh5py.objects.object_base import ObjectType
 
 from .base import AirborneEMSurvey, TEMSurvey
 
@@ -83,8 +82,8 @@ class AirborneTEMReceivers(AirborneTEMSurvey):
     _TYPE_UID = uuid.UUID("{19730589-fd28-4649-9de0-ad47249d9aba}")
     __TYPE = "Receivers"
 
-    def __init__(self, object_type: ObjectType, name="Airborne TEM Rx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    def __init__(self, name="Airborne TEM Rx", **kwargs):
+        super().__init__(name=name, **kwargs)
 
     @property
     def complement(self):
@@ -104,8 +103,8 @@ class AirborneTEMTransmitters(AirborneTEMSurvey):
     _TYPE_UID = uuid.UUID("{58c4849f-41e2-4e09-b69b-01cf4286cded}")
     __TYPE = "Transmitters"
 
-    def __init__(self, object_type: ObjectType, name="Airborne TEM Tx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    def __init__(self, name="Airborne TEM Tx", **kwargs):
+        super().__init__(name=name, **kwargs)
 
     @property
     def complement(self):

@@ -23,7 +23,7 @@ import warnings
 import numpy as np
 
 from ..shared.utils import box_intersect, mask_by_extent
-from .object_base import ObjectBase, ObjectType
+from .object_base import ObjectBase
 
 
 class Points(ObjectBase):
@@ -37,13 +37,12 @@ class Points(ObjectBase):
 
     def __init__(
         self,
-        object_type: ObjectType,
         vertices: np.ndarray | list | tuple | None = None,
         **kwargs,
     ):
         self._vertices: np.ndarray = self.validate_vertices(vertices)
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(**kwargs)
 
     def copy(
         self,

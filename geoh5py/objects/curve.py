@@ -23,7 +23,6 @@ import numpy as np
 
 from ..shared.utils import str2uuid
 from .cell_object import CellObject
-from .object_base import ObjectType
 
 
 class Curve(CellObject):
@@ -50,7 +49,6 @@ class Curve(CellObject):
 
     def __init__(  # pylint: disable="too-many-arguments"
         self,
-        object_type: ObjectType,
         current_line_id: uuid.UUID | None = None,
         parts: np.ndarray | None = None,
         vertices: np.ndarray | list | tuple | None = None,
@@ -59,7 +57,6 @@ class Curve(CellObject):
         self._parts = self.validate_parts(parts, vertices)
 
         super().__init__(
-            object_type,
             vertices=vertices,
             **kwargs,
         )

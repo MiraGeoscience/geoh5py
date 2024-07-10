@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import uuid
 from numbers import Real
-from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -27,9 +26,6 @@ from ..objects import GeoImage
 from ..shared.conversion import Grid2DConversion
 from ..shared.utils import mask_by_extent, xy_rotation_matrix, yz_rotation_matrix
 from .grid_object import GridObject
-
-if TYPE_CHECKING:
-    from geoh5py.objects import ObjectType
 
 
 class Grid2D(GridObject):
@@ -61,7 +57,6 @@ class Grid2D(GridObject):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        object_type: ObjectType,
         u_cell_size: float = 1.0,
         v_cell_size: float = 1.0,
         u_count: int = 1,
@@ -74,7 +69,6 @@ class Grid2D(GridObject):
         self._v_count: np.int32 = self.validate_count(v_count, "v")
 
         super().__init__(
-            object_type=object_type,
             **kwargs,
         )
 

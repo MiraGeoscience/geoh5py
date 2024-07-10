@@ -17,12 +17,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from . import NoTypeGroup
-
-if TYPE_CHECKING:
-    from ..groups import GroupType
 
 
 class RootGroup(NoTypeGroup):
@@ -32,7 +27,6 @@ class RootGroup(NoTypeGroup):
 
     def __init__(
         self,
-        group_type: GroupType,
         allow_move=False,
         allow_delete=False,
         allow_rename=False,
@@ -40,7 +34,6 @@ class RootGroup(NoTypeGroup):
     ):
 
         super().__init__(
-            group_type,
             allow_move=allow_move,
             allow_delete=allow_delete,
             allow_rename=allow_rename,

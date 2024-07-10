@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 class ConcatenatedObject(Concatenated, ObjectBase):
     _parent: Concatenator
 
-    def __init__(self, entity_type, **kwargs):
+    def __init__(self, **kwargs):
         if kwargs.get("parent") is None:
             raise UserWarning(
                 "Creating a concatenated object must have a parent "
@@ -43,7 +43,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
         self._property_groups: list | None = None
 
-        super().__init__(entity_type, **kwargs)
+        super().__init__(**kwargs)
 
     def create_property_group(
         self, name=None, on_file=False, uid=None, **kwargs

@@ -22,7 +22,7 @@ import uuid
 import numpy as np
 
 from ..shared.utils import box_intersect, mask_by_extent
-from .object_base import ObjectBase, ObjectType
+from .object_base import ObjectBase
 
 
 class DrapeModel(ObjectBase):
@@ -50,7 +50,6 @@ class DrapeModel(ObjectBase):
 
     def __init__(
         self,
-        object_type: ObjectType,
         layers: np.ndarray | list | tuple | None = None,
         prisms: np.ndarray | list | tuple | None = None,
         **kwargs,
@@ -59,7 +58,7 @@ class DrapeModel(ObjectBase):
         self._layers: np.ndarray = self.validate_layers(layers)
         self._prisms: np.ndarray = self.validate_prisms(prisms)
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(**kwargs)
 
     @property
     def centroids(self) -> np.ndarray:

@@ -19,15 +19,11 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from numbers import Real
-from typing import TYPE_CHECKING
 
 import numpy as np
 
 from ..shared.utils import box_intersect, mask_by_extent
 from .object_base import ObjectBase
-
-if TYPE_CHECKING:
-    from geoh5py.objects import ObjectType
 
 ORIGIN_TYPE = np.dtype([("x", float), ("y", float), ("z", float)])
 
@@ -45,14 +41,13 @@ class GridObject(ObjectBase, ABC):
 
     def __init__(
         self,
-        object_type: ObjectType,
         origin: np.ndarray | tuple = (0.0, 0.0, 0.0),
         rotation: float = 0.0,
         **kwargs,
     ):
         self._centroids: np.ndarray | None = None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(**kwargs)
 
         self.origin = origin
         self.rotation = rotation

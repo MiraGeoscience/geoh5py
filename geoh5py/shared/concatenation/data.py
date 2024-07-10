@@ -31,14 +31,14 @@ if TYPE_CHECKING:
 class ConcatenatedData(Concatenated, Data):
     _parent: ConcatenatedObject
 
-    def __init__(self, entity_type, **kwargs):
+    def __init__(self, **kwargs):
         if kwargs.get("parent") is None:
             raise UserWarning(
                 "Creating a concatenated data must have a parent "
                 "of type Concatenated."
             )
 
-        super().__init__(entity_type, **kwargs)
+        super().__init__(**kwargs)
 
     @property
     def property_group(self) -> ConcatenatedPropertyGroup | None:

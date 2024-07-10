@@ -56,7 +56,7 @@ def test_group_instantiation(group_class, tmp_path):
         type_used_by_root = False
         if workspace.root is not None:
             type_used_by_root = workspace.root.entity_type is group_type
-        created_group = group_class(group_type, name="test group")
+        created_group = group_class(entity_type=group_type, name="test group")
         assert created_group.uid is not None
         assert created_group.uid.int != 0
         assert created_group.name == "test group"
@@ -105,7 +105,7 @@ def test_custom_group_instantiation(tmp_path):
         assert GroupType.find(workspace, group_type.uid) is group_type
 
         created_group = CustomGroup(
-            group_type, name="test custom group", parent=workspace.root
+            entity_type=group_type, name="test custom group", parent=workspace.root
         )
         workspace.save_entity(created_group)
         assert created_group.uid is not None

@@ -19,14 +19,10 @@ from __future__ import annotations
 
 import uuid
 from numbers import Real
-from typing import TYPE_CHECKING
 
 import numpy as np
 
 from .grid_object import GridObject
-
-if TYPE_CHECKING:
-    from geoh5py.objects import ObjectType
 
 
 class Octree(GridObject):
@@ -65,7 +61,6 @@ class Octree(GridObject):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        object_type: ObjectType,
         u_count: int = 1,
         v_count: int = 1,
         w_count: int = 1,
@@ -85,7 +80,6 @@ class Octree(GridObject):
         self._octree_cells: np.ndarray = self.validate_octree_cells(octree_cells)
 
         super().__init__(
-            object_type,
             **kwargs,
         )
 

@@ -29,7 +29,6 @@ import numpy as np
 from ...data import Data, ReferencedData
 from ...shared.utils import str_json_to_dict
 from ..curve import Curve
-from ..object_type import ObjectType
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +37,10 @@ class BaseElectrode(Curve, ABC):
     _potential_electrodes: PotentialElectrode | None = None
     _current_electrodes: CurrentElectrode | None = None
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, **kwargs):
         self._ab_cell_id: ReferencedData | None = None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(**kwargs)
 
     @property
     def ab_cell_id(self) -> ReferencedData | None:
@@ -310,10 +309,10 @@ class CurrentElectrode(BaseElectrode):
 
     _TYPE_UID = uuid.UUID("{9b08bb5a-300c-48fe-9007-d206f971ea92}")
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, **kwargs):
         self._current_line_id: uuid.UUID | None = None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(**kwargs)
 
     @property
     def current_electrodes(self):

@@ -39,23 +39,12 @@ class Data(Entity):
 
     def __init__(
         self,
-        data_type: DataType,
         association: DataAssociationEnum = DataAssociationEnum.OBJECT,
         **kwargs,
     ):
         self.association = association
         self._on_file = False
         self._modifiable = True
-
-        if (
-            not isinstance(data_type, DataType)
-            or data_type.primitive_type != self.primitive_type()
-        ):
-            raise TypeError(
-                "Input 'data_type' must be a DataType object of primitive_type 'TEXT'."
-            )
-
-        self.entity_type = data_type
         self._values = None
 
         super().__init__(**kwargs)
@@ -268,6 +257,20 @@ class Data(Entity):
                 return indices
 
         return None
+
+    def validate_entity_type(self, entity_type: DataType | None) -> DataType:
+        """
+        Validate the entity type.
+        """
+        if (
+            not isinstance(entity_type, DataType)
+            or entity_type.primitive_type != self.primitive_type()
+        ):
+            raise TypeError(
+                "Input 'entity_type' must be a DataType object of primitive_type 'TEXT'."
+            )
+
+        return entity_type
 
     def __call__(self):
         return self.values

@@ -18,14 +18,10 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING
 
 import numpy as np
 
 from .grid_object import GridObject
-
-if TYPE_CHECKING:
-    from geoh5py.objects import ObjectType
 
 
 class BlockModel(GridObject):
@@ -53,7 +49,6 @@ class BlockModel(GridObject):
 
     def __init__(
         self,
-        object_type: ObjectType,
         u_cell_delimiters: np.ndarray = np.array([0.0, 1.0]),
         v_cell_delimiters: np.ndarray = np.array([0.0, 1.0]),
         z_cell_delimiters: np.ndarray = np.array([0.0, 1.0]),
@@ -64,7 +59,6 @@ class BlockModel(GridObject):
         self._z_cell_delimiters = self.validate_cell_delimiters(z_cell_delimiters, "z")
 
         super().__init__(
-            object_type,
             **kwargs,
         )
 

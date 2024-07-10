@@ -26,7 +26,6 @@ import numpy as np
 from ..data import Data, DataAssociationEnum
 from ..groups import PropertyGroup
 from ..shared.utils import box_intersect, mask_by_extent
-from .object_base import ObjectType
 from .points import Points
 
 
@@ -40,11 +39,10 @@ class CellObject(Points, ABC):
 
     def __init__(
         self,
-        object_type: ObjectType,
         cells: np.ndarray | list | tuple | None = None,
         **kwargs,
     ):
-        super().__init__(object_type, **kwargs)
+        super().__init__(**kwargs)
 
         self._cells = self.validate_cells(cells)
 

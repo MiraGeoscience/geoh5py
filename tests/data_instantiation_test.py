@@ -56,7 +56,7 @@ def test_data_instantiation(data_class, tmp_path):
         assert workspace.find_type(data_type.uid, ObjectType) is None
 
         created_data = data_class(
-            data_type, association=DataAssociationEnum.VERTEX, name="test"
+            entity_type=data_type, association=DataAssociationEnum.VERTEX, name="test"
         )
 
         assert created_data.uid is not None

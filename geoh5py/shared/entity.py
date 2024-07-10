@@ -56,6 +56,7 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
+        entity_type: shared.EntityType | None = None,
         allow_delete: bool = True,
         allow_move: bool = True,
         allow_rename: bool = True,
@@ -70,6 +71,7 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         visible: bool = True,
         **kwargs,
     ):
+        self._entity_type = self.validate_entity_type(entity_type)
         self.on_file = on_file
         self.uid: uuid.UUID = uid or uuid.uuid4()
         self.allow_delete = allow_delete
@@ -289,6 +291,12 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
             )
 
         return value
+
+    @abstractmethod
+    def validate_entity_type(self, entity_type):
+        """
+        Validate the entity type.
+        """
 
     @property
     def name(self) -> str:

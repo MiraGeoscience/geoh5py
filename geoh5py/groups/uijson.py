@@ -22,7 +22,7 @@ import uuid
 import numpy as np
 
 from ..shared.utils import str_json_to_dict, stringify
-from .base import Group, GroupType
+from .base import Group
 
 
 class UIJsonGroup(Group):
@@ -33,13 +33,12 @@ class UIJsonGroup(Group):
 
     def __init__(
         self,
-        group_type: GroupType,
         options: dict | np.ndarray | bytes | None = None,
         **kwargs,
     ):
         self._options: dict
 
-        super().__init__(group_type, **kwargs)
+        super().__init__(**kwargs)
         self.options = self.format_input_options(options)
 
     @property

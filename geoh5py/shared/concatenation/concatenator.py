@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import uuid
 import warnings
-from typing import TYPE_CHECKING
 
 import numpy as np
 from h5py import special_dtype
@@ -35,10 +34,6 @@ from .data import ConcatenatedData
 from .drillholes_group_table import DrillholesGroupTable
 from .object import ConcatenatedObject
 from .property_group import ConcatenatedPropertyGroup
-
-if TYPE_CHECKING:
-    from ...groups import GroupType
-
 
 PROPERTY_KWARGS = {
     "trace": {"maxshape": (None,)},
@@ -58,8 +53,8 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
     _concat_attr_str: str | None = None
 
-    def __init__(self, group_type: GroupType, **kwargs):
-        super().__init__(group_type, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         getattr(self, "_attribute_map").update(
             {

@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-from .data_type import DataType
 from .integer_data import IntegerData
 from .primitive_type_enum import PrimitiveTypeEnum
 
@@ -27,8 +26,8 @@ class ReferencedData(IntegerData):
     Reference data described by indices and associated strings.
     """
 
-    def __init__(self, data_type: DataType, **kwargs):
-        super().__init__(data_type, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         if "value_map" in kwargs:
             self.entity_type.value_map = kwargs["value_map"]

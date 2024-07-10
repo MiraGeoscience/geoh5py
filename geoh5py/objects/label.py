@@ -21,7 +21,7 @@ import uuid
 import warnings
 from typing import TYPE_CHECKING
 
-from .object_base import ObjectBase, ObjectType
+from .object_base import ObjectBase
 
 if TYPE_CHECKING:
     from numpy import ndarray
@@ -39,12 +39,12 @@ class Label(ObjectBase):
         fields=(0xE79F449D, 0x74E3, 0x4598, 0x9C, 0x9C, 0x351A28B8B69E)
     )
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, **kwargs):
         # TODO
         self.target_position = None
         self.label_position = None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(**kwargs)
 
     def copy(
         self,

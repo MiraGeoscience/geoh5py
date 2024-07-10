@@ -35,7 +35,7 @@ from ..shared.utils import (
     dip_points,
     xy_rotation_matrix,
 )
-from .object_base import ObjectBase, ObjectType
+from .object_base import ObjectBase
 
 if TYPE_CHECKING:
     from ..objects import Grid2D
@@ -55,12 +55,12 @@ class GeoImage(ObjectBase):
 
     _converter: type[GeoImageConversion] = GeoImageConversion
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, **kwargs):
         self._vertices: None | np.ndarray = None
         self._cells = None
         self._tag: dict[int, Any] | None = None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(**kwargs)
 
     @property
     def cells(self) -> np.ndarray | None:

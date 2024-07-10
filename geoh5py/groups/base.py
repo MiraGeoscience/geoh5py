@@ -35,17 +35,6 @@ class Group(EntityContainer):
 
     _default_name = "Group"
 
-    def __init__(self, group_type: GroupType, **kwargs):
-
-        if not isinstance(group_type, GroupType):
-            raise TypeError(
-                f"Input 'group_type' must be of type {GroupType}, not {type(group_type)}"
-            )
-
-        self._entity_type = group_type
-
-        super().__init__(**kwargs)
-
     def add_comment(self, comment: str, author: str | None = None):
         """
         Add text comment to an object.
@@ -203,3 +192,14 @@ class Group(EntityContainer):
     def find_or_create_type(cls, workspace: Workspace, **kwargs) -> GroupType:
         kwargs["entity_class"] = cls
         return GroupType.find_or_create(workspace, **kwargs)
+
+    def validate_entity_type(self, entity_type: GroupType | None) -> GroupType:
+        """
+        Validate the entity type.
+        """
+        if not isinstance(entity_type, GroupType):
+            raise TypeError(
+                f"Input 'entity_type' must be of type {GroupType}, not {type(entity_type)}"
+            )
+
+        return entity_type
