@@ -134,7 +134,7 @@ class DrapeModel(ObjectBase):
 
     @property
     def n_cells(self) -> int:
-        return self._layers.shape[0]
+        return self.layers.shape[0]
 
     def mask_by_extent(
         self, extent: np.ndarray, inverse: bool = False

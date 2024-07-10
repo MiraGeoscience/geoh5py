@@ -29,23 +29,30 @@ from geoh5py.workspace import Workspace
 # pylint: disable=too-many-locals
 
 
+def create_drape_parameters():
+    """
+    Utility function to generate basic drape model
+    """
+    n_col, n_row = 64, 32
+    j, i = np.meshgrid(np.arange(n_row), np.arange(n_col))
+    bottom = -np.sin(j / n_col * np.pi) * np.abs(np.cos(4 * i / n_col * np.pi)) - 0.1
+
+    x = np.sin(2 * np.arange(n_col) / n_col * np.pi)
+    y = np.cos(2 * np.arange(n_col) / n_col * np.pi)
+    top = bottom.flatten()[::n_row] + 0.1
+
+    layers = np.c_[i.flatten(), j.flatten(), bottom.flatten()]
+    prisms = np.c_[
+        x, y, top, np.arange(0, i.flatten().shape[0], n_row), np.tile(n_row, n_col)
+    ]
+    return layers, prisms
+
+
 def test_create_drape_model(tmp_path: Path):
     h5file_path = tmp_path / "drapedmodel.geoh5"
     with Workspace.create(h5file_path) as workspace:
-        n_col, n_row = 64, 32
-        j, i = np.meshgrid(np.arange(n_row), np.arange(n_col))
-        bottom = (
-            -np.sin(j / n_col * np.pi) * np.abs(np.cos(4 * i / n_col * np.pi)) - 0.1
-        )
 
-        x = np.sin(2 * np.arange(n_col) / n_col * np.pi)
-        y = np.cos(2 * np.arange(n_col) / n_col * np.pi)
-        top = bottom.flatten()[::n_row] + 0.1
-
-        layers = np.c_[i.flatten(), j.flatten(), bottom.flatten()]
-        prisms = np.c_[
-            x, y, top, np.arange(0, i.flatten().shape[0], n_row), np.tile(n_row, n_col)
-        ]
+        layers, prisms = create_drape_parameters()
 
         with pytest.raises(TypeError, match="Attribute 'layers' must be"):
             DrapeModel.create(workspace, layers="abc")
@@ -68,7 +75,7 @@ def test_create_drape_model(tmp_path: Path):
         drape.add_data(
             {
                 "indices": {
-                    "values": (i * n_row + j).flatten().astype(np.int32),
+                    "values": np.arange(drape.n_cells).astype(np.int32),
                     "association": "CELL",
                 }
             }
