@@ -67,6 +67,7 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         parent: EntityContainer | None = None,
         public: bool = True,
         uid: uuid.UUID | None = None,
+        visible: bool = True,
         **kwargs,
     ):
         self.on_file = on_file
@@ -80,6 +81,7 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         self.parent = parent or self.workspace.root
         self.partially_hidden = partially_hidden
         self.public = public
+        self.visible = visible
 
         # TODO Deprecate in favor of explicit attribute setter
         map_attributes(self, **kwargs)
