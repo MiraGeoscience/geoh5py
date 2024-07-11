@@ -57,13 +57,7 @@ class ObjectBase(EntityContainer):
         self._property_groups: list[PropertyGroup] | None = None
         self._visual_parameters: VisualParameters | None = None
 
-        if not any(key for key in kwargs if key in ["name", "Name"]):
-            kwargs["name"] = type(self).__name__
-
         super().__init__(**kwargs)
-
-        if self.entity_type.name == "Entity":
-            self.entity_type.name = type(self).__name__
 
     def add_children(self, children: list[Entity | PropertyGroup]):
         """
@@ -642,6 +636,9 @@ class ObjectBase(EntityContainer):
             raise TypeError(
                 f"Input 'entity_type' must be of type {ObjectType}, not {type(entity_type)}"
             )
+
+        if entity_type.name == "Entity":
+            entity_type.name = self.name
 
         return entity_type
 

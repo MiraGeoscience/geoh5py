@@ -81,9 +81,7 @@ class AirborneTEMReceivers(AirborneTEMSurvey):
 
     _TYPE_UID = uuid.UUID("{19730589-fd28-4649-9de0-ad47249d9aba}")
     __TYPE = "Receivers"
-
-    def __init__(self, name="Airborne TEM Rx", **kwargs):
-        super().__init__(name=name, **kwargs)
+    _default_name = "Airborne TEM Rx"
 
     @property
     def complement(self):
@@ -102,9 +100,7 @@ class AirborneTEMTransmitters(AirborneTEMSurvey):
 
     _TYPE_UID = uuid.UUID("{58c4849f-41e2-4e09-b69b-01cf4286cded}")
     __TYPE = "Transmitters"
-
-    def __init__(self, name="Airborne TEM Tx", **kwargs):
-        super().__init__(name=name, **kwargs)
+    _default_name = "Airborne TEM Tx"
 
     @property
     def complement(self):

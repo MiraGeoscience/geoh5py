@@ -32,9 +32,7 @@ class MTReceivers(FEMSurvey, Points):
     _TYPE_UID = uuid.UUID("{b99bd6e5-4fe1-45a5-bd2f-75fc31f91b38}")
     __TYPE = "Receivers"
     __INPUT_TYPE = ["Rx only"]
-
-    def __init__(self, name="Magnetotellurics rx", **kwargs):
-        super().__init__(name=name, **kwargs)
+    _default_name = "Magnetotellurics rx"
 
     @property
     def default_input_types(self) -> list[str]:

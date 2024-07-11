@@ -43,14 +43,10 @@ class Data(Entity):
         **kwargs,
     ):
         self.association = association
-        self._on_file = False
         self._modifiable = True
         self._values = None
 
         super().__init__(**kwargs)
-
-        if self.entity_type.name == "Entity":
-            self.entity_type.name = self.name
 
     def copy(
         self,
@@ -269,6 +265,9 @@ class Data(Entity):
             raise TypeError(
                 "Input 'entity_type' must be a DataType object of primitive_type 'TEXT'."
             )
+
+        if entity_type.name == "Entity":
+            entity_type.name = self.name
 
         return entity_type
 

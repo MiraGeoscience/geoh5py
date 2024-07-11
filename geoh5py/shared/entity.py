@@ -37,7 +37,23 @@ DEFAULT_CRS = {"Code": "Unknown", "Name": "Unknown"}
 
 class Entity(ABC):  # pylint: disable=too-many-instance-attributes
     """
-    Base Entity class
+    Base entity class for Objects, Groups and Data.
+
+    :param entity_type: Entity type registered by the Workspace.
+    :param allow_delete: Entity can be deleted from the workspace.
+    :param allow_move: Entity can change :obj:`~geoh5py.shared.entity.Entity.parent`
+    :param allow_rename: Entity can change name
+    :param clipping_ids: List of clipping uuids
+    :param metadata: Metadata attached to the entity.
+    :param name: Name of the entity
+    :param on_file: Whether this Entity is already stored on
+        :obj:`~geoh5py.workspace.workspace.Workspace.h5file`.
+    :param partially_hidden: Whether this Entity is partially hidden.
+    :param parent: Parent entity.
+    :param public: Whether this Entity is accessible in the workspace tree and other parts
+        of the user interface in ANALYST.
+    :param uid: Unique identifier of the entity.
+    :param visible: Whether the Entity is visible in camera (checked in ANALYST object tree).
     """
 
     _attribute_map: dict = {
@@ -51,8 +67,7 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         "Public": "public",
         "Visible": "visible",
     }
-    _visible = True
-    _default_name: str = "Entity"
+    _default_name: str | None = None
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
@@ -71,15 +86,15 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         visible: bool = True,
         **kwargs,
     ):
-        self._entity_type = self.validate_entity_type(entity_type)
         self.on_file = on_file
+        self.name = name or self._default_name or type(self).__name__
+        self._entity_type = self.validate_entity_type(entity_type)
         self.uid: uuid.UUID = uid or uuid.uuid4()
         self.allow_delete = allow_delete
         self.allow_move = allow_move
         self.allow_rename = allow_rename
         self.clipping_ids = clipping_ids
         self.metadata = metadata
-        self.name = name or self._default_name
         self.parent = parent or self.workspace.root
         self.partially_hidden = partially_hidden
         self.public = public

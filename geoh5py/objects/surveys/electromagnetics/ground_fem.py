@@ -74,9 +74,7 @@ class MovingLoopGroundFEMReceivers(
     __TYPE = "Receivers"
 
     _transmitters: MovingLoopGroundFEMTransmitters | None = None
-
-    def __init__(self, name="Airborne FEM Rx", **kwargs):
-        super().__init__(name=name, **kwargs)
+    _default_name = "Airborne FEM Rx"
 
     @property
     def complement(self):
@@ -104,9 +102,7 @@ class MovingLoopGroundFEMTransmitters(
 
     _TYPE_UID = uuid.UUID("{f59d5a1c-5e63-4297-b5bc-43898cb4f5f8}")
     __TYPE = "Transmitters"
-
-    def __init__(self, name="Ground FEM Tx", **kwargs):
-        super().__init__(name=name, **kwargs)
+    _default_name = "Ground FEM Tx"
 
     @property
     def complement(self):
@@ -169,9 +165,7 @@ class LargeLoopGroundFEMReceivers(
     __TYPE = "Receivers"
 
     _transmitters: LargeLoopGroundFEMTransmitters | None = None
-
-    def __init__(self, name="Airborne FEM Rx", **kwargs):
-        super().__init__(name=name, **kwargs)
+    _default_name = "Airborne FEM Rx"
 
     @property
     def complement(self):
@@ -199,9 +193,7 @@ class LargeLoopGroundFEMTransmitters(
 
     _TYPE_UID = uuid.UUID("{fe1a240a-9189-49ff-aa7e-6067405b6e0a}")
     __TYPE = "Transmitters"
-
-    def __init__(self, name="Ground FEM Tx", **kwargs):
-        super().__init__(name=name, **kwargs)
+    _default_name = "Ground FEM Tx"
 
     @property
     def complement(self):

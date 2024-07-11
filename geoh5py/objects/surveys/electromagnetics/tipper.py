@@ -175,11 +175,7 @@ class TipperReceivers(TipperSurvey, Curve):  # pylint: disable=too-many-ancestor
 
     _TYPE_UID = uuid.UUID("{0b639533-f35b-44d8-92a8-f70ecff3fd26}")
     __TYPE = "Receivers"
-
-    def __init__(self, name="Tipper rx", **kwargs):
-        self._base_stations: TipperBaseStations | None = None
-
-        super().__init__(name=name, **kwargs)
+    _default_name = "Tipper rx"
 
     @property
     def complement(self):
@@ -198,9 +194,7 @@ class TipperBaseStations(TipperSurvey, Points):
 
     _TYPE_UID = uuid.UUID("{f495cd13-f09b-4a97-9212-2ea392aeb375}")
     __TYPE = "Base stations"
-
-    def __init__(self, name="Tipper base", **kwargs):
-        super().__init__(name=name, **kwargs)
+    _default_name = "Tipper base"
 
     @property
     def complement(self):

@@ -202,4 +202,7 @@ class Group(EntityContainer):
                 f"Input 'entity_type' must be of type {GroupType}, not {type(entity_type)}"
             )
 
+        if entity_type.name == "Entity":
+            entity_type.name = self.name
+
         return entity_type

@@ -73,9 +73,7 @@ class MovingLoopGroundTEMReceivers(
     __TYPE = "Receivers"
 
     _transmitters: MovingLoopGroundTEMTransmitters | None = None
-
-    def __init__(self, name="Airborne TEM Rx", **kwargs):
-        super().__init__(name=name, **kwargs)
+    _default_name = "Airborne TEM Rx"
 
     @property
     def complement(self):
@@ -103,9 +101,7 @@ class MovingLoopGroundTEMTransmitters(
 
     _TYPE_UID = uuid.UUID("{98a96d44-6144-4adb-afbe-0d5e757c9dfc}")
     __TYPE = "Transmitters"
-
-    def __init__(self, name="Ground TEM Tx", **kwargs):
-        super().__init__(name=name, **kwargs)
+    _default_name = "Ground TEM Tx"
 
     @property
     def complement(self):
@@ -167,9 +163,7 @@ class LargeLoopGroundTEMReceivers(LargeLoopGroundTEMSurvey):
     __TYPE = "Receivers"
 
     _transmitters: LargeLoopGroundTEMTransmitters | None = None
-
-    def __init__(self, name="Ground TEM Rx", **kwargs):
-        super().__init__(name=name, **kwargs)
+    _default_name = "Ground TEM Rx"
 
     @property
     def complement(self):
@@ -197,9 +191,7 @@ class LargeLoopGroundTEMTransmitters(LargeLoopGroundTEMSurvey):
     __TYPE = "Transmitters"
 
     _receivers: LargeLoopGroundTEMReceivers | None = None
-
-    def __init__(self, name="Ground TEM Tx", **kwargs):
-        super().__init__(name=name, **kwargs)
+    _default_name = "Ground TEM Tx"
 
     @property
     def complement(self):
