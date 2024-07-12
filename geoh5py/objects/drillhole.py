@@ -120,7 +120,8 @@ class Drillhole(Points):
     def collar(self, value: list | np.ndarray | None):
         if value is None:
             warnings.warn(
-                "No 'collar' provided. Using a default point at the origin.",
+                "No 'collar' provided. Using (0, 0, 0) as default point at the origin.",
+
                 UserWarning,
             )
             value = (0.0, 0.0, 0.0)
