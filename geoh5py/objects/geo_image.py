@@ -53,8 +53,8 @@ class GeoImage(ObjectBase):
     The 'image' data can be set with:
         - A File on disk
         - An array of values defining the pixels of the image
-            - A 2D array of values will create gray.
-            - A 3D array of values will create and RGB image
+            - A 2D array of values will create a grayscale image.
+            - A 3D array of values will create an RGB image
         - A PIL.Image object
 
     Setting the 'image' property will create a 'GeoImageMesh_Image' entity and remove
