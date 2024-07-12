@@ -112,7 +112,7 @@ class Points(ObjectBase):
         """
         if xyz is None:
             warnings.warn(
-                "No 'vertices' provided. Using a default point at the origin.",
+                "No 'vertices' provided. Using (0, 0, 0) default point at the origin.",
                 UserWarning,
             )
             xyz = (0.0, 0.0, 0.0)
