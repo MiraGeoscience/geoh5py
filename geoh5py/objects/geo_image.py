@@ -651,13 +651,16 @@ class GeoImage(ObjectBase):
         :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`:
         Defines the four corners of the geo_image
         """
+        # Case the vertices were removed from the object
         if self._vertices is None and self.on_file:
             self._vertices = self.workspace.fetch_array_attribute(self, "vertices")
 
+        # Case where the vertices are not set but the image is defined
         if self._vertices is None and self.tag is not None and self.image is not None:
             self.vertices = self.default_vertices
             self.georeferencing_from_tiff()
 
+        # Case neither vertices nor image are set
         if self._vertices is None:
             return self.default_vertices
 
