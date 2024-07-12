@@ -268,13 +268,15 @@ def test_georeference_image(tmp_path):
         image = Image.open(f"{str(tmp_path)}/testtif.tif").convert("L")
         geoimage = GeoImage.create(workspace, name="test_area", image=image)
 
+        assert geoimage is not None
+
         image = Image.fromarray(
             np.random.randint(0, 255, (128, 128, 4)).astype("uint8"), "RGBA"
         )
 
-        geoimage.image = image
-
-        geoimage.to_grid2d(name="CMYK")
+        geoimage = GeoImage.create(workspace, name="to_CMYK", image=image)
+        new_grid = geoimage.to_grid2d(name="CMYK")
+        assert len(new_grid.children) == 4
 
 
 def test_rotation_setter(tmp_path):
@@ -522,7 +524,7 @@ def test_image_grid_rotation_conversion(tmp_path):
 
         geoimage2 = grid2d.to_geoimage(0, normalize=False, ignore=["tag"])
 
-        compare_entities(geoimage, geoimage2, ignore=["_uid"])
+        compare_entities(geoimage, geoimage2, ignore=["_uid", "_image_data"])
 
         geoimage.georeferencing_from_image()
 

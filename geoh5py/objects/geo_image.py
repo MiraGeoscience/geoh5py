@@ -64,7 +64,6 @@ class GeoImage(ObjectBase):
     :param dip: Dip of the image in degrees from the vertices position.
     :param image: Image data as a numpy array, PIL.Image, bytes, or path to an image file.
     :param rotation: Rotation of the image in degrees, counter-clockwise.
-    :param tag: Georeferencing information of a tiff image stored in the header.
     :param vertices: Array of vertices defining the four corners of the image.
     """
 
@@ -73,13 +72,12 @@ class GeoImage(ObjectBase):
     )
     _converter: type[GeoImageConversion] = GeoImageConversion
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         cells: np.ndarray | list | tuple | None = None,
         dip: float | None = None,
         image: str | np.ndarray | BytesIO | Image.Image | FilenameData | None = None,
         rotation: float | None = None,
-        tag: dict[int, Any] | None = None,
         vertices: np.ndarray | list | tuple | None = None,
         **kwargs,
     ):
@@ -89,11 +87,9 @@ class GeoImage(ObjectBase):
 
         super().__init__(**kwargs)
         self._image_data: FilenameData | None = None
-
         self.vertices = vertices
         self.image = image
         self.cells = cells
-        self.tag = tag
 
         if rotation is not None:
             self.rotation = rotation
@@ -399,17 +395,33 @@ class GeoImage(ObjectBase):
                 "Consider creating a new object."
             )
 
+        if isinstance(image, (FilenameData, type(None))):
+            self._image_data = image
+            return
+
         image = self.validate_image_data(image)
 
-        self._image_data = image
+        with TemporaryDirectory() as tempdir:
+            if image.mode not in PILLOW_ARGUMENTS:
+                raise NotImplementedError(
+                    f"The mode {image.mode} of the image is not supported."
+                )
+
+            temp_file = Path(tempdir) / "image"
+            image.save(temp_file, **PILLOW_ARGUMENTS[image.mode])
+            image_file = self.add_file(str(temp_file))
+            image_file.name = "GeoImageMesh_Image"
+            image_file.entity_type.name = "GeoImageMesh_Image"
+
+        self._image_data = image_file
+
+        if self._vertices is None:
+            self.vertices = self.default_vertices
 
         # if the image is a tiff save tag information
         if isinstance(image, TiffImageFile):
             self.tag = image
             self.to_grid2d(name=self.name + "_grid2d")
-
-        if self._vertices is None and image is not None:
-            self.vertices = self.default_vertices
 
     @property
     def image_data(self) -> FilenameData | None:
@@ -560,12 +572,12 @@ class GeoImage(ObjectBase):
         return None
 
     @tag.setter
-    def tag(self, image: Image.Image | dict | None):
-        if isinstance(image, (Image.Image, TiffImageFile)):
-            self._tag = dict(image.tag)
-        elif isinstance(image, dict):
-            self._tag = image
-        elif image is None:
+    def tag(self, value: Image.Image | dict | None):
+        if isinstance(value, (Image.Image, TiffImageFile)):
+            self._tag = dict(value.tag)
+        elif isinstance(value, dict):
+            self._tag = value
+        elif value is None:
             self._tag = None
         else:
             raise ValueError("Input 'tag' must be a PIL.Image")
@@ -589,7 +601,7 @@ class GeoImage(ObjectBase):
 
     def validate_image_data(
         self, image: str | np.ndarray | BytesIO | Image.Image | FilenameData | None
-    ) -> FilenameData | None:
+    ) -> Image.Image:
         """
         Validate the input image.
 
@@ -597,9 +609,6 @@ class GeoImage(ObjectBase):
 
         :return: Image converted to FileNameData object.
         """
-        if isinstance(image, (FilenameData, type(None))):
-            return image
-
         # todo: this should be changed in the future to accept tiff images
         if isinstance(image, np.ndarray) and image.ndim in [2, 3]:
             if image.ndim == 3 and image.shape[2] != 3:
@@ -631,19 +640,7 @@ class GeoImage(ObjectBase):
                 f"Get type {type(image)} instead."
             )
 
-        with TemporaryDirectory() as tempdir:
-            if image.mode not in PILLOW_ARGUMENTS:
-                raise NotImplementedError(
-                    f"The mode {image.mode} of the image is not supported."
-                )
-
-            temp_file = Path(tempdir) / "image"
-            image.save(temp_file, **PILLOW_ARGUMENTS[image.mode])
-            image_file = self.add_file(str(temp_file))
-            image_file.name = "GeoImageMesh_Image"
-            image_file.entity_type.name = "GeoImageMesh_Image"
-
-        return image_file
+        return image
 
     @property
     def vertices(self) -> np.ndarray:
