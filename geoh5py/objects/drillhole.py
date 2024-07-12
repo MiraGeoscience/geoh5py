@@ -121,7 +121,6 @@ class Drillhole(Points):
         if value is None:
             warnings.warn(
                 "No 'collar' provided. Using (0, 0, 0) as default point at the origin.",
-
                 UserWarning,
             )
             value = (0.0, 0.0, 0.0)
