@@ -45,43 +45,96 @@ class GeoImage(ObjectBase):
     """
     Image object class.
 
-    .. warning:: Not yet implemented.
+    The GeoImage object position is defined by the four corner vertices.
+    The values displayed in the image are stored in a separate entity, called
+    'GeoImageMesh_Image', and stored as 'GeoImage.image_data' attribute. The image
+    values themselves can be accessed through the 'GeoImage.image' attribute.
 
+    The 'image' data can be set with:
+        - A File on disk
+        - An array of values defining the pixels of the image
+            - A 2D array of values will create gray.
+            - A 3D array of values will create and RGB image
+        - A PIL.Image object
+
+    Setting the 'image' property will create a 'GeoImageMesh_Image' entity and remove
+    the previous one.
+
+    :param cells: Array of indices defining segments connecting vertices.
+    :param dip: Dip of the image in degrees from the vertices position.
+    :param image: Image data as a numpy array, PIL.Image, bytes, or path to an image file.
+    :param rotation: Rotation of the image in degrees, counter-clockwise.
+    :param tag: Georeferencing information of a tiff image stored in the header.
+    :param vertices: Array of vertices defining the four corners of the image.
     """
 
     _TYPE_UID = uuid.UUID(
         fields=(0x77AC043C, 0xFE8D, 0x4D14, 0x81, 0x67, 0x75E300FB835A)
     )
-
     _converter: type[GeoImageConversion] = GeoImageConversion
 
-    def __init__(self, **kwargs):
-        self._vertices: None | np.ndarray = None
-        self._cells = None
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        cells: np.ndarray | list | tuple | None = None,
+        dip: float | None = None,
+        image: str | np.ndarray | BytesIO | Image.Image | FilenameData | None = None,
+        rotation: float | None = None,
+        tag: dict[int, Any] | None = None,
+        vertices: np.ndarray | list | tuple | None = None,
+        **kwargs,
+    ):
+        self._cells: np.ndarray | None
+        self._vertices: np.ndarray | None
         self._tag: dict[int, Any] | None = None
 
         super().__init__(**kwargs)
+        self._image_data: FilenameData | None = None
+
+        self.vertices = vertices
+        self.image = image
+        self.cells = cells
+        self.tag = tag
+
+        if rotation is not None:
+            self.rotation = rotation
+
+        if dip is not None:
+            self.dip = dip
 
     @property
-    def cells(self) -> np.ndarray | None:
-        r"""
-        :obj:`numpy.ndarray` of :obj:`int`, shape (\*, 2):
-        Array of indices defining segments connecting vertices. Defined based on
-        :obj:`~geoh5py.objects.curve.Curve.parts` if set by the user.
+    def cells(self) -> np.ndarray:
         """
-        if getattr(self, "_cells", None) is None:
-            if self.on_file:
-                self._cells = self.workspace.fetch_array_attribute(self)
-            else:
-                self.cells = np.c_[[0, 1, 2, 0], [0, 2, 3, 0]].T.astype("uint32")
+        Array of indices defining segments connecting vertices.
+        """
+        if self._cells is None and self.on_file:
+            self._cells = self.workspace.fetch_array_attribute(self)
 
         return self._cells
 
     @cells.setter
-    def cells(self, indices):
-        assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
+    def cells(self, indices: np.ndarray | list | tuple | None):
+
+        if isinstance(indices, (list, tuple)):
+            indices = np.array(indices, ndmin=2)
+
+        if indices is None:
+            indices = np.c_[[0, 1, 2, 0], [0, 2, 3, 0]].T.astype("uint32")
+
+        if not isinstance(indices, np.ndarray):
+            raise TypeError(
+                "Attribute 'cells' must be provided as type numpy.ndarray, list or tuple."
+            )
+
+        if indices.ndim != 2 or indices.shape != (2, 4):
+            raise ValueError("Array of cells should be of shape (2, 4).")
+
+        if not np.issubdtype(indices.dtype, np.integer):
+            raise TypeError("Indices array must be of integer type")
+
         self._cells = indices
-        self.workspace.update_attribute(self, "cells")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "cells")
 
     def copy(
         self,
@@ -162,7 +215,7 @@ class GeoImage(ObjectBase):
         return image_transformed
 
     @property
-    def default_vertices(self):
+    def default_vertices(self) -> np.ndarray:
         """
         Assign the default vertices based on image pixel count
         """
@@ -174,8 +227,15 @@ class GeoImage(ObjectBase):
                     [self.image.size[0], 0, 0],
                     [0, 0, 0],
                 ]
-            )
-        return None
+            ).astype(float)
+        return np.asarray(
+            [
+                [0, 1, 0],
+                [1, 1, 0],
+                [1, 0, 0],
+                [0, 0, 0],
+            ]
+        ).astype(float)
 
     @property
     def dip(self) -> float:
@@ -183,9 +243,6 @@ class GeoImage(ObjectBase):
         Calculated dip of the image in degrees from the vertices position.
         :return: the dip angle.
         """
-        if self.vertices is None or self.rotation is None:
-            raise AttributeError("The image has no vertices")
-
         # Get rotation matrix
         rotation_matrix = xy_rotation_matrix(np.deg2rad(-self.rotation))
 
@@ -203,10 +260,7 @@ class GeoImage(ObjectBase):
         return dip
 
     @dip.setter
-    def dip(self, new_dip):
-        if self.vertices is None:
-            raise AttributeError("The image has no vertices")
-
+    def dip(self, new_dip: float):
         # Transform the vertices to a plane
         self.vertices = (
             dip_points(
@@ -225,10 +279,7 @@ class GeoImage(ObjectBase):
         :return: shape(2, 3) Bounding box defined by the bottom South-West and
             top North-East coordinates.
         """
-        if self.vertices is not None:
-            return np.c_[self.vertices.min(axis=0), self.vertices.max(axis=0)].T
-
-        return None
+        return np.c_[self.vertices.min(axis=0), self.vertices.max(axis=0)].T
 
     def georeference(self, reference: np.ndarray | list, locations: np.ndarray | list):
         """
@@ -333,85 +384,47 @@ class GeoImage(ObjectBase):
         """
         Get the image as a :obj:`PIL.Image` object.
         """
-        if self.image_data is not None:
+        if self.image_data is not None and self.image_data.values is not None:
             return Image.open(BytesIO(self.image_data.values))
 
         return None
 
     @image.setter
-    def image(self, image: str | np.ndarray | BytesIO | Image.Image):
-        """
-        Create a :obj:`~geoh5py.data.filename_data.FilenameData`
-        from dictionary of name and arguments.
-        The provided arguments can be any property of the target Data class.
-
-        :return: List of new Data objects.
-        """
-        convert_to_grid = False
-        # todo: this should be changed in the future to accept tiff images
-        if isinstance(image, np.ndarray) and image.ndim in [2, 3]:
-            if image.ndim == 3 and image.shape[2] != 3:
-                raise ValueError(
-                    "Shape of the 'image' must be a 2D or "
-                    "a 3D array with shape(*,*, 3) representing 'RGB' values."
-                )
-            value = image
-            if image.min() < 0 or image.max() > 255 or image.dtype != "uint8":
-                value = image.astype(float)
-                value -= value.min()
-                value *= 255.0 / value.max()
-                value = value.astype("uint8")
-
-            image = Image.fromarray(value)
-
-        elif isinstance(image, str):
-            if not Path(image).is_file():
-                raise ValueError(f"Input image file {image} does not exist.")
-
-            image = Image.open(image)
-        elif isinstance(image, bytes):
-            image = Image.open(BytesIO(image))
-
-        elif not isinstance(image, Image.Image):
-            raise ValueError(
-                "Input 'value' for the 'image' property must be "
-                "a 2D or 3D numpy.ndarray, bytes, PIL.Image or a path to an existing image."
-                f"Get type {type(image)} instead."
+    def image(
+        self, image: str | np.ndarray | BytesIO | Image.Image | FilenameData | None
+    ):
+        if self._image_data is not None:
+            raise AttributeError(
+                "The 'image' property cannot be reset. "
+                "Consider creating a new object."
             )
+
+        image = self.validate_image_data(image)
+
+        self._image_data = image
+
         # if the image is a tiff save tag information
         if isinstance(image, TiffImageFile):
             self.tag = image
-            convert_to_grid = True
-
-        with TemporaryDirectory() as tempdir:
-            if image.mode not in PILLOW_ARGUMENTS:
-                raise NotImplementedError(
-                    f"The mode {image.mode} of the image is not supported."
-                )
-
-            temp_file = Path(tempdir) / "image"
-            image.save(temp_file, **PILLOW_ARGUMENTS[image.mode])
-
-            if self.image_data is not None:
-                self.workspace.remove_entity(self.image_data)
-
-            image = self.add_file(str(temp_file))
-            image.name = "GeoImageMesh_Image"
-            image.entity_type.name = "GeoImageMesh_Image"
-
-        # quick and dirty fix: create a grid if image is tiff
-        if convert_to_grid:
             self.to_grid2d(name=self.name + "_grid2d")
 
+        if self._vertices is None and image is not None:
+            self.vertices = self.default_vertices
+
     @property
-    def image_data(self):
+    def image_data(self) -> FilenameData | None:
         """
         Get the FilenameData entity holding the image.
         """
-        for child in self.children:
-            if isinstance(child, FilenameData) and child.name == "GeoImageMesh_Image":
-                return child
-        return None
+        if self._image_data is None:
+            for child in self.children:
+                if (
+                    isinstance(child, FilenameData)
+                    and child.name == "GeoImageMesh_Image"
+                ):
+                    self._image_data = child
+
+        return self._image_data
 
     @property
     def image_georeferenced(self) -> Image.Image | None:
@@ -437,34 +450,26 @@ class GeoImage(ObjectBase):
 
         Uses the four corners of the image to determine overlap with the extent window.
         """
-        if self.extent is None or not box_intersect(self.extent, extent):
+        if box_intersect(self.extent, extent):
             return None
 
-        if self.vertices is not None:
-            return np.ones(self.vertices.shape[0], dtype=bool)
-
-        return None
+        return np.ones(self.vertices.shape[0], dtype=bool)
 
     @property
-    def origin(self) -> np.array | None:
+    def origin(self) -> np.array:
         """
         The origin of the image.
         :return: an array of the origin of the image in x, y, z.
         """
-        if self.vertices is not None:
-            return self.vertices[3, :]
 
-        return None
+        return self.vertices[3, :]
 
     @property
-    def rotation(self) -> float | None:
+    def rotation(self) -> float:
         """
         The rotation of the image in degrees, counter-clockwise.
         :return: the rotation angle.
         """
-        if self.vertices is None:
-            raise AttributeError("The image has no vertices")
-
         dxy = np.r_[np.diff(self.vertices[:2, 0]), np.diff(self.vertices[:2, 1])]
         dxy /= np.linalg.norm(dxy)
         rotation_rad = np.arctan2(dxy[1], dxy[0])
@@ -473,9 +478,6 @@ class GeoImage(ObjectBase):
 
     @rotation.setter
     def rotation(self, new_rotation):
-        if self.vertices is None:
-            raise AttributeError("The image has no vertices")
-
         # Compute rotation matrix
         rotation_matrix = xy_rotation_matrix(np.deg2rad(new_rotation - self.rotation))
 
@@ -524,15 +526,11 @@ class GeoImage(ObjectBase):
         in order to export as a georeferenced .tiff.
         WARNING: this function must be used after georeference().
         """
-
-        if self.image is None:
-            raise AttributeError("There is no image to reference")
-
-        if not isinstance(self.vertices, np.ndarray):
-            raise AttributeError("Vertices must be set before setting tag")
-
         if self._tag is None:
             self._tag = {}
+
+        if self.image is None:
+            raise AttributeError("An 'image' must be set before georeferencing.")
 
         width, height = self.image.size
         self._tag[256] = (width,)
@@ -589,32 +587,90 @@ class GeoImage(ObjectBase):
         """
         return self.converter.to_grid2d(self, mode, **grid2d_kwargs)
 
+    def validate_image_data(
+        self, image: str | np.ndarray | BytesIO | Image.Image | FilenameData | None
+    ) -> FilenameData | None:
+        """
+        Validate the input image.
+
+        :param image: Image to validate.
+
+        :return: Image converted to FileNameData object.
+        """
+        if isinstance(image, (FilenameData, type(None))):
+            return image
+
+        # todo: this should be changed in the future to accept tiff images
+        if isinstance(image, np.ndarray) and image.ndim in [2, 3]:
+            if image.ndim == 3 and image.shape[2] != 3:
+                raise ValueError(
+                    "Shape of the 'image' must be a 2D or "
+                    "a 3D array with shape(*,*, 3) representing 'RGB' values."
+                )
+            value = image
+            if image.min() < 0 or image.max() > 255 or image.dtype != "uint8":
+                value = image.astype(float)
+                value -= value.min()
+                value *= 255.0 / value.max()
+                value = value.astype("uint8")
+
+            image = Image.fromarray(value)
+
+        elif isinstance(image, str):
+            if not Path(image).is_file():
+                raise ValueError(f"Input image file {image} does not exist.")
+
+            image = Image.open(image)
+        elif isinstance(image, bytes):
+            image = Image.open(BytesIO(image))
+
+        elif not isinstance(image, Image.Image):
+            raise ValueError(
+                "Input 'value' for the 'image' property must be "
+                "a 2D or 3D numpy.ndarray, bytes, PIL.Image or a path to an existing image."
+                f"Get type {type(image)} instead."
+            )
+
+        with TemporaryDirectory() as tempdir:
+            if image.mode not in PILLOW_ARGUMENTS:
+                raise NotImplementedError(
+                    f"The mode {image.mode} of the image is not supported."
+                )
+
+            temp_file = Path(tempdir) / "image"
+            image.save(temp_file, **PILLOW_ARGUMENTS[image.mode])
+            image_file = self.add_file(str(temp_file))
+            image_file.name = "GeoImageMesh_Image"
+            image_file.entity_type.name = "GeoImageMesh_Image"
+
+        return image_file
+
     @property
-    def vertices(self) -> np.ndarray | None:
+    def vertices(self) -> np.ndarray:
         """
         :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`:
         Defines the four corners of the geo_image
         """
-        if (getattr(self, "_vertices", None) is None) and self.on_file:
+        if self._vertices is None and self.on_file:
             self._vertices = self.workspace.fetch_array_attribute(self, "vertices")
 
-        if self._vertices is None and self.image is not None:
-            if self.tag is not None:
-                self.vertices = self.default_vertices
-                self.georeferencing_from_tiff()
-            else:
-                self.vertices = self.default_vertices
+        if self._vertices is None and self.tag is not None and self.image is not None:
+            self.vertices = self.default_vertices
+            self.georeferencing_from_tiff()
 
-        # todo: change the call from vertices to vertices_xyz in the code
-        if self._vertices is not None:
-            return self._vertices.view("<f8").reshape((-1, 3)).astype(float)
+        if self._vertices is None:
+            return self.default_vertices
 
-        return self._vertices
+        return self._vertices.view("<f8").reshape((-1, 3)).astype(float)
 
     @vertices.setter
-    def vertices(self, xyz: np.ndarray | list):
-        if isinstance(xyz, list):
-            xyz = np.asarray(xyz)
+    def vertices(self, xyz: np.ndarray | list | None):
+        if xyz is None:
+            self._vertices = None
+            return
+
+        if isinstance(xyz, list | tuple):
+            xyz = np.array(xyz, ndmin=2)
 
         if not isinstance(xyz, np.ndarray) or xyz.shape != (4, 3):
             raise ValueError("Input 'vertices' must be a numpy array of shape (4, 3)")
@@ -624,4 +680,7 @@ class GeoImage(ObjectBase):
         )
 
         self._vertices = xyz
-        self.workspace.update_attribute(self, "vertices")
+        self._tag = None
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "vertices")

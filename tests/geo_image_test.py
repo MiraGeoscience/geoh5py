@@ -66,19 +66,6 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
 
         geoimage = GeoImage.create(workspace, name="MyGeoImage")
 
-        with pytest.raises(AttributeError, match="Vertices are not defined"):
-            geoimage.copy_from_extent(np.vstack(([125, 145], [125, 145])))
-
-        with pytest.raises(AttributeError, match="The image has no vertices"):
-            _ = geoimage.dip
-
-        with pytest.raises(AttributeError, match="The image has no vertices"):
-            geoimage.dip = 66
-
-        assert geoimage.extent is None
-
-        assert geoimage.default_vertices is None
-
         assert geoimage.image_georeferenced is None
 
         with pytest.raises(AttributeError, match="The object contains no image data"):
@@ -99,12 +86,14 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
         with pytest.raises(ValueError, match="Shape of the 'image' must be a 2D or "):
             geoimage.image = np.random.randn(12, 12, 4)
 
-        with pytest.raises(AttributeError, match="GeoImage has no vertices"):
-            geoimage.to_grid2d()
+        grid2d = geoimage.to_grid2d()
+        assert grid2d.children == []
 
         assert geoimage.image is None
 
-        with pytest.raises(AttributeError, match="There is no image to"):
+        with pytest.raises(
+            AttributeError, match="An 'image' must be set before georeferencing."
+        ):
             geoimage.set_tag_from_vertices()
 
         with pytest.raises(AttributeError, match="The image is not georeferenced"):
@@ -112,9 +101,9 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
 
         geoimage.image = np.random.randint(0, 255, (128, 128))
 
-        assert (
-            geoimage.extent == np.array([[0.0, 0.0, 0.0], [128.0, 128.0, 0.0]])
-        ).all()
+        np.testing.assert_allclose(
+            geoimage.extent, np.array([[0.0, 0.0, 0.0], [128.0, 128.0, 0.0]])
+        )
 
         geoimage.georeferencing_from_image()
 
@@ -131,11 +120,19 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
         ):
             geoimage.georeference(pixels, points[0, :])
 
-        geoimage.image = np.random.randint(0, 255, (128, 64, 3))
+        with pytest.raises(
+            AttributeError,
+            match="The 'image' property cannot be reset. Consider creating a new object",
+        ):
+            geoimage.image = np.random.randint(0, 255, (128, 64, 3))
+
+        geoimage = GeoImage.create(
+            workspace, name="MyGeoImage", image=np.random.randint(0, 255, (128, 64, 3))
+        )
         geoimage.georeference(pixels, points)
         np.testing.assert_almost_equal(
             geoimage.vertices,
-            np.asarray([[0, 15, 6], [10, 15, 6], [10, 5, 0], [0, 5, 0]]),
+            np.asarray([[0, 15, 6], [10, 15, 6], [10, 5, 0], [0, 5, 0]]).astype(float),
             err_msg="Issue geo-referencing the coordinates.",
         )
 
