@@ -267,16 +267,6 @@ class GeoImage(ObjectBase):
             + self.origin
         )
 
-    @property
-    def extent(self) -> np.ndarray | None:
-        """
-        Geography bounding box of the object.
-
-        :return: shape(2, 3) Bounding box defined by the bottom South-West and
-            top North-East coordinates.
-        """
-        return np.c_[self.vertices.min(axis=0), self.vertices.max(axis=0)].T
-
     def georeference(self, reference: np.ndarray | list, locations: np.ndarray | list):
         """
         Georeference the image vertices (corners) based on input reference and
@@ -462,7 +452,7 @@ class GeoImage(ObjectBase):
 
         Uses the four corners of the image to determine overlap with the extent window.
         """
-        if box_intersect(self.extent, extent):
+        if self.extent is None or box_intersect(self.extent, extent):
             return None
 
         return np.ones(self.vertices.shape[0], dtype=bool)

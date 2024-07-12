@@ -21,7 +21,6 @@ import uuid
 
 import numpy as np
 
-from ..shared.utils import box_intersect, mask_by_extent
 from .object_base import ObjectBase
 
 
@@ -94,16 +93,6 @@ class DrapeModel(ObjectBase):
         return self._centroids
 
     @property
-    def extent(self) -> np.ndarray:
-        """
-        Geography bounding box of the object.
-
-        :return: shape(2, 3) Bounding box defined by the bottom South-West and
-            top North-East coordinates.
-        """
-        return np.c_[self.centroids.min(axis=0), self.centroids.max(axis=0)].T
-
-    @property
     def layers(self) -> np.ndarray:
         """
         Layers in the drape model organized into blocks representing each prism in the model:
@@ -134,19 +123,6 @@ class DrapeModel(ObjectBase):
     @property
     def n_cells(self) -> int:
         return self.layers.shape[0]
-
-    def mask_by_extent(
-        self, extent: np.ndarray, inverse: bool = False
-    ) -> np.ndarray | None:
-        """
-        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
-
-        Applied to object's centroids.
-        """
-        if not box_intersect(self.extent, extent):
-            return None
-
-        return mask_by_extent(self.centroids, extent, inverse=inverse)
 
     @property
     def prisms(self) -> np.ndarray:

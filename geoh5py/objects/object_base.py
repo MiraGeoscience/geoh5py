@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import uuid
 import warnings
-from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -32,7 +31,7 @@ from ..groups import PropertyGroup
 from ..shared import Entity
 from ..shared.conversion import BaseConversion
 from ..shared.entity_container import EntityContainer
-from ..shared.utils import clear_array_attributes
+from ..shared.utils import box_intersect, clear_array_attributes, mask_by_extent
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
@@ -302,14 +301,6 @@ class ObjectBase(EntityContainer):
 
         return new_object
 
-    @abstractmethod
-    def mask_by_extent(
-        self, extent: np.ndarray, inverse: bool = False
-    ) -> np.ndarray | None:
-        """
-        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
-        """
-
     @property
     def entity_type(self) -> ObjectType:
         """
@@ -318,12 +309,17 @@ class ObjectBase(EntityContainer):
         return self._entity_type
 
     @property
-    @abstractmethod
-    def extent(self):
+    def extent(self) -> np.ndarray | None:
         """
-        Geography bounding box of the object defined by the bottom South-West and
-            top North-East coordinates, shape(2, 3).
+        Geography bounding box of the object.
+
+        :return: Bounding box defined by the bottom South-West and
+            top North-East coordinates,  shape(2, 3).
         """
+        if self.locations is None:
+            return None
+
+        return np.c_[self.locations.min(axis=0), self.locations.max(axis=0)].T
 
     @property
     def faces(self) -> np.ndarray:
@@ -451,6 +447,19 @@ class ObjectBase(EntityContainer):
     @last_focus.setter
     def last_focus(self, value: str):
         self._last_focus = value
+
+    def mask_by_extent(
+        self, extent: np.ndarray, inverse: bool = False
+    ) -> np.ndarray | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
+
+        Applied to object's centroids.
+        """
+        if self.extent is None or not box_intersect(self.extent, extent):
+            return None
+
+        return mask_by_extent(self.locations, extent, inverse=inverse)
 
     @property
     def n_cells(self) -> int | None:

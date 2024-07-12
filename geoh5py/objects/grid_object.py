@@ -22,7 +22,6 @@ from numbers import Real
 
 import numpy as np
 
-from ..shared.utils import box_intersect, mask_by_extent
 from .object_base import ObjectBase
 
 ORIGIN_TYPE = np.dtype([("x", float), ("y", float), ("z", float)])
@@ -58,27 +57,6 @@ class GridObject(ObjectBase, ABC):
         """
         Cell center locations in world coordinates of shape (n_cells, 3).
         """
-
-    @property
-    def extent(self) -> np.ndarray:
-        """
-        Geography bounding box of the object defined by the bottom South-West and
-            top North-East coordinates, shape(2, 3).
-        """
-        return np.c_[self.centroids.min(axis=0), self.centroids.max(axis=0)].T
-
-    def mask_by_extent(
-        self, extent: np.ndarray, inverse: bool = False
-    ) -> np.ndarray | None:
-        """
-        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
-
-        Applied to object's centroids.
-        """
-        if not box_intersect(self.extent, extent):
-            return None
-
-        return mask_by_extent(self.centroids, extent, inverse=inverse)
 
     @property
     def n_cells(self) -> int:

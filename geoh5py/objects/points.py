@@ -22,7 +22,6 @@ import warnings
 
 import numpy as np
 
-from ..shared.utils import box_intersect, mask_by_extent
 from .object_base import ObjectBase
 
 
@@ -70,27 +69,6 @@ class Points(ObjectBase):
         )
 
         return new_entity
-
-    @property
-    def extent(self) -> np.ndarray:
-        """
-        Geography bounding box of the object.
-
-        :return: Bounding box defined by the bottom South-West and
-            top North-East coordinates,  shape(2, 3).
-        """
-        return np.c_[self.vertices.min(axis=0), self.vertices.max(axis=0)].T
-
-    def mask_by_extent(
-        self, extent: np.ndarray, inverse: bool = False
-    ) -> np.ndarray | None:
-        """
-        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
-        """
-        if not box_intersect(self.extent, extent):
-            return None
-
-        return mask_by_extent(self.vertices, extent, inverse=inverse)
 
     def remove_vertices(
         self, indices: list[int] | np.ndarray, clear_cache: bool = False
