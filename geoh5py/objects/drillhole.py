@@ -77,12 +77,12 @@ class Drillhole(Points):
         self._trace_depth: np.ndarray | None = None
         self._locations = None
 
-        super().__init__(**kwargs)
+        super().__init__(
+            vertices=(0.0, 0.0, 0.0) if vertices is None else vertices, **kwargs
+        )
 
         if vertices is None:
             self._vertices = None
-        else:
-            self._vertices: np.ndarray = self.validate_vertices(vertices)
 
         self.collar = collar
         self.cost = cost
