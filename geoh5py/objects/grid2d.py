@@ -350,7 +350,9 @@ class Grid2D(GridObject):
         """
         Validate and format type of count value.
         """
-        if not isinstance(value, (np.integer, int)):
-            raise TypeError(f"Attribute '{axis}_count' must be type(int32).")
+        if not isinstance(value, (np.integer, int)) or value < 1:
+            raise TypeError(
+                f"Attribute '{axis}_count' must be a type(int32) greater than 1."
+            )
 
         return np.int32(value)
