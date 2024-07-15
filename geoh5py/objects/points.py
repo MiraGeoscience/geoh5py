@@ -32,9 +32,10 @@ class Points(ObjectBase):
     :param vertices: Array of vertices coordinates, shape(n_vertices, 3).
     """
 
+    _default_name = "Points"
     _TYPE_UID: uuid.UUID | None = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
     __VERTICES_DTYPE = np.dtype([("x", "<f8"), ("y", "<f8"), ("z", "<f8")])
-    _default_name = "Points"
+    _minimum_vertices = 1
 
     def __init__(
         self,
@@ -124,6 +125,9 @@ class Points(ObjectBase):
 
         if not isinstance(xyz, np.ndarray):
             raise TypeError("Vertices must be a numpy array.")
+
+        if len(xyz) < cls._minimum_vertices:
+            xyz = np.vstack([xyz] * cls._minimum_vertices)
 
         if np.issubdtype(xyz.dtype, np.number):
             if xyz.ndim != 2 or xyz.shape[-1] != 3:

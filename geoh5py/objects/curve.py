@@ -46,6 +46,7 @@ class Curve(CellObject):
     _TYPE_UID: uuid.UUID | None = uuid.UUID(
         fields=(0x6A057FDC, 0xB355, 0x11E3, 0x95, 0xBE, 0xFD84A7FFCB88)
     )
+    _minimum_vertices = 2
 
     def __init__(  # pylint: disable="too-many-arguments"
         self,
@@ -179,17 +180,3 @@ class Curve(CellObject):
             raise TypeError("Indices array must be of integer type")
 
         return indices
-
-    @classmethod
-    def validate_vertices(cls, xyz: np.ndarray | list | tuple) -> np.ndarray:
-        """
-        Validate and format type of vertices array.
-
-        :param xyz: Array of vertices as defined by :obj:`~geoh5py.objects.points.Points.vertices`.
-        """
-        xyz = super().validate_vertices(xyz)
-
-        if len(xyz) > 0 and len(xyz) < 2:
-            xyz = np.vstack([xyz] * 2)
-
-        return xyz

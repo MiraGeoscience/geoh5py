@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 import uuid
-import warnings
 
 import numpy as np
 
@@ -33,6 +32,7 @@ class Surface(CellObject):
     _TYPE_UID = uuid.UUID(
         fields=(0xF26FEBA3, 0xADED, 0x494B, 0xB9, 0xE9, 0xB2BBCBE298E1)
     )
+    _minimum_vertices = 3
 
     def validate_cells(self, indices: list | tuple | np.ndarray | None) -> np.ndarray:
         """
@@ -65,27 +65,3 @@ class Surface(CellObject):
             raise TypeError("Indices array must be of integer type")
 
         return indices.astype(np.int32)
-
-    @classmethod
-    def validate_vertices(cls, xyz: np.ndarray | list | tuple) -> np.ndarray:
-        """
-        Validate and format type of vertices array.
-
-        :param xyz: Array of vertices as defined by :obj:`~geoh5py.objects.points.Points.vertices`.
-        """
-        if xyz is None:
-            xyz = (0.0, 0.0, 0.0)
-            warnings.warn(
-                f"No 'vertices' provided. Using a default point {xyz} at the origin.",
-                UserWarning,
-            )
-
-        if isinstance(xyz, (list, tuple)):
-            xyz = np.array(xyz, ndmin=2)
-
-        if len(xyz) < 3:
-            xyz = np.vstack([xyz] * 3)
-
-        xyz = super().validate_vertices(xyz)
-
-        return xyz

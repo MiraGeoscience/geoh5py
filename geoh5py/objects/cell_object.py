@@ -121,25 +121,12 @@ class CellObject(Points, ABC):
         :param indices: Indices of vertices to be removed.
         :param clear_cache: Clear cache of data values.
         """
-        if isinstance(indices, list):
-            indices = np.array(indices)
+        n_vertices = self.n_vertices
 
-        if not isinstance(indices, np.ndarray):
-            raise TypeError("Indices must be a list or numpy array.")
+        super().remove_vertices(indices, clear_cache=clear_cache)
 
-        if (
-            isinstance(self.vertices, np.ndarray)
-            and np.max(indices) > self.vertices.shape[0] - 1
-        ):
-            raise ValueError("Found indices larger than the number of vertices.")
-
-        vert_index = np.ones(self.vertices.shape[0], dtype=bool)
+        vert_index = np.ones(n_vertices, dtype=bool)
         vert_index[indices] = False
-        vertices = self.vertices[vert_index, :]
-        self._vertices = self.validate_vertices(vertices)
-        self.remove_children_values(indices, "VERTEX", clear_cache=clear_cache)
-        self.workspace.update_attribute(self, "vertices")
-
         new_index = np.ones_like(vert_index, dtype=int)
         new_index[vert_index] = np.arange(self.vertices.shape[0])
         self.remove_cells(np.where(~np.all(vert_index[self.cells], axis=1)))
