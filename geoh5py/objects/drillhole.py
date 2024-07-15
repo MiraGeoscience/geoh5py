@@ -240,6 +240,15 @@ class Drillhole(Points):
         return None
 
     @property
+    def n_cells(self) -> int | None:
+        """
+        Number of cells.
+        """
+        if self.cells is not None:
+            return self.cells.shape[0]
+        return None
+
+    @property
     def planning(self) -> str:
         """
         Status of the hole on of "Default", "Ongoing", "Planned", "Completed" or "No status"

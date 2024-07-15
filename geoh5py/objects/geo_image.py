@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from ..objects import Grid2D
 
 
-class GeoImage(ObjectBase):
+class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
     """
     Image object class.
 
@@ -456,6 +456,20 @@ class GeoImage(ObjectBase):
             return None
 
         return np.ones(self.vertices.shape[0], dtype=bool)
+
+    @property
+    def n_cells(self):
+        """
+        Number of vertices
+        """
+        return self.cells.shape[0]
+
+    @property
+    def n_vertices(self):
+        """
+        Number of vertices
+        """
+        return self.vertices.shape[0]
 
     @property
     def origin(self) -> np.array:

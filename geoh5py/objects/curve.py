@@ -105,7 +105,7 @@ class Curve(CellObject):
         """
         if getattr(self, "_parts", None) is None:
             cell_parts = np.r_[0, np.cumsum(self.cells[1:, 0] != self.cells[:-1, 1])]
-            parts = np.zeros(self.vertices.shape[0], dtype=int)
+            parts = np.zeros(self.n_vertices, dtype=int)
             parts[self.cells.flatten()] = np.kron(cell_parts, np.ones(2))
             self._parts = parts
 
@@ -154,7 +154,7 @@ class Curve(CellObject):
             if self._parts is not None:
                 indices = self._make_cells_from_parts()
             else:
-                n_segments = self.vertices.shape[0]
+                n_segments = self.n_vertices
                 indices = np.c_[
                     np.arange(0, n_segments - 1), np.arange(1, n_segments)
                 ].astype("uint32")
@@ -173,7 +173,7 @@ class Curve(CellObject):
         if not np.issubdtype(indices.dtype, np.integer):
             raise TypeError("Indices array must be of integer type")
 
-        if np.max(indices) > self.vertices.shape[0] - 1:
+        if np.max(indices) > self.n_vertices - 1:
             raise ValueError("Found cell indices larger than the number of vertices.")
 
         return indices

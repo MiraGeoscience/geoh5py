@@ -57,7 +57,7 @@ class Points(ObjectBase):
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy`.
         """
-        if mask is not None and self.n_vertices:
+        if mask is not None and self.vertices is not None:
             if not isinstance(mask, np.ndarray) or mask.shape != (self.n_vertices,):
                 raise ValueError("Mask must be an array of shape (n_vertices,).")
 
@@ -72,6 +72,13 @@ class Points(ObjectBase):
         )
 
         return new_entity
+
+    @property
+    def n_vertices(self) -> int:
+        """
+        Number of vertices
+        """
+        return self.vertices.shape[0]
 
     def remove_vertices(
         self, indices: list[int] | np.ndarray, clear_cache: bool = False
@@ -88,10 +95,10 @@ class Points(ObjectBase):
         if not isinstance(indices, np.ndarray):
             raise TypeError("Indices must be a list or numpy array.")
 
-        if np.max(indices) > self.vertices.shape[0] - 1:
+        if np.max(indices) > self.n_vertices - 1:
             raise ValueError("Found indices larger than the number of vertices.")
 
-        if (self.vertices.shape[0] - len(np.unique(indices))) < self._minimum_vertices:
+        if (self.n_vertices - len(np.unique(indices))) < self._minimum_vertices:
             raise ValueError(
                 f"Operation would leave fewer vertices than the "
                 f"minimum permitted of {self._minimum_vertices}."

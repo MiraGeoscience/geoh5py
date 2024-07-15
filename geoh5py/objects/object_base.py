@@ -468,21 +468,17 @@ class ObjectBase(EntityContainer):
         return mask_by_extent(self.locations, extent, inverse=inverse)
 
     @property
-    def n_cells(self) -> int | None:
+    def n_cells(self):
         """
         :obj:`int`: Number of cells.
         """
-        if self.cells is not None:
-            return self.cells.shape[0]
         return None
 
     @property
-    def n_vertices(self) -> int | None:
+    def n_vertices(self):
         """
         :obj:`int`: Number of vertices.
         """
-        if self.vertices is not None:
-            return self.vertices.shape[0]
         return None
 
     @property

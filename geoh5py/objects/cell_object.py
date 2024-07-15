@@ -82,6 +82,13 @@ class CellObject(Points, ABC):
 
         return vert_mask
 
+    @property
+    def n_cells(self) -> int:
+        """
+        Number of vertices
+        """
+        return self.cells.shape[0]
+
     def remove_cells(self, indices: list[int] | np.ndarray, clear_cache: bool = False):
         """
         Safely remove cells and corresponding data entries.
