@@ -31,7 +31,6 @@ class GridObject(ObjectBase, ABC):
     """
     Base class for object with centroids.
 
-    :param object_type: Type of object.
     :param origin: Origin of the object.
     :param rotation: Rotation angle (clockwise) about the vertical axis.
     """

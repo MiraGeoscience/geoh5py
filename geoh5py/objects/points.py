@@ -28,6 +28,8 @@ from .object_base import ObjectBase
 class Points(ObjectBase):
     """
     Points object made up of vertices.
+
+    :param vertices: Array of vertices coordinates, shape(n_vertices, 3).
     """
 
     _TYPE_UID: uuid.UUID | None = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")

@@ -28,9 +28,9 @@ class DrapeModel(ObjectBase):
     """
     Drape (curtain) model object made up of layers and prisms.
 
-    :attr layers: Array of layers in the drape model organized into blocks
+    :param layers: Array of layers in the drape model organized into blocks
         representing each prism in the model.
-    :attr prisms: Array detailing the assembly of
+    :param prisms: Array detailing the assembly of
         :obj:`geoh5py.objects.drape_model.DrapeModel.layers` within the trace
          of the drape model.
     """

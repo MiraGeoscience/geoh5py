@@ -35,6 +35,14 @@ class Grid2D(GridObject):
     and :obj:`~geoh5py.objects.grid2d.Grid2D.dip` parameters.
     Nodal coordinates are determined relative to the origin and the sign
     of cell delimiters.
+
+    :param u_cell_size: Cell size along the u-axis.
+    :param v_cell_size: Cell size along the v-axis.
+    :param u_count: Number of cells along the u-axis.
+    :param v_count: Number of cells along the v-axis.
+    :param vertical: Set the grid to be vertical.
+    :param dip: Dip angle from horizontal (positive down) in degrees.
+        Defaults to an horizontal grid (dip=0).
     """
 
     _TYPE_UID = uuid.UUID(

@@ -32,6 +32,8 @@ from .points import Points
 class CellObject(Points, ABC):
     """
     Base class for object with cells.
+
+    :param cells: Array of indices defining connecting vertices.
     """
 
     _attribute_map: dict = Points._attribute_map.copy()
