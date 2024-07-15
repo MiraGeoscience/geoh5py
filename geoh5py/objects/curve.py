@@ -179,4 +179,7 @@ class Curve(CellObject):
         if not np.issubdtype(indices.dtype, np.integer):
             raise TypeError("Indices array must be of integer type")
 
+        if np.max(indices) > self.vertices.shape[0] - 1:
+            raise ValueError("Found cell indices larger than the number of vertices.")
+
         return indices

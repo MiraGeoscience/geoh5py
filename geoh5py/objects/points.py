@@ -91,6 +91,12 @@ class Points(ObjectBase):
         if np.max(indices) > self.vertices.shape[0] - 1:
             raise ValueError("Found indices larger than the number of vertices.")
 
+        if (self.vertices.shape[0] - len(np.unique(indices))) < self._minimum_vertices:
+            raise ValueError(
+                f"Operation would leave fewer vertices than the "
+                f"minimum permitted of {self._minimum_vertices}."
+            )
+
         vertices = np.delete(self.vertices, indices, axis=0)
         self._vertices = self.validate_vertices(vertices)
         self.remove_children_values(indices, "VERTEX", clear_cache=clear_cache)

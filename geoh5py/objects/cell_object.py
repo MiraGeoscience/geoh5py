@@ -121,7 +121,7 @@ class CellObject(Points, ABC):
         :param indices: Indices of vertices to be removed.
         :param clear_cache: Clear cache of data values.
         """
-        n_vertices = self.n_vertices
+        n_vertices = self.vertices.shape[0]
 
         super().remove_vertices(indices, clear_cache=clear_cache)
 
@@ -129,10 +129,11 @@ class CellObject(Points, ABC):
         vert_index[indices] = False
         new_index = np.ones_like(vert_index, dtype=int)
         new_index[vert_index] = np.arange(self.vertices.shape[0])
-        self.remove_cells(np.where(~np.all(vert_index[self.cells], axis=1)))
-        new_cells = new_index[self.cells]
 
-        self._cells = self.validate_cells(new_cells)
+        cell_mask = np.where(~np.all(vert_index[self.cells], axis=1))
+        self._cells = new_index[self.cells]
+        self.remove_cells(cell_mask)
+
         self.workspace.update_attribute(self, "cells")
 
     def copy(  # pylint: disable=too-many-branches

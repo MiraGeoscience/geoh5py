@@ -56,6 +56,13 @@ def test_attribute_validations():
                 parts=np.ones(n_data - 1),
             )
 
+        with pytest.raises(ValueError, match="Found cell indices larger than"):
+            Curve.create(
+                workspace,
+                vertices=np.random.randn(n_data, 3),
+                cells=np.c_[np.arange(11), np.arange(2, 13)],
+            )
+
         curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
 
         with pytest.raises(
@@ -216,8 +223,8 @@ def test_remove_vertex_data(tmp_path):
         assert len(data[0].values) == 8, "Error removing data values with cells."
         assert len(curve.vertices) == 10, "Error removing vertices from cells."
 
-        curve.remove_vertices(np.arange(curve.n_vertices))
-        assert curve.n_vertices == 0
+        with pytest.raises(ValueError, match="Operation would leave fewer"):
+            curve.remove_vertices(np.arange(curve.n_vertices))
 
 
 def test_copy_cells_data(tmp_path):
