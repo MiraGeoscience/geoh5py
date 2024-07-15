@@ -465,11 +465,6 @@ class Workspace(AbstractContextManager):
         if entity_class is None or issubclass(entity_class, Data):
             created_entity = self.create_data(Data, entity, entity_type)
 
-            if isinstance(created_entity, VisualParameters) and isinstance(
-                created_entity.parent, ObjectBase
-            ):
-                created_entity.parent.visual_parameters = created_entity
-
         else:
             created_entity = self.create_object_or_group(
                 entity_class, entity, entity_type

@@ -610,7 +610,7 @@ class ObjectBase(EntityContainer):
         if self.visual_parameters is not None:
             raise UserWarning("Visual parameters already exist.")
 
-        self.workspace.create_entity(  # type: ignore
+        self._visual_parameters = self.workspace.create_entity(  # type: ignore
             Data,
             save_on_creation=True,
             entity={
