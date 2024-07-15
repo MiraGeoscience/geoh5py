@@ -134,6 +134,9 @@ class CellObject(Points, ABC):
         self._cells = new_index[self.cells]
         self.remove_cells(cell_mask)
 
+        if hasattr(self, "_parts"):
+            setattr(self, "_parts", None)
+
         self.workspace.update_attribute(self, "cells")
 
     def copy(  # pylint: disable=too-many-branches

@@ -104,15 +104,9 @@ class Curve(CellObject):
         property get modified by the setting of parts.
         """
         if getattr(self, "_parts", None) is None:
-            cells = self.cells
-            parts = np.zeros(self.vertices.shape[0], dtype="int")
-            count = 0
-            for ind in range(1, cells.shape[0]):
-                if cells[ind, 0] != cells[ind - 1, 1]:
-                    count += 1
-
-                parts[cells[ind, :]] = count
-
+            cell_parts = np.r_[0, np.cumsum(self.cells[1:, 0] != self.cells[:-1, 1])]
+            parts = np.zeros(self.vertices.shape[0], dtype=int)
+            parts[self.cells.flatten()] = np.kron(cell_parts, np.ones(2))
             self._parts = parts
 
         return self._parts

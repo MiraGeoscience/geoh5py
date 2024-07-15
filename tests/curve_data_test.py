@@ -222,9 +222,11 @@ def test_remove_vertex_data(tmp_path):
 
         assert len(data[0].values) == 8, "Error removing data values with cells."
         assert len(curve.vertices) == 10, "Error removing vertices from cells."
-
         with pytest.raises(ValueError, match="Operation would leave fewer"):
             curve.remove_vertices(np.arange(curve.n_vertices))
+
+        curve.remove_vertices([6])
+        assert len(np.unique(curve.parts)) == 3, "Error detecting parts."
 
 
 def test_copy_cells_data(tmp_path):
