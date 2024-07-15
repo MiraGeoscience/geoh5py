@@ -259,7 +259,9 @@ class Grid2D(GridObject):
         self._centroids = None
 
         if isinstance(value, np.ndarray):
-            assert len(value) == 1, "u_cell_size must be a float of shape (1,)"
+            if not len(value) == 1:
+                raise ValueError("u_cell_size must be a float of shape (1,)")
+
             self._u_cell_size = np.r_[value].astype(float).item()
         else:
             self._u_cell_size = float(value)
@@ -288,7 +290,9 @@ class Grid2D(GridObject):
 
         self._centroids = None
         if isinstance(value, np.ndarray):
-            assert len(value) == 1, "v_cell_size must be a float of shape (1,)"
+            if not len(value) == 1:
+                raise ValueError("v_cell_size must be a float of shape (1,)")
+
             self._v_cell_size = np.r_[value].astype(float).item()
         else:
             self._v_cell_size = float(value)
