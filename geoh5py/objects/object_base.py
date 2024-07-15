@@ -42,6 +42,8 @@ if TYPE_CHECKING:
 class ObjectBase(EntityContainer):
     """
     Object base class.
+
+    :param last_focus: Object visible in camera on start.
     """
 
     _attribute_map: dict = getattr(EntityContainer, "_attribute_map").copy()
@@ -50,11 +52,12 @@ class ObjectBase(EntityContainer):
     )
     _converter: type[BaseConversion] | None = None
 
-    def __init__(self, **kwargs):
-        self._comments = None
-        self._last_focus = "None"
+    def __init__(self, last_focus: str = "None", **kwargs):
         self._property_groups: list[PropertyGroup] | None = None
         self._visual_parameters: VisualParameters | None = None
+        self._comments: CommentsData | None = None
+
+        self.last_focus = last_focus
 
         super().__init__(**kwargs)
 
@@ -446,6 +449,9 @@ class ObjectBase(EntityContainer):
 
     @last_focus.setter
     def last_focus(self, value: str):
+        if not isinstance(value, str):
+            raise TypeError("Attribute 'last_focus' must be a string")
+
         self._last_focus = value
 
     def mask_by_extent(
@@ -648,6 +654,7 @@ class ObjectBase(EntityContainer):
 
         if entity_type.name == "Entity":
             entity_type.name = self.name
+            entity_type.description = self.name
 
         return entity_type
 
@@ -663,10 +670,3 @@ class ObjectBase(EntityContainer):
                     break
 
         return self._visual_parameters
-
-    @visual_parameters.setter
-    def visual_parameters(self, value: VisualParameters):
-        if not isinstance(value, VisualParameters):
-            raise TypeError("visual_parameters must be a VisualParameters object.")
-
-        self._visual_parameters = value
