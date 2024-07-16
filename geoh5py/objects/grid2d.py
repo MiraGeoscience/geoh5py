@@ -151,7 +151,7 @@ class Grid2D(GridObject):
         if not isinstance(extent, np.ndarray):
             raise TypeError("Expected a numpy array of extent values.")
 
-        if not extent.ndim == 2 and 3 < extent.shape[1] < 2:
+        if not extent.ndim == 2 or extent.shape not in [(2, 3), (2, 2)]:
             raise TypeError("Expected a 2D numpy array with 2 or 3 columns")
 
         # get the centroids
@@ -253,18 +253,8 @@ class Grid2D(GridObject):
 
     @u_cell_size.setter
     def u_cell_size(self, value: Real | np.ndarray):
-        if not isinstance(value, (Real, np.ndarray)):
-            raise TypeError("Attribute 'u_cell_size' must be type(float).")
-
+        self._u_cell_size = self.validate_cell_size(value, "u")
         self._centroids = None
-
-        if isinstance(value, np.ndarray):
-            if not len(value) == 1:
-                raise ValueError("u_cell_size must be a float of shape (1,)")
-
-            self._u_cell_size = np.r_[value].astype(float).item()
-        else:
-            self._u_cell_size = float(value)
 
         if self.on_file:
             self.workspace.update_attribute(self, "attributes")
@@ -285,17 +275,9 @@ class Grid2D(GridObject):
 
     @v_cell_size.setter
     def v_cell_size(self, value: Real | np.ndarray):
-        if not isinstance(value, (Real, np.ndarray)):
-            raise TypeError("Attribute 'v_cell_size' must be type(float).")
 
+        self._v_cell_size = self.validate_cell_size(value, "v")
         self._centroids = None
-        if isinstance(value, np.ndarray):
-            if not len(value) == 1:
-                raise ValueError("v_cell_size must be a float of shape (1,)")
-
-            self._v_cell_size = np.r_[value].astype(float).item()
-        else:
-            self._v_cell_size = float(value)
 
         if self.on_file:
             self.workspace.update_attribute(self, "attributes")
@@ -306,6 +288,24 @@ class Grid2D(GridObject):
         Number of cells along v-axis.
         """
         return self._v_count
+
+    @staticmethod
+    def validate_cell_size(value: Real | np.ndarray, axis: str) -> float:
+        """
+        Validate and format type of cell size value.
+        """
+        if not isinstance(value, (Real, np.ndarray)):
+            raise TypeError(f"Attribute '{axis}_cell_size' must be type(float).")
+
+        if isinstance(value, np.ndarray):
+            if not len(value) == 1:
+                raise ValueError(
+                    "Attribute 'v_cell_size' must be a float of shape (1,)"
+                )
+
+            return np.r_[value].astype(float).item()
+
+        return float(value)
 
     @property
     def vertical(self) -> bool:

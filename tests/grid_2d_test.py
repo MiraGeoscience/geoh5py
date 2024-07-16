@@ -31,6 +31,32 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
+def test_attribute_setters():
+    with Workspace() as workspace_context:
+
+        with pytest.raises(TypeError, match="Attribute 'v_cell_size' must be"):
+            Grid2D.create(
+                workspace_context,
+                origin=[0, 0, 0],
+                u_cell_size=20.0,
+                v_cell_size="abc",
+                u_count=10,
+                v_count=15,
+                vertical=True,
+            )
+
+        with pytest.raises(TypeError, match="Dip angle must be a float"):
+            Grid2D.create(
+                workspace_context,
+                origin=[0, 0, 0],
+                u_cell_size=20.0,
+                v_cell_size=10.0,
+                u_count=10,
+                v_count=15,
+                dip="90",
+            )
+
+
 def test_create_grid_2d_data(tmp_path):
     name = "MyTestGrid2D"
 
@@ -63,6 +89,23 @@ def test_create_grid_2d_data(tmp_path):
         grid.name = name
 
         assert converter.grid_to_tag(grid)[33550] == (20.0, 30.0, 0.0)
+
+
+def test_copy_from_extent():
+    with Workspace() as workspace_context:
+        grid = Grid2D.create(
+            workspace_context,
+            origin=[0, 0, 0],
+            u_cell_size=np.r_[20.0],
+            v_cell_size=np.r_[30.0],
+            u_count=10,
+            v_count=15,
+            vertical=True,
+        )
+        assert grid.dip == 90.0
+
+        with pytest.raises(TypeError, match="Expected a 2D numpy array"):
+            grid.copy_from_extent(np.ones((3, 3)))
 
 
 def test_grid2d_to_geoimage(tmp_path):
@@ -125,9 +168,9 @@ def test_grid2d_to_geoimage(tmp_path):
         _ = grid.to_geoimage(data.uid)
         _ = grid.to_geoimage(data)
 
-        geoimage = grid.to_geoimage(["DataValues", "DataValues", "DataValues"])
+        assert grid.to_geoimage(["DataValues", "DataValues", "DataValues"])
 
-        geoimage = grid.to_geoimage(
+        assert grid.to_geoimage(
             ["DataValues", "DataValues", "DataValues", "DataValues"]
         )
 
