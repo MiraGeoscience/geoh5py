@@ -22,6 +22,7 @@ from numbers import Real
 
 import numpy as np
 
+from ..shared.utils import xy_rotation_matrix
 from .grid_object import GridObject
 
 
@@ -137,11 +138,7 @@ class Octree(GridObject):
         """
         if getattr(self, "_centroids", None) is None:
             angle = np.deg2rad(self.rotation)
-            rot = np.r_[
-                np.c_[np.cos(angle), -np.sin(angle), 0],
-                np.c_[np.sin(angle), np.cos(angle), 0],
-                np.c_[0, 0, 1],
-            ]
+            rot = xy_rotation_matrix(angle)
             u_grid = (
                 self.octree_cells["I"] + self.octree_cells["NCells"] / 2.0
             ) * self.u_cell_size
