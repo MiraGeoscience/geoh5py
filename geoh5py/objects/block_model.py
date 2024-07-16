@@ -21,6 +21,7 @@ import uuid
 
 import numpy as np
 
+from ..shared.utils import xy_rotation_matrix
 from .grid_object import GridObject
 
 
@@ -89,11 +90,7 @@ class BlockModel(GridObject):
             cell_center_v = self.local_axis_centers("v")
             cell_center_z = self.local_axis_centers("z")
             angle = np.deg2rad(self.rotation)
-            rot = np.r_[
-                np.c_[np.cos(angle), -np.sin(angle), 0],
-                np.c_[np.sin(angle), np.cos(angle), 0],
-                np.c_[0, 0, 1],
-            ]
+            rot = xy_rotation_matrix(angle)
             u_grid, v_grid, z_grid = np.meshgrid(
                 cell_center_u, cell_center_v, cell_center_z
             )
