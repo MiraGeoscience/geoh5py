@@ -30,13 +30,13 @@ class Octree(GridObject):
     Octree mesh class that uses a tree structure such that cells
     can be subdivided it into eight octants.
 
-    :attr u_count: Number of cells along the u-axis.
-    :attr v_count: Number of cells along the v-axis.
-    :attr w_count: Number of cells along the w-axis.
-    :attr u_cell_size: Base cell size along the u-axis.
-    :attr v_cell_size: Base cell size along the v-axis.
-    :attr w_cell_size: Base cell size along the w-axis.
-    :attr octree_cells: Array defining the i, j, k position and size of each cell.
+    :param u_count: Number of cells along the u-axis.
+    :param v_count: Number of cells along the v-axis.
+    :param w_count: Number of cells along the w-axis.
+    :param u_cell_size: Base cell size along the u-axis.
+    :param v_cell_size: Base cell size along the v-axis.
+    :param w_cell_size: Base cell size along the w-axis.
+    :param octree_cells: Array defining the i, j, k position and size of each cell.
     """
 
     _TYPE_UID = uuid.UUID(
