@@ -51,6 +51,23 @@ tag = {
 }
 
 
+def test_attribute_setters():
+    workspace = Workspace()
+    image = np.random.randint(0, 255, (128, 128))
+    gimage = GeoImage.create(workspace, image=image, cells=[[0, 0, 0, 0], [1, 1, 1, 1]])
+
+    with pytest.raises(
+        TypeError, match="Attribute 'cells' must be provided as type numpy.ndarray"
+    ):
+        gimage.cells = "abc"
+
+    with pytest.raises(ValueError, match="Array of cells should be of shape"):
+        gimage.cells = [[0, 0, 0], [1, 1, 1]]
+
+    with pytest.raises(TypeError, match="Indices array must be of integer type"):
+        gimage.cells = np.array([[0, 0, 0, 0], [1, 1, 1, 1]], ndmin=2, dtype=float)
+
+
 def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
     with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
         pixels = np.r_[
@@ -165,7 +182,9 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
         ), "Error writing and re-loading the image file."
 
         with Workspace.create(tmp_path / r"geo_image_test2.geoh5") as new_workspace:
-            geoimage.copy(parent=new_workspace)
+            geoimage.copy(parent=new_workspace, clear_cache=True)
+
+            assert geoimage.cells is not None
 
             rec_image = new_workspace.get_entity("MyGeoImage")[0]
 
@@ -469,21 +488,17 @@ def test_image_rotation(tmp_path):
         np.testing.assert_array_almost_equal(geoimage.rotation, 0)
         np.testing.assert_array_almost_equal(geoimage.dip, 0)
 
-        geoimage2 = geoimage.copy()
-        geoimage2.rotation = 66
-
+        geoimage2 = GeoImage.create(
+            workspace, name="test_area", image=image, rotation=66
+        )
         np.testing.assert_array_almost_equal(geoimage2.rotation, 66)
 
-        geoimage3 = geoimage.copy()
-
-        geoimage3.dip = 44
-
+        geoimage3 = GeoImage.create(workspace, name="test_area", image=image, dip=44)
         np.testing.assert_array_almost_equal(geoimage3.dip, 44)
 
-        geoimage4 = geoimage.copy()
-
-        geoimage4.dip = 44
-        geoimage4.rotation = 66
+        geoimage4 = GeoImage.create(
+            workspace, name="test_area", image=image, dip=44, rotation=66
+        )
 
         np.testing.assert_array_almost_equal(geoimage4.dip, 44)
         np.testing.assert_array_almost_equal(geoimage4.rotation, 66)

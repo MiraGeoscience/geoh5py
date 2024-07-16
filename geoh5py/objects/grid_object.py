@@ -106,14 +106,14 @@ class GridObject(ObjectBase, ABC):
         if np.issubdtype(values.dtype, np.number):
             if len(values) != 3:
                 raise ValueError(
-                    "Array of 'prisms' must be of shape (3,). "
+                    "Attribute 'origin' must be a list or array of shape (3,). "
                     f"Array of shape {values.shape} provided."
                 )
 
             values = np.asarray(tuple(values), dtype=ORIGIN_TYPE)
 
         if values.dtype != np.dtype(ORIGIN_TYPE):
-            raise ValueError(f"Array of 'prisms' must be of dtype = {ORIGIN_TYPE}")
+            raise ValueError(f"Array of 'origin' must be of dtype = {ORIGIN_TYPE}")
 
         self._centroids = None
 
