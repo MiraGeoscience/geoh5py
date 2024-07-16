@@ -196,8 +196,11 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
 
             geoimage.vertices = geoimage.vertices
 
+            assert np.all(geoimage.mask_by_extent(np.c_[[9, 10], [9, 10]]))
+            assert geoimage.mask_by_extent(np.c_[[90, 100], [90, 100]]) is None
+
             # Test copy from extent that clips one corner
-            new_image = geoimage.copy(extent=[[9, 9], [10, 10]])
+            new_image = geoimage.copy_from_extent(np.c_[[9, 10], [9, 10]])
             assert new_image is not None, "Error copying from extent."
 
             with pytest.warns(UserWarning, match="Image could not be cropped."):

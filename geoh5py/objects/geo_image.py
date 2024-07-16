@@ -452,7 +452,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         Uses the four corners of the image to determine overlap with the extent window.
         """
-        if self.extent is None or box_intersect(self.extent, extent):
+        if self.extent is None or not box_intersect(self.extent, extent):
             return None
 
         return np.ones(self.vertices.shape[0], dtype=bool)
