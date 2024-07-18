@@ -236,6 +236,14 @@ class Octree(GridObject):
 
     @staticmethod
     def validate_octree_count(value: int, axis: str) -> np.int32:
+        """
+        Validate the number of cells along an axis are in power of 2.
+
+        :param value: Number of cells along the axis.
+        :param axis: Axis name.
+
+        :return: Number of cells along the axis.
+        """
         if not isinstance(value, (np.integer, int)):
             raise TypeError(f"Attribute '{axis}_count' must be type(int).")
 
@@ -250,6 +258,14 @@ class Octree(GridObject):
     def validate_octree_cells(
         cls, array: np.ndarray | list | tuple | None
     ) -> np.ndarray:
+        """
+        Validate the octree cell array.
+
+        :param array: An array or list defining the i, j, k position
+            and size of each cell.
+
+        :return: A formatted recarray
+        """
         if isinstance(array, (list, tuple)):
             array = np.array(array, ndmin=2)
 
@@ -271,7 +287,7 @@ class Octree(GridObject):
             )
         if array.dtype != cls.__OCTREE_DTYPE:
             raise ValueError(
-                f"Array of 'layers' must be of dtype = {cls.__OCTREE_DTYPE}"
+                f"Array of 'octree_cells' must be of dtype = {cls.__OCTREE_DTYPE}"
             )
 
         return array
