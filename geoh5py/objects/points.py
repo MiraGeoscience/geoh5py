@@ -58,8 +58,14 @@ class Points(ObjectBase):
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy`.
         """
         if mask is not None and self.vertices is not None:
-            if not isinstance(mask, np.ndarray) or mask.shape != (self.n_vertices,):
-                raise ValueError("Mask must be an array of shape (n_vertices,).")
+            if (
+                not isinstance(mask, np.ndarray)
+                or mask.shape != (self.n_vertices,)
+                or mask.dtype != bool
+            ):
+                raise ValueError(
+                    "Mask must be an array of shape (n_vertices,) and dtype 'bool'."
+                )
 
             kwargs.update({"vertices": self.vertices[mask]})
 
@@ -140,11 +146,20 @@ class Points(ObjectBase):
             raise TypeError("Vertices must be a numpy array.")
 
         if len(xyz) < cls._minimum_vertices:
+            warnings.warn(
+                f"Attribute 'vertices' has fewer elements than the "
+                f"minimum required for object of type {type(cls)}. "
+                f"Augmenting the array to shape ({cls._minimum_vertices}, 3).",
+                UserWarning,
+            )
             xyz = np.vstack([xyz] * cls._minimum_vertices)
 
         if np.issubdtype(xyz.dtype, np.number):
             if xyz.ndim != 2 or xyz.shape[-1] != 3:
-                raise ValueError("Array of vertices should be of shape (*, 3).")
+                raise ValueError(
+                    "Array of 'vertices' should be of shape (*, 3). "
+                    f"Got shape {xyz.shape}."
+                )
 
             xyz = np.asarray(
                 np.core.records.fromarrays(

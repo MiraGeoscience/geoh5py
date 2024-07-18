@@ -52,9 +52,10 @@ def test_create_surface_data(tmp_path: Path):
         # Create a grid of points and triangulate
         xyz, simplices, values = generate_surface(10)
 
-        singleton = Surface.create(
-            workspace,
-        )
+        with pytest.warns(UserWarning, match="Attribute 'vertices' has fewer elements"):
+            singleton = Surface.create(
+                workspace,
+            )
         assert singleton.n_vertices == 3, "Error creating surface with no vertices."
         assert singleton.n_cells == 1, "Error creating surface with no cells."
 
