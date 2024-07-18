@@ -19,6 +19,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 from h5py import special_dtype
 
@@ -27,8 +29,13 @@ from ...objects import Drillhole
 from .object import ConcatenatedObject
 from .property_group import ConcatenatedPropertyGroup
 
+if TYPE_CHECKING:
+    from .concatenator import Concatenator
+
 
 class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
+    _parent: Concatenator
+
     def _update_attribute_from_property_group(
         self,
         attributes: dict,
@@ -382,6 +389,9 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
         """
         Reformat the survey values as structured array with the right shape.
         """
+        if isinstance(values, (list, tuple)):
+            values = np.array(values, ndmin=2)
+
         if isinstance(values, np.ndarray):
             values = values.T.tolist()
 

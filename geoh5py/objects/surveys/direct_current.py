@@ -27,8 +27,8 @@ from typing import cast
 import numpy as np
 
 from ...data import Data, ReferencedData
+from ...shared.utils import str_json_to_dict
 from ..curve import Curve
-from ..object_type import ObjectType
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +37,10 @@ class BaseElectrode(Curve, ABC):
     _potential_electrodes: PotentialElectrode | None = None
     _current_electrodes: CurrentElectrode | None = None
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, **kwargs):
         self._ab_cell_id: ReferencedData | None = None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(**kwargs)
 
     @property
     def ab_cell_id(self) -> ReferencedData | None:
@@ -226,31 +226,22 @@ class BaseElectrode(Curve, ABC):
         The associated current_electrodes (transmitters)
         """
 
-    @classmethod
-    @abstractmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """Default unique identifier. Implemented on the child class."""
+    @staticmethod
+    def validate_metadata(value):
+        if isinstance(value, np.ndarray):
+            value = value[0]
 
-    @Curve.metadata.setter  # type: ignore
-    def metadata(self, values: dict | None):
-        if isinstance(values, dict):
+        if isinstance(value, bytes):
+            value = str_json_to_dict(value)
+
+        if isinstance(value, dict):
             default_keys = ["Current Electrodes", "Potential Electrodes"]
 
-            if self.metadata:
-                existing_keys = self.metadata.copy()
-                existing_keys.update(values)
-            else:
-                existing_keys = values
-
             # check if metadata has the required keys
-            if not all(key in existing_keys for key in default_keys):
+            if not all(key in value for key in default_keys):
                 raise ValueError(f"Input metadata must have for keys {default_keys}")
 
-            for key in default_keys:
-                if self.workspace.get_entity(existing_keys[key])[0] is None:
-                    raise KeyError(f"Input {key} uuid not present in Workspace")
-
-        super(Curve, Curve).metadata.fset(self, values)  # type: ignore
+        return value
 
     @property
     @abstractmethod
@@ -265,7 +256,7 @@ class PotentialElectrode(BaseElectrode):
     Ground potential electrode (receiver).
     """
 
-    __TYPE_UID = uuid.UUID("{275ecee9-9c24-4378-bf94-65f3c5fbe163}")
+    _TYPE_UID = uuid.UUID("{275ecee9-9c24-4378-bf94-65f3c5fbe163}")
 
     @property
     def current_electrodes(self):
@@ -310,32 +301,18 @@ class PotentialElectrode(BaseElectrode):
         """
         return self
 
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
-
 
 class CurrentElectrode(BaseElectrode):
     """
     Ground direct current electrode (transmitter).
     """
 
-    __TYPE_UID = uuid.UUID("{9b08bb5a-300c-48fe-9007-d206f971ea92}")
+    _TYPE_UID = uuid.UUID("{9b08bb5a-300c-48fe-9007-d206f971ea92}")
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, **kwargs):
         self._current_line_id: uuid.UUID | None = None
 
-        super().__init__(object_type, **kwargs)
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
+        super().__init__(**kwargs)
 
     @property
     def current_electrodes(self):

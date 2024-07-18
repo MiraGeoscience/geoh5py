@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import uuid
 import warnings
-from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -32,7 +31,7 @@ from ..groups import PropertyGroup
 from ..shared import Entity
 from ..shared.conversion import BaseConversion
 from ..shared.entity_container import EntityContainer
-from ..shared.utils import clear_array_attributes
+from ..shared.utils import box_intersect, clear_array_attributes, mask_by_extent
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
@@ -43,6 +42,8 @@ if TYPE_CHECKING:
 class ObjectBase(EntityContainer):
     """
     Object base class.
+
+    :param last_focus: Object visible in camera on start.
     """
 
     _attribute_map: dict = getattr(EntityContainer, "_attribute_map").copy()
@@ -51,21 +52,14 @@ class ObjectBase(EntityContainer):
     )
     _converter: type[BaseConversion] | None = None
 
-    def __init__(self, object_type: ObjectType, **kwargs):
-        assert object_type is not None
-        self._comments = None
-        self._entity_type = object_type
-        self._last_focus = "None"
+    def __init__(self, last_focus: str = "None", **kwargs):
         self._property_groups: list[PropertyGroup] | None = None
         self._visual_parameters: VisualParameters | None = None
+        self._comments: CommentsData | None = None
 
-        if not any(key for key in kwargs if key in ["name", "Name"]):
-            kwargs["name"] = type(self).__name__
+        self.last_focus = last_focus
 
         super().__init__(**kwargs)
-
-        if self.entity_type.name == "Entity":
-            self.entity_type.name = type(self).__name__
 
     def add_children(self, children: list[Entity | PropertyGroup]):
         """
@@ -310,21 +304,6 @@ class ObjectBase(EntityContainer):
 
         return new_object
 
-    @classmethod
-    @abstractmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        Default entity type unique identifier
-        """
-
-    @abstractmethod
-    def mask_by_extent(
-        self, extent: np.ndarray, inverse: bool = False
-    ) -> np.ndarray | None:
-        """
-        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
-        """
-
     @property
     def entity_type(self) -> ObjectType:
         """
@@ -333,14 +312,17 @@ class ObjectBase(EntityContainer):
         return self._entity_type
 
     @property
-    @abstractmethod
-    def extent(self):
+    def extent(self) -> np.ndarray | None:
         """
         Geography bounding box of the object.
 
-        :return: shape(2, 3) Bounding box defined by the bottom South-West and
-            top North-East coordinates.
+        :return: Bounding box defined by the bottom South-West and
+            top North-East coordinates,  shape(2, 3).
         """
+        if self.locations is None:
+            return None
+
+        return np.c_[self.locations.min(axis=0), self.locations.max(axis=0)].T
 
     @property
     def faces(self) -> np.ndarray:
@@ -467,24 +449,36 @@ class ObjectBase(EntityContainer):
 
     @last_focus.setter
     def last_focus(self, value: str):
+        if not isinstance(value, str):
+            raise TypeError("Attribute 'last_focus' must be a string")
+
         self._last_focus = value
 
+    def mask_by_extent(
+        self, extent: np.ndarray, inverse: bool = False
+    ) -> np.ndarray | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
+
+        Applied to object's centroids.
+        """
+        if self.extent is None or not box_intersect(self.extent, extent):
+            return None
+
+        return mask_by_extent(self.locations, extent, inverse=inverse)
+
     @property
-    def n_cells(self) -> int | None:
+    def n_cells(self):
         """
         :obj:`int`: Number of cells.
         """
-        if self.cells is not None:
-            return self.cells.shape[0]
         return None
 
     @property
-    def n_vertices(self) -> int | None:
+    def n_vertices(self):
         """
         :obj:`int`: Number of vertices.
         """
-        if self.vertices is not None:
-            return self.vertices.shape[0]
         return None
 
     @property
@@ -612,17 +606,15 @@ class ObjectBase(EntityContainer):
         if self.visual_parameters is not None:
             raise UserWarning("Visual parameters already exist.")
 
-        self.workspace.create_entity(  # type: ignore
+        self._visual_parameters = self.workspace.create_entity(  # type: ignore
             Data,
             save_on_creation=True,
-            **{  # type: ignore
-                "entity": {
-                    "name": "Visual Parameters",
-                    "parent": self,
-                    "association": "OBJECT",
-                },
-                "entity_type": {"name": "XmlData", "primitive_type": "TEXT"},
+            entity={
+                "name": "Visual Parameters",
+                "parent": self,
+                "association": "OBJECT",
             },
+            entity_type={"name": "XmlData", "primitive_type": "TEXT"},
         )
 
         return self._visual_parameters
@@ -647,6 +639,21 @@ class ObjectBase(EntityContainer):
         for property_group in self._property_groups:
             property_group.remove_properties(data)
 
+    def validate_entity_type(self, entity_type: ObjectType | None) -> ObjectType:
+        """
+        Validate the entity type.
+        """
+        if not isinstance(entity_type, ObjectType):
+            raise TypeError(
+                f"Input 'entity_type' must be of type {ObjectType}, not {type(entity_type)}"
+            )
+
+        if entity_type.name == "Entity":
+            entity_type.name = self.name
+            entity_type.description = self.name
+
+        return entity_type
+
     @property
     def visual_parameters(self) -> VisualParameters | None:
         """
@@ -659,10 +666,3 @@ class ObjectBase(EntityContainer):
                     break
 
         return self._visual_parameters
-
-    @visual_parameters.setter
-    def visual_parameters(self, value: VisualParameters):
-        if not isinstance(value, VisualParameters):
-            raise TypeError("visual_parameters must be a VisualParameters object.")
-
-        self._visual_parameters = value

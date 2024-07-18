@@ -33,7 +33,7 @@ from geoh5py.data.float_data import FloatData
 from geoh5py.groups.property_group import PropertyGroup
 from geoh5py.objects import Curve
 from geoh5py.objects.object_base import ObjectBase
-from geoh5py.shared.utils import is_uuid
+from geoh5py.shared.utils import str2uuid, str_json_to_dict
 
 if TYPE_CHECKING:
     from geoh5py.groups import Group
@@ -305,11 +305,6 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         """Default metadata structure. Implemented on the child class."""
         return {"EM Dataset": {}}
 
-    @classmethod
-    @abstractmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """Default unique identifier. Implemented on the child class."""
-
     @property
     @abstractmethod
     def default_transmitter_type(self) -> type:
@@ -391,63 +386,24 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         """Metadata attached to the entity."""
         if getattr(self, "_metadata", None) is None:
             metadata = self.workspace.fetch_metadata(self.uid)
-
-            if metadata is None:
-                metadata = self.default_metadata
-                if self.type is not None:
-                    metadata["EM Dataset"][self.type] = self.uid
-                self.metadata = metadata
-            else:
-                if "Property groups" in metadata["EM Dataset"]:
-                    prop_groups = []
-                    for value in metadata["EM Dataset"]["Property groups"]:
-                        if is_uuid(value):
-                            value = uuid.UUID(value)
-
-                        prop_group = self.get_property_group(value)[0]
-
-                        if isinstance(prop_group, PropertyGroup):
-                            prop_groups.append(prop_group.name)
-
-                    metadata["EM Dataset"]["Property groups"] = prop_groups
-
-                self._metadata = metadata
+            self._metadata = self.validate_em_metadata(metadata)
 
         return self._metadata
 
     @metadata.setter
-    def metadata(self, values: dict):
-        if not isinstance(values, dict):
-            raise TypeError("'metadata' must be of type 'dict'")
+    def metadata(self, values: dict | np.ndarray | bytes | None):
 
-        if "EM Dataset" not in values:
-            values = {"EM Dataset": values}
+        self._metadata = self.validate_em_metadata(values)
 
-        missing_keys = []
-        for key in self.default_metadata["EM Dataset"]:
-            if key not in values["EM Dataset"]:
-                missing_keys += [key]
-
-        if missing_keys:
-            raise KeyError(
-                f"'{missing_keys}' argument(s) missing from the input metadata."
-            )
-
-        for key, value in values["EM Dataset"].items():
-            if isinstance(value, str):
-                try:
-                    values["EM Dataset"][key] = uuid.UUID(value)
-                except ValueError:
-                    continue
-
-        self._metadata = values
-        self.workspace.update_attribute(self, "metadata")
+        if self.on_file:
+            self.workspace.update_attribute(self, "metadata")
 
         for elem in ["receivers", "transmitters", "base_stations"]:
             dependent = getattr(self, elem, None)
             if dependent is not None and dependent is not self:
-                setattr(dependent, "_metadata", values)
-                self.workspace.update_attribute(dependent, "metadata")
+                setattr(dependent, "_metadata", self._metadata)
+                if self.on_file:
+                    self.workspace.update_attribute(dependent, "metadata")
 
     @property
     def receivers(self) -> BaseEMSurvey | None:
@@ -582,6 +538,59 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             if value.name not in self.metadata["EM Dataset"]["Property groups"]:
                 self.metadata["EM Dataset"]["Property groups"].append(value.name)
 
+    def validate_em_metadata(self, values: dict | np.ndarray | bytes | None) -> dict:
+        """
+        Validate and format the metadata structure for EM entities.
+
+        :param values: Metadata dictionary.
+
+        :return: Validated and formatted metadata dictionary.
+        """
+        if values is None:
+            metadata = self.default_metadata
+
+            if self.type is not None:
+                metadata["EM Dataset"][self.type] = self.uid
+
+            values = metadata
+
+        if isinstance(values, np.ndarray):
+            values = values[0]
+
+        if isinstance(values, bytes):
+            values = str_json_to_dict(values)
+
+        if not isinstance(values, dict):
+            raise TypeError("'metadata' must be of type 'dict'")
+
+        if "EM Dataset" not in values:
+            values = {"EM Dataset": values}
+
+        missing_keys = []
+        for key in self.default_metadata["EM Dataset"]:
+            if key not in values["EM Dataset"]:
+                missing_keys += [key]
+
+        if missing_keys:
+            raise KeyError(
+                f"'{missing_keys}' argument(s) missing from the input metadata."
+            )
+
+        for key, value in values["EM Dataset"].items():
+            values["EM Dataset"][key] = str2uuid(value)
+
+        if "Property groups" in values["EM Dataset"]:
+            prop_groups = []
+            for value in values["EM Dataset"]["Property groups"]:
+                prop_group = self.get_property_group(str2uuid(value))[0]
+
+                if isinstance(prop_group, PropertyGroup):
+                    prop_groups.append(prop_group.name)
+
+            values["EM Dataset"]["Property groups"] = prop_groups
+
+        return values
+
     def _super_copy(
         self,
         parent: Group | Workspace | None = None,
@@ -604,8 +613,9 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         )
 
 
-class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve):
+class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
     __INPUT_TYPE = ["Rx"]
+    _TYPE_UID: uuid.UUID | None = None
 
     @property
     def base_receiver_type(self):
@@ -632,9 +642,10 @@ class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve):
         self.edit_em_metadata({"Loop radius": value})
 
 
-class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
+class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
     __INPUT_TYPE = ["Tx and Rx"]
     _tx_id_property: ReferencedData | None = None
+    _TYPE_UID: uuid.UUID | None = None
 
     @property
     def base_receiver_type(self):
@@ -803,7 +814,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
             self.edit_em_metadata({"Tx ID property": getattr(value, "uid", None)})
 
 
-class AirborneEMSurvey(BaseEMSurvey, Curve):
+class AirborneEMSurvey(BaseEMSurvey, Curve, ABC):
     __INPUT_TYPE = ["Rx", "Tx", "Tx and Rx"]
     _PROPERTY_MAP = {
         "crossline_offset": "Crossline offset",
@@ -813,6 +824,7 @@ class AirborneEMSurvey(BaseEMSurvey, Curve):
         "vertical_offset": "Vertical offset",
         "yaw": "Yaw",
     }
+    _TYPE_UID: uuid.UUID | None = None
 
     @property
     def crossline_offset(self) -> float | uuid.UUID | None:
@@ -935,7 +947,7 @@ class AirborneEMSurvey(BaseEMSurvey, Curve):
         self.set_metadata("yaw", value)
 
 
-class FEMSurvey(BaseEMSurvey):
+class FEMSurvey(BaseEMSurvey, ABC):
     __UNITS = __UNITS = [
         "Hertz (Hz)",
         "KiloHertz (kHz)",
@@ -956,7 +968,7 @@ class FEMSurvey(BaseEMSurvey):
         return self.__UNITS
 
 
-class TEMSurvey(BaseEMSurvey):
+class TEMSurvey(BaseEMSurvey, ABC):
     __UNITS = [
         "Seconds (s)",
         "Milliseconds (ms)",

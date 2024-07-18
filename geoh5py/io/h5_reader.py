@@ -26,7 +26,14 @@ import h5py
 import numpy as np
 
 from ..shared import FLOAT_NDV, fetch_h5_handle
-from ..shared.utils import KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid, str2uuid
+from ..shared.utils import (
+    INV_KEY_MAP,
+    KEY_MAP,
+    as_str_if_utf8_bytes,
+    as_str_if_uuid,
+    str2uuid,
+    str_json_to_dict,
+)
 
 
 class H5Reader:
@@ -40,7 +47,7 @@ class H5Reader:
         file: str | h5py.File,
         uid: uuid.UUID,
         entity_type: str,
-    ) -> tuple[dict, dict, dict] | None:
+    ) -> tuple[dict, dict, dict] | tuple[None, None, None]:
         """
         Get attributes of an :obj:`~geoh5py.shared.entity.Entity`.
 
@@ -66,24 +73,30 @@ class H5Reader:
                 entity = h5file[name][entity_type].get(as_str_if_uuid(uid))
 
             if entity is None:
-                return None
+                return None, None, None
 
-            attributes: dict = {"entity": {}}
-            type_attributes: dict = {"entity_type": {}}
+            attributes: dict = {}
+            type_attributes: dict = {}
             property_groups: dict = {}
 
             for key, value in entity.attrs.items():
-                attributes["entity"][key] = value
+                attributes[INV_KEY_MAP.get(key, key)] = value
+
+            # TODO Use lazy pointer to data
+            if entity_type != "Data":
+                for key, value in entity.items():
+                    if (
+                        key in INV_KEY_MAP
+                        and isinstance(value, h5py.Dataset)
+                        and value.ndim > 0
+                    ):
+                        attributes[INV_KEY_MAP[key]] = value[:]
 
             if "Type" in entity:
-                type_attributes["entity_type"] = cls.fetch_type_attributes(
-                    entity["Type"]
-                )
+                type_attributes = cls.fetch_type_attributes(entity["Type"])
             # Check if the entity has property_group
             if "PropertyGroups" in entity:
                 property_groups = cls.fetch_property_groups(file, uid)
-
-            attributes["entity"]["on_file"] = True
 
         return attributes, type_attributes, property_groups
 
@@ -276,24 +289,14 @@ class H5Reader:
             name = list(h5file)[0]
 
             try:
-                metadata = np.r_[
-                    h5file[name][entity_type][as_str_if_uuid(uid)][argument]
+                value = np.r_[h5file[name][entity_type][as_str_if_uuid(uid)][argument]][
+                    0
                 ]
-                metadata = as_str_if_utf8_bytes(metadata[0])
 
             except KeyError:
                 return None
 
-        metadata = json.loads(metadata)
-
-        for key, val in metadata.items():
-            if isinstance(val, dict):
-                for sub_key, sub_val in val.items():
-                    metadata[key][sub_key] = str2uuid(sub_val)
-            else:
-                metadata[key] = str2uuid(val)
-
-        return metadata
+        return str_json_to_dict(value)
 
     @classmethod
     def fetch_project_attributes(cls, file: str | h5py.File) -> dict[Any, Any]:
@@ -379,7 +382,7 @@ class H5Reader:
         """
         type_attributes = {}
         for key, value in type_handle.attrs.items():
-            type_attributes[key] = value
+            type_attributes[INV_KEY_MAP.get(key, key)] = value
 
         if "Color map" in type_handle:
             type_attributes["color_map"] = {}

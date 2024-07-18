@@ -17,15 +17,12 @@
 
 from __future__ import annotations
 
-import uuid
-from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
 
 import numpy as np
 
 from ..data import CommentsData, Data
-from ..shared.entity import Entity
 from ..shared.entity_container import EntityContainer
 from .group_type import GroupType
 
@@ -37,44 +34,6 @@ class Group(EntityContainer):
     """Base Group class"""
 
     _default_name = "Group"
-
-    def __init__(self, group_type: GroupType, **kwargs):
-
-        if not isinstance(group_type, GroupType):
-            raise TypeError(
-                f"Input 'group_type' must be of type {GroupType}, not {type(group_type)}"
-            )
-
-        if group_type.name == "Entity":
-            group_type.name = self._default_name
-
-        self._entity_type = group_type
-
-        super().__init__(**kwargs)
-
-    @classmethod
-    @abstractmethod
-    def default_type_uid(cls) -> uuid.UUID | None:
-        """Abstract method to return the default type uid for the class."""
-
-    def add_children(self, children: list[Entity]):
-        """
-        :param children: Add a list of entities as
-            :obj:`~geoh5py.shared.entity.Entity.children`
-        """
-        if not isinstance(children, list):
-            children = [children]
-
-        for child in children:
-            if child in self._children:
-                continue
-
-            if not isinstance(child, Entity):
-                raise TypeError(
-                    f"Child must be an instance of Entity, not {type(child)}"
-                )
-
-            self._children.append(child)
 
     def add_comment(self, comment: str, author: str | None = None):
         """
@@ -233,3 +192,17 @@ class Group(EntityContainer):
     def find_or_create_type(cls, workspace: Workspace, **kwargs) -> GroupType:
         kwargs["entity_class"] = cls
         return GroupType.find_or_create(workspace, **kwargs)
+
+    def validate_entity_type(self, entity_type: GroupType | None) -> GroupType:
+        """
+        Validate the entity type.
+        """
+        if not isinstance(entity_type, GroupType):
+            raise TypeError(
+                f"Input 'entity_type' must be of type {GroupType}, not {type(entity_type)}"
+            )
+
+        if entity_type.name == "Entity":
+            entity_type.name = self.name
+
+        return entity_type

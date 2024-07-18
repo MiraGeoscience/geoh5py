@@ -51,6 +51,23 @@ tag = {
 }
 
 
+def test_attribute_setters():
+    workspace = Workspace()
+    image = np.random.randint(0, 255, (128, 128))
+    gimage = GeoImage.create(workspace, image=image, cells=[[0, 0, 0, 0], [1, 1, 1, 1]])
+
+    with pytest.raises(
+        TypeError, match="Attribute 'cells' must be provided as type numpy.ndarray"
+    ):
+        gimage.cells = "abc"
+
+    with pytest.raises(ValueError, match="Array of cells should be of shape"):
+        gimage.cells = [[0, 0, 0], [1, 1, 1]]
+
+    with pytest.raises(TypeError, match="Indices array must be of integer type"):
+        gimage.cells = np.array([[0, 0, 0, 0], [1, 1, 1, 1]], ndmin=2, dtype=float)
+
+
 def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
     with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
         pixels = np.r_[
@@ -65,19 +82,6 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
         ]
 
         geoimage = GeoImage.create(workspace, name="MyGeoImage")
-
-        with pytest.raises(AttributeError, match="Vertices are not defined"):
-            geoimage.copy_from_extent(np.vstack(([125, 145], [125, 145])))
-
-        with pytest.raises(AttributeError, match="The image has no vertices"):
-            _ = geoimage.dip
-
-        with pytest.raises(AttributeError, match="The image has no vertices"):
-            geoimage.dip = 66
-
-        assert geoimage.extent is None
-
-        assert geoimage.default_vertices is None
 
         assert geoimage.image_georeferenced is None
 
@@ -99,12 +103,14 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
         with pytest.raises(ValueError, match="Shape of the 'image' must be a 2D or "):
             geoimage.image = np.random.randn(12, 12, 4)
 
-        with pytest.raises(AttributeError, match="GeoImage has no vertices"):
-            geoimage.to_grid2d()
+        grid2d = geoimage.to_grid2d()
+        assert grid2d.children == []
 
         assert geoimage.image is None
 
-        with pytest.raises(AttributeError, match="There is no image to"):
+        with pytest.raises(
+            AttributeError, match="An 'image' must be set before georeferencing."
+        ):
             geoimage.set_tag_from_vertices()
 
         with pytest.raises(AttributeError, match="The image is not georeferenced"):
@@ -112,9 +118,9 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
 
         geoimage.image = np.random.randint(0, 255, (128, 128))
 
-        assert (
-            geoimage.extent == np.array([[0.0, 0.0, 0.0], [128.0, 128.0, 0.0]])
-        ).all()
+        np.testing.assert_allclose(
+            geoimage.extent, np.array([[0.0, 0.0, 0.0], [128.0, 128.0, 0.0]])
+        )
 
         geoimage.georeferencing_from_image()
 
@@ -131,11 +137,19 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
         ):
             geoimage.georeference(pixels, points[0, :])
 
-        geoimage.image = np.random.randint(0, 255, (128, 64, 3))
+        with pytest.raises(
+            AttributeError,
+            match="The 'image' property cannot be reset. Consider creating a new object",
+        ):
+            geoimage.image = np.random.randint(0, 255, (128, 64, 3))
+
+        geoimage = GeoImage.create(
+            workspace, name="MyGeoImage", image=np.random.randint(0, 255, (128, 64, 3))
+        )
         geoimage.georeference(pixels, points)
         np.testing.assert_almost_equal(
             geoimage.vertices,
-            np.asarray([[0, 15, 6], [10, 15, 6], [10, 5, 0], [0, 5, 0]]),
+            np.asarray([[0, 15, 6], [10, 15, 6], [10, 5, 0], [0, 5, 0]]).astype(float),
             err_msg="Issue geo-referencing the coordinates.",
         )
 
@@ -168,7 +182,9 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
         ), "Error writing and re-loading the image file."
 
         with Workspace.create(tmp_path / r"geo_image_test2.geoh5") as new_workspace:
-            geoimage.copy(parent=new_workspace)
+            geoimage.copy(parent=new_workspace, clear_cache=True)
+
+            assert geoimage.cells is not None
 
             rec_image = new_workspace.get_entity("MyGeoImage")[0]
 
@@ -180,8 +196,11 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
 
             geoimage.vertices = geoimage.vertices
 
+            assert np.all(geoimage.mask_by_extent(np.c_[[9, 10], [9, 10]]))
+            assert geoimage.mask_by_extent(np.c_[[90, 100], [90, 100]]) is None
+
             # Test copy from extent that clips one corner
-            new_image = geoimage.copy(extent=[[9, 9], [10, 10]])
+            new_image = geoimage.copy_from_extent(np.c_[[9, 10], [9, 10]])
             assert new_image is not None, "Error copying from extent."
 
             with pytest.warns(UserWarning, match="Image could not be cropped."):
@@ -271,13 +290,15 @@ def test_georeference_image(tmp_path):
         image = Image.open(f"{str(tmp_path)}/testtif.tif").convert("L")
         geoimage = GeoImage.create(workspace, name="test_area", image=image)
 
+        assert geoimage is not None
+
         image = Image.fromarray(
             np.random.randint(0, 255, (128, 128, 4)).astype("uint8"), "RGBA"
         )
 
-        geoimage.image = image
-
-        geoimage.to_grid2d(name="CMYK")
+        geoimage = GeoImage.create(workspace, name="to_CMYK", image=image)
+        new_grid = geoimage.to_grid2d(name="CMYK")
+        assert len(new_grid.children) == 4
 
 
 def test_rotation_setter(tmp_path):
@@ -470,21 +491,17 @@ def test_image_rotation(tmp_path):
         np.testing.assert_array_almost_equal(geoimage.rotation, 0)
         np.testing.assert_array_almost_equal(geoimage.dip, 0)
 
-        geoimage2 = geoimage.copy()
-        geoimage2.rotation = 66
-
+        geoimage2 = GeoImage.create(
+            workspace, name="test_area", image=image, rotation=66
+        )
         np.testing.assert_array_almost_equal(geoimage2.rotation, 66)
 
-        geoimage3 = geoimage.copy()
-
-        geoimage3.dip = 44
-
+        geoimage3 = GeoImage.create(workspace, name="test_area", image=image, dip=44)
         np.testing.assert_array_almost_equal(geoimage3.dip, 44)
 
-        geoimage4 = geoimage.copy()
-
-        geoimage4.dip = 44
-        geoimage4.rotation = 66
+        geoimage4 = GeoImage.create(
+            workspace, name="test_area", image=image, dip=44, rotation=66
+        )
 
         np.testing.assert_array_almost_equal(geoimage4.dip, 44)
         np.testing.assert_array_almost_equal(geoimage4.rotation, 66)
@@ -525,7 +542,7 @@ def test_image_grid_rotation_conversion(tmp_path):
 
         geoimage2 = grid2d.to_geoimage(0, normalize=False, ignore=["tag"])
 
-        compare_entities(geoimage, geoimage2, ignore=["_uid"])
+        compare_entities(geoimage, geoimage2, ignore=["_uid", "_image_data"])
 
         geoimage.georeferencing_from_image()
 

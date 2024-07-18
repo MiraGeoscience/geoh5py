@@ -15,34 +15,33 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from geoh5py.objects import Points
+from geoh5py.objects import Grid2D
 from geoh5py.workspace import Workspace
 
 
-def test_metadata(tmp_path):
+def test_attribute_setters():
+    with Workspace() as workspace:
 
-    h5file_path = tmp_path / r"testPoints.geoh5"
-    workspace = Workspace.create(h5file_path)
-    points = Points.create(workspace, vertices=np.random.randn(12, 3), allow_move=False)
+        grid = Grid2D.create(workspace)
 
-    assert points.metadata is None
+        with pytest.raises(TypeError, match="Rotation angle must be a float."):
+            grid.rotation = np.r_[0, 1]
 
-    points.metadata = {"test": "test"}
+        with pytest.raises(TypeError, match="Attribute 'origin' must be a list"):
+            grid.origin = "abc"
 
-    assert points.metadata == {"test": "test"}
+        with pytest.raises(
+            ValueError, match="Attribute 'origin' must be a list or array"
+        ):
+            grid.origin = np.r_[0, 1]
 
-    points.metadata = {"test2": "test"}
-
-    assert points.metadata == {"test2": "test"}
-
-    points.metadata = None
-
-    assert points.metadata is None
-
-    with pytest.raises(TypeError, match="Input metadata must be of type"):
-        points.metadata = "bidon"
+        with pytest.raises(ValueError, match="Array of 'origin' must be of dtype"):
+            grid.origin = np.asarray(
+                [0, 0, 0], dtype=np.dtype([("x", int), ("y", int), ("z", int)])
+            )

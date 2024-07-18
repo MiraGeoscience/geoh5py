@@ -35,6 +35,17 @@ def test_octree(tmp_path: Path):
 
     with Workspace.create(h5file_path) as workspace:
         # Create an octree mesh with variable dimensions
+        with pytest.raises(TypeError, match=r"Attribute 'u_count' must"):
+            Octree.create(
+                workspace,
+                u_count=32.0,
+            )
+
+        with pytest.raises(ValueError, match="power of 2"):
+            Octree.create(
+                workspace,
+                u_count=15,
+            )
 
         mesh = Octree.create(
             workspace,
@@ -55,8 +66,7 @@ def test_octree(tmp_path: Path):
             "w_count",
         ]:
             with pytest.raises(
-                TypeError,
-                match=re.escape(f"Attribute '{attr}' must be type(int) in power of 2."),
+                AttributeError,
             ):
                 setattr(mesh, attr, 12.0)
 
@@ -87,23 +97,22 @@ def test_change_octree_cells(tmp_path: Path):
     name = "MyTestOctree"
     h5file_path = tmp_path / r"octree.geoh5"
 
+    params = {
+        "origin": [0, 0, 0],
+        "u_count": 32,
+        "v_count": 16,
+        "w_count": 8,
+        "u_cell_size": 1.0,
+        "v_cell_size": 1.0,
+        "w_cell_size": 2.0,
+        "rotation": 45,
+    }
     with Workspace.create(h5file_path) as workspace:
         # Create an octree mesh with variable dimensions
 
-        mesh = Octree.create(
-            workspace,
-            name=name,
-            origin=[0, 0, 0],
-            u_count=32,
-            v_count=16,
-            w_count=8,
-            u_cell_size=1.0,
-            v_cell_size=1.0,
-            w_cell_size=2.0,
-            rotation=45,
-        )
+        orig_mesh = Octree.create(workspace, name="original", **params)
 
-    base_cells = mesh.octree_cells
+    base_cells = orig_mesh.octree_cells
 
     # Refinement on first cell
     new_cells = np.vstack(
@@ -117,16 +126,22 @@ def test_change_octree_cells(tmp_path: Path):
     octree_cells = np.vstack([new_cells, np.asarray(base_cells.tolist())[1:]])
 
     with workspace.open():
-        mesh.octree_cells = octree_cells
+        mesh = Octree.create(workspace, name=name, octree_cells=octree_cells, **params)
 
     with workspace.open():
         rec_obj = workspace.get_entity(name)[0]
         compare_entities(mesh, rec_obj)
+
+        rec_obj.add_data({"values": {"values": np.random.randn(rec_obj.n_cells)}})
+        extent_grid = rec_obj.copy_from_extent(np.vstack([[-3, 3], [3, 9]]))
+        assert (~np.isnan(extent_grid.children[0].values)).sum() == 3
 
     # Revert back using recarray
     with workspace.open():
-        mesh.octree_cells = base_cells
+        base_mesh = Octree.create(
+            workspace, name="base_cells", octree_cells=base_cells, **params
+        )
 
     with workspace.open():
-        rec_obj = workspace.get_entity(name)[0]
-        compare_entities(mesh, rec_obj)
+        rec_obj = workspace.get_entity("base_cells")[0]
+        compare_entities(base_mesh, rec_obj)

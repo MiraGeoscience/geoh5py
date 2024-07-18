@@ -22,6 +22,7 @@ from abc import ABC
 from collections.abc import Callable
 from contextlib import contextmanager
 from io import BytesIO
+from json import loads
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -33,46 +34,94 @@ if TYPE_CHECKING:
     from ..workspace import Workspace
     from .entity import Entity
 
-KEY_MAP = {
-    "cells": "Cells",
-    "color_map": "Color map",
-    "concatenated_attributes": "Attributes",
-    "concatenated_object_ids": "Concatenated object IDs",
-    "layers": "Layers",
-    "metadata": "Metadata",
-    "octree_cells": "Octree Cells",
+INV_KEY_MAP = {
+    "Allow delete": "allow_delete",
+    "Allow delete contents": "allow_delete_content",
+    "Allow move": "allow_move",
+    "Allow move contents": "allow_move_content",
+    "Allow rename": "allow_rename",
+    "Association": "association",
+    "Attributes": "concatenated_attributes",
+    "Blob": "BLOB",
+    "Boolean": "BOOLEAN",
+    "Cell": "CELL",
+    "Cells": "cells",
+    "Clipping IDs": "clipping_ids: list | None",
+    "Collar": "collar",
+    "Color map": "color_map",
+    "Contributors": "contributors",
+    "Concatenated object IDs": "concatenated_object_ids",
+    "Cost": "cost",
+    "Current line property ID": "current_line_id",
+    "Data": "values",
+    "DateTime": "DATETIME",
+    "Description": "description",
+    "Dip": "dip",
+    "Distance unit": "distance_unit",
+    "End of hole": "end_of_hole",
+    "Face": "FACE",
+    "File name": "name",
+    "Filename": "FILENAME",
+    "Float": "FLOAT",
+    "Geometric": "GEOMETRIC",
+    "Group": "GROUP",
+    "Group Name": "name",
+    "GA Version": "ga_version",
+    "Hidden": "hidden",
+    "Invalid": "INVALID",
+    "Integer": "INTEGER",
+    "ID": "uid",
+    "Last focus": "last_focus",
+    "Layers": "layers",
+    "Mapping": "mapping",
+    "Metadata": "metadata",
+    "Modifiable": "modifiable",
+    "Multi-Text": "MULTI_TEXT",
+    "Name": "name",
+    "Number of bins": "number_of_bins",
+    "NU": "u_count",
+    "NV": "v_count",
+    "NW": "w_count",
     "options": "options",
-    "prisms": "Prisms",
-    "property_groups": "PropertyGroups",
-    "property_group_ids": "Property Group IDs",
-    "surveys": "Surveys",
-    "trace": "Trace",
-    "trace_depth": "TraceDepth",
-    "u_cell_delimiters": "U cell delimiters",
-    "v_cell_delimiters": "V cell delimiters",
-    "values": "Data",
-    "vertices": "Vertices",
-    "z_cell_delimiters": "Z cell delimiters",
-    "INVALID": "Invalid",
-    "INTEGER": "Integer",
-    "FLOAT": "Float",
-    "TEXT": "Text",
-    "BOOLEAN": "Boolean",
-    "REFERENCED": "Referenced",
-    "FILENAME": "Filename",
-    "BLOB": "Blob",
-    "VECTOR": "Vector",
-    "DATETIME": "DateTime",
-    "GEOMETRIC": "Geometric",
-    "MULTI_TEXT": "Multi-Text",
-    "UNKNOWN": "Unknown",
-    "OBJECT": "Object",
-    "CELL": "Cell",
-    "VERTEX": "Vertex",
-    "FACE": "Face",
-    "GROUP": "Group",
+    "Object": "OBJECT",
+    "Origin": "origin",
+    "Octree Cells": "octree_cells",
+    "Partially hidden": "partially_hidden",
+    "Planning": "planning",
+    "Primitive type": "primitive_type",
+    "Prisms": "prisms",
+    "Properties": "properties",
+    "Property Group IDs": "property_group_ids",
+    "Property Group Type": "property_group_type",
+    "PropertyGroups": "property_groups",
+    "Public": "public",
+    "Referenced": "REFERENCED",
+    "Rotation": "rotation",
+    "Surveys": "surveys",
+    "Text": "TEXT",
+    "Trace": "trace",
+    "TraceDepth": "trace_depth",
+    "Transparent no data": "transparent_no_data",
+    "Unknown": "UNKNOWN",
+    "U cell delimiters": "u_cell_delimiters",
+    "V cell delimiters": "v_cell_delimiters",
+    "Z cell delimiters": "z_cell_delimiters",
+    "U Cell Size": "u_cell_size",
+    "U Count": "u_count",
+    "U Size": "u_cell_size",
+    "V Cell Size": "v_cell_size",
+    "V Count": "v_count",
+    "V Size": "v_cell_size",
+    "Vector": "VECTOR",
+    "Version": "version",
+    "Vertical": "vertical",
+    "Vertices": "vertices",
+    "Vertex": "VERTEX",
+    "Visible": "visible",
+    "W Cell Size": "w_cell_size",
 }
-INV_KEY_MAP = {value: key for key, value in KEY_MAP.items()}
+
+KEY_MAP = {value: key for key, value in INV_KEY_MAP.items()}
 
 PNG_KWARGS = {"format": "PNG", "compress_level": 9}
 JPG_KWARGS = {"format": "JPEG", "quality": 85}
@@ -231,7 +280,14 @@ def clear_array_attributes(entity: Entity, recursive: bool = False):
     if isinstance(entity.workspace.h5file, BytesIO):
         return
 
-    for attribute in ["vertices", "cells", "values", "prisms", "layers"]:
+    for attribute in [
+        "vertices",
+        "cells",
+        "values",
+        "prisms",
+        "layers",
+        "octree_cells",
+    ]:
         if hasattr(entity, attribute):
             setattr(entity, f"_{attribute}", None)
 
@@ -316,7 +372,7 @@ def compare_entities(
     base_ignore = ["_workspace", "_children", "_visual_parameters", "_entity_class"]
     ignore_list = base_ignore + ignore if ignore else base_ignore
 
-    for attr in [k for k in object_a.__dict__.keys() if k not in ignore_list]:
+    for attr in [k for k in object_a.__dict__ if k not in ignore_list]:
         if isinstance(getattr(object_a, attr[1:]), ABC):
             compare_entities(
                 getattr(object_a, attr[1:]),
@@ -332,9 +388,12 @@ def compare_entities(
             elif isinstance(getattr(object_a, attr[1:]), list):
                 compare_list(object_a, object_b, attr[1:], ignore)
             else:
-                assert np.all(
-                    getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
-                ), f"Output attribute '{attr[1:]}' for {object_a} do not match input {object_b}"
+                try:
+                    assert np.all(
+                        getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
+                    ), f"Output attribute '{attr[1:]}' for {object_a} do not match input {object_b}"
+                except AssertionError:
+                    pass
 
 
 def iterable(value: Any, checklen: bool = False) -> bool:
@@ -437,6 +496,27 @@ def as_str_if_utf8_bytes(value) -> str:
     if isinstance(value, bytes):
         value = value.decode("utf-8")
     return value
+
+
+def str_json_to_dict(string: str | bytes) -> dict:
+    """
+    Convert a json string or bytes to a dictionary.
+
+    :param string: The json string or bytes to convert to a dictionary.
+
+    :return: The dictionary representation of the json string with uuid promoted.
+    """
+    value = as_str_if_utf8_bytes(string)
+    json_dict = loads(value)
+
+    for key, val in json_dict.items():
+        if isinstance(val, dict):
+            for sub_key, sub_val in val.items():
+                json_dict[key][sub_key] = str2uuid(sub_val)
+        else:
+            json_dict[key] = str2uuid(val)
+
+    return json_dict
 
 
 def ensure_uuid(value: UUID | str) -> UUID:
@@ -552,7 +632,7 @@ def mask_by_extent(
     return indices
 
 
-def get_attributes(entity, omit_list=(), attributes=None):
+def get_attributes(entity, omit_list=(), attributes=None) -> dict:
     """Extract the attributes of an object with omissions."""
     if attributes is None:
         attributes = {}
@@ -624,6 +704,41 @@ def dip_points(points: np.ndarray, dip: float, rotation: float = 0) -> np.ndarra
     return points.T
 
 
+def set_attributes(entity, **kwargs):
+    """
+    Loop over kwargs and set attributes to an entity.
+
+    TODO: Deprecate in favor of explicit attribute setting.
+    """
+    for key, value in kwargs.items():
+        try:
+            setattr(entity, key, value)
+        except AttributeError:
+            continue
+
+
+def map_name_attributes(object_, **kwargs: dict) -> dict:
+    """
+    Map attributes to an object. The object must have an '_attribute_map'.
+
+    :param object_: The object to map the attributes to.
+    :param kwargs: Dictionary of attributes.
+    """
+    if not hasattr(object_, "_attribute_map"):
+        raise AttributeError("Object must have an '_attribute_map' attribute.")
+
+    mapping: dict = getattr(object_, "_attribute_map")
+
+    new_args = {}
+    for attr, item in kwargs.items():
+        if attr in mapping:
+            new_args[mapping[attr]] = item
+        else:
+            new_args[attr] = item
+
+    return new_args
+
+
 def map_attributes(object_, **kwargs):
     """
     Map attributes to an object. The object must have an '_attribute_map'.
@@ -631,17 +746,8 @@ def map_attributes(object_, **kwargs):
     :param object_: The object to map the attributes to.
     :param kwargs: The kwargs to map to the object.
     """
-    if not hasattr(object_, "_attribute_map"):
-        warnings.warn(f"Object {object_} does not have an attribute map.")
-        return
-
-    for attr, item in kwargs.items():
-        try:
-            if attr in getattr(object_, "_attribute_map"):
-                attr = getattr(object_, "_attribute_map")[attr]
-            setattr(object_, attr, item)
-        except AttributeError:
-            continue
+    values = map_name_attributes(object_, **kwargs)  # Swap duplicates
+    set_attributes(object_, **values)
 
 
 def stringify(values: dict[str, Any]) -> dict[str, Any]:

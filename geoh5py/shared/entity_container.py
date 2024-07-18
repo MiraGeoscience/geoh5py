@@ -23,11 +23,9 @@ import uuid
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING
-from warnings import warn
 
 import numpy as np
 
-from ..shared.utils import str2uuid
 from .entity import Entity
 
 if TYPE_CHECKING:
@@ -42,13 +40,37 @@ class EntityContainer(Entity):
     Base Entity class
     """
 
-    def __init__(self, uid: uuid.UUID | None = None, **kwargs):
-        self._uid = (
-            str2uuid(uid) if isinstance(str2uuid(uid), uuid.UUID) else uuid.uuid4()
-        )
-        self._children: list = []
+    _TYPE_UID: uuid.UUID | None = None
 
-        super().__init__(uid, **kwargs)
+    def __init__(self, **kwargs):
+        self._children: list = []
+        super().__init__(**kwargs)
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID | None:
+        """
+        Default uuid for the entity type.
+        """
+        return cls._TYPE_UID
+
+    def add_children(self, children: list):
+        """
+        :param children: Add a list of entities as
+            :obj:`~geoh5py.shared.entity.Entity.children`
+        """
+        if not isinstance(children, list):
+            children = [children]
+
+        for child in children:
+            if child in self._children:
+                continue
+
+            if not isinstance(child, Entity):
+                raise TypeError(
+                    f"Child must be an instance of Entity, not {type(child)}"
+                )
+
+            self._children.append(child)
 
     def add_file(self, file: str | Path | bytes, name: str = "filename.dat"):
         """
@@ -188,38 +210,6 @@ class EntityContainer(Entity):
             child.name for child in self.children if isinstance(child, entity_type)
         ]
         return sorted(name_list)
-
-    def reference_to_uid(
-        self, value: Entity | PropertyGroup | str | uuid.UUID
-    ) -> list[uuid.UUID]:
-        """
-        General entity reference translation.
-
-        Todo: Remove in future release
-
-        :param value: Either an `Entity`, string or uuid
-
-        :return: List of unique identifier associated with the input reference.
-        """
-        warn(
-            "EntityContainer.reference_to_uid() is deprecated "
-            "and will be removed in versions 0.10.0.",
-            DeprecationWarning,
-        )
-
-        children_uid = [child.uid for child in self.children]
-        if hasattr(value, "uid"):
-            uid = [value.uid]
-        elif isinstance(value, str):
-            uid = [
-                obj.uid
-                for obj in self.workspace.get_entity(value)
-                if (obj is not None) and (obj.uid in children_uid)
-            ]
-        elif isinstance(value, uuid.UUID):
-            uid = [value]
-
-        return uid
 
     def remove_children(self, children: list[shared.Entity | PropertyGroup]):
         """

@@ -34,15 +34,12 @@ def create_drape_model(workspace: Workspace, alpha: float = 0.0):
     x = np.sin(2 * np.arange(n_col) / n_col * np.pi)
     y = np.cos(2 * np.arange(n_col) / n_col * np.pi) + alpha
     top = bottom.flatten()[::n_row] + 0.1
-    drape = DrapeModel.create(workspace)
 
     layers = np.c_[i.flatten(), j.flatten(), bottom.flatten()]
-    drape.layers = layers
-
     prisms = np.c_[
         x, y, top, np.arange(0, i.flatten().shape[0], n_row), np.tile(n_row, n_col)
     ]
-    drape.prisms = prisms
+    drape = DrapeModel.create(workspace, prisms=prisms, layers=layers)
 
     drape.add_data(
         {
@@ -79,7 +76,7 @@ def test_merge_drape_model(tmp_path):  # pylint: disable=too-many-locals
     h5file_path_2 = tmp_path / "drapedmodel2.geoh5"
     with Workspace.create(h5file_path_2) as workspace:
         drape_model_merged = DrapeModelMerger.merge_objects(
-            workspace, drape_models, name="merged", children=[Points(workspace)]
+            workspace, drape_models, name="merged", children=[Points.create(workspace)]
         )
 
         # test the output
@@ -120,7 +117,11 @@ def test_merge_drape_model_attribute_error(tmp_path):
             drape_model = create_drape_model(workspace, alpha=i * 2.5)
             drape_models.append(drape_model)
 
-        drape_models[1] = DrapeModel(workspace)
+        drape_models[1] = DrapeModel.create(
+            workspace, layers=(0, 0, -1), prisms=(0, 0, 0, 0, 0)
+        )
 
-        with pytest.raises(AttributeError, match="All entities must have prisms"):
+        with pytest.raises(
+            ValueError, match="All DrapeModel entities must have at least 2 prisms"
+        ):
             _ = DrapeModelMerger.merge_objects(workspace, drape_models)

@@ -56,7 +56,7 @@ def test_data_instantiation(data_class, tmp_path):
         assert workspace.find_type(data_type.uid, ObjectType) is None
 
         created_data = data_class(
-            data_type, association=DataAssociationEnum.VERTEX, name="test"
+            entity_type=data_type, association=DataAssociationEnum.VERTEX, name="test"
         )
 
         assert created_data.uid is not None
@@ -75,6 +75,7 @@ def test_data_instantiation(data_class, tmp_path):
         assert workspace.find_type(data_type_uid, DataType) is not None
 
         created_data_uid = created_data.uid
+        workspace.remove_entity(created_data)
         created_data = None  # type: ignore
         # no more reference on created_data, so it should be gone from the workspace
         assert workspace.find_data(created_data_uid) is None
@@ -82,7 +83,7 @@ def test_data_instantiation(data_class, tmp_path):
         # no more reference on data_type, so it should be gone from the workspace
         assert workspace.find_type(data_type_uid, DataType) is None
 
-        with pytest.raises(TypeError, match="Input 'data_type' must be "):
+        with pytest.raises(TypeError, match="Input 'entity_type' must be "):
             data.TextData(data_type="bidon")
 
         with pytest.raises(NotImplementedError, match="Only add_data"):
