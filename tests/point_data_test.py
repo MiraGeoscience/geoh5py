@@ -87,7 +87,7 @@ def test_remove_point_data(tmp_path):
         pt = Points.create(workspace)
         assert pt.n_vertices == 1
 
-        with pytest.raises(ValueError, match="Array of vertices should be of shape"):
+        with pytest.raises(ValueError, match="Array of 'vertices' should be of shape"):
             Points.create(workspace, vertices=np.r_[1, 2, 3])
 
         points = Points.create(workspace, vertices=np.random.randn(12, 3))
