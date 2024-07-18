@@ -136,15 +136,14 @@ class Drillhole(Points):
 
         value = np.asarray(tuple(value), dtype=self.__COLLAR_DTYPE)
         self._collar = value
-
         self._locations = None
-        self._trace = None
-        self._trace_depth = None
 
         if self.on_file:
             self.workspace.update_attribute(self, "attributes")
-            if self.trace is not None:
 
+            if self.trace is not None:
+                self._trace = None
+                self._trace_depth = None
                 self.workspace.update_attribute(self, "trace")
                 self.workspace.update_attribute(self, "trace_depth")
 
@@ -291,11 +290,13 @@ class Drillhole(Points):
 
         self._surveys = self.format_survey_values(array)
         self.end_of_hole = float(self._surveys["Depth"][-1])
-        self._trace = None
 
         if self.on_file:
             self.workspace.update_attribute(self, "surveys")
-            self.workspace.update_attribute(self, "trace")
+
+            if self.trace is not None:
+                self._trace = None
+                self.workspace.update_attribute(self, "trace")
 
         self._locations = None
 
