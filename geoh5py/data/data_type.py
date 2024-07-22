@@ -157,7 +157,7 @@ class DataType(EntityType):
         :return: EntityType
         """
         primitive_type = kwargs.get("primitive_type", None)
-        if primitive_type and primitive_type.upper() == "GEOMETRIC":
+        if isinstance(primitive_type, str) and primitive_type.upper() == "GEOMETRIC":
             return cls._geometric_data(workspace, uid, **kwargs)
 
         data_type = super().find_or_create(workspace, uid, entity_class, **kwargs)

@@ -27,12 +27,15 @@ from .primitive_type_enum import PrimitiveTypeEnum
 class GeometricDataConstants(Data):
     """
     Base class for geometric data constants.
+
+    :param allow_move: Defaults coordinate to remain on object.
+    :param visible: Defaults to not visible.
     """
 
     _TYPE_UID: uuid.UUID
 
-    def __init__(self, **kwargs):
-        super().__init__(allow_move=False, visible=False, **kwargs)
+    def __init__(self, allow_move=False, visible=False, **kwargs):
+        super().__init__(allow_move=allow_move, visible=visible, **kwargs)
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
