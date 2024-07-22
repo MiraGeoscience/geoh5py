@@ -101,7 +101,7 @@ class BaseForm(BaseModel):
     )
 
     label: str
-    value: Any
+    value: Any | None = None
     optional: bool = False
     enabled: bool = True
     main: bool = True
@@ -123,7 +123,7 @@ class StringForm(BaseForm):
     String valued uijson form.
     """
 
-    value: str = ""
+    value: str | None = ""
 
 
 class BoolForm(BaseForm):
@@ -131,7 +131,7 @@ class BoolForm(BaseForm):
     Boolean valued uijson form.
     """
 
-    value: bool = True
+    value: bool | None = True
 
 
 class IntegerForm(BaseForm):
@@ -139,7 +139,7 @@ class IntegerForm(BaseForm):
     Integer valued uijson form.
     """
 
-    value: int = 1
+    value: int | None = 1
     min: float = -np.inf
     max: float = np.inf
 
@@ -149,7 +149,7 @@ class FloatForm(BaseForm):
     Float valued uijson form.
     """
 
-    value: float = 1.0
+    value: float | None = 1.0
     min: float = -np.inf
     max: float = np.inf
     precision: int = 2
@@ -161,7 +161,7 @@ class ChoiceForm(BaseForm):
     Choice list uijson form.
     """
 
-    value: list[str]
+    value: list[str] | None
     choice_list: list[str]
     multi_select: bool = False
 
@@ -180,10 +180,15 @@ class ChoiceForm(BaseForm):
 
     @model_validator(mode="after")
     def valid_choice(self):
+
+        if self.value is None:
+            return self
+
         bad_choices = []
-        for val in self.value:
+        for val in self.value:  # pylint: disable=not-an-iterable
             if val not in self.choice_list:
                 bad_choices.append(val)
+
         if bad_choices:
             raise ValueError(f"Provided value(s): {bad_choices} are not valid choices.")
 
@@ -195,7 +200,7 @@ class FileForm(BaseForm):
     File path uijson form
     """
 
-    value: list[Path]
+    value: list[Path] | None
     file_description: list[str]
     file_type: list[str]
     file_multi: bool = False
@@ -273,7 +278,7 @@ class ObjectForm(BaseForm):
     Geoh5py object uijson form.
     """
 
-    value: UUID
+    value: UUID | None
     mesh_type: list[TypeUID]
 
 
@@ -307,12 +312,12 @@ class DataForm(BaseForm):
     Geoh5py data uijson form.
     """
 
-    value: UUID | float | int
+    value: UUID | float | int | None
     parent: UUID | str
     association: Association | list[Association]
     data_type: DataType | list[DataType]
     is_value: bool = False
-    property: UUID = UUID("00000000-0000-0000-0000-000000000000")
+    property: UUID | None = UUID("00000000-0000-0000-0000-000000000000")
     min: float = -np.inf
     max: float = np.inf
     precision: int = 2

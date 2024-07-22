@@ -67,6 +67,8 @@ def test_base_form():
     assert form.label == "name"
     assert form.value == "test"
     assert form.model_fields_set == {"label", "value"}
+    form = BaseForm(label="name", value=None)
+    assert form.value is None
 
 
 def test_base_form_config_extra():
