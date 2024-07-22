@@ -1182,13 +1182,18 @@ class Workspace(AbstractContextManager):
 
         if parent is not None:
             entity_attrs["parent"] = parent
-
-        entity = self.create_entity(
-            base_classes[entity_type],
-            save_on_creation=False,
-            entity=entity_attrs,
-            entity_type=type_attrs,
-        )
+        try:
+            entity = self.create_entity(
+                base_classes[entity_type],
+                save_on_creation=False,
+                entity=entity_attrs,
+                entity_type=type_attrs,
+            )
+        except TypeError:
+            warnings.warn(
+                f"Could not create an entity from the given attributes {type_attrs}. Skipping over."
+            )
+            entity = None
 
         # Get property groups (key 2) from object attributes
         if isinstance(entity, ObjectBase) and len(prop_groups) > 0:

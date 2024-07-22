@@ -20,36 +20,33 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from geoh5py.data import DataType, GeometricDataConstants
+import numpy as np
+
+from geoh5py.data import geometric_data
+from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
 def test_xyz_dataype(tmp_path: Path):
     h5file_path = tmp_path / f"{__name__}.geoh5"
+
     with Workspace.create(h5file_path) as workspace:
-        x_datatype = DataType.for_x_data(workspace)
-        assert x_datatype.uid == GeometricDataConstants.x_datatype_uid()
-        assert (
-            DataType.find(workspace, GeometricDataConstants.x_datatype_uid())
-            is x_datatype
-        )
-        # make sure another call does no re-create another type
-        assert DataType.for_x_data(workspace) is x_datatype
+        points = Points.create(workspace, vertices=np.random.randn(10, 3))
 
-        y_datatype = DataType.for_y_data(workspace)
-        assert y_datatype.uid == GeometricDataConstants.y_datatype_uid()
-        assert (
-            DataType.find(workspace, GeometricDataConstants.y_datatype_uid())
-            is y_datatype
-        )
-        # make sure another call does no re-create another type
-        assert DataType.for_y_data(workspace) is y_datatype
+        for axis in "XYZ":
+            data = points.add_data(
+                {
+                    axis: {
+                        "association": "VERTEX",
+                        "entity_type": {"name": axis, "primitive_type": "GEOMETRIC"},
+                    }
+                }
+            )
 
-        z_datatype = DataType.for_z_data(workspace)
-        assert z_datatype.uid == GeometricDataConstants.z_datatype_uid()
-        assert (
-            DataType.find(workspace, GeometricDataConstants.z_datatype_uid())
-            is z_datatype
-        )
-        # make sure another call does no re-create another type
-        assert DataType.for_z_data(workspace) is z_datatype
+            assert isinstance(data, geometric_data.GeometricDataConstants)
+            assert (
+                data.entity_type.uid
+                == getattr(
+                    geometric_data, f"GeometricDataConstants{axis}"
+                ).default_type_uid()
+            )

@@ -27,7 +27,7 @@ from .data_unit import DataUnit
 from .datetime_data import DatetimeData
 from .filename_data import FilenameData
 from .float_data import FloatData
-from .geometric_data_constants import GeometricDataConstants
+from .geometric_data import GeometricDataConstants
 from .integer_data import IntegerData
 from .numeric_data import NumericData
 from .primitive_type_enum import PrimitiveTypeEnum
