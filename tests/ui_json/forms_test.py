@@ -67,8 +67,6 @@ def test_base_form():
     assert form.label == "name"
     assert form.value == "test"
     assert form.model_fields_set == {"label", "value"}
-    form = BaseForm(label="name", value=None)
-    assert form.value is None
 
 
 def test_base_form_config_extra():
@@ -258,6 +256,13 @@ def test_object_form():
         _ = ObjectForm(
             label="name", value=obj_uid, mesh_type=[TypeUID.POINTS, str(uuid.uuid4())]
         )
+
+
+def test_object_form_empty_string_handling():
+    form = ObjectForm(
+        label="name", value="", mesh_type=[TypeUID.POINTS, TypeUID.SURFACE]
+    )
+    assert form.value == uuid.UUID("00000000-0000-0000-0000-000000000000")
 
 
 def test_data_form():

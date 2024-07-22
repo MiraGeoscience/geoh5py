@@ -101,7 +101,7 @@ class BaseForm(BaseModel):
     )
 
     label: str
-    value: Any | None = None
+    value: Any = None
     optional: bool = False
     enabled: bool = True
     main: bool = True
@@ -123,7 +123,7 @@ class StringForm(BaseForm):
     String valued uijson form.
     """
 
-    value: str | None = ""
+    value: str = ""
 
 
 class BoolForm(BaseForm):
@@ -131,7 +131,7 @@ class BoolForm(BaseForm):
     Boolean valued uijson form.
     """
 
-    value: bool | None = True
+    value: bool = True
 
 
 class IntegerForm(BaseForm):
@@ -139,7 +139,7 @@ class IntegerForm(BaseForm):
     Integer valued uijson form.
     """
 
-    value: int | None = 1
+    value: int = 1
     min: float = -np.inf
     max: float = np.inf
 
@@ -149,7 +149,7 @@ class FloatForm(BaseForm):
     Float valued uijson form.
     """
 
-    value: float | None = 1.0
+    value: float = 1.0
     min: float = -np.inf
     max: float = np.inf
     precision: int = 2
@@ -161,7 +161,7 @@ class ChoiceForm(BaseForm):
     Choice list uijson form.
     """
 
-    value: list[str] | None
+    value: list[str]
     choice_list: list[str]
     multi_select: bool = False
 
@@ -200,7 +200,7 @@ class FileForm(BaseForm):
     File path uijson form
     """
 
-    value: list[Path] | None
+    value: list[Path]
     file_description: list[str]
     file_type: list[str]
     file_multi: bool = False
@@ -273,13 +273,21 @@ class TypeUID(str, Enum):
     UIJSONGROUP = UUID("{BB50AC61-A657-4926-9C82-067658E246A0}")
 
 
+def empty_string_to_uid(value):
+    if value == "":
+        return UUID("00000000-0000-0000-0000-000000000000")
+    return value
+
+
 class ObjectForm(BaseForm):
     """
     Geoh5py object uijson form.
     """
 
-    value: UUID | None
+    value: UUID = UUID("00000000-0000-0000-0000-000000000000")
     mesh_type: list[TypeUID]
+
+    _empty_string_to_uid = field_validator("value", mode="before")(empty_string_to_uid)
 
 
 class Association(str, Enum):
@@ -312,15 +320,19 @@ class DataForm(BaseForm):
     Geoh5py data uijson form.
     """
 
-    value: UUID | float | int | None
+    value: UUID | float | int = UUID("00000000-0000-0000-0000-000000000000")
     parent: UUID | str
     association: Association | list[Association]
     data_type: DataType | list[DataType]
     is_value: bool = False
-    property: UUID | None = UUID("00000000-0000-0000-0000-000000000000")
+    property: UUID = UUID("00000000-0000-0000-0000-000000000000")
     min: float = -np.inf
     max: float = np.inf
     precision: int = 2
+
+    _empty_string_to_uid = field_validator("value", "property", mode="before")(
+        empty_string_to_uid
+    )
 
     @model_validator(mode="after")
     def value_if_is_value(self):
