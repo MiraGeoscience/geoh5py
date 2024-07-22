@@ -22,7 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
-from geoh5py.data import geometric_data
+from geoh5py.data import data_type, geometric_data
 from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
@@ -46,7 +46,5 @@ def test_xyz_dataype(tmp_path: Path):
             assert isinstance(data, geometric_data.GeometricDataConstants)
             assert (
                 data.entity_type.uid
-                == getattr(
-                    geometric_data, f"GeometricDataConstants{axis}"
-                ).default_type_uid()
+                == getattr(data_type, f"GeometricData{axis}").default_type_uid()
             )

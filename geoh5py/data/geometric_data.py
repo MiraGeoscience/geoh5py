@@ -20,7 +20,6 @@ from __future__ import annotations
 import uuid
 
 from .data import Data
-from .data_type import DataType
 from .primitive_type_enum import PrimitiveTypeEnum
 
 
@@ -40,54 +39,3 @@ class GeometricDataConstants(Data):
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.GEOMETRIC
-
-
-class GeometricDataConstantsX(DataType):
-    """
-    Data container for X values
-    """
-
-    _TYPE_UID = uuid.UUID(
-        fields=(0xE9E6B408, 0x4109, 0x4E42, 0xB6, 0xA8, 0x685C37A802EE)
-    )
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID | None:
-        """
-        Default uuid for the entity type.
-        """
-        return cls._TYPE_UID
-
-
-class GeometricDataConstantsY(DataType):
-    """
-    Data container for Y values
-    """
-
-    _TYPE_UID = uuid.UUID(
-        fields=(0xF55B07BD, 0xD8A0, 0x4DFF, 0xBA, 0xE5, 0xC975D490D71C)
-    )
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID | None:
-        """
-        Default uuid for the entity type.
-        """
-        return cls._TYPE_UID
-
-
-class GeometricDataConstantsZ(DataType):
-    """
-    Data container for X values
-    """
-
-    _TYPE_UID = uuid.UUID(
-        fields=(0xDBAFB885, 0x1531, 0x410C, 0xB1, 0x8E, 0x6AC9A40B4466)
-    )
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID | None:
-        """
-        Default uuid for the entity type.
-        """
-        return cls._TYPE_UID

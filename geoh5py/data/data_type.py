@@ -157,32 +157,43 @@ class DataType(EntityType):
         :return: EntityType
         """
         primitive_type = kwargs.get("primitive_type", None)
-        if isinstance(primitive_type, str) and primitive_type.upper() == "GEOMETRIC":
-            return cls._geometric_data(workspace, uid, **kwargs)
+        if (
+            entity_class is None
+            and isinstance(primitive_type, str)
+            and primitive_type.upper() == "GEOMETRIC"
+        ):
+            entity_class = cls._geometric_data(uid, kwargs.get("name", ""))
 
         data_type = super().find_or_create(workspace, uid, entity_class, **kwargs)
 
         return data_type
 
     @classmethod
-    def _geometric_data(
-        cls, workspace: Workspace, uid: UUID | None, **kwargs
-    ) -> DataType:
+    def _geometric_data(cls, uid: UUID | None, name="") -> type[DataType]:
         """
         Get the data type for geometric data.
 
-        :param workspace: An active Workspace.
         :param uid: The uid of the existing data type to get.
+        :param name: The name of the data type.
 
-        :return: A new instance of DataType.
+        :return: Type of GeometricData.
         """
-        module = __import__("geoh5py").data
-        geometric_class = getattr(
-            module.geometric_data,
-            f"GeometricDataConstants{kwargs.get('name', '')}",
-            None,
-        )
-        return super().find_or_create(workspace, uid, geometric_class, **kwargs)
+        geometric_class: type[GeometricDataX | GeometricDataY | GeometricDataZ]
+        if name == "X":
+            geometric_class = GeometricDataX
+        elif name == "Y":
+            geometric_class = GeometricDataY
+        elif name == "Z":
+            geometric_class = GeometricDataZ
+        else:
+            raise ValueError(f"Geometric data type {name} not recognized.")
+
+        if uid is not None and uid != geometric_class.default_type_uid():
+            raise ValueError(
+                f"Geometric data type {geometric_class} with uid {uid} not compatible."
+            )
+
+        return geometric_class
 
     @property
     def hidden(self) -> bool:
@@ -372,3 +383,48 @@ class DataType(EntityType):
         self._value_map: ReferenceValueMap | None = value_map
 
         self.workspace.update_attribute(self, "value_map")
+
+
+class GeometricDataX(DataType):
+    """
+    Data container for X values
+    """
+
+    _TYPE_UID = UUID(fields=(0xE9E6B408, 0x4109, 0x4E42, 0xB6, 0xA8, 0x685C37A802EE))
+
+    @classmethod
+    def default_type_uid(cls) -> UUID:
+        """
+        Default uuid for the entity type.
+        """
+        return cls._TYPE_UID
+
+
+class GeometricDataY(DataType):
+    """
+    Data container for Y values
+    """
+
+    _TYPE_UID = UUID(fields=(0xF55B07BD, 0xD8A0, 0x4DFF, 0xBA, 0xE5, 0xC975D490D71C))
+
+    @classmethod
+    def default_type_uid(cls) -> UUID:
+        """
+        Default uuid for the entity type.
+        """
+        return cls._TYPE_UID
+
+
+class GeometricDataZ(DataType):
+    """
+    Data container for X values
+    """
+
+    _TYPE_UID = UUID(fields=(0xDBAFB885, 0x1531, 0x410C, 0xB1, 0x8E, 0x6AC9A40B4466))
+
+    @classmethod
+    def default_type_uid(cls) -> UUID:
+        """
+        Default uuid for the entity type.
+        """
+        return cls._TYPE_UID
