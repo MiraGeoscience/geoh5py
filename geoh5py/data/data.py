@@ -40,13 +40,14 @@ class Data(Entity):
     def __init__(
         self,
         association: DataAssociationEnum = DataAssociationEnum.OBJECT,
+        visible: bool = False,
         **kwargs,
     ):
         self.association = association
         self._modifiable = True
         self._values = None
 
-        super().__init__(**kwargs)
+        super().__init__(visible=visible, **kwargs)
 
     def copy(
         self,
