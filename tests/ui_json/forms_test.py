@@ -252,7 +252,7 @@ def test_object_form():
             mesh_type=[TypeUID.POINTS, TypeUID.SURFACE],
         )
 
-    with pytest.raises(ValidationError, match="Input should be '{202C5DB1-"):
+    with pytest.raises(ValidationError, match="Input should be '202c5db1"):
         _ = ObjectForm(
             label="name", value=obj_uid, mesh_type=[TypeUID.POINTS, str(uuid.uuid4())]
         )
