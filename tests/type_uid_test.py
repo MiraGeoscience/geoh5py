@@ -15,26 +15,13 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# flake8: noqa
-
-__version__ = "0.10.0-alpha.1"
-
-import inspect
-
-from geoh5py.workspace import Workspace
-
-from . import groups, objects
-from .groups import CustomGroup
+from geoh5py import TYPE_UID_TO_CLASS, get_type_uid_classes
+from geoh5py.groups import ContainerGroup, SimPEGGroup, UIJsonGroup
+from geoh5py.objects import Curve, Points, Surface
 
 
-def get_type_uid_classes():
-
-    members = []
-    for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
-        if inspect.isclass(member) and hasattr(member, "default_type_uid"):
-            members.append(member)
-
-    return members
-
-
-TYPE_UID_TO_CLASS = {k.default_type_uid(): k for k in get_type_uid_classes()}
+def test_get_objects_with_type_uid():
+    members = get_type_uid_classes()
+    checks = [Points, Curve, Surface, UIJsonGroup, SimPEGGroup, ContainerGroup]
+    assert all(k in members for k in checks)
+    assert all(k in TYPE_UID_TO_CLASS.values() for k in checks)

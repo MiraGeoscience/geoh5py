@@ -24,7 +24,7 @@ from uuid import UUID
 
 import numpy as np
 
-from geoh5py import Workspace
+from geoh5py import TYPE_UID_TO_CLASS, Workspace
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
@@ -39,6 +39,45 @@ from geoh5py.shared.exceptions import (
     ValueValidationError,
 )
 from geoh5py.shared.utils import iterable
+
+
+def to_list(value):
+    if not isinstance(value, list):
+        value = [value]
+    return value
+
+
+def to_uuid(values):
+    out = []
+    for val in values:
+        if isinstance(val, str):
+            out.append(UUID(val))
+        else:
+            out.append(val)
+    return out
+
+
+def to_class(values):
+    out = []
+    for val in values:
+        if hasattr(val, "default_type_uid"):
+            out.append(val)
+        elif isinstance(val, UUID):
+            if val in TYPE_UID_TO_CLASS:
+                out.append(TYPE_UID_TO_CLASS[val])
+            else:
+                raise ValueError(
+                    f"Provided type_uid string {str(val)} is not a recognized "
+                    f"geoh5py object or group type uid."
+                )
+
+    return out
+
+
+def empty_string_to_uid(value):
+    if value == "":
+        return UUID("00000000-0000-0000-0000-000000000000")
+    return value
 
 
 class BaseValidator(ABC):

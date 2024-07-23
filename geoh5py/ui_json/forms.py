@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 import numpy as np
@@ -31,6 +31,7 @@ from pydantic import (
     model_validator,
 )
 from pydantic.alias_generators import to_camel
+from pydantic.functional_validators import BeforeValidator
 
 from geoh5py.data import (
     BooleanData,
@@ -40,8 +41,11 @@ from geoh5py.data import (
     ReferencedData,
     TextData,
 )
+from geoh5py.groups import Group
+from geoh5py.objects import ObjectBase
 from geoh5py.shared.exceptions import AggregateValidationError, BaseValidationError
 from geoh5py.shared.utils import SetDict
+from geoh5py.shared.validators import empty_string_to_uid, to_class, to_list, to_uuid
 from geoh5py.ui_json.descriptors import FormValueAccess
 from geoh5py.ui_json.enforcers import EnforcerPool
 from geoh5py.ui_json.parameters import (
@@ -101,7 +105,7 @@ class BaseForm(BaseModel):
     )
 
     label: str
-    value: Any = None
+    value: Any
     optional: bool = False
     enabled: bool = True
     main: bool = True
@@ -243,40 +247,12 @@ class FileForm(BaseForm):
         return data
 
 
-class TypeUID(str, Enum):
-    """
-    Geoh5py object types.
-    """
-
-    POINTS = UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
-    CURVE = UUID("{6a057fdc-b355-11e3-95be-fd84a7ffcb88}")
-    SURFACE = UUID("{f26feba3-aded-494b-b9e9-b2bbcbe298e1}")
-    GRID2D = UUID("{f26feba3-aded-494b-b9e9-b2bbcbe298e1}")
-    BLOCKMODEL = UUID("{b020a277-90e2-4cd7-84d6-612ee3f25051}")
-    OCTREE = UUID("{4ea87376-3ece-438b-bf12-3479733ded46}")
-    DRAPEMODEL = UUID("{C94968EA-CF7D-11EB-B8BC-0242AC130003}")
-    DRILLHOLE = UUID("{7caebf0e-d16e-11e3-bc69-e4632694aa37}")
-    GEOIMAGE = UUID("{77ac043c-fe8d-4d14-8167-75e300fb835a}")
-    INTEGRATORPOINTS = UUID("{6832ACF3-78AA-44D3-8506-9574A3510C44}")
-    LABEL = UUID("{e79f449d-74e3-4598-9c9c-351a28b8b69e}")
-    AIRBORNEFEMRECEIVERS = UUID("{b3a47539-0301-4b27-922e-1dde9d882c60}")
-    AIRBORNETEMRECEIVERS = UUID("{19730589-fd28-4649-9de0-ad47249d9aba}")
-    MOVINGLOOPGROUNDFEMRECEIVERS = UUID("{a81c6b0a-f290-4bc8-b72d-60e59964bfe8}")
-    MOVINGLOOPGROUNDTEMRECEIVERS = UUID("{41018a45-01a0-4c61-a7cb-9f32d8159df4}")
-    MTRECEIVERS = UUID("{b99bd6e5-4fe1-45a5-bd2f-75fc31f91b38}")
-    TIPPERRECEIVERS = UUID("{0b639533-f35b-44d8-92a8-f70ecff3fd26}")
-    POTENTIALELECTRODE = UUID("{275ecee9-9c24-4378-bf94-65f3c5fbe163}")
-    AIRBORNEMAGNETICS = UUID("{4b99204c-d133-4579-a916-a9c8b98cfccb}")
-    CONTAINERGROUP = UUID("{61fbb4e8-a480-11e3-8d5a-2776bdf4f982}")
-    DRILLHOLEGROUP = UUID("{825424fb-c2c6-4fea-9f2b-6cd00023d393}")
-    SIMPEGGROUP = UUID("{55ed3daf-c192-4d4b-a439-60fa987fe2b8}")
-    UIJSONGROUP = UUID("{BB50AC61-A657-4926-9C82-067658E246A0}")
-
-
-def empty_string_to_uid(value):
-    if value == "":
-        return UUID("00000000-0000-0000-0000-000000000000")
-    return value
+MeshTypes = Annotated[
+    list[type[ObjectBase] | type[Group]],
+    BeforeValidator(to_class),
+    BeforeValidator(to_uuid),
+    BeforeValidator(to_list),
+]
 
 
 class ObjectForm(BaseForm):
@@ -285,7 +261,7 @@ class ObjectForm(BaseForm):
     """
 
     value: UUID = UUID("00000000-0000-0000-0000-000000000000")
-    mesh_type: list[TypeUID]
+    mesh_type: MeshTypes
 
     _empty_string_to_uid = field_validator("value", mode="before")(empty_string_to_uid)
 
