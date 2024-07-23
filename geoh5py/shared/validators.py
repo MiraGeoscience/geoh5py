@@ -63,13 +63,12 @@ def to_class(values):
         if hasattr(val, "default_type_uid"):
             out.append(val)
         elif isinstance(val, UUID):
-            if val in TYPE_UID_TO_CLASS:
-                out.append(TYPE_UID_TO_CLASS[val])
-            else:
+            if val not in TYPE_UID_TO_CLASS:
                 raise ValueError(
                     f"Provided type_uid string {str(val)} is not a recognized "
                     f"geoh5py object or group type uid."
                 )
+            out.append(TYPE_UID_TO_CLASS[val])
 
     return out
 
