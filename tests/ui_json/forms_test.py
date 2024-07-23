@@ -239,7 +239,7 @@ def test_file_form(tmp_path):
 def test_object_form():
     obj_uid = str(uuid.uuid4())
     form = ObjectForm(
-        label="name", value="", mesh_type=[TypeUID.POINTS, TypeUID.SURFACE]
+        label="name", value=obj_uid, mesh_type=[TypeUID.POINTS, TypeUID.SURFACE]
     )
     assert form.label == "name"
     assert form.value == uuid.UUID(obj_uid)
