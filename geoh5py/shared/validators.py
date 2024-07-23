@@ -57,18 +57,22 @@ def to_uuid(values):
     return out
 
 
+def class_or_raise(value):
+    if value not in TYPE_UID_TO_CLASS:
+        raise ValueError(
+            f"Provided type_uid string {str(value)} is not a recognized "
+            f"geoh5py object or group type uid."
+        )
+    return TYPE_UID_TO_CLASS[value]
+
+
 def to_class(values):
     out = []
     for val in values:
         if hasattr(val, "default_type_uid"):
             out.append(val)
         elif isinstance(val, UUID):
-            if val not in TYPE_UID_TO_CLASS:
-                raise ValueError(
-                    f"Provided type_uid string {str(val)} is not a recognized "
-                    f"geoh5py object or group type uid."
-                )
-            out.append(TYPE_UID_TO_CLASS[val])
+            out.append(class_or_raise(val))
 
     return out
 
