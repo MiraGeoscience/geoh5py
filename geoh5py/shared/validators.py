@@ -25,7 +25,8 @@ from uuid import UUID
 import numpy as np
 
 from geoh5py import TYPE_UID_TO_CLASS, Workspace
-from geoh5py.groups import PropertyGroup
+from geoh5py.groups import Group, PropertyGroup
+from geoh5py.objects import ObjectBase
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
@@ -41,13 +42,15 @@ from geoh5py.shared.exceptions import (
 from geoh5py.shared.utils import iterable
 
 
-def to_list(value):
+def to_list(value: Any) -> list[Any]:
+    """Promote single values to list."""
     if not isinstance(value, list):
         value = [value]
     return value
 
 
 def to_uuid(values):
+    """Promote strings to uuid and pass anything else."""
     out = []
     for val in values:
         if isinstance(val, str):
@@ -57,7 +60,8 @@ def to_uuid(values):
     return out
 
 
-def class_or_raise(value):
+def class_or_raise(value: UUID) -> type[ObjectBase] | type[Group]:
+    """Promote uid to class, raise if uid is not a geoh5py type uid."""
     if value not in TYPE_UID_TO_CLASS:
         raise ValueError(
             f"Provided type_uid string {str(value)} is not a recognized "
@@ -66,14 +70,20 @@ def class_or_raise(value):
     return TYPE_UID_TO_CLASS[value]
 
 
-def to_class(values):
+def to_class(
+    values: list[UUID | type[ObjectBase] | type[Group]],
+) -> list[type[ObjectBase] | type[Group]]:
+    """
+    Promote uid to class.
+
+    Passes existing classes and raises if uid is not a geoh5py type uid.
+    """
     out = []
     for val in values:
-        if hasattr(val, "default_type_uid"):
-            out.append(val)
-        elif isinstance(val, UUID):
+        if isinstance(val, UUID):
             out.append(class_or_raise(val))
-
+        elif issubclass(val, (ObjectBase, Group)):
+            out.append(val)
     return out
 
 
