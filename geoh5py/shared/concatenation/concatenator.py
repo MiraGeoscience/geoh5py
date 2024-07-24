@@ -300,9 +300,9 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             self.data[label], np.arange(start, start + size), axis=0
         )
         # Shift indices
-        self.index[label]["Start index"][
-            self.index[label]["Start index"] > start
-        ] -= size
+        self.index[label]["Start index"][self.index[label]["Start index"] > start] -= (
+            size
+        )
         self.index[label] = np.delete(self.index[label], index, axis=0)
 
     def fetch_concatenated_data_index(self):

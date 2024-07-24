@@ -36,7 +36,6 @@ from ..shared.utils import clear_array_attributes
 from .object_type import ObjectType
 
 if TYPE_CHECKING:
-
     from ..workspace import Workspace
 
 

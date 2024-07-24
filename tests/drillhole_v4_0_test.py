@@ -173,7 +173,6 @@ def test_concatenator(tmp_path):
         compare_entities(dh_group_copy, dh_group, ignore=["_uid"])
 
     with Workspace(h5file_path) as workspace:
-
         assert len(workspace.get_entity("DH_group")[0].children) == 1
 
 

@@ -61,7 +61,6 @@ class EntityContainer(Entity):
             file = Path(file)
 
         if isinstance(file, Path):
-
             if not file.is_file():
                 raise ValueError(f"Input file '{file}' does not exist.")
 

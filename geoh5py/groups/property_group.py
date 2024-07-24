@@ -232,7 +232,6 @@ class PropertyGroup(ABC):
             return
 
         for elem in data:
-
             if isinstance(elem, Data):
                 elem = elem.uid
 

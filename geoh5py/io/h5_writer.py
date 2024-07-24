@@ -283,7 +283,6 @@ class H5Writer:
                 return
 
             if isinstance(values, np.ndarray):
-
                 if np.issubdtype(values.dtype, np.floating):
                     values = values.astype(np.float32)
 
@@ -545,7 +544,6 @@ class H5Writer:
                 values = values.astype(h5py.special_dtype(vlen=str))
 
             if values is not None:
-
                 entity_handle.create_dataset(
                     KEY_MAP[attribute],
                     data=values,
@@ -594,7 +592,6 @@ class H5Writer:
                 entity.workspace.repack = True
 
             if values is None:
-
                 values = getattr(
                     entity, attribute, None
                 )  # Give the chance to fetch from file

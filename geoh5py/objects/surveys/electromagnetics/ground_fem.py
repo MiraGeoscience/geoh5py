@@ -65,9 +65,7 @@ class MovingLoopGroundFEMSurvey(FEMSurvey, MovingLoopGroundEMSurvey):
         return MovingLoopGroundFEMTransmitters
 
 
-class MovingLoopGroundFEMReceivers(
-    MovingLoopGroundFEMSurvey
-):  # pylint: disable=too-many-ancestors
+class MovingLoopGroundFEMReceivers(MovingLoopGroundFEMSurvey):  # pylint: disable=too-many-ancestors
     """
     Airborne frequency-domain electromagnetic receivers class.
     """
@@ -104,9 +102,7 @@ class MovingLoopGroundFEMReceivers(
         return self.__TYPE
 
 
-class MovingLoopGroundFEMTransmitters(
-    MovingLoopGroundFEMSurvey
-):  # pylint: disable=too-many-ancestors
+class MovingLoopGroundFEMTransmitters(MovingLoopGroundFEMSurvey):  # pylint: disable=too-many-ancestors
     """
     Airborne frequency-domain electromagnetic transmitters class.
     """
@@ -174,9 +170,7 @@ class LargeLoopGroundFEMSurvey(FEMSurvey, LargeLoopGroundEMSurvey):
         return LargeLoopGroundFEMTransmitters
 
 
-class LargeLoopGroundFEMReceivers(
-    LargeLoopGroundFEMSurvey
-):  # pylint: disable=too-many-ancestors
+class LargeLoopGroundFEMReceivers(LargeLoopGroundFEMSurvey):  # pylint: disable=too-many-ancestors
     """
     Airborne frequency-domain electromagnetic receivers class.
     """
@@ -213,9 +207,7 @@ class LargeLoopGroundFEMReceivers(
         return self.__TYPE
 
 
-class LargeLoopGroundFEMTransmitters(
-    LargeLoopGroundFEMSurvey
-):  # pylint: disable=too-many-ancestors
+class LargeLoopGroundFEMTransmitters(LargeLoopGroundFEMSurvey):  # pylint: disable=too-many-ancestors
     """
     Airborne frequency-domain electromagnetic transmitters class.
     """

@@ -216,9 +216,7 @@ class DrillholesGroupTable(ABC):
             # get the drillhole
             drillhole: ConcatenatedDrillhole = self.parent.workspace.get_entity(  # type: ignore
                 str2uuid(drillhole_uid)
-            )[
-                0
-            ]
+            )[0]
 
             # add data to the drillhole
             drillhole.add_data(

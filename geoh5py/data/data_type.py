@@ -327,7 +327,6 @@ class DataType(EntityType):
                 elif isinstance(values, np.ndarray) and (
                     np.issubdtype(values.dtype, np.integer)
                 ):
-
                     entity_type = {"primitive_type": "INTEGER"}
                 elif isinstance(values, str) or (
                     isinstance(values, np.ndarray) and values.dtype.kind in ["U", "S"]

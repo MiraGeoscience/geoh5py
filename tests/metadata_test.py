@@ -25,7 +25,6 @@ from geoh5py.workspace import Workspace
 
 
 def test_metadata(tmp_path):
-
     h5file_path = tmp_path / r"testPoints.geoh5"
     workspace = Workspace.create(h5file_path)
     points = Points.create(workspace, vertices=np.random.randn(12, 3), allow_move=False)

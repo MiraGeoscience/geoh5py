@@ -718,7 +718,6 @@ class Workspace(AbstractContextManager):
             children_list = {child.uid: "" for child in entity.children}
 
         else:
-
             children_list = self._io_call(
                 H5Reader.fetch_children, entity.uid, entity_type, mode="r"
             )

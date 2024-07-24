@@ -39,7 +39,6 @@ class Group(EntityContainer):
     _default_name = "Group"
 
     def __init__(self, group_type: GroupType, **kwargs):
-
         if not isinstance(group_type, GroupType):
             raise TypeError(
                 f"Input 'group_type' must be of type {GroupType}, not {type(group_type)}"
