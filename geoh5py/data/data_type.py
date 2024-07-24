@@ -23,6 +23,7 @@ from uuid import UUID
 import numpy as np
 
 from ..shared import EntityType
+from ..shared.utils import str2uuid
 from .color_map import ColorMap
 from .primitive_type_enum import PrimitiveTypeEnum
 from .reference_value_map import ReferenceValueMap
@@ -188,7 +189,7 @@ class DataType(EntityType):
         else:
             raise ValueError(f"Geometric data type {name} not recognized.")
 
-        if uid is not None and uid != geometric_class.default_type_uid():
+        if uid is not None and str2uuid(uid) != geometric_class.default_type_uid():
             raise ValueError(
                 f"Geometric data type {geometric_class} with uid {uid} not compatible."
             )
