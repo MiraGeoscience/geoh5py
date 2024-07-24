@@ -185,9 +185,6 @@ class ChoiceForm(BaseForm):
     @model_validator(mode="after")
     def valid_choice(self):
 
-        if self.value is None:
-            return self
-
         bad_choices = []
         for val in self.value:  # pylint: disable=not-an-iterable
             if val not in self.choice_list:
