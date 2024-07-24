@@ -88,6 +88,7 @@ def to_class(
 
 
 def empty_string_to_uid(value):
+    """Promote empty string to uid, and pass all other values."""
     if value == "":
         return UUID("00000000-0000-0000-0000-000000000000")
     return value
