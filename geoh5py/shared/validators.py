@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Any
 from uuid import UUID
 
@@ -42,8 +43,21 @@ from geoh5py.shared.exceptions import (
 from geoh5py.shared.utils import iterable
 
 
+def to_path(value: list[str]) -> list[Path]:
+    """Promote path strings to patlib.Path objects."""
+    out = []
+    for path in value:
+        if isinstance(path, str):
+            out.append(Path(path))
+        else:
+            out.append(path)
+    return out
+
+
 def to_list(value: Any) -> list[Any]:
     """Promote single values to list."""
+    if isinstance(value, str) and ";" in value:
+        value = value.split(";")
     if not isinstance(value, list):
         value = [value]
     return value
@@ -54,9 +68,8 @@ def to_uuid(values):
     out = []
     for val in values:
         if isinstance(val, str):
-            out.append(UUID(val))
-        else:
-            out.append(val)
+            val = UUID(val)
+        out.append(val)
     return out
 
 
