@@ -67,6 +67,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
     :param vertices: Array of vertices defining the four corners of the image.
     """
 
+    __VERTICES_DTYPE = np.dtype([("x", "<f8"), ("y", "<f8"), ("z", "<f8")])
     _TYPE_UID = uuid.UUID(
         fields=(0x77AC043C, 0xFE8D, 0x4D14, 0x81, 0x67, 0x75E300FB835A)
     )
@@ -676,12 +677,23 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         if isinstance(xyz, list | tuple):
             xyz = np.array(xyz, ndmin=2)
 
-        if not isinstance(xyz, np.ndarray) or xyz.shape != (4, 3):
-            raise ValueError("Input 'vertices' must be a numpy array of shape (4, 3)")
+        if not isinstance(xyz, np.ndarray):
+            raise TypeError(
+                "Input 'vertices' must be provided as type numpy.ndarray, list or tuple."
+            )
 
-        xyz = np.asarray(
-            np.core.records.fromarrays(xyz.T, names="x, y, z", formats="<f8, <f8, <f8")
-        )
+        if np.issubdtype(xyz.dtype, np.number):
+            xyz = np.asarray(
+                np.core.records.fromarrays(xyz.T, dtype=self.__VERTICES_DTYPE)
+            )
+
+        if xyz.dtype != self.__VERTICES_DTYPE:
+            raise TypeError(
+                f"Array of 'vertices' must be of dtype = {self.__VERTICES_DTYPE}"
+            )
+
+        if len(xyz) != 4:
+            raise ValueError("Array of 'vertices' must be of shape (4, 3).")
 
         self._vertices = xyz
         self._tag = None

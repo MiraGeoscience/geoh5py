@@ -17,14 +17,14 @@
 
 from __future__ import annotations
 
-import uuid
-from typing import TYPE_CHECKING, Literal, cast, get_args
+from typing import TYPE_CHECKING, Literal, get_args
+from uuid import UUID
 
 import numpy as np
 
 from ..shared import EntityType
+from ..shared.utils import str2uuid
 from .color_map import ColorMap
-from .geometric_data_constants import GeometricDataConstants
 from .primitive_type_enum import PrimitiveTypeEnum
 from .reference_value_map import ReferenceValueMap
 
@@ -90,26 +90,6 @@ class DataType(EntityType):
         self.units = units
         self.value_map = value_map  # type: ignore
 
-    @classmethod
-    def _for_geometric_data(cls, workspace: Workspace, uid: uuid.UUID) -> DataType:
-        """
-        Get the data type for geometric data.
-
-        :param workspace: An active Workspace.
-        :param uid: The uid of the existing data type to get.
-
-        :return: A new instance of DataType.
-        """
-        geom_primitive_type = GeometricDataConstants.primitive_type()
-        data_type = cast(DataType, workspace.find_type(uid, DataType))
-        if data_type is not None:
-            if not data_type.primitive_type == geom_primitive_type:
-                raise ValueError(
-                    f"Data type with uid {uid} is not of type {geom_primitive_type}"
-                )
-            return data_type
-        return cls(workspace, uid=uid, primitive_type=geom_primitive_type)
-
     @property
     def color_map(self) -> ColorMap | None:
         r"""
@@ -153,43 +133,68 @@ class DataType(EntityType):
         self.workspace.update_attribute(self, "color_map")
 
     @classmethod
-    def for_x_data(cls, workspace: Workspace) -> DataType:
+    def find_or_create(
+        cls,
+        workspace: Workspace,
+        uid: UUID | None = None,
+        entity_class: type | None = None,
+        **kwargs,
+    ):
         """
-        Get the data type for x data.
+        Find or creates an EntityType with given uid that matches the given
+        Group implementation class.
 
-        :param workspace: An active Workspace.
+        It is expected to have a single instance of EntityType in the Workspace
+        for each concrete Entity class.
 
-        :return: A new instance of DataType.
+        To find an object, the kwargs must contain an existing 'uid' keyword,
+        or a 'entity_class' keyword, containing an object class.
+
+        :param workspace: An active Workspace class
+        :param uid: The unique identifier of the entity type.
+        :param entity_class: The class of the entity.
+        :param kwargs: The attributes of the entity type.
+
+        :return: EntityType
         """
-        return cls._for_geometric_data(
-            workspace, GeometricDataConstants.x_datatype_uid()
-        )
+        primitive_type = kwargs.get("primitive_type", None)
+        if (
+            entity_class is None
+            and isinstance(primitive_type, str)
+            and primitive_type.upper() == "GEOMETRIC"
+        ):
+            entity_class = cls._geometric_data(uid, kwargs.get("name", ""))
+
+        data_type = super().find_or_create(workspace, uid, entity_class, **kwargs)
+
+        return data_type
 
     @classmethod
-    def for_y_data(cls, workspace: Workspace) -> DataType:
+    def _geometric_data(cls, uid: UUID | None, name="") -> type[DataType]:
         """
-        Get the data type for y data.
+        Get the data type for geometric data.
 
-        :param workspace: An active Workspace.
+        :param uid: The uid of the existing data type to get.
+        :param name: The name of the data type.
 
-        :return: A new instance of DataType.
+        :return: Type of GeometricData.
         """
-        return cls._for_geometric_data(
-            workspace, GeometricDataConstants.y_datatype_uid()
-        )
+        geometric_class: type[GeometricDataX | GeometricDataY | GeometricDataZ]
+        if name == "X":
+            geometric_class = GeometricDataX
+        elif name == "Y":
+            geometric_class = GeometricDataY
+        elif name == "Z":
+            geometric_class = GeometricDataZ
+        else:
+            raise ValueError(f"Geometric data type {name} not recognized.")
 
-    @classmethod
-    def for_z_data(cls, workspace: Workspace) -> DataType:
-        """
-        Get the data type for z data.
+        if uid is not None and str2uuid(uid) != geometric_class.default_type_uid():
+            raise ValueError(
+                f"Geometric data type {geometric_class} with uid {uid} not compatible."
+            )
 
-        :param workspace: An active Workspace.
-
-        :return: A new instance of DataType.
-        """
-        return cls._for_geometric_data(
-            workspace, GeometricDataConstants.z_datatype_uid()
-        )
+        return geometric_class
 
     @property
     def hidden(self) -> bool:
@@ -379,3 +384,48 @@ class DataType(EntityType):
         self._value_map: ReferenceValueMap | None = value_map
 
         self.workspace.update_attribute(self, "value_map")
+
+
+class GeometricDataX(DataType):
+    """
+    Data container for X values
+    """
+
+    _TYPE_UID = UUID(fields=(0xE9E6B408, 0x4109, 0x4E42, 0xB6, 0xA8, 0x685C37A802EE))
+
+    @classmethod
+    def default_type_uid(cls) -> UUID:
+        """
+        Default uuid for the entity type.
+        """
+        return cls._TYPE_UID
+
+
+class GeometricDataY(DataType):
+    """
+    Data container for Y values
+    """
+
+    _TYPE_UID = UUID(fields=(0xF55B07BD, 0xD8A0, 0x4DFF, 0xBA, 0xE5, 0xC975D490D71C))
+
+    @classmethod
+    def default_type_uid(cls) -> UUID:
+        """
+        Default uuid for the entity type.
+        """
+        return cls._TYPE_UID
+
+
+class GeometricDataZ(DataType):
+    """
+    Data container for X values
+    """
+
+    _TYPE_UID = UUID(fields=(0xDBAFB885, 0x1531, 0x410C, 0xB1, 0x8E, 0x6AC9A40B4466))
+
+    @classmethod
+    def default_type_uid(cls) -> UUID:
+        """
+        Default uuid for the entity type.
+        """
+        return cls._TYPE_UID

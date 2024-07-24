@@ -91,7 +91,7 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
         with pytest.raises(AttributeError, match="An 'image' must be set be"):
             geoimage.georeference(pixels[0, :], points)
 
-        with pytest.raises(ValueError, match="Input 'vertices' must be"):
+        with pytest.raises(ValueError, match="Array of 'vertices' must be"):
             geoimage.vertices = [1, 2, 3]
 
         with pytest.raises(
