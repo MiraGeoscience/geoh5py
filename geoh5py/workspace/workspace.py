@@ -1193,7 +1193,7 @@ class Workspace(AbstractContextManager):
             warnings.warn(
                 f"Could not create an entity from the given attributes {type_attrs}. Skipping over."
             )
-            entity = None
+            return None
 
         # Get property groups (key 2) from object attributes
         if isinstance(entity, ObjectBase) and len(prop_groups) > 0:
