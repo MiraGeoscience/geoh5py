@@ -45,7 +45,13 @@ from geoh5py.groups import Group
 from geoh5py.objects import ObjectBase
 from geoh5py.shared.exceptions import AggregateValidationError, BaseValidationError
 from geoh5py.shared.utils import SetDict
-from geoh5py.shared.validators import to_class, to_list, to_uuid
+from geoh5py.shared.validators import (
+    empty_string_to_uid,
+    to_class,
+    to_list,
+    to_path,
+    to_uuid,
+)
 from geoh5py.ui_json.descriptors import FormValueAccess
 from geoh5py.ui_json.enforcers import EnforcerPool
 from geoh5py.ui_json.parameters import (
@@ -194,20 +200,22 @@ class ChoiceForm(BaseForm):
         return self
 
 
+PathList = Annotated[
+    list[Path],
+    BeforeValidator(to_path),
+    BeforeValidator(to_list),
+]
+
+
 class FileForm(BaseForm):
     """
     File path uijson form
     """
 
-    value: list[Path]
+    value: PathList
     file_description: list[str]
     file_type: list[str]
     file_multi: bool = False
-
-    @field_validator("value", mode="before")
-    @classmethod
-    def to_list(cls, value):
-        return [Path(path) for path in value.split(";")]
 
     @field_serializer("value", when_used="json")
     def to_string(self, value):
@@ -255,8 +263,10 @@ class ObjectForm(BaseForm):
     Geoh5py object uijson form.
     """
 
-    value: UUID
+    value: UUID = UUID("00000000-0000-0000-0000-000000000000")
     mesh_type: MeshTypes
+
+    _empty_string_to_uid = field_validator("value", mode="before")(empty_string_to_uid)
 
 
 class Association(str, Enum):
@@ -289,7 +299,7 @@ class DataForm(BaseForm):
     Geoh5py data uijson form.
     """
 
-    value: UUID | float | int
+    value: UUID | float | int = UUID("00000000-0000-0000-0000-000000000000")
     parent: UUID | str
     association: Association | list[Association]
     data_type: DataType | list[DataType]
@@ -298,6 +308,10 @@ class DataForm(BaseForm):
     min: float = -np.inf
     max: float = np.inf
     precision: int = 2
+
+    _empty_string_to_uid = field_validator("value", "property", mode="before")(
+        empty_string_to_uid
+    )
 
     @model_validator(mode="after")
     def value_if_is_value(self):
