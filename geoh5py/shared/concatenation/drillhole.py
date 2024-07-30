@@ -118,7 +118,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
         """
         if collocation_distance is None:
             collocation_distance = attributes.get(
-                "collocation_distance", getattr(self, "default_collocation_distance")
+                "collocation_distance", self.default_collocation_distance
             )
         if collocation_distance < 0:
             raise UserWarning("Input depth 'collocation_distance' must be >0.")
@@ -234,9 +234,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
             property_group = f"depth_{ind}"
 
         if isinstance(property_group, str):
-            out_group: ConcatenatedPropertyGroup = getattr(
-                self, "find_or_create_property_group"
-            )(
+            out_group: ConcatenatedPropertyGroup = self.find_or_create_property_group(
                 name=property_group,
                 association="DEPTH",
                 property_group_type="Depth table",
@@ -331,9 +329,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
             property_group = f"Interval_{ind}"
 
         if isinstance(property_group, str):
-            out_group: ConcatenatedPropertyGroup = getattr(
-                self, "find_or_create_property_group"
-            )(
+            out_group: ConcatenatedPropertyGroup = self.find_or_create_property_group(
                 name=property_group,
                 association="DEPTH",
                 property_group_type="Interval table",

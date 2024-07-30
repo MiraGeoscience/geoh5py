@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING
 from .. import interfaces
 from ..workspace import Workspace
 
+
 if TYPE_CHECKING:
     from ..interfaces.data import Data as i_Data
     from ..interfaces.data import DataQuery as i_DataQuery

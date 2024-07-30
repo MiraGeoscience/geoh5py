@@ -35,6 +35,7 @@ from geoh5py.objects import Curve
 from geoh5py.objects.object_base import ObjectBase
 from geoh5py.shared.utils import is_uuid
 
+
 if TYPE_CHECKING:
     from geoh5py.groups import Group
     from geoh5py.workspace import Workspace
@@ -275,14 +276,12 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
     ):
-        new_complement = (
-            self.complement._super_copy(  # pylint: disable=protected-access
-                parent=parent,
-                copy_children=copy_children,
-                clear_cache=clear_cache,
-                mask=mask,
-                omit_list=OMIT_LIST,
-            )
+        new_complement = self.complement._super_copy(  # pylint: disable=protected-access
+            parent=parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            mask=mask,
+            omit_list=OMIT_LIST,
         )
 
         setattr(
@@ -446,7 +445,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         for elem in ["receivers", "transmitters", "base_stations"]:
             dependent = getattr(self, elem, None)
             if dependent is not None and dependent is not self:
-                setattr(dependent, "_metadata", values)
+                dependent._metadata = values
                 self.workspace.update_attribute(dependent, "metadata")
 
     @property
@@ -700,14 +699,12 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
             mask[self.complement.cells[cell_mask, :]] = True
             tx_ids = self.complement.tx_id_property.values[cell_mask]
 
-        new_complement = (
-            self.complement._super_copy(  # pylint: disable=protected-access
-                parent=parent,
-                omit_list=OMIT_LIST,
-                copy_children=copy_children,
-                clear_cache=clear_cache,
-                mask=mask,
-            )
+        new_complement = self.complement._super_copy(  # pylint: disable=protected-access
+            parent=parent,
+            omit_list=OMIT_LIST,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            mask=mask,
         )
 
         if isinstance(self, self.default_receiver_type):

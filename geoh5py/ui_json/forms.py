@@ -316,8 +316,7 @@ class DataForm(BaseForm):
     @model_validator(mode="after")
     def value_if_is_value(self):
         if (
-            "is_value"
-            in self.model_fields_set  # pylint: disable=unsupported-membership-test
+            "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
             and self.is_value
         ):
             if isinstance(self.value, UUID):
@@ -327,10 +326,8 @@ class DataForm(BaseForm):
     @model_validator(mode="after")
     def property_if_not_is_value(self):
         if (
-            "is_value"
-            in self.model_fields_set  # pylint: disable=unsupported-membership-test
-            and "property"
-            not in self.model_fields_set  # pylint: disable=unsupported-membership-test
+            "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
+            and "property" not in self.model_fields_set  # pylint: disable=unsupported-membership-test
         ):
             raise ValueError("A property must be provided in is_value is used.")
         return self

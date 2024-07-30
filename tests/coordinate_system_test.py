@@ -24,6 +24,7 @@ from PIL import Image
 from geoh5py.objects import GeoImage
 from geoh5py.workspace import Workspace
 
+
 # test tag
 tag = {
     256: (128,),
@@ -58,7 +59,7 @@ def test_coordinate_system(tmp_path):
 
     # load image
     geoimage = GeoImage.create(
-        workspace, name="test_area_a", image=f"{str(tmp_path)}/testtif.tif"
+        workspace, name="test_area_a", image=f"{tmp_path!s}/testtif.tif"
     )
 
     # create RGB grid2d

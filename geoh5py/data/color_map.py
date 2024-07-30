@@ -23,6 +23,7 @@ import numpy as np
 from ..shared.exceptions import ShapeValidationError
 from ..shared.utils import map_attributes
 
+
 if TYPE_CHECKING:
     from .data_type import DataType
 
@@ -82,12 +83,12 @@ class ColorMap:
                 )
 
             self._values = np.asarray(
-                values, dtype=list(zip(self._names, self._formats))
+                values, dtype=list(zip(self._names, self._formats, strict=False))
             )
         self.parent.modified_attributes = "color_map"
 
         if self.parent is not None:
-            getattr(self.parent, "workspace").update_attribute(self, "color_map")
+            self.parent.workspace.update_attribute(self, "color_map")
 
     @property
     def name(self) -> str:

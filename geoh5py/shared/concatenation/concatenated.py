@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 
 from ...shared.entity import Entity
 
+
 if TYPE_CHECKING:
     from .concatenator import Concatenator
 

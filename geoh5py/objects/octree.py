@@ -24,6 +24,7 @@ import numpy as np
 
 from .grid_object import GridObject
 
+
 if TYPE_CHECKING:
     from geoh5py.objects import ObjectType
 

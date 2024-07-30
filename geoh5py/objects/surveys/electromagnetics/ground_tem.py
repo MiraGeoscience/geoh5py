@@ -25,6 +25,7 @@ from geoh5py.objects.object_base import ObjectType
 
 from .base import LargeLoopGroundEMSurvey, MovingLoopGroundEMSurvey, TEMSurvey
 
+
 # pylint: disable=too-many-ancestors, no-member
 # mypy: disable-error-code="attr-defined"
 
@@ -64,9 +65,7 @@ class MovingLoopGroundTEMSurvey(TEMSurvey, MovingLoopGroundEMSurvey):
         return MovingLoopGroundTEMTransmitters
 
 
-class MovingLoopGroundTEMReceivers(
-    MovingLoopGroundTEMSurvey
-):  # pylint: disable=too-many-ancestors
+class MovingLoopGroundTEMReceivers(MovingLoopGroundTEMSurvey):  # pylint: disable=too-many-ancestors
     """
     Airborne time-domain electromagnetic receivers class.
     """
@@ -103,9 +102,7 @@ class MovingLoopGroundTEMReceivers(
         return self.__TYPE
 
 
-class MovingLoopGroundTEMTransmitters(
-    MovingLoopGroundTEMSurvey
-):  # pylint: disable=too-many-ancestors
+class MovingLoopGroundTEMTransmitters(MovingLoopGroundTEMSurvey):  # pylint: disable=too-many-ancestors
     """
     Airborne frequency-domain electromagnetic transmitters class.
     """

@@ -35,8 +35,8 @@ from ..shared.entity_container import EntityContainer
 from ..shared.utils import clear_array_attributes
 from .object_type import ObjectType
 
-if TYPE_CHECKING:
 
+if TYPE_CHECKING:
     from ..workspace import Workspace
 
 
@@ -45,7 +45,7 @@ class ObjectBase(EntityContainer):
     Object base class.
     """
 
-    _attribute_map: dict = getattr(EntityContainer, "_attribute_map").copy()
+    _attribute_map: dict = EntityContainer._attribute_map.copy()
     _attribute_map.update(
         {"Last focus": "last_focus", "PropertyGroups": "property_groups"}
     )

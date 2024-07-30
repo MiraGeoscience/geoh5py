@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING
 
 from ... import objects
 
+
 if TYPE_CHECKING:
     from ...objects import ObjectBase
     from ...workspace import Workspace

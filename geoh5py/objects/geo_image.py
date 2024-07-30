@@ -37,6 +37,7 @@ from ..shared.utils import (
 )
 from .object_base import ObjectBase, ObjectType
 
+
 if TYPE_CHECKING:
     from ..objects import Grid2D
 

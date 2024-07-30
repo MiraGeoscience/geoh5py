@@ -23,6 +23,7 @@ from ...data import Data
 from ..utils import as_str_if_uuid
 from .concatenated import Concatenated
 
+
 if TYPE_CHECKING:
     from .object import ConcatenatedObject
     from .property_group import ConcatenatedPropertyGroup

@@ -29,6 +29,7 @@ from ..groups import PropertyGroup
 from ..shared.utils import box_intersect, mask_by_extent
 from .points import Points
 
+
 if TYPE_CHECKING:
     from geoh5py.objects import ObjectType
 
@@ -101,7 +102,7 @@ class CellObject(Points, ABC):
 
         cells = np.delete(self.cells, indices, axis=0)
         self._cells = None
-        setattr(self, "cells", cells)
+        self.cells = cells
 
         self.remove_children_values(indices, "CELL", clear_cache=clear_cache)
 
@@ -136,13 +137,13 @@ class CellObject(Points, ABC):
         vertices = self.vertices[vert_index, :]
 
         self._vertices = None
-        setattr(self, "vertices", vertices)
+        self.vertices = vertices
         self.remove_children_values(indices, "VERTEX", clear_cache=clear_cache)
 
         new_index = np.ones_like(vert_index, dtype=int)
         new_index[vert_index] = np.arange(self.vertices.shape[0])
         self.remove_cells(np.where(~np.all(vert_index[self.cells], axis=1)))
-        setattr(self, "cells", new_index[self.cells])
+        self.cells = new_index[self.cells]
 
     def copy(  # pylint: disable=too-many-branches
         self,

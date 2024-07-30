@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING
 
 from .object_base import ObjectBase, ObjectType
 
+
 if TYPE_CHECKING:
     from numpy import ndarray
 
