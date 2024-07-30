@@ -21,6 +21,7 @@ from abc import ABC
 
 import numpy as np
 
+
 BOOLEAN_VALUE_MAP = {0: "False", 1: "True"}
 
 

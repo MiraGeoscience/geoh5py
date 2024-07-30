@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 
 from . import NoTypeGroup
 
+
 if TYPE_CHECKING:
     from ..groups import GroupType
 
@@ -31,7 +32,6 @@ class RootGroup(NoTypeGroup):
     __ROOT_NAME = "Workspace"
 
     def __init__(self, group_type: GroupType, **kwargs):
-
         super().__init__(group_type, **kwargs)
 
         # Hard wired attributes

@@ -56,7 +56,7 @@ def test_create_curve_data(tmp_path: Path):
 
         cells = curve.cells.copy()
         assert cells.shape[0] == 10, "Error creating cells from parts." ""
-        setattr(curve, "_cells", None)
+        curve._cells = None
         with pytest.raises(ValueError, match="Array of cells should be of shape"):
             curve.cells = np.c_[1]
 

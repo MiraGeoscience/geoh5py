@@ -115,7 +115,7 @@ def test_remove_root(tmp_path: Path):
         ):
             points2.add_data_to_group(["abs"], "bidon")
 
-        setattr(points2, "_property_groups", None)
+        points2._property_groups = None
 
         assert points2.remove_data_from_groups(data2) is None
 

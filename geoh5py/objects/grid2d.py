@@ -27,6 +27,7 @@ from ..shared.conversion import Grid2DConversion
 from ..shared.utils import mask_by_extent, xy_rotation_matrix, yz_rotation_matrix
 from .grid_object import GridObject
 
+
 if TYPE_CHECKING:
     from geoh5py.objects import ObjectType
 

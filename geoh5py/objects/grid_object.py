@@ -27,6 +27,7 @@ from ..data import Data
 from ..shared.utils import box_intersect, mask_by_extent
 from .object_base import ObjectBase
 
+
 if TYPE_CHECKING:
     from geoh5py.objects import ObjectType
 

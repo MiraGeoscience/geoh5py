@@ -21,9 +21,10 @@ from typing import TYPE_CHECKING
 
 from ..shared import EntityType
 
+
 if TYPE_CHECKING:
     from ..workspace import Workspace
-    from . import base  # noqa: F401
+    from . import base
 
 
 class GroupType(EntityType):

@@ -281,7 +281,6 @@ def test_object_form_mesh_type():
 
 
 def test_object_form_mesh_type_as_classes(tmp_path):
-
     ws = Workspace(tmp_path / "test.geoh5")
     points = Points.create(ws, vertices=np.random.rand(10, 3))
 

@@ -42,7 +42,7 @@ def test_create_grid_2d_data(tmp_path):
         grid = Grid2D.create(workspace_context)
 
         converter = Grid2DConversion
-        setattr(grid, "_origin", None)
+        grid._origin = None
         with pytest.raises(AttributeError, match="The Grid2D has no origin."):
             converter.grid_to_tag(grid)
 

@@ -26,6 +26,7 @@ from .concatenated import Concatenated
 from .data import ConcatenatedData
 from .property_group import ConcatenatedPropertyGroup
 
+
 if TYPE_CHECKING:
     from ..entity import Entity
     from .concatenator import Concatenator

@@ -277,7 +277,7 @@ def test_flatten_group_value():
         group_value=my_uuid,
     )
 
-    validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
+    validators = InputValidation._validations_from_uijson(ui_json)
     assert validators["test"]["types"] == [list]
 
     flat = flatten(ui_json)
@@ -290,7 +290,7 @@ def test_flatten_group_value():
         group_value=None,
         optional="enabled",
     )
-    validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
+    validators = InputValidation._validations_from_uijson(ui_json)
     assert validators["test"]["types"] == [list]
 
     flat = flatten(ui_json)
@@ -305,7 +305,7 @@ def test_range_label():
         value=[1, 2], property_=my_uuid, is_complement=False, optional="enabled"
     )
 
-    validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
+    validators = InputValidation._validations_from_uijson(ui_json)
     assert validators["test"]["types"] == [list]
 
     flat = flatten(ui_json)

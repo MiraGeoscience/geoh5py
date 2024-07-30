@@ -30,6 +30,7 @@ from ...data import Data, ReferencedData
 from ..curve import Curve
 from ..object_type import ObjectType
 
+
 logger = logging.getLogger(__name__)
 
 

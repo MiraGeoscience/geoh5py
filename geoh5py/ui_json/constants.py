@@ -25,6 +25,7 @@ from ..groups import PropertyGroup
 from ..shared import Entity
 from ..workspace import Workspace
 
+
 default_ui_json = {
     "title": "Custom UI",
     "geoh5": None,

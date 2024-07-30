@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 
 from ..shared import EntityType
 
+
 if TYPE_CHECKING:
     from ..workspace import Workspace
 

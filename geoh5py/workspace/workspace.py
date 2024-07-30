@@ -718,7 +718,6 @@ class Workspace(AbstractContextManager):
             children_list = {child.uid: "" for child in entity.children}
 
         else:
-
             children_list = self._io_call(
                 H5Reader.fetch_children, entity.uid, entity_type, mode="r"
             )
@@ -751,10 +750,10 @@ class Workspace(AbstractContextManager):
                         recovered_object, recursively=True
                     )
                     if getattr(recovered_object, "property_groups", None) is not None:
-                        family_tree += getattr(recovered_object, "property_groups")
+                        family_tree += recovered_object.property_groups
 
         if getattr(entity, "property_groups", None) is not None:
-            family_tree += getattr(entity, "property_groups")
+            family_tree += entity.property_groups
 
         return family_tree
 

@@ -27,6 +27,7 @@ import numpy as np
 
 from ..shared.utils import map_attributes, str2uuid
 
+
 if TYPE_CHECKING:
     from .. import shared
     from ..workspace import Workspace

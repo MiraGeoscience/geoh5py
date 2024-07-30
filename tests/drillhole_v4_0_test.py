@@ -173,7 +173,6 @@ def test_concatenator(tmp_path):
         compare_entities(dh_group_copy, dh_group, ignore=["_uid"])
 
     with Workspace(h5file_path) as workspace:
-
         assert len(workspace.get_entity("DH_group")[0].children) == 1
 
 
@@ -225,7 +224,7 @@ def test_concatenated_entities(tmp_path):
         assert prop_group.to_ is None
         assert prop_group.from_ is None
 
-        setattr(prop_group, "_parent", None)
+        prop_group._parent = None
 
         with pytest.raises(
             ValueError,
@@ -727,7 +726,9 @@ def test_copy_drillhole_group(tmp_path):
         dh_group.add_file(tmp_path / file_name)
         dh_group_copy = dh_group.copy(workspace)
 
-        for child_a, child_b in zip(dh_group.children, dh_group_copy.children):
+        for child_a, child_b in zip(
+            dh_group.children, dh_group_copy.children, strict=False
+        ):
             if isinstance(child_a, Drillhole):
                 assert child_a.name == child_b.name
                 assert child_a.collar == child_b.collar
@@ -1093,12 +1094,10 @@ def test_tables_errors(tmp_path):
 
     with workspace.open():
         with pytest.raises(TypeError, match="The parent must be a Concatenator"):
-            getattr(DrillholesGroupTable, "_get_property_groups")("bidon", "bidon")
+            DrillholesGroupTable._get_property_groups("bidon", "bidon")
 
         with pytest.raises(ValueError, match="No property group with name"):
-            getattr(DrillholesGroupTable, "_get_property_groups")(
-                drillhole_group, "bidon"
-            )
+            DrillholesGroupTable._get_property_groups(drillhole_group, "bidon")
 
         with pytest.raises(KeyError, match="The name must"):
             drillhole_group.drillholes_tables[

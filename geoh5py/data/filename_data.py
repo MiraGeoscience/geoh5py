@@ -73,7 +73,7 @@ class FilenameData(Data):
 
         if self.values is not None:
             with open(Path(path) / name, "wb") as raw_binary:
-                raw_binary.write(getattr(self, "values"))
+                raw_binary.write(self.values)
 
     @property
     def values(self) -> bytes | None:

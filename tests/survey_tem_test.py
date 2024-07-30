@@ -284,9 +284,7 @@ def test_survey_airborne_tem_data(tmp_path):
 
     receivers.timing_mark = 10**-3.1
 
-    assert (
-        getattr(receivers, "timing_mark") == 10**-3.1
-    ), "Failed in setting 'timing_mark'."
+    assert receivers.timing_mark == 10**-3.1, "Failed in setting 'timing_mark'."
     assert (
         receivers.metadata == transmitters.metadata
     ), "Error synchronizing the transmitters and receivers metadata."
@@ -344,6 +342,7 @@ def test_survey_airborne_tem_data(tmp_path):
                     for child in receivers_rec.children
                     if not isinstance(child, PropertyGroup)
                 ],
+                strict=False,
             ):
                 np.testing.assert_almost_equal(child_a.values[5:], child_b.values)
 
