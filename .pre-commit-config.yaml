@@ -39,7 +39,22 @@ repos:
             tomli, # to read config from pyproject.toml
             types-toml,
         ]
-        exclude: ^(geoh5py/interfaces/__init__\.py|geoh5py/handlers/__init__\.py|geoh5py/interfaces|geoh5py/handlers|tests|geoh5py/shared/utils\.py|geoh5py/shared/entity_type\.py|geoh5py/data/data_type\.py|geoh5py/objects/cell_object\.py|geoh5py/shared/concatenation/drillhole\.py|geoh5py/shared/concatenation/concatenator\.py|geoh5py/workspace/workspace\.py|geoh5py/ui_json/validation\.py)/
+        exclude: |
+            (?x)(^
+                geoh5py/interfaces/__init__.py|
+                geoh5py/handlers/__init__.py|
+                geoh5py/interfaces|
+                geoh5py/handlers|
+                tests|
+                geoh5py/shared/utils.py|
+                geoh5py/shared/entity_type.py|
+                geoh5py/data/data_type.py|
+                geoh5py/objects/cell_object.py|
+                geoh5py/shared/concatenation/drillhole.py|
+                geoh5py/shared/concatenation/concatenator.py|
+                geoh5py/workspace/workspace.py|
+                geoh5py/ui_json/validation.py
+            )$
 -   repo: https://github.com/codingjoe/relint
     rev: 3.1.1
     hooks:
