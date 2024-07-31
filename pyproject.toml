@@ -73,6 +73,10 @@ ignore = [
     "TID252", # TO DO
     "RUF012", # TO DO
     "UP038", # TO DO
+    "RUF003", # TO DO
+    "RUF015", # TO DO
+    "B018", # TO DO
+    "B024", # TO DO
 ]
 select = [
     "A",  # flake8-builtins
