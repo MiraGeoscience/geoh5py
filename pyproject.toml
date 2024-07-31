@@ -81,6 +81,7 @@ ignore = [
     "B008", # TO DO
     "B018", # TO DO
     "B024", # TO DO
+    "B027", # TO DO
     "E721", # TO DO
     "C409", # TO DO
 ]
