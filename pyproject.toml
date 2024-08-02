@@ -70,20 +70,20 @@ ignore = [
     "B028",  # no-explicit-stacklevel for warnings.warn()
     "E501",  # line-too-long - code is reformatted (do not care about comments and docstring)
     "F401",  # unsused-import - covered by pycln
-    "TID252", # TO DO
-    "RUF012", # TO DO
-    "UP031", # TO DO
-    "UP038", # TO DO
-    "RUF001", # TO DO
-    "RUF003", # TO DO
-    "RUF005", # TO DO
-    "RUF015", # TO DO
-    "B008", # TO DO
-    "B018", # TO DO
-    "B024", # TO DO
-    "B027", # TO DO
-    "E721", # TO DO
-    "C409", # TO DO
+    "TID252", # TODO
+    "RUF012", # TODO
+    "UP031", # TODO
+    "UP038", # TODO
+    "RUF001", # TODO
+    "RUF003", # TODO
+    "RUF005", # TODO
+    "RUF015", # TODO
+    "B008", # TODO
+    "B018", # TODO
+    "B024", # TODO
+    "B027", # TODO
+    "E721", # TODO
+    "C409", # TODO
 ]
 select = [
     "A",  # flake8-builtins
