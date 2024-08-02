@@ -28,9 +28,10 @@ from .geometric_data_constants import GeometricDataConstants
 from .primitive_type_enum import PrimitiveTypeEnum
 from .reference_value_map import ReferenceValueMap
 
+
 if TYPE_CHECKING:
     from ..workspace import Workspace
-    from .data import Data  # noqa: F401
+    from .data import Data
 
 
 ColorMapping = Literal["linear", "equal_area", "logarithmic", "cdf", "missing"]
@@ -259,7 +260,7 @@ class DataType(EntityType):
         if isinstance(value, str):
             value = getattr(PrimitiveTypeEnum, value.replace("-", "_").upper())
         elif hasattr(value, "primitive_type"):
-            value = getattr(value, "primitive_type")()
+            value = value.primitive_type()
         if not isinstance(value, (PrimitiveTypeEnum, type(None))):
             raise ValueError(
                 f"Primitive type value must be of type {PrimitiveTypeEnum}, find {type(value)}"
@@ -327,7 +328,6 @@ class DataType(EntityType):
                 elif isinstance(values, np.ndarray) and (
                     np.issubdtype(values.dtype, np.integer)
                 ):
-
                     entity_type = {"primitive_type": "INTEGER"}
                 elif isinstance(values, str) or (
                     isinstance(values, np.ndarray) and values.dtype.kind in ["U", "S"]
@@ -341,7 +341,7 @@ class DataType(EntityType):
                         "BOOLEAN and TEXT have been implemented"
                     )
         elif isinstance(entity_type, EntityType) and (
-            (entity_type.uid not in getattr(workspace, "_types"))
+            (entity_type.uid not in workspace._types)
             or (entity_type.workspace != workspace)
         ):
             return entity_type.copy(workspace=workspace)

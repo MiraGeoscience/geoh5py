@@ -30,6 +30,7 @@ import numpy as np
 from ..shared.utils import str2uuid
 from .entity import Entity
 
+
 if TYPE_CHECKING:
     from .. import shared
     from ..groups import PropertyGroup
@@ -61,7 +62,6 @@ class EntityContainer(Entity):
             file = Path(file)
 
         if isinstance(file, Path):
-
             if not file.is_file():
                 raise ValueError(f"Input file '{file}' does not exist.")
 

@@ -21,30 +21,17 @@ repos:
     hooks:
     -   id: pycln
         args: [--config=pyproject.toml]
--   repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.5
     hooks:
-    -   id: isort
-        additional_dependencies: [tomli] # to read config from pyproject.toml
--   repo: https://github.com/psf/black
-    rev: 24.4.2
-    hooks:
-    -   id: black
--   repo: https://github.com/PyCQA/flake8
-    rev: 7.1.0
-    hooks:
-    -   id: flake8
-        types: [text]
-        types_or: [python, pyi]
--   repo: https://github.com/asottile/pyupgrade
-    rev: v3.16.0
-    hooks:
-    -   id: pyupgrade
-        args: [--py310-plus]
-        types: [text]
-        types_or: [python, pyi]
+    -   id: ruff
+        args:
+        -   --fix
+        -   --exit-non-zero-on-fix
+#        -   --unsafe-fixes
+    -   id: ruff-format
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.1
+    rev: v1.11.0
     hooks:
     -   id: mypy
         additional_dependencies: [
@@ -53,12 +40,35 @@ repos:
             tomli, # to read config from pyproject.toml
             types-toml,
         ]
-        exclude: (geoh5py/interfaces/__init__\.py|geoh5py/handlers/__init__\.py|geoh5py/interfaces|geoh5py/handlers|tests)
+        exclude: |
+            (?x)(^
+                geoh5py/interfaces/__init__.py|
+                geoh5py/handlers/__init__.py|
+                geoh5py/interfaces|
+                geoh5py/handlers|
+                tests|
+                geoh5py/shared/utils.py|
+                geoh5py/shared/entity_type.py|
+                geoh5py/data/data_type.py|
+                geoh5py/objects/cell_object.py|
+                geoh5py/shared/concatenation/drillhole.py|
+                geoh5py/shared/concatenation/concatenator.py|
+                geoh5py/workspace/workspace.py|
+                geoh5py/ui_json/validation.py
+            )$
 -   repo: https://github.com/codingjoe/relint
     rev: 3.1.1
     hooks:
     -   id: relint
         args: [-W]  # to fail on warnings
+-   repo: https://github.com/MiraGeoscience/pre-commit-hooks
+    rev: v1.0.1
+    hooks:
+    -   id: check-copyright
+        files: (^LICENSE|^README(|-dev).rst|\.py|\.pyi)$
+        exclude: (^\.|^docs/)
+    -   id: prepare-commit-msg
+    -   id: check-commit-msg
 -   repo: local
     hooks:
     -   id: pylint
@@ -69,23 +79,6 @@ repos:
         types: [text]
         types_or: [python, pyi]
         exclude: ^(devtools|docs|geoh5py/interfaces|geoh5py/handlers)/
-    -   id: check-copyright
-        name: Check copyright
-        entry: python devtools/check-copyright.py
-        language: python
-        types: [text]
-        files: (^LICENSE|^README(|-dev).rst|\.py|\.pyi)$
-        exclude: (^\.|^docs/)
-    -   id: prepare-commit-msg
-        stages: [prepare-commit-msg]
-        name: Prepare commit message
-        entry: python devtools/git_message_hook.py --prepare
-        language: python
-    -   id: check-commit-msg
-        stages: [commit-msg]
-        name: Check commit message
-        entry: python devtools/git_message_hook.py --check
-        language: python
 -   repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:
@@ -121,7 +114,7 @@ repos:
         exclude_types: [jupyter]
         exclude: ^docs/(.*/)?images/
 -   repo: https://github.com/rstcheck/rstcheck
-    rev: v6.2.0
+    rev: v6.2.4
     hooks:
     -   id: rstcheck
         exclude: ^THIRD_PARTY_SOFTWARE.rst$

@@ -29,6 +29,7 @@ from uuid import UUID
 import h5py
 import numpy as np
 
+
 if TYPE_CHECKING:
     from ..workspace import Workspace
     from .entity import Entity
@@ -103,17 +104,13 @@ def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
 
     :return h5py.File: Handle to an opened Workspace.
     """
-    if (
-        workspace is None
-        or getattr(workspace, "_geoh5")
-        and mode in workspace.geoh5.mode
-    ):
+    if workspace is None or workspace._geoh5 and mode in workspace.geoh5.mode:
         try:
             yield workspace
         finally:
             pass
     else:
-        if getattr(workspace, "_geoh5"):
+        if workspace._geoh5:
             warnings.warn(
                 f"Closing the workspace in mode '{workspace.geoh5.mode}' "
                 f"and re-opening in mode '{mode}'."
@@ -271,7 +268,9 @@ def compare_arrays(object_a, object_b, attribute: str, decimal: int = 6):
     if len(attr_a) > 0 and isinstance(attr_a[0], str):
         assert all(
             a == b
-            for a, b in zip(getattr(object_a, attribute), getattr(object_b, attribute))
+            for a, b in zip(
+                getattr(object_a, attribute), getattr(object_b, attribute), strict=False
+            )
         ), f"Error comparing attribute '{attribute}'."
     else:
         np.testing.assert_array_almost_equal(
@@ -296,7 +295,7 @@ def compare_list(object_a, object_b, attribute: str, ignore: list[str] | None):
     get_object_b = getattr(object_b, attribute)
     assert isinstance(get_object_a, list)
     assert len(get_object_a) == len(get_object_b)
-    for obj_a, obj_b in zip(get_object_a, get_object_b):
+    for obj_a, obj_b in zip(get_object_a, get_object_b, strict=False):
         assert are_objects_similar(obj_a, obj_b, ignore)
 
 
@@ -397,7 +396,7 @@ def uuid2entity(value: UUID, workspace: Workspace) -> Entity | Any:
             if getattr(obj, "property_groups", None) is not None:
                 prop_group = [
                     prop_group
-                    for prop_group in getattr(obj, "property_groups")
+                    for prop_group in obj.property_groups
                     if prop_group.uid == value
                 ]
 
@@ -510,7 +509,7 @@ def box_intersect(extent_a: np.ndarray, extent_b: np.ndarray) -> bool:
                 "bounds in nd-space on the first and second row respectively."
             )
 
-    for comp_a, comp_b in zip(extent_a.T, extent_b.T):
+    for comp_a, comp_b in zip(extent_a.T, extent_b.T, strict=False):
         min_ext = max(comp_a[0], comp_b[0])
         max_ext = min(comp_a[1], comp_b[1])
 
@@ -543,7 +542,7 @@ def mask_by_extent(
         )
 
     indices = np.ones(locations.shape[0], dtype=bool)
-    for loc, lim in zip(locations.T, extent.T):
+    for loc, lim in zip(locations.T, extent.T, strict=False):
         indices &= (lim[0] <= loc) & (loc <= lim[1])
 
     if inverse:
@@ -637,8 +636,8 @@ def map_attributes(object_, **kwargs):
 
     for attr, item in kwargs.items():
         try:
-            if attr in getattr(object_, "_attribute_map"):
-                attr = getattr(object_, "_attribute_map")[attr]
+            if attr in object_._attribute_map:
+                attr = object_._attribute_map[attr]
             setattr(object_, attr, item)
         except AttributeError:
             continue

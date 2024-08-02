@@ -176,5 +176,6 @@ def test_create_survey_mt(tmp_path):
                     for child in mt_survey_rec.children
                     if not isinstance(child, PropertyGroup)
                 ],
+                strict=False,
             ):
                 np.testing.assert_array_almost_equal(child_a.values, child_b.values[:6])

@@ -103,7 +103,7 @@ def test_input_file_json():
         RequiredValidationError,
         match=RequiredValidationError.message("title", None, None),
     ):
-        getattr(InputFile(ui_json=ui_json), "data")
+        InputFile(ui_json=ui_json).data
 
     # Test wrong type for core geoh5 parameter
     ui_json = deepcopy(default_ui_json)
@@ -113,7 +113,7 @@ def test_input_file_json():
         ValueError,
         match="Input 'geoh5' must be a valid :obj:`geoh5py.workspace.Workspace`.",
     ):
-        getattr(InputFile(ui_json=ui_json), "data")
+        InputFile(ui_json=ui_json).data
 
 
 def test_input_file_name_path(tmp_path: Path):
@@ -355,9 +355,7 @@ def test_shape_parameter(tmp_path: Path):
         ShapeValidationError,
         match=re.escape(ShapeValidationError.message("data", (1,), (2,))),
     ):
-        getattr(
-            InputFile(ui_json=ui_json, validations={"data": {"shape": (2,)}}), "data"
-        )
+        InputFile(ui_json=ui_json, validations={"data": {"shape": (2,)}}).data
 
 
 def test_missing_required_field(tmp_path: Path):
@@ -375,7 +373,7 @@ def test_missing_required_field(tmp_path: Path):
             "object", RequiredValidationError.message("value", None, None)
         ),
     ):
-        getattr(InputFile(ui_json=ui_json), "data")
+        InputFile(ui_json=ui_json).data
 
 
 def test_object_promotion(tmp_path: Path):
@@ -440,7 +438,7 @@ def test_invalid_uuid_string(tmp_path: Path):
         TypeValidationError,
         match=TypeValidationError.message("data", "int", ["str", "UUID", "Entity"]),
     ):
-        getattr(InputFile(ui_json=ui_json), "data")
+        InputFile(ui_json=ui_json).data
 
 
 def test_valid_uuid_in_workspace(tmp_path: Path):
@@ -456,7 +454,7 @@ def test_valid_uuid_in_workspace(tmp_path: Path):
         AssociationValidationError,
         match=AssociationValidationError.message("data", bogus_uuid, workspace),
     ):
-        getattr(InputFile(ui_json=ui_json), "data")
+        InputFile(ui_json=ui_json).data
 
 
 def test_property_group_with_wrong_type(tmp_path: Path):
@@ -480,7 +478,7 @@ def test_property_group_with_wrong_type(tmp_path: Path):
             ),
         ),
     ):
-        getattr(InputFile(ui_json=ui_json), "data")
+        InputFile(ui_json=ui_json).data
 
     ui_json["data"]["dataGroupType"] = "3D vector"
     ui_json["data"]["value"] = points.property_groups[0]
@@ -491,7 +489,7 @@ def test_property_group_with_wrong_type(tmp_path: Path):
             "data", points.property_groups[0], "3D vector"
         ),
     ):
-        getattr(InputFile(ui_json=ui_json), "data")
+        InputFile(ui_json=ui_json).data
 
 
 def test_data_with_wrong_parent(tmp_path: Path):
@@ -516,7 +514,7 @@ def test_data_with_wrong_parent(tmp_path: Path):
         AssociationValidationError,
         match=AssociationValidationError.message("data", no_property_child[0], points),
     ):
-        getattr(InputFile(ui_json=ui_json), "data")
+        InputFile(ui_json=ui_json).data
 
 
 def test_input_file(tmp_path: Path):
@@ -668,7 +666,7 @@ def test_multi_object_value_parameter(tmp_path: Path):
         UserWarning,
         match="Data associated with multiSelect dependent is not supported. Validation ignored.",
     ):
-        getattr(in_file, "data")
+        in_file.data
 
     ui_json.pop("data")
     in_file = InputFile(ui_json=ui_json)

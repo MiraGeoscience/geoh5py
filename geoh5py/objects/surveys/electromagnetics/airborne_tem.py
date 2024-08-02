@@ -24,6 +24,7 @@ from geoh5py.objects.object_base import ObjectType
 
 from .base import AirborneEMSurvey, TEMSurvey
 
+
 # pylint: disable=too-many-ancestors
 
 

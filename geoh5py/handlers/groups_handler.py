@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING
 from .. import interfaces
 from ..workspace import Workspace
 
+
 if TYPE_CHECKING:
     from ..interfaces.groups import Group as i_Group
     from ..interfaces.groups import GroupQuery as i_GroupQuery

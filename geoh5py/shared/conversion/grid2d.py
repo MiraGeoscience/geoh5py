@@ -29,6 +29,7 @@ from ...shared import FLOAT_NDV
 from ...shared.utils import PILLOW_ARGUMENTS, xy_rotation_matrix, yz_rotation_matrix
 from .base import CellObjectConversion
 
+
 if TYPE_CHECKING:
     from ...objects import GeoImage, Grid2D
 

@@ -25,6 +25,7 @@ from warnings import warn
 
 from ..shared.utils import ensure_uuid
 
+
 if TYPE_CHECKING:
     from ..workspace import Workspace
 
@@ -97,9 +98,7 @@ class EntityType(ABC):
 
         attributes.update(kwargs)
 
-        if attributes.get("uid") in getattr(
-            attributes.get("workspace", self.workspace), "_types"
-        ):
+        if attributes.get("uid") in attributes.get("workspace", self.workspace)._types:
             del attributes["uid"]
 
         return self.__class__(**attributes)
@@ -193,7 +192,7 @@ class EntityType(ABC):
         if (
             getattr(entity_class, "default_type_uid", None) is not None
         ) and uid is None:
-            uid = getattr(entity_class, "default_type_uid")()
+            uid = entity_class.default_type_uid()
 
         if uid is not None:
             entity_type = cls.find(workspace, ensure_uuid(uid))

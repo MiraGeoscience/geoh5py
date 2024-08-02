@@ -29,6 +29,7 @@ from ..shared.entity import Entity
 from ..shared.entity_container import EntityContainer
 from .group_type import GroupType
 
+
 if TYPE_CHECKING:
     from ..workspace import Workspace
 
@@ -39,7 +40,6 @@ class Group(EntityContainer):
     _default_name = "Group"
 
     def __init__(self, group_type: GroupType, **kwargs):
-
         if not isinstance(group_type, GroupType):
             raise TypeError(
                 f"Input 'group_type' must be of type {GroupType}, not {type(group_type)}"

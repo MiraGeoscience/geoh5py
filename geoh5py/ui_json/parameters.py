@@ -25,6 +25,7 @@ from geoh5py.groups import PropertyGroup
 from geoh5py.shared.utils import SetDict
 from geoh5py.ui_json.enforcers import EnforcerPool
 
+
 Validation = dict[str, Any]
 
 

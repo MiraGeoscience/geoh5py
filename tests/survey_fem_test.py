@@ -311,6 +311,7 @@ def test_survey_airborne_fem_data(tmp_path):
                     for child in receivers_rec.children
                     if not isinstance(child, PropertyGroup)
                 ],
+                strict=False,
             ):
                 np.testing.assert_almost_equal(child_a.values[5:], child_b.values)
 

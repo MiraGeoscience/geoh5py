@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING
 from ..data import Data, DataAssociationEnum
 from ..shared.utils import map_attributes
 
+
 if TYPE_CHECKING:
     from ..objects import ObjectBase
 
@@ -232,7 +233,6 @@ class PropertyGroup(ABC):
             return
 
         for elem in data:
-
             if isinstance(elem, Data):
                 elem = elem.uid
 

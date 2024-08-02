@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING
 from .. import interfaces
 from ..workspace import Workspace
 
+
 if TYPE_CHECKING:
     from ..interfaces.objects import BlockModel as i_BlockModel
     from ..interfaces.objects import Curve as i_Curve

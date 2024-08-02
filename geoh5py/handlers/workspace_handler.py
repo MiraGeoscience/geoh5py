@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING
 
 from .. import interfaces
 
+
 if TYPE_CHECKING:
     from ..interfaces.shared import Uuid as i_Uuid
     from ..interfaces.shared import VersionString as i_VersionString

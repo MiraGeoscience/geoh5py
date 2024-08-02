@@ -23,6 +23,7 @@ from uuid import UUID
 
 from geoh5py.shared.utils import iterable_message
 
+
 if TYPE_CHECKING:
     from geoh5py import Workspace
     from geoh5py.groups import PropertyGroup
@@ -75,7 +76,7 @@ class AggregateValidationError(BaseValidationError):
     def message(cls, name, value, validation=None):
         msg = f"\n\nValidation of '{name}' collected {len(value)} errors:\n"
         for i, err in enumerate(value):
-            msg += f"\t{i}. {str(err)}\n"
+            msg += f"\t{i}. {err!s}\n"
         return msg
 
 

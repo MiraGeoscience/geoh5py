@@ -28,7 +28,6 @@ from .groups import CustomGroup
 
 
 def get_type_uid_classes():
-
     members = []
     for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
         if inspect.isclass(member) and hasattr(member, "default_type_uid"):

@@ -77,7 +77,7 @@ def class_or_raise(value: UUID) -> type[ObjectBase] | type[Group]:
     """Promote uid to class, raise if uid is not a geoh5py type uid."""
     if value not in TYPE_UID_TO_CLASS:
         raise ValueError(
-            f"Provided type_uid string {str(value)} is not a recognized "
+            f"Provided type_uid string {value!s} is not a recognized "
             f"geoh5py object or group type uid."
         )
     return TYPE_UID_TO_CLASS[value]

@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+
 try:
     import thriftpy2
 except (ModuleNotFoundError, ImportError):
