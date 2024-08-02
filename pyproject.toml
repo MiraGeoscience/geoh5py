@@ -120,7 +120,8 @@ show_column_numbers = true
 check_untyped_defs = true
 
 plugins = [
-#    'numpy.typing.mypy_plugin'
+#    "numpy.typing.mypy_plugin",
+    "pydantic.mypy"
 ]
 
 [tool.coverage.run]
