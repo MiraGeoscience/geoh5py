@@ -34,7 +34,7 @@ jobs:
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest_windows.yml@main
     with:
       package_manager: 'poetry'
-      python_ver: '["3.10"]'
+      python_ver: '["3.10", "3.11", "3.12"]'
       cache_number: 1
       codecov_reference_python_ver: '3.10'
     secrets:
