@@ -42,14 +42,14 @@ dependencies = [
 ]
 dynamic = ["version"]
 [project.urls]
-documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
+Documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
 Homepage = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
 Repository = "https://github.com/MiraGeoscience/geoh5py"
 
 [tool.hatch.version]
 path = "geoh5py/__init__.py"
 
-[tool.hatch.build.targets.sdist]
+[tool.hatch.build.targets.sdist] # What to include given the target
 include = [
     "geoh5py",
     "COPYING",
@@ -92,9 +92,9 @@ dependencies = [
     "pytest",
     "pytest-cov",
 ]
-matrix-name-format = "{variable}_{value}"
+matrix-name-format = "{variable}_{value}" # (eg py3.12)
 
-[tool.hatch.envs.test.scripts]
+[tool.hatch.envs.test.scripts] # (eg hatch run test:cov)
 all = [
     "pytest test/"
 ]
@@ -195,4 +195,3 @@ lines-after-imports = 2
 
 [tool.ruff.format]
 # default formatting is just fine
-
