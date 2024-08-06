@@ -38,9 +38,21 @@ dependencies = [
     "pydantic~=2.5.2",
     "h5py",
     "numpy~=1.26.0",
-    "Pillow~=10.3.0"
+    "Pillow~=10.3.0",
 ]
 dynamic = ["version"]
+
+[project.optional-dependencies]
+test = [
+    "coverage",
+    "pytest",
+    "pytest-cov",
+]
+quality = [
+    "pylint",
+    "pre-commit",
+]
+
 [project.urls]
 Documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
 Homepage = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
@@ -82,22 +94,19 @@ exclude = [
 [tool.hatch.envs.default]
 dependencies = [
     "pygments",
-    "pylint",
     "scipy~=1.14.0",
+]
+features = [
+    "test",
+    "quality",
 ]
 
 [tool.hatch.envs.test]
-dependencies = [ # Depenencies of test env
-    "coverage",
-    "pytest",
-    "pytest-cov",
+features = [
+    "test"
 ]
-matrix-name-format = "{variable}_{value}" # (eg py3.12)
 
 [tool.hatch.envs.test.scripts] # (eg hatch run test:cov)
-all = [
-    "pytest test/"
-]
 test = "pytest tests"
 cov = 'pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=pkg --cov=tests'
 
@@ -105,19 +114,38 @@ cov = 'pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=pkg --
 python = ["3.10", "3.11", "3.12"] # 3 envs : py3.10, py3.11, py3.12
 
 [tool.hatch.envs.docs]
-dependencies = [ # Dependencies of docs env
-    "sphinx~=5.0",
+detached = true # Skip project installation and disable inheritance
+dependencies = [
+    # Sphinx dependencies
+    "sphinx",
+    "sphinx_issues",
     "sphinx-autodoc-typehints",
     "sphinx-rtd-theme",
+    "nbsphinx",
     "nbstripout",
     "numpydoc",
-    "sphinx_issues",
-    "nbsphinx",
-    "sphinxcontrib.googleanalytics",
+    "sphinxcontrib-bibtex",
+    "sphinxcontrib-googleanalytics",
+    # Jupyter dependencies
+    "jupyter_client",
+    "ipykernel",
+    # Data showing dependencies
+    "matplotlib",
+    "scipy",
+    "h5py",
 ]
 
+[tool.hatch.envs.docs.env-vars]
+BUILD_DIR = "_build"
+
 [tool.hatch.envs.docs.scripts] # eg hatch run script docs:html
-html = "sphinx-build -b html -d _build/doctrees docs _build/html"
+html = 'sphinx-build -b html -d $BUILD_DIR/doctrees docs $BUILD_DIR/html'
+dirhtml = 'sphinx-build -b dirhtml -d $BUILD_DIR/doctrees docs $BUILD_DIR/dirhtml'
+singlehtml = 'sphinx-build -b singlehtml -d $BUILD_DIR/doctrees docs $BUILD_DIR/singlehtml'
+pickle = 'sphinx-build -b pickle -d $BUILD_DIR/doctrees docs $BUILD_DIR/pickle'
+json = 'sphinx-build -b json -d $BUILD_DIR/doctrees docs $BUILD_DIR/json'
+latex = 'sphinx-build -b latex -d $BUILD_DIR/doctrees docs $BUILD_DIR/latex'
+doctest = 'sphinx-build -b doctest -d $BUILD_DIR/doctrees docs $BUILD_DIR/doctest'
 
 [tool.coverage.run]
 branch = true
