@@ -11,11 +11,6 @@ ci:
     autoupdate_schedule: monthly
 
 repos:
--   repo: https://github.com/python-poetry/poetry
-    rev: 1.8.0
-    hooks:
-    -   id: poetry-check
-        args: [--lock]
 -   repo: https://github.com/hadialqattan/pycln
     rev: v2.4.0
     hooks:
@@ -73,7 +68,7 @@ repos:
     hooks:
     -   id: pylint
         name: pylint
-        entry: poetry run pylint
+        entry: hatch run pylint
         language: system
         require_serial: true  # pylint does its own parallelism
         types: [text]
