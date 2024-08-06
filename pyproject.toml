@@ -136,16 +136,11 @@ dependencies = [
 ]
 
 [tool.hatch.envs.docs.env-vars]
-BUILD_DIR = "_build"
+BUILD_DIR = "docs/_build"
 
 [tool.hatch.envs.docs.scripts] # eg hatch run script docs:html
 html = 'sphinx-build -b html -d $BUILD_DIR/doctrees docs $BUILD_DIR/html'
-dirhtml = 'sphinx-build -b dirhtml -d $BUILD_DIR/doctrees docs $BUILD_DIR/dirhtml'
-singlehtml = 'sphinx-build -b singlehtml -d $BUILD_DIR/doctrees docs $BUILD_DIR/singlehtml'
-pickle = 'sphinx-build -b pickle -d $BUILD_DIR/doctrees docs $BUILD_DIR/pickle'
-json = 'sphinx-build -b json -d $BUILD_DIR/doctrees docs $BUILD_DIR/json'
 latex = 'sphinx-build -b latex -d $BUILD_DIR/doctrees docs $BUILD_DIR/latex'
-doctest = 'sphinx-build -b doctest -d $BUILD_DIR/doctrees docs $BUILD_DIR/doctest'
 
 [tool.coverage.run]
 branch = true
