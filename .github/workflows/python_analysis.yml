@@ -24,14 +24,14 @@ concurrency:
 jobs:
   call-workflow-static-analysis:
     name: Static analysis
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-static_analysis.yml@main
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-static_analysis.yml@DEVOPS-439
     with:
       package_manager: 'hatch'
       app_name: 'geoh5py'
       python_vers: '3.10'
   call-workflow-pytest-on-windows:
     name: Pytest on Windows
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest_windows.yml@main
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest_windows.yml@DEVOPS-439
     with:
       package_manager: 'hatch'
       python_ver: '["3.10", "3.11", "3.12"]'
@@ -41,7 +41,7 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   call-workflow-pytest-on-unix-os:
     name: Pytest on Unix OS
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest_unix_os.yml@main
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest_unix_os.yml@DEVOPS-439
     with:
       package_manager: 'hatch'
       python_ver: '["3.10", "3.11", "3.12"]'
