@@ -87,7 +87,7 @@ dependencies = [
 ]
 
 [tool.hatch.envs.test]
-dependencies = [
+dependencies = [ # Depenencies of test env
     "coverage",
     "pytest",
     "pytest-cov",
@@ -102,17 +102,22 @@ test = "pytest tests"
 cov = 'pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=pkg --cov=tests'
 
 [[tool.hatch.envs.test.matrix]]
-python = ["3.10", "3.11", "3.12"]
+python = ["3.10", "3.11", "3.12"] # 3 envs : py3.10, py3.11, py3.12
 
 [tool.hatch.envs.docs]
-dependencies = [
-    "sphinx~=3.0",
-    "sphinx-autodoc-typehints~=1.10",
-    "sphinx-rtd-theme~=0.4.3",
+dependencies = [ # Dependencies of docs env
+    "sphinx~=5.0",
+    "sphinx-autodoc-typehints",
+    "sphinx-rtd-theme",
+    "nbstripout",
+    "numpydoc",
+    "sphinx_issues",
+    "nbsphinx",
+    "sphinxcontrib.googleanalytics",
 ]
 
-[tool.hatch.envs.docs.scripts]
-html = "sphinx-build -c docs -b html -d docs/"
+[tool.hatch.envs.docs.scripts] # eg hatch run script docs:html
+html = "sphinx-build -b html -d _build/doctrees docs _build/html"
 
 [tool.coverage.run]
 branch = true
