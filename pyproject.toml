@@ -8,7 +8,7 @@ description = "Python API for geoh5, an open file format for geoscientific data"
 readme = "package.rst"
 requires-python = "~=3.10"
 license = "GPL-3.0-or-later"
-license-files = { paths = ["COPYING", "COPYING.LESSER"] }
+license-files = { paths = ["COPYING", "COPYING.LESSER", "THIRD_PARTY_SOFTWARE.rst"] }
 authors = [
     { name = "MiraGeoscience", email = "support@mirageoscience.com" }
 ]
@@ -35,10 +35,10 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 dependencies = [
-    "pydantic~=2.5.2",
-    "h5py",
-    "numpy~=1.26.0",
-    "Pillow~=10.3.0",
+    "pydantic==2.5.*",
+    "h5py==3.11.*",
+    "numpy==1.26.*",
+    "Pillow==10.3.*",
 ]
 dynamic = ["version"]
 
@@ -47,10 +47,29 @@ test = [
     "coverage",
     "pytest",
     "pytest-cov",
+    "scipy==1.14.*",
 ]
 quality = [
     "pylint",
     "pre-commit",
+]
+docs = [
+    # Sphinx dependencies
+    "sphinx",
+    "sphinx_issues",
+    "sphinx-autodoc-typehints",
+    "sphinx-rtd-theme",
+    "nbsphinx",
+    "nbstripout",
+    "numpydoc",
+    "sphinxcontrib-bibtex",
+    "sphinxcontrib-googleanalytics",
+    # Jupyter dependencies
+    "jupyter_client",
+    "ipykernel",
+    # Data showing dependencies
+    "matplotlib",
+    "scipy==1.14.*",
 ]
 
 [project.urls]
@@ -78,7 +97,7 @@ exclude = [
 
 [tool.hatch.build.targets.wheel]
 include = [
-    "/geoh5py",
+    "geoh5py",
     "COPYING",
     "COPYING.LESSER",
     "LICENSE",
@@ -87,14 +106,13 @@ include = [
     "docs/**/THIRD_PARTY_SOFTWARE.rst",
 ]
 exclude = [
-    "/geoh5py/handlers/*",
-    "/geoh5py/interfaces/*"
+    "geoh5py/handlers/*",
+    "geoh5py/interfaces/*"
 ]
 
 [tool.hatch.envs.default]
 dependencies = [
     "pygments",
-    "scipy~=1.14.0",
 ]
 features = [
     "test",
@@ -115,24 +133,8 @@ python = ["3.10", "3.11", "3.12"] # 3 envs : py3.10, py3.11, py3.12
 
 [tool.hatch.envs.docs]
 detached = true # Skip project installation and disable inheritance
-dependencies = [
-    # Sphinx dependencies
-    "sphinx",
-    "sphinx_issues",
-    "sphinx-autodoc-typehints",
-    "sphinx-rtd-theme",
-    "nbsphinx",
-    "nbstripout",
-    "numpydoc",
-    "sphinxcontrib-bibtex",
-    "sphinxcontrib-googleanalytics",
-    # Jupyter dependencies
-    "jupyter_client",
-    "ipykernel",
-    # Data showing dependencies
-    "matplotlib",
-    "scipy",
-    "h5py",
+features = [
+    "docs"
 ]
 
 [tool.hatch.envs.docs.env-vars]
@@ -157,6 +159,7 @@ exclude_lines = [
     "if TYPE_CHECKING",
     "pragma: no cover"
 ]
+
 fail_under = 90
 
 [tool.coverage.html]
