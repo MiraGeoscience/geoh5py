@@ -108,7 +108,7 @@ features = [
 
 [tool.hatch.envs.test.scripts] # (eg hatch run test:cov)
 test = "pytest tests"
-cov = 'pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=pkg --cov=tests'
+cov = 'pytest --cov-report=term-missing --cov-report=html'
 
 [[tool.hatch.envs.test.matrix]]
 python = ["3.10", "3.11", "3.12"] # 3 envs : py3.10, py3.11, py3.12
