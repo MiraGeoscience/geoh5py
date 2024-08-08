@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
@@ -40,7 +40,9 @@ dependencies = [
     "numpy==1.26.*",
     "Pillow==10.3.*",
 ]
-dynamic = ["version"]
+dynamic = [
+    "version"
+]
 
 [project.optional-dependencies]
 test = [
@@ -78,7 +80,11 @@ Homepage = "https://www.mirageoscience.com/mining-industry-software/python-integ
 Repository = "https://github.com/MiraGeoscience/geoh5py"
 
 [tool.hatch.version]
-path = "geoh5py/__init__.py"
+source = "vcs"
+fallback-version = "0.0.0-error"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "geoh5py/__version.py"
 
 [tool.hatch.build.targets.sdist] # What to include given the target
 include = [
@@ -113,6 +119,7 @@ exclude = [
 [tool.hatch.envs.default]
 dependencies = [
     "pygments",
+    "setuptools_scm",
 ]
 features = [
     "test",
