@@ -110,9 +110,6 @@ class ColorMap:
 
     @parent.setter
     def parent(self, data_type: DataType | None):
-        if not isinstance(data_type, (DataType, type(None))):
-            raise TypeError(f"Input 'data_type' must be of type {DataType}.")
-
         self._parent = data_type
 
     def __len__(self):

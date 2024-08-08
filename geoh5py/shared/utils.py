@@ -107,7 +107,7 @@ def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
     :return h5py.File: Handle to an opened Workspace.
     """
     try:
-        geoh5 = workspace.geoh5
+        geoh5 = None if workspace is None else workspace.geoh5
     except Geoh5FileClosedError:
         geoh5 = None
 
