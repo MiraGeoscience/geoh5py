@@ -189,9 +189,7 @@ class EntityType(ABC):
         kwargs = cls.convert_kwargs(kwargs)
         uid = kwargs.pop("uid", uid)
 
-        if (
-            getattr(entity_class, "default_type_uid", None) is not None
-        ) and uid is None:
+        if (hasattr(entity_class, "default_type_uid")) and uid is None:
             uid = entity_class.default_type_uid()
 
         if uid is not None:

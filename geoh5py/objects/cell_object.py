@@ -51,6 +51,19 @@ class CellObject(Points, ABC):
     def default_type_uid(cls) -> uuid.UUID:
         """Default type uid."""
 
+    @property
+    def cells(self) -> np.ndarray:
+        """
+        :obj:`numpy.array` of :obj:`int`: Array of indices
+        defining the connection between
+        :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
+        """
+
+    @cells.setter
+    @abstractmethod
+    def cells(self, values):
+        """Cells setter defined on child class."""
+
     def mask_by_extent(
         self,
         extent: np.ndarray,
