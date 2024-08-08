@@ -43,6 +43,7 @@ except (ImportError, LookupError):
             "Please install it with pip."
         )
 
+
 def get_type_uid_classes():
     members = []
     for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
