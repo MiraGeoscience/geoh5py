@@ -35,8 +35,8 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 dependencies = [
-    "pydantic==2.5.*",
-    "h5py==3.11.*",
+    "h5py>=3.2.1, <4.0.0",
+    "pydantic>=2.5.2, <3.0.0",
     "numpy==1.26.*",
     "Pillow==10.3.*",
 ]
@@ -49,7 +49,7 @@ test = [
     "coverage",
     "pytest",
     "pytest-cov",
-    "scipy==1.14.*",
+    "scipy~=1.14.0",
 ]
 quality = [
     "pylint",
@@ -71,7 +71,7 @@ docs = [
     "ipykernel",
     # Data showing dependencies
     "matplotlib",
-    "scipy==1.14.*",
+    "scipy~=1.14.0",
 ]
 
 [project.urls]
@@ -119,7 +119,6 @@ exclude = [
 [tool.hatch.envs.default]
 dependencies = [
     "pygments",
-    "setuptools_scm",
 ]
 features = [
     "test",
