@@ -21,8 +21,6 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from geoh5py.shared.utils import iterable_message
-
 
 if TYPE_CHECKING:
     from geoh5py import Workspace
@@ -261,3 +259,36 @@ class ValueValidationError(BaseValidationError):
         return f"Value '{value}' provided for '{name}' is invalid." + iterable_message(
             validation
         )
+
+
+def iterable_message(valid: list[Any] | None) -> str:
+    """Append possibly iterable valid: "Must be (one of): {valid}."."""
+    if valid is None:
+        msg = ""
+    elif iterable(valid, checklen=True):
+        vstr = "'" + "', '".join(str(k) for k in valid) + "'"
+        msg = f" Must be one of: {vstr}."
+    else:
+        msg = f" Must be: '{valid[0]}'."
+
+    return msg
+
+
+def iterable(value: Any, checklen: bool = False) -> bool:
+    """
+    Checks if object is iterable.
+
+    Parameters
+    ----------
+    value : Object to check for iterableness.
+    checklen : Restrict objects with __iter__ method to len > 1.
+
+    Returns
+    -------
+    True if object has __iter__ attribute but is not string or dict type.
+    """
+    only_array_like = (not isinstance(value, str)) & (not isinstance(value, dict))
+    if (hasattr(value, "__iter__")) & only_array_like:
+        return not (checklen and (len(value) == 1))
+
+    return False

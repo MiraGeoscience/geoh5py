@@ -749,10 +749,13 @@ class Workspace(AbstractContextManager):
                     family_tree += self.fetch_children(
                         recovered_object, recursively=True
                     )
-                    if getattr(recovered_object, "property_groups", None) is not None:
+                    if (
+                        isinstance(recovered_object, ObjectBase)
+                        and recovered_object.property_groups is not None
+                    ):
                         family_tree += recovered_object.property_groups
 
-        if getattr(entity, "property_groups", None) is not None:
+        if isinstance(entity, ObjectBase) and entity.property_groups is not None:
             family_tree += entity.property_groups
 
         return family_tree

@@ -110,7 +110,7 @@ class InputValidation:
     def _required_validators(validations):
         """Returns dictionary of validators required by validations."""
         unique_validators = InputValidation._unique_validators(validations)
-        sub_classes: list[BaseValidator] = BaseValidator.__subclasses__()
+        sub_classes: list[type[BaseValidator]] = BaseValidator.__subclasses__()
         all_validators: dict[str, Any] = {k.validator_type: k() for k in sub_classes}
         val = {}
         for k in unique_validators:

@@ -259,8 +259,9 @@ class DataType(EntityType):
     def primitive_type(self, value: str | type[Data] | PrimitiveTypeEnum | None):
         if isinstance(value, str):
             value = getattr(PrimitiveTypeEnum, value.replace("-", "_").upper())
-        elif hasattr(value, "primitive_type"):
+        elif not isinstance(value, (PrimitiveTypeEnum | type(None))):
             value = value.primitive_type()
+
         if not isinstance(value, (PrimitiveTypeEnum, type(None))):
             raise ValueError(
                 f"Primitive type value must be of type {PrimitiveTypeEnum}, find {type(value)}"
@@ -341,7 +342,7 @@ class DataType(EntityType):
                         "BOOLEAN and TEXT have been implemented"
                     )
         elif isinstance(entity_type, EntityType) and (
-            (entity_type.uid not in workspace._types)
+            (entity_type.uid not in workspace._types)  # pylint: disable=protected-access
             or (entity_type.workspace != workspace)
         ):
             return entity_type.copy(workspace=workspace)

@@ -22,11 +22,10 @@ import re
 import numpy as np
 import pytest
 
+from geoh5py.shared.exceptions import iterable, iterable_message
 from geoh5py.shared.utils import (
     box_intersect,
     inf2str,
-    iterable,
-    iterable_message,
     mask_by_extent,
     nan2str,
 )

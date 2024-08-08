@@ -39,8 +39,8 @@ from geoh5py.shared.exceptions import (
     TypeValidationError,
     UUIDValidationError,
     ValueValidationError,
+    iterable,
 )
-from geoh5py.shared.utils import iterable
 
 
 def to_path(value: list[str]) -> list[Path]:

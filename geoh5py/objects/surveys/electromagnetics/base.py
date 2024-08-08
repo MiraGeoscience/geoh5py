@@ -445,7 +445,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         for elem in ["receivers", "transmitters", "base_stations"]:
             dependent = getattr(self, elem, None)
             if dependent is not None and dependent is not self:
-                dependent._metadata = values
+                setattr(dependent, "_metadata", values)  # noqa: B010
                 self.workspace.update_attribute(dependent, "metadata")
 
     @property
@@ -692,12 +692,11 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
             ]
             tx_ids = self.complement.tx_id_property.values[mask]
         else:
-            cell_mask = np.r_[
-                [(val in intersect) for val in self.complement.tx_id_property.values]
-            ]
             mask = np.zeros(self.complement.vertices.shape[0], dtype=bool)
-            mask[self.complement.cells[cell_mask, :]] = True
-            tx_ids = self.complement.tx_id_property.values[cell_mask]
+            for val in intersect:
+                mask[self.complement.tx_id_property.values == val] = True
+
+            tx_ids = self.complement.tx_id_property.values[mask]
 
         new_complement = self.complement._super_copy(  # pylint: disable=protected-access
             parent=parent,
@@ -784,6 +783,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve):
                         "values": value.astype(np.int32),
                         "entity_type": entity_type,
                         "type": "referenced",
+                        "association": "VERTEX",
                     }
                 }
             )
