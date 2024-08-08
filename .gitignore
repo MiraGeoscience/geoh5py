@@ -146,4 +146,4 @@ dmypy.json
 *.geoh5.lock
 
 # generated version file
-geoh5py/__version.py
+geoh5py/_version.py

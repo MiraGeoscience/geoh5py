@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
+requires = ["hatchling", "versioningit"]
 build-backend = "hatchling.build"
 
 [project]
@@ -79,12 +79,8 @@ Documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
 Homepage = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
 Repository = "https://github.com/MiraGeoscience/geoh5py"
 
-[tool.hatch.version]
-source = "vcs"
-fallback-version = "0.0.0-error"
-
-[tool.hatch.build.hooks.vcs]
-version-file = "geoh5py/__version.py"
+[tool.hatch.build]
+artifacts = ["geoh5py/_version.py"]
 
 [tool.hatch.build.targets.sdist] # What to include given the target
 include = [
@@ -149,6 +145,17 @@ BUILD_DIR = "docs/_build"
 [tool.hatch.envs.docs.scripts] # eg hatch run script docs:html
 html = 'sphinx-build -b html -d $BUILD_DIR/doctrees docs $BUILD_DIR/html'
 latex = 'sphinx-build -b latex -d $BUILD_DIR/doctrees docs $BUILD_DIR/latex'
+
+[tool.hatch.version]
+source = "versioningit"
+
+[tool.hatch.version.format]
+distance = "{base_version}"
+dirty = "{base_version}"
+distance-dirty = "{base_version}"
+
+[tool.hatch.version.write]
+file = "geoh5py/_version.py"
 
 [tool.coverage.run]
 branch = true

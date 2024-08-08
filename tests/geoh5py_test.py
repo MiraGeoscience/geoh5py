@@ -15,27 +15,18 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# flake8: noqa
+from __future__ import annotations
 
-import inspect
+import re
 
-from geoh5py.workspace import Workspace
-
-from . import groups, objects
-from .groups import CustomGroup
-
-try:
-    from ._version import __version__
-except ModuleNotFoundError:
-    raise(ModuleNotFoundError("geoh5py is not correctly initialized. Please check if it is correctly built."))
-
-def get_type_uid_classes():
-    members = []
-    for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
-        if inspect.isclass(member) and hasattr(member, "default_type_uid"):
-            members.append(member)
-
-    return members
+import geoh5py
 
 
-TYPE_UID_TO_CLASS = {k.default_type_uid(): k for k in get_type_uid_classes()}
+def test_version_is_semver():
+    semver_re = (
+        r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)"
+        r"(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)"
+        r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
+        r"(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
+    )
+    assert re.search(semver_re, geoh5py.__version__) is not None
