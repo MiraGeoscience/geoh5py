@@ -24,6 +24,7 @@ from geoh5py.workspace import Workspace
 from . import groups, objects
 from .groups import CustomGroup
 
+
 def get_type_uid_classes():
     members = []
     for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
