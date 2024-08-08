@@ -98,7 +98,7 @@ class EntityType(ABC):
 
         attributes.update(kwargs)
 
-        if attributes.get("uid") in attributes.get("workspace", self.workspace).types:
+        if attributes.get("uid") in attributes.get("workspace", self.workspace)._types:  # pylint: disable=protected-access
             del attributes["uid"]
 
         return self.__class__(**attributes)

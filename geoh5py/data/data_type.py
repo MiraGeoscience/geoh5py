@@ -341,7 +341,7 @@ class DataType(EntityType):
                         "BOOLEAN and TEXT have been implemented"
                     )
         elif isinstance(entity_type, EntityType) and (
-            (entity_type.uid not in workspace._types)
+            (entity_type.uid not in workspace._types)  # pylint: disable=protected-access
             or (entity_type.workspace != workspace)
         ):
             return entity_type.copy(workspace=workspace)
