@@ -98,7 +98,7 @@ class EntityType(ABC):
 
         attributes.update(kwargs)
 
-        if attributes.get("uid") in attributes.get("workspace", self.workspace)._types:
+        if attributes.get("uid") in attributes.get("workspace", self.workspace).types:
             del attributes["uid"]
 
         return self.__class__(**attributes)

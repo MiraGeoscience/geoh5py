@@ -29,6 +29,8 @@ from uuid import UUID
 import h5py
 import numpy as np
 
+from .exceptions import Geoh5FileClosedError
+
 
 if TYPE_CHECKING:
     from ..workspace import Workspace
@@ -104,13 +106,18 @@ def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
 
     :return h5py.File: Handle to an opened Workspace.
     """
-    if workspace is None or workspace._geoh5 and mode in workspace.geoh5.mode:
+    try:
+        geoh5 = workspace.geoh5
+    except Geoh5FileClosedError:
+        geoh5 = None
+
+    if workspace is None or (geoh5 is not None and mode in workspace.geoh5.mode):
         try:
             yield workspace
         finally:
             pass
     else:
-        if workspace._geoh5:
+        if geoh5 is not None:
             warnings.warn(
                 f"Closing the workspace in mode '{workspace.geoh5.mode}' "
                 f"and re-opening in mode '{mode}'."
@@ -334,39 +341,6 @@ def compare_entities(
                 assert np.all(
                     getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
                 ), f"Output attribute '{attr[1:]}' for {object_a} do not match input {object_b}"
-
-
-def iterable(value: Any, checklen: bool = False) -> bool:
-    """
-    Checks if object is iterable.
-
-    Parameters
-    ----------
-    value : Object to check for iterableness.
-    checklen : Restrict objects with __iter__ method to len > 1.
-
-    Returns
-    -------
-    True if object has __iter__ attribute but is not string or dict type.
-    """
-    only_array_like = (not isinstance(value, str)) & (not isinstance(value, dict))
-    if (hasattr(value, "__iter__")) & only_array_like:
-        return not (checklen and (len(value) == 1))
-
-    return False
-
-
-def iterable_message(valid: list[Any] | None) -> str:
-    """Append possibly iterable valid: "Must be (one of): {valid}."."""
-    if valid is None:
-        msg = ""
-    elif iterable(valid, checklen=True):
-        vstr = "'" + "', '".join(str(k) for k in valid) + "'"
-        msg = f" Must be one of: {vstr}."
-    else:
-        msg = f" Must be: '{valid[0]}'."
-
-    return msg
 
 
 def is_uuid(value: str) -> bool:
@@ -623,22 +597,24 @@ def dip_points(points: np.ndarray, dip: float, rotation: float = 0) -> np.ndarra
     return points.T
 
 
-def map_attributes(object_, **kwargs):
+def map_attributes(entity, **kwargs):
     """
     Map attributes to an object. The object must have an '_attribute_map'.
 
-    :param object_: The object to map the attributes to.
+    :param entity: The object to map the attributes to.
     :param kwargs: The kwargs to map to the object.
     """
-    if not hasattr(object_, "_attribute_map"):
-        warnings.warn(f"Object {object_} does not have an attribute map.")
+    attribute_map = getattr(entity, "_attribute_map", None)
+
+    if attribute_map is None:
+        warnings.warn(f"Object {entity} does not have an attribute map.")
         return
 
     for attr, item in kwargs.items():
         try:
-            if attr in object_._attribute_map:
-                attr = object_._attribute_map[attr]
-            setattr(object_, attr, item)
+            if attr in attribute_map:
+                attr = attribute_map[attr]
+            setattr(entity, attr, item)
         except AttributeError:
             continue
 
