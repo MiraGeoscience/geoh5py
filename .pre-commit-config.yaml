@@ -44,9 +44,9 @@ repos:
             (?x)(^
                 geoh5py/interfaces/__init__.py|
                 geoh5py/handlers/__init__.py|
-                geoh5py/interfaces|
-                geoh5py/handlers|
-                tests|
+                geoh5py/interfaces/.*|
+                geoh5py/handlers/.*|
+                tests/.*|
                 geoh5py/shared/utils.py|
                 geoh5py/shared/entity_type.py|
                 geoh5py/data/data_type.py|
