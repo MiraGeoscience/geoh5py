@@ -28,7 +28,7 @@ try:
     from ._version import __version__
 except ModuleNotFoundError as exc:
     raise ModuleNotFoundError(
-            "geoh5py is not correctly initialized. Please check if it is correctly built."
+        "geoh5py is not correctly initialized. Please check if it is correctly built."
     ) from exc
 
 
