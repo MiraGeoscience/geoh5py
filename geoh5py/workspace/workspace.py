@@ -336,7 +336,7 @@ class Workspace(AbstractContextManager):
             if entity.workspace.find_property_group(prop_group.uid) is None:
                 property_group_kwargs["uid"] = prop_group.uid
 
-            entity.find_or_create_property_group(**property_group_kwargs)
+            entity.fetch_property_group(**property_group_kwargs)
 
     @classmethod
     def create(cls, path: str | Path, **kwargs) -> Workspace:
@@ -739,21 +739,21 @@ class Workspace(AbstractContextManager):
             recovered_object = self.get_entity(uid)[0]
             if recovered_object is None and not isinstance(entity, PropertyGroup):
                 recovered_object = self.load_entity(uid, child_type, parent=entity)
-            if not (
-                recovered_object is None or isinstance(recovered_object, PropertyGroup)
-            ):
-                recovered_object.on_file = True
-                recovered_object.entity_type.on_file = True
-                family_tree += [recovered_object]
-                if recursively and isinstance(recovered_object, (Group, ObjectBase)):
-                    family_tree += self.fetch_children(
-                        recovered_object, recursively=True
-                    )
-                    if (
-                        isinstance(recovered_object, ObjectBase)
-                        and recovered_object.property_groups is not None
-                    ):
-                        family_tree += recovered_object.property_groups
+
+            if recovered_object is None or isinstance(recovered_object, PropertyGroup):
+                continue
+
+            recovered_object.on_file = True
+            recovered_object.entity_type.on_file = True
+            family_tree.append(recovered_object)
+
+            if recursively and isinstance(recovered_object, (Group, ObjectBase)):
+                family_tree += self.fetch_children(recovered_object, recursively=True)
+                if (
+                    isinstance(recovered_object, ObjectBase)
+                    and recovered_object.property_groups is not None
+                ):
+                    family_tree += recovered_object.property_groups
 
         if isinstance(entity, ObjectBase) and entity.property_groups is not None:
             family_tree += entity.property_groups
