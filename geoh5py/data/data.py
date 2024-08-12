@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import uuid
 from abc import abstractmethod
 
 import numpy as np
@@ -147,6 +148,11 @@ class Data(Entity):
             mask=indices,
             **kwargs,
         )
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID | None:
+        """Abstract method to return the default type uid for the class."""
+        return None
 
     @property
     def n_values(self) -> int | None:
