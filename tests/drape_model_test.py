@@ -44,10 +44,8 @@ def test_create_drape_model(tmp_path: Path):
         top = bottom.flatten()[::n_row] + 0.1
         drape = DrapeModel.create(workspace)
 
-        with pytest.raises(AttributeError) as error:
+        with pytest.raises(AttributeError, match="Attribute 'layers'"):
             drape.centroids
-
-        assert "Attribute 'layers'" in str(error)
 
         layers = np.c_[i.flatten(), j.flatten(), bottom.flatten()]
         drape.layers = layers
@@ -56,16 +54,18 @@ def test_create_drape_model(tmp_path: Path):
             layers[-32:, 0] = 64
             drape.layers = layers
 
-        with pytest.raises(AttributeError) as error:
+        with pytest.raises(AttributeError, match="Attribute 'prisms'"):
             drape.centroids
-
-        assert "Attribute 'prisms'" in str(error)
 
         prisms = np.c_[
             x, y, top, np.arange(0, i.flatten().shape[0], n_row), np.tile(n_row, n_col)
         ]
         drape.prisms = prisms
 
+        np.testing.assert_almost_equal(
+            drape.centroids[:n_row, 2],
+            bottom[0, :] - np.diff(np.r_[0.0, bottom[0, :]]) / 2.0,
+        )
         drape.add_data(
             {
                 "indices": {
