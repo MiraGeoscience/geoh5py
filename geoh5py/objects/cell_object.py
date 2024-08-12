@@ -54,8 +54,7 @@ class CellObject(Points, ABC):
     @property
     def cells(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`int`: Array of indices
-        defining the connection between
+        Array of indices defining the connection between
         :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
         """
 

@@ -408,8 +408,7 @@ class ObjectBase(EntityContainer):
 
     def fetch_property_group(self, name=None, uid=None, **kwargs) -> PropertyGroup:
         """
-        Find or create :obj:`~geoh5py.groups.property_group.PropertyGroup`
-        from given name and properties.
+        Find or create a PropertyGroup from given name and properties.
 
         :param name: Name of the property group.
         :param uid: Unique identifier for the property group.
@@ -432,8 +431,7 @@ class ObjectBase(EntityContainer):
         self, name=None, uid=None, **kwargs
     ) -> PropertyGroup:
         """
-        Find or create :obj:`~geoh5py.groups.property_group.PropertyGroup`
-        from given name and properties.
+        Find or create a PropertyGroup from given name and properties.
         """
         warnings.warn(
             "The 'find_and_create_property_group' will be deprecated. "
