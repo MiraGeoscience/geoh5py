@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 import uuid
-from abc import ABC
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
@@ -30,7 +29,7 @@ if TYPE_CHECKING:
     from ..objects import ObjectBase
 
 
-class PropertyGroup(ABC):
+class PropertyGroup:
     """
     Property group listing data children of an object.
     This group is not registered to the workspace and only visible to the parent object.
