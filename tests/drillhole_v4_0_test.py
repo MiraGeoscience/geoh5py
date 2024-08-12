@@ -823,7 +823,7 @@ def test_locations(tmp_path):
         property_group="my property group",
     )
 
-    property_group = dh.find_or_create_property_group(name="my property group")
+    property_group = dh.fetch_property_group(name="my property group")
     assert np.allclose(property_group.locations, np.arange(0, 10.0))
 
     dh.add_data(
@@ -835,7 +835,7 @@ def test_locations(tmp_path):
         },
         property_group="my other property group",
     )
-    property_group = dh.find_or_create_property_group(name="my other property group")
+    property_group = dh.fetch_property_group(name="my other property group")
     assert np.allclose(
         property_group.locations, np.c_[np.arange(0, 10.0), np.arange(1, 11.0)]
     )
@@ -845,7 +845,7 @@ def test_is_collocated(tmp_path):
     ws = Workspace(tmp_path / "test.geoh5")
     dh_group = DrillholeGroup.create(ws)
     dh = Drillhole.create(ws, name="dh", parent=dh_group)
-    property_group = dh.find_or_create_property_group(name="some uninitialized group")
+    property_group = dh.fetch_property_group(name="some uninitialized group")
     assert not property_group.is_collocated(np.arange(0, 10.0), 0.01)
     dh.add_data(
         {
@@ -856,7 +856,7 @@ def test_is_collocated(tmp_path):
         },
         property_group="my property group",
     )
-    property_group = dh.find_or_create_property_group(name="my property group")
+    property_group = dh.fetch_property_group(name="my property group")
     assert property_group.is_collocated(np.arange(0, 10.0), 0.01)
     assert property_group.is_collocated(np.arange(0.001, 10), 0.01)
     assert not property_group.is_collocated(np.arange(1, 11.0), 0.01)
@@ -876,7 +876,7 @@ def test_is_collocated(tmp_path):
         property_group="my property group",
     )
 
-    property_group = dh2.find_or_create_property_group(name="my property group")
+    property_group = dh2.fetch_property_group(name="my property group")
     assert property_group.is_collocated(np.arange(1, 11.0), 0.01)
 
     dh.add_data(
@@ -888,7 +888,7 @@ def test_is_collocated(tmp_path):
         },
         property_group="my other property group",
     )
-    property_group = dh.find_or_create_property_group(name="my other property group")
+    property_group = dh.fetch_property_group(name="my other property group")
     assert property_group.is_collocated(
         np.c_[np.arange(0, 10.0), np.arange(1, 11.0)], 0.01
     )

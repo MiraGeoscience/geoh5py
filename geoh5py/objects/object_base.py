@@ -428,6 +428,20 @@ class ObjectBase(EntityContainer):
 
         return prop_group
 
+    def find_or_create_property_group(
+        self, name=None, uid=None, **kwargs
+    ) -> PropertyGroup:
+        """
+        Find or create :obj:`~geoh5py.groups.property_group.PropertyGroup`
+        from given name and properties.
+        """
+        warnings.warn(
+            "The 'find_and_create_property_group' will be deprecated. "
+            "Use fetch_property_group instead.",
+            DeprecationWarning,
+        )
+        return self.fetch_property_group(name=name, uid=uid, **kwargs)
+
     def get_data(self, name: str | uuid.UUID) -> list[Data]:
         """
         Get a child :obj:`~geoh5py.data.data.Data` by name.

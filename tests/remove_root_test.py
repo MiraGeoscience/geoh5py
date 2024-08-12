@@ -85,7 +85,7 @@ def test_remove_root(tmp_path: Path):
         )
         compare_entities(
             data_group,
-            rec_points.find_or_create_property_group(name=group_name),
+            rec_points.fetch_property_group(name=group_name),
             ignore=["_parent", "_on_file"],
         )
 
