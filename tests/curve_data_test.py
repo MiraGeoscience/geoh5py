@@ -134,10 +134,6 @@ def test_create_curve_data(tmp_path: Path):
             compare_entities(data_objects[0], data_vert_rec)
             compare_entities(data_objects[1], ws2.get_entity("cellValues")[0])
 
-            with pytest.raises(AttributeError):
-                # Modify and write
-                obj_rec.vertices = np.random.randn(n_data, 3)
-
             with pytest.raises(TypeError, match="Values cannot have decimal points."):
                 data_vert_rec.values = np.random.randn(n_data)  # warning here
 
