@@ -125,6 +125,17 @@ class Points(ObjectBase):
 
         return self._vertices.view("<f8").reshape((-1, 3))
 
+    @vertices.setter
+    def vertices(self, vertices: np.ndarray | list | tuple):
+        xyz = self.validate_vertices(vertices)
+        if self._vertices is not None and self._vertices.shape != xyz.shape:
+            raise ValueError(
+                "New vertices array must have the same shape as the current vertices array."
+            )
+        self._vertices = xyz
+
+        self.workspace.update_attribute(self, "vertices")
+
     @classmethod
     def validate_vertices(cls, xyz: np.ndarray | list | tuple | None) -> np.ndarray:
         """
