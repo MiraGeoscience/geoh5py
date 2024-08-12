@@ -234,7 +234,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
             property_group = f"depth_{ind}"
 
         if isinstance(property_group, str):
-            out_group: ConcatenatedPropertyGroup = self.find_or_create_property_group(
+            out_group: ConcatenatedPropertyGroup = self.fetch_property_group(  # type: ignore
                 name=property_group,
                 association="DEPTH",
                 property_group_type="Depth table",
@@ -329,7 +329,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
             property_group = f"Interval_{ind}"
 
         if isinstance(property_group, str):
-            out_group: ConcatenatedPropertyGroup = self.find_or_create_property_group(
+            out_group: ConcatenatedPropertyGroup = self.fetch_property_group(  # type: ignore
                 name=property_group,
                 association="DEPTH",
                 property_group_type="Interval table",

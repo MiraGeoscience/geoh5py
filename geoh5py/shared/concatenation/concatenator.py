@@ -544,24 +544,31 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         else:  # For data values
             self.workspace.update_attribute(self, "data", field)
 
-    def update_attributes(self, entity: Concatenated, label: str) -> None:
+    def update_attributes(
+        self, entity: ConcatenatedData | ConcatenatedObject, label: str
+    ) -> None:
         """
         Update a concatenated entity.
         """
         if label == "attributes":
             self.update_concatenated_attributes(entity)
         elif label == "property_groups":
-            if getattr(entity, "property_groups", None) is not None:
-                for prop_group in entity.property_groups:
-                    self.add_save_concatenated(prop_group)
-                    if (
-                        self.property_group_ids is not None
-                        and as_str_if_uuid(prop_group.uid).encode()
-                        not in self.property_group_ids
-                    ):
-                        self.property_group_ids.append(
-                            as_str_if_uuid(prop_group.uid).encode()
-                        )
+            if (
+                not isinstance(entity, ConcatenatedObject)
+                or entity.property_groups is None
+            ):
+                return
+
+            for prop_group in entity.property_groups:
+                self.add_save_concatenated(prop_group)
+                if (
+                    self.property_group_ids is not None
+                    and as_str_if_uuid(prop_group.uid).encode()
+                    not in self.property_group_ids
+                ):
+                    self.property_group_ids.append(
+                        as_str_if_uuid(prop_group.uid).encode()
+                    )
 
             self.update_array_attribute(entity, label)
 

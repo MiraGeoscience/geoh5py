@@ -148,7 +148,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                 property_groups = []
 
             for key in property_groups:
-                self.find_or_create_property_group(
+                self.fetch_property_group(
                     **self.concatenator.get_concatenated_attributes(key), on_file=True
                 )
 

@@ -440,7 +440,7 @@ class H5Writer:
             if color_map is not None and color_map.values is not None:
                 cls.create_dataset(
                     entity_type_handle,
-                    color_map._values,
+                    color_map._values,  # pylint: disable=protected-access
                     "Color map",
                 )
                 entity_type_handle["Color map"].attrs.create(

@@ -65,8 +65,7 @@ def test_delete_entities(tmp_path: Path):
         curve_2.remove_children(curve_2.children[0])
 
         assert (
-            uid_out
-            not in curve_2.find_or_create_property_group(name="myGroup").properties
+            uid_out not in curve_2.fetch_property_group(name="myGroup").properties
         ), "Data uid was not removed from the property_group"
 
         curve_2.remove_children(curve_2.children[0])

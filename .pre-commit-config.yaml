@@ -36,7 +36,9 @@ repos:
             types-toml,
         ]
         exclude: |
-            (?x)^(
+            (?x)(^
+                geoh5py/interfaces/__init__.py|
+                geoh5py/handlers/__init__.py|
                 geoh5py/interfaces/.*|
                 geoh5py/handlers/.*|
                 tests/.*|
