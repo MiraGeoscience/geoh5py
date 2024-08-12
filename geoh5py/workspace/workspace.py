@@ -32,7 +32,7 @@ from getpass import getuser
 from io import BytesIO
 from pathlib import Path
 from subprocess import CalledProcessError
-from typing import ClassVar, cast
+from typing import Any, ClassVar, cast
 from weakref import ReferenceType
 
 import h5py
@@ -734,7 +734,7 @@ class Workspace(AbstractContextManager):
                     }
                 )
 
-        family_tree = []
+        family_tree: list[Any] = []
         for uid, child_type in children_list.items():
             recovered_object = self.get_entity(uid)[0]
             if recovered_object is None and not isinstance(entity, PropertyGroup):
