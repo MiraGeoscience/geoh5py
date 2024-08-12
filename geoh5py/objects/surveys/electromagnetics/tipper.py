@@ -25,12 +25,12 @@ import numpy as np
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.points import Points
 
-from .base import AirborneEMSurvey, FEMSurvey
+from .base import FEMSurvey
 
 # pylint: disable=too-many-ancestors
 
 
-class TipperSurvey(FEMSurvey, AirborneEMSurvey):
+class TipperSurvey(FEMSurvey):
     """
     Base tipper survey class.
     """
@@ -195,6 +195,7 @@ class TipperBaseStations(TipperSurvey, Points):
     _TYPE_UID = uuid.UUID("{f495cd13-f09b-4a97-9212-2ea392aeb375}")
     __TYPE = "Base stations"
     _default_name = "Tipper base"
+    _minimum_vertices = 1
 
     @property
     def complement(self):
