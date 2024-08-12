@@ -19,13 +19,25 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Iterable
-from typing import TYPE_CHECKING
+from enum import Enum
+from typing import TYPE_CHECKING, Literal
 
 from ..data import Data, DataAssociationEnum
 from ..shared.utils import map_attributes
 
 if TYPE_CHECKING:
     from ..objects import ObjectBase
+
+
+class GroupTypeEnum(str, Enum):
+    """
+    Supported property group types.
+    """
+
+    MULTI = "Multi-element"
+    VECTOR = "3D vector"
+    DIPDIR = "Dip direction & dip"
+    STRIKEDIP = "Strike & dip"
 
 
 class PropertyGroup:
@@ -44,20 +56,21 @@ class PropertyGroup:
     _name: str
     _uid: uuid.UUID
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         parent: ObjectBase,
+        association: DataAssociationEnum = DataAssociationEnum.VERTEX,
         name=None,
         on_file=False,
         uid=None,
-        property_group_type="Multi-element",
+        property_group_type: Literal[GroupTypeEnum.MULTI] = GroupTypeEnum.MULTI,
         **kwargs,
     ):
         self.name = name or "property_group"
         self.uid = uid or uuid.uuid4()
         self._allow_delete = True
         self.on_file = on_file
-        self._association: DataAssociationEnum = DataAssociationEnum.VERTEX
+        self.association = association
 
         if not hasattr(parent, "_property_groups"):
             raise AttributeError(
@@ -66,7 +79,7 @@ class PropertyGroup:
 
         self._parent: ObjectBase = parent
         self._properties: list[uuid.UUID] | None = None
-        self._property_group_type = property_group_type
+        self.property_group_type = property_group_type
 
         parent.add_children([self])
 
@@ -217,8 +230,20 @@ class PropertyGroup:
         return self._property_group_type
 
     @property_group_type.setter
-    def property_group_type(self, group_type: str):
-        self._property_group_type = group_type
+    def property_group_type(self, value: str | GroupTypeEnum):
+        if isinstance(value, str):
+            try:
+                value = GroupTypeEnum(value)
+            except ValueError as error:
+                raise ValueError(
+                    f"Property group type must be one of "
+                    f"{', '.join(GroupTypeEnum.__members__)}"
+                ) from error
+
+        if not isinstance(value, GroupTypeEnum):
+            raise TypeError(f"Association must be of type {GroupTypeEnum}")
+
+        self._property_group_type = value
 
     def remove_properties(self, data: Data | list[Data | uuid.UUID] | uuid.UUID):
         """

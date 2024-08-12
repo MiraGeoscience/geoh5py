@@ -487,11 +487,17 @@ def test_property_group_with_wrong_type(tmp_path: Path):
 
     with pytest.raises(
         PropertyGroupValidationError,
-        match=PropertyGroupValidationError.message(
-            "data", points.property_groups[0], "3D vector"
+        match=re.escape(
+            PropertyGroupValidationError.message(
+                "data", points.property_groups[0], ["3D vector"]
+            )
         ),
     ):
         getattr(InputFile(ui_json=ui_json), "data")
+
+    ui_json["data"]["dataGroupType"] = ["3D vector", "Multi-element"]
+
+    assert getattr(InputFile(ui_json=ui_json), "data") is not None
 
 
 def test_data_with_wrong_parent(tmp_path: Path):
