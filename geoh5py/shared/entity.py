@@ -181,6 +181,11 @@ class Entity(ABC):
         )
         return new_object
 
+    @classmethod
+    @abstractmethod
+    def default_type_uid(cls) -> uuid.UUID | None:
+        """Abstract method to return the default type uid for the class."""
+
     @property
     @abstractmethod
     def entity_type(self) -> shared.EntityType:

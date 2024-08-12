@@ -28,6 +28,7 @@ from ..shared.utils import ensure_uuid
 
 if TYPE_CHECKING:
     from ..workspace import Workspace
+    from .entity import Entity
 
 EntityTypeT = TypeVar("EntityTypeT", bound="EntityType")
 
@@ -166,7 +167,7 @@ class EntityType(ABC):
         cls,
         workspace: Workspace,
         uid: uuid.UUID | None = None,
-        entity_class: type | None = None,
+        entity_class: type[Entity] | None = None,
         **kwargs,
     ):
         """
@@ -189,7 +190,7 @@ class EntityType(ABC):
         kwargs = cls.convert_kwargs(kwargs)
         uid = kwargs.pop("uid", uid)
 
-        if (hasattr(entity_class, "default_type_uid")) and uid is None:
+        if entity_class is not None and uid is None:
             uid = entity_class.default_type_uid()
 
         if uid is not None:
