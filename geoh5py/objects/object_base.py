@@ -225,7 +225,7 @@ class ObjectBase(EntityContainer):
             if len(associations) != 1:
                 raise ValueError("All input 'data' must have the same association.")
 
-            property_group = self.find_or_create_property_group(
+            property_group = self.fetch_property_group(
                 name=property_group, association=associations[0]
             )
 
@@ -406,9 +406,7 @@ class ObjectBase(EntityContainer):
 
         return prop_group
 
-    def find_or_create_property_group(
-        self, name=None, uid=None, **kwargs
-    ) -> PropertyGroup:
+    def fetch_property_group(self, name=None, uid=None, **kwargs) -> PropertyGroup:
         """
         Find or create :obj:`~geoh5py.groups.property_group.PropertyGroup`
         from given name and properties.

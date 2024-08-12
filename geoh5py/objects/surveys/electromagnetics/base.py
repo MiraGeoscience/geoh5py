@@ -215,7 +215,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         if "Property groups" in self.metadata["EM Dataset"]:
             components = {}
             for name in self.metadata["EM Dataset"]["Property groups"]:
-                prop_group = self.find_or_create_property_group(name=name)
+                prop_group = self.fetch_property_group(name=name)
 
                 if prop_group.properties is None:
                     continue
