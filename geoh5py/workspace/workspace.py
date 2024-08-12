@@ -1374,7 +1374,7 @@ class Workspace(AbstractContextManager):
         :param channel: Optional channel argument for concatenated data and index.
         """
         if entity.on_file:
-            if isinstance(entity, Concatenated):
+            if isinstance(entity, (ConcatenatedObject | ConcatenatedData)):
                 entity.concatenator.update_attributes(entity, attribute)
             elif channel is not None:
                 self._io_call(

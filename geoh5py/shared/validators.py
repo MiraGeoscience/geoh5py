@@ -15,6 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=too-few-public-methods
+
 from __future__ import annotations
 
 import warnings
@@ -110,6 +112,8 @@ def empty_string_to_uid(value):
 class BaseValidator(ABC):
     """Concrete base class for validators."""
 
+    validator_type: str
+
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             if hasattr(self, key):
@@ -128,14 +132,6 @@ class BaseValidator(ABC):
             "The 'validate' method must be implemented by the sub-class. "
             f"Must contain a 'name' {name}, 'value' {value} and 'valid' {valid} argument."
         )
-
-    @property
-    @abstractmethod
-    def validator_type(self) -> str:
-        """
-        Validation type identifier.
-        """
-        raise NotImplementedError("Must implement the validator_type property.")
 
 
 class OptionalValidator(BaseValidator):
