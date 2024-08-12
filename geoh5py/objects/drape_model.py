@@ -68,22 +68,25 @@ class DrapeModel(GridObject):
                     "Attribute 'prisms' must be defined before accessing 'centroids'."
                 )
 
-            self._centroids = np.vstack(
-                [
-                    np.ones((int(val), 3)) * self.prisms[ii, :3]
-                    for ii, val in enumerate(self.prisms[:, 4])
-                ]
-            )
-            tops = np.hstack(
-                [
-                    np.r_[
-                        cells[2],
-                        self.layers[int(cells[3]) : int(cells[3] + cells[4] - 1), 2],
-                    ]
-                    for cells in self.prisms.tolist()
-                ]
-            )
-            self._centroids[:, 2] = (tops + self.layers[:, 2]) / 2.0
+            top = self.layers[:, 1] == 0
+            z_centers = np.r_[
+                0.0,
+                np.mean(
+                    [
+                        self.layers[1:, 2],
+                        self.layers[:-1, 2],
+                    ],
+                    axis=0,
+                ),
+            ]
+
+            # Reset the value for the top cell of every column
+            z_centers[top] = (
+                self.prisms[self.layers[top, 0].astype(int), 2] + self.layers[top, 2]
+            ) / 2.0
+            self._centroids = np.c_[
+                self.prisms[self.layers[:, 0].astype(int), :2], z_centers
+            ]
 
         return self._centroids
 
