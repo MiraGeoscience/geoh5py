@@ -152,8 +152,12 @@ class PropertyGroupValidator(BaseValidator):
     validator_type = "property_group_type"
 
     @classmethod
-    def validate(cls, name: str, value: PropertyGroup, valid: str) -> None:
-        if (value is not None) and (value.property_group_type != valid):
+    def validate(cls, name: str, value: PropertyGroup, valid: str | list[str]) -> None:
+
+        if isinstance(valid, str):
+            valid = [valid]
+
+        if (value is not None) and (value.property_group_type not in valid):
             raise PropertyGroupValidationError(name, value, valid)
 
 
