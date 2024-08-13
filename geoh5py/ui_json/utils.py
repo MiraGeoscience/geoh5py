@@ -94,7 +94,16 @@ def dependency_requires_value(ui_json: dict[str, dict], parameter: str) -> bool:
     :param parameter: Name of parameter to check type.
     """
     dependency = ui_json[parameter]["dependency"]
-    key = "enabled" if ui_json[dependency].get("optional", False) else "value"
+
+    key = (
+        "enabled"
+        if (
+            ui_json[dependency].get("optional", False)
+            or "enabled" in ui_json[dependency]
+        )
+        else "value"
+    )
+
     if ui_json[parameter].get("dependencyType", "enabled") == "enabled":
         is_required = ui_json[dependency].get(key, True)
     else:
