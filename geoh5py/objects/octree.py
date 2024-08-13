@@ -185,6 +185,20 @@ class Octree(GridObject):
 
         return self._octree_cells
 
+    @octree_cells.setter
+    def octree_cells(self, octree_cells: np.ndarray | list | tuple):
+        octree_cells = self.validate_octree_cells(octree_cells)
+        if (
+            self._octree_cells is not None
+            and self._octree_cells.shape != octree_cells.shape
+        ):
+            raise ValueError(
+                "New octree_cells array must have the same shape as the current octree_cells array."
+            )
+        self._octree_cells = octree_cells
+
+        self.workspace.update_attribute(self, "octree_cells")
+
     @property
     def shape(self) -> tuple[np.int32, np.int32, np.int32]:
         """

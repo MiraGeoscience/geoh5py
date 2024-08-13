@@ -101,8 +101,10 @@ def test_create_curve_data(tmp_path: Path):
         cells = curve.cells.copy()
         assert cells.shape[0] == 11, "Error creating cells from parts." ""
 
-        with pytest.raises(AttributeError):
-            curve.cells = np.c_[1]
+        with pytest.raises(
+            ValueError, match="New cells array must have the same shape"
+        ):
+            curve.cells = np.c_[1, 2]
 
         curve = Curve.create(
             workspace, vertices=np.random.randn(n_data, 3), name=curve_name, cells=cells

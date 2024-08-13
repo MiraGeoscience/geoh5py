@@ -99,7 +99,9 @@ def test_remove_cells_surface_data(tmp_path: Path):
         ):
             surface.remove_cells([101])
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(
+            ValueError, match="New cells array must have the same shape"
+        ):
             surface.cells = surface.cells[1:, :]
 
         surface.remove_cells([0])
