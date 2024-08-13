@@ -34,10 +34,12 @@ class GroupTypeEnum(str, Enum):
     Supported property group types.
     """
 
-    MULTI = "Multi-element"
-    VECTOR = "3D vector"
+    DEPTH = "Depth table"
     DIPDIR = "Dip direction & dip"
+    INTERVAL = "Interval table"
+    MULTI = "Multi-element"
     STRIKEDIP = "Strike & dip"
+    VECTOR = "3D vector"
 
 
 class PropertyGroup:
@@ -237,7 +239,7 @@ class PropertyGroup:
             except ValueError as error:
                 raise ValueError(
                     f"Property group type must be one of "
-                    f"{', '.join(GroupTypeEnum.__members__)}"
+                    f"{', '.join(GroupTypeEnum.__members__)}. Provided {value}"
                 ) from error
 
         if not isinstance(value, GroupTypeEnum):
