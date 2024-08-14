@@ -766,6 +766,17 @@ class Drillhole(Points):
 
         return None
 
+    @vertices.setter
+    def vertices(self, vertices: np.ndarray | list | tuple):
+        xyz = self.validate_vertices(vertices)
+        if self._vertices is not None and self._vertices.shape != xyz.shape:
+            raise ValueError(
+                "New vertices array must have the same shape as the current vertices array."
+            )
+        self._vertices = xyz
+
+        self.workspace.update_attribute(self, "vertices")
+
     def sort_depths(self):
         """
         Read the 'DEPTH' data and sort all Data.values if needed
