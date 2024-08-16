@@ -58,6 +58,17 @@ class CellObject(Points, ABC):
 
         return self._cells
 
+    @cells.setter
+    def cells(self, cells: np.ndarray | list | tuple):
+        cells = self.validate_cells(cells)
+        if self._cells is not None and self._cells.shape != cells.shape:
+            raise ValueError(
+                "New cells array must have the same shape as the current cells array."
+            )
+        self._cells = cells
+
+        self.workspace.update_attribute(self, "cells")
+
     def mask_by_extent(
         self,
         extent: np.ndarray,

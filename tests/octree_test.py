@@ -145,3 +145,8 @@ def test_change_octree_cells(tmp_path: Path):
     with workspace.open():
         rec_obj = workspace.get_entity("base_cells")[0]
         compare_entities(base_mesh, rec_obj)
+
+        with pytest.raises(
+            ValueError, match="New octree_cells array must have the same shape"
+        ):
+            base_mesh.octree_cells = octree_cells

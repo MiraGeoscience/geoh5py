@@ -103,7 +103,9 @@ def test_remove_point_data(tmp_path):
             {"DataValues": {"association": "VERTEX", "values": values}}
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(
+            ValueError, match="New vertices array must have the same shape"
+        ):
             points.vertices = np.random.randn(10, 3)
 
         with pytest.raises(

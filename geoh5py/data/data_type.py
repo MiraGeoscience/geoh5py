@@ -33,7 +33,14 @@ if TYPE_CHECKING:
     from .data import Data  # noqa: F401
 
 
-ColorMapping = Literal["linear", "equal_area", "logarithmic", "cdf", "missing"]
+ColorMapping = Literal[
+    "linear",
+    "equal_area",
+    "logarithmic",
+    "cdf",
+    "missing",
+    "cumulative_distribution_function",
+]
 
 
 class DataType(EntityType):

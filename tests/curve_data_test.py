@@ -101,8 +101,10 @@ def test_create_curve_data(tmp_path: Path):
         cells = curve.cells.copy()
         assert cells.shape[0] == 11, "Error creating cells from parts." ""
 
-        with pytest.raises(AttributeError):
-            curve.cells = np.c_[1]
+        with pytest.raises(
+            ValueError, match="New cells array must have the same shape"
+        ):
+            curve.cells = np.c_[1, 2]
 
         curve = Curve.create(
             workspace, vertices=np.random.randn(n_data, 3), name=curve_name, cells=cells
@@ -133,10 +135,6 @@ def test_create_curve_data(tmp_path: Path):
             compare_entities(curve, obj_rec)
             compare_entities(data_objects[0], data_vert_rec)
             compare_entities(data_objects[1], ws2.get_entity("cellValues")[0])
-
-            with pytest.raises(AttributeError):
-                # Modify and write
-                obj_rec.vertices = np.random.randn(n_data, 3)
 
             with pytest.raises(TypeError, match="Values cannot have decimal points."):
                 data_vert_rec.values = np.random.randn(n_data)  # warning here
