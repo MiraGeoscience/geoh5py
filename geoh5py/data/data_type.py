@@ -15,6 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=too-many-arguments, too-many-instance-attributes
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, get_args
@@ -44,7 +46,6 @@ ColorMapping = Literal[
 
 
 class DataType(EntityType):
-    # pylint: disable=too-many-arguments
     """
     DataType class.
 
@@ -53,6 +54,7 @@ class DataType(EntityType):
     :param workspace: An active Workspace.
     :param primitive_type: The primitive type of the data.
     :param color_map: The colormap used for plotting.
+    :param duplicate_type_on_copy: Force a copy on copy of the data entity.
     :param hidden: If the data are hidden or not.
     :param mapping: The type of color stretching to plot the colormap.
     :param number_of_bins: The number of bins used by the histogram.
@@ -79,6 +81,7 @@ class DataType(EntityType):
         workspace: Workspace,
         primitive_type: type[Data] | PrimitiveTypeEnum | str | None = None,
         color_map: ColorMap | None = None,
+        duplicate_type_on_copy: bool = False,
         hidden: bool = False,
         mapping: ColorMapping = "equal_area",
         number_of_bins: int | None = None,
@@ -89,6 +92,7 @@ class DataType(EntityType):
     ):
         super().__init__(workspace, **kwargs)
         self.color_map = color_map
+        self.duplicate_type_on_copy = duplicate_type_on_copy
         self.hidden = hidden
         self.mapping = mapping
         self.number_of_bins = number_of_bins
@@ -139,6 +143,21 @@ class DataType(EntityType):
 
         self.workspace.update_attribute(self, "color_map")
 
+    @property
+    def duplicate_type_on_copy(self) -> bool:
+        """
+        If the data type should be duplicated on copy.
+        """
+        return self._duplicate_type_on_copy
+
+    @duplicate_type_on_copy.setter
+    def duplicate_type_on_copy(self, value: bool):
+        if not isinstance(value, bool) and value != 1 and value != 0:
+            raise TypeError(f"transparent_no_data must be a bool, not {type(value)}")
+
+        self._duplicate_type_on_copy = bool(value)
+        self.workspace.update_attribute(self, "attributes")
+
     @classmethod
     def find_or_create(
         cls,
@@ -170,7 +189,10 @@ class DataType(EntityType):
             and isinstance(primitive_type, str)
             and primitive_type.upper() == "GEOMETRIC"
         ):
-            entity_class = cls._geometric_data(uid, kwargs.get("name", ""))
+            if "dynamic_implementation_id" in kwargs:
+                entity_class = GeometricDynamicData
+            else:
+                entity_class = cls._geometric_data(uid, kwargs.get("name", ""))
 
         data_type = super().find_or_create(workspace, uid, entity_class, **kwargs)
 
@@ -436,3 +458,42 @@ class GeometricDataZ(DataType):
         Default uuid for the entity type.
         """
         return cls._TYPE_UID
+
+
+class GeometricDynamicData(DataType):
+    """
+    Data container for dynamic geometric data.
+    """
+
+    _TYPE_UID = UUID("{4b6ecb37-0623-4ea0-95f1-4873008890a8}")
+
+    def __init__(
+        self,
+        workspace: Workspace,
+        dynamic_implementation_id: UUID = _TYPE_UID,
+        **kwargs,
+    ):
+        super().__init__(workspace, **kwargs)
+
+        self.dynamic_implementation_id = dynamic_implementation_id
+
+    @property
+    def dynamic_implementation_id(self) -> UUID | None:
+        """
+        The dynamic implementation id.
+        """
+        return self._dynamic_implementation_id
+
+    @dynamic_implementation_id.setter
+    def dynamic_implementation_id(self, value: UUID):
+        if not isinstance(value, UUID):
+            raise TypeError(
+                f"dynamic_implementation_id must be a UUID, not {type(value)}"
+            )
+
+        if value != self._TYPE_UID:
+            raise ValueError(
+                f"Dynamic implementation id {value} is not compatible with {self.__class__}"
+            )
+
+        self._dynamic_implementation_id = value

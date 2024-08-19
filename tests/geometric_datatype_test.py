@@ -48,3 +48,8 @@ def test_xyz_dataype(tmp_path: Path):
                 data.entity_type.uid
                 == getattr(data_type, f"GeometricData{axis}").default_type_uid()
             )
+
+
+def test_dynamic_data():
+    ws = Workspace(r"C:\Users\dominiquef\Desktop\Tests\colortable.geoh5")
+    print(ws.objects[0].get_data("FlinFlon_geology"))
