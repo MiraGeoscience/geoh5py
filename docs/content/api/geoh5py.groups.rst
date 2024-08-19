@@ -2,18 +2,10 @@ geoh5py.groups
 ==============
 
 
-geoh5py.groups.base\_group
---------------------------
-
-.. automodule:: geoh5py.groups.base
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 geoh5py.groups.container\_group
 -------------------------------
 
-.. automodule:: geoh5py.groups.container
+.. automodule:: geoh5py.groups.container_group
    :members:
    :undoc-members:
    :show-inheritance:
@@ -21,7 +13,7 @@ geoh5py.groups.container\_group
 geoh5py.groups.custom\_group
 ----------------------------
 
-.. automodule:: geoh5py.groups.custom
+.. automodule:: geoh5py.groups.custom_group
    :members:
    :undoc-members:
    :show-inheritance:
@@ -29,7 +21,7 @@ geoh5py.groups.custom\_group
 geoh5py.groups.drillhole\_group
 -------------------------------
 
-.. automodule:: geoh5py.groups.drillhole
+.. automodule:: geoh5py.groups.drillhole_group
    :members:
    :undoc-members:
    :show-inheritance:
@@ -37,7 +29,15 @@ geoh5py.groups.drillhole\_group
 geoh5py.groups.giftools\_group
 ------------------------------
 
-.. automodule:: geoh5py.groups.giftools
+.. automodule:: geoh5py.groups.giftools_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+geoh5py.groups.group
+--------------------
+
+.. automodule:: geoh5py.groups.group
    :members:
    :undoc-members:
    :show-inheritance:
@@ -53,7 +53,7 @@ geoh5py.groups.group\_type
 geoh5py.groups.integrator\_group
 --------------------------------
 
-.. automodule:: geoh5py.groups.integrator
+.. automodule:: geoh5py.groups.integrator_group
    :members:
    :undoc-members:
    :show-inheritance:
@@ -61,7 +61,7 @@ geoh5py.groups.integrator\_group
 geoh5py.groups.maps\_group
 --------------------------
 
-.. automodule:: geoh5py.groups.maps
+.. automodule:: geoh5py.groups.maps_group
    :members:
    :undoc-members:
    :show-inheritance:
@@ -69,7 +69,7 @@ geoh5py.groups.maps\_group
 geoh5py.groups.notype\_group
 ----------------------------
 
-.. automodule:: geoh5py.groups.notype
+.. automodule:: geoh5py.groups.notype_group
    :members:
    :undoc-members:
    :show-inheritance:
@@ -85,7 +85,7 @@ geoh5py.groups.property\_group
 geoh5py.groups.root\_group
 --------------------------
 
-.. automodule:: geoh5py.groups.root
+.. automodule:: geoh5py.groups.root_group
    :members:
    :undoc-members:
    :show-inheritance:
@@ -93,7 +93,7 @@ geoh5py.groups.root\_group
 geoh5py.groups.simpeg\_group
 ----------------------------
 
-.. automodule:: geoh5py.groups.simpeg
+.. automodule:: geoh5py.groups.simpeg_group
    :members:
    :undoc-members:
    :show-inheritance:
@@ -101,7 +101,7 @@ geoh5py.groups.simpeg\_group
 geoh5py.groups.survey\_group
 ----------------------------
 
-.. automodule:: geoh5py.groups.survey
+.. automodule:: geoh5py.groups.survey_group
    :members:
    :undoc-members:
    :show-inheritance:
