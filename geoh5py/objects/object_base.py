@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import uuid
 import warnings
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -86,34 +85,6 @@ class ObjectBase(EntityContainer):
 
         if property_groups:
             self._property_groups = property_groups
-
-    def add_comment(self, comment: str, author: str | None = None):
-        """
-        Add text comment to an object.
-
-        :param comment: Text to be added as comment.
-        :param author: Name of author or defaults to
-            :obj:`~geoh5py.workspace.workspace.Workspace.contributors`.
-        """
-
-        date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        if author is None:
-            author = ",".join(self.workspace.contributors)
-
-        comment_dict = {"Author": author, "Date": date, "Text": comment}
-
-        if self.comments is None:
-            self.add_data(
-                {
-                    "UserComments": {
-                        "values": [comment_dict],
-                        "association": "OBJECT",
-                        "entity_type": {"primitive_type": "TEXT"},
-                    }
-                }
-            )
-        else:
-            self.comments.values = self.comments.values + [comment_dict]
 
     def add_data(
         self,
@@ -234,17 +205,6 @@ class ObjectBase(EntityContainer):
         defining the connection between
         :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
         """
-
-    @property
-    def comments(self):
-        """
-        Fetch a :obj:`~geoh5py.data.text_data.CommentsData` entity from children.
-        """
-        for child in self.children:
-            if isinstance(child, CommentsData):
-                return child
-
-        return None
 
     def copy(
         self,

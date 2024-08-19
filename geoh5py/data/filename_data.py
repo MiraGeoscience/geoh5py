@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from .data import Data, PrimitiveTypeEnum
 
@@ -90,14 +91,19 @@ class FilenameData(Data):
 
     @values.setter
     def values(self, values):
+        self._values = self.validate_values(values)
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "values")
+
+    def validate_values(self, values: Any | None) -> Any:
         if not isinstance(values, bytes):
             raise ValueError("Input 'values' for FilenameData must be of type 'bytes'.")
 
         if self.file_name is None:
             raise AttributeError("FilenameData requires the 'file_name' to be set.")
 
-        self._values = values
-        self.workspace.update_attribute(self, "values")
+        return values
 
     # TODO: implement specialization to access values.
     # Stored as a 1D array of 32-bit unsigned integer type (native).

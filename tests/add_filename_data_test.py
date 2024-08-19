@@ -30,7 +30,7 @@ from geoh5py.workspace import Workspace
 
 
 def test_add_file(tmp_path: Path):
-    workspace = Workspace()
+    workspace = Workspace(tmp_path / "test.geoh5")
     workspace_copy = Workspace()
     with pytest.warns(UserWarning, match="No 'vertices' provided."):
         curve = Curve.create(workspace)

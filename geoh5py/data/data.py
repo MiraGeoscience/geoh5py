@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from typing import Any
 
 import numpy as np
 
@@ -40,14 +41,16 @@ class Data(Entity):
     def __init__(
         self,
         association: DataAssociationEnum = DataAssociationEnum.OBJECT,
+        modifiable: bool = True,
         visible: bool = False,
+        values: Any | None = None,
         **kwargs,
     ):
-        self.association = association
-        self._modifiable = True
-        self._values = None
-
         super().__init__(visible=visible, **kwargs)
+
+        self.association = association
+        self.modifiable = modifiable
+        self.values = values
 
     def copy(
         self,
@@ -166,13 +169,6 @@ class Data(Entity):
         return None
 
     @property
-    def values(self):
-        """
-        Data values
-        """
-        return self._values
-
-    @property
     def association(self) -> DataAssociationEnum:
         """
         :obj:`~geoh5py.data.data_association_enum.DataAssociationEnum`:
@@ -209,7 +205,9 @@ class Data(Entity):
     @modifiable.setter
     def modifiable(self, value: bool):
         self._modifiable = value
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def entity_type(self) -> DataType:
@@ -221,7 +219,9 @@ class Data(Entity):
     @entity_type.setter
     def entity_type(self, data_type: DataType):
         self._entity_type = data_type
-        self.workspace.update_attribute(self, "entity_type")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "entity_type")
 
     @classmethod
     @abstractmethod
@@ -271,6 +271,30 @@ class Data(Entity):
             entity_type.name = self.name
 
         return entity_type
+
+    @abstractmethod
+    def validate_values(self, values: Any | None) -> Any:
+        """
+        Validate the values.
+        """
+
+    @property
+    def values(self):
+        """
+        Data values
+        """
+        if getattr(self, "_values", None) is None:
+            values = self.workspace.fetch_values(self)
+            self._values = self.validate_values(values)
+
+        return self._values
+
+    @values.setter
+    def values(self, values: np.ndarray | None):
+        self._values = self.validate_values(values)
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "values")
 
     def __call__(self):
         return self.values

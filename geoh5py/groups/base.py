@@ -17,12 +17,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..data import CommentsData, Data
 from ..shared.entity_container import EntityContainer
 from .group_type import GroupType
 
@@ -34,35 +32,6 @@ class Group(EntityContainer):
     """Base Group class"""
 
     _default_name = "Group"
-
-    def add_comment(self, comment: str, author: str | None = None):
-        """
-        Add text comment to an object.
-
-        :param comment: Text to be added as comment.
-        :param author: Author's name or :obj:`~geoh5py.workspace.workspace.Workspace.contributors`.
-        """
-
-        date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        if author is None:
-            author = ",".join(self.workspace.contributors)
-
-        comment_dict = {"Author": author, "Date": date, "Text": comment}
-
-        if self.comments is None:
-            self.workspace.create_entity(
-                Data,
-                entity={
-                    "name": "UserComments",
-                    "association": "OBJECT",
-                    "values": [comment_dict],
-                    "parent": self,
-                },
-                entity_type={"primitive_type": "TEXT"},
-            )
-
-        else:
-            self.comments.values = self.comments.values + [comment_dict]
 
     def mask_by_extent(self, extent: np.ndarray, inverse: bool = False) -> None:
         """
@@ -148,17 +117,6 @@ class Group(EntityContainer):
                 return None
 
         return copy_group
-
-    @property
-    def comments(self):
-        """
-        Fetch a :obj:`~geoh5py.data.text_data.CommentsData` entity from children.
-        """
-        for child in self.children:
-            if isinstance(child, CommentsData):
-                return child
-
-        return None
 
     @property
     def entity_type(self) -> GroupType:

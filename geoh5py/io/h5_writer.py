@@ -613,11 +613,7 @@ class H5Writer:
             # Adding an array of values
             if isinstance(values, dict) or isinstance(entity, CommentsData):
                 values = deepcopy(values)
-                if isinstance(entity, CommentsData):
-                    values = {"Comments": values}
-
                 values = dict_mapper(values, [as_str_if_uuid])
-
                 entity_handle.create_dataset(
                     name_map,
                     data=json.dumps(values, indent=4),

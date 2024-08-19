@@ -48,29 +48,6 @@ class NumericData(Data, ABC):
         :return: the formatted values.
         """
 
-    @property
-    def values(self) -> np.ndarray | None:
-        """
-        :return: values: An array of values
-        """
-        if getattr(self, "_values", None) is None:
-            values = self.workspace.fetch_values(self)
-
-            if isinstance(values, (np.ndarray, type(None))):
-                self._values = self.format_values(values)
-
-        return self._values
-
-    @values.setter
-    def values(self, values: np.ndarray | None):
-        if not isinstance(values, (np.ndarray, type(None))):
-            raise TypeError(
-                f"Input 'values' for {self} must be of type {np.ndarray} or None."
-            )
-
-        self._values = self.format_values(values)
-        self.workspace.update_attribute(self, "values")
-
     def format_length(self, values: np.ndarray) -> np.ndarray:
         """
         Check for possible mismatch between the length of values
@@ -97,7 +74,7 @@ class NumericData(Data, ABC):
 
         return values
 
-    def format_values(self, values: np.ndarray | None) -> np.ndarray:
+    def validate_values(self, values: np.ndarray | None) -> np.ndarray:
         """
         Check for possible mismatch between the length of values
         stored and the expected number of cells or vertices.

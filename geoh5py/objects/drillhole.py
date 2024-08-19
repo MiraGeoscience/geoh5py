@@ -786,7 +786,7 @@ class Drillhole(Points):
 
             depths = data_obj.values
             if isinstance(data_obj, NumericData):
-                depths = data_obj.format_values(depths)
+                depths = data_obj.validate_values(depths)
 
             if not np.all(np.diff(depths) >= 0):
                 sort_ind = np.argsort(depths)
@@ -796,7 +796,7 @@ class Drillhole(Points):
                         isinstance(child, NumericData)
                         and getattr(child.association, "name", None) == "VERTEX"
                     ):
-                        child.values = child.format_values(child.values)[sort_ind]
+                        child.values = child.validate_values(child.values)[sort_ind]
 
                 if self.vertices is not None:
                     self._vertices = self.vertices[sort_ind, :]

@@ -21,11 +21,13 @@ from __future__ import annotations
 
 import uuid
 from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
 
+from ..data import CommentsData, Data
 from .entity import Entity
 
 if TYPE_CHECKING:
@@ -71,6 +73,37 @@ class EntityContainer(Entity):
                 )
 
             self._children.append(child)
+
+    def add_comment(self, comment: str, author: str | None = None):
+        """
+        Add text comment to an object.
+
+        :param comment: Text to be added as comment.
+        :param author: Author's name or :obj:`~geoh5py.workspace.workspace.Workspace.contributors`.
+        """
+
+        date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        if author is None:
+            author = ",".join(self.workspace.contributors)
+
+        comment_dict = {"Author": author, "Date": date, "Text": comment}
+
+        if self.comments is None:
+            self.workspace.create_entity(
+                Data,
+                entity={
+                    "name": "UserComments",
+                    "association": "OBJECT",
+                    "values": {"Comments": [comment_dict]},
+                    "parent": self,
+                },
+                entity_type={"primitive_type": "TEXT"},
+            )
+
+        else:
+            self.comments.values = {
+                "Comments": self.comments.values["Comments"] + [comment_dict]
+            }
 
     def add_file(self, file: str | Path | bytes, name: str = "filename.dat"):
         """
@@ -121,6 +154,17 @@ class EntityContainer(Entity):
         :obj:`list` Children entities in the workspace tree
         """
         return self._children
+
+    @property
+    def comments(self):
+        """
+        Fetch a :obj:`~geoh5py.data.text_data.CommentsData` entity from children.
+        """
+        for child in self.children:
+            if isinstance(child, CommentsData):
+                return child
+
+        return None
 
     @abstractmethod
     def copy(
