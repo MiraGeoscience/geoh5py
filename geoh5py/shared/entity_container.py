@@ -135,10 +135,10 @@ class EntityContainer(Entity):
 
         attributes = {
             "name": name,
-            "file_name": name,
+            "file_name": blob,
             "association": "OBJECT",
             "parent": self,
-            "values": blob,
+            "values": name,
         }
         entity_type = {"name": "UserFiles", "primitive_type": "FILENAME"}
 

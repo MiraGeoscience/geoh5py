@@ -24,41 +24,58 @@ from .data import Data, PrimitiveTypeEnum
 
 
 class FilenameData(Data):
-    _file_name: str | None = None
-    _name = "GeoImageMesh_Image"
-    _values: bytes | None
+    """
+    Class for storing files as data blob.
 
-    def __init__(self, file_name=None, **kwargs):
-        super().__init__(file_name=file_name, **kwargs)
-        self._public = False
+    :param values: Name of the file.
+    :param file_name: Binary representation of the file.
+    """
+
+    def __init__(
+        self,
+        values: str | None = None,
+        file_name: bytes | None = None,
+        name="GeoImageMesh_Image",
+        public: bool = False,
+        **kwargs,
+    ):
+        super().__init__(values=values, name=name, public=public, **kwargs)
+
+        self.file_name = file_name
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.FILENAME
 
     @property
-    def file_name(self) -> str | None:
+    def file_name(self):
         """
-        :obj:`str` Text value.
+        Binary blob value representation of a file.
         """
-        if getattr(self, "_file_name", None) is None:
-            file_name = self.workspace.fetch_values(self)
-
-            if isinstance(file_name, (str, type(None))):
-                self._file_name = file_name
+        if (
+            self.values is not None
+            and self.on_file
+            and getattr(self, "_file_name", None) is None
+        ):
+            self._file_name = self.workspace.fetch_file_object(self.uid, self.values)
 
         return self._file_name
 
     @file_name.setter
-    def file_name(self, value: str | None):
-        self._file_name = value
+    def file_name(self, value: bytes | None):
 
-        if not isinstance(value, (str, type(None))):
-            raise ValueError(
-                f"Input 'file_name' for {self} must be of type str or None."
+        if self.values is None:
+            raise AttributeError("FilenameData requires the 'values' to be set.")
+
+        if not isinstance(value, bytes | None):
+            raise TypeError(
+                "Input 'file_name' for FilenameData must be of type 'bytes'."
             )
 
-        self.workspace.update_attribute(self, "values")
+        self._file_name = value
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "values")
 
     def save_file(self, path: str | Path = Path(), name=None):
         """
@@ -69,39 +86,15 @@ class FilenameData(Data):
         """
         Path(path).mkdir(exist_ok=True)
         if name is None:
-            name = getattr(self, "file_name", "image.tiff")
+            name = getattr(self, "values", "image.tiff")
 
-        if self.values is not None:
+        if self.file_name is not None:
             with open(Path(path) / name, "wb") as raw_binary:
-                raw_binary.write(getattr(self, "values"))
-
-    @property
-    def values(self) -> bytes | None:
-        """
-        Binary :obj:`str` value representation of a file.
-        """
-        if (
-            self.file_name is not None
-            and self.on_file
-            and getattr(self, "_values", None) is None
-        ):
-            self._values = self.workspace.fetch_file_object(self.uid, self.file_name)
-
-        return self._values
-
-    @values.setter
-    def values(self, values):
-        self._values = self.validate_values(values)
-
-        if self.on_file:
-            self.workspace.update_attribute(self, "values")
+                raw_binary.write(self.file_name)
 
     def validate_values(self, values: Any | None) -> Any:
-        if not isinstance(values, bytes):
-            raise ValueError("Input 'values' for FilenameData must be of type 'bytes'.")
-
-        if self.file_name is None:
-            raise AttributeError("FilenameData requires the 'file_name' to be set.")
+        if not isinstance(values, str | None):
+            raise ValueError("Input 'values' for FilenameData must be of type 'str'.")
 
         return values
 
