@@ -46,9 +46,10 @@ class Data(Entity):
         values: Any | None = None,
         **kwargs,
     ):
+        self._association = self.validate_association(association)
+
         super().__init__(visible=visible, **kwargs)
 
-        self.association = association
         self.modifiable = modifiable
         self.values = values
 
@@ -180,21 +181,6 @@ class Data(Entity):
         """
         return self._association
 
-    @association.setter
-    def association(self, value: str | DataAssociationEnum):
-        if isinstance(value, str):
-            if value.upper() not in DataAssociationEnum.__members__:
-                raise ValueError(
-                    f"Association flag should be one of {DataAssociationEnum.__members__}"
-                )
-
-            value = getattr(DataAssociationEnum, value.upper())
-
-        if not isinstance(value, DataAssociationEnum):
-            raise TypeError(f"Association must be of type {DataAssociationEnum}")
-
-        self._association = value
-
     @property
     def modifiable(self) -> bool:
         """
@@ -271,6 +257,21 @@ class Data(Entity):
             entity_type.name = self.name
 
         return entity_type
+
+    @staticmethod
+    def validate_association(value: str | DataAssociationEnum):
+        if isinstance(value, str):
+            if value.upper() not in DataAssociationEnum.__members__:
+                raise ValueError(
+                    f"Association flag should be one of {DataAssociationEnum.__members__}"
+                )
+
+            value = getattr(DataAssociationEnum, value.upper())
+
+        if not isinstance(value, DataAssociationEnum):
+            raise TypeError(f"Association must be of type {DataAssociationEnum}")
+
+        return value
 
     @abstractmethod
     def validate_values(self, values: Any | None) -> Any:

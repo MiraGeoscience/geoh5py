@@ -74,4 +74,4 @@ def test_add_file(tmp_path: Path):
     with pytest.raises(
         AttributeError, match="FilenameData requires the 'values' to be set."
     ):
-        file_data.file_name = None
+        file_data.file_name = b"abc"
