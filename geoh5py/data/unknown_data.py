@@ -17,26 +17,13 @@
 
 from __future__ import annotations
 
-import uuid
 from typing import Any
 
 from .data import Data
-from .data_association_enum import DataAssociationEnum
-from .data_type import DataType
 from .primitive_type_enum import PrimitiveTypeEnum
 
 
 class UnknownData(Data):
-    def __init__(
-        self,
-        association: DataAssociationEnum,
-        name: str,
-        uid: uuid.UUID | None = None,
-        entity_type: DataType | None = None,
-    ):
-        super().__init__(
-            association=association, name=name, uid=uid, entity_type=entity_type
-        )
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:

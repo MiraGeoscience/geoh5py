@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from .integer_data import IntegerData
 from .primitive_type_enum import PrimitiveTypeEnum
+from .reference_value_map import ReferenceValueMap
 
 
 class ReferencedData(IntegerData):
@@ -26,11 +27,11 @@ class ReferencedData(IntegerData):
     Reference data described by indices and associated strings.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, value_map: ReferenceValueMap | None = None, **kwargs):
         super().__init__(**kwargs)
 
-        if "value_map" in kwargs:
-            self.entity_type.value_map = kwargs["value_map"]
+        if value_map is not None:
+            self.entity_type.value_map = value_map
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
