@@ -65,13 +65,12 @@ class VisualParameters(TextData):
 
     @values.setter
     def values(self, values: np.ndarray | str | None):
-        self._values = values
-
         if not isinstance(values, (np.ndarray, str, type(None))):
             raise ValueError(
                 f"Input 'values' for {self} must be of type {np.ndarray}  str or None."
             )
 
+        self._values = values
         self.workspace.update_attribute(self, "values")
 
     @property

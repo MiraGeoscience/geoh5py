@@ -53,9 +53,8 @@ class H5Writer:
 
     str_type = h5py.special_dtype(vlen=str)
 
-    @classmethod
+    @staticmethod
     def init_geoh5(
-        cls,
         file: str | h5py.File,
         workspace: workspace.Workspace,
     ):
@@ -70,7 +69,7 @@ class H5Writer:
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             project = h5file.create_group(workspace.name)
-            cls.write_attributes(h5file, workspace)
+            H5Writer.write_attributes(h5file, workspace)
             project.create_group("Data")
             project.create_group("Groups")
             project.create_group("Objects")
@@ -79,8 +78,8 @@ class H5Writer:
             types.create_group("Group types")
             types.create_group("Object types")
 
-    @classmethod
-    def create_dataset(cls, entity_handle, dataset: np.ndarray, label: str) -> None:
+    @staticmethod
+    def create_dataset(entity_handle, dataset: np.ndarray, label: str) -> None:
         """
         Create a dataset on geoh5.
 
@@ -154,9 +153,8 @@ class H5Writer:
                 if parent is not None:
                     H5Writer.remove_child(h5file, uid, ref_type, parent)
 
-    @classmethod
+    @staticmethod
     def fetch_handle(
-        cls,
         file: str | h5py.File,
         entity,
         return_parent: bool = False,
@@ -210,9 +208,8 @@ class H5Writer:
 
         return None
 
-    @classmethod
+    @staticmethod
     def save_entity(
-        cls,
         file: str | h5py.File,
         entity,
         compression: int = 5,
@@ -246,9 +243,9 @@ class H5Writer:
 
         return new_entity
 
-    @classmethod
+    @staticmethod
     def update_concatenated_field(
-        cls, file: str | h5py.File, entity, attribute: str, channel: str
+        file: str | h5py.File, entity, attribute: str, channel: str
     ) -> None:
         """
         Update the attributes of a concatenated :obj:`~geoh5py.shared.entity.Entity`.
@@ -300,9 +297,8 @@ class H5Writer:
                 compression_opts=9,
             )
 
-    @classmethod
+    @staticmethod
     def update_field(
-        cls,
         file: str | h5py.File,
         entity,
         attribute: str,
@@ -330,7 +326,9 @@ class H5Writer:
                 "trace_depth",
                 "values",
             ]:
-                cls.write_data_values(h5file, entity, attribute, compression, **kwargs)
+                H5Writer.write_data_values(
+                    h5file, entity, attribute, compression, **kwargs
+                )
             elif attribute in [
                 "cells",
                 "concatenated_object_ids",
@@ -345,24 +343,23 @@ class H5Writer:
                 "vertices",
                 "z_cell_delimiters",
             ]:
-                cls.write_array_attribute(h5file, entity, attribute, **kwargs)
+                H5Writer.write_array_attribute(h5file, entity, attribute, **kwargs)
             elif attribute == "property_groups":
-                cls.write_property_groups(h5file, entity)
+                H5Writer.write_property_groups(h5file, entity)
             elif attribute == "color_map":
-                cls.write_color_map(h5file, entity)
+                H5Writer.write_color_map(h5file, entity)
             elif attribute == "value_map":
-                cls.write_value_map(h5file, entity)
+                H5Writer.write_value_map(h5file, entity)
             elif attribute == "entity_type":
                 del entity_handle["Type"]
                 entity.workspace.repack = True
                 new_type = H5Writer.write_entity_type(h5file, entity.entity_type)
                 entity_handle["Type"] = new_type
             else:
-                cls.write_attributes(h5file, entity)
+                H5Writer.write_attributes(h5file, entity)
 
-    @classmethod
+    @staticmethod
     def write_attributes(
-        cls,
         file: str | h5py.File,
         entity,
     ) -> None:
@@ -405,15 +402,14 @@ class H5Writer:
                 if isinstance(value, (np.int8, bool)):
                     entity_handle.attrs.create(key, int(value), dtype="int8")
                 elif isinstance(value, str):
-                    entity_handle.attrs.create(key, value, dtype=cls.str_type)
+                    entity_handle.attrs.create(key, value, dtype=H5Writer.str_type)
                 else:
                     entity_handle.attrs.create(
                         key, value, dtype=np.asarray(value).dtype
                     )
 
-    @classmethod
+    @staticmethod
     def write_color_map(
-        cls,
         file: str | h5py.File,
         entity_type: shared.EntityType,
     ) -> None:
@@ -438,18 +434,17 @@ class H5Writer:
                 pass
 
             if color_map is not None and color_map.values is not None:
-                cls.create_dataset(
+                H5Writer.create_dataset(
                     entity_type_handle,
                     getattr(color_map, "_values"),
                     "Color map",
                 )
                 entity_type_handle["Color map"].attrs.create(
-                    "File name", color_map.name, dtype=cls.str_type
+                    "File name", color_map.name, dtype=H5Writer.str_type
                 )
 
-    @classmethod
+    @staticmethod
     def write_value_map(
-        cls,
         file: str | h5py.File,
         entity_type: shared.EntityType,
     ) -> None:
@@ -479,11 +474,10 @@ class H5Writer:
             if reference_value_map is not None and reference_value_map.map is not None:
                 dtype = list(zip(names, formats))
                 array = np.array(list(reference_value_map.map.items()), dtype=dtype)
-                cls.create_dataset(entity_type_handle, array, "Value map")
+                H5Writer.create_dataset(entity_type_handle, array, "Value map")
 
-    @classmethod
+    @staticmethod
     def write_visible(
-        cls,
         file: str | h5py.File,
         entity,
     ) -> None:
@@ -509,9 +503,9 @@ class H5Writer:
                 )
                 visible["Visible"] = 1
 
-    @classmethod
+    @staticmethod
     def write_array_attribute(
-        cls, file: str | h5py.File, entity, attribute, values=None, **kwargs
+        file: str | h5py.File, entity, attribute, values=None, **kwargs
     ) -> None:
         """
         Add :obj:`~geoh5py.objects.object_base.ObjectBase.surveys` of an object.
@@ -554,9 +548,8 @@ class H5Writer:
                     **kwargs,
                 )
 
-    @classmethod
+    @staticmethod
     def write_data_values(  # pylint: disable=too-many-branches
-        cls,
         file: str | h5py.File,
         entity,
         attribute,
@@ -613,11 +606,7 @@ class H5Writer:
             # Adding an array of values
             if isinstance(values, dict) or isinstance(entity, CommentsData):
                 values = deepcopy(values)
-                if isinstance(entity, CommentsData):
-                    values = {"Comments": values}
-
                 values = dict_mapper(values, [as_str_if_uuid])
-
                 entity_handle.create_dataset(
                     name_map,
                     data=json.dumps(values, indent=4),
@@ -627,7 +616,7 @@ class H5Writer:
                 )
 
             elif isinstance(entity, FilenameData):
-                cls.write_file_name_data(entity_handle, entity, values)
+                H5Writer.write_file_name_data(entity_handle, entity)
 
             elif isinstance(values, str):
                 entity_handle.create_dataset(
@@ -660,9 +649,8 @@ class H5Writer:
                     **kwargs,
                 )
 
-    @classmethod
+    @staticmethod
     def clear_stats_cache(
-        cls,
         file: str | h5py.File,
         entity: Data,
     ) -> None:
@@ -685,9 +673,8 @@ class H5Writer:
                 del entity_type_handle["StatsCache"]
                 entity.workspace.repack = True
 
-    @classmethod
+    @staticmethod
     def write_entity(
-        cls,
         file: str | h5py.File,
         entity,
         compression: int,
@@ -742,7 +729,7 @@ class H5Writer:
             entity_handle["Type"] = new_type
             entity.entity_type.on_file = True
 
-            cls.write_properties(h5file, entity, compression)
+            H5Writer.write_properties(h5file, entity, compression)
             entity.on_file = True
 
             if isinstance(entity, RootGroup):
@@ -753,9 +740,8 @@ class H5Writer:
 
         return entity_handle
 
-    @classmethod
+    @staticmethod
     def write_entity_type(
-        cls,
         file: str | h5py.File,
         entity_type: shared.EntityType,
     ) -> h5py.Group:
@@ -807,10 +793,8 @@ class H5Writer:
 
         return new_type
 
-    @classmethod
-    def write_file_name_data(
-        cls, entity_handle: h5py.Group, entity: FilenameData, values: bytes
-    ) -> None:
+    @staticmethod
+    def write_file_name_data(entity_handle: h5py.Group, entity: FilenameData) -> None:
         """
         Write a dataset for the file name and file blob.
 
@@ -818,29 +802,28 @@ class H5Writer:
         :param entity: Target :obj:`~geoh5py.data.filename_data.FilenameData` entity.
         :param values: Bytes data
         """
-        if entity.file_name is None:
+        if entity.file_name is None or entity.values is None:
             raise AttributeError("FilenameData requires the 'file_name' to be set.")
 
         entity_handle.create_dataset(
             "Data",
-            data=entity.file_name,
+            data=entity.values,
             dtype=h5py.special_dtype(vlen=str),
             shape=(1,),
         )
 
-        if entity.file_name in entity_handle:
-            del entity_handle[entity.file_name]
+        if entity.values in entity_handle:
+            del entity_handle[entity.values]
             entity.workspace.repack = True
 
         entity_handle.create_dataset(
-            entity.file_name,
-            data=np.asarray(np.void(values[:])),
+            entity.values,
+            data=np.asarray(np.void(entity.file_name[:])),
             shape=(1,),
         )
 
-    @classmethod
+    @staticmethod
     def write_properties(
-        cls,
         file: str | h5py.File,
         entity: Entity,
         compression: int,
@@ -859,9 +842,8 @@ class H5Writer:
                 if getattr(entity, attribute, None) is not None:
                     H5Writer.update_field(h5file, entity, attribute, compression)
 
-    @classmethod
+    @staticmethod
     def write_property_groups(
-        cls,
         file: str | h5py.File,
         entity,
     ) -> None:
@@ -887,10 +869,10 @@ class H5Writer:
                 entity.property_groups, list
             ):
                 for p_g in entity.property_groups:
-                    cls.add_or_update_property_group(h5file, p_g)
+                    H5Writer.add_or_update_property_group(h5file, p_g)
 
-    @classmethod
-    def add_or_update_property_group(cls, file, property_group, remove=False):
+    @staticmethod
+    def add_or_update_property_group(file, property_group, remove=False):
         """
         Update a :obj:`~geoh5py.groups.property_group.PropertyGroup` associated with
         an :obj:`~geoh5py.shared.entity.Entity`.
@@ -944,9 +926,8 @@ class H5Writer:
 
             property_group.on_file = True
 
-    @classmethod
+    @staticmethod
     def write_to_parent(
-        cls,
         file: str | h5py.File,
         entity: Entity,
         compression: int,
