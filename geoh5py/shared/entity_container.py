@@ -135,7 +135,7 @@ class EntityContainer(Entity):
 
         attributes = {
             "name": name,
-            "file_name": blob,
+            "file_bytes": blob,
             "association": "OBJECT",
             "parent": self,
             "values": name,
