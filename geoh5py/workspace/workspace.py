@@ -39,7 +39,7 @@ import h5py
 import numpy as np
 
 from .. import data, groups, objects
-from ..data import CommentsData, Data, DataType
+from ..data import CommentsData, Data, DataType, GeometricDynamicData
 from ..data.text_data import TextData
 from ..data.visual_parameters import VisualParameters
 from ..groups import (
@@ -51,6 +51,7 @@ from ..groups import (
     RootGroup,
 )
 from ..io import H5Reader, H5Writer
+from ..io.utils import str_from_type
 from ..objects import Drillhole, ObjectBase
 from ..shared import weakref_utils
 from ..shared.concatenation import (
@@ -392,7 +393,7 @@ class Workspace(AbstractContextManager):
         if isinstance(entity_type, DataType):
             data_type: DataType = entity_type
         elif isinstance(entity_type, dict):
-            data_type = data.data_type.DataType.find_or_create(self, **entity_type)
+            data_type = Data.find_or_create_type(self, **entity_type)
         else:
             raise TypeError(
                 f"Expected `entity_type` to be of type `dict` or `DataType`, "
@@ -432,6 +433,16 @@ class Workspace(AbstractContextManager):
         raise TypeError(
             f"Data type {entity_class} not found in {data_type.primitive_type}."
         )
+
+    def create_data_type(self, type_attributes: dict) -> DataType:
+        """
+        Validate and create the data type from attributes
+        """
+        primitive_type = type_attributes.get("primitive_type", None)
+        if isinstance(primitive_type, str) and primitive_type.upper() == "GEOMETRIC":
+            return GeometricDynamicData.find_or_create(self, **type_attributes)
+
+        return DataType.find_or_create(self, **type_attributes)
 
     def create_entity(
         self,
@@ -622,7 +633,7 @@ class Workspace(AbstractContextManager):
                     H5Writer.add_or_update_property_group, child, remove=True, mode="r+"
                 )
             else:
-                ref_type = self.str_from_type(child)
+                ref_type = str_from_type(child)
                 self._io_call(
                     H5Writer.remove_child, child.uid, ref_type, parent, mode="r+"
                 )
@@ -644,7 +655,7 @@ class Workspace(AbstractContextManager):
         self.workspace.remove_recursively(entity)
 
         if not isinstance(entity, PropertyGroup):
-            ref_type = self.str_from_type(entity)
+            ref_type = str_from_type(entity)
             self._io_call(
                 H5Writer.remove_entity,
                 entity.uid,
@@ -713,10 +724,11 @@ class Workspace(AbstractContextManager):
         if isinstance(entity, Concatenated):
             return entity.concatenator.fetch_values(entity, key)
 
+        entity_type = str_from_type(entity)
         return self._io_call(
             H5Reader.fetch_array_attribute,
             entity.uid,
-            "Objects" if isinstance(entity, ObjectBase) else "Groups",
+            entity_type,
             key,
             mode="r",
         )
@@ -736,11 +748,7 @@ class Workspace(AbstractContextManager):
         if entity is None or isinstance(entity, ConcatenatedData):
             return []
 
-        entity_type = "data"
-        if isinstance(entity, Group):
-            entity_type = "group"
-        elif isinstance(entity, ObjectBase):
-            entity_type = "object"
+        entity_type = str_from_type(entity)
 
         if isinstance(entity, RootGroup) and not entity.on_file:
             children_list = {child.uid: "" for child in entity.children}
@@ -861,22 +869,21 @@ class Workspace(AbstractContextManager):
             mode="r",
         )
 
-    def fetch_metadata(self, uid: uuid.UUID, argument="Metadata") -> dict | None:
+    def fetch_metadata(self, entity: Entity, argument="Metadata") -> dict | None:
         """
         Fetch the metadata of an entity from the source geoh5.
 
-        :param uid: Entity uid containing the metadata.
+        :param entity: Entity uid containing the metadata.
         :param argument: Optional argument for other json-like attributes.
 
         :return: Dictionary of values.
         """
+        entity_type = str_from_type(entity)
         return self._io_call(
             H5Reader.fetch_metadata,
-            uid,
+            entity.uid,
             argument=argument,
-            entity_type=(
-                "Groups" if isinstance(self.get_entity(uid)[0], Group) else "Objects"
-            ),
+            entity_type=entity_type,
             mode="r",
         )
 
@@ -1374,19 +1381,6 @@ class Workspace(AbstractContextManager):
         :param entity_type: Entity to be written to geoh5.
         """
         self._io_call(H5Writer.write_entity_type, entity_type, mode="r+")
-
-    @staticmethod
-    def str_from_type(entity) -> str | None:
-        if isinstance(entity, Data):
-            return "Data"
-
-        if isinstance(entity, Group):
-            return "Groups"
-
-        if isinstance(entity, ObjectBase):
-            return "Objects"
-
-        return None
 
     @property
     def types(self) -> list[EntityType]:

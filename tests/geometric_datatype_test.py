@@ -34,11 +34,18 @@ def test_xyz_dataype(tmp_path: Path):
         points = Points.create(workspace, vertices=np.random.randn(10, 3))
 
         for axis in "XYZ":
+            dynamic_id = getattr(
+                data_type, f"GeometricData{axis}"
+            ).dynamic_implementation_id()
             data = points.add_data(
                 {
                     axis: {
                         "association": "VERTEX",
-                        "entity_type": {"name": axis, "primitive_type": "GEOMETRIC"},
+                        "entity_type": {
+                            "name": axis,
+                            "primitive_type": "GEOMETRIC",
+                            "dynamic_implementation_id": dynamic_id,
+                        },
                     }
                 }
             )
@@ -52,4 +59,4 @@ def test_xyz_dataype(tmp_path: Path):
 
 def test_dynamic_data():
     ws = Workspace(r"C:\Users\dominiquef\Desktop\Tests\colortable.geoh5")
-    print(ws.objects[0].get_data("FlinFlon_geology"))
+    print(ws.objects[0].get_data("something")[0])

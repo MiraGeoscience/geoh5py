@@ -17,7 +17,7 @@
 
 from __future__ import annotations
 
-import uuid
+from uuid import UUID
 
 from .data import Data
 from .primitive_type_enum import PrimitiveTypeEnum
@@ -31,7 +31,7 @@ class GeometricDataConstants(Data):
     :param visible: Defaults to not visible.
     """
 
-    _TYPE_UID: uuid.UUID
+    _TYPE_UID: UUID
 
     def __init__(self, allow_move=False, visible=False, **kwargs):
         super().__init__(allow_move=allow_move, visible=visible, **kwargs)

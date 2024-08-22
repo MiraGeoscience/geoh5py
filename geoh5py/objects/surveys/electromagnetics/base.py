@@ -385,7 +385,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
     def metadata(self):
         """Metadata attached to the entity."""
         if getattr(self, "_metadata", None) is None:
-            metadata = self.workspace.fetch_metadata(self.uid)
+            metadata = self.workspace.fetch_metadata(self)
             self._metadata = self.validate_em_metadata(metadata)
 
         return self._metadata

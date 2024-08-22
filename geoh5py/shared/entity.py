@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..shared.utils import map_attributes, str2uuid, str_json_to_dict
+from .entity_type import EntityType
 
 if TYPE_CHECKING:
     from .. import shared
@@ -244,6 +245,18 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         """Abstract property to get the entity type of the entity."""
 
     @classmethod
+    def find_or_create_type(cls, workspace: Workspace, **kwargs) -> EntityType:
+        """
+        Find or create a type instance for a given object class.
+
+        :param workspace: Target :obj:`~geoh5py.workspace.workspace.Workspace`.
+
+        :return: The ObjectType instance for the given object class.
+        """
+        kwargs["entity_class"] = cls
+        return EntityType.find_or_create(workspace, **kwargs)
+
+    @classmethod
     def fix_up_name(cls, name: str) -> str:
         """If the given  name is not a valid one, transforms it to make it valid
         :return: a valid name built from the given name. It simply returns the given name
@@ -279,7 +292,7 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         To remove the metadata, set it to None.
         """
         if getattr(self, "_metadata", None) is None:
-            value = self.workspace.fetch_metadata(self.uid)
+            value = self.workspace.fetch_metadata(self)
             self._metadata = self.validate_metadata(value)
 
         return self._metadata

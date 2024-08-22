@@ -19,13 +19,13 @@
 
 from __future__ import annotations
 
+from abc import ABC
 from typing import TYPE_CHECKING, Literal, get_args
 from uuid import UUID
 
 import numpy as np
 
 from ..shared import EntityType
-from ..shared.utils import str2uuid
 from .color_map import ColorMap
 from .primitive_type_enum import PrimitiveTypeEnum
 from .reference_value_map import ReferenceValueMap
@@ -157,73 +157,6 @@ class DataType(EntityType):
 
         self._duplicate_type_on_copy = bool(value)
         self.workspace.update_attribute(self, "attributes")
-
-    @classmethod
-    def find_or_create(
-        cls,
-        workspace: Workspace,
-        uid: UUID | None = None,
-        entity_class: type | None = None,
-        **kwargs,
-    ):
-        """
-        Find or creates an EntityType with given uid that matches the given
-        Group implementation class.
-
-        It is expected to have a single instance of EntityType in the Workspace
-        for each concrete Entity class.
-
-        To find an object, the kwargs must contain an existing 'uid' keyword,
-        or a 'entity_class' keyword, containing an object class.
-
-        :param workspace: An active Workspace class
-        :param uid: The unique identifier of the entity type.
-        :param entity_class: The class of the entity.
-        :param kwargs: The attributes of the entity type.
-
-        :return: EntityType
-        """
-        primitive_type = kwargs.get("primitive_type", None)
-        if (
-            entity_class is None
-            and isinstance(primitive_type, str)
-            and primitive_type.upper() == "GEOMETRIC"
-        ):
-            if "dynamic_implementation_id" in kwargs:
-                entity_class = GeometricDynamicData
-            else:
-                entity_class = cls._geometric_data(uid, kwargs.get("name", ""))
-
-        data_type = super().find_or_create(workspace, uid, entity_class, **kwargs)
-
-        return data_type
-
-    @classmethod
-    def _geometric_data(cls, uid: UUID | None, name="") -> type[DataType]:
-        """
-        Get the data type for geometric data.
-
-        :param uid: The uid of the existing data type to get.
-        :param name: The name of the data type.
-
-        :return: Type of GeometricData.
-        """
-        geometric_class: type[GeometricDataX | GeometricDataY | GeometricDataZ]
-        if name == "X":
-            geometric_class = GeometricDataX
-        elif name == "Y":
-            geometric_class = GeometricDataY
-        elif name == "Z":
-            geometric_class = GeometricDataZ
-        else:
-            raise ValueError(f"Geometric data type {name} not recognized.")
-
-        if uid is not None and str2uuid(uid) != geometric_class.default_type_uid():
-            raise ValueError(
-                f"Geometric data type {geometric_class} with uid {uid} not compatible."
-            )
-
-        return geometric_class
 
     @property
     def hidden(self) -> bool:
@@ -415,85 +348,97 @@ class DataType(EntityType):
         self.workspace.update_attribute(self, "value_map")
 
 
-class GeometricDataX(DataType):
+class GeometricDynamicData(DataType, ABC):
+    """
+    Data container for dynamic geometric data.
+    """
+
+    _attribute_map = DataType._attribute_map.copy()
+    _attribute_map.update(
+        {
+            "Dynamic implementation ID": "dynamic_implementation_id",
+        }
+    )
+
+    _TYPE_UID: UUID | None
+    _DYNAMIC_IMPLEMENTATION_ID: UUID
+
+    def __init__(
+        self,
+        workspace: Workspace,
+        uid: UUID | None = None,
+        **kwargs,
+    ):
+        if uid is None:
+            uid = self._TYPE_UID
+
+        super().__init__(workspace, uid=uid, **kwargs)
+
+    @classmethod
+    def default_type_uid(cls) -> UUID | None:
+        """
+        Default uuid for the entity type.
+        """
+        return cls._TYPE_UID
+
+    @classmethod
+    def dynamic_implementation_id(cls) -> UUID:
+        """
+        The dynamic implementation id.
+        """
+        return cls._DYNAMIC_IMPLEMENTATION_ID
+
+    @classmethod
+    def find_type(
+        cls, uid: UUID | None, dynamic_implementation_id: UUID
+    ) -> type[DataType]:
+        """
+        Find the data type in the workspace.
+
+        :param uid: The UUID of the data type.
+        :param dynamic_implementation_id: The dynamic implementation id.
+        """
+        for candidate in cls.__subclasses__():
+            if candidate.dynamic_implementation_id() == dynamic_implementation_id:
+                if candidate.default_type_uid() is not None and uid is not None:
+                    if candidate.default_type_uid() != uid:
+                        continue
+                return candidate
+
+        return DataType
+
+
+class GeometricDataValueMap(GeometricDynamicData):
+    """
+    Data container for value map
+    """
+
+    _DYNAMIC_IMPLEMENTATION_ID = UUID("{4b6ecb37-0623-4ea0-95f1-4873008890a8}")
+    _TYPE_UID = None
+
+
+class GeometricDataX(GeometricDynamicData):
     """
     Data container for X values
     """
 
     _TYPE_UID = UUID(fields=(0xE9E6B408, 0x4109, 0x4E42, 0xB6, 0xA8, 0x685C37A802EE))
-
-    @classmethod
-    def default_type_uid(cls) -> UUID:
-        """
-        Default uuid for the entity type.
-        """
-        return cls._TYPE_UID
+    _DYNAMIC_IMPLEMENTATION_ID = UUID("{2dbf303e-05d6-44ba-9692-39474e88d516}")
 
 
-class GeometricDataY(DataType):
+class GeometricDataY(GeometricDynamicData):
     """
     Data container for Y values
     """
 
     _TYPE_UID = UUID(fields=(0xF55B07BD, 0xD8A0, 0x4DFF, 0xBA, 0xE5, 0xC975D490D71C))
-
-    @classmethod
-    def default_type_uid(cls) -> UUID:
-        """
-        Default uuid for the entity type.
-        """
-        return cls._TYPE_UID
+    _DYNAMIC_IMPLEMENTATION_ID = UUID("{d56406dc-5eeb-418d-add4-a1282a6ef668}")
 
 
-class GeometricDataZ(DataType):
+class GeometricDataZ(GeometricDynamicData):
     """
     Data container for X values
     """
 
     _TYPE_UID = UUID(fields=(0xDBAFB885, 0x1531, 0x410C, 0xB1, 0x8E, 0x6AC9A40B4466))
-
-    @classmethod
-    def default_type_uid(cls) -> UUID:
-        """
-        Default uuid for the entity type.
-        """
-        return cls._TYPE_UID
-
-
-class GeometricDynamicData(DataType):
-    """
-    Data container for dynamic geometric data.
-    """
-
-    _TYPE_UID = UUID("{4b6ecb37-0623-4ea0-95f1-4873008890a8}")
-
-    def __init__(
-        self,
-        workspace: Workspace,
-        dynamic_implementation_id: UUID = _TYPE_UID,
-        **kwargs,
-    ):
-        super().__init__(workspace, **kwargs)
-
-        self.dynamic_implementation_id = dynamic_implementation_id
-
-    @property
-    def dynamic_implementation_id(self) -> UUID | None:
-        """
-        The dynamic implementation id.
-        """
-        return self._dynamic_implementation_id
-
-    @dynamic_implementation_id.setter
-    def dynamic_implementation_id(self, value: UUID):
-        if not isinstance(value, UUID):
-            raise TypeError(
-                f"dynamic_implementation_id must be a UUID, not {type(value)}"
-            )
-
-        if value != self._TYPE_UID:
-            raise ValueError(
-                f"Dynamic implementation id {value} is not compatible with {self.__class__}"
-            )
-
-        self._dynamic_implementation_id = value
+    _DYNAMIC_IMPLEMENTATION_ID = UUID("{9dacdc3b-6878-408d-93ae-e9a95e640f0c}")

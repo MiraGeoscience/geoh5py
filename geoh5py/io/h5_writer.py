@@ -41,6 +41,7 @@ from ..objects import ObjectBase, ObjectType
 from ..shared import FLOAT_NDV, Entity, EntityType, fetch_h5_handle
 from ..shared.concatenation import Concatenator
 from ..shared.utils import KEY_MAP, as_str_if_uuid, dict_mapper
+from .utils import str_from_type
 
 if TYPE_CHECKING:
     from .. import shared, workspace
@@ -691,14 +692,7 @@ class H5Writer:
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             base = list(h5file)[0]
-
-            if isinstance(entity, Data):
-                entity_type = "Data"
-            elif isinstance(entity, ObjectBase):
-                entity_type = "Objects"
-            else:
-                entity_type = "Groups"
-
+            entity_type = str_from_type(entity)
             uid = entity.uid
 
             if entity_type not in h5file[base]:
@@ -949,15 +943,7 @@ class H5Writer:
             uid = entity.uid
             entity_handle = H5Writer.write_entity(h5file, entity, compression)
             parent_handle = H5Writer.write_entity(h5file, entity.parent, compression)
-
-            if isinstance(entity, Data):
-                entity_type = "Data"
-            elif isinstance(entity, ObjectBase):
-                entity_type = "Objects"
-            elif isinstance(entity, Group):
-                entity_type = "Groups"
-            else:
-                return
+            entity_type = str_from_type(entity)
 
             # Check if child h5py.Group already exists
             if entity_type not in parent_handle:
