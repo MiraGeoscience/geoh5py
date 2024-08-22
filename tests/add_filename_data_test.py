@@ -53,10 +53,10 @@ def test_add_file(tmp_path: Path):
         file_data.save_file(path=new_path)
         np.testing.assert_array_equal(
             np.loadtxt(new_path / "numpy_array.txt"),
-            np.loadtxt(BytesIO(file_data.file_name)),
+            np.loadtxt(BytesIO(file_data.file_bytes)),
             err_msg="Loaded and stored bytes array not the same",
         )
-        file_data.file_name = b"abc"
+        file_data.file_bytes = b"abc"
         obj.copy(parent=workspace_copy)
         workspace_copy.close()
         workspace_copy.open()
@@ -65,13 +65,13 @@ def test_add_file(tmp_path: Path):
         compare_entities(file_data, rec_data, ignore=["_parent"])
 
     with pytest.raises(
-        TypeError, match="Input 'file_name' for FilenameData must be of type 'bytes'."
+        TypeError, match="Input 'file_bytes' for FilenameData must be of type 'bytes'."
     ):
-        file_data.file_name = "abc"
+        file_data.file_bytes = "abc"
 
     file_data.values = None
 
     with pytest.raises(
         AttributeError, match="FilenameData requires the 'values' to be set."
     ):
-        file_data.file_name = b"abc"
+        file_data.file_bytes = b"abc"

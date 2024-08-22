@@ -802,8 +802,8 @@ class H5Writer:
         :param entity: Target :obj:`~geoh5py.data.filename_data.FilenameData` entity.
         :param values: Bytes data
         """
-        if entity.file_name is None or entity.values is None:
-            raise AttributeError("FilenameData requires the 'file_name' to be set.")
+        if entity.file_bytes is None or entity.values is None:
+            raise AttributeError("FilenameData requires the 'file_bytes' to be set.")
 
         entity_handle.create_dataset(
             "Data",
@@ -818,7 +818,7 @@ class H5Writer:
 
         entity_handle.create_dataset(
             entity.values,
-            data=np.asarray(np.void(entity.file_name[:])),
+            data=np.asarray(np.void(entity.file_bytes[:])),
             shape=(1,),
         )
 

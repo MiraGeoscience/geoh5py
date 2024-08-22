@@ -39,7 +39,9 @@ class TextData(Data):
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.TEXT
 
-    def validate_values(self, values: np.ndarray | str | None):
+    def validate_values(
+        self, values: np.ndarray | str | None
+    ) -> np.ndarray | str | None:
         if isinstance(values, bytes):
             values = values.decode()
 
@@ -78,7 +80,7 @@ class CommentsData(Data):
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.TEXT
 
-    def validate_values(self, values):
+    def validate_values(self, values) -> dict | None:
         if isinstance(values, str):
             values = json.loads(values)
 
@@ -116,9 +118,11 @@ class MultiTextData(Data):
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.MULTI_TEXT
 
-    def validate_values(self, values: np.ndarray | str | None):
+    def validate_values(
+        self, values: np.ndarray | str | None
+    ) -> np.ndarray | str | None:
 
-        if not isinstance(values, (np.ndarray, str, type(None))):
+        if not isinstance(values, np.ndarray | str | type(None)):
             raise ValueError(
                 f"Input 'values' for {self} must be of type {np.ndarray}  str or None."
             )
