@@ -381,12 +381,12 @@ class GeometricDynamicData(DataType, ABC):
         """
         return cls._TYPE_UID
 
-    @classmethod
-    def dynamic_implementation_id(cls) -> UUID:
+    @property
+    def dynamic_implementation_id(self) -> UUID:
         """
         The dynamic implementation id.
         """
-        return cls._DYNAMIC_IMPLEMENTATION_ID
+        return self._DYNAMIC_IMPLEMENTATION_ID
 
     @classmethod
     def find_type(
@@ -398,14 +398,18 @@ class GeometricDynamicData(DataType, ABC):
         :param uid: The UUID of the data type.
         :param dynamic_implementation_id: The dynamic implementation id.
         """
-        for candidate in cls.__subclasses__():
-            if candidate.dynamic_implementation_id() == dynamic_implementation_id:
-                if candidate.default_type_uid() is not None and uid is not None:
-                    if candidate.default_type_uid() != uid:
-                        continue
-                return candidate
+        data_type = DYNAMIC_CLASS_IDS.get(dynamic_implementation_id, DataType)
 
-        return DataType
+        # Unknown geometric data type
+        if (
+            hasattr(data_type, "default_type_uid")
+            and data_type.default_type_uid() is not None
+            and uid is not None
+            and data_type.default_type_uid() != uid
+        ):
+            return DataType
+
+        return data_type
 
 
 class GeometricDataValueMap(GeometricDynamicData):
@@ -422,8 +426,8 @@ class GeometricDataX(GeometricDynamicData):
     Data container for X values
     """
 
-    _TYPE_UID = UUID(fields=(0xE9E6B408, 0x4109, 0x4E42, 0xB6, 0xA8, 0x685C37A802EE))
     _DYNAMIC_IMPLEMENTATION_ID = UUID("{2dbf303e-05d6-44ba-9692-39474e88d516}")
+    _TYPE_UID = UUID(fields=(0xE9E6B408, 0x4109, 0x4E42, 0xB6, 0xA8, 0x685C37A802EE))
 
 
 class GeometricDataY(GeometricDynamicData):
@@ -431,8 +435,8 @@ class GeometricDataY(GeometricDynamicData):
     Data container for Y values
     """
 
-    _TYPE_UID = UUID(fields=(0xF55B07BD, 0xD8A0, 0x4DFF, 0xBA, 0xE5, 0xC975D490D71C))
     _DYNAMIC_IMPLEMENTATION_ID = UUID("{d56406dc-5eeb-418d-add4-a1282a6ef668}")
+    _TYPE_UID = UUID(fields=(0xF55B07BD, 0xD8A0, 0x4DFF, 0xBA, 0xE5, 0xC975D490D71C))
 
 
 class GeometricDataZ(GeometricDynamicData):
@@ -440,5 +444,11 @@ class GeometricDataZ(GeometricDynamicData):
     Data container for X values
     """
 
-    _TYPE_UID = UUID(fields=(0xDBAFB885, 0x1531, 0x410C, 0xB1, 0x8E, 0x6AC9A40B4466))
     _DYNAMIC_IMPLEMENTATION_ID = UUID("{9dacdc3b-6878-408d-93ae-e9a95e640f0c}")
+    _TYPE_UID = UUID(fields=(0xDBAFB885, 0x1531, 0x410C, 0xB1, 0x8E, 0x6AC9A40B4466))
+
+
+DYNAMIC_CLASS_IDS = {
+    cls._DYNAMIC_IMPLEMENTATION_ID: cls  # pylint: disable=protected-access
+    for cls in GeometricDynamicData.__subclasses__()
+}

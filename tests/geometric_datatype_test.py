@@ -33,10 +33,11 @@ def test_xyz_dataype(tmp_path: Path):
     with Workspace.create(h5file_path) as workspace:
         points = Points.create(workspace, vertices=np.random.randn(10, 3))
 
-        for axis in "XYZ":
-            dynamic_id = getattr(
-                data_type, f"GeometricData{axis}"
-            ).dynamic_implementation_id()
+        for dynamic_id, dtype in data_type.DYNAMIC_CLASS_IDS.items():
+            if dtype.default_type_uid() is None:
+                continue
+
+            axis = dtype.__name__[-1]
             data = points.add_data(
                 {
                     axis: {

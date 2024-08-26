@@ -226,7 +226,6 @@ class Data(Entity):
         data_type = DataType
         if dynamic_implementation_id is not None:
             data_type = GeometricDynamicData.find_type(uid, dynamic_implementation_id)
-            kwargs["dynamic_implementation_id"] = dynamic_implementation_id
 
         return data_type(workspace, uid=uid, **kwargs)
 
