@@ -1,6 +1,12 @@
 [build-system]
 # requires = ["hatchling", "versioningit", "pathspec"]
-requires = ["hatchling", "pathspec"]
+requires = [
+    "hatchling>=1.25.0", 
+    "packaging>=23.2",
+    "pathspec>=0.10.1",
+    "pluggy>=1.0.0",
+    "tomli>=1.2.2; python_version < '3.11'",
+    "trove-classifiers"]
 build-backend = "hatchling.build"
 
 [project]
