@@ -1,7 +1,7 @@
 [build-system]
 # requires = ["hatchling", "versioningit", "pathspec"]
 requires = [
-    "hatchling>=1.25.0", 
+    "hatchling>=1.25.0",
     "packaging>=23.2",
     "pathspec>=0.10.1",
     "pluggy>=1.0.0",
