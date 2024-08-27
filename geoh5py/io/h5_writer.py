@@ -34,6 +34,7 @@ from ..data import (
     DataType,
     FilenameData,
     IntegerData,
+    ReferenceDataType,
     TextData,
 )
 from ..groups import Group, GroupType, PropertyGroup, RootGroup
@@ -447,7 +448,7 @@ class H5Writer:
     @staticmethod
     def write_value_map(
         file: str | h5py.File,
-        entity_type: shared.EntityType,
+        entity_type: ReferenceDataType,
     ) -> None:
         """
         Add :obj:`~geoh5py.data.reference_value_map.ReferenceValueMap` to a
@@ -457,25 +458,42 @@ class H5Writer:
         :param entity_type: Target entity_type with value_map
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-            reference_value_map = getattr(entity_type, "value_map", None)
-            names = ["Key", "Value"]
-            formats = ["<u4", h5py.special_dtype(vlen=str)]
-
+            reference_value_map = entity_type.value_map
             entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)
 
             if entity_type_handle is None:
                 return
 
-            try:
+            if "Value map" in entity_type_handle:
                 del entity_type_handle["Value map"]
                 entity_type.workspace.repack = True
-            except KeyError:
-                pass
 
-            if reference_value_map is not None and reference_value_map.map is not None:
-                dtype = list(zip(names, formats))
-                array = np.array(list(reference_value_map.map.items()), dtype=dtype)
-                H5Writer.create_dataset(entity_type_handle, array, "Value map")
+            formatted = np.dtype([("Key", "<u4"), ("Value", H5Writer.str_type)])
+            H5Writer.create_dataset(
+                entity_type_handle,
+                reference_value_map.map.astype(formatted),
+                "Value map",
+            )
+
+            if reference_value_map.data_maps is not None:
+                for ind, (key, value) in enumerate(
+                    reference_value_map.data_maps.items()
+                ):
+                    name = f"Value map {ind}"
+
+                    if name in entity_type_handle:
+                        del entity_type_handle[name]
+                        entity_type.workspace.repack = True
+
+                    H5Writer.create_dataset(
+                        entity_type_handle, value.astype(formatted), name
+                    )
+                    entity_type_handle[name].attrs.create(
+                        "Name", key, dtype=H5Writer.str_type
+                    )
+                    entity_type_handle[name].attrs.create(
+                        "Allow delete", True, dtype="int8"
+                    )
 
     @staticmethod
     def write_visible(
@@ -737,7 +755,7 @@ class H5Writer:
     @staticmethod
     def write_entity_type(
         file: str | h5py.File,
-        entity_type: shared.EntityType,
+        entity_type: shared.EntityType | ReferenceDataType,
     ) -> h5py.Group:
         """
         Add an :obj:`~geoh5py.shared.entity_type.EntityType` to geoh5.
@@ -780,7 +798,7 @@ class H5Writer:
             if hasattr(entity_type, "color_map"):
                 H5Writer.write_color_map(h5file, entity_type)
 
-            if hasattr(entity_type, "value_map"):
+            if isinstance(entity_type, ReferenceDataType):
                 H5Writer.write_value_map(h5file, entity_type)
 
             entity_type.on_file = True

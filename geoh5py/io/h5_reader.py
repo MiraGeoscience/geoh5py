@@ -395,8 +395,8 @@ class H5Reader:
             type_attributes["color_map"]["values"] = type_handle["Color map"][:]
 
         if "Value map" in type_handle:
-            mapping = cls.fetch_value_map(type_handle)
-            type_attributes["value_map"] = mapping
+            value_map = cls.fetch_value_map(type_handle)
+            type_attributes["value_map"] = value_map
 
         return type_attributes
 
@@ -423,7 +423,7 @@ class H5Reader:
         return uuids
 
     @classmethod
-    def fetch_value_map(cls, h5_handle: h5py.Group) -> dict:
+    def fetch_value_map(cls, h5_handle: h5py.Group) -> tuple[dict, dict | None]:
         """
         Get data :obj:`~geoh5py.data.data.Data.value_map`
 
@@ -431,17 +431,20 @@ class H5Reader:
 
         :return value_map: :obj:`dict` of {:obj:`int`: :obj:`str`}
         """
-        try:
-            value_map = h5_handle["Value map"][:]
-            mapping = {}
-            for key, value in value_map.tolist():
-                value = as_str_if_utf8_bytes(value)
-                mapping[key] = value
+        mapping = {}
+        property_maps = {}
+        for attr in h5_handle:
+            if "Value map" in attr:
+                value_map = h5_handle[attr][:].astype(
+                    [("Key", "int8"), ("Value", "<U13")]
+                )
 
-        except KeyError:
-            mapping = {}
+                if attr == "Value map":
+                    mapping = value_map
+                else:
+                    property_maps[h5_handle[attr].attrs["Name"]] = value_map
 
-        return mapping
+        return mapping, property_maps or None
 
     @classmethod
     def fetch_file_object(

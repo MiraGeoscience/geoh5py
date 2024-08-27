@@ -26,7 +26,7 @@ import numpy as np
 from ..shared import Entity
 from ..shared.utils import mask_by_extent
 from .data_association_enum import DataAssociationEnum
-from .data_type import DataType, GeometricDynamicData
+from .data_type import DataType, GeometricDynamicData, ReferenceDataType
 from .primitive_type_enum import PrimitiveTypeEnum
 
 if TYPE_CHECKING:
@@ -186,14 +186,14 @@ class Data(Entity):
         return self._association
 
     @property
-    def entity_type(self) -> DataType:
+    def entity_type(self):
         """
         :obj:`~geoh5py.data.data_type.DataType`
         """
         return self._entity_type
 
     @entity_type.setter
-    def entity_type(self, data_type: DataType):
+    def entity_type(self, data_type: DataType | ReferenceDataType):
         self._entity_type = data_type
 
         if self.on_file:
@@ -205,6 +205,7 @@ class Data(Entity):
         workspace: Workspace,
         uid: UUID | None = None,
         dynamic_implementation_id: UUID | None = None,
+        value_map: dict | tuple | None = None,
         **kwargs,
     ) -> DataType:
         """
@@ -226,6 +227,8 @@ class Data(Entity):
         data_type = DataType
         if dynamic_implementation_id is not None:
             data_type = GeometricDynamicData.find_type(uid, dynamic_implementation_id)
+        elif value_map is not None:
+            return ReferenceDataType(workspace, value_map, uid=uid, **kwargs)
 
         return data_type(workspace, uid=uid, **kwargs)
 

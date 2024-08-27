@@ -501,6 +501,13 @@ def as_str_if_utf8_bytes(value) -> str:
     return value
 
 
+def as_float_if_isnumeric(value: str) -> float | str:
+    """Convert bytes to string"""
+    if value.isnumeric():
+        return float(value)
+    return value
+
+
 def str_json_to_dict(string: str | bytes) -> dict:
     """
     Convert a json string or bytes to a dictionary.

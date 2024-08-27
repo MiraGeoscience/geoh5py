@@ -128,6 +128,7 @@ class ObjectBase(EntityContainer):
             for key, val in attr.items():
                 if key in ["parent", "association", "entity_type", "type"]:
                     continue
+
                 kwargs[key] = val
 
             data_object = self.workspace.create_entity(

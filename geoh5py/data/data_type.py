@@ -60,7 +60,6 @@ class DataType(EntityType):
     :param number_of_bins: The number of bins used by the histogram.
     :param transparent_no_data: If the no data values are displayed as transparent or not.
     :param units: The type of the units of the data.
-    :param value_map: Reference value map for to map index with description.
     :param kwargs: Additional keyword arguments to set as attributes
         (see :obj:`...shared.entity_type.EntityType`).
     """
@@ -79,6 +78,7 @@ class DataType(EntityType):
     def __init__(
         self,
         workspace: Workspace,
+        *,
         primitive_type: type[Data] | PrimitiveTypeEnum | str | None = None,
         color_map: ColorMap | None = None,
         duplicate_type_on_copy: bool = False,
@@ -87,7 +87,6 @@ class DataType(EntityType):
         number_of_bins: int | None = None,
         transparent_no_data: bool = True,
         units: str | None = None,
-        value_map: dict[int, str] | ReferenceValueMap | None = None,
         **kwargs,
     ):
         super().__init__(workspace, **kwargs)
@@ -99,7 +98,6 @@ class DataType(EntityType):
         self.primitive_type = primitive_type  # type: ignore
         self.transparent_no_data = transparent_no_data
         self.units = units
-        self.value_map = value_map  # type: ignore
 
     @property
     def color_map(self) -> ColorMap | None:
@@ -265,7 +263,9 @@ class DataType(EntityType):
         self.workspace.update_attribute(self, "attributes")
 
     @staticmethod
-    def validate_data_type(workspace: Workspace, attribute_dict: dict):
+    def validate_data_type(
+        workspace: Workspace, attribute_dict: dict
+    ) -> EntityType | dict:
         """
         Get a dictionary of attributes and validate the type of data.
 
@@ -307,6 +307,17 @@ class DataType(EntityType):
                         "Only add_data values of type FLOAT, INTEGER,"
                         "BOOLEAN and TEXT have been implemented"
                     )
+
+            if entity_type["primitive_type"] == "REFERENCED":
+                value_map = attribute_dict.pop("value_map")
+                if value_map is None:
+                    value_map = {
+                        i: str(val)
+                        for i, val in enumerate(set(attribute_dict["values"]))
+                    }
+
+                entity_type["value_map"] = value_map
+
         elif isinstance(entity_type, EntityType) and (
             (entity_type.uid not in getattr(workspace, "_types"))
             or (entity_type.workspace != workspace)
@@ -315,8 +326,46 @@ class DataType(EntityType):
 
         return entity_type
 
+
+class ReferenceDataType(DataType):
+    """
+    DataType class.
+
+    Controls all the attributes of reference data.
+
+    :param value_map: Reference value map for to map index with description.
+    """
+
+    def __init__(
+        self,
+        workspace: Workspace,
+        value_map: dict[int, str] | tuple | ReferenceValueMap,
+        **kwargs,
+    ):
+        super().__init__(workspace, **kwargs)
+        self._value_map = self.validate_value_map(value_map)
+
+    @staticmethod
+    def validate_value_map(
+        value_map: dict | tuple | ReferenceValueMap,
+    ) -> ReferenceValueMap:
+        """
+        Validate the attribute of ReferencedDataType
+        """
+        if isinstance(value_map, dict):
+            value_map = ReferenceValueMap(value_map)
+        elif isinstance(value_map, tuple):
+            value_map = ReferenceValueMap(*value_map)
+
+        if not isinstance(value_map, ReferenceValueMap):
+            raise TypeError(
+                "Attribute 'value_map' must be provided as a dict, tuple[dict] "
+                f"or {ReferenceValueMap}."
+            )
+        return value_map
+
     @property
-    def value_map(self) -> ReferenceValueMap | None:
+    def value_map(self) -> ReferenceValueMap:
         r"""
         Reference value map for to map index with description.
 
@@ -335,17 +384,12 @@ class DataType(EntityType):
         return self._value_map
 
     @value_map.setter
-    def value_map(self, value_map: dict[int, str] | ReferenceValueMap | None):
-        if isinstance(value_map, dict):
-            value_map = ReferenceValueMap(value_map)
-        if not isinstance(value_map, (ReferenceValueMap, type(None))):
-            raise TypeError(
-                f"'value_map' must be a {dict} or {ReferenceValueMap} or {type(None)}."
-            )
+    def value_map(self, value_map: dict | tuple | ReferenceValueMap):
 
-        self._value_map: ReferenceValueMap | None = value_map
+        self._value_map = self.validate_value_map(value_map)
 
-        self.workspace.update_attribute(self, "value_map")
+        if self.on_file:
+            self.workspace.update_attribute(self, "value_map")
 
 
 class GeometricDynamicData(DataType, ABC):
