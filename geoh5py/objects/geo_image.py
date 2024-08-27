@@ -371,8 +371,8 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         """
         Get the image as a :obj:`PIL.Image` object.
         """
-        if self.image_data is not None and self.image_data.values is not None:
-            return Image.open(BytesIO(self.image_data.values))
+        if self.image_data is not None and self.image_data.file_bytes is not None:
+            return Image.open(BytesIO(self.image_data.file_bytes))
 
         return None
 

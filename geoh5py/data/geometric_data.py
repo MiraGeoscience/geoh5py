@@ -39,3 +39,14 @@ class GeometricDataConstants(Data):
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.GEOMETRIC
+
+    def validate_values(self, values: None) -> None:
+        """
+        Validate values for GeometricDataConstants.
+        """
+        if values is not None:
+            raise TypeError(
+                f"GeometricDataConstants does not accept values. Got {values}."
+            )
+
+        return values

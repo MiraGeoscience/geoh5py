@@ -94,7 +94,7 @@ def test_data_boolean(tmp_path):
             with pytest.raises(ValueError, match="Values provided by "):
                 data2.values = np.array([0, 2, 1])
 
-            with pytest.raises(TypeError, match="Input 'values' for "):
+            with pytest.raises(TypeError, match="Input 'values' must be a numpy array"):
                 data2.values = "bidon"
 
     with Workspace(h5file_path, mode="r") as workspace:

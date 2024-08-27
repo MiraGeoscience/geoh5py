@@ -17,30 +17,20 @@
 
 from __future__ import annotations
 
-import uuid
+from typing import Any
 
 from .data import Data
-from .data_association_enum import DataAssociationEnum
-from .data_type import DataType
 from .primitive_type_enum import PrimitiveTypeEnum
 
 
 class UnknownData(Data):
-    def __init__(
-        self,
-        association: DataAssociationEnum,
-        name: str,
-        uid: uuid.UUID | None = None,
-        entity_type: DataType | None = None,
-    ):
-        super().__init__(
-            association=association, name=name, uid=uid, entity_type=entity_type
-        )
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.INVALID
 
-    # TODO: Provide a partial implementation to access generic data,
-    #  for which primitive type would be provided by the H5 file.
-    #  raise NotImplementedError for method that are not supported
+    def validate_values(self, values: Any | None) -> Any:
+        """
+        Validate values for UnknownData.
+        """
+        return values

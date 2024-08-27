@@ -165,7 +165,7 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
 
         # Setting image from byte
         geoimage_copy = GeoImage.create(workspace, name="MyGeoImageTwin")
-        geoimage_copy.image = geoimage.image_data.values
+        geoimage_copy.image = geoimage.image_data.file_bytes
         assert geoimage_copy.image == geoimage.image, "Error setting image from bytes."
 
         # Re-load from file
@@ -599,8 +599,8 @@ def test_copy_from_extent_geoimage(tmp_path):
 
             # test the size of the cropped image
             assert (
-                BytesIO(geoimage.image_data.values).getbuffer().nbytes
-                > BytesIO(geoimage2.image_data.values).getbuffer().nbytes
+                BytesIO(geoimage.image_data.file_bytes).getbuffer().nbytes
+                > BytesIO(geoimage2.image_data.file_bytes).getbuffer().nbytes
             )
 
 

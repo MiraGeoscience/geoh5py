@@ -35,9 +35,9 @@ class ColorMap:
     _formats = ["<f8", "u1", "u1", "u1", "u1"]
 
     def __init__(self, **kwargs):
-        self._values = np.empty((0, 5))
-        self._name = "geoh5py_custom.TBL"
-        self._parent = None
+        self.parent = None
+        self.name = "geoh5py_custom.TBL"
+        self.values = np.empty((0, 5))
 
         map_attributes(self, **kwargs)
 
@@ -84,7 +84,6 @@ class ColorMap:
             self._values = np.asarray(
                 values, dtype=list(zip(self._names, self._formats))
             )
-        self.parent.modified_attributes = "color_map"
 
         if self.parent is not None:
             getattr(self.parent, "workspace").update_attribute(self, "color_map")
@@ -99,7 +98,8 @@ class ColorMap:
     @name.setter
     def name(self, value: str):
         self._name = str(value)
-        self.parent.modified_attributes = "color_map"
+        if self.parent is not None:
+            getattr(self.parent, "workspace").update_attribute(self, "color_map")
 
     @property
     def parent(self):
