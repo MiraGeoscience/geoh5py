@@ -50,9 +50,9 @@ dependencies = [
     "numpy==1.26.*",
     "Pillow==10.3.*",
 ]
-# dynamic = [
-#     "version"
-# ]
+dynamic = [
+    "version"
+]
 
 [project.optional-dependencies]
 test = [
@@ -156,16 +156,16 @@ BUILD_DIR = "docs/_build"
 html = 'sphinx-build -b html -d $BUILD_DIR/doctrees docs $BUILD_DIR/html'
 latex = 'sphinx-build -b latex -d $BUILD_DIR/doctrees docs $BUILD_DIR/latex'
 
-# [tool.hatch.version]
-# source = "versioningit"
+[tool.hatch.version]
+source = "versioningit"
 
-# [tool.hatch.version.format]
-# distance = "{base_version}"
-# dirty = "{base_version}"
-# distance-dirty = "{base_version}"
+[tool.hatch.version.format]
+distance = "{base_version}"
+dirty = "{base_version}"
+distance-dirty = "{base_version}"
 
-# [tool.hatch.version.write]
-# file = "geoh5py/_version.py"
+[tool.hatch.version.write]
+file = "geoh5py/_version.py"
 
 [tool.coverage.run]
 branch = true
