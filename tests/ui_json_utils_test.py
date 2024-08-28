@@ -25,8 +25,10 @@ import pytest
 from geoh5py.shared.utils import dict_mapper
 from geoh5py.ui_json import templates
 from geoh5py.ui_json.constants import default_ui_json
+from geoh5py.ui_json.input_file import InputFile
 from geoh5py.ui_json.utils import (
     collect,
+    dependency_requires_value,
     flatten,
     group_enabled,
     group_optional,
@@ -98,15 +100,25 @@ def test_group_optional():
 
 
 def test_requires_value():
-    # Check the groupOptional behaviour
+    # check default parameters
     ui_json = deepcopy(default_ui_json)
     ui_json["string_parameter"] = templates.string_parameter()
     ui_json["string_parameter"]["group"] = "test"
-    ui_json["string_parameter"]["groupOptional"] = True
+    ui_json["string_parameter"]["enabled"] = True
+    ui_json["string_parameter"]["groupOptional"] = (
+        False  # equivalent to not having groupOptional
+    )
     ui_json["float_parameter"] = templates.float_parameter(optional="enabled")
     ui_json["float_parameter"]["group"] = "test"
     ui_json["integer_parameter"] = templates.integer_parameter()
     ui_json["integer_parameter"]["group"] = "test"
+    assert requires_value(ui_json, "string_parameter")
+    assert requires_value(ui_json, "float_parameter")
+    assert requires_value(ui_json, "integer_parameter")
+
+    # Check the groupOptional behaviour
+    ui_json["string_parameter"].pop("enabled")
+    ui_json["string_parameter"]["groupOptional"] = True
     assert requires_value(ui_json, "string_parameter")
     assert requires_value(ui_json, "float_parameter")
     assert requires_value(ui_json, "integer_parameter")
