@@ -308,8 +308,8 @@ class DataType(EntityType):
                         "BOOLEAN and TEXT have been implemented"
                     )
 
-            if entity_type["primitive_type"] == "REFERENCED":
-                value_map = attribute_dict.pop("value_map")
+            if entity_type["primitive_type"] in ["REFERENCED", "BOOLEAN"]:
+                value_map = attribute_dict.pop("value_map", None)
                 if value_map is None:
                     value_map = {
                         i: str(val)

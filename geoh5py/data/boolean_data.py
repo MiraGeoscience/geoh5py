@@ -20,7 +20,6 @@ from __future__ import annotations
 import numpy as np
 
 from .data import PrimitiveTypeEnum
-from .reference_value_map import ReferenceValueMap
 from .referenced_data import ReferencedData
 
 
@@ -28,12 +27,6 @@ class BooleanData(ReferencedData):
     """
     Data class for logical (bool) values.
     """
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        if not self.on_file and self.entity_type.value_map is None:
-            self.entity_type.value_map = ReferenceValueMap({0: "False", 1: "True"})
 
     def format_type(self, values: np.ndarray):
         """
