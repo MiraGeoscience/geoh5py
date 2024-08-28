@@ -324,18 +324,26 @@ def are_objects_similar(obj1, obj2, ignore: list[str] | None):
 
 
 def compare_arrays(object_a, object_b, attribute: str, decimal: int = 6):
-    if getattr(object_b, attribute) is None:
+    array_a_values = getattr(object_a, attribute)
+    array_b_values = getattr(object_b, attribute)
+
+    if array_b_values is None:
         raise ValueError(f"attr {attribute} is None for object {object_b.name}")
-    attr_a = getattr(object_a, attribute).tolist()
-    if len(attr_a) > 0 and isinstance(attr_a[0], str):
+
+    if array_b_values.dtype.names is not None:
         assert all(
-            a == b
-            for a, b in zip(getattr(object_a, attribute), getattr(object_b, attribute))
+            array_a_values[name] == array_b_values[name]
+            for name in array_b_values.dtype.names
+        ), f"Error comparing attribute '{attribute}'."
+
+    elif len(array_a_values) > 0 and isinstance(array_a_values[0], str):
+        assert all(
+            array_a_values == array_b_values
         ), f"Error comparing attribute '{attribute}'."
     else:
         np.testing.assert_array_almost_equal(
-            attr_a,
-            getattr(object_b, attribute).tolist(),
+            array_a_values,
+            array_b_values,
             decimal=decimal,
             err_msg=f"Error comparing attribute '{attribute}'.",
         )
