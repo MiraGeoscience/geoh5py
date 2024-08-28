@@ -26,7 +26,7 @@ from typing import cast
 
 import numpy as np
 
-from ...data import Data, ReferencedData
+from ...data import Data, ReferencedData, ReferenceValueMap
 from ...shared.utils import str_json_to_dict
 from ..curve import Curve
 
@@ -106,7 +106,7 @@ class BaseElectrode(Curve, ABC):
                     self._ab_cell_id = data
 
     @property
-    def ab_map(self) -> dict | None:
+    def ab_map(self) -> ReferenceValueMap | None:
         """
         Get the ReferenceData.value_map of the ab_value_id
         """
@@ -206,7 +206,7 @@ class BaseElectrode(Curve, ABC):
                 )
             }
             new_map = {
-                val: new_entity.current_electrodes.ab_cell_id.value_map.map[val]
+                val: dict(new_entity.current_electrodes.ab_cell_id.value_map.map)[val]
                 for val in value_map.values()
             }
             new_complement.ab_cell_id.values = np.asarray(
@@ -215,7 +215,7 @@ class BaseElectrode(Curve, ABC):
             new_entity.ab_cell_id.values = np.asarray(
                 [value_map[val] for val in new_entity.ab_cell_id.values]
             )
-            new_entity.ab_cell_id.value_map.map = new_map
+            new_entity.ab_cell_id.entity_type.value_map = new_map
 
         return new_entity
 
