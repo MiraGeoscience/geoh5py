@@ -13,7 +13,6 @@ build-backend = "hatchling.build"
 
 [project]
 name = "geoh5py"
-version = "0.10.0a1"
 description = "Python API for geoh5, an open file format for geoscientific data"
 readme = "package.rst"
 requires-python = "~=3.10"
