@@ -139,7 +139,7 @@ along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 Third Party Software
 ^^^^^^^^^^^^^^^^^^^^
-The geoh5 Software may provide links to third party libraries or code (collectively “Third Party Software”)
+The geoh5 Software may provide links to third party libraries or code (collectively "Third Party Software")
 to implement various functions. Third Party Software does not comprise part of the Software.
 The use of Third Party Software is governed by the terms of such software license(s).
 Third Party Software notices and/or additional terms and conditions are located in the
