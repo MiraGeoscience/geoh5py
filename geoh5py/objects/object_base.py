@@ -121,8 +121,12 @@ class ObjectBase(EntityContainer):
                 f"Given value to data {name} should of type {dict}. "
                 f"Type {type(attr)} given instead."
             )
+            assert (
+                "values" in attr
+            ), f"Given attributes for data {name} should include 'values'"
+
             attr["name"] = name
-            self.validate_data_association(attr)
+            self.validate_data(attr)
             entity_type = DataType.validate_data_type(self.workspace, attr)
             kwargs = {"parent": self, "association": attr["association"]}
             for key, val in attr.items():
@@ -540,7 +544,7 @@ class ObjectBase(EntityContainer):
         """
         return self._converter
 
-    def validate_data_association(self, attribute_dict):
+    def validate_data(self, attribute_dict):
         """
         Get a dictionary of attributes and validate the data 'association' keyword.
         """
