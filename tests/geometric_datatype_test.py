@@ -59,8 +59,3 @@ def test_xyz_dataype(tmp_path: Path):
     assert all(
         isinstance(data, geometric_data.GeometricDataConstants) for child in ws.data
     )
-
-
-def test_dynamic_data():
-    ws = Workspace(r"C:\Users\dominiquef\Desktop\Tests\colortable.geoh5")
-    print(ws.objects[0].get_data("something")[0])

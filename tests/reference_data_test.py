@@ -113,8 +113,3 @@ def test_add_data_map(tmp_path):
         ]
 
         data.add_data_map("test", data_map)
-
-
-# def test_load_file():
-#     file = r"C:\Users\dominiquef\Desktop\Tests\colortable.geoh5"
-#     ws = Workspace(file)
