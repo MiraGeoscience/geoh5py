@@ -131,7 +131,7 @@ class ObjectBase(EntityContainer):
                 )
 
             attr["name"] = name
-            attr, property_group = self.validate_data(
+            attr, validate_property_group = self.validate_data(
                 attr, property_group=property_group, **kwargs
             )
 
@@ -151,8 +151,8 @@ class ObjectBase(EntityContainer):
             if not isinstance(data_object, Data):
                 continue
 
-            if property_group is not None:
-                self.add_data_to_group(data_object, property_group)
+            if validate_property_group is not None:
+                self.add_data_to_group(data_object, validate_property_group)
 
             data_objects.append(data_object)
 
