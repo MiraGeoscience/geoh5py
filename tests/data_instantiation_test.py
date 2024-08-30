@@ -87,7 +87,7 @@ def test_data_instantiation(data_class, tmp_path):
             data.TextData(data_type="bidon")
 
         with pytest.raises(NotImplementedError, match="Only add_data"):
-            DataType.validate_data_type(workspace, {"values": object()})
+            workspace.validate_data_type({}, object())
 
 
 def _can_find(workspace, created_data):

@@ -42,11 +42,9 @@ def test_xyz_dataype(tmp_path: Path):
                 {
                     axis: {
                         "association": "VERTEX",
-                        "entity_type": {
-                            "name": axis,
-                            "primitive_type": "GEOMETRIC",
-                            "dynamic_implementation_id": dynamic_id,
-                        },
+                        "name": axis,
+                        "primitive_type": "GEOMETRIC",
+                        "dynamic_implementation_id": dynamic_id,
                     }
                 }
             )
@@ -56,6 +54,11 @@ def test_xyz_dataype(tmp_path: Path):
                 data.entity_type.uid
                 == getattr(data_type, f"GeometricData{axis}").default_type_uid()
             )
+
+    ws = Workspace(h5file_path)
+    assert all(
+        isinstance(data, geometric_data.GeometricDataConstants) for child in ws.data
+    )
 
 
 def test_dynamic_data():

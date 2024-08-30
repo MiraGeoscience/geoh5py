@@ -94,6 +94,8 @@ class NumericData(Data, ABC):
             values = np.ravel(values)
             warn("Input 'values' converted to a 1D array.")
 
+        values = values.astype(float)
+
         # change nan values to nan_value
         values[np.isnan(values)] = self.nan_value
 

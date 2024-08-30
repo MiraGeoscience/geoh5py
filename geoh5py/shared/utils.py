@@ -332,7 +332,7 @@ def compare_arrays(object_a, object_b, attribute: str, decimal: int = 6):
 
     if array_b_values.dtype.names is not None:
         assert all(
-            array_a_values[name] == array_b_values[name]
+            np.all(array_a_values[name] == array_b_values[name])
             for name in array_b_values.dtype.names
         ), f"Error comparing attribute '{attribute}'."
 
@@ -384,25 +384,29 @@ def compare_entities(
     ignore_list = base_ignore + ignore if ignore else base_ignore
 
     for attr in [k for k in object_a.__dict__ if k not in ignore_list]:
-        if isinstance(getattr(object_a, attr[1:]), ABC):
+        if isinstance(getattr(object_a, attr.lstrip("_")), ABC):
             compare_entities(
-                getattr(object_a, attr[1:]),
-                getattr(object_b, attr[1:]),
+                getattr(object_a, attr.lstrip("_")),
+                getattr(object_b, attr.lstrip("_")),
                 ignore=ignore,
                 decimal=decimal,
             )
         else:
-            if isinstance(getattr(object_a, attr[1:]), np.ndarray):
-                compare_arrays(object_a, object_b, attr[1:], decimal=decimal)
-            elif isinstance(getattr(object_a, attr[1:]), float):
-                compare_floats(object_a, object_b, attr[1:], decimal=decimal)
-            elif isinstance(getattr(object_a, attr[1:]), list):
-                compare_list(object_a, object_b, attr[1:], ignore)
+            if isinstance(getattr(object_a, attr.lstrip("_")), np.ndarray):
+                compare_arrays(object_a, object_b, attr.lstrip("_"), decimal=decimal)
+            elif isinstance(getattr(object_a, attr.lstrip("_")), float):
+                compare_floats(object_a, object_b, attr.lstrip("_"), decimal=decimal)
+            elif isinstance(getattr(object_a, attr.lstrip("_")), list):
+                compare_list(object_a, object_b, attr.lstrip("_"), ignore)
             else:
                 try:
                     assert np.all(
-                        getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
-                    ), f"Output attribute '{attr[1:]}' for {object_a} do not match input {object_b}"
+                        getattr(object_a, attr.lstrip("_"))
+                        == getattr(object_b, attr.lstrip("_"))
+                    ), (
+                        f"Output attribute '{attr.lstrip('_')}' for {object_a} do "
+                        f"not match input {object_b}"
+                    )
                 except AssertionError:
                     pass
 
@@ -656,9 +660,7 @@ def get_attributes(entity, omit_list=(), attributes=None) -> dict:
         attributes = {}
     for key in vars(entity):
         if key not in omit_list:
-            if key[0] == "_":
-                key = key[1:]
-
+            key = key.lstrip("_")
             attr = getattr(entity, key)
             attributes[key] = attr
 

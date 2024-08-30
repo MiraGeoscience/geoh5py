@@ -81,26 +81,23 @@ class BaseElectrode(Curve, ABC):
                     if isinstance(self, PotentialElectrode)
                     else self.potential_electrodes
                 )
-
+                attributes = {
+                    "values": data.astype(np.int32),
+                    "association": "CELL",
+                }
                 if complement is not None and complement.ab_cell_id is not None:
-                    entity_type = complement.ab_cell_id.entity_type
+                    attributes["entity_type"] = complement.ab_cell_id.entity_type
                 else:
                     value_map = {ii: str(ii) for ii in range(data.max() + 1)}
                     value_map[0] = "Unknown"
-                    entity_type = {  # type: ignore
-                        "primitive_type": "REFERENCED",
-                        "value_map": value_map,
-                    }
-
-                data = self.add_data(
-                    {
-                        "A-B Cell ID": {
-                            "values": data.astype(np.int32),
-                            "association": "CELL",
-                            "entity_type": entity_type,
+                    attributes.update(
+                        {  # type: ignore
+                            "primitive_type": "REFERENCED",
+                            "value_map": value_map,
                         }
-                    }
-                )
+                    )
+
+                data = self.add_data({"A-B Cell ID": attributes})
 
                 if isinstance(data, ReferencedData):
                     self._ab_cell_id = data
@@ -378,13 +375,14 @@ class CurrentElectrode(BaseElectrode):
                 "A-B Cell ID": {
                     "values": data,
                     "association": "CELL",
-                    "entity_type": {
-                        "primitive_type": "REFERENCED",
-                        "value_map": value_map,
-                    },
+                    "primitive_type": "REFERENCED",
+                    "value_map": value_map,
                 }
             }
         )
-        if isinstance(ab_cell_id, ReferencedData):
-            ab_cell_id.entity_type.name = "A-B"
-            self._ab_cell_id = ab_cell_id
+
+        if not isinstance(ab_cell_id, ReferencedData):
+            raise UserWarning("Could not create 'A-B Cell ID' data.")
+
+        ab_cell_id.entity_type.name = "A-B"
+        self._ab_cell_id = ab_cell_id

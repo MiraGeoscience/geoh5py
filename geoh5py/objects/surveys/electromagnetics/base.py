@@ -740,7 +740,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
                 )
             }
             new_map = {
-                val: new_entity.transmitters.tx_id_property.value_map.map[ind]
+                val: dict(new_entity.transmitters.tx_id_property.value_map.map)[ind]
                 for ind, val in value_map.items()
             }
             new_complement.tx_id_property.values = np.asarray(
@@ -777,30 +777,29 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
             value = self.get_data(value)[0]
 
         if isinstance(value, np.ndarray):
+
+            attributes = {
+                "values": value.astype(np.int32),
+                "type": "referenced",
+            }
             if (
                 self.complement is not None
                 and self.complement.tx_id_property is not None
             ):
-                entity_type = self.complement.tx_id_property.entity_type
+                attributes["entity_type"] = self.complement.tx_id_property.entity_type
             else:
                 value_map = {
                     ind: f"Loop {ind}" for ind in np.unique(value.astype(np.int32))
                 }
                 value_map[0] = "Unknown"
-                entity_type = {  # type: ignore
-                    "primitive_type": "REFERENCED",
-                    "value_map": value_map,
-                }
-
-            value = self.add_data(
-                {
-                    "Transmitter ID": {
-                        "values": value.astype(np.int32),
-                        "entity_type": entity_type,
-                        "type": "referenced",
+                attributes.update(
+                    {  # type: ignore
+                        "primitive_type": "REFERENCED",
+                        "value_map": value_map,
                     }
-                }
-            )
+                )
+
+            value = self.add_data({"Transmitter ID": attributes})
 
         if not isinstance(value, (ReferencedData, type(None))):
             raise TypeError(

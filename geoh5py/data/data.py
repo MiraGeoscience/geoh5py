@@ -18,19 +18,15 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any
-from uuid import UUID
+from typing import Any
 
 import numpy as np
 
 from ..shared import Entity
 from ..shared.utils import mask_by_extent
 from .data_association_enum import DataAssociationEnum
-from .data_type import DataType, GeometricDynamicData, ReferenceDataType
+from .data_type import DataType, ReferenceDataType
 from .primitive_type_enum import PrimitiveTypeEnum
-
-if TYPE_CHECKING:
-    from ..workspace import Workspace
 
 
 class Data(Entity):
@@ -198,39 +194,6 @@ class Data(Entity):
 
         if self.on_file:
             self.workspace.update_attribute(self, "entity_type")
-
-    @classmethod
-    def find_or_create_type(
-        cls,
-        workspace: Workspace,
-        uid: UUID | None = None,
-        dynamic_implementation_id: UUID | None = None,
-        value_map: dict | tuple | None = None,
-        **kwargs,
-    ) -> DataType:
-        """
-        Get the data type for geometric data.
-
-        :param workspace: An active Workspace class
-        :param uid: The unique identifier of the entity type.
-        :param dynamic_implementation_id: Optional dynamic implementation id.
-        :param kwargs: The attributes of the entity type.
-
-        :return: EntityType
-        """
-        if uid is not None:
-            entity_type = DataType.find(workspace, uid)
-
-            if entity_type is not None:
-                return entity_type
-
-        data_type = DataType
-        if dynamic_implementation_id is not None:
-            data_type = GeometricDynamicData.find_type(uid, dynamic_implementation_id)
-        elif value_map is not None:
-            return ReferenceDataType(workspace, value_map, uid=uid, **kwargs)
-
-        return data_type(workspace, uid=uid, **kwargs)
 
     @property
     def modifiable(self) -> bool:

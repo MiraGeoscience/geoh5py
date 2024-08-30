@@ -390,11 +390,9 @@ class Workspace(AbstractContextManager):
 
         :return: The newly created entity.
         """
-        if isinstance(entity_type, DataType):
-            data_type: DataType = entity_type
-        elif isinstance(entity_type, dict):
-            data_type = Data.find_or_create_type(self, **entity_type)
-        else:
+        if isinstance(entity_type, dict):
+            entity_type = DataType.find_or_create_type(self, **entity_type)
+        elif not isinstance(entity_type, DataType):
             raise TypeError(
                 f"Expected `entity_type` to be of type `dict` or `DataType`, "
                 f"got {type(entity_type)}."
@@ -407,7 +405,7 @@ class Workspace(AbstractContextManager):
                 and member is not entity_class
                 and hasattr(member, "primitive_type")
                 and inspect.ismethod(member.primitive_type)
-                and data_type.primitive_type is member.primitive_type()
+                and entity_type.primitive_type is member.primitive_type()
             ):
                 if member is CommentsData and not any(
                     isinstance(val, str) and val == "UserComments"
@@ -426,12 +424,12 @@ class Workspace(AbstractContextManager):
                 ):
                     member = VisualParameters
 
-                created_entity = member(entity_type=data_type, **entity)
+                created_entity = member(entity_type=entity_type, **entity)
 
                 return created_entity
 
         raise TypeError(
-            f"Data type {entity_class} not found in {data_type.primitive_type}."
+            f"Data type {entity_class} not found in {entity_type.primitive_type}."
         )
 
     # def create_data_type(self, type_attributes: dict) -> DataType:
@@ -473,6 +471,7 @@ class Workspace(AbstractContextManager):
             entity["parent"] = self.root
 
         created_entity: Data | Group | ObjectBase
+
         if entity_class is None or issubclass(entity_class, Data):
             created_entity = self.create_data(Data, entity, entity_type)
 
@@ -1418,6 +1417,25 @@ class Workspace(AbstractContextManager):
                 )
 
             self._io_call(H5Writer.clear_stats_cache, entity, mode="r+")
+
+    def validate_data_type(self, attributes: dict, values) -> DataType:
+        """
+        Find or create a data type from input dictionary.
+        """
+        entity_type = attributes.pop("entity_type", {})
+        if isinstance(entity_type, DataType):
+            if (entity_type.uid not in self._types) or (entity_type.workspace != self):
+                entity_type = entity_type.copy(workspace=self)
+        else:
+            primitive_type = attributes.pop(
+                "type", attributes.pop("primitive_type", None)
+            )
+            if primitive_type is None:
+                primitive_type = DataType.validate_primitive_type(values)
+
+            entity_type = DataType.create(self, primitive_type, attributes)
+
+        return entity_type
 
     @property
     def version(self) -> float:

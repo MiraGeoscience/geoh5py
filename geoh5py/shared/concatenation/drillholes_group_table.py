@@ -207,10 +207,10 @@ class DrillholesGroupTable(ABC):
             )
 
         if not isinstance(data_type, DataType):
-            primitive_type = DataType.validate_data_type(
-                self.parent.workspace, {"values": values}
-            )["primitive_type"]
-            data_type = DataType(self.parent.workspace, primitive_type, name=name)
+            primitive_type = DataType.validate_primitive_type(values)
+            data_type = DataType.create(
+                self.parent.workspace, primitive_type, {"name": name}
+            )
 
         for drillhole_uid, indices in self.index_by_drillhole.items():
             # get the drillhole

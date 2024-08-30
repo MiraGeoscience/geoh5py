@@ -156,6 +156,39 @@ class DataType(EntityType):
         self._duplicate_type_on_copy = bool(value)
         self.workspace.update_attribute(self, "attributes")
 
+    @classmethod
+    def find_or_create_type(
+        cls,
+        workspace: Workspace,
+        uid: UUID | None = None,
+        dynamic_implementation_id: UUID | None = None,
+        value_map: dict | tuple | None = None,
+        **kwargs,
+    ) -> DataType:
+        """
+        Get the data type for geometric data.
+
+        :param workspace: An active Workspace class
+        :param uid: The unique identifier of the entity type.
+        :param dynamic_implementation_id: Optional dynamic implementation id.
+        :param kwargs: The attributes of the entity type.
+
+        :return: EntityType
+        """
+        if uid is not None:
+            entity_type = DataType.find(workspace, uid)
+
+            if entity_type is not None:
+                return entity_type
+
+        data_type = cls
+        if dynamic_implementation_id is not None:
+            data_type = GeometricDynamicData.find_type(uid, dynamic_implementation_id)
+        elif value_map is not None:
+            return ReferenceDataType(workspace, value_map, uid=uid, **kwargs)
+
+        return data_type(workspace, uid=uid, **kwargs)
+
     @property
     def hidden(self) -> bool:
         """
@@ -262,69 +295,69 @@ class DataType(EntityType):
 
         self.workspace.update_attribute(self, "attributes")
 
-    @staticmethod
-    def validate_data_type(
-        workspace: Workspace, attribute_dict: dict
-    ) -> EntityType | dict:
+    @classmethod
+    def create(
+        cls, workspace: Workspace, primitive_type: str, attribute_dict: dict
+    ) -> DataType:
         """
         Get a dictionary of attributes and validate the type of data.
 
         :param workspace: An active Workspace.
+        :param primitive_type: The primitive type of the data.
         :param attribute_dict: A dictionary of attributes of the new Datatype to create.
 
         :return: A new instance of DataType.
         """
+        if not primitive_type.upper() in PrimitiveTypeEnum.__members__:
+            raise ValueError(
+                f"Data 'type' should be one of {PrimitiveTypeEnum.__members__}"
+            )
 
-        entity_type = attribute_dict.get("entity_type")
-        if entity_type is None:
-            primitive_type = attribute_dict.get("type")
-            if primitive_type is not None:
-                assert (
-                    primitive_type.upper() in PrimitiveTypeEnum.__members__
-                ), f"Data 'type' should be one of {PrimitiveTypeEnum.__members__}"
-                entity_type = {"primitive_type": primitive_type.upper()}
-            else:
-                values = attribute_dict.get("values")
-                if values is None or (
-                    isinstance(values, np.ndarray)
-                    and np.issubdtype(values.dtype, np.floating)
-                ):
-                    entity_type = {"primitive_type": "FLOAT"}
+        attribute_dict["primitive_type"] = primitive_type.upper()
 
-                elif isinstance(values, np.ndarray) and (
-                    np.issubdtype(values.dtype, np.integer)
-                ):
-
-                    entity_type = {"primitive_type": "INTEGER"}
-                elif isinstance(values, str) or (
-                    isinstance(values, np.ndarray) and values.dtype.kind in ["U", "S"]
-                ):
-                    entity_type = {"primitive_type": "TEXT"}
-                elif isinstance(values, np.ndarray) and (values.dtype == bool):
-                    entity_type = {"primitive_type": "BOOLEAN"}
-                else:
-                    raise NotImplementedError(
-                        "Only add_data values of type FLOAT, INTEGER,"
-                        "BOOLEAN and TEXT have been implemented"
-                    )
-
-            if entity_type["primitive_type"] in ["REFERENCED", "BOOLEAN"]:
-                value_map = attribute_dict.pop("value_map", None)
-                if value_map is None:
+        if attribute_dict["primitive_type"] in ["REFERENCED", "BOOLEAN"]:
+            value_map = attribute_dict.pop("value_map", None)
+            if value_map is None:
+                if attribute_dict["primitive_type"] == "REFERENCED":
                     value_map = {
                         i: str(val)
                         for i, val in enumerate(set(attribute_dict["values"]))
                     }
+                else:
+                    value_map = {0: "False", 1: "True"}
 
-                entity_type["value_map"] = value_map
+            attribute_dict["value_map"] = value_map
 
-        elif isinstance(entity_type, EntityType) and (
-            (entity_type.uid not in getattr(workspace, "_types"))
-            or (entity_type.workspace != workspace)
+        data_type = cls.find_or_create_type(workspace, **attribute_dict)
+
+        return data_type
+
+    @staticmethod
+    def validate_primitive_type(values: np.ndarray | None) -> str:
+        """
+        Validate the primitive type of the data.
+        """
+        if values is None or (
+            isinstance(values, np.ndarray) and np.issubdtype(values.dtype, np.floating)
         ):
-            return entity_type.copy(workspace=workspace)
+            primitive_type = "FLOAT"
 
-        return entity_type
+        elif isinstance(values, np.ndarray) and (
+            np.issubdtype(values.dtype, np.integer)
+        ):
+            primitive_type = "INTEGER"
+        elif isinstance(values, str) or (
+            isinstance(values, np.ndarray) and values.dtype.kind in ["U", "S"]
+        ):
+            primitive_type = "TEXT"
+        elif isinstance(values, np.ndarray) and (values.dtype == bool):
+            primitive_type = "BOOLEAN"
+        else:
+            raise NotImplementedError(
+                "Only add_data values of type FLOAT, INTEGER,"
+                "BOOLEAN and TEXT have been implemented"
+            )
+        return primitive_type
 
 
 class ReferenceDataType(DataType):
