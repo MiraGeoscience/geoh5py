@@ -39,7 +39,7 @@ import h5py
 import numpy as np
 
 from .. import data, groups, objects
-from ..data import CommentsData, Data, DataType  # , GeometricDynamicData
+from ..data import CommentsData, Data, DataType
 from ..data.text_data import TextData
 from ..data.visual_parameters import VisualParameters
 from ..groups import (
@@ -431,16 +431,6 @@ class Workspace(AbstractContextManager):
         raise TypeError(
             f"Data type {entity_class} not found in {entity_type.primitive_type}."
         )
-
-    # def create_data_type(self, type_attributes: dict) -> DataType:
-    #     """
-    #     Validate and create the data type from attributes
-    #     """
-    #     primitive_type = type_attributes.get("primitive_type", None)
-    #     if isinstance(primitive_type, str) and primitive_type.upper() == "GEOMETRIC":
-    #         return GeometricDynamicData.find_or_create(self, **type_attributes)
-    #
-    #     return DataType.find_or_create(self, **type_attributes)
 
     def create_entity(
         self,

@@ -30,10 +30,10 @@ class ReferenceValueMap(ABC):
     def __init__(
         self,
         value_map: dict[int, str] | np.ndarray,
-        data_maps: dict[str, np.ndarray] | None = None,
+        name: str = "Value map",
     ):
         self._map: np.ndarray = self.validate_value_map(value_map)
-        self.data_maps: dict[str, dict] | None = data_maps
+        self.name = name
 
     def __getitem__(self, item: int) -> str:
 
@@ -68,6 +68,9 @@ class ReferenceValueMap(ABC):
 
         :param value_map: Array of key, value pairs.
         """
+        if isinstance(value_map, np.ndarray) and value_map.dtype.names is None:
+            value_map = dict(value_map)
+
         if isinstance(value_map, dict):
             value_map = np.array(list(value_map.items()), dtype=cls.MAP_DTYPE)
 
@@ -83,13 +86,6 @@ class ReferenceValueMap(ABC):
         if set(value_map["Value"]) == {"False", "True"}:
             return value_map
 
-        if 0 not in value_map["Key"]:
-            value_map.resize(len(value_map) + 1, refcheck=False)
-            value_map[-1] = (0, "Unknown")
-
-        if dict(value_map)[0] != "Unknown":
-            raise ValueError("Value for key 0 must be 'Unknown'")
-
         return value_map
 
     @property
@@ -100,26 +96,6 @@ class ReferenceValueMap(ABC):
         The key '0' is always 'Unknown'.
         """
         return self._map
-
-    @property
-    def data_maps(self) -> dict[str, np.ndarray] | None:
-        """
-        A reference dictionary mapping properties to numpy arrays.
-        """
-        return self._data_maps
-
-    @data_maps.setter
-    def data_maps(self, value: dict[str, np.ndarray] | None):
-        if value is not None:
-            if not isinstance(value, dict):
-                raise TypeError("Property maps must be a dictionary")
-            for key, val in value.items():
-                if not isinstance(val, np.ndarray):
-                    raise TypeError(
-                        f"Property maps values for '{key}' must be a numpy array."
-                    )
-
-        self._data_maps = value
 
 
 BOOLEAN_VALUE_MAP = np.array(

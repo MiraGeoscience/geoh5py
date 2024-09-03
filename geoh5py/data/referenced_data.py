@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .data_type import ReferenceDataType
+from .data_type import GeometricDataValueMapType, ReferenceDataType
 from .integer_data import IntegerData
 from .primitive_type_enum import PrimitiveTypeEnum
 from .reference_value_map import ReferenceValueMap
@@ -34,11 +34,11 @@ class ReferencedData(IntegerData):
         super().__init__(**kwargs)
 
     @property
-    def data_maps(self):
+    def data_maps(self) -> dict[str, np.ndarray] | None:
         """
-        Pointer to the :obj:`data.data_type.DataType.value_map`
+        A reference dictionary mapping properties to numpy arrays.
         """
-        return self.entity_type.value_map.data_maps
+        return self.entity_type.data_maps
 
     @property
     def entity_type(self) -> ReferenceDataType:
@@ -76,7 +76,7 @@ class ReferencedData(IntegerData):
         :param name: The name of the data map.
         :param data: The data map to add.
         """
-        value_map = self.entity_type.value_map.data_maps or {}
+        value_map = self.entity_type.data_maps or {}
 
         if name in value_map:
             raise KeyError(f"Data map '{name}' already exists.")
@@ -87,14 +87,30 @@ class ReferencedData(IntegerData):
         if isinstance(data, np.ndarray) and data.ndim != 2:
             raise ValueError("Data map must be a 2D array")
 
-        data = np.array(list(dict(data)), dtype=ReferenceValueMap.MAP_DTYPE)
+        reference_data = ReferenceValueMap(data, name=name)
 
-        if not set(data["Key"]).issubset(set(self.entity_type.value_map.map["Key"])):
+        if not set(reference_data.map["Key"]).issubset(
+            set(self.entity_type.value_map.map["Key"])
+        ):
             raise KeyError("Data map keys must be a subset of the value map keys.")
 
-        value_map[name] = data
-
-        self.entity_type.value_map.data_maps = value_map
+        data_type = GeometricDataValueMapType(
+            self.workspace,
+            self.entity_type,
+            reference_data,
+            name=self.name + f": {name}",
+        )
+        # self.workspace.save_entity_type(data_type)
+        self.parent.add_data(
+            {
+                name: {
+                    "association": self.association,
+                    "entity_type": data_type,
+                }
+            }
+        )
+        value_map[name] = data_type
+        self.entity_type.data_maps = value_map
 
         if self.on_file:
-            self.workspace.update_attribute(self.entity_type, "value_map")
+            self.workspace.update_attribute(data_type, "value_map")

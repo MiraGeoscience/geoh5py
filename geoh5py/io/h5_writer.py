@@ -33,6 +33,7 @@ from ..data import (
     Data,
     DataType,
     FilenameData,
+    GeometricDataValueMapType,
     IntegerData,
     ReferenceDataType,
     TextData,
@@ -459,41 +460,43 @@ class H5Writer:
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             reference_value_map = entity_type.value_map
-            entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)
+
+            if isinstance(entity_type, GeometricDataValueMapType):
+                if entity_type.parent.data_maps is None or entity_type not in list(
+                    entity_type.parent.data_maps.values()
+                ):
+                    return
+
+                entity_type_handle = H5Writer.fetch_handle(h5file, entity_type.parent)
+                name = (
+                    "Value map "
+                    + f"{list(entity_type.parent.data_maps.values()).index(entity_type) + 1}"
+                )
+            else:
+                entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)
+                name = "Value map"
 
             if entity_type_handle is None:
                 return
 
-            if "Value map" in entity_type_handle:
-                del entity_type_handle["Value map"]
+            if name in entity_type_handle:
+                del entity_type_handle[name]
                 entity_type.workspace.repack = True
 
             formatted = np.dtype([("Key", "<u4"), ("Value", H5Writer.str_type)])
             H5Writer.create_dataset(
                 entity_type_handle,
                 reference_value_map.map.astype(formatted),
-                "Value map",
+                name,
             )
 
-            if reference_value_map.data_maps is not None:
-                for ind, (key, value) in enumerate(
-                    reference_value_map.data_maps.items()
-                ):
-                    name = f"Value map {ind}"
-
-                    if name in entity_type_handle:
-                        del entity_type_handle[name]
-                        entity_type.workspace.repack = True
-
-                    H5Writer.create_dataset(
-                        entity_type_handle, value.astype(formatted), name
-                    )
-                    entity_type_handle[name].attrs.create(
-                        "Name", key, dtype=H5Writer.str_type
-                    )
-                    entity_type_handle[name].attrs.create(
-                        "Allow delete", True, dtype="int8"
-                    )
+            if isinstance(entity_type, GeometricDataValueMapType):
+                entity_type_handle[name].attrs.create(
+                    "Name", entity_type.value_map.name, dtype=H5Writer.str_type
+                )
+                entity_type_handle[name].attrs.create(
+                    "Allow delete", True, dtype="int8"
+                )
 
     @staticmethod
     def write_visible(

@@ -183,7 +183,9 @@ class DataType(EntityType):
 
         data_type = cls
         if dynamic_implementation_id is not None:
-            data_type = GeometricDynamicData.find_type(uid, dynamic_implementation_id)
+            data_type = GeometricDynamicDataType.find_type(
+                uid, dynamic_implementation_id
+            )
         elif value_map is not None:
             return ReferenceDataType(workspace, value_map, uid=uid, **kwargs)
 
@@ -373,13 +375,50 @@ class ReferenceDataType(DataType):
         self,
         workspace: Workspace,
         value_map: dict[int, str] | tuple | ReferenceValueMap,
+        data_maps: dict[str, ReferenceValueMap] | None = None,
         **kwargs,
     ):
         super().__init__(workspace, **kwargs)
         self._value_map = self.validate_value_map(value_map)
+        self.data_maps = data_maps
+
+    @property
+    def data_maps(self) -> dict[str, np.ndarray] | None:
+        """
+        A reference dictionary mapping properties to numpy arrays.
+        """
+        return self._data_maps
+
+    @data_maps.setter
+    def data_maps(self, value: dict[str, np.ndarray] | None):
+        if value is not None:
+            if not isinstance(value, dict):
+                raise TypeError("Property maps must be a dictionary")
+            for key, val in value.items():
+                if not isinstance(val, GeometricDataValueMapType):
+                    raise TypeError(
+                        f"Property maps values for '{key}' must be a 'GeometricDataValueMapType'."
+                    )
+
+        self._data_maps = value
 
     @staticmethod
+    def validate_keys(value_map: ReferenceValueMap) -> ReferenceValueMap:
+        """
+        Validate the keys of the value map.
+        """
+        if 0 not in value_map.map["Key"]:
+            value_map.map.resize(len(value_map) + 1, refcheck=False)
+            value_map.map[-1] = (0, "Unknown")
+
+        if dict(value_map.map)[0] != "Unknown":
+            raise ValueError("Value for key 0 must be 'Unknown'")
+
+        return value_map
+
+    @classmethod
     def validate_value_map(
+        cls,
         value_map: dict | tuple | ReferenceValueMap,
     ) -> ReferenceValueMap:
         """
@@ -395,6 +434,9 @@ class ReferenceDataType(DataType):
                 "Attribute 'value_map' must be provided as a dict, tuple[dict] "
                 f"or {ReferenceValueMap}."
             )
+
+        value_map = cls.validate_keys(value_map)
+
         return value_map
 
     @property
@@ -425,7 +467,7 @@ class ReferenceDataType(DataType):
             self.workspace.update_attribute(self, "value_map")
 
 
-class GeometricDynamicData(DataType, ABC):
+class GeometricDynamicDataType(DataType, ABC):
     """
     Data container for dynamic geometric data.
     """
@@ -436,7 +478,6 @@ class GeometricDynamicData(DataType, ABC):
             "Dynamic implementation ID": "dynamic_implementation_id",
         }
     )
-
     _TYPE_UID: UUID | None
     _DYNAMIC_IMPLEMENTATION_ID: UUID
 
@@ -449,7 +490,9 @@ class GeometricDynamicData(DataType, ABC):
         if uid is None:
             uid = self._TYPE_UID
 
-        super().__init__(workspace, uid=uid, **kwargs)
+        super().__init__(
+            workspace, primitive_type=PrimitiveTypeEnum.GEOMETRIC, uid=uid, **kwargs
+        )
 
     @classmethod
     def default_type_uid(cls) -> UUID | None:
@@ -489,7 +532,7 @@ class GeometricDynamicData(DataType, ABC):
         return data_type
 
 
-class GeometricDataValueMap(GeometricDynamicData):
+class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
     """
     Data container for value map
     """
@@ -497,8 +540,41 @@ class GeometricDataValueMap(GeometricDynamicData):
     _DYNAMIC_IMPLEMENTATION_ID = UUID("{4b6ecb37-0623-4ea0-95f1-4873008890a8}")
     _TYPE_UID = None
 
+    def __init__(
+        self,
+        workspace: Workspace,
+        parent: ReferenceDataType,
+        value_map: ReferenceValueMap,
+        uid: UUID | None = None,
+        description: str = "Dynamic referenced data",
+        **kwargs,
+    ):
+        super().__init__(
+            workspace, value_map, uid=uid, description=description, **kwargs
+        )
 
-class GeometricDataX(GeometricDynamicData):
+        if not isinstance(parent, ReferenceDataType):
+            raise TypeError("Parent must be of type ReferenceDataType")
+
+        self._parent = parent
+
+    @property
+    def parent(self) -> ReferenceDataType:
+        """
+        The parent data type.
+        """
+        return self._parent
+
+    @staticmethod
+    def validate_keys(value_map: ReferenceValueMap) -> ReferenceValueMap:
+        """
+        Validate the keys of the value map.
+        """
+
+        return value_map
+
+
+class GeometricDataXType(GeometricDynamicDataType):
     """
     Data container for X values
     """
@@ -507,7 +583,7 @@ class GeometricDataX(GeometricDynamicData):
     _TYPE_UID = UUID(fields=(0xE9E6B408, 0x4109, 0x4E42, 0xB6, 0xA8, 0x685C37A802EE))
 
 
-class GeometricDataY(GeometricDynamicData):
+class GeometricDataYType(GeometricDynamicDataType):
     """
     Data container for Y values
     """
@@ -516,7 +592,7 @@ class GeometricDataY(GeometricDynamicData):
     _TYPE_UID = UUID(fields=(0xF55B07BD, 0xD8A0, 0x4DFF, 0xBA, 0xE5, 0xC975D490D71C))
 
 
-class GeometricDataZ(GeometricDynamicData):
+class GeometricDataZType(GeometricDynamicDataType):
     """
     Data container for X values
     """
@@ -527,5 +603,5 @@ class GeometricDataZ(GeometricDynamicData):
 
 DYNAMIC_CLASS_IDS = {
     cls._DYNAMIC_IMPLEMENTATION_ID: cls  # pylint: disable=protected-access
-    for cls in GeometricDynamicData.__subclasses__()
+    for cls in GeometricDynamicDataType.__subclasses__()
 }

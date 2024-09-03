@@ -33,8 +33,21 @@ class GeometricDataConstants(Data):
 
     _TYPE_UID: UUID
 
-    def __init__(self, allow_move=False, visible=False, **kwargs):
-        super().__init__(allow_move=allow_move, visible=visible, **kwargs)
+    def __init__(
+        self,
+        allow_move=False,
+        visible=False,
+        allow_delete=False,
+        allow_rename=False,
+        **kwargs,
+    ):
+        super().__init__(
+            allow_move=allow_move,
+            allow_delete=allow_delete,
+            allow_rename=allow_rename,
+            visible=visible,
+            **kwargs,
+        )
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
