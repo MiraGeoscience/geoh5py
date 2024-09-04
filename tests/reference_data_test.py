@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 
 from geoh5py.data import ReferenceValueMap
-from geoh5py.data.data_type import GeometricDataValueMapType, ReferenceDataType
+from geoh5py.data.data_type import GeometricDataValueMapType, ReferencedValueMapType
 from geoh5py.objects import Points
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
@@ -77,7 +77,7 @@ def test_create_reference_data(tmp_path):
             ReferenceValueMap({-1: "test"})
 
         with pytest.raises(ValueError, match="Value for key 0 must be 'Unknown'"):
-            ReferenceDataType(workspace, ReferenceValueMap({0: "test"}))
+            ReferencedValueMapType(workspace, ReferenceValueMap({0: "test"}))
 
         value_map = ReferenceValueMap({0: "Unknown", 2: "test"})
 
@@ -115,4 +115,16 @@ def test_add_data_map(tmp_path):
 
         data.add_data_map("test", data_map)
 
+        data_map = np.c_[
+            data.entity_type.value_map.map["Key"],
+            np.random.randn(len(data.entity_type.value_map.map["Key"])),
+        ]
+
+        data.add_data_map("test2", data_map)
+
         assert isinstance(data.entity_type.data_maps["test"], GeometricDataValueMapType)
+
+    # with Workspace(h5file_path) as workspace:
+    #     rec_data = workspace.get_entity("DataValues")[0]
+
+    # assert isinstance(rec_data.entity_type.data_maps["test"], GeometricDataValueMapType)

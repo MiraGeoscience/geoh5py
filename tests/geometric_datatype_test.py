@@ -37,7 +37,7 @@ def test_xyz_dataype(tmp_path: Path):
             if dtype.default_type_uid() is None:
                 continue
 
-            axis = dtype.__name__[-1]
+            axis = dtype.__name__.lstrip("GeometricData").rstrip("Type")
             data = points.add_data(
                 {
                     axis: {
@@ -52,7 +52,7 @@ def test_xyz_dataype(tmp_path: Path):
             assert isinstance(data, geometric_data.GeometricDataConstants)
             assert (
                 data.entity_type.uid
-                == getattr(data_type, f"GeometricData{axis}").default_type_uid()
+                == getattr(data_type, f"GeometricData{axis}Type").default_type_uid()
             )
 
     ws = Workspace(h5file_path)

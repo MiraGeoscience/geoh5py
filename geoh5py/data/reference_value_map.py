@@ -83,9 +83,6 @@ class ReferenceValueMap(ABC):
         if not all(value_map["Key"] >= 0):
             raise KeyError("Key must be an positive integer")
 
-        if set(value_map["Value"]) == {"False", "True"}:
-            return value_map
-
         return value_map
 
     @property

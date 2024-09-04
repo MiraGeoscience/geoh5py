@@ -131,7 +131,7 @@ class ObjectBase(EntityContainer):
                 )
 
             attr["name"] = name
-            attr, validate_property_group = self.validate_data(
+            attr, validate_property_group = self.validate_association(
                 attr, property_group=property_group, **kwargs
             )
 
@@ -561,7 +561,7 @@ class ObjectBase(EntityContainer):
         """
         return self._converter
 
-    def validate_data(self, attributes, property_group=None, **_):
+    def validate_association(self, attributes, property_group=None, **_):
         """
         Get a dictionary of attributes and validate the data 'association' keyword.
         """

@@ -391,7 +391,9 @@ class Workspace(AbstractContextManager):
         :return: The newly created entity.
         """
         if isinstance(entity_type, dict):
-            entity_type = DataType.find_or_create_type(self, **entity_type)
+            entity_type = DataType.find_or_create_type(
+                self, entity_type.pop("primitive_type"), **entity_type
+            )
         elif not isinstance(entity_type, DataType):
             raise TypeError(
                 f"Expected `entity_type` to be of type `dict` or `DataType`, "
@@ -1191,7 +1193,6 @@ class Workspace(AbstractContextManager):
             )
             return None
 
-        # Get property groups (key 2) from object attributes
         if isinstance(entity, ObjectBase) and len(prop_groups) > 0:
             for kwargs in prop_groups.values():
                 entity.create_property_group(on_file=True, **kwargs)
@@ -1420,10 +1421,13 @@ class Workspace(AbstractContextManager):
             primitive_type = attributes.pop(
                 "type", attributes.pop("primitive_type", None)
             )
-            if primitive_type is None:
-                primitive_type = DataType.validate_primitive_type(values)
 
-            entity_type = DataType.create(self, primitive_type, attributes)
+            if primitive_type is None:
+                primitive_type = DataType.primitive_type_from_values(values)
+
+            entity_type = DataType.find_or_create_type(
+                self, primitive_type, **attributes
+            )
 
         return entity_type
 

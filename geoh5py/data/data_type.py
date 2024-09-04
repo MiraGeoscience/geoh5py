@@ -19,7 +19,7 @@
 
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Literal, get_args
 from uuid import UUID
 
@@ -28,7 +28,7 @@ import numpy as np
 from ..shared import EntityType
 from .color_map import ColorMap
 from .primitive_type_enum import PrimitiveTypeEnum
-from .reference_value_map import ReferenceValueMap
+from .reference_value_map import BOOLEAN_VALUE_MAP, ReferenceValueMap
 
 if TYPE_CHECKING:
     from ..workspace import Workspace
@@ -160,17 +160,16 @@ class DataType(EntityType):
     def find_or_create_type(
         cls,
         workspace: Workspace,
+        primitive_type: PrimitiveTypeEnum | str,
         uid: UUID | None = None,
-        dynamic_implementation_id: UUID | None = None,
-        value_map: dict | tuple | None = None,
         **kwargs,
     ) -> DataType:
         """
         Get the data type for geometric data.
 
         :param workspace: An active Workspace class
+        :param primitive_type: The primitive type of the data.
         :param uid: The unique identifier of the entity type.
-        :param dynamic_implementation_id: Optional dynamic implementation id.
         :param kwargs: The attributes of the entity type.
 
         :return: EntityType
@@ -181,15 +180,18 @@ class DataType(EntityType):
             if entity_type is not None:
                 return entity_type
 
-        data_type = cls
-        if dynamic_implementation_id is not None:
-            data_type = GeometricDynamicDataType.find_type(
-                uid, dynamic_implementation_id
-            )
-        elif value_map is not None:
-            return ReferenceDataType(workspace, value_map, uid=uid, **kwargs)
+        primitive_type = cls.validate_primitive_type(primitive_type)
 
-        return data_type(workspace, uid=uid, **kwargs)
+        if primitive_type in [
+            PrimitiveTypeEnum.REFERENCED,
+            PrimitiveTypeEnum.BOOLEAN,
+            PrimitiveTypeEnum.GEOMETRIC,
+        ]:
+            return ReferenceDataType.create(
+                workspace, primitive_type, uid=uid, **kwargs
+            )
+
+        return cls(workspace, primitive_type=primitive_type, uid=uid, **kwargs)
 
     @property
     def hidden(self) -> bool:
@@ -256,10 +258,12 @@ class DataType(EntityType):
 
     @primitive_type.setter
     def primitive_type(self, value: str | type[Data] | PrimitiveTypeEnum | None):
-        if isinstance(value, str):
-            value = getattr(PrimitiveTypeEnum, value.replace("-", "_").upper())
-        elif hasattr(value, "primitive_type"):
+        if hasattr(value, "primitive_type"):
             value = getattr(value, "primitive_type")()
+
+        elif value is not None:
+            value = self.validate_primitive_type(value)
+
         if not isinstance(value, (PrimitiveTypeEnum, type(None))):
             raise ValueError(
                 f"Primitive type value must be of type {PrimitiveTypeEnum}, find {type(value)}"
@@ -297,67 +301,45 @@ class DataType(EntityType):
 
         self.workspace.update_attribute(self, "attributes")
 
-    @classmethod
-    def create(
-        cls, workspace: Workspace, primitive_type: str, attribute_dict: dict
-    ) -> DataType:
-        """
-        Get a dictionary of attributes and validate the type of data.
-
-        :param workspace: An active Workspace.
-        :param primitive_type: The primitive type of the data.
-        :param attribute_dict: A dictionary of attributes of the new Datatype to create.
-
-        :return: A new instance of DataType.
-        """
-        if not primitive_type.upper() in PrimitiveTypeEnum.__members__:
-            raise ValueError(
-                f"Data 'type' should be one of {PrimitiveTypeEnum.__members__}"
-            )
-
-        attribute_dict["primitive_type"] = primitive_type.upper()
-
-        if attribute_dict["primitive_type"] in ["REFERENCED", "BOOLEAN"]:
-            value_map = attribute_dict.pop("value_map", None)
-            if value_map is None:
-                if attribute_dict["primitive_type"] == "REFERENCED":
-                    value_map = {
-                        i: str(val)
-                        for i, val in enumerate(set(attribute_dict["values"]))
-                    }
-                else:
-                    value_map = {0: "False", 1: "True"}
-
-            attribute_dict["value_map"] = value_map
-
-        data_type = cls.find_or_create_type(workspace, **attribute_dict)
-
-        return data_type
-
     @staticmethod
-    def validate_primitive_type(values: np.ndarray | None) -> str:
+    def primitive_type_from_values(values: np.ndarray | None) -> PrimitiveTypeEnum:
         """
         Validate the primitive type of the data.
         """
         if values is None or (
             isinstance(values, np.ndarray) and np.issubdtype(values.dtype, np.floating)
         ):
-            primitive_type = "FLOAT"
+            primitive_type = PrimitiveTypeEnum.FLOAT
 
         elif isinstance(values, np.ndarray) and (
             np.issubdtype(values.dtype, np.integer)
         ):
-            primitive_type = "INTEGER"
+            primitive_type = PrimitiveTypeEnum.INTEGER
         elif isinstance(values, str) or (
             isinstance(values, np.ndarray) and values.dtype.kind in ["U", "S"]
         ):
-            primitive_type = "TEXT"
+            primitive_type = PrimitiveTypeEnum.TEXT
         elif isinstance(values, np.ndarray) and (values.dtype == bool):
-            primitive_type = "BOOLEAN"
+            primitive_type = PrimitiveTypeEnum.BOOLEAN
         else:
             raise NotImplementedError(
                 "Only add_data values of type FLOAT, INTEGER,"
                 "BOOLEAN and TEXT have been implemented"
+            )
+        return primitive_type
+
+    @staticmethod
+    def validate_primitive_type(
+        primitive_type: PrimitiveTypeEnum | str,
+    ) -> PrimitiveTypeEnum:
+        """
+        Validate the primitive type of the data.
+        """
+        if isinstance(primitive_type, str):
+            primitive_type = getattr(PrimitiveTypeEnum, primitive_type.upper())
+        if not isinstance(primitive_type, PrimitiveTypeEnum):
+            raise ValueError(
+                f"Data 'type' should be one of {PrimitiveTypeEnum.__members__}"
             )
         return primitive_type
 
@@ -375,46 +357,63 @@ class ReferenceDataType(DataType):
         self,
         workspace: Workspace,
         value_map: dict[int, str] | tuple | ReferenceValueMap,
-        data_maps: dict[str, ReferenceValueMap] | None = None,
         **kwargs,
     ):
         super().__init__(workspace, **kwargs)
         self._value_map = self.validate_value_map(value_map)
-        self.data_maps = data_maps
 
-    @property
-    def data_maps(self) -> dict[str, np.ndarray] | None:
+    @classmethod
+    def create(
+        cls,
+        workspace: Workspace,
+        primitive_type: str | PrimitiveTypeEnum,
+        dynamic_implementation_id: UUID | None = None,
+        values: np.ndarray | None = None,
+        value_map: (
+            np.ndarray | dict[int, str] | tuple | ReferenceValueMap | None
+        ) = None,
+        **kwargs,
+    ):
         """
-        A reference dictionary mapping properties to numpy arrays.
+        Create a new instance of ReferenceDataType
         """
-        return self._data_maps
+        primitive_type = cls.validate_primitive_type(primitive_type)
 
-    @data_maps.setter
-    def data_maps(self, value: dict[str, np.ndarray] | None):
-        if value is not None:
-            if not isinstance(value, dict):
-                raise TypeError("Property maps must be a dictionary")
-            for key, val in value.items():
-                if not isinstance(val, GeometricDataValueMapType):
-                    raise TypeError(
-                        f"Property maps values for '{key}' must be a 'GeometricDataValueMapType'."
-                    )
+        if (
+            primitive_type == PrimitiveTypeEnum.GEOMETRIC
+            and dynamic_implementation_id is not None
+        ):
+            data_type = DYNAMIC_CLASS_IDS.get(dynamic_implementation_id, DataType)
 
-        self._data_maps = value
+            return data_type(workspace, primitive_type=primitive_type, **kwargs)
+
+        if value_map is None:
+            if primitive_type == PrimitiveTypeEnum.REFERENCED:
+                if values is None:
+                    raise ValueError("Either 'values' or 'value_map' must be provided.")
+
+                value_map = {i: str(val) for i, val in enumerate(set(values))}
+            else:
+                value_map = {0: "False", 1: "True"}
+
+        if primitive_type is None:
+            primitive_type = PrimitiveTypeEnum.REFERENCED
+
+        if primitive_type == PrimitiveTypeEnum.BOOLEAN:
+            return ReferencedBooleanType(
+                workspace, value_map, primitive_type=primitive_type, **kwargs
+            )
+
+        return ReferencedValueMapType(
+            workspace, value_map, primitive_type=primitive_type, **kwargs
+        )
 
     @staticmethod
+    @abstractmethod
     def validate_keys(value_map: ReferenceValueMap) -> ReferenceValueMap:
         """
         Validate the keys of the value map.
         """
-        if 0 not in value_map.map["Key"]:
-            value_map.map.resize(len(value_map) + 1, refcheck=False)
-            value_map.map[-1] = (0, "Unknown")
-
-        if dict(value_map.map)[0] != "Unknown":
-            raise ValueError("Value for key 0 must be 'Unknown'")
-
-        return value_map
 
     @classmethod
     def validate_value_map(
@@ -467,6 +466,74 @@ class ReferenceDataType(DataType):
             self.workspace.update_attribute(self, "value_map")
 
 
+class ReferencedValueMapType(ReferenceDataType):
+    """
+    Data container for referenced value map.
+    """
+
+    _TYPE_UID = UUID(fields=(0x2D5D6C1E, 0x4D8C, 0x4F3A, 0x9B, 0x3F, 0x2E5A0D8E1C1F))
+
+    def __init__(
+        self,
+        workspace: Workspace,
+        value_map: dict[int, str] | tuple | ReferenceValueMap,
+        data_maps: dict[str, ReferenceValueMap] | None = None,
+        **kwargs,
+    ):
+        super().__init__(workspace, value_map, **kwargs)
+        self.data_maps = data_maps
+
+    @property
+    def data_maps(self) -> dict[str, np.ndarray] | None:
+        """
+        A reference dictionary mapping properties to numpy arrays.
+        """
+        return self._data_maps
+
+    @data_maps.setter
+    def data_maps(self, value: dict[str, np.ndarray] | None):
+        if value is not None:
+            if not isinstance(value, dict):
+                raise TypeError("Property maps must be a dictionary")
+            for key, val in value.items():
+                if not isinstance(val, GeometricDataValueMapType):
+                    raise TypeError(
+                        f"Property maps values for '{key}' must be a 'GeometricDataValueMapType'."
+                    )
+
+        self._data_maps = value
+
+    @staticmethod
+    def validate_keys(value_map: ReferenceValueMap) -> ReferenceValueMap:
+        """
+        Validate the keys of the value map.
+        """
+        if 0 not in value_map.map["Key"]:
+            value_map.map.resize(len(value_map) + 1, refcheck=False)
+            value_map.map[-1] = (0, "Unknown")
+
+        if dict(value_map.map)[0] != "Unknown":
+            raise ValueError("Value for key 0 must be 'Unknown'")
+
+        return value_map
+
+
+class ReferencedBooleanType(ReferenceDataType):
+    """
+    Data container for referenced boolean data.
+    """
+
+    @staticmethod
+    def validate_keys(value_map: ReferenceValueMap) -> ReferenceValueMap:
+        """
+        Validate the keys of the value map.
+        """
+        if not np.all(value_map.map == BOOLEAN_VALUE_MAP):
+            raise ValueError("Boolean value map must be (0: 'False', 1: 'True'")
+
+        return value_map
+
+
 class GeometricDynamicDataType(DataType, ABC):
     """
     Data container for dynamic geometric data.
@@ -490,9 +557,7 @@ class GeometricDynamicDataType(DataType, ABC):
         if uid is None:
             uid = self._TYPE_UID
 
-        super().__init__(
-            workspace, primitive_type=PrimitiveTypeEnum.GEOMETRIC, uid=uid, **kwargs
-        )
+        super().__init__(workspace, uid=uid, **kwargs)
 
     @classmethod
     def default_type_uid(cls) -> UUID | None:
@@ -507,29 +572,6 @@ class GeometricDynamicDataType(DataType, ABC):
         The dynamic implementation id.
         """
         return self._DYNAMIC_IMPLEMENTATION_ID
-
-    @classmethod
-    def find_type(
-        cls, uid: UUID | None, dynamic_implementation_id: UUID
-    ) -> type[DataType]:
-        """
-        Find the data type in the workspace.
-
-        :param uid: The UUID of the data type.
-        :param dynamic_implementation_id: The dynamic implementation id.
-        """
-        data_type = DYNAMIC_CLASS_IDS.get(dynamic_implementation_id, DataType)
-
-        # Unknown geometric data type
-        if (
-            hasattr(data_type, "default_type_uid")
-            and data_type.default_type_uid() is not None
-            and uid is not None
-            and data_type.default_type_uid() != uid
-        ):
-            return DataType
-
-        return data_type
 
 
 class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
@@ -547,10 +589,16 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
         value_map: ReferenceValueMap,
         uid: UUID | None = None,
         description: str = "Dynamic referenced data",
+        primitive_type: PrimitiveTypeEnum | str = PrimitiveTypeEnum.GEOMETRIC,
         **kwargs,
     ):
         super().__init__(
-            workspace, value_map, uid=uid, description=description, **kwargs
+            workspace,
+            value_map,
+            description=description,
+            uid=uid,
+            primitive_type=primitive_type,
+            **kwargs,
         )
 
         if not isinstance(parent, ReferenceDataType):
