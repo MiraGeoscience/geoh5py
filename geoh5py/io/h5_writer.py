@@ -34,6 +34,7 @@ from ..data import (
     DataType,
     FilenameData,
     IntegerData,
+    MultiTextData,
     TextData,
 )
 from ..groups import Group, GroupType, PropertyGroup, RootGroup
@@ -186,18 +187,17 @@ class H5Writer:
             }
 
             if isinstance(entity, EntityType):
-                try:
+                if "Types" in base_handle:
                     base_handle = base_handle["Types"]
-                except KeyError:
+                else:
                     base_handle = base_handle.create_group("Types")
 
             for key, value in hierarchy.items():
                 if isinstance(entity, key):
-                    try:
+                    if value in base_handle:
                         base_handle = base_handle[value]
-                    except KeyError:
+                    else:
                         base_handle = base_handle.create_group(value)
-                    break
 
             # Check if already in the project
             if as_str_if_uuid(uid) in base_handle:
@@ -268,11 +268,9 @@ class H5Writer:
                     attribute.capitalize()
                 )
             name = channel.replace("/", "\u2044")
-            try:
+            if name in attr_handle:
                 del attr_handle[name]
                 entity.workspace.repack = True
-            except KeyError:
-                pass
 
             values = getattr(entity, attribute).get(channel, None)
 
@@ -427,11 +425,9 @@ class H5Writer:
             if entity_type_handle is None:
                 return
 
-            try:
+            if "Color map" in entity_type_handle:
                 del entity_type_handle["Color map"]
                 entity_type.workspace.repack = True
-            except KeyError:
-                pass
 
             if color_map is not None and color_map.values is not None:
                 H5Writer.create_dataset(
@@ -465,11 +461,9 @@ class H5Writer:
             if entity_type_handle is None:
                 return
 
-            try:
+            if "Value map" in entity_type_handle:
                 del entity_type_handle["Value map"]
                 entity_type.workspace.repack = True
-            except KeyError:
-                pass
 
             if reference_value_map is not None and reference_value_map.map is not None:
                 dtype = list(zip(names, formats))
@@ -529,11 +523,9 @@ class H5Writer:
             ):
                 entity_handle = entity_handle["Concatenated Data"]
 
-            try:
+            if KEY_MAP[attribute] in entity_handle:
                 del entity_handle[KEY_MAP[attribute]]
                 entity.workspace.repack = True
-            except KeyError:
-                pass
 
             if isinstance(values, np.ndarray) and np.issubdtype(values.dtype, np.str_):
                 values = values.astype(h5py.special_dtype(vlen=str))
@@ -635,7 +627,9 @@ class H5Writer:
                 elif isinstance(entity, IntegerData):
                     out_values = np.round(out_values).astype("int32")
 
-                elif isinstance(entity, TextData) and not isinstance(values[0], bytes):
+                elif isinstance(entity, TextData | MultiTextData) and not isinstance(
+                    values[0], bytes
+                ):
                     out_values = np.char.encode(values, encoding="utf-8").astype("O")
 
                 if getattr(entity, "ndv", None) is not None:
@@ -859,11 +853,9 @@ class H5Writer:
             if entity_handle is None:
                 return
 
-            try:
+            if "PropertyGroups" in entity_handle:
                 del entity_handle["PropertyGroups"]
                 entity.workspace.repack = True
-            except KeyError:
-                pass
 
             if hasattr(entity, "property_groups") and isinstance(
                 entity.property_groups, list
