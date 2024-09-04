@@ -113,7 +113,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
                 obj_list.append(data[1])
         return obj_list
 
-    def validate_data(
+    def validate_association(
         self, attributes: dict, property_group=None, collocation_distance=None, **_
     ) -> tuple:
         """

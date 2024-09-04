@@ -249,9 +249,10 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                     attr_type = self.workspace.fetch_type(
                         uuid.UUID(elem["Type ID"]), "Data"
                     )
-                    data_type = DataType.find_or_create(
+                    primitive_type = attr_type.pop("primitive_type")
+                    data_type = DataType.find_or_create_type(
                         new_entity.workspace,
-                        attr_type.pop("primitive_type"),
+                        primitive_type,
                         **attr_type,
                     )
                     new_entity.workspace.save_entity_type(data_type)
