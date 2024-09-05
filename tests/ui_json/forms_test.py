@@ -296,7 +296,7 @@ def test_data_form():
             is_value=True,
         )
     with pytest.raises(
-        ValidationError, match="A property must be provided in is_value is used"
+        ValidationError, match="A property must be provided if is_value is used"
     ):
         _ = DataForm(
             label="name",
