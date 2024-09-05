@@ -31,6 +31,8 @@ class ReferencedData(IntegerData):
     """
 
     def __init__(self, **kwargs):
+        self._data_maps = None
+
         super().__init__(**kwargs)
 
     @property
@@ -38,7 +40,20 @@ class ReferencedData(IntegerData):
         """
         A reference dictionary mapping properties to numpy arrays.
         """
-        return self.entity_type.data_maps
+        return self._data_maps
+
+    @data_maps.setter
+    def data_maps(self, value: dict[str, GeometricDataValueMapType] | None):
+        if value is not None:
+            if not isinstance(value, dict):
+                raise TypeError("Property maps must be a dictionary")
+            for key, val in value.items():
+                if not isinstance(val, GeometricDataValueMapType):
+                    raise TypeError(
+                        f"Property maps values for '{key}' must be a 'GeometricDataValueMapType'."
+                    )
+
+        self._data_maps = value
 
     @property
     def entity_type(self) -> ReferenceDataType:
@@ -76,7 +91,7 @@ class ReferencedData(IntegerData):
         :param name: The name of the data map.
         :param data: The data map to add.
         """
-        value_map = self.entity_type.data_maps or {}
+        value_map = self.data_maps or {}
 
         if name in value_map:
             raise KeyError(f"Data map '{name}' already exists.")
@@ -96,11 +111,11 @@ class ReferencedData(IntegerData):
 
         data_type = GeometricDataValueMapType(
             self.workspace,
-            self.entity_type,
-            reference_data,
+            value_map=reference_data,
+            parent=self.parent,
             name=self.name + f": {name}",
         )
-        # self.workspace.save_entity_type(data_type)
+
         self.parent.add_data(
             {
                 name: {
@@ -110,7 +125,7 @@ class ReferencedData(IntegerData):
             }
         )
         value_map[name] = data_type
-        self.entity_type.data_maps = value_map
+        self.data_maps = value_map
 
         if self.on_file:
             self.workspace.update_attribute(data_type, "value_map")

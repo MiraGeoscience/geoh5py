@@ -50,7 +50,7 @@ class EntityType(ABC):
         workspace: Workspace,
         uid: uuid.UUID | None = None,
         description: str | None = "Entity",
-        name: str | None = "Entity",
+        name: str = "Entity",
         on_file: bool = False,
         **_,
     ):
@@ -187,16 +187,16 @@ class EntityType(ABC):
         return cls(workspace, uid=uid, **kwargs)
 
     @property
-    def name(self) -> str | None:
+    def name(self) -> str:
         """
         The name of the entity type.
         """
         return self._name
 
     @name.setter
-    def name(self, name: str | None):
-        if not isinstance(name, (str, type(None))):
-            raise TypeError(f"name must be a string or None, not {type(name)}")
+    def name(self, name: str):
+        if not isinstance(name, str):
+            raise TypeError(f"name must be a string, not {type(name)}")
 
         self._name = name
 

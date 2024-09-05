@@ -29,7 +29,7 @@ class ReferenceValueMap(ABC):
 
     def __init__(
         self,
-        value_map: dict[int, str] | np.ndarray,
+        value_map: dict[int, str] | np.ndarray | tuple,
         name: str = "Value map",
     ):
         self._map: np.ndarray = self.validate_value_map(value_map)
@@ -68,7 +68,14 @@ class ReferenceValueMap(ABC):
 
         :param value_map: Array of key, value pairs.
         """
+        if isinstance(value_map, tuple):
+            value_map = dict(value_map)
+
         if isinstance(value_map, np.ndarray) and value_map.dtype.names is None:
+
+            if value_map.ndim == 1:
+                value_map = {i: str(val) for i, val in enumerate(set(value_map))}
+
             value_map = dict(value_map)
 
         if isinstance(value_map, dict):

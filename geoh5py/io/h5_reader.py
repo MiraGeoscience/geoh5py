@@ -423,7 +423,7 @@ class H5Reader:
         return uuids
 
     @classmethod
-    def fetch_value_map(cls, h5_handle: h5py.Group) -> tuple[dict, dict | None]:
+    def fetch_value_map(cls, h5_handle: h5py.Group, name=None) -> np.ndarray | None:
         """
         Get data :obj:`~geoh5py.data.data.Data.value_map`
 
@@ -431,20 +431,20 @@ class H5Reader:
 
         :return value_map: :obj:`dict` of {:obj:`int`: :obj:`str`}
         """
-        mapping = {}
-        property_maps = {}
+        if name is None and "Value map" in h5_handle:
+            return h5_handle["Value map"][:].astype(
+                [("Key", "int8"), ("Value", "<U13")]
+            )
+
         for attr in h5_handle:
-            if "Value map" in attr:
-                value_map = h5_handle[attr][:].astype(
-                    [("Key", "int8"), ("Value", "<U13")]
-                )
+            if (
+                "Value map" in attr
+                and "Name" in h5_handle[attr].attrs
+                and h5_handle[attr].attrs["Name"] == name
+            ):
+                return h5_handle[attr][:].astype([("Key", "int8"), ("Value", "<U13")])
 
-                if attr == "Value map":
-                    mapping = value_map
-                else:
-                    property_maps[h5_handle[attr].attrs["Name"]] = value_map
-
-        return mapping, property_maps or None
+        return None
 
     @classmethod
     def fetch_file_object(

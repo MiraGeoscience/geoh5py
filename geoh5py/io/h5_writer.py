@@ -462,15 +462,18 @@ class H5Writer:
             reference_value_map = entity_type.value_map
 
             if isinstance(entity_type, GeometricDataValueMapType):
-                if entity_type.parent.data_maps is None or entity_type not in list(
-                    entity_type.parent.data_maps.values()
+                ref_data = entity_type.referenced_data
+                if (
+                    ref_data is None
+                    or ref_data.data_maps is None
+                    or entity_type not in list(ref_data.data_maps.values())
                 ):
                     return
 
-                entity_type_handle = H5Writer.fetch_handle(h5file, entity_type.parent)
+                entity_type_handle = H5Writer.fetch_handle(h5file, ref_data.entity_type)
                 name = (
                     "Value map "
-                    + f"{list(entity_type.parent.data_maps.values()).index(entity_type) + 1}"
+                    + f"{list(ref_data.data_maps.values()).index(entity_type) + 1}"
                 )
             else:
                 entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)

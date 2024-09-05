@@ -39,7 +39,7 @@ import h5py
 import numpy as np
 
 from .. import data, groups, objects
-from ..data import CommentsData, Data, DataType
+from ..data import CommentsData, Data, DataType, PrimitiveTypeEnum
 from ..data.text_data import TextData
 from ..data.visual_parameters import VisualParameters
 from ..groups import (
@@ -392,7 +392,10 @@ class Workspace(AbstractContextManager):
         """
         if isinstance(entity_type, dict):
             entity_type = DataType.find_or_create_type(
-                self, entity_type.pop("primitive_type"), **entity_type
+                self,
+                entity_type.pop("primitive_type"),
+                parent=entity["parent"],
+                **entity_type,
             )
         elif not isinstance(entity_type, DataType):
             raise TypeError(
@@ -1424,6 +1427,16 @@ class Workspace(AbstractContextManager):
 
             if primitive_type is None:
                 primitive_type = DataType.primitive_type_from_values(values)
+
+            if isinstance(primitive_type, str):
+                primitive_type = DataType.validate_primitive_type(primitive_type)
+
+            # Generate a value map based on type of values
+            if (
+                primitive_type is PrimitiveTypeEnum.REFERENCED
+                and "value_map" not in attributes
+            ):
+                attributes["value_map"] = values
 
             entity_type = DataType.find_or_create_type(
                 self, primitive_type, **attributes

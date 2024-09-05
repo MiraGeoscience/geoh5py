@@ -25,14 +25,16 @@ from uuid import UUID
 
 import numpy as np
 
-from ..shared import EntityType
+from ..shared import EntityType, utils
 from .color_map import ColorMap
 from .primitive_type_enum import PrimitiveTypeEnum
 from .reference_value_map import BOOLEAN_VALUE_MAP, ReferenceValueMap
 
 if TYPE_CHECKING:
+    from ..objects import ObjectBase
     from ..workspace import Workspace
-    from .data import Data  # noqa: F401
+    from .data import Data
+    from .referenced_data import ReferencedData
 
 
 ColorMapping = Literal[
@@ -161,7 +163,10 @@ class DataType(EntityType):
         cls,
         workspace: Workspace,
         primitive_type: PrimitiveTypeEnum | str,
+        dynamic_implementation_id: str | UUID | None = None,
         uid: UUID | None = None,
+        # values: np.ndarray | None = None,
+        # value_map: dict[int, str] | tuple | ReferenceValueMap | None = None,
         **kwargs,
     ) -> DataType:
         """
@@ -182,13 +187,26 @@ class DataType(EntityType):
 
         primitive_type = cls.validate_primitive_type(primitive_type)
 
-        if primitive_type in [
-            PrimitiveTypeEnum.REFERENCED,
-            PrimitiveTypeEnum.BOOLEAN,
-            PrimitiveTypeEnum.GEOMETRIC,
-        ]:
-            return ReferenceDataType.create(
-                workspace, primitive_type, uid=uid, **kwargs
+        if primitive_type == PrimitiveTypeEnum.BOOLEAN:
+            return ReferencedBooleanType(
+                workspace, primitive_type=primitive_type, uid=uid, **kwargs
+            )
+
+        if (
+            primitive_type == PrimitiveTypeEnum.GEOMETRIC
+            and dynamic_implementation_id is not None
+        ):
+            data_type = DYNAMIC_CLASS_IDS.get(
+                utils.str2uuid(dynamic_implementation_id), DataType
+            )
+
+            return data_type(
+                workspace, primitive_type=primitive_type, uid=uid, **kwargs
+            )
+
+        if primitive_type == PrimitiveTypeEnum.REFERENCED:
+            return ReferencedValueMapType(
+                workspace, primitive_type=primitive_type, uid=uid, **kwargs
             )
 
         return cls(workspace, primitive_type=primitive_type, uid=uid, **kwargs)
@@ -356,57 +374,13 @@ class ReferenceDataType(DataType):
     def __init__(
         self,
         workspace: Workspace,
-        value_map: dict[int, str] | tuple | ReferenceValueMap,
+        value_map: dict[int, str] | np.ndarray | tuple | ReferenceValueMap = (
+            (0, "Unknown"),
+        ),
         **kwargs,
     ):
         super().__init__(workspace, **kwargs)
-        self._value_map = self.validate_value_map(value_map)
-
-    @classmethod
-    def create(
-        cls,
-        workspace: Workspace,
-        primitive_type: str | PrimitiveTypeEnum,
-        dynamic_implementation_id: UUID | None = None,
-        values: np.ndarray | None = None,
-        value_map: (
-            np.ndarray | dict[int, str] | tuple | ReferenceValueMap | None
-        ) = None,
-        **kwargs,
-    ):
-        """
-        Create a new instance of ReferenceDataType
-        """
-        primitive_type = cls.validate_primitive_type(primitive_type)
-
-        if (
-            primitive_type == PrimitiveTypeEnum.GEOMETRIC
-            and dynamic_implementation_id is not None
-        ):
-            data_type = DYNAMIC_CLASS_IDS.get(dynamic_implementation_id, DataType)
-
-            return data_type(workspace, primitive_type=primitive_type, **kwargs)
-
-        if value_map is None:
-            if primitive_type == PrimitiveTypeEnum.REFERENCED:
-                if values is None:
-                    raise ValueError("Either 'values' or 'value_map' must be provided.")
-
-                value_map = {i: str(val) for i, val in enumerate(set(values))}
-            else:
-                value_map = {0: "False", 1: "True"}
-
-        if primitive_type is None:
-            primitive_type = PrimitiveTypeEnum.REFERENCED
-
-        if primitive_type == PrimitiveTypeEnum.BOOLEAN:
-            return ReferencedBooleanType(
-                workspace, value_map, primitive_type=primitive_type, **kwargs
-            )
-
-        return ReferencedValueMapType(
-            workspace, value_map, primitive_type=primitive_type, **kwargs
-        )
+        self.value_map = self.validate_value_map(value_map)
 
     @staticmethod
     @abstractmethod
@@ -418,15 +392,13 @@ class ReferenceDataType(DataType):
     @classmethod
     def validate_value_map(
         cls,
-        value_map: dict | tuple | ReferenceValueMap,
+        value_map: dict[int, str] | np.ndarray | tuple | ReferenceValueMap,
     ) -> ReferenceValueMap:
         """
         Validate the attribute of ReferencedDataType
         """
-        if isinstance(value_map, dict):
+        if isinstance(value_map, dict | np.ndarray | tuple):
             value_map = ReferenceValueMap(value_map)
-        elif isinstance(value_map, tuple):
-            value_map = ReferenceValueMap(*value_map)
 
         if not isinstance(value_map, ReferenceValueMap):
             raise TypeError(
@@ -458,7 +430,9 @@ class ReferenceDataType(DataType):
         return self._value_map
 
     @value_map.setter
-    def value_map(self, value_map: dict | tuple | ReferenceValueMap):
+    def value_map(
+        self, value_map: dict[int, str] | np.ndarray | tuple | ReferenceValueMap
+    ):
 
         self._value_map = self.validate_value_map(value_map)
 
@@ -476,32 +450,9 @@ class ReferencedValueMapType(ReferenceDataType):
     def __init__(
         self,
         workspace: Workspace,
-        value_map: dict[int, str] | tuple | ReferenceValueMap,
-        data_maps: dict[str, ReferenceValueMap] | None = None,
         **kwargs,
     ):
-        super().__init__(workspace, value_map, **kwargs)
-        self.data_maps = data_maps
-
-    @property
-    def data_maps(self) -> dict[str, np.ndarray] | None:
-        """
-        A reference dictionary mapping properties to numpy arrays.
-        """
-        return self._data_maps
-
-    @data_maps.setter
-    def data_maps(self, value: dict[str, np.ndarray] | None):
-        if value is not None:
-            if not isinstance(value, dict):
-                raise TypeError("Property maps must be a dictionary")
-            for key, val in value.items():
-                if not isinstance(val, GeometricDataValueMapType):
-                    raise TypeError(
-                        f"Property maps values for '{key}' must be a 'GeometricDataValueMapType'."
-                    )
-
-        self._data_maps = value
+        super().__init__(workspace, **kwargs)
 
     @staticmethod
     def validate_keys(value_map: ReferenceValueMap) -> ReferenceValueMap:
@@ -522,6 +473,16 @@ class ReferencedBooleanType(ReferenceDataType):
     """
     Data container for referenced boolean data.
     """
+
+    def __init__(
+        self,
+        workspace: Workspace,
+        value_map: (
+            dict[int, str] | np.ndarray | tuple | ReferenceValueMap
+        ) = BOOLEAN_VALUE_MAP,
+        **kwargs,
+    ):
+        super().__init__(workspace, value_map=value_map, **kwargs)
 
     @staticmethod
     def validate_keys(value_map: ReferenceValueMap) -> ReferenceValueMap:
@@ -585,33 +546,44 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
     def __init__(
         self,
         workspace: Workspace,
-        parent: ReferenceDataType,
-        value_map: ReferenceValueMap,
-        uid: UUID | None = None,
+        value_map: dict[int, str] | tuple | ReferenceValueMap | None = None,
+        parent: ObjectBase | None = None,
         description: str = "Dynamic referenced data",
         primitive_type: PrimitiveTypeEnum | str = PrimitiveTypeEnum.GEOMETRIC,
         **kwargs,
     ):
+        self._referenced_data = None
+
         super().__init__(
             workspace,
             value_map,
             description=description,
-            uid=uid,
             primitive_type=primitive_type,
             **kwargs,
         )
-
-        if not isinstance(parent, ReferenceDataType):
-            raise TypeError("Parent must be of type ReferenceDataType")
-
         self._parent = parent
 
+    def get_parent_reference(self, parent: ObjectBase):
+        """
+        Recover the parent ReferencedData by name.
+        """
+        ref_data_name = self.name.rsplit(":")[0]
+        ref_data = parent.get_data(ref_data_name)
+
+        if len(ref_data) == 0:
+            raise ValueError(f"Parent data {ref_data_name} not found.")
+
+        return ref_data[0]
+
     @property
-    def parent(self) -> ReferenceDataType:
+    def referenced_data(self) -> ReferencedData | None:
         """
-        The parent data type.
+        Reference data type holding the value map.
         """
-        return self._parent
+        if self._referenced_data is None and self._parent is not None:
+            self._referenced_data = self.get_parent_reference(self._parent)
+
+        return self._referenced_data
 
     @staticmethod
     def validate_keys(value_map: ReferenceValueMap) -> ReferenceValueMap:
@@ -620,6 +592,40 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
         """
 
         return value_map
+
+    @property
+    def value_map(self) -> ReferenceValueMap:
+        r"""
+        Reference value map for to map index with description.
+
+        The value_map can be set from a dictionary of sorted values int
+        values with text description.
+
+        .. code-block:: python
+
+            value_map = {
+                val_1: str_1,
+                ...,
+                val_i: str_i
+            }
+
+        """
+        if self._value_map is None:
+            value_map = self.workspace.fetch_array_attribute(self)
+            self._value_map = self.validate_value_map(value_map)
+
+        return self._value_map
+
+    @value_map.setter
+    def value_map(self, value_map: dict | tuple | ReferenceValueMap | None):
+
+        if value_map is None:
+            return
+
+        self._value_map = self.validate_value_map(value_map)
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "value_map")
 
 
 class GeometricDataXType(GeometricDynamicDataType):
