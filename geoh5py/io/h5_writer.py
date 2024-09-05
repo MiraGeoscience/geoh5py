@@ -15,11 +15,12 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=R0904
+# pylint: disable=too-many-public-methods, too-many-lines
 
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from copy import deepcopy
 from typing import TYPE_CHECKING
@@ -36,6 +37,8 @@ from ..data import (
     GeometricDataValueMapType,
     IntegerData,
     ReferenceDataType,
+    ReferencedData,
+    ReferenceValueMap,
     TextData,
 )
 from ..groups import Group, GroupType, PropertyGroup, RootGroup
@@ -43,7 +46,7 @@ from ..objects import ObjectBase, ObjectType
 from ..shared import FLOAT_NDV, Entity, EntityType, fetch_h5_handle
 from ..shared.concatenation import Concatenator
 from ..shared.utils import KEY_MAP, as_str_if_uuid, dict_mapper
-from .utils import str_from_type
+from .utils import str_from_subtype, str_from_type
 
 if TYPE_CHECKING:
     from .. import shared, workspace
@@ -353,6 +356,8 @@ class H5Writer:
                 H5Writer.write_color_map(h5file, entity)
             elif attribute == "value_map":
                 H5Writer.write_value_map(h5file, entity)
+            elif attribute == "data_map":
+                H5Writer.write_data_map(h5file, entity)
             elif attribute == "entity_type":
                 del entity_handle["Type"]
                 entity.workspace.repack = True
@@ -450,6 +455,8 @@ class H5Writer:
     def write_value_map(
         file: str | h5py.File,
         entity_type: ReferenceDataType,
+        name="Value map",
+        value_map: ReferenceValueMap | None = None,
     ) -> None:
         """
         Add :obj:`~geoh5py.data.reference_value_map.ReferenceValueMap` to a
@@ -457,48 +464,76 @@ class H5Writer:
 
         :param file: Name or handle to a geoh5 file
         :param entity_type: Target entity_type with value_map
+        :param name: Name of the value map
+        :param value_map: Value map to be written
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-            reference_value_map = entity_type.value_map
 
             if isinstance(entity_type, GeometricDataValueMapType):
-                ref_data = entity_type.referenced_data
-                if (
-                    ref_data is None
-                    or ref_data.data_maps is None
-                    or entity_type not in list(ref_data.data_maps.values())
-                ):
-                    return
+                return
 
-                entity_type_handle = H5Writer.fetch_handle(h5file, ref_data.entity_type)
-                name = (
-                    "Value map "
-                    + f"{list(ref_data.data_maps.values()).index(entity_type) + 1}"
-                )
-            else:
-                entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)
-                name = "Value map"
+            entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)
 
             if entity_type_handle is None:
                 return
+
+            dtype = np.dtype([("Key", "<u4"), ("Value", H5Writer.str_type)])
+
+            if value_map is None:
+                value_map = entity_type.value_map
+
+            if value_map is None:
+                return
+
+            if not isinstance(value_map, ReferenceValueMap):
+                raise TypeError("Value map must be a ReferenceValueMap object.")
 
             if name in entity_type_handle:
                 del entity_type_handle[name]
                 entity_type.workspace.repack = True
 
-            formatted = np.dtype([("Key", "<u4"), ("Value", H5Writer.str_type)])
             H5Writer.create_dataset(
                 entity_type_handle,
-                reference_value_map.map.astype(formatted),
+                value_map.map.astype(dtype),
                 name,
             )
 
-            if isinstance(entity_type, GeometricDataValueMapType):
+            if name != "Value map":
                 entity_type_handle[name].attrs.create(
-                    "Name", entity_type.value_map.name, dtype=H5Writer.str_type
+                    "Name", value_map.name, dtype=H5Writer.str_type
                 )
                 entity_type_handle[name].attrs.create(
                     "Allow delete", True, dtype="int8"
+                )
+
+    @staticmethod
+    def write_data_map(file: str | h5py.File, data: ReferencedData):
+        """
+        Write the value map of geometric data.
+
+        :param file: Name or handle to a geoh5 file
+        :param data: Target referenced data with value map
+        """
+        if data.data_maps is None:
+            return
+
+        with fetch_h5_handle(file, mode="r+") as h5file:
+
+            entity_type_handle = H5Writer.fetch_handle(h5file, data.entity_type)
+
+            if entity_type_handle is None:
+                return
+
+            for name in entity_type_handle:
+                if re.match("Value map [0-9]", name):
+                    del entity_type_handle[name]
+
+            for ii, child in enumerate(data.data_maps.values()):
+                H5Writer.write_value_map(
+                    h5file,
+                    data.entity_type,
+                    f"Value map {ii+1}",
+                    child.entity_type.value_map,
                 )
 
     @staticmethod
@@ -774,15 +809,7 @@ class H5Writer:
         with fetch_h5_handle(file, mode="r+") as h5file:
             base = list(h5file)[0]
             uid = entity_type.uid
-
-            if isinstance(entity_type, DataType):
-                entity_type_str = "Data types"
-            elif isinstance(entity_type, ObjectType):
-                entity_type_str = "Object types"
-            elif isinstance(entity_type, GroupType):
-                entity_type_str = "Group types"
-            else:
-                return None
+            entity_type_str = str_from_subtype(entity_type)
 
             if "Types" not in h5file[base]:
                 h5file[base].create_group("Types")

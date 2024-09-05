@@ -51,7 +51,7 @@ from ..groups import (
     RootGroup,
 )
 from ..io import H5Reader, H5Writer
-from ..io.utils import str_from_type
+from ..io.utils import str_from_subtype, str_from_type
 from ..objects import Drillhole, ObjectBase
 from ..shared import weakref_utils
 from ..shared.concatenation import (
@@ -636,7 +636,7 @@ class Workspace(AbstractContextManager):
         """
         Function to remove an entity and its children from the workspace.
         """
-        if not entity.allow_delete:
+        if hasattr(entity, "allow_delete") and not entity.allow_delete:
             raise UserWarning(
                 f"The 'allow_delete' property of entity {entity} prevents it from "
                 "being removed. Please revise."
@@ -647,6 +647,9 @@ class Workspace(AbstractContextManager):
             return
 
         self.workspace.remove_recursively(entity)
+
+        if hasattr(entity, "parent"):
+            entity.parent.remove_children([entity])
 
         if not isinstance(entity, PropertyGroup):
             ref_type = str_from_type(entity)
@@ -682,13 +685,9 @@ class Workspace(AbstractContextManager):
 
     def remove_recursively(self, entity: Entity | PropertyGroup):
         """Delete an entity and its children from the workspace and geoh5 recursively"""
-        parent = entity.parent
-
         if hasattr(entity, "children"):
             for child in entity.children:
                 self.remove_entity(child)
-
-        parent.remove_children([entity])
 
     def deactivate(self):
         """Deactivate this workspace if it was the active one, else does nothing."""
@@ -706,7 +705,9 @@ class Workspace(AbstractContextManager):
     def distance_unit(self, value: str):
         self._distance_unit = value
 
-    def fetch_array_attribute(self, entity: Entity, key: str = "cells") -> np.ndarray:
+    def fetch_array_attribute(
+        self, entity: Entity | EntityType, key: str = "cells"
+    ) -> np.ndarray:
         """
         Fetch attribute stored as structured array from the source geoh5.
 
@@ -718,7 +719,11 @@ class Workspace(AbstractContextManager):
         if isinstance(entity, Concatenated):
             return entity.concatenator.fetch_values(entity, key)
 
-        entity_type = str_from_type(entity)
+        if isinstance(entity, EntityType):
+            entity_type = str_from_subtype(entity)
+        else:
+            entity_type = str_from_type(entity)
+
         return self._io_call(
             H5Reader.fetch_array_attribute,
             entity.uid,

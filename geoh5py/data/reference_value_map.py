@@ -39,21 +39,6 @@ class ReferenceValueMap(ABC):
 
         return dict(self._map)[item]
 
-    def __setitem__(self, key, value):
-        # verify if it corresponds to boolean values
-        if np.all(self.map == BOOLEAN_VALUE_MAP):
-            raise AssertionError("Boolean value map cannot be modified")
-
-        if key not in self._map["Key"]:
-            raise KeyError(f"Key '{key}' not found in value map.")
-
-        index = list(self._map["Key"]).index(key)
-
-        if key == 0 and value != "Unknown":
-            raise ValueError("Value for key 0 must be 'Unknown'")
-
-        self._map[index] = (key, value)
-
     def __len__(self):
         return len(self._map)
 

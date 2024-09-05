@@ -23,8 +23,8 @@ import string
 import numpy as np
 import pytest
 
-from geoh5py.data import ReferenceValueMap
-from geoh5py.data.data_type import GeometricDataValueMapType, ReferencedValueMapType
+from geoh5py.data import GeometricDataConstants, ReferenceValueMap
+from geoh5py.data.data_type import ReferencedValueMapType
 from geoh5py.objects import Points
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
@@ -79,20 +79,6 @@ def test_create_reference_data(tmp_path):
         with pytest.raises(ValueError, match="Value for key 0 must be 'Unknown'"):
             ReferencedValueMapType(workspace, value_map=((0, "test"),))
 
-        value_map = ReferenceValueMap({0: "Unknown", 2: "test"})
-
-        with pytest.raises(KeyError, match="Key 'test' not found in value map."):
-            value_map["test"] = "test"
-
-        value_map[2] = 1
-
-        assert value_map[2] == "1"
-
-        with pytest.raises(ValueError, match="Value for key 0 must be 'Unknown'"):
-            value_map[0] = "test"
-
-        assert dict(value_map()) == {0: "Unknown", 2: "1"}
-
 
 def test_add_data_map(tmp_path):
     h5file_path = tmp_path / r"testPoints.geoh5"
@@ -122,9 +108,18 @@ def test_add_data_map(tmp_path):
 
         data.add_data_map("test2", data_map)
 
-        assert isinstance(data.data_maps["test"], GeometricDataValueMapType)
+        assert isinstance(data.data_maps["test"], GeometricDataConstants)
 
     with Workspace(h5file_path) as workspace:
         rec_data = workspace.get_entity("DataValues")[0]
 
-    assert isinstance(rec_data.data_maps["test"], GeometricDataValueMapType)
+        assert isinstance(rec_data.data_maps["test"], GeometricDataConstants)
+
+        rec_data.remove_data_map("test")
+
+        assert "test" not in rec_data.data_maps
+        assert rec_data.parent.get_entity("test")[0] is None
+
+        geo_data = rec_data.data_maps["test2"]
+        assert geo_data.entity_type.value_map is not None
+        assert geo_data.entity_type.value_map.name == "test2"

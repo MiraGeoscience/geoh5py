@@ -122,8 +122,14 @@ class H5Reader:
         with fetch_h5_handle(file) as h5file:
             name = list(h5file)[0]
             label = KEY_MAP.get(key, key)
+
+            if "types" in entity_type:
+                root_handle = h5file[name]["Types"][entity_type]
+            else:
+                root_handle = h5file[name][entity_type]
+
             try:
-                values = h5file[name][entity_type][as_str_if_uuid(uid)][label][:]
+                values = root_handle[as_str_if_uuid(uid)][label][:]
                 return values
             except KeyError:
                 return None
@@ -395,8 +401,9 @@ class H5Reader:
             type_attributes["color_map"]["values"] = type_handle["Color map"][:]
 
         if "Value map" in type_handle:
-            value_map = cls.fetch_value_map(type_handle)
-            type_attributes["value_map"] = value_map
+            type_attributes["value_map"] = type_handle["Value map"][:].astype(
+                [("Key", "int8"), ("Value", "<U13")]
+            )
 
         return type_attributes
 
@@ -421,30 +428,6 @@ class H5Reader:
                 uuids = []
 
         return uuids
-
-    @classmethod
-    def fetch_value_map(cls, h5_handle: h5py.Group, name=None) -> np.ndarray | None:
-        """
-        Get data :obj:`~geoh5py.data.data.Data.value_map`
-
-        :param h5_handle: Handle to the target h5 group.
-
-        :return value_map: :obj:`dict` of {:obj:`int`: :obj:`str`}
-        """
-        if name is None and "Value map" in h5_handle:
-            return h5_handle["Value map"][:].astype(
-                [("Key", "int8"), ("Value", "<U13")]
-            )
-
-        for attr in h5_handle:
-            if (
-                "Value map" in attr
-                and "Name" in h5_handle[attr].attrs
-                and h5_handle[attr].attrs["Name"] == name
-            ):
-                return h5_handle[attr][:].astype([("Key", "int8"), ("Value", "<U13")])
-
-        return None
 
     @classmethod
     def fetch_file_object(

@@ -28,6 +28,7 @@ from h5py import special_dtype
 from ...data import Data, DataAssociationEnum, DataType
 from ...groups import Group
 from ..entity import Entity
+from ..entity_type import EntityType
 from ..utils import INV_KEY_MAP, KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid, str2uuid
 from .concatenated import Concatenated
 from .data import ConcatenatedData
@@ -337,7 +338,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         return attr_dict
 
     def fetch_index(
-        self, entity: ConcatenatedObject | ConcatenatedData, field: str
+        self, entity: ConcatenatedObject | ConcatenatedData | EntityType, field: str
     ) -> int | None:
         """
         Fetch the array index for specific concatenated object and data field.
@@ -386,7 +387,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         return start
 
     def fetch_values(
-        self, entity: ConcatenatedObject | ConcatenatedData, field: str
+        self, entity: ConcatenatedObject | ConcatenatedData | EntityType, field: str
     ) -> np.ndarray | None:
         """
         Get an array of values from concatenated data.

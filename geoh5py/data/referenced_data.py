@@ -20,6 +20,7 @@ from __future__ import annotations
 import numpy as np
 
 from .data_type import GeometricDataValueMapType, ReferenceDataType
+from .geometric_data import GeometricDataConstants
 from .integer_data import IntegerData
 from .primitive_type_enum import PrimitiveTypeEnum
 from .reference_value_map import ReferenceValueMap
@@ -36,24 +37,40 @@ class ReferencedData(IntegerData):
         super().__init__(**kwargs)
 
     @property
-    def data_maps(self) -> dict[str, np.ndarray] | None:
+    def data_maps(self) -> dict[str, GeometricDataConstants] | None:
         """
         A reference dictionary mapping properties to numpy arrays.
         """
+        if self._data_maps is None:
+            data_maps = {}
+            for child in self.parent.children:
+                if isinstance(child, GeometricDataConstants) and isinstance(
+                    child.entity_type, GeometricDataValueMapType
+                ):
+                    data_maps[child.name] = child
+
+            if data_maps:
+                self._data_maps = data_maps
+
         return self._data_maps
 
     @data_maps.setter
-    def data_maps(self, value: dict[str, GeometricDataValueMapType] | None):
-        if value is not None:
-            if not isinstance(value, dict):
+    def data_maps(self, data_map: dict[str, GeometricDataConstants] | None):
+        if data_map is not None:
+            if not isinstance(data_map, dict):
                 raise TypeError("Property maps must be a dictionary")
-            for key, val in value.items():
-                if not isinstance(val, GeometricDataValueMapType):
+            for key, val in data_map.items():
+                if not isinstance(val, GeometricDataConstants):
                     raise TypeError(
-                        f"Property maps values for '{key}' must be a 'GeometricDataValueMapType'."
+                        f"Property maps value for '{key}' must be a 'GeometricDataConstants'."
                     )
 
-        self._data_maps = value
+            self.metadata = {child.name: child.uid for child in data_map.values()}
+
+        self._data_maps = data_map
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "data_map")
 
     @property
     def entity_type(self) -> ReferenceDataType:
@@ -78,11 +95,29 @@ class ReferencedData(IntegerData):
         return PrimitiveTypeEnum.REFERENCED
 
     @property
-    def value_map(self) -> ReferenceValueMap:
+    def value_map(self) -> ReferenceValueMap | None:
         """
         Pointer to the :obj:`data.data_type.DataType.value_map`
         """
         return self.entity_type.value_map
+
+    def remove_data_map(self, name: str):
+        """
+        Remove a data map from the list of children.
+
+        :param name: The name of the data map to remove.
+        """
+
+        if self.data_maps is None or name not in self.data_maps:
+            return
+
+        child = self.data_maps[name]
+        child.allow_delete = True
+        self.workspace.remove_entity(child)
+        self.workspace.remove_entity(child.entity_type)
+
+        del self.data_maps[name]
+        self.data_maps = self._data_maps
 
     def add_data_map(self, name: str, data: np.ndarray | dict):
         """
@@ -104,6 +139,9 @@ class ReferencedData(IntegerData):
 
         reference_data = ReferenceValueMap(data, name=name)
 
+        if self.entity_type.value_map is None:
+            raise ValueError("Entity type must have a value map.")
+
         if not set(reference_data.map["Key"]).issubset(
             set(self.entity_type.value_map.map["Key"])
         ):
@@ -115,8 +153,7 @@ class ReferencedData(IntegerData):
             parent=self.parent,
             name=self.name + f": {name}",
         )
-
-        self.parent.add_data(
+        geom_data = self.parent.add_data(
             {
                 name: {
                     "association": self.association,
@@ -124,8 +161,5 @@ class ReferencedData(IntegerData):
                 }
             }
         )
-        value_map[name] = data_type
+        value_map[name] = geom_data
         self.data_maps = value_map
-
-        if self.on_file:
-            self.workspace.update_attribute(data_type, "value_map")

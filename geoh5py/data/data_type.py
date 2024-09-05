@@ -165,8 +165,6 @@ class DataType(EntityType):
         primitive_type: PrimitiveTypeEnum | str,
         dynamic_implementation_id: str | UUID | None = None,
         uid: UUID | None = None,
-        # values: np.ndarray | None = None,
-        # value_map: dict[int, str] | tuple | ReferenceValueMap | None = None,
         **kwargs,
     ) -> DataType:
         """
@@ -389,14 +387,17 @@ class ReferenceDataType(DataType):
         Validate the keys of the value map.
         """
 
-    @classmethod
     def validate_value_map(
-        cls,
+        self,
         value_map: dict[int, str] | np.ndarray | tuple | ReferenceValueMap,
-    ) -> ReferenceValueMap:
+    ) -> ReferenceValueMap | None:
         """
         Validate the attribute of ReferencedDataType
         """
+
+        if value_map is None:
+            return None
+
         if isinstance(value_map, dict | np.ndarray | tuple):
             value_map = ReferenceValueMap(value_map)
 
@@ -406,12 +407,12 @@ class ReferenceDataType(DataType):
                 f"or {ReferenceValueMap}."
             )
 
-        value_map = cls.validate_keys(value_map)
+        self.validate_keys(value_map)
 
         return value_map
 
     @property
-    def value_map(self) -> ReferenceValueMap:
+    def value_map(self) -> ReferenceValueMap | None:
         r"""
         Reference value map for to map index with description.
 
@@ -455,7 +456,7 @@ class ReferencedValueMapType(ReferenceDataType):
         super().__init__(workspace, **kwargs)
 
     @staticmethod
-    def validate_keys(value_map: ReferenceValueMap) -> ReferenceValueMap:
+    def validate_keys(value_map: ReferenceValueMap):
         """
         Validate the keys of the value map.
         """
@@ -465,8 +466,6 @@ class ReferencedValueMapType(ReferenceDataType):
 
         if dict(value_map.map)[0] != "Unknown":
             raise ValueError("Value for key 0 must be 'Unknown'")
-
-        return value_map
 
 
 class ReferencedBooleanType(ReferenceDataType):
@@ -485,14 +484,12 @@ class ReferencedBooleanType(ReferenceDataType):
         super().__init__(workspace, value_map=value_map, **kwargs)
 
     @staticmethod
-    def validate_keys(value_map: ReferenceValueMap) -> ReferenceValueMap:
+    def validate_keys(value_map: ReferenceValueMap):
         """
         Validate the keys of the value map.
         """
         if not np.all(value_map.map == BOOLEAN_VALUE_MAP):
             raise ValueError("Boolean value map must be (0: 'False', 1: 'True'")
-
-        return value_map
 
 
 class GeometricDynamicDataType(DataType, ABC):
@@ -556,7 +553,7 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
 
         super().__init__(
             workspace,
-            value_map,
+            value_map=value_map,
             description=description,
             primitive_type=primitive_type,
             **kwargs,
@@ -586,15 +583,35 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
         return self._referenced_data
 
     @staticmethod
-    def validate_keys(value_map: ReferenceValueMap) -> ReferenceValueMap:
+    def validate_keys(value_map: ReferenceValueMap):
         """
         Validate the keys of the value map.
         """
 
+    def validate_value_map(
+        self,
+        value_map: dict[int, str] | np.ndarray | tuple | ReferenceValueMap,
+    ) -> ReferenceValueMap | None:
+        """
+        Validate the attribute of ReferencedDataType
+        """
+
+        if value_map is None:
+            return None
+
+        if isinstance(value_map, dict | np.ndarray | tuple):
+            value_map = ReferenceValueMap(value_map, name=self.name.rsplit(": ")[1])
+
+        if not isinstance(value_map, ReferenceValueMap):
+            raise TypeError(
+                "Attribute 'value_map' must be provided as a dict, tuple[dict] "
+                f"or {ReferenceValueMap}."
+            )
+
         return value_map
 
     @property
-    def value_map(self) -> ReferenceValueMap:
+    def value_map(self) -> ReferenceValueMap | None:
         r"""
         Reference value map for to map index with description.
 
@@ -610,22 +627,31 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
             }
 
         """
-        if self._value_map is None:
-            value_map = self.workspace.fetch_array_attribute(self)
-            self._value_map = self.validate_value_map(value_map)
+        if self._value_map is None and self.referenced_data is not None:
+            if self.referenced_data.data_maps is None:
+                raise ValueError("Referenced data has no data maps.")
+
+            value_map = None
+            for count, data_map in enumerate(self.referenced_data.data_maps.values()):
+                if data_map.entity_type == self:
+                    value_map = self.workspace.fetch_array_attribute(
+                        self.referenced_data.entity_type, f"Value map {count+1}"
+                    )
+
+            if value_map is not None:
+                self._value_map = self.validate_value_map(
+                    value_map.astype(ReferenceValueMap.MAP_DTYPE)
+                )
 
         return self._value_map
 
     @value_map.setter
     def value_map(self, value_map: dict | tuple | ReferenceValueMap | None):
 
-        if value_map is None:
-            return
-
         self._value_map = self.validate_value_map(value_map)
 
-        if self.on_file:
-            self.workspace.update_attribute(self, "value_map")
+        if self.on_file and self.referenced_data is not None:
+            self.workspace.update_attribute(self.referenced_data, "data_map")
 
 
 class GeometricDataXType(GeometricDynamicDataType):

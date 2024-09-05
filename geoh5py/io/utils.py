@@ -16,13 +16,17 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from ..data import Data
-from ..groups import Group, PropertyGroup
-from ..objects import ObjectBase
+from ..data import Data, DataType
+from ..groups import Group, GroupType, PropertyGroup
+from ..objects import ObjectBase, ObjectType
 from ..shared.entity import Entity
+from ..shared.entity_type import EntityType
 
 
 def str_from_type(entity: Entity | PropertyGroup) -> str:
+    """
+    Convert entity type to geoh5 string standard.
+    """
     if isinstance(entity, Data):
         return "Data"
 
@@ -35,6 +39,27 @@ def str_from_type(entity: Entity | PropertyGroup) -> str:
     if isinstance(entity, PropertyGroup):
         return "PropertyGroups"
 
+    if isinstance(entity, EntityType):
+        return "Types"
+
     raise TypeError(
-        f"Input value should be of type 'Data', 'Group' or 'ObjectBase'. Provided {type(entity)}"
+        "Input value should be of type 'Data', 'Group' or 'ObjectBase'. "
+        f"Provided {type(entity)}"
+    )
+
+
+def str_from_subtype(entity_type: EntityType) -> str:
+    """
+    Convert sub entity type to geoh5 string standard.
+    """
+    if isinstance(entity_type, DataType):
+        return "Data types"
+    if isinstance(entity_type, ObjectType):
+        return "Object types"
+    if isinstance(entity_type, GroupType):
+        return "Group types"
+
+    raise TypeError(
+        "Input value should be of type 'Data', 'Group' or 'ObjectBase'. "
+        f"Provided {type(entity_type)}"
     )
