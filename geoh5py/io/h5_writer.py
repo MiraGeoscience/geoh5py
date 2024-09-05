@@ -528,7 +528,7 @@ class H5Writer:
                 H5Writer.write_value_map(
                     h5file,
                     data.entity_type,
-                    f"Value map {ii+1}",
+                    f"Value map {ii + 1}",
                     child.entity_type.value_map,
                 )
 

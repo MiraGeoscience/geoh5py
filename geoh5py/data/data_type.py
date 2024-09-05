@@ -635,7 +635,7 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
             for count, data_map in enumerate(self.referenced_data.data_maps.values()):
                 if data_map.entity_type == self:
                     value_map = self.workspace.fetch_array_attribute(
-                        self.referenced_data.entity_type, f"Value map {count+1}"
+                        self.referenced_data.entity_type, f"Value map {count + 1}"
                     )
 
             if value_map is not None:
