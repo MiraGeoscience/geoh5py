@@ -55,11 +55,36 @@ def generate_value_map(workspace, n_data=12, n_class=8):
     return points, data
 
 
+def test_reference_value_map():
+    workspace = Workspace()
+
+    with pytest.raises(TypeError, match="Value map must be a numpy array or dict."):
+        ReferenceValueMap("value_map")
+
+    with pytest.raises(KeyError, match="Key must be an positive integer"):
+        ReferenceValueMap({-1: "test"})
+
+    with pytest.raises(ValueError, match="Value for key 0 must be 'Unknown'"):
+        ReferencedValueMapType(workspace, value_map=((0, "test"),))
+
+    with pytest.raises(ValueError, match="Array of 'value_map' must be of dtype"):
+        array = np.array([(0, "test")], dtype=[("I", "i1"), ("K", "<U13")])
+        ReferenceValueMap(array)
+
+    value_map = ReferenceValueMap(np.random.randint(1, high=10, size=1000))
+    assert len(value_map()) == 9
+
+
 def test_create_reference_data(tmp_path):
     h5file_path = tmp_path / r"testPoints.geoh5"
 
     with Workspace.create(h5file_path) as workspace:
         points, data = generate_value_map(workspace)
+
+        with pytest.raises(
+            TypeError, match="entity_type must be of type ReferenceDataType"
+        ):
+            data.entity_type = "abc"
 
         new_workspace = Workspace(h5file_path)
         rec_obj = new_workspace.get_entity("Points")[0]
@@ -69,15 +94,6 @@ def test_create_reference_data(tmp_path):
         compare_entities(data, rec_data, ignore=["_map"])
 
         assert all(data.entity_type.value_map.map == rec_data.entity_type.value_map.map)
-
-        with pytest.raises(TypeError, match="Value map must be a numpy array or dict."):
-            ReferenceValueMap("value_map")
-
-        with pytest.raises(KeyError, match="Key must be an positive integer"):
-            ReferenceValueMap({-1: "test"})
-
-        with pytest.raises(ValueError, match="Value for key 0 must be 'Unknown'"):
-            ReferencedValueMapType(workspace, value_map=((0, "test"),))
 
 
 def test_add_data_map(tmp_path):
@@ -99,7 +115,27 @@ def test_add_data_map(tmp_path):
             np.random.randn(len(data.entity_type.value_map.map["Key"])),
         ]
 
+        with pytest.raises(TypeError, match="Property maps must be a dictionary"):
+            data.data_maps = data_map
+
+        with pytest.raises(
+            TypeError, match="Data map values must be a numpy array or dict"
+        ):
+            data.add_data_map("test", "abc")
+
+        assert data.remove_data_map("DataValues") is None
+
+        value_map = data.entity_type.value_map
+        data.entity_type.value_map = None
+
+        with pytest.raises(ValueError, match="Entity type must have a value map."):
+            data.add_data_map("test", data_map)
+
+        data.entity_type.value_map = value_map
         data.add_data_map("test", data_map)
+
+        with pytest.raises(KeyError, match="Data map 'test' already exists."):
+            data.add_data_map("test", data_map)
 
         data_map = np.c_[
             data.entity_type.value_map.map["Key"],
