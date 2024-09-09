@@ -324,6 +324,14 @@ def are_objects_similar(obj1, obj2, ignore: list[str] | None):
 
 
 def compare_arrays(object_a, object_b, attribute: str, decimal: int = 6):
+    """
+    Utility to compare array properties from two Entities
+
+    :param object_a: First Entity
+    :param object_b: Second Entity
+    :param attribute: Attribute to compare
+    :param decimal: Decimal precision for comparison
+    """
     array_a_values = getattr(object_a, attribute)
     array_b_values = getattr(object_b, attribute)
 

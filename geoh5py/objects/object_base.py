@@ -564,6 +564,9 @@ class ObjectBase(EntityContainer):
     def validate_association(self, attributes, property_group=None, **_):
         """
         Get a dictionary of attributes and validate the data 'association' keyword.
+
+        :param attributes: Dictionary of attributes provided for the data.
+        :param property_group: Property group to associate the data with.
         """
         if attributes.get("association") is not None:
             return attributes, property_group
