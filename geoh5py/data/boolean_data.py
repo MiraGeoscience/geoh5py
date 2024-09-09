@@ -20,6 +20,7 @@ from __future__ import annotations
 import numpy as np
 
 from .data import PrimitiveTypeEnum
+from .data_type import ReferencedBooleanType
 from .referenced_data import ReferencedData
 
 
@@ -28,9 +29,27 @@ class BooleanData(ReferencedData):
     Data class for logical (bool) values.
     """
 
+    @property
+    def entity_type(self):
+        """
+        :obj:`~geoh5py.data.data_type.ReferencedBooleanType`
+        """
+        return self._entity_type
+
+    @entity_type.setter
+    def entity_type(self, data_type: ReferencedBooleanType):
+
+        if not isinstance(data_type, ReferencedBooleanType):
+            raise TypeError("'entity_type' must be of type ReferencedBooleanType")
+
+        self._entity_type = data_type
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "entity_type")
+
     def format_type(self, values: np.ndarray):
         """
-        Check if the type of values is valid and coerse to type bool.
+        Check if the type of values is valid and coerce to type bool.
         :param values: numpy array to modify.
         :return: the formatted values.
         """
