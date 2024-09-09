@@ -80,7 +80,9 @@ class DataType(EntityType):
     def __init__(
         self,
         workspace: Workspace,
-        primitive_type: type[Data] | PrimitiveTypeEnum | str | None = None,
+        primitive_type: (
+            type[Data] | PrimitiveTypeEnum | str
+        ) = PrimitiveTypeEnum.INVALID,
         color_map: ColorMap | None = None,
         duplicate_type_on_copy: bool = False,
         hidden: bool = False,
@@ -96,7 +98,7 @@ class DataType(EntityType):
         self.hidden = hidden
         self.mapping = mapping
         self.number_of_bins = number_of_bins
-        self.primitive_type = primitive_type  # type: ignore
+        self.primitive_type = self.validate_primitive_type(primitive_type)
         self.transparent_no_data = transparent_no_data
         self.units = units
 
@@ -267,21 +269,15 @@ class DataType(EntityType):
         self.workspace.update_attribute(self, "attributes")
 
     @property
-    def primitive_type(self) -> PrimitiveTypeEnum | None:
+    def primitive_type(self) -> PrimitiveTypeEnum:
         """
         The primitive type of the data.
         """
         return self._primitive_type
 
     @primitive_type.setter
-    def primitive_type(self, value: str | type[Data] | PrimitiveTypeEnum | None):
-        if hasattr(value, "primitive_type"):
-            value = getattr(value, "primitive_type")()
-
-        elif value is not None:
-            value = self.validate_primitive_type(value)
-
-        if not isinstance(value, (PrimitiveTypeEnum, type(None))):
+    def primitive_type(self, value: PrimitiveTypeEnum):
+        if not isinstance(value, PrimitiveTypeEnum):
             raise ValueError(
                 f"Primitive type value must be of type {PrimitiveTypeEnum}, find {type(value)}"
             )
@@ -322,6 +318,10 @@ class DataType(EntityType):
     def primitive_type_from_values(values: np.ndarray | None) -> PrimitiveTypeEnum:
         """
         Validate the primitive type of the data.
+
+        :param values: The values to validate.
+
+        :return: The equivalent primitive type of the data.
         """
         if values is None or (
             isinstance(values, np.ndarray) and np.issubdtype(values.dtype, np.floating)
@@ -347,13 +347,23 @@ class DataType(EntityType):
 
     @staticmethod
     def validate_primitive_type(
-        primitive_type: PrimitiveTypeEnum | str,
+        primitive_type: PrimitiveTypeEnum | str | type[Data],
     ) -> PrimitiveTypeEnum:
         """
         Validate the primitive type of the data.
+
+        :param primitive_type: Some reference to the primitive type of the data.
+
+        :return: A known primitive type.
         """
         if isinstance(primitive_type, str):
             primitive_type = getattr(PrimitiveTypeEnum, primitive_type.upper())
+
+        if isinstance(primitive_type, type) and hasattr(
+            primitive_type, "primitive_type"
+        ):
+            primitive_type = primitive_type.primitive_type()
+
         if not isinstance(primitive_type, PrimitiveTypeEnum):
             raise ValueError(
                 f"Data 'type' should be one of {PrimitiveTypeEnum.__members__}"

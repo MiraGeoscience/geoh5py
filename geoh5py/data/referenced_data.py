@@ -75,7 +75,7 @@ class ReferencedData(IntegerData):
     @property
     def entity_type(self) -> ReferenceDataType:
         """
-        :obj:`~geoh5py.data.data_type.ReferenceDataType`
+        The associated reference data type.
         """
         return self._entity_type
 

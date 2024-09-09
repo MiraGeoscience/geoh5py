@@ -26,6 +26,10 @@ from ..shared.entity_type import EntityType
 def str_from_type(entity: Entity | PropertyGroup | EntityType) -> str:
     """
     Convert entity type to geoh5 string standard.
+
+    :param entity: Entity, PropertyGroup or EntityType
+
+    :return: String equivalent.
     """
     if isinstance(entity, Data):
         return "Data"
@@ -51,6 +55,10 @@ def str_from_type(entity: Entity | PropertyGroup | EntityType) -> str:
 def str_from_subtype(entity_type: EntityType) -> str:
     """
     Convert sub entity type to geoh5 string standard.
+
+    :param entity_type: Sub-class of entity type.
+
+    :return: String equivalent.
     """
     if isinstance(entity_type, DataType):
         return "Data types"
