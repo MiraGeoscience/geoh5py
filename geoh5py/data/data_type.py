@@ -80,7 +80,6 @@ class DataType(EntityType):
     def __init__(
         self,
         workspace: Workspace,
-        *,
         primitive_type: type[Data] | PrimitiveTypeEnum | str | None = None,
         color_map: ColorMap | None = None,
         duplicate_type_on_copy: bool = False,
