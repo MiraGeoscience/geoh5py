@@ -632,11 +632,11 @@ class Workspace(AbstractContextManager):
                     H5Writer.remove_child, child.uid, ref_type, parent, mode="r+"
                 )
 
-    def remove_entity(self, entity: Entity | PropertyGroup | EntityType):
+    def remove_entity(self, entity: Entity | PropertyGroup | EntityType, force=False):
         """
         Function to remove an entity and its children from the workspace.
         """
-        if hasattr(entity, "allow_delete") and not entity.allow_delete:
+        if not getattr(entity, "allow_delete", True) and not force:
             raise UserWarning(
                 f"The 'allow_delete' property of entity {entity} prevents it from "
                 "being removed. Please revise."
@@ -686,7 +686,7 @@ class Workspace(AbstractContextManager):
         """Delete an entity and its children from the workspace and geoh5 recursively"""
         if hasattr(entity, "children"):
             for child in entity.children:
-                self.remove_entity(child)
+                self.remove_entity(child, force=True)
 
     def deactivate(self):
         """Deactivate this workspace if it was the active one, else does nothing."""
@@ -1419,6 +1419,9 @@ class Workspace(AbstractContextManager):
     def validate_data_type(self, attributes: dict, values) -> DataType:
         """
         Find or create a data type from input dictionary.
+
+        :param attributes: Dictionary of attributes.
+        :param values: Values to be stored as data.
         """
         entity_type = attributes.pop("entity_type", {})
         if isinstance(entity_type, DataType):
