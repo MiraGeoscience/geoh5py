@@ -182,9 +182,9 @@ class Data(Entity):
         return self._association
 
     @property
-    def entity_type(self):
+    def entity_type(self) -> DataType | ReferenceDataType:
         """
-        :obj:`~geoh5py.data.data_type.DataType`
+        Type of data.
         """
         return self._entity_type
 

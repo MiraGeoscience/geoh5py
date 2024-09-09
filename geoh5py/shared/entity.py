@@ -241,7 +241,7 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
 
     @property
     @abstractmethod
-    def entity_type(self) -> shared.EntityType:
+    def entity_type(self):
         """Abstract property to get the entity type of the entity."""
 
     @classmethod
