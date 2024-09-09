@@ -39,11 +39,11 @@ class ReferenceValueMap(ABC):
 
         return dict(self._map)[item]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._map)
 
-    def __call__(self):
-        return self._map
+    def __call__(self) -> dict:
+        return dict(self._map)
 
     @classmethod
     def validate_value_map(cls, value_map: np.ndarray | dict) -> np.ndarray:
@@ -80,7 +80,7 @@ class ReferenceValueMap(ABC):
     @property
     def map(self) -> np.ndarray:
         """
-        A reference dictionary mapping values to strings.
+        A reference array mapping values to strings.
         The keys are positive integers, and the values description.
         The key '0' is always 'Unknown'.
         """

@@ -71,8 +71,10 @@ def test_reference_value_map():
         array = np.array([(0, "test")], dtype=[("I", "i1"), ("K", "<U13")])
         ReferenceValueMap(array)
 
-    value_map = ReferenceValueMap(np.random.randint(1, high=10, size=1000))
-    assert len(value_map()) == 9
+    random_array = np.random.randint(1, high=10, size=1000)
+    value_map = ReferenceValueMap(random_array)
+    assert len(value_map) == 9
+    assert isinstance(value_map(), dict)
 
 
 def test_create_reference_data(tmp_path):

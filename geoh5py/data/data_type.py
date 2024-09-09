@@ -676,7 +676,7 @@ class GeometricDataYType(GeometricDynamicDataType):
 
 class GeometricDataZType(GeometricDynamicDataType):
     """
-    Data container for X values
+    Data container for Z values
     """
 
     _DYNAMIC_IMPLEMENTATION_ID = UUID("{9dacdc3b-6878-408d-93ae-e9a95e640f0c}")
