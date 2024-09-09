@@ -153,7 +153,9 @@ class DataType(EntityType):
     @duplicate_type_on_copy.setter
     def duplicate_type_on_copy(self, value: bool):
         if not isinstance(value, bool) and value != 1 and value != 0:
-            raise TypeError(f"transparent_no_data must be a bool, not {type(value)}")
+            raise TypeError(
+                f"'duplicate_type_on copy' must be a bool, not {type(value)}"
+            )
 
         self._duplicate_type_on_copy = bool(value)
         self.workspace.update_attribute(self, "attributes")
@@ -366,7 +368,7 @@ class ReferenceDataType(DataType):
 
     Controls all the attributes of reference data.
 
-    :param value_map: Reference value map for to map index with description.
+    :param value_map: Reference value to map index with description.
     """
 
     def __init__(
@@ -403,8 +405,8 @@ class ReferenceDataType(DataType):
 
         if not isinstance(value_map, ReferenceValueMap):
             raise TypeError(
-                "Attribute 'value_map' must be provided as a dict, tuple[dict] "
-                f"or {ReferenceValueMap}."
+                "Attribute 'value_map' must be provided as a dict, tuple[dict], "
+                f"numpy.ndarray or {ReferenceValueMap}."
             )
 
         self.validate_keys(value_map)
@@ -613,9 +615,9 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
     @property
     def value_map(self) -> ReferenceValueMap | None:
         r"""
-        Reference value map for to map index with description.
+        Reference value to map index with description.
 
-        The value_map can be set from a dictionary of sorted values int
+        The value_map can be set from a dictionary of sorted integer
         values with text description.
 
         .. code-block:: python
