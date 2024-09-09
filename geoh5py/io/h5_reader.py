@@ -402,7 +402,7 @@ class H5Reader:
 
         if "Value map" in type_handle:
             type_attributes["value_map"] = type_handle["Value map"][:].astype(
-                [("Key", "int8"), ("Value", "<U13")]
+                [("Key", "<u4"), ("Value", "<U13")]
             )
 
         return type_attributes

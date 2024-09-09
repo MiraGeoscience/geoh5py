@@ -25,7 +25,7 @@ import numpy as np
 class ReferenceValueMap(ABC):
     """Maps from reference index to reference value of ReferencedData."""
 
-    MAP_DTYPE = np.dtype([("Key", "i1"), ("Value", "<U13")])
+    MAP_DTYPE = np.dtype([("Key", "<u4"), ("Value", "<U13")])
 
     def __init__(
         self,
@@ -64,6 +64,9 @@ class ReferenceValueMap(ABC):
             value_map = dict(value_map)
 
         if isinstance(value_map, dict):
+            if not np.all(np.asarray(list(value_map)) >= 0):
+                raise KeyError("Key must be an positive integer")
+
             value_map = np.array(list(value_map.items()), dtype=cls.MAP_DTYPE)
 
         if not isinstance(value_map, np.ndarray):
@@ -71,9 +74,6 @@ class ReferenceValueMap(ABC):
 
         if value_map.dtype != cls.MAP_DTYPE:
             raise ValueError(f"Array of 'value_map' must be of dtype = {cls.MAP_DTYPE}")
-
-        if not all(value_map["Key"] >= 0):
-            raise KeyError("Key must be an positive integer")
 
         return value_map
 
