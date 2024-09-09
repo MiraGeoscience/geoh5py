@@ -103,10 +103,15 @@ class Curve(CellObject):
         property. The definition of the :obj:`~geoh5py.objects.curve.Curve.cells`
         property get modified by the setting of parts.
         """
-        if getattr(self, "_parts", None) is None:
-            cell_parts = np.r_[0, np.cumsum(self.cells[1:, 0] != self.cells[:-1, 1])]
-            parts = np.zeros(self.n_vertices, dtype=int)
-            parts[self.cells.flatten()] = np.kron(cell_parts, np.ones(2))
+        if self._parts is None:
+            if len(self.cells) == 0:
+                parts = np.arange(self.n_vertices, dtype=int)
+            else:
+                cell_parts = np.r_[
+                    0, np.cumsum(self.cells[1:, 0] != self.cells[:-1, 1])
+                ]
+                parts = np.zeros(self.n_vertices, dtype=int)
+                parts[self.cells.flatten()] = np.kron(cell_parts, np.ones(2))
             self._parts = parts
 
         return self._parts
