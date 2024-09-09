@@ -114,7 +114,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
         return obj_list
 
     def validate_association(
-        self, attributes: dict, property_group=None, collocation_distance=None
+        self, attributes: dict, property_group=None, collocation_distance=None, **_
     ) -> tuple:
         """
         Validate input drillhole data attributes.

@@ -561,7 +561,7 @@ class ObjectBase(EntityContainer):
         """
         return self._converter
 
-    def validate_association(self, attributes, property_group=None):
+    def validate_association(self, attributes, property_group=None, **_):
         """
         Get a dictionary of attributes and validate the data 'association' keyword.
         """
