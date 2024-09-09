@@ -23,7 +23,7 @@ from ..shared.entity import Entity
 from ..shared.entity_type import EntityType
 
 
-def str_from_type(entity: Entity | PropertyGroup) -> str:
+def str_from_type(entity: Entity | PropertyGroup | EntityType) -> str:
     """
     Convert entity type to geoh5 string standard.
     """

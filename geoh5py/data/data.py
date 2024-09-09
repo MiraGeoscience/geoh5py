@@ -182,7 +182,7 @@ class Data(Entity):
         return self._association
 
     @property
-    def entity_type(self) -> DataType | ReferenceDataType:
+    def entity_type(self):
         """
         Type of data.
         """

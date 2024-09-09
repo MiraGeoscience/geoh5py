@@ -632,7 +632,7 @@ class Workspace(AbstractContextManager):
                     H5Writer.remove_child, child.uid, ref_type, parent, mode="r+"
                 )
 
-    def remove_entity(self, entity: Entity | PropertyGroup):
+    def remove_entity(self, entity: Entity | PropertyGroup | EntityType):
         """
         Function to remove an entity and its children from the workspace.
         """
@@ -646,9 +646,8 @@ class Workspace(AbstractContextManager):
             entity.concatenator.remove_entity(entity)
             return
 
-        self.workspace.remove_recursively(entity)
-
-        if hasattr(entity, "parent"):
+        if isinstance(entity, Entity | PropertyGroup):
+            self.workspace.remove_recursively(entity)
             entity.parent.remove_children([entity])
 
         if not isinstance(entity, PropertyGroup):
