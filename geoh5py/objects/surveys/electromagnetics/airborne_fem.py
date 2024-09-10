@@ -24,6 +24,7 @@ from geoh5py.objects.curve import Curve
 
 from .base import AirborneEMSurvey, FEMSurvey
 
+
 # pylint: disable=too-many-ancestors
 
 

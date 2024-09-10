@@ -36,7 +36,6 @@ class ReferenceValueMap(ABC):
         self.name = name
 
     def __getitem__(self, item: int) -> str:
-
         return dict(self._map)[item]
 
     def __len__(self) -> int:
@@ -57,7 +56,6 @@ class ReferenceValueMap(ABC):
             value_map = dict(value_map)
 
         if isinstance(value_map, np.ndarray) and value_map.dtype.names is None:
-
             if value_map.ndim == 1:
                 value_map = {i: str(val) for i, val in enumerate(set(value_map))}
 

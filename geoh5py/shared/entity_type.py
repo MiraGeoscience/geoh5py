@@ -25,8 +25,10 @@ from warnings import warn
 
 from ..shared.utils import ensure_uuid
 
+
 if TYPE_CHECKING:
     from ..workspace import Workspace
+    from .entity import Entity
 
 EntityTypeT = TypeVar("EntityTypeT", bound="EntityType")
 
@@ -97,9 +99,7 @@ class EntityType(ABC):
 
         attributes.update(kwargs)
 
-        if attributes.get("uid") in getattr(
-            attributes.get("workspace", self.workspace), "_types"
-        ):
+        if attributes.get("uid") in attributes.get("workspace", self.workspace)._types:  # pylint: disable=protected-access
             del attributes["uid"]
 
         return self.__class__(**attributes)
@@ -151,7 +151,7 @@ class EntityType(ABC):
         cls,
         workspace: Workspace,
         uid: uuid.UUID | None = None,
-        entity_class: type | None = None,
+        entity_class: type[Entity] | None = None,
         **kwargs,
     ):
         """
@@ -174,10 +174,8 @@ class EntityType(ABC):
         kwargs = cls.convert_kwargs(kwargs)
         uid = kwargs.pop("uid", uid)
 
-        if (
-            getattr(entity_class, "default_type_uid", None) is not None
-        ) and uid is None:
-            uid = getattr(entity_class, "default_type_uid")()
+        if entity_class is not None and uid is None:
+            uid = entity_class.default_type_uid()
 
         if uid is not None:
             entity_type = cls.find(workspace, ensure_uuid(uid))

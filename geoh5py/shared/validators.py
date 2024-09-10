@@ -15,17 +15,21 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+# pylint: disable=too-few-public-methods
+
 from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Any
 from uuid import UUID
 
 import numpy as np
 
-from geoh5py import Workspace
-from geoh5py.groups import PropertyGroup
+from geoh5py import TYPE_UID_TO_CLASS, Workspace
+from geoh5py.groups import Group, PropertyGroup
+from geoh5py.objects import ObjectBase
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
@@ -37,12 +41,78 @@ from geoh5py.shared.exceptions import (
     TypeValidationError,
     UUIDValidationError,
     ValueValidationError,
+    iterable,
 )
-from geoh5py.shared.utils import iterable
+
+
+def to_path(value: list[str]) -> list[Path]:
+    """Promote path strings to patlib.Path objects."""
+    out = []
+    for path in value:
+        if isinstance(path, str):
+            out.append(Path(path))
+        else:
+            out.append(path)
+    return out
+
+
+def to_list(value: Any) -> list[Any]:
+    """Promote single values to list."""
+    if isinstance(value, str) and ";" in value:
+        value = value.split(";")
+    if not isinstance(value, list):
+        value = [value]
+    return value
+
+
+def to_uuid(values):
+    """Promote strings to uuid and pass anything else."""
+    out = []
+    for val in values:
+        if isinstance(val, str):
+            val = UUID(val)
+        out.append(val)
+    return out
+
+
+def class_or_raise(value: UUID) -> type[ObjectBase] | type[Group]:
+    """Promote uid to class, raise if uid is not a geoh5py type uid."""
+    if value not in TYPE_UID_TO_CLASS:
+        raise ValueError(
+            f"Provided type_uid string {value!s} is not a recognized "
+            f"geoh5py object or group type uid."
+        )
+    return TYPE_UID_TO_CLASS[value]
+
+
+def to_class(
+    values: list[UUID | type[ObjectBase] | type[Group]],
+) -> list[type[ObjectBase] | type[Group]]:
+    """
+    Promote uid to class.
+
+    Passes existing classes and raises if uid is not a geoh5py type uid.
+    """
+    out = []
+    for val in values:
+        if isinstance(val, UUID):
+            out.append(class_or_raise(val))
+        elif issubclass(val, (ObjectBase, Group)):
+            out.append(val)
+    return out
+
+
+def empty_string_to_uid(value):
+    """Promote empty string to uid, and pass all other values."""
+    if value == "":
+        return UUID("00000000-0000-0000-0000-000000000000")
+    return value
 
 
 class BaseValidator(ABC):
     """Concrete base class for validators."""
+
+    validator_type: str
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
@@ -62,14 +132,6 @@ class BaseValidator(ABC):
             "The 'validate' method must be implemented by the sub-class. "
             f"Must contain a 'name' {name}, 'value' {value} and 'valid' {valid} argument."
         )
-
-    @property
-    @abstractmethod
-    def validator_type(self) -> str:
-        """
-        Validation type identifier.
-        """
-        raise NotImplementedError("Must implement the validator_type property.")
 
 
 class OptionalValidator(BaseValidator):
@@ -153,7 +215,6 @@ class PropertyGroupValidator(BaseValidator):
 
     @classmethod
     def validate(cls, name: str, value: PropertyGroup, valid: str | list[str]) -> None:
-
         if isinstance(valid, str):
             valid = [valid]
 

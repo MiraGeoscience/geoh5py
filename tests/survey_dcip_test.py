@@ -126,8 +126,8 @@ def test_create_survey_dcip(tmp_path):
             currents.potential_electrodes = None
         assert info.type == TypeError, "Code did not catch TypeError"
 
-        setattr(potentials, "_current_electrodes", None)
-        setattr(currents, "_potential_electrodes", None)
+        potentials._current_electrodes = None
+        currents._potential_electrodes = None
 
         currents.potential_electrodes = potentials
         assert (

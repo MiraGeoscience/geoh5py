@@ -26,6 +26,7 @@ from uuid import UUID
 from .. import groups, objects
 from ..shared import Entity
 
+
 known_object_types = [
     member.default_type_uid()
     for _, member in inspect.getmembers(objects)

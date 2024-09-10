@@ -30,6 +30,7 @@ from .color_map import ColorMap
 from .primitive_type_enum import PrimitiveTypeEnum
 from .reference_value_map import BOOLEAN_VALUE_MAP, ReferenceValueMap
 
+
 if TYPE_CHECKING:
     from ..objects import ObjectBase
     from ..workspace import Workspace
@@ -450,7 +451,6 @@ class ReferenceDataType(DataType):
     def value_map(
         self, value_map: dict[int, str] | np.ndarray | tuple | ReferenceValueMap
     ):
-
         self._value_map = self.validate_value_map(value_map)
 
         if self.on_file:
@@ -663,7 +663,6 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
 
     @value_map.setter
     def value_map(self, value_map: dict | tuple | ReferenceValueMap | None):
-
         self._value_map = self.validate_value_map(value_map)
 
         if self.on_file and self.referenced_data is not None:

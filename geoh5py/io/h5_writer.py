@@ -49,6 +49,7 @@ from ..shared.concatenation import Concatenator
 from ..shared.utils import KEY_MAP, as_str_if_uuid, dict_mapper
 from .utils import str_from_subtype, str_from_type
 
+
 if TYPE_CHECKING:
     from .. import shared, workspace
 
@@ -284,7 +285,6 @@ class H5Writer:
                 return
 
             if isinstance(values, np.ndarray):
-
                 if np.issubdtype(values.dtype, np.floating):
                     values = values.astype(np.float32)
 
@@ -440,7 +440,7 @@ class H5Writer:
             if color_map is not None and color_map.values is not None:
                 H5Writer.create_dataset(
                     entity_type_handle,
-                    getattr(color_map, "_values"),
+                    color_map._values,  # pylint: disable=protected-access
                     "Color map",
                 )
                 entity_type_handle["Color map"].attrs.create(
@@ -464,7 +464,6 @@ class H5Writer:
         :param value_map: Value map to be written
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-
             if isinstance(entity_type, GeometricDataValueMapType):
                 return
 
@@ -514,7 +513,6 @@ class H5Writer:
             return
 
         with fetch_h5_handle(file, mode="r+") as h5file:
-
             entity_type_handle = H5Writer.fetch_handle(h5file, data.entity_type)
 
             if entity_type_handle is None:
@@ -593,7 +591,6 @@ class H5Writer:
                 values = values.astype(h5py.special_dtype(vlen=str))
 
             if values is not None:
-
                 entity_handle.create_dataset(
                     KEY_MAP[attribute],
                     data=values,
@@ -641,7 +638,6 @@ class H5Writer:
                 entity.workspace.repack = True
 
             if values is None:
-
                 values = getattr(
                     entity, attribute, None
                 )  # Give the chance to fetch from file

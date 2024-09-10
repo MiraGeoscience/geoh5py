@@ -28,6 +28,7 @@ import numpy as np
 from ..shared.utils import map_attributes, str2uuid, str_json_to_dict
 from .entity_type import EntityType
 
+
 if TYPE_CHECKING:
     from .. import shared
     from ..shared.entity_container import EntityContainer
@@ -239,6 +240,11 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         )
         return new_object
 
+    @classmethod
+    @abstractmethod
+    def default_type_uid(cls) -> uuid.UUID | None:
+        """Abstract method to return the default type uid for the class."""
+
     @property
     @abstractmethod
     def entity_type(self):
@@ -361,7 +367,6 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
 
     @parent.setter
     def parent(self, parent: EntityContainer):
-
         current_parent: EntityContainer | None = getattr(self, "_parent", None)
 
         parent.add_children([self])

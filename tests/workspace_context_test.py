@@ -54,7 +54,7 @@ def test_write_context():
         assert isinstance(w_s.geoh5, h5py.File)
 
     with pytest.raises(Geoh5FileClosedError):
-        getattr(w_s, "geoh5")
+        w_s.geoh5
 
 
 def test_read_only():

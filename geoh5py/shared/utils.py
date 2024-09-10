@@ -30,6 +30,9 @@ from uuid import UUID
 import h5py
 import numpy as np
 
+from .exceptions import Geoh5FileClosedError
+
+
 if TYPE_CHECKING:
     from ..workspace import Workspace
     from .entity import Entity
@@ -155,17 +158,18 @@ def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
 
     :return h5py.File: Handle to an opened Workspace.
     """
-    if (
-        workspace is None
-        or getattr(workspace, "_geoh5")
-        and mode in workspace.geoh5.mode
-    ):
+    try:
+        geoh5 = None if workspace is None else workspace.geoh5
+    except Geoh5FileClosedError:
+        geoh5 = None
+
+    if workspace is None or (geoh5 is not None and mode in workspace.geoh5.mode):
         try:
             yield workspace
         finally:
             pass
     else:
-        if getattr(workspace, "_geoh5"):
+        if geoh5 is not None:
             warnings.warn(
                 f"Closing the workspace in mode '{workspace.geoh5.mode}' "
                 f"and re-opening in mode '{mode}'."
@@ -371,7 +375,7 @@ def compare_list(object_a, object_b, attribute: str, ignore: list[str] | None):
     get_object_b = getattr(object_b, attribute)
     assert isinstance(get_object_a, list)
     assert len(get_object_a) == len(get_object_b)
-    for obj_a, obj_b in zip(get_object_a, get_object_b):
+    for obj_a, obj_b in zip(get_object_a, get_object_b, strict=False):
         assert are_objects_similar(obj_a, obj_b, ignore)
 
 
@@ -419,39 +423,6 @@ def compare_entities(
                     pass
 
 
-def iterable(value: Any, checklen: bool = False) -> bool:
-    """
-    Checks if object is iterable.
-
-    Parameters
-    ----------
-    value : Object to check for iterableness.
-    checklen : Restrict objects with __iter__ method to len > 1.
-
-    Returns
-    -------
-    True if object has __iter__ attribute but is not string or dict type.
-    """
-    only_array_like = (not isinstance(value, str)) & (not isinstance(value, dict))
-    if (hasattr(value, "__iter__")) & only_array_like:
-        return not (checklen and (len(value) == 1))
-
-    return False
-
-
-def iterable_message(valid: list[Any] | None) -> str:
-    """Append possibly iterable valid: "Must be (one of): {valid}."."""
-    if valid is None:
-        msg = ""
-    elif iterable(valid, checklen=True):
-        vstr = "'" + "', '".join(str(k) for k in valid) + "'"
-        msg = f" Must be one of: {vstr}."
-    else:
-        msg = f" Must be: '{valid[0]}'."
-
-    return msg
-
-
 def is_uuid(value: str) -> bool:
     """Check if a string is UUID compliant."""
     try:
@@ -476,10 +447,10 @@ def uuid2entity(value: UUID, workspace: Workspace) -> Entity | Any:
 
         # Search for property groups
         for obj in workspace.objects:
-            if getattr(obj, "property_groups", None) is not None:
+            if obj.property_groups is not None:
                 prop_group = [
                     prop_group
-                    for prop_group in getattr(obj, "property_groups")
+                    for prop_group in obj.property_groups
                     if prop_group.uid == value
                 ]
 
@@ -620,7 +591,7 @@ def box_intersect(extent_a: np.ndarray, extent_b: np.ndarray) -> bool:
                 "bounds in nd-space on the first and second row respectively."
             )
 
-    for comp_a, comp_b in zip(extent_a.T, extent_b.T):
+    for comp_a, comp_b in zip(extent_a.T, extent_b.T, strict=False):
         min_ext = max(comp_a[0], comp_b[0])
         max_ext = min(comp_a[1], comp_b[1])
 
@@ -653,7 +624,7 @@ def mask_by_extent(
         )
 
     indices = np.ones(locations.shape[0], dtype=bool)
-    for loc, lim in zip(locations.T, extent.T):
+    for loc, lim in zip(locations.T, extent.T, strict=False):
         indices &= (lim[0] <= loc) & (loc <= lim[1])
 
     if inverse:
@@ -752,10 +723,10 @@ def map_name_attributes(object_, **kwargs: dict) -> dict:
     :param object_: The object to map the attributes to.
     :param kwargs: Dictionary of attributes.
     """
-    if not hasattr(object_, "_attribute_map"):
-        raise AttributeError("Object must have an '_attribute_map' attribute.")
+    mapping: dict = getattr(object_, "_attribute_map", None)
 
-    mapping: dict = getattr(object_, "_attribute_map")
+    if mapping is None:
+        raise AttributeError("Object must have an '_attribute_map' attribute.")
 
     new_args = {}
     for attr, item in kwargs.items():
@@ -771,9 +742,10 @@ def map_attributes(object_, **kwargs):
     """
     Map attributes to an object. The object must have an '_attribute_map'.
 
-    :param object_: The object to map the attributes to.
+    :param entity: The object to map the attributes to.
     :param kwargs: The kwargs to map to the object.
     """
+
     values = map_name_attributes(object_, **kwargs)  # Swap duplicates
     set_attributes(object_, **values)
 

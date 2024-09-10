@@ -25,7 +25,7 @@ from pydantic import ValidationError
 
 from geoh5py import Workspace
 from geoh5py.data import FloatData
-from geoh5py.objects import Points
+from geoh5py.objects import Curve, Points, Surface
 from geoh5py.shared.exceptions import (
     AggregateValidationError,
     RequiredFormMemberValidationError,
@@ -57,7 +57,6 @@ from geoh5py.ui_json.forms import (
     ObjectFormParameter,
     StringForm,
     StringFormParameter,
-    TypeUID,
 )
 from geoh5py.ui_json.parameters import IntegerParameter, StringParameter
 
@@ -238,25 +237,65 @@ def test_file_form(tmp_path):
 
 def test_object_form():
     obj_uid = str(uuid.uuid4())
-    form = ObjectForm(
-        label="name", value=obj_uid, mesh_type=[TypeUID.POINTS, TypeUID.SURFACE]
-    )
+    form = ObjectForm(label="name", value=obj_uid, mesh_type=[Points, Surface])
     assert form.label == "name"
     assert form.value == uuid.UUID(obj_uid)
-    assert form.mesh_type == [TypeUID.POINTS, TypeUID.SURFACE]
+    assert form.mesh_type == [Points, Surface]
 
     with pytest.raises(ValidationError, match="Input should be a valid UUID"):
         _ = ObjectForm(
             label="name",
             value="not a uuid",
-            mesh_type=[TypeUID.POINTS, TypeUID.SURFACE],
+            mesh_type=[Points, Surface],
         )
 
-    with pytest.raises(ValidationError, match="Input should be '{202C5DB1-"):
-        _ = ObjectForm(
-            label="name", value=obj_uid, mesh_type=[TypeUID.POINTS, str(uuid.uuid4())]
-        )
-    ObjectForm(label="name", value=obj_uid, mesh_type=[TypeUID.POINTS, TypeUID.SURFACE])
+    bad_uid_string = str(uuid.uuid4())
+    msg = (
+        f"Provided type_uid string {bad_uid_string} is not a recognized geoh5py "
+        f"object or group type uid"
+    )
+    with pytest.raises(ValidationError, match=msg):
+        _ = ObjectForm(label="name", value=obj_uid, mesh_type=[Points, bad_uid_string])
+
+
+def test_object_form_mesh_type():
+    obj_uid = str(uuid.uuid4())
+    form = ObjectForm(label="name", value=obj_uid, mesh_type=Points)
+    assert form.mesh_type == [Points]
+
+    obj_uid = str(uuid.uuid4())
+    form = ObjectForm(label="name", value=obj_uid, mesh_type=Points.default_type_uid())
+    assert form.mesh_type == [Points]
+
+    obj_uid = str(uuid.uuid4())
+    form = ObjectForm(
+        label="name", value=obj_uid, mesh_type=str(Points.default_type_uid())
+    )
+    assert form.mesh_type == [Points]
+
+    obj_uid = str(uuid.uuid4())
+    form = ObjectForm(
+        label="name", value=obj_uid, mesh_type=[Points, str(Curve.default_type_uid())]
+    )
+    assert form.mesh_type == [Points, Curve]
+
+
+def test_object_form_mesh_type_as_classes(tmp_path):
+    ws = Workspace(tmp_path / "test.geoh5")
+    points = Points.create(ws, vertices=np.random.rand(10, 3))
+
+    form = ObjectForm(
+        label="name",
+        value=points.uid,
+        mesh_type=[str(Points.default_type_uid()), str(Curve.default_type_uid())],
+    )
+
+    assert isinstance(ws.get_entity(form.value)[0], tuple(form.mesh_type))
+
+
+def test_object_form_empty_string_handling():
+    form = ObjectForm(label="name", value="", mesh_type=[Points, Surface])
+    assert form.value == uuid.UUID("00000000-0000-0000-0000-000000000000")
 
 
 def test_data_form():

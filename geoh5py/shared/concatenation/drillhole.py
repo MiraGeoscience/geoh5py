@@ -29,6 +29,7 @@ from ...objects import Drillhole
 from .object import ConcatenatedObject
 from .property_group import ConcatenatedPropertyGroup
 
+
 if TYPE_CHECKING:
     from .concatenator import Concatenator
 
@@ -125,7 +126,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
         """
         if collocation_distance is None:
             collocation_distance = attributes.get(
-                "collocation_distance", getattr(self, "default_collocation_distance")
+                "collocation_distance", self.default_collocation_distance
             )
 
         if attributes["name"] in self.get_data_list():
@@ -249,9 +250,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
             property_group = f"depth_{ind}"
 
         if isinstance(property_group, str):
-            out_group: ConcatenatedPropertyGroup = getattr(
-                self, "find_or_create_property_group"
-            )(
+            out_group: ConcatenatedPropertyGroup = self.fetch_property_group(  # type: ignore
                 name=property_group,
                 association="DEPTH",
                 property_group_type="Depth table",
@@ -346,9 +345,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
             property_group = f"Interval_{ind}"
 
         if isinstance(property_group, str):
-            out_group: ConcatenatedPropertyGroup = getattr(
-                self, "find_or_create_property_group"
-            )(
+            out_group: ConcatenatedPropertyGroup = self.fetch_property_group(  # type: ignore
                 name=property_group,
                 association="DEPTH",
                 property_group_type="Interval table",

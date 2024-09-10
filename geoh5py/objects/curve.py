@@ -116,6 +116,18 @@ class Curve(CellObject):
 
         return self._parts
 
+    def remove_vertices(
+        self, indices: list[int] | np.ndarray, clear_cache: bool = False
+    ):
+        """
+        Safely remove vertices and cells and corresponding data entries.
+
+        :param indices: Indices of vertices to be removed.
+        :param clear_cache: Clear cache of data values.
+        """
+        super().remove_vertices(indices, clear_cache=clear_cache)
+        self._parts = None
+
     @staticmethod
     def validate_parts(
         indices: list | tuple | np.ndarray | None, vertices: np.ndarray | None

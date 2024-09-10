@@ -39,8 +39,8 @@ from ..shared.entity_container import EntityContainer
 from ..shared.utils import box_intersect, clear_array_attributes, mask_by_extent
 from .object_type import ObjectType
 
-if TYPE_CHECKING:
 
+if TYPE_CHECKING:
     from ..workspace import Workspace
 
 
@@ -51,7 +51,7 @@ class ObjectBase(EntityContainer):
     :param last_focus: Object visible in camera on start.
     """
 
-    _attribute_map: dict = getattr(EntityContainer, "_attribute_map").copy()
+    _attribute_map: dict = EntityContainer._attribute_map.copy()
     _attribute_map.update(
         {"Last focus": "last_focus", "PropertyGroups": "property_groups"}
     )
@@ -207,7 +207,7 @@ class ObjectBase(EntityContainer):
             if len(associations) != 1:
                 raise ValueError("All input 'data' must have the same association.")
 
-            property_group = self.find_or_create_property_group(
+            property_group = self.fetch_property_group(
                 name=property_group, association=associations[0]
             )
 
@@ -365,12 +365,9 @@ class ObjectBase(EntityContainer):
 
         return prop_group
 
-    def find_or_create_property_group(
-        self, name=None, uid=None, **kwargs
-    ) -> PropertyGroup:
+    def fetch_property_group(self, name=None, uid=None, **kwargs) -> PropertyGroup:
         """
-        Find or create :obj:`~geoh5py.groups.property_group.PropertyGroup`
-        from given name and properties.
+        Find or create a PropertyGroup from given name and properties.
 
         :param name: Name of the property group.
         :param uid: Unique identifier for the property group.
@@ -388,6 +385,19 @@ class ObjectBase(EntityContainer):
             prop_group = self.create_property_group(name=name, uid=uid, **kwargs)
 
         return prop_group
+
+    def find_or_create_property_group(
+        self, name=None, uid=None, **kwargs
+    ) -> PropertyGroup:
+        """
+        Find or create a PropertyGroup from given name and properties.
+        """
+        warnings.warn(
+            "The 'find_and_create_property_group' will be deprecated. "
+            "Use fetch_property_group instead.",
+            DeprecationWarning,
+        )
+        return self.fetch_property_group(name=name, uid=uid, **kwargs)
 
     def get_data(self, name: str | uuid.UUID) -> list[Data]:
         """

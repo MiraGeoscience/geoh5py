@@ -32,7 +32,6 @@ class RootGroup(NoTypeGroup):
         allow_rename=False,
         **kwargs,
     ):
-
         super().__init__(
             allow_move=allow_move,
             allow_delete=allow_delete,

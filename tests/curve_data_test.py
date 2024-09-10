@@ -83,7 +83,6 @@ def test_create_curve_data(tmp_path: Path):
     n_data = 12
 
     with Workspace.create(h5file_path) as workspace:
-
         curve = Curve.create(workspace, vertices=(1.0, 1.0, 1.0))
 
         assert curve.vertices.shape == (
@@ -99,6 +98,7 @@ def test_create_curve_data(tmp_path: Path):
             curve.parts = parts
 
         cells = curve.cells.copy()
+
         assert cells.shape[0] == 11, "Error creating cells from parts." ""
 
         with pytest.raises(

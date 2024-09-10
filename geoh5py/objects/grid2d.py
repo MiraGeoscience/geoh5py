@@ -275,7 +275,6 @@ class Grid2D(GridObject):
 
     @v_cell_size.setter
     def v_cell_size(self, value: Real | np.ndarray):
-
         self._v_cell_size = self.validate_cell_size(value, "v")
         self._centroids = None
 

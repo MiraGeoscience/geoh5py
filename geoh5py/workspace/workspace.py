@@ -32,7 +32,7 @@ from getpass import getuser
 from io import BytesIO
 from pathlib import Path
 from subprocess import CalledProcessError
-from typing import ClassVar, cast
+from typing import Any, ClassVar, cast
 from weakref import ReferenceType
 
 import h5py
@@ -338,7 +338,7 @@ class Workspace(AbstractContextManager):
             if entity.workspace.find_property_group(prop_group.uid) is None:
                 property_group_kwargs["uid"] = prop_group.uid
 
-            entity.find_or_create_property_group(**property_group_kwargs)
+            entity.fetch_property_group(**property_group_kwargs)
 
     @classmethod
     def create(cls, path: str | Path, **kwargs) -> Workspace:
@@ -752,7 +752,6 @@ class Workspace(AbstractContextManager):
             children_list = {child.uid: "" for child in entity.children}
 
         else:
-
             children_list = self._io_call(
                 H5Reader.fetch_children, entity.uid, entity_type, mode="r"
             )
@@ -769,7 +768,7 @@ class Workspace(AbstractContextManager):
                     }
                 )
 
-        family_tree = []
+        family_tree: list[Any] = []
         for uid, child_type in children_list.items():
             recovered_object = self.get_entity(uid)[0]
             if recovered_object is None and not isinstance(entity, PropertyGroup):
@@ -781,13 +780,17 @@ class Workspace(AbstractContextManager):
             recovered_object.on_file = True
             recovered_object.entity_type.on_file = True
             family_tree += [recovered_object]
+
             if recursively and isinstance(recovered_object, (Group, ObjectBase)):
                 family_tree += self.fetch_children(recovered_object, recursively=True)
-                if getattr(recovered_object, "property_groups", None) is not None:
-                    family_tree += getattr(recovered_object, "property_groups")
+                if (
+                    isinstance(recovered_object, ObjectBase)
+                    and recovered_object.property_groups is not None
+                ):
+                    family_tree += recovered_object.property_groups
 
-        if getattr(entity, "property_groups", None) is not None:
-            family_tree += getattr(entity, "property_groups")
+        if isinstance(entity, ObjectBase) and entity.property_groups is not None:
+            family_tree += entity.property_groups
 
         return family_tree
 
@@ -1386,7 +1389,7 @@ class Workspace(AbstractContextManager):
 
     def update_attribute(
         self,
-        entity: Entity | EntityType,
+        entity: Entity | EntityType | DataType,
         attribute: str,
         channel: str | None = None,
         **kwargs,

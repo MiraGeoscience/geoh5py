@@ -233,9 +233,9 @@ def test_validate_data(tmp_path):
     with pytest.raises(
         AtLeastOneValidationError, match="at least one sad little parameter"
     ):
-        getattr(InputFile(ui_json=ui_json, validations=validations), "data")
+        InputFile(ui_json=ui_json, validations=validations).data
 
     ui_json["param_1"].update({"enabled": True})
 
     with pytest.raises(OptionalValidationError, match="Cannot set a None"):
-        getattr(InputFile(ui_json=ui_json, validations=validations), "data")
+        InputFile(ui_json=ui_json, validations=validations).data

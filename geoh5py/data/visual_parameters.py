@@ -25,6 +25,7 @@ import numpy as np
 from .data_association_enum import DataAssociationEnum
 from .text_data import TextData
 
+
 PARAMETERS = ["Colour"]
 ATTRIBUTES = ["tag", "text", "attrib"]
 

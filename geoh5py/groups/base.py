@@ -24,6 +24,7 @@ import numpy as np
 from ..shared.entity_container import EntityContainer
 from .group_type import GroupType
 
+
 if TYPE_CHECKING:
     from ..workspace import Workspace
 

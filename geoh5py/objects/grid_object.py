@@ -24,6 +24,7 @@ import numpy as np
 
 from .object_base import ObjectBase
 
+
 ORIGIN_TYPE = np.dtype([("x", float), ("y", float), ("z", float)])
 
 

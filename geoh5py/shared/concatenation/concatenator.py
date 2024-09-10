@@ -36,6 +36,7 @@ from .drillholes_group_table import DrillholesGroupTable
 from .object import ConcatenatedObject
 from .property_group import ConcatenatedPropertyGroup
 
+
 PROPERTY_KWARGS = {
     "trace": {"maxshape": (None,)},
     "trace_depth": {"maxshape": (None,)},
@@ -57,7 +58,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        getattr(self, "_attribute_map").update(
+        self._attribute_map.update(
             {
                 self.concat_attr_str: "concatenated_attributes",
                 "Property Groups IDs": "property_group_ids",
@@ -299,9 +300,9 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             self.data[label], np.arange(start, start + size), axis=0
         )
         # Shift indices
-        self.index[label]["Start index"][
-            self.index[label]["Start index"] > start
-        ] -= size
+        self.index[label]["Start index"][self.index[label]["Start index"] > start] -= (
+            size
+        )
         self.index[label] = np.delete(self.index[label], index, axis=0)
 
     def fetch_concatenated_data_index(self):
@@ -559,17 +560,22 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         if label == "attributes":
             self.update_concatenated_attributes(entity)
         elif label == "property_groups":
-            if getattr(entity, "property_groups", None) is not None:
-                for prop_group in getattr(entity, "property_groups"):
-                    self.add_save_concatenated(prop_group)
-                    if (
-                        self.property_group_ids is not None
-                        and as_str_if_uuid(prop_group.uid).encode()
-                        not in self.property_group_ids
-                    ):
-                        self.property_group_ids.append(
-                            as_str_if_uuid(prop_group.uid).encode()
-                        )
+            if (
+                not isinstance(entity, ConcatenatedObject)
+                or entity.property_groups is None
+            ):
+                return
+
+            for prop_group in entity.property_groups:
+                self.add_save_concatenated(prop_group)
+                if (
+                    self.property_group_ids is not None
+                    and as_str_if_uuid(prop_group.uid).encode()
+                    not in self.property_group_ids
+                ):
+                    self.property_group_ids.append(
+                        as_str_if_uuid(prop_group.uid).encode()
+                    )
 
             self.update_array_attribute(entity, label)
 
@@ -629,7 +635,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             values = getattr(entity, f"_{field}", None)
             obj_id = as_str_if_uuid(entity.uid).encode()
             data_id = as_str_if_uuid(uuid.UUID(int=0)).encode()
-        elif getattr(entity, "name") == field:
+        elif entity.name == field:
             values = getattr(entity, "values", None)
             obj_id = as_str_if_uuid(entity.parent.uid).encode()
             data_id = as_str_if_uuid(entity.uid).encode()

@@ -30,6 +30,7 @@ from ...data import Data, ReferencedData, ReferenceValueMap
 from ...shared.utils import str_json_to_dict
 from ..curve import Curve
 
+
 logger = logging.getLogger(__name__)
 
 

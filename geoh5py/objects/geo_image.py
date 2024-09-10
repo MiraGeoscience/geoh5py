@@ -37,6 +37,7 @@ from ..shared.utils import (
 )
 from .object_base import ObjectBase
 
+
 if TYPE_CHECKING:
     from ..objects import Grid2D
 
@@ -110,7 +111,6 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
     @cells.setter
     def cells(self, indices: np.ndarray | list | tuple | None):
-
         if isinstance(indices, (list, tuple)):
             indices = np.array(indices, ndmin=2)
 

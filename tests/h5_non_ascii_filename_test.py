@@ -28,6 +28,7 @@ from geoh5py import Workspace
 from geoh5py.ui_json.constants import default_ui_json
 from geoh5py.ui_json.input_file import InputFile
 
+
 NON_ASCII_FILENAME = (
     r"éèçàù¨ẫäêëîïôöûü" + r"ὦშข้าእግᚾᚩᚱᚦᚹ⠎⠁⠹ ⠹ ∀x∈ℝ ٩(-̮̮̃-̃)۶ ٩(●̮̮̃•̃)۶ ٩(͡๏̯͡๏)۶ ٩(-̮̮̃•̃).h5"
 )
@@ -52,8 +53,8 @@ def test_write_reread_non_ascii_filename(tmp_path):
     with h5py.File(file_path, "r") as h5_file:
         dataset = h5_file[dataset_name]
         assert dataset is not None
-        assert getattr(dataset, "shape") == dataset_shape
-        assert getattr(dataset, "dtype") == np.dtype("int32")
+        assert dataset.shape == dataset_shape
+        assert dataset.dtype == np.dtype("int32")
 
 
 @pytest.mark.xfail(
@@ -86,7 +87,7 @@ def test_non_ascii_path_geoh5(tmp_path: Path):
     assert all(
         part_a == part_b
         for part_a, part_b in zip(
-            new_read.data["geoh5"].h5file.parts, workspace.h5file.parts
+            new_read.data["geoh5"].h5file.parts, workspace.h5file.parts, strict=False
         )
     )
 
