@@ -1,6 +1,23 @@
 Release Notes
 =============
 
+Release 0.10.0 (2024-10-31)
+---------------------------
+
+- GEOPY-1602: Major refactor of class instantiation and inheritance
+    - Entity type passed as a keyword argument to the constructor.
+    - Deprecate property 'default_type_uid' in favour of class attribute '_TYPE_UID'.
+    - Explicit definition of objects attributes in the signature of the class
+    - Enforce assignment of geometric attributes such as vertices, cells, and centroids.
+    - Improve object classes docstrings.
+    - Add private default name for objects. Assign name to entity type.
+    - Change base class of DrapeModel to ObjectBase.
+    - Store dtypes of arrays (prisms, layers, etc.) as class attributes
+    - Standardize attributes of sub-classes of GridObject.
+    - Add a method to get the number of vertices and cells of an object.
+
+
+
 Release 0.9.1 (2024-07-02)
 --------------------------
 

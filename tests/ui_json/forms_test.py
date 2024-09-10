@@ -335,7 +335,7 @@ def test_data_form():
             is_value=True,
         )
     with pytest.raises(
-        ValidationError, match="A property must be provided in is_value is used"
+        ValidationError, match="A property must be provided if is_value is used"
     ):
         _ = DataForm(
             label="name",
@@ -345,6 +345,44 @@ def test_data_form():
             data_type="Float",
             is_value=False,
         )
+
+
+def test_flatten():
+    param = BaseForm(label="my_param", value=2)
+    assert param.flatten() == 2
+
+    data_uid = str(uuid.uuid4())
+    form = DataForm(
+        label="name",
+        value=data_uid,
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+    )
+    assert str(form.flatten()) == data_uid
+
+    form = DataForm(
+        label="name",
+        value=0.0,
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        property="",
+        is_value=True,
+    )
+    assert form.flatten() == 0.0
+
+    form = DataForm(
+        label="name",
+        value=0.0,
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        property=data_uid,
+        is_value=False,
+    )
+
+    assert str(form.flatten()) == data_uid
 
 
 ### TODO: Old tests to clean up once updated

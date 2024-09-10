@@ -127,6 +127,10 @@ class BaseForm(BaseModel):
     def json_string(self):
         return self.model_dump_json(exclude_unset=True, by_alias=True)
 
+    def flatten(self):
+        """Returns the data for the form."""
+        return self.value
+
 
 class StringForm(BaseForm):
     """
@@ -309,9 +313,12 @@ class DataForm(BaseForm):
     max: float = np.inf
     precision: int = 2
 
-    _empty_string_to_uid = field_validator("value", "property", mode="before")(
-        empty_string_to_uid
-    )
+    @field_validator("property", mode="before")
+    @classmethod
+    def empty_string_to_uid(cls, val):
+        if val == "":
+            return UUID("00000000-0000-0000-0000-000000000000")
+        return val
 
     @model_validator(mode="after")
     def value_if_is_value(self):
@@ -329,8 +336,17 @@ class DataForm(BaseForm):
             "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
             and "property" not in self.model_fields_set  # pylint: disable=unsupported-membership-test
         ):
-            raise ValueError("A property must be provided in is_value is used.")
+            raise ValueError("A property must be provided if is_value is used.")
         return self
+
+    def flatten(self):
+        """Returns the data for the form."""
+        if (
+            "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
+            and not self.is_value
+        ):
+            return self.property
+        return self.value
 
 
 ### TODO: Old code to be cleaned up ###

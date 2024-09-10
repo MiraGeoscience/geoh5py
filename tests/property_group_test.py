@@ -58,6 +58,7 @@ def test_create_property_group(tmp_path):
         curve = make_example(workspace)
 
         props = [child for child in curve.children if isinstance(child, Data)]
+
         test_values = np.r_[[prop.values for prop in props]]
 
         with pytest.raises(TypeError, match="Name must be"):
@@ -192,6 +193,14 @@ def test_create_property_group(tmp_path):
         assert (
             rec_object.property_groups is None
         ), "Property_groups not properly removed."
+
+
+def test_bad_property_group_type():
+    workspace = Workspace()
+    curve = make_example(workspace)
+
+    with pytest.raises(ValueError, match="Property group type must be one of"):
+        _ = PropertyGroup(parent=curve, property_group_type="badType")
 
 
 def test_copy_property_group(tmp_path):

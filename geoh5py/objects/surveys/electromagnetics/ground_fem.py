@@ -19,8 +19,6 @@ from __future__ import annotations
 
 import uuid
 
-from geoh5py.objects.object_base import ObjectType
-
 from .base import FEMSurvey, LargeLoopGroundEMSurvey, MovingLoopGroundEMSurvey
 
 
@@ -71,24 +69,15 @@ class MovingLoopGroundFEMReceivers(MovingLoopGroundFEMSurvey):  # pylint: disabl
     Airborne frequency-domain electromagnetic receivers class.
     """
 
-    __TYPE_UID = uuid.UUID("{a81c6b0a-f290-4bc8-b72d-60e59964bfe8}")
+    _TYPE_UID = uuid.UUID("{a81c6b0a-f290-4bc8-b72d-60e59964bfe8}")
     __TYPE = "Receivers"
 
     _transmitters: MovingLoopGroundFEMTransmitters | None = None
-
-    def __init__(self, object_type: ObjectType, name="Airborne FEM Rx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    _default_name = "Airborne FEM Rx"
 
     @property
     def complement(self):
         return self.transmitters
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     @property
     def default_transmitter_type(self):
@@ -108,22 +97,13 @@ class MovingLoopGroundFEMTransmitters(MovingLoopGroundFEMSurvey):  # pylint: dis
     Airborne frequency-domain electromagnetic transmitters class.
     """
 
-    __TYPE_UID = uuid.UUID("{f59d5a1c-5e63-4297-b5bc-43898cb4f5f8}")
+    _TYPE_UID = uuid.UUID("{f59d5a1c-5e63-4297-b5bc-43898cb4f5f8}")
     __TYPE = "Transmitters"
-
-    def __init__(self, object_type: ObjectType, name="Ground FEM Tx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    _default_name = "Ground FEM Tx"
 
     @property
     def complement(self):
         return self.receivers
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     @property
     def default_receiver_type(self):
@@ -176,24 +156,15 @@ class LargeLoopGroundFEMReceivers(LargeLoopGroundFEMSurvey):  # pylint: disable=
     Airborne frequency-domain electromagnetic receivers class.
     """
 
-    __TYPE_UID = uuid.UUID("{30928322-cf2c-4230-b393-4dc629259b64}")
+    _TYPE_UID = uuid.UUID("{30928322-cf2c-4230-b393-4dc629259b64}")
     __TYPE = "Receivers"
 
     _transmitters: LargeLoopGroundFEMTransmitters | None = None
-
-    def __init__(self, object_type: ObjectType, name="Airborne FEM Rx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    _default_name = "Airborne FEM Rx"
 
     @property
     def complement(self):
         return self.transmitters
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     @property
     def default_transmitter_type(self):
@@ -213,22 +184,13 @@ class LargeLoopGroundFEMTransmitters(LargeLoopGroundFEMSurvey):  # pylint: disab
     Airborne frequency-domain electromagnetic transmitters class.
     """
 
-    __TYPE_UID = uuid.UUID("{fe1a240a-9189-49ff-aa7e-6067405b6e0a}")
+    _TYPE_UID = uuid.UUID("{fe1a240a-9189-49ff-aa7e-6067405b6e0a}")
     __TYPE = "Transmitters"
-
-    def __init__(self, object_type: ObjectType, name="Ground FEM Tx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    _default_name = "Ground FEM Tx"
 
     @property
     def complement(self):
         return self.receivers
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     @property
     def default_receiver_type(self):
