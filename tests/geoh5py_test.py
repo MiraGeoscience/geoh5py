@@ -18,24 +18,8 @@
 from __future__ import annotations
 
 import re
-from pathlib import Path
-
-import tomli as toml
 
 import geoh5py
-
-
-def get_version():
-    path = Path(__file__).resolve().parents[1] / "pyproject.toml"
-
-    with open(str(path), encoding="utf-8") as file:
-        pyproject = toml.loads(file.read())
-
-    return pyproject["tool"]["poetry"]["version"]
-
-
-def test_version_is_consistent():
-    assert geoh5py.__version__ == get_version()
 
 
 def test_version_is_semver():

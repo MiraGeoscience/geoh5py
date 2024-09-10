@@ -17,14 +17,19 @@
 
 # flake8: noqa
 
-__version__ = "0.10.0-alpha.1"
-
 import inspect
 
 from geoh5py.workspace import Workspace
 
 from . import groups, objects
 from .groups import CustomGroup
+
+try:
+    from ._version import __version__
+except ModuleNotFoundError as exc:
+    raise ModuleNotFoundError(
+        "geoh5py is not correctly initialized. Please check if it is correctly installed."
+    ) from exc
 
 
 def get_type_uid_classes():
