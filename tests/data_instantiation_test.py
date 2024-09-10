@@ -122,3 +122,44 @@ def test_copy_from_extent(tmp_path):
     validation[11:] = np.nan
 
     np.testing.assert_array_equal(cropped_data.values, validation)
+
+
+def test_data_type_attributes():
+
+    workspace = Workspace()
+    data_type = DataType(workspace, primitive_type="REFERENCED")
+
+    with pytest.raises(ValueError, match=r"Attribute 'mapping' should be one"):
+        data_type.mapping = "exponential"
+
+    with pytest.raises(TypeError, match=r"Attribute 'hidden' must be a bool"):
+        data_type.hidden = "abc"
+
+    with pytest.raises(
+        TypeError, match=r"Attribute 'duplicate_type_on copy' must be a bool"
+    ):
+        data_type.duplicate_type_on_copy = "abc"
+
+    with pytest.raises(
+        ValueError, match=r"Attribute 'number_of_bins' should be an integer"
+    ):
+        data_type.number_of_bins = "abc"
+
+    with pytest.raises(ValueError, match="greater than 0 or None"):
+        data_type.number_of_bins = 0
+
+    with pytest.raises(
+        ValueError, match=r"Attribute 'primitive_type' value must be of type"
+    ):
+        data_type.primitive_type = "FLOAT"
+
+    with pytest.raises(
+        TypeError, match="Attribute 'transparent_no_data' must be a bool"
+    ):
+        data_type.transparent_no_data = "FLOAT"
+
+    with pytest.raises(TypeError, match=r"Attribute 'units' must be a string"):
+        data_type.units = 1
+
+    with pytest.raises(ValueError, match=r"Attribute 'primitive_type' should be one"):
+        data_type.validate_primitive_type(1)

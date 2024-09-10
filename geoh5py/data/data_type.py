@@ -133,7 +133,7 @@ class DataType(EntityType):
 
         if not isinstance(color_map, (ColorMap, type(None))):
             raise TypeError(
-                f"Input value for 'color_map' must be of type {ColorMap},"
+                f"Attribute 'color_map' must be of type {ColorMap},"
                 f"numpy.ndarray or dict with 'values'."
             )
 
@@ -155,7 +155,7 @@ class DataType(EntityType):
     def duplicate_type_on_copy(self, value: bool):
         if not isinstance(value, bool) and value != 1 and value != 0:
             raise TypeError(
-                f"'duplicate_type_on copy' must be a bool, not {type(value)}"
+                f"Attribute 'duplicate_type_on copy' must be a bool, not {type(value)}"
             )
 
         self._duplicate_type_on_copy = bool(value)
@@ -222,7 +222,7 @@ class DataType(EntityType):
     @hidden.setter
     def hidden(self, value: bool):
         if not isinstance(value, bool) and value != 1 and value != 0:
-            raise TypeError(f"hidden must be a bool, not {type(value)}")
+            raise TypeError(f"Attribute 'hidden' must be a bool, not {type(value)}")
 
         self._hidden: bool = bool(value)
 
@@ -241,7 +241,8 @@ class DataType(EntityType):
     def mapping(self, value: ColorMapping):
         if value not in get_args(ColorMapping):
             raise ValueError(
-                f"Mapping {value} was provided but should be one of {get_args(ColorMapping)}"
+                f"Attribute 'mapping' should be one of {get_args(ColorMapping)}. "
+                f"Value '{value}' was provided."
             )
         self._mapping: str = value
 
@@ -261,7 +262,8 @@ class DataType(EntityType):
             pass
         elif not isinstance(n_bins, (int, np.integer)) or n_bins < 1:
             raise ValueError(
-                f"Number of bins should be an integer greater than 0 or None, not {n_bins}"
+                "Attribute 'number_of_bins' should be an integer greater than 0 "
+                f"or None, not {n_bins}"
             )
 
         self._number_of_bins: int | None = n_bins
@@ -279,7 +281,8 @@ class DataType(EntityType):
     def primitive_type(self, value: PrimitiveTypeEnum):
         if not isinstance(value, PrimitiveTypeEnum):
             raise ValueError(
-                f"Primitive type value must be of type {PrimitiveTypeEnum}, find {type(value)}"
+                "Attribute 'primitive_type' value must be of type "
+                f"{PrimitiveTypeEnum}, find {type(value)}"
             )
 
         self._primitive_type = value
@@ -294,7 +297,9 @@ class DataType(EntityType):
     @transparent_no_data.setter
     def transparent_no_data(self, value: bool):
         if not isinstance(value, bool) and value != 1 and value != 0:
-            raise TypeError(f"transparent_no_data must be a bool, not {type(value)}")
+            raise TypeError(
+                f"Attribute 'transparent_no_data' must be a bool, not {type(value)}"
+            )
         self._transparent_no_data = bool(value)
 
         self.workspace.update_attribute(self, "attributes")
@@ -309,7 +314,7 @@ class DataType(EntityType):
     @units.setter
     def units(self, unit: str | None):
         if not isinstance(unit, (str, type(None))):
-            raise TypeError(f"units must be a string, not {type(unit)}")
+            raise TypeError(f"Attribute 'units' must be a string, not {type(unit)}")
         self._units = unit
 
         self.workspace.update_attribute(self, "attributes")
@@ -366,7 +371,7 @@ class DataType(EntityType):
 
         if not isinstance(primitive_type, PrimitiveTypeEnum):
             raise ValueError(
-                f"Data 'type' should be one of {PrimitiveTypeEnum.__members__}"
+                f"Attribute 'primitive_type' should be one of {PrimitiveTypeEnum.__members__}"
             )
         return primitive_type
 
