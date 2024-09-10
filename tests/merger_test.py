@@ -269,7 +269,7 @@ def test_merge_attribute_error(tmp_path):
         with pytest.raises(ValueError, match="Need more than one object"):
             _ = PointsMerger.merge_objects(workspace, [points[0]])
 
-        surface = Surface(
+        surface = Surface.create(
             workspace,
             vertices=np.random.randn(10, 3),
         )
@@ -277,7 +277,7 @@ def test_merge_attribute_error(tmp_path):
         with pytest.raises(TypeError, match="All objects must be of"):
             _ = PointsMerger.merge_objects(workspace, [points[0], surface])
 
-        surface2 = Surface(
+        surface2 = Surface.create(
             workspace,
             vertices=np.random.randn(10, 3),
         )
@@ -285,10 +285,7 @@ def test_merge_attribute_error(tmp_path):
         with pytest.raises(TypeError, match="The input entities must be a list"):
             _ = PointsMerger.merge_objects(workspace, [surface, surface2])
 
-        points[0] = Points(workspace)
-
-        with pytest.raises(AttributeError, match="All entities must have vertices"):
-            _ = PointsMerger.merge_objects(workspace, points)
+        points[0] = Points.create(workspace)
 
         with pytest.raises(NotImplementedError, match="BaseMerger cannot be use"):
             _ = BaseMerger.create_object(workspace, points, name="bidon")

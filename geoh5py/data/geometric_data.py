@@ -17,17 +17,26 @@
 
 from __future__ import annotations
 
-from .notype import NoTypeGroup
+from uuid import UUID
+
+from .data import Data
+from .primitive_type_enum import PrimitiveTypeEnum
 
 
-class RootGroup(NoTypeGroup):
-    """The Root group of a workspace."""
+class GeometricDataConstants(Data):
+    """
+    Base class for geometric data constants.
 
-    _default_name = "Workspace"
+    :param allow_move: Defaults coordinate to remain on object.
+    :param visible: Defaults to not visible.
+    """
+
+    _TYPE_UID: UUID
 
     def __init__(
         self,
         allow_move=False,
+        visible=False,
         allow_delete=False,
         allow_rename=False,
         **kwargs,
@@ -36,17 +45,21 @@ class RootGroup(NoTypeGroup):
             allow_move=allow_move,
             allow_delete=allow_delete,
             allow_rename=allow_rename,
-            parent=self,
+            visible=visible,
             **kwargs,
         )
 
-    @property
-    def parent(self):
-        """
-        Parental entity of root is always None
-        """
-        return None
+    @classmethod
+    def primitive_type(cls) -> PrimitiveTypeEnum:
+        return PrimitiveTypeEnum.GEOMETRIC
 
-    @parent.setter
-    def parent(self, _):
-        pass
+    def validate_values(self, values: None) -> None:
+        """
+        Validate values for GeometricDataConstants.
+        """
+        if values is not None:
+            raise TypeError(
+                f"GeometricDataConstants does not accept values. Got {values}."
+            )
+
+        return values

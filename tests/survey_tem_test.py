@@ -309,7 +309,8 @@ def test_survey_airborne_tem_data(tmp_path):
     # Test copying receiver over through the receivers
     with Workspace(path) as workspace:
         receivers_orig = workspace.get_entity(name + "_rx")[0]
-        np.testing.assert_almost_equal(receivers_orig.waveform, waveform)
+        rec_waveform = receivers_orig.waveform
+        np.testing.assert_almost_equal(rec_waveform, waveform)
 
         with Workspace.create(
             Path(tmp_path) / r"testATEM_copy2.geoh5"
@@ -459,7 +460,7 @@ def test_create_survey_ground_tem_large_loop(
         )
 
         assert list(
-            transmitters_rec.tx_id_property.entity_type.value_map.map.values()
+            transmitters_rec.tx_id_property.entity_type.value_map.map["Value"]
         ) == ["Unknown", "Loop 2"]
 
 

@@ -49,8 +49,8 @@ class GeoImageConversion(BaseConversion):
             dtype=[("x", float), ("y", float), ("z", float)],
         )
 
-        grid2d_attributes["u_count"] = geoimage.default_vertices[1, 0]
-        grid2d_attributes["v_count"] = geoimage.default_vertices[0, 1]
+        grid2d_attributes["u_count"] = geoimage.default_vertices[1, 0].astype(np.int32)
+        grid2d_attributes["v_count"] = geoimage.default_vertices[0, 1].astype(np.int32)
 
         # Compute the distances
         distance_u = np.linalg.norm(geoimage.vertices[2] - geoimage.vertices[3])
@@ -152,12 +152,13 @@ class GeoImageConversion(BaseConversion):
             **grid2d_kwargs,
         )
 
-        image = geoimage.image.copy()
+        if geoimage.image is not None:
+            image = geoimage.image.copy()
 
-        if mode is not None and mode != image.mode:
-            image = image.convert(mode if mode != "GRAY" else "L")
+            if mode is not None and mode != image.mode:
+                image = image.convert(mode if mode != "GRAY" else "L")
 
-        if copy_children:
-            GeoImageConversion.add_data_2dgrid(image, output)
+            if copy_children:
+                GeoImageConversion.add_data_2dgrid(image, output)
 
         return output

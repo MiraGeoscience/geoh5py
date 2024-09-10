@@ -116,7 +116,7 @@ class AssociationValidationError(BaseValidationError):
 class PropertyGroupValidationError(BaseValidationError):
     """Error on property group validation."""
 
-    def __init__(self, name: str, value: PropertyGroup, validation: str):
+    def __init__(self, name: str, value: PropertyGroup, validation: list[str]):
         super().__init__(PropertyGroupValidationError.message(name, value, validation))
 
     @classmethod

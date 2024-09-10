@@ -92,6 +92,7 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0", add_data=True)
                     },
                 }
             )
+
             well.add_data(
                 {
                     "text Data": {
@@ -181,38 +182,38 @@ def test_concatenated_entities(tmp_path):
     with Workspace.create(h5file_path, version=2.0) as workspace:
         class_type = type("TestGroup", (Concatenator, ContainerGroup), {})
         entity_type = Group.find_or_create_type(workspace)
-        concat = class_type(entity_type)
+        concat = class_type(entity_type=entity_type)
 
         class_obj_type = type("TestObject", (ConcatenatedObject, Drillhole), {})
         object_type = ObjectBase.find_or_create_type(workspace)
 
         with pytest.raises(UserWarning) as error:
-            concat_object = class_obj_type(object_type)
+            concat_object = class_obj_type(entity_type=object_type)
 
         assert (
             "Creating a concatenated object must have a parent of type Concatenator."
             in str(error)
         )
 
-        concat_object = class_obj_type(object_type, parent=concat)
+        concat_object = class_obj_type(entity_type=object_type, parent=concat)
 
         with pytest.raises(UserWarning) as error:
             class_type = type("TestData", (ConcatenatedData, FloatData), {})
             dtype = data_type.DataType.find_or_create(
                 workspace, primitive_type=FloatData.primitive_type()
             )
-            data = class_type(dtype)
+            class_type(entity_type=dtype)
 
         assert "Creating a concatenated data must have a parent" in str(error)
 
-        data = class_type(dtype, parent=concat_object)
+        data = class_type(entity_type=dtype, parent=concat_object)
 
         assert data.property_group is None
 
         with pytest.raises(
             AttributeError, match="must have a 'property_groups' attribute"
         ):
-            prop_group = ConcatenatedPropertyGroup(None)
+            ConcatenatedPropertyGroup(None)
 
         prop_group = ConcatenatedPropertyGroup(parent=concat_object)
 
@@ -1032,7 +1033,10 @@ def test_add_data_to_property(tmp_path):
             "new value",
             verification_map_value,
             data_type=data_type.DataType(
-                workspace, "REFERENCED", name="new_value", value_map=value_map
+                workspace,
+                primitive_type="REFERENCED",
+                name="new_value",
+                value_map=value_map,
             ),
         )
 

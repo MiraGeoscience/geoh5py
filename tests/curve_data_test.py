@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import uuid
 from pathlib import Path
 
 import numpy as np
@@ -28,6 +29,53 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
+def test_attribute_validations():
+    # Generate a random cloud of points
+    n_data = 12
+
+    with Workspace() as workspace:
+        with pytest.raises(TypeError, match="Parts must be a list or numpy array."):
+            Curve.create(workspace, vertices=np.random.randn(n_data, 3), parts="abc")
+
+        with pytest.raises(
+            TypeError, match="Attribute 'cells' must be provided as type"
+        ):
+            Curve.create(workspace, vertices=np.random.randn(n_data, 3), cells="abc")
+
+        with pytest.raises(TypeError, match="Indices array must be of integer type"):
+            Curve.create(
+                workspace,
+                vertices=np.random.randn(n_data, 3),
+                cells=np.c_[np.arange(n_data - 1), np.arange(n_data - 1)].astype(float),
+            )
+
+        with pytest.raises(ValueError, match="Provided parts must be of shape"):
+            Curve.create(
+                workspace,
+                vertices=np.random.randn(n_data, 3),
+                parts=np.ones(n_data - 1),
+            )
+
+        with pytest.raises(ValueError, match="Found cell indices larger than"):
+            Curve.create(
+                workspace,
+                vertices=np.random.randn(n_data, 3),
+                cells=np.c_[np.arange(11), np.arange(2, 13)],
+            )
+
+        curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
+
+        with pytest.raises(
+            TypeError, match="Input current_line_id value should be of type"
+        ):
+            curve.current_line_id = "abc"
+
+        new_value = uuid.uuid4()
+        curve.current_line_id = new_value
+
+        assert curve.current_line_id == new_value
+
+
 def test_create_curve_data(tmp_path: Path):
     curve_name = "TestCurve"
     h5file_path = tmp_path / r"testCurve.geoh5"
@@ -35,35 +83,32 @@ def test_create_curve_data(tmp_path: Path):
     n_data = 12
 
     with Workspace.create(h5file_path) as workspace:
-        curve = Curve.create(workspace)
+        curve = Curve.create(workspace, vertices=(1.0, 1.0, 1.0))
 
-        with pytest.warns(UserWarning, match="No cells to be removed."):
-            curve.remove_cells(0)
-
-        curve = Curve.create(
-            workspace, vertices=np.random.randn(n_data, 3), name=curve_name
-        )
-
-        with pytest.raises(
-            TypeError, match="Input current_line_id value should be of type"
-        ):
-            curve.current_line_id = "abc"
-
+        assert curve.vertices.shape == (
+            2,
+            3,
+        ), "Error creating curve with single vertex."
+        assert len(curve.cells) == 1
+        curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
         # Get and change the parts
         parts = curve.parts
         parts[-3:] = 1
-        curve.parts = parts
+        with pytest.raises(AttributeError):
+            curve.parts = parts
 
         cells = curve.cells.copy()
-        assert cells.shape[0] == 10, "Error creating cells from parts." ""
-        curve._cells = None
-        with pytest.raises(ValueError, match="Array of cells should be of shape"):
-            curve.cells = np.c_[1]
 
-        with pytest.raises(TypeError, match="Indices array must be of integer type"):
-            curve.cells = np.c_[0.0, 1.0]
+        assert cells.shape[0] == 11, "Error creating cells from parts." ""
 
-        curve.cells = cells.tolist()
+        with pytest.raises(
+            ValueError, match="New cells array must have the same shape"
+        ):
+            curve.cells = np.c_[1, 2]
+
+        curve = Curve.create(
+            workspace, vertices=np.random.randn(n_data, 3), name=curve_name, cells=cells
+        )
 
         data_objects = curve.add_data(
             {
@@ -91,11 +136,9 @@ def test_create_curve_data(tmp_path: Path):
             compare_entities(data_objects[0], data_vert_rec)
             compare_entities(data_objects[1], ws2.get_entity("cellValues")[0])
 
-            # Modify and write
-            obj_rec.vertices = np.random.randn(n_data, 3)
-
             with pytest.raises(TypeError, match="Values cannot have decimal points."):
                 data_vert_rec.values = np.random.randn(n_data)  # warning here
+
             data_vert_rec.values = np.random.randint(
                 0, curve.n_vertices, curve.n_vertices
             ).astype(np.uint32)
@@ -136,11 +179,6 @@ def test_remove_cells_data(tmp_path: Path):
         ):
             curve.remove_cells([12])
 
-        with pytest.raises(
-            ValueError, match="Attempting to assign 'cells' with fewer values."
-        ):
-            curve.cells = curve.cells[1:, :]
-
         with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
             curve.remove_cells("abc")
 
@@ -159,18 +197,19 @@ def test_remove_vertex_data(tmp_path):
     n_data = 12
 
     with Workspace.create(tmp_path / r"testCurve.geoh5") as workspace:
-        curve = Curve.create(workspace)
-        with pytest.warns(UserWarning, match="No vertices to be removed."):
-            curve.remove_vertices(12)
-
-        curve.vertices = np.random.randn(n_data, 3)
+        curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
         data = curve.add_data(
             {
                 "cellValues": {
                     "values": np.random.randn(curve.n_cells).astype(np.float64)
                 },
+                "vertValues": {
+                    "values": np.random.randn(curve.n_vertices).astype(np.float64)
+                },
             }
         )
+
+        curve.copy(name="validation")
 
         with pytest.raises(
             ValueError, match="Found indices larger than the number of vertices."
@@ -179,8 +218,13 @@ def test_remove_vertex_data(tmp_path):
 
         curve.remove_vertices([0, 3])
 
-        assert len(data.values) == 8, "Error removing data values with cells."
+        assert len(data[0].values) == 8, "Error removing data values with cells."
         assert len(curve.vertices) == 10, "Error removing vertices from cells."
+        with pytest.raises(ValueError, match="Operation would leave fewer"):
+            curve.remove_vertices(np.arange(curve.n_vertices))
+
+        curve.remove_vertices([6])
+        assert len(np.unique(curve.parts)) == 3, "Error detecting parts."
 
 
 def test_copy_cells_data(tmp_path):
@@ -216,7 +260,7 @@ def test_copy_cells_data(tmp_path):
 
 
 def test_cell_from_part(tmp_path):
-    n_vertices = 100
+    n_vertices = 1000
     locations = np.random.randn(n_vertices, 3)
     parts = np.random.randint(0, 10, n_vertices)
 

@@ -21,6 +21,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from geoh5py.data.color_map import ColorMap
 from geoh5py.objects import Grid2D
 from geoh5py.shared.utils import compare_entities
 from geoh5py.shared.validators import ShapeValidationError
@@ -35,6 +36,9 @@ def test_create_color_map(tmp_path):
     values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
 
     h5file_path = tmp_path / r"test_color_map.geoh5"
+
+    standalone = ColorMap()
+    assert standalone.values.shape[1] == 0
 
     # Create a workspace
     workspace = Workspace.create(h5file_path)
@@ -62,12 +66,8 @@ def test_create_color_map(tmp_path):
         ]
     )
 
-    with pytest.raises(TypeError) as error:
+    with pytest.raises(TypeError, match="Attribute 'color_map' must be of type"):
         data.entity_type.color_map = 1234
-
-    assert "Input value for 'color_map' must be of type" in str(
-        error
-    ), "Failed raising error on un-supported color map input"
 
     with pytest.raises(ShapeValidationError) as error:
         data.entity_type.color_map = rgba
@@ -78,21 +78,17 @@ def test_create_color_map(tmp_path):
 
     data.entity_type.color_map = rgba.T
 
-    with pytest.raises(TypeError) as error:
+    with pytest.raises(TypeError, match="Input 'values' of ColorMap must be of type"):
         data.entity_type.color_map.values = "abc"
 
-    assert f"Input 'values' of ColorMap must be of type {np.ndarray}." in str(
-        error
-    ), "Failed raising error on wrong type color map values."
-
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(
+        ValueError, match="Input 'values' must contain fields with types"
+    ):
         data.entity_type.color_map.values = np.core.records.fromarrays(
             rgba.T, names=("a", "b", "c", "d", "f")
         )
 
-    assert "Input 'values' must contain fields with types" in str(
-        error
-    ), "Failed to raise error for color_map recarray with wrong names."
+    data.entity_type.color_map.name = "my colours"
     workspace.close()
 
     # Read the data back in from a fresh workspace

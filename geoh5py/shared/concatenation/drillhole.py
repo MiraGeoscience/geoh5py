@@ -19,6 +19,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 from h5py import special_dtype
 
@@ -28,7 +30,13 @@ from .object import ConcatenatedObject
 from .property_group import ConcatenatedPropertyGroup
 
 
+if TYPE_CHECKING:
+    from .concatenator import Concatenator
+
+
 class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
+    _parent: Concatenator
+
     def _update_attribute_from_property_group(
         self,
         attributes: dict,
@@ -106,8 +114,8 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
                 obj_list.append(data[1])
         return obj_list
 
-    def validate_data(
-        self, attributes: dict, property_group=None, collocation_distance=None
+    def validate_association(
+        self, attributes: dict, property_group=None, collocation_distance=None, **_
     ) -> tuple:
         """
         Validate input drillhole data attributes.
@@ -120,6 +128,14 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
             collocation_distance = attributes.get(
                 "collocation_distance", self.default_collocation_distance
             )
+
+        if attributes["name"] in self.get_data_list():
+            raise ValueError(
+                f"Data with name '{attributes['name']}' already present "
+                f"on the drillhole '{self.name}'. "
+                "Consider changing the values or renaming."
+            )
+
         if collocation_distance < 0:
             raise UserWarning("Input depth 'collocation_distance' must be >0.")
 
@@ -258,7 +274,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
                 f"DEPTH{label}": {
                     "association": "DEPTH",
                     "values": depth,
-                    "entity_type": {"primitive_type": "FLOAT"},
+                    "primitive_type": "FLOAT",
                     "parent": self,
                     "allow_move": False,
                     "allow_delete": False,
@@ -352,7 +368,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
                 f"FROM{label}": {
                     "association": "DEPTH",
                     "values": from_to[:, 0],
-                    "entity_type": {"primitive_type": "FLOAT"},
+                    "primitive_type": "FLOAT",
                     "parent": self,
                     "allow_move": False,
                     "allow_delete": False,
@@ -360,7 +376,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
                 f"TO{label}": {
                     "association": "DEPTH",
                     "values": from_to[:, 1],
-                    "entity_type": {"primitive_type": "FLOAT"},
+                    "primitive_type": "FLOAT",
                     "parent": self,
                     "allow_move": False,
                     "allow_delete": False,
@@ -371,13 +387,16 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
 
         return out_group
 
-    def sort_depths(self):
+    def post_processing(self):
         """Bypass sort_depths from previous version."""
 
     def format_survey_values(self, values: list | np.ndarray) -> np.recarray:
         """
         Reformat the survey values as structured array with the right shape.
         """
+        if isinstance(values, (list, tuple)):
+            values = np.array(values, ndmin=2)
+
         if isinstance(values, np.ndarray):
             values = values.T.tolist()
 

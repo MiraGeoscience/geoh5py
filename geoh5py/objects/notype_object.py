@@ -33,7 +33,7 @@ class NoTypeObject(ObjectBase):
     Generic Data object without a registered type
     """
 
-    __TYPE_UID = uuid.UUID(
+    _TYPE_UID = uuid.UUID(
         fields=(0x849D2F3E, 0xA46E, 0x11E3, 0xB4, 0x01, 0x2776BDF4F982)
     )
 
@@ -68,10 +68,6 @@ class NoTypeObject(ObjectBase):
         )
 
         return new_entity
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
 
     @property
     def extent(self):

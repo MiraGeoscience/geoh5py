@@ -28,36 +28,49 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
+def generate_surface(n_points):
+    x, y = np.meshgrid(np.arange(n_points), np.arange(n_points))
+    x, y = x.ravel(), y.ravel()
+    z = np.random.randn(x.shape[0])
+
+    vertices = np.c_[x, y, z]
+
+    cells = np.unique(
+        np.random.randint(0, vertices.shape[0] - 1, (vertices.shape[0], 3)), axis=1
+    )
+
+    # Create random data
+    values = np.mean(np.c_[x[cells[:, 0]], x[cells[:, 1]], x[cells[:, 2]]], axis=1)
+
+    return vertices, cells, values
+
+
 def test_create_surface_data(tmp_path: Path):
     h5file_path = tmp_path / r"testSurface.geoh5"
 
     with Workspace.create(h5file_path) as workspace:
         # Create a grid of points and triangulate
-        x, y = np.meshgrid(np.arange(10), np.arange(10))
-        x, y = x.ravel(), y.ravel()
-        z = np.random.randn(x.shape[0])
+        xyz, simplices, values = generate_surface(10)
 
-        xyz = np.c_[x, y, z]
-
-        simplices = np.unique(
-            np.random.randint(0, xyz.shape[0] - 1, (xyz.shape[0], 3)), axis=1
-        )
-
-        # Create random data
-        values = np.mean(
-            np.c_[x[simplices[:, 0]], x[simplices[:, 1]], x[simplices[:, 2]]], axis=1
-        )
+        with pytest.warns(UserWarning, match="Attribute 'vertices' has fewer elements"):
+            singleton = Surface.create(
+                workspace,
+            )
+        assert singleton.n_vertices == 3, "Error creating surface with no vertices."
+        assert singleton.n_cells == 1, "Error creating surface with no cells."
 
         # Create a geoh5 surface
-        surface = Surface.create(workspace, name="mySurf", vertices=xyz)
-
-        with pytest.raises(ValueError, match="Array of cells should be of shape"):
-            surface.cells = np.c_[[0, 1]]
+        with pytest.raises(ValueError, match="Array of 'cells' should be of shape"):
+            Surface.create(workspace, name="mySurf", vertices=xyz, cells=np.c_[[0, 1]])
 
         with pytest.raises(TypeError, match="Indices array must be of integer type"):
-            surface.cells = simplices.astype(float)
+            Surface.create(
+                workspace, name="mySurf", vertices=xyz, cells=simplices.astype(float)
+            )
 
-        surface.cells = simplices.tolist()
+        surface = Surface.create(
+            workspace, name="mySurf", vertices=xyz, cells=simplices.tolist()
+        )
 
         data = surface.add_data({"TMI": {"values": values}})
 
@@ -72,10 +85,14 @@ def test_create_surface_data(tmp_path: Path):
 
 
 def test_remove_cells_surface_data(tmp_path: Path):
-    h5file_path = tmp_path / r"../test_create_surface_data0/testSurface.geoh5"
+    xyz, simplices, values = generate_surface(10)
 
-    with Workspace(h5file_path) as workspace:
-        surface = workspace.objects[0].copy()
+    with Workspace.create(tmp_path / "remove_cells.geoh5") as workspace:
+        surface = Surface.create(
+            workspace, name="mySurf", vertices=xyz, cells=simplices.tolist()
+        )
+
+        surface.add_data({"TMI": {"values": values}})
 
         with pytest.raises(
             ValueError, match="Found indices larger than the number of cells."
@@ -83,7 +100,7 @@ def test_remove_cells_surface_data(tmp_path: Path):
             surface.remove_cells([101])
 
         with pytest.raises(
-            ValueError, match="Attempting to assign 'cells' with fewer values."
+            ValueError, match="New cells array must have the same shape"
         ):
             surface.cells = surface.cells[1:, :]
 
@@ -95,10 +112,13 @@ def test_remove_cells_surface_data(tmp_path: Path):
 
 
 def test_remove_vertices_surface_data(tmp_path: Path):
-    h5file_path = tmp_path / r"../test_create_surface_data0/testSurface.geoh5"
+    with Workspace.create(tmp_path / "remove_vertices.geoh5") as workspace:
+        xyz, simplices, values = generate_surface(10)
+        surface = Surface.create(
+            workspace, name="mySurf", vertices=xyz, cells=simplices.tolist()
+        )
 
-    with Workspace(h5file_path) as workspace:
-        surface = workspace.objects[0].copy()
+        surface.add_data({"TMI": {"values": values}})
 
         # todo: WARNING HERE! In some random scenarios, it raises an error in cell_object l97
         #  'ValueError: zero-size array to reduction operation maximum which has no identity'

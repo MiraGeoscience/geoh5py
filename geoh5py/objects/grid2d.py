@@ -18,7 +18,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING
+from numbers import Real
 
 import numpy as np
 
@@ -28,10 +28,6 @@ from ..shared.utils import mask_by_extent, xy_rotation_matrix, yz_rotation_matri
 from .grid_object import GridObject
 
 
-if TYPE_CHECKING:
-    from geoh5py.objects import ObjectType
-
-
 class Grid2D(GridObject):
     """
     Rectilinear 2D grid of uniform cell size. The grid can
@@ -39,9 +35,17 @@ class Grid2D(GridObject):
     and :obj:`~geoh5py.objects.grid2d.Grid2D.dip` parameters.
     Nodal coordinates are determined relative to the origin and the sign
     of cell delimiters.
+
+    :param u_cell_size: Cell size along the u-axis.
+    :param v_cell_size: Cell size along the v-axis.
+    :param u_count: Number of cells along the u-axis.
+    :param v_count: Number of cells along the v-axis.
+    :param vertical: Set the grid to be vertical.
+    :param dip: Dip angle from horizontal (positive down) in degrees.
+        Defaults to an horizontal grid (dip=0).
     """
 
-    __TYPE_UID = uuid.UUID(
+    _TYPE_UID = uuid.UUID(
         fields=(0x48F5054A, 0x1C5C, 0x4CA4, 0x90, 0x48, 0x80F36DC60A06)
     )
     _attribute_map = GridObject._attribute_map.copy()
@@ -59,52 +63,53 @@ class Grid2D(GridObject):
     )
     _converter: type[Grid2DConversion] = Grid2DConversion
 
-    def __init__(self, object_type: ObjectType, **kwargs):
-        self._origin: np.ndarray = np.asarray(
-            tuple(np.zeros(3)), dtype=[("x", float), ("y", float), ("z", float)]
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        u_cell_size: float = 1.0,
+        v_cell_size: float = 1.0,
+        u_count: int = 1,
+        v_count: int = 1,
+        vertical: bool = False,
+        dip: float = 0.0,
+        **kwargs,
+    ):
+        self._u_count: np.int32 = self.validate_count(u_count, "u")
+        self._v_count: np.int32 = self.validate_count(v_count, "v")
+
+        super().__init__(
+            **kwargs,
         )
-        self._u_cell_size: float | None = None
-        self._v_cell_size: float | None = None
-        self._u_count: int | None = None
-        self._v_count: int | None = None
-        self._rotation: float = 0.0
-        self._vertical: bool = False
-        self._dip: float = 0.0
 
-        super().__init__(object_type, **kwargs)
+        self.u_cell_size = u_cell_size
+        self.v_cell_size = v_cell_size
+        self.dip = dip
+        self.vertical = vertical
 
     @property
-    def cell_center_u(self) -> np.ndarray | None:
+    def cell_center_u(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`, shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, ):
-        Cell center local coordinate along the u-axis.
+        Cell center local coordinate along the u-axis,
+        shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, )
         """
-        if self.u_count is not None and self.u_cell_size is not None:
-            return (
-                np.cumsum(np.ones(self.u_count) * self.u_cell_size)
-                - self.u_cell_size / 2.0
-            )
-        return None
+        return (
+            np.cumsum(np.ones(self.u_count) * self.u_cell_size) - self.u_cell_size / 2.0
+        )
 
     @property
-    def cell_center_v(self) -> np.ndarray | None:
+    def cell_center_v(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float` shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, ):
-        The cell center local coordinate along the v-axis.
+        The cell center local coordinate along the v-axis,
+        shape(:obj:`~geoh5py.objects.grid2d.Grid2D.u_count`, )
         """
-        if self.v_count is not None and self.v_cell_size is not None:
-            return (
-                np.cumsum(np.ones(self.v_count) * self.v_cell_size)
-                - self.v_cell_size / 2.0
-            )
-        return None
+        return (
+            np.cumsum(np.ones(self.v_count) * self.v_cell_size) - self.v_cell_size / 2.0
+        )
 
     @property
-    def centroids(self) -> np.ndarray | None:
+    def centroids(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`,
-        shape (:obj:`~geoh5py.objects.grid2d.Grid2D.n_cells`, 3):
-        Cell center locations in world coordinates.
+        Cell center locations in world coordinates,
+        shape(:obj:`~geoh5py.objects.grid2d.Grid2D.n_cells`, 3).
 
         .. code-block:: python
 
@@ -114,13 +119,7 @@ class Grid2D(GridObject):
                 [x_N, y_N, z_N]
             ]
         """
-        if (
-            getattr(self, "_centroids", None) is None
-            and self.cell_center_u is not None
-            and self.cell_center_v is not None
-            and self.n_cells is not None
-            and self.origin is not None
-        ):
+        if getattr(self, "_centroids", None) is None:
             rotation_matrix = xy_rotation_matrix(np.deg2rad(self.rotation))
             dip_matrix = yz_rotation_matrix(np.deg2rad(self.dip))
 
@@ -152,14 +151,8 @@ class Grid2D(GridObject):
         if not isinstance(extent, np.ndarray):
             raise TypeError("Expected a numpy array of extent values.")
 
-        if not extent.ndim == 2 and 3 < extent.shape[1] < 2:
+        if not extent.ndim == 2 or extent.shape not in [(2, 3), (2, 2)]:
             raise TypeError("Expected a 2D numpy array with 2 or 3 columns")
-
-        if self.u_cell_size is None or self.v_cell_size is None:
-            raise AttributeError("Cell sizes are not defined.")
-
-        if self.centroids is None:
-            raise AttributeError("Centroids are not defined.")
 
         # get the centroids
         selected_centroids = mask_by_extent(
@@ -220,17 +213,10 @@ class Grid2D(GridObject):
 
         return copy
 
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
-
     @property
     def dip(self) -> float:
         """
-        :obj:`float`: Dip angle from horizontal (positive down) in degrees.
+        Dip angle from horizontal (positive down) in degrees.
         """
         if self.vertical:
             self._dip = 90.0
@@ -239,9 +225,10 @@ class Grid2D(GridObject):
         return self._dip
 
     @dip.setter
-    def dip(self, value):
-        if not isinstance(value, (float, int)):
+    def dip(self, value: Real):
+        if not isinstance(value, Real):
             raise TypeError("Dip angle must be a float.")
+
         self._centroids = None
 
         self._dip = float(value)
@@ -251,151 +238,96 @@ class Grid2D(GridObject):
         self.workspace.update_attribute(self, "attributes")
 
     @property
-    def n_cells(self) -> int | None:
+    def shape(self) -> tuple[np.int32, np.int32]:
         """
-        :obj:`int`: Total number of cells.
+        Number of cells along the u and v-axis.
         """
-        if self.shape is not None:
-            return np.prod(self.shape)
-        return None
+        return self.u_count, self.v_count
 
     @property
-    def origin(self) -> np.ndarray:
+    def u_cell_size(self) -> float:
         """
-        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin.
-        """
-        return self._origin
-
-    @origin.setter
-    def origin(self, value):
-        if value is not None:
-            if isinstance(value, np.ndarray):
-                value = value.tolist()
-
-            assert len(value) == 3, "Origin must be a list or numpy array of shape (3,)"
-
-            self._centroids = None
-
-            value = np.asarray(
-                tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
-            )
-            self._origin = value
-            self.workspace.update_attribute(self, "attributes")
-
-    @property
-    def rotation(self) -> float:
-        """
-        :obj:`float`: Clockwise rotation angle (degree) about the vertical axis.
-        """
-        return self._rotation
-
-    @rotation.setter
-    def rotation(self, value: float | int):
-        if not isinstance(value, (float, int)):
-            raise TypeError("Rotation angle must be a float.")
-        self._centroids = None
-        self._rotation = float(value)
-        self.workspace.update_attribute(self, "attributes")
-
-    @property
-    def shape(self) -> tuple | None:
-        """
-        :obj:`list` of :obj:`int`, len (2, ): Number of cells along the u and v-axis.
-        """
-        if self.u_count is not None and self.v_count is not None:
-            return self.u_count, self.v_count
-        return None
-
-    @property
-    def u_cell_size(self) -> float | None:
-        """
-        :obj:`np.ndarray`: Cell size along the u-axis.
+        Cell size along the u-axis.
         """
         return self._u_cell_size
 
     @u_cell_size.setter
-    def u_cell_size(self, value: float | np.ndarray):
-        if not isinstance(value, (float, np.ndarray)):
-            raise TypeError("Attribute 'u_cell_size' must be type(float).")
-
+    def u_cell_size(self, value: Real | np.ndarray):
+        self._u_cell_size = self.validate_cell_size(value, "u")
         self._centroids = None
-        if isinstance(value, np.ndarray):
-            assert len(value) == 1, "u_cell_size must be a float of shape (1,)"
-            self._u_cell_size = np.r_[value].astype(float).item()
-        else:
-            self._u_cell_size = value
-        self.workspace.update_attribute(self, "attributes")
 
-    @property
-    def u_count(self) -> int | None:
-        """
-        :obj:`int`: Number of cells along u-axis
-        """
-        return self._u_count
-
-    @u_count.setter
-    def u_count(self, value):
-        if value is not None:
-            value = np.r_[value]
-            self._centroids = None
-            self._u_count = int(value)
-            assert len(value) == 1, "u_count must be an integer of shape (1,)"
+        if self.on_file:
             self.workspace.update_attribute(self, "attributes")
 
     @property
-    def v_cell_size(self) -> float | None:
+    def u_count(self) -> np.int32:
         """
-        :obj:`np.ndarray`: Cell size along the v-axis
+        Number of cells along v-axis.
+        """
+        return self._u_count
+
+    @property
+    def v_cell_size(self) -> float:
+        """
+        Cell size along the v-axis
         """
         return self._v_cell_size
 
     @v_cell_size.setter
-    def v_cell_size(self, value: float | np.ndarray):
-        if not isinstance(value, (float, np.ndarray)):
-            raise TypeError("Attribute 'v_cell_size' must be type(float).")
-
+    def v_cell_size(self, value: Real | np.ndarray):
+        self._v_cell_size = self.validate_cell_size(value, "v")
         self._centroids = None
-        if isinstance(value, np.ndarray):
-            assert len(value) == 1, "v_cell_size must be a float of shape (1,)"
-            self._v_cell_size = np.r_[value].astype(float).item()
-        else:
-            self._v_cell_size = value
-        self.workspace.update_attribute(self, "attributes")
 
-    @property
-    def v_count(self) -> int | None:
-        """
-        :obj:`int`: Number of cells along v-axis
-        """
-        return self._v_count
-
-    @v_count.setter
-    def v_count(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "v_count must be an integer of shape (1,)"
-            self._centroids = None
-            self._v_count = int(value)
+        if self.on_file:
             self.workspace.update_attribute(self, "attributes")
 
     @property
-    def vertical(self) -> bool | None:
+    def v_count(self) -> np.int32:
         """
-        :obj:`bool`: Set the grid to be vertical.
+        Number of cells along v-axis.
+        """
+        return self._v_count
+
+    @staticmethod
+    def validate_cell_size(value: Real | np.ndarray, axis: str) -> float:
+        """
+        Validate and format type of cell size value.
+        """
+        if not isinstance(value, (Real, np.ndarray)):
+            raise TypeError(f"Attribute '{axis}_cell_size' must be type(float).")
+
+        if isinstance(value, np.ndarray):
+            if not len(value) == 1:
+                raise ValueError(
+                    "Attribute 'v_cell_size' must be a float of shape (1,)"
+                )
+
+            return np.r_[value].astype(float).item()
+
+        return float(value)
+
+    @property
+    def vertical(self) -> bool:
+        """
+        Set the grid to be vertical.
         """
         return self._vertical
 
     @vertical.setter
     def vertical(self, value: bool):
-        if value is not None:
-            assert isinstance(value, bool) or value in [
-                0,
-                1,
-            ], "vertical must be of type 'bool'"
-            self._centroids = None
-            self._vertical = value
-            if self.dip != 90 and value is True:
-                self._dip = 90.0
+        if not isinstance(value, bool) is not None or value not in [
+            0,
+            1,
+        ]:
+            raise TypeError("Attribute 'vertical' must be type(bool).")
+
+        self._centroids = None
+        self._vertical = bool(value)
+
+        if self.dip != 90 and value is True:
+            self._dip = 90.0
+
+        if self.on_file:
             self.workspace.update_attribute(self, "attributes")
 
     def to_geoimage(
@@ -411,3 +343,15 @@ class Grid2D(GridObject):
         :return: a new georeferenced :obj:`geoh5py.objects.geo_image.GeoImage`.
         """
         return self.converter.to_geoimage(self, keys, mode=mode, **geoimage_kwargs)
+
+    @staticmethod
+    def validate_count(value: int, axis: str) -> np.int32:
+        """
+        Validate and format type of count value.
+        """
+        if not isinstance(value, (np.integer, int)) or value < 1:
+            raise TypeError(
+                f"Attribute '{axis}_count' must be a type(int32) greater than 1."
+            )
+
+        return np.int32(value)

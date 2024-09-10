@@ -48,12 +48,16 @@ def test_data_boolean(tmp_path):
 
             values = values.astype(bool)
 
-            grid.add_data(
+            _, non_bool = grid.add_data(
                 {
                     "my_boolean": {
                         "association": "CELL",
                         "values": values.flatten(),
-                    }
+                    },
+                    "non-bool": {
+                        "association": "CELL",
+                        "values": values.astype(float),
+                    },
                 }
             )
 
@@ -91,10 +95,15 @@ def test_data_boolean(tmp_path):
             ):
                 data2.values = np.array([1.1, 0.2, 1.1])
 
+            with pytest.raises(
+                TypeError, match="'entity_type' must be of type ReferencedBooleanType"
+            ):
+                data2.entity_type = non_bool.entity_type
+
             with pytest.raises(ValueError, match="Values provided by "):
                 data2.values = np.array([0, 2, 1])
 
-            with pytest.raises(TypeError, match="Input 'values' for "):
+            with pytest.raises(TypeError, match="Input 'values' must be a numpy array"):
                 data2.values = "bidon"
 
     with Workspace(h5file_path, mode="r") as workspace:
