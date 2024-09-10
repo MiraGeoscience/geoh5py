@@ -32,6 +32,10 @@ from geoh5py.shared.exceptions import (
 )
 from geoh5py.ui_json import InputFile
 from geoh5py.ui_json.forms import (
+    StringForm,
+    IntegerForm,
+    ObjectForm,
+    DataForm,
     BoolFormParameter,
     ChoiceStringFormParameter,
     DataFormParameter,
@@ -50,6 +54,75 @@ from geoh5py.ui_json.parameters import (
 )
 from geoh5py.ui_json.ui_json import UIJson
 
+
+def sample_uijson(test_path):
+    uijson_path = test_path / "test.ui.json"
+    geoh5_path = test_path / "test.geoh5"
+    with Workspace.create(geoh5_path) as workspace:
+        pts = Points.create(workspace, name="test", vertices=np.random.random((10, 3)))
+        data = pts.add_data({
+            "my data": {"values": np.random.random(10)}
+        })
+    with open(uijson_path, mode="w") as file:
+        file.write(
+            json.dumps(
+                {
+                    "title": "my application",
+                    "geoh5": str(geoh5_path),
+                    "run_command": "python -m my_module",
+                    "run_command_boolean": True,
+                    "monitoring_directory": "my_monitoring_directory",
+                    "conda_environment": "my_conda_environment",
+                    "conda_environment_boolean": False,
+                    "workspace": str(geoh5_path),
+                    "my_string_parameter": {
+                        "label": "My string parameter",
+                        "value": "my string value",
+                    },
+                    "my_integer_parameter": {
+                        "label": "My integer parameter",
+                        "value": 10,
+                    },
+                    "my_object_parameter": {
+                        "label": "My object parameter",
+                        "mesh_type": ["{202C5DB1-A56D-4004-9CAD-BAAFD8899406}"],
+                        "value": str(pts.uid),
+                    },
+                    "my_data_parameter": {
+                        "label": "My data parameter",
+                        "parent": "my_object_parameter",
+                        "association": "Vertex",
+                        "data_type": "Float",
+                        "is_value": False,
+                        "property": str(data.uid),
+                        "value": 0.0,
+                    },
+                    "my_other_data_parameter": {
+                        "label": "My other data parameter",
+                        "parent": "my_object_parameter",
+                        "association": "Vertex",
+                        "data_type": "Float",
+                        "is_value": True,
+                        "property": "",
+                        "value": 0.0,
+                    }
+                }
+            )
+        )
+        return uijson_path
+
+def test_uijson(tmp_path):
+    class MyUIJson(UIJson):
+        my_string_parameter: StringForm
+        my_integer_parameter: IntegerForm
+        my_object_parameter: ObjectForm
+        my_data_parameter: DataForm
+        my_other_data_parameter: DataForm
+
+
+    uijson = MyUIJson.read(sample_uijson(tmp_path))
+    params = uijson.to_params()
+    assert True
 
 def generate_sample_uijson_data(testpath):
     with Workspace.create(testpath / "test.geoh5") as workspace:
