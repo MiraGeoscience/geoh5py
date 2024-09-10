@@ -81,7 +81,6 @@ class ReferencedData(IntegerData):
 
     @entity_type.setter
     def entity_type(self, data_type: ReferenceDataType):
-
         if not isinstance(data_type, ReferenceDataType):
             raise TypeError("entity_type must be of type ReferenceDataType")
 

@@ -125,7 +125,6 @@ def test_copy_from_extent(tmp_path):
 
 
 def test_data_type_attributes():
-
     workspace = Workspace()
     data_type = DataType(workspace, primitive_type="REFERENCED")
 

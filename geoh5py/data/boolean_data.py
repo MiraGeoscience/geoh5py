@@ -38,7 +38,6 @@ class BooleanData(ReferencedData):
 
     @entity_type.setter
     def entity_type(self, data_type: ReferencedBooleanType):
-
         if not isinstance(data_type, ReferencedBooleanType):
             raise TypeError("'entity_type' must be of type ReferencedBooleanType")
 

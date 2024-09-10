@@ -50,7 +50,6 @@ class UIJsonGroup(Group):
 
     @options.setter
     def options(self, value: dict):
-
         if not isinstance(value, dict):
             raise ValueError(f"Input 'options' must be of type {dict}.")
 
