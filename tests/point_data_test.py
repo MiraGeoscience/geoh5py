@@ -83,7 +83,6 @@ def test_remove_point_data(tmp_path):
     values = np.random.randn(12)
     h5file_path = tmp_path / r"testPoints.geoh5"
     with Workspace.create(h5file_path) as workspace:
-
         pt = Points.create(workspace)
         assert pt.n_vertices == 1
 
