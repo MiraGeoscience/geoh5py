@@ -17,7 +17,7 @@
 
 from __future__ import annotations
 
-from . import NoTypeGroup
+from .notype import NoTypeGroup
 
 
 class RootGroup(NoTypeGroup):
