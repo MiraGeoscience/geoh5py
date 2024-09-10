@@ -21,6 +21,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from geoh5py.data.color_map import ColorMap
 from geoh5py.objects import Grid2D
 from geoh5py.shared.utils import compare_entities
 from geoh5py.shared.validators import ShapeValidationError
@@ -35,6 +36,9 @@ def test_create_color_map(tmp_path):
     values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
 
     h5file_path = tmp_path / r"test_color_map.geoh5"
+
+    standalone = ColorMap()
+    assert standalone.values.shape[1] == 0
 
     # Create a workspace
     workspace = Workspace.create(h5file_path)
@@ -83,6 +87,8 @@ def test_create_color_map(tmp_path):
         data.entity_type.color_map.values = np.core.records.fromarrays(
             rgba.T, names=("a", "b", "c", "d", "f")
         )
+
+    data.entity_type.color_map.name = "my colours"
     workspace.close()
 
     # Read the data back in from a fresh workspace

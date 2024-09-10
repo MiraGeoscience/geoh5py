@@ -44,7 +44,7 @@ class ColorMap:
         map_attributes(self, **kwargs)
 
     @property
-    def values(self) -> np.ndarray | None:
+    def values(self) -> np.ndarray:
         """
         :obj:`numpy.array`: Colormap defined by values and corresponding RGBA:
 
@@ -58,8 +58,6 @@ class ColorMap:
         where V (Values) are sorted floats defining the position of each RGBA.
         R (Red), G (Green), B (Blue) and A (Alpha) are integer values between [0, 255].
         """
-        if self._values is None:
-            return self._values
         return np.vstack([self._values[name] for name in self._names])
 
     @values.setter
