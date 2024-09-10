@@ -723,7 +723,7 @@ def map_name_attributes(object_, **kwargs: dict) -> dict:
     :param object_: The object to map the attributes to.
     :param kwargs: Dictionary of attributes.
     """
-    mapping: dict = getattr(object_, "_attribute_map", None)
+    mapping = getattr(object_, "_attribute_map", None)
 
     if mapping is None:
         raise AttributeError("Object must have an '_attribute_map' attribute.")
