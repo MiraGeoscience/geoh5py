@@ -25,7 +25,13 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..data import CommentsData, Data, DataAssociationEnum, DataType, VisualParameters
+from ..data import (
+    CommentsData,
+    Data,
+    DataAssociationEnum,
+    ReferencedData,
+    VisualParameters,
+)
 from ..groups import PropertyGroup
 from ..shared import Entity
 from ..shared.conversion import BaseConversion
@@ -91,7 +97,8 @@ class ObjectBase(EntityContainer):
         data: dict,
         property_group: str | PropertyGroup | None = None,
         compression: int = 5,
-    ) -> Data | list[Data]:
+        **kwargs,
+    ) -> Data | ReferencedData | list[Data]:
         """
         Create :obj:`~geoh5py.data.data.Data` from dictionary of name and arguments.
         The provided arguments can be any property of the target Data class.
@@ -117,17 +124,24 @@ class ObjectBase(EntityContainer):
         """
         data_objects = []
         for name, attr in data.items():
-            assert isinstance(attr, dict), (
-                f"Given value to data {name} should of type {dict}. "
-                f"Type {type(attr)} given instead."
-            )
+            if not isinstance(attr, dict):
+                raise TypeError(
+                    f"Given value to data {name} should of type {dict}. "
+                    f"Type {type(attr)} given instead."
+                )
+
             attr["name"] = name
-            self.validate_data_association(attr)
-            entity_type = DataType.validate_data_type(self.workspace, attr)
+            attr, validate_property_group = self.validate_association(
+                attr, property_group=property_group, **kwargs
+            )
+
+            entity_type = self.workspace.validate_data_type(attr, attr.get("values"))
+
             kwargs = {"parent": self, "association": attr["association"]}
             for key, val in attr.items():
                 if key in ["parent", "association", "entity_type", "type"]:
                     continue
+
                 kwargs[key] = val
 
             data_object = self.workspace.create_entity(
@@ -137,10 +151,13 @@ class ObjectBase(EntityContainer):
             if not isinstance(data_object, Data):
                 continue
 
-            if property_group is not None:
-                self.add_data_to_group(data_object, property_group)
+            if validate_property_group is not None:
+                self.add_data_to_group(data_object, validate_property_group)
 
             data_objects.append(data_object)
+
+        # TODO: Legacy re-sorting for old drillhole format
+        self.post_processing()
 
         if len(data_objects) == 1:
             return data_objects[0]
@@ -448,6 +465,11 @@ class ObjectBase(EntityContainer):
         """
         return self._property_groups
 
+    def post_processing(self):
+        """
+        Post-processing function to be called after adding data.
+        """
+
     def remove_children(self, children: list[Entity | PropertyGroup]):
         """
         Remove children from the list of children entities.
@@ -539,25 +561,30 @@ class ObjectBase(EntityContainer):
         """
         return self._converter
 
-    def validate_data_association(self, attribute_dict):
+    def validate_association(self, attributes, property_group=None, **_):
         """
         Get a dictionary of attributes and validate the data 'association' keyword.
+
+        :param attributes: Dictionary of attributes provided for the data.
+        :param property_group: Property group to associate the data with.
         """
-        if attribute_dict.get("association") is not None:
-            return
+        if attributes.get("association") is not None:
+            return attributes, property_group
 
         if (
             getattr(self, "n_cells", None) is not None
-            and attribute_dict["values"].ravel().shape[0] == self.n_cells
+            and attributes["values"].ravel().shape[0] == self.n_cells
         ):
-            attribute_dict["association"] = "CELL"
+            attributes["association"] = "CELL"
         elif (
             getattr(self, "n_vertices", None) is not None
-            and attribute_dict["values"].ravel().shape[0] == self.n_vertices
+            and attributes["values"].ravel().shape[0] == self.n_vertices
         ):
-            attribute_dict["association"] = "VERTEX"
+            attributes["association"] = "VERTEX"
         else:
-            attribute_dict["association"] = "OBJECT"
+            attributes["association"] = "OBJECT"
+
+        return attributes, property_group
 
     def add_default_visual_parameters(self):
         """

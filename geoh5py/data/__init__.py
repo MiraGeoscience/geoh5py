@@ -22,7 +22,12 @@ from .blob_data import BlobData
 from .boolean_data import BooleanData
 from .data import Data
 from .data_association_enum import DataAssociationEnum
-from .data_type import DataType
+from .data_type import (
+    DataType,
+    GeometricDataValueMapType,
+    GeometricDynamicDataType,
+    ReferenceDataType,
+)
 from .data_unit import DataUnit
 from .datetime_data import DatetimeData
 from .filename_data import FilenameData

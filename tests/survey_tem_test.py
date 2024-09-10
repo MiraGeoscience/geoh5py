@@ -460,7 +460,7 @@ def test_create_survey_ground_tem_large_loop(
         )
 
         assert list(
-            transmitters_rec.tx_id_property.entity_type.value_map.map.values()
+            transmitters_rec.tx_id_property.entity_type.value_map.map["Value"]
         ) == ["Unknown", "Loop 2"]
 
 

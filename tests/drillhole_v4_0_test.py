@@ -92,6 +92,7 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0", add_data=True)
                     },
                 }
             )
+
             well.add_data(
                 {
                     "text Data": {
@@ -1031,7 +1032,10 @@ def test_add_data_to_property(tmp_path):
             "new value",
             verification_map_value,
             data_type=data_type.DataType(
-                workspace, "REFERENCED", name="new_value", value_map=value_map
+                workspace,
+                primitive_type="REFERENCED",
+                name="new_value",
+                value_map=value_map,
             ),
         )
 
