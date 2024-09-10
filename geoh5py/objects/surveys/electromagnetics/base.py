@@ -398,12 +398,8 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
 
         for elem in ["receivers", "transmitters", "base_stations"]:
             dependent = getattr(self, elem, None)
-            if (
-                dependent is not None
-                and dependent is not self
-                and dependent.metadata != self._metadata
-            ):
-                dependent.metadata = self._metadata
+            if dependent is not None and dependent is not self:
+                dependent._metadata = self._metadata  # pylint: disable=protected-access
 
     @property
     def receivers(self) -> BaseEMSurvey | None:
