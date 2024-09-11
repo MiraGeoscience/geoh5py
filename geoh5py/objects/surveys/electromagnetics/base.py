@@ -234,6 +234,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         cell_mask: np.ndarray | None = None,
+        copy_complement: bool = True,
         **kwargs,
     ):
         """
@@ -257,7 +258,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             if not isinstance(value, (uuid.UUID, type(None))):
                 new_entity.edit_em_metadata({key: value})
 
-        if self.complement is not None:
+        if self.complement is not None and copy_complement:
             self.copy_complement(
                 new_entity,
                 parent=parent,
@@ -772,7 +773,6 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
         if isinstance(value, np.ndarray):
             attributes = {
                 "values": value.astype(np.int32),
-                "type": "referenced",
             }
             if (
                 self.complement is not None
@@ -785,9 +785,10 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
                 }
                 value_map[0] = "Unknown"
                 attributes.update(
-                    {  # type: ignore
+                    {
                         "primitive_type": "REFERENCED",
                         "value_map": value_map,
+                        "association": "VERTEX",
                     }
                 )
 
