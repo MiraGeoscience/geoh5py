@@ -402,6 +402,9 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             if dependent is not None and dependent is not self:
                 dependent._metadata = self._metadata  # pylint: disable=protected-access
 
+                if dependent.on_file:
+                    self.workspace.update_attribute(dependent, "metadata")
+
     @property
     def receivers(self) -> BaseEMSurvey | None:
         """
