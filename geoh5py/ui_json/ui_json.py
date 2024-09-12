@@ -44,7 +44,7 @@ class BaseUIJson(BaseModel):
     :params workspace_geoh5: Path to the workspace geoh5 file.
     """
 
-    model_config: ConfigDict = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     title: str
     geoh5: Path
