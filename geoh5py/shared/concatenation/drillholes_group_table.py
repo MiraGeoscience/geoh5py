@@ -75,7 +75,7 @@ class DrillholesGroupTable(ABC):
 
         for name, dtype in zip(properties, types, strict=False):
             if name in names:
-                if dtype not in [np.float32, np.int32]:
+                if dtype not in [np.float32, np.int32, np.uint32, bool]:
                     dtype = "O"
                 dtypes.append((name, dtype))
                 no_data_values.append(self.nan_value_from_name(name))
