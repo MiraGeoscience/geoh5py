@@ -277,6 +277,9 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
     ) -> BaseEMSurvey | None:
+        """
+        Copy the complement entity to the new entity.
+        """
         if self.complement is None:
             return None
 
