@@ -203,7 +203,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         self.edit_em_metadata({"Channels": values})
 
     @property
-    def complement(self):
+    def complement(self) -> BaseEMSurvey | None:
         """Returns the complement object for self."""
         return None
 
@@ -258,7 +258,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             if not isinstance(value, (uuid.UUID, type(None))):
                 new_entity.edit_em_metadata({key: value})
 
-        if self.complement is not None and copy_complement:
+        if copy_complement:
             self.copy_complement(
                 new_entity,
                 parent=parent,
@@ -276,7 +276,10 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
-    ):
+    ) -> BaseEMSurvey | None:
+        if self.complement is None:
+            return None
+
         new_complement = self.complement._super_copy(  # pylint: disable=protected-access
             parent=parent,
             copy_children=copy_children,
@@ -397,13 +400,11 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         if self.on_file:
             self.workspace.update_attribute(self, "metadata")
 
-        for elem in ["receivers", "transmitters", "base_stations"]:
-            dependent = getattr(self, elem, None)
-            if dependent is not None and dependent is not self:
-                dependent._metadata = self._metadata  # pylint: disable=protected-access
+            if self.complement is not None:
+                self.complement._metadata = self._metadata  # pylint: disable=protected-access
 
-                if dependent.on_file:
-                    self.workspace.update_attribute(dependent, "metadata")
+                if self.complement.on_file:
+                    self.workspace.update_attribute(self.complement, "metadata")
 
     @property
     def receivers(self) -> BaseEMSurvey | None:
