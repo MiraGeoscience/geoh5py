@@ -95,13 +95,11 @@ class BaseUIJson(BaseModel):
         """
 
         with fetch_active_workspace(workspace or Workspace(self.geoh5)) as geoh5:
-
             if geoh5 is None:
                 raise ValueError("Workspace cannot be None.")
 
             data = {}
             for field in self.model_fields_set:
-
                 if field == "geoh5":
                     data[field] = geoh5
                     continue
