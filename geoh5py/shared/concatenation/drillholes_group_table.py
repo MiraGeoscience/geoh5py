@@ -23,6 +23,7 @@ from uuid import UUID
 import numpy as np
 
 from ...data import DataType
+from ...data.primitive_type_enum import DataTypeEnum
 from ..utils import str2uuid, to_tuple
 from .property_group import ConcatenatedPropertyGroup
 
@@ -45,6 +46,7 @@ class DrillholesGroupTable(ABC):
         self._association: tuple | None = None
         self._index_by_drillhole: dict | None = None
         self._properties: tuple | None = None
+        self._properties_types: tuple | None = None
 
         self._property_groups: dict[UUID, ConcatenatedPropertyGroup] = (
             self._get_property_groups(parent, name)
@@ -52,26 +54,40 @@ class DrillholesGroupTable(ABC):
         self._parent: Concatenator = parent
         self._name: str = name
 
-    @staticmethod
-    def _create_structured_array(output: np.ndarray, names: tuple[str]) -> np.ndarray:
+    def _create_empty_structured_array(
+        self,
+        names: tuple[str],
+        drillhole: bool = True,
+    ) -> np.ndarray:
         """
-        Create a structured array from the output of the function get_depth_table.
+        Create an empty structured array that can contains the data.
 
-        :param output: The data to pass to structured array.
-        :param names: The name of the columns of the structured array.
+        :param names: The names to extract.
+        :param drillhole: If True, the drillholes are added to the table.
 
-        :return: The structured array.
+        :return: an empty structured array.
         """
-        # create the structured array
-        dtype = []
-        for idx, data_name in enumerate(names):
-            type_temp = np.array([output[0, idx]]).dtype
-            if type_temp.kind in ["S", "U"]:
-                dtype.append((data_name, "O"))
-            else:
-                dtype.append((data_name, type_temp))
+        dtypes = [("Drillhole", "O")] if drillhole else []
+        no_data_values = [None] if drillhole else []
 
-        return np.core.records.fromarrays(output.T, dtype=dtype)
+        properties = self.association + self.properties
+        types = (np.float32,) * len(self.association) + self.properties_type
+
+        for name, dtype in zip(properties, types, strict=False):
+            if name in names:
+                if dtype not in [np.float32, np.int32]:
+                    dtype = "O"
+                dtypes.append((name, dtype))
+                no_data_values.append(self.nan_value_from_name(name))
+
+        empty_array = np.recarray(
+            (self.parent.data[self.association[0]].shape[0],), dtype=dtypes
+        )
+
+        for name, ndv in zip(empty_array.dtype.names, no_data_values, strict=False):
+            empty_array[name].fill(ndv)
+
+        return empty_array
 
     def _depth_table_by_key(
         self,
@@ -92,36 +108,36 @@ class DrillholesGroupTable(ABC):
         if self.index_by_drillhole is None:
             raise ValueError("No drillhole found in the concatenator.")
 
-        all_data_list = []
+        output_array = self._create_empty_structured_array(
+            names=names, drillhole=drillholes
+        )
+        current_index = 0
+        temp_array = None
         for object_, data_dict in self.index_by_drillhole.items():
-            data_list: list = []
-            no_data_values: list = []
             for name, info in data_dict.items():
                 if name in names:
-                    data_list.append(
-                        self.parent.data[name][info[0] : info[0] + info[1]]
+                    temp_array = self._pad_array_to_association(
+                        object_,
+                        self.parent.data[name][info[0] : info[0] + info[1]],
+                        self.nan_value_from_name(name),
                     )
-                    no_data_values.append(self.nan_value_from_name(name))
 
-            data_list = self._pad_arrays_to_association(
-                object_, data_list, no_data_values
-            )
+                    output_array[name][
+                        current_index : current_index + temp_array.shape[0]
+                    ] = temp_array
+
+            if temp_array is None:
+                raise ValueError("No data found for the given names.")
 
             if drillholes:
-                # add the object list to the first position of the data list
-                data_list.insert(0, [object_] * data_list[0].shape[0])
+                output_array["Drillhole"][
+                    current_index : current_index + temp_array.shape[0]
+                ] = object_
 
-            # create a numpy array
-            all_data_list.append(np.array(data_list, dtype=object).T)
-
-        # get the names of the data
-        if drillholes:
-            names = ("Drillhole",) + names
+            current_index += temp_array.shape[0]
 
         # transform to a structured array
-        return self._create_structured_array(
-            np.concatenate(all_data_list, axis=0), names
-        )
+        return output_array
 
     @staticmethod
     def _get_property_groups(parent, name) -> dict[UUID, ConcatenatedPropertyGroup]:
@@ -154,37 +170,60 @@ class DrillholesGroupTable(ABC):
 
         return property_groups
 
-    def _pad_arrays_to_association(
-        self, drillhole_uid: bytes, arrays: list[np.ndarray], ndv: Any
-    ) -> list[np.ndarray]:
+    def _get_properties_names_types(self):
+        if not self._properties:
+            properties_name: tuple = ()
+            properties_type: tuple = ()
+
+            for property_group in self.property_groups.values():
+                if property_group.properties is None:
+                    continue
+
+                for property_ in property_group.properties:
+                    property_temp = property_group.parent.get_data(property_)[0]
+
+                    if property_temp.name not in self.association + properties_name:
+                        properties_name += (property_temp.name,)
+                        properties_type += (
+                            DataTypeEnum.from_primitive_type(
+                                property_temp.entity_type.primitive_type
+                            ),
+                        )
+
+            # sort the properties names and dtypes
+            mapper = dict(zip(properties_name, properties_type, strict=False))
+            properties_name = tuple(sorted(properties_name))
+            properties_type = tuple(mapper[name] for name in properties_name)
+
+            if properties_name:
+                self._properties = properties_name
+                self._properties_types = properties_type
+
+    def _pad_array_to_association(
+        self, drillhole_uid: bytes, array: np.ndarray, ndv: Any
+    ) -> np.ndarray:
         """
-        Pad the arrays in the list to match the size of the association
-            for a given drillhole.
+        Pad the array to match the size of the association for a given drillhole.
 
         :param drillhole_uid: The uid of the drillhole where the data is located.
-        :param arrays: The list of arrays to pad.
+        :param array: The array to pad.
         :param ndv: The No Data Value of the data.
 
-        :return: The padded arrays.
+        :return: The padded array.
         """
-        padded_arrays = []  # First array remains the same
-        for idx, array in enumerate(arrays):
-            pad_size = (
-                self.index_by_drillhole[drillhole_uid][self.association[0]][1]
-                - array.shape[0]
+        pad_size = (
+            self.index_by_drillhole[drillhole_uid][self.association[0]][1]
+            - array.shape[0]
+        )
+        if pad_size > 0:
+            return np.pad(
+                array,
+                (0, pad_size),
+                mode="constant",
+                constant_values=(ndv, ndv),
             )
-            if pad_size > 0:
-                padded_array = np.pad(
-                    array,
-                    (0, pad_size),
-                    mode="constant",
-                    constant_values=(ndv[idx], ndv[idx]),
-                )
-            else:
-                padded_array = array
-            padded_arrays.append(padded_array)
 
-        return padded_arrays
+        return array
 
     def add_values_to_property_group(
         self, name: str, values: np.ndarray, data_type: DataType | None = None
@@ -237,7 +276,7 @@ class DrillholesGroupTable(ABC):
                 property_group=self.property_groups[drillhole.uid],
             )
 
-        self._update_drillholes_group_table(name)
+        self._update_drillholes_group_table(name, data_type)
 
     @property
     def association(self) -> tuple:
@@ -371,29 +410,27 @@ class DrillholesGroupTable(ABC):
         The names of the associated data.
         """
         if not self._properties:
-            properties: tuple = ()
-            for property_group in self.property_groups.values():
-                if property_group.properties is None:
-                    continue
-
-                temp_properties = tuple(
-                    property_group.parent.get_data(property_)[0].name
-                    for property_ in property_group.properties
-                )
-
-                properties = tuple(sorted(set(properties + temp_properties)))
-
-            properties = tuple(
-                name for name in properties if name not in self.association
-            )
-
-            if properties:
-                self._properties = properties
+            self._get_properties_names_types()
 
         if self._properties is None:
             return ()
 
         return self._properties
+
+    @property
+    def properties_type(self) -> tuple:
+        """
+        The dtype of the associated data.
+
+        They are ordered in the same way as the properties.
+        """
+        if not self._properties_types:
+            self._get_properties_names_types()
+
+        if self._properties_types is None:
+            return ()
+
+        return self._properties_types
 
     @property
     def property_group_type(self) -> str:
@@ -411,20 +448,25 @@ class DrillholesGroupTable(ABC):
         """
         return self._property_groups
 
-    def _update_drillholes_group_table(self, name):
+    def _update_drillholes_group_table(self, name: str, data_type: DataType):
         """
         Update the drillholes group table with a new property group.
 
         :param name: The name of the property group to update.
+        :param data_type: The data type of the property group.
         """
         self.parent.update_data_index()
         self.parent.workspace.update_attribute(self.parent, "concatenated_attributes")
         self._property_groups = self._get_property_groups(self.parent, self.name)
 
-        if self._properties is not None:
+        dtype = DataTypeEnum.from_primitive_type(data_type.primitive_type)
+
+        if self._properties is not None and self._properties_types is not None:
             self._properties += (name,)
+            self._properties_types += (dtype,)
         else:
             self._properties = ((name,),)
+            self._properties_types = ((dtype,),)
 
         if self._index_by_drillhole is not None:
             for value in self._index_by_drillhole.values():

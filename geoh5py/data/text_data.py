@@ -27,7 +27,6 @@ from .primitive_type_enum import PrimitiveTypeEnum
 
 class TextData(Data):
     _values: np.ndarray | str | None
-    dtype = str
 
     @property
     def nan_value(self):
@@ -51,7 +50,7 @@ class TextData(Data):
                 [v.decode("utf-8") if isinstance(v, bytes) else v for v in values]
             )
 
-        if (not isinstance(values, (self.dtype, type(None), np.ndarray))) or (
+        if (not isinstance(values, (str, type(None), np.ndarray))) or (
             isinstance(values, np.ndarray) and values.dtype.kind not in ["U", "S"]
         ):
             raise ValueError(

@@ -31,8 +31,6 @@ class ReferencedData(IntegerData):
     Reference data described by indices and associated strings.
     """
 
-    dtype = np.uint8
-
     def __init__(self, **kwargs):
         self._data_maps = None
 

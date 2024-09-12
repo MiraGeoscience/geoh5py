@@ -32,8 +32,6 @@ class FilenameData(Data):
     :param file_bytes: Binary representation of the file.
     """
 
-    dtype = Path
-
     def __init__(
         self,
         values: str | None = None,
@@ -104,7 +102,7 @@ class FilenameData(Data):
                 raw_binary.write(self.file_bytes)
 
     def validate_values(self, values: Any | None) -> Any:
-        if not isinstance(values, str | Path | None):
+        if not isinstance(values, str | None):
             raise ValueError("Input 'values' for FilenameData must be of type 'str'.")
 
         return values
