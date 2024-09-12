@@ -254,7 +254,7 @@ def test_data_form():
     form = DataForm(
         label="name",
         value=data_uid,
-        parent=uuid.uuid4(),
+        parent="Da-da",
         association=["Vertex", "Cell"],
         data_type=["Float", "Integer"],
     )

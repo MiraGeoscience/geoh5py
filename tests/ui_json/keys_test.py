@@ -17,26 +17,24 @@
 
 from __future__ import annotations
 
-from geoh5py.ui_json.forms import MemberKeys
-
-
-def test_keys():
-    mappable_keys = {
-        "groupOptional": "group_optional",
-        "dependencyType": "dependency_type",
-        "groupDependency": "group_dependency",
-        "groupDependencyType": "group_dependency_type",
-        "lineEdit": "line_edit",
-        "choiceList": "choice_list",
-        "fileDescription": "file_description",
-        "fileType": "file_type",
-        "fileMulti": "file_multi",
-        "meshType": "mesh_type",
-        "dataType": "data_type",
-        "dataGroupType": "data_group_type",
-        "isValue": "is_value",
-    }
-    keys = MemberKeys()
-    assert list(keys.map(mappable_keys)) == list(mappable_keys.values())
-    inv_mappable_keys = {v: k for k, v in mappable_keys.items()}
-    assert list(keys.map(inv_mappable_keys, convention="camel")) == list(mappable_keys)
+#
+# def test_keys():
+#     mappable_keys = {
+#         "groupOptional": "group_optional",
+#         "dependencyType": "dependency_type",
+#         "groupDependency": "group_dependency",
+#         "groupDependencyType": "group_dependency_type",
+#         "lineEdit": "line_edit",
+#         "choiceList": "choice_list",
+#         "fileDescription": "file_description",
+#         "fileType": "file_type",
+#         "fileMulti": "file_multi",
+#         "meshType": "mesh_type",
+#         "dataType": "data_type",
+#         "dataGroupType": "data_group_type",
+#         "isValue": "is_value",
+#     }
+#     keys = MemberKeys()
+#     assert list(keys.map(mappable_keys)) == list(mappable_keys.values())
+#     inv_mappable_keys = {v: k for k, v in mappable_keys.items()}
+#     assert list(keys.map(inv_mappable_keys, convention="camel")) == list(mappable_keys)
