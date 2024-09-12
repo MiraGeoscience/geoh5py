@@ -79,7 +79,7 @@ class BaseForm(BaseModel):
         optional or True if a bool type.
     """
 
-    model_config: ClassVar = ConfigDict(
+    model_config: ClassVar[ConfigDict] = ConfigDict(
         extra="allow",
         frozen=True,
         populate_by_name=True,
