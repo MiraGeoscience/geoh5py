@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, ClassVar
 from uuid import UUID
 
 import numpy as np
@@ -79,7 +79,7 @@ class BaseForm(BaseModel):
         optional or True if a bool type.
     """
 
-    model_config = ConfigDict(
+    model_config: ClassVar = ConfigDict(
         extra="allow",
         frozen=True,
         populate_by_name=True,

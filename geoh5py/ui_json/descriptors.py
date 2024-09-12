@@ -17,47 +17,46 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 
-
-if TYPE_CHECKING:
-    from geoh5py.ui_json.forms import FormParameter
-    from geoh5py.ui_json.parameters import Parameter
-
-
-# pylint: disable=too-few-public-methods
-
-
-class ValueAccess:
-    """
-    Descriptor to elevate underlying member values within 'FormParameter'.
-
-    :param private: Name of private attribute.
-    """
-
-    def __init__(self, private: str):
-        self.private: str = private
-
-    def __get__(self, obj: Parameter, objtype=None):
-        return getattr(obj, self.private).value
-
-    def __set__(self, obj: Parameter, value):
-        getattr(obj, self.private).value = value
-
-
-class FormValueAccess:
-    """
-    Descriptor to elevate underlying member values within 'FormParameter'.
-
-    :param private: Name of private attribute.
-    """
-
-    def __init__(self, private: str):
-        self.private: str = private
-
-    def __get__(self, obj: FormParameter, objtype=None):
-        return getattr(obj, self.private).value
-
-    def __set__(self, obj: FormParameter, value):
-        getattr(obj, self.private).value = value
-        obj._active_members.append(self.private[1:])
+#
+# if TYPE_CHECKING:
+#     from geoh5py.ui_json.forms import FormParameter
+#     from geoh5py.ui_json.parameters import Parameter
+#
+#
+# # pylint: disable=too-few-public-methods
+#
+#
+# class ValueAccess:
+#     """
+#     Descriptor to elevate underlying member values within 'FormParameter'.
+#
+#     :param private: Name of private attribute.
+#     """
+#
+#     def __init__(self, private: str):
+#         self.private: str = private
+#
+#     def __get__(self, obj: Parameter, objtype=None):
+#         return getattr(obj, self.private).value
+#
+#     def __set__(self, obj: Parameter, value):
+#         getattr(obj, self.private).value = value
+#
+#
+# class FormValueAccess:
+#     """
+#     Descriptor to elevate underlying member values within 'FormParameter'.
+#
+#     :param private: Name of private attribute.
+#     """
+#
+#     def __init__(self, private: str):
+#         self.private: str = private
+#
+#     def __get__(self, obj: FormParameter, objtype=None):
+#         return getattr(obj, self.private).value
+#
+#     def __set__(self, obj: FormParameter, value):
+#         getattr(obj, self.private).value = value
+#         obj._active_members.append(self.private[1:])
