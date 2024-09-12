@@ -25,8 +25,6 @@ from .numeric_data import NumericData
 
 
 class IntegerData(NumericData):
-    dtype = np.int32
-
     def format_type(self, values: np.ndarray) -> np.ndarray:
         """
         Check if the type of values is valid and coerse to type int32.
@@ -36,7 +34,7 @@ class IntegerData(NumericData):
         if np.any(np.modf(values)[0] != 0):
             raise TypeError("Values cannot have decimal points.")
 
-        return values.astype(self.dtype)
+        return values.astype(np.int32)
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:

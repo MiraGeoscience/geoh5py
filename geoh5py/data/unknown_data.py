@@ -24,8 +24,6 @@ from .primitive_type_enum import PrimitiveTypeEnum
 
 
 class UnknownData(Data):
-    dtype = Any
-
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.INVALID
