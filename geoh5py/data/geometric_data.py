@@ -32,6 +32,7 @@ class GeometricDataConstants(Data):
     """
 
     _TYPE_UID: UUID
+    dtype = type(None)
 
     def __init__(
         self,

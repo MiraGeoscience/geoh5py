@@ -23,6 +23,8 @@ from .data import Data, PrimitiveTypeEnum
 
 
 class BlobData(Data):
+    dtype = bytes
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.BLOB
@@ -32,7 +34,7 @@ class BlobData(Data):
         Validate values for BlobData.
         """
         if values is not None:
-            if not isinstance(values, bytes):
+            if not isinstance(values, self.dtype):
                 raise TypeError(f"Values must be of type bytes. Got {type(values)}")
         return values
 
