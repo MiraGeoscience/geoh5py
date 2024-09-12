@@ -47,7 +47,7 @@ class BaseUIJson(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     title: str
-    geoh5: Path
+    geoh5: Path | None
     run_command: str
     monitoring_directory: Path
     conda_environment: str
