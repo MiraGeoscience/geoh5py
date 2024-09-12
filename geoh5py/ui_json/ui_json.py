@@ -49,10 +49,8 @@ class BaseUIJson(BaseModel):
     title: str
     geoh5: Path
     run_command: str
-    run_command_boolean: bool
     monitoring_directory: Path
     conda_environment: str
-    conda_environment_boolean: bool
     workspace_geoh5: Path
 
     @field_validator("workspace_geoh5", mode="after")
