@@ -122,4 +122,3 @@ def test_uijson(tmp_path):
 
     assert "my_absent_uid_parameter" in str(err.value)
     assert "my_faulty_data_parameter" in str(err.value)
-
