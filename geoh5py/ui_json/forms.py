@@ -328,8 +328,7 @@ class DataForm(BaseForm):
             child = self.property
 
         if child is not None:
-            children = params[self.parent].children
-            if not children or child not in [k.uid for k in children]:
+            if not isinstance(params[self.parent], ObjectBase) or params[self.parent].get_entity(child)[0] is None:
                 raise UIJsonError(f"{child} data is not a child of {self.parent}.")
 
     def validate_data(self, params: dict[str, Any]):
