@@ -23,7 +23,9 @@ import numpy as np
 from ..shared.exceptions import ShapeValidationError
 from ..shared.utils import map_attributes
 
+
 if TYPE_CHECKING:
+    from ..workspace import Workspace
     from .data_type import DataType
 
 
@@ -42,7 +44,7 @@ class ColorMap:
         map_attributes(self, **kwargs)
 
     @property
-    def values(self) -> np.ndarray | None:
+    def values(self) -> np.ndarray:
         """
         :obj:`numpy.array`: Colormap defined by values and corresponding RGBA:
 
@@ -56,8 +58,6 @@ class ColorMap:
         where V (Values) are sorted floats defining the position of each RGBA.
         R (Red), G (Green), B (Blue) and A (Alpha) are integer values between [0, 255].
         """
-        if self._values is None:
-            return self._values
         return np.vstack([self._values[name] for name in self._names])
 
     @values.setter
@@ -82,11 +82,11 @@ class ColorMap:
                 )
 
             self._values = np.asarray(
-                values, dtype=list(zip(self._names, self._formats))
+                values, dtype=list(zip(self._names, self._formats, strict=False))
             )
 
-        if self.parent is not None:
-            getattr(self.parent, "workspace").update_attribute(self, "color_map")
+        if self.workspace is not None and self.parent is not None:
+            self.workspace.update_attribute(self.parent, "color_map")  # pylint: disable=no-member
 
     @property
     def name(self) -> str:
@@ -99,16 +99,24 @@ class ColorMap:
     def name(self, value: str):
         self._name = str(value)
         if self.parent is not None:
-            getattr(self.parent, "workspace").update_attribute(self, "color_map")
+            self.parent.workspace.update_attribute(self.parent, "color_map")
 
     @property
-    def parent(self):
+    def parent(self) -> DataType | None:
         """Parent data type"""
         return self._parent
 
     @parent.setter
-    def parent(self, data_type: DataType):
+    def parent(self, data_type: DataType | None):
         self._parent = data_type
+
+    @property
+    def workspace(self) -> Workspace | None:
+        """Workspace object"""
+        if self.parent is not None:
+            return self.parent.workspace
+
+        return None
 
     def __len__(self):
         return len(self._values)

@@ -26,9 +26,10 @@ from typing import cast
 
 import numpy as np
 
-from ...data import Data, ReferencedData
+from ...data import Data, ReferencedData, ReferenceValueMap
 from ...shared.utils import str_json_to_dict
 from ..curve import Curve
+
 
 logger = logging.getLogger(__name__)
 
@@ -81,32 +82,29 @@ class BaseElectrode(Curve, ABC):
                     if isinstance(self, PotentialElectrode)
                     else self.potential_electrodes
                 )
-
+                attributes = {
+                    "values": data.astype(np.int32),
+                    "association": "CELL",
+                }
                 if complement is not None and complement.ab_cell_id is not None:
-                    entity_type = complement.ab_cell_id.entity_type
+                    attributes["entity_type"] = complement.ab_cell_id.entity_type
                 else:
                     value_map = {ii: str(ii) for ii in range(data.max() + 1)}
                     value_map[0] = "Unknown"
-                    entity_type = {  # type: ignore
-                        "primitive_type": "REFERENCED",
-                        "value_map": value_map,
-                    }
-
-                data = self.add_data(
-                    {
-                        "A-B Cell ID": {
-                            "values": data.astype(np.int32),
-                            "association": "CELL",
-                            "entity_type": entity_type,
+                    attributes.update(
+                        {  # type: ignore
+                            "primitive_type": "REFERENCED",
+                            "value_map": value_map,
                         }
-                    }
-                )
+                    )
+
+                data = self.add_data({"A-B Cell ID": attributes})
 
                 if isinstance(data, ReferencedData):
                     self._ab_cell_id = data
 
     @property
-    def ab_map(self) -> dict | None:
+    def ab_map(self) -> ReferenceValueMap | None:
         """
         Get the ReferenceData.value_map of the ab_value_id
         """
@@ -206,7 +204,7 @@ class BaseElectrode(Curve, ABC):
                 )
             }
             new_map = {
-                val: new_entity.current_electrodes.ab_cell_id.value_map.map[val]
+                val: dict(new_entity.current_electrodes.ab_cell_id.value_map.map)[val]
                 for val in value_map.values()
             }
             new_complement.ab_cell_id.values = np.asarray(
@@ -215,7 +213,7 @@ class BaseElectrode(Curve, ABC):
             new_entity.ab_cell_id.values = np.asarray(
                 [value_map[val] for val in new_entity.ab_cell_id.values]
             )
-            new_entity.ab_cell_id.value_map.map = new_map
+            new_entity.ab_cell_id.entity_type.value_map = new_map
 
         return new_entity
 
@@ -378,13 +376,14 @@ class CurrentElectrode(BaseElectrode):
                 "A-B Cell ID": {
                     "values": data,
                     "association": "CELL",
-                    "entity_type": {
-                        "primitive_type": "REFERENCED",
-                        "value_map": value_map,
-                    },
+                    "primitive_type": "REFERENCED",
+                    "value_map": value_map,
                 }
             }
         )
-        if isinstance(ab_cell_id, ReferencedData):
-            ab_cell_id.entity_type.name = "A-B"
-            self._ab_cell_id = ab_cell_id
+
+        if not isinstance(ab_cell_id, ReferencedData):
+            raise UserWarning("Could not create 'A-B Cell ID' data.")
+
+        ab_cell_id.entity_type.name = "A-B"
+        self._ab_cell_id = ab_cell_id

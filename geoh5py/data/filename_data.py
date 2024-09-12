@@ -64,7 +64,6 @@ class FilenameData(Data):
 
     @file_bytes.setter
     def file_bytes(self, value: bytes | None):
-
         if value is not None and self.values is None:
             raise AttributeError("FilenameData requires the 'values' to be set.")
 

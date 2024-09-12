@@ -35,6 +35,7 @@ from geoh5py.objects import Curve
 from geoh5py.objects.object_base import ObjectBase
 from geoh5py.shared.utils import str2uuid, str_json_to_dict
 
+
 if TYPE_CHECKING:
     from geoh5py.groups import Group
     from geoh5py.workspace import Workspace
@@ -214,7 +215,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         if "Property groups" in self.metadata["EM Dataset"]:
             components = {}
             for name in self.metadata["EM Dataset"]["Property groups"]:
-                prop_group = self.find_or_create_property_group(name=name)
+                prop_group = self.fetch_property_group(name=name)
 
                 if prop_group.properties is None:
                     continue
@@ -233,6 +234,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         cell_mask: np.ndarray | None = None,
+        copy_complement: bool = True,
         **kwargs,
     ):
         """
@@ -256,7 +258,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             if not isinstance(value, (uuid.UUID, type(None))):
                 new_entity.edit_em_metadata({key: value})
 
-        if self.complement is not None:
+        if self.complement is not None and copy_complement:
             self.copy_complement(
                 new_entity,
                 parent=parent,
@@ -275,14 +277,12 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
     ):
-        new_complement = (
-            self.complement._super_copy(  # pylint: disable=protected-access
-                parent=parent,
-                copy_children=copy_children,
-                clear_cache=clear_cache,
-                mask=mask,
-                omit_list=OMIT_LIST,
-            )
+        new_complement = self.complement._super_copy(  # pylint: disable=protected-access
+            parent=parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            mask=mask,
+            omit_list=OMIT_LIST,
         )
 
         setattr(
@@ -385,14 +385,13 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
     def metadata(self):
         """Metadata attached to the entity."""
         if getattr(self, "_metadata", None) is None:
-            metadata = self.workspace.fetch_metadata(self.uid)
+            metadata = self.workspace.fetch_metadata(self)
             self._metadata = self.validate_em_metadata(metadata)
 
         return self._metadata
 
     @metadata.setter
     def metadata(self, values: dict | np.ndarray | bytes | None):
-
         self._metadata = self.validate_em_metadata(values)
 
         if self.on_file:
@@ -401,8 +400,9 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         for elem in ["receivers", "transmitters", "base_stations"]:
             dependent = getattr(self, elem, None)
             if dependent is not None and dependent is not self:
-                setattr(dependent, "_metadata", self._metadata)
-                if self.on_file:
+                dependent._metadata = self._metadata  # pylint: disable=protected-access
+
+                if dependent.on_file:
                     self.workspace.update_attribute(dependent, "metadata")
 
     @property
@@ -704,21 +704,18 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
             ]
             tx_ids = self.complement.tx_id_property.values[mask]
         else:
-            cell_mask = np.r_[
-                [(val in intersect) for val in self.complement.tx_id_property.values]
-            ]
             mask = np.zeros(self.complement.vertices.shape[0], dtype=bool)
-            mask[self.complement.cells[cell_mask, :]] = True
-            tx_ids = self.complement.tx_id_property.values[cell_mask]
+            for val in intersect:
+                mask[self.complement.tx_id_property.values == val] = True
 
-        new_complement = (
-            self.complement._super_copy(  # pylint: disable=protected-access
-                parent=parent,
-                omit_list=OMIT_LIST,
-                copy_children=copy_children,
-                clear_cache=clear_cache,
-                mask=mask,
-            )
+            tx_ids = self.complement.tx_id_property.values[mask]
+
+        new_complement = self.complement._super_copy(  # pylint: disable=protected-access
+            parent=parent,
+            omit_list=OMIT_LIST,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            mask=mask,
         )
 
         if isinstance(self, self.default_receiver_type):
@@ -740,7 +737,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
                 )
             }
             new_map = {
-                val: new_entity.transmitters.tx_id_property.value_map.map[ind]
+                val: dict(new_entity.transmitters.tx_id_property.value_map.map)[ind]
                 for ind, val in value_map.items()
             }
             new_complement.tx_id_property.values = np.asarray(
@@ -777,30 +774,28 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
             value = self.get_data(value)[0]
 
         if isinstance(value, np.ndarray):
+            attributes = {
+                "values": value.astype(np.int32),
+            }
             if (
                 self.complement is not None
                 and self.complement.tx_id_property is not None
             ):
-                entity_type = self.complement.tx_id_property.entity_type
+                attributes["entity_type"] = self.complement.tx_id_property.entity_type
             else:
                 value_map = {
                     ind: f"Loop {ind}" for ind in np.unique(value.astype(np.int32))
                 }
                 value_map[0] = "Unknown"
-                entity_type = {  # type: ignore
-                    "primitive_type": "REFERENCED",
-                    "value_map": value_map,
-                }
-
-            value = self.add_data(
-                {
-                    "Transmitter ID": {
-                        "values": value.astype(np.int32),
-                        "entity_type": entity_type,
-                        "type": "referenced",
+                attributes.update(
+                    {
+                        "primitive_type": "REFERENCED",
+                        "value_map": value_map,
+                        "association": "VERTEX",
                     }
-                }
-            )
+                )
+
+            value = self.add_data({"Transmitter ID": attributes})
 
         if not isinstance(value, (ReferencedData, type(None))):
             raise TypeError(

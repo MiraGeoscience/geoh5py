@@ -23,6 +23,7 @@ from geoh5py.objects.curve import Curve
 
 from .base import AirborneEMSurvey, TEMSurvey
 
+
 # pylint: disable=too-many-ancestors
 
 

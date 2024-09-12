@@ -39,6 +39,7 @@ from geoh5py.shared.validators import (
 )
 from geoh5py.ui_json.utils import requires_value
 
+
 Validation = dict[str, Any]
 
 
@@ -148,7 +149,7 @@ class InputValidation:
     def _required_validators(validations):
         """Returns dictionary of validators required by validations."""
         unique_validators = InputValidation._unique_validators(validations)
-        sub_classes: list[BaseValidator] = getattr(BaseValidator, "__subclasses__")()
+        sub_classes: list[type[BaseValidator]] = BaseValidator.__subclasses__()
         all_validators: dict[str, Any] = {k.validator_type: k() for k in sub_classes}
         val = {}
         for k in unique_validators:
@@ -158,8 +159,8 @@ class InputValidation:
         return val
 
     @staticmethod
-    def _validations_from_uijson(  # pylint: disable=too-many-branches  # noqa: too complex
-        ui_json: dict[str, Any]
+    def _validations_from_uijson(  # pylint: disable=too-many-branches
+        ui_json: dict[str, Any],
     ) -> dict[str, dict]:
         """Determine base set of validations from ui.json structure."""
         validations: dict[str, dict] = {}

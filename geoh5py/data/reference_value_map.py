@@ -21,67 +21,71 @@ from abc import ABC
 
 import numpy as np
 
-BOOLEAN_VALUE_MAP = {0: "False", 1: "True"}
-
 
 class ReferenceValueMap(ABC):
     """Maps from reference index to reference value of ReferencedData."""
 
-    def __init__(self, value_map: dict[int, str]):
-        self.map: dict[int, str] = value_map
+    MAP_DTYPE = np.dtype([("Key", "<u4"), ("Value", "<U13")])
+
+    def __init__(
+        self,
+        value_map: dict[int, str] | np.ndarray | tuple,
+        name: str = "Value map",
+    ):
+        self._map: np.ndarray = self.validate_value_map(value_map)
+        self.name = name
 
     def __getitem__(self, item: int) -> str:
-        return self._map[item]
+        return dict(self._map)[item]
 
-    def __setitem__(self, key, value):
-        # verify if it corresponds to boolean values
-        if self.map == BOOLEAN_VALUE_MAP:
-            raise AssertionError("Boolean value map cannot be modified")
-
-        self._validate_key_value(key, value)
-        self._map[key] = value
-
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._map)
 
-    def __call__(self):
-        return self._map
+    def __call__(self) -> dict:
+        return dict(self._map)
 
-    @staticmethod
-    def _validate_key_value(key: int, value: str):
+    @classmethod
+    def validate_value_map(cls, value_map: np.ndarray | dict) -> np.ndarray:
         """
         Verify that the key and value are valid.
         It raises errors if there is an issue
 
-        :param key: The key to verify.
-        :param value: The value to verify.
+        :param value_map: Array of key, value pairs.
         """
-        if not isinstance(key, (int, np.integer)) or key < 0:
-            raise KeyError("Key must be an positive integer")
-        if not isinstance(value, str):
-            raise TypeError("Value must be a string")
+        if isinstance(value_map, tuple):
+            value_map = dict(value_map)
 
-        if key == 0 and value != "Unknown":
-            raise ValueError("Value for key 0 must be 'Unknown'")
+        if isinstance(value_map, np.ndarray) and value_map.dtype.names is None:
+            if value_map.ndim == 1:
+                value_map = {i: str(val) for i, val in enumerate(set(value_map))}
+
+            value_map = dict(value_map)
+
+        if isinstance(value_map, dict):
+            if not np.all(np.asarray(list(value_map)) >= 0):
+                raise KeyError("Key must be an positive integer")
+
+            value_map = np.array(list(value_map.items()), dtype=cls.MAP_DTYPE)
+
+        if not isinstance(value_map, np.ndarray):
+            raise TypeError("Value map must be a numpy array or dict.")
+
+        if value_map.dtype != cls.MAP_DTYPE:
+            raise ValueError(f"Array of 'value_map' must be of dtype = {cls.MAP_DTYPE}")
+
+        return value_map
 
     @property
-    def map(self) -> dict[int, str]:
+    def map(self) -> np.ndarray:
         """
-        A reference dictionary mapping values to strings.
+        A reference array mapping values to strings.
         The keys are positive integers, and the values description.
         The key '0' is always 'Unknown'.
         """
         return self._map
 
-    @map.setter
-    def map(self, value_map: dict[int, str]):
-        if not isinstance(value_map, dict):
-            raise TypeError("Map values must be a dictionary")
-        if value_map != BOOLEAN_VALUE_MAP:
-            for key, val in value_map.items():
-                self._validate_key_value(key, val)
 
-            if 0 not in value_map:
-                value_map[0] = "Unknown"
-
-        self._map = value_map
+BOOLEAN_VALUE_MAP = np.array(
+    [(0, "False"), (1, "True")],
+    dtype=ReferenceValueMap.MAP_DTYPE,
+)

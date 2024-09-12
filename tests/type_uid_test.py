@@ -15,24 +15,13 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-from __future__ import annotations
+from geoh5py import TYPE_UID_TO_CLASS, get_type_uid_classes
+from geoh5py.groups import ContainerGroup, SimPEGGroup, UIJsonGroup
+from geoh5py.objects import Curve, Points, Surface
 
 
-try:
-    import thriftpy2
-except (ModuleNotFoundError, ImportError):
-    pass
-else:
-    from pathlib import Path
-    from types import ModuleType
-
-    _INTERFACES_PATH = Path("interfaces")
-    _INTERFACES: dict[str, ModuleType] = {}
-
-    def __getattr__(name):
-        try:
-            return _INTERFACES[name]
-        except KeyError:
-            interface = thriftpy2.load(str(_INTERFACES_PATH.joinpath(f"{name}.thrift")))
-            _INTERFACES[name] = interface
-            return interface
+def test_get_objects_with_type_uid():
+    members = get_type_uid_classes()
+    checks = [Points, Curve, Surface, UIJsonGroup, SimPEGGroup, ContainerGroup]
+    assert all(k in members for k in checks)
+    assert all(k in TYPE_UID_TO_CLASS.values() for k in checks)

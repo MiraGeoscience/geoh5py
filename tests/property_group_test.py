@@ -68,12 +68,12 @@ def test_create_property_group(tmp_path):
             _ = PropertyGroup(parent="bidon")
 
         # Property group object should have been created
-        prop_group = curve.find_or_create_property_group(name="myGroup")
+        prop_group = curve.fetch_property_group(name="myGroup")
 
         # test properties group
         curve2 = curve.copy()
 
-        prop_group2 = curve2.find_or_create_property_group(name="myGroup2")
+        prop_group2 = curve2.fetch_property_group(name="myGroup2")
 
         assert prop_group2.collect_values is None
 
@@ -162,7 +162,7 @@ def test_create_property_group(tmp_path):
         rec_object = workspace.get_entity(curve.uid)[0]
 
         # Read the property_group back in
-        rec_prop_group = rec_object.find_or_create_property_group(name="myGroup")
+        rec_prop_group = rec_object.fetch_property_group(name="myGroup")
 
         attrs = rec_prop_group.attribute_map
         check_list = [

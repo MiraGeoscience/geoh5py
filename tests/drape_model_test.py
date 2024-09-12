@@ -26,6 +26,7 @@ from geoh5py.objects import DrapeModel
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
+
 # pylint: disable=too-many-locals
 
 
@@ -51,7 +52,6 @@ def create_drape_parameters():
 def test_create_drape_model(tmp_path: Path):
     h5file_path = tmp_path / "drapedmodel.geoh5"
     with Workspace.create(h5file_path) as workspace:
-
         layers, prisms = create_drape_parameters()
 
         with pytest.raises(TypeError, match="Attribute 'layers' must be"):

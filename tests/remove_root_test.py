@@ -85,7 +85,7 @@ def test_remove_root(tmp_path: Path):
         )
         compare_entities(
             data_group,
-            rec_points.find_or_create_property_group(name=group_name),
+            rec_points.fetch_property_group(name=group_name),
             ignore=["_parent", "_on_file"],
         )
 
@@ -115,6 +115,6 @@ def test_remove_root(tmp_path: Path):
         ):
             points2.add_data_to_group(["abs"], "bidon")
 
-        setattr(points2, "_property_groups", None)
+        points2._property_groups = None
 
         assert points2.remove_data_from_groups(data2) is None

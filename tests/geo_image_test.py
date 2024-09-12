@@ -34,6 +34,7 @@ from geoh5py.shared.utils import (
 )
 from geoh5py.workspace import Workspace
 
+
 # test tag
 tag = {
     256: (128,),
@@ -223,7 +224,7 @@ def test_georeference_image(tmp_path):
 
         # load image
         geoimage = GeoImage.create(
-            workspace, name="test_area", image=f"{str(tmp_path)}/testtif.tif"
+            workspace, name="test_area", image=f"{tmp_path!s}/testtif.tif"
         )
 
         geoimage.tag = None
@@ -240,7 +241,7 @@ def test_georeference_image(tmp_path):
         ):
             geoimage.georeferencing_from_tiff()
 
-        image = Image.open(f"{str(tmp_path)}/testtif.tif")
+        image = Image.open(f"{tmp_path!s}/testtif.tif")
 
         geoimage = GeoImage.create(workspace, name="test_area", image=image)
 
@@ -287,7 +288,7 @@ def test_georeference_image(tmp_path):
 
         geoimage.save_as("saved_tif.png", str(tmp_path))
 
-        image = Image.open(f"{str(tmp_path)}/testtif.tif").convert("L")
+        image = Image.open(f"{tmp_path!s}/testtif.tif").convert("L")
         geoimage = GeoImage.create(workspace, name="test_area", image=image)
 
         assert geoimage is not None

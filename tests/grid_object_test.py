@@ -27,7 +27,6 @@ from geoh5py.workspace import Workspace
 
 def test_attribute_setters():
     with Workspace() as workspace:
-
         grid = Grid2D.create(workspace)
 
         with pytest.raises(TypeError, match="Rotation angle must be a float."):

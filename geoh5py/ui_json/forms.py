@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 import numpy as np
@@ -31,7 +31,17 @@ from pydantic import (
     model_validator,
 )
 from pydantic.alias_generators import to_camel
+from pydantic.functional_validators import BeforeValidator
 
+from geoh5py.groups import Group
+from geoh5py.objects import ObjectBase
+from geoh5py.shared.validators import (
+    empty_string_to_uid,
+    to_class,
+    to_list,
+    to_path,
+    to_uuid,
+)
 from geoh5py.ui_json.validation import UIJsonError
 
 
@@ -69,7 +79,7 @@ class BaseForm(BaseModel):
         optional or True if a bool type.
     """
 
-    model_config: ConfigDict = ConfigDict(
+    model_config = ConfigDict(
         extra="allow",
         frozen=True,
         populate_by_name=True,
@@ -174,20 +184,22 @@ class ChoiceForm(BaseForm):
         return self
 
 
+PathList = Annotated[
+    list[Path],
+    BeforeValidator(to_path),
+    BeforeValidator(to_list),
+]
+
+
 class FileForm(BaseForm):
     """
     File path uijson form
     """
 
-    value: list[Path]
+    value: PathList
     file_description: list[str]
     file_type: list[str]
     file_multi: bool = False
-
-    @field_validator("value", mode="before")
-    @classmethod
-    def to_list(cls, value):
-        return [Path(path) for path in value.split(";")]
 
     @field_serializer("value", when_used="json")
     def to_string(self, value):
@@ -222,34 +234,12 @@ class FileForm(BaseForm):
         return data
 
 
-class TypeUID(str, Enum):
-    """
-    Geoh5py object types.
-    """
-
-    POINTS = "{202C5DB1-A56D-4004-9CAD-BAAFD8899406}"
-    CURVE = "{6a057fdc-b355-11e3-95be-fd84a7ffcb88}"
-    SURFACE = "{f26feba3-aded-494b-b9e9-b2bbcbe298e1}"
-    GRID2D = "{f26feba3-aded-494b-b9e9-b2bbcbe298e1}"
-    BLOCKMODEL = "{b020a277-90e2-4cd7-84d6-612ee3f25051}"
-    OCTREE = "{4ea87376-3ece-438b-bf12-3479733ded46}"
-    DRAPEMODEL = "{C94968EA-CF7D-11EB-B8BC-0242AC130003}"
-    DRILLHOLE = "{7caebf0e-d16e-11e3-bc69-e4632694aa37}"
-    GEOIMAGE = "{77ac043c-fe8d-4d14-8167-75e300fb835a}"
-    INTEGRATORPOINTS = "{6832ACF3-78AA-44D3-8506-9574A3510C44}"
-    LABEL = "{e79f449d-74e3-4598-9c9c-351a28b8b69e}"
-    AIRBORNEFEMRECEIVERS = "{b3a47539-0301-4b27-922e-1dde9d882c60}"
-    AIRBORNETEMRECEIVERS = "{19730589-fd28-4649-9de0-ad47249d9aba}"
-    MOVINGLOOPGROUNDFEMRECEIVERS = "{a81c6b0a-f290-4bc8-b72d-60e59964bfe8}"
-    MOVINGLOOPGROUNDTEMRECEIVERS = "{41018a45-01a0-4c61-a7cb-9f32d8159df4}"
-    MTRECEIVERS = "{b99bd6e5-4fe1-45a5-bd2f-75fc31f91b38}"
-    TIPPERRECEIVERS = "{0b639533-f35b-44d8-92a8-f70ecff3fd26}"
-    POTENTIALELECTRODE = "{275ecee9-9c24-4378-bf94-65f3c5fbe163}"
-    AIRBORNEMAGNETICS = "{4b99204c-d133-4579-a916-a9c8b98cfccb}"
-    CONTAINERGROUP = "{61fbb4e8-a480-11e3-8d5a-2776bdf4f982}"
-    DRILLHOLEGROUP = "{825424fb-c2c6-4fea-9f2b-6cd00023d393}"
-    SIMPEGGROUP = "{55ed3daf-c192-4d4b-a439-60fa987fe2b8}"
-    UIJSONGROUP = "{BB50AC61-A657-4926-9C82-067658E246A0}"
+MeshTypes = Annotated[
+    list[type[ObjectBase] | type[Group]],
+    BeforeValidator(to_class),
+    BeforeValidator(to_uuid),
+    BeforeValidator(to_list),
+]
 
 
 class ObjectForm(BaseForm):
@@ -257,8 +247,10 @@ class ObjectForm(BaseForm):
     Geoh5py object uijson form.
     """
 
-    value: UUID
-    mesh_type: list[TypeUID]
+    value: UUID = UUID("00000000-0000-0000-0000-000000000000")
+    mesh_type: MeshTypes
+
+    _empty_string_to_uid = field_validator("value", mode="before")(empty_string_to_uid)
 
 
 class Association(str, Enum):
@@ -311,8 +303,7 @@ class DataForm(BaseForm):
     @model_validator(mode="after")
     def value_if_is_value(self):
         if (
-            "is_value"
-            in self.model_fields_set  # pylint: disable=unsupported-membership-test
+            "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
             and self.is_value
         ):
             if isinstance(self.value, UUID):
@@ -322,10 +313,8 @@ class DataForm(BaseForm):
     @model_validator(mode="after")
     def property_if_not_is_value(self):
         if (
-            "is_value"
-            in self.model_fields_set  # pylint: disable=unsupported-membership-test
-            and "property"
-            not in self.model_fields_set  # pylint: disable=unsupported-membership-test
+            "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
+            and "property" not in self.model_fields_set  # pylint: disable=unsupported-membership-test
         ):
             raise ValueError("A property must be provided if is_value is used.")
         return self
@@ -350,8 +339,7 @@ class DataForm(BaseForm):
     def flatten(self):
         """Returns the data for the form."""
         if (
-            "is_value"
-            in self.model_fields_set  # pylint: disable=unsupported-membership-test
+            "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
             and not self.is_value
         ):
             return self.property

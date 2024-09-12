@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import uuid
 from abc import abstractmethod
 from typing import Any
 
@@ -25,18 +26,22 @@ import numpy as np
 from ..shared import Entity
 from ..shared.utils import mask_by_extent
 from .data_association_enum import DataAssociationEnum
-from .data_type import DataType
+from .data_type import DataType, ReferenceDataType
 from .primitive_type_enum import PrimitiveTypeEnum
 
 
 class Data(Entity):
     """
     Base class for Data entities.
+
+    :param association: Relationship made between the parent object and values.
+    :param modifiable: Entity can be modified.
+    :param visible: Entity is visible. Only a single data can be visible at a time.
+    :param values: Data values.
     """
 
     _attribute_map = Entity._attribute_map.copy()
     _attribute_map.update({"Association": "association", "Modifiable": "modifiable"})
-    _visible = False
 
     def __init__(
         self,
@@ -138,11 +143,15 @@ class Data(Entity):
             **kwargs,
         )
 
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID | None:
+        """Abstract method to return the default type uid for the class."""
+        return None
+
     @property
     def n_values(self) -> int | None:
         """
-        :obj:`int`: Number of expected data values based on
-        :obj:`~geoh5py.data.data.Data.association`
+        Number of expected data values based on :obj:`~geoh5py.data.data.Data.association`
         """
         if self.association in [
             DataAssociationEnum.VERTEX,
@@ -172,19 +181,30 @@ class Data(Entity):
     @property
     def association(self) -> DataAssociationEnum:
         """
-        :obj:`~geoh5py.data.data_association_enum.DataAssociationEnum`:
         Relationship made between the
         :func:`~geoh5py.data.data.Data.values` and elements of the
         :obj:`~geoh5py.shared.entity.Entity.parent` object.
-        Association can be set from a :obj:`str` chosen from the list of available
-        :obj:`~geoh5py.data.data_association_enum.DataAssociationEnum` options.
         """
         return self._association
 
     @property
+    def entity_type(self):
+        """
+        Type of data.
+        """
+        return self._entity_type
+
+    @entity_type.setter
+    def entity_type(self, data_type: DataType | ReferenceDataType):
+        self._entity_type = data_type
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "entity_type")
+
+    @property
     def modifiable(self) -> bool:
         """
-        :obj:`bool` Entity can be modified.
+        Entity can be modified within ANALYST.
         """
         return self._modifiable
 
@@ -194,20 +214,6 @@ class Data(Entity):
 
         if self.on_file:
             self.workspace.update_attribute(self, "attributes")
-
-    @property
-    def entity_type(self) -> DataType:
-        """
-        :obj:`~geoh5py.data.data_type.DataType`
-        """
-        return self._entity_type
-
-    @entity_type.setter
-    def entity_type(self, data_type: DataType):
-        self._entity_type = data_type
-
-        if self.on_file:
-            self.workspace.update_attribute(self, "entity_type")
 
     @classmethod
     @abstractmethod
@@ -221,6 +227,9 @@ class Data(Entity):
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
 
         Uses the parent object's vertices or centroids coordinates.
+
+        :param extent: Array or coordinate defining the lower and upper bounds of the extent.
+        :param inverse: Keep the inverse (clip) of the extent selection.
         """
         if self.association is DataAssociationEnum.VERTEX and hasattr(
             self.parent, "vertices"
@@ -232,7 +241,6 @@ class Data(Entity):
                 return mask_by_extent(self.parent.centroids, extent, inverse=inverse)
 
             if hasattr(self.parent, "vertices") and hasattr(self.parent, "cells"):
-
                 indices = mask_by_extent(self.parent.vertices, extent, inverse=inverse)
                 if indices is not None:
                     indices = np.all(indices[self.parent.cells], axis=1)
@@ -244,6 +252,8 @@ class Data(Entity):
     def validate_entity_type(self, entity_type: DataType | None) -> DataType:
         """
         Validate the entity type.
+
+        :param entity_type: Entity type to validate.
         """
         if (
             not isinstance(entity_type, DataType)
@@ -277,6 +287,10 @@ class Data(Entity):
     def validate_values(self, values: Any | None) -> Any:
         """
         Validate the values.
+
+        To be deprecated along with the standalone Drillhole class in future version.
+
+        :param values: Values to validate.
         """
 
     @property
@@ -296,6 +310,24 @@ class Data(Entity):
 
         if self.on_file:
             self.workspace.update_attribute(self, "values")
+
+    @property
+    def visible(self) -> bool:
+        """
+        Whether the data is visible in camera (checked in ANALYST object tree).
+        """
+        return self._visible
+
+    @visible.setter
+    def visible(self, value: bool):
+        self._visible = value
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
+
+            if value:
+                for child in self.parent.children:
+                    child.visible = False
 
     def __call__(self):
         return self.values

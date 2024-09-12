@@ -25,6 +25,7 @@ import numpy as np
 from geoh5py.data import Data
 from geoh5py.groups import PropertyGroup
 
+
 if TYPE_CHECKING:
     from .concatenator import Concatenator
     from .object import ConcatenatedObject

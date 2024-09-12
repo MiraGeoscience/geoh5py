@@ -33,12 +33,19 @@ def test_xyz_dataype(tmp_path: Path):
     with Workspace.create(h5file_path) as workspace:
         points = Points.create(workspace, vertices=np.random.randn(10, 3))
 
-        for axis in "XYZ":
+        for name in ["X", "Y", "Z"]:
+            class_name = f"GeometricData{name}Type"
+            dtype = getattr(data_type, class_name)
+            dynamic_id = {
+                value: key for key, value in data_type.DYNAMIC_CLASS_IDS.items()
+            }
             data = points.add_data(
                 {
-                    axis: {
+                    name: {
                         "association": "VERTEX",
-                        "entity_type": {"name": axis, "primitive_type": "GEOMETRIC"},
+                        "name": name,
+                        "primitive_type": "GEOMETRIC",
+                        "dynamic_implementation_id": dynamic_id[dtype],
                     }
                 }
             )
@@ -46,5 +53,10 @@ def test_xyz_dataype(tmp_path: Path):
             assert isinstance(data, geometric_data.GeometricDataConstants)
             assert (
                 data.entity_type.uid
-                == getattr(data_type, f"GeometricData{axis}").default_type_uid()
+                == getattr(data_type, class_name).default_type_uid()
             )
+
+    ws = Workspace(h5file_path)
+    assert all(
+        isinstance(data, geometric_data.GeometricDataConstants) for data in ws.data
+    )

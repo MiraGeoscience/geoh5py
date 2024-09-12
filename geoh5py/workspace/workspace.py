@@ -32,14 +32,14 @@ from getpass import getuser
 from io import BytesIO
 from pathlib import Path
 from subprocess import CalledProcessError
-from typing import ClassVar, cast
+from typing import Any, ClassVar, cast
 from weakref import ReferenceType
 
 import h5py
 import numpy as np
 
 from .. import data, groups, objects
-from ..data import CommentsData, Data, DataType
+from ..data import CommentsData, Data, DataType, PrimitiveTypeEnum
 from ..data.text_data import TextData
 from ..data.visual_parameters import VisualParameters
 from ..groups import (
@@ -51,6 +51,7 @@ from ..groups import (
     RootGroup,
 )
 from ..io import H5Reader, H5Writer
+from ..io.utils import str_from_subtype, str_from_type
 from ..objects import Drillhole, ObjectBase
 from ..shared import weakref_utils
 from ..shared.concatenation import (
@@ -337,7 +338,7 @@ class Workspace(AbstractContextManager):
             if entity.workspace.find_property_group(prop_group.uid) is None:
                 property_group_kwargs["uid"] = prop_group.uid
 
-            entity.find_or_create_property_group(**property_group_kwargs)
+            entity.fetch_property_group(**property_group_kwargs)
 
     @classmethod
     def create(cls, path: str | Path, **kwargs) -> Workspace:
@@ -389,11 +390,14 @@ class Workspace(AbstractContextManager):
 
         :return: The newly created entity.
         """
-        if isinstance(entity_type, DataType):
-            data_type: DataType = entity_type
-        elif isinstance(entity_type, dict):
-            data_type = data.data_type.DataType.find_or_create(self, **entity_type)
-        else:
+        if isinstance(entity_type, dict):
+            entity_type = DataType.find_or_create_type(
+                self,
+                entity_type.pop("primitive_type"),
+                parent=entity["parent"],
+                **entity_type,
+            )
+        elif not isinstance(entity_type, DataType):
             raise TypeError(
                 f"Expected `entity_type` to be of type `dict` or `DataType`, "
                 f"got {type(entity_type)}."
@@ -406,7 +410,7 @@ class Workspace(AbstractContextManager):
                 and member is not entity_class
                 and hasattr(member, "primitive_type")
                 and inspect.ismethod(member.primitive_type)
-                and data_type.primitive_type is member.primitive_type()
+                and entity_type.primitive_type is member.primitive_type()
             ):
                 if member is CommentsData and not any(
                     isinstance(val, str) and val == "UserComments"
@@ -425,12 +429,12 @@ class Workspace(AbstractContextManager):
                 ):
                     member = VisualParameters
 
-                created_entity = member(entity_type=data_type, **entity)
+                created_entity = member(entity_type=entity_type, **entity)
 
                 return created_entity
 
         raise TypeError(
-            f"Data type {entity_class} not found in {data_type.primitive_type}."
+            f"Data type {entity_class} not found in {entity_type.primitive_type}."
         )
 
     def create_entity(
@@ -462,6 +466,7 @@ class Workspace(AbstractContextManager):
             entity["parent"] = self.root
 
         created_entity: Data | Group | ObjectBase
+
         if entity_class is None or issubclass(entity_class, Data):
             created_entity = self.create_data(Data, entity, entity_type)
 
@@ -622,16 +627,16 @@ class Workspace(AbstractContextManager):
                     H5Writer.add_or_update_property_group, child, remove=True, mode="r+"
                 )
             else:
-                ref_type = self.str_from_type(child)
+                ref_type = str_from_type(child)
                 self._io_call(
                     H5Writer.remove_child, child.uid, ref_type, parent, mode="r+"
                 )
 
-    def remove_entity(self, entity: Entity | PropertyGroup):
+    def remove_entity(self, entity: Entity | PropertyGroup | EntityType, force=False):
         """
         Function to remove an entity and its children from the workspace.
         """
-        if not entity.allow_delete:
+        if not getattr(entity, "allow_delete", True) and not force:
             raise UserWarning(
                 f"The 'allow_delete' property of entity {entity} prevents it from "
                 "being removed. Please revise."
@@ -641,10 +646,12 @@ class Workspace(AbstractContextManager):
             entity.concatenator.remove_entity(entity)
             return
 
-        self.workspace.remove_recursively(entity)
+        if isinstance(entity, Entity | PropertyGroup):
+            self.workspace.remove_recursively(entity)
+            entity.parent.remove_children([entity])
 
         if not isinstance(entity, PropertyGroup):
-            ref_type = self.str_from_type(entity)
+            ref_type = str_from_type(entity)
             self._io_call(
                 H5Writer.remove_entity,
                 entity.uid,
@@ -677,13 +684,9 @@ class Workspace(AbstractContextManager):
 
     def remove_recursively(self, entity: Entity | PropertyGroup):
         """Delete an entity and its children from the workspace and geoh5 recursively"""
-        parent = entity.parent
-
         if hasattr(entity, "children"):
             for child in entity.children:
-                self.remove_entity(child)
-
-        parent.remove_children([entity])
+                self.remove_entity(child, force=True)
 
     def deactivate(self):
         """Deactivate this workspace if it was the active one, else does nothing."""
@@ -701,7 +704,9 @@ class Workspace(AbstractContextManager):
     def distance_unit(self, value: str):
         self._distance_unit = value
 
-    def fetch_array_attribute(self, entity: Entity, key: str = "cells") -> np.ndarray:
+    def fetch_array_attribute(
+        self, entity: Entity | EntityType, key: str = "cells"
+    ) -> np.ndarray:
         """
         Fetch attribute stored as structured array from the source geoh5.
 
@@ -713,10 +718,15 @@ class Workspace(AbstractContextManager):
         if isinstance(entity, Concatenated):
             return entity.concatenator.fetch_values(entity, key)
 
+        if isinstance(entity, EntityType):
+            entity_type = str_from_subtype(entity)
+        else:
+            entity_type = str_from_type(entity)
+
         return self._io_call(
             H5Reader.fetch_array_attribute,
             entity.uid,
-            "Objects" if isinstance(entity, ObjectBase) else "Groups",
+            entity_type,
             key,
             mode="r",
         )
@@ -736,17 +746,12 @@ class Workspace(AbstractContextManager):
         if entity is None or isinstance(entity, ConcatenatedData):
             return []
 
-        entity_type = "data"
-        if isinstance(entity, Group):
-            entity_type = "group"
-        elif isinstance(entity, ObjectBase):
-            entity_type = "object"
+        entity_type = str_from_type(entity)
 
         if isinstance(entity, RootGroup) and not entity.on_file:
             children_list = {child.uid: "" for child in entity.children}
 
         else:
-
             children_list = self._io_call(
                 H5Reader.fetch_children, entity.uid, entity_type, mode="r"
             )
@@ -763,7 +768,7 @@ class Workspace(AbstractContextManager):
                     }
                 )
 
-        family_tree = []
+        family_tree: list[Any] = []
         for uid, child_type in children_list.items():
             recovered_object = self.get_entity(uid)[0]
             if recovered_object is None and not isinstance(entity, PropertyGroup):
@@ -775,13 +780,17 @@ class Workspace(AbstractContextManager):
             recovered_object.on_file = True
             recovered_object.entity_type.on_file = True
             family_tree += [recovered_object]
+
             if recursively and isinstance(recovered_object, (Group, ObjectBase)):
                 family_tree += self.fetch_children(recovered_object, recursively=True)
-                if getattr(recovered_object, "property_groups", None) is not None:
-                    family_tree += getattr(recovered_object, "property_groups")
+                if (
+                    isinstance(recovered_object, ObjectBase)
+                    and recovered_object.property_groups is not None
+                ):
+                    family_tree += recovered_object.property_groups
 
-        if getattr(entity, "property_groups", None) is not None:
-            family_tree += getattr(entity, "property_groups")
+        if isinstance(entity, ObjectBase) and entity.property_groups is not None:
+            family_tree += entity.property_groups
 
         return family_tree
 
@@ -861,22 +870,21 @@ class Workspace(AbstractContextManager):
             mode="r",
         )
 
-    def fetch_metadata(self, uid: uuid.UUID, argument="Metadata") -> dict | None:
+    def fetch_metadata(self, entity: Entity, argument="Metadata") -> dict | None:
         """
         Fetch the metadata of an entity from the source geoh5.
 
-        :param uid: Entity uid containing the metadata.
+        :param entity: Entity uid containing the metadata.
         :param argument: Optional argument for other json-like attributes.
 
         :return: Dictionary of values.
         """
+        entity_type = str_from_type(entity)
         return self._io_call(
             H5Reader.fetch_metadata,
-            uid,
+            entity.uid,
             argument=argument,
-            entity_type=(
-                "Groups" if isinstance(self.get_entity(uid)[0], Group) else "Objects"
-            ),
+            entity_type=entity_type,
             mode="r",
         )
 
@@ -1195,7 +1203,6 @@ class Workspace(AbstractContextManager):
             )
             return None
 
-        # Get property groups (key 2) from object attributes
         if isinstance(entity, ObjectBase) and len(prop_groups) > 0:
             for kwargs in prop_groups.values():
                 entity.create_property_group(on_file=True, **kwargs)
@@ -1375,19 +1382,6 @@ class Workspace(AbstractContextManager):
         """
         self._io_call(H5Writer.write_entity_type, entity_type, mode="r+")
 
-    @staticmethod
-    def str_from_type(entity) -> str | None:
-        if isinstance(entity, Data):
-            return "Data"
-
-        if isinstance(entity, Group):
-            return "Groups"
-
-        if isinstance(entity, ObjectBase):
-            return "Objects"
-
-        return None
-
     @property
     def types(self) -> list[EntityType]:
         """Get all active entity types registered in the workspace."""
@@ -1395,7 +1389,7 @@ class Workspace(AbstractContextManager):
 
     def update_attribute(
         self,
-        entity: Entity | EntityType,
+        entity: Entity | EntityType | DataType,
         attribute: str,
         channel: str | None = None,
         **kwargs,
@@ -1424,6 +1418,41 @@ class Workspace(AbstractContextManager):
                 )
 
             self._io_call(H5Writer.clear_stats_cache, entity, mode="r+")
+
+    def validate_data_type(self, attributes: dict, values) -> DataType:
+        """
+        Find or create a data type from input dictionary.
+
+        :param attributes: Dictionary of attributes.
+        :param values: Values to be stored as data.
+        """
+        entity_type = attributes.pop("entity_type", {})
+        if isinstance(entity_type, DataType):
+            if (entity_type.uid not in self._types) or (entity_type.workspace != self):
+                entity_type = entity_type.copy(workspace=self)
+        else:
+            primitive_type = attributes.pop(
+                "type", attributes.pop("primitive_type", None)
+            )
+
+            if primitive_type is None:
+                primitive_type = DataType.primitive_type_from_values(values)
+
+            if isinstance(primitive_type, str):
+                primitive_type = DataType.validate_primitive_type(primitive_type)
+
+            # Generate a value map based on type of values
+            if (
+                primitive_type is PrimitiveTypeEnum.REFERENCED
+                and "value_map" not in attributes
+            ):
+                attributes["value_map"] = values
+
+            entity_type = DataType.find_or_create_type(
+                self, primitive_type, **attributes
+            )
+
+        return entity_type
 
     @property
     def version(self) -> float:

@@ -30,6 +30,9 @@ from uuid import UUID
 import h5py
 import numpy as np
 
+from .exceptions import Geoh5FileClosedError
+
+
 if TYPE_CHECKING:
     from ..workspace import Workspace
     from .entity import Entity
@@ -58,6 +61,8 @@ INV_KEY_MAP = {
     "Description": "description",
     "Dip": "dip",
     "Distance unit": "distance_unit",
+    "Dynamic implementation ID": "dynamic_implementation_id",
+    "Duplicate type on copy": "duplicate_type_on_copy",
     "End of hole": "end_of_hole",
     "Face": "FACE",
     "File name": "name",
@@ -97,6 +102,7 @@ INV_KEY_MAP = {
     "Public": "public",
     "Referenced": "REFERENCED",
     "Rotation": "rotation",
+    "Scale": "scale",
     "Surveys": "surveys",
     "Text": "TEXT",
     "Trace": "trace",
@@ -152,17 +158,18 @@ def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
 
     :return h5py.File: Handle to an opened Workspace.
     """
-    if (
-        workspace is None
-        or getattr(workspace, "_geoh5")
-        and mode in workspace.geoh5.mode
-    ):
+    try:
+        geoh5 = None if workspace is None else workspace.geoh5
+    except Geoh5FileClosedError:
+        geoh5 = None
+
+    if workspace is None or (geoh5 is not None and mode in workspace.geoh5.mode):
         try:
             yield workspace
         finally:
             pass
     else:
-        if getattr(workspace, "_geoh5"):
+        if geoh5 is not None:
             warnings.warn(
                 f"Closing the workspace in mode '{workspace.geoh5.mode}' "
                 f"and re-opening in mode '{mode}'."
@@ -321,18 +328,34 @@ def are_objects_similar(obj1, obj2, ignore: list[str] | None):
 
 
 def compare_arrays(object_a, object_b, attribute: str, decimal: int = 6):
-    if getattr(object_b, attribute) is None:
+    """
+    Utility to compare array properties from two Entities
+
+    :param object_a: First Entity
+    :param object_b: Second Entity
+    :param attribute: Attribute to compare
+    :param decimal: Decimal precision for comparison
+    """
+    array_a_values = getattr(object_a, attribute)
+    array_b_values = getattr(object_b, attribute)
+
+    if array_b_values is None:
         raise ValueError(f"attr {attribute} is None for object {object_b.name}")
-    attr_a = getattr(object_a, attribute).tolist()
-    if len(attr_a) > 0 and isinstance(attr_a[0], str):
+
+    if array_b_values.dtype.names is not None:
         assert all(
-            a == b
-            for a, b in zip(getattr(object_a, attribute), getattr(object_b, attribute))
+            np.all(array_a_values[name] == array_b_values[name])
+            for name in array_b_values.dtype.names
+        ), f"Error comparing attribute '{attribute}'."
+
+    elif len(array_a_values) > 0 and isinstance(array_a_values[0], str):
+        assert all(
+            array_a_values == array_b_values
         ), f"Error comparing attribute '{attribute}'."
     else:
         np.testing.assert_array_almost_equal(
-            attr_a,
-            getattr(object_b, attribute).tolist(),
+            array_a_values,
+            array_b_values,
             decimal=decimal,
             err_msg=f"Error comparing attribute '{attribute}'.",
         )
@@ -352,7 +375,7 @@ def compare_list(object_a, object_b, attribute: str, ignore: list[str] | None):
     get_object_b = getattr(object_b, attribute)
     assert isinstance(get_object_a, list)
     assert len(get_object_a) == len(get_object_b)
-    for obj_a, obj_b in zip(get_object_a, get_object_b):
+    for obj_a, obj_b in zip(get_object_a, get_object_b, strict=False):
         assert are_objects_similar(obj_a, obj_b, ignore)
 
 
@@ -373,60 +396,31 @@ def compare_entities(
     ignore_list = base_ignore + ignore if ignore else base_ignore
 
     for attr in [k for k in object_a.__dict__ if k not in ignore_list]:
-        if isinstance(getattr(object_a, attr[1:]), ABC):
+        if isinstance(getattr(object_a, attr.lstrip("_")), ABC):
             compare_entities(
-                getattr(object_a, attr[1:]),
-                getattr(object_b, attr[1:]),
+                getattr(object_a, attr.lstrip("_")),
+                getattr(object_b, attr.lstrip("_")),
                 ignore=ignore,
                 decimal=decimal,
             )
         else:
-            if isinstance(getattr(object_a, attr[1:]), np.ndarray):
-                compare_arrays(object_a, object_b, attr[1:], decimal=decimal)
-            elif isinstance(getattr(object_a, attr[1:]), float):
-                compare_floats(object_a, object_b, attr[1:], decimal=decimal)
-            elif isinstance(getattr(object_a, attr[1:]), list):
-                compare_list(object_a, object_b, attr[1:], ignore)
+            if isinstance(getattr(object_a, attr.lstrip("_")), np.ndarray):
+                compare_arrays(object_a, object_b, attr.lstrip("_"), decimal=decimal)
+            elif isinstance(getattr(object_a, attr.lstrip("_")), float):
+                compare_floats(object_a, object_b, attr.lstrip("_"), decimal=decimal)
+            elif isinstance(getattr(object_a, attr.lstrip("_")), list):
+                compare_list(object_a, object_b, attr.lstrip("_"), ignore)
             else:
                 try:
                     assert np.all(
-                        getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
-                    ), f"Output attribute '{attr[1:]}' for {object_a} do not match input {object_b}"
+                        getattr(object_a, attr.lstrip("_"))
+                        == getattr(object_b, attr.lstrip("_"))
+                    ), (
+                        f"Output attribute '{attr.lstrip('_')}' for {object_a} do "
+                        f"not match input {object_b}"
+                    )
                 except AssertionError:
                     pass
-
-
-def iterable(value: Any, checklen: bool = False) -> bool:
-    """
-    Checks if object is iterable.
-
-    Parameters
-    ----------
-    value : Object to check for iterableness.
-    checklen : Restrict objects with __iter__ method to len > 1.
-
-    Returns
-    -------
-    True if object has __iter__ attribute but is not string or dict type.
-    """
-    only_array_like = (not isinstance(value, str)) & (not isinstance(value, dict))
-    if (hasattr(value, "__iter__")) & only_array_like:
-        return not (checklen and (len(value) == 1))
-
-    return False
-
-
-def iterable_message(valid: list[Any] | None) -> str:
-    """Append possibly iterable valid: "Must be (one of): {valid}."."""
-    if valid is None:
-        msg = ""
-    elif iterable(valid, checklen=True):
-        vstr = "'" + "', '".join(str(k) for k in valid) + "'"
-        msg = f" Must be one of: {vstr}."
-    else:
-        msg = f" Must be: '{valid[0]}'."
-
-    return msg
 
 
 def is_uuid(value: str) -> bool:
@@ -453,10 +447,10 @@ def uuid2entity(value: UUID, workspace: Workspace) -> Entity | Any:
 
         # Search for property groups
         for obj in workspace.objects:
-            if getattr(obj, "property_groups", None) is not None:
+            if obj.property_groups is not None:
                 prop_group = [
                     prop_group
-                    for prop_group in getattr(obj, "property_groups")
+                    for prop_group in obj.property_groups
                     if prop_group.uid == value
                 ]
 
@@ -495,6 +489,13 @@ def as_str_if_utf8_bytes(value) -> str:
     """Convert bytes to string"""
     if isinstance(value, bytes):
         value = value.decode("utf-8")
+    return value
+
+
+def as_float_if_isnumeric(value: str) -> float | str:
+    """Convert bytes to string"""
+    if value.isnumeric():
+        return float(value)
     return value
 
 
@@ -590,7 +591,7 @@ def box_intersect(extent_a: np.ndarray, extent_b: np.ndarray) -> bool:
                 "bounds in nd-space on the first and second row respectively."
             )
 
-    for comp_a, comp_b in zip(extent_a.T, extent_b.T):
+    for comp_a, comp_b in zip(extent_a.T, extent_b.T, strict=False):
         min_ext = max(comp_a[0], comp_b[0])
         max_ext = min(comp_a[1], comp_b[1])
 
@@ -623,7 +624,7 @@ def mask_by_extent(
         )
 
     indices = np.ones(locations.shape[0], dtype=bool)
-    for loc, lim in zip(locations.T, extent.T):
+    for loc, lim in zip(locations.T, extent.T, strict=False):
         indices &= (lim[0] <= loc) & (loc <= lim[1])
 
     if inverse:
@@ -638,9 +639,7 @@ def get_attributes(entity, omit_list=(), attributes=None) -> dict:
         attributes = {}
     for key in vars(entity):
         if key not in omit_list:
-            if key[0] == "_":
-                key = key[1:]
-
+            key = key.lstrip("_")
             attr = getattr(entity, key)
             attributes[key] = attr
 
@@ -724,10 +723,10 @@ def map_name_attributes(object_, **kwargs: dict) -> dict:
     :param object_: The object to map the attributes to.
     :param kwargs: Dictionary of attributes.
     """
-    if not hasattr(object_, "_attribute_map"):
-        raise AttributeError("Object must have an '_attribute_map' attribute.")
+    mapping = getattr(object_, "_attribute_map", None)
 
-    mapping: dict = getattr(object_, "_attribute_map")
+    if mapping is None:
+        raise AttributeError("Object must have an '_attribute_map' attribute.")
 
     new_args = {}
     for attr, item in kwargs.items():
@@ -743,9 +742,10 @@ def map_attributes(object_, **kwargs):
     """
     Map attributes to an object. The object must have an '_attribute_map'.
 
-    :param object_: The object to map the attributes to.
+    :param entity: The object to map the attributes to.
     :param kwargs: The kwargs to map to the object.
     """
+
     values = map_name_attributes(object_, **kwargs)  # Swap duplicates
     set_attributes(object_, **values)
 

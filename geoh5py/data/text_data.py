@@ -121,7 +121,6 @@ class MultiTextData(Data):
     def validate_values(
         self, values: np.ndarray | str | None
     ) -> np.ndarray | str | None:
-
         if not isinstance(values, np.ndarray | str | type(None)):
             raise ValueError(
                 f"Input 'values' for {self} must be of type {np.ndarray}  str or None."

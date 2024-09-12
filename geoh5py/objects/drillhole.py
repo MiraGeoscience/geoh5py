@@ -26,8 +26,7 @@ from numbers import Real
 
 import numpy as np
 
-from ..data import Data, DataType, FloatData, NumericData
-from ..groups import PropertyGroup
+from ..data import Data, FloatData, NumericData
 from ..shared.utils import box_intersect, mask_by_extent, merge_arrays
 from .points import Points
 
@@ -411,96 +410,6 @@ class Drillhole(Points):
                 f"Input '_depth' property must be of type{FloatData} or None"
             )
 
-    def add_data(
-        self,
-        data: dict,
-        property_group: str | PropertyGroup | None = None,
-        compression: int = 5,
-        collocation_distance=None,
-    ) -> Data | list[Data]:
-        """
-        Create :obj:`~geoh5py.data.data.Data` specific to the drillhole object
-        from dictionary of name and arguments. A keyword 'depth' or 'from-to'
-        with corresponding depth values is expected in order to locate the
-        data along the well path.
-
-        :param data: Dictionary of data to be added to the object, e.g.
-
-        .. code-block:: python
-
-            data_dict = {
-                "data_A": {
-                    'values', [v_1, v_2, ...],
-                    "from-to": numpy.ndarray,
-                    },
-                "data_B": {
-                    'values', [v_1, v_2, ...],
-                    "depth": numpy.ndarray,
-                    },
-            }
-
-        :param property_group: Name or PropertyGroup used to group the data.
-        :param collocation_distance: Minimum collocation distance for matching
-        :param compression: Compression level for data.
-
-        :return: List of new Data objects.
-        """
-        data_objects = []
-
-        for name, attributes in data.items():
-            assert isinstance(attributes, dict), (
-                f"Given value to data {name} should of type {dict}. "
-                f"Type {type(attributes)} given instead."
-            )
-            assert (
-                "values" in attributes
-            ), f"Given attributes for data {name} should include 'values'"
-
-            attributes["name"] = name
-
-            if attributes["name"] in self.get_data_list():
-                raise ValueError(
-                    f"Data with name '{attributes['name']}' already present "
-                    f"on the drillhole '{self.name}'. "
-                    "Consider changing the values or renaming."
-                )
-
-            attributes, new_property_group = self.validate_data(
-                attributes, property_group, collocation_distance=collocation_distance
-            )
-
-            entity_type = DataType.validate_data_type(self.workspace, attributes)
-            kwargs = {
-                "name": None,
-                "parent": self,
-                "association": attributes["association"],
-                "allow_move": False,
-            }
-            for key, val in attributes.items():
-                if key in ["parent", "association", "entity_type", "type"]:
-                    continue
-                kwargs[key] = val
-
-            data_object = self.workspace.create_entity(
-                Data, entity=kwargs, entity_type=entity_type, compression=compression
-            )
-
-            if not isinstance(data_object, Data):
-                continue
-
-            if new_property_group is not None:
-                self.add_data_to_group(data_object, new_property_group)
-
-            data_objects.append(data_object)
-
-        # Check the depths and re-sort data if necessary
-        self.sort_depths()
-
-        if len(data_objects) == 1:
-            return data_objects[0]
-
-        return data_objects
-
     def desurvey(self, depths):
         """
         Function to return x, y, z coordinates from depth.
@@ -707,8 +616,8 @@ class Drillhole(Points):
 
         return values
 
-    def validate_data(
-        self, attributes: dict, property_group=None, collocation_distance=None
+    def validate_association(
+        self, attributes: dict, property_group=None, collocation_distance=None, **_
     ) -> tuple:
         """
         Validate input drillhole data attributes.
@@ -732,6 +641,13 @@ class Drillhole(Points):
                     "or contain an 'OBJECT' association. Valid depth keys are 'depth' "
                     "and 'from-to'."
                 )
+
+        if attributes["name"] in self.get_data_list():
+            raise ValueError(
+                f"Data with name '{attributes['name']}' already present "
+                f"on the drillhole '{self.name}'. "
+                "Consider changing the values or renaming."
+            )
 
         if "depth" in attributes.keys():
             attributes["association"] = "VERTEX"
@@ -777,7 +693,7 @@ class Drillhole(Points):
 
         self.workspace.update_attribute(self, "vertices")
 
-    def sort_depths(self):
+    def post_processing(self):
         """
         Read the 'DEPTH' data and sort all Data.values if needed
         """

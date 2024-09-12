@@ -25,7 +25,13 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..data import CommentsData, Data, DataAssociationEnum, DataType, VisualParameters
+from ..data import (
+    CommentsData,
+    Data,
+    DataAssociationEnum,
+    ReferencedData,
+    VisualParameters,
+)
 from ..groups import PropertyGroup
 from ..shared import Entity
 from ..shared.conversion import BaseConversion
@@ -33,8 +39,8 @@ from ..shared.entity_container import EntityContainer
 from ..shared.utils import box_intersect, clear_array_attributes, mask_by_extent
 from .object_type import ObjectType
 
-if TYPE_CHECKING:
 
+if TYPE_CHECKING:
     from ..workspace import Workspace
 
 
@@ -45,7 +51,7 @@ class ObjectBase(EntityContainer):
     :param last_focus: Object visible in camera on start.
     """
 
-    _attribute_map: dict = getattr(EntityContainer, "_attribute_map").copy()
+    _attribute_map: dict = EntityContainer._attribute_map.copy()
     _attribute_map.update(
         {"Last focus": "last_focus", "PropertyGroups": "property_groups"}
     )
@@ -91,7 +97,8 @@ class ObjectBase(EntityContainer):
         data: dict,
         property_group: str | PropertyGroup | None = None,
         compression: int = 5,
-    ) -> Data | list[Data]:
+        **kwargs,
+    ) -> Data | ReferencedData | list[Data]:
         """
         Create :obj:`~geoh5py.data.data.Data` from dictionary of name and arguments.
         The provided arguments can be any property of the target Data class.
@@ -117,17 +124,24 @@ class ObjectBase(EntityContainer):
         """
         data_objects = []
         for name, attr in data.items():
-            assert isinstance(attr, dict), (
-                f"Given value to data {name} should of type {dict}. "
-                f"Type {type(attr)} given instead."
-            )
+            if not isinstance(attr, dict):
+                raise TypeError(
+                    f"Given value to data {name} should of type {dict}. "
+                    f"Type {type(attr)} given instead."
+                )
+
             attr["name"] = name
-            self.validate_data_association(attr)
-            entity_type = DataType.validate_data_type(self.workspace, attr)
+            attr, validate_property_group = self.validate_association(
+                attr, property_group=property_group, **kwargs
+            )
+
+            entity_type = self.workspace.validate_data_type(attr, attr.get("values"))
+
             kwargs = {"parent": self, "association": attr["association"]}
             for key, val in attr.items():
                 if key in ["parent", "association", "entity_type", "type"]:
                     continue
+
                 kwargs[key] = val
 
             data_object = self.workspace.create_entity(
@@ -137,10 +151,13 @@ class ObjectBase(EntityContainer):
             if not isinstance(data_object, Data):
                 continue
 
-            if property_group is not None:
-                self.add_data_to_group(data_object, property_group)
+            if validate_property_group is not None:
+                self.add_data_to_group(data_object, validate_property_group)
 
             data_objects.append(data_object)
+
+        # TODO: Legacy re-sorting for old drillhole format
+        self.post_processing()
 
         if len(data_objects) == 1:
             return data_objects[0]
@@ -190,7 +207,7 @@ class ObjectBase(EntityContainer):
             if len(associations) != 1:
                 raise ValueError("All input 'data' must have the same association.")
 
-            property_group = self.find_or_create_property_group(
+            property_group = self.fetch_property_group(
                 name=property_group, association=associations[0]
             )
 
@@ -348,12 +365,9 @@ class ObjectBase(EntityContainer):
 
         return prop_group
 
-    def find_or_create_property_group(
-        self, name=None, uid=None, **kwargs
-    ) -> PropertyGroup:
+    def fetch_property_group(self, name=None, uid=None, **kwargs) -> PropertyGroup:
         """
-        Find or create :obj:`~geoh5py.groups.property_group.PropertyGroup`
-        from given name and properties.
+        Find or create a PropertyGroup from given name and properties.
 
         :param name: Name of the property group.
         :param uid: Unique identifier for the property group.
@@ -371,6 +385,19 @@ class ObjectBase(EntityContainer):
             prop_group = self.create_property_group(name=name, uid=uid, **kwargs)
 
         return prop_group
+
+    def find_or_create_property_group(
+        self, name=None, uid=None, **kwargs
+    ) -> PropertyGroup:
+        """
+        Find or create a PropertyGroup from given name and properties.
+        """
+        warnings.warn(
+            "The 'find_and_create_property_group' will be deprecated. "
+            "Use fetch_property_group instead.",
+            DeprecationWarning,
+        )
+        return self.fetch_property_group(name=name, uid=uid, **kwargs)
 
     def get_data(self, name: str | uuid.UUID) -> list[Data]:
         """
@@ -447,6 +474,11 @@ class ObjectBase(EntityContainer):
         List of :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         """
         return self._property_groups
+
+    def post_processing(self):
+        """
+        Post-processing function to be called after adding data.
+        """
 
     def remove_children(self, children: list[Entity | PropertyGroup]):
         """
@@ -539,25 +571,30 @@ class ObjectBase(EntityContainer):
         """
         return self._converter
 
-    def validate_data_association(self, attribute_dict):
+    def validate_association(self, attributes, property_group=None, **_):
         """
         Get a dictionary of attributes and validate the data 'association' keyword.
+
+        :param attributes: Dictionary of attributes provided for the data.
+        :param property_group: Property group to associate the data with.
         """
-        if attribute_dict.get("association") is not None:
-            return
+        if attributes.get("association") is not None:
+            return attributes, property_group
 
         if (
             getattr(self, "n_cells", None) is not None
-            and attribute_dict["values"].ravel().shape[0] == self.n_cells
+            and attributes["values"].ravel().shape[0] == self.n_cells
         ):
-            attribute_dict["association"] = "CELL"
+            attributes["association"] = "CELL"
         elif (
             getattr(self, "n_vertices", None) is not None
-            and attribute_dict["values"].ravel().shape[0] == self.n_vertices
+            and attributes["values"].ravel().shape[0] == self.n_vertices
         ):
-            attribute_dict["association"] = "VERTEX"
+            attributes["association"] = "VERTEX"
         else:
-            attribute_dict["association"] = "OBJECT"
+            attributes["association"] = "OBJECT"
+
+        return attributes, property_group
 
     def add_default_visual_parameters(self):
         """

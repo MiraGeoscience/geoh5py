@@ -17,7 +17,7 @@
 
 from __future__ import annotations
 
-from . import NoTypeGroup
+from .notype import NoTypeGroup
 
 
 class RootGroup(NoTypeGroup):
@@ -32,7 +32,6 @@ class RootGroup(NoTypeGroup):
         allow_rename=False,
         **kwargs,
     ):
-
         super().__init__(
             allow_move=allow_move,
             allow_delete=allow_delete,

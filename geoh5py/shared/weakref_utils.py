@@ -21,6 +21,7 @@ import weakref
 from typing import TypeVar
 from weakref import ReferenceType
 
+
 K = TypeVar("K")  # pylint: disable=invalid-name
 T = TypeVar("T")  # pylint: disable=invalid-name
 
