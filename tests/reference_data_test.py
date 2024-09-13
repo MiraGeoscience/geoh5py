@@ -52,6 +52,7 @@ def generate_value_map(workspace, n_data=12, n_class=8):
             }
         }
     )
+    data.entity_type.name = "abc"
     return points, data
 
 

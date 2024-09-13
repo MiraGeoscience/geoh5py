@@ -150,7 +150,7 @@ class ReferencedData(IntegerData):
             self.workspace,
             value_map=reference_data,
             parent=self.parent,
-            name=self.name + f": {name}",
+            name=self.entity_type.name + f": {name}",
         )
         geom_data = self.parent.add_data(
             {
