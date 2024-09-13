@@ -112,29 +112,21 @@ class DrillholesGroupTable(ABC):
             names=names, drillhole=drillholes
         )
         current_index = 0
-        temp_array = None
         for object_, data_dict in self.index_by_drillhole.items():
             for name, info in data_dict.items():
                 if name in names:
-                    temp_array = self._pad_array_to_association(
-                        object_,
-                        self.parent.data[name][info[0] : info[0] + info[1]],
-                        self.nan_value_from_name(name),
-                    )
+                    temp_array = self.parent.data[name][info[0] : info[0] + info[1]]
 
                     output_array[name][
                         current_index : current_index + temp_array.shape[0]
                     ] = temp_array
 
-            if temp_array is None:
-                raise ValueError("No data found for the given names.")
-
             if drillholes:
                 output_array["Drillhole"][
-                    current_index : current_index + temp_array.shape[0]
+                    current_index : current_index + data_dict[self.association[0]][1]
                 ] = object_
 
-            current_index += temp_array.shape[0]
+            current_index += data_dict[self.association[0]][1]
 
         # transform to a structured array
         return output_array
@@ -198,32 +190,6 @@ class DrillholesGroupTable(ABC):
             if properties_name:
                 self._properties = properties_name
                 self._properties_types = properties_type
-
-    def _pad_array_to_association(
-        self, drillhole_uid: bytes, array: np.ndarray, ndv: Any
-    ) -> np.ndarray:
-        """
-        Pad the array to match the size of the association for a given drillhole.
-
-        :param drillhole_uid: The uid of the drillhole where the data is located.
-        :param array: The array to pad.
-        :param ndv: The No Data Value of the data.
-
-        :return: The padded array.
-        """
-        pad_size = (
-            self.index_by_drillhole[drillhole_uid][self.association[0]][1]
-            - array.shape[0]
-        )
-        if pad_size > 0:
-            return np.pad(
-                array,
-                (0, pad_size),
-                mode="constant",
-                constant_values=(ndv, ndv),
-            )
-
-        return array
 
     def add_values_to_property_group(
         self, name: str, values: np.ndarray, data_type: DataType | None = None
