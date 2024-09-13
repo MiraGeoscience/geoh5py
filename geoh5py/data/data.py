@@ -329,12 +329,12 @@ class Data(Entity):
     def visible(self, value: bool):
         self._visible = value
 
-        if value:
-            for child in self.parent.children:
-                child.visible = False
-
         if self.on_file:
             self.workspace.update_attribute(self, "attributes")
+
+            if value:
+                for child in self.parent.children:
+                    child.visible = False
 
     def __call__(self):
         return self.values

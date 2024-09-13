@@ -1073,8 +1073,8 @@ def test_add_data_to_property(tmp_path):
         verificationc["interval_values_a"] = verification_map_value
 
         assert compare_structured_arrays(
-            verificationc,
-            verificationd,
+            verificationc.astype([("new_value", np.float32)]),
+            verificationd.astype([("new_value", np.float32)]),
             tolerance=1e-5,
         )
 

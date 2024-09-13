@@ -203,7 +203,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         self.edit_em_metadata({"Channels": values})
 
     @property
-    def complement(self):
+    def complement(self) -> BaseEMSurvey | None:
         """Returns the complement object for self."""
         return None
 
@@ -234,6 +234,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         cell_mask: np.ndarray | None = None,
+        copy_complement: bool = True,
         **kwargs,
     ):
         """
@@ -257,7 +258,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             if not isinstance(value, (uuid.UUID, type(None))):
                 new_entity.edit_em_metadata({key: value})
 
-        if self.complement is not None:
+        if copy_complement:
             self.copy_complement(
                 new_entity,
                 parent=parent,
@@ -275,7 +276,13 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
-    ):
+    ) -> BaseEMSurvey | None:
+        """
+        Copy the complement entity to the new entity.
+        """
+        if self.complement is None:
+            return None
+
         new_complement = self.complement._super_copy(  # pylint: disable=protected-access
             parent=parent,
             copy_children=copy_children,
@@ -396,10 +403,11 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         if self.on_file:
             self.workspace.update_attribute(self, "metadata")
 
-        for elem in ["receivers", "transmitters", "base_stations"]:
-            dependent = getattr(self, elem, None)
-            if dependent is not None and dependent is not self:
-                dependent._metadata = self._metadata  # pylint: disable=protected-access
+            if self.complement is not None:
+                self.complement._metadata = self._metadata  # pylint: disable=protected-access
+
+                if self.complement.on_file:
+                    self.workspace.update_attribute(self.complement, "metadata")
 
     @property
     def receivers(self) -> BaseEMSurvey | None:
@@ -772,7 +780,6 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
         if isinstance(value, np.ndarray):
             attributes = {
                 "values": value.astype(np.int32),
-                "type": "referenced",
             }
             if (
                 self.complement is not None
@@ -785,9 +792,10 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
                 }
                 value_map[0] = "Unknown"
                 attributes.update(
-                    {  # type: ignore
+                    {
                         "primitive_type": "REFERENCED",
                         "value_map": value_map,
+                        "association": "VERTEX",
                     }
                 )
 
