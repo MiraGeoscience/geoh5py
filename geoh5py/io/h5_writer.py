@@ -321,7 +321,6 @@ class H5Writer:
 
             if attribute in [
                 "concatenated_attributes",
-                "metadata",
                 "options",
                 "trace_depth",
                 "values",
@@ -329,6 +328,8 @@ class H5Writer:
                 H5Writer.write_data_values(
                     h5file, entity, attribute, compression, **kwargs
                 )
+            elif attribute == "metadata":
+                H5Writer.write_metadata(h5file, entity, attribute, **kwargs)
             elif attribute in [
                 "cells",
                 "concatenated_object_ids",
@@ -650,8 +651,16 @@ class H5Writer:
                         json.dumps(val).encode("utf-8") for val in values["Attributes"]
                     ]
 
-            # Adding an array of values
-            if isinstance(values, dict) or isinstance(entity, CommentsData):
+            if name_map == "Attributes Jsons":
+                entity_handle.create_dataset(
+                    name_map,
+                    data=values,
+                    compression="gzip",
+                    compression_opts=compression,
+                    **kwargs,
+                )
+
+            elif isinstance(values, dict) or isinstance(entity, CommentsData):
                 values = deepcopy(values)
                 values = dict_mapper(values, [as_str_if_uuid])
                 entity_handle.create_dataset(
@@ -661,19 +670,16 @@ class H5Writer:
                     shape=(1,),
                     **kwargs,
                 )
-
             elif isinstance(entity, FilenameData):
                 H5Writer.write_file_name_data(entity_handle, entity)
-
-            elif isinstance(values, str):
+            elif isinstance(entity.values, str):
                 entity_handle.create_dataset(
                     name_map,
-                    data=values,
+                    data=entity.values,
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
                     **kwargs,
                 )
-
             else:
                 entity_handle.create_dataset(
                     name_map,
@@ -682,6 +688,62 @@ class H5Writer:
                     compression_opts=compression,
                     **kwargs,
                 )
+
+    @staticmethod
+    def write_metadata(  # pylint: disable=too-many-branches
+        file: str | h5py.File,
+        entity: Data,
+        attribute,
+        values=None,
+        **kwargs,
+    ) -> None:
+        """
+        Add data :obj:`~geoh5py.data.data.Data.values`.
+
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Target entity.
+        :param attribute: Name of the attribute to be written to geoh5
+        :param compression: Compression level for the data.
+        :param values: Data values.
+        """
+        with fetch_h5_handle(file, mode="r+") as h5file:
+            entity_handle = H5Writer.fetch_handle(h5file, entity)
+
+            if entity_handle is None:
+                return
+
+            name_map = KEY_MAP[attribute]
+
+            if isinstance(entity, Concatenator):
+                entity_handle = entity_handle["Concatenated Data"]
+
+                if (
+                    attribute == "concatenated_attributes"
+                    and entity.concat_attr_str == "Attributes Jsons"
+                ):
+                    name_map = entity.concat_attr_str
+
+            if name_map in entity_handle:
+                del entity_handle[name_map]
+                entity.workspace.repack = True
+
+            if values is None:
+                values = getattr(
+                    entity, attribute, None
+                )  # Give the chance to fetch from file
+
+                if values is None:
+                    return
+
+            values = deepcopy(values)
+            values = dict_mapper(values, [as_str_if_uuid])
+            entity_handle.create_dataset(
+                name_map,
+                data=json.dumps(values, indent=4),
+                dtype=h5py.special_dtype(vlen=str),
+                shape=(1,),
+                **kwargs,
+            )
 
     @staticmethod
     def clear_stats_cache(

@@ -23,6 +23,7 @@ from copy import deepcopy
 import numpy as np
 from numpy import ndarray
 
+from ..shared.utils import as_str_if_uuid, dict_mapper
 from .data import Data
 from .primitive_type_enum import PrimitiveTypeEnum
 
@@ -96,6 +97,11 @@ class CommentsData(Data):
                 },
             ]
     """
+
+    @property
+    def formatted_values(self):
+        values = deepcopy(self.values)
+        return dict_mapper(values, [as_str_if_uuid])
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
