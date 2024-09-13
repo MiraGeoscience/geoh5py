@@ -624,6 +624,7 @@ class H5Writer:
                 return
 
             name_map = KEY_MAP[attribute]
+
             if isinstance(entity, Concatenator):
                 entity_handle = entity_handle["Concatenated Data"]
 
@@ -679,6 +680,8 @@ class H5Writer:
 
             else:
                 out_values = deepcopy(values)
+
+                # todo: those setter should be in Data
                 if isinstance(entity, BooleanData):
                     out_values = np.round(out_values).astype("int8")
 
