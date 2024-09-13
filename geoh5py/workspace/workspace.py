@@ -1439,7 +1439,9 @@ class Workspace(AbstractContextManager):
                 primitive_type = DataType.primitive_type_from_values(values)
 
             if isinstance(primitive_type, str):
-                primitive_type = DataType.validate_primitive_type(primitive_type)
+                primitive_type = DataType.validate_primitive_type(
+                    primitive_type.upper()
+                )
 
             # Generate a value map based on type of values
             if (
