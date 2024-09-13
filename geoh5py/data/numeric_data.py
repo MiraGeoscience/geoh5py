@@ -42,12 +42,15 @@ class NumericData(Data, ABC):
         """No-data-value"""
 
     @property
-    def ndv_values(self):
+    def ndv_values(self) -> np.ndarray | None:
         """
         Data with nan replaced by ndv
         """
+        if self.values is None:
+            return None
         values = deepcopy(self.values)
         values[np.isnan(values)] = self.ndv
+
         return values
 
     @abstractmethod

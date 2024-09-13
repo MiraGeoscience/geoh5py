@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import uuid
 from abc import abstractmethod
+from copy import deepcopy
 from typing import Any
 
 import numpy as np
@@ -153,7 +154,7 @@ class Data(Entity):
         """
         The data with the right format for Geoscience ANALYST.
         """
-        raise NotImplementedError("formatted_values not available for this class.")
+        return deepcopy(self.values)
 
     @property
     def n_values(self) -> int | None:

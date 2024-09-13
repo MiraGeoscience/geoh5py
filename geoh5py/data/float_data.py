@@ -46,7 +46,7 @@ class FloatData(NumericData):
         if values is None:
             return values
 
-        return values.astype(np.float32)
+        return values
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:

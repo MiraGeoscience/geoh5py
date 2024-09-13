@@ -101,7 +101,7 @@ class CommentsData(Data):
     @property
     def formatted_values(self):
         values = deepcopy(self.values)
-        return dict_mapper(values, [as_str_if_uuid])
+        return json.dumps(dict_mapper(values, [as_str_if_uuid]))
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
