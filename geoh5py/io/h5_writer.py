@@ -29,18 +29,14 @@ import h5py
 import numpy as np
 
 from ..data import (
-    BooleanData,
     CommentsData,
     Data,
     DataType,
     FilenameData,
     GeometricDataValueMapType,
-    IntegerData,
-    MultiTextData,
     ReferenceDataType,
     ReferencedData,
     ReferenceValueMap,
-    TextData,
 )
 from ..groups import Group, GroupType, PropertyGroup, RootGroup
 from ..objects import ObjectBase, ObjectType
@@ -602,7 +598,7 @@ class H5Writer:
     @staticmethod
     def write_data_values(  # pylint: disable=too-many-branches
         file: str | h5py.File,
-        entity,
+        entity: Data,
         attribute,
         compression: int,
         values=None,
@@ -679,26 +675,9 @@ class H5Writer:
                 )
 
             else:
-                out_values = deepcopy(values)
-
-                # todo: those setter should be in Data
-                if isinstance(entity, BooleanData):
-                    out_values = np.round(out_values).astype("int8")
-
-                elif isinstance(entity, IntegerData):
-                    out_values = np.round(out_values).astype("int32")
-
-                elif isinstance(entity, TextData | MultiTextData) and not isinstance(
-                    values[0], bytes
-                ):
-                    out_values = np.char.encode(values, encoding="utf-8").astype("O")
-
-                if getattr(entity, "ndv", None) is not None:
-                    out_values[np.isnan(out_values)] = entity.ndv
-
                 entity_handle.create_dataset(
                     name_map,
-                    data=out_values,
+                    data=entity.formatted_values,
                     compression="gzip",
                     compression_opts=compression,
                     **kwargs,

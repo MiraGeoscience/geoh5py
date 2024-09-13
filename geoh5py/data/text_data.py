@@ -18,15 +18,36 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 
 import numpy as np
+from numpy import ndarray
 
 from .data import Data
 from .primitive_type_enum import PrimitiveTypeEnum
 
 
+def text_formating(values: None | np.ndarray | str) -> ndarray | None:
+    """
+    Format text values to utf-8.
+
+    :param values: The values to format.
+
+    :return: The formatted values.
+    """
+    values = deepcopy(values)
+
+    # todo: values[0] seems dangerous here
+    if values is None or isinstance(values[0], bytes):
+        return values
+
+    return np.char.encode(values, encoding="utf-8").astype("O")
+
+
 class TextData(Data):
-    _values: np.ndarray | str | None
+    @property
+    def formatted_values(self):
+        return text_formating(self.values)
 
     @property
     def nan_value(self):
@@ -113,6 +134,10 @@ class CommentsData(Data):
 
 class MultiTextData(Data):
     _values: np.ndarray | str | None
+
+    @property
+    def formatted_values(self):
+        return text_formating(self.values)
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
