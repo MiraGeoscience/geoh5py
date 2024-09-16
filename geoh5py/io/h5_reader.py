@@ -401,10 +401,12 @@ class H5Reader:
             type_attributes["color_map"]["values"] = type_handle["Color map"][:]
 
         if "Value map" in type_handle:
-            type_attributes["value_map"] = type_handle["Value map"][:].astype(
-                [("Key", "<u4"), ("Value", "<U13")]
-            )
-
+            try:
+                type_attributes["value_map"] = type_handle["Value map"][:].astype(
+                    [("Key", "<u4"), ("Value", "<U13")]
+                )
+            except UnicodeDecodeError:
+                type_handle["Value map"][:].astype([("Key", "<u4"), ("Value", "O")])
         return type_attributes
 
     @classmethod

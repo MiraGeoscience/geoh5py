@@ -26,6 +26,7 @@ class ReferenceValueMap(ABC):
     """Maps from reference index to reference value of ReferencedData."""
 
     MAP_DTYPE = np.dtype([("Key", "<u4"), ("Value", "<U13")])
+    MAP_DTYPE_BYTES = np.dtype([("Key", "<u4"), ("Value", "O")])
 
     def __init__(
         self,
@@ -65,12 +66,19 @@ class ReferenceValueMap(ABC):
             if not np.all(np.asarray(list(value_map)) >= 0):
                 raise KeyError("Key must be an positive integer")
 
-            value_map = np.array(list(value_map.items()), dtype=cls.MAP_DTYPE)
+            value_list = list(value_map.items())
+
+            if isinstance(value_list[0][1], bytes):
+                dtype = cls.MAP_DTYPE_BYTES
+            else:
+                dtype = cls.MAP_DTYPE
+
+            value_map = np.array(value_list, dtype=dtype)
 
         if not isinstance(value_map, np.ndarray):
             raise TypeError("Value map must be a numpy array or dict.")
 
-        if value_map.dtype != cls.MAP_DTYPE:
+        if value_map.dtype not in [cls.MAP_DTYPE, cls.MAP_DTYPE_BYTES]:
             raise ValueError(f"Array of 'value_map' must be of dtype = {cls.MAP_DTYPE}")
 
         return value_map

@@ -162,3 +162,30 @@ def test_add_data_map(tmp_path):
         geo_data = rec_data.data_maps["test2"]
         assert geo_data.entity_type.value_map is not None
         assert geo_data.entity_type.value_map.name == "test2"
+
+
+def test_create_bytes_reference(tmp_path):
+    h5file_path = tmp_path / r"testPoints.geoh5"
+
+    with Workspace.create(h5file_path) as workspace:
+        points, data = generate_value_map(workspace)
+
+        value_map = data.entity_type.value_map()
+        for key, value in value_map.items():
+            value_map[key] = value.encode()
+
+        points.add_data(
+            {
+                "DataValues_bytes": {
+                    "type": "referenced",
+                    "values": data.values,
+                    "value_map": value_map,
+                }
+            }
+        )
+
+    with Workspace(h5file_path) as workspace:
+        data = workspace.get_entity("DataValues_bytes")[0]
+        assert data.entity_type.value_map.map.dtype == np.dtype(
+            [("Key", "<u4"), ("Value", "<U13")]
+        )
