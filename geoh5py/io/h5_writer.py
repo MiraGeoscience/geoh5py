@@ -24,6 +24,7 @@ import re
 import uuid
 from copy import deepcopy
 from typing import TYPE_CHECKING
+from warnings import warn
 
 import h5py
 import numpy as np
@@ -318,7 +319,7 @@ class H5Writer:
 
             if entity_handle is None:
                 return
-            if attribute in ["concatenated_attributes", "options"]:
+            if attribute == "concatenated_attributes":
                 H5Writer.write_group_values(
                     h5file, entity, attribute, compression, **kwargs
                 )
@@ -329,7 +330,7 @@ class H5Writer:
                 H5Writer.write_data_values(
                     h5file, entity, attribute, compression, **kwargs
                 )
-            elif attribute == "metadata":
+            elif attribute in ["metadata", "options"]:
                 H5Writer.write_metadata(h5file, entity, attribute, **kwargs)
             elif attribute in [
                 "cells",
@@ -693,6 +694,8 @@ class H5Writer:
                     shape=(1,),
                     **kwargs,
                 )
+            else:
+                warn(f"Writing '{values}' on '{entity.name}' failed.")
 
     @staticmethod
     def write_data_values(  # pylint: disable=too-many-branches
