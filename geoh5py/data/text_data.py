@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 import json
-from copy import deepcopy
 
 import numpy as np
 from numpy import ndarray
@@ -36,8 +35,6 @@ def text_formating(values: None | np.ndarray | str) -> ndarray | None:
 
     :return: The formatted values.
     """
-    values = deepcopy(values)
-
     # todo: values[0] seems dangerous here
     if values is None or isinstance(values[0], bytes):
         return values
@@ -100,8 +97,7 @@ class CommentsData(Data):
 
     @property
     def formatted_values(self):
-        values = deepcopy(self.values)
-        return json.dumps(dict_mapper(values, [as_str_if_uuid]))
+        return json.dumps(dict_mapper(self.values, [as_str_if_uuid]))
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:

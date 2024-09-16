@@ -17,17 +17,12 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 from typing import Any
 
 from .data import Data, PrimitiveTypeEnum
 
 
 class BlobData(Data):
-    @property
-    def formatted_values(self):
-        return deepcopy(self.values)
-
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.BLOB
