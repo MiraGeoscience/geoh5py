@@ -363,7 +363,9 @@ class DataType(EntityType):
         :return: A known primitive type.
         """
         if isinstance(primitive_type, str):
-            primitive_type = getattr(PrimitiveTypeEnum, primitive_type.upper())
+            primitive_type = getattr(
+                PrimitiveTypeEnum, utils.INV_KEY_MAP.get(primitive_type, primitive_type)
+            )
 
         if isinstance(primitive_type, type) and hasattr(
             primitive_type, "primitive_type"

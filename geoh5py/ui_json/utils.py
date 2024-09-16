@@ -105,7 +105,9 @@ def dependency_requires_value(ui_json: dict[str, dict], parameter: str) -> bool:
     )
 
     if ui_json[parameter].get("dependencyType", "enabled") == "enabled":
-        is_required = ui_json[dependency].get(key, True)
+        is_required = ui_json[dependency].get(key, True) & bool(
+            ui_json[dependency]["value"]
+        )
     else:
         is_required = not ui_json[dependency].get(key, True)
     if ("optional" in ui_json[parameter]) & bool(is_required):
