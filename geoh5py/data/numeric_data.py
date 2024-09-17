@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from warnings import warn
 
 import numpy as np
@@ -39,6 +40,18 @@ class NumericData(Data, ABC):
     @abstractmethod
     def ndv(self):
         """No-data-value"""
+
+    @property
+    def ndv_values(self) -> np.ndarray | None:
+        """
+        Data with nan replaced by ndv
+        """
+        if self.values is None:
+            return None
+        values = deepcopy(self.values)
+        values[np.isnan(values)] = self.ndv
+
+        return values
 
     @abstractmethod
     def format_type(self, values: np.ndarray) -> np.ndarray:
