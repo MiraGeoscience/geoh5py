@@ -59,6 +59,10 @@ class BooleanData(ReferencedData):
 
         return values.astype(bool)
 
+    @property
+    def formatted_values(self):
+        return super().formatted_values.astype("int8")
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.BOOLEAN

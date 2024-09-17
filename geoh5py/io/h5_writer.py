@@ -24,23 +24,20 @@ import re
 import uuid
 from copy import deepcopy
 from typing import TYPE_CHECKING
+from warnings import warn
 
 import h5py
 import numpy as np
 
 from ..data import (
-    BooleanData,
     CommentsData,
     Data,
     DataType,
     FilenameData,
     GeometricDataValueMapType,
-    IntegerData,
-    MultiTextData,
     ReferenceDataType,
     ReferencedData,
     ReferenceValueMap,
-    TextData,
 )
 from ..groups import Group, GroupType, PropertyGroup, RootGroup
 from ..objects import ObjectBase, ObjectType
@@ -322,17 +319,19 @@ class H5Writer:
 
             if entity_handle is None:
                 return
-
-            if attribute in [
-                "concatenated_attributes",
-                "metadata",
-                "options",
+            if attribute == "concatenated_attributes":
+                H5Writer.write_group_values(
+                    h5file, entity, attribute, compression, **kwargs
+                )
+            elif attribute in [
                 "trace_depth",
                 "values",
             ]:
                 H5Writer.write_data_values(
                     h5file, entity, attribute, compression, **kwargs
                 )
+            elif attribute in ["metadata", "options"]:
+                H5Writer.write_metadata(h5file, entity, attribute, **kwargs)
             elif attribute in [
                 "cells",
                 "concatenated_object_ids",
@@ -600,16 +599,51 @@ class H5Writer:
                 )
 
     @staticmethod
-    def write_data_values(  # pylint: disable=too-many-branches
+    def prepare_data_to_write(
+        h5file: h5py.File, entity: Data | Group | ObjectBase, attribute: str
+    ) -> tuple[h5py.Group, str] | tuple[None, None]:
+        """
+        Prepare data to be written to a geoh5 file.
+
+        :param h5file: Name or handle to a geoh5 file.
+        :param entity: Entity with attributes to be added to the geoh5 file.
+        :param attribute: The attribute to be written to the geoh5 file.
+
+        :return: The entity handle, the name map, and the values to be written to the geoh5 file.
+        """
+        entity_handle = H5Writer.fetch_handle(h5file, entity)
+
+        if entity_handle is None:
+            return None, None
+
+        name_map = KEY_MAP[attribute]
+
+        if isinstance(entity, Concatenator):
+            entity_handle = entity_handle["Concatenated Data"]
+
+            if (
+                attribute == "concatenated_attributes"
+                and entity.concat_attr_str == "Attributes Jsons"
+            ):
+                name_map = entity.concat_attr_str
+
+        if name_map in entity_handle:
+            del entity_handle[name_map]
+            entity.workspace.repack = True
+
+        return entity_handle, name_map
+
+    @staticmethod
+    def write_group_values(
         file: str | h5py.File,
-        entity,
+        entity: Group,
         attribute,
         compression: int,
         values=None,
         **kwargs,
-    ) -> None:
+    ):
         """
-        Add data :obj:`~geoh5py.data.data.Data.values`.
+        Add Concatenator values.
 
         :param file: Name or handle to a geoh5 file.
         :param entity: Target entity.
@@ -617,44 +651,40 @@ class H5Writer:
         :param compression: Compression level for the data.
         :param values: Data values.
         """
+        if not isinstance(entity, Group):
+            raise TypeError(
+                "Entity must be a Group object; " f"got '{type(entity)}' instead."
+            )
+        # check type here
         with fetch_h5_handle(file, mode="r+") as h5file:
-            entity_handle = H5Writer.fetch_handle(h5file, entity)
+            entity_handle, name_map = H5Writer.prepare_data_to_write(
+                h5file, entity, attribute
+            )
 
-            if entity_handle is None:
+            # Give the chance to fetch from file
+            values = getattr(entity, attribute, None) if values is None else values
+
+            if values is None or entity_handle is None:
                 return
 
-            name_map = KEY_MAP[attribute]
-            if isinstance(entity, Concatenator):
-                entity_handle = entity_handle["Concatenated Data"]
+            if (
+                attribute == "concatenated_attributes"
+                and isinstance(entity, Concatenator)
+                and entity.concat_attr_str == "Attributes Jsons"
+            ):
+                values = [
+                    json.dumps(val).encode("utf-8") for val in values["Attributes"]
+                ]
 
-                if (
-                    attribute == "concatenated_attributes"
-                    and entity.concat_attr_str == "Attributes Jsons"
-                ):
-                    name_map = entity.concat_attr_str
-
-            if name_map in entity_handle:
-                del entity_handle[name_map]
-                entity.workspace.repack = True
-
-            if values is None:
-                values = getattr(
-                    entity, attribute, None
-                )  # Give the chance to fetch from file
-
-                if values is None:
-                    return
-
-                if (
-                    attribute == "concatenated_attributes"
-                    and entity.concat_attr_str == "Attributes Jsons"
-                ):
-                    values = [
-                        json.dumps(val).encode("utf-8") for val in values["Attributes"]
-                    ]
-
-            # Adding an array of values
-            if isinstance(values, dict) or isinstance(entity, CommentsData):
+            if name_map == "Attributes Jsons":
+                entity_handle.create_dataset(
+                    name_map,
+                    data=values,
+                    compression="gzip",
+                    compression_opts=compression,
+                    **kwargs,
+                )
+            elif isinstance(values, dict):
                 values = deepcopy(values)
                 values = dict_mapper(values, [as_str_if_uuid])
                 entity_handle.create_dataset(
@@ -664,42 +694,99 @@ class H5Writer:
                     shape=(1,),
                     **kwargs,
                 )
+            else:
+                warn(f"Writing '{values}' on '{entity.name}' failed.")
 
-            elif isinstance(entity, FilenameData):
-                H5Writer.write_file_name_data(entity_handle, entity)
+    @staticmethod
+    def write_data_values(  # pylint: disable=too-many-branches
+        file: str | h5py.File,
+        entity: Data,
+        attribute,
+        compression: int,
+        **kwargs,
+    ) -> None:
+        """
+        Add data :obj:`~geoh5py.data.data.Data.values`.
 
-            elif isinstance(values, str):
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Target entity.
+        :param attribute: Name of the attribute to be written to geoh5
+        :param compression: Compression level for the data.
+        """
+        if not isinstance(entity, Data):
+            raise TypeError(
+                "Entity must be a Data object; " f"got '{type(entity)}' instead."
+            )
+
+        with fetch_h5_handle(file, mode="r+") as h5file:
+            entity_handle, name_map = H5Writer.prepare_data_to_write(
+                h5file, entity, attribute
+            )
+            if entity.formatted_values is None or entity_handle is None:
+                return
+            if isinstance(entity, CommentsData):
                 entity_handle.create_dataset(
                     name_map,
-                    data=values,
+                    data=entity.formatted_values,
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
                     **kwargs,
                 )
-
-            else:
-                out_values = deepcopy(values)
-                if isinstance(entity, BooleanData):
-                    out_values = np.round(out_values).astype("int8")
-
-                elif isinstance(entity, IntegerData):
-                    out_values = np.round(out_values).astype("int32")
-
-                elif isinstance(entity, TextData | MultiTextData) and not isinstance(
-                    values[0], bytes
-                ):
-                    out_values = np.char.encode(values, encoding="utf-8").astype("O")
-
-                if getattr(entity, "ndv", None) is not None:
-                    out_values[np.isnan(out_values)] = entity.ndv
-
+            elif isinstance(entity, FilenameData):
+                H5Writer.write_file_name_data(entity_handle, entity)
+            elif isinstance(entity.values, str):
                 entity_handle.create_dataset(
                     name_map,
-                    data=out_values,
+                    data=entity.values,
+                    dtype=h5py.special_dtype(vlen=str),
+                    shape=(1,),
+                    **kwargs,
+                )
+            else:
+                entity_handle.create_dataset(
+                    name_map,
+                    data=entity.formatted_values,
                     compression="gzip",
                     compression_opts=compression,
                     **kwargs,
                 )
+
+    @staticmethod
+    def write_metadata(  # pylint: disable=too-many-branches
+        file: str | h5py.File,
+        entity: Group | ObjectBase,
+        attribute,
+        values=None,
+        **kwargs,
+    ) -> None:
+        """
+        Add data :obj:`~geoh5py.data.data.Data.values`.
+
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Target entity.
+        :param attribute: Name of the attribute to be written to geoh5
+        :param values: Data values.
+        """
+        with fetch_h5_handle(file, mode="r+") as h5file:
+            entity_handle, name_map = H5Writer.prepare_data_to_write(
+                h5file, entity, attribute
+            )
+
+            # Give the chance to fetch from file
+            values = getattr(entity, attribute, None) if values is None else values
+
+            if values is None or entity_handle is None:
+                return
+
+            values = deepcopy(values)
+            values = dict_mapper(values, [as_str_if_uuid])
+            entity_handle.create_dataset(
+                name_map,
+                data=json.dumps(values, indent=4),
+                dtype=h5py.special_dtype(vlen=str),
+                shape=(1,),
+                **kwargs,
+            )
 
     @staticmethod
     def clear_stats_cache(

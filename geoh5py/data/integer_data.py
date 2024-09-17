@@ -36,6 +36,14 @@ class IntegerData(NumericData):
 
         return values.astype(np.int32)
 
+    @property
+    def formatted_values(self):
+        values = self.ndv_values
+        if values is None:
+            return values
+
+        return np.round(values).astype(np.int32)
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.INTEGER
