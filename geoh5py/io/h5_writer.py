@@ -599,7 +599,7 @@ class H5Writer:
                 )
 
     @staticmethod
-    def def_prepare_data_to_write(
+    def prepare_data_to_write(
         h5file: h5py.File, entity: Data | Group | ObjectBase, attribute: str
     ) -> tuple[h5py.Group, str] | tuple[None, None]:
         """
