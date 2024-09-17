@@ -653,7 +653,10 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
 
         """
         if self._value_map is None and self.referenced_data is not None:
-            if self.referenced_data.data_maps is None:
+            if (
+                self.referenced_data.data_maps is None
+                or self.referenced_data.metadata is None
+            ):
                 raise ValueError("Referenced data has no data maps.")
 
             value_map = None
