@@ -768,7 +768,7 @@ class H5Writer:
         :param values: Data values.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-            entity_handle, name_map = H5Writer.def_prepare_data_to_write(
+            entity_handle, name_map = H5Writer.prepare_data_to_write(
                 h5file, entity, attribute
             )
 
