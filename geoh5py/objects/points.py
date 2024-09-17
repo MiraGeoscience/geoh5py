@@ -22,6 +22,7 @@ import warnings
 
 import numpy as np
 
+from ..data import Data, DataAssociationEnum
 from .object_base import ObjectBase
 
 
@@ -110,9 +111,18 @@ class Points(ObjectBase):
                 f"minimum permitted of {self._minimum_vertices}."
             )
 
+        children = []
+        for child in self.children:
+            if (
+                isinstance(child, Data)
+                and child.values is not None
+                and child.association == DataAssociationEnum.VERTEX
+            ):
+                children.append(child)
+
         vertices = np.delete(self.vertices, indices, axis=0)
         self._vertices = self.validate_vertices(vertices)
-        self.remove_children_values(indices, "VERTEX", clear_cache=clear_cache)
+        self.remove_children_values(indices, children, clear_cache=clear_cache)
         self.workspace.update_attribute(self, "vertices")
 
     @property

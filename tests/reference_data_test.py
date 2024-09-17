@@ -65,7 +65,7 @@ def test_reference_value_map():
     with pytest.raises(KeyError, match="Key must be an positive integer"):
         ReferenceValueMap({-1: "test"})
 
-    with pytest.raises(ValueError, match="Value for key 0 must be 'Unknown'"):
+    with pytest.raises(ValueError, match="Value for key 0 must be b'Unknown'"):
         ReferencedValueMapType(workspace, value_map=((0, "test"),))
 
     with pytest.raises(ValueError, match="Array of 'value_map' must be of dtype"):
@@ -96,7 +96,7 @@ def test_create_reference_data(tmp_path):
         compare_entities(points, rec_obj)
         compare_entities(data, rec_data, ignore=["_map"])
 
-        assert all(data.entity_type.value_map.map == rec_data.entity_type.value_map.map)
+        assert data.entity_type.value_map() == rec_data.entity_type.value_map()
 
 
 def test_add_data_map(tmp_path):
@@ -165,4 +165,31 @@ def test_add_data_map(tmp_path):
         np.testing.assert_array_almost_equal(
             np.asarray(list(geo_data.entity_type.value_map().values()), dtype=float),
             data_map[:, 1],
+        )
+
+
+def test_create_bytes_reference(tmp_path):
+    h5file_path = tmp_path / r"testPoints.geoh5"
+
+    with Workspace.create(h5file_path) as workspace:
+        points, data = generate_value_map(workspace)
+
+        value_map = data.entity_type.value_map()
+        for key, value in value_map.items():
+            value_map[key] = value.encode()
+
+        points.add_data(
+            {
+                "DataValues_bytes": {
+                    "type": "referenced",
+                    "values": data.values,
+                    "value_map": value_map,
+                }
+            }
+        )
+
+    with Workspace(h5file_path) as workspace:
+        data = workspace.get_entity("DataValues_bytes")[0]
+        assert data.entity_type.value_map.map.dtype == np.dtype(
+            [("Key", "<u4"), ("Value", "O")]
         )
