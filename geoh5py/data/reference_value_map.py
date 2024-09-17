@@ -73,13 +73,11 @@ class ReferenceValueMap(ABC):
 
             value_list = list(value_map.items())
             value_map = np.array(
-                value_list, dtype=[("Key", "uint"), ("Value", special_dtype(vlen=str))]
+                value_list, dtype=[("Key", "<u4"), ("Value", special_dtype(vlen=str))]
             )
-            print(value_map.dtype)
             value_map["Value"] = np.char.encode(
                 value_map["Value"].astype("U25"), "utf-8"
             )
-            print(value_map.dtype)
 
         if not isinstance(value_map, np.ndarray):
             raise TypeError("Value map must be a numpy array or dict.")
