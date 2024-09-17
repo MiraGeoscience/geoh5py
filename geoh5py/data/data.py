@@ -149,6 +149,13 @@ class Data(Entity):
         return None
 
     @property
+    def formatted_values(self):
+        """
+        The data with the right format for Geoscience ANALYST.
+        """
+        return self.values
+
+    @property
     def n_values(self) -> int | None:
         """
         Number of expected data values based on :obj:`~geoh5py.data.data.Data.association`
