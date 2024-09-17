@@ -657,8 +657,8 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
                 raise ValueError("Referenced data has no data maps.")
 
             value_map = None
-            for count, data_map in enumerate(self.referenced_data.data_maps.values()):
-                if data_map.entity_type == self:
+            for count, name in enumerate(self.referenced_data.metadata):
+                if name == self.name.rsplit(": ")[1]:
                     value_map = self.workspace.fetch_array_attribute(
                         self.referenced_data.entity_type, f"Value map {count + 1}"
                     )

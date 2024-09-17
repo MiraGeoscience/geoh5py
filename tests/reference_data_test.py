@@ -162,6 +162,10 @@ def test_add_data_map(tmp_path):
         geo_data = rec_data.data_maps["test2"]
         assert geo_data.entity_type.value_map is not None
         assert geo_data.entity_type.value_map.name == "test2"
+        np.testing.assert_array_almost_equal(
+            np.asarray(list(geo_data.entity_type.value_map().values()), dtype=float),
+            data_map[:, 1],
+        )
 
 
 def test_create_bytes_reference(tmp_path):
