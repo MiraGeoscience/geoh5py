@@ -583,10 +583,17 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
         Recover the parent ReferencedData by name.
         """
         ref_data_name = self.name.rsplit(":")[0]
-        ref_data = parent.get_data(ref_data_name)
+
+        ref_data = []
+        for child in parent.children:
+            if (
+                isinstance(child.entity_type, ReferencedValueMapType)
+                and child.entity_type.name == ref_data_name
+            ):
+                ref_data.append(child)
 
         if len(ref_data) == 0:
-            raise ValueError(f"Parent data {ref_data_name} not found.")
+            raise ValueError(f"Parent data '{ref_data_name}' not found.")
 
         return ref_data[0]
 
@@ -646,12 +653,15 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
 
         """
         if self._value_map is None and self.referenced_data is not None:
-            if self.referenced_data.data_maps is None:
+            if (
+                self.referenced_data.data_maps is None
+                or self.referenced_data.metadata is None
+            ):
                 raise ValueError("Referenced data has no data maps.")
 
             value_map = None
-            for count, data_map in enumerate(self.referenced_data.data_maps.values()):
-                if data_map.entity_type == self:
+            for count, name in enumerate(self.referenced_data.metadata):
+                if name == self.name.rsplit(": ")[1]:
                     value_map = self.workspace.fetch_array_attribute(
                         self.referenced_data.entity_type, f"Value map {count + 1}"
                     )
