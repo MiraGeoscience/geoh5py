@@ -20,13 +20,13 @@ from __future__ import annotations
 from abc import ABC
 
 import numpy as np
+from h5py import special_dtype
 
 
 class ReferenceValueMap(ABC):
     """Maps from reference index to reference value of ReferencedData."""
 
-    MAP_DTYPE = np.dtype([("Key", "<u4"), ("Value", "<U13")])
-    MAP_DTYPE_BYTES = np.dtype([("Key", "<u4"), ("Value", "O")])
+    MAP_DTYPE = np.dtype([("Key", "<u4"), ("Value", special_dtype(vlen=str))])
 
     def __init__(
         self,
@@ -43,7 +43,12 @@ class ReferenceValueMap(ABC):
         return len(self._map)
 
     def __call__(self) -> dict:
-        return dict(self._map)
+        try:
+            map_string = self._map.astype(np.dtype([("Key", "<u4"), ("Value", "U25")]))
+        except UnicodeDecodeError:
+            map_string = self._map.astype(np.dtype([("Key", "<u4"), ("Value", "O")]))
+
+        return dict(map_string)
 
     @classmethod
     def validate_value_map(cls, value_map: np.ndarray | dict) -> np.ndarray:
@@ -67,18 +72,15 @@ class ReferenceValueMap(ABC):
                 raise KeyError("Key must be an positive integer")
 
             value_list = list(value_map.items())
-
-            if isinstance(value_list[0][1], bytes):
-                dtype = cls.MAP_DTYPE_BYTES
-            else:
-                dtype = cls.MAP_DTYPE
-
-            value_map = np.array(value_list, dtype=dtype)
+            value_map = np.array(value_list, dtype=[("Key", "uint"), ("Value", "O")])
+            value_map["Value"] = np.char.encode(
+                value_map["Value"].astype("U25"), "utf-8"
+            )
 
         if not isinstance(value_map, np.ndarray):
             raise TypeError("Value map must be a numpy array or dict.")
 
-        if value_map.dtype not in [cls.MAP_DTYPE, cls.MAP_DTYPE_BYTES]:
+        if value_map.dtype != cls.MAP_DTYPE:
             raise ValueError(f"Array of 'value_map' must be of dtype = {cls.MAP_DTYPE}")
 
         return value_map
@@ -94,6 +96,6 @@ class ReferenceValueMap(ABC):
 
 
 BOOLEAN_VALUE_MAP = np.array(
-    [(0, "False"), (1, "True")],
+    [(0, b"False"), (1, b"True")],
     dtype=ReferenceValueMap.MAP_DTYPE,
 )

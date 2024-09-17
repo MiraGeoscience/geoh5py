@@ -478,10 +478,10 @@ class ReferencedValueMapType(ReferenceDataType):
         """
         if 0 not in value_map.map["Key"]:
             value_map.map.resize(len(value_map) + 1, refcheck=False)
-            value_map.map[-1] = (0, "Unknown")
+            value_map.map[-1] = (0, b"Unknown")
 
         if dict(value_map.map)[0] not in ["Unknown", b"Unknown"]:
-            raise ValueError("Value for key 0 must be 'Unknown'")
+            raise ValueError("Value for key 0 must be b'Unknown'")
 
 
 class ReferencedBooleanType(ReferenceDataType):

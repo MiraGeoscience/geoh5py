@@ -65,7 +65,7 @@ def test_reference_value_map():
     with pytest.raises(KeyError, match="Key must be an positive integer"):
         ReferenceValueMap({-1: "test"})
 
-    with pytest.raises(ValueError, match="Value for key 0 must be 'Unknown'"):
+    with pytest.raises(ValueError, match="Value for key 0 must be b'Unknown'"):
         ReferencedValueMapType(workspace, value_map=((0, "test"),))
 
     with pytest.raises(ValueError, match="Array of 'value_map' must be of dtype"):
@@ -96,7 +96,7 @@ def test_create_reference_data(tmp_path):
         compare_entities(points, rec_obj)
         compare_entities(data, rec_data, ignore=["_map"])
 
-        assert all(data.entity_type.value_map.map == rec_data.entity_type.value_map.map)
+        assert data.entity_type.value_map() == rec_data.entity_type.value_map()
 
 
 def test_add_data_map(tmp_path):
@@ -187,5 +187,5 @@ def test_create_bytes_reference(tmp_path):
     with Workspace(h5file_path) as workspace:
         data = workspace.get_entity("DataValues_bytes")[0]
         assert data.entity_type.value_map.map.dtype == np.dtype(
-            [("Key", "<u4"), ("Value", "<U13")]
+            [("Key", "<u4"), ("Value", "O")]
         )
