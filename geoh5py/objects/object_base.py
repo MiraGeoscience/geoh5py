@@ -511,7 +511,7 @@ class ObjectBase(EntityContainer):
     def remove_children_values(
         self,
         indices: list[int] | np.ndarray,
-        association: str,
+        children: list[Data],
         clear_cache: bool = False,
     ):
         if isinstance(indices, list):
@@ -520,16 +520,10 @@ class ObjectBase(EntityContainer):
         if not isinstance(indices, np.ndarray):
             raise TypeError("Indices must be a list or numpy array.")
 
-        for child in self.children:
-            if (
-                isinstance(child, Data)
-                and child.values is not None
-                and isinstance(child.association, DataAssociationEnum)
-                and child.association.name == association
-            ):
-                child.values = np.delete(child.values, indices, axis=0)
-                if clear_cache:
-                    clear_array_attributes(child)
+        for child in children:
+            child.values = np.delete(child.values, indices, axis=0)
+            if clear_cache:
+                clear_array_attributes(child)
 
     def remove_property_group(self, property_group: PropertyGroup):
         """
