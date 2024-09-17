@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Literal
 
 from ..data import Data, DataAssociationEnum
 from ..shared.utils import map_attributes
+from .property_group_table import PropertyGroupTable
 
 
 if TYPE_CHECKING:
@@ -56,8 +57,6 @@ class PropertyGroup:
         "Properties": "properties",
         "Property Group Type": "property_group_type",
     }
-    _name: str
-    _uid: uuid.UUID
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
@@ -74,6 +73,7 @@ class PropertyGroup:
         self._allow_delete = True
         self.on_file = on_file
         self.association = association
+        self._property_table = PropertyGroupTable(self)
 
         if not hasattr(parent, "_property_groups"):
             raise AttributeError(
@@ -270,6 +270,13 @@ class PropertyGroup:
             return
 
         self.parent.workspace.add_or_update_property_group(self)
+
+    @property
+    def property_table(self) -> PropertyGroupTable:
+        """
+        Create an object to access the data of the property group.
+        """
+        return self._property_table
 
     @property
     def uid(self) -> uuid.UUID:

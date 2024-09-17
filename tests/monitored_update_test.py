@@ -61,8 +61,10 @@ def test_monitored_directory_copy(tmp_path: Path):
             rec_entity = new_workspace.get_entity(entity.uid)[0]
             rec_data = new_workspace.get_entity(entity.children[0].uid)[0]
 
-            compare_entities(entity, rec_entity, ignore=["_parent"])
-            compare_entities(entity.children[0], rec_data, ignore=["_parent"])
+            compare_entities(entity, rec_entity, ignore=["_parent", "_property_table"])
+            compare_entities(
+                entity.children[0], rec_data, ignore=["_parent", "_property_table"]
+            )
 
         new_file = monitored_directory_copy(tmp_path, points, copy_children=False)
         new_workspace = Workspace(new_file)
