@@ -90,8 +90,7 @@ def test_modify_property_group(tmp_path):
         # Read the property_group back in
         rec_curve = workspace.get_entity(obj_name)[0]
         rec_prop_group = rec_curve.fetch_property_group(name="myGroup")
-        print(rec_prop_group, rec_prop_group.uid)
-        print(prop_group, prop_group.uid)
+
         compare_objects(rec_prop_group, prop_group)
 
         with pytest.raises(DeprecationWarning):

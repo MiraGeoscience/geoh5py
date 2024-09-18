@@ -29,7 +29,7 @@ from geoh5py.objects import Curve
 from geoh5py.workspace import Workspace
 
 
-def make_example(workspace):
+def make_example(workspace, add_str_column=False):
     curve = Curve.create(
         workspace,
         vertices=np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)],
@@ -37,6 +37,7 @@ def make_example(workspace):
 
     # Add data
     props = []
+    all_values = []
     for i in range(4):
         values = np.cos(curve.vertices[:, 0] / (i + 1))
         props += [
@@ -44,8 +45,16 @@ def make_example(workspace):
                 {f"Period{i + 1}": {"values": values}}, property_group="myGroup"
             )
         ]
+        all_values.append(values)
 
-    return curve
+    if add_str_column:
+        values = np.array(["i" for i in range(12)])
+        props += [
+            curve.add_data({"StrColumn": {"values": values}}, property_group="myGroup")
+        ]
+        all_values.append(values)
+
+    return curve, all_values
 
 
 def test_create_property_group(tmp_path):
@@ -55,7 +64,7 @@ def test_create_property_group(tmp_path):
     h5file_path = tmp_path / r"prop_group_test.geoh5"
 
     with Workspace.create(h5file_path) as workspace:
-        curve = make_example(workspace)
+        curve, _ = make_example(workspace)
 
         props = [child for child in curve.children if isinstance(child, Data)]
 
@@ -197,7 +206,7 @@ def test_create_property_group(tmp_path):
 
 def test_bad_property_group_type():
     workspace = Workspace()
-    curve = make_example(workspace)
+    curve, _ = make_example(workspace)
 
     with pytest.raises(ValueError, match="Property group type must be one of"):
         _ = PropertyGroup(parent=curve, property_group_type="badType")
@@ -207,7 +216,7 @@ def test_copy_property_group(tmp_path):
     h5file_path = tmp_path / r"prop_group_test.geoh5"
 
     with Workspace.create(h5file_path) as workspace:
-        curve = make_example(workspace)
+        curve, _ = make_example(workspace)
 
         # New property group object should have been created on copy
         curve_2 = curve.copy()
@@ -223,7 +232,7 @@ def test_clean_out_empty(tmp_path):
     h5file_path = tmp_path / r"prop_group_clean.geoh5"
 
     with Workspace.create(h5file_path) as workspace:
-        curve = make_example(workspace)
+        curve, _ = make_example(workspace)
 
         assert len(curve.property_groups) == 1
 
@@ -231,3 +240,84 @@ def test_clean_out_empty(tmp_path):
         curve.remove_children(props)
 
         assert len(curve.property_groups) == 0
+
+
+def test_property_group_table(tmp_path):
+    h5file_path = tmp_path / r"prop_group_test.geoh5"
+
+    with Workspace.create(h5file_path) as workspace:
+        curve, expected = make_example(workspace, add_str_column=True)
+        expected = np.array(expected, dtype="O").T
+
+        # Property group object should have been created
+        prop_group = curve.fetch_property_group(name="myGroup")
+
+        prop_table = prop_group.property_table.property_table
+        produced = np.array([tuple(row) for row in prop_table], dtype="O")
+
+        np.testing.assert_almost_equal(expected[:, :-1], produced[:, 3:-1])
+        assert all(expected[:, -1] == produced[:, -1])
+        np.testing.assert_almost_equal(curve.locations, produced[:, :3], decimal=6)
+
+        prop_table2 = prop_group.property_table.property_table_by_name(
+            [f"Period{i + 1}" for i in range(4)]
+        )
+        produced2 = prop_table2.view((np.float32, len(prop_table2.dtype.names)))
+
+        np.testing.assert_almost_equal(expected[:, :-1], produced2)
+
+        assert prop_group.property_table.association_columns == "vertices"
+
+        prop_group.association = "CELL"
+        assert prop_group.property_table.association_columns == "centroids"
+        prop_group.association = "UNKNOWN"
+        assert prop_group.property_table.association_columns == "locations"
+
+        # now raising some error
+        curve.add_data(
+            {"StrColumn": {"values": np.array(["i" for i in range(12)])}},
+            property_group="myGroup",
+        )
+
+        prop_group.property_table.update()
+
+        with pytest.raises(ValueError, match="Multiple data with name"):
+            prop_group.property_table._convert_names_to_uid(  # pylint: disable=protected-access
+                ("StrColumn",)
+            )
+
+        curve.add_data(
+            {"StrColumn": {"values": ["i" for i in range(12)]}},
+            property_group="myGroup",
+        )
+
+
+def test_property_group_table_error(tmp_path):
+    h5file_path = tmp_path / r"prop_group_test.geoh5"
+
+    with Workspace.create(h5file_path) as workspace:
+        curve = Curve.create(
+            workspace,
+            vertices=np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)],
+        )
+
+        prop_group = curve.fetch_property_group(name="myGroup")
+
+        prop_group.property_table.update()  # nothing happens..
+
+        assert prop_group.property_table.property_table is None
+
+        with pytest.raises(ValueError, match="The PropertyGroup has no property."):
+            prop_group.property_table._create_empty_structured_array(  # pylint: disable=protected-access
+                "keys", "names"
+            )
+
+        with pytest.raises(ValueError, match="No data found for"):
+            prop_group.property_table._convert_names_to_uid(  # pylint: disable=protected-access
+                ()
+            )
+
+        with pytest.raises(ValueError, match="Data with name "):
+            prop_group.property_table._convert_names_to_uid(  # pylint: disable=protected-access
+                ("bidon",)
+            )

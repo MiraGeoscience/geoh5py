@@ -23,6 +23,7 @@ from uuid import UUID
 
 import numpy as np
 
+from ..data import DataAssociationEnum
 from ..data.primitive_type_enum import DataTypeEnum
 from ..shared.utils import str2uuid, to_tuple
 
@@ -106,7 +107,7 @@ class PropertyGroupTable(ABC):
 
         for key, name in zip(keys, names, strict=False):
             dtype, nan_value = self.properties_type[key]
-            dtypes.append((name, dtype))
+            dtypes.append((str(name), dtype))
             no_data_values.append(nan_value)
 
         empty_array = np.recarray((self.size,), dtype=dtypes)
@@ -124,9 +125,9 @@ class PropertyGroupTable(ABC):
         This function is needed as a data can be both associated to cell or
         vertex in CellObjects.
         """
-        if self.property_group.association == "VERTEX":
+        if self.property_group.association == DataAssociationEnum.VERTEX:
             return "vertices"
-        if self.property_group.association == "CELL":
+        if self.property_group.association == DataAssociationEnum.CELL:
             return "centroids"
         return "locations"
 
@@ -136,15 +137,6 @@ class PropertyGroupTable(ABC):
         The property group to extract the data from.
         """
         return self._property_group
-
-    @property_group.setter
-    def property_group(self, value: PropertyGroup):
-        if not isinstance(value, PropertyGroup):
-            raise TypeError(
-                f"property_group must be a PropertyGroup, not {type(value)}"
-            )
-        self._property_group = value
-        self._properties_type = None
 
     @property
     def property_table(self) -> np.ndarray | None:
@@ -188,7 +180,7 @@ class PropertyGroupTable(ABC):
 
         for key, name in zip(keys, names_, strict=False):
             data = self.property_group.parent.get_data(key)[0]
-            output_array[name] = data.values
+            output_array[str(name)] = data.values
 
         return output_array
 
