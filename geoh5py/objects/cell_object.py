@@ -124,10 +124,19 @@ class CellObject(Points, ABC):
         ):
             raise ValueError("Found indices larger than the number of cells.")
 
+        children = []
+        for child in self.children:
+            if (
+                isinstance(child, Data)
+                and child.values is not None
+                and child.association == DataAssociationEnum.CELL
+            ):
+                children.append(child)
+
         cells = np.delete(self.cells, indices, axis=0)
 
         self._cells = self.validate_cells(cells)
-        self.remove_children_values(indices, "CELL", clear_cache=clear_cache)
+        self.remove_children_values(indices, children, clear_cache=clear_cache)
         self.workspace.update_attribute(self, "cells")
 
     def remove_vertices(

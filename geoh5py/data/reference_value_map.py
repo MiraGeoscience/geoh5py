@@ -20,12 +20,13 @@ from __future__ import annotations
 from abc import ABC
 
 import numpy as np
+from h5py import special_dtype
 
 
 class ReferenceValueMap(ABC):
     """Maps from reference index to reference value of ReferencedData."""
 
-    MAP_DTYPE = np.dtype([("Key", "<u4"), ("Value", "<U13")])
+    MAP_DTYPE = np.dtype([("Key", "<u4"), ("Value", special_dtype(vlen=str))])
 
     def __init__(
         self,
@@ -42,7 +43,12 @@ class ReferenceValueMap(ABC):
         return len(self._map)
 
     def __call__(self) -> dict:
-        return dict(self._map)
+        try:
+            map_string = self._map.astype(np.dtype([("Key", "<u4"), ("Value", "U25")]))
+        except UnicodeDecodeError:
+            map_string = self._map
+
+        return dict(map_string)
 
     @classmethod
     def validate_value_map(cls, value_map: np.ndarray | dict) -> np.ndarray:
@@ -65,7 +71,13 @@ class ReferenceValueMap(ABC):
             if not np.all(np.asarray(list(value_map)) >= 0):
                 raise KeyError("Key must be an positive integer")
 
-            value_map = np.array(list(value_map.items()), dtype=cls.MAP_DTYPE)
+            value_list = list(value_map.items())
+            value_map = np.array(
+                value_list, dtype=[("Key", "<u4"), ("Value", special_dtype(vlen=str))]
+            )
+            value_map["Value"] = np.char.encode(
+                value_map["Value"].astype("U25"), "utf-8"
+            )
 
         if not isinstance(value_map, np.ndarray):
             raise TypeError("Value map must be a numpy array or dict.")
@@ -86,6 +98,6 @@ class ReferenceValueMap(ABC):
 
 
 BOOLEAN_VALUE_MAP = np.array(
-    [(0, "False"), (1, "True")],
+    [(0, b"False"), (1, b"True")],
     dtype=ReferenceValueMap.MAP_DTYPE,
 )

@@ -41,13 +41,14 @@ class ReferencedData(IntegerData):
         """
         A reference dictionary mapping properties to numpy arrays.
         """
-        if self._data_maps is None:
+        if self._data_maps is None and self.metadata is not None:
             data_maps = {}
-            for child in self.parent.children:
+            for name, uid in self.metadata.items():
+                child = self.workspace.get_entity(uid)[0]
                 if isinstance(child, GeometricDataConstants) and isinstance(
                     child.entity_type, GeometricDataValueMapType
                 ):
-                    data_maps[child.name] = child
+                    data_maps[name] = child
 
             if data_maps:
                 self._data_maps = data_maps
@@ -63,6 +64,15 @@ class ReferencedData(IntegerData):
                 if not isinstance(val, GeometricDataConstants):
                     raise TypeError(
                         f"Property maps value for '{key}' must be a 'GeometricDataConstants'."
+                    )
+
+                if (
+                    not isinstance(val.entity_type, GeometricDataValueMapType)
+                    or val.entity_type.value_map is None
+                ):
+                    raise ValueError(
+                        f"Property maps value for '{key}' must have a "
+                        "'GeometricDataValueMapType' entity type and a 'value_map' assigned."
                     )
 
             self.metadata = {child.name: child.uid for child in data_map.values()}
@@ -150,7 +160,7 @@ class ReferencedData(IntegerData):
             self.workspace,
             value_map=reference_data,
             parent=self.parent,
-            name=self.name + f": {name}",
+            name=self.entity_type.name + f": {name}",
         )
         geom_data = self.parent.add_data(
             {
