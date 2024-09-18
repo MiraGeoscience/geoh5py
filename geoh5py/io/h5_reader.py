@@ -402,7 +402,7 @@ class H5Reader:
 
         if "Value map" in type_handle:
             type_attributes["value_map"] = type_handle["Value map"][:].astype(
-                [("Key", "<u4"), ("Value", "O")]
+                [("Key", "<u4"), ("Value", h5py.special_dtype(vlen=str))]
             )
         return type_attributes
 

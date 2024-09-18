@@ -46,7 +46,7 @@ class ReferenceValueMap(ABC):
         try:
             map_string = self._map.astype(np.dtype([("Key", "<u4"), ("Value", "U25")]))
         except UnicodeDecodeError:
-            map_string = self._map.astype(np.dtype([("Key", "<u4"), ("Value", "O")]))
+            map_string = self._map
 
         return dict(map_string)
 
@@ -72,7 +72,9 @@ class ReferenceValueMap(ABC):
                 raise KeyError("Key must be an positive integer")
 
             value_list = list(value_map.items())
-            value_map = np.array(value_list, dtype=[("Key", "uint"), ("Value", "O")])
+            value_map = np.array(
+                value_list, dtype=[("Key", "<u4"), ("Value", special_dtype(vlen=str))]
+            )
             value_map["Value"] = np.char.encode(
                 value_map["Value"].astype("U25"), "utf-8"
             )
