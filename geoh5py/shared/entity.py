@@ -310,6 +310,16 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         if self.on_file:
             self.workspace.update_attribute(self, "metadata")
 
+    def update_metadata(self, value: dict | None):
+        """
+        Update the metadata of the entity.
+
+        :param value: Metadata to update.
+        """
+        if isinstance(self.metadata, dict) and isinstance(value, dict):
+            value = {**self.metadata, **value}
+        self.metadata = value
+
     @staticmethod
     def validate_metadata(value) -> dict | None:
         if isinstance(value, np.ndarray):
