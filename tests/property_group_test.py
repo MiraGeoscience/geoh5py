@@ -286,10 +286,16 @@ def test_property_group_table(tmp_path):
                 ("StrColumn",)
             )
 
-        curve.add_data(
-            {"StrColumn": {"values": ["i" for i in range(12)]}},
-            property_group="myGroup",
-        )
+        # todo: note that now, 2 properties of the same group cannot have different shapes.
+        # todo: Still, this case if possible when initialize with "properties" but not "add_properties"
+        # todo: is this an issue? Or expected behaviour?
+        with pytest.raises(
+            ValueError, match="All properties must have the same length"
+        ):
+            curve.add_data(
+                {"StrColumn": {"values": np.array(["i" for i in range(13)])}},
+                property_group="myGroup",
+            )
 
 
 def test_property_group_table_error(tmp_path):
@@ -306,6 +312,11 @@ def test_property_group_table_error(tmp_path):
         prop_group.property_table.update()  # nothing happens..
 
         assert prop_group.property_table.property_table is None
+
+        with pytest.raises(ValueError, match="Data '"):
+            prop_group.property_table._convert_names_to_uid(  # pylint: disable=protected-access
+                (uuid4(),)
+            )
 
         with pytest.raises(ValueError, match="The PropertyGroup has no property."):
             prop_group.property_table._create_empty_structured_array(  # pylint: disable=protected-access

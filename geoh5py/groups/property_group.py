@@ -112,6 +112,7 @@ class PropertyGroup:
         if properties:
             self._properties = properties
             self.parent.workspace.add_or_update_property_group(self)
+            self.property_table.update()
 
     @property
     def allow_delete(self) -> bool:
@@ -270,6 +271,7 @@ class PropertyGroup:
             return
 
         self.parent.workspace.add_or_update_property_group(self)
+        self.property_table.update()
 
     @property
     def property_table(self) -> PropertyGroupTable:

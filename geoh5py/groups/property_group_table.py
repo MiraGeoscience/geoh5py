@@ -28,7 +28,7 @@ from ..data.primitive_type_enum import DataTypeEnum
 from ..shared.utils import str2uuid, to_tuple
 
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from .property_group import PropertyGroup
 
 
