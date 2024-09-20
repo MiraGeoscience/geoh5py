@@ -18,14 +18,13 @@
 
 from __future__ import annotations
 
-from uuid import uuid4
-
 import numpy as np
 import pytest
 
-from geoh5py.data import Data
+from geoh5py.data import Data, DataAssociationEnum
 from geoh5py.groups import PropertyGroup
-from geoh5py.objects import Curve
+from geoh5py.groups.property_group_table import PropertyGroupTable
+from geoh5py.objects import Curve, Drillhole
 from geoh5py.workspace import Workspace
 
 
@@ -70,49 +69,22 @@ def test_create_property_group(tmp_path):
 
         test_values = np.r_[[prop.values for prop in props]]
 
-        with pytest.raises(TypeError, match="Name must be"):
-            _ = PropertyGroup(parent="bidon", name=42)
-
-        with pytest.raises(AttributeError, match="Parent bidon"):
-            _ = PropertyGroup(parent="bidon")
-
         # Property group object should have been created
         prop_group = curve.fetch_property_group(name="myGroup")
 
-        # test properties group
-        curve2 = curve.copy()
-
-        prop_group2 = curve2.fetch_property_group(name="myGroup2")
-
-        assert prop_group2.collect_values is None
-
-        _ = curve2.copy()
-
-        assert prop_group2.remove_properties("bidon") is None
-
-        with pytest.raises(TypeError, match="All uids must be of type"):
-            prop_group2.properties = [123]
-
-        with pytest.raises(TypeError, match="Could not convert input uid"):
-            prop_group2.uid = 123
-
-        with pytest.raises(TypeError, match="Attribute 'on_file' must be a boolean"):
-            prop_group.on_file = "bidon"
-
-        with pytest.raises(KeyError, match="A Property Group with name"):
-            curve.create_property_group(name="myGroup")
-
-        # test error for allow delete
-        with pytest.raises(TypeError, match="allow_delete must be a boolean"):
-            prop_group.allow_delete = "bidon"
+        assert [
+            "Period1",
+            "Period2",
+            "Period3",
+            "Period4",
+        ] == prop_group.properties_name
 
         prop_group.allow_delete = False
+
         assert prop_group.allow_delete is False
 
-        # set parent
         assert prop_group.parent == curve
 
-        # Add data to group as object
         single_data_group = curve.add_data_to_group(props[1], "Singleton")
 
         assert (
@@ -126,27 +98,8 @@ def test_create_property_group(tmp_path):
             len(single_data_group.properties) == 2  # 3
         ), "Failed adding data to property group."
 
-        with pytest.raises(UserWarning, match="Cannot modify"):
-            single_data_group.properties = "bidon"
-
-        # Try adding bogus data on group
-        single_data_group.add_properties(uuid4())
-        assert len(single_data_group.properties) == 2  # 3
-
-        # Try adding a data that doesn't belong
-        single_data_group.add_properties(curve2.children[0])
-        assert len(single_data_group.properties) == 2
-
         # Remove data from group by data
         single_data_group.remove_properties(props[2])
-        assert len(single_data_group.properties) == 1  # 2
-
-        # Remove bogus data from uuid
-        single_data_group.remove_properties(uuid4())
-        assert len(single_data_group.properties) == 1  # 2
-
-        # Remove data that doesn't belong
-        single_data_group.remove_properties(curve2.children[0])
         assert len(single_data_group.properties) == 1  # 2
 
         # get property group
@@ -169,7 +122,6 @@ def test_create_property_group(tmp_path):
         # assert workspace.get_entity("myGroup")[0].uid == property_group_test.uid
 
         rec_object = workspace.get_entity(curve.uid)[0]
-
         # Read the property_group back in
         rec_prop_group = rec_object.fetch_property_group(name="myGroup")
 
@@ -204,12 +156,109 @@ def test_create_property_group(tmp_path):
         ), "Property_groups not properly removed."
 
 
-def test_bad_property_group_type():
-    workspace = Workspace()
-    curve, _ = make_example(workspace)
+def test_property_group_errors(tmp_path):
+    #  pylint: disable=too-many-locals
+    # pylint: disable=too-many-statements
 
-    with pytest.raises(ValueError, match="Property group type must be one of"):
-        _ = PropertyGroup(parent=curve, property_group_type="badType")
+    h5file_path = tmp_path / r"prop_group_test.geoh5"
+
+    with Workspace.create(h5file_path) as workspace:
+        curve, _ = make_example(workspace)
+
+        prop_group = curve.fetch_property_group(name="myGroup")
+
+        with pytest.raises(UserWarning, match="Cannot modify"):
+            prop_group.properties = "bidon"
+
+        with pytest.raises(TypeError, match="Name must be"):
+            PropertyGroup(parent="bidon", name=42)  # type: ignore
+
+        with pytest.raises(AttributeError, match="Parent bidon"):
+            PropertyGroup(parent="bidon")  # type: ignore
+
+        with pytest.raises(TypeError, match="Data must be of type Data"):
+            PropertyGroup(parent=curve, properties=[123])
+
+        with pytest.raises(TypeError, match="Could not convert input uid"):
+            prop_group.uid = 123
+
+        with pytest.raises(TypeError, match="Attribute 'on_file' must be a boolean"):
+            prop_group.on_file = "bidon"
+
+        with pytest.raises(KeyError, match="A Property Group with name"):
+            curve.create_property_group(name="myGroup")
+
+        # test error for allow delete
+        with pytest.raises(TypeError, match="allow_delete must be a boolean"):
+            prop_group.allow_delete = "bidon"
+
+        with pytest.raises(UserWarning, match="Cannot modify association"):
+            prop_group.association = "bidon"
+
+        with pytest.raises(TypeError, match="Association must be"):
+            PropertyGroup(parent=curve, association=123)
+
+        with pytest.raises(TypeError, match="Properties must be"):
+            PropertyGroup(parent=curve, properties=123)
+
+        with pytest.raises(TypeError, match="'Property group type' must be of type"):
+            PropertyGroup(parent=curve, property_group_type=123)
+
+        with pytest.raises(ValueError, match="'Property group type' must be one of"):
+            PropertyGroup(parent=curve, property_group_type="badType")
+
+        with pytest.raises(ValueError, match="Data 'bidon' not found"):
+            prop_group.verify_data("bidon")
+
+        curve.add_data(
+            {"Period1": {"values": np.random.rand(12)}}, property_group="myGroup"
+        )
+
+        with pytest.raises(ValueError, match="Multiple data 'Period1'"):
+            prop_group.verify_data("Period1")
+
+        curve.add_data(
+            {"TestAssociation": {"values": np.random.rand(11), "association": "CELL"}},
+        )
+
+        with pytest.raises(ValueError, match="Data 'TestAssociation' association"):
+            prop_group.verify_data("TestAssociation")
+
+        test = Curve.create(
+            workspace,
+            vertices=np.c_[np.linspace(0, 2 * np.pi, 11), np.zeros(11), np.zeros(11)],
+        )
+
+        test_data = test.add_data(
+            {"WrongParent": {"values": np.random.rand(10), "association": "CELL"}},
+        )
+
+        with pytest.raises(ValueError, match="Data 'WrongParent' parent"):
+            prop_group.verify_data(test_data)
+
+
+def test_auto_find_association(tmp_path):
+    h5file_path = tmp_path / r"prop_group_test.geoh5"
+
+    with Workspace.create(h5file_path) as workspace:
+        curve, _ = make_example(workspace)
+
+        prop_group = PropertyGroup(parent=curve, name="myGroup2")
+
+        with pytest.warns(match="PropertyGroup.collect"):
+            assert prop_group.collect_values is None
+
+        assert prop_group.remove_properties("bidon") is None
+
+        assert prop_group.properties is None
+
+        assert prop_group.properties_name is None
+
+        assert prop_group.association == DataAssociationEnum.UNKNOWN
+
+        prop_group.add_properties(curve.children[0].uid)
+
+        assert prop_group.association == DataAssociationEnum.VERTEX
 
 
 def test_copy_property_group(tmp_path):
@@ -252,50 +301,33 @@ def test_property_group_table(tmp_path):
         # Property group object should have been created
         prop_group = curve.fetch_property_group(name="myGroup")
 
-        prop_table = prop_group.property_table.property_table
+        prop_table = prop_group.table(spatial_index=True)
         produced = np.array([tuple(row) for row in prop_table], dtype="O")
 
         np.testing.assert_almost_equal(expected[:, :-1], produced[:, 3:-1])
+
         assert all(expected[:, -1] == produced[:, -1])
+
         np.testing.assert_almost_equal(curve.locations, produced[:, :3], decimal=6)
 
-        prop_table2 = prop_group.property_table.property_table_by_name(
-            [f"Period{i + 1}" for i in range(4)]
-        )
-        produced2 = prop_table2.view((np.float32, len(prop_table2.dtype.names)))
+        # create an empty property group
+        prop_group_empty = PropertyGroup(parent=curve, name="emptyGroup")
 
-        np.testing.assert_almost_equal(expected[:, :-1], produced2)
+        assert prop_group_empty.table() is None
 
-        assert prop_group.property_table.association_columns == "vertices"
+        # test with a cell object
 
-        prop_group.association = "CELL"
-        assert prop_group.property_table.association_columns == "centroids"
-        prop_group.association = "UNKNOWN"
-        assert prop_group.property_table.association_columns == "locations"
-
-        # now raising some error
         curve.add_data(
-            {"StrColumn": {"values": np.array(["i" for i in range(12)])}},
-            property_group="myGroup",
+            {"TestCell": {"values": np.random.rand(11), "association": "CELL"}},
+            property_group="cellGroup",
         )
 
-        prop_group.property_table.update()
+        # Property group object should have been created
+        cell_group = curve.fetch_property_group(name="cellGroup")
 
-        with pytest.raises(ValueError, match="Multiple data with name"):
-            prop_group.property_table._convert_names_to_uid(  # pylint: disable=protected-access
-                ("StrColumn",)
-            )
+        np.testing.assert_almost_equal(cell_group.table.locations, curve.centroids)
 
-        # todo: note that now, 2 properties of the same group cannot have different shapes.
-        # todo: Still, this case if possible when initialize with "properties" but not "add_properties"
-        # todo: is this an issue? Or expected behaviour?
-        with pytest.raises(
-            ValueError, match="All properties must have the same length"
-        ):
-            curve.add_data(
-                {"StrColumn": {"values": np.array(["i" for i in range(13)])}},
-                property_group="myGroup",
-            )
+        assert cell_group.table.size == curve.n_cells
 
 
 def test_property_group_table_error(tmp_path):
@@ -307,28 +339,27 @@ def test_property_group_table_error(tmp_path):
             vertices=np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)],
         )
 
+        curve.add_data(
+            {"test": {"values": np.random.rand(12), "association": "UNKNOWN"}},
+            property_group="myGroup",
+        )
+
         prop_group = curve.fetch_property_group(name="myGroup")
 
-        prop_group.property_table.update()  # nothing happens..
+        with pytest.raises(ValueError, match="The association DataAssociation"):
+            _ = prop_group.table.locations
 
-        assert prop_group.property_table.property_table is None
+        with pytest.raises(ValueError, match="The association DataAssociation"):
+            _ = prop_group.table.size
 
-        with pytest.raises(ValueError, match="Data '"):
-            prop_group.property_table._convert_names_to_uid(  # pylint: disable=protected-access
-                (uuid4(),)
-            )
+        with pytest.raises(TypeError, match="'property_group' must be a PropertyGroup"):
+            PropertyGroupTable(property_group=123)  # type: ignore
 
-        with pytest.raises(ValueError, match="The PropertyGroup has no property."):
-            prop_group.property_table._create_empty_structured_array(  # pylint: disable=protected-access
-                "keys", "names"
-            )
+        drillhole = Drillhole.create(workspace, name="test")
 
-        with pytest.raises(ValueError, match="No data found for"):
-            prop_group.property_table._convert_names_to_uid(  # pylint: disable=protected-access
-                ()
-            )
+        prop_group = PropertyGroup(parent=drillhole, name="drillhole")
 
-        with pytest.raises(ValueError, match="Data with name "):
-            prop_group.property_table._convert_names_to_uid(  # pylint: disable=protected-access
-                ("bidon",)
-            )
+        with pytest.raises(
+            NotImplementedError, match="PropertyGroupTable is not supported"
+        ):
+            _ = prop_group.table

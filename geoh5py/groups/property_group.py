@@ -17,18 +17,25 @@
 
 from __future__ import annotations
 
-import uuid
 from collections.abc import Iterable
 from enum import Enum
 from typing import TYPE_CHECKING, Literal
+from uuid import UUID, uuid4
+from warnings import warn
 
 from ..data import Data, DataAssociationEnum
-from ..shared.utils import map_attributes
+from ..shared.utils import (
+    find_unique_name,
+    map_attributes,
+    remove_duplicates_in_list,
+    str2uuid,
+)
 from .property_group_table import PropertyGroupTable
 
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from ..objects import ObjectBase
+    from ..shared import Entity
 
 
 class GroupTypeEnum(str, Enum):
@@ -48,6 +55,13 @@ class PropertyGroup:
     """
     Property group listing data children of an object.
     This group is not registered to the workspace and only visible to the parent object.
+
+    :param parent: Parent object.
+    :param name: Name of the group.
+    :param on_file: Property group is on file.
+    :param uid: Unique identifier.
+    :param property_group_type: Type of property group.
+    :param kwargs: Additional attributes to add to the group
     """
 
     _attribute_map = {
@@ -61,7 +75,6 @@ class PropertyGroup:
     def __init__(  # pylint: disable=too-many-arguments
         self,
         parent: ObjectBase,
-        association: DataAssociationEnum = DataAssociationEnum.VERTEX,
         name=None,
         on_file=False,
         uid=None,
@@ -69,55 +82,47 @@ class PropertyGroup:
         **kwargs,
     ):
         self.name = name or "property_group"
-        self.uid = uid or uuid.uuid4()
-        self._allow_delete = True
+        self.uid = uid or uuid4()
         self.on_file = on_file
-        self.association = association
-        self._property_table = PropertyGroupTable(self)
+        self.property_group_type = property_group_type
 
+        self._allow_delete = True
+        self._association: DataAssociationEnum | None = None
+        self._properties: list[UUID] | None = None
+
+        # define the parent
         if not hasattr(parent, "_property_groups"):
             raise AttributeError(
                 f"Parent {parent} must have a 'property_groups' attribute"
             )
-
         self._parent: ObjectBase = parent
-        self._properties: list[uuid.UUID] | None = None
-        self.property_group_type = property_group_type
-
         parent.add_children([self])
 
         map_attributes(self, **kwargs)
-
         self.parent.workspace.register(self)
 
-    def add_properties(self, data: Data | list[Data | uuid.UUID] | uuid.UUID):
+    def add_properties(self, data: str | Data | list[str | Data | UUID] | UUID):
         """
-        Remove data from the properties.
+        Add data to properties.
+
+        :param data: Data to add to the group.
+            It can be the name, the uuid or the data itself in a list or alone.
         """
-        if isinstance(data, (Data, uuid.UUID)):
+        if not isinstance(data, Iterable):
             data = [data]
 
         properties = self._properties or []
         for elem in data:
-            if isinstance(elem, uuid.UUID):
-                entity = self.parent.get_entity(elem)[0]
-            elif isinstance(elem, Data) and elem in self.parent.children:
-                entity = elem
-            else:
-                continue
-
-            if isinstance(entity, Data) and entity.uid not in properties:
-                properties.append(entity.uid)
+            properties.append(self.verify_data(elem))
 
         if properties:
-            self._properties = properties
+            self._properties = remove_duplicates_in_list(properties)
             self.parent.workspace.add_or_update_property_group(self)
-            self.property_table.update()
 
     @property
     def allow_delete(self) -> bool:
         """
-        :obj:`bool` Allow deleting the group
+        Allow deleting the group
         """
         return self._allow_delete
 
@@ -130,12 +135,21 @@ class PropertyGroup:
     @property
     def association(self) -> DataAssociationEnum:
         """
-        :obj:`~geoh5py.data.data_association_enum.DataAssociationEnum` Data association
+        The association of the data.
         """
+        if self._association is None:
+            return DataAssociationEnum.UNKNOWN
+
         return self._association
 
     @association.setter
     def association(self, value: str | DataAssociationEnum):
+        if self._association is not None:
+            raise UserWarning(
+                "Cannot modify association of an existing property group. "
+                "Consider creating a new property group."
+            )
+
         if isinstance(value, str):
             value = getattr(DataAssociationEnum, value.upper())
 
@@ -149,7 +163,7 @@ class PropertyGroup:
     @property
     def attribute_map(self) -> dict:
         """
-        :obj:`dict` Attribute names mapping between geoh5 and geoh5py
+        Attribute names mapping between geoh5 and geoh5py
         """
         return self._attribute_map
 
@@ -158,6 +172,10 @@ class PropertyGroup:
         """
         The values of the properties in the group.
         """
+        warn(
+            "PropertyGroup.collect_values is deprecated, use PropertyGroup.table instead.",
+            DeprecationWarning,
+        )
 
         if self._properties is None:
             return None
@@ -167,7 +185,7 @@ class PropertyGroup:
     @property
     def name(self) -> str:
         """
-        :obj:`str` Name of the group
+        Name of the group
         """
         return self._name
 
@@ -195,12 +213,12 @@ class PropertyGroup:
     @property
     def parent(self) -> ObjectBase:
         """
-        The parent :obj:`~geoh5py.objects.object_base.ObjectBase`
+        The parent of the PropertyGroup.
         """
         return self._parent
 
     @property
-    def properties(self) -> list[uuid.UUID] | None:
+    def properties(self) -> list[UUID] | None:
         """
         List of unique identifiers for the :obj:`~geoh5py.data.data.Data`
         contained in the property group.
@@ -208,7 +226,7 @@ class PropertyGroup:
         return self._properties
 
     @properties.setter
-    def properties(self, uids: list[str | uuid.UUID]):
+    def properties(self, uids: list[str | UUID]):
         if self._properties is not None:
             raise UserWarning(
                 "Cannot modify properties of an existing property group. "
@@ -216,53 +234,74 @@ class PropertyGroup:
             )
 
         if not isinstance(uids, Iterable):
-            return
+            raise TypeError(f"Properties must be an iterable of UUID. Provided {uids}")
 
-        properties = []
-        for uid in uids:
-            if isinstance(uid, str):
-                uid = uuid.UUID(uid)
-            properties.append(uid)
+        self._properties = remove_duplicates_in_list(
+            [self.verify_data(uid) for uid in uids]
+        )
 
-        if not all(isinstance(uid, uuid.UUID) for uid in properties):
-            raise TypeError("All uids must be of type uuid.UUID")
-
-        self._properties = properties
+        # todo: why not "self.parent.workspace.add_or_update_property_group(self)"?
 
     @property
-    def property_group_type(self) -> str:
+    def properties_name(self) -> list[str] | None:
+        """
+        List of names of the properties`
+        """
+        if self._properties is None:
+            return None
+
+        names: list[str] = []
+        for uid in self._properties:
+            data = self.parent.get_data(uid)[0]
+            name = data.name
+            if name is None:
+                name = str(data.uid)  # very unlikely
+            names.append(find_unique_name(name, names))
+
+        return names
+
+    @property
+    def property_group_type(self) -> GroupTypeEnum:
+        """
+        Type of property group.
+        """
         return self._property_group_type
 
     @property_group_type.setter
     def property_group_type(self, value: str | GroupTypeEnum):
+        # todo: it's strange we can change properties group type on the fly
         if isinstance(value, str):
             try:
                 value = GroupTypeEnum(value)
             except ValueError as error:
                 raise ValueError(
-                    f"Property group type must be one of "
+                    f"'Property group type' must be one of "
                     f"{', '.join(GroupTypeEnum.__members__)}. Provided {value}"
                 ) from error
 
         if not isinstance(value, GroupTypeEnum):
-            raise TypeError(f"Association must be of type {GroupTypeEnum}")
+            raise TypeError(
+                f"'Property group type' must be of type {GroupTypeEnum}, "
+                f"provided {type(value)}"
+            )
 
         self._property_group_type = value
 
-    def remove_properties(self, data: Data | list[Data | uuid.UUID] | uuid.UUID):
+    def remove_properties(self, data: str | Data | list[str | Data | UUID] | UUID):
         """
         Remove data from the properties.
-        """
-        if isinstance(data, (Data, uuid.UUID)):
-            data = [data]
 
+        :param data: Data to remove from the group.
+            It can be the name, the uuid or the data itself in a list or alone.
+        """
         if self._properties is None:
             return
 
-        for elem in data:
-            if isinstance(elem, Data):
-                elem = elem.uid
+        if not isinstance(data, Iterable):
+            data = [data]
 
+        for elem in data:
+            elem = self.verify_data(elem)
             if elem in self._properties:
                 self._properties.remove(elem)
 
@@ -271,28 +310,75 @@ class PropertyGroup:
             return
 
         self.parent.workspace.add_or_update_property_group(self)
-        self.property_table.update()
 
     @property
-    def property_table(self) -> PropertyGroupTable:
+    def table(self) -> PropertyGroupTable:
         """
         Create an object to access the data of the property group.
         """
-        return self._property_table
+        return PropertyGroupTable(self)
 
     @property
-    def uid(self) -> uuid.UUID:
+    def uid(self) -> UUID:
         """
-        :obj:`uuid.UUID` Unique identifier
+        Unique identifier
         """
         return self._uid
 
     @uid.setter
-    def uid(self, uid: str | uuid.UUID):
+    def uid(self, uid: str | UUID):
         if isinstance(uid, str):
-            uid = uuid.UUID(uid)
+            uid = UUID(uid)
 
-        if not isinstance(uid, uuid.UUID):
-            raise TypeError(f"Could not convert input uid {uid} to type uuid.UUID")
+        if not isinstance(uid, UUID):
+            raise TypeError(f"Could not convert input uid {uid} to type UUID")
 
         self._uid = uid
+
+    def verify_data(self, data: Data | UUID | str) -> UUID:
+        """
+        Verify that the data is in the parent and has the same association as the group.
+
+        :param data: The data to verify.
+            It can be the name, the uuid or the data itself.
+
+        :return: The uuid of the data.
+        """
+        data = str2uuid(data)
+
+        if isinstance(data, Data):
+            if self.parent != data.parent:
+                raise ValueError(
+                    f"Data '{data.name}' parent ({data.parent}) "
+                    f"does not match group parent ({self.parent})."
+                )
+
+        if isinstance(data, (str, UUID)):
+            data_: list = self.parent.get_data(data)
+            # if the data is an unloaded uid
+            if len(data_) == 0 and isinstance(data, UUID):
+                data_temp = self.parent.workspace.load_entity(data, "data", self.parent)
+                data_ = [] if data_temp is None else [data_temp]
+            if len(data_) == 0:
+                raise ValueError(f"Data '{data}' not found in parent {self.parent}")
+            if len(data_) > 1:
+                raise ValueError(
+                    f"Multiple data '{data}' found in parent {self.parent}"
+                )
+            data = data_[0]
+
+        if not isinstance(data, Data):
+            raise TypeError(
+                f"Data must be of type Data, UUID or str. Provided {type(data)}"
+            )
+
+        if self._association is None:
+            self.association = data.association
+
+        if self.association != data.association:
+            raise ValueError(
+                f"Data '{data.name}' association ({data.association}) "
+                f"does not match group association ({self.association})."
+            )
+
+        return data.uid

@@ -18,14 +18,13 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 import numpy as np
 
 from ..data import DataAssociationEnum
 from ..data.primitive_type_enum import DataTypeEnum
-from ..shared.utils import str2uuid, to_tuple
 
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -42,94 +41,102 @@ class PropertyGroupTable(ABC):
     locations_keys = ("X", "Y", "Z")
 
     def __init__(self, property_group: PropertyGroup):
-        self._properties_type: dict | None = None
-        self._size: int | None = None
+        if not hasattr(property_group, "property_group_type"):
+            raise TypeError("'property_group' must be a PropertyGroup object.")
+
+        if hasattr(property_group.parent, "collar"):
+            raise NotImplementedError(
+                "PropertyGroupTable is not supported for Drillhole objects."
+            )
 
         self._property_group: PropertyGroup = property_group
 
-    def _convert_names_to_uid(self, names: tuple[str | UUID]) -> tuple:
+    def __call__(
+        self, spatial_index: bool = False, use_uids: bool = False
+    ) -> np.ndarray | None:
         """
-        Convert the names of the properties to their UUID.
+        Create a structured array with the data of the properties.
 
-        :param names: The names of the properties to find back.
+        :param spatial_index: If True, the spatial index is added to the table.
+        :param use_uids: If True, the uids are used as columns name.
 
-        :return: A list of UUID.
+        :return: A table with the data of the properties.
         """
+        if (
+            self.property_group.properties is None
+            or self.property_group.properties_name is None
+        ):
+            return None
 
-        uuids: tuple = ()
+        keys = self.property_group.properties
+        names = (
+            self.property_group.properties
+            if use_uids
+            else self.property_group.properties_name
+        )
 
-        for name in names:
-            uid = str2uuid(name)
+        output_array = self._create_empty_structured_array(names, keys, spatial_index)
 
-            if isinstance(uid, str):
-                data = self.property_group.parent.get_data(uid)
-                if len(data) == 0:
-                    raise ValueError(f"Data with name {name} not found.")
-                if len(data) > 1:
-                    raise ValueError(f"Multiple data with name {name} found.")
-                uid = data[0].uid
+        if spatial_index:
+            for idx, key in enumerate(self.locations_keys):
+                output_array[key] = self.locations[:, idx]
 
-            if (
-                self.property_group.properties is None
-                or not isinstance(uid, UUID)
-                or uid not in self.property_group.properties
-            ):
-                raise ValueError(f"Data '{name}' not found in the property group.")
+        for key, name in zip(keys, names, strict=False):
+            data = self.property_group.parent.get_data(key)[0]
+            output_array[str(name)] = data.values
 
-            uuids += (uid,)
-
-        if len(uuids) == 0:
-            raise ValueError(f"No data found for '{names}' in the property group.")
-
-        return uuids
+        return output_array
 
     def _create_empty_structured_array(
         self,
-        keys: tuple[UUID],
-        names: tuple[Any],
+        properties_name: list[str] | list[UUID],
+        properties_keys: list[UUID],
         spatial_index: bool = False,
     ) -> np.ndarray:
         """
         Create an empty structured array that can contains the data.
 
-        :param keys: The list containing the data.
+        :param properties_name: The names of the properties.
+        :param properties_keys: The keys of the properties.
         :param spatial_index: If True, the association is added to the table.
 
         :return: an empty structured array.
         """
-        if self.size is None or self.properties_type is None:
-            raise ValueError("The PropertyGroup has no property.")
-
         dtypes = (
             [(loc, np.float32) for loc in self.locations_keys] if spatial_index else []
         )
-        no_data_values = [np.nan] * 3 if spatial_index else []
 
-        for key, name in zip(keys, names, strict=False):
-            dtype, nan_value = self.properties_type[key]
+        for key, name in zip(properties_keys, properties_name, strict=False):
+            data = self.property_group.parent.get_data(key)[0]
+            dtype: type | str = DataTypeEnum.from_primitive_type(
+                data.entity_type.primitive_type
+            )
+            if dtype not in [np.float32, np.int32, np.uint32, bool]:
+                dtype = "O"
             dtypes.append((str(name), dtype))
-            no_data_values.append(nan_value)
 
         empty_array = np.recarray((self.size,), dtype=dtypes)
-
-        for name, ndv in zip(empty_array.dtype.names, no_data_values, strict=False):
-            empty_array[name].fill(ndv)
 
         return empty_array
 
     @property
-    def association_columns(self) -> str:
+    def locations(self) -> np.ndarray:
         """
-        The columns of the association table.
+        The locations of the association table.
 
         This function is needed as a data can be both associated to cell or
         vertex in CellObjects.
         """
         if self.property_group.association == DataAssociationEnum.VERTEX:
-            return "vertices"
+            return self.property_group.parent.vertices
+
         if self.property_group.association == DataAssociationEnum.CELL:
-            return "centroids"
-        return "locations"
+            return self.property_group.parent.centroids  # type: ignore
+
+        raise ValueError(
+            f"The association {self.property_group.association} is not supported. "
+            f"Only VERTEX and CELL associations are supported."
+        )
 
     @property
     def property_group(self) -> PropertyGroup:
@@ -139,94 +146,17 @@ class PropertyGroupTable(ABC):
         return self._property_group
 
     @property
-    def property_table(self) -> np.ndarray | None:
-        """
-        Create a structured array with the data of the properties.
-
-        This structured array also contains the spatial index.
-
-        :return: The table with the data of the properties.
-        """
-        if self.property_group.properties is None:
-            return None
-
-        return self.property_table_by_name(
-            self.property_group.properties,  # type: ignore
-            spatial_index=True,
-        )
-
-    def property_table_by_name(
-        self, names: list[str | UUID] | str | UUID, spatial_index: bool = False
-    ) -> np.ndarray:
-        """
-        Create a structured array with the data of the properties.
-
-        :param names: The names of the properties to extract.
-        :param spatial_index: If True, the spatial index is added to the table.
-
-        :return: A table with the data of the properties.
-        """
-        names_ = to_tuple(names)
-
-        keys = self._convert_names_to_uid(names_)
-
-        output_array = self._create_empty_structured_array(keys, names_, spatial_index)
-
-        if spatial_index:
-            for idx, key in enumerate(self.locations_keys):
-                output_array[key] = getattr(
-                    self.property_group.parent, self.association_columns
-                )[:, idx]
-
-        for key, name in zip(keys, names_, strict=False):
-            data = self.property_group.parent.get_data(key)[0]
-            output_array[str(name)] = data.values
-
-        return output_array
-
-    @property
-    def properties_type(self) -> dict | None:
-        """
-        The types of the properties in the group.
-        """
-        if self._properties_type is None:
-            self.update()
-
-        return self._properties_type
-
-    @property
-    def size(self) -> int | None:
+    def size(self) -> int:
         """
         The size of the properties in the group.
         """
-        if self._size is None:
-            self.update()
+        if self.property_group.association == DataAssociationEnum.VERTEX:
+            return self.property_group.parent.n_vertices
 
-        return self._size
+        if self.property_group.association == DataAssociationEnum.CELL:
+            return self.property_group.parent.n_cells
 
-    def update(self):
-        """
-        Find the dtypes for all properties in the group.
-        Also check the length of all data.
-        """
-        properties_type: dict = {}
-        sizes: list = []
-
-        if self._property_group.properties is None:
-            return
-
-        for property_ in self._property_group.properties:
-            data = self.property_group.parent.get_data(property_)[0]
-
-            dtype = DataTypeEnum.from_primitive_type(data.entity_type.primitive_type)
-            if dtype not in [np.float32, np.int32, np.uint32, bool]:
-                dtype = "O"
-
-            properties_type[property_] = (dtype, data.nan_value)
-            sizes.append(data.values.size)
-
-        if not all(size == sizes[0] for size in sizes):
-            raise ValueError("All properties must have the same length.")
-
-        self._size = sizes[0]
-        self._properties_type = properties_type
+        raise ValueError(
+            f"The association {self.property_group.association} is not supported. "
+            f"Only VERTEX and CELL associations are supported."
+        )
