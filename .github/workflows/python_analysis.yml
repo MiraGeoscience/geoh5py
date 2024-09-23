@@ -47,3 +47,10 @@ jobs:
       python_ver: '["3.10", "3.11", "3.12"]'
       os: '["ubuntu-latest"]'
       cache_number: 1
+  call-workflow-python-package-installation:
+    name: Python package installation
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-test_install.yml@DEVOPS-444
+    with:
+      package-name: 'geoh5py'
+      package-manager: 'pypi'
+      python-version: '3.12.0'
