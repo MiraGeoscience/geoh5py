@@ -16,6 +16,7 @@ on:
       - release/**
       - feature/**
       - hotfix/**
+      - DEVOPS-471 # TODO: Remove this line after DEVOPS-471 is resolved
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
