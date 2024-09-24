@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from enum import Enum
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 from warnings import warn
 
@@ -35,7 +35,6 @@ from .property_group_table import PropertyGroupTable
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..objects import ObjectBase
-    from ..shared import Entity
 
 
 class GroupTypeEnum(str, Enum):
@@ -49,6 +48,7 @@ class GroupTypeEnum(str, Enum):
     MULTI = "Multi-element"
     STRIKEDIP = "Strike & dip"
     VECTOR = "3D vector"
+    UNKNOWN = "Unknown"
 
 
 class PropertyGroup:
@@ -75,20 +75,20 @@ class PropertyGroup:
     def __init__(  # pylint: disable=too-many-arguments
         self,
         parent: ObjectBase,
-        name=None,
-        on_file=False,
-        uid=None,
-        property_group_type: Literal[GroupTypeEnum.MULTI] = GroupTypeEnum.MULTI,
+        name: str | None = None,
+        on_file: bool = False,
+        uid: UUID | None = None,
+        property_group_type: GroupTypeEnum = GroupTypeEnum.UNKNOWN,
         **kwargs,
     ):
-        self.name = name or "property_group"
-        self.uid = uid or uuid4()
-        self.on_file = on_file
-        self.property_group_type = property_group_type
-
+        self._on_file: bool = False
         self._allow_delete = True
         self._association: DataAssociationEnum | None = None
         self._properties: list[UUID] | None = None
+
+        self.name = name or "property_group"
+        self.uid = uid or uuid4()
+        self.property_group_type = property_group_type
 
         # define the parent
         if not hasattr(parent, "_property_groups"):
@@ -99,6 +99,8 @@ class PropertyGroup:
         parent.add_children([self])
 
         map_attributes(self, **kwargs)
+        self.on_file = on_file
+
         self.parent.workspace.register(self)
 
     def add_properties(self, data: str | Data | list[str | Data | UUID] | UUID):
@@ -226,7 +228,7 @@ class PropertyGroup:
         return self._properties
 
     @properties.setter
-    def properties(self, uids: list[str | UUID]):
+    def properties(self, uids: list[str | UUID | Data]):
         if self._properties is not None:
             raise UserWarning(
                 "Cannot modify properties of an existing property group. "
@@ -240,7 +242,8 @@ class PropertyGroup:
             [self.verify_data(uid) for uid in uids]
         )
 
-        # todo: why not "self.parent.workspace.add_or_update_property_group(self)"?
+        if self._on_file:
+            self.parent.workspace.add_or_update_property_group(self)
 
     @property
     def properties_name(self) -> list[str] | None:
@@ -268,8 +271,16 @@ class PropertyGroup:
         return self._property_group_type
 
     @property_group_type.setter
-    def property_group_type(self, value: str | GroupTypeEnum):
-        # todo: it's strange we can change properties group type on the fly
+    def property_group_type(self, value: str | GroupTypeEnum | None):
+        if (
+            getattr(self, "_property_group_type", GroupTypeEnum.UNKNOWN)
+            is not GroupTypeEnum.UNKNOWN
+        ):
+            raise UserWarning(
+                "Cannot modify 'property group type' of an existing property group. "
+                "Consider creating a new property group."
+            )
+
         if isinstance(value, str):
             try:
                 value = GroupTypeEnum(value)

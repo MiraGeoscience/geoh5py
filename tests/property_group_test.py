@@ -155,6 +155,16 @@ def test_create_property_group(tmp_path):
             rec_object.property_groups is None
         ), "Property_groups not properly removed."
 
+        # test for properties post assignation
+
+        prop_group = PropertyGroup(parent=rec_object, name="testGroup")
+        prop_group.properties = [
+            child for child in rec_object.children if isinstance(child, Data)
+        ]
+        assert [
+            child.uid for child in rec_object.children if isinstance(child, Data)
+        ] == prop_group.properties
+
 
 def test_property_group_errors(tmp_path):
     #  pylint: disable=too-many-locals
@@ -235,6 +245,9 @@ def test_property_group_errors(tmp_path):
 
         with pytest.raises(ValueError, match="Data 'WrongParent' parent"):
             prop_group.verify_data(test_data)
+
+        with pytest.raises(UserWarning, match="Cannot modify 'property group type'"):
+            prop_group.property_group_type = "bidon"
 
 
 def test_auto_find_association(tmp_path):

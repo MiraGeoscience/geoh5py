@@ -68,8 +68,8 @@ class PropertyGroupTable(ABC):
         ):
             return None
 
-        keys = self.property_group.properties
-        names = (
+        keys: list[UUID] = self.property_group.properties
+        names: list[str] | list[UUID] = (
             self.property_group.properties
             if use_uids
             else self.property_group.properties_name
@@ -81,7 +81,7 @@ class PropertyGroupTable(ABC):
             for idx, key in enumerate(self.locations_keys):
                 output_array[key] = self.locations[:, idx]
 
-        for key, name in zip(keys, names, strict=False):
+        for key, name in zip(keys, names, strict=False):  # type: ignore
             data = self.property_group.parent.get_data(key)[0]
             output_array[str(name)] = data.values
 
@@ -150,13 +150,4 @@ class PropertyGroupTable(ABC):
         """
         The size of the properties in the group.
         """
-        if self.property_group.association == DataAssociationEnum.VERTEX:
-            return self.property_group.parent.n_vertices
-
-        if self.property_group.association == DataAssociationEnum.CELL:
-            return self.property_group.parent.n_cells
-
-        raise ValueError(
-            f"The association {self.property_group.association} is not supported. "
-            f"Only VERTEX and CELL associations are supported."
-        )
+        return self.locations.shape[0]

@@ -90,7 +90,9 @@ def test_create_curve_data(tmp_path: Path):
             3,
         ), "Error creating curve with single vertex."
         assert len(curve.cells) == 1
-        curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
+        curve = Curve.create(
+            workspace, vertices=np.arange(n_data * 3).reshape(n_data, 3)
+        )
         # Get and change the parts
         parts = curve.parts
         parts[-3:] = 1
@@ -105,6 +107,10 @@ def test_create_curve_data(tmp_path: Path):
             ValueError, match="New cells array must have the same shape"
         ):
             curve.cells = np.c_[1, 2]
+
+        np.array_equal(
+            np.arange(1, n_data * 3 - 2).reshape(n_data - 1, 3) + 0.5, curve.centroids
+        )
 
         curve = Curve.create(
             workspace, vertices=np.random.randn(n_data, 3), name=curve_name, cells=cells

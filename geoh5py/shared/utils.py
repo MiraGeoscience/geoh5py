@@ -863,5 +863,4 @@ def remove_duplicates_in_list(input_list: list) -> list:
 
     :return: The sorted list
     """
-    seen = set()
-    return [x for x in input_list if not (x in seen or seen.add(x))]
+    return sorted(set(input_list), key=input_list.index)

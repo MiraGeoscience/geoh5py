@@ -74,10 +74,7 @@ class CellObject(Points, ABC):
         """
         Compute the centroids of the cells.
         """
-        if self.cells is None:
-            return None
-
-        return np.array([self.vertices[conn].mean(axis=0) for conn in self.cells])
+        return np.mean(self.vertices[self.cells], axis=1)
 
     @property
     def locations(self):
