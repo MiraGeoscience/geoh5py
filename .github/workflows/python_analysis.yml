@@ -37,7 +37,7 @@ jobs:
     with:
       app_name: 'geoh5py'
       os: '["ubuntu-latest", "windows-latest"]'
-      python-version: '3.10'
+      # python-version: '3.10'
   # call-workflow-pytest-on-windows:
   #   name: Pytest on Windows
   #   uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest_windows.yml@main
