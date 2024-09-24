@@ -16,6 +16,7 @@ on:
       - release/**
       - feature/**
       - hotfix/**
+      - DEVOPS-473 # TODO: Temporaray until DEVOPS-473 is merged
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -24,11 +25,18 @@ concurrency:
 jobs:
   call-workflow-static-analysis:
     name: Static analysis
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-static_analysis.yml@main
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-static_analysis.yml@DEVOPS-473
     with:
       package_manager: 'poetry'
       app_name: 'geoh5py'
       python_vers: '3.10'
+      os: '["ubuntu-latest", "windows-latest"]'
+  call-workflow-pre-commit:
+    name: Pre-commit
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-pre_commit.yml@DEVOPS-473
+    with:
+      app_name: 'geoh5py'
+      os: '["ubuntu-latest", "windows-latest"]'
   call-workflow-pytest-on-windows:
     name: Pytest on Windows
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest_windows.yml@main
