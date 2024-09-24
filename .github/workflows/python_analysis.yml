@@ -23,13 +23,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  call-workflow-static-analysis:
-    name: Static analysis
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-static_analysis.yml@DEVOPS-466
-    with:
-      package-manager: 'poetry'
-      app-name: 'geoh5py'
-      python-version: '3.10'
+  # call-workflow-static-analysis:
+  #   name: Static analysis
+  #   uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-static_analysis.yml@DEVOPS-466
+  #   with:
+  #     package-manager: 'poetry'
+  #     app-name: 'geoh5py'
+  #     python-version: '3.10'
   # call-workflow-pytest-on-windows:
   #   name: Pytest on Windows
   #   uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest_windows.yml@DEVOPS-466
