@@ -55,6 +55,14 @@ def test_attribute_setters():
                 dip="90",
             )
 
+        grid = Grid2D.create(workspace_context)
+
+        with pytest.raises(AttributeError, match="Object Grid2D does not."):
+            _ = grid.faces
+
+        with pytest.raises(TypeError, match="Attribute 'last_focus'"):
+            grid.last_focus = 666
+
 
 def test_create_grid_2d_data(tmp_path):
     name = "MyTestGrid2D"

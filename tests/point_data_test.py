@@ -49,6 +49,10 @@ def test_create_point_data(tmp_path):
     tag = points.add_data(
         {"my_comment": {"association": "OBJECT", "values": "hello_world"}}
     )
+
+    with pytest.raises(TypeError, match="Given value to data"):
+        points.add_data({"my_comment": "bidon"})
+
     # Change some data attributes for testing
     data.allow_delete = False
     data.allow_move = True

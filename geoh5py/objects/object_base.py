@@ -19,9 +19,9 @@
 
 from __future__ import annotations
 
-import uuid
 import warnings
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 import numpy as np
 
@@ -36,11 +36,16 @@ from ..groups.property_group import GroupTypeEnum, PropertyGroup
 from ..shared import Entity
 from ..shared.conversion import BaseConversion
 from ..shared.entity_container import EntityContainer
-from ..shared.utils import box_intersect, clear_array_attributes, mask_by_extent
+from ..shared.utils import (
+    box_intersect,
+    clear_array_attributes,
+    mask_by_extent,
+    str2uuid,
+)
 from .object_type import ObjectType
 
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from ..workspace import Workspace
 
 
@@ -166,7 +171,7 @@ class ObjectBase(EntityContainer):
 
     def add_data_to_group(
         self,
-        data: list[Data | uuid.UUID | str] | Data | uuid.UUID | str,
+        data: list[Data | UUID | str] | Data | UUID | str,
         property_group: str | PropertyGroup,
     ) -> PropertyGroup:
         """
@@ -181,37 +186,19 @@ class ObjectBase(EntityContainer):
 
         :return: The target property group.
         """
-        if isinstance(data, Data | uuid.UUID | str):
-            data = [data]
-
         if isinstance(property_group, str):
-            associations = []
-            for elem in data:
-                if isinstance(elem, uuid.UUID | str):
-                    entity = self.get_entity(elem)[0]
-                else:
-                    entity = elem
-
-                if isinstance(entity, Data) and elem in self.children:
-                    associations.append(entity.association)
-
-            associations = list(set(associations))
-            if not associations:
-                raise ValueError(
-                    "No children data found on the parent object. "
-                    "Verify that the list of data or uuid provided are children entities."
-                )
-
-            if len(associations) != 1:
-                raise ValueError("All input 'data' must have the same association.")
-
             property_group = self.fetch_property_group(
-                name=property_group, association=associations[0]
+                name=property_group, properties=data
             )
 
-        property_group.add_properties(data)
+        if isinstance(property_group, PropertyGroup):
+            property_group.add_properties(data)
+            return property_group
 
-        return property_group
+        raise TypeError(
+            "Property group must be of type PropertyGroup or str; "
+            f"got {type(property_group)} instead."
+        )
 
     @property
     def cells(self) -> np.ndarray:
@@ -220,6 +207,9 @@ class ObjectBase(EntityContainer):
         defining the connection between
         :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
         """
+        raise AttributeError(
+            f"Object {self.__class__.__name__} does not have the attribute 'cells'."
+        )
 
     def copy(
         self,
@@ -302,6 +292,9 @@ class ObjectBase(EntityContainer):
     @property
     def faces(self) -> np.ndarray:
         """Object faces."""
+        raise AttributeError(
+            f"Object {self.__class__.__name__} does not have the attribute 'faces'."
+        )
 
     @classmethod
     def find_or_create_type(cls, workspace: Workspace, **kwargs) -> ObjectType:
@@ -315,7 +308,7 @@ class ObjectBase(EntityContainer):
         kwargs["entity_class"] = cls
         return ObjectType.find_or_create(workspace, **kwargs)
 
-    def get_property_group(self, name: uuid.UUID | str) -> list:
+    def get_property_group(self, name: UUID | str) -> list:
         """
         Get a child :obj:`~geoh5py.groups.property_group.PropertyGroup` by name.
         :param name: the reference of the property group to get.
@@ -325,11 +318,8 @@ class ObjectBase(EntityContainer):
             return [None]
 
         entities = []
-
         for child in self._property_groups:
-            if (
-                isinstance(name, uuid.UUID) and child.uid == name
-            ) or child.name == name:
+            if (isinstance(name, UUID) and child.uid == name) or child.name == name:
                 entities.append(child)
 
         if len(entities) == 0:
@@ -398,7 +388,7 @@ class ObjectBase(EntityContainer):
         )
         return self.fetch_property_group(name=name, uid=uid, **kwargs)
 
-    def get_data(self, name: str | uuid.UUID) -> list[Data]:
+    def get_data(self, name: str | UUID) -> list[Data]:
         """
         Get a child :obj:`~geoh5py.data.data.Data` by name.
 
@@ -479,6 +469,43 @@ class ObjectBase(EntityContainer):
         Post-processing function to be called after adding data.
         """
 
+    def reference_to_data(self, data: str | Data | UUID) -> Data:
+        """
+        Convert a reference to a Data object.
+
+        :param data: The data to convert.
+            It can be the name, the uuid or the data itself.
+
+        :return: The data object.
+        """
+        data = str2uuid(data)
+
+        if isinstance(data, Data):
+            if self != data.parent:
+                raise ValueError(
+                    f"Data '{data.name}' parent ({data.parent}) "
+                    f"does not match group parent ({self})."
+                )
+
+        if isinstance(data, (str, UUID)):
+            data_: list = self.get_data(data)
+            # if the data is an unloaded uid
+            if len(data_) == 0 and isinstance(data, UUID):
+                data_temp = self.workspace.load_entity(data, "data", self)
+                data_ = [] if data_temp is None else [data_temp]
+            if len(data_) == 0:
+                raise ValueError(f"Data '{data}' not found in parent {self}")
+            if len(data_) > 1:
+                raise ValueError(f"Multiple data '{data}' found in parent {self}")
+            data = data_[0]
+
+        if not isinstance(data, Data):
+            raise TypeError(
+                f"Data must be of type Data, UUID or str. Provided {type(data)}"
+            )
+
+        return data
+
     def remove_children(self, children: list[Entity | PropertyGroup]):
         """
         Remove children from the list of children entities.
@@ -496,7 +523,7 @@ class ObjectBase(EntityContainer):
 
         for child in children:
             if child not in self._children:
-                continue
+                continue  # this is dangerous, should raise an error
 
             if isinstance(child, PropertyGroup) and self._property_groups:
                 self.remove_property_group(child)
@@ -542,6 +569,9 @@ class ObjectBase(EntityContainer):
         :obj:`numpy.array` of :obj:`float`, shape (\*, 3): Array of x, y, z coordinates
         defining the position of points in 3D space.
         """
+        raise AttributeError(
+            f"Object {type(self)} does not have the attribute 'vertices'."
+        )
 
     @property
     def locations(self):
@@ -607,7 +637,7 @@ class ObjectBase(EntityContainer):
         return self._visual_parameters
 
     def remove_data_from_groups(
-        self, data: list[Data | uuid.UUID | str] | Data | uuid.UUID | str
+        self, data: list[Data | UUID | str] | Data | UUID | str
     ) -> None:
         """
         Remove data children to all

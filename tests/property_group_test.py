@@ -165,6 +165,17 @@ def test_create_property_group(tmp_path):
             child.uid for child in rec_object.children if isinstance(child, Data)
         ] == prop_group.properties
 
+        # empty property group
+        empty_group = PropertyGroup(
+            parent=rec_object, name="emptyGroup", association="CELL"
+        )
+
+        assert empty_group.collect_values is None
+        assert empty_group.properties_name is None
+        assert empty_group.table() is None
+
+        empty_group.remove_properties("test")  # nothing is done
+
 
 def test_property_group_errors(tmp_path):
     #  pylint: disable=too-many-locals
@@ -198,6 +209,17 @@ def test_property_group_errors(tmp_path):
         with pytest.raises(KeyError, match="A Property Group with name"):
             curve.create_property_group(name="myGroup")
 
+        with pytest.raises(
+            ValueError, match="At least one of 'properties' or 'association'"
+        ):
+            PropertyGroup(parent=curve)
+
+        with pytest.raises(TypeError, match="Properties must be an iterable"):
+            prop_group._validate_properties(123)  # pylint: disable=protected-access
+
+        with pytest.raises(TypeError, match="Property group must be of type"):
+            curve.add_data_to_group(data="bidon", property_group=123)
+
         # test error for allow delete
         with pytest.raises(TypeError, match="allow_delete must be a boolean"):
             prop_group.allow_delete = "bidon"
@@ -208,11 +230,6 @@ def test_property_group_errors(tmp_path):
         with pytest.raises(TypeError, match="Association must be"):
             PropertyGroup(parent=curve, association=123)
 
-        with pytest.raises(
-            ValueError, match="At least one of 'properties' or 'association'"
-        ):
-            PropertyGroup(parent=curve, properties=123)
-
         with pytest.raises(TypeError, match="'Property group type' must be of type"):
             PropertyGroup(parent=curve, property_group_type=123)
 
@@ -220,21 +237,21 @@ def test_property_group_errors(tmp_path):
             PropertyGroup(parent=curve, property_group_type="badType")
 
         with pytest.raises(ValueError, match="Data 'bidon' not found"):
-            prop_group.validate_data("bidon")
+            prop_group._validate_data("bidon")  # pylint: disable=protected-access
 
         curve.add_data(
             {"Period1": {"values": np.random.rand(12)}}, property_group="myGroup"
         )
 
         with pytest.raises(ValueError, match="Multiple data 'Period1'"):
-            prop_group.validate_data("Period1")
+            prop_group._validate_data("Period1")  # pylint: disable=protected-access
 
         curve.add_data(
             {"TestAssociation": {"values": np.random.rand(11), "association": "CELL"}},
         )
 
         with pytest.raises(ValueError, match="Data 'TestAssociation' association"):
-            prop_group.validate_data("TestAssociation")
+            prop_group._validate_data("TestAssociation")  # pylint: disable=protected-access
 
         test = Curve.create(
             workspace,
@@ -246,7 +263,7 @@ def test_property_group_errors(tmp_path):
         )
 
         with pytest.raises(ValueError, match="Data 'WrongParent' parent"):
-            prop_group.validate_data(test_data)
+            prop_group._validate_data(test_data)  # pylint: disable=protected-access
 
         with pytest.raises(
             AttributeError, match="can't set attribute 'property_group_type'"

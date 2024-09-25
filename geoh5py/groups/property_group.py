@@ -27,7 +27,6 @@ from ..data import Data, DataAssociationEnum
 from ..shared.utils import (
     find_unique_name,
     remove_duplicates_in_list,
-    str2uuid,
 )
 from .property_group_table import PropertyGroupTable
 
@@ -82,29 +81,147 @@ class PropertyGroup:
         on_file: bool = False,
         uid: UUID | None = None,
         property_group_type: GroupTypeEnum | str = GroupTypeEnum.UNKNOWN,
-        properties: list[UUID | Data] | None = None,
+        properties: list[UUID | Data | str] | None = None,
         **_,
     ):
         self._parent: ObjectBase = self._validate_parent(parent)
         self._property_group_type = self._validate_group_type(property_group_type)
 
         self.allow_delete = allow_delete
-        self.name = name or "property_group"
-        self.on_file: bool = on_file
+        self.name = name
+        self.on_file = on_file
         self.uid = uid or uuid4()
 
-        if isinstance(properties, Iterable):
-            properties_list = [self.reference_to_data(prop) for prop in properties]
-        else:
-            properties_list = None
+        properties_list = self._initialize_properties(properties)
 
-        self._association: DataAssociationEnum = self._validate_association(
-            association, properties_list
-        )
+        self._association = self._validate_association(association, properties_list)
         self._properties = self._validate_properties(properties_list)
 
         self.parent.add_children([self])
         self.parent.workspace.register(self)
+
+    def _initialize_properties(
+        self, properties: str | UUID | Data | list[UUID | str | Data] | None
+    ) -> list[Data] | None:
+        """
+        Initialize the properties list.
+
+        :param properties: List of Data entities to validate.
+
+        :return: List of unique identifiers for the Data entities.
+        """
+        if properties is None:
+            return None
+
+        if not isinstance(properties, Iterable):
+            properties = [properties]
+
+        return [self.parent.reference_to_data(prop) for prop in properties]
+
+    @staticmethod
+    def _validate_association(
+        value: str | DataAssociationEnum | None, properties: list[Data] | None
+    ) -> DataAssociationEnum:
+        """
+        Verify that the association is valid, or infer it from the properties.
+
+        :param value: The association to validate.
+        :param properties: A list of properties to infer the association from.
+        """
+        if properties is None and value is None:
+            raise ValueError(
+                "At least one of 'properties' or 'association' must be provided."
+            )
+
+        if value is None and properties is not None:
+            value = properties[0].association
+
+        if isinstance(value, str):
+            value = getattr(DataAssociationEnum, value.upper())
+
+        if not isinstance(value, DataAssociationEnum):
+            raise TypeError(f"Association must be one of type {DataAssociationEnum}")
+
+        return value
+
+    def _validate_data(self, data: Data | UUID | str) -> UUID:
+        """
+        Verify that the data is in the parent and has the same association as the group.
+
+        :param data: The data to verify.
+            It can be the name, the uuid or the data itself.
+
+        :return: The uuid of the data.
+        """
+        data = self.parent.reference_to_data(data)
+
+        if self.association != data.association:
+            raise ValueError(
+                f"Data '{data.name}' association ({data.association}) "
+                f"does not match group association ({self.association})."
+            )
+
+        return data.uid
+
+    @staticmethod
+    def _validate_group_type(value: str | GroupTypeEnum) -> GroupTypeEnum:
+        """
+        Verify that the group type is a valid GroupTypeEnum.
+
+        :param value: The group type to validate.
+
+        :return: The validated group type.
+        """
+        if isinstance(value, str):
+            try:
+                value = GroupTypeEnum(value)
+            except ValueError as error:
+                raise ValueError(
+                    f"'Property group type' must be one of "
+                    f"{', '.join(GroupTypeEnum.__members__)}. Provided {value}"
+                ) from error
+
+        if not isinstance(value, GroupTypeEnum):
+            raise TypeError(
+                f"'Property group type' must be of type {GroupTypeEnum}, "
+                f"provided {type(value)}"
+            )
+
+        return value
+
+    @staticmethod
+    def _validate_parent(parent: ObjectBase) -> ObjectBase:
+        """
+        Verify that the parent is valid.
+
+        :param parent: The parent Object to validate.
+
+        :return: The parent Object.
+        """
+        # define the parent
+        if not hasattr(parent, "_property_groups"):
+            raise TypeError(f"Parent {parent} must have a 'property_groups' attribute")
+        return parent
+
+    def _validate_properties(self, data_list: list[Data] | None) -> list[UUID] | None:
+        """
+        Validate the properties list.
+
+        :param data_list: List of Data entities to validate.
+
+        :return: List of unique identifiers for the Data entities.
+        """
+        if data_list is None:
+            return None
+
+        if not isinstance(data_list, Iterable):
+            raise TypeError(
+                f"Properties must be an iterable of Data. Provided {data_list}"
+            )
+
+        return remove_duplicates_in_list(
+            [self._validate_data(uid) for uid in data_list]
+        )
 
     def add_properties(self, data: str | Data | list[str | Data | UUID] | UUID):
         """
@@ -118,7 +235,7 @@ class PropertyGroup:
 
         properties = self._properties or []
         for elem in data:
-            properties.append(self.validate_data(elem))
+            properties.append(self._validate_data(elem))
 
         if properties:
             self._properties = remove_duplicates_in_list(properties)
@@ -142,9 +259,6 @@ class PropertyGroup:
         """
         The association of the data.
         """
-        if self._association is None:
-            return DataAssociationEnum.UNKNOWN
-
         return self._association
 
     @property
@@ -237,45 +351,6 @@ class PropertyGroup:
         """
         return self._property_group_type
 
-    def reference_to_data(self, data: str | Data | UUID) -> Data:
-        """
-        Convert a reference to a Data object.
-
-        :param data: The data to convert.
-            It can be the name, the uuid or the data itself.
-
-        :return: The data object.
-        """
-        data = str2uuid(data)
-
-        if isinstance(data, Data):
-            if self.parent != data.parent:
-                raise ValueError(
-                    f"Data '{data.name}' parent ({data.parent}) "
-                    f"does not match group parent ({self.parent})."
-                )
-
-        if isinstance(data, (str, UUID)):
-            data_: list = self.parent.get_data(data)
-            # if the data is an unloaded uid
-            if len(data_) == 0 and isinstance(data, UUID):
-                data_temp = self.parent.workspace.load_entity(data, "data", self.parent)
-                data_ = [] if data_temp is None else [data_temp]
-            if len(data_) == 0:
-                raise ValueError(f"Data '{data}' not found in parent {self.parent}")
-            if len(data_) > 1:
-                raise ValueError(
-                    f"Multiple data '{data}' found in parent {self.parent}"
-                )
-            data = data_[0]
-
-        if not isinstance(data, Data):
-            raise TypeError(
-                f"Data must be of type Data, UUID or str. Provided {type(data)}"
-            )
-
-        return data
-
     def remove_properties(self, data: str | Data | list[str | Data | UUID] | UUID):
         """
         Remove data from the properties.
@@ -290,7 +365,7 @@ class PropertyGroup:
             data = [data]
 
         for elem in data:
-            elem = self.validate_data(elem)
+            elem = self._validate_data(elem)
             if elem in self._properties:
                 self._properties.remove(elem)
 
@@ -323,100 +398,3 @@ class PropertyGroup:
             raise TypeError(f"Could not convert input uid {uid} to type UUID")
 
         self._uid = uid
-
-    @staticmethod
-    def _validate_association(
-        value: str | DataAssociationEnum | None, properties: list[Data] | None
-    ) -> DataAssociationEnum:
-        """
-        Verify that the association is valid, or infer it from the properties.
-
-        :param value: The association to validate.
-        :param properties: A list of properties to infer the association from.
-        """
-        if properties is None and value is None:
-            raise ValueError(
-                "At least one of 'properties' or 'association' must be provided."
-            )
-
-        if value is None and properties is not None:
-            value = properties[0].association
-
-        if isinstance(value, str):
-            value = getattr(DataAssociationEnum, value.upper())
-
-        if not isinstance(value, DataAssociationEnum):
-            raise TypeError(f"Association must be one of type {DataAssociationEnum}")
-
-        return value
-
-    def validate_data(self, data: Data | UUID | str) -> UUID:
-        """
-        Verify that the data is in the parent and has the same association as the group.
-
-        :param data: The data to verify.
-            It can be the name, the uuid or the data itself.
-
-        :return: The uuid of the data.
-        """
-        data = self.reference_to_data(data)
-
-        if self.association != data.association:
-            raise ValueError(
-                f"Data '{data.name}' association ({data.association}) "
-                f"does not match group association ({self.association})."
-            )
-
-        return data.uid
-
-    @staticmethod
-    def _validate_group_type(value: str | GroupTypeEnum) -> GroupTypeEnum:
-        """
-        Verify that the group type is a valid GroupTypeEnum.
-
-        :param value: The group type to validate.
-        """
-        if isinstance(value, str):
-            try:
-                value = GroupTypeEnum(value)
-            except ValueError as error:
-                raise ValueError(
-                    f"'Property group type' must be one of "
-                    f"{', '.join(GroupTypeEnum.__members__)}. Provided {value}"
-                ) from error
-
-        if not isinstance(value, GroupTypeEnum):
-            raise TypeError(
-                f"'Property group type' must be of type {GroupTypeEnum}, "
-                f"provided {type(value)}"
-            )
-
-        return value
-
-    @staticmethod
-    def _validate_parent(parent: ObjectBase) -> ObjectBase:
-        """
-        Verify that the parent is valid.
-
-        :param parent: The parent Object to validate.
-        """
-        # define the parent
-        if not hasattr(parent, "_property_groups"):
-            raise TypeError(f"Parent {parent} must have a 'property_groups' attribute")
-        return parent
-
-    def _validate_properties(self, data_list: list[Data] | None) -> list[UUID] | None:
-        """
-        Validate the properties list.
-
-        :param data_list: List of Data entities to validate.
-        """
-        if data_list is None:
-            return None
-
-        if not isinstance(data_list, Iterable):
-            raise TypeError(
-                f"Properties must be an iterable of Data. Provided {data_list}"
-            )
-
-        return remove_duplicates_in_list([self.validate_data(uid) for uid in data_list])
