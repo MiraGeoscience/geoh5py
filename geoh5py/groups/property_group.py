@@ -82,8 +82,8 @@ class PropertyGroup:
         properties: list[UUID | Data] | None = None,
         **_,
     ):
-        self._parent: ObjectBase = self.validate_parent(parent)
-        self._property_group_type = self.validate_group_type(property_group_type)
+        self._parent: ObjectBase = self._validate_parent(parent)
+        self._property_group_type = self._validate_group_type(property_group_type)
 
         self.allow_delete = allow_delete
         self.name = name or "property_group"
@@ -95,10 +95,10 @@ class PropertyGroup:
         else:
             properties_list = None
 
-        self._association: DataAssociationEnum = self.validate_association(
+        self._association: DataAssociationEnum = self._validate_association(
             association, properties_list
         )
-        self._properties = self.validate_properties(properties_list)
+        self._properties = self._validate_properties(properties_list)
 
         self.parent.add_children([self])
         self.parent.workspace.register(self)
@@ -322,7 +322,7 @@ class PropertyGroup:
         self._uid = uid
 
     @staticmethod
-    def validate_association(
+    def _validate_association(
         value: str | DataAssociationEnum | None, properties: list[Data] | None
     ) -> DataAssociationEnum:
         if properties is None and value is None:
@@ -361,7 +361,7 @@ class PropertyGroup:
         return data.uid
 
     @staticmethod
-    def validate_group_type(value: str | GroupTypeEnum) -> GroupTypeEnum:
+    def _validate_group_type(value: str | GroupTypeEnum) -> GroupTypeEnum:
         if isinstance(value, str):
             try:
                 value = GroupTypeEnum(value)
@@ -380,13 +380,13 @@ class PropertyGroup:
         return value
 
     @staticmethod
-    def validate_parent(parent: ObjectBase) -> ObjectBase:
+    def _validate_parent(parent: ObjectBase) -> ObjectBase:
         # define the parent
         if not hasattr(parent, "_property_groups"):
             raise TypeError(f"Parent {parent} must have a 'property_groups' attribute")
         return parent
 
-    def validate_properties(self, data_list: list[Data] | None):
+    def _validate_properties(self, data_list: list[Data] | None):
         """
         Validate the properties list.
         """
