@@ -189,7 +189,9 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
     :param parameter: Parameter name.
     :param value: Boolean value set to parameter's enabled member.
     """
-    if ui_json[parameter].get("optional", False):
+    if ui_json[parameter].get("optional", False) or bool(
+        ui_json[parameter].get("dependency", False)
+    ):
         ui_json[parameter]["enabled"] = value
 
     is_group_optional = False
