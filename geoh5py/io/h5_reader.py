@@ -360,7 +360,7 @@ class H5Reader:
                 for pg_uid in pg_handle:
                     property_groups[pg_uid] = {}
                     for attr, value in pg_handle[pg_uid].attrs.items():
-                        property_groups[pg_uid][attr] = value
+                        property_groups[pg_uid][INV_KEY_MAP.get(attr, attr)] = value
             except KeyError:
                 pass
         return property_groups

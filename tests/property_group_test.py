@@ -156,11 +156,11 @@ def test_create_property_group(tmp_path):
         ), "Property_groups not properly removed."
 
         # test for properties post assignation
+        properties = [child for child in rec_object.children if isinstance(child, Data)]
+        prop_group = PropertyGroup(
+            parent=rec_object, name="testGroup", properties=properties
+        )
 
-        prop_group = PropertyGroup(parent=rec_object, name="testGroup")
-        prop_group.properties = [
-            child for child in rec_object.children if isinstance(child, Data)
-        ]
         assert [
             child.uid for child in rec_object.children if isinstance(child, Data)
         ] == prop_group.properties
@@ -177,13 +177,13 @@ def test_property_group_errors(tmp_path):
 
         prop_group = curve.fetch_property_group(name="myGroup")
 
-        with pytest.raises(UserWarning, match="Cannot modify"):
+        with pytest.raises(AttributeError, match="can't set attribute 'properties'"):
             prop_group.properties = "bidon"
 
         with pytest.raises(TypeError, match="Name must be"):
-            PropertyGroup(parent="bidon", name=42)  # type: ignore
+            PropertyGroup(parent=curve, name=42)  # type: ignore
 
-        with pytest.raises(AttributeError, match="Parent bidon"):
+        with pytest.raises(TypeError, match="Parent bidon"):
             PropertyGroup(parent="bidon")  # type: ignore
 
         with pytest.raises(TypeError, match="Data must be of type Data"):
@@ -202,13 +202,15 @@ def test_property_group_errors(tmp_path):
         with pytest.raises(TypeError, match="allow_delete must be a boolean"):
             prop_group.allow_delete = "bidon"
 
-        with pytest.raises(UserWarning, match="Cannot modify association"):
+        with pytest.raises(AttributeError, match="can't set attribute"):
             prop_group.association = "bidon"
 
         with pytest.raises(TypeError, match="Association must be"):
             PropertyGroup(parent=curve, association=123)
 
-        with pytest.raises(TypeError, match="Properties must be"):
+        with pytest.raises(
+            ValueError, match="At least one of 'properties' or 'association'"
+        ):
             PropertyGroup(parent=curve, properties=123)
 
         with pytest.raises(TypeError, match="'Property group type' must be of type"):
@@ -218,21 +220,21 @@ def test_property_group_errors(tmp_path):
             PropertyGroup(parent=curve, property_group_type="badType")
 
         with pytest.raises(ValueError, match="Data 'bidon' not found"):
-            prop_group.verify_data("bidon")
+            prop_group.validate_data("bidon")
 
         curve.add_data(
             {"Period1": {"values": np.random.rand(12)}}, property_group="myGroup"
         )
 
         with pytest.raises(ValueError, match="Multiple data 'Period1'"):
-            prop_group.verify_data("Period1")
+            prop_group.validate_data("Period1")
 
         curve.add_data(
             {"TestAssociation": {"values": np.random.rand(11), "association": "CELL"}},
         )
 
         with pytest.raises(ValueError, match="Data 'TestAssociation' association"):
-            prop_group.verify_data("TestAssociation")
+            prop_group.validate_data("TestAssociation")
 
         test = Curve.create(
             workspace,
@@ -244,9 +246,11 @@ def test_property_group_errors(tmp_path):
         )
 
         with pytest.raises(ValueError, match="Data 'WrongParent' parent"):
-            prop_group.verify_data(test_data)
+            prop_group.validate_data(test_data)
 
-        with pytest.raises(UserWarning, match="Cannot modify 'property group type'"):
+        with pytest.raises(
+            AttributeError, match="can't set attribute 'property_group_type'"
+        ):
             prop_group.property_group_type = "bidon"
 
 
@@ -256,20 +260,11 @@ def test_auto_find_association(tmp_path):
     with Workspace.create(h5file_path) as workspace:
         curve, _ = make_example(workspace)
 
-        prop_group = PropertyGroup(parent=curve, name="myGroup2")
-
-        with pytest.warns(match="PropertyGroup.collect"):
-            assert prop_group.collect_values is None
-
-        assert prop_group.remove_properties("bidon") is None
-
-        assert prop_group.properties is None
-
-        assert prop_group.properties_name is None
-
-        assert prop_group.association == DataAssociationEnum.UNKNOWN
-
-        prop_group.add_properties(curve.children[0].uid)
+        prop_group = PropertyGroup(
+            parent=curve,
+            name="myGroup2",
+            properties=[data for data in curve.children if isinstance(data, Data)],
+        )
 
         assert prop_group.association == DataAssociationEnum.VERTEX
 
@@ -323,13 +318,6 @@ def test_property_group_table(tmp_path):
 
         np.testing.assert_almost_equal(curve.locations, produced[:, :3], decimal=6)
 
-        # create an empty property group
-        prop_group_empty = PropertyGroup(parent=curve, name="emptyGroup")
-
-        assert prop_group_empty.table() is None
-
-        # test with a cell object
-
         curve.add_data(
             {"TestCell": {"values": np.random.rand(11), "association": "CELL"}},
             property_group="cellGroup",
@@ -370,7 +358,9 @@ def test_property_group_table_error(tmp_path):
 
         drillhole = Drillhole.create(workspace, name="test")
 
-        prop_group = PropertyGroup(parent=drillhole, name="drillhole")
+        prop_group = PropertyGroup(
+            parent=drillhole, name="drillhole", association="DEPTH"
+        )
 
         with pytest.raises(
             NotImplementedError, match="PropertyGroupTable is not supported"
