@@ -371,6 +371,11 @@ class PropertyGroup:
 
     @staticmethod
     def _validate_group_type(value: str | GroupTypeEnum) -> GroupTypeEnum:
+        """
+        Verify that the group type is a valid GroupTypeEnum.
+
+        :param value: The group type to validate.
+        """
         if isinstance(value, str):
             try:
                 value = GroupTypeEnum(value)
@@ -390,14 +395,21 @@ class PropertyGroup:
 
     @staticmethod
     def _validate_parent(parent: ObjectBase) -> ObjectBase:
+        """
+        Verify that the parent is valid.
+
+        :param parent: The parent Object to validate.
+        """
         # define the parent
         if not hasattr(parent, "_property_groups"):
             raise TypeError(f"Parent {parent} must have a 'property_groups' attribute")
         return parent
 
-    def _validate_properties(self, data_list: list[Data] | None):
+    def _validate_properties(self, data_list: list[Data] | None) -> list[UUID] | None:
         """
         Validate the properties list.
+
+        :param data_list: List of Data entities to validate.
         """
         if data_list is None:
             return None
