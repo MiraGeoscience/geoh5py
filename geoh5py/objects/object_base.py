@@ -32,7 +32,7 @@ from ..data import (
     ReferencedData,
     VisualParameters,
 )
-from ..groups import PropertyGroup
+from ..groups.property_group import GroupTypeEnum, PropertyGroup
 from ..shared import Entity
 from ..shared.conversion import BaseConversion
 from ..shared.entity_container import EntityContainer
@@ -166,7 +166,7 @@ class ObjectBase(EntityContainer):
 
     def add_data_to_group(
         self,
-        data: list[Data | uuid.UUID] | Data | uuid.UUID,
+        data: list[Data | uuid.UUID | str] | Data | uuid.UUID | str,
         property_group: str | PropertyGroup,
     ) -> PropertyGroup:
         """
@@ -181,20 +181,18 @@ class ObjectBase(EntityContainer):
 
         :return: The target property group.
         """
-        if isinstance(data, (Data, uuid.UUID)):
+        if isinstance(data, Data | uuid.UUID | str):
             data = [data]
 
         if isinstance(property_group, str):
             associations = []
             for elem in data:
-                if isinstance(elem, uuid.UUID):
+                if isinstance(elem, uuid.UUID | str):
                     entity = self.get_entity(elem)[0]
-                elif elem in self.children:
-                    entity = elem
                 else:
-                    continue
+                    entity = elem
 
-                if isinstance(entity, Data):
+                if isinstance(entity, Data) and elem in self.children:
                     associations.append(entity.association)
 
             associations = list(set(associations))
@@ -340,14 +338,16 @@ class ObjectBase(EntityContainer):
         return entities
 
     def create_property_group(
-        self, name=None, on_file=False, uid=None, **kwargs
+        self,
+        name=None,
+        property_group_type: GroupTypeEnum | str = GroupTypeEnum.MULTI,
+        **kwargs,
     ) -> PropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
 
         :param name: Name of the new property group.
-        :param on_file: If True, the property group is saved to file.
-        :param uid: Unique identifier for the new property group.
+        :param property_group_type: Type of property group.
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
 
@@ -358,10 +358,9 @@ class ObjectBase(EntityContainer):
         ]:
             raise KeyError(f"A Property Group with name '{name}' already exists.")
 
-        if "property_group_type" not in kwargs and "Property Group Type" not in kwargs:
-            kwargs["property_group_type"] = "Multi-element"
-
-        prop_group = PropertyGroup(self, name=name, on_file=on_file, uid=uid, **kwargs)
+        prop_group = PropertyGroup(
+            self, name=name, property_group_type=property_group_type, **kwargs
+        )
 
         return prop_group
 
@@ -608,7 +607,7 @@ class ObjectBase(EntityContainer):
         return self._visual_parameters
 
     def remove_data_from_groups(
-        self, data: list[Data | uuid.UUID] | Data | uuid.UUID
+        self, data: list[Data | uuid.UUID | str] | Data | uuid.UUID | str
     ) -> None:
         """
         Remove data children to all

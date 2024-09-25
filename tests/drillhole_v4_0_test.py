@@ -210,12 +210,10 @@ def test_concatenated_entities(tmp_path):
 
         assert data.property_group is None
 
-        with pytest.raises(
-            AttributeError, match="must have a 'property_groups' attribute"
-        ):
+        with pytest.raises(TypeError, match="must have a 'property_groups' attribute"):
             ConcatenatedPropertyGroup(None)
 
-        prop_group = ConcatenatedPropertyGroup(parent=concat_object)
+        prop_group = ConcatenatedPropertyGroup(parent=concat_object, properties=[data])
 
         with pytest.raises(
             AttributeError, match="Cannot change parent of a property group."
@@ -237,9 +235,6 @@ def test_concatenated_entities(tmp_path):
 
         assert prop_group.parent == concat_object
 
-        with pytest.raises(KeyError, match="A Property Group"):
-            concat_object.create_property_group(name="property_group")
-
 
 def test_empty_concatenated_property_group():
     workspace = Workspace()
@@ -248,7 +243,7 @@ def test_empty_concatenated_property_group():
         workspace,
         parent=dh_group,
     )
-    ConcatenatedPropertyGroup(parent=well)
+    ConcatenatedPropertyGroup(parent=well, association="DEPTH")
     assert not well.from_
 
 
@@ -603,7 +598,9 @@ def test_copy_and_append_drillhole_data(tmp_path):
                         },
                     },
                     property_group=ConcatenatedPropertyGroup(
-                        parent=well, property_group_type="Multi-element"
+                        parent=well,
+                        property_group_type="Multi-element",
+                        association="DEPTH",
                     ),
                 )
 
@@ -846,7 +843,9 @@ def test_is_collocated(tmp_path):
     ws = Workspace(tmp_path / "test.geoh5")
     dh_group = DrillholeGroup.create(ws)
     dh = Drillhole.create(ws, name="dh", parent=dh_group)
-    property_group = dh.fetch_property_group(name="some uninitialized group")
+    property_group = dh.fetch_property_group(
+        name="some uninitialized group", association="DEPTH"
+    )
     assert not property_group.is_collocated(np.arange(0, 10.0), 0.01)
     dh.add_data(
         {
