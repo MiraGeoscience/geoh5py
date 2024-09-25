@@ -48,7 +48,7 @@ class ObjectBase(EntityContainer):
     """
     Object base class.
 
-    :param last_focus: Object povisible in camera on start.
+    :param last_focus: Object visible in camera on start.
     """
 
     _attribute_map: dict = EntityContainer._attribute_map.copy()

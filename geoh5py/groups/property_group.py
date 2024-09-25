@@ -325,6 +325,12 @@ class PropertyGroup:
     def _validate_association(
         value: str | DataAssociationEnum | None, properties: list[Data] | None
     ) -> DataAssociationEnum:
+        """
+        Verify that the association is valid, or infer it from the properties.
+
+        :param value: The association to validate.
+        :param properties: A list of properties to infer the association from.
+        """
         if properties is None and value is None:
             raise ValueError(
                 "At least one of 'properties' or 'association' must be provided."
