@@ -56,10 +56,13 @@ class PropertyGroup:
     This group is not registered to the workspace and only visible to the parent object.
 
     :param parent: Parent object.
+    :param association: Association of the data.
+    :param allow_delete: Allow deleting the group.
     :param name: Name of the group.
     :param on_file: Property group is on file.
     :param uid: Unique identifier.
     :param property_group_type: Type of property group.
+    :param properties: List of data or unique identifiers for the data.
     """
 
     _attribute_map = {
