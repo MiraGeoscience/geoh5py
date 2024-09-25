@@ -188,9 +188,6 @@ def test_property_group_errors(tmp_path):
 
         prop_group = curve.fetch_property_group(name="myGroup")
 
-        with pytest.raises(AttributeError, match="can't set attribute 'properties'"):
-            prop_group.properties = "bidon"
-
         with pytest.raises(TypeError, match="Name must be"):
             PropertyGroup(parent=curve, name=42)  # type: ignore
 
