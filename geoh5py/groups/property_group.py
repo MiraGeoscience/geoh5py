@@ -337,9 +337,7 @@ class PropertyGroup:
             value = getattr(DataAssociationEnum, value.upper())
 
         if not isinstance(value, DataAssociationEnum):
-            raise TypeError(
-                f"Association must be 'VERTEX', 'CELL' or class of type {DataAssociationEnum}"
-            )
+            raise TypeError(f"Association must be one of type {DataAssociationEnum}")
 
         return value
 
