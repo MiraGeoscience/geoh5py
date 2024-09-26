@@ -59,7 +59,7 @@ class DataTypeEnum(Enum):
     BOOLEAN = bool
 
     @classmethod
-    def from_primitive_type(cls, primitive_type: PrimitiveTypeEnum) -> DataTypeEnum:
+    def from_primitive_type(cls, primitive_type: PrimitiveTypeEnum) -> type:
         """
         Get the data type from the primitive type.
 

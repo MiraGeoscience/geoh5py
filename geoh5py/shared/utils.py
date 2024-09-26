@@ -833,3 +833,34 @@ def str2none(value):
     if value == "":
         return None
     return value
+
+
+def find_unique_name(name: str, names: list[str]) -> str:
+    """
+    Get a unique name not in a list of names.
+
+    :param name: The name to check.
+    :param names: The list of names to avoid.
+
+    :return: a unique name.
+    """
+
+    if name not in names:
+        return name
+
+    count = 1
+    while f"{name}({count})" in names:
+        count += 1
+
+    return f"{name}({count})"
+
+
+def remove_duplicates_in_list(input_list: list) -> list:
+    """
+    Remove duplicates from a list without changing the sorting.
+
+    :param input_list: the list to remove duplicates from.
+
+    :return: The sorted list
+    """
+    return sorted(set(input_list), key=input_list.index)

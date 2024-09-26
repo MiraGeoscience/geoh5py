@@ -69,6 +69,17 @@ class CellObject(Points, ABC):
 
         self.workspace.update_attribute(self, "cells")
 
+    @property
+    def centroids(self) -> np.ndarray | None:
+        """
+        Compute the centroids of the cells.
+        """
+        return np.mean(self.vertices[self.cells], axis=1)
+
+    @property
+    def locations(self):
+        return self.vertices
+
     def mask_by_extent(
         self,
         extent: np.ndarray,

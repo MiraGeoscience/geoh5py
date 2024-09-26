@@ -56,10 +56,12 @@ def test_delete_entities(tmp_path: Path):
                     },
                     property_group="myGroup",
                 )
+
             else:
                 curve_2.add_data(
                     {f"Period{i + 1}": {"values": values}}, property_group="myGroup"
                 )
+
         uid_out = curve_2.children[1].uid
 
         curve_2.remove_children(curve_2.children[0])
@@ -95,6 +97,7 @@ def test_delete_entities(tmp_path: Path):
         assert (
             len(workspace.groups) == 2
         ), "Group was not fully removed from the workspace."
+
         assert (
             len(workspace.objects) == 1
         ), "Object was not fully removed from the workspace."

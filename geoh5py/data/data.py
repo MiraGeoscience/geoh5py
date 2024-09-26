@@ -244,15 +244,15 @@ class Data(Entity):
             return mask_by_extent(self.parent.vertices, extent, inverse=inverse)
 
         if self.association is DataAssociationEnum.CELL:
-            if hasattr(self.parent, "centroids"):
-                return mask_by_extent(self.parent.centroids, extent, inverse=inverse)
-
-            if hasattr(self.parent, "vertices") and hasattr(self.parent, "cells"):
+            if hasattr(self.parent, "vertices") and hasattr(self.parent, "_cells"):
                 indices = mask_by_extent(self.parent.vertices, extent, inverse=inverse)
                 if indices is not None:
                     indices = np.all(indices[self.parent.cells], axis=1)
 
                 return indices
+
+            if hasattr(self.parent, "centroids"):
+                return mask_by_extent(self.parent.centroids, extent, inverse=inverse)
 
         return None
 

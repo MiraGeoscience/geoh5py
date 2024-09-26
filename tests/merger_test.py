@@ -43,9 +43,6 @@ def test_merge_point_data_unique_entity(tmp_path):
                 allow_move=False,
             )
         )
-
-        test = PropertyGroup(parent=points[0], name="test")
-
         data.append(
             points[0].add_data(
                 {
@@ -56,7 +53,6 @@ def test_merge_point_data_unique_entity(tmp_path):
                 }
             )
         )
-
         data.append(
             points[0].add_data(
                 {
@@ -67,7 +63,6 @@ def test_merge_point_data_unique_entity(tmp_path):
                 }
             )
         )
-
         points[0].add_data(
             {
                 "TestText": {
