@@ -214,11 +214,6 @@ class PropertyGroup:
         if data_list is None:
             return None
 
-        if not isinstance(data_list, Iterable):
-            raise TypeError(
-                f"Properties must be an iterable of Data. Provided {data_list}"
-            )
-
         return remove_duplicates_in_list(
             [self._validate_data(uid) for uid in data_list]
         )

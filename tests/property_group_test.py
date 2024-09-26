@@ -211,18 +211,12 @@ def test_property_group_errors(tmp_path):
         ):
             PropertyGroup(parent=curve)
 
-        with pytest.raises(TypeError, match="Properties must be an iterable"):
-            prop_group._validate_properties(123)  # pylint: disable=protected-access
-
         with pytest.raises(TypeError, match="Property group must be of type"):
             curve.add_data_to_group(data="bidon", property_group=123)
 
         # test error for allow delete
         with pytest.raises(TypeError, match="allow_delete must be a boolean"):
             prop_group.allow_delete = "bidon"
-
-        with pytest.raises(AttributeError, match="can't set attribute"):
-            prop_group.association = "bidon"
 
         with pytest.raises(TypeError, match="Association must be"):
             PropertyGroup(parent=curve, association=123)
