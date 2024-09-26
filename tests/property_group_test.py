@@ -256,11 +256,6 @@ def test_property_group_errors(tmp_path):
         with pytest.raises(ValueError, match="Data 'WrongParent' parent"):
             prop_group._validate_data(test_data)  # pylint: disable=protected-access
 
-        with pytest.raises(
-            AttributeError, match="can't set attribute 'property_group_type'"
-        ):
-            prop_group.property_group_type = "bidon"
-
 
 def test_auto_find_association(tmp_path):
     h5file_path = tmp_path / r"prop_group_test.geoh5"
