@@ -32,7 +32,7 @@ from getpass import getuser
 from io import BytesIO
 from pathlib import Path
 from subprocess import CalledProcessError
-from typing import Any, ClassVar, cast
+from typing import Any, ClassVar, TypeVar, cast
 from weakref import ReferenceType
 
 import h5py
@@ -71,6 +71,9 @@ from ..shared.utils import (
     get_attributes,
     str2uuid,
 )
+
+
+TYPE = TypeVar("TYPE")  # pylint: disable=invalid-name
 
 
 # pylint: disable=too-many-instance-attributes
@@ -439,12 +442,12 @@ class Workspace(AbstractContextManager):
 
     def create_entity(
         self,
-        entity_class,
+        entity_class: type[TYPE],
         compression: int = 5,
         entity: dict | None = None,
         entity_type: EntityType | dict | None = None,
         save_on_creation: bool = True,
-    ) -> Entity:
+    ) -> TYPE:
         """
         Function to create and register a new entity and its entity_type.
 

@@ -20,7 +20,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 import numpy as np
@@ -29,7 +29,6 @@ from ..data import (
     CommentsData,
     Data,
     DataAssociationEnum,
-    ReferencedData,
     VisualParameters,
 )
 from ..groups.property_group import GroupTypeEnum, PropertyGroup
@@ -73,8 +72,7 @@ class ObjectBase(EntityContainer):
 
     def add_children(self, children: list[Entity | PropertyGroup]):
         """
-        :param children: Add a list of entities as
-            :obj:`~geoh5py.shared.entity.Entity.children`
+        :param children: a list of entity to add as children.
         """
         property_groups = self._property_groups or []
 
@@ -103,9 +101,9 @@ class ObjectBase(EntityContainer):
         property_group: str | PropertyGroup | None = None,
         compression: int = 5,
         **kwargs,
-    ) -> Data | ReferencedData | list[Data]:
+    ) -> Data | list[Data]:
         """
-        Create :obj:`~geoh5py.data.data.Data` from dictionary of name and arguments.
+        Create a Data from dictionary of name and arguments.
         The provided arguments can be any property of the target Data class.
 
         :param data: Dictionary of data to be added to the object, e.g.
@@ -128,6 +126,12 @@ class ObjectBase(EntityContainer):
         :return: List of new Data objects.
         """
         data_objects = []
+
+        if not isinstance(data, dict):
+            raise TypeError(
+                f"Input 'data' must be of type {dict}. Got {type(data)} instead."
+            )
+
         for name, attr in data.items():
             if not isinstance(attr, dict):
                 raise TypeError(
@@ -136,25 +140,24 @@ class ObjectBase(EntityContainer):
                 )
 
             attr["name"] = name
+
             attr, validate_property_group = self.validate_association(
                 attr, property_group=property_group, **kwargs
             )
 
             entity_type = self.workspace.validate_data_type(attr, attr.get("values"))
 
-            kwargs = {"parent": self, "association": attr["association"]}
+            kwargs = {"parent": self}
             for key, val in attr.items():
-                if key in ["parent", "association", "entity_type", "type"]:
-                    continue
-
-                kwargs[key] = val
+                if key not in ["parent", "entity_type", "type"]:
+                    kwargs[key] = val
 
             data_object = self.workspace.create_entity(
-                Data, entity=kwargs, entity_type=entity_type, compression=compression
+                Data,  # type: ignore
+                entity=kwargs,
+                entity_type=entity_type,
+                compression=compression,
             )
-
-            if not isinstance(data_object, Data):
-                continue
 
             if validate_property_group is not None:
                 self.add_data_to_group(data_object, validate_property_group)
@@ -178,11 +181,9 @@ class ObjectBase(EntityContainer):
         Append data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
         All given data must be children of the parent object.
 
-        :param data: :obj:`~geoh5py.data.data.Data` object,
-            :obj:`~geoh5py.shared.entity.Entity.uid` or
-            :obj:`~geoh5py.shared.entity.Entity.name` of data.
-        :param property_group: Name or :obj:`~geoh5py.groups.property_group.PropertyGroup`.
-            A new group is created if none exist with the given name.
+        :param data: The name, the uid or the object to add itself, pass as a list or single object.
+        :param property_group: The name or the object of the property group;
+            a new one will be created if not found.
 
         :return: The target property group.
         """
@@ -200,6 +201,26 @@ class ObjectBase(EntityContainer):
             f"got {type(property_group)} instead."
         )
 
+    def add_default_visual_parameters(self):
+        """
+        Create a default visual parameters to the object.
+        """
+        if self.visual_parameters is not None:
+            raise UserWarning("Visual parameters already exist.")
+
+        self._visual_parameters = self.workspace.create_entity(
+            Data,  # type: ignore
+            save_on_creation=True,
+            entity={
+                "name": "Visual Parameters",
+                "parent": self,
+                "association": "OBJECT",
+            },
+            entity_type={"name": "XmlData", "primitive_type": "TEXT"},
+        )
+
+        return self._visual_parameters
+
     @property
     def cells(self) -> np.ndarray:
         """
@@ -210,6 +231,13 @@ class ObjectBase(EntityContainer):
         raise AttributeError(
             f"Object {self.__class__.__name__} does not have the attribute 'cells'."
         )
+
+    @property
+    def converter(self) -> Any:
+        """
+        :return: The converter for the object.
+        """
+        return self._converter
 
     def copy(
         self,
@@ -269,64 +297,6 @@ class ObjectBase(EntityContainer):
 
         return new_object
 
-    @property
-    def entity_type(self) -> ObjectType:
-        """
-        :obj:`~geoh5py.shared.entity_type.EntityType`: Object type.
-        """
-        return self._entity_type
-
-    @property
-    def extent(self) -> np.ndarray | None:
-        """
-        Geography bounding box of the object.
-
-        :return: Bounding box defined by the bottom South-West and
-            top North-East coordinates,  shape(2, 3).
-        """
-        if self.locations is None:
-            return None
-
-        return np.c_[self.locations.min(axis=0), self.locations.max(axis=0)].T
-
-    @property
-    def faces(self) -> np.ndarray:
-        """Object faces."""
-        raise AttributeError(
-            f"Object {self.__class__.__name__} does not have the attribute 'faces'."
-        )
-
-    @classmethod
-    def find_or_create_type(cls, workspace: Workspace, **kwargs) -> ObjectType:
-        """
-        Find or create a type instance for a given object class.
-
-        :param workspace: Target :obj:`~geoh5py.workspace.workspace.Workspace`.
-
-        :return: The ObjectType instance for the given object class.
-        """
-        kwargs["entity_class"] = cls
-        return ObjectType.find_or_create(workspace, **kwargs)
-
-    def get_property_group(self, name: UUID | str) -> list:
-        """
-        Get a child :obj:`~geoh5py.groups.property_group.PropertyGroup` by name.
-        :param name: the reference of the property group to get.
-        :return: A list of children Data objects
-        """
-        if self._property_groups is None:
-            return [None]
-
-        entities = []
-        for child in self._property_groups:
-            if (isinstance(name, UUID) and child.uid == name) or child.name == name:
-                entities.append(child)
-
-        if len(entities) == 0:
-            return [None]
-
-        return entities
-
     def create_property_group(
         self,
         name=None,
@@ -354,6 +324,33 @@ class ObjectBase(EntityContainer):
 
         return prop_group
 
+    @property
+    def entity_type(self) -> ObjectType:
+        """
+        :obj:`~geoh5py.shared.entity_type.EntityType`: Object type.
+        """
+        return self._entity_type
+
+    @property
+    def extent(self) -> np.ndarray | None:
+        """
+        Geography bounding box of the object.
+
+        :return: Bounding box defined by the bottom South-West and
+            top North-East coordinates,  shape(2, 3).
+        """
+        if self.locations is None:
+            return None
+
+        return np.c_[self.locations.min(axis=0), self.locations.max(axis=0)].T
+
+    @property
+    def faces(self) -> np.ndarray:
+        """Object faces."""
+        raise AttributeError(
+            f"Object {self.__class__.__name__} does not have the attribute 'faces'."
+        )
+
     def fetch_property_group(self, name=None, uid=None, **kwargs) -> PropertyGroup:
         """
         Find or create a PropertyGroup from given name and properties.
@@ -365,7 +362,6 @@ class ObjectBase(EntityContainer):
 
         :return: A new or existing :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-
         prop_group = None
         if name is not None or uid is not None:
             prop_group = self.get_property_group(uid or name)[0]
@@ -388,38 +384,70 @@ class ObjectBase(EntityContainer):
         )
         return self.fetch_property_group(name=name, uid=uid, **kwargs)
 
-    def get_data(self, name: str | UUID) -> list[Data]:
+    @classmethod
+    def find_or_create_type(cls, workspace: Workspace, **kwargs) -> ObjectType:
         """
-        Get a child :obj:`~geoh5py.data.data.Data` by name.
+        Find or create a type instance for a given object class.
 
-        :param name: Name of the target child data
+        :param workspace: Target workspace.
+        :param kwargs: Keyword arguments for the ObjectType.
+
+        :return: The ObjectType instance for the given object class.
+        """
+        kwargs["entity_class"] = cls
+        return ObjectType.find_or_create(workspace, **kwargs)
+
+    def get_property_group(self, name: UUID | str) -> list[PropertyGroup] | list[None]:
+        """
+        Get a child PropertyGroup by name.
+
+        :param name: the reference of the property group to get.
 
         :return: A list of children Data objects
         """
-        entity_list = []
+        if self._property_groups is None:
+            return [None]
 
-        for child in self.get_entity(name):
-            if isinstance(child, Data):
-                entity_list.append(child)
+        entities = []
+        for child in self._property_groups:
+            if (isinstance(name, UUID) and child.uid == name) or child.name == name:
+                entities.append(child)
 
-        return entity_list
+        if len(entities) == 0:
+            return [None]
 
-    def get_data_list(self, attribute="name") -> list[str]:
+        return entities
+
+    def get_data(self, name: str | UUID) -> list[Data]:
         """
-        Get a list of names of all children :obj:`~geoh5py.data.data.Data`.
+        Get the children associated with a given name.
+
+        :param name: Name or UUID of the target child data
+
+        :return: A list of children Data objects
+        """
+        return [child for child in self.get_entity(name) if isinstance(child, Data)]
+
+    def get_data_list(self, attribute: str = "name") -> list[Any]:
+        """
+        Get a list of a specific attribute of the data children.
+
+        :param attribute: The attribute to return from the data objects.
 
         :return: List of names of data associated with the object.
         """
-        name_list = []
-        for child in self.children:
-            if isinstance(child, Data):
-                name_list.append(getattr(child, attribute))
-        return sorted(name_list)
+        return sorted(
+            [
+                getattr(child, attribute)
+                for child in self.children
+                if isinstance(child, Data)
+            ]
+        )
 
     @property
     def last_focus(self) -> str:
         """
-        :obj:`bool`: Object visible in camera on start.
+        The name of the object visible in the camera on start.
         """
         return self._last_focus
 
@@ -430,44 +458,56 @@ class ObjectBase(EntityContainer):
 
         self._last_focus = value
 
+    @property
+    def locations(self) -> np.ndarray | None:
+        """
+        Exposes the vertices or centroids of the object.
+        """
+        out = None
+        if hasattr(self, "vertices"):
+            out = self.vertices
+        if hasattr(self, "centroids"):
+            out = self.centroids
+
+        return out
+
     def mask_by_extent(
         self, extent: np.ndarray, inverse: bool = False
     ) -> np.ndarray | None:
-        """
-        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
-
-        Applied to object's centroids.
-        """
         if self.extent is None or not box_intersect(self.extent, extent):
             return None
 
         return mask_by_extent(self.locations, extent, inverse=inverse)
 
     @property
-    def n_cells(self):
+    def n_cells(self) -> int:
         """
-        :obj:`int`: Number of cells.
+        The number of cells.
         """
-        return None
+        raise AttributeError(
+            f"Object {self.__class__.__name__} does not have the attribute 'n_cells'."
+        )
 
     @property
-    def n_vertices(self):
+    def n_vertices(self) -> int:
         """
-        :obj:`int`: Number of vertices.
+        The number of vertices
         """
-        return None
-
-    @property
-    def property_groups(self) -> list[PropertyGroup] | None:
-        """
-        List of :obj:`~geoh5py.groups.property_group.PropertyGroup`.
-        """
-        return self._property_groups
+        raise AttributeError(
+            f"Object {self.__class__.__name__} does not have the attribute 'n_vertices'."
+        )
 
     def post_processing(self):
         """
         Post-processing function to be called after adding data.
         """
+
+    @property
+    def property_groups(self) -> list[PropertyGroup] | None:
+        """
+        List of the property groups associated with the object.
+        """
+        return self._property_groups
 
     def reference_to_data(self, data: str | Data | UUID) -> Data:
         """
@@ -489,7 +529,6 @@ class ObjectBase(EntityContainer):
 
         if isinstance(data, (str, UUID)):
             data_: list = self.get_data(data)
-            # if the data is an unloaded uid
             if len(data_) == 0 and isinstance(data, UUID):
                 data_temp = self.workspace.load_entity(data, "data", self)
                 data_ = [] if data_temp is None else [data_temp]
@@ -523,8 +562,8 @@ class ObjectBase(EntityContainer):
 
         for child in children:
             if child not in self._children:
-                continue  # this is dangerous, should raise an error
-
+                warnings.warn(f"Child {child} not found in parent {self}.")
+                continue
             if isinstance(child, PropertyGroup) and self._property_groups:
                 self.remove_property_group(child)
             elif isinstance(child, Data):
@@ -534,12 +573,19 @@ class ObjectBase(EntityContainer):
 
         self.workspace.remove_children(self, children)
 
+    @staticmethod
     def remove_children_values(
-        self,
         indices: list[int] | np.ndarray,
         children: list[Data],
         clear_cache: bool = False,
     ):
+        """
+        Remove values from children data objects.
+
+        :param indices: The indices to remove.
+        :param children: The children data objects.
+        :param clear_cache: Clear the cache of the children.
+        """
         if isinstance(indices, list):
             indices = np.array(indices)
 
@@ -547,7 +593,14 @@ class ObjectBase(EntityContainer):
             raise TypeError("Indices must be a list or numpy array.")
 
         for child in children:
+            if not isinstance(child.values, np.ndarray):
+                continue
+
             child.values = np.delete(child.values, indices, axis=0)
+
+            if child.values.size == 0:
+                child.values = None
+
             if clear_cache:
                 clear_array_attributes(child)
 
@@ -562,34 +615,7 @@ class ObjectBase(EntityContainer):
             and property_group in self._property_groups
         ):
             self._property_groups.remove(property_group)
-
-    @property
-    def vertices(self) -> np.ndarray:
-        r"""
-        :obj:`numpy.array` of :obj:`float`, shape (\*, 3): Array of x, y, z coordinates
-        defining the position of points in 3D space.
-        """
-        raise AttributeError(
-            f"Object {type(self)} does not have the attribute 'vertices'."
-        )
-
-    @property
-    def locations(self):
-        """Exposes the vertices or centroids of the object."""
-        out = None
-        if hasattr(self, "vertices"):
-            out = self.vertices
-        if hasattr(self, "centroids"):
-            out = self.centroids
-
-        return out
-
-    @property
-    def converter(self):
-        """
-        :return: The converter for the object.
-        """
-        return self._converter
+            # todo: this should suppress the property group too?
 
     def validate_association(self, attributes, property_group=None, **_):
         """
@@ -616,36 +642,24 @@ class ObjectBase(EntityContainer):
 
         return attributes, property_group
 
-    def add_default_visual_parameters(self):
+    @property
+    def vertices(self) -> np.ndarray:
         """
-        Add default visual parameters to the object.
+        x, y, z coordinates of points in 3D space.
         """
-        if self.visual_parameters is not None:
-            raise UserWarning("Visual parameters already exist.")
-
-        self._visual_parameters = self.workspace.create_entity(  # type: ignore
-            Data,
-            save_on_creation=True,
-            entity={
-                "name": "Visual Parameters",
-                "parent": self,
-                "association": "OBJECT",
-            },
-            entity_type={"name": "XmlData", "primitive_type": "TEXT"},
+        raise AttributeError(
+            f"Object {type(self)} does not have the attribute 'vertices'."
         )
-
-        return self._visual_parameters
 
     def remove_data_from_groups(
         self, data: list[Data | UUID | str] | Data | UUID | str
-    ) -> None:
+    ):
         """
         Remove data children to all
         :obj:`~geoh5py.groups.property_group.PropertyGroup` of the object.
 
-        :param data: :obj:`~geoh5py.data.data.Data` object,
-            :obj:`~geoh5py.shared.entity.Entity.uid` or
-            :obj:`~geoh5py.shared.entity.Entity.name` of data.
+        :param data: The name, the uid or the object to remove itself,
+            pass as a list or single object.
         """
         if not isinstance(data, list):
             data = [data]
@@ -674,10 +688,11 @@ class ObjectBase(EntityContainer):
     @property
     def visual_parameters(self) -> VisualParameters | None:
         """
-        Access the visual parameters of the object.
+        The visual parameters of the object.
         """
         if self._visual_parameters is None:
             for child in self.children:
+                # todo: so  an object can have several Visual Parameters?
                 if isinstance(child, VisualParameters):
                     self._visual_parameters = child
                     break
