@@ -191,11 +191,24 @@ def test_remove_cells_data(tmp_path: Path):
         with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
             curve.remove_vertices("abc")
 
+        # print(curve.get_data("cellValues")[0].values)
+
         curve.remove_cells([0])
 
         data = curve.get_data("cellValues")[0]
 
         assert len(data.values) == 10, "Error removing data values with cells."
+
+        with pytest.raises(TypeError, match="Indices must be a numpy array."):
+            data.remove_values("bidon")  # type: ignore
+
+        # remove all cells
+        curve.remove_cells(np.arange(10), clear_cache=True)
+
+        assert data.values is None
+
+        with pytest.warns(UserWarning, match="The values of "):
+            data.remove_values(np.arange(10))
 
 
 def test_remove_vertex_data(tmp_path):

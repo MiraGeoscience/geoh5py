@@ -19,9 +19,9 @@
 
 from __future__ import annotations
 
-import warnings
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
+from warnings import warn
 
 import numpy as np
 
@@ -70,6 +70,30 @@ class ObjectBase(EntityContainer):
 
         super().__init__(**kwargs)
 
+    def _remove_children_values(
+        self,
+        indices: list[int] | np.ndarray,
+        association: DataAssociationEnum,
+        clear_cache: bool = False,
+    ):
+        """
+        Remove values from children data objects.
+
+        :param indices: The indices to remove.
+        :param association: The association of the data to remove.
+        :param clear_cache: Clear the cache of the children.
+        """
+        for child in self.children:
+            if (
+                isinstance(child, Data)
+                and child.values is not None
+                and child.association == association
+            ):
+                child.remove_values(indices)
+
+                if clear_cache:
+                    clear_array_attributes(child)
+
     def add_children(self, children: list[Entity | PropertyGroup]):
         """
         :param children: a list of entity to add as children.
@@ -80,17 +104,16 @@ class ObjectBase(EntityContainer):
         children_uids = {child.uid: child for child in self._children}
 
         for child in children:
-            if child.uid not in children_uids and isinstance(
-                child, (Data, PropertyGroup)
+            if (
+                isinstance(child, (Data, PropertyGroup))
+                and child.uid not in children_uids
+                and child.uid not in prop_group_uids
             ):
                 self._children.append(child)
-                if (
-                    isinstance(child, PropertyGroup)
-                    and child.uid not in prop_group_uids
-                ):
+                if isinstance(child, PropertyGroup):
                     property_groups.append(child)
             else:
-                warnings.warn(f"Child {child} is not valid or already exists.")
+                warn(f"Child {child} is not valid or already exists.")
 
         if property_groups:
             self._property_groups = property_groups
@@ -371,13 +394,35 @@ class ObjectBase(EntityContainer):
 
         return prop_group
 
+    def find_association(self, values: np.ndarray) -> str:
+        """
+        Find the association based on a value shape.
+
+        :param values: The values to check.
+
+        :return: The name of the association.
+        """
+        if isinstance(values, np.ndarray):
+            if (
+                getattr(self, "n_cells", None) is not None
+                and values.ravel().shape[0] == self.n_cells
+            ):
+                return "CELL"
+            if (
+                getattr(self, "n_vertices", None) is not None
+                and values.ravel().shape[0] == self.n_vertices
+            ):
+                return "VERTEX"
+
+        return "OBJECT"
+
     def find_or_create_property_group(
         self, name=None, uid=None, **kwargs
     ) -> PropertyGroup:
         """
         Find or create a PropertyGroup from given name and properties.
         """
-        warnings.warn(
+        warn(
             "The 'find_and_create_property_group' will be deprecated. "
             "Use fetch_property_group instead.",
             DeprecationWarning,
@@ -457,6 +502,13 @@ class ObjectBase(EntityContainer):
             raise TypeError("Attribute 'last_focus' must be a string")
 
         self._last_focus = value
+
+    def load_children_values(self):
+        """
+        Load the values of the children in memory.
+        """
+        for child in self.children:
+            _ = getattr(child, "values", None)
 
     @property
     def locations(self) -> np.ndarray | None:
@@ -562,7 +614,7 @@ class ObjectBase(EntityContainer):
 
         for child in children:
             if child not in self._children:
-                warnings.warn(f"Child {child} not found in parent {self}.")
+                warn(f"Child {child} not found in parent {self}.")
                 continue
             if isinstance(child, PropertyGroup) and self._property_groups:
                 self.remove_property_group(child)
@@ -572,37 +624,6 @@ class ObjectBase(EntityContainer):
             self._children.remove(child)
 
         self.workspace.remove_children(self, children)
-
-    @staticmethod
-    def remove_children_values(
-        indices: list[int] | np.ndarray,
-        children: list[Data],
-        clear_cache: bool = False,
-    ):
-        """
-        Remove values from children data objects.
-
-        :param indices: The indices to remove.
-        :param children: The children data objects.
-        :param clear_cache: Clear the cache of the children.
-        """
-        if isinstance(indices, list):
-            indices = np.array(indices)
-
-        if not isinstance(indices, np.ndarray):
-            raise TypeError("Indices must be a list or numpy array.")
-
-        for child in children:
-            if not isinstance(child.values, np.ndarray):
-                continue
-
-            child.values = np.delete(child.values, indices, axis=0)
-
-            if child.values.size == 0:
-                child.values = None
-
-            if clear_cache:
-                clear_array_attributes(child)
 
     def remove_property_group(self, property_group: PropertyGroup):
         """
@@ -615,7 +636,7 @@ class ObjectBase(EntityContainer):
             and property_group in self._property_groups
         ):
             self._property_groups.remove(property_group)
-            # todo: this should suppress the property group too?
+            # todo: this should suppress the property group object too?
 
     def validate_association(self, attributes, property_group=None, **_):
         """
@@ -624,21 +645,10 @@ class ObjectBase(EntityContainer):
         :param attributes: Dictionary of attributes provided for the data.
         :param property_group: Property group to associate the data with.
         """
-        if attributes.get("association") is not None:
+        if attributes.get("association") is not None or "values" not in attributes:
             return attributes, property_group
 
-        if (
-            getattr(self, "n_cells", None) is not None
-            and attributes["values"].ravel().shape[0] == self.n_cells
-        ):
-            attributes["association"] = "CELL"
-        elif (
-            getattr(self, "n_vertices", None) is not None
-            and attributes["values"].ravel().shape[0] == self.n_vertices
-        ):
-            attributes["association"] = "VERTEX"
-        else:
-            attributes["association"] = "OBJECT"
+        attributes["association"] = self.find_association(attributes["values"])
 
         return attributes, property_group
 
@@ -690,9 +700,9 @@ class ObjectBase(EntityContainer):
         """
         The visual parameters of the object.
         """
+        # todo: it sounds like I could have several visual parameters to object
         if self._visual_parameters is None:
             for child in self.children:
-                # todo: so  an object can have several Visual Parameters?
                 if isinstance(child, VisualParameters):
                     self._visual_parameters = child
                     break

@@ -20,6 +20,7 @@ from __future__ import annotations
 import uuid
 from abc import abstractmethod
 from typing import Any
+from warnings import warn
 
 import numpy as np
 
@@ -255,6 +256,34 @@ class Data(Entity):
                 return mask_by_extent(self.parent.centroids, extent, inverse=inverse)
 
         return None
+
+    def remove_values(self, indices: np.ndarray):
+        """
+        Remove values based on indices.
+
+        :param indices:
+        """
+        if not isinstance(indices, np.ndarray):
+            raise TypeError("Indices must be a numpy array.")
+
+        if not isinstance(self.values, np.ndarray):
+            warn(
+                f"The values of {self} are not an array but a {type(self.values)}."
+                "The values cannot be removed."
+            )
+            return
+
+        self._values = np.delete(self.values, indices, axis=0)
+
+        if self._values.size == 0:
+            self._values = None
+
+        self._association = self.validate_association(
+            self.parent.find_association(self._values)
+        )
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "values")
 
     def validate_entity_type(self, entity_type: DataType | None) -> DataType:
         """

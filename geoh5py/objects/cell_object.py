@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-import warnings
 from abc import ABC, abstractmethod
 from uuid import UUID
 
@@ -53,6 +52,7 @@ class CellObject(Points, ABC):
         """
         Array of indices defining connecting vertices.
         """
+        # todo: technically this is not possible anymore
         if self._cells is None and self.on_file:
             self._cells = self.workspace.fetch_array_attribute(self, "cells")
 
@@ -118,11 +118,6 @@ class CellObject(Points, ABC):
         :param indices: Indices of cells to be removed.
         :param clear_cache: Clear cache of data values.
         """
-
-        if self.cells is None:
-            warnings.warn("No cells to be removed.", UserWarning)
-            return
-
         if isinstance(indices, (list, tuple)):
             indices = np.array(indices)
 
@@ -135,19 +130,12 @@ class CellObject(Points, ABC):
         ):
             raise ValueError("Found indices larger than the number of cells.")
 
-        children = []
-        for child in self.children:
-            if (
-                isinstance(child, Data)
-                and child.values is not None
-                and child.association == DataAssociationEnum.CELL
-            ):
-                children.append(child)
-
         cells = np.delete(self.cells, indices, axis=0)
-
+        self.load_children_values()
         self._cells = self.validate_cells(cells)
-        self.remove_children_values(indices, children, clear_cache=clear_cache)
+        self._remove_children_values(
+            indices, DataAssociationEnum.CELL, clear_cache=clear_cache
+        )
         self.workspace.update_attribute(self, "cells")
 
     def remove_vertices(
