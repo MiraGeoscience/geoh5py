@@ -38,6 +38,7 @@ from .integrator import (
     RockPropertiesTheme,
     SamplesTheme,
 )
+from .interpretation_section import InterpretationSection
 from .notype import NoTypeGroup
 from .property_group import PropertyGroup
 from .root import RootGroup
