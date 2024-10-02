@@ -32,7 +32,7 @@ class DrapeModel(ObjectBase):
         representing each prism in the model.
     :param prisms: Array detailing the assembly of
         :obj:`geoh5py.objects.drape_model.DrapeModel.layers` within the trace
-         of the drape model.
+        of the drape model.
     """
 
     _TYPE_UID = uuid.UUID("{C94968EA-CF7D-11EB-B8BC-0242AC130003}")
