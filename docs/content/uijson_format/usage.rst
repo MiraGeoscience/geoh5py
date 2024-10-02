@@ -52,7 +52,7 @@ geoh5py as shown below:
 
 When a **ui.json** is run within Geoscience ANALYST Pro, the following parameters are updated or added:
 
-- The **value** member of the **grid_object** parameter is updated with the UUID of the object selected in the UI
+- The **value** member of the **grid_object** parameter is updated with the UUID of the object selected in the UI.
 - The :ref:`enabled <common_members>` member of the **grid_object** is set for whether the parameter is enabled.
     The **enabled** state can be modified by making the parameter (group) :ref:`optional <common_members>` or a (group)
     :ref`dependency <common_members>` of another parameter (group).
