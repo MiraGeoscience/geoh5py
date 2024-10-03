@@ -76,7 +76,7 @@ ignore = [
     "UP038", # TODO
     "RUF001", # TODO
     "RUF003", # TODO
-    "RUF005", # TODO
+    "RUF005",  # collection-literal-concatenation - wrong suggestion with numpy arrays
     "RUF015", # TODO
     "B008", # TODO
     "B018", # TODO
