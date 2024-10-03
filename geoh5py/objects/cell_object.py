@@ -52,7 +52,6 @@ class CellObject(Points, ABC):
         """
         Array of indices defining connecting vertices.
         """
-        # todo: technically this is not possible anymore
         if self._cells is None and self.on_file:
             self._cells = self.workspace.fetch_array_attribute(self, "cells")
 

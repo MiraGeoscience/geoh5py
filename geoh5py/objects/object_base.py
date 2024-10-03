@@ -100,14 +100,12 @@ class ObjectBase(EntityContainer):
         """
         property_groups = self._property_groups or []
 
-        prop_group_uids = {prop_group.uid: prop_group for prop_group in property_groups}
         children_uids = {child.uid: child for child in self._children}
 
         for child in children:
             if (
                 isinstance(child, (Data, PropertyGroup))
                 and child.uid not in children_uids
-                and child.uid not in prop_group_uids
             ):
                 self._children.append(child)
                 if isinstance(child, PropertyGroup):
@@ -176,11 +174,12 @@ class ObjectBase(EntityContainer):
                     kwargs[key] = val
 
             data_object = self.workspace.create_entity(
-                Data,  # type: ignore
-                entity=kwargs,
-                entity_type=entity_type,
-                compression=compression,
+                Data, entity=kwargs, entity_type=entity_type, compression=compression
             )
+
+            # change the visual parameters if the data object is a visual parameter
+            if isinstance(data_object, VisualParameters):
+                self.visual_parameters = data_object
 
             if validate_property_group is not None:
                 self.add_data_to_group(data_object, validate_property_group)
@@ -700,7 +699,6 @@ class ObjectBase(EntityContainer):
         """
         The visual parameters of the object.
         """
-        # todo: it sounds like I could have several visual parameters to object
         if self._visual_parameters is None:
             for child in self.children:
                 if isinstance(child, VisualParameters):
@@ -708,3 +706,15 @@ class ObjectBase(EntityContainer):
                     break
 
         return self._visual_parameters
+
+    @visual_parameters.setter
+    def visual_parameters(self, value: VisualParameters | None):
+        if not isinstance(value, VisualParameters | None):
+            raise TypeError(
+                f"Input 'visual_parameters' must be of type {VisualParameters}, "
+                f"not {type(value)}"
+            )
+        if self.visual_parameters is not None:
+            self.remove_children([self.visual_parameters])
+
+        self._visual_parameters = value

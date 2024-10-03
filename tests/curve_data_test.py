@@ -191,8 +191,6 @@ def test_remove_cells_data(tmp_path: Path):
         with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
             curve.remove_vertices("abc")
 
-        # print(curve.get_data("cellValues")[0].values)
-
         curve.remove_cells([0])
 
         data = curve.get_data("cellValues")[0]
