@@ -86,10 +86,16 @@ class ObjectBase(EntityContainer):
         for child in self.children:
             if (
                 isinstance(child, Data)
-                and child.values is not None
+                and isinstance(child.values, np.ndarray)
                 and child.association == association
             ):
-                child.remove_values(indices)
+                child.values = np.delete(child.values, indices, axis=0)
+
+                if child.values.size == 0:
+                    child.values = None
+
+                if child.on_file:
+                    child.workspace.update_attribute(child, "values")
 
                 if clear_cache:
                     clear_array_attributes(child)
@@ -355,14 +361,6 @@ class ObjectBase(EntityContainer):
 
         return np.c_[self.locations.min(axis=0), self.locations.max(axis=0)].T
 
-    @property
-    def faces(self) -> np.ndarray:
-        """Object faces."""
-        # todo: this is used nowhere... remove?
-        raise AttributeError(
-            f"Object {self.__class__.__name__} does not have the attribute 'faces'."
-        )
-
     def fetch_property_group(self, name=None, uid=None, **kwargs) -> PropertyGroup:
         """
         Find or create a PropertyGroup from given name and properties.
@@ -577,31 +575,23 @@ class ObjectBase(EntityContainer):
         if not isinstance(children, list):
             children = [children]
 
-        for child in children:
+        for child in children.copy():
             if child not in self._children:
                 warn(f"Child {child} not found in parent {self}.")
+                children.remove(child)
                 continue
-            if isinstance(child, PropertyGroup) and self._property_groups:
-                self.remove_property_group(child)
+            if (
+                isinstance(child, PropertyGroup)
+                and self._property_groups
+                and child in self._property_groups
+            ):
+                self._property_groups.remove(child)
             elif isinstance(child, Data):
                 self.remove_data_from_groups(child)
 
             self._children.remove(child)
 
         self.workspace.remove_children(self, children)
-
-    def remove_property_group(self, property_group: PropertyGroup):
-        """
-        Remove a property group from the object.
-
-        :param property_group: The property group to remove.
-        """
-        if (
-            self._property_groups is not None
-            and property_group in self._property_groups
-        ):
-            self._property_groups.remove(property_group)
-            # todo: this should suppress the property group object too? del property_group
 
     def validate_association(self, attributes, property_group=None, **_):
         """
@@ -636,7 +626,7 @@ class ObjectBase(EntityContainer):
         for property_group in self._property_groups:
             property_group.remove_properties(data)
 
-    def validate_entity_type(self, entity_type: ObjectType | None) -> ObjectType:
+    def validate_entity_type(self, entity_type: ObjectType) -> ObjectType:
         """
         Validate the entity type.
         """
