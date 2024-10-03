@@ -39,6 +39,7 @@ repos:
             pydantic==2.5.*,
             tomli, # to read config from pyproject.toml
             types-toml,
+            types-PyYAML,
         ]
         exclude: |
             (?x)(^
@@ -94,6 +95,7 @@ repos:
         exclude_types: [jupyter]
     -   id: check-toml
     -   id: check-yaml
+        exclude: ^meta.yaml$
 #    -   id: check-added-large-files # crashing on some configuration. To be investigated
     -   id: check-case-conflict
     -   id: check-merge-conflict

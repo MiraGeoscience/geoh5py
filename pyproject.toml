@@ -58,6 +58,9 @@ sphinx = "^3.0"
 sphinx-autodoc-typehints = "^1.10"
 sphinx-rtd-theme = "^0.4.3"
 tomli = "*"
+packaging = "*"
+pyyaml = "*"
+JinJa2 = "*"
 
 [tool.poetry.extras]
 
