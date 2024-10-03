@@ -360,7 +360,7 @@ class PropertyGroup:
             data = [data]
 
         for elem in data:
-            elem = self._validate_data(elem)
+            elem = self.parent.reference_to_data(elem).uid
             if elem in self._properties:
                 self._properties.remove(elem)
 

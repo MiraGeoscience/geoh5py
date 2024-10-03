@@ -46,6 +46,9 @@ def test_create_point_data(tmp_path):
     with pytest.warns(UserWarning, match="Input 'values' converted to a 1D array."):
         points.add_data({"test": {"values": values.reshape(-1, 1)}})
 
+    with pytest.raises(TypeError, match="Input 'data' must be of type"):
+        points.add_data("bidon")
+
     tag = points.add_data(
         {"my_comment": {"association": "OBJECT", "values": "hello_world"}}
     )

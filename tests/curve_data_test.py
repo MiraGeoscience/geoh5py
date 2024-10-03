@@ -197,6 +197,10 @@ def test_remove_cells_data(tmp_path: Path):
 
         assert len(data.values) == 10, "Error removing data values with cells."
 
+        curve.remove_cells(np.arange(curve.n_cells))
+
+        assert data.values is None
+
 
 def test_remove_vertex_data(tmp_path):
     # Generate a random cloud of points
@@ -222,7 +226,7 @@ def test_remove_vertex_data(tmp_path):
         ):
             curve.remove_vertices([12])
 
-        curve.remove_vertices([0, 3])
+        curve.remove_vertices([0, 3], clear_cache=True)
 
         assert len(data[0].values) == 8, "Error removing data values with cells."
         assert len(curve.vertices) == 10, "Error removing vertices from cells."
