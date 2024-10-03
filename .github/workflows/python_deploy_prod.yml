@@ -9,7 +9,7 @@ jobs:
     name: Publish production package on JFrog Artifactory
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-publish_package.yml@main
     with:
-      package-managers: '["conda"]'
+      package-managers: '["conda", "poetry"]'
       package-name: 'geoh5py'
       version-tag: ${{ github.ref_name }}
       python-version: '3.10'
