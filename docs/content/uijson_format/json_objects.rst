@@ -157,13 +157,40 @@ string of a geoh5py group, or a list of type uuids.
 
    {
    "my_group": {
-   "groupType": "{55ed3daf-c192-4d4b-a439-60fa987fe2b8}",
+   "groupType": [
+      "{61fbb4e8-a480-11e3-8d5a-2776bdf4f982}",
+      "{55ed3daf-c192-4d4b-a439-60fa987fe2b8}"
+    ],
    "main": true,
    "multiSelect": false,
    "label": "Select Points or Curve",
    "value": ""
    }
    }
+
+.. figure:: ./images/group_param.png
+
+Drillhole group data Parameter
+------------------------------
+
+The Drillhole group data parameter allows users to select a drillhole group and one or more data channels from the group.
+The **groupType** and **groupValue** members are required and gives the type uuid of the drillhole group and selected
+drillhole group, respectively.
+
+.. code-block:: json
+
+    {
+    "my_group_data": {
+        "main": true,
+        "label": "Choose a drillhole group and data",
+        "groupType": "{825424fb-c2c6-4fea-9f2b-6cd00023d393}",
+        "groupValue": "",
+        "multiselect": true,
+        "value": ""
+      }
+    }
+
+.. figure:: ./images/drillhole_group_data_param.png
 
 .. _object_parameter:
 
@@ -293,6 +320,43 @@ and is float. The **isValue** is set to false upon export in this case.
 .. figure:: ./images/data_value_param.png
 .. figure:: ./images/data_value_param2.png
 
+
+Range slider Parameter
+-----------------------
+
+The range slider parameter allows users to select a data channel and select a range of values from within the data bounds.
+Compared to the data or value parameter, the range slider parameter adds the required **rangeLabel**, **allowComplement**
+and **isComplement** members.  If allowComplement is true, the user may flip the inclusion from within the bounds to outside
+the bounds, and when it is false the icon for flipping the complement is grey and inactive.  When saved the ui.json file
+will have it's **isComplement**, **property** and **value** updated.  The **property** will contain the uuid to the selected
+data, whereas the **value** will contain the range values.  If is complement is false, then the data are intended to be
+included within the bounds, and if it is false they are meant to be included outside the bounds.
+
+.. code-block:: json
+
+    {
+      "my_object": {
+        "main": true,
+        "label": "An object",
+        "meshType": "{4ea87376-3ece-438b-bf12-3479733ded46}",
+        "value": ""
+      },
+      "range_data": {
+        "main": true,
+        "label": "Select range",
+        "allowComplement": true,
+        "isComplement": false,
+        "parent": "my_object",
+        "property": "",
+        "association": "Cell",
+        "dataType": "Float",
+        "value": 0.0,
+        "rangeLabel": "My range"
+      }
+    }
+
+.. figure:: ./images/range_slider_param.png
+.. figure:: ./images/range_slider_param_complement.png
 
 Dependencies on other parameters
 ================================
