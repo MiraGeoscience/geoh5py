@@ -38,7 +38,15 @@ class FloatData(NumericData):
         if not np.issubdtype(values.dtype, np.number):
             raise TypeError("Values must be a numpy array of numeric values.")
 
-        return values.astype(np.float64)
+        return values
+
+    @property
+    def formatted_values(self):
+        values = self.ndv_values
+        if values is None:
+            return values
+
+        return values
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:

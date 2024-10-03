@@ -20,13 +20,32 @@ from __future__ import annotations
 import json
 
 import numpy as np
+from numpy import ndarray
 
+from ..shared.utils import as_str_if_uuid, dict_mapper
 from .data import Data
 from .primitive_type_enum import PrimitiveTypeEnum
 
 
+def text_formating(values: None | np.ndarray | str) -> ndarray | None:
+    """
+    Format text values to utf-8.
+
+    :param values: The values to format.
+
+    :return: The formatted values.
+    """
+    # todo: values[0] seems dangerous here
+    if values is None or isinstance(values[0], bytes):
+        return values
+
+    return np.char.encode(values, encoding="utf-8").astype("O")
+
+
 class TextData(Data):
-    _values: np.ndarray | str | None
+    @property
+    def formatted_values(self):
+        return text_formating(self.values)
 
     @property
     def nan_value(self):
@@ -39,30 +58,16 @@ class TextData(Data):
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.TEXT
 
-    @property
-    def values(self) -> np.ndarray | str | None:
-        """
-        :obj:`str` Text value.
-        """
-        if (getattr(self, "_values", None) is None) and self.on_file:
-            values = self.workspace.fetch_values(self)
-            if isinstance(values, np.ndarray) and values.dtype == object:
-                values = np.array(
-                    [v.decode("utf-8") if isinstance(v, bytes) else v for v in values]
-                )
-
-            if isinstance(values, (np.ndarray, str, type(None))):
-                self._values = values
-
-        return self._values
-
-    @values.setter
-    def values(self, values: np.ndarray | str | None):
+    def validate_values(
+        self, values: np.ndarray | str | None
+    ) -> np.ndarray | str | None:
         if isinstance(values, bytes):
             values = values.decode()
 
         if isinstance(values, np.ndarray) and values.dtype == object:
-            values = values.astype(str)
+            values = np.array(
+                [v.decode("utf-8") if isinstance(v, bytes) else v for v in values]
+            )
 
         if (not isinstance(values, (str, type(None), np.ndarray))) or (
             isinstance(values, np.ndarray) and values.dtype.kind not in ["U", "S"]
@@ -71,9 +76,7 @@ class TextData(Data):
                 f"Input 'values' for {self} must be of type {np.ndarray}  str or None."
             )
 
-        self._values = values
-
-        self.workspace.update_attribute(self, "values")
+        return values
 
 
 class CommentsData(Data):
@@ -92,68 +95,62 @@ class CommentsData(Data):
             ]
     """
 
+    @property
+    def formatted_values(self):
+        return json.dumps(dict_mapper(self.values, [as_str_if_uuid]))
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.TEXT
 
-    @property
-    def values(self) -> list[dict] | None:
-        """
-        :obj:`list` List of comments
-        """
-        if (getattr(self, "_values", None) is None) and self.on_file:
-            comment_str = self.workspace.fetch_values(self)
+    def validate_values(self, values) -> dict | None:
+        if isinstance(values, str):
+            values = json.loads(values)
 
-            if isinstance(comment_str, str):
-                self._values = json.loads(comment_str)["Comments"]
+        if values is None:
+            return None
 
-        return self._values
+        if not isinstance(values, dict):
+            raise TypeError("Input 'values' for CommentsData must be a dict.")
 
-    @values.setter
-    def values(self, values):
-        self.workspace.update_attribute(self, "values")
+        if "Comments" not in values:
+            raise ValueError(
+                "Input 'values' for CommentsData must contain key 'Comments'."
+            )
 
-        if values is not None:
-            for value in values:
-                assert isinstance(value, dict), (
-                    f"Error setting CommentsData with expected input of type list[dict].\n"
+        for value in values["Comments"]:
+            if not isinstance(value, dict):
+                raise TypeError(
+                    "Error setting CommentsData with expected input of type list[dict].\n"
                     f"Input {type(values)} provided."
                 )
-                assert list(value.keys()) == ["Author", "Date", "Text"], (
-                    f"Comment dictionaries must include keys 'Author', 'Date' and 'Text'.\n"
+
+            if not len(set(value.keys()).union({"Author", "Date", "Text"})) == 3:
+                raise ValueError(
+                    "Comment dictionaries must include keys 'Author', 'Date' and 'Text'.\n"
                     f"Keys {list(value.keys())} provided."
                 )
 
-        self._values = values
-        self.workspace.update_attribute(self, "values")
+        return values
 
 
 class MultiTextData(Data):
     _values: np.ndarray | str | None
 
+    @property
+    def formatted_values(self):
+        return text_formating(self.values)
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.MULTI_TEXT
 
-    @property
-    def values(self) -> np.ndarray | str | None:
-        """
-        :obj:`str` Text value.
-        """
-        if (getattr(self, "_values", None) is None) and self.on_file:
-            values = self.workspace.fetch_values(self)
-            if isinstance(values, (np.ndarray, str, type(None))):
-                self._values = values
-
-        return self._values
-
-    @values.setter
-    def values(self, values: np.ndarray | str | None):
-        self._values = values
-
-        if not isinstance(values, (np.ndarray, str, type(None))):
+    def validate_values(
+        self, values: np.ndarray | str | None
+    ) -> np.ndarray | str | None:
+        if not isinstance(values, np.ndarray | str | type(None)):
             raise ValueError(
                 f"Input 'values' for {self} must be of type {np.ndarray}  str or None."
             )
 
-        self.workspace.update_attribute(self, "values")
+        return values

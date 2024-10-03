@@ -53,9 +53,10 @@ def test_group_instantiation(group_class, tmp_path):
         # searching for the wrong type
         assert workspace.find_type(group_type.uid, ObjectType) is None
 
+        type_used_by_root = False
         if workspace.root is not None:
             type_used_by_root = workspace.root.entity_type is group_type
-        created_group = group_class(group_type, name="test group")
+        created_group = group_class(entity_type=group_type, name="test group")
         assert created_group.uid is not None
         assert created_group.uid.int != 0
         assert created_group.name == "test group"
@@ -73,6 +74,7 @@ def test_group_instantiation(group_class, tmp_path):
         assert workspace.find_type(group_type_uid, GroupType) is not None
 
         created_group_uid = created_group.uid
+        workspace.remove_entity(created_group)
         created_group = None  # type: ignore
         # no more reference on create_group, so it should be gone from the workspace
         assert workspace.find_group(created_group_uid) is None
@@ -103,7 +105,7 @@ def test_custom_group_instantiation(tmp_path):
         assert GroupType.find(workspace, group_type.uid) is group_type
 
         created_group = CustomGroup(
-            group_type, name="test custom group", parent=workspace.root
+            entity_type=group_type, name="test custom group", parent=workspace.root
         )
         workspace.save_entity(created_group)
         assert created_group.uid is not None

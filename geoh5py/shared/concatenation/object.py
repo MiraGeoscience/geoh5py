@@ -21,7 +21,9 @@ import uuid
 from typing import TYPE_CHECKING
 
 from ...data import Data
+from ...groups.property_group import GroupTypeEnum
 from ...objects import ObjectBase
+from ..utils import INV_KEY_MAP
 from .concatenated import Concatenated
 from .data import ConcatenatedData
 from .property_group import ConcatenatedPropertyGroup
@@ -35,7 +37,7 @@ if TYPE_CHECKING:
 class ConcatenatedObject(Concatenated, ObjectBase):
     _parent: Concatenator
 
-    def __init__(self, entity_type, **kwargs):
+    def __init__(self, **kwargs):
         if kwargs.get("parent") is None:
             raise UserWarning(
                 "Creating a concatenated object must have a parent "
@@ -44,17 +46,19 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
         self._property_groups: list | None = None
 
-        super().__init__(entity_type, **kwargs)
+        super().__init__(**kwargs)
 
     def create_property_group(
-        self, name=None, on_file=False, uid=None, **kwargs
+        self,
+        name=None,
+        property_group_type: GroupTypeEnum | str = GroupTypeEnum.INTERVAL,
+        **kwargs,
     ) -> ConcatenatedPropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
 
         :param name: Name of the property group.
-        :param on_file: If True, the property group is saved to file.
-        :param uid: Unique ID of the property group.
+        :param property_group_type: Type of property group.
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
 
@@ -65,11 +69,8 @@ class ConcatenatedObject(Concatenated, ObjectBase):
         ]:
             raise KeyError(f"A Property Group with name '{name}' already exists.")
 
-        if "property_group_type" not in kwargs and "Property Group Type" not in kwargs:
-            kwargs["property_group_type"] = "Interval table"
-
         prop_group = ConcatenatedPropertyGroup(
-            self, name=name, on_file=on_file, **kwargs
+            self, name=name, property_group_type=property_group_type, **kwargs
         )
 
         return prop_group
@@ -148,9 +149,13 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                 property_groups = []
 
             for key in property_groups:
-                self.fetch_property_group(
-                    **self.concatenator.get_concatenated_attributes(key), on_file=True
-                )
+                attributes = {
+                    INV_KEY_MAP.get(key, key): val
+                    for key, val in self.concatenator.get_concatenated_attributes(
+                        key
+                    ).items()
+                }
+                self.fetch_property_group(**attributes, on_file=True)
 
             property_groups = [
                 child

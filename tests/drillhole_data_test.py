@@ -39,16 +39,13 @@ def test_create_drillhole_data(tmp_path):
     with Workspace(version=1.0).save_as(h5file_path) as workspace:
         # Create a workspace
         max_depth = 100
-        well = Drillhole.create(
-            workspace,
-            name=well_name,
-            default_collocation_distance=1e-5,
-        )
 
-        with pytest.raises(
-            AttributeError, match="The 'desurvey' operation requires the 'locations'"
-        ):
-            well.desurvey(0.0)
+        with pytest.warns(UserWarning, match="No 'collar' provided"):
+            well = Drillhole.create(
+                workspace,
+                name=well_name,
+                default_collocation_distance=1e-5,
+            )
 
         well.collar = [0.0, 10.0, 10]
         well.surveys = np.c_[

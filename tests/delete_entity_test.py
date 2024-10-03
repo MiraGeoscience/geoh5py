@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 
 from geoh5py.groups import ContainerGroup
-from geoh5py.objects import Curve
+from geoh5py.objects import Curve, Points
 from geoh5py.workspace import Workspace
 
 
@@ -56,10 +56,12 @@ def test_delete_entities(tmp_path: Path):
                     },
                     property_group="myGroup",
                 )
+
             else:
                 curve_2.add_data(
                     {f"Period{i + 1}": {"values": values}}, property_group="myGroup"
                 )
+
         uid_out = curve_2.children[1].uid
 
         curve_2.remove_children(curve_2.children[0])
@@ -95,6 +97,7 @@ def test_delete_entities(tmp_path: Path):
         assert (
             len(workspace.groups) == 2
         ), "Group was not fully removed from the workspace."
+
         assert (
             len(workspace.objects) == 1
         ), "Object was not fully removed from the workspace."
@@ -118,3 +121,21 @@ def test_delete_entities(tmp_path: Path):
         len(workspace.types) == 4
     ), "Types were not properly written to the workspace."
     workspace.close()
+
+
+def test_remove_protected_children():
+    workspace = Workspace()
+    group = ContainerGroup.create(workspace)
+    child = Points.create(
+        workspace, vertices=np.random.randn(10, 3), parent=group, allow_delete=False
+    )
+    child.add_data(
+        {"DataValues": {"values": np.random.randn(10), "allow_delete": False}}
+    )
+
+    workspace.remove_entity(group)
+
+    del child, group
+    assert (
+        len(workspace.data) == len(workspace.objects) == 0
+    ), "Group was not removed from the workspace."

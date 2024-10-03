@@ -17,22 +17,11 @@
 
 from __future__ import annotations
 
-import uuid
-
-from .base import Group
+from geoh5py.shared.utils import find_unique_name
 
 
-class DrillholeGroup(Group):
-    """The type for the group containing drillholes."""
+def test_find_unique_name():
+    name = "test"
+    names = ["test", "test(1)", "bidon"]
 
-    _TYPE_UID = uuid.UUID(
-        fields=(0x825424FB, 0xC2C6, 0x4FEA, 0x9F, 0x2B, 0x6CD00023D393)
-    )
-    _default_name = "Drillhole Group"
-
-
-class IntegratorDrillholeGroup(DrillholeGroup):
-    """The type for the group containing drillholes."""
-
-    _TYPE_UID = uuid.UUID("{952829b6-76a2-4d0b-b908-7f8d2482dc0d}")
-    _default_name = "Integrator Drillhole Group"
+    assert find_unique_name(name, names) == "test(2)"

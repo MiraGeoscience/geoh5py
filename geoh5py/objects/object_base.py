@@ -19,30 +19,41 @@
 
 from __future__ import annotations
 
-import uuid
 import warnings
-from abc import abstractmethod
-from datetime import datetime
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 import numpy as np
 
-from ..data import CommentsData, Data, DataAssociationEnum, DataType, VisualParameters
-from ..groups import PropertyGroup
+from ..data import (
+    CommentsData,
+    Data,
+    DataAssociationEnum,
+    ReferencedData,
+    VisualParameters,
+)
+from ..groups.property_group import GroupTypeEnum, PropertyGroup
 from ..shared import Entity
 from ..shared.conversion import BaseConversion
 from ..shared.entity_container import EntityContainer
-from ..shared.utils import clear_array_attributes
+from ..shared.utils import (
+    box_intersect,
+    clear_array_attributes,
+    mask_by_extent,
+    str2uuid,
+)
 from .object_type import ObjectType
 
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from ..workspace import Workspace
 
 
 class ObjectBase(EntityContainer):
     """
     Object base class.
+
+    :param last_focus: Object visible in camera on start.
     """
 
     _attribute_map: dict = EntityContainer._attribute_map.copy()
@@ -51,21 +62,14 @@ class ObjectBase(EntityContainer):
     )
     _converter: type[BaseConversion] | None = None
 
-    def __init__(self, object_type: ObjectType, **kwargs):
-        assert object_type is not None
-        self._comments = None
-        self._entity_type = object_type
-        self._last_focus = "None"
+    def __init__(self, last_focus: str = "None", **kwargs):
         self._property_groups: list[PropertyGroup] | None = None
         self._visual_parameters: VisualParameters | None = None
+        self._comments: CommentsData | None = None
 
-        if not any(key for key in kwargs if key in ["name", "Name"]):
-            kwargs["name"] = type(self).__name__
+        self.last_focus = last_focus
 
         super().__init__(**kwargs)
-
-        if self.entity_type.name == "Entity":
-            self.entity_type.name = type(self).__name__
 
     def add_children(self, children: list[Entity | PropertyGroup]):
         """
@@ -93,40 +97,13 @@ class ObjectBase(EntityContainer):
         if property_groups:
             self._property_groups = property_groups
 
-    def add_comment(self, comment: str, author: str | None = None):
-        """
-        Add text comment to an object.
-
-        :param comment: Text to be added as comment.
-        :param author: Name of author or defaults to
-            :obj:`~geoh5py.workspace.workspace.Workspace.contributors`.
-        """
-
-        date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        if author is None:
-            author = ",".join(self.workspace.contributors)
-
-        comment_dict = {"Author": author, "Date": date, "Text": comment}
-
-        if self.comments is None:
-            self.add_data(
-                {
-                    "UserComments": {
-                        "values": [comment_dict],
-                        "association": "OBJECT",
-                        "entity_type": {"primitive_type": "TEXT"},
-                    }
-                }
-            )
-        else:
-            self.comments.values = self.comments.values + [comment_dict]
-
     def add_data(
         self,
         data: dict,
         property_group: str | PropertyGroup | None = None,
         compression: int = 5,
-    ) -> Data | list[Data]:
+        **kwargs,
+    ) -> Data | ReferencedData | list[Data]:
         """
         Create :obj:`~geoh5py.data.data.Data` from dictionary of name and arguments.
         The provided arguments can be any property of the target Data class.
@@ -152,17 +129,24 @@ class ObjectBase(EntityContainer):
         """
         data_objects = []
         for name, attr in data.items():
-            assert isinstance(attr, dict), (
-                f"Given value to data {name} should of type {dict}. "
-                f"Type {type(attr)} given instead."
-            )
+            if not isinstance(attr, dict):
+                raise TypeError(
+                    f"Given value to data {name} should of type {dict}. "
+                    f"Type {type(attr)} given instead."
+                )
+
             attr["name"] = name
-            self.validate_data_association(attr)
-            entity_type = DataType.validate_data_type(self.workspace, attr)
+            attr, validate_property_group = self.validate_association(
+                attr, property_group=property_group, **kwargs
+            )
+
+            entity_type = self.workspace.validate_data_type(attr, attr.get("values"))
+
             kwargs = {"parent": self, "association": attr["association"]}
             for key, val in attr.items():
                 if key in ["parent", "association", "entity_type", "type"]:
                     continue
+
                 kwargs[key] = val
 
             data_object = self.workspace.create_entity(
@@ -172,10 +156,13 @@ class ObjectBase(EntityContainer):
             if not isinstance(data_object, Data):
                 continue
 
-            if property_group is not None:
-                self.add_data_to_group(data_object, property_group)
+            if validate_property_group is not None:
+                self.add_data_to_group(data_object, validate_property_group)
 
             data_objects.append(data_object)
+
+        # TODO: Legacy re-sorting for old drillhole format
+        self.post_processing()
 
         if len(data_objects) == 1:
             return data_objects[0]
@@ -184,7 +171,7 @@ class ObjectBase(EntityContainer):
 
     def add_data_to_group(
         self,
-        data: list[Data | uuid.UUID] | Data | uuid.UUID,
+        data: list[Data | UUID | str] | Data | UUID | str,
         property_group: str | PropertyGroup,
     ) -> PropertyGroup:
         """
@@ -199,39 +186,19 @@ class ObjectBase(EntityContainer):
 
         :return: The target property group.
         """
-        if isinstance(data, (Data, uuid.UUID)):
-            data = [data]
-
         if isinstance(property_group, str):
-            associations = []
-            for elem in data:
-                if isinstance(elem, uuid.UUID):
-                    entity = self.get_entity(elem)[0]
-                elif elem in self.children:
-                    entity = elem
-                else:
-                    continue
-
-                if isinstance(entity, Data):
-                    associations.append(entity.association)
-
-            associations = list(set(associations))
-            if not associations:
-                raise ValueError(
-                    "No children data found on the parent object. "
-                    "Verify that the list of data or uuid provided are children entities."
-                )
-
-            if len(associations) != 1:
-                raise ValueError("All input 'data' must have the same association.")
-
             property_group = self.fetch_property_group(
-                name=property_group, association=associations[0]
+                name=property_group, properties=data
             )
 
-        property_group.add_properties(data)
+        if isinstance(property_group, PropertyGroup):
+            property_group.add_properties(data)
+            return property_group
 
-        return property_group
+        raise TypeError(
+            "Property group must be of type PropertyGroup or str; "
+            f"got {type(property_group)} instead."
+        )
 
     @property
     def cells(self) -> np.ndarray:
@@ -240,17 +207,9 @@ class ObjectBase(EntityContainer):
         defining the connection between
         :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
         """
-
-    @property
-    def comments(self):
-        """
-        Fetch a :obj:`~geoh5py.data.text_data.CommentsData` entity from children.
-        """
-        for child in self.children:
-            if isinstance(child, CommentsData):
-                return child
-
-        return None
+        raise AttributeError(
+            f"Object {self.__class__.__name__} does not have the attribute 'cells'."
+        )
 
     def copy(
         self,
@@ -310,21 +269,6 @@ class ObjectBase(EntityContainer):
 
         return new_object
 
-    @classmethod
-    @abstractmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        Default entity type unique identifier
-        """
-
-    @abstractmethod
-    def mask_by_extent(
-        self, extent: np.ndarray, inverse: bool = False
-    ) -> np.ndarray | None:
-        """
-        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
-        """
-
     @property
     def entity_type(self) -> ObjectType:
         """
@@ -333,18 +277,24 @@ class ObjectBase(EntityContainer):
         return self._entity_type
 
     @property
-    @abstractmethod
-    def extent(self):
+    def extent(self) -> np.ndarray | None:
         """
         Geography bounding box of the object.
 
-        :return: shape(2, 3) Bounding box defined by the bottom South-West and
-            top North-East coordinates.
+        :return: Bounding box defined by the bottom South-West and
+            top North-East coordinates,  shape(2, 3).
         """
+        if self.locations is None:
+            return None
+
+        return np.c_[self.locations.min(axis=0), self.locations.max(axis=0)].T
 
     @property
     def faces(self) -> np.ndarray:
         """Object faces."""
+        raise AttributeError(
+            f"Object {self.__class__.__name__} does not have the attribute 'faces'."
+        )
 
     @classmethod
     def find_or_create_type(cls, workspace: Workspace, **kwargs) -> ObjectType:
@@ -358,7 +308,7 @@ class ObjectBase(EntityContainer):
         kwargs["entity_class"] = cls
         return ObjectType.find_or_create(workspace, **kwargs)
 
-    def get_property_group(self, name: uuid.UUID | str) -> list:
+    def get_property_group(self, name: UUID | str) -> list:
         """
         Get a child :obj:`~geoh5py.groups.property_group.PropertyGroup` by name.
         :param name: the reference of the property group to get.
@@ -368,11 +318,8 @@ class ObjectBase(EntityContainer):
             return [None]
 
         entities = []
-
         for child in self._property_groups:
-            if (
-                isinstance(name, uuid.UUID) and child.uid == name
-            ) or child.name == name:
+            if (isinstance(name, UUID) and child.uid == name) or child.name == name:
                 entities.append(child)
 
         if len(entities) == 0:
@@ -381,14 +328,16 @@ class ObjectBase(EntityContainer):
         return entities
 
     def create_property_group(
-        self, name=None, on_file=False, uid=None, **kwargs
+        self,
+        name=None,
+        property_group_type: GroupTypeEnum | str = GroupTypeEnum.MULTI,
+        **kwargs,
     ) -> PropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
 
         :param name: Name of the new property group.
-        :param on_file: If True, the property group is saved to file.
-        :param uid: Unique identifier for the new property group.
+        :param property_group_type: Type of property group.
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
 
@@ -399,10 +348,9 @@ class ObjectBase(EntityContainer):
         ]:
             raise KeyError(f"A Property Group with name '{name}' already exists.")
 
-        if "property_group_type" not in kwargs and "Property Group Type" not in kwargs:
-            kwargs["property_group_type"] = "Multi-element"
-
-        prop_group = PropertyGroup(self, name=name, on_file=on_file, uid=uid, **kwargs)
+        prop_group = PropertyGroup(
+            self, name=name, property_group_type=property_group_type, **kwargs
+        )
 
         return prop_group
 
@@ -440,7 +388,7 @@ class ObjectBase(EntityContainer):
         )
         return self.fetch_property_group(name=name, uid=uid, **kwargs)
 
-    def get_data(self, name: str | uuid.UUID) -> list[Data]:
+    def get_data(self, name: str | UUID) -> list[Data]:
         """
         Get a child :obj:`~geoh5py.data.data.Data` by name.
 
@@ -477,24 +425,36 @@ class ObjectBase(EntityContainer):
 
     @last_focus.setter
     def last_focus(self, value: str):
+        if not isinstance(value, str):
+            raise TypeError("Attribute 'last_focus' must be a string")
+
         self._last_focus = value
 
+    def mask_by_extent(
+        self, extent: np.ndarray, inverse: bool = False
+    ) -> np.ndarray | None:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
+
+        Applied to object's centroids.
+        """
+        if self.extent is None or not box_intersect(self.extent, extent):
+            return None
+
+        return mask_by_extent(self.locations, extent, inverse=inverse)
+
     @property
-    def n_cells(self) -> int | None:
+    def n_cells(self):
         """
         :obj:`int`: Number of cells.
         """
-        if self.cells is not None:
-            return self.cells.shape[0]
         return None
 
     @property
-    def n_vertices(self) -> int | None:
+    def n_vertices(self):
         """
         :obj:`int`: Number of vertices.
         """
-        if self.vertices is not None:
-            return self.vertices.shape[0]
         return None
 
     @property
@@ -503,6 +463,48 @@ class ObjectBase(EntityContainer):
         List of :obj:`~geoh5py.groups.property_group.PropertyGroup`.
         """
         return self._property_groups
+
+    def post_processing(self):
+        """
+        Post-processing function to be called after adding data.
+        """
+
+    def reference_to_data(self, data: str | Data | UUID) -> Data:
+        """
+        Convert a reference to a Data object.
+
+        :param data: The data to convert.
+            It can be the name, the uuid or the data itself.
+
+        :return: The data object.
+        """
+        data = str2uuid(data)
+
+        if isinstance(data, Data):
+            if self != data.parent:
+                raise ValueError(
+                    f"Data '{data.name}' parent ({data.parent}) "
+                    f"does not match group parent ({self})."
+                )
+
+        if isinstance(data, (str, UUID)):
+            data_: list = self.get_data(data)
+            # if the data is an unloaded uid
+            if len(data_) == 0 and isinstance(data, UUID):
+                data_temp = self.workspace.load_entity(data, "data", self)
+                data_ = [] if data_temp is None else [data_temp]
+            if len(data_) == 0:
+                raise ValueError(f"Data '{data}' not found in parent {self}")
+            if len(data_) > 1:
+                raise ValueError(f"Multiple data '{data}' found in parent {self}")
+            data = data_[0]
+
+        if not isinstance(data, Data):
+            raise TypeError(
+                f"Data must be of type Data, UUID or str. Provided {type(data)}"
+            )
+
+        return data
 
     def remove_children(self, children: list[Entity | PropertyGroup]):
         """
@@ -521,7 +523,7 @@ class ObjectBase(EntityContainer):
 
         for child in children:
             if child not in self._children:
-                continue
+                continue  # this is dangerous, should raise an error
 
             if isinstance(child, PropertyGroup) and self._property_groups:
                 self.remove_property_group(child)
@@ -535,7 +537,7 @@ class ObjectBase(EntityContainer):
     def remove_children_values(
         self,
         indices: list[int] | np.ndarray,
-        association: str,
+        children: list[Data],
         clear_cache: bool = False,
     ):
         if isinstance(indices, list):
@@ -544,19 +546,10 @@ class ObjectBase(EntityContainer):
         if not isinstance(indices, np.ndarray):
             raise TypeError("Indices must be a list or numpy array.")
 
-        for child in self.children:
-            if (
-                hasattr(child, "_values")
-                and isinstance(child.association, DataAssociationEnum)
-                and child.association.name == association
-            ):
-                # accessing values with no property as the vertices had changed
-                values = getattr(child, "_values", None)
-                if values is None:
-                    values = child.workspace.fetch_values(child)
-                child.values = np.delete(values, indices, axis=0)
-                if clear_cache:
-                    clear_array_attributes(child)
+        for child in children:
+            child.values = np.delete(child.values, indices, axis=0)
+            if clear_cache:
+                clear_array_attributes(child)
 
     def remove_property_group(self, property_group: PropertyGroup):
         """
@@ -576,6 +569,9 @@ class ObjectBase(EntityContainer):
         :obj:`numpy.array` of :obj:`float`, shape (\*, 3): Array of x, y, z coordinates
         defining the position of points in 3D space.
         """
+        raise AttributeError(
+            f"Object {type(self)} does not have the attribute 'vertices'."
+        )
 
     @property
     def locations(self):
@@ -595,25 +591,30 @@ class ObjectBase(EntityContainer):
         """
         return self._converter
 
-    def validate_data_association(self, attribute_dict):
+    def validate_association(self, attributes, property_group=None, **_):
         """
         Get a dictionary of attributes and validate the data 'association' keyword.
+
+        :param attributes: Dictionary of attributes provided for the data.
+        :param property_group: Property group to associate the data with.
         """
-        if attribute_dict.get("association") is not None:
-            return
+        if attributes.get("association") is not None:
+            return attributes, property_group
 
         if (
             getattr(self, "n_cells", None) is not None
-            and attribute_dict["values"].ravel().shape[0] == self.n_cells
+            and attributes["values"].ravel().shape[0] == self.n_cells
         ):
-            attribute_dict["association"] = "CELL"
+            attributes["association"] = "CELL"
         elif (
             getattr(self, "n_vertices", None) is not None
-            and attribute_dict["values"].ravel().shape[0] == self.n_vertices
+            and attributes["values"].ravel().shape[0] == self.n_vertices
         ):
-            attribute_dict["association"] = "VERTEX"
+            attributes["association"] = "VERTEX"
         else:
-            attribute_dict["association"] = "OBJECT"
+            attributes["association"] = "OBJECT"
+
+        return attributes, property_group
 
     def add_default_visual_parameters(self):
         """
@@ -622,23 +623,21 @@ class ObjectBase(EntityContainer):
         if self.visual_parameters is not None:
             raise UserWarning("Visual parameters already exist.")
 
-        self.workspace.create_entity(  # type: ignore
+        self._visual_parameters = self.workspace.create_entity(  # type: ignore
             Data,
             save_on_creation=True,
-            **{  # type: ignore
-                "entity": {
-                    "name": "Visual Parameters",
-                    "parent": self,
-                    "association": "OBJECT",
-                },
-                "entity_type": {"name": "XmlData", "primitive_type": "TEXT"},
+            entity={
+                "name": "Visual Parameters",
+                "parent": self,
+                "association": "OBJECT",
             },
+            entity_type={"name": "XmlData", "primitive_type": "TEXT"},
         )
 
         return self._visual_parameters
 
     def remove_data_from_groups(
-        self, data: list[Data | uuid.UUID] | Data | uuid.UUID
+        self, data: list[Data | UUID | str] | Data | UUID | str
     ) -> None:
         """
         Remove data children to all
@@ -657,6 +656,21 @@ class ObjectBase(EntityContainer):
         for property_group in self._property_groups:
             property_group.remove_properties(data)
 
+    def validate_entity_type(self, entity_type: ObjectType | None) -> ObjectType:
+        """
+        Validate the entity type.
+        """
+        if not isinstance(entity_type, ObjectType):
+            raise TypeError(
+                f"Input 'entity_type' must be of type {ObjectType}, not {type(entity_type)}"
+            )
+
+        if entity_type.name == "Entity":
+            entity_type.name = self.name
+            entity_type.description = self.name
+
+        return entity_type
+
     @property
     def visual_parameters(self) -> VisualParameters | None:
         """
@@ -669,10 +683,3 @@ class ObjectBase(EntityContainer):
                     break
 
         return self._visual_parameters
-
-    @visual_parameters.setter
-    def visual_parameters(self, value: VisualParameters):
-        if not isinstance(value, VisualParameters):
-            raise TypeError("visual_parameters must be a VisualParameters object.")
-
-        self._visual_parameters = value

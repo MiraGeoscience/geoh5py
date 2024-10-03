@@ -18,6 +18,9 @@
 from __future__ import annotations
 
 from enum import Enum
+from pathlib import Path
+
+import numpy as np
 
 
 class PrimitiveTypeEnum(Enum):
@@ -39,3 +42,28 @@ class PrimitiveTypeEnum(Enum):
     GEOMETRIC = 9
     MULTI_TEXT = 10
     BOOLEAN = 11
+
+
+class DataTypeEnum(Enum):
+    INVALID = type(None)
+    INTEGER = np.int32
+    FLOAT = np.float32
+    TEXT = str
+    REFERENCED = np.uint32  # Could represent a reference type
+    FILENAME = Path
+    BLOB = bytes
+    VECTOR = type(None)  # Assuming a vector is a list
+    DATETIME = str  # Could use datetime
+    GEOMETRIC = type(None)  # For custom geometric type
+    MULTI_TEXT = str
+    BOOLEAN = bool
+
+    @classmethod
+    def from_primitive_type(cls, primitive_type: PrimitiveTypeEnum) -> type:
+        """
+        Get the data type from the primitive type.
+
+        :param primitive_type: The primitive type.
+        :return: The data type.
+        """
+        return DataTypeEnum[primitive_type.name].value

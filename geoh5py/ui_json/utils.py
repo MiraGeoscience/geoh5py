@@ -105,7 +105,9 @@ def dependency_requires_value(ui_json: dict[str, dict], parameter: str) -> bool:
     )
 
     if ui_json[parameter].get("dependencyType", "enabled") == "enabled":
-        is_required = ui_json[dependency].get(key, True)
+        is_required = bool(ui_json[dependency].get(key, True)) & bool(
+            ui_json[dependency]["value"]
+        )
     else:
         is_required = not ui_json[dependency].get(key, True)
     if ("optional" in ui_json[parameter]) & bool(is_required):
@@ -187,7 +189,9 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
     :param parameter: Parameter name.
     :param value: Boolean value set to parameter's enabled member.
     """
-    if ui_json[parameter].get("optional", False):
+    if ui_json[parameter].get("optional", False) or bool(
+        ui_json[parameter].get("dependency", False)
+    ):
         ui_json[parameter]["enabled"] = value
 
     is_group_optional = False
