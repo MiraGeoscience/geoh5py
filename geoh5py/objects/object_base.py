@@ -244,17 +244,6 @@ class ObjectBase(EntityContainer):
         return self._visual_parameters
 
     @property
-    def cells(self) -> np.ndarray:
-        """
-        :obj:`numpy.array` of :obj:`int`: Array of indices
-        defining the connection between
-        :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`.
-        """
-        raise AttributeError(
-            f"Object {self.__class__.__name__} does not have the attribute 'cells'."
-        )
-
-    @property
     def converter(self) -> Any:
         """
         :return: The converter for the object.
@@ -369,6 +358,7 @@ class ObjectBase(EntityContainer):
     @property
     def faces(self) -> np.ndarray:
         """Object faces."""
+        # todo: this is used nowhere... remove?
         raise AttributeError(
             f"Object {self.__class__.__name__} does not have the attribute 'faces'."
         )
@@ -402,15 +392,9 @@ class ObjectBase(EntityContainer):
         :return: The name of the association.
         """
         if isinstance(values, np.ndarray):
-            if (
-                getattr(self, "n_cells", None) is not None
-                and values.ravel().shape[0] == self.n_cells
-            ):
+            if values.ravel().shape[0] == getattr(self, "n_cells", None):
                 return "CELL"
-            if (
-                getattr(self, "n_vertices", None) is not None
-                and values.ravel().shape[0] == self.n_vertices
-            ):
+            if values.ravel().shape[0] == getattr(self, "n_vertices", None):
                 return "VERTEX"
 
         return "OBJECT"
@@ -530,24 +514,6 @@ class ObjectBase(EntityContainer):
 
         return mask_by_extent(self.locations, extent, inverse=inverse)
 
-    @property
-    def n_cells(self) -> int:
-        """
-        The number of cells.
-        """
-        raise AttributeError(
-            f"Object {self.__class__.__name__} does not have the attribute 'n_cells'."
-        )
-
-    @property
-    def n_vertices(self) -> int:
-        """
-        The number of vertices
-        """
-        raise AttributeError(
-            f"Object {self.__class__.__name__} does not have the attribute 'n_vertices'."
-        )
-
     def post_processing(self):
         """
         Post-processing function to be called after adding data.
@@ -635,7 +601,7 @@ class ObjectBase(EntityContainer):
             and property_group in self._property_groups
         ):
             self._property_groups.remove(property_group)
-            # todo: this should suppress the property group object too?
+            # todo: this should suppress the property group object too? del property_group
 
     def validate_association(self, attributes, property_group=None, **_):
         """
@@ -650,15 +616,6 @@ class ObjectBase(EntityContainer):
         attributes["association"] = self.find_association(attributes["values"])
 
         return attributes, property_group
-
-    @property
-    def vertices(self) -> np.ndarray:
-        """
-        x, y, z coordinates of points in 3D space.
-        """
-        raise AttributeError(
-            f"Object {type(self)} does not have the attribute 'vertices'."
-        )
 
     def remove_data_from_groups(
         self, data: list[Data | UUID | str] | Data | UUID | str
