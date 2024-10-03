@@ -52,7 +52,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
         """
 
         if isinstance(property_group, str):
-            property_group = self.get_property_group(property_group)[0]
+            property_group = self.get_property_group(property_group)[0]  # type: ignore
         if not isinstance(property_group, ConcatenatedPropertyGroup):
             raise AttributeError(
                 "Input data dictionary must contain a key/value pair of depth data "

@@ -128,7 +128,7 @@ class PropertyGroupTable(ABC):
         vertex in CellObjects.
         """
         if self.property_group.association == DataAssociationEnum.VERTEX:
-            return self.property_group.parent.vertices
+            return self.property_group.parent.vertices  # type: ignore
 
         if self.property_group.association == DataAssociationEnum.CELL:
             return self.property_group.parent.centroids  # type: ignore

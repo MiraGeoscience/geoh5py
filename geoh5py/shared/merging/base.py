@@ -33,7 +33,7 @@ class BaseMerger(ABC):
     def merge_data(
         cls,
         out_entity,
-        input_entities: list[ObjectBase],
+        input_entities: list,
     ):
         """
         Merge the data respecting the entity type, the values, and the association.
