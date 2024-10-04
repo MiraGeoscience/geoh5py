@@ -194,7 +194,7 @@ def test_integer_parameter(tmp_path: Path):
         in_file.data = data
 
     data.pop("integer")
-    with pytest.raises(ValueError, match="The number of input values"):
+    with pytest.warns(UserWarning, match="The number of input values"):
         in_file.data = data
 
     data["integer"] = 123
