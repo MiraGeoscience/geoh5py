@@ -264,7 +264,7 @@ class InputFile:
                     if self.validation_options.get("update_enabled", True):
                         enabled = False if value is None else True
 
-                    set_enabled(self.ui_json, key, enabled)
+                    set_enabled(self.ui_json, key, enabled, validate=self.validate)
 
                 member = "value"
                 if "isValue" in self.ui_json[key]:

@@ -181,7 +181,7 @@ def group_enabled(group: dict[str, dict]) -> bool:
     return group[parameters[0]].get("enabled", True)
 
 
-def set_enabled(ui_json: dict, parameter: str, value: bool):
+def set_enabled(ui_json: dict, parameter: str, value: bool, validate=True):
     """
     Set enabled status for an optional or groupOptional parameter.
 
@@ -205,15 +205,16 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
                 for form in group.values():
                     form["enabled"] = value
 
-    if not is_group_optional and "dependency" in ui_json[parameter]:
-        is_group_optional = not dependency_requires_value(ui_json, parameter)
+    if validate:
+        if not is_group_optional and "dependency" in ui_json[parameter]:
+            is_group_optional = not dependency_requires_value(ui_json, parameter)
 
-    if (not value) and not (
-        ui_json[parameter].get("optional", False) or is_group_optional
-    ):
-        warnings.warn(
-            f"Non-option parameter '{parameter}' cannot be set to 'enabled' False "
-        )
+        if (not value) and not (
+            ui_json[parameter].get("optional", False) or is_group_optional
+        ):
+            warnings.warn(
+                f"Non-option parameter '{parameter}' cannot be set to 'enabled' False "
+            )
 
 
 def truth(ui_json: dict[str, dict], name: str, member: str) -> bool:
