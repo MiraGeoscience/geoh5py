@@ -245,7 +245,7 @@ def is_uijson(ui_json: dict[str, dict]):
         "run_command",
         "conda_environment",
         "geoh5",
-        "workspace",
+        "workspace_geoh5",
     ]
 
     is_a_uijson = True
