@@ -6,15 +6,25 @@ on:
       - '*' # Push events to every tag not containing
 
 jobs:
-  call-workflow-publish:
-    name: Publish development package on JFrog Artifactory
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-publish_package.yml@main
+  call-workflow-conda-publish:
+    name: Publish development conda package on JFrog Artifactory
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-publish_conda_package.yml@DEVOPS-504
     with:
-      package-managers: '["conda", "poetry"]'
+      package-name: 'geoh5py'
+      python-version: '3.10'
+      repo-names: '["public-conda-dev-local"]'
+    secrets:
+      JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+      JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+  call-workflow-pypi-publish:
+    name: Publish development pypi package on JFrog Artifactory
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-publish_pypi_package.yml@DEVOPS-504
+    with:
+      package-manager: 'poetry'
       package-name: 'geoh5py'
       version-tag: ${{ github.ref_name }}
       python-version: '3.10'
-      repo-names: '["public-conda-dev-local", "public-pypi-dev-local"]'
+      repo-names: '[ "public-pypi-dev-local"]'
     secrets:
       JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
       JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
