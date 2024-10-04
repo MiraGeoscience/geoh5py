@@ -128,9 +128,9 @@ class InputFile:
                 raise AttributeError("'ui_json' must be set before setting data.")
 
             if len(value) != len(self._ui_json):
-                raise ValueError(
-                    "The number of input values for 'data' must "
-                    "equal the number of parameters in 'ui_json'."
+                warnings.warn(
+                    "The number of input values for 'data' differs from "
+                    "the number of parameters in 'ui_json'."
                 )
 
             if self._geoh5 is None and "geoh5" in value:
@@ -258,7 +258,7 @@ class InputFile:
             raise AttributeError("InputFile requires a 'ui_json' to be defined.")
 
         for key, value in data.items():
-            if isinstance(self.ui_json[key], dict):
+            if key in self.ui_json and isinstance(self.ui_json[key], dict):
                 enabled = self.ui_json[key].get("enabled", None)
                 if enabled is not None:
                     if self.validation_options.get("update_enabled", True):
