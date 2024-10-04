@@ -82,7 +82,7 @@ class TipperSurvey(FEMSurvey):
                 f"The 'base_station' attribute cannot be set on class {TipperBaseStations}."
             )
 
-        if base.n_vertices not in [self.n_vertices, 1, None]:
+        if base.n_vertices not in [getattr(self, "n_vertices", None), 1, None]:
             raise AttributeError(
                 "The input 'base_stations' should have n_vertices equal to 1, n_receivers or None."
             )

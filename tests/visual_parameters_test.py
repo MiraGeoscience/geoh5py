@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
@@ -58,3 +59,29 @@ def test_visual_parameters(tmp_path):
     with Workspace(h5file_path) as workspace:
         points = workspace.get_entity(name)[0]
         assert points.visual_parameters.colour == [0, 255, 0]
+
+        viz_params = points.visual_parameters
+        viz_params_b = viz_params.copy()
+
+        points.visual_parameters = viz_params_b
+
+        assert points.visual_parameters.uid == viz_params_b.uid
+        assert viz_params not in points.children
+
+        vp3 = points.add_data(
+            {
+                "Visual Parameters": {
+                    "name": "Visual Parameters",
+                    "association": "OBJECT",
+                    "primitive_type": "TEXT",
+                }
+            }
+        )
+
+        assert points.visual_parameters.uid == vp3.uid
+
+        with pytest.raises(UserWarning, match="Visual parameters already exist"):
+            points.add_default_visual_parameters()
+
+        with pytest.raises(TypeError, match="Input 'visual_parameters'"):
+            points.visual_parameters = 1

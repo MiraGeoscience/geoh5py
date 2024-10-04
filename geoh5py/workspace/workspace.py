@@ -444,7 +444,7 @@ class Workspace(AbstractContextManager):
         entity: dict | None = None,
         entity_type: EntityType | dict | None = None,
         save_on_creation: bool = True,
-    ) -> Entity:
+    ):
         """
         Function to create and register a new entity and its entity_type.
 
@@ -465,19 +465,15 @@ class Workspace(AbstractContextManager):
         ):
             entity["parent"] = self.root
 
-        created_entity: Data | Group | ObjectBase
-
         if entity_class is None or issubclass(entity_class, Data):
-            created_entity = self.create_data(Data, entity, entity_type)
+            created_data = self.create_data(Data, entity, entity_type)
+            if save_on_creation and self.h5file is not None:
+                self.save_entity(created_data, compression=compression)
+            return created_data
 
-        else:
-            created_entity = self.create_object_or_group(
-                entity_class, entity, entity_type
-            )
-
+        created_entity = self.create_object_or_group(entity_class, entity, entity_type)
         if save_on_creation and self.h5file is not None:
             self.save_entity(created_entity, compression=compression)
-
         return created_entity
 
     def add_or_update_property_group(

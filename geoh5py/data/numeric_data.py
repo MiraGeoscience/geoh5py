@@ -96,7 +96,6 @@ class NumericData(Data, ABC):
 
         :returns: values: An array of float values of length n_values or None
         """
-
         if values is None:
             return values
 
