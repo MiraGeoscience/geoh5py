@@ -206,9 +206,6 @@ class InputFile:
         with open(json_file, encoding="utf-8") as file:
             input_file.ui_json = json.load(file)
 
-        if isinstance(input_file.geoh5, Workspace):
-            input_file.geoh5.close()
-
         return input_file
 
     @property
