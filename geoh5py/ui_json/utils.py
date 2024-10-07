@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-import shutil
 import warnings
 from io import BytesIO
 from pathlib import Path
@@ -27,7 +26,7 @@ from typing import Any
 from geoh5py import Workspace
 from geoh5py.groups import ContainerGroup, Group
 from geoh5py.objects import ObjectBase
-from geoh5py.shared.utils import fetch_active_workspace
+from geoh5py.shared.utils import fetch_active_workspace, resilient_copy
 
 
 def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
@@ -326,7 +325,7 @@ def monitored_directory_copy(
         with Workspace.create(working_path / temp_geoh5) as w_s:
             entity.copy(parent=w_s, copy_children=copy_children)
 
-    shutil.move(
+    resilient_copy(
         working_path / temp_geoh5,
         directory_path / temp_geoh5,
     )

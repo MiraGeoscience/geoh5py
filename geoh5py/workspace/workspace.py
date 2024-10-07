@@ -20,7 +20,6 @@
 from __future__ import annotations
 
 import inspect
-import shutil
 import subprocess
 import tempfile
 import uuid
@@ -69,6 +68,7 @@ from ..shared.utils import (
     as_str_if_utf8_bytes,
     clear_array_attributes,
     get_attributes,
+    resilient_copy,
     str2uuid,
 )
 
@@ -212,7 +212,7 @@ class Workspace(AbstractContextManager):
                     stdout=subprocess.DEVNULL,
                 )
                 Path(self._h5file).unlink()
-                shutil.move(temp_file, self._h5file)
+                resilient_copy(temp_file, self._h5file)
             except CalledProcessError:
                 pass
 
@@ -1329,7 +1329,7 @@ class Workspace(AbstractContextManager):
         elif self.h5file is None:
             raise ValueError("Input 'h5file' file must be specified.")
         else:
-            shutil.copy(self.h5file, filepath)
+            resilient_copy(self.h5file, filepath)
 
         self._h5file = filepath
 
