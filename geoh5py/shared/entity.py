@@ -310,15 +310,22 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         if self.on_file:
             self.workspace.update_attribute(self, "metadata")
 
-    def update_metadata(self, value: dict | None):
+    def update_metadata(self, value: dict):
         """
         Update the metadata of the entity.
 
         :param value: Metadata to update.
         """
-        if isinstance(self.metadata, dict) and isinstance(value, dict):
-            value = {**self.metadata, **value}
-        self.metadata = value
+        metadata = self.metadata if isinstance(self.metadata, dict) else {}
+
+        if isinstance(value, dict):
+            value = {**metadata, **value}
+            self.metadata = value
+        else:
+            raise TypeError(
+                "Input metadata must be of type dict. "
+                f"Provided value of type '{type(value)}'."
+            )
 
     @staticmethod
     def validate_metadata(value) -> dict | None:
