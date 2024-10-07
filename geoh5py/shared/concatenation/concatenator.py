@@ -34,7 +34,7 @@ from .concatenated import Concatenated
 from .data import ConcatenatedData
 from .drillholes_group_table import DrillholesGroupTable
 from .object import ConcatenatedObject
-from .property_group import ConcatenatedPropertyGroup
+from .property_group import ConcatenatedPropertyGroup, PropertyGroup
 
 
 PROPERTY_KWARGS = {
@@ -88,11 +88,16 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return self._attributes_keys
 
-    def add_children(self, children: list[ConcatenatedObject] | list[Entity]) -> None:
+    def add_children(
+        self, children: Entity | PropertyGroup | list[Entity | PropertyGroup]
+    ) -> None:
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
         """
+        if not isinstance(children, list):
+            children = [children]
+
         for child in children:
             if not (
                 isinstance(child, Concatenated)
