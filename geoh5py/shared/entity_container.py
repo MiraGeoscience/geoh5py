@@ -56,7 +56,9 @@ class EntityContainer(Entity):
         """
         return cls._TYPE_UID
 
-    def add_children(self, children: Entity | list[Entity]):
+    def add_children(
+        self, children: Entity | PropertyGroup | list[Entity | PropertyGroup]
+    ):
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`

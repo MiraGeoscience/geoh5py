@@ -71,11 +71,16 @@ class ObjectBase(EntityContainer):
 
         super().__init__(**kwargs)
 
-    def add_children(self, children: list[Entity | PropertyGroup]):
+    def add_children(
+        self, children: Entity | PropertyGroup | list[Entity | PropertyGroup]
+    ):
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
         """
+        if not isinstance(children, list):
+            children = [children]
+
         property_groups = self._property_groups or []
 
         prop_group_uids = {prop_group.uid: prop_group for prop_group in property_groups}
