@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ...objects import ObjectBase, Points
+from ...objects import Points
 from ...workspace import Workspace
 from .base import BaseMerger
 
@@ -28,7 +28,7 @@ class PointsMerger(BaseMerger):
 
     @classmethod
     def create_object(
-        cls, workspace: Workspace, input_entities: list[ObjectBase], **kwargs
+        cls, workspace: Workspace, input_entities: list, **kwargs
     ) -> Points:
         # create the vertices
         vertices = np.vstack([input_entity.vertices for input_entity in input_entities])

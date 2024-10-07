@@ -17,7 +17,7 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from pydantic import BaseModel, model_validator
@@ -404,8 +404,8 @@ class InterpretationSection(Group):
             self.update_metadata({"Section object ID": None})
             return
 
-        self._section_object_id = cast(Slicer, self._verify_object(slicer, "Slicer"))
+        self._section_object_id = self._verify_object(slicer, "Slicer")
 
-        self.add_children(self._section_object_id)
+        self.add_children(self._section_object_id)  # type: ignore
 
-        self.update_metadata({"Section object ID": self._section_object_id.uid})
+        self.update_metadata({"Section object ID": self._section_object_id.uid})  # type: ignore

@@ -64,7 +64,7 @@ def test_delete_entities(tmp_path: Path):
 
         uid_out = curve_2.children[1].uid
 
-        curve_2.remove_children(curve_2.children[0])
+        curve_2.remove_children([curve_2.children[0], "bidon"])
 
         assert (
             uid_out not in curve_2.fetch_property_group(name="myGroup").properties
