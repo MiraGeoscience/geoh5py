@@ -17,7 +17,7 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
 from pydantic import BaseModel, model_validator
@@ -28,7 +28,6 @@ from .base import Group
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..objects import Curve, Slicer
-    from ..shared.entity import Entity
 
 ATTRIBUTE_MAP = {
     "Normal X": "normal_x",
@@ -405,8 +404,8 @@ class InterpretationSection(Group):
             self.update_metadata({"Section object ID": None})
             return
 
-        self._section_object_id = self._verify_object(slicer, "Slicer")
+        self._section_object_id = cast(Slicer, self._verify_object(slicer, "Slicer"))
 
-        self.add_children(slicer)
+        self.add_children(self._section_object_id)
 
-        self.update_metadata({"Section object ID": slicer.uid})
+        self.update_metadata({"Section object ID": self._section_object_id.uid})
