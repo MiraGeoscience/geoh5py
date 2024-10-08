@@ -46,7 +46,7 @@ Filename
 
 -  Stored as a 1D array of UTF-8 encoded, variable-length string type
    designating a file name
--  For each file name within “Data”, an opaque dataset named after the
+-  For each file name within "Data", an opaque dataset named after the
    filename must be added under the Data instance, containing a complete
    binary dump of the file
 -  Different files (under the same object/group) must be saved under
@@ -56,8 +56,8 @@ Filename
 Blob
 ^^^^
 
--  Stored as a 1D array of 8-bit char type (native) (value ‘0’ or ‘1’)
+-  Stored as a 1D array of 8-bit char type (native) (value '0' or '1')
 -  For each index set to 1, an opaque dataset named after the index
-   (e.g. “1”, “2”, etc) must be added under the Data instance,
+   (e.g. "1", "2", etc) must be added under the Data instance,
    containing the binary data tied to that index
 -  No data value : 0
