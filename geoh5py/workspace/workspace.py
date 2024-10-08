@@ -30,6 +30,7 @@ from gc import collect
 from getpass import getuser
 from io import BytesIO
 from pathlib import Path
+from shutil import copy, move
 from subprocess import CalledProcessError
 from typing import Any, ClassVar, cast
 from weakref import ReferenceType
@@ -68,7 +69,6 @@ from ..shared.utils import (
     as_str_if_utf8_bytes,
     clear_array_attributes,
     get_attributes,
-    resilient_copy,
     str2uuid,
 )
 
@@ -212,7 +212,7 @@ class Workspace(AbstractContextManager):
                     stdout=subprocess.DEVNULL,
                 )
                 Path(self._h5file).unlink()
-                resilient_copy(temp_file, self._h5file)
+                move(temp_file, self._h5file, copy)
             except CalledProcessError:
                 pass
 
@@ -1329,7 +1329,7 @@ class Workspace(AbstractContextManager):
         elif self.h5file is None:
             raise ValueError("Input 'h5file' file must be specified.")
         else:
-            resilient_copy(self.h5file, filepath)
+            move(self.h5file, filepath, copy)
 
         self._h5file = filepath
 

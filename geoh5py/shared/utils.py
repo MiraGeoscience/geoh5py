@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-import shutil
 from abc import ABC
 from collections.abc import Callable
 from contextlib import contextmanager
@@ -865,26 +864,3 @@ def remove_duplicates_in_list(input_list: list) -> list:
     :return: The sorted list
     """
     return sorted(set(input_list), key=input_list.index)
-
-
-def resilient_copy(source: str | Path, destination: str | Path):
-    """
-    Copy a file and ignore errors.
-
-    This function is for the case of a copy in a different folder under unbutu.
-
-    :param source: The source file to copy.
-    :param destination: The destination file to copy to.
-    """
-    permission_error = False
-    try:
-        shutil.copy2(source, destination)
-    except PermissionError as error:
-        permission_error = True
-        warn(
-            f"First copy attempt failed due to: {error}"
-            "Trying again with shutil.copy."
-        )
-
-    if permission_error:
-        shutil.copy(source, destination)
