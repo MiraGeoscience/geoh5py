@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-import warnings
 from abc import ABC
 from collections.abc import Callable
 from contextlib import contextmanager
@@ -26,6 +25,7 @@ from json import loads
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
+from warnings import warn
 
 import h5py
 import numpy as np
@@ -170,7 +170,7 @@ def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
             pass
     else:
         if geoh5 is not None:
-            warnings.warn(
+            warn(
                 f"Closing the workspace in mode '{workspace.geoh5.mode}' "
                 f"and re-opening in mode '{mode}'."
             )
