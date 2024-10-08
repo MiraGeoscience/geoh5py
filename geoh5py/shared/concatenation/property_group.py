@@ -141,7 +141,9 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
         parent.workspace.add_or_update_property_group(self)
 
-    def remove_properties(self, data: Data | list[Data | uuid.UUID] | uuid.UUID):
+    def remove_properties(
+        self, data: str | Data | list[str | Data | uuid.UUID] | uuid.UUID
+    ):
         """
         Remove data from the properties.
 

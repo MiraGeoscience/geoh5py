@@ -73,6 +73,7 @@ def test_flatten():
 def test_collect():
     ui_json = deepcopy(default_ui_json)
     ui_json["string_parameter"] = templates.string_parameter(optional="enabled")
+    ui_json["string_parameter"]["tooltip"] = "Bla bla bla"
     ui_json["float_parameter"] = templates.float_parameter(optional="disabled")
     ui_json["integer_parameter"] = templates.integer_parameter(optional="enabled")
     enabled_params = collect(ui_json, "enabled", value=True)
@@ -80,7 +81,7 @@ def test_collect():
     assert all(k in enabled_params for k in ["string_parameter", "integer_parameter"])
     tooltip_params = collect(ui_json, "tooltip")
     assert len(tooltip_params) == 1
-    assert "run_command_boolean" in tooltip_params
+    assert "string_parameter" in tooltip_params
 
 
 def test_group_optional():

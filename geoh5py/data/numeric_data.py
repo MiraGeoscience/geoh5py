@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from warnings import warn
 
 import numpy as np
@@ -40,6 +41,18 @@ class NumericData(Data, ABC):
     def ndv(self):
         """No-data-value"""
 
+    @property
+    def ndv_values(self) -> np.ndarray | None:
+        """
+        Data with nan replaced by ndv
+        """
+        if self.values is None:
+            return None
+        values = deepcopy(self.values)
+        values[np.isnan(values)] = self.ndv
+
+        return values
+
     @abstractmethod
     def format_type(self, values: np.ndarray) -> np.ndarray:
         """
@@ -47,29 +60,6 @@ class NumericData(Data, ABC):
         :param values: numpy array to modify.
         :return: the formatted values.
         """
-
-    @property
-    def values(self) -> np.ndarray | None:
-        """
-        :return: values: An array of values
-        """
-        if getattr(self, "_values", None) is None:
-            values = self.workspace.fetch_values(self)
-
-            if isinstance(values, (np.ndarray, type(None))):
-                self._values = self.format_values(values)
-
-        return self._values
-
-    @values.setter
-    def values(self, values: np.ndarray | None):
-        if not isinstance(values, (np.ndarray, type(None))):
-            raise TypeError(
-                f"Input 'values' for {self} must be of type {np.ndarray} or None."
-            )
-
-        self._values = self.format_values(values)
-        self.workspace.update_attribute(self, "values")
 
     def format_length(self, values: np.ndarray) -> np.ndarray:
         """
@@ -97,7 +87,7 @@ class NumericData(Data, ABC):
 
         return values
 
-    def format_values(self, values: np.ndarray | None) -> np.ndarray:
+    def validate_values(self, values: np.ndarray | None) -> np.ndarray:
         """
         Check for possible mismatch between the length of values
         stored and the expected number of cells or vertices.
@@ -106,7 +96,6 @@ class NumericData(Data, ABC):
 
         :returns: values: An array of float values of length n_values or None
         """
-
         if values is None:
             return values
 
@@ -116,6 +105,8 @@ class NumericData(Data, ABC):
         if values.ndim > 1:
             values = np.ravel(values)
             warn("Input 'values' converted to a 1D array.")
+
+        values = values.astype(float)
 
         # change nan values to nan_value
         values[np.isnan(values)] = self.nan_value

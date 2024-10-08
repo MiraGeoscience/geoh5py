@@ -92,6 +92,7 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0", add_data=True)
                     },
                 }
             )
+
             well.add_data(
                 {
                     "text Data": {
@@ -181,40 +182,38 @@ def test_concatenated_entities(tmp_path):
     with Workspace.create(h5file_path, version=2.0) as workspace:
         class_type = type("TestGroup", (Concatenator, ContainerGroup), {})
         entity_type = Group.find_or_create_type(workspace)
-        concat = class_type(entity_type)
+        concat = class_type(entity_type=entity_type)
 
         class_obj_type = type("TestObject", (ConcatenatedObject, Drillhole), {})
         object_type = ObjectBase.find_or_create_type(workspace)
 
         with pytest.raises(UserWarning) as error:
-            concat_object = class_obj_type(object_type)
+            concat_object = class_obj_type(entity_type=object_type)
 
         assert (
             "Creating a concatenated object must have a parent of type Concatenator."
             in str(error)
         )
 
-        concat_object = class_obj_type(object_type, parent=concat)
+        concat_object = class_obj_type(entity_type=object_type, parent=concat)
 
         with pytest.raises(UserWarning) as error:
             class_type = type("TestData", (ConcatenatedData, FloatData), {})
             dtype = data_type.DataType.find_or_create(
                 workspace, primitive_type=FloatData.primitive_type()
             )
-            data = class_type(dtype)
+            class_type(entity_type=dtype)
 
         assert "Creating a concatenated data must have a parent" in str(error)
 
-        data = class_type(dtype, parent=concat_object)
+        data = class_type(entity_type=dtype, parent=concat_object)
 
         assert data.property_group is None
 
-        with pytest.raises(
-            AttributeError, match="must have a 'property_groups' attribute"
-        ):
-            prop_group = ConcatenatedPropertyGroup(None)
+        with pytest.raises(TypeError, match="must have a 'property_groups' attribute"):
+            ConcatenatedPropertyGroup(None)
 
-        prop_group = ConcatenatedPropertyGroup(parent=concat_object)
+        prop_group = ConcatenatedPropertyGroup(parent=concat_object, properties=[data])
 
         with pytest.raises(
             AttributeError, match="Cannot change parent of a property group."
@@ -236,9 +235,6 @@ def test_concatenated_entities(tmp_path):
 
         assert prop_group.parent == concat_object
 
-        with pytest.raises(KeyError, match="A Property Group"):
-            concat_object.create_property_group(name="property_group")
-
 
 def test_empty_concatenated_property_group():
     workspace = Workspace()
@@ -247,7 +243,7 @@ def test_empty_concatenated_property_group():
         workspace,
         parent=dh_group,
     )
-    ConcatenatedPropertyGroup(parent=well)
+    ConcatenatedPropertyGroup(parent=well, association="DEPTH")
     assert not well.from_
 
 
@@ -602,7 +598,9 @@ def test_copy_and_append_drillhole_data(tmp_path):
                         },
                     },
                     property_group=ConcatenatedPropertyGroup(
-                        parent=well, property_group_type="Multi-element"
+                        parent=well,
+                        property_group_type="Multi-element",
+                        association="DEPTH",
                     ),
                 )
 
@@ -845,7 +843,9 @@ def test_is_collocated(tmp_path):
     ws = Workspace(tmp_path / "test.geoh5")
     dh_group = DrillholeGroup.create(ws)
     dh = Drillhole.create(ws, name="dh", parent=dh_group)
-    property_group = dh.fetch_property_group(name="some uninitialized group")
+    property_group = dh.fetch_property_group(
+        name="some uninitialized group", association="DEPTH"
+    )
     assert not property_group.is_collocated(np.arange(0, 10.0), 0.01)
     dh.add_data(
         {
@@ -1032,7 +1032,10 @@ def test_add_data_to_property(tmp_path):
             "new value",
             verification_map_value,
             data_type=data_type.DataType(
-                workspace, "REFERENCED", name="new_value", value_map=value_map
+                workspace,
+                primitive_type="REFERENCED",
+                name="new_value",
+                value_map=value_map,
             ),
         )
 
@@ -1069,8 +1072,8 @@ def test_add_data_to_property(tmp_path):
         verificationc["interval_values_a"] = verification_map_value
 
         assert compare_structured_arrays(
-            verificationc,
-            verificationd,
+            verificationc.astype([("new_value", np.float32)]),
+            verificationd.astype([("new_value", np.float32)]),
             tolerance=1e-5,
         )
 

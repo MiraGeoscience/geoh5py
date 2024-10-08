@@ -18,47 +18,64 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING
 
 import numpy as np
 
+from ..shared.utils import xy_rotation_matrix
 from .grid_object import GridObject
-
-
-if TYPE_CHECKING:
-    from geoh5py.objects import ObjectType
 
 
 class BlockModel(GridObject):
     """
     Rectilinear 3D tensor mesh defined by three perpendicular axes.
+
     Each axis is divided into discrete intervals that define the cell dimensions.
     Nodal coordinates are determined relative to the origin and the sign of cell delimiters.
     Negative and positive cell delimiters
     are accepted to denote relative offsets from the origin.
+
+    :param object_type: Type of object registered in the workspace.
+    :param u_cell_delimiters: Nodal offsets along the u-axis relative to the origin.
+    :param v_cell_delimiters: Nodal offsets along the v-axis relative to the origin.
+    :param z_cell_delimiters: Nodal offsets along the z-axis relative to the origin.
+    :param kwargs: Additional attributes defined by the
+        :obj:`~geoh5py.objects.grid_object.GridObject` class.
     """
 
-    __TYPE_UID = uuid.UUID(
+    _TYPE_UID = uuid.UUID(
         fields=(0xB020A277, 0x90E2, 0x4CD7, 0x84, 0xD6, 0x612EE3F25051)
     )
     _attribute_map = GridObject._attribute_map.copy()
     _attribute_map.update({"Origin": "origin", "Rotation": "rotation"})
 
-    def __init__(self, object_type: ObjectType, **kwargs):
-        self._origin: np.ndarray = np.zeros(3)
-        self._rotation: float = 0.0
-        self._u_cell_delimiters: np.ndarray | None = None
-        self._v_cell_delimiters: np.ndarray | None = None
-        self._z_cell_delimiters: np.ndarray | None = None
+    def __init__(
+        self,
+        u_cell_delimiters: np.ndarray = np.array([0.0, 1.0]),
+        v_cell_delimiters: np.ndarray = np.array([0.0, 1.0]),
+        z_cell_delimiters: np.ndarray = np.array([0.0, 1.0]),
+        **kwargs,
+    ):
+        self._u_cell_delimiters = self.validate_cell_delimiters(u_cell_delimiters, "u")
+        self._v_cell_delimiters = self.validate_cell_delimiters(v_cell_delimiters, "v")
+        self._z_cell_delimiters = self.validate_cell_delimiters(z_cell_delimiters, "z")
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(
+            **kwargs,
+        )
+
+    def local_axis_centers(self, axis: str) -> np.ndarray:
+        """
+        Get the local axis centers for the block model.
+
+        :param axis: Axis to get the centers for.
+        """
+        n_cells = getattr(self, f"{axis}_cells")
+        return np.cumsum(n_cells) - n_cells / 2.0
 
     @property
-    def centroids(self) -> np.ndarray | None:
+    def centroids(self) -> np.ndarray:
         """
-        :obj:`numpy.array`,
-        shape (:obj:`~geoh5py.objects.block_model.BlockModel.n_cells`, 3):
-        Cell center locations in world coordinates.
+        Cell center locations in world coordinates of shape (n_cells, 3).
 
         .. code-block:: python
 
@@ -68,32 +85,17 @@ class BlockModel(GridObject):
                 [x_N, y_N, z_N]
             ]
         """
-        if (
-            getattr(self, "_centroids", None) is None
-            and self.u_cells is not None
-            and self.v_cells is not None
-            and self.z_cells is not None
-            and self.origin is not None
-        ):
-            cell_center_u = np.cumsum(self.u_cells) - self.u_cells / 2.0
-            cell_center_v = np.cumsum(self.v_cells) - self.v_cells / 2.0
-            cell_center_z = np.cumsum(self.z_cells) - self.z_cells / 2.0
-
+        if getattr(self, "_centroids", None) is None:
+            cell_center_u = self.local_axis_centers("u")
+            cell_center_v = self.local_axis_centers("v")
+            cell_center_z = self.local_axis_centers("z")
             angle = np.deg2rad(self.rotation)
-            rot = np.r_[
-                np.c_[np.cos(angle), -np.sin(angle), 0],
-                np.c_[np.sin(angle), np.cos(angle), 0],
-                np.c_[0, 0, 1],
-            ]
-
+            rot = xy_rotation_matrix(angle)
             u_grid, v_grid, z_grid = np.meshgrid(
                 cell_center_u, cell_center_v, cell_center_z
             )
-
             xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.ravel(z_grid)]
-
             self._centroids = np.dot(rot, xyz.T).T
-            assert self._centroids is not None
 
             for ind, axis in enumerate(["x", "y", "z"]):
                 self._centroids[:, ind] += self.origin[axis]
@@ -101,177 +103,82 @@ class BlockModel(GridObject):
         return self._centroids
 
     @property
-    def cell_delimiters(self):
+    def cell_delimiters(self) -> list[np.ndarray]:
+        """
+        List of cell delimiters along the u, v and z-axis.
+        """
         return [
             self._u_cell_delimiters,
             self._v_cell_delimiters,
             self._z_cell_delimiters,
         ]
 
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
+    @property
+    def shape(self) -> tuple[int, int, int]:
         """
-        :return: Default unique identifier
+        Number of cells along the u, v and z-axis
         """
-        return cls.__TYPE_UID
+        return self.u_cells.shape[0], self.v_cells.shape[0], self.z_cells.shape[0]
 
     @property
-    def n_cells(self) -> int | None:
+    def u_cell_delimiters(self) -> np.ndarray:
         """
-        :obj:`int`: Total number of cells
-        """
-        if self.shape is not None:
-            return int(np.prod(self.shape))
-        return None
-
-    @property
-    def origin(self) -> np.ndarray:
-        """
-        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the origin.
-        """
-        return self._origin
-
-    @origin.setter
-    def origin(self, value):
-        if value is not None:
-            if isinstance(value, np.ndarray):
-                value = value.tolist()
-
-            assert (
-                len(value) == 3
-            ), "Origin must be a list or numpy array of shape (3, )"
-
-            self._centroids = None
-
-            value = np.asarray(
-                tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
-            )
-            self._origin = value
-            self.workspace.update_attribute(self, "attributes")
-
-    @property
-    def rotation(self) -> float:
-        """
-        :obj:`float`: Clockwise rotation angle (degree) about the vertical axis.
-        """
-        return self._rotation
-
-    @rotation.setter
-    def rotation(self, value):
-        if value is not None:
-            value = np.r_[value]
-            assert len(value) == 1, "Rotation angle must be a float of shape (1,)"
-            self._centroids = None
-            self._rotation = value.astype(float).item()
-            self.workspace.update_attribute(self, "attributes")
-
-    @property
-    def shape(self) -> tuple | None:
-        """
-        :obj:`list` of :obj:`int`, len (3, ): Number of cells along the u, v and z-axis
-        """
-        if (
-            self.u_cells is not None
-            and self.v_cells is not None
-            and self.z_cells is not None
-        ):
-            return tuple(
-                [self.u_cells.shape[0], self.v_cells.shape[0], self.z_cells.shape[0]]
-            )
-        return None
-
-    @property
-    def u_cell_delimiters(self) -> np.ndarray | None:
-        """
-        :obj:`numpy.array` of :obj:`float`:
         Nodal offsets along the u-axis relative to the origin.
         """
-        if (getattr(self, "_u_cell_delimiters", None) is None) and self.on_file:
-            self._u_cell_delimiters = self.workspace.fetch_array_attribute(
-                self, "u_cell_delimiters"
-            )
-
         return self._u_cell_delimiters
 
-    @u_cell_delimiters.setter
-    def u_cell_delimiters(self, value):
-        if value is not None:
-            value = np.r_[value]
-            self._centroids = None
-            self._u_cell_delimiters = value.astype(float)
-            self.workspace.update_attribute(self, "u_cell_delimiters")
-
     @property
-    def u_cells(self) -> np.ndarray | None:
+    def u_cells(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`,
-        shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [0], ):
         Cell size along the u-axis.
         """
-        if self.u_cell_delimiters is not None:
-            return self.u_cell_delimiters[1:] - self.u_cell_delimiters[:-1]
-        return None
+        return self.u_cell_delimiters[1:] - self.u_cell_delimiters[:-1]
 
     @property
-    def v_cell_delimiters(self) -> np.ndarray | None:
+    def v_cell_delimiters(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`:
         Nodal offsets along the v-axis relative to the origin.
         """
-        if (getattr(self, "_v_cell_delimiters", None) is None) and self.on_file:
-            self._v_cell_delimiters = self.workspace.fetch_array_attribute(
-                self, "v_cell_delimiters"
-            )
-
         return self._v_cell_delimiters
 
-    @v_cell_delimiters.setter
-    def v_cell_delimiters(self, value):
-        if value is not None:
-            value = np.r_[value]
-            self._centroids = None
-            self._v_cell_delimiters = value.astype(float)
-            self.workspace.update_attribute(self, "v_cell_delimiters")
-
     @property
-    def v_cells(self) -> np.ndarray | None:
+    def v_cells(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`,
-        shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [1], ):
         Cell size along the v-axis.
         """
-        if self.v_cell_delimiters is not None:
-            return self.v_cell_delimiters[1:] - self.v_cell_delimiters[:-1]
-        return None
+        return self.v_cell_delimiters[1:] - self.v_cell_delimiters[:-1]
 
     @property
-    def z_cell_delimiters(self) -> np.ndarray | None:
+    def z_cell_delimiters(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`:
-        Nodal offsets along the z-axis relative to the origin (positive up).
+        Nodal offsets along the u-axis relative to the origin.
         """
-        if (getattr(self, "_z_cell_delimiters", None) is None) and self.on_file:
-            self._z_cell_delimiters = self.workspace.fetch_array_attribute(
-                self, "z_cell_delimiters"
-            )
-
         return self._z_cell_delimiters
 
-    @z_cell_delimiters.setter
-    def z_cell_delimiters(self, value):
-        if value is not None:
-            value = np.r_[value]
-            self._centroids = None
-            self._z_cell_delimiters = value.astype(float)
-            self.workspace.update_attribute(self, "z_cell_delimiters")
-
     @property
-    def z_cells(self) -> np.ndarray | None:
+    def z_cells(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`,
-        shape (:obj:`~geoh5py.objects.block_model.BlockModel.shape` [2], ):
         Cell size along the z-axis
         """
-        if self.z_cell_delimiters is not None:
-            return self.z_cell_delimiters[1:] - self.z_cell_delimiters[:-1]
-        return None
+        return self.z_cell_delimiters[1:] - self.z_cell_delimiters[:-1]
+
+    @staticmethod
+    def validate_cell_delimiters(value: np.ndarray, axis: str) -> np.ndarray:
+        """
+        Validate the cell delimiters for the block model.
+
+        :param value: Cell delimiters along the axis.
+        :param axis: Axis to validate the cell delimiters for.
+        """
+        if not isinstance(value, np.ndarray):
+            raise TypeError(
+                f"Attribute '{axis}_cell_delimiters' must be a numpy array."
+            )
+
+        if not np.issubdtype(value.dtype, np.number) or value.ndim != 1:
+            raise ValueError(
+                f"Attribute '{axis}_cell_delimiters' must be a 1D array of floats. "
+                f"Provided {value}"
+            )
+
+        return value.astype(float)

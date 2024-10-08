@@ -21,33 +21,48 @@ import uuid
 
 import numpy as np
 
-from .grid_object import GridObject
-from .object_base import ObjectType
+from .object_base import ObjectBase
 
 
-class DrapeModel(GridObject):
+class DrapeModel(ObjectBase):
     """
     Drape (curtain) model object made up of layers and prisms.
+
+    :param layers: Array of layers in the drape model organized into blocks
+        representing each prism in the model.
+    :param prisms: Array detailing the assembly of
+        :obj:`geoh5py.objects.drape_model.DrapeModel.layers` within the trace
+        of the drape model.
     """
 
-    __TYPE_UID = uuid.UUID("{C94968EA-CF7D-11EB-B8BC-0242AC130003}")
+    _TYPE_UID = uuid.UUID("{C94968EA-CF7D-11EB-B8BC-0242AC130003}")
+    __LAYERS_DTYPE = np.dtype([("I", "<i4"), ("K", "<i4"), ("Bottom elevation", "<f8")])
+    __PRISM_DTYPE = np.dtype(
+        [
+            ("Top easting", "<f8"),
+            ("Top northing", "<f8"),
+            ("Top elevation", "<f8"),
+            ("First layer", "<i4"),
+            ("Layer count", "<i4"),
+        ]
+    )
 
-    def __init__(self, object_type: ObjectType, **kwargs):
-        self._layers: np.ndarray | None = None
-        self._prisms: np.ndarray | None = None
+    def __init__(
+        self,
+        layers: np.ndarray | list | tuple | None = None,
+        prisms: np.ndarray | list | tuple | None = None,
+        **kwargs,
+    ):
+        self._centroids: np.ndarray | None = None
+        self._layers: np.ndarray = self.validate_layers(layers)
+        self._prisms: np.ndarray = self.validate_prisms(prisms)
 
-        super().__init__(object_type, **kwargs)
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
+        super().__init__(**kwargs)
 
     @property
-    def centroids(self):
+    def centroids(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`,
-        shape (:obj:`~geoh5py.objects.drape_model.Drapemodel.n_cells`, 3):
-        Cell center locations in world coordinates.
+        Cell center locations in world coordinates, shape(*, 3).
 
         .. code-block:: python
 
@@ -58,44 +73,31 @@ class DrapeModel(GridObject):
             ]
         """
         if getattr(self, "_centroids", None) is None:
-            if self.layers is None:
-                raise AttributeError(
-                    "Attribute 'layers' must be defined before accessing 'centroids'."
-                )
-
-            if self.prisms is None:
-                raise AttributeError(
-                    "Attribute 'prisms' must be defined before accessing 'centroids'."
-                )
-
-            top = self.layers[:, 1] == 0
-            z_centers = np.r_[
-                0.0,
-                np.mean(
-                    [
-                        self.layers[1:, 2],
-                        self.layers[:-1, 2],
-                    ],
-                    axis=0,
-                ),
-            ]
-
-            # Reset the value for the top cell of every column
-            z_centers[top] = (
-                self.prisms[self.layers[top, 0].astype(int), 2] + self.layers[top, 2]
-            ) / 2.0
-            self._centroids = np.c_[
-                self.prisms[self.layers[:, 0].astype(int), :2], z_centers
-            ]
+            self._centroids = np.vstack(
+                [
+                    np.ones((int(val), 3)) * self.prisms[ii, :3]
+                    for ii, val in enumerate(self.prisms[:, 4])
+                ]
+            )
+            tops = np.hstack(
+                [
+                    np.r_[
+                        cells[2],
+                        self.layers[int(cells[3]) : int(cells[3] + cells[4] - 1), 2],
+                    ]
+                    for cells in self.prisms.tolist()
+                ]
+            )
+            self._centroids[:, 2] = (tops + self.layers[:, 2]) / 2.0
 
         return self._centroids
 
     @property
-    def layers(self) -> np.ndarray | None:
+    def layers(self) -> np.ndarray:
         """
-        :obj:`numpy.array`, shape(*, 3): Layers in the drape model with columns: X
-        (prism index), K (depth index), elevation (cell bottom)).
-        shape(*, 3) organized into blocks representing each prism in the model.
+        Layers in the drape model organized into blocks representing each prism in the model:
+
+        X (prism index), K (depth index), elevation (cell bottom))
 
         .. code-block:: python
 
@@ -116,39 +118,16 @@ class DrapeModel(GridObject):
         if self._layers is None and self.on_file:
             self._layers = self.workspace.fetch_array_attribute(self, "layers")
 
-        if self._layers is not None:
-            return np.asarray(self._layers.tolist())
-
-        return None
-
-    @layers.setter
-    def layers(self, xyz: np.ndarray):
-        if any(np.diff(np.unique(xyz[:, 0])) != 1):
-            msg = "Prism index (first column) must be monotonically increasing."
-            raise ValueError(msg)
-
-        if xyz.shape[1] != 3:
-            msg = f"Array of layers must be of shape (*, 3). Array of shape {xyz.shape} provided."
-            raise ValueError(msg)
-
-        self._layers = np.asarray(
-            np.core.records.fromarrays(
-                xyz.T.tolist(),
-                dtype=[("I", "<i4"), ("K", "<i4"), ("Bottom elevation", "<f8")],
-            )
-        )
-        self.workspace.update_attribute(self, "layers")
+        return np.asarray(self._layers.tolist())
 
     @property
-    def n_cells(self):
-        if self._layers is not None:
-            return self._layers.shape[0]
-        return None
+    def n_cells(self) -> int:
+        return self.layers.shape[0]
 
     @property
-    def prisms(self) -> np.ndarray | None:
+    def prisms(self) -> np.ndarray:
         """
-        :obj:`numpy.array`, shape(*, 5) detailing the assembly of :obj:
+        Array detailing the assembly of :obj:
         `geoh5py.objects.drape_model.Drapemodel.layers` within the trace
         of the drape model.
 
@@ -167,29 +146,84 @@ class DrapeModel(GridObject):
         if self._prisms is None and self.on_file:
             self._prisms = self.workspace.fetch_array_attribute(self, "prisms")
 
-        if self._prisms is not None:
-            return np.array(self._prisms.tolist())
+        return np.array(self._prisms.tolist())
 
-        return None
+    @classmethod
+    def validate_prisms(cls, values: np.ndarray | list | tuple | None) -> np.ndarray:
+        """
+        Validate and format type of prisms array.
 
-    @prisms.setter
-    def prisms(self, xyz: np.ndarray):
-        assert (
-            xyz.shape[1] == 5
-        ), f"Array of prisms must be of shape (*, 5). Array of shape {xyz.shape} provided."
-        self._prisms = np.asarray(
-            np.core.records.fromarrays(
-                xyz.T.tolist(),
-                dtype={
-                    "names": [
-                        "Top easting",
-                        "Top northing",
-                        "Top elevation",
-                        "First layer",
-                        "Layer count",
-                    ],
-                    "formats": ["<f8", "<f8", "<f8", "<i4", "<i4"],
-                },
+        :param values: Array of prisms as defined by
+            :obj:`~geoh5py.objects.drape_model.DrapeModel.prisms`.
+        """
+        if isinstance(values, (list, tuple)):
+            values = np.array(values, ndmin=2)
+
+        if not isinstance(values, np.ndarray):
+            raise TypeError(
+                "Attribute 'prisms' must be a list, tuple or numpy array. "
+                f"Object of type {type(values)} provided."
             )
-        )
-        self.workspace.update_attribute(self, "prisms")
+
+        if np.issubdtype(values.dtype, np.number):
+            if values.shape[1] != 5:
+                raise ValueError(
+                    "Array of 'prisms' must be of shape (*, 5). "
+                    f"Array of shape {values.shape} provided."
+                )
+
+            values = np.asarray(
+                np.core.records.fromarrays(
+                    values.T.tolist(),
+                    dtype=cls.__PRISM_DTYPE,
+                )
+            )
+
+        if values.dtype != cls.__PRISM_DTYPE:
+            raise ValueError(
+                f"Array of 'prisms' must be of dtype = {cls.__PRISM_DTYPE}"
+            )
+
+        return values
+
+    @classmethod
+    def validate_layers(cls, values: np.ndarray | list | tuple | None) -> np.ndarray:
+        """
+        Validate and format type of layers array.
+
+        :param values: Array of layers as defined by
+            :obj:`~geoh5py.objects.drape_model.DrapeModel.layers`.
+        """
+        if isinstance(values, (list, tuple)):
+            values = np.array(values, ndmin=2)
+
+        if not isinstance(values, np.ndarray):
+            raise TypeError(
+                "Attribute 'layers' must be a list, tuple or numpy array. "
+                f"Object of type {type(values)} provided."
+            )
+
+        if np.issubdtype(values.dtype, np.number):
+            if values.shape[1] != 3:
+                raise ValueError(
+                    "Array of 'layers' must be of shape (*, 3). "
+                    f"Array of shape {values.shape} provided."
+                )
+
+            if any(np.diff(np.unique(values[:, 0])) != 1):
+                msg = "Prism index (first column) must be monotonically increasing."
+                raise ValueError(msg)
+
+            values = np.asarray(
+                np.core.records.fromarrays(
+                    values.T.tolist(),
+                    dtype=cls.__LAYERS_DTYPE,
+                )
+            )
+
+        if values.dtype != cls.__LAYERS_DTYPE:
+            raise ValueError(
+                f"Array of 'layers' must be of dtype = {cls.__LAYERS_DTYPE}"
+            )
+
+        return values

@@ -10,6 +10,7 @@ dependencies:
   - h5py
   - pip
   - ipykernel
+  - pydantic
   - pip:
     - sphinx
     - sphinx_issues

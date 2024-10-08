@@ -25,11 +25,7 @@ from .base import Group
 class GiftoolsGroup(Group):
     """The type for a GIFtools group."""
 
-    __TYPE_UID = uuid.UUID(
+    _TYPE_UID = uuid.UUID(
         fields=(0x585B3218, 0xC24B, 0x41FE, 0xAD, 0x1F, 0x24D5E6E8348A)
     )
     _default_name = "GIFtools Project"
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
