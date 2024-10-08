@@ -113,4 +113,4 @@ class FilenameData(Data):
     #   – Key (unsigned int)
     #   - Value (variable-length utf8 string)
     # must exist under type.
-    # No data value : 0 (key is tied to value “Unknown”)
+    # No data value : 0 (key is tied to value "Unknown")
