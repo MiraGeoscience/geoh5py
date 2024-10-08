@@ -69,8 +69,9 @@ class BlockModel(GridObject):
 
         :param axis: Axis to get the centers for.
         """
-        n_cells = getattr(self, f"{axis}_cells")
-        return np.cumsum(n_cells) - n_cells / 2.0
+        out = np.cumsum(getattr(self, f"{axis}_cell_delimiters"))
+        out[2:] = out[2:] - out[:-2]
+        return out[2 - 1 :] / 2
 
     @property
     def centroids(self) -> np.ndarray:
