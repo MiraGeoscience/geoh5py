@@ -17,10 +17,10 @@
 
 from __future__ import annotations
 
-import shutil
 import warnings
 from io import BytesIO
 from pathlib import Path
+from shutil import copy, move
 from time import time
 from typing import Any
 
@@ -326,9 +326,6 @@ def monitored_directory_copy(
         with Workspace.create(working_path / temp_geoh5) as w_s:
             entity.copy(parent=w_s, copy_children=copy_children)
 
-    shutil.move(
-        working_path / temp_geoh5,
-        directory_path / temp_geoh5,
-    )
+    move(working_path / temp_geoh5, directory_path / temp_geoh5, copy)
 
     return str(directory_path / temp_geoh5)
