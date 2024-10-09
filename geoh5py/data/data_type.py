@@ -314,9 +314,10 @@ class DataType(EntityType):
     @precision.setter
     def precision(self, value: int):
         if (
-            not isinstance(value, int)
-            and (isinstance(value, float) and not value.is_integer())
-        ) or value < 0:
+            not isinstance(value, (int, float, np.integer, np.floating))
+            or (isinstance(value, (float, np.floating)) and not value.is_integer())
+            or value < 0
+        ):
             raise TypeError(
                 f"Attribute 'precision' must be an integer greater than 0, not {value}"
             )
