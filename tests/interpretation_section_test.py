@@ -50,23 +50,18 @@ def test_create_interpretation_section(tmp_path: Path):
         }
 
         slicer = Slicer.create(workspace, name="slicer")
-
+        print(slicer._attribute_map)
         # testing the removes
         group.remove_interpretation_curve(curve.uid)  # nothing happens
         group.remove_interpretation_section(section)  # nothing happens
 
         group.add_interpretation_section(section)
 
-        assert (
-            InterpretationSectionParams(**section).in_list(
-                group.interpretation_sections
-            )
-            == 0
-        )
+        assert InterpretationSectionParams(**section) in group.interpretation_sections
 
         group.add_interpretation_curve(curve.uid)
 
-        assert [curve] == group.interpretation_curves
+        assert (curve,) == group.interpretation_curves
 
         group.section_object_id = slicer.uid
 
@@ -92,12 +87,7 @@ def test_create_interpretation_section(tmp_path: Path):
 
         assert group.can_add_group is True
 
-        assert (
-            InterpretationSectionParams(**section).in_list(
-                group.interpretation_sections
-            )
-            == 0
-        )
+        assert InterpretationSectionParams(**section) in group.interpretation_sections
 
         assert curve.uid == group.interpretation_curves[0].uid
 
@@ -118,24 +108,22 @@ def test_create_interpretation_section(tmp_path: Path):
         group.add_interpretation_section(section2)
         group.add_interpretation_curve(curve2.uid)
 
-        assert (
-            InterpretationSectionParams(**section2).in_list(
-                group.interpretation_sections
-            )
-            == 1
-        )
+        assert InterpretationSectionParams(**section2) in group.interpretation_sections
+
         assert curve2.uid == group.interpretation_curves[1].uid
+
+        assert curve2.clipping_ids[0] == slicer.uid
 
         # remove object
         group.remove_interpretation_curve(curve.uid)
-        assert group.interpretation_curves == [curve2]
+        assert group.interpretation_curves == (curve2,)
         group.remove_interpretation_section(section)
-        assert (
-            InterpretationSectionParams(**section2).in_list(
-                group.interpretation_sections
-            )
-            == 0
-        )
+        assert InterpretationSectionParams(**section2) in group.interpretation_sections
+
+        group.remove_interpretation_section(section2)
+
+        assert group.interpretation_sections == ()
+
         group.section_object_id = None
         assert group.section_object_id is None
 
@@ -145,11 +133,11 @@ def test_create_interpretation_section_errors(tmp_path: Path):
     with Workspace.create(h5file_path) as workspace:
         group = InterpretationSection.create(workspace)
 
-        with pytest.raises(TypeError, match="Interpretation sections must be a list"):
-            group.interpretation_sections = "bidon"
+        with pytest.raises(ValueError, match="Invalid key"):
+            group._update_to_metadata("bidon", 666)
 
-        with pytest.raises(TypeError, match="Interpretation curves must be a list"):
-            group.interpretation_curves = "bidon"
+        with pytest.raises(TypeError, match="'Can add group' must be"):
+            group.can_add_group = 2
 
         param_test = InterpretationSectionParams(
             **{
@@ -163,9 +151,9 @@ def test_create_interpretation_section_errors(tmp_path: Path):
         )
 
         with pytest.raises(TypeError, match="Interpretation section must be"):
-            InterpretationSectionParams.verify("bidon")
+            InterpretationSectionParams.create_section("bidon")
 
-        assert param_test == InterpretationSectionParams.verify(param_test)
+        assert param_test == InterpretationSectionParams.create_section(param_test)
 
         with pytest.raises(
             TypeError,

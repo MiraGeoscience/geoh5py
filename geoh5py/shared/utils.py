@@ -764,6 +764,22 @@ def stringify(values: dict[str, Any]) -> dict[str, Any]:
     return string_dict
 
 
+def to_list(value: Any) -> list:
+    """
+    Convert value to a list.
+
+    :param value: The value to convert.
+
+    :return: A list
+    """
+    # ensure the names are a list
+    if isinstance(value, list):
+        return value
+    if isinstance(value, tuple):
+        return list(value)
+    return [value]
+
+
 def to_tuple(value: Any) -> tuple:
     """
     Convert value to a tuple.

@@ -25,11 +25,11 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..shared.utils import map_attributes, str2uuid, str_json_to_dict
+from ..shared.utils import map_attributes, str2uuid, str_json_to_dict, to_list
 from .entity_type import EntityType
 
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from .. import shared
     from ..shared.entity_container import EntityContainer
     from ..workspace import Workspace
@@ -159,25 +159,25 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
     @property
     def clipping_ids(self) -> list[uuid.UUID] | None:
         """
-        List of clipping uuids
+        List of clipping uuids.
         """
         return self._clipping_ids
 
     @clipping_ids.setter
     def clipping_ids(self, value: list | None):
         msg = (
-            "Input clipping_ids must be a list of uuid.UUID or None. "
+            "Input clipping_ids must be a list of uuid.UUID or None of Slicer objects. "
             f"Provided value of type '{type(value)}'."
         )
 
-        if isinstance(value, list):
-            value = [str2uuid(val) for val in value]
-
-            if not all(isinstance(val, uuid.UUID) for val in value):
-                raise TypeError(msg)
-
-        elif not isinstance(value, type(None)):
-            raise TypeError(msg)
+        if value is not None:
+            verified_values = []
+            for val in to_list(value):
+                val = self.workspace.get_entity(str2uuid(val))[0]
+                if getattr(val, "_default_name", None) != "Slicer":
+                    raise TypeError(msg)
+                verified_values.append(val.uid)
+            value = verified_values
 
         self._clipping_ids = value
 
@@ -386,8 +386,8 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
     def parent(self, parent: EntityContainer):
         current_parent: EntityContainer | None = getattr(self, "_parent", None)
 
-        parent.add_children([self])
         self._parent = parent
+        parent.add_children([self])
 
         if current_parent is not None and current_parent != self._parent:
             current_parent.remove_children([self])
