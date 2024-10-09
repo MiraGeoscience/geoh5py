@@ -162,3 +162,15 @@ def test_data_type_attributes():
 
     with pytest.raises(ValueError, match=r"Attribute 'primitive_type' should be one"):
         data_type.validate_primitive_type(1)
+
+    with pytest.raises(TypeError, match=r"Attribute 'duplicate_on_copy'"):
+        data_type.duplicate_on_copy = "bidon"
+
+    with pytest.raises(TypeError, match=r"Attribute 'precision'"):
+        data_type.precision = "bidon"
+
+    with pytest.raises(ValueError, match=r"Attribute 'scale'"):
+        data_type.scale = "bidon"
+
+    with pytest.raises(TypeError, match=r"Attribute 'scientific_notation'"):
+        data_type.scientific_notation = "bidon"
