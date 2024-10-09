@@ -48,7 +48,7 @@ capabilities of `Geoscience ANALYST <https://mirageoscience.com/mining-industry-
 Documentation
 ^^^^^^^^^^^^^
 
-`Online documentation <https://geoh5py.readthedocs.io/en/latest/>`_
+`Online documentation <https://mirageoscience-geoh5py.readthedocs-hosted.com/en/latest/>`_
 
 See also documentation for the `geoh5 file format`_.
 
