@@ -74,6 +74,21 @@ To configure the development environment and tools, please see `README-dev.rst`_
 
 .. _README-dev.rst: README-dev.rst
 
+License
+^^^^^^^
+geoh5py is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+geoh5py is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+
 
 Third Party Software
 ^^^^^^^^^^^^^^^^^^^^
@@ -84,6 +99,11 @@ Third Party Software notices and/or additional terms and conditions are located 
 `THIRD_PARTY_SOFTWARE.rst`_ file.
 
 .. _THIRD_PARTY_SOFTWARE.rst: THIRD_PARTY_SOFTWARE.rst
+
+
+Copyright
+^^^^^^^^^
+Copyright (c) 2024 Mira Geoscience Ltd.
 
 
 Citing geoh5py
