@@ -71,7 +71,7 @@ class BlockModel(GridObject):
         """
         out = np.cumsum(getattr(self, f"{axis}_cell_delimiters"))
         out[2:] = out[2:] - out[:-2]
-        return out[2 - 1 :] / 2
+        return out[1:] / 2
 
     @property
     def centroids(self) -> np.ndarray:
