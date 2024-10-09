@@ -55,7 +55,7 @@ def test_version_is_consistent():
     assert geoh5py.__version__ == get_version()
 
 
-def test_conda_version_is_pypi():
+def test_conda_version_is_pep440():
     version = Version(get_conda_recipe_version())
     assert version is not None
 
