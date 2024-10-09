@@ -31,7 +31,7 @@ from .primitive_type_enum import PrimitiveTypeEnum
 from .reference_value_map import BOOLEAN_VALUE_MAP, ReferenceValueMap
 
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from ..objects import ObjectBase
     from ..workspace import Workspace
     from .data import Data
@@ -57,10 +57,14 @@ class DataType(EntityType):
     :param workspace: An active Workspace.
     :param primitive_type: The primitive type of the data.
     :param color_map: The colormap used for plotting.
+    :param duplicate_on_copy: Force a copy on copy of the data entity.
     :param duplicate_type_on_copy: Force a copy on copy of the data entity.
     :param hidden: If the data are hidden or not.
     :param mapping: The type of color stretching to plot the colormap.
     :param number_of_bins: The number of bins used by the histogram.
+    :param precision: The decimals precision of the data to display.
+    :param scale: The type of scale of the data.
+    :param scientific_notation: If the data should be displayed in scientific notation.
     :param transparent_no_data: If the no data values are displayed as transparent or not.
     :param units: The type of the units of the data.
     :param kwargs: Additional keyword arguments to set as attributes
@@ -73,8 +77,11 @@ class DataType(EntityType):
             "Hidden": "hidden",
             "Mapping": "mapping",
             "Number of bins": "number_of_bins",
+            "Precision": "precision",
             "Primitive type": "primitive_type",
             "Transparent no data": "transparent_no_data",
+            "Scale": "scale",
+            "Scientific notation": "scientific_notation",
         }
     )
 
@@ -85,21 +92,29 @@ class DataType(EntityType):
             type[Data] | PrimitiveTypeEnum | str
         ) = PrimitiveTypeEnum.INVALID,
         color_map: ColorMap | None = None,
+        duplicate_on_copy: bool = False,
         duplicate_type_on_copy: bool = False,
         hidden: bool = False,
         mapping: ColorMapping = "equal_area",
         number_of_bins: int | None = None,
+        precision: int = 2,
+        scale: str | None = None,
+        scientific_notation: bool = False,
         transparent_no_data: bool = True,
         units: str | None = None,
         **kwargs,
     ):
         super().__init__(workspace, **kwargs)
         self.color_map = color_map
+        self.duplicate_on_copy = duplicate_on_copy
         self.duplicate_type_on_copy = duplicate_type_on_copy
         self.hidden = hidden
         self.mapping = mapping
         self.number_of_bins = number_of_bins
+        self.precision = precision
         self.primitive_type = self.validate_primitive_type(primitive_type)
+        self.scale = scale
+        self.scientific_notation = scientific_notation
         self.transparent_no_data = transparent_no_data
         self.units = units
 
@@ -144,6 +159,24 @@ class DataType(EntityType):
         self._color_map: ColorMap | None = color_map
 
         self.workspace.update_attribute(self, "color_map")
+
+    @property
+    def duplicate_on_copy(self) -> bool:
+        """
+        If the data type should be duplicated on copy.
+        """
+        return self._duplicate_on_copy
+
+    @duplicate_on_copy.setter
+    def duplicate_on_copy(self, value: bool):
+        if not isinstance(value, bool) and value not in [1, 0]:
+            raise TypeError(
+                f"Attribute 'duplicate_on_copy' must be a bool, not {type(value)}"
+            )
+
+        self._duplicate_on_copy = bool(value)
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def duplicate_type_on_copy(self) -> bool:
@@ -272,6 +305,24 @@ class DataType(EntityType):
         self.workspace.update_attribute(self, "attributes")
 
     @property
+    def precision(self) -> int:
+        """
+        The decimals precision of the data to display.
+        """
+        return self._precision
+
+    @precision.setter
+    def precision(self, value: int):
+        if not isinstance(value, int) or value < 0:
+            raise TypeError(
+                f"Attribute 'precision' must be an integer greater than 0, not {value}"
+            )
+
+        self._precision = value
+
+        self.workspace.update_attribute(self, "attributes")
+
+    @property
     def primitive_type(self) -> PrimitiveTypeEnum:
         """
         The primitive type of the data.
@@ -350,6 +401,39 @@ class DataType(EntityType):
                 "BOOLEAN and TEXT have been implemented"
             )
         return primitive_type
+
+    @property
+    def scale(self) -> str | None:
+        """
+        The type of scale of the data.
+        """
+        return self._scale
+
+    @scale.setter
+    def scale(self, value: str | None):
+        if value not in ["linear", "log", None]:
+            raise ValueError(
+                f"Attribute 'scale' must be one of 'linear', 'log', NoneType, not {value}"
+            )
+        self._scale = value
+        self.workspace.update_attribute(self, "attributes")
+
+    @property
+    def scientific_notation(self) -> bool:
+        """
+        If the data should be displayed in scientific notation.
+        """
+        return self._scientific_notation
+
+    @scientific_notation.setter
+    def scientific_notation(self, value: bool):
+        if not isinstance(value, bool) and value not in [1, 0]:
+            raise TypeError(
+                f"Attribute 'scientific_notation' must be a bool, not {type(value)}"
+            )
+
+        self._scientific_notation = bool(value)
+        self.workspace.update_attribute(self, "attributes")
 
     @staticmethod
     def validate_primitive_type(
