@@ -100,6 +100,31 @@ def _can_find(workspace, created_data):
     assert workspace.find_data(created_data.uid) is created_data
 
 
+def test_scale_continuity(tmp_path):
+    h5file_path = tmp_path / r"testPoints.geoh5"
+    with Workspace.create(h5file_path) as workspace:
+        points = Points.create(
+            workspace,
+            name="point",
+            vertices=np.vstack((np.arange(20), np.arange(20), np.zeros(20))).T,
+            allow_move=False,
+        )
+        data = points.add_data(
+            {"DataValues": {"association": "VERTEX", "values": np.random.randn(20)}}
+        )
+        data.entity_type.scale = "Log"
+        data.entity_type.precision = 4.0
+        data.entity_type.scientific_notation = True
+
+    with Workspace(h5file_path) as workspace:
+        points = workspace.get_entity("point")[0]
+        data = points.get_data("DataValues")[0]
+
+        assert data.entity_type.scale == "Log"
+        assert data.entity_type.precision == 4
+        assert data.entity_type.scientific_notation is True
+
+
 def test_copy_from_extent(tmp_path):
     # Generate a random cloud of points
     h5file_path = tmp_path / r"testPoints.geoh5"
