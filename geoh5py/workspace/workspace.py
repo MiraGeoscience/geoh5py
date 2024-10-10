@@ -20,7 +20,6 @@
 from __future__ import annotations
 
 import inspect
-import shutil
 import subprocess
 import tempfile
 import uuid
@@ -31,6 +30,7 @@ from gc import collect
 from getpass import getuser
 from io import BytesIO
 from pathlib import Path
+from shutil import copy, move
 from subprocess import CalledProcessError
 from typing import Any, ClassVar, cast
 from weakref import ReferenceType
@@ -212,7 +212,7 @@ class Workspace(AbstractContextManager):
                     stdout=subprocess.DEVNULL,
                 )
                 Path(self._h5file).unlink()
-                shutil.move(temp_file, self._h5file)
+                move(temp_file, self._h5file, copy)
             except CalledProcessError:
                 pass
 
@@ -1331,7 +1331,7 @@ class Workspace(AbstractContextManager):
         elif self.h5file is None:
             raise ValueError("Input 'h5file' file must be specified.")
         else:
-            shutil.copy(self.h5file, filepath)
+            move(self.h5file, filepath, copy)
 
         self._h5file = filepath
 
