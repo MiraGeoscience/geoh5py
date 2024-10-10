@@ -41,11 +41,14 @@ geoscientific data (points, curve, surface, 2D and 3D grids) in
 ``*.geoh5`` file format. Users will be able to directly leverage the powerful visualization
 capabilities of `Geoscience ANALYST <https://mirageoscience.com/mining-industry-software/geoscience-analyst/>`_.
 
+.. contents:: Table of Contents
+   :local:
+   :depth: 3
 
 Documentation
 ^^^^^^^^^^^^^
 
-`Online documentation <https://geoh5py.readthedocs.io/en/latest/>`_
+`Online documentation <https://mirageoscience-geoh5py.readthedocs-hosted.com/en/latest/>`_
 
 See also documentation for the `geoh5 file format`_.
 
@@ -66,60 +69,10 @@ Install **geoh5py** from PyPI::
 
 Setup for development
 ^^^^^^^^^^^^^^^^^^^^^
-After having cloned the Git repository you will need to set up `Poetry`_.
-`Poetry`_ makes it easy to install the dependencies and start a virtual environment.
 
-To install poetry:
+To configure the development environment and tools, please see `README-dev.rst`_.
 
-.. code-block:: bash
-
-  curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
-
-Then, create and activate the virtual environment simply with:
-
-.. code-block:: bash
-
-  poetry shell
-
-.. _Poetry: https://poetry.eustace.io/docs/
-
-Configure the pre-commit hooks
-------------------------------
-To have the `pre-commit`_ hooks installed and running, first make sure you have pip installed
-on your system. Then execute:
-
-.. code-block:: bash
-
-  pip install --user pre-commit
-  pre-commit install
-
-All the pre-commit checks run automatically for you, and reformat files when required. Enjoy...
-
-.. _pre-commit: https://pre-commit.com/
-
-IDE
----
-`PyCharm`_, by JetBrains, is a very good IDE for developing with Python.
-Some suggested PyCharm plugins for working in this project:
-
-- `Toml`_
-
-For Vim lovers, also check out `IdeaVim`_.
-
-.. _PyCharm: https://www.jetbrains.com/pycharm/
-
-.. _Toml: https://plugins.jetbrains.com/plugin/8195-toml/
-.. _IdeaVim: https://plugins.jetbrains.com/plugin/164-ideavim/
-
-Build the docs
---------------
-
-To build the api docs using autodocs
-
-.. code-block:: bash
-
-  sphinx-apidoc -o source/ ../geoh5py -t docs/templates
-
+.. _README-dev.rst: README-dev.rst
 
 License
 ^^^^^^^
