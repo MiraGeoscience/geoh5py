@@ -92,7 +92,7 @@ class InterpretationSection(Group):
 
         self._interpretation_curves: tuple[Curve] | tuple = ()
         self._interpretation_sections: tuple[InterpretationSectionParams] | tuple = ()
-        self._section_object_id: Slicer | None = None
+        self._section_object: Slicer | None = None
 
     def _load_from_metadata(self, key: str) -> Any:
         """
@@ -168,8 +168,8 @@ class InterpretationSection(Group):
             self.add_children(curve)
             self._interpretation_curves += (curve,)
 
-            if self.section_object_id is not None:
-                curve.clipping_ids = [self.section_object_id.uid]
+            if self.section_object is not None:
+                curve.clipping_ids = [self.section_object.uid]
 
         self._update_to_metadata("Interpretation curves", self._interpretation_curves)
 
@@ -279,34 +279,34 @@ class InterpretationSection(Group):
         )
 
     @property
-    def section_object_id(self) -> Slicer | None:
+    def section_object(self) -> Slicer | None:
         """
         Get the section object ID.
 
         :return: The section object ID.
         """
-        if self._section_object_id is None:
-            self.section_object_id = self._load_from_metadata("Section object ID")
+        if self._section_object is None:
+            self.section_object = self._load_from_metadata("Section object ID")
 
-        return self._section_object_id
+        return self._section_object
 
-    @section_object_id.setter
-    def section_object_id(self, slicer: Slicer | None):
+    @section_object.setter
+    def section_object(self, slicer: Slicer | None):
         """
         Set the section object ID.
 
         :param slicer: The section object ID.
         """
         if slicer is None:
-            self._section_object_id = None
+            self._section_object = None
             self.update_metadata({"Section object ID": None})
             return
 
         # a lot of type ignore because of circular imports
-        self._section_object_id = self._verify_object(slicer, "Slicer")  # type: ignore
+        self._section_object = self._verify_object(slicer, "Slicer")  # type: ignore
 
-        self.add_children(self._section_object_id)  # type: ignore
+        self.add_children(self._section_object)  # type: ignore
 
-        self.clipping_ids = [self._section_object_id.uid]  # type: ignore
+        self.clipping_ids = [self._section_object.uid]  # type: ignore
 
-        self.update_metadata({"Section object ID": self._section_object_id.uid})  # type: ignore
+        self.update_metadata({"Section object ID": self._section_object.uid})  # type: ignore

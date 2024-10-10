@@ -50,7 +50,7 @@ def test_create_interpretation_section(tmp_path: Path):
         }
 
         slicer = Slicer.create(workspace, name="slicer")
-        print(slicer._attribute_map)
+
         # testing the removes
         group.remove_interpretation_curve(curve.uid)  # nothing happens
         group.remove_interpretation_section(section)  # nothing happens
@@ -63,9 +63,9 @@ def test_create_interpretation_section(tmp_path: Path):
 
         assert (curve,) == group.interpretation_curves
 
-        group.section_object_id = slicer.uid
+        group.section_object = slicer.uid
 
-        assert slicer == group.section_object_id
+        assert slicer == group.section_object
 
         assert group.metadata == {
             "Interpretation curves": [str(curve.uid)],
@@ -91,7 +91,7 @@ def test_create_interpretation_section(tmp_path: Path):
 
         assert curve.uid == group.interpretation_curves[0].uid
 
-        assert slicer.uid == group.section_object_id.uid
+        assert slicer.uid == group.section_object.uid
 
         # add another object
         curve2 = Curve.create(workspace, name="curve2", vertices=np.random.randn(10, 3))
@@ -124,8 +124,8 @@ def test_create_interpretation_section(tmp_path: Path):
 
         assert group.interpretation_sections == ()
 
-        group.section_object_id = None
-        assert group.section_object_id is None
+        group.section_object = None
+        assert group.section_object is None
 
 
 def test_create_interpretation_section_errors(tmp_path: Path):
