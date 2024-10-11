@@ -117,7 +117,11 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
             self._children.append(child)
 
-            if hasattr(child, "parent") and child.parent != self:
+            if (
+                not isinstance(child, PropertyGroup)
+                and hasattr(child, "parent")
+                and child.parent != self
+            ):
                 child.parent = self
 
     def add_save_concatenated(self, child) -> None:

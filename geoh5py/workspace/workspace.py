@@ -712,7 +712,7 @@ class Workspace(AbstractContextManager):
         :return: Structured array.
         """
         if isinstance(entity, Concatenated):
-            return entity.concatenator.fetch_values(entity, key)
+            return entity.concatenator.fetch_values(entity, key)  # type: ignore
 
         if isinstance(entity, EntityType):
             entity_type = str_from_subtype(entity)
