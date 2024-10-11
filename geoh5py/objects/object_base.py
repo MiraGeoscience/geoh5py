@@ -121,6 +121,8 @@ class ObjectBase(EntityContainer):
                 self._children.append(child)
                 if isinstance(child, PropertyGroup):
                     property_groups.append(child)
+                elif hasattr(child, "parent") and child.parent != self:
+                    child.parent = self
             else:
                 warn(f"Child {child} is not valid or already exists.")
 

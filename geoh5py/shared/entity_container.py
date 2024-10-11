@@ -77,6 +77,9 @@ class EntityContainer(Entity):
 
             self._children.append(child)
 
+            if hasattr(child, "parent") and child.parent is not self:
+                child.parent = self
+
     def add_comment(self, comment: str, author: str | None = None):
         """
         Add text comment to an object.

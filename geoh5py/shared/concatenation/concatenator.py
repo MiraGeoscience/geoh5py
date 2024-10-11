@@ -112,8 +112,13 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                 )
                 continue
 
-            if child not in self._children:
-                self._children.append(child)
+            if child in self._children:
+                continue
+
+            self._children.append(child)
+
+            if hasattr(child, "parent") and child.parent != self:
+                child.parent = self
 
     def add_save_concatenated(self, child) -> None:
         """

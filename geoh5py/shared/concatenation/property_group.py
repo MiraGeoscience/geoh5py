@@ -32,8 +32,6 @@ if TYPE_CHECKING:
 
 
 class ConcatenatedPropertyGroup(PropertyGroup):
-    _parent: ConcatenatedObject
-
     def __init__(self, parent: ConcatenatedObject, **kwargs):
         super().__init__(parent, **kwargs)
 
