@@ -55,11 +55,15 @@ def test_create_interpretation_section(tmp_path: Path):
         group.remove_interpretation_curve(curve.uid)  # nothing happens
         group.remove_interpretation_section(section)  # nothing happens
 
+        assert curve.parent != group
+
         group.add_interpretation_section(section)
 
         assert InterpretationSectionParams(**section) in group.interpretation_sections
 
         group.add_interpretation_curve(curve.uid)
+
+        assert curve.parent == group
 
         assert (curve,) == group.interpretation_curves
 
