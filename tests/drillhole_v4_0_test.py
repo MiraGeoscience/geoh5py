@@ -1167,3 +1167,7 @@ def test_surveys_info(tmp_path):
 
     assert len(dh.parent.data["Surveys"]) == 35
     assert "Info" in dh.parent.data["Surveys"].dtype.names
+
+    with workspace.open():
+        dh = workspace.get_entity("Info Drillhole")[0]
+        assert len(dh.surveys) == 5
