@@ -274,7 +274,7 @@ class Drillhole(Points):
             self._surveys = self.workspace.fetch_array_attribute(self, "surveys")
 
         if self._surveys is None:
-            surveys = np.asarray([0, 0, -90])
+            surveys = np.c_[0, 0, -90]
 
         else:
             surveys = np.vstack(
