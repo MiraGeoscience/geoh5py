@@ -37,7 +37,6 @@ if TYPE_CHECKING:  # pragma: no cover
     from .data import Data
     from .referenced_data import ReferencedData
 
-
 ColorMapping = Literal[
     "linear",
     "equal_area",
@@ -105,6 +104,7 @@ class DataType(EntityType):
         **kwargs,
     ):
         super().__init__(workspace, **kwargs)
+
         self.color_map = color_map
         self.duplicate_on_copy = duplicate_on_copy
         self.duplicate_type_on_copy = duplicate_type_on_copy
@@ -313,12 +313,16 @@ class DataType(EntityType):
 
     @precision.setter
     def precision(self, value: int):
-        if not isinstance(value, int) or value < 0:
+        if (
+            not isinstance(value, (int, float, np.integer, np.floating))
+            or (isinstance(value, (float, np.floating)) and not value.is_integer())
+            or value < 0
+        ):
             raise TypeError(
                 f"Attribute 'precision' must be an integer greater than 0, not {value}"
             )
 
-        self._precision = value
+        self._precision = int(value)
 
         self.workspace.update_attribute(self, "attributes")
 
@@ -411,9 +415,9 @@ class DataType(EntityType):
 
     @scale.setter
     def scale(self, value: str | None):
-        if value not in ["linear", "log", None]:
+        if value not in ["Linear", "Log", None]:
             raise ValueError(
-                f"Attribute 'scale' must be one of 'linear', 'log', NoneType, not {value}"
+                f"Attribute 'scale' must be one of 'Linear', 'Log', NoneType, not {value}"
             )
         self._scale = value
         self.workspace.update_attribute(self, "attributes")
@@ -427,7 +431,7 @@ class DataType(EntityType):
 
     @scientific_notation.setter
     def scientific_notation(self, value: bool):
-        if not isinstance(value, bool) and value not in [1, 0]:
+        if value not in [True, False, 1, 0]:
             raise TypeError(
                 f"Attribute 'scientific_notation' must be a bool, not {type(value)}"
             )
