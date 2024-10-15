@@ -120,7 +120,7 @@ def test_property_group_validator(tmp_path):
     with pytest.raises(PropertyGroupValidationError) as excinfo:
         validator("test", property_group, "not_test_group")
     assert PropertyGroupValidationError.message(
-        "test", property_group, "not_test_group"
+        "test", property_group, ["not_test_group"]
     ) == str(excinfo.value)
 
 

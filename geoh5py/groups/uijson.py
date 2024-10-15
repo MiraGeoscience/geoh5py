@@ -19,42 +19,44 @@ from __future__ import annotations
 import json
 import uuid
 
-from ..shared.utils import stringify
-from .base import Group, GroupType
+import numpy as np
+
+from ..shared.utils import str_json_to_dict, stringify
+from .base import Group
 
 
 class UIJsonGroup(Group):
     """Group for SimPEG inversions."""
 
-    __TYPE_UID = uuid.UUID("{BB50AC61-A657-4926-9C82-067658E246A0}")
+    _TYPE_UID = uuid.UUID("{BB50AC61-A657-4926-9C82-067658E246A0}")
     _default_name = "UIJson"
 
-    def __init__(self, group_type: GroupType, **kwargs):
-        self._options: dict | None = None
+    def __init__(
+        self,
+        options: dict | np.ndarray | bytes | None = None,
+        **kwargs,
+    ):
+        self._options: dict
 
-        super().__init__(group_type, **kwargs)
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
+        super().__init__(**kwargs)
+        self.options = self.format_input_options(options)
 
     @property
     def options(self) -> dict:
         """
         Metadata attached to the entity.
         """
-        if getattr(self, "_options", None) is None:
-            self._options = self.workspace.fetch_metadata(self.uid, argument="options")
-
-        return self._options or {}
+        return self._options
 
     @options.setter
-    def options(self, value: dict | None):
-        if not isinstance(value, (dict, type(None))):
-            raise ValueError(f"Input 'options' must be of type {dict} or None")
+    def options(self, value: dict):
+        if not isinstance(value, dict):
+            raise ValueError(f"Input 'options' must be of type {dict}.")
 
         self._options = value
-        self.workspace.update_attribute(self, "options")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "options")
 
     def add_ui_json(self, name: str | None = None):
         """
@@ -72,3 +74,25 @@ class UIJsonGroup(Group):
             name = self.name
 
         self.add_file(bytes_data, name=f"{name}.ui.json")
+
+    @staticmethod
+    def format_input_options(options: dict | np.ndarray | bytes | None) -> dict:
+        """
+        Format input options to a dictionary.
+
+        :param options: Input options.
+        :return: Formatted options.
+        """
+        if options is None:
+            return {}
+
+        if isinstance(options, np.ndarray):
+            options = options[0]
+
+        if isinstance(options, bytes):
+            options = str_json_to_dict(options)
+
+        if not isinstance(options, dict):
+            raise ValueError(f"Input 'options' must be of type {dict}.")
+
+        return options

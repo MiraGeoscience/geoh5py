@@ -63,18 +63,25 @@ def test_create_block_model_data(tmp_path):
     ]
 
     with Workspace.create(h5file_path) as workspace:
+        with pytest.raises(
+            TypeError, match="Attribute 'u_cell_delimiters' must be a numpy array."
+        ):
+            BlockModel.create(workspace, u_cell_delimiters="abc")
+
+        with pytest.raises(ValueError, match="must be a 1D array of floats"):
+            BlockModel.create(workspace, u_cell_delimiters=np.ones((2, 2)))
+
         grid = BlockModel.create(
             workspace,
-            origin=[0, 0, 0],
+            u_cell_delimiters=nodal_x,
             v_cell_delimiters=nodal_y,
             z_cell_delimiters=nodal_z,
             name=name,
-            rotation=30,
+            rotation=30.0,
             allow_move=False,
         )
         assert grid.mask_by_extent(np.vstack([[-100, -100], [-1, -1]])) is None
 
-        grid.u_cell_delimiters = (nodal_x,)
         data = grid.add_data(
             {
                 "DataValues": {
@@ -93,11 +100,10 @@ def test_create_block_model_data(tmp_path):
         with Workspace(h5file_path) as new_workspace:
             rec_obj = new_workspace.get_entity(name)[0]
             rec_data = new_workspace.get_entity("DataValues")[0]
-
             compare_entities(grid, rec_obj)
             compare_entities(data, rec_data)
 
-        with pytest.raises(ValueError, match="Mask must be an array of shape"):
+        with pytest.raises(TypeError, match="Mask must be an array or None"):
             grid.copy(mask="abc")
 
         # mask = np.ones(grid.n_cells, dtype=bool)

@@ -19,28 +19,27 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...shared.entity import Entity
-
 
 if TYPE_CHECKING:
     from .concatenator import Concatenator
+    from .object import ConcatenatedObject
 
 
-class Concatenated(Entity):
+class Concatenated:
     """
     Base class modifier for concatenated objects and data.
     """
 
-    _parent: Concatenated | Concatenator
+    _parent: ConcatenatedObject | Concatenator
     _concat_attr_str: str = "Attributes"
 
-    def __init__(self, entity_type, **kwargs):
+    def __init__(self, *args, **kwargs):
         attribute_map = getattr(self, "_attribute_map", {})
         attr = {"name": "Entity", "parent": None}
         for key, value in kwargs.items():
             attr[attribute_map.get(key, key)] = value
 
-        super().__init__(entity_type, **attr)
+        super().__init__(*args, **attr)
 
     @property
     def concat_attr_str(self) -> str:

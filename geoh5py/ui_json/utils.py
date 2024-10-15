@@ -17,10 +17,10 @@
 
 from __future__ import annotations
 
-import shutil
 import warnings
 from io import BytesIO
 from pathlib import Path
+from shutil import copy, move
 from time import time
 from typing import Any
 
@@ -105,7 +105,9 @@ def dependency_requires_value(ui_json: dict[str, dict], parameter: str) -> bool:
     )
 
     if ui_json[parameter].get("dependencyType", "enabled") == "enabled":
-        is_required = ui_json[dependency].get(key, True)
+        is_required = bool(ui_json[dependency].get(key, True)) & bool(
+            ui_json[dependency]["value"]
+        )
     else:
         is_required = not ui_json[dependency].get(key, True)
     if ("optional" in ui_json[parameter]) & bool(is_required):
@@ -179,7 +181,7 @@ def group_enabled(group: dict[str, dict]) -> bool:
     return group[parameters[0]].get("enabled", True)
 
 
-def set_enabled(ui_json: dict, parameter: str, value: bool):
+def set_enabled(ui_json: dict, parameter: str, value: bool, validate=True):
     """
     Set enabled status for an optional or groupOptional parameter.
 
@@ -187,7 +189,9 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
     :param parameter: Parameter name.
     :param value: Boolean value set to parameter's enabled member.
     """
-    if ui_json[parameter].get("optional", False):
+    if ui_json[parameter].get("optional", False) or bool(
+        ui_json[parameter].get("dependency", False)
+    ):
         ui_json[parameter]["enabled"] = value
 
     is_group_optional = False
@@ -201,15 +205,16 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
                 for form in group.values():
                     form["enabled"] = value
 
-    if not is_group_optional and "dependency" in ui_json[parameter]:
-        is_group_optional = not dependency_requires_value(ui_json, parameter)
+    if validate:
+        if not is_group_optional and "dependency" in ui_json[parameter]:
+            is_group_optional = not dependency_requires_value(ui_json, parameter)
 
-    if (not value) and not (
-        ui_json[parameter].get("optional", False) or is_group_optional
-    ):
-        warnings.warn(
-            f"Non-option parameter '{parameter}' cannot be set to 'enabled' False "
-        )
+        if (not value) and not (
+            ui_json[parameter].get("optional", False) or is_group_optional
+        ):
+            warnings.warn(
+                f"Non-option parameter '{parameter}' cannot be set to 'enabled' False "
+            )
 
 
 def truth(ui_json: dict[str, dict], name: str, member: str) -> bool:
@@ -240,7 +245,7 @@ def is_uijson(ui_json: dict[str, dict]):
         "run_command",
         "conda_environment",
         "geoh5",
-        "workspace",
+        "workspace_geoh5",
     ]
 
     is_a_uijson = True
@@ -321,9 +326,6 @@ def monitored_directory_copy(
         with Workspace.create(working_path / temp_geoh5) as w_s:
             entity.copy(parent=w_s, copy_children=copy_children)
 
-    shutil.move(
-        working_path / temp_geoh5,
-        directory_path / temp_geoh5,
-    )
+    move(working_path / temp_geoh5, directory_path / temp_geoh5, copy)
 
     return str(directory_path / temp_geoh5)

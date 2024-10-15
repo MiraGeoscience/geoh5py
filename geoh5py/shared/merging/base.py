@@ -33,7 +33,7 @@ class BaseMerger(ABC):
     def merge_data(
         cls,
         out_entity,
-        input_entities: list[ObjectBase],
+        input_entities: list,
     ):
         """
         Merge the data respecting the entity type, the values, and the association.
@@ -108,12 +108,8 @@ class BaseMerger(ABC):
                     values[start:end] = data.values
                     data_dict[label].values = values
 
-            data_count["VERTEX"] += (
-                input_entity.n_vertices if input_entity.n_vertices is not None else 0
-            )
-            data_count["CELL"] += (
-                input_entity.n_cells if input_entity.n_cells is not None else 0
-            )
+            data_count["VERTEX"] += getattr(input_entity, "n_vertices", 0) or 0
+            data_count["CELL"] += getattr(input_entity, "n_cells", 0) or 0
 
     @classmethod
     def merge_objects(

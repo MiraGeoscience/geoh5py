@@ -156,7 +156,9 @@ disable=raw-checker-failed,
         missing-function-docstring,
         missing-class-docstring,
         fixme,
-        duplicate-code
+        duplicate-code,
+        # TODO: activate rules below
+        too-many-positional-arguments
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
