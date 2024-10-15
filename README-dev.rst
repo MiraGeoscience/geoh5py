@@ -330,7 +330,7 @@ make sure to specify the Python interpreter.
 In PyCharm settings, open ``File > Settings``, go to ``Python Interpreter``,
 and add click add interpreter (at the top left):
 
-    ..  image:: devtools/images/pycharm-add_Python_interpreter.png
+    ..  image:: docs/images/pycharm-add_Python_interpreter.png
         :alt: PyCharm: Python interpreter settings
         :align: center
         :width: 80%
@@ -340,7 +340,7 @@ For an environment created by Poetry
 Select ``Poetry Environment``, ``Existing environment``,
 navigate to the Poetry installation folder, and select the ``python.exe`` file:
 
-    ..  image:: devtools/images/pycharm-set_Poetry_Python_as_interpreter.png
+    ..  image:: docs/images/pycharm-set_Poetry_Python_as_interpreter.png
         :alt: PyCharm: Set Python from Poetry environment as interpreter
         :align: center
         :width: 80%
@@ -359,7 +359,7 @@ For a conda environment
 Select ``Conda Environment``, ``Use existing environment``,
 and select the desired environment from the list:
 
-    ..  image:: devtools/images/pycharm-set_conda_env_as_interpreter.png
+    ..  image:: docs/images/pycharm-set_conda_env_as_interpreter.png
         :alt: PyCharm: Set conda environment as interpreter
         :align: center
         :width: 80%
@@ -368,7 +368,7 @@ Then you can check the list of installed packages in the ``Packages`` table. You
 **my-app** and its dependencies. Make sure to turn off the ``Use Conda Package Manager``
 option to see also the packages installed with Poetry through pip:
 
-    ..  image:: devtools/images/pycharm-list_all_conda_packages.png
+    ..  image:: docs/images/pycharm-list_all_conda_packages.png
         :alt: PyCharm: Conda environment packages
         :align: center
         :width: 80%
@@ -380,7 +380,7 @@ First, right click on the ``my_app`` folder and select ``Mark Directory as > Sou
 
 Then, right click on the ``tests`` folder and select ``Mark Directory as > Test Sources Root``:
 
-    ..  image:: devtools/images/pycharm-mark_directory_as_tests.png
+    ..  image:: docs/images/pycharm-mark_directory_as_tests.png
         :alt: PyCharm: Add Python interpreter
         :align: center
         :width: 40%
@@ -393,7 +393,7 @@ the ``tests`` folder and select ``Run 'pytest in tests'``, or select the folder 
 
 PyCharm will nicely present the test results and logs:
 
-    ..  image:: devtools/images/pycharm-test_results.png
+    ..  image:: docs/images/pycharm-test_results.png
         :alt: PyCharm: Run tests
         :align: center
         :width: 80%
@@ -408,11 +408,11 @@ You can run the tests with a nice report of the code coverage, thanks to the pyt
 To set up this option in PyCharm, right click on the ``tests`` folder and ``Modify Run Configuration...``,
 then add the following option in the ``Additional Arguments`` field:
 
-    ..  image:: devtools/images/pycharm-menu_modify_test_run_config.png
+    ..  image:: docs/images/pycharm-menu_modify_test_run_config.png
         :alt: PyCharm tests contextual menu: modify run configuration
         :width: 30%
 
-    ..  image:: devtools/images/pycharm-dialog_edit_test_run_config.png
+    ..  image:: docs/images/pycharm-dialog_edit_test_run_config.png
         :alt: PyCharm dialog: edit tests run configuration
         :width: 60%
 
