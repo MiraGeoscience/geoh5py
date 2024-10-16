@@ -1,7 +1,7 @@
 Installation
 ============
 
-**geoh5py** is currently written for Python 3.9 or higher, and depends on `NumPy <https://numpy.org/>`_ and
+**geoh5py** is currently written for Python 3.10 or higher, and depends on `NumPy <https://numpy.org/>`_ and
 `h5py <https://www.h5py.org/>`_.
 
 
