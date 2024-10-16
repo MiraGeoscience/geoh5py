@@ -408,11 +408,11 @@ You can run the tests with a nice report of the code coverage, thanks to the pyt
 To set up this option in PyCharm, right click on the ``tests`` folder and ``Modify Run Configuration...``,
 then add the following option in the ``Additional Arguments`` field:
 
-    ..  image:: docs/images/readme/readme/pycharm-menu_modify_test_run_config.png
+    ..  image:: docs/images/readme/pycharm-menu_modify_test_run_config.png
         :alt: PyCharm tests contextual menu: modify run configuration
         :width: 30%
 
-    ..  image:: docs/images/readme/readme/pycharm-dialog_edit_test_run_config.png
+    ..  image:: docs/images/readme/pycharm-dialog_edit_test_run_config.png
         :alt: PyCharm dialog: edit tests run configuration
         :width: 60%
 
