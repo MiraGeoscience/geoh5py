@@ -249,9 +249,15 @@ class InterpretationSection(Group):
             return
 
         verified = [self._verify_object(curve, "Curve") for curve in to_tuple(curves)]
-        self._interpretation_curves = tuple(
-            curve for curve in self.interpretation_curves if curve not in verified
-        )
+
+        interpretation_curves = []
+        for curve in self.interpretation_curves:
+            if curve in verified:
+                self.workspace.remove_entity(curve)
+            else:
+                interpretation_curves.append(curve)
+
+        self._interpretation_curves = tuple(interpretation_curves)
         self._update_to_metadata("Interpretation curves", self._interpretation_curves)
 
     def remove_interpretation_section(
@@ -297,16 +303,16 @@ class InterpretationSection(Group):
 
         :param slicer: The section object ID.
         """
+        original_slicer = self._section_object
         if slicer is None:
             self._section_object = None
             self.update_metadata({"Section object ID": None})
-            return
+        else:
+            # a lot of type ignore because of circular imports
+            self._section_object = self._verify_object(slicer, "Slicer")  # type: ignore
+            self.add_children(self._section_object)  # type: ignore
+            self.clipping_ids = [self._section_object.uid]  # type: ignore
+            self.update_metadata({"Section object ID": self._section_object.uid})  # type: ignore
 
-        # a lot of type ignore because of circular imports
-        self._section_object = self._verify_object(slicer, "Slicer")  # type: ignore
-
-        self.add_children(self._section_object)  # type: ignore
-
-        self.clipping_ids = [self._section_object.uid]  # type: ignore
-
-        self.update_metadata({"Section object ID": self._section_object.uid})  # type: ignore
+        if original_slicer is not None:
+            self.workspace.remove_entity(original_slicer)
