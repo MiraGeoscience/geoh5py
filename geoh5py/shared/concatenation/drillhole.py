@@ -19,8 +19,6 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import numpy as np
 from h5py import special_dtype
 
@@ -30,13 +28,7 @@ from .object import ConcatenatedObject
 from .property_group import ConcatenatedPropertyGroup
 
 
-if TYPE_CHECKING:
-    from .concatenator import Concatenator
-
-
 class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
-    _parent: Concatenator
-
     def _update_attribute_from_property_group(
         self,
         attributes: dict,

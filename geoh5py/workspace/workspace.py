@@ -712,7 +712,7 @@ class Workspace(AbstractContextManager):
         :return: Structured array.
         """
         if isinstance(entity, Concatenated):
-            return entity.concatenator.fetch_values(entity, key)
+            return entity.concatenator.fetch_values(entity, key)  # type: ignore
 
         if isinstance(entity, EntityType):
             entity_type = str_from_subtype(entity)
@@ -1193,9 +1193,11 @@ class Workspace(AbstractContextManager):
                 entity=entity_attrs,
                 entity_type=type_attrs,
             )
-        except TypeError:
+        except TypeError as error:
+            print(error)
             warnings.warn(
                 f"Could not create an entity from the given attributes {type_attrs}. Skipping over."
+                f"Error: {error}"
             )
             return None
 
