@@ -113,7 +113,7 @@ class InterpretationSection(Group):
 
         if values:
             if key == "Interpretation curves":
-                metadata = [str(value.uid) for value in values]
+                metadata = [value.uid for value in values]
             elif key == "Interpretation sections":
                 metadata = [value.model_dump(by_alias=True) for value in values]
             else:
