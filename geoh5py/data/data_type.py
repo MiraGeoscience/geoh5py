@@ -42,8 +42,8 @@ ColorMapping = Literal[
     "equal_area",
     "logarithmic",
     "cdf",
-    "missing",
     "cumulative_distribution_function",
+    "missing",
 ]
 
 
