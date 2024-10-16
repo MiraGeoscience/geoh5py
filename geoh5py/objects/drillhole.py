@@ -65,7 +65,7 @@ class Drillhole(Points):
         cost: float = 0.0,
         end_of_hole: float | None = None,
         planning: str = "Default",
-        surveys: np.ndarray | list | tuple = (0, 0, -90),
+        surveys: np.ndarray | list | tuple | None = None,
         vertices: np.ndarray | None = None,
         default_collocation_distance: float = 1e-2,
         **kwargs,
@@ -75,6 +75,7 @@ class Drillhole(Points):
         self._trace: np.ndarray | None = None
         self._trace_depth: np.ndarray | None = None
         self._locations = None
+        self._surveys: np.ndarray | None = None
 
         super().__init__(
             vertices=(0.0, 0.0, 0.0) if vertices is None else vertices, **kwargs
@@ -88,7 +89,9 @@ class Drillhole(Points):
         self.default_collocation_distance = default_collocation_distance
         self.end_of_hole = end_of_hole
         self.planning = planning
-        self.surveys = surveys
+
+        if surveys is not None:
+            self.surveys = surveys
 
     @property
     def cells(self) -> np.ndarray | None:
@@ -267,16 +270,20 @@ class Drillhole(Points):
         """
         Coordinates of the surveys.
         """
-        if (getattr(self, "_surveys", None) is None) and self.on_file:
+        if self._surveys is None and self.on_file:
             self._surveys = self.workspace.fetch_array_attribute(self, "surveys")
 
-        surveys = np.vstack(
-            [
-                self._surveys["Depth"],
-                self._surveys["Azimuth"],
-                self._surveys["Dip"],
-            ]
-        ).T
+        if self._surveys is None:
+            surveys = np.c_[0, 0, -90]
+
+        else:
+            surveys = np.vstack(
+                [
+                    self._surveys["Depth"],
+                    self._surveys["Azimuth"],
+                    self._surveys["Dip"],
+                ]
+            ).T
 
         return surveys.astype(float)
 
