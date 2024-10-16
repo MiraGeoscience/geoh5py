@@ -4,6 +4,7 @@ Release Notes
 Release 0.10.0 (2024-10-31)
 ---------------------------
 
+- Drop support for Python 3.9
 - GEOPY-1602: Major refactor of class instantiation and inheritance
     - Entity type passed as a keyword argument to the constructor.
     - Deprecate property 'default_type_uid' in favour of class attribute '_TYPE_UID'.
