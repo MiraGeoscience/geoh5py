@@ -57,10 +57,12 @@ See also documentation for the `geoh5 file format`_.
 
 Installation
 ^^^^^^^^^^^^
-**geoh5py** is currently written for Python 3.7 or higher, and depends on `NumPy <https://numpy.org/>`_ and
+**geoh5py** is currently written for Python 3.10 or higher, and depends on `NumPy <https://numpy.org/>`_ and
 `h5py <https://www.h5py.org/>`_. Users will likely want to also make use of advanced processing
-techniques made available under the python ecosystem. We therefore recommend installing
-`Miniforge <https://github.com/conda-forge/miniforge#download>`_ `(Windows x86_64) <https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe>`_ to handle the various packages.
+techniques made available under the python ecosystem. We therefore recommend installing a **Conda** distribution
+such as `miniforge`_ to handle the various packages.
+
+.. _miniforge: https://github.com/conda-forge/miniforge
 
 Install **geoh5py** from PyPI::
 

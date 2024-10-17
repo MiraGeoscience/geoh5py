@@ -35,8 +35,6 @@ if TYPE_CHECKING:
 
 
 class ConcatenatedObject(Concatenated, ObjectBase):
-    _parent: Concatenator
-
     def __init__(self, **kwargs):
         if kwargs.get("parent") is None:
             raise UserWarning(
@@ -44,6 +42,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                 "of type Concatenator."
             )
 
+        self._parent: Concatenator
         self._property_groups: list | None = None
 
         super().__init__(**kwargs)
@@ -97,8 +96,8 @@ class ConcatenatedObject(Concatenated, ObjectBase):
         """
         Get a child :obj:`~geoh5py.data.data.Data` by name.
 
-        :param name: Name of the target child data
-        :param entity_type: Sub-select entities based on type.
+        :param name: Name of the target child data.
+
         :return: A list of children Data objects
         """
         if not any(child for child in self.children if isinstance(child, Data)):

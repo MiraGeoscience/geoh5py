@@ -49,3 +49,6 @@ def test_metadata(tmp_path):
 
     with pytest.raises(TypeError, match="Input metadata must be of type"):
         points.metadata = "bidon"
+
+    with pytest.raises(TypeError, match="Input metadata must be of type"):
+        points.update_metadata("bidon")

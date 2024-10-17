@@ -100,11 +100,16 @@ class ObjectBase(EntityContainer):
                 if clear_cache:
                     clear_array_attributes(child)
 
-    def add_children(self, children: list[Entity | PropertyGroup]):
+    def add_children(
+        self, children: Entity | PropertyGroup | list[Entity | PropertyGroup]
+    ):
         """
         :param children: a list of entity to add as children.
         """
         property_groups = self._property_groups or []
+
+        if not isinstance(children, list):
+            children = [children]
 
         children_uids = {child.uid: child for child in self._children}
 
@@ -116,6 +121,8 @@ class ObjectBase(EntityContainer):
                 self._children.append(child)
                 if isinstance(child, PropertyGroup):
                     property_groups.append(child)
+                elif hasattr(child, "parent") and child.parent != self:
+                    child.parent = self
             else:
                 warn(f"Child {child} is not valid or already exists.")
 
