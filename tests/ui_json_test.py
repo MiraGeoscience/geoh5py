@@ -194,7 +194,7 @@ def test_integer_parameter(tmp_path: Path):
         in_file.data = data
 
     data.pop("integer")
-    with pytest.raises(ValueError, match="The number of input values"):
+    with pytest.warns(UserWarning, match="The number of input values"):
         in_file.data = data
 
     data["integer"] = 123
@@ -485,11 +485,17 @@ def test_property_group_with_wrong_type(tmp_path: Path):
 
     with pytest.raises(
         PropertyGroupValidationError,
-        match=PropertyGroupValidationError.message(
-            "data", points.property_groups[0], "3D vector"
+        match=re.escape(
+            PropertyGroupValidationError.message(
+                "data", points.property_groups[0], ["3D vector"]
+            )
         ),
     ):
         InputFile(ui_json=ui_json).data
+
+    ui_json["data"]["dataGroupType"] = ["3D vector", "Multi-element"]
+
+    assert InputFile(ui_json=ui_json).data is not None
 
 
 def test_data_with_wrong_parent(tmp_path: Path):

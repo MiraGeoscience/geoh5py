@@ -21,27 +21,34 @@ from __future__ import annotations
 
 import re
 import uuid
+import warnings
+from numbers import Real
 
 import numpy as np
 
-from ..data import Data, DataType, FloatData, NumericData
-from ..groups import PropertyGroup
+from ..data import Data, FloatData, NumericData
 from ..shared.utils import box_intersect, mask_by_extent, merge_arrays
-from .object_base import ObjectType
 from .points import Points
 
 
 class Drillhole(Points):
     """
-    Drillhole object class defined by
+    Drillhole object class defined by a collar and survey.
 
-    .. warning:: Not yet implemented.
-
+    :param collar: Coordinates of the drillhole.
+    :param cost: Cost estimate of the drillhole.
+    :param end_of_hole: End of drillhole in meters.
+    :param planning: Status of the hole, defaults to 'Default'.
+    :param surveys: Survey information provided as 'Depth', 'Azimuth', 'Dip'.
+    :param vertices: Coordinates of the vertices.
+    :param default_collocation_distance: Minimum collocation distance for matching depth on merge.
     """
 
-    __TYPE_UID = uuid.UUID(
+    _TYPE_UID = uuid.UUID(
         fields=(0x7CAEBF0E, 0xD16E, 0x11E3, 0xBC, 0x69, 0xE4632694AA37)
     )
+    __SURVEY_DTYPE = np.dtype([("Depth", "<f4"), ("Azimuth", "<f4"), ("Dip", "<f4")])
+    __COLLAR_DTYPE = np.dtype([("x", float), ("y", float), ("z", float)])
     _attribute_map = Points._attribute_map.copy()
     _attribute_map.update(
         {
@@ -52,24 +59,39 @@ class Drillhole(Points):
         }
     )
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        collar: np.ndarray | list | None = None,
+        cost: float = 0.0,
+        end_of_hole: float | None = None,
+        planning: str = "Default",
+        surveys: np.ndarray | list | tuple | None = None,
+        vertices: np.ndarray | None = None,
+        default_collocation_distance: float = 1e-2,
+        **kwargs,
+    ):
         self._cells: np.ndarray | None = None
-        self._collar: np.ndarray | None = None
-        self._cost: float | None = 0.0
         self._depths: FloatData | None = None
-        self._end_of_hole: float | None = None
-        self._planning: str = "Default"
-        self._surveys: np.ndarray | None = None
         self._trace: np.ndarray | None = None
         self._trace_depth: np.ndarray | None = None
         self._locations = None
-        self._default_collocation_distance = 1e-2
+        self._surveys: np.ndarray | None = None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(
+            vertices=(0.0, 0.0, 0.0) if vertices is None else vertices, **kwargs
+        )
 
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
+        if vertices is None:
+            self._vertices = None
+
+        self.collar = collar
+        self.cost = cost
+        self.default_collocation_distance = default_collocation_distance
+        self.end_of_hole = end_of_hole
+        self.planning = planning
+
+        if surveys is not None:
+            self.surveys = surveys
 
     @property
     def cells(self) -> np.ndarray | None:
@@ -90,52 +112,59 @@ class Drillhole(Points):
         self.workspace.update_attribute(self, "cells")
 
     @property
-    def collar(self):
+    def collar(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the collar
+        Coordinates of the collar, shape(1, 3)
         """
         return self._collar
 
     @collar.setter
     def collar(self, value: list | np.ndarray | None):
-        if value is not None:
-            if isinstance(value, np.ndarray):
-                value = value.tolist()
-
-            if isinstance(value, str):
-                value = [float(n) for n in re.findall(r"-?\d+\.\d+", value)]
-
-            if len(value) != 3:
-                raise ValueError("Origin must be a list or numpy array of len (3,).")
-
-            value = np.asarray(
-                tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
+        if value is None:
+            warnings.warn(
+                "No 'collar' provided. Using (0, 0, 0) as default point at the origin.",
+                UserWarning,
             )
-            self._collar = value
-            self.workspace.update_attribute(self, "attributes")
+            value = (0.0, 0.0, 0.0)
 
+        if isinstance(value, np.ndarray):
+            value = value.tolist()
+
+        if isinstance(value, str):
+            value = [float(n) for n in re.findall(r"-?\d+\.\d+", value)]
+
+        if len(value) != 3:
+            raise ValueError("Origin must be a list or numpy array of len (3,).")
+
+        value = np.asarray(tuple(value), dtype=self.__COLLAR_DTYPE)
+        self._collar = value
         self._locations = None
 
-        if self.trace is not None:
-            self._trace = None
-            self._trace_depth = None
-            self.workspace.update_attribute(self, "trace")
-            self.workspace.update_attribute(self, "trace_depth")
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
+
+            if self.trace is not None:
+                self._trace = None
+                self._trace_depth = None
+                self.workspace.update_attribute(self, "trace")
+                self.workspace.update_attribute(self, "trace_depth")
 
     @property
-    def cost(self):
+    def cost(self) -> float:
         """
         :obj:`float`: Cost estimate of the drillhole
         """
         return self._cost
 
     @cost.setter
-    def cost(self, value: float | int):
+    def cost(self, value: Real):
         assert isinstance(
-            value, (float, int)
+            value, Real
         ), f"Provided cost value must be of type {float} or int."
-        self._cost = value
-        self.workspace.update_attribute(self, "attributes")
+        self._cost = float(value)
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def end_of_hole(self) -> float | None:
@@ -145,12 +174,14 @@ class Drillhole(Points):
         return self._end_of_hole
 
     @end_of_hole.setter
-    def end_of_hole(self, value: float | int | None):
+    def end_of_hole(self, value: Real | None):
         assert isinstance(
             value, (int, float, type(None))
         ), f"Provided end_of_hole value must be of type {int}"
         self._end_of_hole = value
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def extent(self) -> np.ndarray | None:
@@ -210,6 +241,15 @@ class Drillhole(Points):
         return None
 
     @property
+    def n_cells(self) -> int | None:
+        """
+        Number of cells.
+        """
+        if self.cells is not None:
+            return self.cells.shape[0]
+        return None
+
+    @property
     def planning(self) -> str:
         """
         Status of the hole on of "Default", "Ongoing", "Planned", "Completed" or "No status"
@@ -221,17 +261,22 @@ class Drillhole(Points):
         choices = ["Default", "Ongoing", "Planned", "Completed", "No status"]
         assert value in choices, f"Provided planning value must be one of {choices}"
         self._planning = value
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def surveys(self) -> np.ndarray:
         """
-        Coordinates of the surveys
+        Coordinates of the surveys.
         """
-        if (getattr(self, "_surveys", None) is None) and self.on_file:
+        if self._surveys is None and self.on_file:
             self._surveys = self.workspace.fetch_array_attribute(self, "surveys")
 
-        if isinstance(self._surveys, np.ndarray):
+        if self._surveys is None:
+            surveys = np.c_[0, 0, -90]
+
+        else:
             surveys = np.vstack(
                 [
                     self._surveys["Depth"],
@@ -240,37 +285,48 @@ class Drillhole(Points):
                 ]
             ).T
 
-        else:
-            surveys = np.c_[0, 0, -90]
-
         return surveys.astype(float)
 
     @surveys.setter
-    def surveys(self, value):
-        if value is not None:
-            self._surveys = self.format_survey_values(value)
+    def surveys(self, array: np.ndarray | list | tuple):
+        if not isinstance(array, (np.ndarray, list, tuple)):
+            raise TypeError(
+                "Input 'surveys' must be of type 'numpy.ndarray' or 'list'."
+            )
+
+        self._surveys = self.format_survey_values(array)
+        self.end_of_hole = float(self._surveys["Depth"][-1])
+
+        if self.on_file:
             self.workspace.update_attribute(self, "surveys")
-            self.end_of_hole = float(self._surveys["Depth"][-1])
-            self._trace = None
-            self.workspace.update_attribute(self, "trace")
+
+            if self.trace is not None:
+                self._trace = None
+                self.workspace.update_attribute(self, "trace")
 
         self._locations = None
 
-    def format_survey_values(self, values: list | np.ndarray) -> np.recarray:
+    def format_survey_values(self, values: list | tuple | np.ndarray) -> np.ndarray:
         """
         Reformat the survey values as structured array with the right shape.
         """
-        if isinstance(values, list):
-            values = np.vstack(values)
+        if isinstance(values, (list, tuple)):
+            values = np.array(values, ndmin=2)
 
-        if values.shape[1] != 3:
-            raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
+        if np.issubdtype(values.dtype, np.number):
+            if values.shape[1] != 3:
+                raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
 
-        array_values = np.asarray(
-            np.core.records.fromarrays(
-                values.T, names="Depth, Azimuth, Dip", formats="<f4, <f4, <f4"
+            array_values = np.asarray(
+                np.core.records.fromarrays(values.T, dtype=self.__SURVEY_DTYPE)
             )
-        )
+        else:
+            array_values = values
+
+        if array_values.dtype != self.__SURVEY_DTYPE:
+            raise ValueError(
+                f"Array of 'survey' must be of dtype = {self.__SURVEY_DTYPE}"
+            )
         return array_values
 
     @property
@@ -361,96 +417,6 @@ class Drillhole(Points):
                 f"Input '_depth' property must be of type{FloatData} or None"
             )
 
-    def add_data(
-        self,
-        data: dict,
-        property_group: str | PropertyGroup | None = None,
-        compression: int = 5,
-        collocation_distance=None,
-    ) -> Data | list[Data]:
-        """
-        Create :obj:`~geoh5py.data.data.Data` specific to the drillhole object
-        from dictionary of name and arguments. A keyword 'depth' or 'from-to'
-        with corresponding depth values is expected in order to locate the
-        data along the well path.
-
-        :param data: Dictionary of data to be added to the object, e.g.
-
-        .. code-block:: python
-
-            data_dict = {
-                "data_A": {
-                    'values', [v_1, v_2, ...],
-                    "from-to": numpy.ndarray,
-                    },
-                "data_B": {
-                    'values', [v_1, v_2, ...],
-                    "depth": numpy.ndarray,
-                    },
-            }
-
-        :param property_group: Name or PropertyGroup used to group the data.
-        :param collocation_distance: Minimum collocation distance for matching
-        :param compression: Compression level for data.
-
-        :return: List of new Data objects.
-        """
-        data_objects = []
-
-        for name, attributes in data.items():
-            assert isinstance(attributes, dict), (
-                f"Given value to data {name} should of type {dict}. "
-                f"Type {type(attributes)} given instead."
-            )
-            assert (
-                "values" in attributes
-            ), f"Given attributes for data {name} should include 'values'"
-
-            attributes["name"] = name
-
-            if attributes["name"] in self.get_data_list():
-                raise ValueError(
-                    f"Data with name '{attributes['name']}' already present "
-                    f"on the drillhole '{self.name}'. "
-                    "Consider changing the values or renaming."
-                )
-
-            attributes, new_property_group = self.validate_data(
-                attributes, property_group, collocation_distance=collocation_distance
-            )
-
-            entity_type = DataType.validate_data_type(self.workspace, attributes)
-            kwargs = {
-                "name": None,
-                "parent": self,
-                "association": attributes["association"],
-                "allow_move": False,
-            }
-            for key, val in attributes.items():
-                if key in ["parent", "association", "entity_type", "type"]:
-                    continue
-                kwargs[key] = val
-
-            data_object = self.workspace.create_entity(
-                Data, entity=kwargs, entity_type=entity_type, compression=compression
-            )
-
-            if not isinstance(data_object, Data):
-                continue
-
-            if new_property_group is not None:
-                self.add_data_to_group(data_object, new_property_group)
-
-            data_objects.append(data_object)
-
-        # Check the depths and re-sort data if necessary
-        self.sort_depths()
-
-        if len(data_objects) == 1:
-            return data_objects[0]
-
-        return data_objects
-
     def desurvey(self, depths):
         """
         Function to return x, y, z coordinates from depth.
@@ -490,11 +456,17 @@ class Drillhole(Points):
         Function to add vertices to the drillhole
         """
         indices = np.arange(xyz.shape[0])
-        if isinstance(self.vertices, np.ndarray):
-            indices += self.vertices.shape[0]
-            self.vertices = np.vstack([self.vertices, xyz])
-        else:
-            self.vertices = xyz
+        if self._vertices is not None:
+            indices += self.n_vertices
+            xyz = np.vstack([self.vertices, xyz])
+
+        self._vertices = np.asarray(
+            np.core.records.fromarrays(
+                xyz.T.tolist(),
+                dtype=[("x", "<f8"), ("y", "<f8"), ("z", "<f8")],
+            )
+        )
+        self.workspace.update_attribute(self, "vertices")
 
         return indices.astype("uint32")
 
@@ -651,8 +623,8 @@ class Drillhole(Points):
 
         return values
 
-    def validate_data(
-        self, attributes: dict, property_group=None, collocation_distance=None
+    def validate_association(
+        self, attributes: dict, property_group=None, collocation_distance=None, **_
     ) -> tuple:
         """
         Validate input drillhole data attributes.
@@ -677,6 +649,13 @@ class Drillhole(Points):
                     "and 'from-to'."
                 )
 
+        if attributes["name"] in self.get_data_list():
+            raise ValueError(
+                f"Data with name '{attributes['name']}' already present "
+                f"on the drillhole '{self.name}'. "
+                "Consider changing the values or renaming."
+            )
+
         if "depth" in attributes.keys():
             attributes["association"] = "VERTEX"
             attributes["values"] = self.validate_depth_data(
@@ -697,7 +676,31 @@ class Drillhole(Points):
 
         return attributes, property_group
 
-    def sort_depths(self):
+    @property
+    def vertices(self) -> np.ndarray | None:
+        """
+        :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`
+        """
+        if self._vertices is None and self.on_file:
+            self._vertices = self.workspace.fetch_array_attribute(self, "vertices")
+
+        if self._vertices is not None:
+            return self._vertices.view("<f8").reshape((-1, 3))
+
+        return None
+
+    @vertices.setter
+    def vertices(self, vertices: np.ndarray | list | tuple):
+        xyz = self.validate_vertices(vertices)
+        if self._vertices is not None and self._vertices.shape != xyz.shape:
+            raise ValueError(
+                "New vertices array must have the same shape as the current vertices array."
+            )
+        self._vertices = xyz
+
+        self.workspace.update_attribute(self, "vertices")
+
+    def post_processing(self):
         """
         Read the 'DEPTH' data and sort all Data.values if needed
         """
@@ -706,7 +709,7 @@ class Drillhole(Points):
 
             depths = data_obj.values
             if isinstance(data_obj, NumericData):
-                depths = data_obj.format_values(depths)
+                depths = data_obj.validate_values(depths)
 
             if not np.all(np.diff(depths) >= 0):
                 sort_ind = np.argsort(depths)
@@ -716,14 +719,16 @@ class Drillhole(Points):
                         isinstance(child, NumericData)
                         and getattr(child.association, "name", None) == "VERTEX"
                     ):
-                        child.values = child.format_values(child.values)[sort_ind]
+                        child.values = child.validate_values(child.values)[sort_ind]
 
                 if self.vertices is not None:
-                    self.vertices = self.vertices[sort_ind, :]
+                    self._vertices = self.vertices[sort_ind, :]
+                    self.workspace.update_attribute(self, "vertices")
 
                 if self.cells is not None:
                     key_map = np.argsort(sort_ind)[self.cells.flatten()]
-                    self.cells = key_map.reshape((-1, 2)).astype("uint32")
+                    self._cells = key_map.reshape((-1, 2)).astype("uint32")
+                    self.workspace.update_attribute(self, "cells")
 
 
 def compute_deviation(surveys: np.ndarray) -> np.ndarray:

@@ -52,7 +52,7 @@ class EntityType(ABC):
         workspace: Workspace,
         uid: uuid.UUID | None = None,
         description: str | None = "Entity",
-        name: str | None = "Entity",
+        name: str = "Entity",
         on_file: bool = False,
         **_,
     ):
@@ -103,22 +103,6 @@ class EntityType(ABC):
             del attributes["uid"]
 
         return self.__class__(**attributes)
-
-    @classmethod
-    def create(cls, workspace, **kwargs):
-        """
-        WILL BE  DEPRECATED IN 10.0.0
-        Creates a new instance of :obj:`~geoh5py.data.data_type.DataType` with
-        corresponding :obj:`~geoh5py.data.primitive_type_enum.PrimitiveTypeEnum`.
-
-        :param workspace: The workspace to associate the entity type with.
-        :param kwargs: Keyword arguments to initialize the new DataType.
-
-        :return: A new instance of :obj:`~geoh5py.data.data_type.DataType`.
-        """
-        warn("This method will be deprecated in 10.0.0. Use the class constructor")
-
-        return cls(workspace, **kwargs)
 
     @classmethod
     def create_custom(cls, workspace: Workspace, **kwargs):
@@ -201,16 +185,16 @@ class EntityType(ABC):
         return cls(workspace, uid=uid, **kwargs)
 
     @property
-    def name(self) -> str | None:
+    def name(self) -> str:
         """
         The name of the entity type.
         """
         return self._name
 
     @name.setter
-    def name(self, name: str | None):
-        if not isinstance(name, (str, type(None))):
-            raise TypeError(f"name must be a string or None, not {type(name)}")
+    def name(self, name: str):
+        if not isinstance(name, str):
+            raise TypeError(f"name must be a string, not {type(name)}")
 
         self._name = name
 

@@ -17,6 +17,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from .data import Data, PrimitiveTypeEnum
 
 
@@ -24,6 +26,15 @@ class BlobData(Data):
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.BLOB
+
+    def validate_values(self, values: Any | None) -> Any:
+        """
+        Validate values for BlobData.
+        """
+        if values is not None:
+            if not isinstance(values, bytes):
+                raise TypeError(f"Values must be of type bytes. Got {type(values)}")
+        return values
 
     # TODO: implement specialization to access values.
     # Stored as a 1D array of 8-bit char type (native) (value '0' or '1').

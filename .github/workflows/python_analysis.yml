@@ -9,7 +9,6 @@ on:
       - release/**
       - feature/**
       - hotfix/**
-      - DEVOPS-466 # Temporary branch for testing
   push:
     branches:
       - develop

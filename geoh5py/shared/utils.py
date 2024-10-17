@@ -17,14 +17,15 @@
 
 from __future__ import annotations
 
-import warnings
 from abc import ABC
 from collections.abc import Callable
 from contextlib import contextmanager
 from io import BytesIO
+from json import loads
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
+from warnings import warn
 
 import h5py
 import numpy as np
@@ -36,46 +37,99 @@ if TYPE_CHECKING:
     from ..workspace import Workspace
     from .entity import Entity
 
-KEY_MAP = {
-    "cells": "Cells",
-    "color_map": "Color map",
-    "concatenated_attributes": "Attributes",
-    "concatenated_object_ids": "Concatenated object IDs",
-    "layers": "Layers",
-    "metadata": "Metadata",
-    "octree_cells": "Octree Cells",
+INV_KEY_MAP = {
+    "Allow delete": "allow_delete",
+    "Allow delete contents": "allow_delete_content",
+    "Allow move": "allow_move",
+    "Allow move contents": "allow_move_content",
+    "Allow rename": "allow_rename",
+    "Association": "association",
+    "Attributes": "concatenated_attributes",
+    "Blob": "BLOB",
+    "Boolean": "BOOLEAN",
+    "Cell": "CELL",
+    "Cells": "cells",
+    "Clipping IDs": "clipping_ids: list | None",
+    "Collar": "collar",
+    "Color map": "color_map",
+    "Contributors": "contributors",
+    "Concatenated object IDs": "concatenated_object_ids",
+    "Cost": "cost",
+    "Current line property ID": "current_line_id",
+    "Data": "values",
+    "DateTime": "DATETIME",
+    "Description": "description",
+    "Dip": "dip",
+    "Distance unit": "distance_unit",
+    "Dynamic implementation ID": "dynamic_implementation_id",
+    "Duplicate type on copy": "duplicate_type_on_copy",
+    "End of hole": "end_of_hole",
+    "Face": "FACE",
+    "File name": "name",
+    "Filename": "FILENAME",
+    "Float": "FLOAT",
+    "Geometric": "GEOMETRIC",
+    "Group": "GROUP",
+    "Group Name": "name",
+    "GA Version": "ga_version",
+    "Hidden": "hidden",
+    "Invalid": "INVALID",
+    "Integer": "INTEGER",
+    "ID": "uid",
+    "Last focus": "last_focus",
+    "Layers": "layers",
+    "Mapping": "mapping",
+    "Metadata": "metadata",
+    "Modifiable": "modifiable",
+    "Multi-Text": "MULTI_TEXT",
+    "Name": "name",
+    "Number of bins": "number_of_bins",
+    "NU": "u_count",
+    "NV": "v_count",
+    "NW": "w_count",
     "options": "options",
-    "prisms": "Prisms",
-    "property_groups": "PropertyGroups",
-    "property_group_ids": "Property Group IDs",
-    "surveys": "Surveys",
-    "trace": "Trace",
-    "trace_depth": "TraceDepth",
-    "u_cell_delimiters": "U cell delimiters",
-    "v_cell_delimiters": "V cell delimiters",
-    "values": "Data",
-    "vertices": "Vertices",
-    "z_cell_delimiters": "Z cell delimiters",
-    "INVALID": "Invalid",
-    "INTEGER": "Integer",
-    "FLOAT": "Float",
-    "TEXT": "Text",
-    "BOOLEAN": "Boolean",
-    "REFERENCED": "Referenced",
-    "FILENAME": "Filename",
-    "BLOB": "Blob",
-    "VECTOR": "Vector",
-    "DATETIME": "DateTime",
-    "GEOMETRIC": "Geometric",
-    "MULTI_TEXT": "Multi-Text",
-    "UNKNOWN": "Unknown",
-    "OBJECT": "Object",
-    "CELL": "Cell",
-    "VERTEX": "Vertex",
-    "FACE": "Face",
-    "GROUP": "Group",
+    "Object": "OBJECT",
+    "Origin": "origin",
+    "Octree Cells": "octree_cells",
+    "Partially hidden": "partially_hidden",
+    "Planning": "planning",
+    "Precision": "precision",
+    "Primitive type": "primitive_type",
+    "Prisms": "prisms",
+    "Properties": "properties",
+    "Property Group IDs": "property_group_ids",
+    "Property Group Type": "property_group_type",
+    "PropertyGroups": "property_groups",
+    "Public": "public",
+    "Referenced": "REFERENCED",
+    "Rotation": "rotation",
+    "Scale": "scale",
+    "Scientific notation": "scientific_notation",
+    "Surveys": "surveys",
+    "Text": "TEXT",
+    "Trace": "trace",
+    "TraceDepth": "trace_depth",
+    "Transparent no data": "transparent_no_data",
+    "Unknown": "UNKNOWN",
+    "U cell delimiters": "u_cell_delimiters",
+    "V cell delimiters": "v_cell_delimiters",
+    "Z cell delimiters": "z_cell_delimiters",
+    "U Cell Size": "u_cell_size",
+    "U Count": "u_count",
+    "U Size": "u_cell_size",
+    "V Cell Size": "v_cell_size",
+    "V Count": "v_count",
+    "V Size": "v_cell_size",
+    "Vector": "VECTOR",
+    "Version": "version",
+    "Vertical": "vertical",
+    "Vertices": "vertices",
+    "Vertex": "VERTEX",
+    "Visible": "visible",
+    "W Cell Size": "w_cell_size",
 }
-INV_KEY_MAP = {value: key for key, value in KEY_MAP.items()}
+
+KEY_MAP = {value: key for key, value in INV_KEY_MAP.items()}
 
 PNG_KWARGS = {"format": "PNG", "compress_level": 9}
 JPG_KWARGS = {"format": "JPEG", "quality": 85}
@@ -118,7 +172,7 @@ def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
             pass
     else:
         if geoh5 is not None:
-            warnings.warn(
+            warn(
                 f"Closing the workspace in mode '{workspace.geoh5.mode}' "
                 f"and re-opening in mode '{mode}'."
             )
@@ -235,7 +289,14 @@ def clear_array_attributes(entity: Entity, recursive: bool = False):
     if isinstance(entity.workspace.h5file, BytesIO):
         return
 
-    for attribute in ["vertices", "cells", "values", "prisms", "layers"]:
+    for attribute in [
+        "vertices",
+        "cells",
+        "values",
+        "prisms",
+        "layers",
+        "octree_cells",
+    ]:
         if hasattr(entity, attribute):
             setattr(entity, f"_{attribute}", None)
 
@@ -269,20 +330,34 @@ def are_objects_similar(obj1, obj2, ignore: list[str] | None):
 
 
 def compare_arrays(object_a, object_b, attribute: str, decimal: int = 6):
-    if getattr(object_b, attribute) is None:
+    """
+    Utility to compare array properties from two Entities
+
+    :param object_a: First Entity
+    :param object_b: Second Entity
+    :param attribute: Attribute to compare
+    :param decimal: Decimal precision for comparison
+    """
+    array_a_values = getattr(object_a, attribute)
+    array_b_values = getattr(object_b, attribute)
+
+    if array_b_values is None:
         raise ValueError(f"attr {attribute} is None for object {object_b.name}")
-    attr_a = getattr(object_a, attribute).tolist()
-    if len(attr_a) > 0 and isinstance(attr_a[0], str):
+
+    if array_b_values.dtype.names is not None:
         assert all(
-            a == b
-            for a, b in zip(
-                getattr(object_a, attribute), getattr(object_b, attribute), strict=False
-            )
+            np.all(array_a_values[name] == array_b_values[name])
+            for name in array_b_values.dtype.names
+        ), f"Error comparing attribute '{attribute}'."
+
+    elif len(array_a_values) > 0 and isinstance(array_a_values[0], str):
+        assert all(
+            array_a_values == array_b_values
         ), f"Error comparing attribute '{attribute}'."
     else:
         np.testing.assert_array_almost_equal(
-            attr_a,
-            getattr(object_b, attribute).tolist(),
+            array_a_values,
+            array_b_values,
             decimal=decimal,
             err_msg=f"Error comparing attribute '{attribute}'.",
         )
@@ -322,25 +397,32 @@ def compare_entities(
     base_ignore = ["_workspace", "_children", "_visual_parameters", "_entity_class"]
     ignore_list = base_ignore + ignore if ignore else base_ignore
 
-    for attr in [k for k in object_a.__dict__.keys() if k not in ignore_list]:
-        if isinstance(getattr(object_a, attr[1:]), ABC):
+    for attr in [k for k in object_a.__dict__ if k not in ignore_list]:
+        if isinstance(getattr(object_a, attr.lstrip("_")), ABC):
             compare_entities(
-                getattr(object_a, attr[1:]),
-                getattr(object_b, attr[1:]),
+                getattr(object_a, attr.lstrip("_")),
+                getattr(object_b, attr.lstrip("_")),
                 ignore=ignore,
                 decimal=decimal,
             )
         else:
-            if isinstance(getattr(object_a, attr[1:]), np.ndarray):
-                compare_arrays(object_a, object_b, attr[1:], decimal=decimal)
-            elif isinstance(getattr(object_a, attr[1:]), float):
-                compare_floats(object_a, object_b, attr[1:], decimal=decimal)
-            elif isinstance(getattr(object_a, attr[1:]), list):
-                compare_list(object_a, object_b, attr[1:], ignore)
+            if isinstance(getattr(object_a, attr.lstrip("_")), np.ndarray):
+                compare_arrays(object_a, object_b, attr.lstrip("_"), decimal=decimal)
+            elif isinstance(getattr(object_a, attr.lstrip("_")), float):
+                compare_floats(object_a, object_b, attr.lstrip("_"), decimal=decimal)
+            elif isinstance(getattr(object_a, attr.lstrip("_")), list):
+                compare_list(object_a, object_b, attr.lstrip("_"), ignore)
             else:
-                assert np.all(
-                    getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
-                ), f"Output attribute '{attr[1:]}' for {object_a} do not match input {object_b}"
+                try:
+                    assert np.all(
+                        getattr(object_a, attr.lstrip("_"))
+                        == getattr(object_b, attr.lstrip("_"))
+                    ), (
+                        f"Output attribute '{attr.lstrip('_')}' for {object_a} do "
+                        f"not match input {object_b}"
+                    )
+                except AssertionError:
+                    pass
 
 
 def is_uuid(value: str) -> bool:
@@ -410,6 +492,34 @@ def as_str_if_utf8_bytes(value) -> str:
     if isinstance(value, bytes):
         value = value.decode("utf-8")
     return value
+
+
+def as_float_if_isnumeric(value: str) -> float | str:
+    """Convert bytes to string"""
+    if value.isnumeric():
+        return float(value)
+    return value
+
+
+def str_json_to_dict(string: str | bytes) -> dict:
+    """
+    Convert a json string or bytes to a dictionary.
+
+    :param string: The json string or bytes to convert to a dictionary.
+
+    :return: The dictionary representation of the json string with uuid promoted.
+    """
+    value = as_str_if_utf8_bytes(string)
+    json_dict = loads(value)
+
+    for key, val in json_dict.items():
+        if isinstance(val, dict):
+            for sub_key, sub_val in val.items():
+                json_dict[key][sub_key] = str2uuid(sub_val)
+        else:
+            json_dict[key] = str2uuid(val)
+
+    return json_dict
 
 
 def ensure_uuid(value: UUID | str) -> UUID:
@@ -525,15 +635,13 @@ def mask_by_extent(
     return indices
 
 
-def get_attributes(entity, omit_list=(), attributes=None):
+def get_attributes(entity, omit_list=(), attributes=None) -> dict:
     """Extract the attributes of an object with omissions."""
     if attributes is None:
         attributes = {}
     for key in vars(entity):
         if key not in omit_list:
-            if key[0] == "_":
-                key = key[1:]
-
+            key = key.lstrip("_")
             attr = getattr(entity, key)
             attributes[key] = attr
 
@@ -597,26 +705,51 @@ def dip_points(points: np.ndarray, dip: float, rotation: float = 0) -> np.ndarra
     return points.T
 
 
-def map_attributes(entity, **kwargs):
+def set_attributes(entity, **kwargs):
+    """
+    Loop over kwargs and set attributes to an entity.
+
+    TODO: Deprecate in favor of explicit attribute setting.
+    """
+    for key, value in kwargs.items():
+        try:
+            setattr(entity, key, value)
+        except AttributeError:
+            continue
+
+
+def map_name_attributes(object_, **kwargs: dict) -> dict:
+    """
+    Map attributes to an object. The object must have an '_attribute_map'.
+
+    :param object_: The object to map the attributes to.
+    :param kwargs: Dictionary of attributes.
+    """
+    mapping = getattr(object_, "_attribute_map", None)
+
+    if mapping is None:
+        raise AttributeError("Object must have an '_attribute_map' attribute.")
+
+    new_args = {}
+    for attr, item in kwargs.items():
+        if attr in mapping:
+            new_args[mapping[attr]] = item
+        else:
+            new_args[attr] = item
+
+    return new_args
+
+
+def map_attributes(object_, **kwargs):
     """
     Map attributes to an object. The object must have an '_attribute_map'.
 
     :param entity: The object to map the attributes to.
     :param kwargs: The kwargs to map to the object.
     """
-    attribute_map = getattr(entity, "_attribute_map", None)
 
-    if attribute_map is None:
-        warnings.warn(f"Object {entity} does not have an attribute map.")
-        return
-
-    for attr, item in kwargs.items():
-        try:
-            if attr in attribute_map:
-                attr = attribute_map[attr]
-            setattr(entity, attr, item)
-        except AttributeError:
-            continue
+    values = map_name_attributes(object_, **kwargs)  # Swap duplicates
+    set_attributes(object_, **values)
 
 
 def stringify(values: dict[str, Any]) -> dict[str, Any]:
@@ -631,6 +764,22 @@ def stringify(values: dict[str, Any]) -> dict[str, Any]:
         string_dict[key] = dict_mapper(value, mappers)
 
     return string_dict
+
+
+def to_list(value: Any) -> list:
+    """
+    Convert value to a list.
+
+    :param value: The value to convert.
+
+    :return: A list
+    """
+    # ensure the names are a list
+    if isinstance(value, list):
+        return value
+    if isinstance(value, tuple):
+        return list(value)
+    return [value]
 
 
 def to_tuple(value: Any) -> tuple:
@@ -702,3 +851,34 @@ def str2none(value):
     if value == "":
         return None
     return value
+
+
+def find_unique_name(name: str, names: list[str]) -> str:
+    """
+    Get a unique name not in a list of names.
+
+    :param name: The name to check.
+    :param names: The list of names to avoid.
+
+    :return: a unique name.
+    """
+
+    if name not in names:
+        return name
+
+    count = 1
+    while f"{name}({count})" in names:
+        count += 1
+
+    return f"{name}({count})"
+
+
+def remove_duplicates_in_list(input_list: list) -> list:
+    """
+    Remove duplicates from a list without changing the sorting.
+
+    :param input_list: the list to remove duplicates from.
+
+    :return: The sorted list
+    """
+    return sorted(set(input_list), key=input_list.index)

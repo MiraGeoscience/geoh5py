@@ -32,8 +32,6 @@ if TYPE_CHECKING:
 
 
 class ConcatenatedPropertyGroup(PropertyGroup):
-    _parent: ConcatenatedObject
-
     def __init__(self, parent: ConcatenatedObject, **kwargs):
         super().__init__(parent, **kwargs)
 
@@ -141,7 +139,9 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
         parent.workspace.add_or_update_property_group(self)
 
-    def remove_properties(self, data: Data | list[Data | uuid.UUID] | uuid.UUID):
+    def remove_properties(
+        self, data: str | Data | list[str | Data | uuid.UUID] | uuid.UUID
+    ):
         """
         Remove data from the properties.
 

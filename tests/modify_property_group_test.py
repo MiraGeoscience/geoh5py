@@ -29,7 +29,8 @@ from geoh5py.workspace import Workspace
 def test_modify_property_group(tmp_path):
     def compare_objects(object_a, object_b, ignore=None):
         if ignore is None:
-            ignore = ["_workspace", "_children", "_parent"]
+            ignore = ["_workspace", "_children", "_parent", "_property_table"]
+
         for attr in object_a.__dict__.keys():
             if attr in ignore:
                 continue
@@ -89,6 +90,7 @@ def test_modify_property_group(tmp_path):
         # Read the property_group back in
         rec_curve = workspace.get_entity(obj_name)[0]
         rec_prop_group = rec_curve.fetch_property_group(name="myGroup")
+
         compare_objects(rec_prop_group, prop_group)
 
         with pytest.raises(DeprecationWarning):

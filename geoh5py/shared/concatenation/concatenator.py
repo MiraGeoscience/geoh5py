@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import uuid
 import warnings
-from typing import TYPE_CHECKING
 
 import numpy as np
 from h5py import special_dtype
@@ -29,16 +28,13 @@ from h5py import special_dtype
 from ...data import Data, DataAssociationEnum, DataType
 from ...groups import Group
 from ..entity import Entity
+from ..entity_type import EntityType
 from ..utils import INV_KEY_MAP, KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid, str2uuid
 from .concatenated import Concatenated
 from .data import ConcatenatedData
 from .drillholes_group_table import DrillholesGroupTable
 from .object import ConcatenatedObject
-from .property_group import ConcatenatedPropertyGroup
-
-
-if TYPE_CHECKING:
-    from ...groups import GroupType
+from .property_group import ConcatenatedPropertyGroup, PropertyGroup
 
 
 PROPERTY_KWARGS = {
@@ -59,8 +55,8 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
     _concat_attr_str: str | None = None
 
-    def __init__(self, group_type: GroupType, **kwargs):
-        super().__init__(group_type, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self._attribute_map.update(
             {
@@ -92,11 +88,16 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return self._attributes_keys
 
-    def add_children(self, children: list[ConcatenatedObject] | list[Entity]) -> None:
+    def add_children(
+        self, children: Entity | PropertyGroup | list[Entity | PropertyGroup]
+    ) -> None:
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
         """
+        if not isinstance(children, list):
+            children = [children]
+
         for child in children:
             if not (
                 isinstance(child, Concatenated)
@@ -111,8 +112,17 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                 )
                 continue
 
-            if child not in self._children:
-                self._children.append(child)
+            if child in self._children:
+                continue
+
+            self._children.append(child)
+
+            if (
+                not isinstance(child, PropertyGroup)
+                and hasattr(child, "parent")
+                and child.parent != self
+            ):
+                child.parent = self
 
     def add_save_concatenated(self, child) -> None:
         """
@@ -255,8 +265,11 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                     attr_type = self.workspace.fetch_type(
                         uuid.UUID(elem["Type ID"]), "Data"
                     )
-                    data_type = DataType.find_or_create(
-                        new_entity.workspace, **attr_type
+                    primitive_type = attr_type.pop("primitive_type")
+                    data_type = DataType.find_or_create_type(
+                        new_entity.workspace,
+                        primitive_type,
+                        **attr_type,
                     )
                     new_entity.workspace.save_entity_type(data_type)
 
@@ -339,7 +352,9 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return attr_dict
 
-    def fetch_index(self, entity: Concatenated, field: str) -> int | None:
+    def fetch_index(
+        self, entity: ConcatenatedObject | ConcatenatedData | EntityType, field: str
+    ) -> int | None:
         """
         Fetch the array index for specific concatenated object and data field.
 
@@ -364,7 +379,9 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return None
 
-    def fetch_start_index(self, entity: Concatenated, label: str) -> int:
+    def fetch_start_index(
+        self, entity: ConcatenatedObject | ConcatenatedData, label: str
+    ) -> int:
         """
         Fetch starting index for a given entity and label.
         Existing date is removed such that new entries can be appended.
@@ -384,7 +401,9 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return start
 
-    def fetch_values(self, entity: Concatenated, field: str) -> np.ndarray | None:
+    def fetch_values(
+        self, entity: ConcatenatedObject | ConcatenatedData | EntityType, field: str
+    ) -> np.ndarray | None:
         """
         Get an array of values from concatenated data.
 
@@ -477,11 +496,12 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
             self.remove_entity(child)
 
-    def remove_entity(self, entity: Concatenated | ConcatenatedPropertyGroup):
+    def remove_entity(
+        self, entity: ConcatenatedObject | ConcatenatedData | ConcatenatedPropertyGroup
+    ):
         """Remove a concatenated entity."""
-
-        parent = entity.parent
         if isinstance(entity, ConcatenatedData):
+            parent = entity.parent
             # Remove the rows of data and index
             self.update_array_attribute(entity, entity.name, remove=True)
             # Remove the data from the group
@@ -505,11 +525,16 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         elif isinstance(entity, ConcatenatedPropertyGroup):
             # Remove all data within the group
+            parent = entity.parent
             if entity.properties is not None and len(entity.properties) > 0:
                 data = [entity.parent.get_entity(uid)[0] for uid in entity.properties]
                 entity.parent.remove_children(data)
 
-            entity.parent.remove_property_group(entity)
+            if (
+                entity.parent.property_groups is not None
+                and entity in entity.parent.property_groups
+            ):
+                entity.parent.property_groups.remove(entity)
             self.update_array_attribute(parent, "property_groups")
 
         if (
@@ -545,7 +570,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             self.workspace.update_attribute(self, "data", field)
 
     def update_attributes(
-        self, entity: ConcatenatedData | ConcatenatedObject, label: str
+        self, entity: ConcatenatedObject | ConcatenatedData, label: str
     ) -> None:
         """
         Update a concatenated entity.
@@ -578,7 +603,9 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
             self.update_array_attribute(entity, label)
 
-    def update_concatenated_attributes(self, entity: Concatenated) -> None:
+    def update_concatenated_attributes(
+        self, entity: ConcatenatedObject | ConcatenatedData
+    ) -> None:
         """
         Update the concatenated attributes.
         :param entity: Concatenated entity with attributes.
@@ -611,7 +638,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         self.workspace.repack = True
 
     def update_array_attribute(
-        self, entity: Concatenated, field: str, remove=False
+        self, entity: ConcatenatedObject | ConcatenatedData, field: str, remove=False
     ) -> None:
         """
         Update values stored as data.

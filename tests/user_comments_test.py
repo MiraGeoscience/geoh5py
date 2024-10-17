@@ -36,10 +36,10 @@ def test_user_comments(tmp_path):
         ws2 = Workspace(h5file_path)
         object_base = ws2.get_entity("myObject")[0]
         assert (
-            object_base.comments.values[0]["Author"] == author
+            object_base.comments.values["Comments"][0]["Author"] == author
         ), "Issue with 'Author of object comments"
         assert (
-            object_base.comments.values[0]["Text"] == object_comment
+            object_base.comments.values["Comments"][0]["Text"] == object_comment
         ), "Issue with 'Text' of object comments"
 
         # Repeat with Group comments
@@ -53,12 +53,12 @@ def test_user_comments(tmp_path):
         ws3 = Workspace(h5file_path)
         group_in = ws3.get_entity("myGroup")[0]
 
-        assert group_in.comments.values[0]["Author"] == ",".join(
+        assert group_in.comments.values["Comments"][0]["Author"] == ",".join(
             ws3.contributors
         ), "Issue with 'Author of object comments"
         assert (
-            group_in.comments.values[0]["Text"] == group_comment_1
+            group_in.comments.values["Comments"][0]["Text"] == group_comment_1
         ), "Issue with 'Text' of group comments"
         assert (
-            group_in.comments.values[1]["Text"] == group_comment_2
+            group_in.comments.values["Comments"][1]["Text"] == group_comment_2
         ), "Issue with 'Text' of group comments"

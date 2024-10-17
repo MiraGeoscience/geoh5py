@@ -21,12 +21,13 @@ from __future__ import annotations
 
 import uuid
 from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..shared.utils import str2uuid
+from ..data import CommentsData, Data
 from .entity import Entity
 
 
@@ -42,13 +43,73 @@ class EntityContainer(Entity):
     Base Entity class
     """
 
-    def __init__(self, uid: uuid.UUID | None = None, **kwargs):
-        self._uid = (
-            str2uuid(uid) if isinstance(str2uuid(uid), uuid.UUID) else uuid.uuid4()
-        )
-        self._children: list = []
+    _TYPE_UID: uuid.UUID | None = None
 
-        super().__init__(uid, **kwargs)
+    def __init__(self, **kwargs):
+        self._children: list = []
+        super().__init__(**kwargs)
+
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID | None:
+        """
+        Default uuid for the entity type.
+        """
+        return cls._TYPE_UID
+
+    def add_children(
+        self, children: Entity | PropertyGroup | list[Entity | PropertyGroup]
+    ):
+        """
+        :param children: Add a list of entities as
+            :obj:`~geoh5py.shared.entity.Entity.children`
+        """
+        if not isinstance(children, list):
+            children = [children]
+
+        for child in children:
+            if child in self._children:
+                continue
+
+            if not isinstance(child, Entity):
+                raise TypeError(
+                    f"Child must be an instance of Entity, not {type(child)}"
+                )
+
+            self._children.append(child)
+
+            if hasattr(child, "parent") and child.parent is not self:
+                child.parent = self
+
+    def add_comment(self, comment: str, author: str | None = None):
+        """
+        Add text comment to an object.
+
+        :param comment: Text to be added as comment.
+        :param author: Author's name or :obj:`~geoh5py.workspace.workspace.Workspace.contributors`.
+        """
+
+        date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        if author is None:
+            author = ",".join(self.workspace.contributors)
+
+        comment_dict = {"Author": author, "Date": date, "Text": comment}
+
+        if self.comments is None:
+            self.workspace.create_entity(
+                Data,
+                entity={
+                    "name": "UserComments",
+                    "association": "OBJECT",
+                    "values": {"Comments": [comment_dict]},
+                    "parent": self,
+                },
+                entity_type={"primitive_type": "TEXT"},
+            )
+
+        else:
+            self.comments.values = {
+                "Comments": self.comments.values["Comments"] + [comment_dict]
+            }
 
     def add_file(self, file: str | Path | bytes, name: str = "filename.dat"):
         """
@@ -79,10 +140,10 @@ class EntityContainer(Entity):
 
         attributes = {
             "name": name,
-            "file_name": name,
+            "file_bytes": blob,
             "association": "OBJECT",
             "parent": self,
-            "values": blob,
+            "values": name,
         }
         entity_type = {"name": "UserFiles", "primitive_type": "FILENAME"}
 
@@ -98,6 +159,17 @@ class EntityContainer(Entity):
         :obj:`list` Children entities in the workspace tree
         """
         return self._children
+
+    @property
+    def comments(self):
+        """
+        Fetch a :obj:`~geoh5py.data.text_data.CommentsData` entity from children.
+        """
+        for child in self.children:
+            if isinstance(child, CommentsData):
+                return child
+
+        return None
 
     @abstractmethod
     def copy(

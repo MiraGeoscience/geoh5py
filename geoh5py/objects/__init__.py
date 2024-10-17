@@ -32,6 +32,7 @@ from .object_base import ObjectBase
 from .object_type import ObjectType
 from .octree import Octree
 from .points import Points
+from .slicer import Slicer
 from .surface import Surface
 from .surveys.direct_current import CurrentElectrode, PotentialElectrode
 from .surveys.electromagnetics.airborne_fem import (

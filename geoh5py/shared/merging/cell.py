@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ...objects import CellObject, Curve, ObjectBase, Surface
+from ...objects import CellObject, Curve, Surface
 from ...workspace import Workspace
 from .points import PointsMerger
 
@@ -28,7 +28,7 @@ class CellMerger(PointsMerger):
 
     @classmethod
     def create_object(
-        cls, workspace: Workspace, input_entities: list[ObjectBase], **kwargs
+        cls, workspace: Workspace, input_entities: list, **kwargs
     ) -> CellObject:
         """
         Create a new object of type cls._type from a list of input entities.
