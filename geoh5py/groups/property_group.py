@@ -17,13 +17,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from enum import Enum
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 from warnings import warn
 
-from ..data import Data, DataAssociationEnum
+from ..data import Data, DataAssociationEnum, NumericData, FloatData
 from ..shared.utils import (
     find_unique_name,
     remove_duplicates_in_list,
@@ -44,9 +44,93 @@ class GroupTypeEnum(str, Enum):
     DIPDIR = "Dip direction & dip"
     INTERVAL = "Interval table"
     MULTI = "Multi-element"
+    SIMPLE = "Simple"
     STRIKEDIP = "Strike & dip"
     VECTOR = "3D vector"
-    UNKNOWN = "Unknown"
+
+    @classmethod
+    def find_type(cls, data: list):
+        if all(isinstance(d, NumericData) for d in data):
+            return cls.MULTI
+        return cls.SIMPLE
+
+    @classmethod
+    def no_modify(cls) -> list[GroupTypeEnum]:
+        """
+        The property group types that cannot be modified.
+        """
+        return [
+            cls.DIPDIR, cls.STRIKEDIP, cls.VECTOR
+        ]
+
+    @classmethod
+    def verify_type(cls, children: list[Data], group_type: GroupTypeEnum):
+        """
+        Verify that the children are of the correct type for the group type.
+
+        Raises a TypeError if the children are not of the correct type.
+
+        :param children: The children to verify.
+        :param group_type: The group type to verify against.
+        """
+        if group_type == cls.DEPTH:
+            if (
+                    len(children) < 1
+                    or not children[0].association == DataAssociationEnum.DEPTH
+                    or not isinstance(children[0], FloatData)
+            ):
+                raise TypeError(
+                    f"First children of '{group_type}' property group type "
+                    "must be a FloatData of 'Depth' association. "
+                )
+
+        elif group_type == cls.DIPDIR:
+            if (
+                len(children) != 2
+                or not all(isinstance(child, NumericData) for child in children)
+            ):
+                raise TypeError(
+                    f"Children of '{group_type}' property group type "
+                    "must be a list of 2 NumericData entities"
+                )
+
+        elif group_type == cls.INTERVAL:
+            if (
+                len(children) < 2
+                or not children[0].association == DataAssociationEnum.DEPTH
+                or not all(isinstance(child, FloatData) for child in children[:2])
+            ):
+                raise TypeError(
+                    f"First two children of '{group_type}' property group type "
+                    "must be FloatData of 'Interval' association."
+                )
+
+        elif group_type == cls.MULTI:
+            if not all(isinstance(child, NumericData) for child in children):
+                raise TypeError(
+                    f"Children of '{group_type}' property group type "
+                    "must be a list of NumericData entities"
+                )
+
+        elif group_type == cls.STRIKEDIP:
+            if (
+                len(children) != 2
+                or not all(isinstance(child, NumericData) for child in children)
+            ):
+                raise TypeError(
+                    f"Children of '{group_type}' property group type "
+                    "must be a list of 2 NumericData entities"
+                )
+
+        elif group_type == cls.VECTOR:
+            if (
+                    len(children) != 3
+                    or not all(isinstance(child, NumericData) for child in children)
+            ):
+                raise TypeError(
+                    f"Children of '{group_type}' property group type "
+                    "must be a list of 3 NumericData entities"
+                )
 
 
 class PropertyGroup:
@@ -80,7 +164,7 @@ class PropertyGroup:
         name: str = "Property Group",
         on_file: bool = False,
         uid: UUID | None = None,
-        property_group_type: GroupTypeEnum | str = GroupTypeEnum.UNKNOWN,
+        property_group_type: GroupTypeEnum | str = GroupTypeEnum.SIMPLE,
         properties: list[UUID | Data | str] | None = None,
         **_,
     ):
@@ -144,7 +228,7 @@ class PropertyGroup:
 
         return value
 
-    def _validate_data(self, data: Data | UUID | str) -> UUID:
+    def _validate_data(self, data: Data | UUID | str) -> Data:
         """
         Verify that the data is in the parent and has the same association as the group.
 
@@ -161,7 +245,7 @@ class PropertyGroup:
                 f"does not match group association ({self.association})."
             )
 
-        return data.uid
+        return data
 
     @staticmethod
     def _validate_group_type(value: str | GroupTypeEnum) -> GroupTypeEnum:
@@ -203,7 +287,10 @@ class PropertyGroup:
             raise TypeError(f"Parent {parent} must have a 'property_groups' attribute")
         return parent
 
-    def _validate_properties(self, data_list: list[Data] | None) -> list[UUID] | None:
+    def _validate_properties(
+            self,
+            data_list: Sequence[str | UUID | Data] | None
+    ) -> list[UUID] | None:
         """
         Validate the properties list.
 
@@ -211,12 +298,16 @@ class PropertyGroup:
 
         :return: List of unique identifiers for the Data entities.
         """
-        if data_list is None:
+        if not data_list:
             return None
 
-        return remove_duplicates_in_list(
+        data_list_ = remove_duplicates_in_list(
             [self._validate_data(uid) for uid in data_list]
         )
+
+        GroupTypeEnum.verify_type(data_list_, self._property_group_type)
+
+        return [data.uid for data in data_list_]
 
     def add_properties(self, data: str | Data | list[str | Data | UUID] | UUID):
         """
@@ -225,12 +316,17 @@ class PropertyGroup:
         :param data: Data to add to the group.
             It can be the name, the uuid or the data itself in a list or alone.
         """
-        if not isinstance(data, Iterable):
+        if self._property_group_type in GroupTypeEnum.no_modify():
+            raise ValueError(
+                f"Cannot add properties to '{self._property_group_type}' property group type."
+            )
+
+        if not isinstance(data, list):
             data = [data]
 
-        properties = self._properties or []
-        for elem in data:
-            properties.append(self._validate_data(elem))
+        properties = self._validate_properties(
+            data if self.properties is None else self.properties + data
+        )
 
         if properties:
             self._properties = remove_duplicates_in_list(properties)
@@ -353,18 +449,26 @@ class PropertyGroup:
         :param data: Data to remove from the group.
             It can be the name, the uuid or the data itself in a list or alone.
         """
-        if self._properties is None:
+        if self._property_group_type in GroupTypeEnum.no_modify():
+            raise ValueError(
+                f"Cannot remove properties from '{self._property_group_type}' property group type."
+            )
+
+        if self.properties is None:
             return
 
-        if not isinstance(data, Iterable):
+        if not isinstance(data, list):
             data = [data]
 
+        properties = self.properties
         for elem in data:
             elem = self.parent.reference_to_data(elem).uid
-            if elem in self._properties:
-                self._properties.remove(elem)
+            if elem in properties:
+                properties.remove(elem)
 
-        if len(self._properties) == 0:
+        self._properties = self._validate_properties(properties)
+
+        if not self._properties:
             self.parent.workspace.remove_entity(self)
             return
 

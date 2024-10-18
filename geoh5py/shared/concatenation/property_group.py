@@ -147,7 +147,22 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
         The property group is removed if only the depth or from/to data are left.
         """
-        super().remove_properties(data)
+        if not isinstance(data, (list, tuple)):
+            data = [data]
+
+        # avoid suppressing depth and from-to directly
+        avoid = []
+        if self.depth_ is not None:
+            avoid.extend([self.depth_, self.depth_.uid, self.depth_.name])
+        if self.from_ is not None:
+            avoid.extend([self.from_, self.from_.uid, self.from_.name])
+        if self.to_ is not None:
+            avoid.extend([self.to_, self.to_.uid, self.to_.name])
+
+        data = [d for d in data if d not in avoid]
+
+        if data:
+            super().remove_properties(data)
 
         if (
             self._properties is not None
@@ -155,7 +170,8 @@ class ConcatenatedPropertyGroup(PropertyGroup):
             and self.depth_ is not None
         ):
             self.depth_.allow_delete = True
-            self.parent.remove_children([self.depth_])
+            self._properties.remove(self.depth_.uid)
+            self.parent.remove_children([self.depth_, self])
 
         elif (
             self._properties is not None
@@ -164,6 +180,8 @@ class ConcatenatedPropertyGroup(PropertyGroup):
             and self.to_ is not None
         ):
             self.to_.allow_delete = True
+            self._properties.remove(self.to_.uid)
             self.parent.remove_children([self.to_])
             self.from_.allow_delete = True
-            self.parent.remove_children([self.from_])
+            self._properties.remove(self.from_.uid)
+            self.parent.remove_children([self.from_, self])

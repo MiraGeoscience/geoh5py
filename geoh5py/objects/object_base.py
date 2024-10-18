@@ -159,13 +159,13 @@ class ObjectBase(EntityContainer):
 
         :return: List of new Data objects.
         """
-        data_objects = []
-
         if not isinstance(data, dict):
             raise TypeError(
                 f"Input 'data' must be of type {dict}. Got {type(data)} instead."
             )
 
+        property_groups: dict[PropertyGroup | None, list[Data]] = {}
+        data_objects = []
         for name, attr in data.items():
             if not isinstance(attr, dict):
                 raise TypeError(
@@ -173,31 +173,39 @@ class ObjectBase(EntityContainer):
                     f"Type {type(attr)} given instead."
                 )
 
-            attr["name"] = name
-
             attr, validate_property_group = self.validate_association(
-                attr, property_group=property_group, **kwargs
+                {**attr, "name": name},
+                property_group=property_group,
+                **kwargs
             )
 
-            entity_type = self.workspace.validate_data_type(attr, attr.get("values"))
-
-            kwargs = {"parent": self}
-            for key, val in attr.items():
-                if key not in ["parent", "entity_type", "type"]:
-                    kwargs[key] = val
-
             data_object = self.workspace.create_entity(
-                Data, entity=kwargs, entity_type=entity_type, compression=compression
+                Data,
+                entity={
+                    "parent": self, **{
+                        key: val for key, val in attr.items() if key not in [
+                            "parent", "entity_type", "type"
+                        ]
+                    }
+                },
+                entity_type=self.workspace.validate_data_type(attr, attr.get("values")),
+                compression=compression
             )
 
             # change the visual parameters if the data object is a visual parameter
             if isinstance(data_object, VisualParameters):
                 self.visual_parameters = data_object
 
-            if validate_property_group is not None:
-                self.add_data_to_group(data_object, validate_property_group)
-
+            property_groups.setdefault(validate_property_group, []).append(data_object)
             data_objects.append(data_object)
+
+        for proper_group, data_associated in property_groups.items():
+            if proper_group is not None:
+                self.add_data_to_group(
+                    data_associated,  # type: ignore
+                    proper_group,
+                    property_group_type=GroupTypeEnum.find_type(data_associated)
+                )
 
         # TODO: Legacy re-sorting for old drillhole format
         self.post_processing()
@@ -208,9 +216,10 @@ class ObjectBase(EntityContainer):
         return data_objects
 
     def add_data_to_group(
-        self,
-        data: list[Data | UUID | str] | Data | UUID | str,
-        property_group: str | PropertyGroup,
+            self,
+            data: list[Data | UUID | str] | Data | UUID | str,
+            property_group: str | PropertyGroup,
+            **kwargs
     ) -> PropertyGroup:
         """
         Append data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`
@@ -219,12 +228,13 @@ class ObjectBase(EntityContainer):
         :param data: The name, the uid or the object to add itself, pass as a list or single object.
         :param property_group: The name or the object of the property group;
             a new one will be created if not found.
+        :param kwargs: Additional keyword arguments to create a property group.
 
         :return: The target property group.
         """
         if isinstance(property_group, str):
             property_group = self.fetch_property_group(
-                name=property_group, properties=data
+                name=property_group, properties=data, **kwargs
             )
 
         if isinstance(property_group, PropertyGroup):

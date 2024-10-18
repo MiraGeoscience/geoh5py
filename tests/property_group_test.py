@@ -35,23 +35,19 @@ def make_example(workspace, add_str_column=False):
     )
 
     # Add data
-    props = []
+    props = {}
     all_values = []
     for i in range(4):
         values = np.cos(curve.vertices[:, 0] / (i + 1))
-        props += [
-            curve.add_data(
-                {f"Period{i + 1}": {"values": values}}, property_group="myGroup"
-            )
-        ]
+        props[f"Period{i + 1}"] = {"values": values}
         all_values.append(values)
 
     if add_str_column:
         values = np.array(["i" for i in range(12)])
-        props += [
-            curve.add_data({"StrColumn": {"values": values}}, property_group="myGroup")
-        ]
+        props["StrColumn"] = {"values": values}
         all_values.append(values)
+
+    curve.add_data(props, property_group="myGroup")
 
     return curve, all_values
 
