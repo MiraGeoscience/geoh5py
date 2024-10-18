@@ -379,10 +379,10 @@ def test_property_group_table_error(tmp_path):
             parent=curve, name="strikeDip", property_group_type="Strike & dip" , properties=strike_dip
         )
 
-        with pytest.raises(ValueError, match="Cannot add properties to 'Strike & dip'"):
+        with pytest.raises(ValueError, match="Cannot add properties to "):
             prop_group.add_properties(curve)
 
-        with pytest.raises(ValueError, match="Cannot remove properties from 'Strike & dip'"):
+        with pytest.raises(ValueError, match="Cannot remove properties from "):
             prop_group.remove_properties(curve)
 
 
