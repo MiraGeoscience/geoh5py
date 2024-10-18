@@ -62,6 +62,7 @@ class Octree(GridObject):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
+        *,
         u_count: int = 1,
         v_count: int = 1,
         w_count: int = 1,

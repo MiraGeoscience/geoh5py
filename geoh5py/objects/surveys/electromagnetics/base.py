@@ -87,6 +87,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
                 "Component B": [...],
             },
 
+
         or a nested dictionary of arguments defining new Data entities as defined by the
         :func:`~geoh5py.objects.object_base.ObjectBase.add_data` method.
 
@@ -230,6 +231,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
     def copy(  # pylint: disable=too-many-arguments
         self,
         parent: Group | Workspace | None = None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
@@ -272,6 +274,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
     def copy_complement(
         self,
         new_entity,
+        *,
         parent: Group | Workspace | None = None,
         copy_children: bool = True,
         clear_cache: bool = False,
@@ -662,6 +665,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
     def copy_complement(
         self,
         new_entity,
+        *,
         parent: Group | Workspace | None = None,
         copy_children: bool = True,
         clear_cache: bool = False,

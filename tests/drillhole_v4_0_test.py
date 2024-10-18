@@ -681,6 +681,7 @@ def test_remove_drillhole_data(tmp_path):
         well = workspace.get_entity("well")[0]
         all_data = [well.get_entity(name)[0] for name in well.get_data_list()]
         all_data = [data for data in all_data if data.allow_delete]
+
         well.remove_children(all_data)
 
         assert len(well.property_groups) == 0

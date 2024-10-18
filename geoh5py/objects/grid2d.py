@@ -65,6 +65,7 @@ class Grid2D(GridObject):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
+        *,
         u_cell_size: float = 1.0,
         v_cell_size: float = 1.0,
         u_count: int = 1,
@@ -140,6 +141,7 @@ class Grid2D(GridObject):
         self,
         extent: np.ndarray,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         inverse: bool = False,
