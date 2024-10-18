@@ -76,6 +76,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
     def __init__(
         self,
+        *,
         cells: np.ndarray | list | tuple | None = None,
         dip: float | None = None,
         image: str | np.ndarray | BytesIO | Image.Image | FilenameData | None = None,
@@ -136,6 +137,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
     def copy(
         self,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
@@ -166,6 +168,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         self,
         extent: np.ndarray,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         inverse: bool = False,

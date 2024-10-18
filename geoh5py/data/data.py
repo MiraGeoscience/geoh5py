@@ -61,6 +61,7 @@ class Data(Entity):
     def copy(
         self,
         parent=None,
+        *,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         **kwargs,
@@ -115,6 +116,7 @@ class Data(Entity):
         self,
         extent: np.ndarray,
         parent=None,
+        *,
         clear_cache: bool = False,
         inverse: bool = False,
         **kwargs,

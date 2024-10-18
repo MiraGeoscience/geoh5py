@@ -50,6 +50,7 @@ class Points(ObjectBase):
     def copy(
         self,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
