@@ -26,6 +26,7 @@ from geoh5py.objects import Points
 from geoh5py.shared import fetch_h5_handle
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
+from geoh5py import groups
 
 
 def test_create_point_data(tmp_path):
@@ -83,6 +84,16 @@ def test_create_point_data(tmp_path):
         ), "StatsCache was not properly deleted on update of values"
 
     assert np.allclose(points.vertices, points.locations)
+
+
+def test_add_children(tmp_path):
+    h5file_path = tmp_path / r"testPoints.geoh5"
+    with Workspace.create(h5file_path) as workspace:
+        group = groups.Group.create(workspace)
+        point = Points.create(workspace, vertices=np.random.randn(12, 3))
+        group.add_children(point)
+
+        assert point.parent == group, "Error adding children to group."
 
 
 def test_remove_point_data(tmp_path):

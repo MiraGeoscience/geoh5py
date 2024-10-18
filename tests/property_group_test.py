@@ -23,6 +23,7 @@ import pytest
 
 from geoh5py.data import Data, DataAssociationEnum
 from geoh5py.groups import PropertyGroup
+from geoh5py.groups.property_group import GroupTypeEnum
 from geoh5py.groups.property_group_table import PropertyGroupTable
 from geoh5py.objects import Curve, Drillhole
 from geoh5py.workspace import Workspace
@@ -365,3 +366,51 @@ def test_property_group_table_error(tmp_path):
             NotImplementedError, match="PropertyGroupTable is not supported"
         ):
             _ = prop_group.table
+
+        strike_dip = curve.add_data(
+            {
+                "Strike": {"values": np.random.rand(12), "association": "VERTEX"},
+                "Dip": {"values": np.random.rand(12), "association": "VERTEX"},
+            },
+            property_group="strikeDip",
+        )
+
+        prop_group = PropertyGroup(
+            parent=curve, name="strikeDip", property_group_type="Strike & dip" , properties=strike_dip
+        )
+
+        with pytest.raises(ValueError, match="Cannot add properties to 'Strike & dip'"):
+            prop_group.add_properties(curve)
+
+        with pytest.raises(ValueError, match="Cannot remove properties from 'Strike & dip'"):
+            prop_group.remove_properties(curve)
+
+
+def test_group_type_enum(tmp_path):
+    workspace = Workspace(tmp_path / "test.geoh5")
+    curve = Curve.create(
+        workspace,
+        vertices=np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)],
+    )
+    data = curve.add_data(
+        {"test": {"values": np.random.rand(12), "association": "VERTEX"}},
+        property_group="myGroup",
+    )
+
+    with pytest.raises(TypeError, match="First children of 'Depth table'"):
+        GroupTypeEnum.verify_type(children = [data], group_type= GroupTypeEnum.DEPTH)
+
+    with pytest.raises(TypeError, match="Children of 'Dip direction & dip'"):
+        GroupTypeEnum.verify_type(children = [data], group_type= GroupTypeEnum.DIPDIR)
+
+    with pytest.raises(TypeError, match="First two children of 'Interval table'"):
+        GroupTypeEnum.verify_type(children = [data], group_type= GroupTypeEnum.INTERVAL)
+
+    with pytest.raises(TypeError, match="Children of 'Multi-element'"):
+        GroupTypeEnum.verify_type(children = ["bidon"], group_type= GroupTypeEnum.MULTI)
+
+    with pytest.raises(TypeError, match="Children of 'Strike & dip'"):
+        GroupTypeEnum.verify_type(children = [data], group_type= GroupTypeEnum.STRIKEDIP)
+
+    with pytest.raises(TypeError, match="Children of '3D vector'"):
+        GroupTypeEnum.verify_type(children = [data], group_type= GroupTypeEnum.VECTOR)

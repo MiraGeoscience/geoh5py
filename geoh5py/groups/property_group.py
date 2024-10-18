@@ -63,6 +63,101 @@ class GroupTypeEnum(str, Enum):
             cls.DIPDIR, cls.STRIKEDIP, cls.VECTOR
         ]
 
+    @staticmethod
+    def _verify_depth(children: list[Data]):
+        """
+        Verify that the children are of the correct type for the group type.
+
+        :param children: A list of children to verify.
+        """
+        if (
+                len(children) < 1
+                or not children[0].association == DataAssociationEnum.DEPTH
+                or not isinstance(children[0], FloatData)
+        ):
+            raise TypeError(
+                "First children of 'Depth table' property group type "
+                "must be a FloatData of 'Depth' association. "
+            )
+
+    @staticmethod
+    def _verify_dipdir(children: list[Data]):
+        """
+        Verify that the children are of the correct type for the group type.
+
+        :param children: A list of children to verify.
+        """
+        if (
+            len(children) != 2
+            or not all(isinstance(child, NumericData) for child in children)
+        ):
+            raise TypeError(
+                "Children of 'Dip direction & dip' property group type "
+                "must be a list of 2 NumericData entities"
+            )
+
+    @staticmethod
+    def _verify_interval(children: list[Data]):
+        """
+        Verify that the children are of the correct type for the group type.
+
+        :param children: A list of children to verify.
+        """
+        if (
+            len(children) < 2
+            or not children[0].association == DataAssociationEnum.DEPTH
+            or not all(isinstance(child, FloatData) for child in children[:2])
+        ):
+            raise TypeError(
+                "First two children of 'Interval table' property group type "
+                "must be FloatData of 'Interval' association."
+            )
+
+    @staticmethod
+    def _verify_multi(children: list[Data]):
+        """
+        Verify that the children are of the correct type for the group type.
+
+        :param children: A list of children to verify.
+        """
+        if not all(isinstance(child, NumericData) for child in children):
+            raise TypeError(
+                "Children of 'Multi-element' property group type "
+                "must be a list of NumericData entities"
+            )
+
+    @staticmethod
+    def _verify_strikedip(children: list[Data]):
+        """
+        Verify that the children are of the correct type for the group type.
+
+        :param children: A list of children to verify.
+        """
+        if (
+            len(children) != 2
+            or not all(isinstance(child, NumericData) for child in children)
+        ):
+            raise TypeError(
+                "Children of 'Strike & dip' property group type "
+                "must be a list of 2 NumericData entities"
+            )
+
+    @staticmethod
+    def _verify_vector(children: list[Data]):
+        """
+        Verify that the children are of the correct type for the group type.
+
+        :param children: A list of children to verify.
+        """
+        if (
+                len(children) != 3
+                or not all(isinstance(child, NumericData) for child in children)
+        ):
+            raise TypeError(
+                "Children of '3D vector' property group type "
+                "must be a list of 3 NumericData entities"
+            )
+
     @classmethod
     def verify_type(cls, children: list[Data], group_type: GroupTypeEnum):
         """
@@ -74,64 +169,17 @@ class GroupTypeEnum(str, Enum):
         :param group_type: The group type to verify against.
         """
         if group_type == cls.DEPTH:
-            if (
-                    len(children) < 1
-                    or not children[0].association == DataAssociationEnum.DEPTH
-                    or not isinstance(children[0], FloatData)
-            ):
-                raise TypeError(
-                    f"First children of '{group_type}' property group type "
-                    "must be a FloatData of 'Depth' association. "
-                )
-
+            cls._verify_depth(children)
         elif group_type == cls.DIPDIR:
-            if (
-                len(children) != 2
-                or not all(isinstance(child, NumericData) for child in children)
-            ):
-                raise TypeError(
-                    f"Children of '{group_type}' property group type "
-                    "must be a list of 2 NumericData entities"
-                )
-
+            cls._verify_dipdir(children)
         elif group_type == cls.INTERVAL:
-            if (
-                len(children) < 2
-                or not children[0].association == DataAssociationEnum.DEPTH
-                or not all(isinstance(child, FloatData) for child in children[:2])
-            ):
-                raise TypeError(
-                    f"First two children of '{group_type}' property group type "
-                    "must be FloatData of 'Interval' association."
-                )
-
+            cls._verify_interval(children)
         elif group_type == cls.MULTI:
-            if not all(isinstance(child, NumericData) for child in children):
-                raise TypeError(
-                    f"Children of '{group_type}' property group type "
-                    "must be a list of NumericData entities"
-                )
-
+            cls._verify_multi(children)
         elif group_type == cls.STRIKEDIP:
-            if (
-                len(children) != 2
-                or not all(isinstance(child, NumericData) for child in children)
-            ):
-                raise TypeError(
-                    f"Children of '{group_type}' property group type "
-                    "must be a list of 2 NumericData entities"
-                )
-
+            cls._verify_strikedip(children)
         elif group_type == cls.VECTOR:
-            if (
-                    len(children) != 3
-                    or not all(isinstance(child, NumericData) for child in children)
-            ):
-                raise TypeError(
-                    f"Children of '{group_type}' property group type "
-                    "must be a list of 3 NumericData entities"
-                )
-
+            cls._verify_vector(children)
 
 class PropertyGroup:
     """
@@ -428,9 +476,7 @@ class PropertyGroup:
         names: list[str] = []
         for uid in self._properties:
             data = self.parent.get_data(uid)[0]
-            name = data.name
-            if name is None:
-                name = str(data.uid)  # very unlikely
+            name = str(data.uid) if data.name is None else data.name
             names.append(find_unique_name(name, names))
 
         return names

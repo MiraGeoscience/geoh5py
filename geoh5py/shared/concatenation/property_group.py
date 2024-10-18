@@ -17,13 +17,13 @@
 
 from __future__ import annotations
 
-import uuid
+from uuid import UUID
 from typing import TYPE_CHECKING
 
 import numpy as np
 
 from geoh5py.data import Data
-from geoh5py.groups import PropertyGroup
+from geoh5py.groups.property_group import PropertyGroup, GroupTypeEnum
 
 
 if TYPE_CHECKING:
@@ -78,7 +78,11 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
     @property
     def depth_(self):
-        if self.properties is None or len(self.properties) < 1:
+        if (
+                self.properties is None
+                or len(self.properties) < 1
+                or self._property_group_type != GroupTypeEnum.DEPTH
+        ):
             return None
 
         data = self.parent.get_data(  # pylint: disable=no-value-for-parameter
@@ -93,7 +97,11 @@ class ConcatenatedPropertyGroup(PropertyGroup):
     @property
     def from_(self):
         """Return the data entities defined the 'from' depth intervals."""
-        if self.properties is None or len(self.properties) < 1:
+        if (
+                self.properties is None
+                or len(self.properties) < 1
+                or self._property_group_type != GroupTypeEnum.INTERVAL
+        ):
             return None
 
         data = self.parent.get_data(  # pylint: disable=no-value-for-parameter
@@ -108,7 +116,11 @@ class ConcatenatedPropertyGroup(PropertyGroup):
     @property
     def to_(self):
         """Return the data entities defined the 'to' depth intervals."""
-        if self.properties is None or len(self.properties) < 2:
+        if (
+                self.properties is None
+                or len(self.properties) < 2
+                or self._property_group_type != GroupTypeEnum.INTERVAL
+        ):
             return None
 
         data = self.parent.get_data(  # pylint: disable=no-value-for-parameter
@@ -139,13 +151,15 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
         parent.workspace.add_or_update_property_group(self)
 
-    def remove_properties(
-        self, data: str | Data | list[str | Data | uuid.UUID] | uuid.UUID
-    ):
+    def _clear_data_list(
+            self, data: str | Data | list[str | Data | UUID] | UUID
+    ) -> list[str | Data | UUID]:
         """
-        Remove data from the properties.
+        Clear the data list of any data that is a depth or from/to data.
 
-        The property group is removed if only the depth or from/to data are left.
+        :param data: List of data to clear.
+
+        :return: List of data with depth and from/to data removed.
         """
         if not isinstance(data, (list, tuple)):
             data = [data]
@@ -159,29 +173,48 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         if self.to_ is not None:
             avoid.extend([self.to_, self.to_.uid, self.to_.name])
 
-        data = [d for d in data if d not in avoid]
+        return [d for d in data if d not in avoid]
 
-        if data:
-            super().remove_properties(data)
-
+    def _remove_depth_from_to(self):
+        """
+        Remove the depth or from/to data from the property group
+            if they are the only properties left.
+        """
         if (
-            self._properties is not None
-            and len(self._properties) == 1
-            and self.depth_ is not None
+                self._properties is not None
+                and len(self._properties) == 1
+                and self.depth_ is not None
         ):
             self.depth_.allow_delete = True
             self._properties.remove(self.depth_.uid)
             self.parent.remove_children([self.depth_, self])
 
         elif (
-            self._properties is not None
-            and len(self._properties) == 2
-            and self.from_ is not None
-            and self.to_ is not None
+                self._properties is not None
+                and len(self._properties) == 2
+                and self.from_ is not None
+                and self.to_ is not None
         ):
             self.to_.allow_delete = True
             self._properties.remove(self.to_.uid)
             self.parent.remove_children([self.to_])
+
             self.from_.allow_delete = True
             self._properties.remove(self.from_.uid)
             self.parent.remove_children([self.from_, self])
+
+    def remove_properties(
+        self, data: str | Data | list[str | Data | UUID] | UUID
+    ):
+        """
+        Remove data from the properties.
+
+        The property group is removed if only the depth or from/to data are left.
+
+        :param data: Data to remove.
+        """
+        data = self._clear_data_list(data)
+        if data:
+            super().remove_properties(data)
+
+        self._remove_depth_from_to()
