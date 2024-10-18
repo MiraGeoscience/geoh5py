@@ -24,7 +24,7 @@ jobs:
       package-name: 'geoh5py'
       version-tag: ${{ github.ref_name }}
       python-version: '3.10'
-      virtual-repo-names: '["pypi"]'
+      virtual-repo-names: '["public-pypi-dev", "pypi"]'
     secrets:
       JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
       JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
