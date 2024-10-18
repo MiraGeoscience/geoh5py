@@ -207,6 +207,7 @@ class PropertyGroup:
     def __init__(  # pylint: disable=too-many-arguments
         self,
         parent: ObjectBase,
+        *,
         association: str | DataAssociationEnum | None = None,
         allow_delete: bool = True,
         name: str = "Property Group",
