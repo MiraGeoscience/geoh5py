@@ -21,12 +21,12 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from geoh5py import groups
 from geoh5py.io import H5Writer
 from geoh5py.objects import Points
 from geoh5py.shared import fetch_h5_handle
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
-from geoh5py import groups
 
 
 def test_create_point_data(tmp_path):

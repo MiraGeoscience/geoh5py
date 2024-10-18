@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 from warnings import warn
 
-from ..data import Data, DataAssociationEnum, NumericData, FloatData
+from ..data import Data, DataAssociationEnum, FloatData, NumericData
 from ..shared.utils import (
     find_unique_name,
     remove_duplicates_in_list,
@@ -59,9 +59,7 @@ class GroupTypeEnum(str, Enum):
         """
         The property group types that cannot be modified.
         """
-        return [
-            cls.DIPDIR, cls.STRIKEDIP, cls.VECTOR
-        ]
+        return [cls.DIPDIR, cls.STRIKEDIP, cls.VECTOR]
 
     @staticmethod
     def _verify_depth(children: list[Data]):
@@ -71,9 +69,9 @@ class GroupTypeEnum(str, Enum):
         :param children: A list of children to verify.
         """
         if (
-                len(children) < 1
-                or not children[0].association == DataAssociationEnum.DEPTH
-                or not isinstance(children[0], FloatData)
+            len(children) < 1
+            or not children[0].association == DataAssociationEnum.DEPTH
+            or not isinstance(children[0], FloatData)
         ):
             raise TypeError(
                 "First children of 'Depth table' property group type "
@@ -87,9 +85,8 @@ class GroupTypeEnum(str, Enum):
 
         :param children: A list of children to verify.
         """
-        if (
-            len(children) != 2
-            or not all(isinstance(child, NumericData) for child in children)
+        if len(children) != 2 or not all(
+            isinstance(child, NumericData) for child in children
         ):
             raise TypeError(
                 "Children of 'Dip direction & dip' property group type "
@@ -133,9 +130,8 @@ class GroupTypeEnum(str, Enum):
 
         :param children: A list of children to verify.
         """
-        if (
-            len(children) != 2
-            or not all(isinstance(child, NumericData) for child in children)
+        if len(children) != 2 or not all(
+            isinstance(child, NumericData) for child in children
         ):
             raise TypeError(
                 "Children of 'Strike & dip' property group type "
@@ -149,9 +145,8 @@ class GroupTypeEnum(str, Enum):
 
         :param children: A list of children to verify.
         """
-        if (
-                len(children) != 3
-                or not all(isinstance(child, NumericData) for child in children)
+        if len(children) != 3 or not all(
+            isinstance(child, NumericData) for child in children
         ):
             raise TypeError(
                 "Children of '3D vector' property group type "
@@ -180,6 +175,7 @@ class GroupTypeEnum(str, Enum):
             cls._verify_strikedip(children)
         elif group_type == cls.VECTOR:
             cls._verify_vector(children)
+
 
 class PropertyGroup:
     """
@@ -337,8 +333,7 @@ class PropertyGroup:
         return parent
 
     def _validate_properties(
-            self,
-            data_list: Sequence[str | UUID | Data] | None
+        self, data_list: Sequence[str | UUID | Data] | None
     ) -> list[UUID] | None:
         """
         Validate the properties list.

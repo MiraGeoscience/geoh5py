@@ -17,13 +17,13 @@
 
 from __future__ import annotations
 
-from uuid import UUID
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 import numpy as np
 
 from geoh5py.data import Data
-from geoh5py.groups.property_group import PropertyGroup, GroupTypeEnum
+from geoh5py.groups.property_group import GroupTypeEnum, PropertyGroup
 
 
 if TYPE_CHECKING:
@@ -79,9 +79,9 @@ class ConcatenatedPropertyGroup(PropertyGroup):
     @property
     def depth_(self):
         if (
-                self.properties is None
-                or len(self.properties) < 1
-                or self._property_group_type != GroupTypeEnum.DEPTH
+            self.properties is None
+            or len(self.properties) < 1
+            or self._property_group_type != GroupTypeEnum.DEPTH
         ):
             return None
 
@@ -98,9 +98,9 @@ class ConcatenatedPropertyGroup(PropertyGroup):
     def from_(self):
         """Return the data entities defined the 'from' depth intervals."""
         if (
-                self.properties is None
-                or len(self.properties) < 1
-                or self._property_group_type != GroupTypeEnum.INTERVAL
+            self.properties is None
+            or len(self.properties) < 1
+            or self._property_group_type != GroupTypeEnum.INTERVAL
         ):
             return None
 
@@ -117,9 +117,9 @@ class ConcatenatedPropertyGroup(PropertyGroup):
     def to_(self):
         """Return the data entities defined the 'to' depth intervals."""
         if (
-                self.properties is None
-                or len(self.properties) < 2
-                or self._property_group_type != GroupTypeEnum.INTERVAL
+            self.properties is None
+            or len(self.properties) < 2
+            or self._property_group_type != GroupTypeEnum.INTERVAL
         ):
             return None
 
@@ -152,7 +152,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         parent.workspace.add_or_update_property_group(self)
 
     def _clear_data_list(
-            self, data: str | Data | list[str | Data | UUID] | UUID
+        self, data: str | Data | list[str | Data | UUID] | UUID
     ) -> list[str | Data | UUID]:
         """
         Clear the data list of any data that is a depth or from/to data.
@@ -181,19 +181,19 @@ class ConcatenatedPropertyGroup(PropertyGroup):
             if they are the only properties left.
         """
         if (
-                self._properties is not None
-                and len(self._properties) == 1
-                and self.depth_ is not None
+            self._properties is not None
+            and len(self._properties) == 1
+            and self.depth_ is not None
         ):
             self.depth_.allow_delete = True
             self._properties.remove(self.depth_.uid)
             self.parent.remove_children([self.depth_, self])
 
         elif (
-                self._properties is not None
-                and len(self._properties) == 2
-                and self.from_ is not None
-                and self.to_ is not None
+            self._properties is not None
+            and len(self._properties) == 2
+            and self.from_ is not None
+            and self.to_ is not None
         ):
             self.to_.allow_delete = True
             self._properties.remove(self.to_.uid)
@@ -203,9 +203,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
             self._properties.remove(self.from_.uid)
             self.parent.remove_children([self.from_, self])
 
-    def remove_properties(
-        self, data: str | Data | list[str | Data | UUID] | UUID
-    ):
+    def remove_properties(self, data: str | Data | list[str | Data | UUID] | UUID):
         """
         Remove data from the properties.
 
