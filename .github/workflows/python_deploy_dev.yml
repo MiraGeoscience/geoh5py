@@ -28,3 +28,4 @@ jobs:
     secrets:
       JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
       JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+      PYPI_TOKEN: ${{ secrets.TEST_PYPI_TOKEN}}
