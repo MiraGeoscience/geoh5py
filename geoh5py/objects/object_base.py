@@ -174,22 +174,21 @@ class ObjectBase(EntityContainer):
                 )
 
             attr, validate_property_group = self.validate_association(
-                {**attr, "name": name},
-                property_group=property_group,
-                **kwargs
+                {**attr, "name": name}, property_group=property_group, **kwargs
             )
 
             data_object = self.workspace.create_entity(
                 Data,
                 entity={
-                    "parent": self, **{
-                        key: val for key, val in attr.items() if key not in [
-                            "parent", "entity_type", "type"
-                        ]
-                    }
+                    "parent": self,
+                    **{
+                        key: val
+                        for key, val in attr.items()
+                        if key not in ["parent", "entity_type", "type"]
+                    },
                 },
                 entity_type=self.workspace.validate_data_type(attr, attr.get("values")),
-                compression=compression
+                compression=compression,
             )
 
             # change the visual parameters if the data object is a visual parameter
@@ -204,7 +203,7 @@ class ObjectBase(EntityContainer):
                 self.add_data_to_group(
                     data_associated,  # type: ignore
                     proper_group,
-                    property_group_type=GroupTypeEnum.find_type(data_associated)
+                    property_group_type=GroupTypeEnum.find_type(data_associated),
                 )
 
         # TODO: Legacy re-sorting for old drillhole format
@@ -216,10 +215,10 @@ class ObjectBase(EntityContainer):
         return data_objects
 
     def add_data_to_group(
-            self,
-            data: list[Data | UUID | str] | Data | UUID | str,
-            property_group: str | PropertyGroup,
-            **kwargs
+        self,
+        data: list[Data | UUID | str] | Data | UUID | str,
+        property_group: str | PropertyGroup,
+        **kwargs,
     ) -> PropertyGroup:
         """
         Append data children to a :obj:`~geoh5py.groups.property_group.PropertyGroup`

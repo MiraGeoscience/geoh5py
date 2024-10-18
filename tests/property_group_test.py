@@ -376,7 +376,10 @@ def test_property_group_table_error(tmp_path):
         )
 
         prop_group = PropertyGroup(
-            parent=curve, name="strikeDip", property_group_type="Strike & dip" , properties=strike_dip
+            parent=curve,
+            name="strikeDip",
+            property_group_type="Strike & dip",
+            properties=strike_dip,
         )
 
         with pytest.raises(ValueError, match="Cannot add properties to "):
@@ -398,19 +401,19 @@ def test_group_type_enum(tmp_path):
     )
 
     with pytest.raises(TypeError, match="First children of 'Depth table'"):
-        GroupTypeEnum.verify_type(children = [data], group_type= GroupTypeEnum.DEPTH)
+        GroupTypeEnum.verify_type(children=[data], group_type=GroupTypeEnum.DEPTH)
 
     with pytest.raises(TypeError, match="Children of 'Dip direction & dip'"):
-        GroupTypeEnum.verify_type(children = [data], group_type= GroupTypeEnum.DIPDIR)
+        GroupTypeEnum.verify_type(children=[data], group_type=GroupTypeEnum.DIPDIR)
 
     with pytest.raises(TypeError, match="First two children of 'Interval table'"):
-        GroupTypeEnum.verify_type(children = [data], group_type= GroupTypeEnum.INTERVAL)
+        GroupTypeEnum.verify_type(children=[data], group_type=GroupTypeEnum.INTERVAL)
 
     with pytest.raises(TypeError, match="Children of 'Multi-element'"):
-        GroupTypeEnum.verify_type(children = ["bidon"], group_type= GroupTypeEnum.MULTI)
+        GroupTypeEnum.verify_type(children=["bidon"], group_type=GroupTypeEnum.MULTI)
 
     with pytest.raises(TypeError, match="Children of 'Strike & dip'"):
-        GroupTypeEnum.verify_type(children = [data], group_type= GroupTypeEnum.STRIKEDIP)
+        GroupTypeEnum.verify_type(children=[data], group_type=GroupTypeEnum.STRIKEDIP)
 
     with pytest.raises(TypeError, match="Children of '3D vector'"):
-        GroupTypeEnum.verify_type(children = [data], group_type= GroupTypeEnum.VECTOR)
+        GroupTypeEnum.verify_type(children=[data], group_type=GroupTypeEnum.VECTOR)
