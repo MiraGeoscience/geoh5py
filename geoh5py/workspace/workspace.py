@@ -102,8 +102,8 @@ class Workspace(AbstractContextManager):
 
     def __init__(
         self,
-        *,
         h5file: str | Path | BytesIO | None = None,
+        *,
         contributors: tuple[str] = (getuser(),),
         distance_unit: str = "meter",
         ga_version: str = "1",
