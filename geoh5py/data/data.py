@@ -115,6 +115,7 @@ class Data(Entity):
         self,
         extent: np.ndarray,
         parent=None,
+        *,
         clear_cache: bool = False,
         inverse: bool = False,
         **kwargs,

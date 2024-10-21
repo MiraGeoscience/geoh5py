@@ -137,11 +137,11 @@ class Grid2D(GridObject):
 
         return self._centroids
 
-    def copy_from_extent(  # pylint: disable=too-many-locals disable=too-many-arguments
+    def copy_from_extent(  # pylint: disable=too-many-locals
         self,
         extent: np.ndarray,
-        *,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         inverse: bool = False,

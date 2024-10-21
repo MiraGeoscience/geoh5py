@@ -163,11 +163,11 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         return new_entity
 
-    def copy_from_extent(  # pylint: disable=too-many-locals
+    def copy_from_extent(
         self,
         extent: np.ndarray,
-        *,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         inverse: bool = False,

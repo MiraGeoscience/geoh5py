@@ -93,8 +93,8 @@ class TipperSurvey(FEMSurvey):
     def copy_from_extent(
         self,
         extent: np.ndarray,
-        *,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         inverse: bool = False,

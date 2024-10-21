@@ -229,8 +229,8 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
 
     def copy(  # pylint: disable=too-many-arguments
         self,
-        *,
         parent: Group | Workspace | None = None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
