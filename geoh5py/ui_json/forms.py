@@ -250,6 +250,12 @@ class ObjectForm(BaseForm):
     value: UUID = UUID("00000000-0000-0000-0000-000000000000")
     mesh_type: MeshTypes
 
+    @model_validator(mode="after")
+    def is_a_mesh_type(self):
+        if not any(isinstance(self.value, t) for t in self.mesh_type):
+            raise ValueError(f"{self.value} is not one of the allowed 'MeshTypes'.")
+        return self
+
     _empty_string_to_uid = field_validator("value", mode="before")(empty_string_to_uid)
 
 

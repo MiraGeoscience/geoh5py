@@ -272,6 +272,14 @@ def test_object_form_mesh_type_as_classes(tmp_path):
     assert isinstance(ws.get_entity(form.value)[0], tuple(form.mesh_type))
 
 
+def test_object_form_mesh_type_validation(tmp_path):
+    ws = Workspace(tmp_path / "test.geoh5")
+    points = Points.create(ws, vertices=np.random.rand(10, 3))
+
+    with pytest.raises(ValidationError, match="is not one of the allowed 'MeshTypes'."):
+        _ = ObjectForm(label="name", value=points.uid, mesh_type=[Curve])
+
+
 def test_object_form_empty_string_handling():
     form = ObjectForm(label="name", value="", mesh_type=[Points, Surface])
     assert form.value == uuid.UUID("00000000-0000-0000-0000-000000000000")
