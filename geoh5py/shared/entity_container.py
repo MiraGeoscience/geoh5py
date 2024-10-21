@@ -174,6 +174,7 @@ class EntityContainer(Entity):
     @abstractmethod
     def copy(
         self,
+        *,
         parent=None,
         copy_children: bool = True,
         clear_cache: bool = False,
@@ -198,6 +199,7 @@ class EntityContainer(Entity):
         self,
         extent: np.ndarray,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         inverse: bool = False,

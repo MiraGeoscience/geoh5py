@@ -87,6 +87,7 @@ class DataType(EntityType):
     def __init__(
         self,
         workspace: Workspace,
+        *,
         primitive_type: (
             type[Data] | PrimitiveTypeEnum | str
         ) = PrimitiveTypeEnum.INVALID,
@@ -649,6 +650,7 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
     def __init__(
         self,
         workspace: Workspace,
+        *,
         value_map: dict[int, str] | tuple | ReferenceValueMap | None = None,
         parent: ObjectBase | None = None,
         description: str = "Dynamic referenced data",

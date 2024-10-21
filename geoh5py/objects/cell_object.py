@@ -164,6 +164,7 @@ class CellObject(Points, ABC):
     def copy(  # pylint: disable=too-many-branches
         self,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,

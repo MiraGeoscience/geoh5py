@@ -241,6 +241,7 @@ def match_values(vec_a, vec_b, collocation_distance=1e-4) -> np.ndarray:
 def merge_arrays(
     head,
     tail,
+    *,
     replace="A->B",
     mapping=None,
     collocation_distance=1e-4,

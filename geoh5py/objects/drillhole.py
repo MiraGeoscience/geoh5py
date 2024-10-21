@@ -61,6 +61,7 @@ class Drillhole(Points):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
+        *,
         collar: np.ndarray | list | None = None,
         cost: float = 0.0,
         end_of_hole: float | None = None,

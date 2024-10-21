@@ -85,6 +85,7 @@ class Group(EntityContainer):
         self,
         extent: np.ndarray,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         inverse: bool = False,
