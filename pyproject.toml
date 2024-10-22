@@ -50,7 +50,7 @@ Pillow = "~10.3.0"
 [tool.poetry.group.dev.dependencies]
 Pygments = "*"
 lockfile = "^0.12.2"
-pylint = "*"
+pylint = ">=3.3.1"
 pytest = "*"
 pytest-cov = "*"
 pyyaml = '*'
