@@ -18,163 +18,21 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from enum import Enum
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 from warnings import warn
 
-from ..data import Data, DataAssociationEnum, FloatData, NumericData
+from ..data import Data, DataAssociationEnum
 from ..shared.utils import (
     find_unique_name,
     remove_duplicates_in_list,
 )
 from .property_group_table import PropertyGroupTable
+from .property_group_type import GroupTypeEnum
 
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..objects import ObjectBase
-
-
-class GroupTypeEnum(str, Enum):
-    """
-    Supported property group types.
-    """
-
-    DEPTH = "Depth table"
-    DIPDIR = "Dip direction & dip"
-    INTERVAL = "Interval table"
-    MULTI = "Multi-element"
-    SIMPLE = "Simple"
-    STRIKEDIP = "Strike & dip"
-    VECTOR = "3D vector"
-
-    @classmethod
-    def find_type(cls, data: list):
-        if all(isinstance(d, NumericData) for d in data):
-            return cls.MULTI
-        return cls.SIMPLE
-
-    @classmethod
-    def no_modify(cls) -> list[GroupTypeEnum]:
-        """
-        The property group types that cannot be modified.
-        """
-        return [cls.DIPDIR, cls.STRIKEDIP, cls.VECTOR]
-
-    @staticmethod
-    def _verify_depth(children: list[Data]):
-        """
-        Verify that the children are of the correct type for the group type.
-
-        :param children: A list of children to verify.
-        """
-        if (
-            len(children) < 1
-            or not children[0].association == DataAssociationEnum.DEPTH
-            or not isinstance(children[0], FloatData)
-        ):
-            raise TypeError(
-                "First children of 'Depth table' property group type "
-                "must be a FloatData of 'Depth' association. "
-            )
-
-    @staticmethod
-    def _verify_dipdir(children: list[Data]):
-        """
-        Verify that the children are of the correct type for the group type.
-
-        :param children: A list of children to verify.
-        """
-        if len(children) != 2 or not all(
-            isinstance(child, NumericData) for child in children
-        ):
-            raise TypeError(
-                "Children of 'Dip direction & dip' property group type "
-                "must be a list of 2 NumericData entities"
-            )
-
-    @staticmethod
-    def _verify_interval(children: list[Data]):
-        """
-        Verify that the children are of the correct type for the group type.
-
-        :param children: A list of children to verify.
-        """
-        if (
-            len(children) < 2
-            or not children[0].association == DataAssociationEnum.DEPTH
-            or not all(isinstance(child, FloatData) for child in children[:2])
-        ):
-            raise TypeError(
-                "First two children of 'Interval table' property group type "
-                "must be FloatData of 'Interval' association."
-            )
-
-    @staticmethod
-    def _verify_multi(children: list[Data]):
-        """
-        Verify that the children are of the correct type for the group type.
-
-        :param children: A list of children to verify.
-        """
-        if not all(isinstance(child, NumericData) for child in children):
-            raise TypeError(
-                "Children of 'Multi-element' property group type "
-                "must be a list of NumericData entities"
-            )
-
-    @staticmethod
-    def _verify_strikedip(children: list[Data]):
-        """
-        Verify that the children are of the correct type for the group type.
-
-        :param children: A list of children to verify.
-        """
-        if len(children) != 2 or not all(
-            isinstance(child, NumericData) for child in children
-        ):
-            raise TypeError(
-                "Children of 'Strike & dip' property group type "
-                "must be a list of 2 NumericData entities"
-            )
-
-    @staticmethod
-    def _verify_vector(children: list[Data]):
-        """
-        Verify that the children are of the correct type for the group type.
-
-        :param children: A list of children to verify.
-        """
-        if len(children) != 3 or not all(
-            isinstance(child, NumericData) for child in children
-        ):
-            raise TypeError(
-                "Children of '3D vector' property group type "
-                "must be a list of 3 NumericData entities"
-            )
-
-    @classmethod
-    def verify_type(cls, children: list[Data], group_type: GroupTypeEnum):
-        """
-        Verify that the children are of the correct type for the group type.
-
-        Raises a TypeError if the children are not of the correct type.
-
-        :param children: The children to verify.
-        :param group_type: The group type to verify against.
-        """
-        if group_type == cls.DEPTH:
-            cls._verify_depth(children)
-        elif group_type == cls.DIPDIR:
-            cls._verify_dipdir(children)
-        elif group_type == cls.INTERVAL:
-            cls._verify_interval(children)
-        elif group_type == cls.MULTI:
-            cls._verify_multi(children)
-        elif group_type == cls.STRIKEDIP:
-            cls._verify_strikedip(children)
-        elif group_type == cls.VECTOR:
-            cls._verify_vector(children)
 
 
 class PropertyGroup:
@@ -349,7 +207,7 @@ class PropertyGroup:
             [self._validate_data(uid) for uid in data_list]
         )
 
-        GroupTypeEnum.verify_type(data_list_, self._property_group_type)
+        self._property_group_type.verify(data_list_)
 
         return [data.uid for data in data_list_]
 
@@ -360,7 +218,7 @@ class PropertyGroup:
         :param data: Data to add to the group.
             It can be the name, the uuid or the data itself in a list or alone.
         """
-        if self._property_group_type in GroupTypeEnum.no_modify():
+        if self._property_group_type.no_modify:
             raise ValueError(
                 f"Cannot add properties to '{self._property_group_type}' property group type."
             )
@@ -491,7 +349,7 @@ class PropertyGroup:
         :param data: Data to remove from the group.
             It can be the name, the uuid or the data itself in a list or alone.
         """
-        if self._property_group_type in GroupTypeEnum.no_modify():
+        if self._property_group_type.no_modify:
             raise ValueError(
                 f"Cannot remove properties from '{self._property_group_type}' property group type."
             )

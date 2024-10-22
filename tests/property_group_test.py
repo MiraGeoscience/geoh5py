@@ -400,20 +400,30 @@ def test_group_type_enum(tmp_path):
         property_group="myGroup",
     )
 
+    data_text = curve.add_data(
+        {
+            "text": {
+                "values": np.array(["i" for i in range(12)]),
+                "association": "VERTEX",
+            }
+        },
+        property_group="myGroup2",
+    )
+
     with pytest.raises(TypeError, match="First children of 'Depth table'"):
-        GroupTypeEnum.verify_type(children=[data], group_type=GroupTypeEnum.DEPTH)
+        GroupTypeEnum("Depth table").verify([data])
 
     with pytest.raises(TypeError, match="Children of 'Dip direction & dip'"):
-        GroupTypeEnum.verify_type(children=[data], group_type=GroupTypeEnum.DIPDIR)
+        GroupTypeEnum("Dip direction & dip").verify([data])
 
     with pytest.raises(TypeError, match="First two children of 'Interval table'"):
-        GroupTypeEnum.verify_type(children=[data], group_type=GroupTypeEnum.INTERVAL)
+        GroupTypeEnum("Interval table").verify([data])
 
     with pytest.raises(TypeError, match="Children of 'Multi-element'"):
-        GroupTypeEnum.verify_type(children=["bidon"], group_type=GroupTypeEnum.MULTI)
+        GroupTypeEnum("Multi-element").verify([data_text])
 
     with pytest.raises(TypeError, match="Children of 'Strike & dip'"):
-        GroupTypeEnum.verify_type(children=[data], group_type=GroupTypeEnum.STRIKEDIP)
+        GroupTypeEnum("Strike & dip").verify([data])
 
     with pytest.raises(TypeError, match="Children of '3D vector'"):
-        GroupTypeEnum.verify_type(children=[data], group_type=GroupTypeEnum.VECTOR)
+        GroupTypeEnum("3D vector").verify([data])

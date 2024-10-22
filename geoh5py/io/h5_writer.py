@@ -1040,7 +1040,7 @@ class H5Writer:
                 elif key == "ID":
                     value = as_str_if_uuid(value)
                 elif key == "Property Group Type":
-                    value = value.value
+                    value = value.name
 
                 group_handle.attrs.create(
                     key, value, dtype=h5py.special_dtype(vlen=str)
