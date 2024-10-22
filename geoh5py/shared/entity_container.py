@@ -174,6 +174,7 @@ class EntityContainer(Entity):
     @abstractmethod
     def copy(
         self,
+        *,
         parent=None,
         *,
         copy_children: bool = True,
