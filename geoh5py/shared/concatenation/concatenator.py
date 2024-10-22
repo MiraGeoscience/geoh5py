@@ -568,7 +568,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                 **PROPERTY_KWARGS.get(field, {}),
             )
         else:  # For data values
-            self.workspace.update_attribute(self, "data", field)
+            self.workspace.update_attribute(self, "data", alias)
 
     def update_attributes(
         self, entity: ConcatenatedObject | ConcatenatedData, label: str
