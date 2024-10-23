@@ -87,6 +87,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
                 "Component B": [...],
             },
 
+
         or a nested dictionary of arguments defining new Data entities as defined by the
         :func:`~geoh5py.objects.object_base.ObjectBase.add_data` method.
 

@@ -157,6 +157,7 @@ def float_parameter(
 
 
 def string_parameter(
+    *,
     main: bool = True,
     label: str = "String data",
     value: str = "data",
@@ -251,6 +252,7 @@ def file_parameter(
 
 
 def group_parameter(
+    *,
     main: bool = True,
     label: str = "Object",
     group_type: tuple = tuple(known_group_types),

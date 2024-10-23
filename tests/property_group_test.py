@@ -24,6 +24,14 @@ import pytest
 from geoh5py.data import Data, DataAssociationEnum
 from geoh5py.groups import PropertyGroup
 from geoh5py.groups.property_group_table import PropertyGroupTable
+from geoh5py.groups.property_group_type import (
+    DepthGroup,
+    DipDirGroup,
+    IntervalGroup,
+    MultiElementGroup,
+    StrikeDipGroup,
+    VectorGroup,
+)
 from geoh5py.objects import Curve, Drillhole
 from geoh5py.workspace import Workspace
 
@@ -35,23 +43,19 @@ def make_example(workspace, add_str_column=False):
     )
 
     # Add data
-    props = []
+    props = {}
     all_values = []
     for i in range(4):
         values = np.cos(curve.vertices[:, 0] / (i + 1))
-        props += [
-            curve.add_data(
-                {f"Period{i + 1}": {"values": values}}, property_group="myGroup"
-            )
-        ]
+        props[f"Period{i + 1}"] = {"values": values}
         all_values.append(values)
 
     if add_str_column:
         values = np.array(["i" for i in range(12)])
-        props += [
-            curve.add_data({"StrColumn": {"values": values}}, property_group="myGroup")
-        ]
+        props["StrColumn"] = {"values": values}
         all_values.append(values)
+
+    curve.add_data(props, property_group="myGroup")
 
     return curve, all_values
 
@@ -369,3 +373,64 @@ def test_property_group_table_error(tmp_path):
             NotImplementedError, match="PropertyGroupTable is not supported"
         ):
             _ = prop_group.table
+
+        strike_dip = curve.add_data(
+            {
+                "Strike": {"values": np.random.rand(12), "association": "VERTEX"},
+                "Dip": {"values": np.random.rand(12), "association": "VERTEX"},
+            },
+            property_group="strikeDip",
+        )
+
+        prop_group = PropertyGroup(
+            parent=curve,
+            name="strikeDip",
+            property_group_type="Strike & dip",
+            properties=strike_dip,
+        )
+
+        with pytest.raises(ValueError, match="Cannot add properties to "):
+            prop_group.add_properties(curve)
+
+        with pytest.raises(ValueError, match="Cannot remove properties from "):
+            prop_group.remove_properties(curve)
+
+
+def test_group_type_enum(tmp_path):
+    workspace = Workspace(tmp_path / "test.geoh5")
+    curve = Curve.create(
+        workspace,
+        vertices=np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)],
+    )
+    data = curve.add_data(
+        {"test": {"values": np.random.rand(12), "association": "VERTEX"}},
+        property_group="myGroup",
+    )
+
+    data_text = curve.add_data(
+        {
+            "text": {
+                "values": np.array(["i" for i in range(12)]),
+                "association": "VERTEX",
+            }
+        },
+        property_group="myGroup2",
+    )
+
+    with pytest.raises(TypeError, match="First children of 'Depth table'"):
+        DepthGroup.verify([data])
+
+    with pytest.raises(TypeError, match="Children of 'Dip direction & dip'"):
+        DipDirGroup.verify([data])
+
+    with pytest.raises(TypeError, match="First two children of 'Interval table'"):
+        IntervalGroup.verify([data])
+
+    with pytest.raises(TypeError, match="Children of 'Multi-element'"):
+        MultiElementGroup.verify([data_text])
+
+    with pytest.raises(TypeError, match="Children of 'Strike & dip'"):
+        StrikeDipGroup.verify([data])
+
+    with pytest.raises(TypeError, match="Children of '3D vector'"):
+        VectorGroup.verify([data])

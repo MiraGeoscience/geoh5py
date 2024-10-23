@@ -1196,7 +1196,6 @@ class Workspace(AbstractContextManager):
                 entity_type=type_attrs,
             )
         except TypeError as error:
-            print(error)
             warnings.warn(
                 f"Could not create an entity from the given attributes {type_attrs}. Skipping over."
                 f"Error: {error}"

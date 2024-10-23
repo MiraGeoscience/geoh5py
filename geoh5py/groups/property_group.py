@@ -17,8 +17,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-from enum import Enum
+from collections.abc import Iterable, Sequence
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 from warnings import warn
@@ -29,24 +28,11 @@ from ..shared.utils import (
     remove_duplicates_in_list,
 )
 from .property_group_table import PropertyGroupTable
+from .property_group_type import GROUP_TYPES, PropertyGroupType
 
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..objects import ObjectBase
-
-
-class GroupTypeEnum(str, Enum):
-    """
-    Supported property group types.
-    """
-
-    DEPTH = "Depth table"
-    DIPDIR = "Dip direction & dip"
-    INTERVAL = "Interval table"
-    MULTI = "Multi-element"
-    STRIKEDIP = "Strike & dip"
-    VECTOR = "3D vector"
-    UNKNOWN = "Unknown"
 
 
 class PropertyGroup:
@@ -81,7 +67,7 @@ class PropertyGroup:
         name: str = "Property Group",
         on_file: bool = False,
         uid: UUID | None = None,
-        property_group_type: GroupTypeEnum | str = GroupTypeEnum.UNKNOWN,
+        property_group_type: PropertyGroupType | str = PropertyGroupType(),
         properties: list[UUID | Data | str] | None = None,
         **_,
     ):
@@ -145,7 +131,7 @@ class PropertyGroup:
 
         return value
 
-    def _validate_data(self, data: Data | UUID | str) -> UUID:
+    def _validate_data(self, data: Data | UUID | str) -> Data:
         """
         Verify that the data is in the parent and has the same association as the group.
 
@@ -162,30 +148,29 @@ class PropertyGroup:
                 f"does not match group association ({self.association})."
             )
 
-        return data.uid
+        return data
 
     @staticmethod
-    def _validate_group_type(value: str | GroupTypeEnum) -> GroupTypeEnum:
+    def _validate_group_type(value: str | PropertyGroupType) -> PropertyGroupType:
         """
-        Verify that the group type is a valid GroupTypeEnum.
+        Verify that the group type is a valid PropertyGroupType.
 
         :param value: The group type to validate.
 
         :return: The validated group type.
         """
         if isinstance(value, str):
-            try:
-                value = GroupTypeEnum(value)
-            except ValueError as error:
+            if value not in GROUP_TYPES:
                 raise ValueError(
                     f"'Property group type' must be one of "
-                    f"{', '.join(GroupTypeEnum.__members__)}. Provided {value}"
-                ) from error
+                    f"{', '.join(GROUP_TYPES)}. Provided {value}"
+                )
+            value = GROUP_TYPES[value]
 
-        if not isinstance(value, GroupTypeEnum):
+        if not isinstance(value, PropertyGroupType):
             raise TypeError(
-                f"'Property group type' must be of type {GroupTypeEnum}, "
-                f"provided {type(value)}"
+                f"'Property group type' must be of type {PropertyGroupType}, "
+                f"provided {value} of type {type(value)}."
             )
 
         return value
@@ -204,7 +189,9 @@ class PropertyGroup:
             raise TypeError(f"Parent {parent} must have a 'property_groups' attribute")
         return parent
 
-    def _validate_properties(self, data_list: list[Data] | None) -> list[UUID] | None:
+    def _validate_properties(
+        self, data_list: Sequence[str | UUID | Data] | None
+    ) -> list[UUID] | None:
         """
         Validate the properties list.
 
@@ -212,12 +199,16 @@ class PropertyGroup:
 
         :return: List of unique identifiers for the Data entities.
         """
-        if data_list is None:
+        if not data_list:
             return None
 
-        return remove_duplicates_in_list(
+        data_list_ = remove_duplicates_in_list(
             [self._validate_data(uid) for uid in data_list]
         )
+
+        self._property_group_type.verify(data_list_)
+
+        return [data.uid for data in data_list_]
 
     def add_properties(self, data: str | Data | list[str | Data | UUID] | UUID):
         """
@@ -226,12 +217,17 @@ class PropertyGroup:
         :param data: Data to add to the group.
             It can be the name, the uuid or the data itself in a list or alone.
         """
-        if not isinstance(data, Iterable):
+        if self._property_group_type.no_modify:
+            raise ValueError(
+                f"Cannot add properties to '{self._property_group_type}' property group type."
+            )
+
+        if not isinstance(data, list):
             data = [data]
 
-        properties = self._properties or []
-        for elem in data:
-            properties.append(self._validate_data(elem))
+        properties = self._validate_properties(
+            data if self.properties is None else self.properties + data
+        )
 
         if properties:
             self._properties = remove_duplicates_in_list(properties)
@@ -333,19 +329,17 @@ class PropertyGroup:
         names: list[str] = []
         for uid in self._properties:
             data = self.parent.get_data(uid)[0]
-            name = data.name
-            if name is None:
-                name = str(data.uid)  # very unlikely
+            name = str(data.uid) if data.name is None else data.name
             names.append(find_unique_name(name, names))
 
         return names
 
     @property
-    def property_group_type(self) -> GroupTypeEnum:
+    def property_group_type(self) -> str:
         """
         Type of property group.
         """
-        return self._property_group_type
+        return self._property_group_type.name
 
     def remove_properties(self, data: str | Data | list[str | Data | UUID] | UUID):
         """
@@ -354,18 +348,26 @@ class PropertyGroup:
         :param data: Data to remove from the group.
             It can be the name, the uuid or the data itself in a list or alone.
         """
-        if self._properties is None:
+        if self._property_group_type.no_modify:
+            raise ValueError(
+                f"Cannot remove properties from '{self._property_group_type}' property group type."
+            )
+
+        if self.properties is None:
             return
 
-        if not isinstance(data, Iterable):
+        if not isinstance(data, list):
             data = [data]
 
+        properties = self.properties
         for elem in data:
             elem = self.parent.reference_to_data(elem).uid
-            if elem in self._properties:
-                self._properties.remove(elem)
+            if elem in properties:
+                properties.remove(elem)
 
-        if len(self._properties) == 0:
+        self._properties = self._validate_properties(properties)
+
+        if not self._properties:
             self.parent.workspace.remove_entity(self)
             return
 
