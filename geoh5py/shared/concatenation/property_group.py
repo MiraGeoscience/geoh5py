@@ -23,8 +23,7 @@ from uuid import UUID
 import numpy as np
 
 from geoh5py.data import Data
-from geoh5py.groups.property_group import PropertyGroup
-from geoh5py.groups.property_group_type import DepthGroup, IntervalGroup
+from geoh5py.groups.property_group import GroupTypeEnum, PropertyGroup
 
 
 if TYPE_CHECKING:
@@ -82,9 +81,10 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         if (
             self.properties is None
             or len(self.properties) < 1
-            or not isinstance(self._property_group_type, DepthGroup)
+            or self._property_group_type != GroupTypeEnum.DEPTH
         ):
             return None
+
         data = self.parent.get_data(  # pylint: disable=no-value-for-parameter
             self.properties[0]
         )
@@ -100,7 +100,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         if (
             self.properties is None
             or len(self.properties) < 1
-            or not isinstance(self._property_group_type, IntervalGroup)
+            or self._property_group_type != GroupTypeEnum.INTERVAL
         ):
             return None
 
@@ -119,7 +119,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         if (
             self.properties is None
             or len(self.properties) < 2
-            or not isinstance(self._property_group_type, IntervalGroup)
+            or self._property_group_type != GroupTypeEnum.INTERVAL
         ):
             return None
 

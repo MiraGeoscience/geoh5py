@@ -862,7 +862,6 @@ class H5Writer:
             entity.entity_type.on_file = True
 
             H5Writer.write_properties(h5file, entity, compression)
-
             entity.on_file = True
 
             if isinstance(entity, RootGroup):
@@ -1040,6 +1039,8 @@ class H5Writer:
 
                 elif key == "ID":
                     value = as_str_if_uuid(value)
+                elif key == "Property Group Type":
+                    value = value.value
 
                 group_handle.attrs.create(
                     key, value, dtype=h5py.special_dtype(vlen=str)

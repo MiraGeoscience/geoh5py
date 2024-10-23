@@ -21,7 +21,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 from ...data import Data
-from ...groups.property_group_type import IntervalGroup, PropertyGroupType
+from ...groups.property_group import GroupTypeEnum
 from ...objects import ObjectBase
 from ..utils import INV_KEY_MAP
 from .concatenated import Concatenated
@@ -50,7 +50,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
     def create_property_group(
         self,
         name=None,
-        property_group_type: PropertyGroupType | str = IntervalGroup(),
+        property_group_type: GroupTypeEnum | str = GroupTypeEnum.INTERVAL,
         **kwargs,
     ) -> ConcatenatedPropertyGroup:
         """

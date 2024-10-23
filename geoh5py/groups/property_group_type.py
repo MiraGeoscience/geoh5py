@@ -19,7 +19,8 @@
 
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
+from enum import Enum
 
 from ..data import Data, DataAssociationEnum, FloatData, NumericData
 
@@ -29,10 +30,10 @@ class PropertyGroupType(ABC):
     Class to define the basic structure of a property group type.
     """
 
-    name: str = "Simple"  # Each subclass will define this
     no_modify: bool = False
 
     @classmethod
+    @abstractmethod
     def verify(cls, children: list[Data]):
         """
         Verify that the children are of the correct type for this group type
@@ -43,9 +44,15 @@ class PropertyGroupType(ABC):
         """
 
 
-class DepthGroup(PropertyGroupType):
-    name = "Depth table"
+class SimpleType(PropertyGroupType):
+    @classmethod
+    def verify(cls, children: list[Data]):
+        """
+        Accept any children
+        """
 
+
+class DepthType(PropertyGroupType):
     @classmethod
     def verify(cls, children: list[Data]):
         if (
@@ -59,8 +66,7 @@ class DepthGroup(PropertyGroupType):
             )
 
 
-class DipDirGroup(PropertyGroupType):
-    name = "Dip direction & dip"
+class DipDirType(PropertyGroupType):
     no_modify = True
 
     @classmethod
@@ -74,9 +80,7 @@ class DipDirGroup(PropertyGroupType):
             )
 
 
-class IntervalGroup(PropertyGroupType):
-    name = "Interval table"
-
+class IntervalType(PropertyGroupType):
     @classmethod
     def verify(cls, children: list[Data]):
         if (
@@ -90,9 +94,7 @@ class IntervalGroup(PropertyGroupType):
             )
 
 
-class MultiElementGroup(PropertyGroupType):
-    name = "Multi-element"
-
+class MultiElementType(PropertyGroupType):
     @classmethod
     def verify(cls, children: list[Data]):
         if not all(isinstance(child, NumericData) for child in children):
@@ -102,8 +104,7 @@ class MultiElementGroup(PropertyGroupType):
             )
 
 
-class StrikeDipGroup(PropertyGroupType):
-    name = "Strike & dip"
+class StrikeDipType(PropertyGroupType):
     no_modify = True
 
     @classmethod
@@ -117,8 +118,7 @@ class StrikeDipGroup(PropertyGroupType):
             )
 
 
-class VectorGroup(PropertyGroupType):
-    name = "3D vector"
+class VectorType(PropertyGroupType):
     no_modify = True
 
     @classmethod
@@ -132,26 +132,48 @@ class VectorGroup(PropertyGroupType):
             )
 
 
-# mapper for group types
 GROUP_TYPES = {
-    "Depth table": DepthGroup(),
-    "Dip direction & dip": DipDirGroup(),
-    "Interval table": IntervalGroup(),
-    "Multi-element": MultiElementGroup(),
-    "Simple": PropertyGroupType(),
-    "Strike & dip": StrikeDipGroup(),
-    "3D vector": VectorGroup(),
+    "Depth table": DepthType,
+    "Dip direction & dip": DipDirType,
+    "Interval table": IntervalType,
+    "Multi-element": MultiElementType,
+    "Simple": SimpleType,
+    "Strike & dip": StrikeDipType,
+    "3D vector": VectorType,
 }
 
 
-def find_type(data: list[Data]) -> PropertyGroupType:
+class GroupTypeEnum(str, Enum):
     """
-    Find the group type by name
-
-    :param data: The data to find the group type for.
-
-    :return: The group type.
+    Supported property group types.
     """
-    if all(isinstance(d, NumericData) for d in data):
-        return MultiElementGroup()
-    return PropertyGroupType()
+
+    DEPTH = "Depth table"
+    DIPDIR = "Dip direction & dip"
+    INTERVAL = "Interval table"
+    MULTI = "Multi-element"
+    SIMPLE = "Simple"
+    STRIKEDIP = "Strike & dip"
+    VECTOR = "3D vector"
+
+    @classmethod
+    def find_type(cls, data: list[Data]):
+        """
+        Determine the group type based on the data.
+        """
+        if all(isinstance(d, NumericData) for d in data):
+            return cls.MULTI
+        return cls.SIMPLE
+
+    def verify(self, data: list[Data]):
+        """
+        Validate the data based on the group type.
+        """
+        GROUP_TYPES[self.value].verify(data)
+
+    @property
+    def no_modify(self) -> bool:
+        """
+        Get the name of the group type.
+        """
+        return GROUP_TYPES[self.value].no_modify
