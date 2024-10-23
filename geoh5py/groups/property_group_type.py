@@ -45,8 +45,6 @@ class PropertyGroupType(ABC):
 
 
 class SimpleType(PropertyGroupType):
-    name: str = "Simple"  # Each subclass will define this
-
     @classmethod
     def verify(cls, children: list[Data]):
         """
@@ -55,8 +53,6 @@ class SimpleType(PropertyGroupType):
 
 
 class DepthType(PropertyGroupType):
-    name = "Depth table"
-
     @classmethod
     def verify(cls, children: list[Data]):
         if (
@@ -71,7 +67,6 @@ class DepthType(PropertyGroupType):
 
 
 class DipDirType(PropertyGroupType):
-    name = "Dip direction & dip"
     no_modify = True
 
     @classmethod
@@ -86,8 +81,6 @@ class DipDirType(PropertyGroupType):
 
 
 class IntervalType(PropertyGroupType):
-    name = "Interval table"
-
     @classmethod
     def verify(cls, children: list[Data]):
         if (
@@ -102,8 +95,6 @@ class IntervalType(PropertyGroupType):
 
 
 class MultiElementType(PropertyGroupType):
-    name = "Multi-element"
-
     @classmethod
     def verify(cls, children: list[Data]):
         if not all(isinstance(child, NumericData) for child in children):
@@ -114,7 +105,6 @@ class MultiElementType(PropertyGroupType):
 
 
 class StrikeDipType(PropertyGroupType):
-    name = "Strike & dip"
     no_modify = True
 
     @classmethod
@@ -129,7 +119,6 @@ class StrikeDipType(PropertyGroupType):
 
 
 class VectorType(PropertyGroupType):
-    name = "3D vector"
     no_modify = True
 
     @classmethod
