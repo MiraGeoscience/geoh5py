@@ -20,14 +20,13 @@
 from __future__ import annotations
 
 from abc import ABC
-from enum import Enum
 
 from ..data import Data, DataAssociationEnum, FloatData, NumericData
 
 
-class SimpleGroup(ABC):
+class PropertyGroupType(ABC):
     """
-    Abstract base class for defining the type of group that a property group is.
+    Class to define the basic structure of a property group type.
     """
 
     name: str = "Simple"  # Each subclass will define this
@@ -44,7 +43,7 @@ class SimpleGroup(ABC):
         """
 
 
-class DepthGroup(SimpleGroup):
+class DepthGroup(PropertyGroupType):
     name = "Depth table"
 
     @classmethod
@@ -60,7 +59,7 @@ class DepthGroup(SimpleGroup):
             )
 
 
-class DipDirGroup(SimpleGroup):
+class DipDirGroup(PropertyGroupType):
     name = "Dip direction & dip"
     no_modify = True
 
@@ -75,7 +74,7 @@ class DipDirGroup(SimpleGroup):
             )
 
 
-class IntervalGroup(SimpleGroup):
+class IntervalGroup(PropertyGroupType):
     name = "Interval table"
 
     @classmethod
@@ -91,7 +90,7 @@ class IntervalGroup(SimpleGroup):
             )
 
 
-class MultiElementGroup(SimpleGroup):
+class MultiElementGroup(PropertyGroupType):
     name = "Multi-element"
 
     @classmethod
@@ -103,7 +102,7 @@ class MultiElementGroup(SimpleGroup):
             )
 
 
-class StrikeDipGroup(SimpleGroup):
+class StrikeDipGroup(PropertyGroupType):
     name = "Strike & dip"
     no_modify = True
 
@@ -118,7 +117,7 @@ class StrikeDipGroup(SimpleGroup):
             )
 
 
-class VectorGroup(SimpleGroup):
+class VectorGroup(PropertyGroupType):
     name = "3D vector"
     no_modify = True
 
@@ -133,48 +132,26 @@ class VectorGroup(SimpleGroup):
             )
 
 
+# mapper for group types
 GROUP_TYPES = {
-    "Depth table": DepthGroup,
-    "Dip direction & dip": DipDirGroup,
-    "Interval table": IntervalGroup,
-    "Multi-element": MultiElementGroup,
-    "Simple": SimpleGroup,
-    "Strike & dip": StrikeDipGroup,
-    "3D vector": VectorGroup,
+    "Depth table": DepthGroup(),
+    "Dip direction & dip": DipDirGroup(),
+    "Interval table": IntervalGroup(),
+    "Multi-element": MultiElementGroup(),
+    "Simple": PropertyGroupType(),
+    "Strike & dip": StrikeDipGroup(),
+    "3D vector": VectorGroup(),
 }
 
 
-class GroupTypeEnum(str, Enum):
+def find_type(data: list[Data]) -> PropertyGroupType:
     """
-    Supported property group types.
+    Find the group type by name
+
+    :param data: The data to find the group type for.
+
+    :return: The group type.
     """
-
-    DEPTH = "Depth table"
-    DIPDIR = "Dip direction & dip"
-    INTERVAL = "Interval table"
-    MULTI = "Multi-element"
-    SIMPLE = "Simple"
-    STRIKEDIP = "Strike & dip"
-    VECTOR = "3D vector"
-
-    @classmethod
-    def find_type(cls, data: list[Data]):
-        """
-        Determine the group type based on the data.
-        """
-        if all(isinstance(d, NumericData) for d in data):
-            return cls.MULTI
-        return cls.SIMPLE
-
-    def verify(self, data: list[Data]):
-        """
-        Validate the data based on the group type.
-        """
-        GROUP_TYPES[self.value].verify(data)
-
-    @property
-    def no_modify(self) -> bool:
-        """
-        Get the name of the group type.
-        """
-        return GROUP_TYPES[self.value].no_modify
+    if all(isinstance(d, NumericData) for d in data):
+        return MultiElementGroup()
+    return PropertyGroupType()

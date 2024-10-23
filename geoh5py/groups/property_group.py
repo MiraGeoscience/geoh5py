@@ -28,7 +28,7 @@ from ..shared.utils import (
     remove_duplicates_in_list,
 )
 from .property_group_table import PropertyGroupTable
-from .property_group_type import GroupTypeEnum
+from .property_group_type import GROUP_TYPES, PropertyGroupType
 
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -67,7 +67,7 @@ class PropertyGroup:
         name: str = "Property Group",
         on_file: bool = False,
         uid: UUID | None = None,
-        property_group_type: GroupTypeEnum | str = GroupTypeEnum.SIMPLE,
+        property_group_type: PropertyGroupType | str = PropertyGroupType(),
         properties: list[UUID | Data | str] | None = None,
         **_,
     ):
@@ -151,27 +151,26 @@ class PropertyGroup:
         return data
 
     @staticmethod
-    def _validate_group_type(value: str | GroupTypeEnum) -> GroupTypeEnum:
+    def _validate_group_type(value: str | PropertyGroupType) -> PropertyGroupType:
         """
-        Verify that the group type is a valid GroupTypeEnum.
+        Verify that the group type is a valid PropertyGroupType.
 
         :param value: The group type to validate.
 
         :return: The validated group type.
         """
         if isinstance(value, str):
-            try:
-                value = GroupTypeEnum(value)
-            except ValueError as error:
+            if value not in GROUP_TYPES:
                 raise ValueError(
                     f"'Property group type' must be one of "
-                    f"{', '.join(GroupTypeEnum.__members__)}. Provided {value}"
-                ) from error
+                    f"{', '.join(GROUP_TYPES)}. Provided {value}"
+                )
+            value = GROUP_TYPES[value]
 
-        if not isinstance(value, GroupTypeEnum):
+        if not isinstance(value, PropertyGroupType):
             raise TypeError(
-                f"'Property group type' must be of type {GroupTypeEnum}, "
-                f"provided {type(value)}"
+                f"'Property group type' must be of type {PropertyGroupType}, "
+                f"provided {value} of type {type(value)}."
             )
 
         return value
@@ -336,11 +335,11 @@ class PropertyGroup:
         return names
 
     @property
-    def property_group_type(self) -> GroupTypeEnum:
+    def property_group_type(self) -> str:
         """
         Type of property group.
         """
-        return self._property_group_type
+        return self._property_group_type.name
 
     def remove_properties(self, data: str | Data | list[str | Data | UUID] | UUID):
         """

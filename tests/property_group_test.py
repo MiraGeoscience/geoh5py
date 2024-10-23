@@ -23,8 +23,15 @@ import pytest
 
 from geoh5py.data import Data, DataAssociationEnum
 from geoh5py.groups import PropertyGroup
-from geoh5py.groups.property_group import GroupTypeEnum
 from geoh5py.groups.property_group_table import PropertyGroupTable
+from geoh5py.groups.property_group_type import (
+    DepthGroup,
+    DipDirGroup,
+    IntervalGroup,
+    MultiElementGroup,
+    StrikeDipGroup,
+    VectorGroup,
+)
 from geoh5py.objects import Curve, Drillhole
 from geoh5py.workspace import Workspace
 
@@ -411,19 +418,19 @@ def test_group_type_enum(tmp_path):
     )
 
     with pytest.raises(TypeError, match="First children of 'Depth table'"):
-        GroupTypeEnum("Depth table").verify([data])
+        DepthGroup.verify([data])
 
     with pytest.raises(TypeError, match="Children of 'Dip direction & dip'"):
-        GroupTypeEnum("Dip direction & dip").verify([data])
+        DipDirGroup.verify([data])
 
     with pytest.raises(TypeError, match="First two children of 'Interval table'"):
-        GroupTypeEnum("Interval table").verify([data])
+        IntervalGroup.verify([data])
 
     with pytest.raises(TypeError, match="Children of 'Multi-element'"):
-        GroupTypeEnum("Multi-element").verify([data_text])
+        MultiElementGroup.verify([data_text])
 
     with pytest.raises(TypeError, match="Children of 'Strike & dip'"):
-        GroupTypeEnum("Strike & dip").verify([data])
+        StrikeDipGroup.verify([data])
 
     with pytest.raises(TypeError, match="Children of '3D vector'"):
-        GroupTypeEnum("3D vector").verify([data])
+        VectorGroup.verify([data])
