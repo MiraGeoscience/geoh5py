@@ -31,8 +31,7 @@ from ..data import (
     DataAssociationEnum,
     VisualParameters,
 )
-from ..groups.property_group import PropertyGroup
-from ..groups.property_group_type import MultiElementGroup, PropertyGroupType, find_type
+from ..groups.property_group import GroupTypeEnum, PropertyGroup
 from ..shared import Entity
 from ..shared.conversion import BaseConversion
 from ..shared.entity_container import EntityContainer
@@ -204,7 +203,7 @@ class ObjectBase(EntityContainer):
                 self.add_data_to_group(
                     data_associated,  # type: ignore
                     proper_group,
-                    property_group_type=find_type(data_associated),
+                    property_group_type=GroupTypeEnum.find_type(data_associated),
                 )
 
         # TODO: Legacy re-sorting for old drillhole format
@@ -335,7 +334,7 @@ class ObjectBase(EntityContainer):
     def create_property_group(
         self,
         name=None,
-        property_group_type: PropertyGroupType | str = MultiElementGroup(),
+        property_group_type: GroupTypeEnum | str = GroupTypeEnum.MULTI,
         **kwargs,
     ) -> PropertyGroup:
         """
