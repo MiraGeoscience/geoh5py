@@ -25,7 +25,7 @@ from enum import Enum
 from ..data import Data, DataAssociationEnum, FloatData, NumericData
 
 
-class SimpleGroup(ABC):
+class PropertyGroupType(ABC):
     """
     Abstract base class for defining the type of group that a property group is.
     """
@@ -44,7 +44,7 @@ class SimpleGroup(ABC):
         """
 
 
-class DepthGroup(SimpleGroup):
+class DepthGroup(PropertyGroupType):
     name = "Depth table"
 
     @classmethod
@@ -60,7 +60,7 @@ class DepthGroup(SimpleGroup):
             )
 
 
-class DipDirGroup(SimpleGroup):
+class DipDirGroup(PropertyGroupType):
     name = "Dip direction & dip"
     no_modify = True
 
@@ -75,7 +75,7 @@ class DipDirGroup(SimpleGroup):
             )
 
 
-class IntervalGroup(SimpleGroup):
+class IntervalGroup(PropertyGroupType):
     name = "Interval table"
 
     @classmethod
@@ -91,7 +91,7 @@ class IntervalGroup(SimpleGroup):
             )
 
 
-class MultiElementGroup(SimpleGroup):
+class MultiElementGroup(PropertyGroupType):
     name = "Multi-element"
 
     @classmethod
@@ -103,7 +103,7 @@ class MultiElementGroup(SimpleGroup):
             )
 
 
-class StrikeDipGroup(SimpleGroup):
+class StrikeDipGroup(PropertyGroupType):
     name = "Strike & dip"
     no_modify = True
 
@@ -118,7 +118,7 @@ class StrikeDipGroup(SimpleGroup):
             )
 
 
-class VectorGroup(SimpleGroup):
+class VectorGroup(PropertyGroupType):
     name = "3D vector"
     no_modify = True
 
@@ -138,7 +138,7 @@ GROUP_TYPES = {
     "Dip direction & dip": DipDirGroup,
     "Interval table": IntervalGroup,
     "Multi-element": MultiElementGroup,
-    "Simple": SimpleGroup,
+    "Simple": PropertyGroupType,
     "Strike & dip": StrikeDipGroup,
     "3D vector": VectorGroup,
 }
