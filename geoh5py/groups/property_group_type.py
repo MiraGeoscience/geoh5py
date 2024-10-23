@@ -27,7 +27,7 @@ from ..data import Data, DataAssociationEnum, FloatData, NumericData
 
 class PropertyGroupType(ABC):
     """
-    Abstract base class for defining the type of group that a property group is.
+    Class to define the basic structure of a property group type.
     """
 
     name: str = "Simple"  # Each subclass will define this
