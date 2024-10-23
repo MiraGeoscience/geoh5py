@@ -19,7 +19,7 @@
 
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from enum import Enum
 
 from ..data import Data, DataAssociationEnum, FloatData, NumericData
@@ -30,10 +30,10 @@ class PropertyGroupType(ABC):
     Class to define the basic structure of a property group type.
     """
 
-    name: str = "Simple"  # Each subclass will define this
     no_modify: bool = False
 
     @classmethod
+    @abstractmethod
     def verify(cls, children: list[Data]):
         """
         Verify that the children are of the correct type for this group type
@@ -44,7 +44,17 @@ class PropertyGroupType(ABC):
         """
 
 
-class DepthGroup(PropertyGroupType):
+class SimpleType(PropertyGroupType):
+    name: str = "Simple"  # Each subclass will define this
+
+    @classmethod
+    def verify(cls, children: list[Data]):
+        """
+        Accept any children
+        """
+
+
+class DepthType(PropertyGroupType):
     name = "Depth table"
 
     @classmethod
@@ -60,7 +70,7 @@ class DepthGroup(PropertyGroupType):
             )
 
 
-class DipDirGroup(PropertyGroupType):
+class DipDirType(PropertyGroupType):
     name = "Dip direction & dip"
     no_modify = True
 
@@ -75,7 +85,7 @@ class DipDirGroup(PropertyGroupType):
             )
 
 
-class IntervalGroup(PropertyGroupType):
+class IntervalType(PropertyGroupType):
     name = "Interval table"
 
     @classmethod
@@ -91,7 +101,7 @@ class IntervalGroup(PropertyGroupType):
             )
 
 
-class MultiElementGroup(PropertyGroupType):
+class MultiElementType(PropertyGroupType):
     name = "Multi-element"
 
     @classmethod
@@ -103,7 +113,7 @@ class MultiElementGroup(PropertyGroupType):
             )
 
 
-class StrikeDipGroup(PropertyGroupType):
+class StrikeDipType(PropertyGroupType):
     name = "Strike & dip"
     no_modify = True
 
@@ -118,7 +128,7 @@ class StrikeDipGroup(PropertyGroupType):
             )
 
 
-class VectorGroup(PropertyGroupType):
+class VectorType(PropertyGroupType):
     name = "3D vector"
     no_modify = True
 
@@ -134,13 +144,13 @@ class VectorGroup(PropertyGroupType):
 
 
 GROUP_TYPES = {
-    "Depth table": DepthGroup,
-    "Dip direction & dip": DipDirGroup,
-    "Interval table": IntervalGroup,
-    "Multi-element": MultiElementGroup,
-    "Simple": PropertyGroupType,
-    "Strike & dip": StrikeDipGroup,
-    "3D vector": VectorGroup,
+    "Depth table": DepthType,
+    "Dip direction & dip": DipDirType,
+    "Interval table": IntervalType,
+    "Multi-element": MultiElementType,
+    "Simple": SimpleType,
+    "Strike & dip": StrikeDipType,
+    "3D vector": VectorType,
 }
 
 
