@@ -34,4 +34,5 @@ VALIDATIONS_MAP = {
 
 
 def get_validations(form_keys: list[str]) -> list[Callable]:
+    """Returns a list of callable validations based on identifying form keys."""
     return [VALIDATIONS_MAP[k] for k in form_keys if k in VALIDATIONS_MAP]
