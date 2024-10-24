@@ -318,25 +318,6 @@ class DataForm(BaseForm):
             raise ValueError("A property must be provided if is_value is used.")
         return self
 
-    # def _validate_parent(self, params: dict[str, Any]):
-    #     """Validate form uid is a child of the parent object."""
-    #     child = None
-    #     if isinstance(self.value, UUID):
-    #         child = self.value
-    #     elif "property" in list(self.model_fields_set) and not self.is_value:
-    #         child = self.property
-    #
-    #     if child is not None:
-    #         if (
-    #             not isinstance(params[self.parent], ObjectBase)
-    #             or params[self.parent].get_entity(child)[0] is None
-    #         ):
-    #             raise UIJsonError(f"{child} data is not a child of {self.parent}.")
-    #
-    # def validate_data(self, params: dict[str, Any]):
-    #     """Validate the form data."""
-    #     self._validate_parent(params)
-
     def flatten(self):
         """Returns the data for the form."""
         if (
