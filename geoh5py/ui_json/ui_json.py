@@ -124,8 +124,10 @@ class BaseUIJson(BaseModel):
         """
         Validate the UIJson data.
 
-        :param params: promoted and flattened parameters/values dictionary.  The params
+        :param params: Promoted and flattened parameters/values dictionary.  The params
             dictionary will be generated from the model values if not provided.
+        :param errors: Optionally pass existing errors. Primarily for the to_params
+            method.
 
         :raises UIJsonError: If any validations fail.
         """

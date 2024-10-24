@@ -56,6 +56,8 @@ class ErrorPool:  # pylint: disable=too-few-public-methods
 
 
 def dependency_type_validation(name: str, data: dict[str, Any], params: dict[str, Any]):
+    """Dependency is optional or bool type."""
+
     dependency = params[name]["dependency"]
     dependency_form = params[dependency]
     if "optional" not in dependency_form or not isinstance(data[dependency], bool):
@@ -65,6 +67,8 @@ def dependency_type_validation(name: str, data: dict[str, Any], params: dict[str
 
 
 def mesh_type_validation(name: str, data: dict[str, Any], params: dict[str, Any]):
+    """Promoted value is one of the provided mesh types."""
+
     mesh_types = params[name]["mesh_type"]
     obj = data[name]
     if not isinstance(obj, tuple(mesh_types)):
@@ -72,6 +76,8 @@ def mesh_type_validation(name: str, data: dict[str, Any], params: dict[str, Any]
 
 
 def parent_validation(name: str, data: dict[str, Any], params: dict[str, Any]):
+    """Data is a child of the parent object."""
+
     form = params[name]
     child = data[name]
     parent = data[form["parent"]]
