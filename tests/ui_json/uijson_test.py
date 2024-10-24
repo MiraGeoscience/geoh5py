@@ -26,7 +26,7 @@ from geoh5py import Workspace
 from geoh5py.objects import Points
 from geoh5py.ui_json.forms import DataForm, IntegerForm, ObjectForm, StringForm
 from geoh5py.ui_json.ui_json import BaseUIJson
-from geoh5py.ui_json.validation import UIJsonError
+from geoh5py.ui_json.validations import UIJsonError
 
 
 def sample_uijson(test_path):
@@ -122,3 +122,58 @@ def test_uijson(tmp_path):
 
     assert "my_absent_uid_parameter" in str(err.value)
     assert "my_faulty_data_parameter" in str(err.value)
+
+
+def test_validation(tmp_path):
+    from geoh5py.objects import Curve
+
+    ws = Workspace(tmp_path / "test.geoh5")
+    pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
+    other_pts = pts.copy(name="other test")
+    data = pts.add_data({"my_data": {"values": np.random.randn(10)}})
+
+    class MyUIJson(BaseUIJson):
+        my_object_parameter: ObjectForm
+        my_other_object_parameter: ObjectForm
+        my_data_parameter: DataForm
+
+    uijson = MyUIJson(
+        title="my application",
+        geoh5=str(ws.h5file),
+        run_command="python -m my_module",
+        monitoring_directory="my_monitoring_directory",
+        conda_environment="my_conda_environment",
+        workspace_geoh5=str(ws.h5file),
+        my_object_parameter={
+            "label": "test",
+            "mesh_type": [Curve],
+            "value": pts.uid,  # Wrong mesh type
+        },
+        my_other_object_parameter={
+            "label": "other test",
+            "mesh_type": [Points],
+            "value": other_pts.uid,
+        },
+        my_data_parameter={
+            "label": "data",
+            "parent": "my_other_object_parameter",  # Wrong parent
+            "association": "Vertex",
+            "data_type": "Float",
+            "dependency": "my_other_object_parameter",
+            "value": data.uid,
+        },
+    )
+
+    with pytest.raises(UIJsonError) as err:
+        _ = uijson.to_params()
+
+    assert "my_data_parameter data is not a child of my_other_object_parameter" in str(
+        err.value
+    )
+    assert (
+        "Object's mesh type must be one of [<class 'geoh5py.objects.curve.Curve'>]"
+        in str(err.value)
+    )
+    assert "Dependency my_other_object_parameter must be either optional or" in str(
+        err.value
+    )
