@@ -34,19 +34,25 @@ class ErrorPool:  # pylint: disable=too-few-public-methods
     def __init__(self, errors: dict[str, list[Exception]]):
         self.pool = errors
 
-    def throw(self):
-        raising = False
+    def _format_error_message(self):
+        """Format the error message for the UIJsonError."""
+
         msg = ""
-        msg += "Collected UIJson errors:\n"
         for key, errors in self.pool.items():
             if errors:
-                raising = True
                 msg += f"\t{key}:\n"
                 for i, error in enumerate(errors):
                     msg += f"\t\t{i}. {error}\n"
 
-        if raising:
-            raise UIJsonError(msg)
+        return msg
+
+    def throw(self):
+        """Raise the UIJsonError with detailed list of errors per parameter."""
+
+        message = self._format_error_message()
+        if message:
+            message = "Collected UIJson errors:\n" + message
+            raise UIJsonError(message)
 
 
 def dependency_type_validation(name: str, data: dict[str, Any], params: dict[str, Any]):
