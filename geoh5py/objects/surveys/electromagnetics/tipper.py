@@ -22,6 +22,7 @@ import uuid
 
 import numpy as np
 
+from geoh5py.data import IntegerData, ReferencedData
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.points import Points
 
@@ -168,6 +169,19 @@ class TipperSurvey(FEMSurvey):
         "Milliseconds (ms)", "Microseconds (us)" or "Nanoseconds (ns)"
         """
         return self.__UNITS
+
+    @property
+    def tx_id_property(self) -> ReferencedData | IntegerData | None:
+        """
+        Data link between the receiver and transmitter object.
+        """
+        return None
+
+    @tx_id_property.setter
+    def tx_id_property(self, value: uuid.UUID | ReferencedData | np.ndarray | None):
+        raise NotImplementedError(
+            "Property 'tx_id_property' not available for magnetotellurics"
+        )
 
 
 class TipperReceivers(TipperSurvey, Curve):  # pylint: disable=too-many-ancestors

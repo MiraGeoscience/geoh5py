@@ -217,7 +217,7 @@ class CellObject(Points, ABC):
                 if isinstance(child, PropertyGroup):
                     continue
                 if isinstance(child, Data):
-                    if child.name in ["A-B Cell ID", "Transmitter ID"]:
+                    if child.name in ["A-B Cell ID"]:
                         continue
 
                     child_mask = mask

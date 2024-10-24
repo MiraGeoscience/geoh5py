@@ -19,6 +19,9 @@ from __future__ import annotations
 
 import uuid
 
+import numpy as np
+
+from geoh5py.data import IntegerData, ReferencedData
 from geoh5py.objects.points import Points
 
 from .base import FEMSurvey
@@ -81,3 +84,16 @@ class MTReceivers(FEMSurvey, Points):
     def type(self):
         """Survey element type"""
         return self.__TYPE
+
+    @property
+    def tx_id_property(self) -> ReferencedData | IntegerData | None:
+        """
+        Data link between the receiver and transmitter object.
+        """
+        return None
+
+    @tx_id_property.setter
+    def tx_id_property(self, value: uuid.UUID | ReferencedData | np.ndarray | None):
+        raise NotImplementedError(
+            "Transmitter property not available for magnetotellurics"
+        )
