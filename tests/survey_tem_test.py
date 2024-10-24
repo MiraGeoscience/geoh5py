@@ -395,73 +395,94 @@ def test_create_survey_ground_tem_large_loop(
     path = Path(tmp_path) / r"groundTEM.geoh5"
 
     # Create a workspace
-    workspace = Workspace.create(path)
+    with Workspace.create(path) as workspace:
+        receivers, transmitters = make_large_loop_survey(workspace)
 
-    receivers, transmitters = make_large_loop_survey(workspace)
+        receivers.channels = [10.0, 100.0]
+        values = {}
+        for component in ["bx", "bz"]:
+            data = {}
 
-    receivers.channels = [10.0, 100.0]
-    values = {}
-    for component in ["bx", "bz"]:
-        data = {}
+            for ind, channel in enumerate(receivers.channels):
+                data[f"channel[{ind}]"] = {
+                    "values": np.ones(receivers.n_vertices) * channel
+                }
 
-        for ind, channel in enumerate(receivers.channels):
-            data[f"channel[{ind}]"] = {
-                "values": np.ones(receivers.n_vertices) * channel
-            }
+            values[component] = data
 
-        values[component] = data
+        receivers.add_components_data(values)
 
-    receivers.add_components_data(values)
+        assert isinstance(
+            receivers, LargeLoopGroundTEMReceivers
+        ), "Entity type GroundTEMReceiversLargeLoop failed to create."
 
-    assert isinstance(
-        receivers, LargeLoopGroundTEMReceivers
-    ), "Entity type GroundTEMReceiversLargeLoop failed to create."
+        assert isinstance(
+            transmitters, LargeLoopGroundTEMTransmitters
+        ), "Entity type GroundTEMTransmittersLargeLoop failed to create."
 
-    assert isinstance(
-        transmitters, LargeLoopGroundTEMTransmitters
-    ), "Entity type GroundTEMTransmittersLargeLoop failed to create."
+        with pytest.raises(
+            TypeError, match=f" must be of type {LargeLoopGroundTEMTransmitters}"
+        ):
+            receivers.transmitters = "123"
 
-    with pytest.raises(
-        TypeError, match=f" must be of type {LargeLoopGroundTEMTransmitters}"
-    ):
-        receivers.transmitters = "123"
+        with pytest.raises(
+            TypeError,
+            match=f"Provided receivers must be of type {type(receivers)}",
+        ):
+            receivers.receivers = transmitters
 
-    with pytest.raises(
-        TypeError,
-        match=f"Provided receivers must be of type {type(receivers)}",
-    ):
-        receivers.receivers = transmitters
+        with pytest.raises(
+            TypeError,
+            match=f"Provided transmitters must be of type {type(transmitters)}",
+        ):
+            transmitters.transmitters = receivers
 
-    with pytest.raises(
-        TypeError,
-        match=f"Provided transmitters must be of type {type(transmitters)}",
-    ):
-        transmitters.transmitters = receivers
+        receivers.transmitters = transmitters
+        transmitter_uid = transmitters.tx_id_property.uid  # Remember for next test
 
-    receivers.transmitters = transmitters
+    with Workspace(path) as workspace:
+        transmitters = workspace.get_entity(transmitters.uid)[0]
+        receivers = workspace.get_entity(receivers.uid)[0]
 
-    with Workspace.create(Path(tmp_path) / r"testGround_copy.geoh5") as new_workspace:
-        receivers_orig = receivers.copy(new_workspace)
-        repeat_copy = receivers_orig.copy()
         assert (
-            repeat_copy.metadata["EM Dataset"]["Tx ID property"]
-            != receivers_orig.metadata["EM Dataset"]["Tx ID property"]
-        )
+            transmitters.tx_id_property.uid == transmitter_uid
+        ), "Failed to maintain transmitter id property."
 
-    with Workspace.create(
-        Path(tmp_path) / r"testGround_copy_extent.geoh5"
-    ) as new_workspace:
-        transmitters_rec = receivers.transmitters.copy_from_extent(
-            np.vstack([[-150, 300], [150, 600]]), parent=new_workspace
-        )
-        assert transmitters_rec.receivers.n_vertices == receivers_orig.n_vertices / 2.0
-        assert (
-            transmitters_rec.n_vertices == receivers_orig.transmitters.n_vertices / 2.0
-        )
+        with Workspace.create(
+            Path(tmp_path) / r"testGround_copy.geoh5"
+        ) as new_workspace:
+            receivers_orig = receivers.copy(new_workspace)
+            repeat_copy = receivers_orig.copy()
+            assert (
+                repeat_copy.metadata["EM Dataset"]["Tx ID property"]
+                != receivers_orig.metadata["EM Dataset"]["Tx ID property"]
+            )
 
-        assert list(
-            transmitters_rec.tx_id_property.entity_type.value_map.map["Value"]
-        ) == [b"Unknown", b"Loop 2"]
+
+def test_copy_from_extent(
+    tmp_path,
+):
+    path = Path(tmp_path) / r"groundTEM.geoh5"
+
+    # Create a workspace
+    with Workspace.create(path) as workspace:
+        receivers, transmitters = make_large_loop_survey(workspace)
+        receivers.transmitters = transmitters
+
+        with Workspace.create(
+            Path(tmp_path) / r"testGround_copy_extent.geoh5"
+        ) as new_workspace:
+            transmitters_rec = receivers.transmitters.copy_from_extent(
+                np.vstack([[-150, 300], [150, 600]]), parent=new_workspace
+            )
+            assert transmitters_rec.receivers.n_vertices == receivers.n_vertices / 2.0
+            assert (
+                transmitters_rec.n_vertices == receivers.transmitters.n_vertices / 2.0
+            )
+
+            assert list(
+                transmitters_rec.tx_id_property.entity_type.value_map.map["Value"]
+            ) == [b"Unknown", b"Loop 2"]
 
 
 def test_create_survey_ground_tem(tmp_path):
