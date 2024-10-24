@@ -28,8 +28,7 @@ from warnings import warn
 
 import numpy as np
 
-from geoh5py.data import ReferencedData
-from geoh5py.data.float_data import FloatData
+from geoh5py.data import FloatData, IntegerData, ReferencedData
 from geoh5py.groups.property_group import PropertyGroup
 from geoh5py.objects import Curve
 from geoh5py.objects.object_base import ObjectBase
@@ -475,6 +474,15 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
                 f"Provided transmitters must be of type {self.default_transmitter_type}. "
                 f"{type(transmitters)} provided."
             )
+
+        if (
+            hasattr(transmitters, "tx_id_property")
+            and transmitters.tx_id_property is not None
+        ):
+            self.edit_em_metadata(
+                {"Tx ID tx property": transmitters.tx_id_property.uid}
+            )
+
         self._transmitters = transmitters
         self.edit_em_metadata({"Transmitters": transmitters.uid})
 
@@ -651,7 +659,7 @@ class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
 
 class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
     __INPUT_TYPE = ["Tx and Rx"]
-    _tx_id_property: ReferencedData | None = None
+    _tx_id_property: ReferencedData | IntegerData | None = None
     _TYPE_UID: uuid.UUID | None = None
 
     @property
@@ -765,14 +773,23 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
         return self.__INPUT_TYPE
 
     @property
-    def tx_id_property(self) -> ReferencedData | None:
+    def tx_id_property(self) -> ReferencedData | IntegerData | None:
         """
         Default channel units for time or frequency defined on the child class.
         """
-        if self._tx_id_property is None:
-            data = self.get_data("Transmitter ID")
-            if any(data) and isinstance(data[0], ReferencedData):
-                self._tx_id_property = data[0]
+        if self._tx_id_property is None and self.metadata is not None:
+            if self.type == "Receivers":
+                uid = self.metadata["EM Dataset"].get("Tx ID property", None)
+            else:
+                uid = self.metadata["EM Dataset"].get("Tx ID tx property", None)
+
+            if uid is not None:
+                tx_id_property = self.get_entity(uid)[0]
+            else:
+                tx_id_property = self.get_entity("Transmitter ID")[0]
+
+            if isinstance(tx_id_property, (ReferencedData, IntegerData)):
+                self._tx_id_property = tx_id_property
 
         return self._tx_id_property
 
@@ -805,7 +822,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
 
             value = self.add_data({"Transmitter ID": attributes})
 
-        if not isinstance(value, (ReferencedData, type(None))):
+        if not isinstance(value, (ReferencedData, IntegerData, type(None))):
             raise TypeError(
                 "Input value for 'tx_id_property' should be of type uuid.UUID, "
                 "ReferencedData, np.ndarray or None.)"
@@ -815,6 +832,8 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
 
         if self.type == "Receivers":
             self.edit_em_metadata({"Tx ID property": getattr(value, "uid", None)})
+        else:
+            self.edit_em_metadata({"Tx ID tx property": getattr(value, "uid", None)})
 
 
 class AirborneEMSurvey(BaseEMSurvey, Curve, ABC):
