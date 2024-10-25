@@ -124,6 +124,18 @@ def test_uijson(tmp_path):
     assert "my_faulty_data_parameter" in str(err.value)
 
 
+def generate_test_uijson(workspace: Workspace, uijson, data: dict):
+
+    return uijson(
+        title="my application",
+        geoh5=str(workspace.h5file),
+        run_command="python -m my_module",
+        monitoring_directory="my_monitoring_directory",
+        conda_environment="my_conda_environment",
+        workspace_geoh5=str(workspace.h5file),
+        **data
+    )
+
 def test_validation(tmp_path):
 
     ws = Workspace(tmp_path / "test.geoh5")
@@ -176,3 +188,6 @@ def test_validation(tmp_path):
     assert "Dependency my_other_object_parameter must be either optional or" in str(
         err.value
     )
+
+
+    def test_validate_dependency_type_validation():
