@@ -24,7 +24,7 @@ import pytest
 
 from geoh5py import Workspace
 from geoh5py.objects import Points, Curve
-from geoh5py.ui_json.forms import DataForm, IntegerForm, ObjectForm, StringForm
+from geoh5py.ui_json.forms import DataForm, IntegerForm, ObjectForm, StringForm, BoolForm
 from geoh5py.ui_json.ui_json import BaseUIJson
 from geoh5py.ui_json.validations import UIJsonError
 
@@ -136,7 +136,7 @@ def generate_test_uijson(workspace: Workspace, uijson, data: dict):
         **data
     )
 
-def test_validation(tmp_path):
+def test_multiple_validations(tmp_path):
 
     ws = Workspace(tmp_path / "test.geoh5")
     pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
@@ -148,24 +148,19 @@ def test_validation(tmp_path):
         my_other_object_parameter: ObjectForm
         my_data_parameter: DataForm
 
-    uijson = MyUIJson(
-        title="my application",
-        geoh5=str(ws.h5file),
-        run_command="python -m my_module",
-        monitoring_directory="my_monitoring_directory",
-        conda_environment="my_conda_environment",
-        workspace_geoh5=str(ws.h5file),
-        my_object_parameter={
+
+    kwargs = {
+        "my_object_parameter" : {
             "label": "test",
             "mesh_type": [Curve],
             "value": pts.uid,  # Wrong mesh type
         },
-        my_other_object_parameter={
+        "my_other_object_parameter": {
             "label": "other test",
             "mesh_type": [Points],
             "value": other_pts.uid,
         },
-        my_data_parameter={
+        "my_data_parameter" : {
             "label": "data",
             "parent": "my_other_object_parameter",  # Wrong parent
             "association": "Vertex",
@@ -173,7 +168,9 @@ def test_validation(tmp_path):
             "dependency": "my_other_object_parameter",
             "value": data.uid,
         },
-    )
+    }
+
+    uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
     with pytest.raises(UIJsonError) as err:
         _ = uijson.to_params()
@@ -189,5 +186,82 @@ def test_validation(tmp_path):
         err.value
     )
 
+def test_validate_dependency_type_validation(tmp_path):
 
-    def test_validate_dependency_type_validation():
+    ws = Workspace(tmp_path / "test.geoh5")
+
+    # BoolForm dependency is valid
+    class MyUIJson(BaseUIJson):
+        my_parameter: BoolForm
+        my_dependent_parameter: StringForm
+
+    kwargs = {
+        "my_parameter": {
+            "label": "test",
+            "value": True,
+        },
+        "my_dependent_parameter": {
+            "label": "dependency",
+            "value": "test",
+            "dependency": "my_parameter",
+        },
+    }
+    uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
+    params = uijson.to_params()
+    assert params["my_dependent_parameter"] == "test"
+
+
+    # Optional non-bool dependency is valid
+    class MyUIJson(BaseUIJson):
+        my_parameter: StringForm
+        my_dependent_parameter: StringForm
+
+    kwargs["my_parameter"]["value"] = "not a bool"
+    kwargs["my_parameter"]["optional"] = True
+    uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
+    params = uijson.to_params()
+    assert params["my_dependent_parameter"] == "test"
+
+    # Non-optional non-bool dependency is invalid
+    kwargs["my_parameter"].pop("optional")
+    msg = "Dependency my_parameter must be either optional or of boolean type"
+    with pytest.raises(UIJsonError, match=msg):
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
+        _ = uijson.to_params()
+
+
+def test_parent_child_validation(tmp_path):
+
+    ws = Workspace(tmp_path / "test.geoh5")
+    pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
+    data = pts.add_data({"my_data": {"values": np.random.randn(10)}})
+    other_pts = pts.copy(name="other test")
+    class MyUIJson(BaseUIJson):
+        my_object_parameter: ObjectForm
+        my_data_parameter: DataForm
+
+    kwargs = {
+        "my_object_parameter": {
+            "label": "test",
+            "mesh_type": [Points],
+            "value": pts.uid,
+        },
+        "my_data_parameter": {
+            "label": "data",
+            "parent": "my_object_parameter",
+            "association": "Vertex",
+            "data_type": "Float",
+            "value": data.uid,
+        },
+    }
+
+    uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
+    params = uijson.to_params()
+    assert params["my_data_parameter"].uid == data.uid
+
+    # Data is not a child of the parent object
+    kwargs["my_object_parameter"]["value"] = other_pts.uid
+    msg = "my_data_parameter data is not a child of my_object_parameter"
+    with pytest.raises(UIJsonError, match=msg):
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
+        _ = uijson.to_params()

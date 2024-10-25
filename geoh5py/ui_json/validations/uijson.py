@@ -60,7 +60,7 @@ def dependency_type_validation(name: str, data: dict[str, Any], params: dict[str
 
     dependency = params[name]["dependency"]
     dependency_form = params[dependency]
-    if "optional" not in dependency_form or not isinstance(data[dependency], bool):
+    if "optional" not in dependency_form and not isinstance(data[dependency], bool):
         raise UIJsonError(
             f"Dependency {dependency} must be either optional or of boolean type."
         )
