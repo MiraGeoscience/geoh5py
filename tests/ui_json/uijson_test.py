@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 
 from geoh5py import Workspace
-from geoh5py.objects import Points, Curve
+from geoh5py.objects import Curve, Points
 from geoh5py.ui_json.forms import DataForm, IntegerForm, ObjectForm, StringForm
 from geoh5py.ui_json.ui_json import BaseUIJson
 from geoh5py.ui_json.validations import UIJsonError
@@ -125,7 +125,6 @@ def test_uijson(tmp_path):
 
 
 def test_validation(tmp_path):
-
     ws = Workspace(tmp_path / "test.geoh5")
     pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
     other_pts = pts.copy(name="other test")
