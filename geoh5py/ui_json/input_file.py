@@ -90,6 +90,7 @@ class InputFile:
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
+        *,
         data: dict[str, Any] | None = None,
         ui_json: dict[str, Any] | None = None,
         validate: bool = True,
