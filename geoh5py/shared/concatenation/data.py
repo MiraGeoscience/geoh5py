@@ -30,8 +30,6 @@ if TYPE_CHECKING:
 
 
 class ConcatenatedData(Concatenated, Data):
-    _parent: ConcatenatedObject
-
     def __init__(self, **kwargs):
         if kwargs.get("parent") is None:
             raise UserWarning(

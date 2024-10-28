@@ -93,6 +93,7 @@ INV_KEY_MAP = {
     "Octree Cells": "octree_cells",
     "Partially hidden": "partially_hidden",
     "Planning": "planning",
+    "Precision": "precision",
     "Primitive type": "primitive_type",
     "Prisms": "prisms",
     "Properties": "properties",
@@ -103,6 +104,7 @@ INV_KEY_MAP = {
     "Referenced": "REFERENCED",
     "Rotation": "rotation",
     "Scale": "scale",
+    "Scientific notation": "scientific_notation",
     "Surveys": "surveys",
     "Text": "TEXT",
     "Trace": "trace",
@@ -239,6 +241,7 @@ def match_values(vec_a, vec_b, collocation_distance=1e-4) -> np.ndarray:
 def merge_arrays(
     head,
     tail,
+    *,
     replace="A->B",
     mapping=None,
     collocation_distance=1e-4,
@@ -762,6 +765,22 @@ def stringify(values: dict[str, Any]) -> dict[str, Any]:
         string_dict[key] = dict_mapper(value, mappers)
 
     return string_dict
+
+
+def to_list(value: Any) -> list:
+    """
+    Convert value to a list.
+
+    :param value: The value to convert.
+
+    :return: A list
+    """
+    # ensure the names are a list
+    if isinstance(value, list):
+        return value
+    if isinstance(value, tuple):
+        return list(value)
+    return [value]
 
 
 def to_tuple(value: Any) -> tuple:

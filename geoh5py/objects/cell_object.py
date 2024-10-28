@@ -164,6 +164,7 @@ class CellObject(Points, ABC):
     def copy(  # pylint: disable=too-many-branches
         self,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
@@ -216,7 +217,7 @@ class CellObject(Points, ABC):
                 if isinstance(child, PropertyGroup):
                     continue
                 if isinstance(child, Data):
-                    if child.name in ["A-B Cell ID", "Transmitter ID"]:
+                    if child.name in ["A-B Cell ID"]:
                         continue
 
                     child_mask = mask
