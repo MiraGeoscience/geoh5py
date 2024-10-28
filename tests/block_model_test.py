@@ -26,6 +26,30 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
+def test_negative_cell_delimiters_centroids(tmp_path):
+    workspace = Workspace.create(tmp_path / "test.geoh5")
+    block_model = BlockModel.create(
+        workspace,
+        name="test",
+        u_cell_delimiters=np.array([-1, 0, 1]),
+        v_cell_delimiters=np.array([-1, 0, 1]),
+        z_cell_delimiters=np.array([-3, -2, -1]),
+        origin=np.r_[0, 0, 0],
+    )
+    assert np.allclose(
+        block_model.centroids[:, 0],
+        np.array([-0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5]),
+    )
+    assert np.allclose(
+        block_model.centroids[:, 1],
+        np.array([-0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5]),
+    )
+    assert np.allclose(
+        block_model.centroids[:, 2],
+        np.array([-2.5, -1.5, -2.5, -1.5, -2.5, -1.5, -2.5, -1.5]),
+    )
+
+
 def test_create_block_model_data(tmp_path):
     name = "MyTestBlockModel"
     h5file_path = tmp_path / r"block_model.geoh5"

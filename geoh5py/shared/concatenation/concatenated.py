@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .concatenator import Concatenator
-    from .object import ConcatenatedObject
 
 
 class Concatenated:
@@ -30,12 +29,12 @@ class Concatenated:
     Base class modifier for concatenated objects and data.
     """
 
-    _parent: ConcatenatedObject | Concatenator
     _concat_attr_str: str = "Attributes"
 
     def __init__(self, *args, **kwargs):
         attribute_map = getattr(self, "_attribute_map", {})
         attr = {"name": "Entity", "parent": None}
+
         for key, value in kwargs.items():
             attr[attribute_map.get(key, key)] = value
 
@@ -50,8 +49,14 @@ class Concatenated:
     def concatenator(self) -> Concatenator:
         """
         Parental Concatenator entity.
-        """
-        if isinstance(self._parent, Concatenated):
-            return self._parent.concatenator
 
-        return self._parent
+        Warning: Parent is not an attribute of Concatenated, but of the derived class.
+        """
+        parent: Concatenated | Concatenator = getattr(self, "parent", None)  # type: ignore
+        if parent is None:
+            raise UserWarning("Parent of concatenated object is not defined.")
+
+        if isinstance(parent, Concatenated):
+            return parent.concatenator
+
+        return parent

@@ -324,7 +324,6 @@ class H5Writer:
                     h5file, entity, attribute, compression, **kwargs
                 )
             elif attribute in [
-                "trace_depth",
                 "values",
             ]:
                 H5Writer.write_data_values(
@@ -341,6 +340,7 @@ class H5Writer:
                 "prisms",
                 "surveys",
                 "trace",
+                "trace_depth",
                 "u_cell_delimiters",
                 "v_cell_delimiters",
                 "vertices",

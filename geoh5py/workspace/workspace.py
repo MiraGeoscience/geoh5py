@@ -103,6 +103,7 @@ class Workspace(AbstractContextManager):
     def __init__(
         self,
         h5file: str | Path | BytesIO | None = None,
+        *,
         contributors: tuple[str] = (getuser(),),
         distance_unit: str = "meter",
         ga_version: str = "1",
@@ -440,6 +441,7 @@ class Workspace(AbstractContextManager):
     def create_entity(
         self,
         entity_class,
+        *,
         compression: int = 5,
         entity: dict | None = None,
         entity_type: EntityType | dict | None = None,
@@ -712,7 +714,7 @@ class Workspace(AbstractContextManager):
         :return: Structured array.
         """
         if isinstance(entity, Concatenated):
-            return entity.concatenator.fetch_values(entity, key)
+            return entity.concatenator.fetch_values(entity, key)  # type: ignore
 
         if isinstance(entity, EntityType):
             entity_type = str_from_subtype(entity)
@@ -1193,9 +1195,10 @@ class Workspace(AbstractContextManager):
                 entity=entity_attrs,
                 entity_type=type_attrs,
             )
-        except TypeError:
+        except TypeError as error:
             warnings.warn(
                 f"Could not create an entity from the given attributes {type_attrs}. Skipping over."
+                f"Error: {error}"
             )
             return None
 

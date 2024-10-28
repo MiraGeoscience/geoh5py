@@ -50,6 +50,7 @@ class EntityType(ABC):
     def __init__(
         self,
         workspace: Workspace,
+        *,
         uid: uuid.UUID | None = None,
         description: str | None = "Entity",
         name: str = "Entity",
