@@ -716,7 +716,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                 if (
                     property_group is not None
                     and property_group.name not in drillholes_tables
-                    and property_group.property_group_type
+                    and getattr(property_group, "property_group_type", None)
                     in ["Depth table", "Interval table"]
                 ):
                     drillholes_tables[property_group.name] = DrillholesGroupTable(
