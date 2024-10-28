@@ -108,7 +108,8 @@ class Drillhole(Points):
 
     @cells.setter
     def cells(self, indices):
-        assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
+        if indices.dtype != "uint32":
+            raise TypeError("Indices array must be of type 'uint32'")
         self._cells = indices
         self.workspace.update_attribute(self, "cells")
 
@@ -159,9 +160,8 @@ class Drillhole(Points):
 
     @cost.setter
     def cost(self, value: Real):
-        assert isinstance(
-            value, Real
-        ), f"Provided cost value must be of type {float} or int."
+        if not isinstance(value, Real):
+            raise TypeError(f"Provided cost value must be of type {float} or int.")
         self._cost = float(value)
 
         if self.on_file:
@@ -176,9 +176,8 @@ class Drillhole(Points):
 
     @end_of_hole.setter
     def end_of_hole(self, value: Real | None):
-        assert isinstance(
-            value, (int, float, type(None))
-        ), f"Provided end_of_hole value must be of type {int}"
+        if not isinstance(value, (int, float, type(None))):
+            raise TypeError(f"Provided end_of_hole value must be of type {int}")
         self._end_of_hole = value
 
         if self.on_file:
@@ -260,7 +259,8 @@ class Drillhole(Points):
     @planning.setter
     def planning(self, value: str):
         choices = ["Default", "Ongoing", "Planned", "Completed", "No status"]
-        assert value in choices, f"Provided planning value must be one of {choices}"
+        if value not in choices:
+            raise ValueError(f"Provided planning value must be one of {choices}")
         self._planning = value
 
         if self.on_file:
@@ -339,7 +339,9 @@ class Drillhole(Points):
 
     @default_collocation_distance.setter
     def default_collocation_distance(self, tol):
-        assert tol > 0, "Tolerance value should be >0"
+        if not tol > 0:
+            raise ValueError("Tolerance value should be >0.")
+
         self._default_collocation_distance = tol
         self.workspace.update_attribute(self, "attributes")
 
