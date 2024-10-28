@@ -291,9 +291,15 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             new_entity.tx_id_property is not None
             and self.complement.tx_id_property is not None
             and self.complement.tx_id_property.values is not None
+            and mask is not None
         ):
-            unique_ids = np.unique(self.complement.tx_id_property.values)
-            ids_mask = np.zeros(unique_ids.max() + 1, dtype=bool)
+            max_id = np.max(
+                [
+                    self.complement.tx_id_property.values.max(),
+                    new_entity.tx_id_property.values.max(),
+                ]
+            )
+            ids_mask = np.zeros(max_id + 1, dtype=bool)
             ids_mask[new_entity.tx_id_property.values] = True
             mask = ids_mask[self.complement.tx_id_property.values]
 
