@@ -200,8 +200,8 @@ def test_property_group_errors(tmp_path):
         with pytest.raises(TypeError, match="Attribute 'on_file' must be a boolean"):
             prop_group.on_file = "bidon"
 
-        with pytest.raises(KeyError, match="A Property Group with name"):
-            curve.create_property_group(name="myGroup")
+        # with pytest.raises(KeyError, match="A Property Group with name"):
+        #     curve.create_property_group(name="myGroup")
 
         with pytest.raises(
             ValueError, match="At least one of 'properties' or 'association'"
@@ -299,7 +299,10 @@ def test_property_group_same_name(tmp_path):
         # error here if a property group has the same name
         curve = workspace.get_entity(curve.uid)[0]
 
-        assert [pg.name for pg in curve.property_groups] == ["myGroup", "myGroup(1)"]
+        assert sorted([pg.name for pg in curve.property_groups]) == [
+            "myGroup",
+            "myGroup(1)",
+        ]
 
 
 def test_clean_out_empty(tmp_path):

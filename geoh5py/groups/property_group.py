@@ -288,11 +288,20 @@ class PropertyGroup:
         if not isinstance(new_name, str):
             raise TypeError("Name must be a string")
 
-        property_groups = getattr(self.parent, "_property_groups_names", None)
-        if property_groups:
-            new_name = find_unique_name(
-                new_name, [prop_group.name for prop_group in property_groups]
+        if getattr(self.parent, "_property_groups", None):
+            original_name = new_name
+            property_groups = (
+                self.parent.property_groups if self.parent.property_groups else []
             )
+            new_name = find_unique_name(
+                new_name,
+                [prop_group.name for prop_group in property_groups],
+            )
+            if original_name != new_name:
+                warn(
+                    f"Name '{original_name}' already exists in the parent object. "
+                    f"Renamed to '{new_name}'."
+                )
 
         self._name = new_name
 
