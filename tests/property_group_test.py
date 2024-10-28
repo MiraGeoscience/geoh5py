@@ -285,6 +285,23 @@ def test_copy_property_group(tmp_path):
         )
 
 
+def test_property_group_same_name(tmp_path):
+    h5file_path = tmp_path / r"prop_group_test.geoh5"
+
+    with Workspace.create(h5file_path) as workspace:
+        curve, _ = make_example(workspace)
+
+        pg2 = PropertyGroup(parent=curve, name="myGroup", association="VERTEX")
+
+        assert pg2.name == "myGroup(1)"
+
+    with Workspace(h5file_path) as workspace:
+        # error here if a property group has the same name
+        curve = workspace.get_entity(curve.uid)[0]
+
+        assert [pg.name for pg in curve.property_groups] == ["myGroup", "myGroup(1)"]
+
+
 def test_clean_out_empty(tmp_path):
     h5file_path = tmp_path / r"prop_group_clean.geoh5"
 

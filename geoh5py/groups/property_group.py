@@ -288,6 +288,13 @@ class PropertyGroup:
         if not isinstance(new_name, str):
             raise TypeError("Name must be a string")
 
+        # requires a unique name
+        properties_group_names = [
+            pg.name for pg in getattr(self.parent, "_property_groups", [])
+        ]
+        if properties_group_names:
+            new_name = find_unique_name(new_name, properties_group_names)
+
         self._name = new_name
 
     @property
