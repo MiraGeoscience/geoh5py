@@ -324,7 +324,7 @@ class Drillhole(Points):
         else:
             array_values = values
 
-        if array_values.dtype != self.__SURVEY_DTYPE:
+        if array_values.dtype.descr[:3] != self.__SURVEY_DTYPE.descr:
             raise ValueError(
                 f"Array of 'survey' must be of dtype = {self.__SURVEY_DTYPE}"
             )
