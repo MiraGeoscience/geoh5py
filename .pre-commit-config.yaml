@@ -23,7 +23,6 @@ repos:
         args: [--config=pyproject.toml]
 -   repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.7.0
-
     hooks:
     -   id: ruff
         args:
@@ -33,7 +32,6 @@ repos:
     -   id: ruff-format
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.12.1
-
     hooks:
     -   id: mypy
         additional_dependencies: [
@@ -61,7 +59,6 @@ repos:
             )$
 -   repo: https://github.com/codingjoe/relint
     rev: 3.3.0
-
     hooks:
     -   id: relint
         args: [-W]  # to fail on warnings
