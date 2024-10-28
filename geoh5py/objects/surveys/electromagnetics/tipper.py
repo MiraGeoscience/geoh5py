@@ -22,7 +22,6 @@ import uuid
 
 import numpy as np
 
-from geoh5py.data import IntegerData, ReferencedData
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.points import Points
 
@@ -83,10 +82,8 @@ class TipperSurvey(FEMSurvey):
                 f"The 'base_station' attribute cannot be set on class {TipperBaseStations}."
             )
 
-        if base.n_vertices not in [getattr(self, "n_vertices", None), 1, None]:
-            raise AttributeError(
-                "The input 'base_stations' should have n_vertices equal to 1, n_receivers or None."
-            )
+        if base.tx_id_property is not None:
+            self.edit_em_metadata({"Tx ID tx property": base.tx_id_property.uid})
 
         self._base_stations = base
         self.edit_em_metadata({"Base stations": base.uid})
@@ -170,18 +167,27 @@ class TipperSurvey(FEMSurvey):
         """
         return self.__UNITS
 
-    @property
-    def tx_id_property(self) -> ReferencedData | IntegerData | None:
+    def _format_transmitter_ids(self, values, attributes):
         """
-        Data link between the receiver and transmitter object.
-        """
-        return None
+        Format transmitter ids.
 
-    @tx_id_property.setter
-    def tx_id_property(self, value: uuid.UUID | ReferencedData | np.ndarray | None):
-        raise NotImplementedError(
-            "Property 'tx_id_property' not available for magnetotellurics"
-        )
+        :param values: Array of transmitter ids.
+        :param attributes: Attributes dictionary for the new Data.
+        """
+        if self.complement is not None and self.complement.tx_id_property is not None:
+            attributes["entity_type"] = self.complement.tx_id_property.entity_type
+        else:
+            value_map = {
+                ind: f"Base station {ind}" for ind in np.unique(values.astype(np.int32))
+            }
+            value_map[0] = "Unknown"
+            attributes.update(
+                {
+                    "primitive_type": "REFERENCED",
+                    "value_map": value_map,
+                    "association": "VERTEX",
+                }
+            )
 
 
 class TipperReceivers(TipperSurvey, Curve):  # pylint: disable=too-many-ancestors
