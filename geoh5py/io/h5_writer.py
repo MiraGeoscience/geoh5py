@@ -618,7 +618,7 @@ class H5Writer:
 
         name_map = KEY_MAP[attribute]
 
-        if isinstance(entity, Concatenator):
+        if isinstance(entity, Concatenator) and name_map != "Metadata":
             entity_handle = entity_handle["Concatenated Data"]
 
             if (
