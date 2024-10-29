@@ -200,7 +200,6 @@ def test_property_group_errors(tmp_path):
         with pytest.raises(TypeError, match="Attribute 'on_file' must be a boolean"):
             prop_group.on_file = "bidon"
 
-
         with pytest.raises(
             ValueError, match="At least one of 'properties' or 'association'"
         ):
