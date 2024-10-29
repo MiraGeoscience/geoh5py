@@ -200,9 +200,6 @@ def test_property_group_errors(tmp_path):
         with pytest.raises(TypeError, match="Attribute 'on_file' must be a boolean"):
             prop_group.on_file = "bidon"
 
-        with pytest.raises(KeyError, match="A Property Group with name"):
-            curve.create_property_group(name="myGroup")
-
         with pytest.raises(
             ValueError, match="At least one of 'properties' or 'association'"
         ):
@@ -283,6 +280,26 @@ def test_copy_property_group(tmp_path):
             len(curve_2.get_data(uid)) > 0
             for uid in curve_2.property_groups[0].properties
         )
+
+
+def test_property_group_same_name(tmp_path):
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+
+    with Workspace.create(h5file_path) as workspace:
+        curve, _ = make_example(workspace)
+
+        pg2 = PropertyGroup(parent=curve, name="myGroup", association="VERTEX")
+
+        assert pg2.name == "myGroup(1)"
+
+    with Workspace(h5file_path) as workspace:
+        # error here if a property group has the same name
+        curve = workspace.get_entity(curve.uid)[0]
+
+        assert sorted([pg.name for pg in curve.property_groups]) == [
+            "myGroup",
+            "myGroup(1)",
+        ]
 
 
 def test_clean_out_empty(tmp_path):
