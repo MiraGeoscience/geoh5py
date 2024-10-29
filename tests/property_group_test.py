@@ -286,7 +286,7 @@ def test_copy_property_group(tmp_path):
 
 
 def test_property_group_same_name(tmp_path):
-    h5file_path = tmp_path / r"prop_group_test.geoh5"
+    h5file_path = tmp_path / f"{__name__}.geoh5"
 
     with Workspace.create(h5file_path) as workspace:
         curve, _ = make_example(workspace)
