@@ -52,6 +52,7 @@ def test_create_survey_airborne_fem(tmp_path):
     transmitters = AirborneFEMTransmitters.create(
         workspace, vertices=vertices + 10.0, name=name + "_tx"
     )
+
     assert isinstance(
         transmitters, AirborneFEMTransmitters
     ), "Entity type AirborneFEMTransmitters failed to create."
@@ -75,6 +76,18 @@ def test_create_survey_airborne_fem(tmp_path):
 
     with pytest.raises(TypeError, match="Input 'loop_radius' must be of type 'float'"):
         receivers.loop_radius = "123"
+
+    # Check the tx_id_property
+    receivers.tx_id_property = np.arange(receivers.n_vertices)
+    transmitters.tx_id_property = np.arange(transmitters.n_vertices)
+
+    assert (
+        receivers.metadata["EM Dataset"]["Tx ID tx property"]
+        == transmitters.tx_id_property.uid
+    )
+    assert (
+        receivers.tx_id_property.entity_type == transmitters.tx_id_property.entity_type
+    )
 
     receivers.loop_radius = 123.0
     angles = receivers.add_data(
