@@ -85,7 +85,7 @@ project = "geoh5py"
 # The short X.Y version.
 version = "0.10.0"
 # The full version, including alpha/beta/rc tags.
-release = "0.10.0-beta.1"
+release = "0.10.0-beta.2"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
