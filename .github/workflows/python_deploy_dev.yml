@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*' # Push events to every version tag (eg. v1.0.0)
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   call-workflow-conda-publish:
     name: Publish development conda package on JFrog Artifactory
@@ -17,7 +21,7 @@ jobs:
       JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
       JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
   call-workflow-pypi-publish:
-    name: Publish development pypi package on JFrog Artifactory
+    name: Publish development pypi package (JFrog Artifactory and TestPyPI)
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-publish_pypi_package.yml@main
     with:
       package-manager: 'poetry'
