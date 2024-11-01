@@ -20,12 +20,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from geoh5py.groups import ContainerGroup, DrillholeGroup
 from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
 def test_metadata(tmp_path):
-    h5file_path = tmp_path / r"testPoints.geoh5"
+    h5file_path = tmp_path / f"{__name__}.geoh5"
     workspace = Workspace.create(h5file_path)
     points = Points.create(workspace, vertices=np.random.randn(12, 3), allow_move=False)
 
@@ -52,3 +53,17 @@ def test_metadata(tmp_path):
 
     with pytest.raises(TypeError, match="Input metadata must be of type"):
         points.update_metadata("bidon")
+
+
+def test_drillhole_group(tmp_path):
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+    with Workspace.create(h5file_path) as workspace:
+        group = DrillholeGroup.create(
+            workspace, vertices=np.random.randn(12, 3), allow_move=False
+        )
+        group.metadata = {"test": "test"}
+
+    with Workspace(h5file_path) as workspace:
+        group = workspace.get_entity(group.uid)[0]
+
+        assert group.metadata == {"test": "test"}
