@@ -283,7 +283,16 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
-    ):
+    ) -> BaseEMSurvey | None:
+        """
+        Copy the complement entity to the new entity.
+
+        :param new_entity: New entity to copy the complement to.
+        :param parent: Parent group or workspace.
+        :param copy_children: Copy children entities.
+        :param clear_cache: Clear the cache.
+        :param mask: Mask on vertices to apply to the data.
+        """
         if self.complement is None:
             return None
 
