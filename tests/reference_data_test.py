@@ -23,7 +23,7 @@ import string
 import numpy as np
 import pytest
 
-from geoh5py.data import GeometricDataConstants, ReferenceValueMap
+from geoh5py.data import GeometricDataConstants, ReferencedData, ReferenceValueMap
 from geoh5py.data.data_type import ReferencedValueMapType
 from geoh5py.objects import Points
 from geoh5py.shared.utils import compare_entities
@@ -74,6 +74,7 @@ def test_reference_value_map():
 
     random_array = np.random.randint(1, high=10, size=1000)
     value_map = ReferenceValueMap(random_array)
+
     assert len(value_map) == 9
     assert isinstance(value_map(), dict)
 
@@ -97,6 +98,13 @@ def test_create_reference_data(tmp_path):
         compare_entities(data, rec_data, ignore=["_map"])
 
         assert data.entity_type.value_map() == rec_data.entity_type.value_map()
+
+        assert data.mapped_values[0] == dict(data.value_map.map)[data.values[0]]
+
+        data._entity_type._value_map = None  #  pylint: disable=protected-access
+
+        with pytest.raises(ValueError, match="Entity type must have a value map."):
+            _ = data.mapped_values
 
 
 def test_add_data_map(tmp_path):
