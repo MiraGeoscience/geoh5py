@@ -162,10 +162,11 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             )
 
         if isinstance(data_block, list):
-            assert np.all([entry.parent == self for entry in data_block]), (
-                f"The list of values provided for the component '{name}' "
-                f"must contain {FloatData} belonging to the target survey."
-            )
+            if not np.all([entry.parent == self for entry in data_block]):
+                raise ValueError(
+                    f"The list of values provided for the component '{name}' "
+                    f"must contain {FloatData} belonging to the target survey."
+                )
 
             data_list = data_block
 
@@ -282,7 +283,16 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
-    ):
+    ) -> BaseEMSurvey | None:
+        """
+        Copy the complement entity to the new entity.
+
+        :param new_entity: New entity to copy the complement to.
+        :param parent: Parent group or workspace.
+        :param copy_children: Copy children entities.
+        :param clear_cache: Clear the cache.
+        :param mask: Mask on vertices to apply to the data.
+        """
         if self.complement is None:
             return None
 
@@ -291,9 +301,15 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             new_entity.tx_id_property is not None
             and self.complement.tx_id_property is not None
             and self.complement.tx_id_property.values is not None
+            and mask is not None
         ):
-            unique_ids = np.unique(self.complement.tx_id_property.values)
-            ids_mask = np.zeros(unique_ids.max() + 1, dtype=bool)
+            max_id = np.max(
+                [
+                    self.complement.tx_id_property.values.max(),
+                    new_entity.tx_id_property.values.max(),
+                ]
+            )
+            ids_mask = np.zeros(max_id + 1, dtype=bool)
             ids_mask[new_entity.tx_id_property.values] = True
             mask = ids_mask[self.complement.tx_id_property.values]
 
@@ -692,12 +708,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             attributes = {
                 "values": value.astype(np.int32),
             }
-            if (
-                self.complement is not None
-                and self.complement.tx_id_property is not None
-            ):
-                attributes["entity_type"] = self.complement.tx_id_property.entity_type
-
+            self._format_transmitter_ids(value, attributes)
             value = self.add_data({"Transmitter ID": attributes})
 
         if not isinstance(value, (ReferencedData, IntegerData, type(None))):
@@ -712,6 +723,10 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             self.edit_em_metadata({"Tx ID property": getattr(value, "uid", None)})
         else:
             self.edit_em_metadata({"Tx ID tx property": getattr(value, "uid", None)})
+
+    def _format_transmitter_ids(self, _, attributes):
+        if self.complement is not None and self.complement.tx_id_property is not None:
+            attributes["entity_type"] = self.complement.tx_id_property.entity_type
 
 
 class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
@@ -804,57 +819,21 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
         """Choice of survey creation types."""
         return self.__INPUT_TYPE
 
-    @property
-    def tx_id_property(self) -> ReferencedData | IntegerData | None:
-        """
-        Data link between the receiver and transmitter object.
-        """
-        if self._tx_id_property is None and self.metadata is not None:
-            self._tx_id_property = self._fetch_transmitter_id()
-
-        return self._tx_id_property
-
-    @tx_id_property.setter
-    def tx_id_property(self, value: uuid.UUID | ReferencedData | np.ndarray | None):
-        if isinstance(value, uuid.UUID):
-            value = self.get_data(value)[0]
-
-        if isinstance(value, np.ndarray):
-            attributes = {
-                "values": value.astype(np.int32),
-            }
-            if (
-                self.complement is not None
-                and self.complement.tx_id_property is not None
-            ):
-                attributes["entity_type"] = self.complement.tx_id_property.entity_type
-            else:
-                value_map = {
-                    ind: f"Loop {ind}" for ind in np.unique(value.astype(np.int32))
-                }
-                value_map[0] = "Unknown"
-                attributes.update(
-                    {
-                        "primitive_type": "REFERENCED",
-                        "value_map": value_map,
-                        "association": "VERTEX",
-                    }
-                )
-
-            value = self.add_data({"Transmitter ID": attributes})
-
-        if not isinstance(value, (ReferencedData, IntegerData, type(None))):
-            raise TypeError(
-                "Input value for 'tx_id_property' should be of type uuid.UUID, "
-                "ReferencedData, np.ndarray or None.)"
-            )
-
-        self._tx_id_property = value
-
-        if self.type == "Receivers":
-            self.edit_em_metadata({"Tx ID property": getattr(value, "uid", None)})
+    def _format_transmitter_ids(self, values, attributes):
+        if self.complement is not None and self.complement.tx_id_property is not None:
+            attributes["entity_type"] = self.complement.tx_id_property.entity_type
         else:
-            self.edit_em_metadata({"Tx ID tx property": getattr(value, "uid", None)})
+            value_map = {
+                ind: f"Loop {ind}" for ind in np.unique(values.astype(np.int32))
+            }
+            value_map[0] = "Unknown"
+            attributes.update(
+                {
+                    "primitive_type": "REFERENCED",
+                    "value_map": value_map,
+                    "association": "VERTEX",
+                }
+            )
 
 
 class AirborneEMSurvey(BaseEMSurvey, Curve, ABC):

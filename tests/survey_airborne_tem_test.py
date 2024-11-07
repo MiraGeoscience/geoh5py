@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 
 from geoh5py.groups import PropertyGroup
-from geoh5py.objects import AirborneTEMReceivers, AirborneTEMTransmitters
+from geoh5py.objects import AirborneTEMReceivers, AirborneTEMTransmitters, Points
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -196,7 +196,8 @@ def test_survey_airborne_tem_data(tmp_path):
 
     receivers, transmitters = generate_airborne_tem_survey(workspace, name)
     receivers.transmitters = transmitters
-
+    points = Points.create(workspace, name="Points", vertices=receivers.vertices)
+    extras = points.add_data({"extra": {"values": np.random.randn(points.n_vertices)}})
     # Add channels
     with pytest.raises(
         TypeError, match=f"Values provided as 'channels' must be a list of {float}"
@@ -220,6 +221,9 @@ def test_survey_airborne_tem_data(tmp_path):
 
     with pytest.raises(ValueError, match="The number of channel values provided"):
         receivers.add_components_data({"time_data": data[1:]})
+
+    with pytest.raises(ValueError, match="The list of values provided"):
+        receivers.add_components_data({"time_data": data[1:] + [extras]})
 
     prop_group = receivers.add_components_data({"time_data": data})[0]
 
