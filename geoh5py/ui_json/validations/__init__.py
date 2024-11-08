@@ -15,25 +15,24 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
-# flake8: noqa
+from collections.abc import Callable
 
-__version__ = "0.11.0-alpha.1"
-
-import inspect
-
-from geoh5py.workspace import Workspace
-
-from . import groups, objects
-from .groups import CustomGroup
-
-
-def get_type_uid_classes():
-    members = []
-    for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
-        if inspect.isclass(member) and hasattr(member, "default_type_uid"):
-            members.append(member)
-
-    return members
+from .uijson import (
+    ErrorPool,
+    UIJsonError,
+    dependency_type_validation,
+    mesh_type_validation,
+    parent_validation,
+)
 
 
-TYPE_UID_TO_CLASS = {k.default_type_uid(): k for k in get_type_uid_classes()}
+VALIDATIONS_MAP = {
+    "dependency": dependency_type_validation,
+    "mesh_type": mesh_type_validation,
+    "parent": parent_validation,
+}
+
+
+def get_validations(form_keys: list[str]) -> list[Callable]:
+    """Returns a list of callable validations based on identifying form keys."""
+    return [VALIDATIONS_MAP[k] for k in form_keys if k in VALIDATIONS_MAP]
