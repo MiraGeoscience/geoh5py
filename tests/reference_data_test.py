@@ -23,7 +23,7 @@ import string
 import numpy as np
 import pytest
 
-from geoh5py.data import GeometricDataConstants, ReferencedData, ReferenceValueMap
+from geoh5py.data import GeometricDataConstants, ReferenceValueMap
 from geoh5py.data.data_type import ReferencedValueMapType
 from geoh5py.objects import Points
 from geoh5py.shared.utils import compare_entities

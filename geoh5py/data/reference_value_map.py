@@ -96,6 +96,18 @@ class ReferenceValueMap(ABC):
         """
         return self._map
 
+    def map_values(self, values: np.ndarray) -> np.ndarray:
+        """
+        Map the values to the reference values.
+
+        :param values: The values to map.
+
+        :return: The mapped values.
+        """
+        mapper = np.sort(self.map, order="Key")
+        indices = np.searchsorted(mapper["Key"], values)
+        return mapper["Value"][indices]
+
 
 BOOLEAN_VALUE_MAP = np.array(
     [(0, b"False"), (1, b"True")],

@@ -99,28 +99,15 @@ class ReferencedData(IntegerData):
         if self.on_file:
             self.workspace.update_attribute(self, "entity_type")
 
-    def map_values(self, value: np.ndarray) -> np.ndarray:
-        """
-        Map the values to the reference data.
-
-        :param value: The values to map
-
-        :return: The mapped values
-        """
-        if self.value_map is None:
-            raise ValueError("Entity type must have a value map.")
-
-        mapper = np.sort(self.value_map.map, order="Key")
-        indices = np.searchsorted(mapper["Key"], value)
-
-        return mapper["Value"][indices]
-
     @property
     def mapped_values(self) -> np.ndarray:
         """
         The values mapped from the reference data.
         """
-        return self.map_values(self.values)
+        if self.value_map is None:
+            raise ValueError("Entity type must have a value map.")
+
+        return self.value_map.map_values(self.values)
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
