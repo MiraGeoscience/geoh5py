@@ -326,3 +326,17 @@ class DataForm(BaseForm):
         ):
             return self.property
         return self.value
+
+
+class GroupAndData(BaseModel):
+    """
+    Group and data form.
+
+    :param groupValue: The group value.
+    :param value: The data value.
+    """
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    groupValue: Group
+    value: list[str]

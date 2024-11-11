@@ -28,6 +28,7 @@ from geoh5py import Workspace
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
 from geoh5py.shared.validators import AssociationValidator
+from geoh5py.ui_json.forms import GroupAndData
 
 from ..shared.utils import (
     as_str_if_uuid,
@@ -522,7 +523,13 @@ class InputFile:
 
         for key, value in var.items():
             if isinstance(value, dict):
-                var[key] = self.promote(value)
+                if "groupValue" in value and "value" in value:
+                    var[key] = GroupAndData(
+                        groupValue=self._uid_promotion(key, value["groupValue"]),
+                        value=value["value"],
+                    )
+                else:
+                    var[key] = self.promote(value)
             else:
                 if isinstance(value, list):
                     var[key] = [self._uid_promotion(key, val) for val in value]
