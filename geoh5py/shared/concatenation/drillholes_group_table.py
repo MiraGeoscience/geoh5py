@@ -63,7 +63,7 @@ class DrillholesGroupTable(ABC):
 
         :param names: The names to extract.
         :param drillhole: If True, the drillholes are added to the table.
-        :param mapped: Map the referenced data back.
+        :param mapped: Map the referenced data back to the its descriptions instead of indexes.
 
         :return: an empty structured array.
         """
