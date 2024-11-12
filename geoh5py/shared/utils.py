@@ -883,3 +883,17 @@ def remove_duplicates_in_list(input_list: list) -> list:
     :return: The sorted list
     """
     return sorted(set(input_list), key=input_list.index)
+
+
+def decode_byte_array(values: np.ndarray, data_type: type) -> np.array:
+    """
+    Decode a byte array to an array of a given data type.
+
+    :param values: The byte array to decode.
+    :param data_type: The data type to convert the values to.
+
+    :return: The decoded array.
+    """
+    return (
+        np.char.decode(values, "utf-8") if values.dtype.kind == "S" else values
+    ).astype(data_type)
