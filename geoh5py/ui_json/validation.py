@@ -150,7 +150,7 @@ class InputValidation:
                 }
             elif "groupValue" in item and "value" in item:
                 validations[key] = {
-                    "types": [list],
+                    "types": [dict],
                 }
             elif "choiceList" in item:
                 validations[key] = {
@@ -264,7 +264,6 @@ class InputValidation:
                 or name in self.ignore_list
             ):
                 continue
-            print(self.validators[val], val, name, value, validations[val])
             self.validators[val](name, value, validations[val])
 
     def validate_data(self, data: dict[str, Any]) -> None:

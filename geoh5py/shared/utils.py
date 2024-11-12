@@ -571,6 +571,7 @@ def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = No
 
     for fun in string_funcs:
         val = fun(val, *args)
+
     return val
 
 

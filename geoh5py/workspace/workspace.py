@@ -753,7 +753,6 @@ class Workspace(AbstractContextManager):
             children_list = self._io_call(
                 H5Reader.fetch_children, entity.uid, entity_type, mode="r"
             )
-
             if isinstance(entity, Concatenator):
                 if any(entity.children):
                     return entity.children

@@ -28,7 +28,6 @@ from geoh5py import Workspace
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidationError
 from geoh5py.shared.validators import AssociationValidator
-from geoh5py.ui_json.forms import GroupAndData
 
 from ..shared.utils import (
     as_str_if_uuid,
@@ -276,7 +275,10 @@ class InputFile:
                 if (value is None) and (not self.ui_json[key].get("enabled", False)):
                     continue
 
-                self.ui_json[key][member] = value
+                if isinstance(value, dict) and "value" in value:
+                    self.ui_json[key][member] = value["value"]
+                else:
+                    self.ui_json[key][member] = value
             else:
                 self.ui_json[key] = value
 
@@ -416,7 +418,6 @@ class InputFile:
 
         if self.data is not None:
             self.update_ui_values(self.data)
-
         with open(self.path_name, "w", encoding="utf-8") as file:
             json.dump(self.stringify(self.demote(self.ui_json)), file, indent=4)
 
@@ -482,7 +483,6 @@ class InputFile:
         """
         if not isinstance(ui_json, dict):
             raise ValueError("Input value for 'numify' must be a ui_json dictionary.")
-
         for key, value in ui_json.items():
             if isinstance(value, dict):
                 try:
@@ -492,6 +492,7 @@ class InputFile:
                 value = cls.numify(value)
 
             mappers = [str2none, str2inf, str2uuid, path2workspace]
+
             ui_json[key] = dict_mapper(value, mappers)
 
         return ui_json
@@ -520,14 +521,13 @@ class InputFile:
         """Convert uuids to entities from the workspace."""
         if self._geoh5 is None:
             return var
-
         for key, value in var.items():
             if isinstance(value, dict):
                 if "groupValue" in value and "value" in value:
-                    var[key] = GroupAndData(
-                        groupValue=self._uid_promotion(key, value["groupValue"]),
-                        value=value["value"],
-                    )
+                    var[key] = {
+                        "groupValue": self._uid_promotion(key, value["groupValue"]),
+                        "value": value["value"],
+                    }
                 else:
                     var[key] = self.promote(value)
             else:

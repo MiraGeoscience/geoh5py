@@ -39,7 +39,11 @@ def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
                 field = "value" if truth(ui_json, name, "isValue") else "property"
                 if not truth(ui_json, name, "enabled"):
                     data[name] = None
-                elif "groupValue" in value and "value" in value:
+                elif (
+                    "groupValue" in value
+                    and "value" in value
+                    and value["groupValue"] is not None
+                ):
                     data[name] = {
                         "groupValue": value["groupValue"],
                         "value": value["value"],
@@ -48,7 +52,6 @@ def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
                     data[name] = value[field]
         else:
             data[name] = value
-
     return data
 
 

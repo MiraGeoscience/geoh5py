@@ -27,7 +27,7 @@ import numpy as np
 import pytest
 
 from geoh5py.groups import ContainerGroup, DrillholeGroup, PropertyGroup
-from geoh5py.objects import Points
+from geoh5py.objects import Drillhole, Points
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
@@ -46,8 +46,11 @@ from geoh5py.ui_json.utils import collect
 from geoh5py.workspace import Workspace
 
 
-def get_workspace(directory: str | Path):
-    file = Path(directory).parent / "testPoints.geoh5"
+def get_workspace(directory: str | Path, parent: bool = True):
+    if parent:
+        file = Path(directory).parent / "testPoints.geoh5"
+    else:
+        file = Path(directory) / "testPoints.geoh5"
 
     if file.exists():
         workspace = Workspace(file)
@@ -56,7 +59,7 @@ def get_workspace(directory: str | Path):
 
     if len(workspace.objects) == 0:
         group = ContainerGroup.create(workspace)
-        DrillholeGroup.create(workspace, parent=group)
+        DrillholeGroup.create(workspace, name="drh_group", parent=group)
         points = Points.create(
             workspace, vertices=np.random.randn(12, 3), parent=group, name="Points_A"
         )
@@ -76,6 +79,46 @@ def get_workspace(directory: str | Path):
         ]
 
         points_b.add_data_to_group(no_property_child, "My group2")
+
+    return workspace
+
+
+def get_workspace_drillholes(directory: str | Path):
+    workspace = get_workspace(directory, parent=False)
+
+    for i in range(4):
+        well = Drillhole.create(
+            workspace,
+            name=f"drillhole_test_{i}",
+            default_collocation_distance=1e-5,
+            parent=workspace.get_entity("drh_group")[0],
+            collar=[10.0 * i, 10.0 * i, 10],
+        )
+        well.surveys = np.c_[
+            np.linspace(0, 10, 4),
+            np.ones(4) * 45.0,
+            np.linspace(-89, -75, 4),
+        ]
+
+        # Create random from-to
+        depth_ = np.sort(np.random.uniform(low=0.05, high=10, size=(40,))).reshape(
+            (-1, 2)
+        )
+
+        # Add from-to data
+        well.add_data(
+            {
+                "interval_values": {
+                    "values": np.random.randn(depth_.shape[0]),
+                    "from-to": depth_.tolist(),
+                },
+                "interval_values_2": {
+                    "values": np.random.randn(depth_.shape[0]),
+                    "from-to": depth_.tolist(),
+                },
+            },
+            property_group="interval",
+        )
 
     return workspace
 
@@ -400,20 +443,37 @@ def test_object_promotion(tmp_path: Path):
 
 
 def test_group_promotion(tmp_path):
-    workspace = get_workspace(tmp_path)
+    workspace = get_workspace_drillholes(tmp_path)
     group = workspace.get_entity("Container Group")[0]
-    dh_group = workspace.get_entity("Drillhole Group")[0]
+    dh_group = workspace.get_entity("drh_group")[0]
     ui_json = deepcopy(default_ui_json)
     ui_json["object"] = templates.group_parameter()
     ui_json["geoh5"] = workspace
-    ui_json["object"]["value"] = str(group.uid)
-    ui_json["object"]["groupType"] = [group.entity_type.uid]
+    ui_json["object"]["value"] = ["interval_values", "interval_values_2"]
+    ui_json["object"]["groupValue"] = dh_group.uid
+    ui_json["object"]["groupType"] = [dh_group.entity_type.uid]
 
     ui_json["dh"] = templates.group_parameter(optional="enabled")
     ui_json["dh"]["value"] = str(dh_group.uid)
     ui_json["dh"]["groupType"] = [dh_group.entity_type.uid]
 
     in_file = InputFile(ui_json=ui_json)
+
+    assert in_file.ui_json["object"]["value"] == [
+        "interval_values",
+        "interval_values_2",
+    ]
+    data = in_file.data
+    assert in_file.ui_json["object"]["groupValue"] == dh_group.uid
+    assert in_file.ui_json["object"]["value"] == [
+        "interval_values",
+        "interval_values_2",
+    ]
+    assert data["object"] == {
+        "groupValue": dh_group,
+        "value": ["interval_values", "interval_values_2"],
+    }
+
     in_file.write_ui_json("test.ui.json", path=tmp_path)
 
     new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
