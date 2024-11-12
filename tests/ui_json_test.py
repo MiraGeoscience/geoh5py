@@ -46,11 +46,8 @@ from geoh5py.ui_json.utils import collect
 from geoh5py.workspace import Workspace
 
 
-def get_workspace(directory: str | Path, parent: bool = True):
-    if parent:
-        file = Path(directory).parent / "testPoints.geoh5"
-    else:
-        file = Path(directory) / "testPoints.geoh5"
+def get_workspace(directory: str | Path):
+    file = Path(directory).parent / "testPoints.geoh5"
 
     if file.exists():
         workspace = Workspace(file)
@@ -84,7 +81,7 @@ def get_workspace(directory: str | Path, parent: bool = True):
 
 
 def get_workspace_drillholes(directory: str | Path):
-    workspace = get_workspace(directory, parent=False)
+    workspace = get_workspace(directory)
 
     for i in range(4):
         well = Drillhole.create(
@@ -119,6 +116,8 @@ def get_workspace_drillholes(directory: str | Path):
             },
             property_group="interval",
         )
+
+    workspace.close()
 
     return workspace
 
@@ -443,37 +442,20 @@ def test_object_promotion(tmp_path: Path):
 
 
 def test_group_promotion(tmp_path):
-    workspace = get_workspace_drillholes(tmp_path)
+    workspace = get_workspace(tmp_path)
     group = workspace.get_entity("Container Group")[0]
     dh_group = workspace.get_entity("drh_group")[0]
     ui_json = deepcopy(default_ui_json)
     ui_json["object"] = templates.group_parameter()
     ui_json["geoh5"] = workspace
-    ui_json["object"]["value"] = ["interval_values", "interval_values_2"]
-    ui_json["object"]["groupValue"] = dh_group.uid
-    ui_json["object"]["groupType"] = [dh_group.entity_type.uid]
+    ui_json["object"]["value"] = str(group.uid)
+    ui_json["object"]["groupType"] = [group.entity_type.uid]
 
     ui_json["dh"] = templates.group_parameter(optional="enabled")
     ui_json["dh"]["value"] = str(dh_group.uid)
     ui_json["dh"]["groupType"] = [dh_group.entity_type.uid]
 
     in_file = InputFile(ui_json=ui_json)
-
-    assert in_file.ui_json["object"]["value"] == [
-        "interval_values",
-        "interval_values_2",
-    ]
-    data = in_file.data
-    assert in_file.ui_json["object"]["groupValue"] == dh_group.uid
-    assert in_file.ui_json["object"]["value"] == [
-        "interval_values",
-        "interval_values_2",
-    ]
-    assert data["object"] == {
-        "groupValue": dh_group,
-        "value": ["interval_values", "interval_values_2"],
-    }
-
     in_file.write_ui_json("test.ui.json", path=tmp_path)
 
     new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
@@ -483,6 +465,44 @@ def test_group_promotion(tmp_path):
 
     assert (
         new_in_file.data["dh"].uid == dh_group.uid
+    ), "Promotion of entity from uuid string failed."
+
+
+def test_drillhole_group_promotion(tmp_path):
+    workspace = get_workspace_drillholes(tmp_path)
+
+    with workspace.open("r+"):
+        dh_group = workspace.get_entity("drh_group")[0]
+        ui_json = deepcopy(default_ui_json)
+        ui_json["object"] = templates.group_parameter()
+        ui_json["geoh5"] = workspace
+        ui_json["object"]["value"] = ["interval_values", "interval_values_2"]
+        ui_json["object"]["groupValue"] = dh_group.uid
+        ui_json["object"]["groupType"] = [dh_group.entity_type.uid]
+        ui_json["multiSelect"] = True
+
+        in_file = InputFile(ui_json=ui_json)
+
+        assert in_file.ui_json["object"]["value"] == [
+            "interval_values",
+            "interval_values_2",
+        ]
+        data = in_file.data
+        assert in_file.ui_json["object"]["groupValue"] == dh_group.uid
+        assert in_file.ui_json["object"]["value"] == [
+            "interval_values",
+            "interval_values_2",
+        ]
+        assert data["object"] == {
+            "groupValue": dh_group,
+            "value": ["interval_values", "interval_values_2"],
+        }
+
+        in_file.write_ui_json("test.ui.json", path=tmp_path)
+
+    new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
+    assert (
+        new_in_file.data["object"]["groupValue"].uid == dh_group.uid
     ), "Promotion of entity from uuid string failed."
 
 
