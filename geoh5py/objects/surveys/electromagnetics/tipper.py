@@ -22,6 +22,7 @@ import uuid
 
 import numpy as np
 
+from geoh5py.data import IntegerData, ReferencedData
 from geoh5py.objects.curve import Curve
 from geoh5py.objects.points import Points
 
@@ -84,6 +85,11 @@ class TipperSurvey(FEMSurvey):
 
         if base.tx_id_property is not None:
             self.edit_em_metadata({"Tx ID tx property": base.tx_id_property.uid})
+
+            if isinstance(
+                self.tx_id_property, ReferencedData | IntegerData
+            ) and isinstance(base.tx_id_property, ReferencedData | IntegerData):
+                self.tx_id_property.entity_type = base.tx_id_property.entity_type
 
         self._base_stations = base
         self.edit_em_metadata({"Base stations": base.uid})
