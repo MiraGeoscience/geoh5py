@@ -45,6 +45,8 @@ from geoh5py.ui_json.input_file import InputFile
 from geoh5py.ui_json.utils import collect
 from geoh5py.workspace import Workspace
 
+from .drillhole_v4_0_test import create_drillholes
+
 
 def get_workspace(directory: str | Path):
     file = Path(directory).parent / "testPoints.geoh5"
@@ -76,48 +78,6 @@ def get_workspace(directory: str | Path):
         ]
 
         points_b.add_data_to_group(no_property_child, "My group2")
-
-    return workspace
-
-
-def get_workspace_drillholes(directory: str | Path):
-    workspace = get_workspace(directory)
-
-    for i in range(4):
-        well = Drillhole.create(
-            workspace,
-            name=f"drillhole_test_{i}",
-            default_collocation_distance=1e-5,
-            parent=workspace.get_entity("drh_group")[0],
-            collar=[10.0 * i, 10.0 * i, 10],
-        )
-        well.surveys = np.c_[
-            np.linspace(0, 10, 4),
-            np.ones(4) * 45.0,
-            np.linspace(-89, -75, 4),
-        ]
-
-        # Create random from-to
-        depth_ = np.sort(np.random.uniform(low=0.05, high=10, size=(40,))).reshape(
-            (-1, 2)
-        )
-
-        # Add from-to data
-        well.add_data(
-            {
-                "interval_values": {
-                    "values": np.random.randn(depth_.shape[0]),
-                    "from-to": depth_.tolist(),
-                },
-                "interval_values_2": {
-                    "values": np.random.randn(depth_.shape[0]),
-                    "from-to": depth_.tolist(),
-                },
-            },
-            property_group="interval",
-        )
-
-    workspace.close()
 
     return workspace
 
@@ -165,6 +125,7 @@ def test_input_file_name_path(tmp_path: Path):
     test = InputFile()
     test.name = "test.ui.json"
     assert test.name == "test.ui.json"  # usual behaviour
+
     test._name = None
     ui_json = deepcopy(default_ui_json)
     ui_json["title"] = "Jarrod"
@@ -469,41 +430,42 @@ def test_group_promotion(tmp_path):
 
 
 def test_drillhole_group_promotion(tmp_path):
-    workspace = get_workspace_drillholes(tmp_path)
+    _, workspace = create_drillholes(tmp_path)
 
     with workspace.open("r+"):
-        dh_group = workspace.get_entity("drh_group")[0]
+        dh_group = workspace.get_entity("DH_group")[0]
         ui_json = deepcopy(default_ui_json)
         ui_json["object"] = templates.group_parameter()
         ui_json["geoh5"] = workspace
-        ui_json["object"]["value"] = ["interval_values", "interval_values_2"]
+        ui_json["object"]["value"] = ["interval_values_a", "text Data"]
         ui_json["object"]["groupValue"] = dh_group.uid
         ui_json["object"]["groupType"] = [dh_group.entity_type.uid]
         ui_json["multiSelect"] = True
 
         in_file = InputFile(ui_json=ui_json)
 
-        assert in_file.ui_json["object"]["value"] == [
-            "interval_values",
-            "interval_values_2",
-        ]
+        assert in_file.ui_json["object"]["value"] == ["interval_values_a", "text Data"]
         data = in_file.data
         assert in_file.ui_json["object"]["groupValue"] == dh_group.uid
-        assert in_file.ui_json["object"]["value"] == [
-            "interval_values",
-            "interval_values_2",
-        ]
+        assert in_file.ui_json["object"]["value"] == ["interval_values_a", "text Data"]
         assert data["object"] == {
-            "groupValue": dh_group,
-            "value": ["interval_values", "interval_values_2"],
+            "group_value": dh_group,
+            "value": ["interval_values_a", "text Data"],
         }
 
         in_file.write_ui_json("test.ui.json", path=tmp_path)
 
     new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
     assert (
-        new_in_file.data["object"]["groupValue"].uid == dh_group.uid
+        new_in_file.data["object"]["group_value"].uid == dh_group.uid
     ), "Promotion of entity from uuid string failed."
+
+    # test_errors specific to drillholes group Values
+    with workspace.open("r"):
+        in_file.update_ui_values(in_file.ui_json)
+
+        with pytest.raises(TypeError, match="Input value for 'group_value'"):
+            in_file._update_group_value_ui("object", {"bi": "don"})
 
 
 def test_invalid_uuid_string(tmp_path: Path):

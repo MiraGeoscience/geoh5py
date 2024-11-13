@@ -276,7 +276,7 @@ class InputFile:
                     continue
 
                 if isinstance(value, dict) and "value" in value:
-                    self.ui_json[key][member] = value["value"]
+                    self._update_group_value_ui(key, value)
                 else:
                     self.ui_json[key][member] = value
             else:
@@ -430,7 +430,9 @@ class InputFile:
         :param key: Parameter name to update.
         :param value: Value to update with.
         """
-        assert self.data is not None
+        if self.data is None:
+            raise ValueError("Input data must be set before setting values. ")
+
         if self.validate and self.validations is not None and key in self.validations:
             if "association" in self.validations[key]:
                 validations = deepcopy(self.validations[key])
@@ -525,7 +527,7 @@ class InputFile:
             if isinstance(value, dict):
                 if "groupValue" in value and "value" in value:
                     var[key] = {
-                        "groupValue": self._uid_promotion(key, value["groupValue"]),
+                        "group_value": self._uid_promotion(key, value["groupValue"]),
                         "value": value["value"],
                     }
                 else:
@@ -567,3 +569,32 @@ class InputFile:
             DeprecationWarning,
         )
         self.geoh5 = value
+
+    def _update_group_value_ui(self, key: str, value: dict):
+        """
+        Update the ui.json values and enabled status from input data.
+
+        :param key: Key to update in the ui_json.
+        :param value: Key and value pairs expected by the ui_json.
+        """
+        if self.ui_json is None:
+            return
+
+        group_value: Any = None
+        if "group_value" in value:
+            group_value = value["group_value"]
+        elif "groupValue" in value:
+            group_value = value["groupValue"]
+
+        if hasattr(group_value, "uid"):
+            group_value = group_value.uid
+
+        group_value = str2uuid(group_value)
+
+        if not isinstance(group_value, UUID):
+            raise TypeError(
+                f"Input value for 'group_value' must be of type UUID; {type(group_value)} provided."
+            )
+
+        self.ui_json[key]["groupValue"] = group_value
+        self.ui_json[key]["value"] = value["value"]
