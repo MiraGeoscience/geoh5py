@@ -462,8 +462,6 @@ def test_drillhole_group_promotion(tmp_path):
 
     # test_errors specific to drillholes group Values
     with workspace.open("r"):
-        in_file.update_ui_values(in_file.ui_json)
-
         with pytest.raises(TypeError, match="Input value for 'group_value'"):
             in_file._update_group_value_ui("object", {"bi": "don"})
 
