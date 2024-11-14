@@ -580,11 +580,7 @@ class InputFile:
         if self.ui_json is None:
             return
 
-        group_value: Any = None
-        if "group_value" in value:
-            group_value = value["group_value"]
-        elif "groupValue" in value:
-            group_value = value["groupValue"]
+        group_value: Any = value.get("group_value", value.get("GroupValue", None))
 
         if hasattr(group_value, "uid"):
             group_value = group_value.uid
