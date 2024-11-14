@@ -150,7 +150,7 @@ class InputValidation:
                 }
             elif "groupValue" in item and "value" in item:
                 validations[key] = {
-                    "types": [list],
+                    "types": [dict],
                 }
             elif "choiceList" in item:
                 validations[key] = {

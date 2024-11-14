@@ -291,11 +291,14 @@ def test_flatten_group_value():
     )
 
     validators = InputValidation._validations_from_uijson(ui_json)
-    assert validators["test"]["types"] == [list]
+    assert validators["test"]["types"] == [dict]
 
     flat = flatten(ui_json)
 
-    assert flat["test"] == ["test1"]
+    assert flat["test"] == {
+        "groupValue": ui_json["test"]["groupValue"],
+        "value": ["test1"],
+    }
 
     ui_json = deepcopy(default_ui_json)
     ui_json["test"] = templates.drillhole_group_data(
@@ -304,7 +307,7 @@ def test_flatten_group_value():
         optional="enabled",
     )
     validators = InputValidation._validations_from_uijson(ui_json)
-    assert validators["test"]["types"] == [list]
+    assert validators["test"]["types"] == [dict]
 
     flat = flatten(ui_json)
 
