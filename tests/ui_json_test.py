@@ -440,7 +440,7 @@ def test_drillhole_group_promotion(tmp_path):
         ui_json["object"]["value"] = ["interval_values_a", "text Data"]
         ui_json["object"]["groupValue"] = dh_group.uid
         ui_json["object"]["groupType"] = [dh_group.entity_type.uid]
-        ui_json["multiSelect"] = True
+        ui_json["object"]["multiSelect"] = True
 
         in_file = InputFile(ui_json=ui_json)
 
