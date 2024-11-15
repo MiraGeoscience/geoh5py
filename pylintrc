@@ -155,8 +155,8 @@ disable=raw-checker-failed,
         missing-module-docstring,
         missing-function-docstring,
         missing-class-docstring,
-        fixme,
-        duplicate-code
+        fixme
+
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -342,7 +342,7 @@ exclude-too-few-public-methods=
 ignored-parents=
 
 # Maximum number of arguments for function / method.
-max-args=6
+max-args=9  # as long as not hitting too-many-positional-arguments
 
 # Maximum number of attributes for a class (see R0902).
 max-attributes=16
@@ -494,7 +494,7 @@ ignore-imports=yes
 ignore-signatures=yes
 
 # Minimum lines number of a similarity.
-min-similarity-lines=4
+min-similarity-lines=7
 
 
 [SPELLING]

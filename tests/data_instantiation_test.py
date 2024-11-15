@@ -100,6 +100,31 @@ def _can_find(workspace, created_data):
     assert workspace.find_data(created_data.uid) is created_data
 
 
+def test_scale_continuity(tmp_path):
+    h5file_path = tmp_path / r"testPoints.geoh5"
+    with Workspace.create(h5file_path) as workspace:
+        points = Points.create(
+            workspace,
+            name="point",
+            vertices=np.vstack((np.arange(20), np.arange(20), np.zeros(20))).T,
+            allow_move=False,
+        )
+        data = points.add_data(
+            {"DataValues": {"association": "VERTEX", "values": np.random.randn(20)}}
+        )
+        data.entity_type.scale = "Log"
+        data.entity_type.precision = 4.0
+        data.entity_type.scientific_notation = True
+
+    with Workspace(h5file_path) as workspace:
+        points = workspace.get_entity("point")[0]
+        data = points.get_data("DataValues")[0]
+
+        assert data.entity_type.scale == "Log"
+        assert data.entity_type.precision == 4
+        assert data.entity_type.scientific_notation is True
+
+
 def test_copy_from_extent(tmp_path):
     # Generate a random cloud of points
     h5file_path = tmp_path / r"testPoints.geoh5"
@@ -162,3 +187,15 @@ def test_data_type_attributes():
 
     with pytest.raises(ValueError, match=r"Attribute 'primitive_type' should be one"):
         data_type.validate_primitive_type(1)
+
+    with pytest.raises(TypeError, match=r"Attribute 'duplicate_on_copy'"):
+        data_type.duplicate_on_copy = "bidon"
+
+    with pytest.raises(TypeError, match=r"Attribute 'precision'"):
+        data_type.precision = "bidon"
+
+    with pytest.raises(ValueError, match=r"Attribute 'scale'"):
+        data_type.scale = "bidon"
+
+    with pytest.raises(TypeError, match=r"Attribute 'scientific_notation'"):
+        data_type.scientific_notation = "bidon"

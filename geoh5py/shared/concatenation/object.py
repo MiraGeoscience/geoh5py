@@ -35,8 +35,6 @@ if TYPE_CHECKING:
 
 
 class ConcatenatedObject(Concatenated, ObjectBase):
-    _parent: Concatenator
-
     def __init__(self, **kwargs):
         if kwargs.get("parent") is None:
             raise UserWarning(
@@ -44,6 +42,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
                 "of type Concatenator."
             )
 
+        self._parent: Concatenator
         self._property_groups: list | None = None
 
         super().__init__(**kwargs)
@@ -64,11 +63,6 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
         :return: A new :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        if self._property_groups is not None and name in [
-            pg.name for pg in self._property_groups
-        ]:
-            raise KeyError(f"A Property Group with name '{name}' already exists.")
-
         prop_group = ConcatenatedPropertyGroup(
             self, name=name, property_group_type=property_group_type, **kwargs
         )
@@ -97,8 +91,8 @@ class ConcatenatedObject(Concatenated, ObjectBase):
         """
         Get a child :obj:`~geoh5py.data.data.Data` by name.
 
-        :param name: Name of the target child data
-        :param entity_type: Sub-select entities based on type.
+        :param name: Name of the target child data.
+
         :return: A list of children Data objects
         """
         if not any(child for child in self.children if isinstance(child, Data)):

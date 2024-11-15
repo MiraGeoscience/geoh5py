@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "geoh5py"
 
-version = "0.10.0-alpha.1"
+version = "0.11.0-alpha.1"
 
 license = "LGPL-3.0-or-later"
 description = "Python API for geoh5, an open file format for geoscientific data"
@@ -50,9 +50,12 @@ Pillow = "~10.3.0"
 [tool.poetry.group.dev.dependencies]
 Pygments = "*"
 lockfile = "^0.12.2"
-pylint = "*"
+pylint = ">=3.3.1"
 pytest = "*"
 pytest-cov = "*"
+pyyaml = '*'
+jinja2 = '*'
+packaging = '*'
 scipy = "~1.14.0"
 sphinx = "^3.0"
 sphinx-autodoc-typehints = "^1.10"
@@ -60,7 +63,6 @@ sphinx-rtd-theme = "^0.4.3"
 tomli = "*"
 
 [tool.poetry.extras]
-
 
 [tool.ruff]
 target-version = "py310"
@@ -76,7 +78,7 @@ ignore = [
     "UP038", # TODO
     "RUF001", # TODO
     "RUF003", # TODO
-    "RUF005", # TODO
+    "RUF005",  # collection-literal-concatenation - wrong suggestion with numpy arrays
     "RUF015", # TODO
     "B008", # TODO
     "B018", # TODO

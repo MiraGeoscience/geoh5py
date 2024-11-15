@@ -99,6 +99,16 @@ class ReferencedData(IntegerData):
         if self.on_file:
             self.workspace.update_attribute(self, "entity_type")
 
+    @property
+    def mapped_values(self) -> np.ndarray:
+        """
+        The values mapped from the reference data.
+        """
+        if self.value_map is None:
+            raise ValueError("Entity type must have a value map.")
+
+        return self.value_map.map_values(self.values)
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.REFERENCED

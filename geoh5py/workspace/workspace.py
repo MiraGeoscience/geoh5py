@@ -20,7 +20,6 @@
 from __future__ import annotations
 
 import inspect
-import shutil
 import subprocess
 import tempfile
 import uuid
@@ -31,6 +30,7 @@ from gc import collect
 from getpass import getuser
 from io import BytesIO
 from pathlib import Path
+from shutil import copy, move
 from subprocess import CalledProcessError
 from typing import Any, ClassVar, cast
 from weakref import ReferenceType
@@ -103,6 +103,7 @@ class Workspace(AbstractContextManager):
     def __init__(
         self,
         h5file: str | Path | BytesIO | None = None,
+        *,
         contributors: tuple[str] = (getuser(),),
         distance_unit: str = "meter",
         ga_version: str = "1",
@@ -212,7 +213,7 @@ class Workspace(AbstractContextManager):
                     stdout=subprocess.DEVNULL,
                 )
                 Path(self._h5file).unlink()
-                shutil.move(temp_file, self._h5file)
+                move(temp_file, self._h5file, copy)
             except CalledProcessError:
                 pass
 
@@ -440,11 +441,12 @@ class Workspace(AbstractContextManager):
     def create_entity(
         self,
         entity_class,
+        *,
         compression: int = 5,
         entity: dict | None = None,
         entity_type: EntityType | dict | None = None,
         save_on_creation: bool = True,
-    ) -> Entity:
+    ):
         """
         Function to create and register a new entity and its entity_type.
 
@@ -465,19 +467,15 @@ class Workspace(AbstractContextManager):
         ):
             entity["parent"] = self.root
 
-        created_entity: Data | Group | ObjectBase
-
         if entity_class is None or issubclass(entity_class, Data):
-            created_entity = self.create_data(Data, entity, entity_type)
+            created_data = self.create_data(Data, entity, entity_type)
+            if save_on_creation and self.h5file is not None:
+                self.save_entity(created_data, compression=compression)
+            return created_data
 
-        else:
-            created_entity = self.create_object_or_group(
-                entity_class, entity, entity_type
-            )
-
+        created_entity = self.create_object_or_group(entity_class, entity, entity_type)
         if save_on_creation and self.h5file is not None:
             self.save_entity(created_entity, compression=compression)
-
         return created_entity
 
     def add_or_update_property_group(
@@ -716,7 +714,7 @@ class Workspace(AbstractContextManager):
         :return: Structured array.
         """
         if isinstance(entity, Concatenated):
-            return entity.concatenator.fetch_values(entity, key)
+            return entity.concatenator.fetch_values(entity, key)  # type: ignore
 
         if isinstance(entity, EntityType):
             entity_type = str_from_subtype(entity)
@@ -755,7 +753,6 @@ class Workspace(AbstractContextManager):
             children_list = self._io_call(
                 H5Reader.fetch_children, entity.uid, entity_type, mode="r"
             )
-
             if isinstance(entity, Concatenator):
                 if any(entity.children):
                     return entity.children
@@ -1197,9 +1194,10 @@ class Workspace(AbstractContextManager):
                 entity=entity_attrs,
                 entity_type=type_attrs,
             )
-        except TypeError:
+        except TypeError as error:
             warnings.warn(
                 f"Could not create an entity from the given attributes {type_attrs}. Skipping over."
+                f"Error: {error}"
             )
             return None
 
@@ -1333,7 +1331,7 @@ class Workspace(AbstractContextManager):
         elif self.h5file is None:
             raise ValueError("Input 'h5file' file must be specified.")
         else:
-            shutil.copy(self.h5file, filepath)
+            move(self.h5file, filepath, copy)
 
         self._h5file = filepath
 

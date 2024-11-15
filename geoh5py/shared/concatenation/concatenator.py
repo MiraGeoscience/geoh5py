@@ -34,7 +34,7 @@ from .concatenated import Concatenated
 from .data import ConcatenatedData
 from .drillholes_group_table import DrillholesGroupTable
 from .object import ConcatenatedObject
-from .property_group import ConcatenatedPropertyGroup
+from .property_group import ConcatenatedPropertyGroup, PropertyGroup
 
 
 PROPERTY_KWARGS = {
@@ -88,11 +88,16 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         return self._attributes_keys
 
-    def add_children(self, children: list[ConcatenatedObject] | list[Entity]) -> None:
+    def add_children(
+        self, children: Entity | PropertyGroup | list[Entity | PropertyGroup]
+    ) -> None:
         """
         :param children: Add a list of entities as
             :obj:`~geoh5py.shared.entity.Entity.children`
         """
+        if not isinstance(children, list):
+            children = [children]
+
         for child in children:
             if not (
                 isinstance(child, Concatenated)
@@ -107,8 +112,17 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                 )
                 continue
 
-            if child not in self._children:
-                self._children.append(child)
+            if child in self._children:
+                continue
+
+            self._children.append(child)
+
+            if (
+                not isinstance(child, PropertyGroup)
+                and hasattr(child, "parent")
+                and child.parent != self
+            ):
+                child.parent = self
 
     def add_save_concatenated(self, child) -> None:
         """
@@ -199,6 +213,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
     def copy(
         self,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
@@ -420,7 +435,6 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             uid = uuid.UUID(uid)
 
         uid = as_str_if_utf8_bytes(as_str_if_uuid(uid))
-
         if self.attributes_keys is not None and uid in self.attributes_keys:
             index = self.attributes_keys.index(uid)
         else:
@@ -516,7 +530,11 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                 data = [entity.parent.get_entity(uid)[0] for uid in entity.properties]
                 entity.parent.remove_children(data)
 
-            entity.parent.remove_property_group(entity)
+            if (
+                entity.parent.property_groups is not None
+                and entity in entity.parent.property_groups
+            ):
+                entity.parent.property_groups.remove(entity)
             self.update_array_attribute(parent, "property_groups")
 
         if (
@@ -549,7 +567,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                 **PROPERTY_KWARGS.get(field, {}),
             )
         else:  # For data values
-            self.workspace.update_attribute(self, "data", field)
+            self.workspace.update_attribute(self, "data", alias)
 
     def update_attributes(
         self, entity: ConcatenatedObject | ConcatenatedData, label: str
@@ -697,6 +715,8 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                 if (
                     property_group is not None
                     and property_group.name not in drillholes_tables
+                    and getattr(property_group, "property_group_type", None)
+                    in ["Depth table", "Interval table"]
                 ):
                     drillholes_tables[property_group.name] = DrillholesGroupTable(
                         self, property_group.name

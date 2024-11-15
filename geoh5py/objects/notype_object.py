@@ -40,6 +40,7 @@ class NoTypeObject(ObjectBase):
     def copy(
         self,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: ndarray | None = None,
@@ -68,16 +69,3 @@ class NoTypeObject(ObjectBase):
         )
 
         return new_entity
-
-    @property
-    def extent(self):
-        """
-        Geography bounding box of the object.
-        """
-        return None
-
-    def mask_by_extent(self, extent: ndarray, inverse: bool = False) -> None:
-        """
-        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
-        """
-        return None

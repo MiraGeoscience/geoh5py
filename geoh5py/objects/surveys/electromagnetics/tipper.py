@@ -82,10 +82,8 @@ class TipperSurvey(FEMSurvey):
                 f"The 'base_station' attribute cannot be set on class {TipperBaseStations}."
             )
 
-        if base.n_vertices not in [self.n_vertices, 1, None]:
-            raise AttributeError(
-                "The input 'base_stations' should have n_vertices equal to 1, n_receivers or None."
-            )
+        if base.tx_id_property is not None:
+            self.edit_em_metadata({"Tx ID tx property": base.tx_id_property.uid})
 
         self._base_stations = base
         self.edit_em_metadata({"Base stations": base.uid})
@@ -94,6 +92,7 @@ class TipperSurvey(FEMSurvey):
         self,
         extent: np.ndarray,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         inverse: bool = False,
@@ -167,6 +166,28 @@ class TipperSurvey(FEMSurvey):
         "Milliseconds (ms)", "Microseconds (us)" or "Nanoseconds (ns)"
         """
         return self.__UNITS
+
+    def _format_transmitter_ids(self, values, attributes):
+        """
+        Format transmitter ids.
+
+        :param values: Array of transmitter ids.
+        :param attributes: Attributes dictionary for the new Data.
+        """
+        if self.complement is not None and self.complement.tx_id_property is not None:
+            attributes["entity_type"] = self.complement.tx_id_property.entity_type
+        else:
+            value_map = {
+                ind: f"Base station {ind}" for ind in np.unique(values.astype(np.int32))
+            }
+            value_map[0] = "Unknown"
+            attributes.update(
+                {
+                    "primitive_type": "REFERENCED",
+                    "value_map": value_map,
+                    "association": "VERTEX",
+                }
+            )
 
 
 class TipperReceivers(TipperSurvey, Curve):  # pylint: disable=too-many-ancestors

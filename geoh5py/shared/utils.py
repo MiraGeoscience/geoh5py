@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-import warnings
 from abc import ABC
 from collections.abc import Callable
 from contextlib import contextmanager
@@ -26,6 +25,7 @@ from json import loads
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
+from warnings import warn
 
 import h5py
 import numpy as np
@@ -93,6 +93,7 @@ INV_KEY_MAP = {
     "Octree Cells": "octree_cells",
     "Partially hidden": "partially_hidden",
     "Planning": "planning",
+    "Precision": "precision",
     "Primitive type": "primitive_type",
     "Prisms": "prisms",
     "Properties": "properties",
@@ -103,6 +104,7 @@ INV_KEY_MAP = {
     "Referenced": "REFERENCED",
     "Rotation": "rotation",
     "Scale": "scale",
+    "Scientific notation": "scientific_notation",
     "Surveys": "surveys",
     "Text": "TEXT",
     "Trace": "trace",
@@ -170,7 +172,7 @@ def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
             pass
     else:
         if geoh5 is not None:
-            warnings.warn(
+            warn(
                 f"Closing the workspace in mode '{workspace.geoh5.mode}' "
                 f"and re-opening in mode '{mode}'."
             )
@@ -239,6 +241,7 @@ def match_values(vec_a, vec_b, collocation_distance=1e-4) -> np.ndarray:
 def merge_arrays(
     head,
     tail,
+    *,
     replace="A->B",
     mapping=None,
     collocation_distance=1e-4,
@@ -568,6 +571,7 @@ def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = No
 
     for fun in string_funcs:
         val = fun(val, *args)
+
     return val
 
 
@@ -764,6 +768,22 @@ def stringify(values: dict[str, Any]) -> dict[str, Any]:
     return string_dict
 
 
+def to_list(value: Any) -> list:
+    """
+    Convert value to a list.
+
+    :param value: The value to convert.
+
+    :return: A list
+    """
+    # ensure the names are a list
+    if isinstance(value, list):
+        return value
+    if isinstance(value, tuple):
+        return list(value)
+    return [value]
+
+
 def to_tuple(value: Any) -> tuple:
     """
     Convert value to a tuple.
@@ -864,3 +884,17 @@ def remove_duplicates_in_list(input_list: list) -> list:
     :return: The sorted list
     """
     return sorted(set(input_list), key=input_list.index)
+
+
+def decode_byte_array(values: np.ndarray, data_type: type) -> np.array:
+    """
+    Decode a byte array to an array of a given data type.
+
+    :param values: The byte array to decode.
+    :param data_type: The data type to convert the values to.
+
+    :return: The decoded array.
+    """
+    return (
+        np.char.decode(values, "utf-8") if values.dtype.kind == "S" else values
+    ).astype(data_type)

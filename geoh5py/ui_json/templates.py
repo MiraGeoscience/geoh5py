@@ -80,6 +80,7 @@ def bool_parameter(
 
 
 def integer_parameter(
+    *,
     main: bool = True,
     label: str = "Integer data",
     value: int = 1,
@@ -113,6 +114,7 @@ def integer_parameter(
 
 
 def float_parameter(
+    *,
     main: bool = True,
     label: str = "Float data",
     value: float = 1.0,
@@ -155,6 +157,7 @@ def float_parameter(
 
 
 def string_parameter(
+    *,
     main: bool = True,
     label: str = "String data",
     value: str = "data",
@@ -179,6 +182,7 @@ def string_parameter(
 
 
 def choice_string_parameter(
+    *,
     choice_list: tuple = ("Option A", "Option B"),
     label: str = "String data",
     main: bool = True,
@@ -213,6 +217,7 @@ def choice_string_parameter(
 
 
 def file_parameter(
+    *,
     main: bool = True,
     label: str = "File choices",
     file_description: tuple = (),
@@ -247,6 +252,7 @@ def file_parameter(
 
 
 def group_parameter(
+    *,
     main: bool = True,
     label: str = "Object",
     group_type: tuple = tuple(known_group_types),
@@ -273,6 +279,7 @@ def group_parameter(
 
 
 def object_parameter(
+    *,
     main: bool = True,
     label: str = "Object",
     mesh_type: tuple = tuple(known_object_types),
@@ -307,6 +314,7 @@ def object_parameter(
 
 
 def data_parameter(
+    *,
     main: bool = True,
     label: str = "Data channel",
     association: str = "Vertex",
@@ -360,6 +368,7 @@ def data_parameter(
 
 
 def data_value_parameter(
+    *,
     main: bool = True,
     label: str = "Data channel",
     association: str = "Vertex",
@@ -409,6 +418,7 @@ def data_value_parameter(
 
 
 def drillhole_group_data(
+    *,
     value: list[str] | None = None,
     main: bool = True,
     label: str = "Data channel",
@@ -453,6 +463,7 @@ def drillhole_group_data(
 
 
 def range_label_template(
+    *,
     main: bool = True,
     label: str = "Range",
     allow_complement: bool = False,

@@ -24,6 +24,7 @@ import string
 
 import numpy as np
 import pytest
+from h5py import special_dtype
 
 from geoh5py.data import BooleanData, FloatData, ReferencedData
 from geoh5py.objects import Drillhole
@@ -295,6 +296,33 @@ def test_single_survey(tmp_path):
         )
 
         np.testing.assert_array_almost_equal(locations, solution, decimal=3)
+
+
+def test_survey_with_info(tmp_path):
+    # Create a simple well
+    dist = np.random.rand(3) * 100.0
+    azm = np.random.randn(3) * 180.0
+    dip = np.random.randn(3) * 180.0
+    surveys = np.c_[dist, azm, dip].T.tolist()
+    surveys += [["A", "B", "C"]]
+    surveys = np.core.records.fromarrays(
+        surveys,
+        dtype=[
+            ("Depth", "<f4"),
+            ("Azimuth", "<f4"),
+            ("Dip", "<f4"),
+            ("Info", special_dtype(vlen=str)),
+        ],
+    )
+
+    collar = np.r_[0.0, 10.0, 10.0]
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+    with Workspace(version=1.0).save_as(h5file_path) as workspace:
+        Drillhole.create(workspace, name="Han Solo", collar=collar, surveys=surveys)
+
+    with Workspace(h5file_path) as workspace:
+        well = workspace.get_entity("Han Solo")[0]
+        assert len(well._surveys.dtype) == 4
 
 
 def test_outside_survey(tmp_path):

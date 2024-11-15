@@ -61,11 +61,12 @@ class Drillhole(Points):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
+        *,
         collar: np.ndarray | list | None = None,
         cost: float = 0.0,
         end_of_hole: float | None = None,
         planning: str = "Default",
-        surveys: np.ndarray | list | tuple = (0, 0, -90),
+        surveys: np.ndarray | list | tuple | None = None,
         vertices: np.ndarray | None = None,
         default_collocation_distance: float = 1e-2,
         **kwargs,
@@ -75,6 +76,7 @@ class Drillhole(Points):
         self._trace: np.ndarray | None = None
         self._trace_depth: np.ndarray | None = None
         self._locations = None
+        self._surveys: np.ndarray | None = None
 
         super().__init__(
             vertices=(0.0, 0.0, 0.0) if vertices is None else vertices, **kwargs
@@ -88,7 +90,9 @@ class Drillhole(Points):
         self.default_collocation_distance = default_collocation_distance
         self.end_of_hole = end_of_hole
         self.planning = planning
-        self.surveys = surveys
+
+        if surveys is not None:
+            self.surveys = surveys
 
     @property
     def cells(self) -> np.ndarray | None:
@@ -104,7 +108,8 @@ class Drillhole(Points):
 
     @cells.setter
     def cells(self, indices):
-        assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
+        if indices.dtype != "uint32":
+            raise TypeError("Indices array must be of type 'uint32'")
         self._cells = indices
         self.workspace.update_attribute(self, "cells")
 
@@ -155,9 +160,8 @@ class Drillhole(Points):
 
     @cost.setter
     def cost(self, value: Real):
-        assert isinstance(
-            value, Real
-        ), f"Provided cost value must be of type {float} or int."
+        if not isinstance(value, Real):
+            raise TypeError(f"Provided cost value must be of type {float} or int.")
         self._cost = float(value)
 
         if self.on_file:
@@ -172,9 +176,8 @@ class Drillhole(Points):
 
     @end_of_hole.setter
     def end_of_hole(self, value: Real | None):
-        assert isinstance(
-            value, (int, float, type(None))
-        ), f"Provided end_of_hole value must be of type {int}"
+        if not isinstance(value, (int, float, type(None))):
+            raise TypeError(f"Provided end_of_hole value must be of type {int}")
         self._end_of_hole = value
 
         if self.on_file:
@@ -256,7 +259,8 @@ class Drillhole(Points):
     @planning.setter
     def planning(self, value: str):
         choices = ["Default", "Ongoing", "Planned", "Completed", "No status"]
-        assert value in choices, f"Provided planning value must be one of {choices}"
+        if value not in choices:
+            raise ValueError(f"Provided planning value must be one of {choices}")
         self._planning = value
 
         if self.on_file:
@@ -267,16 +271,20 @@ class Drillhole(Points):
         """
         Coordinates of the surveys.
         """
-        if (getattr(self, "_surveys", None) is None) and self.on_file:
+        if self._surveys is None and self.on_file:
             self._surveys = self.workspace.fetch_array_attribute(self, "surveys")
 
-        surveys = np.vstack(
-            [
-                self._surveys["Depth"],
-                self._surveys["Azimuth"],
-                self._surveys["Dip"],
-            ]
-        ).T
+        if self._surveys is None:
+            surveys = np.c_[0, 0, -90]
+
+        else:
+            surveys = np.vstack(
+                [
+                    self._surveys["Depth"],
+                    self._surveys["Azimuth"],
+                    self._surveys["Dip"],
+                ]
+            ).T
 
         return surveys.astype(float)
 
@@ -316,7 +324,7 @@ class Drillhole(Points):
         else:
             array_values = values
 
-        if array_values.dtype != self.__SURVEY_DTYPE:
+        if array_values.dtype.descr[:3] != self.__SURVEY_DTYPE.descr:
             raise ValueError(
                 f"Array of 'survey' must be of dtype = {self.__SURVEY_DTYPE}"
             )
@@ -331,7 +339,9 @@ class Drillhole(Points):
 
     @default_collocation_distance.setter
     def default_collocation_distance(self, tol):
-        assert tol > 0, "Tolerance value should be >0"
+        if not tol > 0:
+            raise ValueError("Tolerance value should be >0.")
+
         self._default_collocation_distance = tol
         self.workspace.update_attribute(self, "attributes")
 

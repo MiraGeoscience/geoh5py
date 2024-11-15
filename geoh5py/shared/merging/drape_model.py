@@ -22,7 +22,7 @@ from typing import cast
 import numpy as np
 
 from ...data import NumericData
-from ...objects import DrapeModel, ObjectBase
+from ...objects import DrapeModel
 from ...workspace import Workspace
 from .base import BaseMerger
 
@@ -32,7 +32,7 @@ class DrapeModelMerger(BaseMerger):
 
     @classmethod
     def create_object(
-        cls, workspace: Workspace, input_entities: list[DrapeModel], **kwargs
+        cls, workspace: Workspace, input_entities: list, **kwargs
     ) -> DrapeModel:
         """
         Create a new DrapeModel from a list of input DrapeModels.
@@ -135,7 +135,7 @@ class DrapeModelMerger(BaseMerger):
     def merge_data(
         cls,
         out_entity,
-        input_entities: list[ObjectBase],
+        input_entities: list[DrapeModel],
     ):
         super().merge_data(out_entity, input_entities)
 
