@@ -24,7 +24,7 @@ concurrency:
 jobs:
   call-workflow-conda-release:
     name: Publish production Conda package on JFrog Artifactory
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_conda_assets.yml@feature/DEVOPS-571
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_conda_assets.yml@main
     if: ${{ github.event_name == 'release' || github.event.inputs.publish-conda == 'true' }}
     with:
       virtual-repo-names: '["public-conda-prod"]'
@@ -35,7 +35,7 @@ jobs:
   call-workflow-pypi-release:
     name: Publish production PyPI package (JFrog Artifactory and PyPI)
     if: ${{ github.event_name == 'release' || github.event.inputs.publish-pypi == 'true' }}
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_pypi_assets.yml@feature/DEVOPS-571
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_pypi_assets.yml@main
     with:
       package-name: 'geoh5py'
       virtual-repo-names: '["public-pypi-prod", "pypi"]'
