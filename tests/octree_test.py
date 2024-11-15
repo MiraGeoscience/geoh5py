@@ -39,8 +39,8 @@ def test_octree_cell_volumes(tmp_path: Path):
             v_count=8,
             w_count=8,
             u_cell_size=10.0,
-            v_cell_size=10.0,
-            w_cell_size=10.0,
+            v_cell_size=20.0,
+            w_cell_size=40.0,
             octree_cells=np.array(
                 [
                     [0, 0, 0, 2],
@@ -59,7 +59,7 @@ def test_octree_cell_volumes(tmp_path: Path):
         )
         volumes = mesh.cell_volumes
 
-        assert np.allclose(volumes, [8000] * 8 + [64000] * 3)
+        assert np.allclose(volumes, [64000] * 8 + [512000] * 3)
 
 
 def test_octree(tmp_path: Path):
