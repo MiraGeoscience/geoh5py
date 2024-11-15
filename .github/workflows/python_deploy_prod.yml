@@ -3,6 +3,19 @@ name: Deploy python package in production
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      release-tag:
+        description: 'Tag for the existing (draft) release to publish assets from'
+        required: true
+      publish-conda:
+        description: 'Publish Conda package'
+        required: false
+        default: true
+      publish-pypi:
+        description: 'Publish PyPI package'
+        required: false
+        default: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -12,17 +25,21 @@ jobs:
   call-workflow-conda-release:
     name: Publish production Conda package on JFrog Artifactory
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_conda_assets.yml@feature/DEVOPS-571
+    if: ${{ github.event_name == 'release' || github.event.inputs.publish-conda == 'true' }}
     with:
       virtual-repo-names: '["public-conda-prod"]'
+      release-tag: ${{ github.event.release.tag_name || github.event.inputs.release-tag }}
     secrets:
       JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
       JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
   call-workflow-pypi-release:
     name: Publish production PyPI package (JFrog Artifactory and PyPI)
+    if: ${{ github.event_name == 'release' || github.event.inputs.publish-pypi == 'true' }}
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_pypi_assets.yml@feature/DEVOPS-571
     with:
       package-name: 'geoh5py'
       virtual-repo-names: '["public-pypi-prod", "pypi"]'
+      release-tag: ${{ github.event.release.tag_name || github.event.inputs.release-tag }}
     secrets:
       JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
       JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
