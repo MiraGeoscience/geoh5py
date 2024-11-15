@@ -18,7 +18,7 @@ on:
         default: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.event.release.tag_name || github.event.inputs.release-tag || github.run_id }}
   cancel-in-progress: true
 
 jobs:
