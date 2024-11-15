@@ -17,7 +17,7 @@
 
 # flake8: noqa
 
-__version__ = "0.10.0-beta.2.post1"
+__version__ = "0.10.0-beta.2.post2"
 
 import inspect
 
