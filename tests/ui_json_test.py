@@ -741,6 +741,29 @@ def test_data_parameter(tmp_path: Path):
     ui_json["data"] = templates.data_parameter(data_group_type="Multi-element")
 
 
+def test_data_object_file_association(tmp_path: Path):
+    workspace = get_workspace(tmp_path)
+    points_b = workspace.get_entity("Points_B")[0]
+    file_path = tmp_path / "test.txt"
+
+    # create a dummy txt file
+    with open(file_path, "w") as file:
+        file.write("Hello World")
+
+    file = points_b.add_file(file_path)
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["object"] = templates.object_parameter(value=points_b.uid)
+    ui_json["data"] = templates.data_parameter(
+        value=file.uid, data_type="Filename", association="Object"
+    )
+
+    in_file = InputFile(ui_json=ui_json)
+
+    assert in_file.data["data"] == file
+
+
 def test_stringify(tmp_path: Path):
     # pylint: disable=protected-access
     workspace = get_workspace(tmp_path)
