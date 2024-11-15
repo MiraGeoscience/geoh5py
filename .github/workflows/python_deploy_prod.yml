@@ -9,24 +9,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  call-workflow-conda-publish:
-    name: Publish production conda package on JFrog Artifactory
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-publish_conda_package.yml@main
+  call-workflow-conda-release:
+    name: Publish production Conda package on JFrog Artifactory
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_conda_assets.yml@feature/DEVOPS-571
     with:
-      package-name: 'geoh5py'
-      python-version: '3.10'
       virtual-repo-names: '["public-conda-prod"]'
     secrets:
       JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
       JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
-  call-workflow-pypi-publish:
-    name: Publish production pypi package (JFrog Artifactory and  PyPI)
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-publish_pypi_package.yml@main
+  call-workflow-pypi-release:
+    name: Publish production PyPI package (JFrog Artifactory and PyPI)
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_pypi_assets.yml@feature/DEVOPS-571
     with:
-      package-manager: 'poetry'
       package-name: 'geoh5py'
-      version-tag: ${{ github.ref_name }}
-      python-version: '3.10'
       virtual-repo-names: '["public-pypi-prod", "pypi"]'
     secrets:
       JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}

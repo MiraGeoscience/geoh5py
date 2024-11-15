@@ -12,7 +12,7 @@ concurrency:
 jobs:
   call-workflow-conda-publish:
     name: Publish development conda package on JFrog Artifactory
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-publish_conda_package.yml@main
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-publish_conda_package.yml@feature/DEVOPS-571
     with:
       package-name: 'geoh5py'
       python-version: '3.10'
@@ -22,7 +22,7 @@ jobs:
       JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
   call-workflow-pypi-publish:
     name: Publish development pypi package (JFrog Artifactory and TestPyPI)
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-publish_pypi_package.yml@main
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-publish_pypi_package.yml@feature/DEVOPS-571
     with:
       package-manager: 'poetry'
       package-name: 'geoh5py'
