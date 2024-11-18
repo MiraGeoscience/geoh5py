@@ -10,3 +10,5 @@ updates:
     schedule:
       interval: "monthly"
     target-branch: "develop"
+    allow:
+      - dependency-type: "production" # Disable when runtime dependencies vulnerabilities are mostly address
