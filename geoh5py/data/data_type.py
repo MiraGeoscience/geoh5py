@@ -27,7 +27,7 @@ import numpy as np
 
 from ..shared import EntityType, utils
 from .color_map import ColorMap
-from .primitive_type_enum import PrimitiveTypeEnum
+from .primitive_type_enum import DataTypeEnum, PrimitiveTypeEnum
 from .reference_value_map import BOOLEAN_VALUE_MAP, ReferenceValueMap
 
 
@@ -160,6 +160,13 @@ class DataType(EntityType):
         self._color_map: ColorMap | None = color_map
 
         self.workspace.update_attribute(self, "color_map")
+
+    @property
+    def dtype(self) -> type:
+        """
+        The data type of the data.
+        """
+        return DataTypeEnum.from_primitive_type(self.primitive_type)
 
     @property
     def duplicate_on_copy(self) -> bool:

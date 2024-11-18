@@ -336,7 +336,15 @@ def test_property_group_table(tmp_path):
         np.testing.assert_almost_equal(curve.locations, produced[:, :3], decimal=6)
 
         curve.add_data(
-            {"TestCell": {"values": np.random.rand(11), "association": "CELL"}},
+            {
+                "TestCell": {"values": np.random.rand(11), "association": "CELL"},
+                "Referenced": {
+                    "values": np.random.randint(0, 3, 11),
+                    "association": "CELL",
+                    "type": "referenced",
+                    "value_map": {1: "A", 2: "B", 3: "C"},
+                },
+            },
             property_group="cellGroup",
         )
 
@@ -346,6 +354,8 @@ def test_property_group_table(tmp_path):
         np.testing.assert_almost_equal(cell_group.table.locations, curve.centroids)
 
         assert cell_group.table.size == curve.n_cells
+
+        assert isinstance(cell_group.table(mapped=True)[0][1], str)
 
 
 def test_property_group_table_error(tmp_path):

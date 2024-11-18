@@ -275,7 +275,10 @@ class InputFile:
                 if (value is None) and (not self.ui_json[key].get("enabled", False)):
                     continue
 
-                self.ui_json[key][member] = value
+                if isinstance(value, dict) and "value" in value:
+                    self._update_group_value_ui(key, value)
+                else:
+                    self.ui_json[key][member] = value
             else:
                 self.ui_json[key] = value
 
@@ -415,7 +418,6 @@ class InputFile:
 
         if self.data is not None:
             self.update_ui_values(self.data)
-
         with open(self.path_name, "w", encoding="utf-8") as file:
             json.dump(self.stringify(self.demote(self.ui_json)), file, indent=4)
 
@@ -428,7 +430,9 @@ class InputFile:
         :param key: Parameter name to update.
         :param value: Value to update with.
         """
-        assert self.data is not None
+        if self.data is None:
+            raise ValueError("Input data must be set before setting values. ")
+
         if self.validate and self.validations is not None and key in self.validations:
             if "association" in self.validations[key]:
                 validations = deepcopy(self.validations[key])
@@ -481,7 +485,6 @@ class InputFile:
         """
         if not isinstance(ui_json, dict):
             raise ValueError("Input value for 'numify' must be a ui_json dictionary.")
-
         for key, value in ui_json.items():
             if isinstance(value, dict):
                 try:
@@ -491,6 +494,7 @@ class InputFile:
                 value = cls.numify(value)
 
             mappers = [str2none, str2inf, str2uuid, path2workspace]
+
             ui_json[key] = dict_mapper(value, mappers)
 
         return ui_json
@@ -519,10 +523,15 @@ class InputFile:
         """Convert uuids to entities from the workspace."""
         if self._geoh5 is None:
             return var
-
         for key, value in var.items():
             if isinstance(value, dict):
-                var[key] = self.promote(value)
+                if "groupValue" in value and "value" in value:
+                    var[key] = {
+                        "group_value": self._uid_promotion(key, value["groupValue"]),
+                        "value": value["value"],
+                    }
+                else:
+                    var[key] = self.promote(value)
             else:
                 if isinstance(value, list):
                     var[key] = [self._uid_promotion(key, val) for val in value]
@@ -560,3 +569,28 @@ class InputFile:
             DeprecationWarning,
         )
         self.geoh5 = value
+
+    def _update_group_value_ui(self, key: str, value: dict):
+        """
+        Update the ui.json values and enabled status from input data.
+
+        :param key: Key to update in the ui_json.
+        :param value: Key and value pairs expected by the ui_json.
+        """
+        if self.ui_json is None:
+            return
+
+        group_value: Any = value.get("group_value", value.get("GroupValue", None))
+
+        if hasattr(group_value, "uid"):
+            group_value = group_value.uid
+
+        group_value = str2uuid(group_value)
+
+        if not isinstance(group_value, UUID):
+            raise TypeError(
+                f"Input value for 'group_value' must be of type UUID; {type(group_value)} provided."
+            )
+
+        self.ui_json[key]["groupValue"] = group_value
+        self.ui_json[key]["value"] = value["value"]
