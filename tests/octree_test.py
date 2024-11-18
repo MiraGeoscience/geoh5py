@@ -29,6 +29,39 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
+def test_octree_cell_volumes(tmp_path: Path):
+    with Workspace.create(tmp_path / "test.geoh5") as workspace:
+        mesh = Octree.create(
+            workspace,
+            name="test",
+            origin=[0, 0, 0],
+            u_count=8,
+            v_count=8,
+            w_count=8,
+            u_cell_size=10.0,
+            v_cell_size=20.0,
+            w_cell_size=40.0,
+            octree_cells=np.array(
+                [
+                    [0, 0, 0, 2],
+                    [2, 0, 0, 2],
+                    [0, 2, 0, 2],
+                    [2, 2, 0, 2],
+                    [0, 0, 2, 2],
+                    [2, 0, 2, 2],
+                    [0, 2, 2, 2],
+                    [2, 2, 2, 2],
+                    [4, 0, 0, 4],
+                    [0, 4, 0, 4],
+                    [4, 4, 0, 4],
+                ]
+            ),
+        )
+        volumes = mesh.cell_volumes
+
+        assert np.allclose(volumes, [64000] * 8 + [512000] * 3)
+
+
 def test_octree(tmp_path: Path):
     name = "MyTestOctree"
     h5file_path = tmp_path / r"octree.geoh5"
