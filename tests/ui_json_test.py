@@ -756,7 +756,7 @@ def test_data_object_file_association(tmp_path: Path):
     ui_json["geoh5"] = workspace
     ui_json["object"] = templates.object_parameter(value=points_b.uid)
     ui_json["data"] = templates.data_parameter(
-        value=file.uid, data_type="Filename", association="Object"
+        value=file.uid, data_type="Filename", association="Object", parent="object"
     )
 
     in_file = InputFile(ui_json=ui_json)
