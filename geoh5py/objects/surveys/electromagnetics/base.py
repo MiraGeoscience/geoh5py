@@ -466,6 +466,11 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         if receivers.tx_id_property is not None:
             self.edit_em_metadata({"Tx ID property": receivers.tx_id_property.uid})
 
+            if isinstance(
+                self.tx_id_property, ReferencedData | IntegerData
+            ) and isinstance(receivers.tx_id_property, ReferencedData | IntegerData):
+                self.tx_id_property.entity_type = receivers.tx_id_property.entity_type
+
         self._receivers = receivers
         self.edit_em_metadata({"Receivers": receivers.uid})
 
@@ -512,6 +517,12 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             self.edit_em_metadata(
                 {"Tx ID tx property": transmitters.tx_id_property.uid}
             )
+            if isinstance(
+                self.tx_id_property, ReferencedData | IntegerData
+            ) and isinstance(transmitters.tx_id_property, ReferencedData | IntegerData):
+                self.tx_id_property.entity_type = (
+                    transmitters.tx_id_property.entity_type
+                )
 
         self._transmitters = transmitters
         self.edit_em_metadata({"Transmitters": transmitters.uid})
