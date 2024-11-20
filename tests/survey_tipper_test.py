@@ -68,6 +68,9 @@ def test_create_survey_tipper(tmp_path):
 
     receivers.base_stations = base_stations
 
+    assert (
+        receivers.tx_id_property.entity_type == base_stations.tx_id_property.entity_type
+    )
     with pytest.raises(ValueError, match="Mask must be an array of shape"):
         receivers.copy(mask=np.r_[1, 2, 3])
 

@@ -1,9 +1,9 @@
 |coverage| |maintainability| |precommit_ci| |docs| |style| |version| |status| |pyversions|
 
 
-.. |docs| image:: https://readthedocs.org/projects/geoh5py/badge/
+.. |docs| image:: https://readthedocs.com/projects/mirageoscience-geoh5py/badge/?version=latest
     :alt: Documentation Status
-    :target: https://geoh5py.readthedocs.io/en/latest/?badge=latest
+    :target: https://mirageoscience-geoh5py.readthedocs-hosted.com/en/latest/?badge=latest
 
 .. |coverage| image:: https://codecov.io/gh/MiraGeoscience/geoh5py/branch/develop/graph/badge.svg
     :alt: Code coverage

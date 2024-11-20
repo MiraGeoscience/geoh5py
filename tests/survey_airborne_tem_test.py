@@ -76,7 +76,6 @@ def test_create_survey_airborne_tem(tmp_path):
         transmitters.transmitters = receivers
 
     receivers.transmitters = transmitters
-
     with pytest.raises(TypeError, match="Input 'loop_radius' must be of type 'float'"):
         receivers.loop_radius = "123"
 

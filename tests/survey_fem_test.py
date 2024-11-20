@@ -46,12 +46,15 @@ def test_create_survey_airborne_fem(tmp_path):
     receivers = AirborneFEMReceivers.create(
         workspace, vertices=vertices, name=name + "_rx"
     )
+    receivers.tx_id_property = np.arange(receivers.n_vertices)
+
     assert isinstance(
         receivers, AirborneFEMReceivers
     ), "Entity type AirborneFEMReceivers failed to create."
     transmitters = AirborneFEMTransmitters.create(
         workspace, vertices=vertices + 10.0, name=name + "_tx"
     )
+    transmitters.tx_id_property = np.arange(transmitters.n_vertices)
 
     assert isinstance(
         transmitters, AirborneFEMTransmitters
@@ -72,12 +75,16 @@ def test_create_survey_airborne_fem(tmp_path):
     ):
         transmitters.transmitters = receivers
 
-    receivers.transmitters = transmitters
+    transmitters.receivers = receivers
+
+    assert (
+        transmitters.tx_id_property.entity_type == receivers.tx_id_property.entity_type
+    )
 
     with pytest.raises(TypeError, match="Input 'loop_radius' must be of type 'float'"):
         receivers.loop_radius = "123"
 
-    # Check the tx_id_property
+    # Reset the tx_id_property
     receivers.tx_id_property = np.arange(receivers.n_vertices)
     transmitters.tx_id_property = np.arange(transmitters.n_vertices)
 
@@ -393,10 +400,12 @@ def test_create_survey_ground_fem_large_loop(
         match=f"Provided transmitters must be of type {type(transmitters)}",
     ):
         transmitters.transmitters = receivers
-
+    receivers.tx_id_property = np.hstack(tx_id)
     receivers.transmitters = transmitters
 
-    receivers.tx_id_property = np.hstack(tx_id)
+    assert (
+        receivers.tx_id_property.entity_type == transmitters.tx_id_property.entity_type
+    )
 
     with Workspace.create(Path(tmp_path) / r"testGround_copy.geoh5") as new_workspace:
         receivers_orig = receivers.copy(new_workspace)
