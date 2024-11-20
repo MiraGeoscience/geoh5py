@@ -761,6 +761,7 @@ def test_data_object_file_association(tmp_path: Path):
 
     in_file = InputFile(ui_json=ui_json)
 
+    in_file.write_ui_json(name="test.ui.json", path=tmp_path)
     assert in_file.data["data"] == file
 
 
