@@ -108,7 +108,7 @@ def test_create_reference_data(tmp_path):
 
 
 def test_add_data_map(tmp_path):
-    h5file_path = tmp_path / r"testPoints.geoh5"
+    h5file_path = tmp_path / (__name__ + ".geoh5")
 
     with Workspace.create(h5file_path) as workspace:
         _, data = generate_value_map(workspace)
@@ -177,7 +177,7 @@ def test_add_data_map(tmp_path):
 
 
 def test_create_bytes_reference(tmp_path):
-    h5file_path = tmp_path / r"testPoints.geoh5"
+    h5file_path = tmp_path / (__name__ + ".geoh5")
 
     with Workspace.create(h5file_path) as workspace:
         points, data = generate_value_map(workspace)
@@ -201,3 +201,20 @@ def test_create_bytes_reference(tmp_path):
         assert data.entity_type.value_map.map.dtype == np.dtype(
             [("Key", "<u4"), ("Value", "O")]
         )
+
+
+def test_value_map_from_values(tmp_path):
+    h5file_path = tmp_path / (__name__ + ".geoh5")
+
+    with Workspace.create(h5file_path) as workspace:
+        points, data = generate_value_map(workspace)
+
+        new = points.add_data(
+            {
+                "auto_map": {
+                    "type": "referenced",
+                    "values": data.values,
+                }
+            }
+        )
+        assert len(new.entity_type.value_map.map) == len(np.unique(data.values)) + 1
