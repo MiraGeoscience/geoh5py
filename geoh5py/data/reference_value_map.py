@@ -63,7 +63,9 @@ class ReferenceValueMap(ABC):
 
         if isinstance(value_map, np.ndarray) and value_map.dtype.names is None:
             if value_map.ndim == 1:
-                value_map = {i: str(val) for i, val in enumerate(set(value_map))}
+                unique_set = set(value_map)
+                unique_set.discard(0)
+                value_map = {i + 1: str(val) for i, val in enumerate(unique_set)}
 
             value_map = dict(value_map)
 
